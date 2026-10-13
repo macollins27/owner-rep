@@ -368,6 +368,14 @@ export const register: Register = on => {
     const brief = await read($, briefA)
     const id = sid
 
+    // The band is one strip shared with every other mod, "You should know"
+    // among them, and this mod draws first. Whatever is beneath is kept under
+    // the row. While another mod's note is showing, the rep's own note waits,
+    // so only one set of digit buttons is ever on screen. The briefing and the
+    // goal field, which the owner asked for, take the strip alone.
+    const beneath = await next(e)
+    const hasBeneath = beneath !== undefined && beneath !== null
+
     const onPress = () => {
       pressBrief($, id).catch(() => undefined)
     }
@@ -415,7 +423,7 @@ export const register: Register = on => {
       )
     }
 
-    if (view === 'note' && note !== null) {
+    if (view === 'note' && note !== null && !hasBeneath) {
       return (
         <Box flexDirection="column">
           {row}
@@ -525,7 +533,12 @@ export const register: Register = on => {
       )
     }
 
-    return row
+    return (
+      <Box flexDirection="column">
+        {row}
+        {beneath}
+      </Box>
+    )
   })
 
   on('session.end', async ($, e, next) => {

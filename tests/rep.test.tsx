@@ -77,6 +77,21 @@ test('the row draws on both surfaces with the Rep button and a placeholder goal'
   }
 })
 
+test('the row keeps what another mod draws beneath it in the shared strip', async ($, on) => {
+  mock.store(on, {})
+  on('session.id', () => ({ value: 'test-session' }))
+  on('ui.render', { component: 'AbovePrompt' }, ($, e) => {
+    const { Text } = $.ui.resolve(e)
+    return <Text key="other">You should know · a note from another mod</Text>
+  })
+  for (const surface of ['terminal', 'desktop'] as const) {
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface, ...BAND })
+    expect(await ui.find({ key: 'rep' })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /a note from another mod/ })).toBeDefined()
+    await ui.unmount()
+  }
+})
+
 test('pressing Rep reads the conversation and draws the briefing with the message and its buttons', async ($, on) => {
   mock.store(on, {})
   on('session.id', () => ({ value: 'test-session' }))
