@@ -132,10 +132,9 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   expect(out?.text).toBe('holds:\n- x')
   expect(out?.tokens).toBe(15)
   expect(resultOf('not json')).toBe(null)
-  expect(checkCostText(0, 0)).toContain('1.3 million tokens')
-  expect(checkCostText(0, 0)).toContain('2 minutes')
-  expect(checkCostText(850000, 95000)).toContain('850k tokens')
-  expect(checkCostText(850000, 95000)).toContain('2 minutes')
+  expect(checkCostText(0, 0, 0)).toContain('210k fresh tokens plus 2.3 million re-read from cache, in 2 minutes')
+  expect(checkCostText(850000, 800000, 95000)).toContain('50k fresh tokens plus 800k re-read from cache, in 2 minutes')
+  expect(out?.cached).toBe(1)
 })
 
 test('the row draws on both surfaces with the Rep button and a placeholder goal', async ($, on) => {
@@ -221,7 +220,7 @@ test('pressing Rep reads the conversation and draws the briefing with the messag
   expect(await ui.find({ type: 'Text', text: /A judge mod that briefs you plainly/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /nothing in the record shows a run/ })).toBeUndefined()
   expect((await ui.find({ key: 'check' }))?.props.hotkey).toBe('3')
-  expect(await ui.find({ type: 'Text', text: /1.3 million tokens/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /re-read from cache, in 2 minutes/ })).toBeDefined()
   await ui.press({ key: 'check' })
   expect(await ui.find({ key: 'check' })).toBeUndefined()
   expect(await ui.find({ type: 'Text', text: /nothing in the record shows a run/ })).toBeDefined()

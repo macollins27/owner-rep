@@ -70,6 +70,7 @@ type Rec = {
   checks: number
   checkTokens: number
   lastCheckTokens: number
+  lastCheckCached: number
   lastCheckMs: number
 }
 
@@ -92,6 +93,7 @@ const freshRec = (id: string): Rec => ({
   checks: 0,
   checkTokens: 0,
   lastCheckTokens: 0,
+  lastCheckCached: 0,
   lastCheckMs: 0,
 })
 
@@ -203,7 +205,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       isChecking: false,
       checked: null,
       checkNote: '',
-      checkCost: checkCostText(after.lastCheckTokens, after.lastCheckMs),
+      checkCost: checkCostText(after.lastCheckTokens, after.lastCheckCached, after.lastCheckMs),
     }
     after.lastBrief = { at: brief.at, next: brief.next, message: brief.message }
     await saveRec($, after)
@@ -291,6 +293,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
     after.checks += 1
     after.checkTokens += got.tokens
     after.lastCheckTokens = got.tokens
+    after.lastCheckCached = got.cached
     after.lastCheckMs = Date.now() - startedAt
     const c = parseCheck(got.text)
     const checked: Checked = { holds: c.holds, wrong: c.wrong, notShown: c.notShown, looked: c.looked }
@@ -301,7 +304,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       message: c.message === '' ? instant.message : c.message,
       does: c.does === '' ? instant.does : c.does,
       spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens),
-      checkCost: checkCostText(after.lastCheckTokens, after.lastCheckMs),
+      checkCost: checkCostText(after.lastCheckTokens, after.lastCheckCached, after.lastCheckMs),
     }
     after.lastBrief = { at, next: patch.next ?? '', message: patch.message ?? '' }
     await saveRec($, after)

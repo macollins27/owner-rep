@@ -513,16 +513,16 @@ export function parseCheck(text: string): CheckAnswer {
 }
 
 // The answer text out of a headless run's JSON output, or null.
-export function resultOf(stdout: string): { text: string; tokens: number } | null {
+export function resultOf(stdout: string): { text: string; tokens: number; cached: number } | null {
   const start = stdout.indexOf('{')
   if (start < 0) return null
   try {
     const d = JSON.parse(stdout.slice(start)) as { result?: unknown; usage?: Partial<Usage> }
     if (typeof d.result !== 'string') return null
     const u = d.usage ?? {}
-    const tokens =
-      (u.input_tokens ?? 0) + (u.output_tokens ?? 0) + (u.cache_read_input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0)
-    return { text: d.result, tokens }
+    const cached = u.cache_read_input_tokens ?? 0
+    const tokens = (u.input_tokens ?? 0) + (u.output_tokens ?? 0) + cached + (u.cache_creation_input_tokens ?? 0)
+    return { text: d.result, tokens, cached }
   } catch {
     return null
   }
@@ -603,8 +603,11 @@ const k = (n: number): string => (n >= 1000 ? `${Math.round(n / 1000)}k` : `${n}
 
 // The rep's own spend this session. Most of each look is the conversation
 // served again from the prompt cache, which is far cheaper than fresh tokens.
-// The first real check, on a session of about 160k tokens, measured 2026-10-13.
-export const FIRST_CHECK_TOKENS = 1300000
+// The first real check, on a session of about 160k tokens, measured 2026-10-13
+// from its transcript: 43 model requests, 2.46 million tokens in all, of which
+// 2.25 million were the checker's own growing context re-read from cache.
+export const FIRST_CHECK_TOKENS = 2460000
+export const FIRST_CHECK_CACHED = 2250000
 export const FIRST_CHECK_MS = 120000
 
 const minutes = (ms: number): string => {
@@ -615,16 +618,18 @@ const minutes = (ms: number): string => {
 const millions = (n: number): string =>
   n >= 1000000 ? `${(n / 1000000).toFixed(1)} million` : n >= 1000 ? `${Math.round(n / 1000)}k` : `${n}`
 
-export function checkCostText(lastTokens: number, lastMs: number): string {
-  if (lastTokens > 0) {
-    return `Check it starts a separate read-only Claude Code run over the session record and the files. The last check here cost about ${millions(lastTokens)} tokens and took ${minutes(lastMs)}.`
-  }
-  return `Check it starts a separate read-only Claude Code run over the session record and the files. The first one, on a session of this kind, cost about ${millions(FIRST_CHECK_TOKENS)} tokens and took ${minutes(FIRST_CHECK_MS)}.`
+const costWords = (tokens: number, cached: number, ms: number): string =>
+  `${millions(Math.max(0, tokens - cached))} fresh tokens plus ${millions(cached)} re-read from cache, in ${minutes(ms)}`
+
+export function checkCostText(lastTokens: number, lastCached: number, lastMs: number): string {
+  const lead = 'Check it starts a separate read-only Claude Code run over the session record and the files.'
+  if (lastTokens > 0) return `${lead} The last check here used ${costWords(lastTokens, lastCached, lastMs)}.`
+  return `${lead} The first one measured used ${costWords(FIRST_CHECK_TOKENS, FIRST_CHECK_CACHED, FIRST_CHECK_MS)}.`
 }
 
 export function spentText(calls: number, tokens: number, cached: number, checks = 0, checkTokens = 0): string {
   const fresh = Math.max(0, tokens - cached)
   const looks = `${calls} look${calls === 1 ? '' : 's'}`
-  const checked = checks > 0 ? `, ${checks} check${checks === 1 ? '' : 's'} (${k(checkTokens)} tokens)` : ''
+  const checked = checks > 0 ? `, ${checks} check${checks === 1 ? '' : 's'} (${k(checkTokens)} tokens, mostly cache)` : ''
   return `Owner rep: ${looks}${checked} this session; looks used ${k(fresh)} fresh tokens and ${k(cached)} re-read from cache`
 }
