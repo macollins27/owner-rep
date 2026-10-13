@@ -373,13 +373,37 @@ export const CHECK_ALLOWED_TOOLS = [
   'Bash(git show:*)',
   'Bash(git branch:*)',
   'Bash(npm test:*)',
+  'Bash(npm run test:*)',
+  'Bash(npm run check:*)',
+  'Bash(npm run lint:*)',
+  'Bash(npm run typecheck:*)',
+  'Bash(pnpm test:*)',
+  'Bash(pnpm run test:*)',
+  'Bash(pnpm tsc:*)',
+  'Bash(yarn test:*)',
+  'Bash(bun test:*)',
   'Bash(npx tsc:*)',
   'Bash(tsc:*)',
+  'Bash(~/Library/pnpm/tsc:*)',
+  'Bash(/Users/maxwellcollins/Library/pnpm/tsc:*)',
+  'Bash(node --test:*)',
   'Bash(pytest:*)',
+  'Bash(python -m pytest:*)',
+  'Bash(python3 -m pytest:*)',
+  'Bash(python3 -I:*)',
+  'Bash(ruff check:*)',
+  'Bash(go test:*)',
+  'Bash(go vet:*)',
+  'Bash(cargo test:*)',
+  'Bash(cargo check:*)',
+  'Bash(make test:*)',
+  'Bash(make check:*)',
   'Bash(bin/gate:*)',
+  'Bash(./bin/gate:*)',
   'Bash(claude plugin validate:*)',
   'Bash(claude plugin test:*)',
   'Bash(docker ps:*)',
+  'Bash(docker compose ps:*)',
 ].join(',')
 
 export const CHECK_DISALLOWED_TOOLS = 'Edit,Write,MultiEdit,NotebookEdit,Agent,Task,SendMessage,WebFetch,WebSearch,Artifact'
@@ -427,9 +451,9 @@ export function checkPrompt(a: CheckArgs): string {
 Session id: ${a.sessionId}
 Working directory: ${a.cwd}
 
-The full record of the session is in agentsview. Refresh it first with \`agentsview sync\`, then read it with \`agentsview session messages ${a.sessionId} --role user,assistant --from 0\` (long sessions: read the end first with \`--from -40\`, then what you need) and \`agentsview session tool-calls ${a.sessionId}\` for what the agent actually ran and what came back. If agentsview does not have the session, the transcript file is \`~/.claude/projects/*/${a.sessionId}.jsonl\`. Helpers the agent launched have their own records; \`agentsview session list --include-children\` finds them.
+The full record of the session is in agentsview. Refresh it first with \`agentsview sync\`. Read the newest messages with \`agentsview session messages ${a.sessionId} --role user,assistant --direction desc --limit 40\` (no \`--from\`: that gives the newest page), the whole record from the start with \`--from 0 --limit 200\` and higher \`--from\` values for later pages, and \`agentsview session tool-calls ${a.sessionId}\` for what the agent actually ran and what came back. If agentsview does not have the session, the transcript file is \`~/.claude/projects/*/${a.sessionId}.jsonl\`. Helpers the agent launched have their own records; \`agentsview session list --include-children\` finds them.
 
-Read any file you need. Run the project's own checks (its tests, its type check, its gate) when a claim says they pass. Never change a file and never send anything to anyone.
+Read any file you need. Run the project's own checks (its tests, its type check, its gate) when a claim says they pass; the record shows the exact command the agent used, so run that one. You may run only read-only commands and the project's own checks; if a command you need is refused, say so under "looked" rather than guessing. Never change a file and never send anything to anyone.
 
 ## What he wants
 

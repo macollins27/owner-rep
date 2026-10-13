@@ -108,11 +108,15 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   expect(prompt).toContain('the result')
   expect(prompt).toContain('first ask')
   expect(prompt).toContain('stands: s')
+  expect(prompt).toContain('--direction desc --limit 40')
+  expect(prompt).not.toContain('--from -40')
   const argv = checkArgv(prompt)
   expect(argv[0]).toBe('claude')
   expect(argv[1]).toBe('-p')
   const allowed = argv[argv.indexOf('--allowedTools') + 1] ?? ''
   expect(allowed).toContain('Bash(agentsview:*)')
+  expect(allowed).toContain('Bash(/Users/maxwellcollins/Library/pnpm/tsc:*)')
+  expect(allowed).toContain('Bash(npx tsc:*)')
   expect(allowed).not.toContain('Write')
   const disallowed = argv[argv.indexOf('--disallowedTools') + 1] ?? ''
   expect(disallowed).toContain('Edit')
