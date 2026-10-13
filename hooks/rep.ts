@@ -14,7 +14,7 @@ export const SEEN_MAX = 40
 export const OWNER_MAX = 40
 export const OWNER_CUT = 1200
 export const SESSIONS_MAX = 32
-export const GOAL_WORDS = 18
+export const GOAL_WORDS = 12
 
 export type Memory = {
   goal: string | null
@@ -374,7 +374,14 @@ export const tokensOf = (u: Usage | null | undefined): number =>
     ? 0
     : u.input_tokens + u.output_tokens + u.cache_read_input_tokens + u.cache_creation_input_tokens
 
-export function spentText(calls: number, tokens: number): string {
-  const k = tokens >= 1000 ? `${Math.round(tokens / 1000)}k` : `${tokens}`
-  return `Owner rep: ${calls} look${calls === 1 ? '' : 's'}, about ${k} tokens this session`
+export const cachedOf = (u: Usage | null | undefined): number =>
+  u === null || u === undefined ? 0 : u.cache_read_input_tokens
+
+const k = (n: number): string => (n >= 1000 ? `${Math.round(n / 1000)}k` : `${n}`)
+
+// The rep's own spend this session. Most of each look is the conversation
+// served again from the prompt cache, which is far cheaper than fresh tokens.
+export function spentText(calls: number, tokens: number, cached: number): string {
+  const fresh = Math.max(0, tokens - cached)
+  return `Owner rep: ${calls} look${calls === 1 ? '' : 's'} this session, ${k(fresh)} fresh tokens and ${k(cached)} re-read from cache`
 }

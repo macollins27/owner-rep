@@ -122,7 +122,7 @@ test('pressing Rep reads the conversation and draws the briefing with the messag
   expect(await ui.find({ type: 'Text', text: /Load the mod in a real session/ })).toBeDefined()
   expect((await ui.find({ key: 'put' }))?.props.hotkey).toBe('1')
   expect((await ui.find({ key: 'goal' }))?.props.hotkey).toBe('g')
-  expect(await ui.find({ type: 'Text', text: /1 look/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /1 look this session/ })).toBeDefined()
   await ui.unmount()
 })
 

@@ -10,6 +10,7 @@ import {
   SEEN_MAX,
   SESSIONS_MAX,
   briefPrompt,
+  cachedOf,
   doingFor,
   fit,
   parseBrief,
@@ -51,6 +52,7 @@ type Rec = {
   skip: number
   calls: number
   tokens: number
+  cached: number
 }
 
 const isRec = (v: unknown): v is Rec =>
@@ -67,6 +69,7 @@ const freshRec = (id: string): Rec => ({
   skip: 0,
   calls: 0,
   tokens: 0,
+  cached: 0,
 })
 
 async function loadRec($: EngineInterface, id: string): Promise<Rec> {
@@ -114,6 +117,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop', tu
   const after = await loadRec($, sid)
   after.calls += 1
   after.tokens += tokensOf('usage' in result ? result.usage : null)
+  after.cached += cachedOf('usage' in result ? result.usage : null)
   if (!result.isAnswered) {
     await saveRec($, after)
     return
@@ -138,12 +142,14 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
   const view = await read($, viewA)
   if (view === 'reading') return
   await update($, viewA, () => 'reading')
+  await setNow($, { mark: '' }).catch(() => undefined)
   try {
     const rec = await loadRec($, sid)
     const result = await $.model.fork({ prompt: briefPrompt(memoryOf(rec)) })
     const after = await loadRec($, sid)
     after.calls += 1
     after.tokens += tokensOf('usage' in result ? result.usage : null)
+    after.cached += cachedOf('usage' in result ? result.usage : null)
     if (!result.isAnswered) {
       await saveRec($, after)
       await update($, viewA, () => 'row')
@@ -169,7 +175,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       message: a.message,
       does: a.does,
       at: Date.now(),
-      spent: spentText(after.calls, after.tokens),
+      spent: spentText(after.calls, after.tokens, after.cached),
     }
     after.lastBrief = { at: brief.at, next: brief.next, message: brief.message }
     await saveRec($, after)
@@ -398,7 +404,7 @@ export const register: Register = on => {
     // The row: mark, the result he wants, what the agent is doing now, the button.
     const isReading = view === 'reading'
     const marked = now.mark !== ''
-    const right = isReading ? 'reading…' : now.doing + (now.helpers > 0 ? ` · ${now.helpers} helper${now.helpers === 1 ? '' : 's'}` : '')
+    const right = isReading ? 'Owner rep is reading the whole session…' : now.doing + (now.helpers > 0 ? ` · ${now.helpers} helper${now.helpers === 1 ? '' : 's'}` : '')
     const button = `${PRESS_HOTKEY}: Rep`
     const sep = ' · '
     const goalText = goal ?? 'working out the result you want…'
@@ -411,7 +417,7 @@ export const register: Register = on => {
           {goalCut}
         </Text>
         <Text dimColor>{sep}</Text>
-        <Text color={marked ? 'warning' : undefined} dimColor={!marked} wrap="truncate-end">
+        <Text color={marked || isReading ? 'warning' : undefined} dimColor={!marked && !isReading} wrap="truncate-end">
           {right}
         </Text>
         <Text> </Text>
