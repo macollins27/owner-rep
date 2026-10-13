@@ -103,8 +103,10 @@ test('a goal typed in the prompt box is pinned by the rep and dropped before the
 
 test('the checker: its prompt names the session, its tools are read-only, and its answer parses', async () => {
   const brief = parseBrief('goal: x\nstands: s\nmeans: m\nleft:\n- a\nnext: n\nmessage:\nhello\nend\ndoes: d')
-  const prompt = checkPrompt({ sessionId: 'abc-123', cwd: '/tmp/x', goal: 'the result', owner: ['first ask'], brief })
+  const prompt = checkPrompt({ sessionId: 'abc-123', cwd: '/tmp/x', goal: 'the result', owner: ['first ask'], brief, writtenAt: '2026-10-13T23:05:00.000Z' })
   expect(prompt).toContain('abc-123')
+  expect(prompt).toContain('2026-10-13T23:05:00.000Z')
+  expect(prompt).toContain('changed:')
   expect(prompt).toContain('the result')
   expect(prompt).toContain('first ask')
   expect(prompt).toContain('stands: s')
@@ -121,8 +123,11 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   const disallowed = argv[argv.indexOf('--disallowedTools') + 1] ?? ''
   expect(disallowed).toContain('Edit')
   expect(disallowed).toContain('SendMessage')
-  const c = parseCheck('holds:\n- the file exists\nfalse:\n- tests passed; the last run printed 2 failures\nnotshown:\n- nothing\nstands: Two tests fail.\nnext: Fix them.\nmessage:\nTwo tests fail. Fix them and show the run.\nend\ndoes: Makes it fix the tests.\nlooked: Read the record and ran the tests; could not open the helper logs.')
+  const c = parseCheck('holds:\n- the file exists\nfalse:\n- tests passed; the last run printed 2 failures\nnotshown:\n- nothing\nchanged:\n- the helper finished at 23:17\nstands: Two tests fail.\nmeans: Not done.\nleft:\n- the live run\nnext: Fix them.\nmessage:\nTwo tests fail. Fix them and show the run.\nend\ndoes: Makes it fix the tests.\nlooked: Read the record and ran the tests; could not open the helper logs.')
   expect(c.holds).toEqual(['the file exists'])
+  expect(c.changed).toEqual(['the helper finished at 23:17'])
+  expect(c.means).toBe('Not done.')
+  expect(c.leftOut).toEqual(['the live run'])
   expect(c.wrong).toEqual(['tests passed; the last run printed 2 failures'])
   expect(c.notShown).toEqual([])
   expect(c.stands).toBe('Two tests fail.')
@@ -207,7 +212,7 @@ test('pressing Rep reads the conversation and draws the briefing with the messag
   on('session.cwd', () => ({ value: '/tmp/x' }))
   const checked = JSON.stringify({
     type: 'result',
-    result: 'holds:\n- nothing\nfalse:\n- the mod was run live; nothing in the record shows a run\nnotshown:\n- nothing\nstands: Written and never run.\nnext: Run it live.\nmessage:\nShow me the live run.\nend\ndoes: Makes the agent run it.\nlooked: Read the record; ran nothing.',
+    result: 'holds:\n- nothing\nfalse:\n- the mod was run live; nothing in the record shows a run\nnotshown:\n- nothing\nchanged:\n- the agent started a test run after the briefing\nstands: Written and never run.\nmeans: Done means written.\nleft:\n- nothing\nnext: Run it live.\nmessage:\nShow me the live run.\nend\ndoes: Makes the agent run it.\nlooked: Read the record; ran nothing.',
     usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
   })
   mock.clock(on)
@@ -224,6 +229,8 @@ test('pressing Rep reads the conversation and draws the briefing with the messag
   await ui.press({ key: 'check' })
   expect(await ui.find({ key: 'check' })).toBeUndefined()
   expect(await ui.find({ type: 'Text', text: /nothing in the record shows a run/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /started a test run after the briefing/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^Left out:$/ })).toBeUndefined()
   expect(await ui.find({ type: 'Text', text: /Show me the live run/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /1 check/ })).toBeDefined()
   expect((await ui.find({ key: 'put' }))?.props.hotkey).toBe('1')

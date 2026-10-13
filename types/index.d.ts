@@ -16,6 +16,7 @@ export type Checked = {
   holds: string[]
   wrong: string[]
   notShown: string[]
+  changed: string[]
   looked: string
 }
 

@@ -14,7 +14,7 @@ export const SEEN_MAX = 40
 export const OWNER_MAX = 40
 export const OWNER_CUT = 1200
 export const SESSIONS_MAX = 32
-export const GOAL_WORDS = 24
+export const GOAL_WORDS = 32
 
 export type Memory = {
   goal: string | null
@@ -75,7 +75,7 @@ You are reading the same conversation the main agent has, but you have none of i
 
 ## What you measure against
 
-Not what he typed, and not a rulebook. One plain sentence, in your own words, saying the result he wants and why. Work it out mostly from his reasons and complaints, from his own messages (listed below) and from what they point at in the conversation. His messages are evidence of what he wants, not the thing itself, because he sometimes puts it wrongly. Weigh them like this:
+Not what he typed, and not a rulebook. One plain sentence, in your own words, saying the result he wants and why. Work it out mostly from his reasons and complaints, from his own messages (listed below) and from what they point at in the conversation. His messages are evidence of what he wants, not the thing itself, because he sometimes puts it wrongly. The sentence names the result he is really after, the thing he will have when the session has done its job, never the step the agent happens to be on. When the session is on a step toward that result, the sentence may add "right now that means ..." in his words, but the result comes first. Never adopt the agent's names for its roadmap, phases, steps or plans as the result; the agent's plan is the agent's, and you judge against his result. Weigh his messages like this:
 - What he wants to end up with, and why: he is the only authority on it.
 - His alarms: when he says something feels off, count it, even when his guess at the cause is wrong.
 - How he says to do it: a suggestion, judged by whether it gets him the result.
@@ -104,6 +104,8 @@ Look especially for: work put off, shrunk or quietly dropped; checks that were n
 ## How you write to him
 
 - Plain words only. No file names, line numbers, flag names or code names unless he used them himself. No jargon. The main agent may have made up words during the session: do not use them unless he does.
+- The agent's technical terms are off limits unless they appear in his own messages listed below. Before you write, list to yourself every term the agent coined or leans on (a guard, a hold, a parser, a page, a row, a loss fix, a design, a version, a step name) and say each one as what it is and what it does for him. "The code that stops a session being deleted" is allowed; "the archive-loss guard" is not, unless he typed it. If a sentence of yours would need a developer to read it, rewrite it.
+- When he has said in this session that he does not understand something, that is the level to write at: shorter, plainer, and with the stake first.
 - Short sentences. Every noun must still make sense to him a week from now.
 - Say "the agent" when it acted on its own, "you" when the responsibility is his, "we" when it is shared.
 - A translation of what matters, never a retelling of the agent's message. Do not recite his own rules back to him.
@@ -240,7 +242,7 @@ end
 does: <one line: what this message will make the agent do>`
 }
 
-const LABELS = ['goal', 'state', 'flag', 'why', 'well', 'stands', 'means', 'left', 'next', 'message', 'does', 'holds', 'false', 'notshown', 'looked'] as const
+const LABELS = ['goal', 'state', 'flag', 'why', 'well', 'stands', 'means', 'left', 'next', 'message', 'does', 'holds', 'false', 'notshown', 'changed', 'looked'] as const
 type Label = (typeof LABELS)[number]
 
 // Splits a labelled answer into its parts. `message:` runs until a line `end`.
@@ -344,7 +346,10 @@ export type CheckAnswer = {
   holds: string[]
   wrong: string[]
   notShown: string[]
+  changed: string[]
   stands: string
+  means: string
+  leftOut: string[]
   next: string
   message: string
   does: string
@@ -428,6 +433,7 @@ export type CheckArgs = {
   goal: string
   owner: string[]
   brief: BriefAnswer
+  writtenAt: string
 }
 
 const briefText = (b: BriefAnswer): string =>
@@ -466,24 +472,34 @@ ${list(a.owner, '(none recorded)')}
 
 ${briefText(a.brief)}
 
+## When the briefing was written
+
+The briefing above was written at ${a.writtenAt}, from the conversation as it stood then. The agent and its helpers keep working while you check, so the record you read now runs past that moment. Judge every claim as of ${a.writtenAt}: a claim that was true then and has since stopped being true is not false, it has changed. Report what changed since the briefing under its own heading, with the time it changed where the record shows one. Never put a claim under "false" because the world moved on after it was written.
+
 ## What to do
 
 1. List the claims the briefing rests on, and the claims the agent's latest messages make that the next step depends on: work done, files saved, tests run and passed, a problem fixed, a helper's result used, something installed or running.
-2. Check each against the record and the disk. A claim holds when you saw the proof yourself: the file is there with the content, the test run printed its result, the command ran. A claim is false when the record or the disk shows otherwise. A claim is not shown when nothing proves it either way.
-3. Rewrite the parts of the briefing that your checking changes. Keep the ones it confirms. Write for the owner: plain words, no file names, line numbers or code names unless he used them, no jargon, no hedging. Say "the agent", "you" or "we" as responsibility falls.
-4. Say in one line what you checked and what you could not look at.
+2. Check each against the record and the disk as of the briefing's time. A claim holds when you saw the proof yourself: the file is there with the content, the test run printed its result, the command ran. A claim is false when the record or the disk shows otherwise at that time. A claim is not shown when nothing proves it either way. Something that became true or false only after the briefing's time is a change, reported under "changed".
+3. Rewrite the whole briefing in the light of your checking: stands, means, left and next, and the message. Drop every "left" item your checking disproved, keep the ones it confirmed, add what it found. The card he reads is your version, so it must not contradict itself.
+4. Write for the owner: plain words, no file names, line numbers or code names unless he used them, no jargon, no hedging. The agent's technical terms are off limits unless they appear in his own messages above; say each thing as what it is and what it does for him. Say "the agent", "you" or "we" as responsibility falls.
+5. Say in one line what you checked and what you could not look at.
 
 ## Output structure
 
-Exactly these labelled parts, in this order, nothing before or after. One item per line under holds, false and notshown, each starting with "- ", in plain words; write "- nothing" under a part with nothing.
+Exactly these labelled parts, in this order, nothing before or after. One item per line under holds, false, notshown, changed and left, each starting with "- ", in plain words; write "- nothing" under a part with nothing.
 
 holds:
-- <a claim that holds, and in a few words what showed it>
+- <a claim that holds as of the briefing's time, and in a few words what showed it>
 false:
-- <a claim that is false, and what the record or the disk shows instead>
+- <a claim that was false at the briefing's time, and what the record or the disk shows instead>
 notshown:
 - <a claim that matters and is not shown anywhere>
-stands: <where the work really stands, one or two sentences, after your checking>
+changed:
+- <something that was true at the briefing's time and has changed since, with when, or something the agent has done since that he should know>
+stands: <where the work really stands now, one or two sentences, after your checking>
+means: <what the agent's latest message means for him, one to three sentences, rewritten where your checking changed it>
+left:
+- <work put off, shrunk or quietly dropped; a check never run; a claim that matters and is not shown; only items your checking supports>
 next: <what should happen next, one or two sentences; it can be stopping the agent now>
 message:
 <the message for him to send to the agent, rewritten where your checking changed it: it names what is false and asks for the proof of what is not shown. Leave empty when there is nothing to send.>
@@ -504,7 +520,10 @@ export function parseCheck(text: string): CheckAnswer {
     holds: items(p.holds),
     wrong: items(p.false),
     notShown: items(p.notshown),
+    changed: items(p.changed),
     stands: clean(p.stands),
+    means: clean(p.means),
+    leftOut: items(p.left),
     next: clean(p.next),
     message: clean(p.message),
     does: clean(p.does),

@@ -219,6 +219,10 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
   }
 }
 
+// Whether the checker's answer carried a "left:" part at all; an absent part
+// keeps the instant read's list, an empty one ("- nothing") clears it.
+const parts_hasLeft = (text: string): boolean => /^\s*left:/im.test(text)
+
 // The check step: a separate headless Claude Code run with read-only tools,
 // agentsview and the files. It starts after the instant read is on screen and
 // rewrites the card when it returns. A newer press makes an older run's answer
@@ -254,7 +258,14 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
   try {
     const rec = await loadRec($, sid)
     const cwd = await $.session.cwd()
-    const prompt = checkPrompt({ sessionId: sid, cwd, goal: rec.goal ?? '', owner: rec.owner, brief: instant })
+    const prompt = checkPrompt({
+      sessionId: sid,
+      cwd,
+      goal: rec.goal ?? '',
+      owner: rec.owner,
+      brief: instant,
+      writtenAt: new Date(at).toISOString(),
+    })
     const startedAt = Date.now()
     const stream = $.process.spawn({ argv: checkArgv(prompt), cwd })
     let stdout = ''
@@ -296,10 +307,13 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
     after.lastCheckCached = got.cached
     after.lastCheckMs = Date.now() - startedAt
     const c = parseCheck(got.text)
-    const checked: Checked = { holds: c.holds, wrong: c.wrong, notShown: c.notShown, looked: c.looked }
+    const checked: Checked = { holds: c.holds, wrong: c.wrong, notShown: c.notShown, changed: c.changed, looked: c.looked }
+    const hasLeft = parts_hasLeft(got.text)
     const patch: Partial<Brief> = {
       checked,
       stands: c.stands === '' ? instant.stands : c.stands,
+      means: c.means === '' ? instant.means : c.means,
+      leftOut: hasLeft ? c.leftOut : instant.leftOut,
       next: c.next === '' ? instant.next : c.next,
       message: c.message === '' ? instant.message : c.message,
       does: c.does === '' ? instant.does : c.does,
@@ -712,6 +726,14 @@ export const register: Register = on => {
                 <Text key={`notshown-${i}`} wrap="wrap">
                   {'  '}
                   <Text color="warning">not shown</Text>
+                  {'  '}
+                  {item}
+                </Text>
+              ))}
+              {brief.checked.changed.map((item, i) => (
+                <Text key={`changed-${i}`} wrap="wrap">
+                  {'  '}
+                  <Text color="suggestion">since then</Text>
                   {'  '}
                   {item}
                 </Text>
