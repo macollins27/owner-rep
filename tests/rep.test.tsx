@@ -1,6 +1,6 @@
 import { expect, mock, test } from 'claude-code/testing'
 
-import { doingFor, fit, goalTyped, parseBrief, parseWatch, same, textOf } from '../hooks/rep'
+import { checkArgv, checkPrompt, doingFor, fit, goalTyped, parseBrief, parseCheck, parseWatch, resultOf, same, textOf } from '../hooks/rep'
 
 const BAND = {
   component: 'AbovePrompt',
@@ -101,6 +101,35 @@ test('a goal typed in the prompt box is pinned by the rep and dropped before the
   await ui.unmount()
 })
 
+test('the checker: its prompt names the session, its tools are read-only, and its answer parses', async () => {
+  const brief = parseBrief('goal: x\nstands: s\nmeans: m\nleft:\n- a\nnext: n\nmessage:\nhello\nend\ndoes: d')
+  const prompt = checkPrompt({ sessionId: 'abc-123', cwd: '/tmp/x', goal: 'the result', owner: ['first ask'], brief })
+  expect(prompt).toContain('abc-123')
+  expect(prompt).toContain('the result')
+  expect(prompt).toContain('first ask')
+  expect(prompt).toContain('stands: s')
+  const argv = checkArgv(prompt)
+  expect(argv[0]).toBe('claude')
+  expect(argv[1]).toBe('-p')
+  const allowed = argv[argv.indexOf('--allowedTools') + 1] ?? ''
+  expect(allowed).toContain('Bash(agentsview:*)')
+  expect(allowed).not.toContain('Write')
+  const disallowed = argv[argv.indexOf('--disallowedTools') + 1] ?? ''
+  expect(disallowed).toContain('Edit')
+  expect(disallowed).toContain('SendMessage')
+  const c = parseCheck('holds:\n- the file exists\nfalse:\n- tests passed; the last run printed 2 failures\nnotshown:\n- nothing\nstands: Two tests fail.\nnext: Fix them.\nmessage:\nTwo tests fail. Fix them and show the run.\nend\ndoes: Makes it fix the tests.\nlooked: Read the record and ran the tests; could not open the helper logs.')
+  expect(c.holds).toEqual(['the file exists'])
+  expect(c.wrong).toEqual(['tests passed; the last run printed 2 failures'])
+  expect(c.notShown).toEqual([])
+  expect(c.stands).toBe('Two tests fail.')
+  expect(c.message).toBe('Two tests fail. Fix them and show the run.')
+  expect(c.looked).toContain('could not open the helper logs')
+  const out = resultOf('noise\n' + JSON.stringify({ type: 'result', result: 'holds:\n- x', usage: { input_tokens: 5, output_tokens: 7, cache_read_input_tokens: 1, cache_creation_input_tokens: 2 } }))
+  expect(out?.text).toBe('holds:\n- x')
+  expect(out?.tokens).toBe(15)
+  expect(resultOf('not json')).toBe(null)
+})
+
 test('the row draws on both surfaces with the Rep button and a placeholder goal', async ($, on) => {
   mock.store(on, {})
   quietBand(on)
@@ -168,13 +197,26 @@ test('pressing Rep reads the conversation and draws the briefing with the messag
     'does: Makes the agent prove it live.',
   ].join('\n')
   on('model.fork', () => ({ value: { isAnswered: true, text: answer, usage: USAGE } }))
+  on('session.cwd', () => ({ value: '/tmp/x' }))
+  const checked = JSON.stringify({
+    type: 'result',
+    result: 'holds:\n- nothing\nfalse:\n- the mod was run live; nothing in the record shows a run\nnotshown:\n- nothing\nstands: Written and never run.\nnext: Run it live.\nmessage:\nShow me the live run.\nend\ndoes: Makes the agent run it.\nlooked: Read the record; ran nothing.',
+    usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+  })
+  mock.clock(on)
+  on('process.spawn', async function* () {
+    yield { stream: 'stdout', text: checked }
+    return { value: { code: 0, signal: null } }
+  })
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   await ui.press({ key: 'rep' })
   expect(await ui.find({ type: 'Text', text: /A judge mod that briefs you plainly/ })).toBeDefined()
-  expect(await ui.find({ type: 'Text', text: /Load the mod in a real session/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /nothing in the record shows a run/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Show me the live run/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /1 check/ })).toBeDefined()
   expect((await ui.find({ key: 'put' }))?.props.hotkey).toBe('1')
   expect((await ui.find({ key: 'goal' }))?.props.hotkey).toBe('3')
-  expect(await ui.find({ type: 'Text', text: /1 look this session/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /1 look, 1 check/ })).toBeDefined()
   await ui.unmount()
 })
 

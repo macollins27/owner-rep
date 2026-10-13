@@ -12,6 +12,13 @@ export type Note = {
   turnId: string
 }
 
+export type Checked = {
+  holds: string[]
+  wrong: string[]
+  notShown: string[]
+  looked: string
+}
+
 export type Brief = {
   goal: string
   well: string
@@ -23,6 +30,10 @@ export type Brief = {
   does: string
   at: number
   spent: string
+  // The check step: running, done (`checked`), or why it could not run.
+  isChecking: boolean
+  checked: Checked | null
+  checkNote: string
 }
 
 export type View = 'row' | 'note' | 'reading' | 'brief'

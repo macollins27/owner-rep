@@ -3,9 +3,10 @@ import type { EngineInterface, Register, RenderChildren } from 'claude-code'
 
 type RenderNodeList = RenderChildren[]
 
-import type { Brief, Note, Now, View } from '../types'
+import type { Brief, Checked, Note, Now, View } from '../types'
 import {
   CHECK_EVERY,
+  CHECK_TIMEOUT_MS,
   CLEAR_AFTER_PROMPTS,
   OWNER_CUT,
   OWNER_MAX,
@@ -15,17 +16,22 @@ import {
   OTHERS_MAX,
   briefPrompt,
   cachedOf,
+  checkArgv,
+  checkPrompt,
   doingFor,
   fit,
   goalTyped,
   parseBrief,
+  parseCheck,
   parseWatch,
+  resultOf,
   same,
   skipAfter,
   spentText,
   textOf,
   tokensOf,
   watchPrompt,
+  type BriefAnswer,
   type Memory,
 } from './rep'
 
@@ -60,6 +66,8 @@ type Rec = {
   calls: number
   tokens: number
   cached: number
+  checks: number
+  checkTokens: number
 }
 
 const isRec = (v: unknown): v is Rec =>
@@ -78,6 +86,8 @@ const freshRec = (id: string): Rec => ({
   calls: 0,
   tokens: 0,
   cached: 0,
+  checks: 0,
+  checkTokens: 0,
 })
 
 async function loadRec($: EngineInterface, id: string): Promise<Rec> {
@@ -184,16 +194,101 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       message: a.message,
       does: a.does,
       at: Date.now(),
-      spent: spentText(after.calls, after.tokens, after.cached),
+      spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens),
+      isChecking: true,
+      checked: null,
+      checkNote: '',
     }
     after.lastBrief = { at: brief.at, next: brief.next, message: brief.message }
     await saveRec($, after)
     await update($, noteA, () => null)
     await update($, briefA, () => brief)
     await update($, viewA, () => 'brief')
+    if (brief.well === '') {
+      await runCheck($, sid, brief.at, a).catch(() => undefined)
+    } else {
+      await update($, briefA, b => (b === null ? b : { ...b, isChecking: false }))
+    }
   } catch {
     await update($, viewA, () => 'row')
     $.ui.toast('Owner rep: the reading failed. Press again.')
+  }
+}
+
+// The check step: a separate headless Claude Code run with read-only tools,
+// agentsview and the files. It starts after the instant read is on screen and
+// rewrites the card when it returns. A newer press makes an older run's answer
+// stale, and a reload of this module kills the child.
+let checkEpoch = 0
+let activeCheck: { stop: () => void } | null = null
+async function runCheck($: EngineInterface, sid: string, at: number, instant: BriefAnswer): Promise<void> {
+  const epoch = ++checkEpoch
+  activeCheck?.stop()
+  activeCheck = null
+  const isStale = async (): Promise<boolean> => {
+    const b = await read($, briefA)
+    return epoch !== checkEpoch || b === null || b.at !== at
+  }
+  const finish = async (patch: Partial<Brief>): Promise<void> => {
+    if (await isStale()) return
+    await update($, briefA, b => (b === null ? b : { ...b, ...patch, isChecking: false }))
+  }
+  try {
+    const rec = await loadRec($, sid)
+    const cwd = await $.session.cwd()
+    const prompt = checkPrompt({ sessionId: sid, cwd, goal: rec.goal ?? '', owner: rec.owner, brief: instant })
+    const stream = $.process.spawn({ argv: checkArgv(prompt), cwd })
+    let stdout = ''
+    let stderr = ''
+    let timedOut = false
+    const close = (signal: string) => {
+      stream.return({ code: null, signal }).catch(() => undefined)
+    }
+    activeCheck = { stop: () => close('replaced') }
+    const stop = $.clock.after(CHECK_TIMEOUT_MS, () => {
+      timedOut = true
+      close('timeout')
+    })
+    let end: { code: number | null; signal: string | null } = { code: null, signal: null }
+    try {
+      for (;;) {
+        const piece = await stream.next()
+        if (piece.done) {
+          end = piece.value
+          break
+        }
+        if (piece.value.stream === 'stdout') stdout += piece.value.text
+        else stderr += piece.value.text
+      }
+    } finally {
+      stop.cancel()
+      if (activeCheck !== null && epoch === checkEpoch) activeCheck = null
+    }
+    if (timedOut) return finish({ checkNote: 'The check ran out of time (five minutes) and was stopped.' })
+    const got = resultOf(stdout)
+    if (got === null) {
+      const why = stderr.trim().split('\n').pop() ?? ''
+      return finish({ checkNote: `The check could not run${end.code === null ? '' : ` (exit ${end.code})`}${why === '' ? '' : `: ${fit(why, 160)}`}.` })
+    }
+    const after = await loadRec($, sid)
+    after.checks += 1
+    after.checkTokens += got.tokens
+    const c = parseCheck(got.text)
+    const checked: Checked = { holds: c.holds, wrong: c.wrong, notShown: c.notShown, looked: c.looked }
+    const patch: Partial<Brief> = {
+      checked,
+      stands: c.stands === '' ? instant.stands : c.stands,
+      next: c.next === '' ? instant.next : c.next,
+      message: c.message === '' ? instant.message : c.message,
+      does: c.does === '' ? instant.does : c.does,
+      spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens),
+    }
+    after.lastBrief = { at, next: patch.next ?? '', message: patch.message ?? '' }
+    await saveRec($, after)
+    await finish(patch)
+  } catch (error) {
+    const why = error instanceof Error ? error.message : String(error)
+    await finish({ checkNote: `The check failed: ${fit(why, 160)}` }).catch(() => undefined)
   }
 }
 
@@ -571,6 +666,52 @@ export const register: Register = on => {
             </Box>
           ) : undefined}
           {section('Next:', brief.next)}
+          {brief.checked !== null ? (
+            <Box flexDirection="column" paddingLeft={2} width={cols}>
+              <Text bold>Checked against the record and the files:</Text>
+              {brief.checked.holds.map((item, i) => (
+                <Text key={`holds-${i}`} wrap="wrap">
+                  {'  '}
+                  <Text color="success">holds</Text>
+                  {'  '}
+                  {item}
+                </Text>
+              ))}
+              {brief.checked.wrong.map((item, i) => (
+                <Text key={`wrong-${i}`} wrap="wrap">
+                  {'  '}
+                  <Text color="error">false</Text>
+                  {'  '}
+                  {item}
+                </Text>
+              ))}
+              {brief.checked.notShown.map((item, i) => (
+                <Text key={`notshown-${i}`} wrap="wrap">
+                  {'  '}
+                  <Text color="warning">not shown</Text>
+                  {'  '}
+                  {item}
+                </Text>
+              ))}
+              {brief.checked.looked !== '' ? (
+                <Text dimColor wrap="wrap">
+                  {brief.checked.looked}
+                </Text>
+              ) : undefined}
+            </Box>
+          ) : undefined}
+          {brief.isChecking ? (
+            <Box paddingLeft={2}>
+              <Text color="suggestion">Checking the record and the files… the card updates when it is done.</Text>
+            </Box>
+          ) : undefined}
+          {brief.checkNote !== '' ? (
+            <Box paddingLeft={2} width={cols}>
+              <Text dimColor wrap="wrap">
+                {brief.checkNote}
+              </Text>
+            </Box>
+          ) : undefined}
           {brief.message !== '' ? (
             <Box marginLeft={2} width={cols - 2} flexDirection="column" borderStyle="round" borderDimColor paddingX={1}>
               <Text wrap="wrap">{brief.message}</Text>

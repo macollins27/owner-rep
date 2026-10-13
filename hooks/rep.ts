@@ -240,7 +240,7 @@ end
 does: <one line: what this message will make the agent do>`
 }
 
-const LABELS = ['goal', 'state', 'flag', 'why', 'well', 'stands', 'means', 'left', 'next', 'message', 'does'] as const
+const LABELS = ['goal', 'state', 'flag', 'why', 'well', 'stands', 'means', 'left', 'next', 'message', 'does', 'holds', 'false', 'notshown', 'looked'] as const
 type Label = (typeof LABELS)[number]
 
 // Splits a labelled answer into its parts. `message:` runs until a line `end`.
@@ -337,6 +337,173 @@ export function textOf(tree: unknown): string {
 
 export const OTHERS_MAX = 10
 
+// ---- The check step: a separate headless Claude Code run with read-only
+// tools, agentsview and the files, started by the mod after the instant read.
+
+export type CheckAnswer = {
+  holds: string[]
+  wrong: string[]
+  notShown: string[]
+  stands: string
+  next: string
+  message: string
+  does: string
+  looked: string
+}
+
+export const CHECK_TIMEOUT_MS = 300000
+export const CHECK_MAX_TURNS = '60'
+
+// What the checker may do: read, search, the session record, and the
+// project's own checks. Nothing that changes a file or sends anything.
+export const CHECK_ALLOWED_TOOLS = [
+  'Read',
+  'Glob',
+  'Grep',
+  'Bash(agentsview:*)',
+  'Bash(ls:*)',
+  'Bash(cat:*)',
+  'Bash(head:*)',
+  'Bash(tail:*)',
+  'Bash(wc:*)',
+  'Bash(find:*)',
+  'Bash(git status:*)',
+  'Bash(git log:*)',
+  'Bash(git diff:*)',
+  'Bash(git show:*)',
+  'Bash(git branch:*)',
+  'Bash(npm test:*)',
+  'Bash(npx tsc:*)',
+  'Bash(tsc:*)',
+  'Bash(pytest:*)',
+  'Bash(bin/gate:*)',
+  'Bash(claude plugin validate:*)',
+  'Bash(claude plugin test:*)',
+  'Bash(docker ps:*)',
+].join(',')
+
+export const CHECK_DISALLOWED_TOOLS = 'Edit,Write,MultiEdit,NotebookEdit,Agent,Task,SendMessage,WebFetch,WebSearch,Artifact'
+
+export const checkArgv = (prompt: string): string[] => [
+  'claude',
+  '-p',
+  prompt,
+  '--output-format',
+  'json',
+  '--max-turns',
+  CHECK_MAX_TURNS,
+  '--allowedTools',
+  CHECK_ALLOWED_TOOLS,
+  '--disallowedTools',
+  CHECK_DISALLOWED_TOOLS,
+]
+
+export type CheckArgs = {
+  sessionId: string
+  cwd: string
+  goal: string
+  owner: string[]
+  brief: BriefAnswer
+}
+
+const briefText = (b: BriefAnswer): string =>
+  [
+    `stands: ${b.stands}`,
+    `means: ${b.means}`,
+    'left:',
+    list(b.leftOut, '- nothing'),
+    `next: ${b.next}`,
+    'message:',
+    b.message,
+    'end',
+    `does: ${b.does}`,
+  ].join('\n')
+
+export function checkPrompt(a: CheckArgs): string {
+  return `You are the checker for the "Owner rep" plugin in Claude Code. You work only for the owner, who directs agents and does not read code. Another instance of the rep has just read the agent's conversation and written him the briefing below from the conversation alone, taking nothing on the agent's word but unable to look outside the conversation. Your job is to look outside it: at the session's full record and at the real files, and to tell him which claims hold, which are false, and which are not shown anywhere.
+
+## The session
+
+Session id: ${a.sessionId}
+Working directory: ${a.cwd}
+
+The full record of the session is in agentsview. Refresh it first with \`agentsview sync\`, then read it with \`agentsview session messages ${a.sessionId} --role user,assistant --from 0\` (long sessions: read the end first with \`--from -40\`, then what you need) and \`agentsview session tool-calls ${a.sessionId}\` for what the agent actually ran and what came back. If agentsview does not have the session, the transcript file is \`~/.claude/projects/*/${a.sessionId}.jsonl\`. Helpers the agent launched have their own records; \`agentsview session list --include-children\` finds them.
+
+Read any file you need. Run the project's own checks (its tests, its type check, its gate) when a claim says they pass. Never change a file and never send anything to anyone.
+
+## What he wants
+
+${a.goal === '' ? '(not settled yet)' : a.goal}
+
+His own messages this session, oldest first:
+${list(a.owner, '(none recorded)')}
+
+## The briefing written from the conversation alone
+
+${briefText(a.brief)}
+
+## What to do
+
+1. List the claims the briefing rests on, and the claims the agent's latest messages make that the next step depends on: work done, files saved, tests run and passed, a problem fixed, a helper's result used, something installed or running.
+2. Check each against the record and the disk. A claim holds when you saw the proof yourself: the file is there with the content, the test run printed its result, the command ran. A claim is false when the record or the disk shows otherwise. A claim is not shown when nothing proves it either way.
+3. Rewrite the parts of the briefing that your checking changes. Keep the ones it confirms. Write for the owner: plain words, no file names, line numbers or code names unless he used them, no jargon, no hedging. Say "the agent", "you" or "we" as responsibility falls.
+4. Say in one line what you checked and what you could not look at.
+
+## Output structure
+
+Exactly these labelled parts, in this order, nothing before or after. One item per line under holds, false and notshown, each starting with "- ", in plain words; write "- nothing" under a part with nothing.
+
+holds:
+- <a claim that holds, and in a few words what showed it>
+false:
+- <a claim that is false, and what the record or the disk shows instead>
+notshown:
+- <a claim that matters and is not shown anywhere>
+stands: <where the work really stands, one or two sentences, after your checking>
+next: <what should happen next, one or two sentences; it can be stopping the agent now>
+message:
+<the message for him to send to the agent, rewritten where your checking changed it: it names what is false and asks for the proof of what is not shown. Leave empty when there is nothing to send.>
+end
+does: <one line: what this message will make the agent do>
+looked: <one line: what you checked yourself and what you could not look at>`
+}
+
+const items = (s: string | undefined): string[] =>
+  clean(s)
+    .split('\n')
+    .map(l => l.replace(/^\s*[-*•]\s*/, '').trim())
+    .filter(l => l !== '' && !/^nothing\.?$/i.test(l))
+
+export function parseCheck(text: string): CheckAnswer {
+  const p = parts(text)
+  return {
+    holds: items(p.holds),
+    wrong: items(p.false),
+    notShown: items(p.notshown),
+    stands: clean(p.stands),
+    next: clean(p.next),
+    message: clean(p.message),
+    does: clean(p.does),
+    looked: clean(p.looked),
+  }
+}
+
+// The answer text out of a headless run's JSON output, or null.
+export function resultOf(stdout: string): { text: string; tokens: number } | null {
+  const start = stdout.indexOf('{')
+  if (start < 0) return null
+  try {
+    const d = JSON.parse(stdout.slice(start)) as { result?: unknown; usage?: Partial<Usage> }
+    if (typeof d.result !== 'string') return null
+    const u = d.usage ?? {}
+    const tokens =
+      (u.input_tokens ?? 0) + (u.output_tokens ?? 0) + (u.cache_read_input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0)
+    return { text: d.result, tokens }
+  } catch {
+    return null
+  }
+}
+
 export const same = (a: string, b: string): boolean =>
   a.trim().toLowerCase().replace(/\.$/, '') === b.trim().toLowerCase().replace(/\.$/, '')
 
@@ -412,7 +579,9 @@ const k = (n: number): string => (n >= 1000 ? `${Math.round(n / 1000)}k` : `${n}
 
 // The rep's own spend this session. Most of each look is the conversation
 // served again from the prompt cache, which is far cheaper than fresh tokens.
-export function spentText(calls: number, tokens: number, cached: number): string {
+export function spentText(calls: number, tokens: number, cached: number, checks = 0, checkTokens = 0): string {
   const fresh = Math.max(0, tokens - cached)
-  return `Owner rep: ${calls} look${calls === 1 ? '' : 's'} this session, ${k(fresh)} fresh tokens and ${k(cached)} re-read from cache`
+  const looks = `${calls} look${calls === 1 ? '' : 's'}`
+  const checked = checks > 0 ? `, ${checks} check${checks === 1 ? '' : 's'} (${k(checkTokens)} tokens)` : ''
+  return `Owner rep: ${looks}${checked} this session; looks used ${k(fresh)} fresh tokens and ${k(cached)} re-read from cache`
 }
