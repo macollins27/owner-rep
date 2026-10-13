@@ -1,6 +1,6 @@
 import { expect, mock, test } from 'claude-code/testing'
 
-import { doingFor, fit, goalTyped, parseBrief, parseWatch, same } from '../hooks/rep'
+import { doingFor, fit, goalTyped, parseBrief, parseWatch, same, textOf } from '../hooks/rep'
 
 const BAND = {
   component: 'AbovePrompt',
@@ -68,6 +68,19 @@ test('helpers: fit cuts with an ellipsis, same ignores case and a final period, 
   expect(goalTyped('Owner rep goal: a judge that works')).toBe('a judge that works')
   expect(goalTyped('owner rep goal:')).toBe('')
   expect(goalTyped('fix the tests')).toBe(null)
+})
+
+test('the text of another mod\'s note is read from its tree, buttons left out', async () => {
+  const tree = {
+    type: 'Box',
+    props: {
+      children: [
+        { type: 'Text', props: { children: ['Heads up', ' · ', 'The pages leave out real customers.'] } },
+        { type: 'Button', props: { label: 'Learn more', children: ['Learn more'] } },
+      ],
+    },
+  }
+  expect(textOf(tree)).toBe('Heads up · The pages leave out real customers.')
 })
 
 test('a goal typed in the prompt box is pinned by the rep and dropped before the agent sees it', async ($, on) => {

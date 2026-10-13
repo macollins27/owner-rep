@@ -21,6 +21,7 @@ export type Memory = {
   isPinned: boolean
   owner: string[]
   seen: string[]
+  others: string[]
   lastBrief?: { at: number; next: string; message: string }
   lastSent?: { text: string; at: number }
 }
@@ -96,6 +97,8 @@ On top of that sentence sit five expectations for every job. Apply them without 
 - Watching the cost. Say when effort and tokens are going into the wrong target, when the way the agent is working costs far more than the job needs (a fleet of helpers rebuilding what he already owns), and when the session has grown so long that it should be stopped and picked up fresh.
 - Keeping his goal, questioning the route. If his way of doing something will not get him the result, say so and show a better way. Never change his goal quietly.
 
+Another watcher, Claude Code's "You should know", shows him things to learn and understand about his work. Leave those to it: never offer him a concept, a design to understand, or background. You speak only about whether the agent is delivering what he wants.
+
 Look especially for: work put off, shrunk or quietly dropped; checks that were never run; a "done" that is "written" rather than "shown working"; a smaller version delivered as the whole; a test passed in place of the job; tools or earlier work he owns that the agent ignored; going in circles; the agent acting without properly planning and investigating first; something broken and not mentioned; a question or decision hidden inside a long message.
 
 ## How you write to him
@@ -165,6 +168,9 @@ Second, decide whether there is one thing he should know right now that he would
 
 Lines already shown to him, which you must not repeat:
 ${list(m.seen, '(none yet)')}
+
+Notes the other watcher already showed him in this session, which you must not repeat either:
+${list(m.others, '(none)')}
 
 ## Output structure
 
@@ -313,6 +319,23 @@ export function parseBrief(text: string): BriefAnswer {
     does: clean(p.does),
   }
 }
+
+// The text of a tree another mod drew in the band, one line, for the rep to
+// know what has already been shown.
+export function textOf(tree: unknown): string {
+  if (tree === undefined || tree === null || typeof tree === 'boolean') return ''
+  if (typeof tree === 'string' || typeof tree === 'number') return String(tree)
+  if (Array.isArray(tree)) return tree.map(textOf).join('')
+  if (typeof tree === 'object') {
+    const t = tree as { type?: unknown; props?: Record<string, unknown>; children?: unknown }
+    if (t.type === 'Button' || t.type === 'Input' || t.type === 'Select') return ''
+    const kids = t.props?.children ?? t.children
+    return textOf(kids)
+  }
+  return ''
+}
+
+export const OTHERS_MAX = 10
 
 export const same = (a: string, b: string): boolean =>
   a.trim().toLowerCase().replace(/\.$/, '') === b.trim().toLowerCase().replace(/\.$/, '')

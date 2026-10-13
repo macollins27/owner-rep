@@ -12,6 +12,7 @@ import {
   SEEN_MAX,
   SESSIONS_MAX,
   GOAL_PREFIX,
+  OTHERS_MAX,
   briefPrompt,
   cachedOf,
   doingFor,
@@ -22,6 +23,7 @@ import {
   same,
   skipAfter,
   spentText,
+  textOf,
   tokensOf,
   watchPrompt,
   type Memory,
@@ -50,6 +52,7 @@ type Rec = {
   isPinned: boolean
   owner: string[]
   seen: string[]
+  others: string[]
   lastBrief?: { at: number; next: string; message: string }
   lastSent?: { text: string; at: number }
   typedPast: number
@@ -69,6 +72,7 @@ const freshRec = (id: string): Rec => ({
   isPinned: false,
   owner: [],
   seen: [],
+  others: [],
   typedPast: 0,
   skip: 0,
   calls: 0,
@@ -100,6 +104,7 @@ const memoryOf = (rec: Rec): Memory => ({
   isPinned: rec.isPinned,
   owner: rec.owner,
   seen: rec.seen,
+  others: rec.others,
   lastBrief: rec.lastBrief,
   lastSent: rec.lastSent,
 })
@@ -243,6 +248,18 @@ async function askGoal($: EngineInterface, goal: string | null): Promise<void> {
     return
   }
   $.ui.toast('Edit the sentence in your prompt box and press Enter. Only the rep reads it; empty unpins.')
+}
+
+// What another mod showed in the strip, kept so the rep never repeats it.
+let lastOther = ''
+async function rememberOther($: EngineInterface, id: string, text: string): Promise<void> {
+  const line = text.replace(/\s+/g, ' ').trim()
+  if (line === '' || line === lastOther || id === '') return
+  lastOther = line
+  const rec = await loadRec($, id)
+  if (rec.others.some(o => same(o, line))) return
+  rec.others = [...rec.others, fit(line, 400)].slice(-OTHERS_MAX)
+  await saveRec($, rec)
 }
 
 async function clearNote($: EngineInterface): Promise<void> {
@@ -422,6 +439,7 @@ export const register: Register = on => {
     // goal field, which the owner asked for, take the strip alone.
     const beneath = await next(e)
     const hasBeneath = drawsSomething(beneath)
+    if (hasBeneath) rememberOther($, id, textOf(beneath)).catch(() => undefined)
 
     const onPress = () => {
       pressBrief($, id).catch(() => undefined)
