@@ -268,16 +268,31 @@ async function clearNote($: EngineInterface): Promise<void> {
 }
 
 // Whether a tree another mod or the engine returned for the band draws
-// anything: an empty fragment or an empty box draws nothing.
+// anything the person can see: text, a control or a picture. Empty boxes,
+// fragments and empty text draw nothing.
 function drawsSomething(tree: unknown): boolean {
-  if (tree === undefined || tree === null || tree === false || tree === '') return false
-  if (typeof tree === 'string' || typeof tree === 'number') return true
+  if (tree === undefined || tree === null || typeof tree === 'boolean') return false
+  if (typeof tree === 'string') return tree.trim() !== ''
+  if (typeof tree === 'number') return true
   if (Array.isArray(tree)) return tree.some(drawsSomething)
   if (typeof tree === 'object') {
     const t = tree as { type?: unknown; props?: { children?: unknown }; children?: unknown }
     const kids = t.props?.children ?? t.children
-    if (t.type === 'Fragment' || t.type === 'Box' || t.type === undefined) return drawsSomething(kids)
-    return true
+    switch (t.type) {
+      case 'Button':
+      case 'Input':
+      case 'Select':
+      case 'Image':
+      case 'Raster':
+      case 'Svg':
+      case 'Client':
+      case 'Code':
+      case 'Markdown':
+      case 'Link':
+        return true
+      default:
+        return drawsSomething(kids)
+    }
   }
   return false
 }

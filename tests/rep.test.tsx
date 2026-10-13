@@ -117,6 +117,23 @@ test('the row draws on both surfaces with the Rep button and a placeholder goal'
   }
 })
 
+test('an empty tree beneath the row leaves the digits on the row buttons', async ($, on) => {
+  mock.store(on, {})
+  on('session.id', () => ({ value: 'test-session' }))
+  on('ui.render', { component: 'AbovePrompt' }, ($, e) => {
+    const { Box, Text } = $.ui.resolve(e)
+    return (
+      <Box>
+        <Text>{''}</Text>
+      </Box>
+    )
+  })
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  expect((await ui.find({ key: 'rep' }))?.props.hotkey).toBe('1')
+  expect((await ui.find({ key: 'goal' }))?.props.hotkey).toBe('2')
+  await ui.unmount()
+})
+
 test('the row keeps what another mod draws beneath it in the shared strip', async ($, on) => {
   mock.store(on, {})
   on('session.id', () => ({ value: 'test-session' }))
