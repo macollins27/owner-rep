@@ -11,10 +11,12 @@ import {
   OWNER_MAX,
   SEEN_MAX,
   SESSIONS_MAX,
+  GOAL_PREFIX,
   briefPrompt,
   cachedOf,
   doingFor,
   fit,
+  goalTyped,
   parseBrief,
   parseWatch,
   same,
@@ -28,7 +30,7 @@ import {
 // The chord that presses the Rep button from the prompt: `ctrl+x r`, bound in
 // ~/.claude/keybindings.json to this engine action, which has no default key.
 const PRESS_ACTION = 'app:toggleDiffPreSession'
-const PRESS_HOTKEY = 'r'
+const PRESS_HOTKEY = '1'
 
 const IDLE: Now = { doing: 'idle', helpers: 0, isWorking: false, mark: '' }
 
@@ -224,7 +226,23 @@ async function pinGoal($: EngineInterface, sid: string, text: string): Promise<v
     $.ui.toast('Pinned. The rep measures against your sentence now.')
   }
   await saveRec($, rec)
-  await update($, viewA, () => 'row')
+}
+
+// "Fix the goal": the sentence goes into the owner's own prompt box, where he
+// edits it and presses Enter; the prompt.submit hook takes it and drops it, so
+// the agent never sees it.
+async function askGoal($: EngineInterface, goal: string | null): Promise<void> {
+  const box = await $.prompt.read()
+  if (box.text.trim() !== '') {
+    $.ui.toast('Your prompt box has text in it. Send or clear it, then press again.')
+    return
+  }
+  const filled = await $.prompt.fill({ text: `${GOAL_PREFIX} ${goal ?? ''}`, mode: 'replace' })
+  if (!filled.isFilled) {
+    $.ui.toast('The prompt box did not take it. Press again.')
+    return
+  }
+  $.ui.toast('Edit the sentence in your prompt box and press Enter. Only the rep reads it; empty unpins.')
 }
 
 async function clearNote($: EngineInterface): Promise<void> {
@@ -274,8 +292,14 @@ export const register: Register = on => {
   })
 
   on('prompt.submit', async ($, e, next) => {
-    const kind = e.origin.kind
+    // The engine stamps the origin; the test kit's own submit carries none.
+    const kind = e.origin?.kind ?? 'composer'
     if (kind === 'composer' || kind === 'bridge') {
+      const typedGoal = goalTyped(e.text)
+      if (typedGoal !== null) {
+        await pinGoal($, await sessionId($), typedGoal).catch(() => undefined)
+        return { drop: typedGoal === '' ? 'Owner rep: unpinned; the rep works the result out again.' : 'Owner rep: pinned. The agent did not see this.' }
+      }
       try {
         const id = await sessionId($)
         const rec = await loadRec($, id)
@@ -382,7 +406,7 @@ export const register: Register = on => {
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     if (e.props.hasSurvey) return next(e)
     if (e.surface !== 'terminal' && e.surface !== 'desktop') return next(e)
-    const { Box, Text, Button, Input } = $.ui.resolve(e)
+    const { Box, Text, Button } = $.ui.resolve(e)
     const cols = Math.max(20, e.props.bodyColumns)
     const view = (await read($, viewA)) ?? 'row'
     const goal = await read($, goalA)
@@ -403,7 +427,7 @@ export const register: Register = on => {
       pressBrief($, id).catch(() => undefined)
     }
     const fixGoal = () => {
-      update($, viewA, () => 'goal').catch(() => undefined)
+      askGoal($, goal).catch(() => undefined)
     }
     const close = () => {
       update($, viewA, () => 'row').catch(() => undefined)
@@ -437,35 +461,19 @@ export const register: Register = on => {
         {buttons}
       </Box>
     )
+    // From the prompt box only a bare digit presses a band button, so every
+    // button carries a digit. While another mod's note is beneath, its digits
+    // win and the row's buttons are drawn without any, for the mouse alone.
+    const digit = (d: string): string | undefined => (hasBeneath ? undefined : d)
     const repButton = (
-      <Button key="rep" plain hotkey={PRESS_HOTKEY} action={PRESS_ACTION} label="Brief me" onPress={onPress} />
+      <Button key="rep" plain hotkey={digit(PRESS_HOTKEY)} action={PRESS_ACTION} label="Brief me" onPress={onPress} />
     )
-    const goalButton = <Button key="goal" plain hotkey="g" label="Fix the goal" onPress={fixGoal} />
+    const goalButton = <Button key="goal" plain hotkey={digit('2')} label="Fix the goal" onPress={fixGoal} />
+    const goalButton3 = <Button key="goal" plain hotkey="3" label="Fix the goal" onPress={fixGoal} />
     const headGlyph = marked ? '◆' : '◇'
     const headColor = marked ? 'warning' : 'suggestion'
     const goalText = goal ?? 'working out the result you want from your messages…'
     const head = lead(headGlyph, headColor, 'Owner rep', goalText)
-
-    if (view === 'goal') {
-      return (
-        <Box flexDirection="column" marginTop={1}>
-          {head}
-          <Box paddingLeft={2}>
-            <Input
-              key="goal"
-              label="The result you want: "
-              value={goal ?? ''}
-              placeholder="one plain sentence; Enter pins it, empty unpins"
-              submitLabel="pin"
-              autoFocus
-              onSubmit={value => {
-                pinGoal($, id, value).catch(() => undefined)
-              }}
-            />
-          </Box>
-        </Box>
-      )
-    }
 
     if (view === 'note' && note !== null && !hasBeneath) {
       const clear = () => {
@@ -506,7 +514,7 @@ export const register: Register = on => {
           <Box flexDirection="column" marginTop={1}>
             {head}
             {section('', brief.well)}
-            {choices(<Button key="close" plain hotkey="2" label="Fine, close" onPress={close} />, goalButton)}
+            {choices(<Button key="close" plain hotkey="2" label="Fine, close" onPress={close} />, goalButton3)}
             <Box paddingLeft={2}>
               <Text dimColor>{brief.spent}</Text>
             </Box>
@@ -555,7 +563,7 @@ export const register: Register = on => {
               />
             ) : undefined,
             <Button key="close" plain hotkey="2" label="Fine, close" onPress={close} />,
-            goalButton,
+            goalButton3,
             <Button key="later" plain hotkey="0" label="Later" onPress={close} />,
           )}
           <Box paddingLeft={2}>

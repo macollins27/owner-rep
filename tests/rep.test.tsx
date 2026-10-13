@@ -1,6 +1,6 @@
 import { expect, mock, test } from 'claude-code/testing'
 
-import { doingFor, fit, parseBrief, parseWatch, same } from '../hooks/rep'
+import { doingFor, fit, goalTyped, parseBrief, parseWatch, same } from '../hooks/rep'
 
 const BAND = {
   component: 'AbovePrompt',
@@ -65,6 +65,27 @@ test('helpers: fit cuts with an ellipsis, same ignores case and a final period, 
   expect(doingFor('Bash', { command: 'git status --short' })).toBe('running git status')
   expect(doingFor('mcp__agentsview__search_content', {})).toBe('using agentsview')
   expect(doingFor('Agent', {})).toBe('starting a helper')
+  expect(goalTyped('Owner rep goal: a judge that works')).toBe('a judge that works')
+  expect(goalTyped('owner rep goal:')).toBe('')
+  expect(goalTyped('fix the tests')).toBe(null)
+})
+
+test('a goal typed in the prompt box is pinned by the rep and dropped before the agent sees it', async ($, on) => {
+  mock.store(on, {})
+  quietBand(on)
+  on('session.id', () => ({ value: 'test-session' }))
+  on('ui.toast', () => ({ value: undefined }))
+  let reached = false
+  on('prompt.submit', ($, e) => {
+    reached = true
+    return { text: e.text }
+  })
+  const result = await $.prompt.submit({ text: 'Owner rep goal: the judge rebuilt so you can oversee agents' })
+  expect(reached).toBe(false)
+  expect(result.drop).toMatch(/pinned/)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  expect(await ui.find({ type: 'Text', text: /the judge rebuilt so you can oversee agents/ })).toBeDefined()
+  await ui.unmount()
 })
 
 test('the row draws on both surfaces with the Rep button and a placeholder goal', async ($, on) => {
@@ -75,7 +96,7 @@ test('the row draws on both surfaces with the Rep button and a placeholder goal'
     const ui = await $.ui.mount({ plugin: 'owner-rep', surface, ...BAND })
     const button = await ui.find({ key: 'rep' })
     expect(button).toBeDefined()
-    expect(button?.props.hotkey).toBe('r')
+    expect(button?.props.hotkey).toBe('1')
     expect(button?.props.action).toBe('app:toggleDiffPreSession')
     expect(await ui.find({ type: 'Text', text: /working out the result/ })).toBeDefined()
     expect(await ui.find({ key: 'put' })).toBeUndefined()
@@ -93,6 +114,7 @@ test('the row keeps what another mod draws beneath it in the shared strip', asyn
   for (const surface of ['terminal', 'desktop'] as const) {
     const ui = await $.ui.mount({ plugin: 'owner-rep', surface, ...BAND })
     expect(await ui.find({ key: 'rep' })).toBeDefined()
+    expect((await ui.find({ key: 'rep' }))?.props.hotkey).toBeUndefined()
     expect(await ui.find({ type: 'Text', text: /a note from another mod/ })).toBeDefined()
     await ui.unmount()
   }
@@ -121,7 +143,7 @@ test('pressing Rep reads the conversation and draws the briefing with the messag
   expect(await ui.find({ type: 'Text', text: /A judge mod that briefs you plainly/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /Load the mod in a real session/ })).toBeDefined()
   expect((await ui.find({ key: 'put' }))?.props.hotkey).toBe('1')
-  expect((await ui.find({ key: 'goal' }))?.props.hotkey).toBe('g')
+  expect((await ui.find({ key: 'goal' }))?.props.hotkey).toBe('3')
   expect(await ui.find({ type: 'Text', text: /1 look this session/ })).toBeDefined()
   await ui.unmount()
 })

@@ -25,7 +25,7 @@ export type Brief = {
   spent: string
 }
 
-export type View = 'row' | 'note' | 'reading' | 'brief' | 'goal'
+export type View = 'row' | 'note' | 'reading' | 'brief'
 
 declare module 'claude-code' {
   interface PluginState {

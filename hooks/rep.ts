@@ -14,7 +14,7 @@ export const SEEN_MAX = 40
 export const OWNER_MAX = 40
 export const OWNER_CUT = 1200
 export const SESSIONS_MAX = 32
-export const GOAL_WORDS = 12
+export const GOAL_WORDS = 24
 
 export type Memory = {
   goal: string | null
@@ -41,6 +41,14 @@ export type BriefAnswer = {
   next: string
   message: string
   does: string
+}
+
+// What the owner types into his prompt box to pin the result he wants; the
+// rep takes it and the agent never sees it.
+export const GOAL_PREFIX = 'Owner rep goal:'
+export const goalTyped = (text: string): string | null => {
+  const m = /^\s*owner rep goal:\s*([\s\S]*)$/i.exec(text)
+  return m === null ? null : (m[1] ?? '').trim()
 }
 
 export const skipAfter = (typedPast: number): number =>
@@ -151,7 +159,7 @@ ${when}
 
 Do two things.
 
-First, write the one-sentence result he wants, as you understand it now: at most ${GOAL_WORDS} words, the result and why, no method and no jargon, in your own words. If he pinned a sentence, repeat it exactly. If the session holds more than one job, write the one in hand.
+First, write the result he wants, as you understand it now: one plain sentence, or two short ones, at most ${GOAL_WORDS} words in all: the result and why, no method and no jargon, in your own words. If he pinned a sentence, repeat it exactly. If the session holds more than one job, write the one in hand.
 
 Second, decide whether there is one thing he should know right now that he would very likely miss, and that has a cost to him: money, time, wasted work, a wrong result, a decision he is in the middle of, or work called finished that is not. The bar is very high. Most of the time the answer is none. Skip anything he is already discussing with the agent, anything the agent plainly said and he replied to, and anything already shown to him (listed below). "Interesting" is not "important". If in doubt, none.
 
@@ -213,7 +221,7 @@ When the work is going well, say so in a couple of lines under "well:" and leave
 
 Exactly these labelled parts, in this order, English labels, nothing before or after:
 
-goal: <the one sentence: the result he wants and why, at most ${GOAL_WORDS} words; if he pinned one, repeat it exactly>
+goal: <the result he wants and why: one plain sentence or two short ones, at most ${GOAL_WORDS} words in all; if he pinned one, repeat it exactly>
 well: <only when the work is going well: one or two plain sentences; otherwise leave empty>
 stands: <one or two sentences: where the work really stands, as the conversation shows it, not as the agent says it>
 means: <one to three sentences: what the agent's latest message means for him; a translation of what matters, not a retelling>
