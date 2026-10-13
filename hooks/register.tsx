@@ -1,5 +1,7 @@
 import { atom, read, update } from 'claude-code'
-import type { EngineInterface, Register } from 'claude-code'
+import type { EngineInterface, Register, RenderChildren } from 'claude-code'
+
+type RenderNodeList = RenderChildren[]
 
 import type { Brief, Note, Now, View } from '../types'
 import {
@@ -400,123 +402,124 @@ export const register: Register = on => {
     const onPress = () => {
       pressBrief($, id).catch(() => undefined)
     }
+    const fixGoal = () => {
+      update($, viewA, () => 'goal').catch(() => undefined)
+    }
+    const close = () => {
+      update($, viewA, () => 'row').catch(() => undefined)
+    }
 
-    // The row: mark, the result he wants, what the agent is doing now, the button.
+    // The shape "You should know" draws in: a lead glyph, a dim tag, a dot,
+    // then text that wraps under itself; a choices row beneath with wide gaps.
     const isReading = view === 'reading'
     const marked = now.mark !== ''
-    const right = isReading ? 'Owner rep is reading the whole session…' : now.doing + (now.helpers > 0 ? ` · ${now.helpers} helper${now.helpers === 1 ? '' : 's'}` : '')
-    const button = `${PRESS_HOTKEY}: Rep`
-    const sep = ' · '
-    const goalText = goal ?? 'working out the result you want…'
-    const room = cols - 2 - sep.length - right.length - button.length - 3
-    const goalCut = fit(goalText, Math.max(8, room))
-    const row = (
-      <Box key="row" flexDirection="row">
-        <Text color={marked ? 'warning' : 'subtle'}>{marked ? '● ' : '○ '}</Text>
-        <Text bold={view === 'brief'} wrap="truncate-end">
-          {goalCut}
-        </Text>
-        <Text dimColor>{sep}</Text>
-        <Text color={marked || isReading ? 'warning' : undefined} dimColor={!marked && !isReading} wrap="truncate-end">
-          {right}
-        </Text>
-        <Text> </Text>
-        <Button key="rep" plain hotkey={PRESS_HOTKEY} action={PRESS_ACTION} label="Rep" onPress={onPress} />
+    const lead = (glyph: string, color: string, tag: string, text: string) => (
+      <Box flexDirection="row">
+        <Text color={color}>{glyph} </Text>
+        <Box flexDirection="column" width={cols - 2}>
+          <Text wrap="wrap">
+            <Text dimColor>{tag} · </Text>
+            {text}
+          </Text>
+        </Box>
       </Box>
     )
+    const status = isReading
+      ? 'reading the whole session…'
+      : now.doing + (now.helpers > 0 ? `, ${now.helpers} helper${now.helpers === 1 ? '' : 's'} running` : '')
+    const statusText = (
+      <Text color={marked ? 'warning' : isReading ? 'suggestion' : undefined} dimColor={!marked && !isReading}>
+        {status}
+      </Text>
+    )
+    const choices = (...buttons: RenderNodeList) => (
+      <Box flexDirection="row" gap={3} paddingLeft={2}>
+        {buttons}
+      </Box>
+    )
+    const repButton = (
+      <Button key="rep" plain hotkey={PRESS_HOTKEY} action={PRESS_ACTION} label="Brief me" onPress={onPress} />
+    )
+    const goalButton = <Button key="goal" plain hotkey="g" label="Fix the goal" onPress={fixGoal} />
+    const headGlyph = marked ? '◆' : '◇'
+    const headColor = marked ? 'warning' : 'suggestion'
+    const goalText = goal ?? 'working out the result you want from your messages…'
+    const head = lead(headGlyph, headColor, 'Owner rep', goalText)
 
     if (view === 'goal') {
       return (
-        <Box flexDirection="column">
-          {row}
-          <Input
-            key="goal"
-            label="The result you want: "
-            value={goal ?? ''}
-            placeholder="one plain sentence; Enter pins it, empty unpins"
-            submitLabel="pin"
-            autoFocus
-            onSubmit={value => {
-              pinGoal($, id, value).catch(() => undefined)
-            }}
-          />
+        <Box flexDirection="column" marginTop={1}>
+          {head}
+          <Box paddingLeft={2}>
+            <Input
+              key="goal"
+              label="The result you want: "
+              value={goal ?? ''}
+              placeholder="one plain sentence; Enter pins it, empty unpins"
+              submitLabel="pin"
+              autoFocus
+              onSubmit={value => {
+                pinGoal($, id, value).catch(() => undefined)
+              }}
+            />
+          </Box>
         </Box>
       )
     }
 
     if (view === 'note' && note !== null && !hasBeneath) {
+      const clear = () => {
+        clearNote($).catch(() => undefined)
+      }
       return (
-        <Box flexDirection="column">
-          {row}
-          <Text wrap="wrap">
-            <Text color="warning">Heads up</Text>
-            <Text dimColor> · </Text>
-            {note.line}
-          </Text>
+        <Box flexDirection="column" marginTop={1}>
+          {lead('◆', 'warning', 'Heads up', note.line)}
           {note.why !== '' ? (
-            <Text dimColor wrap="wrap">
-              {note.why}
-            </Text>
+            <Box paddingLeft={2} width={cols}>
+              <Text dimColor wrap="wrap">
+                {note.why}
+              </Text>
+            </Box>
           ) : undefined}
-          <Box flexDirection="row" gap={3}>
-            <Button key="brief" plain hotkey="1" label="Brief me" onPress={onPress} />
-            <Button
-              key="fine"
-              plain
-              hotkey="2"
-              label="Fine"
-              onPress={() => {
-                clearNote($).catch(() => undefined)
-              }}
-            />
-            <Button
-              key="later"
-              plain
-              hotkey="0"
-              label="Later"
-              onPress={() => {
-                clearNote($).catch(() => undefined)
-              }}
-            />
-          </Box>
+          {choices(
+            <Button key="brief" plain hotkey="1" label="Brief me" onPress={onPress} />,
+            <Button key="fine" plain hotkey="2" label="Fine" onPress={clear} />,
+            <Button key="later" plain hotkey="0" label="Later" onPress={clear} />,
+            statusText,
+          )}
         </Box>
       )
     }
 
     if (view === 'brief' && brief !== null) {
-      const fixGoal = () => {
-        update($, viewA, () => 'goal').catch(() => undefined)
-      }
-      const close = () => {
-        update($, viewA, () => 'row').catch(() => undefined)
-      }
+      const section = (label: string, text: string) =>
+        text === '' ? undefined : (
+          <Box paddingLeft={2} width={cols}>
+            <Text wrap="wrap">
+              <Text bold>{label} </Text>
+              {text}
+            </Text>
+          </Box>
+        )
       if (brief.well !== '') {
         return (
-          <Box flexDirection="column">
-            {row}
-            <Text wrap="wrap">{brief.well}</Text>
-            <Box flexDirection="row" gap={3}>
-              <Button key="close" plain hotkey="2" label="Fine, close" onPress={close} />
-              <Button key="goal" plain hotkey="g" label="Fix the goal" onPress={fixGoal} />
+          <Box flexDirection="column" marginTop={1}>
+            {head}
+            {section('', brief.well)}
+            {choices(<Button key="close" plain hotkey="2" label="Fine, close" onPress={close} />, goalButton)}
+            <Box paddingLeft={2}>
+              <Text dimColor>{brief.spent}</Text>
             </Box>
-            <Text dimColor>{brief.spent}</Text>
           </Box>
         )
       }
-      const line = (label: string, text: string) =>
-        text === '' ? undefined : (
-          <Text wrap="wrap">
-            <Text bold>{label} </Text>
-            {text}
-          </Text>
-        )
       return (
-        <Box flexDirection="column">
-          {row}
-          {line('Stands:', brief.stands)}
-          {line('Means:', brief.means)}
+        <Box flexDirection="column" marginTop={1}>
+          {head}
+          {section('Stands:', brief.stands)}
+          {section('Means:', brief.means)}
           {brief.leftOut.length > 0 ? (
-            <Box flexDirection="column">
+            <Box flexDirection="column" paddingLeft={2} width={cols}>
               <Text bold>Left out:</Text>
               {brief.leftOut.map((item, i) => (
                 <Text key={`left-${i}`} wrap="wrap">
@@ -526,15 +529,21 @@ export const register: Register = on => {
               ))}
             </Box>
           ) : undefined}
-          {line('Next:', brief.next)}
+          {section('Next:', brief.next)}
           {brief.message !== '' ? (
-            <Box flexDirection="column" borderStyle="round" borderDimColor paddingX={1} marginTop={0}>
+            <Box marginLeft={2} width={cols - 2} flexDirection="column" borderStyle="round" borderDimColor paddingX={1}>
               <Text wrap="wrap">{brief.message}</Text>
             </Box>
           ) : undefined}
-          {brief.does !== '' && brief.message !== '' ? <Text dimColor wrap="wrap">{brief.does}</Text> : undefined}
-          <Box flexDirection="row" gap={3}>
-            {brief.message !== '' ? (
+          {brief.does !== '' && brief.message !== '' ? (
+            <Box paddingLeft={2} width={cols}>
+              <Text dimColor wrap="wrap">
+                {brief.does}
+              </Text>
+            </Box>
+          ) : undefined}
+          {choices(
+            brief.message !== '' ? (
               <Button
                 key="put"
                 plain
@@ -544,19 +553,22 @@ export const register: Register = on => {
                   putMessage($, brief.message).catch(() => undefined)
                 }}
               />
-            ) : undefined}
-            <Button key="close" plain hotkey="2" label="Fine, close" onPress={close} />
-            <Button key="goal" plain hotkey="g" label="Fix the goal" onPress={fixGoal} />
-            <Button key="later" plain hotkey="0" label="Later" onPress={close} />
+            ) : undefined,
+            <Button key="close" plain hotkey="2" label="Fine, close" onPress={close} />,
+            goalButton,
+            <Button key="later" plain hotkey="0" label="Later" onPress={close} />,
+          )}
+          <Box paddingLeft={2}>
+            <Text dimColor>{brief.spent}</Text>
           </Box>
-          <Text dimColor>{brief.spent}</Text>
         </Box>
       )
     }
 
     return (
-      <Box flexDirection="column">
-        {row}
+      <Box flexDirection="column" marginTop={1}>
+        {head}
+        {choices(statusText, repButton, goalButton)}
         {beneath}
       </Box>
     )
