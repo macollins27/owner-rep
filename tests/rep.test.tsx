@@ -115,7 +115,7 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   expect(argv[1]).toBe('-p')
   const allowed = argv[argv.indexOf('--allowedTools') + 1] ?? ''
   expect(allowed).toContain('Bash(agentsview:*)')
-  expect(allowed).toContain('Bash(/Users/maxwellcollins/Library/pnpm/tsc:*)')
+  expect(allowed).toContain('Bash(~/Library/pnpm/tsc:*)')
   expect(allowed).toContain('Bash(npx tsc:*)')
   expect(allowed).not.toContain('Write')
   const disallowed = argv[argv.indexOf('--disallowedTools') + 1] ?? ''

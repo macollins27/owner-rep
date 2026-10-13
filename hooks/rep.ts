@@ -385,7 +385,7 @@ export const CHECK_ALLOWED_TOOLS = [
   'Bash(npx tsc:*)',
   'Bash(tsc:*)',
   'Bash(~/Library/pnpm/tsc:*)',
-  'Bash(/Users/maxwellcollins/Library/pnpm/tsc:*)',
+  'Bash(~/.local/bin/tsc:*)',
   'Bash(node --test:*)',
   'Bash(pytest:*)',
   'Bash(python -m pytest:*)',
