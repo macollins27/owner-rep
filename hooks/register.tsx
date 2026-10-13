@@ -224,6 +224,21 @@ async function clearNote($: EngineInterface): Promise<void> {
   await update($, viewA, () => 'row')
 }
 
+// Whether a tree another mod or the engine returned for the band draws
+// anything: an empty fragment or an empty box draws nothing.
+function drawsSomething(tree: unknown): boolean {
+  if (tree === undefined || tree === null || tree === false || tree === '') return false
+  if (typeof tree === 'string' || typeof tree === 'number') return true
+  if (Array.isArray(tree)) return tree.some(drawsSomething)
+  if (typeof tree === 'object') {
+    const t = tree as { type?: unknown; props?: { children?: unknown }; children?: unknown }
+    const kids = t.props?.children ?? t.children
+    if (t.type === 'Fragment' || t.type === 'Box' || t.type === undefined) return drawsSomething(kids)
+    return true
+  }
+  return false
+}
+
 // The session's id, read once per load of the module.
 let sid = ''
 async function sessionId($: EngineInterface): Promise<string> {
@@ -374,7 +389,7 @@ export const register: Register = on => {
     // so only one set of digit buttons is ever on screen. The briefing and the
     // goal field, which the owner asked for, take the strip alone.
     const beneath = await next(e)
-    const hasBeneath = beneath !== undefined && beneath !== null
+    const hasBeneath = drawsSomething(beneath)
 
     const onPress = () => {
       pressBrief($, id).catch(() => undefined)

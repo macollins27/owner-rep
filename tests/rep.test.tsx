@@ -7,6 +7,11 @@ const BAND = {
   props: { hasSurvey: false, isWorking: false, maxRows: 12, bodyColumns: 96, scroll: { offset: 0, bodyRows: 11 }, view: {} },
 } as const
 
+// In a session the engine draws nothing of its own in the band; a test says so
+// with an empty tree beneath the plugins.
+const quietBand = (on: Parameters<Parameters<typeof test>[1] extends (a: infer _A, b: infer B) => unknown ? (a: _A, b: B) => unknown : never>[1]) =>
+  on('ui.render', { component: 'AbovePrompt' }, () => <></>)
+
 const USAGE = { input_tokens: 10, output_tokens: 20, cache_read_input_tokens: 1000, cache_creation_input_tokens: 0 }
 
 test('a watch answer with no flag parses to goal, state and no note', async () => {
@@ -64,6 +69,7 @@ test('helpers: fit cuts with an ellipsis, same ignores case and a final period, 
 
 test('the row draws on both surfaces with the Rep button and a placeholder goal', async ($, on) => {
   mock.store(on, {})
+  quietBand(on)
   on('session.id', () => ({ value: 'test-session' }))
   for (const surface of ['terminal', 'desktop'] as const) {
     const ui = await $.ui.mount({ plugin: 'owner-rep', surface, ...BAND })
@@ -94,6 +100,7 @@ test('the row keeps what another mod draws beneath it in the shared strip', asyn
 
 test('pressing Rep reads the conversation and draws the briefing with the message and its buttons', async ($, on) => {
   mock.store(on, {})
+  quietBand(on)
   on('session.id', () => ({ value: 'test-session' }))
   const answer = [
     'goal: A judge mod that briefs you plainly.',
@@ -121,6 +128,7 @@ test('pressing Rep reads the conversation and draws the briefing with the messag
 
 test('a briefing that says the work is going well has no message and no put button', async ($, on) => {
   mock.store(on, {})
+  quietBand(on)
   on('session.id', () => ({ value: 'test-session' }))
   on('model.fork', () => ({ value: { isAnswered: true, text: 'goal: x\nwell: The agent is doing what you asked and showing it.\nleft:\n- nothing\nmessage:\nend\ndoes:', usage: USAGE } }))
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
@@ -132,6 +140,7 @@ test('a briefing that says the work is going well has no message and no put butt
 
 test('a model that does not answer leaves the row and says so in a toast', async ($, on) => {
   mock.store(on, {})
+  quietBand(on)
   on('session.id', () => ({ value: 'test-session' }))
   on('model.fork', () => ({ value: { isAnswered: false, reason: 'nothing-to-fork' } }))
   const toasts: string[] = []
