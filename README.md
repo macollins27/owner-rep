@@ -7,7 +7,7 @@ It was built in one day, on 13 October 2026, by directing a Claude Code agent fr
 objective to an installed, working tool, with every part proven on screen before the next
 was started. No code was written by hand.
 
-![The row above the prompt](docs/row.png)
+![The briefing card, on a real session](docs/briefing.png)
 
 ## The problem
 
@@ -39,7 +39,7 @@ what was left out, what should happen next, and the message to send to the agent
 ready, with one line saying what it will make the agent do. The message goes into the prompt
 box; nothing is sent until the owner presses Enter.
 
-![The briefing card](docs/briefing.png)
+![The same card after the check: each claim marked holds, false or not shown](docs/checked.png)
 
 On a second press, a **check**: a separate, read-only Claude Code run that reads the session's
 full record through agentsview, opens the real files and runs the project's own tests, then
