@@ -34,6 +34,8 @@ export type Brief = {
   isChecking: boolean
   checked: Checked | null
   checkNote: string
+  // What a check costs, from the last one here or the measured first one.
+  checkCost: string
 }
 
 export type View = 'row' | 'note' | 'reading' | 'brief'

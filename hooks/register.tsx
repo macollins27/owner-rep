@@ -17,6 +17,7 @@ import {
   briefPrompt,
   cachedOf,
   checkArgv,
+  checkCostText,
   checkPrompt,
   doingFor,
   fit,
@@ -68,6 +69,8 @@ type Rec = {
   cached: number
   checks: number
   checkTokens: number
+  lastCheckTokens: number
+  lastCheckMs: number
 }
 
 const isRec = (v: unknown): v is Rec =>
@@ -88,6 +91,8 @@ const freshRec = (id: string): Rec => ({
   cached: 0,
   checks: 0,
   checkTokens: 0,
+  lastCheckTokens: 0,
+  lastCheckMs: 0,
 })
 
 async function loadRec($: EngineInterface, id: string): Promise<Rec> {
@@ -198,6 +203,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       isChecking: false,
       checked: null,
       checkNote: '',
+      checkCost: checkCostText(after.lastCheckTokens, after.lastCheckMs),
     }
     after.lastBrief = { at: brief.at, next: brief.next, message: brief.message }
     await saveRec($, after)
@@ -247,6 +253,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
     const rec = await loadRec($, sid)
     const cwd = await $.session.cwd()
     const prompt = checkPrompt({ sessionId: sid, cwd, goal: rec.goal ?? '', owner: rec.owner, brief: instant })
+    const startedAt = Date.now()
     const stream = $.process.spawn({ argv: checkArgv(prompt), cwd })
     let stdout = ''
     let stderr = ''
@@ -283,6 +290,8 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
     const after = await loadRec($, sid)
     after.checks += 1
     after.checkTokens += got.tokens
+    after.lastCheckTokens = got.tokens
+    after.lastCheckMs = Date.now() - startedAt
     const c = parseCheck(got.text)
     const checked: Checked = { holds: c.holds, wrong: c.wrong, notShown: c.notShown, looked: c.looked }
     const patch: Partial<Brief> = {
@@ -292,6 +301,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       message: c.message === '' ? instant.message : c.message,
       does: c.does === '' ? instant.does : c.does,
       spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens),
+      checkCost: checkCostText(after.lastCheckTokens, after.lastCheckMs),
     }
     after.lastBrief = { at, next: patch.next ?? '', message: patch.message ?? '' }
     await saveRec($, after)
@@ -718,7 +728,7 @@ export const register: Register = on => {
           {brief.checked === null && !brief.isChecking && brief.checkNote === '' ? (
             <Box paddingLeft={2} width={cols}>
               <Text dimColor wrap="wrap">
-                Check it starts a separate read-only Claude Code run over the session record and the files. It takes minutes and costs far more than this card.
+                {brief.checkCost}
               </Text>
             </Box>
           ) : undefined}

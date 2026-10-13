@@ -603,6 +603,25 @@ const k = (n: number): string => (n >= 1000 ? `${Math.round(n / 1000)}k` : `${n}
 
 // The rep's own spend this session. Most of each look is the conversation
 // served again from the prompt cache, which is far cheaper than fresh tokens.
+// The first real check, on a session of about 160k tokens, measured 2026-10-13.
+export const FIRST_CHECK_TOKENS = 1300000
+export const FIRST_CHECK_MS = 120000
+
+const minutes = (ms: number): string => {
+  const m = Math.max(1, Math.round(ms / 60000))
+  return `${m} minute${m === 1 ? '' : 's'}`
+}
+
+const millions = (n: number): string =>
+  n >= 1000000 ? `${(n / 1000000).toFixed(1)} million` : n >= 1000 ? `${Math.round(n / 1000)}k` : `${n}`
+
+export function checkCostText(lastTokens: number, lastMs: number): string {
+  if (lastTokens > 0) {
+    return `Check it starts a separate read-only Claude Code run over the session record and the files. The last check here cost about ${millions(lastTokens)} tokens and took ${minutes(lastMs)}.`
+  }
+  return `Check it starts a separate read-only Claude Code run over the session record and the files. The first one, on a session of this kind, cost about ${millions(FIRST_CHECK_TOKENS)} tokens and took ${minutes(FIRST_CHECK_MS)}.`
+}
+
 export function spentText(calls: number, tokens: number, cached: number, checks = 0, checkTokens = 0): string {
   const fresh = Math.max(0, tokens - cached)
   const looks = `${calls} look${calls === 1 ? '' : 's'}`
