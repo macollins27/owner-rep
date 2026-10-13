@@ -195,7 +195,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       does: a.does,
       at: Date.now(),
       spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens),
-      isChecking: true,
+      isChecking: false,
       checked: null,
       checkNote: '',
     }
@@ -204,11 +204,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     await update($, noteA, () => null)
     await update($, briefA, () => brief)
     await update($, viewA, () => 'brief')
-    if (brief.well === '') {
-      await runCheck($, sid, brief.at, a).catch(() => undefined)
-    } else {
-      await update($, briefA, b => (b === null ? b : { ...b, isChecking: false }))
-    }
+    lastInstant = { at: brief.at, answer: a }
   } catch {
     await update($, viewA, () => 'row')
     $.ui.toast('Owner rep: the reading failed. Press again.')
@@ -221,6 +217,20 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
 // stale, and a reload of this module kills the child.
 let checkEpoch = 0
 let activeCheck: { stop: () => void } | null = null
+// The instant read the card was drawn from, kept for "Check it".
+let lastInstant: { at: number; answer: BriefAnswer } | null = null
+
+// "Check it": the owner chose to pay for the check on the card that is up.
+async function pressCheck($: EngineInterface, sid: string): Promise<void> {
+  const b = await read($, briefA)
+  if (b === null || lastInstant === null || lastInstant.at !== b.at) {
+    $.ui.toast('Owner rep: press Brief me first, then Check it.')
+    return
+  }
+  if (b.isChecking) return
+  await update($, briefA, x => (x === null ? x : { ...x, isChecking: true, checkNote: '' }))
+  await runCheck($, sid, b.at, lastInstant.answer)
+}
 async function runCheck($: EngineInterface, sid: string, at: number, instant: BriefAnswer): Promise<void> {
   const epoch = ++checkEpoch
   activeCheck?.stop()
@@ -597,7 +607,7 @@ export const register: Register = on => {
       <Button key="rep" plain hotkey={digit(PRESS_HOTKEY)} action={PRESS_ACTION} label="Brief me" onPress={onPress} />
     )
     const goalButton = <Button key="goal" plain hotkey={digit('2')} label="Fix the goal" onPress={fixGoal} />
-    const goalButton3 = <Button key="goal" plain hotkey="3" label="Fix the goal" onPress={fixGoal} />
+    const goalButton3 = <Button key="goal" plain hotkey="4" label="Fix the goal" onPress={fixGoal} />
     const headGlyph = marked ? '◆' : '◇'
     const headColor = marked ? 'warning' : 'suggestion'
     const goalText = goal ?? 'working out the result you want from your messages…'
@@ -705,6 +715,13 @@ export const register: Register = on => {
               <Text color="suggestion">Checking the record and the files… the card updates when it is done.</Text>
             </Box>
           ) : undefined}
+          {brief.checked === null && !brief.isChecking && brief.checkNote === '' ? (
+            <Box paddingLeft={2} width={cols}>
+              <Text dimColor wrap="wrap">
+                Check it starts a separate read-only Claude Code run over the session record and the files. It takes minutes and costs far more than this card.
+              </Text>
+            </Box>
+          ) : undefined}
           {brief.checkNote !== '' ? (
             <Box paddingLeft={2} width={cols}>
               <Text dimColor wrap="wrap">
@@ -725,6 +742,17 @@ export const register: Register = on => {
             </Box>
           ) : undefined}
           {choices(
+            brief.checked === null && !brief.isChecking ? (
+              <Button
+                key="check"
+                plain
+                hotkey="3"
+                label="Check it"
+                onPress={() => {
+                  pressCheck($, id).catch(() => undefined)
+                }}
+              />
+            ) : undefined,
             brief.message !== '' ? (
               <Button
                 key="put"
