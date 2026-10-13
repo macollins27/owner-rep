@@ -1,0 +1,5 @@
+{
+  "name": "owner-rep",
+  "owner": { "name": "Maxwell Collins" },
+  "plugins": [{ "name": "owner-rep", "source": "./" }]
+}
