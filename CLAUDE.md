@@ -51,7 +51,7 @@ A snapshot of the mod at commit 59bb22c also sits in `~/.claude/plugins/cache/ow
 left by the install step. It is not what sessions run: `claude plugin list` reports the mod
 read from this folder.
 
-The testing design, three layers and a defect-planting doctor, is in `docs/testing.md` with a
+The testing design, two layers and a defect-planting doctor, is in `docs/testing.md` with a
 status line per part; read it before adding tests, and keep its status lines true.
 
 The kit's `$.tool.call`, `$.prompt.submit` and the other engine calls run through this mod's
