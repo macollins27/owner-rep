@@ -8,6 +8,7 @@ import {
   CHECK_EVERY,
   CHECK_TIMEOUT_MS,
   CLEAR_AFTER_PROMPTS,
+  NOTE_CLEAR_MS,
   NOTE_MARK,
   NOTE_PREFIX,
   OWNER_CUT,
@@ -493,8 +494,11 @@ export const register: Register = on => {
           const id = await sessionId($)
           await takeNote($, id, note)
           // A dropped prompt stays in the box for editing; a note the rep has
-          // taken must not, or the next digit lands after it as text.
-          await $.prompt.fill({ text: '', mode: 'replace' }).catch(() => undefined)
+          // taken must not, or the next digit lands after it as text. A fill
+          // made now is undone by the drop, so it is made once the drop has landed.
+          $.clock.after(NOTE_CLEAR_MS, () => {
+            $.prompt.fill({ text: '', mode: 'replace' }).catch(() => undefined)
+          })
           if (!inFlight.has('note')) {
             inFlight.add('note')
             look($, id, 'note', '')
