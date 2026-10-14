@@ -1,7 +1,7 @@
 import type { On } from 'claude-code'
 import { expect, mock, test, type Engine } from 'claude-code/testing'
 
-import { CHECK_EVERY, CHECK_TIMEOUT_MS, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, same, textOf, watchPrompt } from '../hooks/rep'
+import { CHECK_EVERY, CHECK_TIMEOUT_MS, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, same, textOf, watchPrompt } from '../hooks/rep'
 
 // A band with room for a whole card; the fold-to-fit test narrows it.
 const BAND = {
@@ -151,10 +151,13 @@ test('rule: a note to the rep is dropped before the agent sees it and cleared fr
     fills.push(e.text)
     return { isFilled: true }
   })
+  const clock = mock.clock(on)
   const result = await $.prompt.submit({ text: 'Owner rep: the tests matter more to me than speed', wait: false, origin: { kind: 'composer' } })
   expect(reached).toBe(false)
   expect(result.drop).toMatch(/noted/)
-  // The box is emptied: a dropped prompt would otherwise stay in it.
+  // The box is emptied once the drop has landed: a dropped prompt would otherwise stay in it.
+  expect(fills).toEqual([])
+  await clock.advance(NOTE_CLEAR_MS + 1)
   expect(fills).toEqual([''])
   // The look the note started settles while the strip is drawn, as in a session.
   let ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })

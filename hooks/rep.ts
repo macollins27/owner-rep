@@ -88,6 +88,10 @@ export const noteTyped = (text: string): string | null => {
 }
 // How a note to the rep is marked in the list of the owner's messages.
 export const NOTE_MARK = '(to the rep) '
+// A dropped prompt stays in the box for editing, and a fill made while the
+// prompt is still entering is undone by the drop; the box is emptied this
+// long after the note is taken, once the drop has landed.
+export const NOTE_CLEAR_MS = 150
 
 // The first sentence of a reading, for the row.
 export function firstSentence(text: string): string {
