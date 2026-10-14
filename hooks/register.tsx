@@ -125,6 +125,20 @@ const memoryOf = (rec: Rec): Memory => ({
   lastSent: rec.lastSent,
 })
 
+// The conversation's size against its window, from the engine, for the brief.
+// Best effort: a session that cannot say leaves the figure unknown.
+async function contextOf($: EngineInterface): Promise<Memory['context']> {
+  try {
+    const { context } = await $.session.usage()
+    const tokens = context.tokens ?? 0
+    const window = context.window
+    if (window <= 0) return undefined
+    return { tokens, window, percent: context.percent ?? Math.round((tokens / window) * 100) }
+  } catch {
+    return undefined
+  }
+}
+
 async function setNow($: EngineInterface, patch: Partial<Now>): Promise<void> {
   await update($, nowA, n => ({ ...(n ?? IDLE), ...patch }))
 }
@@ -138,7 +152,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop', tu
     await saveRec($, { ...rec, skip: rec.skip - 1 })
     return
   }
-  const result = await $.model.fork({ prompt: watchPrompt(memoryOf(rec), reason) })
+  const result = await $.model.fork({ prompt: watchPrompt({ ...memoryOf(rec), context: await contextOf($) }, reason) })
   const after = await loadRec($, sid)
   after.calls += 1
   after.tokens += tokensOf('usage' in result ? result.usage : null)
@@ -170,7 +184,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
   await setNow($, { mark: '' }).catch(() => undefined)
   try {
     const rec = await loadRec($, sid)
-    const result = await $.model.fork({ prompt: briefPrompt(memoryOf(rec)) })
+    const result = await $.model.fork({ prompt: briefPrompt({ ...memoryOf(rec), context: await contextOf($) }) })
     const after = await loadRec($, sid)
     after.calls += 1
     after.tokens += tokensOf('usage' in result ? result.usage : null)

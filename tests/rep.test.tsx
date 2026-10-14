@@ -1,7 +1,7 @@
 import type { On } from 'claude-code'
 import { expect, mock, test } from 'claude-code/testing'
 
-import { CLEAR_AFTER_PROMPTS, SESSIONS_MAX, TYPED_PAST_FREE, cardRows, checkArgv, checkCostText, checkPrompt, doingFor, fit, fitCard, goalTyped, parseBrief, parseCheck, parseWatch, programOf, resultOf, same, textOf } from '../hooks/rep'
+import { CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, fit, fitCard, goalTyped, parseBrief, parseCheck, parseWatch, programOf, resultOf, same, textOf } from '../hooks/rep'
 
 // A band with room for a whole card; the fold-to-fit test narrows it.
 const BAND = {
@@ -599,5 +599,35 @@ test('rule: with few rows in the band the card still draws its buttons and folds
   // The digit closes the card: the row is back.
   await ui.press({ key: 'close' })
   expect((await ui.find({ key: 'rep' }))?.props.hotkey).toBe('1')
+  await ui.unmount()
+})
+
+// --- The brief judges against the sum of the owner's messages, and calls a session long only by a figure. ---
+
+test('the brief carries the whole-ask rule, the size as a figure, and the green line tied to the sum', async () => {
+  const m = { goal: 'x', isPinned: false, owner: ['make this serious, with many tests', 'now just add a licence'], seen: [], others: [] }
+  const p = briefPrompt({ ...m, context: { tokens: 242500, window: 500000, percent: 48 } })
+  expect(p).toMatch(/His messages on a job add up/)
+  expect(p).toMatch(/48 percent of its window \(243k of 500k tokens\), which is not long/)
+  expect(p).toMatch(new RegExp(`long only past ${LONG_SESSION_PERCENT} percent`))
+  expect(p).toMatch(/well: <only when nothing in the sum of his messages is still outstanding/)
+  expect(p).toMatch(/means: <.*measured against the whole result/)
+  expect(p).toMatch(/never started/)
+  expect(contextLine(m)).toBe('not known')
+  expect(contextLine({ ...m, context: { tokens: 400000, window: 500000, percent: 80 } })).toMatch(/80 percent.*which is long$/)
+})
+
+test('rule: pressing Rep gives the model the session size the engine reports', async ($, on) => {
+  session(on)
+  quietBand(on)
+  on('session.usage', () => ({ value: { startedAt: 0, context: { tokens: 242500, window: 500000, percent: 48 }, rateLimits: [] } }))
+  let prompt = ''
+  on('model.fork', ($, e) => {
+    prompt = String(e.prompt)
+    return { value: { isAnswered: true, text: BRIEF('Fine.'), usage: USAGE } }
+  })
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  expect(prompt).toMatch(/48 percent of its window \(243k of 500k tokens\)/)
   await ui.unmount()
 })
