@@ -19,6 +19,8 @@ jobs:
       - name: Run the tests
         run: claude plugin test .
       - name: Type-check the hooks and the tests
-        run: npx -y typescript@5.9.3 tsc -p tests/ci/tsconfig.json --noEmit
+        run: |
+          npm install -g typescript@5.9.3
+          tsc -p tests/ci/tsconfig.json --noEmit
       - name: Plant each known defect and expect the suite to fail
         run: python3 tests/doctor/doctor.py
