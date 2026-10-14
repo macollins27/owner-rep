@@ -131,7 +131,7 @@ test('the text of another mod\'s note is read from its tree, buttons left out', 
   expect(textOf(tree)).toBe('Heads up · The pages leave out real customers.')
 })
 
-test('rule: a note to the rep is dropped before the agent sees it, listed to the model as said to the rep, and read at once', async ($, on) => {
+test('rule: a note to the rep is dropped before the agent sees it and cleared from the box, listed to the model as said to the rep, and read at once', async ($, on) => {
   mock.store(on, {})
   quietBand(on)
   on('session.id', () => ({ value: 'test-session' }))
@@ -146,9 +146,16 @@ test('rule: a note to the rep is dropped before the agent sees it, listed to the
     prompts.push(String(e.prompt))
     return { value: { isAnswered: true, text: 'reading: The strip reads plainly in every state, so he can trust it at a glance.\nmoved: first reading\nstate: stopped\nflag: none', usage: USAGE } }
   })
+  const fills: string[] = []
+  on('prompt.fill', ($, e) => {
+    fills.push(e.text)
+    return { isFilled: true }
+  })
   const result = await $.prompt.submit({ text: 'Owner rep: the tests matter more to me than speed', wait: false, origin: { kind: 'composer' } })
   expect(reached).toBe(false)
   expect(result.drop).toMatch(/noted/)
+  // The box is emptied: a dropped prompt would otherwise stay in it.
+  expect(fills).toEqual([''])
   // The look the note started settles while the strip is drawn, as in a session.
   let ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   await ui.unmount()

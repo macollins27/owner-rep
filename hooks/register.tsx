@@ -492,6 +492,9 @@ export const register: Register = on => {
         try {
           const id = await sessionId($)
           await takeNote($, id, note)
+          // A dropped prompt stays in the box for editing; a note the rep has
+          // taken must not, or the next digit lands after it as text.
+          await $.prompt.fill({ text: '', mode: 'replace' }).catch(() => undefined)
           if (!inFlight.has('note')) {
             inFlight.add('note')
             look($, id, 'note', '')

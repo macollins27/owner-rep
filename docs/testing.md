@@ -49,7 +49,7 @@ entry that proves the test bites (all added 14 Oct 2026):
 | The store keeps only the newest `SESSIONS_MAX` sessions | `rule: the store keeps…` | `sessions-unbounded` |
 | The reading is kept when the answer says it holds; the row shows its first sentence | `rule: the reading is kept…` | `reading-rewritten-each-look`, `row-shows-whole-reading` |
 | The agent's words never move the reading; the owner's do, with the cause on the card | `rule: the agent's words never move…` | `agent-moves-reading`, `revision-cause-dropped` |
-| A note to the rep is dropped before the agent sees it, listed as said to the rep, read at once | `rule: a note to the rep…` | `note-reaches-agent`, `note-never-read` |
+| A note to the rep is dropped before the agent sees it and cleared from the box, listed as said to the rep, read at once | `rule: a note to the rep…` | `note-reaches-agent`, `note-never-read`, `note-left-in-box` |
 | A new job closes the old reading; the earlier job's messages leave the brief | `rule: a new job closes…` | `earlier-job-leaks` |
 | Tell the rep puts the prefix in the prompt box | `rule: Tell the rep puts…` | `tell-prefix-dropped` |
 | While the rep reads, the row says so and a second press starts no second read | `rule: while the rep reads…` | `reading-state-unmarked` |
@@ -94,8 +94,11 @@ unset or `claude` falls into print mode and exits. Scenarios, one capture each:
 1. Idle: the row draws with the placeholder reading and "idle".
 2. A shell command that begins by setting a variable: the status is "running <program>" and
    no character of the command appears in the strip.
-3. `Owner rep: ...` typed as a prompt after a first exchange: the agent never answers it, and
-   the rep's row changes from the placeholder to a reading, because the note starts a look.
+3. `Owner rep: ...` typed as a prompt after a first exchange: the agent never answers it, the
+   prompt box is emptied, and the rep's row changes from the placeholder to a reading,
+   because the note starts a look. The first live run of this scenario on 14 Oct 2026 found
+   that the engine leaves a dropped prompt in the box, so the digit pressed next in
+   scenario 6 landed in the box as text; the rep now empties the box once it has the note.
 4. The Rep button pressed mid-turn: the briefing card appears with its buttons.
 5. The session stopped: the status is "stopped, waiting on you" with the mark.
 6. The whole ask: a first message asking for much, a second asking for a step, then a note to
@@ -150,7 +153,7 @@ doctor before any claim that the tests pass.
 **Status.** Built: `tests/doctor/doctor.py`, with `defects.json` and one patch per defect in
 `tests/doctor/defects/`. Run it with `python3 tests/doctor/doctor.py`; it exits 1 when the
 clean suite fails or a defect survives, and stops before planting when the clean suite is
-not clean. Twenty-nine entries, all caught: `strip-shows-command`, one or two per sequence
+not clean. Thirty entries, all caught: `strip-shows-command`, one or two per sequence
 rule above, `card-overflows-band`, `size-figure-dropped`, `whole-ask-rule-dropped`, and one
 per remaining hook path (`helper-not-counted`, `box-text-overwritten`, `fill-refusal-ignored`,
 `check-timeout-unreported`, `check-failure-swallowed`, `end-not-saved`). A throwaway entry no test looks at was planted on 14 Oct
