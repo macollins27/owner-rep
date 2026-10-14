@@ -1,0 +1,44 @@
+
+ ▐▛███▛█   Claude Code v2.1.300
+▝▜██████▀  Fable 5.1 with high effort · Claude Max
+ ▝▝   ▝▝   /private/var/folders/mf/g9s916lj533085gbqr23mm9m0000gn/T/owner-rep-live.64fwxeeq7I
+
+
+⏺ Prompt dropped by a hook: Owner rep: pinned. The agent did not see this.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                                                                                                                                      [-]
+◇ Owner rep · the strip reads plainly in every state
+  idle   1: Brief me   2: Fix the goal
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ Owner rep goal: the strip reads plainly in every state
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  [Fable 5.1] │ owner-rep-live.64fwxeeq7I +owner-rep-live.64fwxeeq… +maxwellcollins git:(main)
+  Context ░░░░░░░░░░ 0%
+  ⏵⏵ bypass permissions on (shift+tab to cycle)
