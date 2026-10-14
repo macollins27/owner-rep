@@ -21,7 +21,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 13 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 14 tests are in tests/rep.test.tsx
 ```
 
 `claude plugin test` has no filter flag. Run the whole file; it takes well under a second.

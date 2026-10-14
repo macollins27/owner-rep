@@ -565,22 +565,58 @@ const base = (p: unknown): string => {
   return parts[parts.length - 1] ?? ''
 }
 
+// Words that run another program after them: skip the word, keep looking.
+const SHELL_PREFIX = new Set(['sudo', 'env', 'time', 'nohup', 'command', 'builtin', 'exec', 'eval', 'doas'])
+
+// Words that begin a line running no program of interest: skip the whole segment.
+const SHELL_NOISE = new Set([
+  'export', 'set', 'cd', 'pushd', 'popd', 'source', 'local', 'declare', 'typeset', 'readonly', 'unset',
+  'then', 'do', 'done', 'else', 'elif', 'fi', 'if', 'while', 'until', 'for', 'case', 'esac', 'select',
+  'function', 'true', 'false', 'echo', 'printf', 'exit', 'return',
+])
+
+const NAME = /^[A-Za-z][A-Za-z0-9._+-]*$/
+
+// The name of the program a shell command runs, or '' when no plain name can be
+// read from it. Never a fragment of the command itself: the result is one word
+// made of letters, digits, dots, dashes and underscores, or nothing.
+export function programOf(command: unknown): string {
+  if (typeof command !== 'string') return ''
+  const line = command.trim().split('\n')[0] ?? ''
+  const segments = line.split(/\s*(?:&&|\|\||\||;|&)\s*/)
+  for (const raw of segments) {
+    const words = raw.replace(/^[\s({]+/, '').split(/\s+/).filter((w) => w !== '')
+    let name = ''
+    for (const w of words) {
+      // Assignments before a program set its environment; skip them.
+      if (/^[A-Za-z_][A-Za-z0-9_]*=/.test(w) || w.startsWith('$')) continue
+      const n = base(w.replace(/[)}]+$/, ''))
+      if (SHELL_PREFIX.has(n)) continue
+      name = n
+      break
+    }
+    if (name === '' || SHELL_NOISE.has(name)) continue
+    // Anything with shell syntax in it is not a name; look further, never show it.
+    if (!NAME.test(name)) continue
+    return fit(name, 24)
+  }
+  return ''
+}
+
 // What the agent is doing now, in two or three plain words, from a tool call.
+// Only a file's name or a program's name is ever copied from the call's fields.
 export function doingFor(tool: string, fields: Record<string, unknown>): string {
   switch (tool) {
     case 'Edit':
     case 'Write':
     case 'MultiEdit':
     case 'NotebookEdit':
-      return `editing ${base(fields.file_path) || base(fields.notebook_path) || 'a file'}`
+      return `editing ${fit(base(fields.file_path) || base(fields.notebook_path), 24) || 'a file'}`
     case 'Read':
-      return `reading ${base(fields.file_path) || 'a file'}`
+      return `reading ${fit(base(fields.file_path), 24) || 'a file'}`
     case 'Bash':
-    case 'PowerShell': {
-      const cmd = typeof fields.command === 'string' ? fields.command.trim().split('\n')[0] ?? '' : ''
-      const word = cmd.split(/\s+/).slice(0, 2).join(' ')
-      return `running ${fit(word, 24) || 'a command'}`
-    }
+    case 'PowerShell':
+      return `running ${programOf(fields.command) || 'a command'}`
     case 'Grep':
     case 'Glob':
       return 'searching files'
