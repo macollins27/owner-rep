@@ -29,6 +29,8 @@ tests/live/live.sh              # on demand: six real sessions in tmux, the stri
 GitHub runs validate, test, the type check and the doctor on every push
 (`.github/workflows/tests.yml`). Its type check uses `tests/ci/types/`, a pinned copy of the
 declarations for the Claude Code build the workflow installs; move both together.
+`tests/ci/declarations.sh` runs first there and fails the run when the installed build is
+not the one stamped on the pinned copy's first line, so the two cannot drift apart unseen.
 
 `claude plugin test` has no filter flag. Run the whole file; it takes well under a second.
 `claude plugin validate` reports one expected warning, that a root `CLAUDE.md` is not shipped
@@ -45,7 +47,7 @@ If `.claude-plugin/types/` is missing here, copy it from there:
 cp -R ~/.claude/dev-mods/02eea29b-b8e0-44e5-b4b8-b6903870fe8a/owner-rep/.claude-plugin/types .claude-plugin/types
 ```
 
-Those declarations are from Claude Code 2.1.296 (13 Oct 2026); the mods API is early access
+Those declarations are from Claude Code 2.1.300 (14 Oct 2026); the mods API is early access
 and changes between releases, so a newer build's declarations win when they exist. With the
 copied folder, the two hook files and the test file type-check clean. A tool the typings do
 not list (an MCP tool, `Grep`) is called from a test with `as never`. Do not commit anything tsc

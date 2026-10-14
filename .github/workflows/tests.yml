@@ -14,6 +14,8 @@ jobs:
           node-version: 22
       - name: Install Claude Code, the build the type declarations are pinned to
         run: npm install -g @anthropic-ai/claude-code@2.1.300
+      - name: Fail when the installed build is not the one the pinned declarations came from
+        run: tests/ci/declarations.sh
       - name: Validate the manifest and the hooks module
         run: claude plugin validate .
       - name: Run the tests
