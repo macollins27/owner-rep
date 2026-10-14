@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 311727d..76d2665 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -247,7 +247,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
+   activeCheck = null
+   const isStale = async (): Promise<boolean> => {
+     const b = await read($, briefA)
+-    return epoch !== checkEpoch || b === null || b.at !== at
++    return false
+   }
+   const finish = async (patch: Partial<Brief>): Promise<void> => {
+     if (await isStale()) return

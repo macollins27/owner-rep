@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 311727d..879b9c0 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -152,7 +152,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop', tu
+     await update($, goalA, () => answer.goal)
+   }
+   const view = await read($, viewA)
+-  if (answer.flag !== null && view === 'row' && ![...after.seen].some(s => same(s, answer.flag ?? ''))) {
++  if (answer.flag !== null && ![...after.seen].some(s => same(s, answer.flag ?? ''))) {
+     after.seen = [...after.seen, answer.flag].slice(-SEEN_MAX)
+     const note: Note = { line: answer.flag, why: answer.why, shownAt: Date.now(), turnId }
+     await update($, noteA, () => note)

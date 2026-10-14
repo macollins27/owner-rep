@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 311727d..1f0802c 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -627,7 +627,7 @@ export const register: Register = on => {
+     // From the prompt box only a bare digit presses a band button, so every
+     // button carries a digit. While another mod's note is beneath, its digits
+     // win and the row's buttons are drawn without any, for the mouse alone.
+-    const digit = (d: string): string | undefined => (hasBeneath ? undefined : d)
++    const digit = (d: string): string | undefined => d
+     const repButton = (
+       <Button key="rep" plain hotkey={digit(PRESS_HOTKEY)} label="Brief me" onPress={onPress} />
+     )

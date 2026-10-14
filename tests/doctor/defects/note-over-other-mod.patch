@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 311727d..3406c1b 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -638,7 +638,7 @@ export const register: Register = on => {
+     const goalText = goal ?? 'working out the result you want from your messages…'
+     const head = lead(headGlyph, headColor, 'Owner rep', goalText)
+ 
+-    if (view === 'note' && note !== null && !hasBeneath) {
++    if (view === 'note' && note !== null) {
+       const clear = () => {
+         clearNote($).catch(() => undefined)
+       }

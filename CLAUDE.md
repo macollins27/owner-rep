@@ -21,7 +21,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 15 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 23 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 ```
 
@@ -42,8 +42,8 @@ cp -R ~/.claude/dev-mods/02eea29b-b8e0-44e5-b4b8-b6903870fe8a/owner-rep/.claude-
 
 Those declarations are from Claude Code 2.1.296 (13 Oct 2026); the mods API is early access
 and changes between releases, so a newer build's declarations win when they exist. With the
-copied folder, the two hook files type-check clean; `tests/rep.test.tsx` reports type errors
-in the test-kit typings only, while the tests themselves pass. Do not commit anything tsc
+copied folder, the two hook files and the test file type-check clean. A tool the typings do
+not list (an MCP tool, `Grep`) is called from a test with `as never`. Do not commit anything tsc
 emits: `.gitignore` drops `.claude-plugin/types/`, `node_modules/` and `*.js`, and stray
 compiled `.js` files were once committed by mistake.
 

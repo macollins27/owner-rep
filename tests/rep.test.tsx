@@ -1,7 +1,7 @@
 import type { On } from 'claude-code'
 import { expect, mock, test } from 'claude-code/testing'
 
-import { checkArgv, checkCostText, checkPrompt, doingFor, fit, goalTyped, parseBrief, parseCheck, parseWatch, programOf, resultOf, same, textOf } from '../hooks/rep'
+import { CLEAR_AFTER_PROMPTS, SESSIONS_MAX, TYPED_PAST_FREE, checkArgv, checkCostText, checkPrompt, doingFor, fit, goalTyped, parseBrief, parseCheck, parseWatch, programOf, resultOf, same, textOf } from '../hooks/rep'
 
 const BAND = {
   component: 'AbovePrompt',
@@ -310,4 +310,228 @@ test('a model that does not answer leaves the row and says so in a toast', async
   expect(await ui.find({ key: 'put' })).toBeUndefined()
   expect(toasts.some(t => /nothing to read yet/.test(t))).toBe(true)
   await ui.unmount()
+})
+
+// --- Sequence rules: what the hooks do over several events, driven through the kit. ---
+
+const watchAnswer = (flag: string | null) =>
+  `goal: A mod that briefs you plainly.\nstate: stopped\nflag: ${flag ?? 'none'}\nwhy: ${flag === null ? '' : 'No test output appears after the last edit.'}`
+
+const stop = (turnId: string, answer = 'Done.', isAborted = false) =>
+  ({ answer, durationMs: 1, isAborted, turnId, reason: isAborted ? 'aborted' : 'answer' }) as const
+
+const typed = (text: string) => ({ text, wait: false, origin: { kind: 'composer' } }) as const
+
+// The watch, the strip and the store in one place, for the tests below.
+const session = (on: On, store: Record<string, unknown> = {}) => {
+  mock.store(on, store)
+  on('session.id', () => ({ value: 'test-session' }))
+  on('turn.complete', () => ({ text: '' }))
+  on('prompt.submit', ($, e) => ({ text: e.text }))
+  on('ui.toast', () => ({ value: undefined }))
+}
+
+test('rule: a flag already shown is not shown again as a note', async ($, on) => {
+  session(on)
+  quietBand(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: watchAnswer('The agent says the tests pass, but never ran them.'), usage: USAGE } }))
+  await $.turn.complete(stop('t1'))
+  let ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  expect(await ui.find({ type: 'Text', text: /never ran them/ })).toBeDefined()
+  await ui.press({ key: 'fine' })
+  expect(await ui.find({ type: 'Text', text: /never ran them/ })).toBeUndefined()
+  await ui.unmount()
+  await $.turn.complete(stop('t2'))
+  ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  expect(await ui.find({ type: 'Text', text: /never ran them/ })).toBeUndefined()
+  expect(await ui.find({ key: 'rep' })).toBeDefined()
+  await ui.unmount()
+})
+
+test('rule: typing past notes backs the watch off, after the free ones', async ($, on) => {
+  session(on)
+  quietBand(on)
+  let forks = 0
+  on('model.fork', () => {
+    forks += 1
+    return { value: { isAnswered: true, text: watchAnswer(`Flag number ${forks}.`), usage: USAGE } }
+  })
+  // Each cycle: a stop shows a note, then the owner types past it.
+  for (let i = 0; i < TYPED_PAST_FREE + 1; i++) {
+    await $.turn.complete(stop(`t${i}`))
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    expect(await ui.find({ type: 'Text', text: new RegExp(`Flag number ${i + 1}`) })).toBeDefined()
+    await ui.unmount()
+    for (let k = 0; k < CLEAR_AFTER_PROMPTS; k++) await $.prompt.submit(typed(`carry on ${i} ${k}`))
+  }
+  expect(forks).toBe(TYPED_PAST_FREE + 1)
+  // One past the free ones: the next look is skipped, the one after runs. The
+  // strip is drawn between stops, as a session draws it, so each look settles.
+  const settle = async () => (await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })).unmount()
+  await settle()
+  await $.turn.complete(stop('skipped'))
+  await settle()
+  expect(forks).toBe(TYPED_PAST_FREE + 1)
+  await $.turn.complete(stop('runs'))
+  await settle()
+  expect(forks).toBe(TYPED_PAST_FREE + 2)
+})
+
+const BRIEF = (stands: string) =>
+  `goal: A judge mod.\nwell:\nstands: ${stands}\nmeans: Done means written.\nleft:\n- nothing\nnext: Run it live.\nmessage:\nShow me the run.\nend\ndoes: Makes the agent run it.`
+
+const CHECKED = (stands: string) =>
+  JSON.stringify({
+    type: 'result',
+    result: `holds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nstands: ${stands}\nmeans:\nleft:\n- nothing\nnext:\nmessage:\nend\ndoes:\nlooked: Read the record.`,
+    usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+  })
+
+// A check run the test holds open and releases when it chooses.
+const heldCheck = (on: On, text: () => string) => {
+  let release: () => void = () => undefined
+  on('process.spawn', async function* () {
+    await new Promise<void>(r => (release = r))
+    yield { stream: 'stdout', text: text() }
+    return { value: { code: 0, signal: null } }
+  })
+  return () => release()
+}
+
+test('rule: a newer press makes an older check stale; its answer does not rewrite the card', async ($, on) => {
+  session(on)
+  quietBand(on)
+  on('session.cwd', () => ({ value: '/tmp/x' }))
+  mock.clock(on)
+  let briefs = 0
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF(`Card ${++briefs}.`), usage: USAGE } }))
+  const release = heldCheck(on, () => CHECKED('OLD-CHECK: the first card, checked.'))
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  expect(await ui.find({ type: 'Text', text: /Card 1\./ })).toBeDefined()
+  const check = ui.press({ key: 'check' })
+  await ui.press({ key: 'close' })
+  await ui.press({ key: 'rep' })
+  expect(await ui.find({ type: 'Text', text: /Card 2\./ })).toBeDefined()
+  release()
+  await check
+  expect(await ui.find({ type: 'Text', text: /Card 2\./ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /OLD-CHECK/ })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: /Read the record/ })).toBeUndefined()
+  expect(await ui.find({ key: 'check' })).toBeDefined()
+  await ui.unmount()
+})
+
+test('rule: a stop while the card is up and a check runs leaves the card; the flag does not replace it', async ($, on) => {
+  session(on)
+  quietBand(on)
+  on('session.cwd', () => ({ value: '/tmp/x' }))
+  mock.clock(on)
+  let calls = 0
+  on('model.fork', () => {
+    calls += 1
+    return { value: { isAnswered: true, text: calls === 1 ? BRIEF('The card.') : watchAnswer('A flag from the watch.'), usage: USAGE } }
+  })
+  const release = heldCheck(on, () => CHECKED('Checked and standing.'))
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  const check = ui.press({ key: 'check' })
+  await $.turn.complete(stop('t1'))
+  expect(await ui.find({ type: 'Text', text: /The card\./ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /A flag from the watch/ })).toBeUndefined()
+  release()
+  await check
+  expect(await ui.find({ type: 'Text', text: /Checked and standing/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /A flag from the watch/ })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('rule: the status names each kind of work, and a stop or a question marks the row', async ($, on) => {
+  session(on)
+  quietBand(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: watchAnswer(null), usage: USAGE } }))
+  on('turn.start', ($, e) => ({ turnId: e.turnId }))
+  on('tool.call', () => ({ result: '' }))
+  const status = async (text: RegExp, glyph: string) => {
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    expect(await ui.find({ type: 'Text', text })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: new RegExp(`^${glyph} $`) })).toBeDefined()
+    await ui.unmount()
+  }
+  await $.turn.start({ turnId: 't1', prompt: 'go', messageCount: 1 } as never)
+  await status(/^thinking$/, '◇')
+  await $.tool.call({ tool: 'Read', file_path: '/a/notes.md' })
+  await status(/^reading notes\.md$/, '◇')
+  await $.tool.call({ tool: 'Grep', pattern: 'x' } as never)
+  await status(/^searching files$/, '◇')
+  await $.tool.call({ tool: 'mcp__agentsview__search_content', query: 'x' } as never)
+  await status(/^using agentsview$/, '◇')
+  await $.turn.complete(stop('t1', 'Which one do you want?'))
+  await status(/^asking you$/, '◆')
+  await $.turn.complete(stop('t2', 'Done.'))
+  await status(/^stopped, waiting on you$/, '◆')
+  await $.turn.complete(stop('t3', '', true))
+  await status(/^stopped by you$/, '◇')
+})
+
+// Another mod drawing in the strip, switchable from the test.
+const otherMod = (on: On) => {
+  const other = { draws: true }
+  on('ui.render', { component: 'AbovePrompt' }, ($, e) => {
+    const { Text } = $.ui.resolve(e)
+    return other.draws ? <Text key="other">You should know · a note from another mod</Text> : <></>
+  })
+  return other
+}
+
+test('rule: the note waits while another mod draws beneath, and shows once the strip is free', async ($, on) => {
+  session(on)
+  const other = otherMod(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: watchAnswer('The agent skipped the tests.'), usage: USAGE } }))
+  await $.turn.complete(stop('t1'))
+  let ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  expect(await ui.find({ type: 'Text', text: /a note from another mod/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /skipped the tests/ })).toBeUndefined()
+  expect(await ui.find({ key: 'fine' })).toBeUndefined()
+  await ui.unmount()
+  other.draws = false
+  ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  expect(await ui.find({ type: 'Text', text: /skipped the tests/ })).toBeDefined()
+  expect((await ui.find({ key: 'fine' }))?.props.hotkey).toBe('2')
+  await ui.unmount()
+})
+
+test('rule: the digit hotkeys leave the row while another mod draws, and come back after', async ($, on) => {
+  session(on)
+  const other = otherMod(on)
+  let ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  expect((await ui.find({ key: 'rep' }))?.props.hotkey).toBeUndefined()
+  expect((await ui.find({ key: 'goal' }))?.props.hotkey).toBeUndefined()
+  await ui.unmount()
+  other.draws = false
+  ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  expect((await ui.find({ key: 'rep' }))?.props.hotkey).toBe('1')
+  expect((await ui.find({ key: 'goal' }))?.props.hotkey).toBe('2')
+  await ui.unmount()
+})
+
+test('rule: the store keeps only the newest SESSIONS_MAX sessions', async ($, on) => {
+  // The test's own store, so it can read back what the rep saved.
+  const store: Record<string, unknown> = { sessions: {} }
+  const old = store.sessions as Record<string, unknown>
+  for (let i = 0; i < SESSIONS_MAX; i++) old[`s${i}`] = { id: `s${i}`, at: 1000 + i, goal: null, isPinned: false, owner: [], seen: [], others: [] }
+  on('store.get', ($, e) => ({ value: store[e.key] }))
+  on('store.set', ($, e) => {
+    store[e.key] = e.value
+    return { value: undefined }
+  })
+  on('session.id', () => ({ value: 'test-session' }))
+  on('prompt.submit', ($, e) => ({ text: e.text }))
+  quietBand(on)
+  await $.prompt.submit(typed('a prompt from the newest session'))
+  const kept = store.sessions as Record<string, { owner: string[] }>
+  expect(Object.keys(kept)).toHaveLength(SESSIONS_MAX)
+  expect(kept['test-session']?.owner).toEqual(['a prompt from the newest session'])
+  expect(kept.s0).toBeUndefined()
+  expect(kept.s1).toBeDefined()
 })
