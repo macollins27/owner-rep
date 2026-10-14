@@ -629,5 +629,6 @@ test('rule: pressing Rep gives the model the session size the engine reports', a
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   await ui.press({ key: 'rep' })
   expect(prompt).toMatch(/48 percent of its window \(243k of 500k tokens\)/)
+  expect(await ui.find({ type: 'Text', text: /conversation at 48 percent of its window/ })).toBeDefined()
   await ui.unmount()
 })

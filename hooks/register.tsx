@@ -184,7 +184,8 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
   await setNow($, { mark: '' }).catch(() => undefined)
   try {
     const rec = await loadRec($, sid)
-    const result = await $.model.fork({ prompt: briefPrompt({ ...memoryOf(rec), context: await contextOf($) }) })
+    const context = await contextOf($)
+    const result = await $.model.fork({ prompt: briefPrompt({ ...memoryOf(rec), context }) })
     const after = await loadRec($, sid)
     after.calls += 1
     after.tokens += tokensOf('usage' in result ? result.usage : null)
@@ -214,7 +215,9 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       message: a.message,
       does: a.does,
       at: Date.now(),
-      spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens),
+      spent:
+        spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens) +
+        (context === undefined ? '' : ` · conversation at ${context.percent} percent of its window`),
       isChecking: false,
       checked: null,
       checkNote: '',

@@ -19,7 +19,7 @@ CAPS=$HERE/captures
 S=owner-rep-live
 STRIP_RE='Owner rep ·|Brief me|Fix the goal|Fine, close|Put message|Check it|Heads up'
 want=("$@")
-[[ ${#want} -eq 0 ]] && want=(1 2 3 4 5)
+[[ ${#want} -eq 0 ]] && want=(1 2 3 4 5 6)
 fails=0
 bad=0
 
@@ -118,6 +118,24 @@ for n in $want; do
       save 5-stopped
       strip | grep -qE '^\s*stopped, waiting on you\s+1: Brief me' ; verdict 'stopped, waiting on you' $?
       pane | grep -q '◆ Owner rep' ; verdict 'the mark on the head' $?
+      stop ;;
+    6)
+      echo "6 whole ask: after a first message that asks for much and a second that asks for a step, Brief me lists the open work and gives the size as a figure"
+      start || { bad=1; fails=$((fails+1)); stop; continue }
+      send 'This folder will be a public repository I show to employers, so it must read as serious engineering: a README, a test suite with as many tests as possible, and a run of those tests on GitHub on every push. Start with the README only: write a two-line README.md and stop.'
+      wait_for '^\s*stopped, waiting on you|^\s*asking you' 120
+      send 'Now add a LICENSE file with the single line MIT and stop.'
+      sleep 3
+      wait_for '^\s*stopped, waiting on you|^\s*asking you' 120
+      sleep 2
+      tmux send-keys -t $S 1
+      wait_for 'Fine, close' 120
+      save 6-whole-ask
+      pane | grep -qE '^\s*Left out:' ; verdict 'left-out list drawn' $?
+      pane | grep -A3 -E '^\s*Left out:' | grep -qE '^\s*- ' ; verdict 'open work listed against the whole ask' $?
+      pane | grep -A3 -E '^\s*Left out:' | grep -qiE 'test|github' ; verdict 'the tests or the GitHub run named as open' $?
+      pane | grep -q 'Put message in prompt' ; verdict 'a message drafted' $?
+      pane | grep -qE 'conversation at [0-9]+ percent of its window' ; verdict 'the size given as a figure' $?
       stop ;;
   esac
   [[ $bad -gt 0 ]] && fails=$((fails+1))

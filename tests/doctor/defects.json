@@ -58,5 +58,17 @@
     "breaks": "The briefing card is never folded to the band's rows, so a long card pushes its buttons out of the window where a digit cannot press them.",
     "patch": "card-overflows-band.patch",
     "fixed": "2026-10-14"
+  },
+  {
+    "name": "size-figure-dropped",
+    "breaks": "The brief never gets the conversation's size from the engine, so the rep judges length by impression.",
+    "patch": "size-figure-dropped.patch",
+    "fixed": "2026-10-14"
+  },
+  {
+    "name": "whole-ask-rule-dropped",
+    "breaks": "The brief loses the rule that the owner's messages add up, so the rep judges the last message alone.",
+    "patch": "whole-ask-rule-dropped.patch",
+    "fixed": "2026-10-14"
   }
 ]
