@@ -191,4 +191,10 @@ per remaining hook path (`helper-not-counted`, `box-text-overwritten`, `fill-ref
    three states still untested (the reading state, the checked card folded, the
    every-`CHECK_EVERY` look).~~ Done 14 Oct 2026, with a test and a doctor entry per rule
    and live scenarios 3 and 6 reshaped around the note.
-7. Keep growing the defect list as bugs are fixed.
+7. ~~A step in the GitHub run that fails when the installed Claude Code build is not the
+   build that wrote the pinned declarations, so an API change cannot pass a type check
+   against a stale copy.~~ Done 14 Oct 2026: `tests/ci/declarations.sh`, run before the
+   type check; shown red on its branch against the pin from 2.1.296 while the run
+   installed 2.1.300, then green once the pin moved to 2.1.300. It is a step of the run,
+   not a rule of the mod, so the doctor does not plant against it; the red run is its proof.
+8. Keep growing the defect list as bugs are fixed.

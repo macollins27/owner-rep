@@ -29,6 +29,8 @@ tests/live/live.sh              # on demand: six real sessions in tmux, the stri
 GitHub runs validate, test, the type check and the doctor on every push
 (`.github/workflows/tests.yml`). Its type check uses `tests/ci/types/`, a pinned copy of the
 declarations for the Claude Code build the workflow installs; move both together.
+`tests/ci/declarations.sh` runs first there and fails the run when the installed build is
+not the one stamped on the pinned copy's first line, so the two cannot drift apart unseen.
 
 `claude plugin test` has no filter flag. Run the whole file; it takes well under a second.
 `claude plugin validate` reports one expected warning, that a root `CLAUDE.md` is not shipped

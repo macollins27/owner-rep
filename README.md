@@ -138,7 +138,9 @@ tests/live/live.sh              # on demand: six real sessions in tmux, the stri
 
 GitHub runs the validation, the tests, the type check and the doctor on every push
 (`.github/workflows/tests.yml`); the type check there uses a pinned copy of the API
-declarations in `tests/ci/`.
+declarations in `tests/ci/`, and a step before it fails the run when the Claude Code build
+the workflow installed is not the build that wrote that copy, so a change in the API can
+never hide behind a type check against a stale copy.
 
 ```
 tsc -p . --noEmit             # needs .claude-plugin/types/, see below
