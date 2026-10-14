@@ -215,9 +215,8 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       message: a.message,
       does: a.does,
       at: Date.now(),
-      spent:
-        spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens) +
-        (context === undefined ? '' : ` · conversation at ${context.percent} percent of its window`),
+      spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens),
+      size: context === undefined ? '' : `conversation at ${context.percent} percent of its window`,
       isChecking: false,
       checked: null,
       checkNote: '',
@@ -817,6 +816,7 @@ export const register: Register = on => {
             <Button key="close" plain hotkey="2" label="Fine, close" onPress={close} />,
             goalButton3,
             <Button key="later" plain hotkey="0" label="Later" onPress={close} />,
+            brief.size !== '' ? <Text dimColor>{brief.size}</Text> : undefined,
           )}
           <Box paddingLeft={2}>
             <Text dimColor>{shown.spent}</Text>

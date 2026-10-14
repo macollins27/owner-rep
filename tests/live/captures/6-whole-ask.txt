@@ -1,0 +1,44 @@
+
+
+✻ Cooked for 50s · done 5:27 PM
+
+❯ Now add a LICENSE file with the single line MIT and stop.
+
+  Thought for 9s, ran 1 shell command
+
+⏺ Bash(printf 'MIT\n' > LICENSE && cat LICENSE && git status --short)
+  ⎿  MIT
+     ?? LICENSE
+     ?? README.md
+  ⎿  Created LICENSE (+1 -0)
+      1 +MIT
+
+⏺ The LICENSE file is written with the single line "MIT", and I have stopped. Nothing is committed yet.
+
+  One point for the employer-facing goal. The word "MIT" on its own names a licence but is not one. The real MIT licence is a short paragraph of about 170 words with your
+  name and the year at the top, and GitHub only shows the "MIT License" badge on a repository when that full text is present. When you are ready, I will replace the
+  single line with the full text in your name, since that is what a serious repository carries.
+
+✻ Crunched for 16s · done 5:27 PM
+                                                                                                                                                                      [-]
+◇ Owner rep · A public code folder that reads as serious work to employers: a short README, as many tests as possible, and those tests run automatically on GitHub on
+  every push.
+  Stands: The agent wrote the two files you asked for and showed their contents printed back, so both exist as requested. The folder itself is empty apart from those
+  two files: no code, no tests, no automatic test run, and nothing saved into the project's history yet.
+  Means: The two small steps are done and shown. The bigger job has not started, and the agent raised a real point: there is no code here for tests to test, and it…
+  Left out:
+    - Test suite not started; there is no code in the folder for tests to cover.; Automatic test run on GitHub on every push not started.; Neither file has been sav…
+  Next: You need to tell the agent what this project is, or point it at the code that belongs here. Without that, the tests and the GitHub run have nothing to work
+  on. Is this folder meant to receive code from one of your existing projects, or is new code to be written here?
+  Check it starts a separate read-only Claude Code run over the session record and the files. The first one measured used 210k fresh tokens plus 2.3 million re-read…
+  ╭─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+  │ The two files are in place as asked. Before the tests and the GitHub run, I need the project itself in this folder. [State here what the project is, or whic…   │
+  ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+  3: Check it   1: Put message in prompt   2: Fine, close   4: Fix the goal   0: Later
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  [Fable 5.1] │ owner-rep-live.J1lqYD035b +owner-rep-live.J1lqYD03… +maxwellcollins git:(main*) │ Public portfolio repo README
+  Context █░░░░░░░░░ 5% │ Usage █░░░░░░░░░ 12% (resets in 3h 33m)
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents
