@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index c0f1d7d..c73156f 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -389,7 +389,7 @@ async function askGoal($: EngineInterface, goal: string | null): Promise<void> {
+     $.ui.toast('Your prompt box has text in it. Send or clear it, then press again.')
+     return
+   }
+-  const filled = await $.prompt.fill({ text: `${GOAL_PREFIX} ${goal ?? ''}`, mode: 'replace' })
++  const filled = await $.prompt.fill({ text: `${goal ?? ''}`, mode: 'replace' })
+   if (!filled.isFilled) {
+     $.ui.toast('The prompt box did not take it. Press again.')
+     return

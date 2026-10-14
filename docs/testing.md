@@ -48,7 +48,9 @@ entry that proves the test bites (all added 14 Oct 2026):
 | The digit hotkeys leave the row while another mod draws, and come back | `rule: the digit hotkeys…` | `digits-doubled` |
 | The store keeps only the newest `SESSIONS_MAX` sessions | `rule: the store keeps…` | `sessions-unbounded` |
 
-Two things the kit taught while writing these. A look the hook starts without awaiting has
+Three things the kit taught while writing these. The engine strips a refusal cause that a
+hook writes itself on `prompt.fill`, so a test can make the box refuse but cannot make it say
+why; the "dialog" wording is reachable only from the engine. A look the hook starts without awaiting has
 not finished when the engine call resolves; draw the strip (`$.ui.mount` then `unmount`)
 between two stops so each look settles, as a session's redraw does. And a test's `on` may
 register an event once: a test that needs to read the store back answers `store.get` and
@@ -58,7 +60,7 @@ The doctor also earned its place here: the first version of the stale-check test
 its defect planted, because the held check answered with text that was not a result, so the
 stale answer had nothing to write. The doctor reported it as survived and the test was fixed.
 
-**Status.** 27 tests: the parsers, the status words (including the variable-first command, read
+**Status.** 35 tests: the parsers, the status words (including the variable-first command, read
 through the mounted strip), the goal pin, the checker's prompt and tools, the row on both
 surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-failure
 toast, the eight sequence rules above, and the card folding to a small band. Ten doctor
@@ -132,8 +134,10 @@ doctor before any claim that the tests pass.
 **Status.** Built: `tests/doctor/doctor.py`, with `defects.json` and one patch per defect in
 `tests/doctor/defects/`. Run it with `python3 tests/doctor/doctor.py`; it exits 1 when the
 clean suite fails or a defect survives, and stops before planting when the clean suite is
-not clean. Twelve entries: `strip-shows-command`, one per sequence rule above,
-`card-overflows-band`, `size-figure-dropped` and `whole-ask-rule-dropped`, all caught. A throwaway entry no test looks at was planted on 14 Oct
+not clean. Nineteen entries, all caught: `strip-shows-command`, one per sequence rule above,
+`card-overflows-band`, `size-figure-dropped`, `whole-ask-rule-dropped`, and one per remaining
+hook path (`helper-not-counted`, `box-text-overwritten`, `fill-refusal-ignored`,
+`goal-prefix-dropped`, `check-timeout-unreported`, `check-failure-swallowed`, `end-not-saved`). A throwaway entry no test looks at was planted on 14 Oct
 2026 to show the survivor path reports and exits 1; it was not kept.
 
 ## Order of work

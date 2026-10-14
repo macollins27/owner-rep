@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index c0f1d7d..080f5ac 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -540,7 +540,7 @@ export const register: Register = on => {
+     const id = result.agentId
+     if (id !== undefined) {
+       await update($, helpersA, ids => [...(ids ?? []), id]).catch(() => undefined)
+-      await update($, nowA, n => ({ ...(n ?? IDLE), helpers: (n?.helpers ?? 0) + 1 })).catch(() => undefined)
++      await update($, nowA, n => ({ ...(n ?? IDLE), helpers: n?.helpers ?? 0 })).catch(() => undefined)
+     }
+     return result
+   })
