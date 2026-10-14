@@ -674,21 +674,16 @@ export const register: Register = on => {
             </Text>
           </Box>
         )
-      if (brief.well !== '') {
-        return (
-          <Box flexDirection="column" marginTop={1}>
-            {head}
-            {section('', brief.well)}
-            {choices(<Button key="close" plain hotkey="2" label="Fine, close" onPress={close} />, goalButton3)}
-            <Box paddingLeft={2}>
-              <Text dimColor>{brief.spent}</Text>
-            </Box>
-          </Box>
-        )
-      }
       return (
         <Box flexDirection="column" marginTop={1}>
           {head}
+          {brief.well !== '' ? (
+            <Box paddingLeft={2} width={cols}>
+              <Text color="success" wrap="wrap">
+                {brief.well}
+              </Text>
+            </Box>
+          ) : undefined}
           {section('Stands:', brief.stands)}
           {section('Means:', brief.means)}
           {brief.leftOut.length > 0 ? (

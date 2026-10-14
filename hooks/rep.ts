@@ -223,14 +223,14 @@ ${memoryText(m)}
 
 He pressed the key. Give him the short briefing described below, measured against the result he wants. Look at what the agent actually did in the conversation, including the helpers it launched and what they reported, not at what the agent says it did. Where the next step depends on a claim the conversation does not show, say "not shown" and have the message ask for the proof. If he sent your last message to the agent, say whether the agent did what it asked.
 
-When the work is going well, say so in a couple of lines under "well:" and leave every other part empty except goal. There is then nothing to send.
+When the work is going well, say so in one line under "well:", and still fill in every other part: he wants the whole picture every time, not only when something is wrong. Leave the message empty when there is nothing worth sending.
 
 ## Output structure
 
 Exactly these labelled parts, in this order, English labels, nothing before or after:
 
 goal: <the result he wants and why: one plain sentence or two short ones, at most ${GOAL_WORDS} words in all; if he pinned one, repeat it exactly>
-well: <only when the work is going well: one or two plain sentences; otherwise leave empty>
+well: <only when the work is going well: one plain sentence saying so; otherwise leave empty>
 stands: <one or two sentences: where the work really stands, as the conversation shows it, not as the agent says it>
 means: <one to three sentences: what the agent's latest message means for him; a translation of what matters, not a retelling>
 left:

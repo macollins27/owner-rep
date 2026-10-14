@@ -239,14 +239,23 @@ test('pressing Rep reads the conversation and draws the briefing with the messag
   await ui.unmount()
 })
 
-test('a briefing that says the work is going well has no message and no put button', async ($, on) => {
+test('a briefing that says the work is going well still shows the full picture and the check button', async ($, on) => {
   mock.store(on, {})
   quietBand(on)
   on('session.id', () => ({ value: 'test-session' }))
-  on('model.fork', () => ({ value: { isAnswered: true, text: 'goal: x\nwell: The agent is doing what you asked and showing it.\nleft:\n- nothing\nmessage:\nend\ndoes:', usage: USAGE } }))
+  on('model.fork', () => ({
+    value: {
+      isAnswered: true,
+      text: 'goal: x\nwell: The agent is doing what you asked and showing it.\nstands: The tests pass and the change is on main.\nmeans: Nothing is waiting on you.\nleft:\n- nothing\nnext: Let it carry on.\nmessage:\nend\ndoes:',
+      usage: USAGE,
+    },
+  }))
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   await ui.press({ key: 'rep' })
   expect(await ui.find({ type: 'Text', text: /doing what you asked/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /change is on main/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Let it carry on/ })).toBeDefined()
+  expect(await ui.find({ key: 'check' })).toBeDefined()
   expect(await ui.find({ key: 'put' })).toBeUndefined()
   await ui.unmount()
 })
