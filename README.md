@@ -48,14 +48,29 @@ have changed, runs the project's own tests, and rewrites the card with each clai
 
 ## How it decides
 
-The rep measures against one plain sentence: the result the owner wants and why. It writes
-that sentence itself from the owner's messages, weighted by kind. The owner's reasons and
-complaints come first, their instructions next, and their "yes" to an agent's proposal last,
-since that is the agent's idea with the owner's name on it. The owner can pin their own
-sentence by typing `Owner rep goal: ...` into the prompt box; the rep takes it and drops the
-prompt before the agent sees it.
+The rep measures against a reading: its own account, in its own words, of what the owner
+wants on the job in hand, up to four sentences, saying the result, what it is for, what
+"done" has to show, and the step the session is on. It is never the owner's text. The owner
+works by intent rather than exact wording, and a rep that only did what the client literally
+said would not be a good one, so the reading includes what a serious owner plainly wants
+without saying it. The owner's messages are weighed by kind when the reading is written:
+reasons and complaints first, instructions next, and a "yes" to an agent's proposal last,
+since that is the agent's idea with the owner's name on it.
 
-On top of that sentence sit five expectations the rep applies without reciting: the whole
+The reading is kept, not rewritten. A session is a run of jobs: the owner opens one, the
+agent works, the owner corrects it a few times, the job ends and the next begins. The reading
+lasts for the job. At each look the model says whether it still holds; it moves only when one
+of the owner's own messages makes it stale, and then it is rebuilt from everything the owner
+said on that job and nothing from an earlier one. The agent's words can never move it, and
+the code enforces that: a revision proposed when the owner has said nothing new is refused.
+The card shows when and why the reading last moved, and the row shows its first sentence.
+
+The owner never types the reading. To steer the rep they type a prompt beginning
+`Owner rep:`; the rep takes the note, drops the prompt before the agent sees it, lists it to
+the model as said to the rep with the highest weight, and reads again at once. "Tell the rep"
+puts the prefix in the prompt box.
+
+On top of the reading sit five expectations the rep applies without reciting: the whole
 result is delivered; it is shown to work, not said to work; no known problem is left behind;
 nothing was added that the result does not need; and it was done the way that is best for the
 result, not the way that was easiest for the agent.
@@ -90,9 +105,10 @@ A newer press makes an older run's answer stale, and the card is only rewritten 
 that belongs to it.
 
 State is in two places. Atoms hold the per-session UI state that drives the render. The
-plugin store holds one record per session, capped at the 32 newest: the goal and whether it
-is pinned, the owner's recent prompts, flags already shown, notes other mods have shown, and
-spend counters. Nothing leaves the machine except the model calls the session already makes.
+plugin store holds one record per session, capped at the 32 newest: the reading with when
+and why it last moved, the first sentence of each earlier job's reading, the owner's recent
+prompts and notes to the rep, flags already shown, notes other mods have shown, and spend
+counters. Nothing leaves the machine except the model calls the session already makes.
 
 The band above the prompt is a strip shared with other mods. The rep draws first and keeps
 whatever is beneath it. While another mod's note is up, the rep's own note waits and its
@@ -115,7 +131,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 35 tests in tests/rep.test.tsx, under a second
+claude plugin test .          # 41 tests in tests/rep.test.tsx, under a second
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: six real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -128,8 +144,8 @@ declarations in `tests/ci/`.
 tsc -p . --noEmit             # needs .claude-plugin/types/, see below
 ```
 
-The tests cover the parsers, the row on both surfaces, the shared strip, the press, the goal
-pin, and a press followed by a check on a stubbed run. The test kit stubs the model and the
+The tests cover the parsers, the row on both surfaces, the shared strip, the press, the held
+reading and the note to the rep, and a press followed by a check on a stubbed run. The test kit stubs the model and the
 band; no test spawns a real check.
 
 Type-checking needs the mods API declarations, which Claude Code writes into a mod's
@@ -158,14 +174,18 @@ it may not edit, send, or launch helpers. The rep never sends anything to an age
   it has to share the strip politely with the mods already using it.
 - **Digits, not letters.** The first version used letter hotkeys; the first live press showed
   that only digits reach a band button from the prompt box.
-- **Fix the goal through the prompt box.** No field to click into. The owner edits the
-  rep's sentence in their own prompt and the rep intercepts it.
+- **The reading is the rep's, and the owner talks to the rep through the prompt box.** No
+  field to click into and no sentence for the owner to compose: a note typed behind a prefix
+  in their own prompt is intercepted by the rep, and the rep rewrites its own reading. A
+  first version let the owner pin a sentence word for word; it was removed on 14 Oct 2026,
+  because a rep that only holds the builder to the client's literal words is not doing the
+  job.
 - **The check costs real money, so it runs only when chosen.** The card states the last
   measured cost beside the button.
 - **The check runs outside the session.** A headless, read-only run, so the agent never
   hears from the rep and the owner gets no permission prompts.
 - **Proven on real sessions.** Each route was pressed live by the owner before the next was
-  built: the row, the briefing, the watch, the goal fix, and two real checks on the session
+  built: the row, the briefing, the watch, the note to the rep, and two real checks on the session
   that built it. A keyboard chord for the Rep button could not be proven and was removed.
 
 ## Status

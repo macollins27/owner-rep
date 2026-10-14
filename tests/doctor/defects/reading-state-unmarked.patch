@@ -1,0 +1,14 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index faabc01..047fac0 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -203,8 +203,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+ // The press: an instant read over the same copy, drawn in the band.
+ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
+   const view = await read($, viewA)
+-  if (view === 'reading') return
+-  await update($, viewA, () => 'reading')
++  await update($, viewA, () => 'row')
+   await setNow($, { mark: '' }).catch(() => undefined)
+   try {
+     const rec = await loadRec($, sid)

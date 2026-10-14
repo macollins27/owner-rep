@@ -47,6 +47,14 @@ entry that proves the test bites (all added 14 Oct 2026):
 | The note waits while another mod draws beneath | `rule: the note waits…` | `note-over-other-mod` |
 | The digit hotkeys leave the row while another mod draws, and come back | `rule: the digit hotkeys…` | `digits-doubled` |
 | The store keeps only the newest `SESSIONS_MAX` sessions | `rule: the store keeps…` | `sessions-unbounded` |
+| The reading is kept when the answer says it holds; the row shows its first sentence | `rule: the reading is kept…` | `reading-rewritten-each-look`, `row-shows-whole-reading` |
+| The agent's words never move the reading; the owner's do, with the cause on the card | `rule: the agent's words never move…` | `agent-moves-reading`, `revision-cause-dropped` |
+| A note to the rep is dropped before the agent sees it, listed as said to the rep, read at once | `rule: a note to the rep…` | `note-reaches-agent`, `note-never-read` |
+| A new job closes the old reading; the earlier job's messages leave the brief | `rule: a new job closes…` | `earlier-job-leaks` |
+| Tell the rep puts the prefix in the prompt box | `rule: Tell the rep puts…` | `tell-prefix-dropped` |
+| While the rep reads, the row says so and a second press starts no second read | `rule: while the rep reads…` | `reading-state-unmarked` |
+| The checked card folds its lists to counts on a small band | `rule: the checked card folds…` | `checked-lists-never-fold` |
+| The watch looks every `CHECK_EVERY` model requests, through `turn.step` | `rule: the watch looks every…` | `step-look-dropped` |
 
 Three things the kit taught while writing these. The engine strips a refusal cause that a
 hook writes itself on `prompt.fill`, so a test can make the box refuse but cannot make it say
@@ -56,15 +64,21 @@ between two stops so each look settles, as a session's redraw does. And a test's
 register an event once: a test that needs to read the store back answers `store.get` and
 `store.set` itself instead of calling `mock.store`.
 
+The `turn.step` test drives the kit's streaming call: `$.turn.step(input)` returns the
+stream, a `turn.step` hook beneath answers it with an `async function*` returning the step's
+result, and the test reads the stream to its end before asserting.
+
 The doctor also earned its place here: the first version of the stale-check test passed with
 its defect planted, because the held check answered with text that was not a result, so the
 stale answer had nothing to write. The doctor reported it as survived and the test was fixed.
 
-**Status.** 35 tests: the parsers, the status words (including the variable-first command, read
-through the mounted strip), the goal pin, the checker's prompt and tools, the row on both
-surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-failure
-toast, the eight sequence rules above, and the card folding to a small band. Ten doctor
-entries, all caught.
+**Status.** 41 tests: the parsers, the status words (including the variable-first command, read
+through the mounted strip), the note to the rep, the checker's prompt and tools, the row on
+both surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-
+failure toast, the seventeen sequence rules above, the card folding to a small band, the brief
+carrying the whole-ask rule and the session's size as a figure, the helper count, the prompt
+box's refusals, the check's three failure paths, and the session end saving the record. Twenty-
+nine doctor entries, all caught.
 
 ## Layer 2: a real session
 
@@ -77,15 +91,17 @@ asserts on the captured text. The nested-session environment variables (`CLAUDEC
 `CLAUDE_CODE_SESSION_ID`, `CLAUDE_CODE_CHILD_SESSION`, the messaging socket and token) must be
 unset or `claude` falls into print mode and exits. Scenarios, one capture each:
 
-1. Idle: the row draws with the placeholder goal and "idle".
+1. Idle: the row draws with the placeholder reading and "idle".
 2. A shell command that begins by setting a variable: the status is "running <program>" and
    no character of the command appears in the strip.
-3. `Owner rep goal: ...` typed as a prompt: the goal is pinned and the agent never answers it.
+3. `Owner rep: ...` typed as a prompt after a first exchange: the agent never answers it, and
+   the rep's row changes from the placeholder to a reading, because the note starts a look.
 4. The Rep button pressed mid-turn: the briefing card appears with its buttons.
 5. The session stopped: the status is "stopped, waiting on you" with the mark.
-6. The whole ask: a first message asking for much, a second asking for a step, then Brief me;
-   the card lists the open work against the sum of both messages, drafts a message, and gives
-   the conversation's size as a figure on its buttons row.
+6. The whole ask: a first message asking for much, a second asking for a step, then a note to
+   the rep that changes what matters most, then Brief me; the card lists the open work
+   against the reading, says when and why the reading was revised, drafts a message, and
+   gives the conversation's size as a figure on its buttons row.
 
 It runs on demand, not under `claude plugin test`, because each scenario costs a model call
 and about a minute. Its output is the captured screens, kept beside the script, so a reader
@@ -119,7 +135,7 @@ for example:
 - `strip-shows-command`: the shell status returns the command's first two words again.
 - `flag-shown-twice`: the watch forgets which flags it has shown.
 - `stale-check-wins`: an older check run overwrites a newer card.
-- `goal-reaches-agent`: an `Owner rep goal:` prompt is passed through to the agent.
+- `note-reaches-agent`: an `Owner rep:` prompt is passed through to the agent.
 - `digits-doubled`: the row keeps its digit hotkeys while another mod draws.
 
 The doctor makes a throwaway worktree of the mod, applies one defect, runs
@@ -134,10 +150,10 @@ doctor before any claim that the tests pass.
 **Status.** Built: `tests/doctor/doctor.py`, with `defects.json` and one patch per defect in
 `tests/doctor/defects/`. Run it with `python3 tests/doctor/doctor.py`; it exits 1 when the
 clean suite fails or a defect survives, and stops before planting when the clean suite is
-not clean. Nineteen entries, all caught: `strip-shows-command`, one per sequence rule above,
-`card-overflows-band`, `size-figure-dropped`, `whole-ask-rule-dropped`, and one per remaining
-hook path (`helper-not-counted`, `box-text-overwritten`, `fill-refusal-ignored`,
-`goal-prefix-dropped`, `check-timeout-unreported`, `check-failure-swallowed`, `end-not-saved`). A throwaway entry no test looks at was planted on 14 Oct
+not clean. Twenty-nine entries, all caught: `strip-shows-command`, one or two per sequence
+rule above, `card-overflows-band`, `size-figure-dropped`, `whole-ask-rule-dropped`, and one
+per remaining hook path (`helper-not-counted`, `box-text-overwritten`, `fill-refusal-ignored`,
+`check-timeout-unreported`, `check-failure-swallowed`, `end-not-saved`). A throwaway entry no test looks at was planted on 14 Oct
 2026 to show the survivor path reports and exits 1; it was not kept.
 
 ## Order of work
@@ -150,4 +166,9 @@ hook path (`helper-not-counted`, `box-text-overwritten`, `fill-refusal-ignored`,
 5. ~~A run on GitHub of the validation, the tests, the type check and the doctor on every
    push.~~ Done 14 Oct 2026: `.github/workflows/tests.yml`, with the declarations pinned in
    `tests/ci/` for the type check.
-6. Keep growing the defect list as bugs are fixed.
+6. ~~The held reading: the rep's own account of what the owner wants, kept for the job,
+   moved only by the owner's words, with the note to the rep in place of the goal pin; the
+   three states still untested (the reading state, the checked card folded, the
+   every-`CHECK_EVERY` look).~~ Done 14 Oct 2026, with a test and a doctor entry per rule
+   and live scenarios 3 and 6 reshaped around the note.
+7. Keep growing the defect list as bugs are fixed.

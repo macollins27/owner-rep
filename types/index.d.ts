@@ -1,3 +1,14 @@
+// The rep's reading of what the owner wants on the job in hand (see hooks/rep.ts).
+export type Reading = {
+  text: string
+  openedAt: number
+  since: number
+  from: number
+  movedAt: number | null
+  cause: string
+  revisions: number
+}
+
 export type Now = {
   doing: string
   helpers: number
@@ -21,7 +32,10 @@ export type Checked = {
 }
 
 export type Brief = {
-  goal: string
+  // The rep's reading of what the owner wants, whole; the row shows its first sentence.
+  reading: string
+  // The line under the head when the reading has moved; '' when it has not.
+  revised: string
   well: string
   stands: string
   means: string
@@ -46,8 +60,7 @@ export type View = 'row' | 'note' | 'reading' | 'brief'
 declare module 'claude-code' {
   interface PluginState {
     'owner-rep': {
-      goal: string | null
-      isPinned: boolean
+      reading: Reading | null
       now: Now
       note: Note | null
       brief: Brief | null

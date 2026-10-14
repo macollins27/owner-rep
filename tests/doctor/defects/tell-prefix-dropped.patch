@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index faabc01..78d4a5d 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -402,7 +402,7 @@ async function tellRep($: EngineInterface): Promise<void> {
+     $.ui.toast('Your prompt box has text in it. Send or clear it, then press again.')
+     return
+   }
+-  const filled = await $.prompt.fill({ text: `${NOTE_PREFIX} `, mode: 'replace' })
++  const filled = await $.prompt.fill({ text: '', mode: 'replace' })
+   if (!filled.isFilled) {
+     $.ui.toast('The prompt box did not take it. Press again.')
+     return
