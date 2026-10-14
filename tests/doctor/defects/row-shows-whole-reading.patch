@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index faabc01..6e64cf3 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -678,7 +678,7 @@ export const register: Register = on => {
+     const headColor = marked ? 'warning' : 'suggestion'
+     // The row shows the reading's first sentence; the card shows it whole.
+     const readingText = reading?.text ?? 'working out the result you want from your messages…'
+-    const head = lead(headGlyph, headColor, 'Owner rep', firstSentence(readingText))
++    const head = lead(headGlyph, headColor, 'Owner rep', readingText)
+ 
+     if (view === 'note' && note !== null && !hasBeneath) {
+       const clear = () => {

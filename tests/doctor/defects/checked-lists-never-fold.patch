@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 8659e64..02ee4bd 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -861,7 +861,7 @@ export function fitCard(card: CardText, maxRows: number, cols: number): CardText
+     () => (c = { ...c, next: oneRow(c.next, 'Next: ') }),
+     () => (c = { ...c, well: oneRow(c.well, '') }),
+     () => {
+-      if (c.checked === null) return
++      return
+       const k = c.checked
+       const parts = [
+         [k.holds.length, 'hold'],

@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 8659e64..f4e4464 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -186,7 +186,7 @@ function memoryText(m: Memory): string {
+     r === null
+       ? 'Not written yet. Write it now, from his messages below.'
+       : `"${r.text}"${r.movedAt === null ? '' : `\n(${revisedLine(r)})`}`
+-  const onJob = r === null ? m.owner : m.owner.slice(r.since)
++  const onJob = m.owner
+   const brief =
+     m.lastBrief === undefined
+       ? '(none yet)'

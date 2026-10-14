@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 8659e64..6ba8b3a 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -375,7 +375,6 @@ const unquoted = (s: string | undefined): string => clean(s).replace(/^["“]|["
+ function readingOf(p: Partial<Record<Label, string>>): ReadingAnswer {
+   const text = unquoted(p.reading)
+   if (text === '') return null
+-  if (/^holds\b/i.test(text)) return { kind: 'holds' }
+   const cause = clean(p.moved).replace(/\s+/g, ' ')
+   return { kind: 'moved', text, cause, isNewJob: /^new job\b/i.test(cause) }
+ }

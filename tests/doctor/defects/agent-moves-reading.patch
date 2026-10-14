@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index faabc01..48bcbe4 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -155,7 +155,6 @@ function takeReading(rec: Rec, a: ReadingAnswer, now: number): boolean {
+     rec.reading = { text: a.text, openedAt: now, since: 0, from: rec.owner.length, movedAt: null, cause: '', revisions: 0 }
+     return true
+   }
+-  if (rec.owner.length <= held.from) return false
+   if (a.isNewJob) {
+     rec.past = [...rec.past, firstSentence(held.text)].slice(-PAST_MAX)
+     rec.reading = { text: a.text, openedAt: now, since: held.from, from: rec.owner.length, movedAt: now, cause: a.cause, revisions: 0 }

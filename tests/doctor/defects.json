@@ -106,5 +106,71 @@
     "breaks": "The session end does not save the record, so a session that ends without a prompt loses its record's freshness.",
     "patch": "end-not-saved.patch",
     "fixed": "tested 2026-10-14"
+  },
+  {
+    "name": "reading-rewritten-each-look",
+    "breaks": "A \"holds\" answer is taken as a new reading, so the reading is rewritten on every look instead of kept.",
+    "patch": "reading-rewritten-each-look.patch",
+    "fixed": "tested 2026-10-14"
+  },
+  {
+    "name": "row-shows-whole-reading",
+    "breaks": "The row draws the whole reading instead of its first sentence, so a four-sentence reading crowds the strip.",
+    "patch": "row-shows-whole-reading.patch",
+    "fixed": "tested 2026-10-14"
+  },
+  {
+    "name": "agent-moves-reading",
+    "breaks": "A revision is taken when no message of the owner's has come since the reading was built, so the agent's words move the reading.",
+    "patch": "agent-moves-reading.patch",
+    "fixed": "tested 2026-10-14"
+  },
+  {
+    "name": "revision-cause-dropped",
+    "breaks": "A revision keeps no cause, so the card cannot say which message of the owner's moved the reading.",
+    "patch": "revision-cause-dropped.patch",
+    "fixed": "tested 2026-10-14"
+  },
+  {
+    "name": "note-reaches-agent",
+    "breaks": "An Owner rep: prompt is passed through to the agent instead of being taken by the rep and dropped.",
+    "patch": "note-reaches-agent.patch",
+    "fixed": "tested 2026-10-14"
+  },
+  {
+    "name": "note-never-read",
+    "breaks": "A note to the rep is recorded but starts no look, so the reading waits for the next stop to take it in.",
+    "patch": "note-never-read.patch",
+    "fixed": "tested 2026-10-14"
+  },
+  {
+    "name": "earlier-job-leaks",
+    "breaks": "The model is shown the owner's messages from earlier jobs as if they were on this one, so a closed job feeds the current grade.",
+    "patch": "earlier-job-leaks.patch",
+    "fixed": "tested 2026-10-14"
+  },
+  {
+    "name": "tell-prefix-dropped",
+    "breaks": "Tell the rep puts nothing in the prompt box, so what the owner types goes to the agent instead of the rep.",
+    "patch": "tell-prefix-dropped.patch",
+    "fixed": "tested 2026-10-14"
+  },
+  {
+    "name": "reading-state-unmarked",
+    "breaks": "A press does not mark the rep as reading, so the row says nothing and a second press starts a second read.",
+    "patch": "reading-state-unmarked.patch",
+    "fixed": "tested 2026-10-14"
+  },
+  {
+    "name": "checked-lists-never-fold",
+    "breaks": "The checked lists are never folded to counts, so a small band loses whole parts of the card before the counts line it could have kept.",
+    "patch": "checked-lists-never-fold.patch",
+    "fixed": "tested 2026-10-14"
+  },
+  {
+    "name": "step-look-dropped",
+    "breaks": "The look that fires every CHECK_EVERY model requests never fires, so a long turn gets no watch until it stops.",
+    "patch": "step-look-dropped.patch",
+    "fixed": "tested 2026-10-14"
   }
 ]
