@@ -58,10 +58,11 @@ The doctor also earned its place here: the first version of the stale-check test
 its defect planted, because the held check answered with text that was not a result, so the
 stale answer had nothing to write. The doctor reported it as survived and the test was fixed.
 
-**Status.** 23 tests: the parsers, the status words (including the variable-first command,
-read through the mounted strip), the goal pin, the checker's prompt and tools, the row on
-both surfaces, the briefing card, the going-well card, another mod's tree beneath, the
-model-failure toast, and the eight sequence rules above. Nine doctor entries, all caught.
+**Status.** 25 tests: the parsers, the status words (including the variable-first command, read
+through the mounted strip), the goal pin, the checker's prompt and tools, the row on both
+surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-failure
+toast, the eight sequence rules above, and the card folding to a small band. Ten doctor
+entries, all caught.
 
 ## Layer 2: a real session
 
@@ -90,9 +91,10 @@ full run on 14 Oct 2026: scenarios 1, 2, 3 and 5 shown; scenario 4 found a defec
 drew, with its body and its message, but it was taller than the band's window, so its buttons
 sat under the engine's "↓ 4 more" row, and a bare digit arms only a button wholly inside the
 window (the engine's rule, stated on `AbovePrompt.maxRows` in the API declarations). The
-owner's "2" went into the prompt box as text and the card stayed up. The scenario asserts the
-buttons are inside the window and the digit closes the card, so it stays red until the card
-is laid out to fit `maxRows`. That fix is the next item of work.
+owner's "2" went into the prompt box as text and the card stayed up. Fixed the same day:
+`fitCard` folds the card's body to the band's rows, body first and buttons never, and the
+rerun showed the buttons' row inside the window and the digit closing the card. The kit
+test for it mounts the band with eight rows; the doctor entry is `card-overflows-band`.
 
 ## The doctor
 
@@ -121,8 +123,9 @@ doctor before any claim that the tests pass.
 
 **Status.** Built: `tests/doctor/doctor.py`, with `defects.json` and one patch per defect in
 `tests/doctor/defects/`. Run it with `python3 tests/doctor/doctor.py`; it exits 1 when the
-clean suite fails or a defect survives. Nine entries: `strip-shows-command` and one per
-sequence rule above, all caught. A throwaway entry no test looks at was planted on 14 Oct
+clean suite fails or a defect survives, and stops before planting when the clean suite is
+not clean. Ten entries: `strip-shows-command`, one per sequence rule above, and
+`card-overflows-band`, all caught. A throwaway entry no test looks at was planted on 14 Oct
 2026 to show the survivor path reports and exits 1; it was not kept.
 
 ## Order of work
@@ -130,7 +133,6 @@ sequence rule above, all caught. A throwaway entry no test looks at was planted 
 1. ~~The doctor, with `strip-shows-command` as its one entry.~~ Done 14 Oct 2026.
 2. ~~The layer 1 sequence-rule tests, with a doctor entry for each.~~ Done 14 Oct 2026.
 3. ~~The layer 2 script with the five scenarios.~~ Done 14 Oct 2026; scenario 4 red.
-4. Lay the briefing card out to fit the band's `maxRows`, so its buttons are always inside
-   the window and their digits work; scenario 4 then goes green, and a kit test with a
-   small `maxRows` and a doctor entry go with it.
+4. ~~Lay the briefing card out to fit the band's `maxRows`.~~ Done 14 Oct 2026; scenario 4
+   green, kit test and doctor entry in place.
 5. Keep growing the defect list as bugs are fixed.
