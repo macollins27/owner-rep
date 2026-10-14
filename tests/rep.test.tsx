@@ -92,6 +92,18 @@ test('a shell status names the program and never shows the command: a chain that
   expect(doingFor('Read', { file_path: '/a/an-unreasonably-long-file-name-for-the-strip.md' })).toBe('reading an-unreasonably-long-fi…')
 })
 
+test('the strip reads plainly while the agent runs a command that starts by setting a variable', async ($, on) => {
+  mock.store(on, {})
+  quietBand(on)
+  on('session.id', () => ({ value: 'test-session' }))
+  on('tool.call', { tool: 'Bash' }, () => ({ result: '' }))
+  await $.tool.call({ tool: 'Bash', command: CHAIN })
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  expect(await ui.find({ type: 'Text', text: /^running agentsview$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /PATH|\$HOME|export|LOGF/ })).toBeUndefined()
+  await ui.unmount()
+})
+
 test('the text of another mod\'s note is read from its tree, buttons left out', async () => {
   const tree = {
     type: 'Box',

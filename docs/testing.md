@@ -1,69 +1,61 @@
 # Testing the owner rep
 
-This is the design for how the rep is tested: three layers of tests, each proving something
-the layer beneath cannot, and a doctor that plants known defects to prove the tests bite. It
-is a plan with a status line per part. Build it in the order given at the end, and keep the
-status lines true as parts land.
+This is the design for how the rep is tested: two layers of tests, each proving something
+the other cannot, and a doctor that plants known defects to prove the tests bite. It is a
+plan with a status line per part. Build it in the order given at the end, and keep the status
+lines true as parts land.
 
-## Why three layers
+## Why two layers
 
-The rep has three kinds of code and each fails in its own way:
+The rep's code fails in three ways:
 
-- Pure functions in `hooks/rep.ts`: prompts, parsers, the status words, cost arithmetic.
-  They fail when an input shape was not thought of. The command that begins by setting a
+- Pure functions in `hooks/rep.ts` (prompts, parsers, the status words, cost arithmetic)
+  fail when an input shape was not thought of. The command that begins by setting a
   variable, which drew shell syntax in the strip on 14 Oct 2026, was one of these.
-- Hook bodies in `hooks/register.tsx`: what happens on a prompt, a tool call, a turn step, a
-  turn end, a button press. They fail when the sequence is wrong: a flag shown twice, a stale
+- Hook bodies in `hooks/register.tsx` (what happens on a prompt, a tool call, a turn step,
+  a turn end, a button press) fail when the sequence is wrong: a flag shown twice, a stale
   check overwriting a newer card, a note shown while another mod draws.
-- The engine wiring: whether Claude Code actually calls those hooks, with the fields the
-  code expects, in the build the owner runs. The mods API is early access and changes between
-  releases, so this fails silently when a release renames a field or stops raising an event.
+- The engine wiring fails when a Claude Code release renames a field or stops raising an
+  event. The mods API is early access and changes between releases, and this failure is
+  silent: the hook is skipped and the strip quietly stops updating.
 
-A test at one layer proves nothing about the others. The suite today (14 tests in
-`tests/rep.test.tsx`) covers the first layer well, the second only where the test kit
-happens to reach a hook, and the third not at all.
+The first two are proved by the test kit; the third only by a real session.
 
-## Layer 1: hook logic without the engine
+## Layer 1: the test kit
 
-**Problem.** A hook's body is written inside its `on(...)` call, so the only way to run it is
-through the engine or the test kit's engine stand-in. On 14 Oct 2026 the kit's `$.tool.call`
-did not reach the mod's `tool.call` hook at all, so the strip could not be tested through it.
+`claude plugin test .` runs `tests/rep.test.tsx` against the engine itself. The test holds
+the engine's `$` and an `on` whose hooks sit beneath the mod, standing for the engine. A call
+such as `$.tool.call`, `$.prompt.submit` or `$.turn.complete` runs through the mod's hooks
+as a session does, and `$.ui.mount` draws the strip through the mod's render hook, so a test
+makes the call and then reads the strip, the store or a toast to see what the hook did.
 
-**Design.** Each hook body becomes a named, exported function that takes the event and a
-small session object (the handful of `$` calls it uses: read and write an atom, load and save
-the record, fork the model, toast). The `on(...)` call becomes one line that hands over. A
-test then calls the function directly with a hand-made event and a fake session, and asserts
-on what the fake session was asked to do and on the state left behind.
+This was settled by a run on 14 Oct 2026 (a probe mod with three hook styles, each reporting
+through a toast, all three reached). An earlier attempt had mounted the strip before an
+unawaited call had started, which looked like the kit not reaching the hook. Await every
+engine call before asserting.
 
-The session object is the seam. Keep it small and typed in `types/index.d.ts`; a hook that
-needs a new `$` call adds it there, so the fake stays honest.
+Tests to add, one per sequence rule the hooks enforce:
 
-**What it buys.** Every sequence rule can be tested: a flag already shown is not shown again,
-typing past a note backs the watch off, a newer check press makes an older run stale, a
-`turn.complete` while a check runs does not clear the card, an `Owner rep goal:` prompt is
-dropped and pinned. None of these are testable today.
+- A flag already shown is not shown again as a note.
+- Typing past a note backs the watch off.
+- A newer check press makes an older run's answer stale; the stale answer does not rewrite
+  the card.
+- A `turn.complete` while a check runs does not clear the card.
+- The status words for each tool kind, and the mark for the states that need a look
+  (stopped, asking, a plan waiting).
+- The note waits while another mod draws something beneath the row.
+- The digit hotkeys leave the row while another mod draws, and return after.
+- The record keeps only the newest `SESSIONS_MAX` sessions.
 
-**Status.** Not started.
+**Status.** 15 tests cover the parsers, the status words (including the variable-first
+command, read through the mounted strip), the goal pin, the checker's prompt and tools, the
+row on both surfaces, the briefing card, the going-well card, another mod's tree beneath, and
+the model-failure toast. None of the sequence rules above has a test yet.
 
-## Layer 2: the drawn strip
+## Layer 2: a real session
 
-**Problem.** The render reads atoms. The existing tests reach some states by submitting a
-prompt or pressing the Rep button, but cannot reach the status states (running a command,
-asking you, stopped), a note, a stale card, or a check in progress.
-
-**Design.** A test-only way to set the atoms before `$.ui.mount`, then assertions on the
-mounted tree with `find`/`findAll`. One test per state the render has a branch for. The
-digit-hotkey rule (only one set of digits on screen while another mod draws) and the "briefing
-takes the strip alone" rule are rendering rules and belong here.
-
-**Status.** Partly covered: the row, the briefing card, the going-well card, another mod's
-tree beneath, and the model-failure toast have tests. Status words, notes, the reading state,
-the checked card and the stale card do not.
-
-## Layer 3: a real session
-
-**Problem.** Layers 1 and 2 prove the code does what it says. They cannot prove the engine
-calls it. Only a real session can.
+**Problem.** Layer 1 proves the code does what it says when the engine calls it. It cannot
+prove that the build the owner runs calls it, with the fields the code expects.
 
 **Design.** A script under `tests/live/` that starts a fresh `claude` session in tmux in a
 scratch folder, accepts the trust prompt, sends a prompt, captures the screen on a loop and
@@ -105,7 +97,7 @@ The doctor makes a throwaway worktree of the mod, applies one defect, runs
 `claude plugin test`, and expects at least one failure. A defect that survives is a gap in
 the suite, and the doctor names it and the sentence. It never touches the main checkout,
 because the owner's live sessions load the mod from there and a planted defect would reach
-them. It can also run the layer 3 script against a defect to prove the live check bites.
+them. It can also run the layer 2 script against a defect to prove the live check bites.
 
 Every fixed bug adds a defect to the list, starting with `strip-shows-command`. Run the
 doctor before any claim that the tests pass.
@@ -114,18 +106,8 @@ doctor before any claim that the tests pass.
 
 ## Order of work
 
-1. The doctor, with `strip-shows-command` as its one entry. It needs no refactor and shows at
-   once how much the current suite proves.
-2. The layer 1 split of `hooks/register.tsx`, with a test per sequence rule above and a
-   doctor entry for each.
-3. The layer 3 script with the five scenarios.
-4. Layer 2 state tests for the states not yet covered.
-5. Keep growing the defect list as bugs are fixed.
-
-## Open question
-
-The test kit's own notes say a test's `$.tool.call` runs beneath every mod's `tool.call`
-hook, and in Claude Code 2.1.300 it did not reach this mod's. Either the kit routes
-differently from its notes or this mod registers the hook in a way the kit does not see. One
-short check against the plugin-authoring material settles it; if it is a kit defect it should
-be reported, since a working kit would make part of layer 1 unnecessary.
+1. The doctor, with `strip-shows-command` as its one entry. It needs no other work and shows
+   at once how much the current suite proves.
+2. The layer 1 sequence-rule tests, with a doctor entry for each.
+3. The layer 2 script with the five scenarios.
+4. Keep growing the defect list as bugs are fixed.

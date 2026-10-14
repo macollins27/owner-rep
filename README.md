@@ -112,7 +112,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 14 tests in tests/rep.test.tsx, under a second
+claude plugin test .          # 15 tests in tests/rep.test.tsx, under a second
 tsc -p . --noEmit             # needs .claude-plugin/types/, see below
 ```
 
