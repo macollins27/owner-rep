@@ -17,7 +17,7 @@ set -u
 HERE=${0:A:h}
 CAPS=$HERE/captures
 S=owner-rep-live
-STRIP_RE='Owner rep ·|Brief me|Fix the goal|Fine, close|Put message|Check it|Heads up'
+STRIP_RE='Owner rep ·|Brief me|Tell the rep|Fine, close|Put message|Check it|Heads up'
 want=("$@")
 [[ ${#want} -eq 0 ]] && want=(1 2 3 4 5 6)
 fails=0
@@ -79,16 +79,22 @@ for n in $want; do
       strip | grep -qE 'PATH|LOGF|\$HOME|export' ; [[ $? -ne 0 ]]; verdict 'no command text in the strip' $?
       stop ;;
     3)
-      echo "3 goal: an Owner rep goal: prompt pins the goal and the agent never answers it"
+      echo "3 note: an Owner rep: prompt never reaches the agent, and the rep reads again at once"
       start || { bad=1; fails=$((fails+1)); stop; continue }
-      send 'Owner rep goal: the strip reads plainly in every state'
-      wait_for 'Owner rep · the strip reads plainly' 20
-      sleep 8
-      save 3-goal
-      strip | grep -q 'Owner rep · the strip reads plainly in every state' ; verdict 'goal pinned in the head' $?
-      # The engine's own line says the hook dropped the prompt; any other ⏺ line is the agent answering.
-      pane | grep -E '^⏺' | grep -qv 'Prompt dropped by a hook' ; [[ $? -ne 0 ]]; verdict 'no answer from the agent, only the dropped-prompt line' $?
-      strip | grep -qE '^\s*idle\s+1: Brief me' ; verdict 'still idle' $?
+      send 'Reply with the single word done and nothing else.'
+      wait_for '^\s*stopped, waiting on you|^\s*asking you' 60
+      sleep 6
+      answers=$(pane | grep -E '^⏺' | grep -vc 'Prompt dropped by a hook')
+      send 'Owner rep: what I care about is a one-word answer and nothing added.'
+      # The note starts a look; the head leaves the placeholder once the reading is written.
+      wait_for 'Owner rep · [^w]' 60
+      sleep 2
+      save 3-note
+      # The engine's own line says the hook dropped the prompt; any other new ⏺ line is the agent answering.
+      [[ $(pane | grep -E '^⏺' | grep -vc 'Prompt dropped by a hook') -eq $answers ]] ; verdict 'no answer from the agent to the note, only the dropped-prompt line' $?
+      pane | grep -q 'Prompt dropped by a hook' ; verdict 'the dropped-prompt line shown' $?
+      strip | grep -q 'working out the result you want' ; [[ $? -ne 0 ]]; verdict 'the head shows a reading, not the placeholder' $?
+      strip | grep -qE '1: Brief me\s+2: Tell the rep' ; verdict 'row buttons with Tell the rep' $?
       stop ;;
     4)
       echo "4 briefing: the Rep button pressed mid-turn draws the card with its buttons"
@@ -128,14 +134,18 @@ for n in $want; do
       sleep 3
       wait_for '^\s*stopped, waiting on you|^\s*asking you' 120
       sleep 2
+      send 'Owner rep: the licence can wait. What matters most to me is the test suite and the GitHub run; judge the work by those.'
+      sleep 20
       tmux send-keys -t $S 1
       wait_for 'Fine, close' 120
       save 6-whole-ask
       pane | grep -qE '^\s*Left out:' ; verdict 'left-out list drawn' $?
-      pane | grep -A3 -E '^\s*Left out:' | grep -qE '^\s*- ' ; verdict 'open work listed against the whole ask' $?
+      pane | grep -A3 -E '^\s*Left out:' | grep -qE '^\s*- ' ; verdict 'open work listed against the reading' $?
       pane | grep -A3 -E '^\s*Left out:' | grep -qiE 'test|github' ; verdict 'the tests or the GitHub run named as open' $?
+      pane | grep -qE 'Reading revised at|New job since' ; verdict 'the reading revised after the note, with its cause' $?
       pane | grep -q 'Put message in prompt' ; verdict 'a message drafted' $?
       pane | grep -qE 'conversation at [0-9]+ percent of its window' ; verdict 'the size given as a figure' $?
+      pane | grep -q '4: Tell the rep' ; verdict 'the card offers Tell the rep' $?
       stop ;;
   esac
   [[ $bad -gt 0 ]] && fails=$((fails+1))

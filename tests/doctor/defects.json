@@ -90,12 +90,6 @@
     "fixed": "tested 2026-10-14"
   },
   {
-    "name": "goal-prefix-dropped",
-    "breaks": "Fix the goal puts the bare sentence in the prompt box, so pressing Enter sends it to the agent instead of pinning it.",
-    "patch": "goal-prefix-dropped.patch",
-    "fixed": "tested 2026-10-14"
-  },
-  {
     "name": "check-timeout-unreported",
     "breaks": "A check that outlasts its five minutes is stopped but reported as having failed to run, not as timed out.",
     "patch": "check-timeout-unreported.patch",

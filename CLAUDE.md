@@ -21,7 +21,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 35 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 41 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: six real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -79,18 +79,18 @@ Two modules, deliberately split:
   allowlist, and the cost arithmetic. Anything that can be unit-tested lives here.
 - `hooks/register.tsx` is the engine side: hooks, state atoms, the store record, the band
   render, and the spawn of the check run. `hooks/hooks.json` names it as the only module.
-- `types/index.d.ts` declares the mod's `PluginState` keys (`goal`, `isPinned`, `now`, `note`,
-  `brief`, `view`, `helperIds`) and the `Brief`/`Checked`/`Now`/`Note` shapes the render reads.
+- `types/index.d.ts` declares the mod's `PluginState` keys (`reading`, `now`, `note`, `brief`,
+  `view`, `helperIds`) and the `Reading`/`Brief`/`Checked`/`Now`/`Note` shapes the render reads.
 
-Three reads of increasing cost, all measured against one goal sentence:
+Three reads of increasing cost, all measured against the held reading:
 
 1. **Watch**: `look()` runs on `turn.step` every `CHECK_EVERY` (8) model requests and on every
    `turn.complete`, via `$.model.fork` over the agent's cached conversation. It is never
    awaited by the hook that starts it. A flag becomes a "Heads up" note only when the view is
    `row` and the flag was not already shown. Typing past notes backs the watch off (`skipAfter`).
 2. **Briefing**: `pressBrief()` on the Rep button, another fork, drawn as the card. The
-   model's answer is labelled lines (`goal:`, `stands:`, `means:`, `left:`, `next:`,
-   `message:` … `end`, `does:`); `parseBrief` splits them.
+   model's answer is labelled lines (`reading:`, `moved:`, `stands:`, `means:`, `left:`,
+   `next:`, `message:` … `end`, `does:`); `parseBrief` splits them.
 3. **Check**: `pressCheck()` → `runCheck()` spawns a headless `claude -p` with
    `CHECK_ALLOWED_TOOLS` (read, search, agentsview, the project's own tests) and
    `CHECK_DISALLOWED_TOOLS` (anything that edits, sends or launches helpers), five-minute
@@ -99,15 +99,31 @@ Three reads of increasing cost, all measured against one goal sentence:
    `lastInstant` ties "Check it" to the card that is up. The check costs real money and runs
    only on a press; the card states the measured figure (`FIRST_CHECK_*`, then the last run).
 
+**The reading** (`Reading` in `types/index.d.ts`, `takeReading` in `register.tsx`) is the
+rep's own account of what the owner wants on the job in hand, up to `READING_SENTENCES`
+sentences, never the owner's text. Every watch and briefing answer begins `reading: holds` or
+a rebuilt reading with a `moved:` line naming the owner's message that made the old one
+stale (`moved: new job …` closes the job). `takeReading` applies it: the first reading is
+taken as is; after that a revision is taken only when `rec.owner` has grown since the reading
+was last built (`from`), so the agent's words can never move it, whatever the model says; a
+new job pushes the old reading's first sentence onto `rec.past` and starts the job's message
+range (`since`) after the old one. The model is shown only the job's messages and the closed
+readings of earlier jobs. The card shows `revisedLine` under the head; the row shows
+`firstSentence`. There is no stored parts list: the model reads the open parts from the
+reading and the job's messages at each look, so one thing is held and revised, not two.
+
 State lives in two places. Atoms (`atom({plugin, key})`) are per-session UI state that drives
-the render. The `$.store` key `sessions` holds a `Rec` per session id (goal, pin, the owner's
-recent prompts, flags already seen, other mods' notes, spend counters), capped at
-`SESSIONS_MAX` newest. `loadRec`/`saveRec` are the only way in and out.
+the render. The `$.store` key `sessions` holds a `Rec` per session id (the reading, the
+earlier jobs' readings, the owner's recent prompts, flags already seen, other mods' notes,
+spend counters), capped at `SESSIONS_MAX` newest. `loadRec`/`saveRec` are the only way in and
+out.
 
 The owner's own messages are the only input that can steer the rep. `prompt.submit` records
-each prompt into `rec.owner`; a prompt beginning `Owner rep goal:` pins or unpins the goal and
-is dropped so the agent never sees it. The rep never sends anything itself: "Put message in
-prompt" fills the prompt box and the owner presses Enter.
+each prompt into `rec.owner`; a prompt beginning `Owner rep` and a colon (`noteTyped`) is a
+note to the rep: it is recorded marked `(to the rep)`, a look starts at once, and the prompt
+is dropped so the agent never sees it. "Tell the rep" fills the prompt box with the prefix.
+The rep never sends anything itself: "Put message in prompt" fills the prompt box and the
+owner presses Enter.
 
 The `AbovePrompt` band is a strip shared with other mods ("You should know" among them) and
 this mod draws first. Rules the render enforces: whatever is beneath is kept under the row;

@@ -3,16 +3,18 @@ import type { EngineInterface, Register, RenderChildren } from 'claude-code'
 
 type RenderNodeList = RenderChildren[]
 
-import type { Brief, Checked, Note, Now, View } from '../types'
+import type { Brief, Checked, Note, Now, Reading, View } from '../types'
 import {
   CHECK_EVERY,
   CHECK_TIMEOUT_MS,
   CLEAR_AFTER_PROMPTS,
+  NOTE_MARK,
+  NOTE_PREFIX,
   OWNER_CUT,
   OWNER_MAX,
+  PAST_MAX,
   SEEN_MAX,
   SESSIONS_MAX,
-  GOAL_PREFIX,
   OTHERS_MAX,
   briefPrompt,
   cachedOf,
@@ -20,13 +22,15 @@ import {
   checkCostText,
   checkPrompt,
   doingFor,
+  firstSentence,
   fitCard,
   fit,
-  goalTyped,
+  noteTyped,
   parseBrief,
   parseCheck,
   parseWatch,
   resultOf,
+  revisedLine,
   same,
   skipAfter,
   spentText,
@@ -35,6 +39,7 @@ import {
   watchPrompt,
   type BriefAnswer,
   type Memory,
+  type ReadingAnswer,
 } from './rep'
 
 // From the prompt box only a bare digit presses a band button.
@@ -42,8 +47,7 @@ const PRESS_HOTKEY = '1'
 
 const IDLE: Now = { doing: 'idle', helpers: 0, isWorking: false, mark: '' }
 
-const goalA = atom({ plugin: 'owner-rep', key: 'goal' } as const, null)
-const pinnedA = atom({ plugin: 'owner-rep', key: 'isPinned' } as const, false)
+const readingA = atom({ plugin: 'owner-rep', key: 'reading' } as const, null)
 const nowA = atom({ plugin: 'owner-rep', key: 'now' } as const, IDLE)
 const noteA = atom({ plugin: 'owner-rep', key: 'note' } as const, null)
 const briefA = atom({ plugin: 'owner-rep', key: 'brief' } as const, null)
@@ -54,9 +58,9 @@ const helpersA = atom({ plugin: 'owner-rep', key: 'helperIds' } as const, [])
 type Rec = {
   id: string
   at: number
-  goal: string | null
-  isPinned: boolean
+  reading: Reading | null
   owner: string[]
+  past: string[]
   seen: string[]
   others: string[]
   lastBrief?: { at: number; next: string; message: string }
@@ -79,9 +83,9 @@ const isRec = (v: unknown): v is Rec =>
 const freshRec = (id: string): Rec => ({
   id,
   at: Date.now(),
-  goal: null,
-  isPinned: false,
+  reading: null,
   owner: [],
+  past: [],
   seen: [],
   others: [],
   typedPast: 0,
@@ -116,9 +120,9 @@ async function saveRec($: EngineInterface, rec: Rec): Promise<void> {
 }
 
 const memoryOf = (rec: Rec): Memory => ({
-  goal: rec.goal,
-  isPinned: rec.isPinned,
+  reading: rec.reading,
   owner: rec.owner,
+  past: rec.past,
   seen: rec.seen,
   others: rec.others,
   lastBrief: rec.lastBrief,
@@ -139,6 +143,28 @@ async function contextOf($: EngineInterface): Promise<Memory['context']> {
   }
 }
 
+// Applies what the model said about the reading to the record. The reading
+// moves only on the owner's own words: a revision proposed when none of his
+// messages has come since the reading was last built is refused, whatever the
+// agent did meanwhile. A new job closes the old reading into `past`. Returns
+// true when the record changed.
+function takeReading(rec: Rec, a: ReadingAnswer, now: number): boolean {
+  if (a === null || a.kind === 'holds') return false
+  const held = rec.reading
+  if (held === null) {
+    rec.reading = { text: a.text, openedAt: now, since: 0, from: rec.owner.length, movedAt: null, cause: '', revisions: 0 }
+    return true
+  }
+  if (rec.owner.length <= held.from) return false
+  if (a.isNewJob) {
+    rec.past = [...rec.past, firstSentence(held.text)].slice(-PAST_MAX)
+    rec.reading = { text: a.text, openedAt: now, since: held.from, from: rec.owner.length, movedAt: now, cause: a.cause, revisions: 0 }
+    return true
+  }
+  rec.reading = { ...held, text: a.text, from: rec.owner.length, movedAt: now, cause: a.cause, revisions: held.revisions + 1 }
+  return true
+}
+
 async function setNow($: EngineInterface, patch: Partial<Now>): Promise<void> {
   await update($, nowA, n => ({ ...(n ?? IDLE), ...patch }))
 }
@@ -146,9 +172,10 @@ async function setNow($: EngineInterface, patch: Partial<Now>): Promise<void> {
 // One look by the watch: the same cached copy of the conversation the agent
 // works from, read by a fresh instance with the rep's brief. Never awaited by
 // the hook that starts it, so the agent is never slowed.
-async function look($: EngineInterface, sid: string, reason: 'step' | 'stop', turnId: string): Promise<void> {
+async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | 'note', turnId: string): Promise<void> {
   const rec = await loadRec($, sid)
-  if (rec.skip > 0) {
+  // Typing past notes backs the watch off; a note to the rep is never skipped.
+  if (rec.skip > 0 && reason !== 'note') {
     await saveRec($, { ...rec, skip: rec.skip - 1 })
     return
   }
@@ -162,10 +189,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop', tu
     return
   }
   const answer = parseWatch(result.text)
-  if (answer.goal !== null && !after.isPinned) {
-    after.goal = answer.goal
-    await update($, goalA, () => answer.goal)
-  }
+  if (takeReading(after, answer.reading, Date.now())) await update($, readingA, () => after.reading)
   const view = await read($, viewA)
   if (answer.flag !== null && view === 'row' && ![...after.seen].some(s => same(s, answer.flag ?? ''))) {
     after.seen = [...after.seen, answer.flag].slice(-SEEN_MAX)
@@ -201,12 +225,10 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       return
     }
     const a = parseBrief(result.text)
-    if (a.goal !== null && !after.isPinned) {
-      after.goal = a.goal
-      await update($, goalA, () => a.goal)
-    }
+    if (takeReading(after, a.reading, Date.now())) await update($, readingA, () => after.reading)
     const brief: Brief = {
-      goal: after.goal ?? a.goal ?? '',
+      reading: after.reading?.text ?? '',
+      revised: revisedLine(after.reading),
       well: a.well,
       stands: a.stands,
       means: a.means,
@@ -276,8 +298,8 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
     const prompt = checkPrompt({
       sessionId: sid,
       cwd,
-      goal: rec.goal ?? '',
-      owner: rec.owner,
+      reading: rec.reading?.text ?? '',
+      owner: rec.reading === null ? rec.owner : rec.owner.slice(rec.reading.since),
       brief: instant,
       writtenAt: new Date(at).toISOString(),
     })
@@ -363,38 +385,29 @@ async function putMessage($: EngineInterface, text: string): Promise<void> {
   $.ui.toast('The message is in your prompt box. Enter sends it; nothing is sent until you do.')
 }
 
-async function pinGoal($: EngineInterface, sid: string, text: string): Promise<void> {
-  const goal = text.trim()
+// A note to the rep, typed behind the prefix: recorded as his, marked as said
+// to the rep, and read at once. The agent never sees it.
+async function takeNote($: EngineInterface, sid: string, note: string): Promise<void> {
   const rec = await loadRec($, sid)
-  if (goal === '') {
-    rec.isPinned = false
-    await update($, pinnedA, () => false)
-    $.ui.toast('Owner rep will work the result out again from your messages.')
-  } else {
-    rec.goal = goal
-    rec.isPinned = true
-    await update($, goalA, () => goal)
-    await update($, pinnedA, () => true)
-    $.ui.toast('Pinned. The rep measures against your sentence now.')
-  }
+  rec.owner = [...rec.owner, fit(`${NOTE_MARK}${note}`, OWNER_CUT)].slice(-OWNER_MAX)
   await saveRec($, rec)
 }
 
-// "Fix the goal": the sentence goes into the owner's own prompt box, where he
-// edits it and presses Enter; the prompt.submit hook takes it and drops it, so
-// the agent never sees it.
-async function askGoal($: EngineInterface, goal: string | null): Promise<void> {
+// "Tell the rep": the prefix goes into the owner's own prompt box, he types
+// after it and presses Enter; the prompt.submit hook takes the note and drops
+// it, so the agent never sees it.
+async function tellRep($: EngineInterface): Promise<void> {
   const box = await $.prompt.read()
   if (box.text.trim() !== '') {
     $.ui.toast('Your prompt box has text in it. Send or clear it, then press again.')
     return
   }
-  const filled = await $.prompt.fill({ text: `${GOAL_PREFIX} ${goal ?? ''}`, mode: 'replace' })
+  const filled = await $.prompt.fill({ text: `${NOTE_PREFIX} `, mode: 'replace' })
   if (!filled.isFilled) {
     $.ui.toast('The prompt box did not take it. Press again.')
     return
   }
-  $.ui.toast('Edit the sentence in your prompt box and press Enter. Only the rep reads it; empty unpins.')
+  $.ui.toast('Type what the rep should know after the prefix and press Enter. Only the rep reads it.')
 }
 
 // What another mod showed in the strip, kept so the rep never repeats it.
@@ -460,8 +473,7 @@ export const register: Register = on => {
     try {
       const id = await sessionId($)
       const rec = await loadRec($, id)
-      await update($, goalA, () => rec.goal)
-      await update($, pinnedA, () => rec.isPinned)
+      await update($, readingA, () => rec.reading)
       await update($, viewA, v => (v === 'reading' ? 'row' : (v ?? 'row')))
       await setNow($, { isWorking: false, doing: 'idle', mark: '' })
     } catch {
@@ -474,10 +486,22 @@ export const register: Register = on => {
     // The engine stamps the origin; the test kit's own submit carries none.
     const kind = e.origin?.kind ?? 'composer'
     if (kind === 'composer' || kind === 'bridge') {
-      const typedGoal = goalTyped(e.text)
-      if (typedGoal !== null) {
-        await pinGoal($, await sessionId($), typedGoal).catch(() => undefined)
-        return { drop: typedGoal === '' ? 'Owner rep: unpinned; the rep works the result out again.' : 'Owner rep: pinned. The agent did not see this.' }
+      const note = noteTyped(e.text)
+      if (note !== null) {
+        if (note === '') return { drop: 'Owner rep: nothing after the prefix, so nothing noted.' }
+        try {
+          const id = await sessionId($)
+          await takeNote($, id, note)
+          if (!inFlight.has('note')) {
+            inFlight.add('note')
+            look($, id, 'note', '')
+              .catch(() => undefined)
+              .finally(() => inFlight.delete('note'))
+          }
+        } catch {
+          // The note is dropped either way; the agent never sees it.
+        }
+        return { drop: 'Owner rep: noted, and reading again. The agent did not see this.' }
       }
       try {
         const id = await sessionId($)
@@ -588,7 +612,7 @@ export const register: Register = on => {
     const { Box, Text, Button } = $.ui.resolve(e)
     const cols = Math.max(20, e.props.bodyColumns)
     const view = (await read($, viewA)) ?? 'row'
-    const goal = await read($, goalA)
+    const reading = await read($, readingA)
     const now = (await read($, nowA)) ?? IDLE
     const note = await read($, noteA)
     const brief = await read($, briefA)
@@ -597,8 +621,8 @@ export const register: Register = on => {
     // The band is one strip shared with every other mod, "You should know"
     // among them, and this mod draws first. Whatever is beneath is kept under
     // the row. While another mod's note is showing, the rep's own note waits,
-    // so only one set of digit buttons is ever on screen. The briefing and the
-    // goal field, which the owner asked for, take the strip alone.
+    // so only one set of digit buttons is ever on screen. The briefing, which
+    // the owner asked for, takes the strip alone.
     const beneath = await next(e)
     const hasBeneath = drawsSomething(beneath)
     if (hasBeneath) rememberOther($, id, textOf(beneath)).catch(() => undefined)
@@ -606,8 +630,8 @@ export const register: Register = on => {
     const onPress = () => {
       pressBrief($, id).catch(() => undefined)
     }
-    const fixGoal = () => {
-      askGoal($, goal).catch(() => undefined)
+    const tell = () => {
+      tellRep($).catch(() => undefined)
     }
     const close = () => {
       update($, viewA, () => 'row').catch(() => undefined)
@@ -648,12 +672,13 @@ export const register: Register = on => {
     const repButton = (
       <Button key="rep" plain hotkey={digit(PRESS_HOTKEY)} label="Brief me" onPress={onPress} />
     )
-    const goalButton = <Button key="goal" plain hotkey={digit('2')} label="Fix the goal" onPress={fixGoal} />
-    const goalButton3 = <Button key="goal" plain hotkey="4" label="Fix the goal" onPress={fixGoal} />
+    const tellButton = <Button key="tell" plain hotkey={digit('2')} label="Tell the rep" onPress={tell} />
+    const tellButton4 = <Button key="tell" plain hotkey="4" label="Tell the rep" onPress={tell} />
     const headGlyph = marked ? '◆' : '◇'
     const headColor = marked ? 'warning' : 'suggestion'
-    const goalText = goal ?? 'working out the result you want from your messages…'
-    const head = lead(headGlyph, headColor, 'Owner rep', goalText)
+    // The row shows the reading's first sentence; the card shows it whole.
+    const readingText = reading?.text ?? 'working out the result you want from your messages…'
+    const head = lead(headGlyph, headColor, 'Owner rep', firstSentence(readingText))
 
     if (view === 'note' && note !== null && !hasBeneath) {
       const clear = () => {
@@ -682,8 +707,8 @@ export const register: Register = on => {
     if (view === 'brief' && brief !== null) {
       // The card folded to the band's rows, so its buttons stay where a digit
       // reaches them; the Put button still carries the whole message.
-      const shown = fitCard({ ...brief, goal: goalText }, e.props.maxRows, cols)
-      const cardHead = lead(headGlyph, headColor, 'Owner rep', shown.goal)
+      const shown = fitCard({ ...brief, reading: brief.reading === '' ? readingText : brief.reading }, e.props.maxRows, cols)
+      const cardHead = lead(headGlyph, headColor, 'Owner rep', shown.reading)
       const section = (label: string, text: string) =>
         text === '' ? undefined : (
           <Box paddingLeft={2} width={cols}>
@@ -696,6 +721,13 @@ export const register: Register = on => {
       return (
         <Box flexDirection="column" marginTop={1}>
           {cardHead}
+          {shown.revised !== '' ? (
+            <Box paddingLeft={2} width={cols}>
+              <Text dimColor wrap="wrap">
+                {shown.revised}
+              </Text>
+            </Box>
+          ) : undefined}
           {shown.well !== '' ? (
             <Box paddingLeft={2} width={cols}>
               <Text color="success" wrap="wrap">
@@ -814,7 +846,7 @@ export const register: Register = on => {
               />
             ) : undefined,
             <Button key="close" plain hotkey="2" label="Fine, close" onPress={close} />,
-            goalButton3,
+            tellButton4,
             <Button key="later" plain hotkey="0" label="Later" onPress={close} />,
             brief.size !== '' ? <Text dimColor>{brief.size}</Text> : undefined,
           )}
@@ -828,7 +860,7 @@ export const register: Register = on => {
     return (
       <Box flexDirection="column" marginTop={1}>
         {head}
-        {choices(statusText, repButton, goalButton)}
+        {choices(statusText, repButton, tellButton)}
         {beneath}
       </Box>
     )

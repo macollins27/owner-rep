@@ -1,7 +1,7 @@
 import type { On } from 'claude-code'
 import { expect, mock, test, type Engine } from 'claude-code/testing'
 
-import { CHECK_TIMEOUT_MS, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, fit, fitCard, goalTyped, parseBrief, parseCheck, parseWatch, programOf, resultOf, same, textOf } from '../hooks/rep'
+import { CHECK_EVERY, CHECK_TIMEOUT_MS, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, same, textOf, watchPrompt } from '../hooks/rep'
 
 // A band with room for a whole card; the fold-to-fit test narrows it.
 const BAND = {
@@ -15,16 +15,21 @@ const quietBand = (on: On) => on('ui.render', { component: 'AbovePrompt' }, () =
 
 const USAGE = { input_tokens: 10, output_tokens: 20, cache_read_input_tokens: 1000, cache_creation_input_tokens: 0 }
 
-test('a watch answer with no flag parses to goal, state and no note', async () => {
-  const a = parseWatch('goal: A mod that briefs you plainly, so you can oversee agents.\nstate: working\nflag: none\n')
-  expect(a.goal).toBe('A mod that briefs you plainly, so you can oversee agents.')
+test('a watch answer with no flag parses to the reading, the state and no note', async () => {
+  const a = parseWatch('reading: A mod that briefs you plainly, so you can oversee agents.\nmoved: first reading\nstate: working\nflag: none\n')
+  expect(a.reading).toEqual({ kind: 'moved', text: 'A mod that briefs you plainly, so you can oversee agents.', cause: 'first reading', isNewJob: false })
   expect(a.state).toBe('working')
   expect(a.flag).toBe(null)
+  expect(parseWatch('reading: holds\nstate: working\nflag: none').reading).toEqual({ kind: 'holds' })
+  expect(parseWatch('reading: Holds.\nstate: working\nflag: none').reading).toEqual({ kind: 'holds' })
+  expect(parseWatch('state: working\nflag: none').reading).toBe(null)
+  const n = parseWatch('reading: The licence file, full text, so the repository is usable.\nmoved: New job: he asked for the licence after closing the README.\nstate: stopped\nflag: none').reading
+  expect(n?.kind === 'moved' && n.isNewJob).toBe(true)
 })
 
 test('a watch answer with a flag parses the flag and the why', async () => {
-  const a = parseWatch('goal: "The judge rebuilt."\nstate: stopped\nflag: The agent says the tests pass, but it never ran them.\nwhy: No test output appears after the last edit.')
-  expect(a.goal).toBe('The judge rebuilt.')
+  const a = parseWatch('reading: "The judge rebuilt."\nstate: stopped\nflag: The agent says the tests pass, but it never ran them.\nwhy: No test output appears after the last edit.')
+  expect(a.reading).toEqual({ kind: 'moved', text: 'The judge rebuilt.', cause: '', isNewJob: false })
   expect(a.state).toBe('stopped')
   expect(a.flag).toBe('The agent says the tests pass, but it never ran them.')
   expect(a.why).toBe('No test output appears after the last edit.')
@@ -32,7 +37,7 @@ test('a watch answer with a flag parses the flag and the why', async () => {
 
 test('a briefing parses every part, the message block whole, and "- nothing" as no items', async () => {
   const text = [
-    'goal: The judge rebuilt so you can oversee agents.',
+    'reading: holds',
     'well:',
     'stands: The mod draws but was never run live.',
     'means: "Done" here means written, not shown working.',
@@ -47,7 +52,7 @@ test('a briefing parses every part, the message block whole, and "- nothing" as 
     'does: Makes the agent prove the mod live instead of moving on.',
   ].join('\n')
   const b = parseBrief(text)
-  expect(b.goal).toBe('The judge rebuilt so you can oversee agents.')
+  expect(b.reading).toEqual({ kind: 'holds' })
   expect(b.well).toBe('')
   expect(b.stands).toBe('The mod draws but was never run live.')
   expect(b.leftOut).toEqual(['the live run you asked for', 'the type check was skipped'])
@@ -55,7 +60,7 @@ test('a briefing parses every part, the message block whole, and "- nothing" as 
     'Before calling this done, load the mod in a real session.\nPress each button idle and mid-turn, and show me what appeared.',
   )
   expect(b.does).toBe('Makes the agent prove the mod live instead of moving on.')
-  expect(parseBrief('goal: x\nwell: Going well.\nleft:\n- nothing\nmessage:\nend\ndoes:').leftOut).toEqual([])
+  expect(parseBrief('reading: x\nwell: Going well.\nleft:\n- nothing\nmessage:\nend\ndoes:').leftOut).toEqual([])
 })
 
 test('helpers: fit cuts with an ellipsis, same ignores case and a final period, doingFor names the work', async () => {
@@ -66,9 +71,17 @@ test('helpers: fit cuts with an ellipsis, same ignores case and a final period, 
   expect(doingFor('Bash', { command: 'git status --short' })).toBe('running git')
   expect(doingFor('mcp__agentsview__search_content', {})).toBe('using agentsview')
   expect(doingFor('Agent', {})).toBe('starting a helper')
-  expect(goalTyped('Owner rep goal: a judge that works')).toBe('a judge that works')
-  expect(goalTyped('owner rep goal:')).toBe('')
-  expect(goalTyped('fix the tests')).toBe(null)
+  expect(noteTyped('Owner rep: the tests matter more than speed')).toBe('the tests matter more than speed')
+  expect(noteTyped('Owner rep goal: a judge that works')).toBe('a judge that works')
+  expect(noteTyped('owner rep:')).toBe('')
+  expect(noteTyped('fix the tests')).toBe(null)
+  expect(noteTyped('the owner rep: is it confused?')).toBe(null)
+  expect(firstSentence('A public project employers can inspect. Right now that means the licence file.')).toBe('A public project employers can inspect.')
+  expect(firstSentence('working out the result you want from your messages…')).toBe('working out the result you want from your messages…')
+  expect(revisedLine(null)).toBe('')
+  expect(revisedLine({ text: 'x', openedAt: 0, since: 0, from: 1, movedAt: null, cause: '', revisions: 0 })).toBe('')
+  expect(revisedLine({ text: 'x', openedAt: 0, since: 0, from: 2, movedAt: new Date(2026, 9, 14, 15, 12).getTime(), cause: 'he asked for tests as well', revisions: 1 })).toBe('Reading revised at 3:12 pm: he asked for tests as well')
+  expect(revisedLine({ text: 'x', openedAt: 0, since: 1, from: 2, movedAt: new Date(2026, 9, 14, 9, 5).getTime(), cause: 'new job, the licence', revisions: 0 })).toBe('New job since 9:05 am: new job, the licence')
 })
 
 // The command from the owner's screenshot of 14 Oct 2026: it starts by setting
@@ -118,7 +131,7 @@ test('the text of another mod\'s note is read from its tree, buttons left out', 
   expect(textOf(tree)).toBe('Heads up · The pages leave out real customers.')
 })
 
-test('a goal typed in the prompt box is pinned by the rep and dropped before the agent sees it', async ($, on) => {
+test('rule: a note to the rep is dropped before the agent sees it, listed to the model as said to the rep, and read at once', async ($, on) => {
   mock.store(on, {})
   quietBand(on)
   on('session.id', () => ({ value: 'test-session' }))
@@ -128,17 +141,34 @@ test('a goal typed in the prompt box is pinned by the rep and dropped before the
     reached = true
     return { text: e.text }
   })
-  const result = await $.prompt.submit({ text: 'Owner rep goal: the judge rebuilt so you can oversee agents', wait: false, origin: { kind: 'composer' } })
+  const prompts: string[] = []
+  on('model.fork', ($, e) => {
+    prompts.push(String(e.prompt))
+    return { value: { isAnswered: true, text: 'reading: The strip reads plainly in every state, so he can trust it at a glance.\nmoved: first reading\nstate: stopped\nflag: none', usage: USAGE } }
+  })
+  const result = await $.prompt.submit({ text: 'Owner rep: the tests matter more to me than speed', wait: false, origin: { kind: 'composer' } })
   expect(reached).toBe(false)
-  expect(result.drop).toMatch(/pinned/)
-  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
-  expect(await ui.find({ type: 'Text', text: /the judge rebuilt so you can oversee agents/ })).toBeDefined()
+  expect(result.drop).toMatch(/noted/)
+  // The look the note started settles while the strip is drawn, as in a session.
+  let ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   await ui.unmount()
+  expect(prompts).toHaveLength(1)
+  expect(prompts[0]).toMatch(/told you something directly/)
+  expect(prompts[0]).toMatch(/- \(to the rep\) the tests matter more to me than speed/)
+  ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  expect(await ui.find({ type: 'Text', text: /^Owner rep · The strip reads plainly in every state, so he can trust it at a glance\.$/ })).toBeDefined()
+  await ui.unmount()
+  // The old prefix is a note too, and an empty note is dropped without a look.
+  expect((await $.prompt.submit({ text: 'Owner rep goal: x', wait: false, origin: { kind: 'composer' } })).drop).toMatch(/noted/)
+  expect((await $.prompt.submit({ text: 'Owner rep:', wait: false, origin: { kind: 'composer' } })).drop).toMatch(/nothing noted/)
+  expect(reached).toBe(false)
+  await (await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })).unmount()
+  expect(prompts).toHaveLength(2)
 })
 
 test('the checker: its prompt names the session, its tools are read-only, and its answer parses', async () => {
-  const brief = parseBrief('goal: x\nstands: s\nmeans: m\nleft:\n- a\nnext: n\nmessage:\nhello\nend\ndoes: d')
-  const prompt = checkPrompt({ sessionId: 'abc-123', cwd: '/tmp/x', goal: 'the result', owner: ['first ask'], brief, writtenAt: '2026-10-13T23:05:00.000Z' })
+  const brief = parseBrief('reading: holds\nstands: s\nmeans: m\nleft:\n- a\nnext: n\nmessage:\nhello\nend\ndoes: d')
+  const prompt = checkPrompt({ sessionId: 'abc-123', cwd: '/tmp/x', reading: 'the result', owner: ['first ask'], brief, writtenAt: '2026-10-13T23:05:00.000Z' })
   expect(prompt).toContain('abc-123')
   expect(prompt).toContain('2026-10-13T23:05:00.000Z')
   expect(prompt).toContain('changed:')
@@ -206,7 +236,7 @@ test('an empty tree beneath the row leaves the digits on the row buttons', async
   })
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   expect((await ui.find({ key: 'rep' }))?.props.hotkey).toBe('1')
-  expect((await ui.find({ key: 'goal' }))?.props.hotkey).toBe('2')
+  expect((await ui.find({ key: 'tell' }))?.props.hotkey).toBe('2')
   await ui.unmount()
 })
 
@@ -231,7 +261,7 @@ test('pressing Rep reads the conversation and draws the briefing with the messag
   quietBand(on)
   on('session.id', () => ({ value: 'test-session' }))
   const answer = [
-    'goal: A judge mod that briefs you plainly.',
+    'reading: A judge mod that briefs you plainly.',
     'well:',
     'stands: Written, not yet run.',
     'means: Done means written.',
@@ -269,7 +299,7 @@ test('pressing Rep reads the conversation and draws the briefing with the messag
   expect(await ui.find({ type: 'Text', text: /Show me the live run/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /1 check/ })).toBeDefined()
   expect((await ui.find({ key: 'put' }))?.props.hotkey).toBe('1')
-  expect((await ui.find({ key: 'goal' }))?.props.hotkey).toBe('4')
+  expect((await ui.find({ key: 'tell' }))?.props.hotkey).toBe('4')
   expect(await ui.find({ type: 'Text', text: /1 look, 1 check/ })).toBeDefined()
   await ui.unmount()
 })
@@ -281,7 +311,7 @@ test('a briefing that says the work is going well still shows the full picture a
   on('model.fork', () => ({
     value: {
       isAnswered: true,
-      text: 'goal: x\nwell: The agent is doing what you asked and showing it.\nstands: The tests pass and the change is on main.\nmeans: Nothing is waiting on you.\nleft:\n- nothing\nnext: Let it carry on.\nmessage:\nend\ndoes:',
+      text: 'reading: x\nwell: The agent is doing what you asked and showing it.\nstands: The tests pass and the change is on main.\nmeans: Nothing is waiting on you.\nleft:\n- nothing\nnext: Let it carry on.\nmessage:\nend\ndoes:',
       usage: USAGE,
     },
   }))
@@ -316,7 +346,7 @@ test('a model that does not answer leaves the row and says so in a toast', async
 // --- Sequence rules: what the hooks do over several events, driven through the kit. ---
 
 const watchAnswer = (flag: string | null) =>
-  `goal: A mod that briefs you plainly.\nstate: stopped\nflag: ${flag ?? 'none'}\nwhy: ${flag === null ? '' : 'No test output appears after the last edit.'}`
+  `reading: A mod that briefs you plainly.\nstate: stopped\nflag: ${flag ?? 'none'}\nwhy: ${flag === null ? '' : 'No test output appears after the last edit.'}`
 
 const stop = (turnId: string, answer = 'Done.', isAborted = false) =>
   ({ answer, durationMs: 1, isAborted, turnId, reason: isAborted ? 'aborted' : 'answer' }) as const
@@ -379,7 +409,7 @@ test('rule: typing past notes backs the watch off, after the free ones', async (
 })
 
 const BRIEF = (stands: string) =>
-  `goal: A judge mod.\nwell:\nstands: ${stands}\nmeans: Done means written.\nleft:\n- nothing\nnext: Run it live.\nmessage:\nShow me the run.\nend\ndoes: Makes the agent run it.`
+  `reading: A judge mod.\nwell:\nstands: ${stands}\nmeans: Done means written.\nleft:\n- nothing\nnext: Run it live.\nmessage:\nShow me the run.\nend\ndoes: Makes the agent run it.`
 
 const CHECKED = (stands: string) =>
   JSON.stringify({
@@ -507,12 +537,12 @@ test('rule: the digit hotkeys leave the row while another mod draws, and come ba
   const other = otherMod(on)
   let ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   expect((await ui.find({ key: 'rep' }))?.props.hotkey).toBeUndefined()
-  expect((await ui.find({ key: 'goal' }))?.props.hotkey).toBeUndefined()
+  expect((await ui.find({ key: 'tell' }))?.props.hotkey).toBeUndefined()
   await ui.unmount()
   other.draws = false
   ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   expect((await ui.find({ key: 'rep' }))?.props.hotkey).toBe('1')
-  expect((await ui.find({ key: 'goal' }))?.props.hotkey).toBe('2')
+  expect((await ui.find({ key: 'tell' }))?.props.hotkey).toBe('2')
   await ui.unmount()
 })
 
@@ -520,7 +550,7 @@ test('rule: the store keeps only the newest SESSIONS_MAX sessions', async ($, on
   // The test's own store, so it can read back what the rep saved.
   const store: Record<string, unknown> = { sessions: {} }
   const old = store.sessions as Record<string, unknown>
-  for (let i = 0; i < SESSIONS_MAX; i++) old[`s${i}`] = { id: `s${i}`, at: 1000 + i, goal: null, isPinned: false, owner: [], seen: [], others: [] }
+  for (let i = 0; i < SESSIONS_MAX; i++) old[`s${i}`] = { id: `s${i}`, at: 1000 + i, reading: null, owner: [], past: [], seen: [], others: [] }
   on('store.get', ($, e) => ({ value: store[e.key] }))
   on('store.set', ($, e) => {
     store[e.key] = e.value
@@ -543,7 +573,8 @@ const LONG = (word: string) => Array.from({ length: 30 }, (_, i) => `${word} sen
 
 test('fitCard folds the body in order, never the buttons, until the card fits the rows', async () => {
   const card = {
-    goal: LONG('Goal'),
+    reading: LONG('Goal'),
+    revised: 'Reading revised at 3:12 pm: he asked for the tests as well as the README.',
     well: '',
     stands: LONG('Stands'),
     means: LONG('Means'),
@@ -567,12 +598,13 @@ test('fitCard folds the body in order, never the buttons, until the card fits th
   const twelve = fitCard(card, 12, 96)
   expect(twelve.spent).toBe('')
   expect(twelve.does).toBe('')
+  expect(twelve.revised).toBe('')
   expect(twelve.leftOut).toHaveLength(1)
   expect(twelve.leftOut[0]).toMatch(/one thing left out; another/)
   expect(twelve.stands).toMatch(/…$/)
   expect(twelve.message).toMatch(/^Message sentence number 1/)
   // A card that fits is left alone.
-  const small = { ...card, goal: 'Short.', stands: 'Short.', means: 'Short.', next: 'Short.', message: 'Short.', leftOut: [] }
+  const small = { ...card, reading: 'Short.', stands: 'Short.', means: 'Short.', next: 'Short.', message: 'Short.', leftOut: [] }
   expect(fitCard(small, 40, 96)).toEqual(small)
 })
 
@@ -582,7 +614,7 @@ test('rule: with few rows in the band the card still draws its buttons and folds
   on('model.fork', () => ({
     value: {
       isAnswered: true,
-      text: `goal: ${LONG('Goal')}\nwell:\nstands: ${LONG('Stands')}\nmeans: ${LONG('Means')}\nleft:\n- one thing\n- another\nnext: ${LONG('Next')}\nmessage:\n${LONG('Message')}\nend\ndoes: Makes the agent prove it.`,
+      text: `reading: ${LONG('Goal')}\nwell:\nstands: ${LONG('Stands')}\nmeans: ${LONG('Means')}\nleft:\n- one thing\n- another\nnext: ${LONG('Next')}\nmessage:\n${LONG('Message')}\nend\ndoes: Makes the agent prove it.`,
       usage: USAGE,
     },
   }))
@@ -605,12 +637,13 @@ test('rule: with few rows in the band the card still draws its buttons and folds
 // --- The brief judges against the sum of the owner's messages, and calls a session long only by a figure. ---
 
 test('the brief carries the whole-ask rule, the size as a figure, and the green line tied to the sum', async () => {
-  const m = { goal: 'x', isPinned: false, owner: ['make this serious, with many tests', 'now just add a licence'], seen: [], others: [] }
+  const m = { reading: null, owner: ['make this serious, with many tests', 'now just add a licence'], past: [], seen: [], others: [] }
   const p = briefPrompt({ ...m, context: { tokens: 242500, window: 500000, percent: 48 } })
   expect(p).toMatch(/His messages on a job add up/)
+  expect(p).toMatch(/Not written yet\. Write it now/)
   expect(p).toMatch(/48 percent of its window \(243k of 500k tokens\), which is not long/)
   expect(p).toMatch(new RegExp(`long only past ${LONG_SESSION_PERCENT} percent`))
-  expect(p).toMatch(/well: <only when nothing in the sum of his messages is still outstanding/)
+  expect(p).toMatch(/well: <only when nothing in the reading is still outstanding/)
   expect(p).toMatch(/means: <.*measured against the whole result/)
   expect(p).toMatch(/never started/)
   expect(contextLine(m)).toBe('not known')
@@ -703,7 +736,7 @@ test('rule: a prompt box that refuses the fill is reported, and one that takes i
   await ui.unmount()
 })
 
-test('rule: Fix the goal puts the goal sentence in the prompt box behind the rep prefix, and an empty one unpins', async ($, on) => {
+test('rule: Tell the rep puts the prefix in the prompt box, from the row and from the card', async ($, on) => {
   let filled = ''
   session(on)
   quietBand(on)
@@ -712,32 +745,15 @@ test('rule: Fix the goal puts the goal sentence in the prompt box behind the rep
     filled = e.text
     return { isFilled: true }
   })
-  let goal = 'the first goal'
-  let forks = 0
-  on('model.fork', () => {
-    forks += 1
-    return { value: { isAnswered: true, text: watchAnswer(null).replace('A mod that briefs you plainly.', goal), usage: USAGE } }
-  })
-  await $.prompt.submit(typed('Owner rep goal: the judge rebuilt'))
-  let ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
-  await ui.press({ key: 'goal' })
-  expect(filled).toBe('Owner rep goal: the judge rebuilt')
-  await ui.unmount()
-  // Pinned: a watch's own goal does not replace it.
-  await $.turn.complete(stop('t1'))
-  ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
-  expect(await ui.find({ type: 'Text', text: /the judge rebuilt/ })).toBeDefined()
-  await ui.unmount()
-  // Unpinned: the next watch's goal takes over.
-  const r = await $.prompt.submit(typed('Owner rep goal:'))
-  expect(r.drop).toMatch(/unpinned/)
-  goal = 'the goal the watch worked out'
-  await $.turn.complete(stop('t2'))
-  // The look the stop started settles while the strip is drawn, as in a session.
-  await (await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })).unmount()
-  expect(forks).toBe(2)
-  ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
-  expect(await ui.find({ type: 'Text', text: /the goal the watch worked out/ })).toBeDefined()
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'tell' })
+  expect(filled).toBe('Owner rep: ')
+  filled = ''
+  await ui.press({ key: 'rep' })
+  expect((await ui.find({ key: 'tell' }))?.props.hotkey).toBe('4')
+  await ui.press({ key: 'tell' })
+  expect(filled).toBe('Owner rep: ')
   await ui.unmount()
 })
 
@@ -793,7 +809,7 @@ test('rule: a check whose run cannot start reports the failure on the card', asy
   await ui.unmount()
 })
 
-test('rule: the session end saves the record, so the next session finds the goal and the owner\'s messages', async ($, on) => {
+test('rule: the session end saves the record, so the next session finds the reading and the owner\'s messages', async ($, on) => {
   const store: Record<string, unknown> = {}
   let saves = 0
   on('store.get', ($, e) => ({ value: store[e.key] }))
@@ -804,13 +820,190 @@ test('rule: the session end saves the record, so the next session finds the goal
   })
   on('session.id', () => ({ value: 'test-session' }))
   on('prompt.submit', ($, e) => ({ text: e.text }))
+  on('turn.complete', () => ({ text: '' }))
   on('session.end', ($, e) => ({ sessionId: e.sessionId }))
+  on('model.fork', () => ({ value: { isAnswered: true, text: 'reading: The reading kept across sessions.\nmoved: first reading\nstate: stopped\nflag: none', usage: USAGE } }))
   quietBand(on)
-  await $.prompt.submit(typed('Owner rep goal: the goal kept across sessions'))
+  await $.prompt.submit(typed('build the thing'))
+  await $.turn.complete(stop('t1'))
+  await (await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })).unmount()
   const savesBefore = saves
   await $.session.end({ reason: 'other', sessionId: 'test-session', resume: { id: 'test-session' } } as never)
   expect(saves).toBe(savesBefore + 1)
-  const rec = (store.sessions as Record<string, { at: number; goal: string; isPinned: boolean }>)['test-session']
-  expect(rec?.goal).toBe('the goal kept across sessions')
-  expect(rec?.isPinned).toBe(true)
+  const rec = (store.sessions as Record<string, { at: number; reading: { text: string } | null; owner: string[] }>)['test-session']
+  expect(rec?.reading?.text).toBe('The reading kept across sessions.')
+  expect(rec?.owner).toEqual(['build the thing'])
+})
+
+// --- The held reading: the rep's own account of what the owner wants, kept for the job and moved only by his words. ---
+
+// A watch answer that proposes a reading, with its cause.
+const reads = (text: string, cause = '') => `reading: ${text}\n${cause === '' ? '' : `moved: ${cause}\n`}state: stopped\nflag: none`
+const HOLDS = 'reading: holds\nstate: stopped\nflag: none'
+
+// The strip drawn and taken down, so a look the hook started settles.
+const settle = async ($: Engine) => (await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })).unmount()
+
+test('rule: the reading is kept when the answer says it holds, and the row shows only its first sentence', async ($, on) => {
+  session(on)
+  quietBand(on)
+  let answer = reads('A public project employers can inspect as careful work. Right now that means the README.', 'first reading')
+  on('model.fork', () => ({ value: { isAnswered: true, text: answer, usage: USAGE } }))
+  await $.prompt.submit(typed('make this a serious public repository; start with the README'))
+  await $.turn.complete(stop('t1'))
+  await settle($)
+  let ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  expect(await ui.find({ type: 'Text', text: /^Owner rep · A public project employers can inspect as careful work\.$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Right now that means/ })).toBeUndefined()
+  await ui.unmount()
+  answer = HOLDS
+  await $.turn.complete(stop('t2'))
+  await settle($)
+  ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  expect(await ui.find({ type: 'Text', text: /^Owner rep · A public project employers can inspect as careful work\.$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /holds/ })).toBeUndefined()
+  // The card shows the whole reading and no revision line.
+  answer = BRIEF('Fine.').replace('reading: A judge mod.', 'reading: holds')
+  await ui.press({ key: 'rep' })
+  expect(await ui.find({ type: 'Text', text: /Right now that means the README\./ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Reading revised|New job since/ })).toBeUndefined()
+  await ui.unmount()
+})
+
+test("rule: the agent's words never move the reading; one of the owner's does, and the card says so", async ($, on) => {
+  session(on)
+  quietBand(on)
+  let answer = reads('The first reading.', 'first reading')
+  on('model.fork', () => ({ value: { isAnswered: true, text: answer, usage: USAGE } }))
+  await $.prompt.submit(typed('build the strip'))
+  await $.turn.complete(stop('t1'))
+  await settle($)
+  // The agent worked on and the model proposes a revision; nothing new from the owner: refused.
+  answer = reads('A revision the agent talked the model into.', 'the agent finished the strip and moved to tests')
+  await $.turn.complete(stop('t2'))
+  await settle($)
+  let ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  expect(await ui.find({ type: 'Text', text: /^Owner rep · The first reading\.$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /talked the model into/ })).toBeUndefined()
+  await ui.unmount()
+  // The owner corrects: the same revision is now taken, with its cause on the card.
+  await $.prompt.submit(typed('also the tests, as many as possible'))
+  answer = reads('The strip and as many tests as possible. Right now that means the tests.', 'he asked for the tests as well')
+  await $.turn.complete(stop('t3'))
+  await settle($)
+  ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  expect(await ui.find({ type: 'Text', text: /^Owner rep · The strip and as many tests as possible\.$/ })).toBeDefined()
+  answer = BRIEF('Fine.').replace('reading: A judge mod.', 'reading: holds')
+  await ui.press({ key: 'rep' })
+  expect(await ui.find({ type: 'Text', text: /^Reading revised at \d+:\d\d [ap]m: he asked for the tests as well$/ })).toBeDefined()
+  await ui.unmount()
+})
+
+test("rule: a new job closes the old reading; the earlier job's messages leave the brief and its reading is listed as closed", async ($, on) => {
+  session(on)
+  quietBand(on)
+  const prompts: string[] = []
+  let answer = reads('The strip reads plainly in every state.', 'first reading')
+  on('model.fork', ($, e) => {
+    prompts.push(String(e.prompt))
+    return { value: { isAnswered: true, text: answer, usage: USAGE } }
+  })
+  await $.prompt.submit(typed('fix the strip so it never shows code'))
+  await $.turn.complete(stop('t1'))
+  await settle($)
+  await $.prompt.submit(typed('that is done; now a licence file with the full MIT text'))
+  answer = reads('A licence file with the full MIT text, so the repository is usable.', 'new job: he closed the strip work and asked for the licence')
+  await $.turn.complete(stop('t2'))
+  await settle($)
+  answer = BRIEF('Fine.').replace('reading: A judge mod.', 'reading: holds')
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  expect(await ui.find({ type: 'Text', text: /^Owner rep · A licence file with the full MIT text, so the repository is usable\.$/ })).toBeDefined()
+  await ui.press({ key: 'rep' })
+  expect(await ui.find({ type: 'Text', text: /^New job since \d+:\d\d [ap]m: new job: he closed the strip work/ })).toBeDefined()
+  await ui.unmount()
+  const last = prompts[prompts.length - 1] ?? ''
+  const onJob = last.slice(last.indexOf('His own messages on this job'), last.indexOf('Jobs before this one'))
+  expect(onJob).toMatch(/- that is done; now a licence file/)
+  expect(onJob).not.toMatch(/fix the strip so it never shows code/)
+  expect(last).toMatch(/Jobs before this one[^]*- The strip reads plainly in every state\./)
+})
+
+test('rule: while the rep reads, the row says so and a second press starts no second read', async ($, on) => {
+  session(on)
+  quietBand(on)
+  let forks = 0
+  let release: () => void = () => undefined
+  on('model.fork', async () => {
+    forks += 1
+    await new Promise<void>(r => (release = r))
+    return { value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }
+  })
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  const press = ui.press({ key: 'rep' })
+  expect(await ui.find({ type: 'Text', text: /^reading the whole session…$/ })).toBeDefined()
+  await ui.press({ key: 'rep' })
+  expect(forks).toBe(1)
+  release()
+  await press
+  expect(await ui.find({ type: 'Text', text: /The card\./ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /reading the whole session/ })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('rule: the checked card folds its lists to counts on a small band and keeps its buttons', async ($, on) => {
+  session(on)
+  quietBand(on)
+  on('session.cwd', () => ({ value: '/tmp/x' }))
+  mock.clock(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF(LONG('Stands')), usage: USAGE } }))
+  on('process.spawn', async function* () {
+    yield {
+      stream: 'stdout',
+      text: JSON.stringify({
+        type: 'result',
+        result: `holds:\n- the file exists\nfalse:\n- the tests passed; two fail\nnotshown:\n- the live run\nchanged:\n- the helper finished\nstands: ${LONG('Checked')}\nmeans:\nleft:\n- nothing\nnext:\nmessage:\nend\ndoes:\nlooked: Read the record.`,
+        usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+      }),
+    }
+    return { value: { code: 0, signal: null } }
+  })
+  const narrow = { ...BAND, props: { ...BAND.props, maxRows: 12, scroll: { offset: 0, bodyRows: 11 } } }
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...narrow })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+  expect(await ui.find({ type: 'Text', text: /^Checked: 1 hold, 1 false, 1 not shown, 1 changed since\.$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /the tests passed; two fail/ })).toBeUndefined()
+  expect((await ui.find({ key: 'close' }))?.props.hotkey).toBe('2')
+  expect((await ui.find({ key: 'put' }))?.props.hotkey).toBe('1')
+  expect(await ui.find({ key: 'check' })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('rule: the watch looks every CHECK_EVERY model requests of a turn, through turn.step', async ($, on) => {
+  session(on)
+  quietBand(on)
+  let forks = 0
+  on('model.fork', () => {
+    forks += 1
+    return { value: { isAnswered: true, text: watchAnswer(null), usage: USAGE } }
+  })
+  on('turn.step', async function* ($, e) {
+    return { turnId: e.turnId, index: e.index, answer: '', toolUses: [], stopReason: 'end_turn', usage: null }
+  })
+  const step = async (index: number) => {
+    const stream = $.turn.step({ turnId: 't1', index, model: 'm', messageCount: index + 1 })
+    for await (const _ of stream) {
+      // The step's chunks are the engine's; the hook passes them on.
+    }
+    await settle($)
+  }
+  for (let i = 0; i < CHECK_EVERY; i++) await step(i)
+  expect(forks).toBe(0)
+  await step(CHECK_EVERY)
+  expect(forks).toBe(1)
+  await step(CHECK_EVERY + 1)
+  expect(forks).toBe(1)
+  await step(CHECK_EVERY * 2)
+  expect(forks).toBe(2)
+  expect(watchPrompt({ reading: null, owner: [], past: [], seen: [], others: [] }, 'step')).toMatch(/in the middle of working/)
 })
