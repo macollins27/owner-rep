@@ -1,5 +1,5 @@
 import type { On } from 'claude-code'
-import { expect, mock, test } from 'claude-code/testing'
+import { expect, mock, test, type Engine } from 'claude-code/testing'
 
 import { CHECK_TIMEOUT_MS, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, fit, fitCard, goalTyped, parseBrief, parseCheck, parseWatch, programOf, resultOf, same, textOf } from '../hooks/rep'
 
@@ -654,7 +654,7 @@ test('rule: a helper the agent starts is counted in the status until its turn co
 })
 
 // A card with a message, ready for the prompt-box tests.
-const cardUp = async ($: Parameters<Parameters<typeof test>[1]>[0], on: On, toasts: string[]) => {
+const cardUp = async ($: Engine, on: On, toasts: string[]) => {
   mock.store(on, {})
   quietBand(on)
   on('session.id', () => ({ value: 'test-session' }))
@@ -742,7 +742,7 @@ test('rule: Fix the goal puts the goal sentence in the prompt box behind the rep
 })
 
 // A card with the check pressed, the check's run answered by `spawn`.
-const checkWith = async ($: Parameters<Parameters<typeof test>[1]>[0], on: On, spawn: () => AsyncGenerator<unknown, unknown>) => {
+const checkWith = async ($: Engine, on: On, spawn: () => AsyncGenerator<unknown, unknown>) => {
   session(on)
   quietBand(on)
   on('session.cwd', () => ({ value: '/tmp/x' }))
@@ -795,9 +795,11 @@ test('rule: a check whose run cannot start reports the failure on the card', asy
 
 test('rule: the session end saves the record, so the next session finds the goal and the owner\'s messages', async ($, on) => {
   const store: Record<string, unknown> = {}
+  let saves = 0
   on('store.get', ($, e) => ({ value: store[e.key] }))
   on('store.set', ($, e) => {
     store[e.key] = e.value
+    if (e.key === 'sessions') saves += 1
     return { value: undefined }
   })
   on('session.id', () => ({ value: 'test-session' }))
@@ -805,11 +807,10 @@ test('rule: the session end saves the record, so the next session finds the goal
   on('session.end', ($, e) => ({ sessionId: e.sessionId }))
   quietBand(on)
   await $.prompt.submit(typed('Owner rep goal: the goal kept across sessions'))
-  const before = (store.sessions as Record<string, { at: number }>)['test-session']?.at ?? 0
-  await new Promise(r => setTimeout(r, 5))
+  const savesBefore = saves
   await $.session.end({ reason: 'other', sessionId: 'test-session', resume: { id: 'test-session' } } as never)
+  expect(saves).toBe(savesBefore + 1)
   const rec = (store.sessions as Record<string, { at: number; goal: string; isPinned: boolean }>)['test-session']
   expect(rec?.goal).toBe('the goal kept across sessions')
   expect(rec?.isPinned).toBe(true)
-  expect(rec?.at).toBeGreaterThan(before)
 })

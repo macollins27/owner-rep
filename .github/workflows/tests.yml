@@ -1,0 +1,24 @@
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Claude Code, the build the type declarations are pinned to
+        run: npm install -g @anthropic-ai/claude-code@2.1.300
+      - name: Validate the manifest and the hooks module
+        run: claude plugin validate .
+      - name: Run the tests
+        run: claude plugin test .
+      - name: Type-check the hooks and the tests
+        run: npx -y typescript@5.9.3 tsc -p tests/ci/tsconfig.json --noEmit
+      - name: Plant each known defect and expect the suite to fail
+        run: python3 tests/doctor/doctor.py

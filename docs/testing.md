@@ -147,4 +147,7 @@ hook path (`helper-not-counted`, `box-text-overwritten`, `fill-refusal-ignored`,
 3. ~~The layer 2 script with the five scenarios.~~ Done 14 Oct 2026; scenario 4 red.
 4. ~~Lay the briefing card out to fit the band's `maxRows`.~~ Done 14 Oct 2026; scenario 4
    green, kit test and doctor entry in place.
-5. Keep growing the defect list as bugs are fixed.
+5. ~~A run on GitHub of the validation, the tests, the type check and the doctor on every
+   push.~~ Done 14 Oct 2026: `.github/workflows/tests.yml`, with the declarations pinned in
+   `tests/ci/` for the type check.
+6. Keep growing the defect list as bugs are fixed.

@@ -1,5 +1,7 @@
 # Owner rep
 
+![tests](https://github.com/macollins27/owner-rep/actions/workflows/tests.yml/badge.svg)
+
 A Claude Code mod that watches a coding agent on behalf of the person who owns the work,
 and reports back in plain words: what the agent has really done, what it has left out, and
 what to tell it next.
@@ -116,6 +118,13 @@ claude plugin validate .      # manifest, hooks, and every engine call and state
 claude plugin test .          # 35 tests in tests/rep.test.tsx, under a second
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: six real sessions in tmux, the strip captured to tests/live/captures
+```
+
+GitHub runs the validation, the tests, the type check and the doctor on every push
+(`.github/workflows/tests.yml`); the type check there uses a pinned copy of the API
+declarations in `tests/ci/`.
+
+```
 tsc -p . --noEmit             # needs .claude-plugin/types/, see below
 ```
 
