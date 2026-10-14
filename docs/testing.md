@@ -58,7 +58,7 @@ The doctor also earned its place here: the first version of the stale-check test
 its defect planted, because the held check answered with text that was not a result, so the
 stale answer had nothing to write. The doctor reported it as survived and the test was fixed.
 
-**Status.** 25 tests: the parsers, the status words (including the variable-first command, read
+**Status.** 27 tests: the parsers, the status words (including the variable-first command, read
 through the mounted strip), the goal pin, the checker's prompt and tools, the row on both
 surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-failure
 toast, the eight sequence rules above, and the card folding to a small band. Ten doctor
@@ -81,6 +81,9 @@ unset or `claude` falls into print mode and exits. Scenarios, one capture each:
 3. `Owner rep goal: ...` typed as a prompt: the goal is pinned and the agent never answers it.
 4. The Rep button pressed mid-turn: the briefing card appears with its buttons.
 5. The session stopped: the status is "stopped, waiting on you" with the mark.
+6. The whole ask: a first message asking for much, a second asking for a step, then Brief me;
+   the card lists the open work against the sum of both messages, drafts a message, and gives
+   the conversation's size as a figure on its buttons row.
 
 It runs on demand, not under `claude plugin test`, because each scenario costs a model call
 and about a minute. Its output is the captured screens, kept beside the script, so a reader
@@ -95,6 +98,11 @@ owner's "2" went into the prompt box as text and the card stayed up. Fixed the s
 `fitCard` folds the card's body to the band's rows, body first and buttons never, and the
 rerun showed the buttons' row inside the window and the digit closing the card. The kit
 test for it mounts the band with eight rows; the doctor entry is `card-overflows-band`.
+Scenario 6 was added the same day after a card gave a green line for a finished step with the
+job open and called a 48 percent session very long: the brief now carries the rule that the
+owner's messages add up and gets the engine's own size figure, and the rerun showed the card
+listing the untouched parts of the first message with a message drafted and "conversation at
+5 percent of its window" on its buttons row.
 
 ## The doctor
 
@@ -124,8 +132,8 @@ doctor before any claim that the tests pass.
 **Status.** Built: `tests/doctor/doctor.py`, with `defects.json` and one patch per defect in
 `tests/doctor/defects/`. Run it with `python3 tests/doctor/doctor.py`; it exits 1 when the
 clean suite fails or a defect survives, and stops before planting when the clean suite is
-not clean. Ten entries: `strip-shows-command`, one per sequence rule above, and
-`card-overflows-band`, all caught. A throwaway entry no test looks at was planted on 14 Oct
+not clean. Twelve entries: `strip-shows-command`, one per sequence rule above,
+`card-overflows-band`, `size-figure-dropped` and `whole-ask-rule-dropped`, all caught. A throwaway entry no test looks at was planted on 14 Oct
 2026 to show the survivor path reports and exits 1; it was not kept.
 
 ## Order of work
