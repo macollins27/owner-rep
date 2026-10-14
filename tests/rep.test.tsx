@@ -608,7 +608,9 @@ test('fitCard folds the body in order, never the buttons, until the card fits th
   const twelve = fitCard(card, 12, 96)
   expect(twelve.spent).toBe('')
   expect(twelve.does).toBe('')
-  expect(twelve.revised).toBe('')
+  // The revision line outlasts the parts that restate the agent's work.
+  expect(twelve.revised).toMatch(/^Reading revised at 3:12 pm/)
+  expect(fitCard(card, 6, 96).revised).toBe('')
   expect(twelve.leftOut).toHaveLength(1)
   expect(twelve.leftOut[0]).toMatch(/one thing left out; another/)
   expect(twelve.stands).toMatch(/…$/)
@@ -1017,3 +1019,66 @@ test('rule: the watch looks every CHECK_EVERY model requests of a turn, through 
   expect(forks).toBe(2)
   expect(watchPrompt({ reading: null, owner: [], past: [], seen: [], others: [] }, 'step')).toMatch(/in the middle of working/)
 })
+
+// Two looks in flight at once, one from a stop and one from a note, released in
+// the given order: the one that saw the note wins either way.
+const raceTest = (noteFirst: boolean) =>
+  test(`rule: a look that lands late cannot take a newer look's place (${noteFirst ? 'note' : 'stop'} answers first)`, async ($, on) => {
+    const store: Record<string, unknown> = {}
+    let onSave: (() => void) | null = null
+    on('store.get', ($, e) => ({ value: store[e.key] }))
+    on('store.set', ($, e) => {
+      store[e.key] = e.value
+      if (e.key === 'sessions') onSave?.()
+      return { value: undefined }
+    })
+    on('session.id', () => ({ value: 'race' }))
+    on('turn.complete', () => ({ text: '' }))
+    on('prompt.submit', ($, e) => ({ text: e.text }))
+    on('ui.toast', () => ({ value: undefined }))
+    on('prompt.fill', () => ({ isFilled: true }))
+    quietBand(on)
+    mock.clock(on)
+    // The first look writes the reading at once; the two that race are held open.
+    const held: Array<() => void> = []
+    let onHeld: (() => void) | null = null
+    let forks = 0
+    on('model.fork', async ($, e) => {
+      forks += 1
+      if (forks === 1) return { value: { isAnswered: true, text: reads('The README alone.', 'first reading'), usage: USAGE } }
+      const seesNote = /\(to the rep\)/.test(String(e.prompt))
+      await new Promise<void>(r => {
+        held.push(r)
+        if (held.length === 2) onHeld?.()
+      })
+      return { value: { isAnswered: true, text: reads(seesNote ? 'The tests matter most; the licence can wait.' : 'The README and a licence file.', seesNote ? 'his note put the tests first' : 'he asked for a licence'), usage: USAGE } }
+    })
+    await $.prompt.submit(typed('a README'))
+    await $.turn.complete(stop('t1'))
+    await settle($)
+    // The licence message, its stop's look still in flight when the note arrives.
+    await $.prompt.submit(typed('now a licence file'))
+    const bothHeld = new Promise<void>(r => (onHeld = r))
+    const stopLook = $.turn.complete(stop('t2'))
+    const note = $.prompt.submit(typed('Owner rep: the tests matter most; the licence can wait'))
+    await bothHeld
+    const [releaseStop, releaseNote] = held as [() => void, () => void]
+    const release = async (r: () => void) => {
+      const saved = new Promise<void>(done => (onSave = done))
+      r()
+      await saved
+    }
+    await release(noteFirst ? releaseNote : releaseStop)
+    await release(noteFirst ? releaseStop : releaseNote)
+    await stopLook
+    await note
+    await settle($)
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    expect(await ui.find({ type: 'Text', text: /^Owner rep · The tests matter most; the licence can wait\.$/ })).toBeDefined()
+    await ui.unmount()
+    const rec = (store.sessions as Record<string, { reading: { from: number; cause: string } }>).race
+    expect(rec?.reading.cause).toBe('his note put the tests first')
+    expect(rec?.reading.from).toBe(3)
+  })
+raceTest(true)
+raceTest(false)

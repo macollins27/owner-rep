@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index f8ef743..5725dbe 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -859,6 +859,7 @@ export function fitCard(card: CardText, maxRows: number, cols: number): CardText
+   const folds: Array<() => void> = [
+     () => (c = { ...c, spent: '' }),
+     () => (c = { ...c, does: '' }),
++    () => (c = { ...c, revised: '' }),
+     () => (c = { ...c, checkCost: oneRow(c.checkCost, '') }),
+     () => (c = { ...c, leftOut: c.leftOut.length > 1 ? [fit(c.leftOut.join('; '), Math.max(8, w - 4))] : c.leftOut.map(i => oneRow(i, '  - ')) }),
+     () => (c = { ...c, means: oneRow(c.means, 'Means: ') }),

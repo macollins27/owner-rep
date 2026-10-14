@@ -1,14 +1,14 @@
 
  ▐▛███▛█   Claude Code v2.1.300
 ▝▜██████▀  Fable 5.1 with high effort · Claude Max
- ▝▝   ▝▝   /private/var/folders/mf/g9s916lj533085gbqr23mm9m0000gn/T/owner-rep-live.w68UrKtXAR
+ ▝▝   ▝▝   /private/var/folders/mf/g9s916lj533085gbqr23mm9m0000gn/T/owner-rep-live.hPMD7s9Fan
 
 
 ❯ Reply with the single word done and nothing else.
 
 ⏺ done
 
-✻ Sautéed for 1s · done 7:01 PM
+✻ Cogitated for 1s · done 7:08 PM
 
 ⏺ Prompt dropped by a hook: Owner rep: noted, and reading again. The agent did not see this.
 
@@ -33,12 +33,12 @@
 
 
                                                                                                                                                                       [-]
-◆ Owner rep · He wants the agent to answer with the one word "done" and nothing more.
+◆ Owner rep · He wants a single-word reply, "done", with nothing else attached, most likely to confirm the session is set up and responding correctly.
   stopped, waiting on you   1: Brief me   2: Tell the rep
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-❯ Owner rep: what I care about is a one-word answer and nothing added.
+❯ 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  [Fable 5.1] │ owner-rep-live.w68UrKtXAR +owner-rep-live.w68UrKtX… +maxwellcollins git:(main) │ Done confirmation reply
-  Context ░░░░░░░░░░ 4% │ Usage ████░░░░░░ 43% (resets in 1h 59m)
-  ⏵⏵ bypass permissions on (shift+tab to cycle)
+  [Fable 5.1] │ owner-rep-live.hPMD7s9Fan +owner-rep-live.hPMD7s9F… +maxwellcollins git:(main) │ Single-word done reply
+  Context ░░░░░░░░░░ 4% │ Usage █████░░░░░ 45% (resets in 1h 52m)
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents

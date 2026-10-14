@@ -178,5 +178,17 @@
     "breaks": "A note to the rep stays in the prompt box after it is taken, so the owner's next digit lands after it as text instead of pressing a button.",
     "patch": "note-left-in-box.patch",
     "fixed": "2026-10-14"
+  },
+  {
+    "name": "late-look-wins",
+    "breaks": "The guard counts the owner's messages that have arrived instead of the ones a look saw, so a stop's look landing late takes a note's place and the note's revision is refused.",
+    "patch": "late-look-wins.patch",
+    "fixed": "2026-10-14"
+  },
+  {
+    "name": "revised-line-folds-first",
+    "breaks": "The card folds the revision line away first, so on a band of ordinary height the owner never sees that the reading moved.",
+    "patch": "revised-line-folds-first.patch",
+    "fixed": "2026-10-14"
   }
 ]
