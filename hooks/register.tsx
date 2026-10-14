@@ -144,25 +144,29 @@ async function contextOf($: EngineInterface): Promise<Memory['context']> {
   }
 }
 
-// Applies what the model said about the reading to the record. The reading
-// moves only on the owner's own words: a revision proposed when none of his
-// messages has come since the reading was last built is refused, whatever the
-// agent did meanwhile. A new job closes the old reading into `past`. Returns
-// true when the record changed.
-function takeReading(rec: Rec, a: ReadingAnswer, now: number): boolean {
+// Applies what the model said about the reading to the record. `saw` is how
+// many of the owner's messages the look was given. The reading moves only on
+// the owner's own words: a revision from a look that saw no message of his
+// beyond what the held reading was built from is refused, whatever the agent
+// did meanwhile. Looks overlap, and one that saw fewer messages can land
+// later than one that saw more; counting what each saw, not what has arrived
+// by the time it lands, keeps a late answer from taking a newer one's place.
+// A new job closes the old reading into `past`. Returns true when the record
+// changed.
+function takeReading(rec: Rec, a: ReadingAnswer, now: number, saw: number): boolean {
   if (a === null || a.kind === 'holds') return false
   const held = rec.reading
   if (held === null) {
-    rec.reading = { text: a.text, openedAt: now, since: 0, from: rec.owner.length, movedAt: null, cause: '', revisions: 0 }
+    rec.reading = { text: a.text, openedAt: now, since: 0, from: saw, movedAt: null, cause: '', revisions: 0 }
     return true
   }
-  if (rec.owner.length <= held.from) return false
+  if (saw <= held.from) return false
   if (a.isNewJob) {
     rec.past = [...rec.past, firstSentence(held.text)].slice(-PAST_MAX)
-    rec.reading = { text: a.text, openedAt: now, since: held.from, from: rec.owner.length, movedAt: now, cause: a.cause, revisions: 0 }
+    rec.reading = { text: a.text, openedAt: now, since: held.from, from: saw, movedAt: now, cause: a.cause, revisions: 0 }
     return true
   }
-  rec.reading = { ...held, text: a.text, from: rec.owner.length, movedAt: now, cause: a.cause, revisions: held.revisions + 1 }
+  rec.reading = { ...held, text: a.text, from: saw, movedAt: now, cause: a.cause, revisions: held.revisions + 1 }
   return true
 }
 
@@ -180,6 +184,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
     await saveRec($, { ...rec, skip: rec.skip - 1 })
     return
   }
+  const saw = rec.owner.length
   const result = await $.model.fork({ prompt: watchPrompt({ ...memoryOf(rec), context: await contextOf($) }, reason) })
   const after = await loadRec($, sid)
   after.calls += 1
@@ -190,7 +195,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
     return
   }
   const answer = parseWatch(result.text)
-  if (takeReading(after, answer.reading, Date.now())) await update($, readingA, () => after.reading)
+  if (takeReading(after, answer.reading, Date.now(), saw)) await update($, readingA, () => after.reading)
   const view = await read($, viewA)
   if (answer.flag !== null && view === 'row' && ![...after.seen].some(s => same(s, answer.flag ?? ''))) {
     after.seen = [...after.seen, answer.flag].slice(-SEEN_MAX)
@@ -209,6 +214,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
   await setNow($, { mark: '' }).catch(() => undefined)
   try {
     const rec = await loadRec($, sid)
+    const saw = rec.owner.length
     const context = await contextOf($)
     const result = await $.model.fork({ prompt: briefPrompt({ ...memoryOf(rec), context }) })
     const after = await loadRec($, sid)
@@ -226,7 +232,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       return
     }
     const a = parseBrief(result.text)
-    if (takeReading(after, a.reading, Date.now())) await update($, readingA, () => after.reading)
+    if (takeReading(after, a.reading, Date.now(), saw)) await update($, readingA, () => after.reading)
     const brief: Brief = {
       reading: after.reading?.text ?? '',
       revised: revisedLine(after.reading),

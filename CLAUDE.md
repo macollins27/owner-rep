@@ -21,7 +21,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 41 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 43 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: six real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -104,8 +104,9 @@ rep's own account of what the owner wants on the job in hand, up to `READING_SEN
 sentences, never the owner's text. Every watch and briefing answer begins `reading: holds` or
 a rebuilt reading with a `moved:` line naming the owner's message that made the old one
 stale (`moved: new job …` closes the job). `takeReading` applies it: the first reading is
-taken as is; after that a revision is taken only when `rec.owner` has grown since the reading
-was last built (`from`), so the agent's words can never move it, whatever the model says; a
+taken as is; after that a revision is taken only when the look that proposed it saw more of
+`rec.owner` than the reading was built from (`from`), so the agent's words can never move it,
+whatever the model says, and a look that lands late cannot take a newer look's place; a
 new job pushes the old reading's first sentence onto `rec.past` and starts the job's message
 range (`since`) after the old one. The model is shown only the job's messages and the closed
 readings of earlier jobs. The card shows `revisedLine` under the head; the row shows

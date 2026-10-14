@@ -841,10 +841,12 @@ export function cardRows(c: CardText, cols: number): number {
 }
 
 // Folds the card until it fits `maxRows`, least important part first: the
-// spend line, the agent's "does" line, the revision line, the check's cost text, the left-out
+// spend line, the agent's "does" line, the check's cost text, the left-out
 // list to one line, then means, stands, next and the going-well line to one
 // row each, the checked lists to counts, the reading to one row, and then whole
-// parts dropped, least telling first. After each fold the message is cut to
+// parts dropped, least telling first. The revision line, one row saying that
+// and why the reading moved, goes late: after the parts that restate the
+// agent's work and before what stands. After each fold the message is cut to
 // the room left. It is never dropped: the owner can still put it in the
 // prompt, whole, and one row of it says what it is.
 export function fitCard(card: CardText, maxRows: number, cols: number): CardText {
@@ -857,7 +859,6 @@ export function fitCard(card: CardText, maxRows: number, cols: number): CardText
   const folds: Array<() => void> = [
     () => (c = { ...c, spent: '' }),
     () => (c = { ...c, does: '' }),
-    () => (c = { ...c, revised: '' }),
     () => (c = { ...c, checkCost: oneRow(c.checkCost, '') }),
     () => (c = { ...c, leftOut: c.leftOut.length > 1 ? [fit(c.leftOut.join('; '), Math.max(8, w - 4))] : c.leftOut.map(i => oneRow(i, '  - ')) }),
     () => (c = { ...c, means: oneRow(c.means, 'Means: ') }),
@@ -884,6 +885,7 @@ export function fitCard(card: CardText, maxRows: number, cols: number): CardText
     () => (c = { ...c, next: '' }),
     () => (c = { ...c, well: '' }),
     () => (c = { ...c, checked: c.checked === null ? null : { ...c.checked, looked: '' } }),
+    () => (c = { ...c, revised: '' }),
     () => (c = { ...c, stands: '' }),
   ]
   const messageToRoom = (): void => {

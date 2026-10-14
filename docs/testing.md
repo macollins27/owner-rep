@@ -51,6 +51,8 @@ entry that proves the test bites (all added 14 Oct 2026):
 | The agent's words never move the reading; the owner's do, with the cause on the card | `rule: the agent's words never move…` | `agent-moves-reading`, `revision-cause-dropped` |
 | A note to the rep is dropped before the agent sees it and cleared from the box, listed as said to the rep, read at once | `rule: a note to the rep…` | `note-reaches-agent`, `note-never-read`, `note-left-in-box` |
 | A new job closes the old reading; the earlier job's messages leave the brief | `rule: a new job closes…` | `earlier-job-leaks` |
+| A look that lands late cannot take a newer look's place, in either order | `rule: a look that lands late…` (two tests) | `late-look-wins` |
+| The revision line outlasts the parts that restate the agent's work when the card folds | `fitCard folds the body…` | `revised-line-folds-first` |
 | Tell the rep puts the prefix in the prompt box | `rule: Tell the rep puts…` | `tell-prefix-dropped` |
 | While the rep reads, the row says so and a second press starts no second read | `rule: while the rep reads…` | `reading-state-unmarked` |
 | The checked card folds its lists to counts on a small band | `rule: the checked card folds…` | `checked-lists-never-fold` |
@@ -72,10 +74,10 @@ The doctor also earned its place here: the first version of the stale-check test
 its defect planted, because the held check answered with text that was not a result, so the
 stale answer had nothing to write. The doctor reported it as survived and the test was fixed.
 
-**Status.** 41 tests: the parsers, the status words (including the variable-first command, read
+**Status.** 43 tests: the parsers, the status words (including the variable-first command, read
 through the mounted strip), the note to the rep, the checker's prompt and tools, the row on
 both surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-
-failure toast, the seventeen sequence rules above, the card folding to a small band, the brief
+failure toast, the nineteen sequence rules above, the card folding to a small band, the brief
 carrying the whole-ask rule and the session's size as a figure, the helper count, the prompt
 box's refusals, the check's three failure paths, and the session end saving the record. Twenty-
 nine doctor entries, all caught.
@@ -96,9 +98,14 @@ unset or `claude` falls into print mode and exits. Scenarios, one capture each:
    no character of the command appears in the strip.
 3. `Owner rep: ...` typed as a prompt after a first exchange: the agent never answers it, the
    prompt box is emptied, and the rep's row changes from the placeholder to a reading,
-   because the note starts a look. The first live run of this scenario on 14 Oct 2026 found
-   that the engine leaves a dropped prompt in the box, so the digit pressed next in
-   scenario 6 landed in the box as text; the rep now empties the box once it has the note.
+   because the note starts a look. The first live runs of this scenario on 14 Oct 2026 found
+   two faults: the engine leaves a dropped prompt in the box, so the digit pressed next in
+   scenario 6 landed in the box as text (the rep now empties the box once the drop has
+   landed; a fill made during the submit is undone by the drop); and a look from a stop
+   that landed after the note's look had started took the note's place, because the guard
+   counted the messages that had arrived rather than the messages each look saw (each look
+   now carries what it saw, and the fold keeps the revision line until the card is nearly
+   bare).
 4. The Rep button pressed mid-turn: the briefing card appears with its buttons.
 5. The session stopped: the status is "stopped, waiting on you" with the mark.
 6. The whole ask: a first message asking for much, a second asking for a step, then a note to
@@ -153,7 +160,7 @@ doctor before any claim that the tests pass.
 **Status.** Built: `tests/doctor/doctor.py`, with `defects.json` and one patch per defect in
 `tests/doctor/defects/`. Run it with `python3 tests/doctor/doctor.py`; it exits 1 when the
 clean suite fails or a defect survives, and stops before planting when the clean suite is
-not clean. Thirty entries, all caught: `strip-shows-command`, one or two per sequence
+not clean. Thirty-two entries, all caught: `strip-shows-command`, one or two per sequence
 rule above, `card-overflows-band`, `size-figure-dropped`, `whole-ask-rule-dropped`, and one
 per remaining hook path (`helper-not-counted`, `box-text-overwritten`, `fill-refusal-ignored`,
 `check-timeout-unreported`, `check-failure-swallowed`, `end-not-saved`). A throwaway entry no test looks at was planted on 14 Oct
