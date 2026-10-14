@@ -1,9 +1,9 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index faabc01..3360303 100644
+index 2d59d32..4e2a63d 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -494,9 +494,7 @@ export const register: Register = on => {
-           await takeNote($, id, note)
+@@ -507,9 +507,7 @@ export const register: Register = on => {
+           })
            if (!inFlight.has('note')) {
              inFlight.add('note')
 -            look($, id, 'note', '')

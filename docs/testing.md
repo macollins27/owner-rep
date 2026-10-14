@@ -162,7 +162,10 @@ because the owner's live sessions load the mod from there and a planted defect w
 them. It can also run the layer 2 script against a defect to prove the live check bites.
 
 Every fixed bug adds a defect to the list, starting with `strip-shows-command`. Run the
-doctor before any claim that the tests pass.
+doctor before any claim that the tests pass. A patch is a diff with context lines, so it
+stops applying when the lines around its edit move; the doctor reports that by name, and the
+patch is remade with the same edit from a committed tree (`git diff`, then `git checkout` of
+the file). Never make one from an uncommitted tree: the checkout would wipe the work.
 
 **Status.** Built: `tests/doctor/doctor.py`, with `defects.json` and one patch per defect in
 `tests/doctor/defects/`. Run it with `python3 tests/doctor/doctor.py`; it exits 1 when the

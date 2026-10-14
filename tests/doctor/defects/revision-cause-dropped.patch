@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index faabc01..60a93c4 100644
+index 2d59d32..2223de5 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -161,7 +161,7 @@ function takeReading(rec: Rec, a: ReadingAnswer, now: number): boolean {
-     rec.reading = { text: a.text, openedAt: now, since: held.from, from: rec.owner.length, movedAt: now, cause: a.cause, revisions: 0 }
+@@ -166,7 +166,7 @@ function takeReading(rec: Rec, a: ReadingAnswer, now: number, saw: number): bool
+     rec.reading = { text: a.text, openedAt: now, since: held.from, from: saw, movedAt: now, cause: a.cause, revisions: 0 }
      return true
    }
--  rec.reading = { ...held, text: a.text, from: rec.owner.length, movedAt: now, cause: a.cause, revisions: held.revisions + 1 }
-+  rec.reading = { ...held, text: a.text, from: rec.owner.length, movedAt: now, cause: '', revisions: held.revisions + 1 }
+-  rec.reading = { ...held, text: a.text, from: saw, movedAt: now, cause: a.cause, revisions: held.revisions + 1 }
++  rec.reading = { ...held, text: a.text, from: saw, movedAt: now, cause: '', revisions: held.revisions + 1 }
    return true
  }
  
