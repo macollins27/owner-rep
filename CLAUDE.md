@@ -21,7 +21,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 14 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 15 tests are in tests/rep.test.tsx
 ```
 
 `claude plugin test` has no filter flag. Run the whole file; it takes well under a second.
@@ -52,6 +52,12 @@ read from this folder.
 
 The testing design, three layers and a defect-planting doctor, is in `docs/testing.md` with a
 status line per part; read it before adding tests, and keep its status lines true.
+
+The kit's `$.tool.call`, `$.prompt.submit` and the other engine calls run through this mod's
+hooks as a session does, so a hook's effect is tested by making the call and reading the
+strip or the store afterwards. Await the call before mounting: a call left unawaited has not
+started when the next line runs, and the strip still shows the state before it (this was
+mistaken for the kit not reaching the hook on 14 Oct 2026).
 
 Tests import their kit from `claude-code/testing`; `$.model.fork` and the band render are
 stubbed there, and the check step is tested through `checkArgv`/`checkPrompt`/`parseCheck`,
