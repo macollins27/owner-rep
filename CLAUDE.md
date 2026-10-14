@@ -50,6 +50,9 @@ A snapshot of the mod at commit 59bb22c also sits in `~/.claude/plugins/cache/ow
 left by the install step. It is not what sessions run: `claude plugin list` reports the mod
 read from this folder.
 
+The testing design, three layers and a defect-planting doctor, is in `docs/testing.md` with a
+status line per part; read it before adding tests, and keep its status lines true.
+
 Tests import their kit from `claude-code/testing`; `$.model.fork` and the band render are
 stubbed there, and the check step is tested through `checkArgv`/`checkPrompt`/`parseCheck`,
 never by spawning a real run.
