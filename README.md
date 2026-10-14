@@ -31,10 +31,11 @@ The **watch** stays silent unless it finds something with a cost to the owner: w
 or shrunk, a claim not shown, a test never run, the easy option taken in place of the right
 one. Then one "Heads up" line appears, with the reason beneath it.
 
-The **briefing** is a card: where the work really stands, what the agent's last message
-means, what was left out, what should happen next, and a message to the agent, written and
-ready. One press puts that message in the prompt box. Nothing is sent until the owner
-presses Enter. The card is folded to fit the rows the band has, body first and buttons never, so the digit that closes it or puts its message in the prompt always reaches a button on screen.
+The **briefing** is a card: where the work really stands, what the agent's last message means,
+what was left out, what should happen next, and a message to the agent, written and ready. One
+press puts that message in the prompt box. Nothing is sent until the owner presses Enter. The
+card is folded to fit the rows the band has, body first and buttons never, so the digit that
+closes it or puts its message in the prompt always reaches a button on screen.
 
 The **check** reads outside the conversation. It opens the session's full record through
 agentsview, a local tool that indexes every coding-agent session on the machine, opens the files the agent claims to

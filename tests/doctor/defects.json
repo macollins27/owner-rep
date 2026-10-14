@@ -52,5 +52,11 @@
     "breaks": "The store keeps every session ever seen instead of the newest SESSIONS_MAX.",
     "patch": "sessions-unbounded.patch",
     "fixed": "tested 2026-10-14"
+  },
+  {
+    "name": "card-overflows-band",
+    "breaks": "The briefing card is never folded to the band's rows, so a long card pushes its buttons out of the window where a digit cannot press them.",
+    "patch": "card-overflows-band.patch",
+    "fixed": "2026-10-14"
   }
 ]
