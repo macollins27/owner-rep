@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index cfacbc7..fdac746 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -129,6 +129,7 @@ const memoryOf = (rec: Rec): Memory => ({
+ // Best effort: a session that cannot say leaves the figure unknown.
+ async function contextOf($: EngineInterface): Promise<Memory['context']> {
+   try {
++    return undefined
+     const { context } = await $.session.usage()
+     const tokens = context.tokens ?? 0
+     const window = context.window
