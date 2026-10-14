@@ -31,6 +31,8 @@ export type Brief = {
   does: string
   at: number
   spent: string
+  // The conversation's size as a figure, drawn on the buttons row so it never folds away.
+  size: string
   // The check step: running, done (`checked`), or why it could not run.
   isChecking: boolean
   checked: Checked | null
