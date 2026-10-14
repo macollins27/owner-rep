@@ -1,5 +1,6 @@
 {
   "name": "owner-rep",
   "owner": { "name": "Maxwell Collins" },
+  "description": "The owner rep: a Claude Code mod that watches the agent on behalf of the person who owns the work.",
   "plugins": [{ "name": "owner-rep", "source": "./" }]
 }

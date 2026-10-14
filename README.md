@@ -1,88 +1,132 @@
 # Owner rep
 
-A Claude Code mod that oversees a coding agent on behalf of the person who owns the work,
-and tells them in plain words what is really going on and what to do about it.
+A Claude Code mod that watches a coding agent on behalf of the person who owns the work,
+and reports back in plain words: what the agent has really done, what it has left out, and
+what to tell it next.
 
-It was built in one day, on 13 October 2026, by directing a Claude Code agent from a written
-objective to an installed, working tool, with every part proven on screen before the next
-was started. No code was written by hand.
+It is built for the owner who directs agents but does not read code. The agent's own report
+is the only account they get, and it is the one account that cannot be taken on trust. The
+rep reads the same conversation, takes nothing on the agent's word, and says so briefly.
 
 ![The briefing card, on a real session](docs/briefing.png)
 
-## The problem
-
-Someone who runs a business on software that AI agents build, and does not read code,
-cannot tell when an agent is cutting a corner, heading the wrong way, or calling work
-finished that is not. The agent's own report is the only account they get, and it is the one
-account that cannot be trusted. They need a representative on their side of the table: one
-that reads everything the agent did, takes none of it on the agent's word, and reports back
-briefly.
-
 ## What it does
 
-One row above the prompt, always there, in the same shape as Claude Code's built-in
-"You should know" notes:
+The rep draws one row above the prompt, in the same shape as Claude Code's built-in "You
+should know" note: the result the owner wants, worked out from the owner's own messages, and
+what the agent is doing right now, with a mark when the session needs a look (the agent has
+stopped, is asking a question, or a plan is waiting for a yes).
 
-- the result the owner wants, in the rep's own words, worked out from the owner's messages,
-  not copied from them;
-- what the agent is doing right now, and how many helpers it has running;
-- a mark when the session is worth a look: the agent has stopped, is asking something, or a
-  plan is waiting for a yes.
+Behind that row are three reads of increasing cost.
 
-Without pressing anything, a **watch** runs at every stop and every eighth model request. It
-reads the same conversation the agent is working from and stays silent unless there is
-something with a cost to the owner: work dropped or shrunk, a claim not shown, a test never
-run, the easy option taken in place of the right one. Then one "Heads up" line appears.
+| Read | When | How | Cost |
+|---|---|---|---|
+| **Watch** | Every eighth model request of a turn, and at every stop | A fresh model instance over the agent's cached conversation, no tools | Mostly cache reads; never blocks the agent |
+| **Briefing** | On a press (`1` or click) | Same mechanism, longer brief | One model call |
+| **Check** | On a second press, only when chosen | A separate headless `claude -p` run with read-only tools, over the session record and the real files | Measured at about 210k fresh tokens plus 2.2M cache reads, about two minutes |
 
-On a press, a **briefing** card: where the work really stands, what the agent's message means,
-what was left out, what should happen next, and the message to send to the agent, written and
-ready, with one line saying what it will make the agent do. The message goes into the prompt
-box; nothing is sent until the owner presses Enter.
+The **watch** stays silent unless it finds something with a cost to the owner: work dropped
+or shrunk, a claim not shown, a test never run, the easy option taken in place of the right
+one. Then one "Heads up" line appears, with the reason beneath it.
 
-![The same card after the check: each claim marked holds, false or not shown](docs/checked.png)
+The **briefing** is a card: where the work really stands, what the agent's last message
+means, what was left out, what should happen next, and a message to the agent, written and
+ready. One press puts that message in the prompt box. Nothing is sent until the owner
+presses Enter.
 
-On a second press, a **check**: a separate, read-only Claude Code run that reads the session's
-full record through agentsview, opens the real files and runs the project's own tests, then
-rewrites the card with each claim marked holds, false or not shown.
+The **check** reads outside the conversation. It opens the session's full record through
+agentsview, a local tool that indexes every coding-agent session on the machine, opens the files the agent claims to
+have changed, runs the project's own tests, and rewrites the card with each claim marked
+**holds**, **false**, **not shown**, or **changed since** the briefing was written.
+
+![The card after a check, each claim marked](docs/checked.png)
 
 ## How it decides
 
-The rep measures against one plain sentence, the result the owner wants and why, and five
-expectations that hold for every job: the whole result is delivered; it is shown to work, not
-said to work; no known problem is left behind; nothing was added that the result does not
-need; and it was done the way that is best for the result, not the way that was easiest for
-the agent. It applies these without reciting them. The owner's messages are evidence of what
-they want, weighted by kind: their reasons and complaints first, their instructions next, and
-their "yes" to an agent's idea last, checked like any other agent claim. Nothing in a session
-except the owner's own messages can give it orders.
+The rep measures against one plain sentence: the result the owner wants and why. It writes
+that sentence itself from the owner's messages, weighted by kind. The owner's reasons and
+complaints come first, their instructions next, and their "yes" to an agent's proposal last,
+since that is the agent's idea with the owner's name on it. The owner can pin their own
+sentence by typing `Owner rep goal: ...` into the prompt box; the rep takes it and drops the
+prompt before the agent sees it.
 
-## Decisions made along the way
+On top of that sentence sit five expectations the rep applies without reciting: the whole
+result is delivered; it is shown to work, not said to work; no known problem is left behind;
+nothing was added that the result does not need; and it was done the way that is best for the
+result, not the way that was easiest for the agent.
 
-Most of the work was judgment, not code. The ones that shaped the tool:
+Nothing in a session except the owner's own messages can give the rep orders. Text an agent
+wrote and the owner pasted is treated as an agent's claim. The full judging brief is in
+[`hooks/rep.ts`](hooks/rep.ts).
 
-- **Build on a mechanism that already works.** Claude Code's "You should know" feature reads
-  a cached copy of the agent's conversation with a fresh instance of the model, so it costs
-  little and never slows the agent. The rep uses the same mechanism with a different brief.
-  Its independence comes from its instructions and, for the check step, from reading outside
-  the conversation.
-- **No side panel.** Everything lives in the strip above the prompt, drawn in the shape the
-  owner already knows, because a clean row that is always there beats a panel that must be
-  opened. The strip is shared with other mods, so the rep passes it along, yields its buttons
-  while another note is up, and never repeats a note the other mod already showed.
-- **Digits, not letters.** From the prompt box only a bare digit presses a band button. A
-  first version used letters; the first live press showed it, and every button became a digit.
-- **Fix the goal through the prompt box.** The owner edits the rep's sentence in their own
-  prompt and presses Enter; the rep takes it and drops the prompt before the agent sees it. No
-  field to click into.
-- **The check costs real money, so it runs only when chosen.** A measured check made 43 model
-  requests in two minutes: about 215k fresh tokens plus 2.2 million re-read from cache. The
-  card states that figure, and the owner presses Check it when the question is worth it.
-- **The check runs outside the session.** A headless Claude Code run with read-only tools, so
-  the agent never hears from the rep and the owner gets no permission prompts.
-- **Proven on real sessions, not on scores.** Each route was pressed live by the owner before
-  the next was built: the row, the briefing, the watch (seen through the card's count of
-  looks rising on its own), the goal fix, and two real checks on the session that built it.
-  One route, a keyboard chord, could not be proven in that session and is carried as unproven.
+## How it is built
+
+Two modules, split on purpose.
+
+- [`hooks/rep.ts`](hooks/rep.ts) holds everything that can be tested without an engine: the
+  three prompts, the parsers for the model's labelled answers, the check run's argument list
+  and tool allowlist, and the cost arithmetic. It has no engine calls.
+- [`hooks/register.tsx`](hooks/register.tsx) is the engine side: hook registrations, state
+  atoms, the per-session store record, the band render, and the spawn of the check run.
+- [`types/index.d.ts`](types/index.d.ts) declares the mod's state keys and the shapes the
+  render reads.
+
+The watch and the briefing use `$.model.fork`, the same mechanism as Claude Code's built-in
+"You should know" note: a fresh instance of the model over the agent's prompt-cached
+conversation, so a read costs little and never slows the agent. The rep's independence comes
+from its brief, which tells the model to treat everything the agent wrote as a claim, and,
+for the check step, from reading outside the conversation altogether.
+
+The check step spawns `claude -p` with `--output-format json`, a turn limit, a five-minute
+timeout, an explicit allowlist (read, search, git log and diff, agentsview, and the common
+test runners) and an explicit denylist (anything that edits, sends, fetches the web or
+launches helpers). It runs with the installing user's permissions and cannot change a file.
+A newer press makes an older run's answer stale, and the card is only rewritten by the run
+that belongs to it.
+
+State is in two places. Atoms hold the per-session UI state that drives the render. The
+plugin store holds one record per session, capped at the 32 newest: the goal and whether it
+is pinned, the owner's recent prompts, flags already shown, notes other mods have shown, and
+spend counters. Nothing leaves the machine except the model calls the session already makes.
+
+The band above the prompt is a strip shared with other mods. The rep draws first and keeps
+whatever is beneath it. While another mod's note is up, the rep's own note waits and its
+buttons lose their digit hotkeys, so only one set of digits is ever on screen. From the
+prompt box only a bare digit presses a band button, which is why every button carries one.
+
+## Install
+
+```
+claude plugin marketplace add macollins27/owner-rep
+claude plugin install owner-rep@owner-rep
+```
+
+Or from a local clone, with the folder's path in place of the GitHub name. Installed from a
+folder, the mod runs from that folder: an edit reaches a session after `/reload-plugins` or a
+restart. The check step reads the session record through `agentsview` when it is on the path, and
+from the session's transcript file under `~/.claude/projects/` when it is not.
+
+## Develop
+
+```
+claude plugin validate .      # manifest, hooks, and every engine call and state key
+claude plugin test .          # 13 tests in tests/rep.test.tsx, under a second
+tsc -p . --noEmit             # needs .claude-plugin/types/, see below
+```
+
+The tests cover the parsers, the row on both surfaces, the shared strip, the press, the goal
+pin, and a press followed by a check on a stubbed run. The test kit stubs the model and the
+band; no test spawns a real check.
+
+Type-checking needs the mods API declarations, which Claude Code writes into a mod's
+development copy under `~/.claude/dev-mods/` when it sets one up, not into this repository.
+Copy that `.claude-plugin/types/` folder here (it is git-ignored) and `tsc` runs clean. The
+declarations are the authority on the API, which is early access and changes between
+releases.
+
+Validation reports one expected warning: a `CLAUDE.md` at the plugin root is not shipped as
+plugin context. It is there for people and agents working on this repository, not for users
+of the mod.
 
 ## What it can reach
 
@@ -92,25 +136,31 @@ store, and the model through the session's own credentials. The check step start
 Claude Code run that may read files, search, run the project's own tests and read agentsview;
 it may not edit, send, or launch helpers. The rep never sends anything to an agent by itself.
 
-## Install
+## Decisions along the way
 
-```
-/plugin install owner-rep --marketplace <path or URL of this repository>
-```
+- **Build on a mechanism that already works.** The built-in note's cached-fork read is cheap
+  and proven; the rep reuses it with a different brief rather than adding a side channel.
+- **No side panel.** A clean row that is always there beats a panel that must be opened, and
+  it has to share the strip politely with the mods already using it.
+- **Digits, not letters.** The first version used letter hotkeys; the first live press showed
+  that only digits reach a band button from the prompt box.
+- **Fix the goal through the prompt box.** No field to click into. The owner edits the
+  rep's sentence in their own prompt and the rep intercepts it.
+- **The check costs real money, so it runs only when chosen.** The card states the last
+  measured cost beside the button.
+- **The check runs outside the session.** A headless, read-only run, so the agent never
+  hears from the rep and the owner gets no permission prompts.
+- **Proven on real sessions.** Each route was pressed live by the owner before the next was
+  built: the row, the briefing, the watch, the goal fix, and two real checks on the session
+  that built it. A keyboard chord for the Rep button could not be proven and was removed.
 
-Installed from a folder, it runs from that folder: an edit reaches a session after
-`/reload-plugins` or a restart, with no version bump.
+## Status
 
-## Checks
+Built on 13 October 2026 in one session, by directing a Claude Code agent from a written
+objective to an installed tool, with every part proven on screen before the next was started.
+Validated and tested on Claude Code 2.1.296 and 2.1.299. The mods API is early access;
+expect the declarations, and this mod with them, to move.
 
-```
-claude plugin validate .
-claude plugin test .
-```
+## Licence
 
-Thirteen tests cover the parsing, the row on both surfaces, the shared strip, the press,
-the goal fix and a press followed by a check on a stubbed run. Type-check with the
-`tsconfig.json` Claude Code lays in `.claude-plugin/types/` when it loads the mod.
-
-Built and proven on Claude Code 2.1.296. The mods API is early access and changes between
-releases; the declaration file Claude Code writes for the running build is the authority.
+[MIT](LICENSE).
