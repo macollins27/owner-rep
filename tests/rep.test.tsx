@@ -1,3 +1,4 @@
+import type { On } from 'claude-code'
 import { expect, mock, test } from 'claude-code/testing'
 
 import { checkArgv, checkCostText, checkPrompt, doingFor, fit, goalTyped, parseBrief, parseCheck, parseWatch, resultOf, same, textOf } from '../hooks/rep'
@@ -9,8 +10,7 @@ const BAND = {
 
 // In a session the engine draws nothing of its own in the band; a test says so
 // with an empty tree beneath the plugins.
-const quietBand = (on: Parameters<Parameters<typeof test>[1] extends (a: infer _A, b: infer B) => unknown ? (a: _A, b: B) => unknown : never>[1]) =>
-  on('ui.render', { component: 'AbovePrompt' }, () => <></>)
+const quietBand = (on: On) => on('ui.render', { component: 'AbovePrompt' }, () => <></>)
 
 const USAGE = { input_tokens: 10, output_tokens: 20, cache_read_input_tokens: 1000, cache_creation_input_tokens: 0 }
 
@@ -93,7 +93,7 @@ test('a goal typed in the prompt box is pinned by the rep and dropped before the
     reached = true
     return { text: e.text }
   })
-  const result = await $.prompt.submit({ text: 'Owner rep goal: the judge rebuilt so you can oversee agents' })
+  const result = await $.prompt.submit({ text: 'Owner rep goal: the judge rebuilt so you can oversee agents', wait: false, origin: { kind: 'composer' } })
   expect(reached).toBe(false)
   expect(result.drop).toMatch(/pinned/)
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
@@ -151,7 +151,7 @@ test('the row draws on both surfaces with the Rep button and a placeholder goal'
     const button = await ui.find({ key: 'rep' })
     expect(button).toBeDefined()
     expect(button?.props.hotkey).toBe('1')
-    expect(button?.props.action).toBe('app:toggleDiffPreSession')
+    expect(button?.props.action).toBeUndefined()
     expect(await ui.find({ type: 'Text', text: /working out the result/ })).toBeDefined()
     expect(await ui.find({ key: 'put' })).toBeUndefined()
     await ui.unmount()

@@ -36,9 +36,7 @@ import {
   type Memory,
 } from './rep'
 
-// The chord that presses the Rep button from the prompt: `ctrl+x r`, bound in
-// ~/.claude/keybindings.json to this engine action, which has no default key.
-const PRESS_ACTION = 'app:toggleDiffPreSession'
+// From the prompt box only a bare digit presses a band button.
 const PRESS_HOTKEY = '1'
 
 const IDLE: Now = { doing: 'idle', helpers: 0, isWorking: false, mark: '' }
@@ -631,7 +629,7 @@ export const register: Register = on => {
     // win and the row's buttons are drawn without any, for the mouse alone.
     const digit = (d: string): string | undefined => (hasBeneath ? undefined : d)
     const repButton = (
-      <Button key="rep" plain hotkey={digit(PRESS_HOTKEY)} action={PRESS_ACTION} label="Brief me" onPress={onPress} />
+      <Button key="rep" plain hotkey={digit(PRESS_HOTKEY)} label="Brief me" onPress={onPress} />
     )
     const goalButton = <Button key="goal" plain hotkey={digit('2')} label="Fix the goal" onPress={fixGoal} />
     const goalButton3 = <Button key="goal" plain hotkey="4" label="Fix the goal" onPress={fixGoal} />
