@@ -1040,29 +1040,33 @@ const raceTest = (noteFirst: boolean) =>
     quietBand(on)
     mock.clock(on)
     // The first look writes the reading at once; the two that race are held open.
-    const held: Array<() => void> = []
+    const held: Array<{ release: () => void; seesNote: boolean }> = []
     let onHeld: (() => void) | null = null
     let forks = 0
     on('model.fork', async ($, e) => {
       forks += 1
       if (forks === 1) return { value: { isAnswered: true, text: reads('The README alone.', 'first reading'), usage: USAGE } }
-      const seesNote = /\(to the rep\)/.test(String(e.prompt))
-      await new Promise<void>(r => {
-        held.push(r)
-        if (held.length === 2) onHeld?.()
+      const seesNote = /- \(to the rep\) the tests matter most/.test(String(e.prompt))
+      await new Promise<void>(release => {
+        held.push({ release, seesNote })
+        onHeld?.()
       })
       return { value: { isAnswered: true, text: reads(seesNote ? 'The tests matter most; the licence can wait.' : 'The README and a licence file.', seesNote ? 'his note put the tests first' : 'he asked for a licence'), usage: USAGE } }
     })
     await $.prompt.submit(typed('a README'))
     await $.turn.complete(stop('t1'))
     await settle($)
-    // The licence message, its stop's look still in flight when the note arrives.
+    // The licence message; its stop's look has read the record and is at the
+    // model when the note arrives, so the two looks saw different messages.
     await $.prompt.submit(typed('now a licence file'))
-    const bothHeld = new Promise<void>(r => (onHeld = r))
+    const stopHeld = new Promise<void>(r => (onHeld = r))
     const stopLook = $.turn.complete(stop('t2'))
+    await stopHeld
+    const noteHeld = new Promise<void>(r => (onHeld = r))
     const note = $.prompt.submit(typed('Owner rep: the tests matter most; the licence can wait'))
-    await bothHeld
-    const [releaseStop, releaseNote] = held as [() => void, () => void]
+    await noteHeld
+    expect(held.map(h => h.seesNote)).toEqual([false, true])
+    const [releaseStop, releaseNote] = held.map(h => h.release) as [() => void, () => void]
     const release = async (r: () => void) => {
       const saved = new Promise<void>(done => (onSave = done))
       r()

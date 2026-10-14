@@ -70,6 +70,13 @@ The `turn.step` test drives the kit's streaming call: `$.turn.step(input)` retur
 stream, a `turn.step` hook beneath answers it with an `async function*` returning the step's
 result, and the test reads the stream to its end before asserting.
 
+The doctor earned its place twice more on 14 Oct 2026: the first race test matched the words
+"(to the rep)" anywhere in the brief, which the brief's own instructions contain, so both
+looks were taken for the one that saw the note and the late-look defect survived; and the
+stop's look was reading the record after the note had been recorded, so there was no race
+to test. The test now starts the stop's look before the note is sent and matches the listed
+note line.
+
 The doctor also earned its place here: the first version of the stale-check test passed with
 its defect planted, because the held check answered with text that was not a result, so the
 stale answer had nothing to write. The doctor reported it as survived and the test was fixed.
