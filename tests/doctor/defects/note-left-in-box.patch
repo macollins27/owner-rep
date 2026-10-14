@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index bebef13..2d9a280 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -494,7 +494,6 @@ export const register: Register = on => {
+           await takeNote($, id, note)
+           // A dropped prompt stays in the box for editing; a note the rep has
+           // taken must not, or the next digit lands after it as text.
+-          await $.prompt.fill({ text: '', mode: 'replace' }).catch(() => undefined)
+           if (!inFlight.has('note')) {
+             inFlight.add('note')
+             look($, id, 'note', '')
