@@ -70,5 +70,47 @@
     "breaks": "The brief loses the rule that the owner's messages add up, so the rep judges the last message alone.",
     "patch": "whole-ask-rule-dropped.patch",
     "fixed": "2026-10-14"
+  },
+  {
+    "name": "helper-not-counted",
+    "breaks": "A helper the agent starts is never counted, so the status hides that helpers are running.",
+    "patch": "helper-not-counted.patch",
+    "fixed": "tested 2026-10-14"
+  },
+  {
+    "name": "box-text-overwritten",
+    "breaks": "The message is put into a prompt box that already has text in it, overwriting what the owner was typing.",
+    "patch": "box-text-overwritten.patch",
+    "fixed": "tested 2026-10-14"
+  },
+  {
+    "name": "fill-refusal-ignored",
+    "breaks": "A prompt box that refuses the message is treated as having taken it, so the card closes and the owner is told it is there.",
+    "patch": "fill-refusal-ignored.patch",
+    "fixed": "tested 2026-10-14"
+  },
+  {
+    "name": "goal-prefix-dropped",
+    "breaks": "Fix the goal puts the bare sentence in the prompt box, so pressing Enter sends it to the agent instead of pinning it.",
+    "patch": "goal-prefix-dropped.patch",
+    "fixed": "tested 2026-10-14"
+  },
+  {
+    "name": "check-timeout-unreported",
+    "breaks": "A check that outlasts its five minutes is stopped but reported as having failed to run, not as timed out.",
+    "patch": "check-timeout-unreported.patch",
+    "fixed": "tested 2026-10-14"
+  },
+  {
+    "name": "check-failure-swallowed",
+    "breaks": "A check whose run cannot start leaves the card saying it is still checking.",
+    "patch": "check-failure-swallowed.patch",
+    "fixed": "tested 2026-10-14"
+  },
+  {
+    "name": "end-not-saved",
+    "breaks": "The session end does not save the record, so a session that ends without a prompt loses its record's freshness.",
+    "patch": "end-not-saved.patch",
+    "fixed": "tested 2026-10-14"
   }
 ]

@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index c0f1d7d..170b84a 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -346,7 +346,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
+ 
+ async function putMessage($: EngineInterface, text: string): Promise<void> {
+   const box = await $.prompt.read()
+-  if (box.text.trim() !== '') {
++  if (false && box.text.trim() !== '') {
+     $.ui.toast('Your prompt box has text in it. Send or clear it, then press 1 again.')
+     return
+   }

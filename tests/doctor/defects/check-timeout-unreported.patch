@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index c0f1d7d..784ee85 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -291,7 +291,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
+     }
+     activeCheck = { stop: () => close('replaced') }
+     const stop = $.clock.after(CHECK_TIMEOUT_MS, () => {
+-      timedOut = true
++      timedOut = false
+       close('timeout')
+     })
+     let end: { code: number | null; signal: string | null } = { code: null, signal: null }

@@ -1,7 +1,7 @@
 import type { On } from 'claude-code'
 import { expect, mock, test } from 'claude-code/testing'
 
-import { CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, fit, fitCard, goalTyped, parseBrief, parseCheck, parseWatch, programOf, resultOf, same, textOf } from '../hooks/rep'
+import { CHECK_TIMEOUT_MS, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, fit, fitCard, goalTyped, parseBrief, parseCheck, parseWatch, programOf, resultOf, same, textOf } from '../hooks/rep'
 
 // A band with room for a whole card; the fold-to-fit test narrows it.
 const BAND = {
@@ -631,4 +631,185 @@ test('rule: pressing Rep gives the model the session size the engine reports', a
   expect(prompt).toMatch(/48 percent of its window \(243k of 500k tokens\)/)
   expect(await ui.find({ type: 'Text', text: /conversation at 48 percent of its window/ })).toBeDefined()
   await ui.unmount()
+})
+
+// --- The remaining hook paths: helpers, the prompt box, the goal field, the check's failures, the session's end. ---
+
+test('rule: a helper the agent starts is counted in the status until its turn completes', async ($, on) => {
+  session(on)
+  quietBand(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: watchAnswer(null), usage: USAGE } }))
+  on('agent.spawn', () => ({ model: 'm', agentId: 'helper-1' }))
+  on('tool.call', () => ({ result: '' }))
+  await $.agent.spawn({ tool_use_id: 'tu1', prompt: 'look into x', description: 'a helper', subagentType: 'general-purpose', provider: { kind: 'model', model: 'm' } } as never)
+  await $.tool.call({ tool: 'Read', file_path: '/a/b.md' })
+  let ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  expect(await ui.find({ type: 'Text', text: /^reading b\.md, 1 helper running$/ })).toBeDefined()
+  await ui.unmount()
+  await $.turn.complete({ ...stop('h1'), agentId: 'helper-1' })
+  await $.tool.call({ tool: 'Read', file_path: '/a/c.md' })
+  ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  expect(await ui.find({ type: 'Text', text: /^reading c\.md$/ })).toBeDefined()
+  await ui.unmount()
+})
+
+// A card with a message, ready for the prompt-box tests.
+const cardUp = async ($: Parameters<Parameters<typeof test>[1]>[0], on: On, toasts: string[]) => {
+  mock.store(on, {})
+  quietBand(on)
+  on('session.id', () => ({ value: 'test-session' }))
+  on('ui.toast', ($, e) => {
+    toasts.push(String(e.text))
+    return { value: undefined }
+  })
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  expect(await ui.find({ key: 'put' })).toBeDefined()
+  return ui
+}
+
+test('rule: the message is not put into a prompt box that has text in it', async ($, on) => {
+  const toasts: string[] = []
+  let filled = ''
+  on('prompt.read', () => ({ value: { text: 'half-typed', cursor: 4 } }))
+  on('prompt.fill', ($, e) => {
+    filled = e.text
+    return { isFilled: true }
+  })
+  const ui = await cardUp($, on, toasts)
+  await ui.press({ key: 'put' })
+  expect(toasts.some(t => /prompt box has text in it/.test(t))).toBe(true)
+  expect(filled).toBe('')
+  expect(await ui.find({ key: 'put' })).toBeDefined()
+  await ui.unmount()
+})
+
+test('rule: a prompt box that refuses the fill is reported, and one that takes it closes the card', async ($, on) => {
+  const toasts: string[] = []
+  let refused = true
+  on('prompt.read', () => ({ value: { text: '', cursor: 0 } }))
+  on('prompt.fill', () => (refused ? { isFilled: false, refusal: 'dialog' } : { isFilled: true }))
+  const ui = await cardUp($, on, toasts)
+  await ui.press({ key: 'put' })
+  // The engine keeps a refusal's cause to itself (a hook's own is stripped), so the plain wording is what shows here.
+  expect(toasts.some(t => /The prompt box did not take the message/.test(t))).toBe(true)
+  expect(await ui.find({ key: 'put' })).toBeDefined()
+  refused = false
+  await ui.press({ key: 'put' })
+  expect(toasts.some(t => /The message is in your prompt box/.test(t))).toBe(true)
+  expect(await ui.find({ key: 'put' })).toBeUndefined()
+  expect((await ui.find({ key: 'rep' }))?.props.hotkey).toBe('1')
+  await ui.unmount()
+})
+
+test('rule: Fix the goal puts the goal sentence in the prompt box behind the rep prefix, and an empty one unpins', async ($, on) => {
+  let filled = ''
+  session(on)
+  quietBand(on)
+  on('prompt.read', () => ({ value: { text: '', cursor: 0 } }))
+  on('prompt.fill', ($, e) => {
+    filled = e.text
+    return { isFilled: true }
+  })
+  let goal = 'the first goal'
+  let forks = 0
+  on('model.fork', () => {
+    forks += 1
+    return { value: { isAnswered: true, text: watchAnswer(null).replace('A mod that briefs you plainly.', goal), usage: USAGE } }
+  })
+  await $.prompt.submit(typed('Owner rep goal: the judge rebuilt'))
+  let ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'goal' })
+  expect(filled).toBe('Owner rep goal: the judge rebuilt')
+  await ui.unmount()
+  // Pinned: a watch's own goal does not replace it.
+  await $.turn.complete(stop('t1'))
+  ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  expect(await ui.find({ type: 'Text', text: /the judge rebuilt/ })).toBeDefined()
+  await ui.unmount()
+  // Unpinned: the next watch's goal takes over.
+  const r = await $.prompt.submit(typed('Owner rep goal:'))
+  expect(r.drop).toMatch(/unpinned/)
+  goal = 'the goal the watch worked out'
+  await $.turn.complete(stop('t2'))
+  // The look the stop started settles while the strip is drawn, as in a session.
+  await (await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })).unmount()
+  expect(forks).toBe(2)
+  ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  expect(await ui.find({ type: 'Text', text: /the goal the watch worked out/ })).toBeDefined()
+  await ui.unmount()
+})
+
+// A card with the check pressed, the check's run answered by `spawn`.
+const checkWith = async ($: Parameters<Parameters<typeof test>[1]>[0], on: On, spawn: () => AsyncGenerator<unknown, unknown>) => {
+  session(on)
+  quietBand(on)
+  on('session.cwd', () => ({ value: '/tmp/x' }))
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  on('process.spawn', spawn as never)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  return ui
+}
+
+test('rule: a check that prints no result says it could not run, with the exit code and the last error line', async ($, on) => {
+  mock.clock(on)
+  const ui = await checkWith($, on, async function* () {
+    yield { stream: 'stderr', text: 'claude: not logged in\n' }
+    return { value: { code: 2, signal: null } }
+  })
+  await ui.press({ key: 'check' })
+  expect(await ui.find({ type: 'Text', text: /The check could not run \(exit 2\): claude: not logged in\./ })).toBeDefined()
+  expect(await ui.find({ key: 'check' })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /The card\./ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('rule: a check that outlasts its five minutes is stopped and says so', async ($, on) => {
+  const clock = mock.clock(on)
+  let kill: () => void = () => undefined
+  const ui = await checkWith($, on, async function* () {
+    // A run that never prints; it ends only when the rep's timeout kills it.
+    await new Promise<void>(r => (kill = r))
+    return { value: { code: null, signal: 'SIGTERM' } }
+  })
+  const press = ui.press({ key: 'check' })
+  await clock.advance(CHECK_TIMEOUT_MS + 1)
+  kill()
+  await press
+  expect(await ui.find({ type: 'Text', text: /ran out of time \(five minutes\) and was stopped/ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('rule: a check whose run cannot start reports the failure on the card', async ($, on) => {
+  mock.clock(on)
+  const ui = await checkWith($, on, async function* () {
+    throw new Error('spawn refused by policy')
+  })
+  await ui.press({ key: 'check' })
+  expect(await ui.find({ type: 'Text', text: /The check failed: / })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /The card\./ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('rule: the session end saves the record, so the next session finds the goal and the owner\'s messages', async ($, on) => {
+  const store: Record<string, unknown> = {}
+  on('store.get', ($, e) => ({ value: store[e.key] }))
+  on('store.set', ($, e) => {
+    store[e.key] = e.value
+    return { value: undefined }
+  })
+  on('session.id', () => ({ value: 'test-session' }))
+  on('prompt.submit', ($, e) => ({ text: e.text }))
+  on('session.end', ($, e) => ({ sessionId: e.sessionId }))
+  quietBand(on)
+  await $.prompt.submit(typed('Owner rep goal: the goal kept across sessions'))
+  const before = (store.sessions as Record<string, { at: number }>)['test-session']?.at ?? 0
+  await new Promise(r => setTimeout(r, 5))
+  await $.session.end({ reason: 'other', sessionId: 'test-session', resume: { id: 'test-session' } } as never)
+  const rec = (store.sessions as Record<string, { at: number; goal: string; isPinned: boolean }>)['test-session']
+  expect(rec?.goal).toBe('the goal kept across sessions')
+  expect(rec?.isPinned).toBe(true)
+  expect(rec?.at).toBeGreaterThan(before)
 })

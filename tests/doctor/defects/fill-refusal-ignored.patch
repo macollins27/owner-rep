@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index c0f1d7d..d6e3d1f 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -351,7 +351,7 @@ async function putMessage($: EngineInterface, text: string): Promise<void> {
+     return
+   }
+   const filled = await $.prompt.fill({ text, mode: 'replace' })
+-  if (!filled.isFilled) {
++  if (false) {
+     $.ui.toast(
+       filled.refusal === 'dialog'
+         ? 'A dialog has the keyboard. Answer it, then press 1 again.'
