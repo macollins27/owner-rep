@@ -1,11 +1,12 @@
 import type { On } from 'claude-code'
 import { expect, mock, test } from 'claude-code/testing'
 
-import { CLEAR_AFTER_PROMPTS, SESSIONS_MAX, TYPED_PAST_FREE, checkArgv, checkCostText, checkPrompt, doingFor, fit, goalTyped, parseBrief, parseCheck, parseWatch, programOf, resultOf, same, textOf } from '../hooks/rep'
+import { CLEAR_AFTER_PROMPTS, SESSIONS_MAX, TYPED_PAST_FREE, cardRows, checkArgv, checkCostText, checkPrompt, doingFor, fit, fitCard, goalTyped, parseBrief, parseCheck, parseWatch, programOf, resultOf, same, textOf } from '../hooks/rep'
 
+// A band with room for a whole card; the fold-to-fit test narrows it.
 const BAND = {
   component: 'AbovePrompt',
-  props: { hasSurvey: false, isWorking: false, maxRows: 12, bodyColumns: 96, scroll: { offset: 0, bodyRows: 11 }, view: {} },
+  props: { hasSurvey: false, isWorking: false, maxRows: 40, bodyColumns: 96, scroll: { offset: 0, bodyRows: 39 }, view: {} },
 } as const
 
 // In a session the engine draws nothing of its own in the band; a test says so
@@ -534,4 +535,69 @@ test('rule: the store keeps only the newest SESSIONS_MAX sessions', async ($, on
   expect(kept['test-session']?.owner).toEqual(['a prompt from the newest session'])
   expect(kept.s0).toBeUndefined()
   expect(kept.s1).toBeDefined()
+})
+
+// --- The card fits the band's rows, so its buttons are always where a digit reaches them. ---
+
+const LONG = (word: string) => Array.from({ length: 30 }, (_, i) => `${word} sentence number ${i + 1} of the model's text.`).join(' ')
+
+test('fitCard folds the body in order, never the buttons, until the card fits the rows', async () => {
+  const card = {
+    goal: LONG('Goal'),
+    well: '',
+    stands: LONG('Stands'),
+    means: LONG('Means'),
+    leftOut: ['one thing left out', 'another thing left out', 'a third'],
+    next: LONG('Next'),
+    checked: null,
+    isChecking: false,
+    checkNote: '',
+    checkCost: 'Check it starts a separate read-only run. The first one measured used 210k fresh tokens plus 2.3 million re-read from cache, in 2 minutes.',
+    message: LONG('Message'),
+    does: 'Makes the agent prove it.',
+    spent: '3 looks',
+  }
+  expect(cardRows(card, 96)).toBeGreaterThan(40)
+  for (const rows of [40, 20, 12, 8, 6]) {
+    const c = fitCard(card, rows, 96)
+    expect(cardRows(c, 96)).toBeLessThanOrEqual(rows)
+    expect(c.message).not.toBe('')
+  }
+  // At twelve rows the spend line and the "does" line go first, the lists fold, the message keeps a row.
+  const twelve = fitCard(card, 12, 96)
+  expect(twelve.spent).toBe('')
+  expect(twelve.does).toBe('')
+  expect(twelve.leftOut).toHaveLength(1)
+  expect(twelve.leftOut[0]).toMatch(/one thing left out; another/)
+  expect(twelve.stands).toMatch(/…$/)
+  expect(twelve.message).toMatch(/^Message sentence number 1/)
+  // A card that fits is left alone.
+  const small = { ...card, goal: 'Short.', stands: 'Short.', means: 'Short.', next: 'Short.', message: 'Short.', leftOut: [] }
+  expect(fitCard(small, 40, 96)).toEqual(small)
+})
+
+test('rule: with few rows in the band the card still draws its buttons and folds the body', async ($, on) => {
+  session(on)
+  quietBand(on)
+  on('model.fork', () => ({
+    value: {
+      isAnswered: true,
+      text: `goal: ${LONG('Goal')}\nwell:\nstands: ${LONG('Stands')}\nmeans: ${LONG('Means')}\nleft:\n- one thing\n- another\nnext: ${LONG('Next')}\nmessage:\n${LONG('Message')}\nend\ndoes: Makes the agent prove it.`,
+      usage: USAGE,
+    },
+  }))
+  const narrow = { ...BAND, props: { ...BAND.props, maxRows: 8, scroll: { offset: 0, bodyRows: 7 } } }
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...narrow })
+  await ui.press({ key: 'rep' })
+  expect((await ui.find({ key: 'close' }))?.props.hotkey).toBe('2')
+  expect((await ui.find({ key: 'put' }))?.props.hotkey).toBe('1')
+  expect(await ui.find({ type: 'Text', text: /Means sentence number 30/ })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: /Message sentence number 1/ })).toBeDefined()
+  const texts = (await ui.findAll({ type: 'Text' })).map(t => t.text ?? '')
+  const longest = Math.max(...texts.map(t => t.length))
+  expect(longest).toBeLessThan(96 * 3)
+  // The digit closes the card: the row is back.
+  await ui.press({ key: 'close' })
+  expect((await ui.find({ key: 'rep' }))?.props.hotkey).toBe('1')
+  await ui.unmount()
 })

@@ -688,3 +688,116 @@ export function spentText(calls: number, tokens: number, cached: number, checks 
   const checked = checks > 0 ? `, ${checks} check${checks === 1 ? '' : 's'} (${k(checkTokens)} tokens, mostly cache)` : ''
   return `Owner rep: ${looks}${checked} this session; looks used ${k(fresh)} fresh tokens and ${k(cached)} re-read from cache`
 }
+
+// --- Fitting the briefing card into the band's rows. ---
+//
+// The band shows at most `maxRows` rows and scrolls a taller tree, and a bare
+// digit presses only a button wholly inside the visible window. So the card's
+// buttons must sit within `maxRows`, whatever the model wrote: the body is
+// folded first, in a fixed order, and the buttons never.
+
+export type CardText = {
+  goal: string
+  well: string
+  stands: string
+  means: string
+  leftOut: string[]
+  next: string
+  checked: { holds: string[]; wrong: string[]; notShown: string[]; changed: string[]; looked: string } | null
+  isChecking: boolean
+  checkNote: string
+  checkCost: string
+  message: string
+  does: string
+  spent: string
+}
+
+// Rows a wrapped text takes in `width` cells, one per paragraph at least.
+export const rowsOf = (text: string, width: number): number => {
+  if (text === '') return 0
+  const w = Math.max(1, width)
+  return text.split('\n').reduce((n, line) => n + Math.max(1, Math.ceil(line.length / w)), 0)
+}
+
+// The card's rows as the band draws it: a top margin, the head, each part in
+// `cols`, the message in its bordered box, the buttons, the spend line.
+export function cardRows(c: CardText, cols: number): number {
+  const w = Math.max(1, cols - 2)
+  let rows = 1 + rowsOf(`Owner rep · ${c.goal}`, cols)
+  const part = (label: string, text: string): number => (text === '' ? 0 : rowsOf(`${label} ${text}`, w))
+  rows += rowsOf(c.well, w) + part('Stands:', c.stands) + part('Means:', c.means)
+  if (c.leftOut.length > 0) rows += 1 + c.leftOut.reduce((n, item) => n + rowsOf(`  - ${item}`, w), 0)
+  rows += part('Next:', c.next)
+  if (c.checked !== null) {
+    const items = [...c.checked.holds, ...c.checked.wrong, ...c.checked.notShown, ...c.checked.changed]
+    rows += 1 + items.reduce((n, item) => n + rowsOf(`  not shown  ${item}`, w), 0) + rowsOf(c.checked.looked, w)
+  }
+  if (c.isChecking) rows += 1
+  if (c.checked === null && !c.isChecking && c.checkNote === '') rows += rowsOf(c.checkCost, w)
+  rows += rowsOf(c.checkNote, w)
+  if (c.message !== '') rows += 2 + rowsOf(c.message, Math.max(1, cols - 6))
+  if (c.does !== '' && c.message !== '') rows += rowsOf(c.does, w)
+  rows += cols >= 70 ? 1 : 2
+  rows += c.spent === '' ? 0 : 1
+  return rows
+}
+
+// Folds the card until it fits `maxRows`, least important part first: the
+// spend line, the agent's "does" line, the check's cost text, the left-out
+// list to one line, then means, stands, next and the going-well line to one
+// row each, the checked lists to counts, the goal to one row, and then whole
+// parts dropped, least telling first. After each fold the message is cut to
+// the room left. It is never dropped: the owner can still put it in the
+// prompt, whole, and one row of it says what it is.
+export function fitCard(card: CardText, maxRows: number, cols: number): CardText {
+  const w = Math.max(1, cols - 2)
+  let c: CardText = { ...card }
+  const over = (): boolean => cardRows(c, cols) > maxRows
+  const oneRow = (text: string, prefix: string): string =>
+    rowsOf(`${prefix}${text}`, w) <= 1 ? text : fit(text, Math.max(8, w - prefix.length))
+  if (!over()) return c
+  const folds: Array<() => void> = [
+    () => (c = { ...c, spent: '' }),
+    () => (c = { ...c, does: '' }),
+    () => (c = { ...c, checkCost: oneRow(c.checkCost, '') }),
+    () => (c = { ...c, leftOut: c.leftOut.length > 1 ? [fit(c.leftOut.join('; '), Math.max(8, w - 4))] : c.leftOut.map(i => oneRow(i, '  - ')) }),
+    () => (c = { ...c, means: oneRow(c.means, 'Means: ') }),
+    () => (c = { ...c, stands: oneRow(c.stands, 'Stands: ') }),
+    () => (c = { ...c, next: oneRow(c.next, 'Next: ') }),
+    () => (c = { ...c, well: oneRow(c.well, '') }),
+    () => {
+      if (c.checked === null) return
+      const k = c.checked
+      const parts = [
+        [k.holds.length, 'hold'],
+        [k.wrong.length, 'false'],
+        [k.notShown.length, 'not shown'],
+        [k.changed.length, 'changed since'],
+      ] as const
+      const line = parts.filter(([n]) => n > 0).map(([n, word]) => `${n} ${word}`).join(', ')
+      c = { ...c, checked: { holds: [], wrong: [], notShown: [], changed: [], looked: line === '' ? '' : `Checked: ${line}.` } }
+    },
+    () => (c = { ...c, goal: oneRow(c.goal, 'Owner rep · ') }),
+    // Whole parts go when one row each is still too much, the least telling first.
+    () => (c = { ...c, checkCost: '' }),
+    () => (c = { ...c, leftOut: [] }),
+    () => (c = { ...c, means: '' }),
+    () => (c = { ...c, next: '' }),
+    () => (c = { ...c, well: '' }),
+    () => (c = { ...c, checked: c.checked === null ? null : { ...c.checked, looked: '' } }),
+    () => (c = { ...c, stands: '' }),
+  ]
+  const messageToRoom = (): void => {
+    if (c.message === '') return
+    const room = maxRows - (cardRows({ ...c, message: '' }, cols) + 2)
+    const mw = Math.max(1, cols - 6)
+    const rows = Math.max(1, room)
+    if (rowsOf(c.message, mw) > rows) c = { ...c, message: fit(c.message, Math.max(8, rows * mw - 2)) }
+  }
+  for (const fold of folds) {
+    fold()
+    messageToRoom()
+    if (!over()) break
+  }
+  return c
+}

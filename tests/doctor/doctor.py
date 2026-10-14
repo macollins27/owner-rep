@@ -84,6 +84,9 @@ def main() -> int:
             print(f'    failing: {t}')
         if p < 0:
             print(out[-2000:])
+        print('stopped: nothing planted, because a defect cannot be told from the break already there.')
+        shutil.rmtree(work, ignore_errors=True)
+        return 1
     else:
         print(f'suite with no defect: {p} pass, {f} fail — ok')
 

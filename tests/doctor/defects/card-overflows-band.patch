@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 0246e77..dc685f4 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -755,7 +755,7 @@ export function fitCard(card: CardText, maxRows: number, cols: number): CardText
+   const over = (): boolean => cardRows(c, cols) > maxRows
+   const oneRow = (text: string, prefix: string): string =>
+     rowsOf(`${prefix}${text}`, w) <= 1 ? text : fit(text, Math.max(8, w - prefix.length))
+-  if (!over()) return c
++  return c
+   const folds: Array<() => void> = [
+     () => (c = { ...c, spent: '' }),
+     () => (c = { ...c, does: '' }),

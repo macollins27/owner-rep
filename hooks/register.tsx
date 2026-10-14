@@ -20,6 +20,7 @@ import {
   checkCostText,
   checkPrompt,
   doingFor,
+  fitCard,
   fit,
   goalTyped,
   parseBrief,
@@ -663,6 +664,10 @@ export const register: Register = on => {
     }
 
     if (view === 'brief' && brief !== null) {
+      // The card folded to the band's rows, so its buttons stay where a digit
+      // reaches them; the Put button still carries the whole message.
+      const shown = fitCard({ ...brief, goal: goalText }, e.props.maxRows, cols)
+      const cardHead = lead(headGlyph, headColor, 'Owner rep', shown.goal)
       const section = (label: string, text: string) =>
         text === '' ? undefined : (
           <Box paddingLeft={2} width={cols}>
@@ -674,20 +679,20 @@ export const register: Register = on => {
         )
       return (
         <Box flexDirection="column" marginTop={1}>
-          {head}
-          {brief.well !== '' ? (
+          {cardHead}
+          {shown.well !== '' ? (
             <Box paddingLeft={2} width={cols}>
               <Text color="success" wrap="wrap">
-                {brief.well}
+                {shown.well}
               </Text>
             </Box>
           ) : undefined}
-          {section('Stands:', brief.stands)}
-          {section('Means:', brief.means)}
-          {brief.leftOut.length > 0 ? (
+          {section('Stands:', shown.stands)}
+          {section('Means:', shown.means)}
+          {shown.leftOut.length > 0 ? (
             <Box flexDirection="column" paddingLeft={2} width={cols}>
               <Text bold>Left out:</Text>
-              {brief.leftOut.map((item, i) => (
+              {shown.leftOut.map((item, i) => (
                 <Text key={`left-${i}`} wrap="wrap">
                   {'  - '}
                   {item}
@@ -695,11 +700,11 @@ export const register: Register = on => {
               ))}
             </Box>
           ) : undefined}
-          {section('Next:', brief.next)}
-          {brief.checked !== null ? (
+          {section('Next:', shown.next)}
+          {shown.checked !== null ? (
             <Box flexDirection="column" paddingLeft={2} width={cols}>
               <Text bold>Checked against the record and the files:</Text>
-              {brief.checked.holds.map((item, i) => (
+              {shown.checked.holds.map((item, i) => (
                 <Text key={`holds-${i}`} wrap="wrap">
                   {'  '}
                   <Text color="success">holds</Text>
@@ -707,7 +712,7 @@ export const register: Register = on => {
                   {item}
                 </Text>
               ))}
-              {brief.checked.wrong.map((item, i) => (
+              {shown.checked.wrong.map((item, i) => (
                 <Text key={`wrong-${i}`} wrap="wrap">
                   {'  '}
                   <Text color="error">false</Text>
@@ -715,7 +720,7 @@ export const register: Register = on => {
                   {item}
                 </Text>
               ))}
-              {brief.checked.notShown.map((item, i) => (
+              {shown.checked.notShown.map((item, i) => (
                 <Text key={`notshown-${i}`} wrap="wrap">
                   {'  '}
                   <Text color="warning">not shown</Text>
@@ -723,7 +728,7 @@ export const register: Register = on => {
                   {item}
                 </Text>
               ))}
-              {brief.checked.changed.map((item, i) => (
+              {shown.checked.changed.map((item, i) => (
                 <Text key={`changed-${i}`} wrap="wrap">
                   {'  '}
                   <Text color="suggestion">since then</Text>
@@ -731,46 +736,46 @@ export const register: Register = on => {
                   {item}
                 </Text>
               ))}
-              {brief.checked.looked !== '' ? (
+              {shown.checked.looked !== '' ? (
                 <Text dimColor wrap="wrap">
-                  {brief.checked.looked}
+                  {shown.checked.looked}
                 </Text>
               ) : undefined}
             </Box>
           ) : undefined}
-          {brief.isChecking ? (
+          {shown.isChecking ? (
             <Box paddingLeft={2}>
               <Text color="suggestion">Checking the record and the files… the card updates when it is done.</Text>
             </Box>
           ) : undefined}
-          {brief.checked === null && !brief.isChecking && brief.checkNote === '' ? (
+          {shown.checked === null && !shown.isChecking && shown.checkNote === '' ? (
             <Box paddingLeft={2} width={cols}>
               <Text dimColor wrap="wrap">
-                {brief.checkCost}
+                {shown.checkCost}
               </Text>
             </Box>
           ) : undefined}
-          {brief.checkNote !== '' ? (
+          {shown.checkNote !== '' ? (
             <Box paddingLeft={2} width={cols}>
               <Text dimColor wrap="wrap">
-                {brief.checkNote}
+                {shown.checkNote}
               </Text>
             </Box>
           ) : undefined}
-          {brief.message !== '' ? (
+          {shown.message !== '' ? (
             <Box marginLeft={2} width={cols - 2} flexDirection="column" borderStyle="round" borderDimColor paddingX={1}>
-              <Text wrap="wrap">{brief.message}</Text>
+              <Text wrap="wrap">{shown.message}</Text>
             </Box>
           ) : undefined}
-          {brief.does !== '' && brief.message !== '' ? (
+          {shown.does !== '' && shown.message !== '' ? (
             <Box paddingLeft={2} width={cols}>
               <Text dimColor wrap="wrap">
-                {brief.does}
+                {shown.does}
               </Text>
             </Box>
           ) : undefined}
           {choices(
-            brief.checked === null && !brief.isChecking ? (
+            shown.checked === null && !shown.isChecking ? (
               <Button
                 key="check"
                 plain
@@ -781,7 +786,7 @@ export const register: Register = on => {
                 }}
               />
             ) : undefined,
-            brief.message !== '' ? (
+            shown.message !== '' ? (
               <Button
                 key="put"
                 plain
@@ -797,7 +802,7 @@ export const register: Register = on => {
             <Button key="later" plain hotkey="0" label="Later" onPress={close} />,
           )}
           <Box paddingLeft={2}>
-            <Text dimColor>{brief.spent}</Text>
+            <Text dimColor>{shown.spent}</Text>
           </Box>
         </Box>
       )
