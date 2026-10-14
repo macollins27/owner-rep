@@ -194,7 +194,7 @@ it may not edit, send, or launch helpers. The rep never sends anything to an age
 
 Built on 13 October 2026 in one session, by directing a Claude Code agent from a written
 objective to an installed tool, with every part proven on screen before the next was started.
-Validated and tested on Claude Code 2.1.296 and 2.1.299. The mods API is early access;
+Validated and tested on Claude Code 2.1.296, 2.1.299 and 2.1.300. The mods API is early access;
 expect the declarations, and this mod with them, to move.
 
 ## Licence
