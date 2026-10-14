@@ -1,0 +1,8 @@
+[
+  {
+    "name": "strip-shows-command",
+    "breaks": "The shell status shows the command's first two words again, so shell syntax reaches the owner's strip.",
+    "patch": "strip-shows-command.patch",
+    "fixed": "2026-10-14"
+  }
+]

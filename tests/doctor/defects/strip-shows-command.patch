@@ -1,0 +1,16 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index a7c033f..d7e6e42 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -616,7 +616,10 @@ export function doingFor(tool: string, fields: Record<string, unknown>): string
+       return `reading ${fit(base(fields.file_path), 24) || 'a file'}`
+     case 'Bash':
+     case 'PowerShell':
+-      return `running ${programOf(fields.command) || 'a command'}`
++    {
++      const cmd = typeof fields.command === 'string' ? fields.command.trim().split('\n')[0] ?? '' : ''
++      return `running ${fit(cmd.split(/\s+/).slice(0, 2).join(' '), 24) || 'a command'}`
++    }
+     case 'Grep':
+     case 'Glob':
+       return 'searching files'

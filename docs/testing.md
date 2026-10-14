@@ -102,12 +102,15 @@ them. It can also run the layer 2 script against a defect to prove the live chec
 Every fixed bug adds a defect to the list, starting with `strip-shows-command`. Run the
 doctor before any claim that the tests pass.
 
-**Status.** Not started.
+**Status.** Built: `tests/doctor/doctor.py`, with `defects.json` and one patch per defect in
+`tests/doctor/defects/`. Run it with `python3 tests/doctor/doctor.py`; it exits 1 when the
+clean suite fails or a defect survives. One entry so far, `strip-shows-command`, caught by
+three tests on 14 Oct 2026. A throwaway entry no test looks at was planted the same day to
+show the survivor path reports and exits 1; it was not kept.
 
 ## Order of work
 
-1. The doctor, with `strip-shows-command` as its one entry. It needs no other work and shows
-   at once how much the current suite proves.
+1. ~~The doctor, with `strip-shows-command` as its one entry.~~ Done 14 Oct 2026.
 2. The layer 1 sequence-rule tests, with a doctor entry for each.
 3. The layer 2 script with the five scenarios.
 4. Keep growing the defect list as bugs are fixed.
