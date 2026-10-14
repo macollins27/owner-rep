@@ -15,7 +15,9 @@ rep reads the same conversation, takes nothing on the agent's word, and says so 
 The rep draws one row above the prompt, in the same shape as Claude Code's built-in "You
 should know" note: the result the owner wants, worked out from the owner's own messages, and
 what the agent is doing right now, with a mark when the session needs a look (the agent has
-stopped, is asking a question, or a plan is waiting for a yes).
+stopped, is asking a question, or a plan is waiting for a yes). That status is plain words
+built from the tool's name: a file's name for a read or an edit, the program's name for a
+shell command, and never any text of the command itself.
 
 Behind that row are three reads of increasing cost.
 
@@ -110,7 +112,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 13 tests in tests/rep.test.tsx, under a second
+claude plugin test .          # 14 tests in tests/rep.test.tsx, under a second
 tsc -p . --noEmit             # needs .claude-plugin/types/, see below
 ```
 

@@ -1,7 +1,7 @@
 import type { On } from 'claude-code'
 import { expect, mock, test } from 'claude-code/testing'
 
-import { checkArgv, checkCostText, checkPrompt, doingFor, fit, goalTyped, parseBrief, parseCheck, parseWatch, resultOf, same, textOf } from '../hooks/rep'
+import { checkArgv, checkCostText, checkPrompt, doingFor, fit, goalTyped, parseBrief, parseCheck, parseWatch, programOf, resultOf, same, textOf } from '../hooks/rep'
 
 const BAND = {
   component: 'AbovePrompt',
@@ -62,12 +62,34 @@ test('helpers: fit cuts with an ellipsis, same ignores case and a final period, 
   expect(fit('short', 10)).toBe('short')
   expect(same('The tests pass.', 'the tests pass')).toBe(true)
   expect(doingFor('Edit', { file_path: '/a/b/register.tsx' })).toBe('editing register.tsx')
-  expect(doingFor('Bash', { command: 'git status --short' })).toBe('running git status')
+  expect(doingFor('Bash', { command: 'git status --short' })).toBe('running git')
   expect(doingFor('mcp__agentsview__search_content', {})).toBe('using agentsview')
   expect(doingFor('Agent', {})).toBe('starting a helper')
   expect(goalTyped('Owner rep goal: a judge that works')).toBe('a judge that works')
   expect(goalTyped('owner rep goal:')).toBe('')
   expect(goalTyped('fix the tests')).toBe(null)
+})
+
+// The command from the owner's screenshot of 14 Oct 2026: it starts by setting
+// variables, and the strip showed the first of them as code.
+const CHAIN =
+  'export PATH="$HOME/.local/bin:$PATH"; LOGF=~/Library/Logs/agentsview/serve.launchd.log; D=~/.agentsview/debug.log; ' +
+  'mark=$(wc -c < "$LOGF"); before=$(wc -l < "$D"); (agentsview sync >/dev/null 2>&1 &); W=""; for i in $(seq 1 90); do ' +
+  'W=$(ps -eo pid,command | grep -E "[a]gentsview sync-worker" | grep -v grep); done'
+
+test('a shell status names the program and never shows the command: a chain that starts by setting a variable', async () => {
+  expect(doingFor('Bash', { command: CHAIN })).toBe('running agentsview')
+  expect(doingFor('Bash', { command: CHAIN })).not.toMatch(/[$="'~\/]/)
+  expect(programOf('FOO=bar npm test')).toBe('npm')
+  expect(programOf('cd /x/y && pnpm build')).toBe('pnpm')
+  expect(programOf('sudo ./scripts/deploy.sh --now')).toBe('deploy.sh')
+  expect(programOf('export PATH="$HOME/.local/bin:$PATH"')).toBe('')
+  expect(programOf('"$HOME/bin/tool" --x')).toBe('')
+  expect(programOf('echo hi > out.txt')).toBe('')
+  expect(programOf('$env:PATH = "C:\\x"; Get-ChildItem')).toBe('Get-ChildItem')
+  expect(programOf(undefined)).toBe('')
+  expect(doingFor('Bash', {})).toBe('running a command')
+  expect(doingFor('Read', { file_path: '/a/an-unreasonably-long-file-name-for-the-strip.md' })).toBe('reading an-unreasonably-long-fi…')
 })
 
 test('the text of another mod\'s note is read from its tree, buttons left out', async () => {
