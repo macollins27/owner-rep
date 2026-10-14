@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 311727d..eb092b3 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -110,7 +110,7 @@ async function saveRec($: EngineInterface, rec: Rec): Promise<void> {
+   all[rec.id] = { ...rec, at: Date.now() }
+   const ids = Object.keys(all).sort((a, b) => (all[b]?.at ?? 0) - (all[a]?.at ?? 0))
+   const kept: Record<string, Rec> = {}
+-  for (const k of ids.slice(0, SESSIONS_MAX)) kept[k] = all[k] as Rec
++  for (const k of ids) kept[k] = all[k] as Rec
+   await $.store.set('sessions', kept)
+ }
+ 

@@ -4,5 +4,53 @@
     "breaks": "The shell status shows the command's first two words again, so shell syntax reaches the owner's strip.",
     "patch": "strip-shows-command.patch",
     "fixed": "2026-10-14"
+  },
+  {
+    "name": "flag-shown-twice",
+    "breaks": "The watch forgets which flags it has shown, so the same note comes back after the owner dismissed it.",
+    "patch": "flag-shown-twice.patch",
+    "fixed": "tested 2026-10-14"
+  },
+  {
+    "name": "watch-never-backs-off",
+    "breaks": "Typing past notes never backs the watch off, so every stop costs a look however often the owner ignores it.",
+    "patch": "watch-never-backs-off.patch",
+    "fixed": "tested 2026-10-14"
+  },
+  {
+    "name": "stale-check-wins",
+    "breaks": "An older check run's answer rewrites the newer card the owner is looking at.",
+    "patch": "stale-check-wins.patch",
+    "fixed": "tested 2026-10-14"
+  },
+  {
+    "name": "flag-replaces-card",
+    "breaks": "A watch flag replaces the briefing card instead of waiting for the row.",
+    "patch": "flag-replaces-card.patch",
+    "fixed": "tested 2026-10-14"
+  },
+  {
+    "name": "stop-never-marked",
+    "breaks": "A stop or a question never marks the row, so the owner is not told the session needs a look.",
+    "patch": "stop-never-marked.patch",
+    "fixed": "tested 2026-10-14"
+  },
+  {
+    "name": "note-over-other-mod",
+    "breaks": "The rep's note draws on top of another mod's note, putting two sets of digit buttons on screen.",
+    "patch": "note-over-other-mod.patch",
+    "fixed": "tested 2026-10-14"
+  },
+  {
+    "name": "digits-doubled",
+    "breaks": "The row keeps its digit hotkeys while another mod draws, so one digit presses two buttons.",
+    "patch": "digits-doubled.patch",
+    "fixed": "tested 2026-10-14"
+  },
+  {
+    "name": "sessions-unbounded",
+    "breaks": "The store keeps every session ever seen instead of the newest SESSIONS_MAX.",
+    "patch": "sessions-unbounded.patch",
+    "fixed": "tested 2026-10-14"
   }
 ]

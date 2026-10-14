@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 311727d..bea931e 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -552,7 +552,7 @@ export const register: Register = on => {
+     const asking = /\?\s*$/.test(e.answer.trim())
+     const doing = e.isAborted ? 'stopped by you' : asking ? 'asking you' : 'stopped, waiting on you'
+     lastDoing = doing
+-    await setNow($, { isWorking: false, doing, mark: e.isAborted ? '' : asking ? 'asking' : 'stopped' }).catch(
++    await setNow($, { isWorking: false, doing, mark: '' }).catch(
+       () => undefined,
+     )
+     if (!e.isAborted && !inFlight.has('look')) {
