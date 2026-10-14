@@ -85,8 +85,14 @@ It runs on demand, not under `claude plugin test`, because each scenario costs a
 and about a minute. Its output is the captured screens, kept beside the script, so a reader
 can see what the strip showed.
 
-**Status.** The capture method is proven (scenario 2 was run by hand on 14 Oct 2026 and
-showed "running agentsview"); no script is checked in yet.
+**Status.** Built: `tests/live/live.sh`, with the captures in `tests/live/captures/`. First
+full run on 14 Oct 2026: scenarios 1, 2, 3 and 5 shown; scenario 4 found a defect. The card
+drew, with its body and its message, but it was taller than the band's window, so its buttons
+sat under the engine's "↓ 4 more" row, and a bare digit arms only a button wholly inside the
+window (the engine's rule, stated on `AbovePrompt.maxRows` in the API declarations). The
+owner's "2" went into the prompt box as text and the card stayed up. The scenario asserts the
+buttons are inside the window and the digit closes the card, so it stays red until the card
+is laid out to fit `maxRows`. That fix is the next item of work.
 
 ## The doctor
 
@@ -123,5 +129,8 @@ sequence rule above, all caught. A throwaway entry no test looks at was planted 
 
 1. ~~The doctor, with `strip-shows-command` as its one entry.~~ Done 14 Oct 2026.
 2. ~~The layer 1 sequence-rule tests, with a doctor entry for each.~~ Done 14 Oct 2026.
-3. The layer 2 script with the five scenarios.
-4. Keep growing the defect list as bugs are fixed.
+3. ~~The layer 2 script with the five scenarios.~~ Done 14 Oct 2026; scenario 4 red.
+4. Lay the briefing card out to fit the band's `maxRows`, so its buttons are always inside
+   the window and their digits work; scenario 4 then goes green, and a kit test with a
+   small `maxRows` and a doctor entry go with it.
+5. Keep growing the defect list as bugs are fixed.
