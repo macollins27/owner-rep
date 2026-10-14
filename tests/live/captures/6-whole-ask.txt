@@ -1,44 +1,44 @@
+⏺ README.md is written and I have stopped there, as asked.
 
-  Thought for 6s
+  The folder held nothing but the git setup, so the README has a title line naming the project and one sentence saying the code, test suite and GitHub test run are still
+  to come. It makes no claim about tests or code that do not exist yet. The file is not committed, since you asked only for the README.
 
-⏺ Writing LICENSE with the single line MIT as asked.
+  The next steps when you want them are the code itself, then the test suite, then the GitHub Actions file that runs those tests on every push.
 
-⏺ Bash(printf 'MIT\n' > LICENSE && cat LICENSE && ls)
+✻ Worked for 15s · done 6:57 PM
+
+❯ Now add a LICENSE file with the single line MIT and stop.
+
+  Thought for 5s
+
+⏺ Writing LICENSE with the single line "MIT" now.
+
+⏺ Bash(printf 'MIT\n' > LICENSE && cat LICENSE && git status --short)
   ⎿  MIT
-     LICENSE
-     README.md
+     ?? LICENSE
+     ?? README.md
   ⎿  Created LICENSE (+1 -0)
       1 +MIT
 
-⏺ LICENSE is written with the single line MIT, and I stopped there.
+⏺ LICENSE now holds the single line "MIT", and I have stopped there.
 
-  One concern for the employer audience. A file that only says MIT does not grant anyone a licence. The MIT licence is a short paragraph of legal text with your name and
-  the year at the top. That text is what makes the code legally usable and what GitHub reads to show an MIT badge on the repository page. A bare word will read to a
-  reviewer as a placeholder.
+  One thing to know for when the repository goes public: a file that says only "MIT" is not a legal license. The MIT license is a short paragraph of standard text that
+  names the copyright holder and year, and GitHub only recognises and displays a license when that full text is present. Employers browsing the repository would see "no
+  license detected". When you are ready, I can replace the one line with the full MIT text under your name, which is a one-step change.
 
-  When you want the real thing, say so and I will replace the line with the full MIT text under your name and 2026. Neither file is committed yet, since the folder still
-  has no commits and no GitHub remote.
+  Neither file is committed yet, since you have asked for files only so far.
 
-✻ Sautéed for 16s · done 5:31 PM
+✻ Sautéed for 8s · done 6:57 PM
+
+⏺ Prompt dropped by a hook: Owner rep: noted, and reading again. The agent did not see this.
                                                                                                                                                                       [-]
-◇ Owner rep · A public project employers can inspect as careful work: a clear README, a large test suite, and tests run on GitHub every push. Right now that means
-  the one-line LICENSE file.
-  Stands: The agent wrote both small files you asked for, and the printed output shows their contents exactly as requested. The folder otherwise holds nothing: no
-  code, no saved history, and no copy on GitHub.
-  Means: The two steps you asked for are done. The agent is right that a licence file saying only the word MIT grants nobody permission to use the code and will loo…
-  Left out:
-    - The licence file is a single word, not the licence text, so it does not yet do what a licence is for.; Neither file is saved into the project's history or on…
-  Next: Decide one thing only you can: is there existing code this repository will hold, or is the project to be written from scratch? Then tell the agent to replace
-  the single word with the full licence text under your name, save the work, and create the GitHub copy.
-  Check it starts a separate read-only Claude Code run over the session record and the files. The first one measured used 210k fresh tokens plus 2.3 million re-read…
-  ╭─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-  │ Replace the single word in the LICENSE file with the full MIT licence text under my name and this year. Then save both files into the project's history and…    │
-  ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-  3: Check it   1: Put message in prompt   2: Fine, close   4: Fix the goal   0: Later   conversation at 5 percent of its window
+◆ Heads up · The folder is empty; there is no code yet, so the README and license describe a project that does not exist.
+  The agent's listing printed nothing but the git folder, and the README it wrote says the code, tests and automatic runs are still to come.
+  1: Brief me   2: Fine   0: Later   stopped, waiting on you
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-❯ Now add the test suite and GitHub Actions workflow.
+❯ Owner rep: the licence can wait. What matters most to me is the test suite and the GitHub run; judge the work by those.1
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  [Fable 5.1] │ owner-rep-live.KHEBMigkDM +owner-rep-live.KHEBMigk… +maxwellcollins git:(main*) │ README.md for portfolio repo
-  Context █░░░░░░░░░ 5% │ Usage █░░░░░░░░░ 13% (resets in 3h 29m)
-  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents
+  [Fable 5.1] │ owner-rep-live.nVATJRi6Sg +owner-rep-live.nVATJRi6… +maxwellcollins git:(main*) │ Portfolio repository README
+  Context █░░░░░░░░░ 5% │ Usage ████░░░░░░ 42% (resets in 2h 3m)
+  ⏵⏵ bypass permissions on (shift+tab to cycle)

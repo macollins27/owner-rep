@@ -172,5 +172,11 @@
     "breaks": "The look that fires every CHECK_EVERY model requests never fires, so a long turn gets no watch until it stops.",
     "patch": "step-look-dropped.patch",
     "fixed": "tested 2026-10-14"
+  },
+  {
+    "name": "note-left-in-box",
+    "breaks": "A note to the rep stays in the prompt box after it is taken, so the owner's next digit lands after it as text instead of pressing a button.",
+    "patch": "note-left-in-box.patch",
+    "fixed": "2026-10-14"
   }
 ]

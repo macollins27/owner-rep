@@ -93,6 +93,8 @@ for n in $want; do
       # The engine's own line says the hook dropped the prompt; any other new ⏺ line is the agent answering.
       [[ $(pane | grep -E '^⏺' | grep -vc 'Prompt dropped by a hook') -eq $answers ]] ; verdict 'no answer from the agent to the note, only the dropped-prompt line' $?
       pane | grep -q 'Prompt dropped by a hook' ; verdict 'the dropped-prompt line shown' $?
+      # The note is cleared from the prompt box, so the next digit presses a button.
+      pane | grep -qE '^❯ Owner rep:' ; [[ $? -ne 0 ]]; verdict 'the prompt box emptied after the note' $?
       strip | grep -q 'working out the result you want' ; [[ $? -ne 0 ]]; verdict 'the head shows a reading, not the placeholder' $?
       strip | grep -qE '1: Brief me\s+2: Tell the rep' ; verdict 'row buttons with Tell the rep' $?
       stop ;;
