@@ -1,7 +1,7 @@
 import type { On } from 'claude-code'
 import { expect, mock, test, type Engine } from 'claude-code/testing'
 
-import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, draftSplit, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, keepResult, afterFirstSentence, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, parseObjective, type Objective, mergeConditions, gateVerdict, type Condition } from '../hooks/rep'
+import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, draftSplit, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, parseObjective, type Objective, mergeConditions, gateVerdict, type Condition } from '../hooks/rep'
 
 const om = (text: string, n = 1): OwnerMsg => ({ n, kind: 'his', text, prior: '' })
 
@@ -17,29 +17,36 @@ const quietBand = (on: On) => on('ui.render', { component: 'AbovePrompt' }, () =
 
 const USAGE = { input_tokens: 10, output_tokens: 20, cache_read_input_tokens: 1000, cache_creation_input_tokens: 0 }
 
-test('a watch answer with no flag parses to the reading, the state and no note', async () => {
-  const a = parseWatch('reading: A mod that briefs you plainly, so you can oversee agents.\nmoved: first reading\nstate: working\nflag: none\n')
-  expect(a.reading).toEqual({ kind: 'moved', text: 'A mod that briefs you plainly, so you can oversee agents.', cause: 'first reading', isNewJob: false, isReplaced: false })
+// An objective held for the job, for the prompt and render fixtures.
+const OBJ_FIXTURE: Objective = { result: 'x', purpose: '', done: [], step: '', openedAt: 0, since: 1, from: 1, movedAt: null, cause: '', revisions: 0, versions: [] }
+
+// An answer from the objective writer; `on('model.complete', …)` stubs its call.
+const OBJ = (result: string, done: string[], cause = '#1 opened the job') =>
+  `objective: moved\nmoved: ${cause}\nresult: ${result}\nfor: So he can rely on it.\ndone:\n${done.map(d => `- ${d}`).join('\n') || '- nothing'}\nstep: The first step.`
+
+test('a watch answer with no flag parses to the state, no note and no marks', async () => {
+  const a = parseWatch('state: working\nflag: none\n')
   expect(a.state).toBe('working')
   expect(a.flag).toBe(null)
-  expect(parseWatch('reading: holds\nstate: working\nflag: none').reading).toEqual({ kind: 'holds' })
-  expect(parseWatch('reading: Holds.\nstate: working\nflag: none').reading).toEqual({ kind: 'holds' })
-  expect(parseWatch('state: working\nflag: none').reading).toBe(null)
-  const n = parseWatch('reading: The licence file, full text, so the repository is usable.\nmoved: New job: he asked for the licence after closing the README.\nstate: stopped\nflag: none').reading
-  expect(n?.kind === 'moved' && n.isNewJob).toBe(true)
+  expect(a.shown).toEqual([])
+  expect(a.closed).toEqual([])
+  expect(parseWatch('state: working\nflag: none\nshown:\n- nothing\nclosed:\n- nothing')).toMatchObject({ shown: [], closed: [] })
+  // A reading line in the old shape is no part of the answer: a look never writes the objective.
+  expect(parseWatch('reading: A revision.\nmoved: he asked for it\nstate: stopped\nflag: none')).toEqual({ state: 'stopped', flag: null, why: '', shown: [], closed: [] })
 })
 
-test('a watch answer with a flag parses the flag and the why', async () => {
-  const a = parseWatch('reading: "The judge rebuilt."\nstate: stopped\nflag: The agent says the tests pass, but it never ran them.\nwhy: No test output appears after the last edit.')
-  expect(a.reading).toEqual({ kind: 'moved', text: 'The judge rebuilt.', cause: '', isNewJob: false, isReplaced: false })
+test('a watch answer with a flag parses the flag, the why and the marks', async () => {
+  const a = parseWatch('state: stopped\nflag: The agent says the tests pass, but it never ran them.\nwhy: No test output appears after the last edit.\nshown:\n- the README written | the agent printed the file\nclosed:\n- the licence | #3\n- the year | none given')
   expect(a.state).toBe('stopped')
   expect(a.flag).toBe('The agent says the tests pass, but it never ran them.')
   expect(a.why).toBe('No test output appears after the last edit.')
+  expect(a.shown).toEqual([{ text: 'the README written', by: 'the agent printed the file' }])
+  expect(a.closed).toEqual([{ text: 'the licence', by: 3 }, { text: 'the year', by: null }])
 })
 
 test('a briefing parses every part, the message block whole, and "- nothing" as no items', async () => {
   const text = [
-    'reading: holds',
+    'verdict: continue',
     'well:',
     'stands: The mod draws but was never run live.',
     'means: "Done" here means written, not shown working.',
@@ -54,7 +61,7 @@ test('a briefing parses every part, the message block whole, and "- nothing" as 
     'does: Makes the agent prove the mod live instead of moving on.',
   ].join('\n')
   const b = parseBrief(text)
-  expect(b.reading).toEqual({ kind: 'holds' })
+  expect(b.verdict).toBe('continue')
   expect(b.well).toBe('')
   expect(b.stands).toBe('The mod draws but was never run live.')
   expect(b.leftOut).toEqual(['the live run you asked for', 'the type check was skipped'])
@@ -62,24 +69,25 @@ test('a briefing parses every part, the message block whole, and "- nothing" as 
     'Before calling this done, load the mod in a real session.\nPress each button idle and mid-turn, and show me what appeared.',
   )
   expect(b.does).toBe('Makes the agent prove the mod live instead of moving on.')
-  expect(parseBrief('reading: x\nwell: Going well.\nleft:\n- nothing\nmessage:\nend\ndoes:').leftOut).toEqual([])
+  expect(parseBrief('verdict: stop\nwell: Going well.\nleft:\n- nothing\nmessage:\nend\ndoes:')).toMatchObject({ verdict: 'stop', leftOut: [] })
+  expect(parseBrief('verdict: maybe\nleft:\n- nothing').verdict).toBe('continue')
 })
 
 test('a card with anything left out never also says the work is going well', async () => {
-  const b = parseBrief('reading: holds\nwell: Every part is shown done.\nstands: x\nmeans: y\nleft:\n- two conversations were kept rather than rewritten\nnext: z\nmessage:\nend\ndoes:')
+  const b = parseBrief('well: Every part is shown done.\nstands: x\nmeans: y\nleft:\n- two conversations were kept rather than rewritten\nnext: z\nmessage:\nend\ndoes:')
   expect(b.leftOut).toEqual(['two conversations were kept rather than rewritten'])
   expect(b.well).toBe('')
-  expect(parseBrief('reading: holds\nwell: Every part is shown done.\nleft:\n- nothing\nmessage:\nend\ndoes:').well).toBe('Every part is shown done.')
+  expect(parseBrief('well: Every part is shown done.\nleft:\n- nothing\nmessage:\nend\ndoes:').well).toBe('Every part is shown done.')
 })
 
 test('the briefs say a chore left for the owner is the agent\'s unfinished work, never his next step', async () => {
-  const m = { reading: { text: 'x', openedAt: 0, since: 0, from: 1, movedAt: null, cause: '', revisions: 0 }, owner: [om('Build it.')], past: [], seen: [], others: [] }
+  const m = { objective: OBJ_FIXTURE, owner: [om('Build it.')], past: [], seen: [], others: [] }
   for (const p of [briefPrompt(m), watchPrompt(m, 'stop')]) {
     expect(p).toMatch(/He does no step of the job himself, ever\./)
     expect(p).toMatch(/Never relay such a chore to him as his next step/)
   }
   expect(briefPrompt(m)).toMatch(/next: <one or two sentences: what the agent should do next, or that it should stop;.*never a step for him to do/)
-  expect(checkPrompt({ sessionId: 's', cwd: '/tmp', owner: [om('Build it.')], reading: 'x', brief: parseBrief('reading: holds\nstands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm' } as never)).toMatch(/never a step for the owner to do/)
+  expect(checkPrompt({ sessionId: 's', cwd: '/tmp', owner: [om('Build it.')], reading: 'x', brief: parseBrief('stands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm' } as never)).toMatch(/never a step for the owner to do/)
 })
 
 test('helpers: fit cuts with an ellipsis, same ignores case and a final period, doingFor names the work', async () => {
@@ -98,9 +106,9 @@ test('helpers: fit cuts with an ellipsis, same ignores case and a final period, 
   expect(firstSentence('A public project employers can inspect. Right now that means the licence file.')).toBe('A public project employers can inspect.')
   expect(firstSentence('working out the result you want from your messages…')).toBe('working out the result you want from your messages…')
   expect(revisedLine(null)).toBe('')
-  expect(revisedLine({ text: 'x', openedAt: 0, since: 0, from: 1, movedAt: null, cause: '', revisions: 0 })).toBe('')
-  expect(revisedLine({ text: 'x', openedAt: 0, since: 0, from: 2, movedAt: new Date(2026, 9, 14, 15, 12).getTime(), cause: 'he asked for tests as well', revisions: 1 })).toBe('Reading revised at 3:12 pm: he asked for tests as well')
-  expect(revisedLine({ text: 'x', openedAt: 0, since: 1, from: 2, movedAt: new Date(2026, 9, 14, 9, 5).getTime(), cause: 'new job, the licence', revisions: 0 })).toBe('New job since 9:05 am: new job, the licence')
+  expect(revisedLine(OBJ_FIXTURE)).toBe('')
+  expect(revisedLine({ ...OBJ_FIXTURE, from: 2, movedAt: new Date(2026, 9, 14, 15, 12).getTime(), cause: 'he asked for tests as well', revisions: 1 })).toBe('Reading revised at 3:12 pm: he asked for tests as well')
+  expect(revisedLine({ ...OBJ_FIXTURE, since: 2, from: 2, movedAt: new Date(2026, 9, 14, 9, 5).getTime(), cause: 'new job, the licence', revisions: 0 })).toBe('New job since 9:05 am: new job, the licence')
 })
 
 // The command from the owner's screenshot of 14 Oct 2026: it starts by setting
@@ -163,7 +171,13 @@ test('rule: a note to the rep is dropped before the agent sees it and cleared fr
   const prompts: string[] = []
   on('model.fork', ($, e) => {
     prompts.push(String(e.prompt))
-    return { value: { isAnswered: true, text: 'reading: The strip reads plainly in every state, so he can trust it at a glance.\nmoved: first reading\nstate: stopped\nflag: none', usage: USAGE } }
+    return { value: { isAnswered: true, text: 'state: stopped\nflag: none', usage: USAGE } }
+  })
+  // The note is his: the objective writer reads it too.
+  const writes: string[] = []
+  on('model.complete', ($, e) => {
+    writes.push(String(e.prompt))
+    return { value: { isAnswered: true, text: OBJ('The strip reads plainly in every state, so he can trust it at a glance.', ['every state drawn | open']), usage: USAGE } }
   })
   const fills: string[] = []
   on('prompt.fill', ($, e) => {
@@ -184,6 +198,8 @@ test('rule: a note to the rep is dropped before the agent sees it and cleared fr
   expect(prompts).toHaveLength(1)
   expect(prompts[0]).toMatch(/told you something directly/)
   expect(prompts[0]).toMatch(/- #1 \(to the rep\) the tests matter more to me than speed/)
+  expect(writes).toHaveLength(1)
+  expect(writes[0]).toMatch(/- #1 \(to the rep\) the tests matter more to me than speed/)
   ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   expect(await ui.find({ type: 'Text', text: /^Owner rep · The strip reads plainly in every state, so he can trust it at a glance\.$/ })).toBeDefined()
   await ui.unmount()
@@ -314,7 +330,6 @@ test('pressing Rep reads the conversation and draws the briefing with the messag
   quietBand(on)
   on('session.id', () => ({ value: 'test-session' }))
   const answer = [
-    'reading: A judge mod that briefs you plainly.',
     'well:',
     'stands: Written, not yet run.',
     'means: Done means written.',
@@ -341,7 +356,7 @@ test('pressing Rep reads the conversation and draws the briefing with the messag
   })
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   await ui.press({ key: 'rep' })
-  expect(await ui.find({ type: 'Text', text: /A judge mod that briefs you plainly/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Written, not yet run/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /nothing in the record shows a run/ })).toBeUndefined()
   expect((await ui.find({ key: 'check' }))?.props.hotkey).toBe('3')
   expect(await ui.find({ type: 'Text', text: /re-read from cache, in 2 minutes/ })).toBeDefined()
@@ -365,7 +380,7 @@ test('a briefing that says the work is going well still shows the full picture a
   on('model.fork', () => ({
     value: {
       isAnswered: true,
-      text: 'reading: x\nwell: The agent is doing what you asked and showing it.\nstands: The tests pass and the change is on main.\nmeans: Nothing is waiting on you.\nleft:\n- nothing\nnext: Let it carry on.\nmessage:\nend\ndoes:',
+      text: 'well: The agent is doing what you asked and showing it.\nstands: The tests pass and the change is on main.\nmeans: Nothing is waiting on you.\nleft:\n- nothing\nnext: Let it carry on.\nmessage:\nend\ndoes:',
       usage: USAGE,
     },
   }))
@@ -400,7 +415,7 @@ test('a model that does not answer leaves the row and says so in a toast', async
 // --- Sequence rules: what the hooks do over several events, driven through the kit. ---
 
 const watchAnswer = (flag: string | null) =>
-  `reading: A mod that briefs you plainly.\nstate: stopped\nflag: ${flag ?? 'none'}\nwhy: ${flag === null ? '' : 'No test output appears after the last edit.'}`
+  `state: stopped\nflag: ${flag ?? 'none'}\nwhy: ${flag === null ? '' : 'No test output appears after the last edit.'}`
 
 const stop = (turnId: string, answer = 'Done.', isAborted = false) =>
   ({ answer, durationMs: 1, isAborted, turnId, reason: isAborted ? 'aborted' : 'answer' }) as const
@@ -463,7 +478,7 @@ test('rule: typing past notes backs the watch off, after the free ones', async (
 })
 
 const BRIEF = (stands: string) =>
-  `reading: A judge mod.\nwell:\nstands: ${stands}\nmeans: Done means written.\nleft:\n- nothing\nnext: Run it live.\nmessage:\nShow me the run.\nend\ndoes: Makes the agent run it.`
+  `well:\nstands: ${stands}\nmeans: Done means written.\nleft:\n- nothing\nnext: Run it live.\nmessage:\nShow me the run.\nend\ndoes: Makes the agent run it.`
 
 const CHECKED = (stands: string) =>
   JSON.stringify({
@@ -605,7 +620,7 @@ test('rule: the store keeps only the newest SESSIONS_MAX sessions', async ($, on
   // The test's own store, so it can read back what the rep saved.
   const store: Record<string, unknown> = { sessions: {} }
   const old = store.sessions as Record<string, unknown>
-  for (let i = 0; i < SESSIONS_MAX; i++) old[`s${i}`] = { id: `s${i}`, at: 1000 + i, reading: null, owner: [], past: [], seen: [], others: [] }
+  for (let i = 0; i < SESSIONS_MAX; i++) old[`s${i}`] = { id: `s${i}`, at: 1000 + i, objective: null, owner: [], past: [], seen: [], others: [] }
   on('store.get', ($, e) => ({ value: store[e.key] }))
   on('store.set', ($, e) => {
     store[e.key] = e.value
@@ -671,7 +686,7 @@ test('rule: with few rows in the band the card still draws its buttons and folds
   on('model.fork', () => ({
     value: {
       isAnswered: true,
-      text: `reading: ${LONG('Goal')}\nwell:\nstands: ${LONG('Stands')}\nmeans: ${LONG('Means')}\nleft:\n- one thing\n- another\nnext: ${LONG('Next')}\nmessage:\n${LONG('Message')}\nend\ndoes: Makes the agent prove it.`,
+      text: `well:\nstands: ${LONG('Stands')}\nmeans: ${LONG('Means')}\nleft:\n- one thing\n- another\nnext: ${LONG('Next')}\nmessage:\n${LONG('Message')}\nend\ndoes: Makes the agent prove it.`,
       usage: USAGE,
     },
   }))
@@ -694,10 +709,10 @@ test('rule: with few rows in the band the card still draws its buttons and folds
 // --- The brief judges against the sum of the owner's messages, and calls a session long only by a figure. ---
 
 test('the brief carries the whole-ask rule, the size as a figure, and the green line tied to the sum', async () => {
-  const m = { reading: null, owner: [om('make this serious, with many tests'), om('now just add a licence', 2)], past: [], seen: [], others: [] }
+  const m = { objective: null, owner: [om('make this serious, with many tests'), om('now just add a licence', 2)], past: [], seen: [], others: [] }
   const p = briefPrompt({ ...m, context: { tokens: 242500, window: 500000, percent: 48 } })
   expect(p).toMatch(/His messages on a job add up/)
-  expect(p).toMatch(/Not written yet\. Write it now/)
+  expect(p).toMatch(/Not written yet: it is being written from his messages/)
   expect(p).toMatch(/48 percent of its window \(243k of 500k tokens\), which is not long/)
   expect(p).toMatch(new RegExp(`long only past ${LONG_SESSION_PERCENT} percent`))
   expect(p).toMatch(/well: <only when nothing in the reading is still outstanding/)
@@ -879,7 +894,7 @@ test('rule: a check whose run cannot start reports the failure on the card', asy
   await ui.unmount()
 })
 
-test('rule: the session end saves the record, so the next session finds the reading and the owner\'s messages', async ($, on) => {
+test('rule: the session end saves the record, so the next session finds the objective and the owner\'s messages', async ($, on) => {
   const store: Record<string, unknown> = {}
   let saves = 0
   on('store.get', ($, e) => ({ value: store[e.key] }))
@@ -892,7 +907,8 @@ test('rule: the session end saves the record, so the next session finds the read
   on('prompt.submit', ($, e) => ({ text: e.text }))
   on('turn.complete', () => ({ text: '' }))
   on('session.end', ($, e) => ({ sessionId: e.sessionId }))
-  on('model.fork', () => ({ value: { isAnswered: true, text: 'reading: The reading kept across sessions.\nmoved: first reading\nstate: stopped\nflag: none', usage: USAGE } }))
+  on('model.fork', () => ({ value: { isAnswered: true, text: 'state: stopped\nflag: none', usage: USAGE } }))
+  on('model.complete', () => ({ value: { isAnswered: true, text: OBJ('The objective kept across sessions.', ['the thing built | open']), usage: USAGE } }))
   quietBand(on)
   await $.prompt.submit(typed('build the thing'))
   await $.turn.complete(stop('t1'))
@@ -900,13 +916,13 @@ test('rule: the session end saves the record, so the next session finds the read
   const savesBefore = saves
   await $.session.end({ reason: 'other', sessionId: 'test-session', resume: { id: 'test-session' } } as never)
   expect(saves).toBe(savesBefore + 1)
-  const rec = (store.sessions as Record<string, { at: number; reading: { text: string } | null; owner: OwnerMsg[] }>)['test-session']
-  expect(rec?.reading?.text).toBe('The reading kept across sessions.')
+  const rec = (store.sessions as Record<string, { at: number; objective: Objective | null; owner: OwnerMsg[] }>)['test-session']
+  expect(rec?.objective?.result).toBe('The objective kept across sessions.')
   expect(rec?.owner).toEqual([{ n: 1, kind: 'his', text: 'build the thing', prior: '' }])
 })
 
 test('the briefs weigh a message the rep drafted as the rep\'s words, and say a document about the result is not the result', async () => {
-  const m = { reading: { text: 'x', openedAt: 0, since: 0, from: 1, movedAt: null, cause: '', revisions: 0 }, owner: [om('Build it.')], past: [], seen: [], others: [] }
+  const m = { objective: OBJ_FIXTURE, owner: [om('Build it.')], past: [], seen: [], others: [] }
   for (const p of [briefPrompt(m), watchPrompt(m, 'stop')]) {
     expect(p).toMatch(/A message marked "\(your draft, sent by him\)": one you wrote for him after a briefing and he sent as it stood/)
     expect(p).toMatch(/never narrows the job, never replaces an earlier message of his, and never sets what "done" means/)
@@ -914,159 +930,404 @@ test('the briefs weigh a message the rep drafted as the rep\'s words, and say a 
     expect(p).toMatch(/The result is the thing, never a document about the thing\./)
     expect(p).toMatch(/an agent that delivered the document has not delivered the result/)
     expect(p).toMatch(/whether a build is installed, a service runs the newest code or a product is on his Mac is "not shown" to you unless the conversation shows it/)
-    expect(p).toMatch(/Keep its first sentence, the result, word for word/)
     expect(p).toMatch(/"\(your draft, sent by him\)" marks one you wrote and he sent/)
   }
   expect(briefPrompt(m)).toMatch(/next: <.*stop only when the result itself is shown, never because a document about it was delivered/)
-  expect(checkPrompt({ sessionId: 's', cwd: '/tmp', owner: [om('Build it.')], reading: 'x', brief: parseBrief('reading: holds\nstands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm' } as never)).toMatch(/written by the rep and sent by the owner, so it is the rep's words, not his/)
+  expect(checkPrompt({ sessionId: 's', cwd: '/tmp', owner: [om('Build it.')], reading: 'x', brief: parseBrief('stands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm' } as never)).toMatch(/written by the rep and sent by the owner, so it is the rep's words, not his/)
 })
 
-test('keepResult: a correction keeps the reading\'s first sentence; "replaced" in the cause is parsed', () => {
-  const held = 'A working product on his Mac, on the newest build. Done shows it on his screen. Right now that means the review.'
-  expect(keepResult(held, 'A working product on his Mac, on the newest build. Done shows it installed. Right now the rep is being fixed.')).toBe(
-    'A working product on his Mac, on the newest build. Done shows it installed. Right now the rep is being fixed.',
-  )
-  expect(keepResult(held, 'He wants only the cause and the fix. Done means he has the wording.')).toBe('A working product on his Mac, on the newest build. Done means he has the wording.')
-  expect(keepResult(held, 'He wants only the cause and the fix.')).toBe('A working product on his Mac, on the newest build.')
-  expect(afterFirstSentence('One. Two three.  Four?')).toBe('Two three. Four?')
-  expect(afterFirstSentence('One only')).toBe('')
-  const r = parseWatch('reading: A licence only.\nmoved: replaced: he said the public project is off, a licence is all he wants\nstate: stopped\nflag: none').reading
-  expect(r).toEqual({ kind: 'moved', text: 'A licence only.', cause: 'replaced: he said the public project is off, a licence is all he wants', isNewJob: false, isReplaced: true })
-  expect(parseWatch('reading: x\nmoved: he asked for tests too\nstate: stopped\nflag: none').reading).toMatchObject({ isReplaced: false, isNewJob: false })
-})
+// --- The objective: written by a call of its own from the owner's messages, held in parts, moved only by his words. ---
 
-// --- The held reading: the rep's own account of what the owner wants, kept for the job and moved only by his words. ---
+// A watch answer that marks nothing and flags nothing.
+const HOLDS = 'state: stopped\nflag: none'
 
-// A watch answer that proposes a reading, with its cause.
-const reads = (text: string, cause = '') => `reading: ${text}\n${cause === '' ? '' : `moved: ${cause}\n`}state: stopped\nflag: none`
-const HOLDS = 'reading: holds\nstate: stopped\nflag: none'
-
-// The strip drawn and taken down, so a look the hook started settles.
+// The strip drawn and taken down, so a look or a write the hook started settles.
 const settle = async ($: Engine) => (await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })).unmount()
 
-test('rule: the reading is kept when the answer says it holds, and the row shows only its first sentence', async ($, on) => {
-  session(on)
-  quietBand(on)
-  let answer = reads('A public project employers can inspect as careful work. Right now that means the README.', 'first reading')
-  on('model.fork', () => ({ value: { isAnswered: true, text: answer, usage: USAGE } }))
-  await $.prompt.submit(typed('make this a serious public repository; start with the README'))
-  await $.turn.complete(stop('t1'))
-  await settle($)
-  let ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
-  expect(await ui.find({ type: 'Text', text: /^Owner rep · A public project employers can inspect as careful work\.$/ })).toBeDefined()
-  expect(await ui.find({ type: 'Text', text: /Right now that means/ })).toBeUndefined()
-  await ui.unmount()
-  answer = HOLDS
-  await $.turn.complete(stop('t2'))
-  await settle($)
-  ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
-  expect(await ui.find({ type: 'Text', text: /^Owner rep · A public project employers can inspect as careful work\.$/ })).toBeDefined()
-  expect(await ui.find({ type: 'Text', text: /holds/ })).toBeUndefined()
-  // The card shows the whole reading and no revision line.
-  answer = BRIEF('Fine.').replace('reading: A judge mod.', 'reading: holds')
-  await ui.press({ key: 'rep' })
-  expect(await ui.find({ type: 'Text', text: /Right now that means the README\./ })).toBeDefined()
-  expect(await ui.find({ type: 'Text', text: /Reading revised|New job since/ })).toBeUndefined()
-  await ui.unmount()
-})
+// What the store holds for the session, as the tests read it back.
+type Stored = { objective: Objective | null; owner: OwnerMsg[]; past: string[]; jobStart: number; objectiveCalls: number; objectiveTokens: number }
 
-test("rule: the agent's words never move the reading; one of the owner's does, and the card says so", async ($, on) => {
-  session(on)
-  quietBand(on)
-  let answer = reads('The first reading.', 'first reading')
-  on('model.fork', () => ({ value: { isAnswered: true, text: answer, usage: USAGE } }))
-  await $.prompt.submit(typed('build the strip'))
-  await $.turn.complete(stop('t1'))
-  await settle($)
-  // The agent worked on and the model proposes a revision; nothing new from the owner: refused.
-  answer = reads('A revision the agent talked the model into.', 'the agent finished the strip and moved to tests')
-  await $.turn.complete(stop('t2'))
-  await settle($)
-  let ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
-  expect(await ui.find({ type: 'Text', text: /^Owner rep · The first reading\.$/ })).toBeDefined()
-  expect(await ui.find({ type: 'Text', text: /talked the model into/ })).toBeUndefined()
-  await ui.unmount()
-  // The owner corrects: a revision is now taken, with its cause on the card. Its first
-  // sentence, the result, stays as it was; the rest of the rebuilt text is taken.
-  await $.prompt.submit(typed('also the tests, as many as possible'))
-  answer = reads('The strip and as many tests as possible. Right now that means the tests.', 'he asked for the tests as well')
-  await $.turn.complete(stop('t3'))
-  await settle($)
-  ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
-  expect(await ui.find({ type: 'Text', text: /^Owner rep · The first reading\.$/ })).toBeDefined()
-  answer = BRIEF('Fine.').replace('reading: A judge mod.', 'reading: holds')
-  await ui.press({ key: 'rep' })
-  expect(await ui.find({ type: 'Text', text: /The first reading\. Right now that means the tests\./ })).toBeDefined()
-  expect(await ui.find({ type: 'Text', text: /^Reading revised at \d+:\d\d [ap]m: he asked for the tests as well$/ })).toBeDefined()
-  await ui.unmount()
-})
-
-test("rule: a new job closes the old reading; the earlier job's messages leave the brief and its reading is listed as closed", async ($, on) => {
-  session(on)
-  quietBand(on)
-  const prompts: string[] = []
-  let answer = reads('The strip reads plainly in every state.', 'first reading')
-  on('model.fork', ($, e) => {
-    prompts.push(String(e.prompt))
-    return { value: { isAnswered: true, text: answer, usage: USAGE } }
+// A session whose store the test reads back: the function returns the record as saved.
+const kept = (on: On, store: Record<string, unknown> = {}) => {
+  on('store.get', (_$, e) => ({ value: store[e.key] }))
+  on('store.set', (_$, e) => {
+    store[e.key] = e.value
+    return { value: undefined }
   })
-  await $.prompt.submit(typed('fix the strip so it never shows code'))
+  on('session.id', () => ({ value: 'test-session' }))
+  on('turn.complete', () => ({ text: '' }))
+  on('prompt.submit', (_$, e) => ({ text: e.text }))
+  on('ui.toast', () => ({ value: undefined }))
+  return () => (store.sessions as Record<string, Stored> | undefined)?.['test-session']
+}
+
+// The objective writer, stubbed: each call's prompt kept, answered by `answer()`; null is an empty reply.
+const writer = (on: On, answer: () => string | null) => {
+  const prompts: string[] = []
+  on('model.complete', (_$, e) => {
+    prompts.push(String(e.prompt))
+    const text = answer()
+    return { value: text === null ? { isAnswered: false, reason: 'empty-reply', usage: USAGE } : { isAnswered: true, text, usage: USAGE } }
+  })
+  return prompts
+}
+
+const rowSays = async ($: Engine, text: RegExp) => {
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  const found = await ui.find({ type: 'Text', text })
+  await ui.unmount()
+  return found !== undefined
+}
+
+test('rule: the objective is written by its own call from his messages, not by the looks', async ($, on) => {
+  const rec = kept(on)
+  quietBand(on)
+  const writes = writer(on, () => OBJ('A public project employers can inspect.', ['the README written | open', 'the tests green on GitHub | not shown']))
+  const looks: string[] = []
+  on('model.fork', (_$, e) => {
+    looks.push(String(e.prompt))
+    return { value: { isAnswered: true, text: HOLDS, usage: USAGE } }
+  })
+  await $.prompt.submit(typed('make this a serious public repository'))
+  await settle($)
+  expect(writes).toHaveLength(1)
+  expect(writes[0]).toMatch(/\n- #1 make this a serious public repository\n/)
+  expect(writes[0]).toMatch(/None yet\. Write it now/)
+  expect(await rowSays($, /^Owner rep · A public project employers can inspect\.$/)).toBe(true)
+  expect(rec()?.objective).toMatchObject({
+    result: 'A public project employers can inspect.',
+    purpose: 'So he can rely on it.',
+    step: 'The first step.',
+    since: 1,
+    from: 1,
+    revisions: 0,
+    movedAt: null,
+    done: [
+      { text: 'the README written', state: 'open', by: '' },
+      { text: 'the tests green on GitHub', state: 'not-shown', by: '' },
+    ],
+  })
+  expect(rec()?.objectiveCalls).toBe(1)
+  expect(rec()?.objectiveTokens).toBeGreaterThan(0)
+  // The look is measured against what the writer wrote, and writes nothing itself.
   await $.turn.complete(stop('t1'))
   await settle($)
-  await $.prompt.submit(typed('that is done; now a licence file with the full MIT text'))
-  answer = reads('A licence file with the full MIT text, so the repository is usable.', 'new job: he closed the strip work and asked for the licence')
+  expect(looks).toHaveLength(1)
+  expect(looks[0]).toMatch(/Done when: the README written; the tests green on GitHub \(not shown\)\./)
+  expect(writes).toHaveLength(1)
+})
+
+test("rule: the agent's words never move the objective; a message of his does, and a draft moves only the step", async ($, on) => {
+  const rec = kept(on)
+  quietBand(on)
+  on('prompt.read', () => ({ value: { text: '', cursor: 0 } }))
+  on('prompt.fill', () => ({ isFilled: true }))
+  let next = OBJ('A public project employers can inspect.', ['the README written | open'])
+  const writes = writer(on, () => next)
+  // A look that still answers in the old shape, proposing a reading: nothing takes it.
+  let look = 'reading: A revision the agent talked the model into.\nmoved: the agent finished the README\nstate: stopped\nflag: none'
+  on('model.fork', () => ({ value: { isAnswered: true, text: look, usage: USAGE } }))
+  await $.prompt.submit(typed('make this a serious public repository'))
+  await settle($)
+  // The agent works on and the looks run: no write starts and the objective stands.
+  await $.turn.complete(stop('t1'))
+  await settle($)
   await $.turn.complete(stop('t2'))
   await settle($)
-  answer = BRIEF('Fine.').replace('reading: A judge mod.', 'reading: holds')
+  expect(writes).toHaveLength(1)
+  expect(await rowSays($, /^Owner rep · A public project employers can inspect\.$/)).toBe(true)
+  expect(await rowSays($, /talked the model into/)).toBe(false)
+  expect(rec()?.objective?.from).toBe(1)
+  // A message of his rebuilds it, and the card says which message did.
+  next = OBJ('A public project employers can inspect.', ['the README written | open', 'as many tests as possible | open'], '#2 added the tests')
+  await $.prompt.submit(typed('also the tests, as many as possible'))
+  await settle($)
+  expect(writes).toHaveLength(2)
+  expect(writes[1]).toMatch(/Built from his messages up to #1/)
+  expect(writes[1]).toMatch(/\n- #2 also the tests, as many as possible/)
+  expect(rec()?.objective).toMatchObject({ from: 2, revisions: 1, cause: '#2 added the tests' })
+  expect(rec()?.objective?.versions.map(v => v.text)).toEqual(['A public project employers can inspect. So he can rely on it. Done when: the README written. Right now: The first step.'])
+  look = BRIEF('Fine.').replace('Show me the run.', 'Show me the run and the test output.')
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
-  expect(await ui.find({ type: 'Text', text: /^Owner rep · A licence file with the full MIT text, so the repository is usable\.$/ })).toBeDefined()
   await ui.press({ key: 'rep' })
-  expect(await ui.find({ type: 'Text', text: /^New job since \d+:\d\d [ap]m: new job: he closed the strip work/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^Reading revised at \d+:\d\d [ap]m: #2 added the tests$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Done when: the README written; as many tests as possible\./ })).toBeDefined()
+  await ui.press({ key: 'put' })
   await ui.unmount()
-  const last = prompts[prompts.length - 1] ?? ''
-  const onJob = last.slice(last.indexOf('His own messages on this job'), last.indexOf('Jobs before this one'))
+  // The rep's own draft, sent as it stood: no write, and only the step moves.
+  await $.prompt.submit(typed('Show me the run and the test output.'))
+  await settle($)
+  expect(writes).toHaveLength(2)
+  expect(rec()?.objective).toMatchObject({ step: 'Show me the run and the test output.', result: 'A public project employers can inspect.', from: 2, revisions: 1 })
+  expect(rec()?.owner.map(m => m.kind)).toEqual(['his', 'his', 'draft'])
+})
+
+test('rule: a correction rebuilds the whole objective, and an open condition the writer drops without his cited message is kept', async ($, on) => {
+  const rec = kept(on)
+  quietBand(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: HOLDS, usage: USAGE } }))
+  let next = OBJ('A public project employers can inspect.', ['the README written | open', 'the tests green on GitHub | not shown'])
+  const writes = writer(on, () => next)
+  await $.prompt.submit(typed('make this a serious public repository'))
+  await settle($)
+  // He bounds the next step and the writer shrinks the objective to it: the parts are
+  // taken whole, but the conditions it let go without a word of his stay held.
+  next = OBJ('Only the reason the README is wrong.', ['the reason given | open'], '#2 asked only for the reason')
+  await $.prompt.submit(typed('just tell me why the README is wrong'))
+  await settle($)
+  expect(writes[1]).toMatch(/Done when: the README written; the tests green on GitHub \(not shown\)\./)
+  expect(await rowSays($, /^Owner rep · Only the reason the README is wrong\.$/)).toBe(true)
+  expect(rec()?.objective?.done).toEqual([
+    { text: 'the reason given', state: 'open', by: '' },
+    { text: 'the README written', state: 'open', by: '' },
+    { text: 'the tests green on GitHub', state: 'not-shown', by: '' },
+  ])
+  // A drop that cites no message of his, or a number that is not his, is not taken.
+  next = `${OBJ('Only the reason the README is wrong.', ['the reason given | open'], '#3 asked again')}\ndropped:\n- the README written\n- the tests green on GitHub | #9`
+  await $.prompt.submit(typed('the reason, please'))
+  await settle($)
+  expect(rec()?.objective?.done.map(c => c.text)).toEqual(['the reason given', 'the README written', 'the tests green on GitHub'])
+  // He lets one go in so many words, and the writer cites his message: it goes.
+  next = `${OBJ('Only the reason the README is wrong.', ['the reason given | open', 'the README written | open'], '#4 dropped the tests')}\ndropped:\n- the tests green on GitHub | #4`
+  await $.prompt.submit(typed('forget the tests'))
+  await settle($)
+  expect(rec()?.objective?.done.map(c => c.text)).toEqual(['the reason given', 'the README written'])
+  expect(rec()?.objective?.revisions).toBe(3)
+})
+
+test('rule: the writer cannot mark a condition shown, and can close one only by a message of his', async ($, on) => {
+  const rec = kept(on)
+  quietBand(on)
+  let look = HOLDS
+  on('model.fork', () => ({ value: { isAnswered: true, text: look, usage: USAGE } }))
+  let next = OBJ('A licence file.', ['the file committed | shown: the agent said so', 'the year current | closed: #1', 'the name right | closed: #7'])
+  writer(on, () => next)
+  await $.prompt.submit(typed('add a licence; the year does not matter'))
+  await settle($)
+  expect(rec()?.objective?.done).toEqual([
+    { text: 'the file committed', state: 'open', by: '' },
+    { text: 'the year current', state: 'closed', by: '#1' },
+    { text: 'the name right', state: 'open', by: '' },
+  ])
+  // A look that names where the conversation showed it does mark it; the writer then keeps the mark.
+  look = `${HOLDS}\nshown:\n- the file committed | the agent printed the commit`
+  await $.turn.complete(stop('t1'))
+  await settle($)
+  expect(rec()?.objective?.done[0]).toEqual({ text: 'the file committed', state: 'shown', by: 'the agent printed the commit' })
+  next = OBJ('A licence file.', ['the file committed | open', 'the year current | open', 'the name right | open'], '#2 asked for the name')
+  await $.prompt.submit(typed('and use my company name'))
+  await settle($)
+  expect(rec()?.objective?.done.map(c => c.state)).toEqual(['shown', 'closed', 'open'])
+})
+
+test('rule: a new job closes the old objective; its result is listed as closed and its messages leave the writer', async ($, on) => {
+  const rec = kept(on)
+  quietBand(on)
+  const looks: string[] = []
+  let look = HOLDS
+  on('model.fork', (_$, e) => {
+    looks.push(String(e.prompt))
+    return { value: { isAnswered: true, text: look, usage: USAGE } }
+  })
+  let next = OBJ('The strip reads plainly in every state.', ['no code on the strip | open'])
+  const writes = writer(on, () => next)
+  await $.prompt.submit(typed('fix the strip so it never shows code'))
+  await settle($)
+  next = OBJ('A licence file with the full MIT text, so the repository is usable.', ['the licence committed | open'], 'new job: #2 closed the strip work and asked for the licence')
+  await $.prompt.submit(typed('that is done; now a licence file with the full MIT text'))
+  await settle($)
+  expect(await rowSays($, /^Owner rep · A licence file with the full MIT text, so the repository is usable\.$/)).toBe(true)
+  expect(rec()?.past).toEqual(['The strip reads plainly in every state.'])
+  expect(rec()?.jobStart).toBe(2)
+  expect(rec()?.objective).toMatchObject({ since: 2, from: 2, revisions: 0 })
+  expect(rec()?.objective?.versions[0]?.text).toMatch(/^The strip reads plainly in every state\./)
+  // The next write is shown the new job's messages only, and the old job as closed.
+  next = 'objective: holds'
+  await $.prompt.submit(typed('use the current year'))
+  await settle($)
+  const last = writes[writes.length - 1] ?? ''
+  expect(last).toMatch(/\n- #2 that is done; now a licence file/)
+  expect(last).toMatch(/\n- #3 use the current year/)
+  expect(last).not.toMatch(/- #1 /)
+  expect(last).toMatch(/Jobs before this one[^]*- The strip reads plainly in every state\./)
+  expect(rec()?.objective?.from).toBe(2)
+  // The briefing sees the same, and the card says a new job began.
+  look = BRIEF('Fine.')
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  expect(await ui.find({ type: 'Text', text: /^New job since \d+:\d\d [ap]m: new job: #2 closed the strip work/ })).toBeDefined()
+  await ui.unmount()
+  const brief = looks[looks.length - 1] ?? ''
+  const onJob = brief.slice(brief.indexOf('His own messages on this job'), brief.indexOf('Jobs before this one'))
   expect(onJob).toMatch(/- #2 that is done; now a licence file/)
   expect(onJob).not.toMatch(/fix the strip so it never shows code/)
-  expect(last).toMatch(/Jobs before this one[^]*- The strip reads plainly in every state\./)
+  expect(brief).toMatch(/Jobs before this one[^]*- The strip reads plainly in every state\./)
 })
 
-test('rule: a correction keeps the result sentence; only "replaced" or a new job changes it', async ($, on) => {
-  session(on)
+test("rule: a write that lands late cannot take a newer write's place, and a message during a write is written after it", async ($, on) => {
+  const store: Record<string, unknown> = {}
+  const rec = kept(on, store)
   quietBand(on)
-  let answer = reads('A public project employers can inspect as careful work. Right now that means the README.', 'first reading')
-  on('model.fork', () => ({ value: { isAnswered: true, text: answer, usage: USAGE } }))
-  await $.prompt.submit(typed('make this a serious public repository; start with the README'))
-  await $.turn.complete(stop('t1'))
+  const held: Array<{ prompt: string; release: (text: string) => void }> = []
+  let onHeld: () => void = () => undefined
+  on('model.complete', async (_$, e) => {
+    const text = await new Promise<string>(release => {
+      held.push({ prompt: String(e.prompt), release })
+      onHeld()
+    })
+    return { value: { isAnswered: true, text, usage: USAGE } }
+  })
+  const nextHeld = () => new Promise<void>(r => (onHeld = r))
+  let waiting = nextHeld()
+  await $.prompt.submit(typed('a README'))
+  await waiting
+  waiting = nextHeld()
+  held[0]?.release(OBJ('The README alone.', ['the README written | open']))
   await settle($)
-  // He bounds the next step; the model shrinks the result to it. The result sentence is kept, the rest is taken.
-  await $.prompt.submit(typed('just tell me why the README is wrong, nothing else'))
-  answer = reads('He wants only to be told why the README is wrong. Done means he has the reason.', 'his second message asks only for the reason')
-  await $.turn.complete(stop('t2'))
+  expect(rec()?.objective).toMatchObject({ result: 'The README alone.', from: 1 })
+  // His second message starts a write that saw #2; his third arrives while it runs and starts no second call.
+  await $.prompt.submit(typed('now a licence file'))
+  await waiting
+  await $.prompt.submit(typed('and the tests before the licence'))
+  expect(held).toHaveLength(2)
+  // Meanwhile a newer write, one that saw #3, landed from elsewhere (an earlier load of the mod).
+  const saved = rec()
+  if (saved?.objective == null) throw new Error('no objective stored')
+  const newer = { ...saved.objective, result: 'The README, then the tests, then the licence.', from: 3, revisions: 1, cause: '#3 put the tests first' }
+  store.sessions = { ...(store.sessions as object), 'test-session': { ...saved, objective: newer } }
+  // The write that saw only #2 lands now: refused. The write for #3 runs after it.
+  waiting = nextHeld()
+  held[1]?.release(OBJ('The README and a licence.', ['the licence committed | open'], '#2 added the licence'))
+  await waiting
+  expect(rec()?.objective).toMatchObject({ result: 'The README, then the tests, then the licence.', from: 3, cause: '#3 put the tests first' })
+  expect(held).toHaveLength(3)
+  expect(held[2]?.prompt).toMatch(/Built from his messages up to #3/)
+  held[2]?.release('objective: holds')
   await settle($)
-  let ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
-  expect(await ui.find({ type: 'Text', text: /^Owner rep · A public project employers can inspect as careful work\.$/ })).toBeDefined()
-  answer = BRIEF('Fine.').replace('reading: A judge mod.', 'reading: holds')
+  expect(await rowSays($, /^Owner rep · The README, then the tests, then the licence\.$/)).toBe(true)
+  expect(rec()?.objective?.from).toBe(3)
+  expect(rec()?.objectiveCalls).toBe(3)
+})
+
+test('rule: a draft, a note and a message all count by number, so a write after 41 messages still moves the objective', async ($, on) => {
+  const rec = kept(on)
+  quietBand(on)
+  mock.clock(on)
+  on('prompt.read', () => ({ value: { text: '', cursor: 0 } }))
+  on('prompt.fill', () => ({ isFilled: true }))
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('Fine.').replace('Show me the run.', 'Show me the run and the test output.'), usage: USAGE } }))
+  let calls = 0
+  const writes = writer(on, () => OBJ(`The result as of write ${++calls}.`, ['the steps finished | open'], `#${calls} added a step`))
+  for (let i = 1; i <= 41; i++) {
+    await $.prompt.submit(typed(`step ${i}`))
+    await settle($)
+  }
+  expect(rec()?.objective).toMatchObject({ from: 41, revisions: 40, result: 'The result as of write 41.' })
+  // A note is a message of his: the next write takes it.
+  await $.prompt.submit(typed('Owner rep: the last steps matter most'))
+  await settle($)
+  expect(rec()?.objective).toMatchObject({ from: 42, revisions: 41 })
+  expect(writes[writes.length - 1]).toMatch(/\n- #1 step 1\n[^]*\n- #42 \(to the rep\) the last steps matter most/)
+  // The rep's draft takes a number and moves nothing but the step; his next message moves it again.
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   await ui.press({ key: 'rep' })
-  expect(await ui.find({ type: 'Text', text: /A public project employers can inspect as careful work\. Done means he has the reason\./ })).toBeDefined()
-  expect(await ui.find({ type: 'Text', text: /He wants only/ })).toBeUndefined()
-  expect(await ui.find({ type: 'Text', text: /^Reading revised at \d+:\d\d [ap]m: his second message asks only for the reason$/ })).toBeDefined()
-  await ui.press({ key: 'close' })
+  await ui.press({ key: 'put' })
   await ui.unmount()
-  // He says the earlier ask no longer stands: the cause begins "replaced" and the whole text is taken.
-  await $.prompt.submit(typed('forget the public repository, I only want a README for myself now'))
-  answer = reads('A README for his own use. Done means it reads well to him.', 'replaced: he dropped the public repository and wants a README for himself')
-  await $.turn.complete(stop('t3'))
+  await $.prompt.submit(typed('Show me the run and the test output.'))
   await settle($)
-  ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
-  expect(await ui.find({ type: 'Text', text: /^Owner rep · A README for his own use\.$/ })).toBeDefined()
+  expect(rec()?.objective).toMatchObject({ from: 42, revisions: 41, step: 'Show me the run and the test output.' })
+  await $.prompt.submit(typed('and then step 44'))
+  await settle($)
+  expect(rec()?.objective).toMatchObject({ from: 44, revisions: 42 })
+  expect(writes).toHaveLength(43)
+})
+
+test('rule: the writer not answering leaves the objective as it was and the next message retries', async ($, on) => {
+  const rec = kept(on)
+  quietBand(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: HOLDS, usage: USAGE } }))
+  let answer: string | null = null
+  const writes = writer(on, () => answer)
+  await $.prompt.submit(typed('add a licence'))
+  await settle($)
+  expect(await rowSays($, /^Owner rep · working out the result you want from your messages…$/)).toBe(true)
+  expect(rec()?.objective).toBe(null)
+  expect(rec()?.objectiveCalls).toBe(1)
+  // A malformed answer is no better: the objective is left as it was.
+  answer = 'result: A licence file.'
+  await $.prompt.submit(typed('the MIT one'))
+  await settle($)
+  expect(rec()?.objective).toBe(null)
+  expect(rec()?.objectiveCalls).toBe(2)
+  answer = OBJ('A licence file with the full MIT text.', ['the file committed | open'])
+  await $.prompt.submit(typed('with this year on it'))
+  await settle($)
+  expect(writes).toHaveLength(3)
+  expect(writes[2]).toMatch(/\n- #1 add a licence\n- #2 the MIT one\n- #3 with this year on it\n/)
+  expect(rec()?.objective).toMatchObject({ result: 'A licence file with the full MIT text.', since: 1, from: 3 })
+  expect(await rowSays($, /^Owner rep · A licence file with the full MIT text\.$/)).toBe(true)
+})
+
+// A record saved with his messages and no objective, as a write that never landed leaves it.
+const unwritten = () => ({
+  sessions: {
+    'test-session': { id: 'test-session', at: Date.now(), objective: null, jobStart: 1, owner: [{ n: 1, kind: 'his', text: 'add a licence file', prior: '' }], counter: 1, past: [], seen: [], others: [] },
+  },
+})
+
+test('rule: with no objective held, a press writes it before the briefing, which is measured against it', async ($, on) => {
+  const rec = kept(on, unwritten())
+  quietBand(on)
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  const order: string[] = []
+  const looks: string[] = []
+  let answer: string | null = null
+  on('model.complete', () => {
+    order.push('write')
+    return { value: answer === null ? { isAnswered: false, reason: 'empty-reply', usage: USAGE } : { isAnswered: true, text: answer, usage: USAGE } }
+  })
+  on('model.fork', (_$, e) => {
+    order.push('brief')
+    looks.push(String(e.prompt))
+    return { value: { isAnswered: true, text: BRIEF('Fine.'), usage: USAGE } }
+  })
+  // The write at the session's start gets no answer: no objective yet.
+  await $.session.start({ cwd: '/tmp/x', surface: 'terminal', isInteractive: true })
+  await settle($)
+  expect(order).toEqual(['write'])
+  expect(rec()?.objective).toBe(null)
+  answer = OBJ('A licence file with the full MIT text.', ['the file committed | open'])
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  expect(order).toEqual(['write', 'write', 'brief'])
+  expect(looks[0]).toMatch(/A licence file with the full MIT text\. So he can rely on it\. Done when: the file committed\./)
+  expect(await ui.find({ type: 'Text', text: /A licence file with the full MIT text\. So he can rely on it\./ })).toBeDefined()
   await ui.unmount()
+  expect(rec()?.objective?.since).toBe(1)
+})
+
+test('rule: a session that starts with his messages and no objective writes it', async ($, on) => {
+  const rec = kept(on, unwritten())
+  quietBand(on)
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  const writes = writer(on, () => OBJ('A licence file with the full MIT text.', ['the file committed | open']))
+  await $.session.start({ cwd: '/tmp/x', surface: 'terminal', isInteractive: true })
+  await settle($)
+  expect(writes).toHaveLength(1)
+  expect(writes[0]).toMatch(/\n- #1 add a licence file/)
+  expect(rec()?.objective?.result).toBe('A licence file with the full MIT text.')
+  expect(await rowSays($, /^Owner rep · A licence file with the full MIT text\.$/)).toBe(true)
+  // A start with the objective held writes nothing.
+  await $.session.start({ cwd: '/tmp/x', surface: 'terminal', isInteractive: true })
+  await settle($)
+  expect(writes).toHaveLength(1)
 })
 
 test('rule: a message the rep drafted and the owner sent is listed to the model as the rep\'s draft, never as his words', async ($, on) => {
   session(on)
   quietBand(on)
   const prompts: string[] = []
-  let answer = reads('The strip reads plainly in every state.', 'first reading')
+  let answer = HOLDS
   on('model.fork', ($, e) => {
     prompts.push(String(e.prompt))
     return { value: { isAnswered: true, text: answer, usage: USAGE } }
@@ -1076,7 +1337,7 @@ test('rule: a message the rep drafted and the owner sent is listed to the model 
   await $.prompt.submit(typed('fix the strip so it never shows code'))
   await $.turn.complete(stop('t1'))
   await settle($)
-  answer = BRIEF('Fine.').replace('reading: A judge mod.', 'reading: holds').replace('Show me the run.', 'Show me the run and the test output.')
+  answer = BRIEF('Fine.').replace('Show me the run.', 'Show me the run and the test output.')
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   await ui.press({ key: 'rep' })
   await ui.press({ key: 'put' })
@@ -1115,7 +1376,7 @@ test('draftSplit: an exact draft, an edited draft, a short reply', () => {
 test('rule: a draft is recognised from the record after a reload, and an edited draft is split', async ($, on) => {
   const d = 'Show me the run and the test output after it.'
   // The card was drawn by an earlier process: only the stored record holds its message.
-  session(on, { sessions: { 'test-session': { id: 'test-session', at: Date.now(), reading: null, owner: [], counter: 1, lastBrief: { at: 1, next: 'Run it.', message: d } } } })
+  session(on, { sessions: { 'test-session': { id: 'test-session', at: Date.now(), objective: null, owner: [], counter: 1, lastBrief: { at: 1, next: 'Run it.', message: d } } } })
   quietBand(on)
   const prompts: string[] = []
   on('model.fork', ($, e) => {
@@ -1251,76 +1512,8 @@ test('rule: the watch looks every CHECK_EVERY model requests of a turn, through 
   expect(forks).toBe(1)
   await step(CHECK_EVERY * 2)
   expect(forks).toBe(2)
-  expect(watchPrompt({ reading: null, owner: [], past: [], seen: [], others: [] }, 'step')).toMatch(/in the middle of working/)
+  expect(watchPrompt({ objective: null, owner: [], past: [], seen: [], others: [] }, 'step')).toMatch(/in the middle of working/)
 })
-
-// Two looks in flight at once, one from a stop and one from a note, released in
-// the given order: the one that saw the note wins either way.
-const raceTest = (noteFirst: boolean) =>
-  test(`rule: a look that lands late cannot take a newer look's place (${noteFirst ? 'note' : 'stop'} answers first)`, async ($, on) => {
-    const store: Record<string, unknown> = {}
-    let onSave: (() => void) | null = null
-    on('store.get', ($, e) => ({ value: store[e.key] }))
-    on('store.set', ($, e) => {
-      store[e.key] = e.value
-      if (e.key === 'sessions') onSave?.()
-      return { value: undefined }
-    })
-    on('session.id', () => ({ value: 'race' }))
-    on('turn.complete', () => ({ text: '' }))
-    on('prompt.submit', ($, e) => ({ text: e.text }))
-    on('ui.toast', () => ({ value: undefined }))
-    on('prompt.fill', () => ({ isFilled: true }))
-    quietBand(on)
-    mock.clock(on)
-    // The first look writes the reading at once; the two that race are held open.
-    const held: Array<{ release: () => void; seesNote: boolean }> = []
-    let onHeld: (() => void) | null = null
-    let forks = 0
-    on('model.fork', async ($, e) => {
-      forks += 1
-      if (forks === 1) return { value: { isAnswered: true, text: reads('The README alone.', 'first reading'), usage: USAGE } }
-      const seesNote = /- #\d+ \(to the rep\) the tests matter most/.test(String(e.prompt))
-      await new Promise<void>(release => {
-        held.push({ release, seesNote })
-        onHeld?.()
-      })
-      return { value: { isAnswered: true, text: reads(seesNote ? 'The README alone. His note puts the tests first; the licence can wait.' : 'The README alone. Done must also show a licence file.', seesNote ? 'his note put the tests first' : 'he asked for a licence'), usage: USAGE } }
-    })
-    await $.prompt.submit(typed('a README'))
-    await $.turn.complete(stop('t1'))
-    await settle($)
-    // The licence message; its stop's look has read the record and is at the
-    // model when the note arrives, so the two looks saw different messages.
-    await $.prompt.submit(typed('now a licence file'))
-    const stopHeld = new Promise<void>(r => (onHeld = r))
-    const stopLook = $.turn.complete(stop('t2'))
-    await stopHeld
-    const noteHeld = new Promise<void>(r => (onHeld = r))
-    const note = $.prompt.submit(typed('Owner rep: the tests matter most; the licence can wait'))
-    await noteHeld
-    expect(held.map(h => h.seesNote)).toEqual([false, true])
-    const [releaseStop, releaseNote] = held.map(h => h.release) as [() => void, () => void]
-    const release = async (r: () => void) => {
-      const saved = new Promise<void>(done => (onSave = done))
-      r()
-      await saved
-    }
-    await release(noteFirst ? releaseNote : releaseStop)
-    await release(noteFirst ? releaseStop : releaseNote)
-    await stopLook
-    await note
-    await settle($)
-    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
-    expect(await ui.find({ type: 'Text', text: /^Owner rep · The README alone\.$/ })).toBeDefined()
-    await ui.unmount()
-    const rec = (store.sessions as Record<string, { reading: { from: number; cause: string; text: string } }>).race
-    expect(rec?.reading.text).toBe('The README alone. His note puts the tests first; the licence can wait.')
-    expect(rec?.reading.cause).toBe('his note put the tests first')
-    expect(rec?.reading.from).toBe(3)
-  })
-raceTest(true)
-raceTest(false)
 
 // The check's run answered with a given count of refused commands.
 const CHECKED_WITH = (refused: number): string =>

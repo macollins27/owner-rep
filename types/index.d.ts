@@ -1,14 +1,3 @@
-// The rep's reading of what the owner wants on the job in hand (see hooks/rep.ts).
-export type Reading = {
-  text: string
-  openedAt: number
-  since: number
-  from: number
-  movedAt: number | null
-  cause: string
-  revisions: number
-}
-
 // The objective the rep holds for the job in hand: the same shapes as in
 // hooks/rep.ts, declared again here because this file must stand alone.
 export type ConditionState = 'open' | 'not-shown' | 'shown' | 'closed'
@@ -52,7 +41,7 @@ export type Checked = {
 }
 
 export type Brief = {
-  // The rep's reading of what the owner wants, whole; the row shows its first sentence.
+  // The objective as prose, whole; the row shows only its result.
   reading: string
   // The line under the head when the reading has moved; '' when it has not.
   revised: string
@@ -81,7 +70,8 @@ declare module 'claude-code' {
   interface PluginState {
     'owner-rep': {
       // The objective the rep holds for the job in hand; the row shows its result.
-      reading: Objective | null
+      // Kept under a shape tag, so what an older build wrote here reads as absent.
+      reading: Shaped<Objective | null>
       now: Now
       note: Note | null
       brief: Brief | null

@@ -1,9 +1,9 @@
 import { atom, read, update } from 'claude-code'
-import type { Atom, EngineInterface, Register, RenderChildren } from 'claude-code'
+import type { EngineInterface, Register, RenderChildren } from 'claude-code'
 
 type RenderNodeList = RenderChildren[]
 
-import type { Brief, Checked, Note, Now, Reading, View } from '../types'
+import type { Brief, Checked, Note, Now, View } from '../types'
 import {
   CHECK_EVERY,
   CHECK_TIMEOUT_MS,
@@ -36,9 +36,16 @@ import {
   fit,
   noteTyped,
   draftSplit,
-  keepResult,
+  gateVerdict,
+  mergeConditions,
+  OBJECTIVE_MAX_TOKENS,
+  OBJECTIVE_MODEL,
+  objectivePrompt,
+  objectiveText,
+  openConditions,
   parseBrief,
   parseCheck,
+  parseObjective,
   parseWatch,
   resultOf,
   revisedLine,
@@ -47,10 +54,13 @@ import {
   spentText,
   textOf,
   tokensOf,
+  VERSIONS_MAX,
   watchPrompt,
   type BriefAnswer,
+  type Condition,
   type Memory,
-  type ReadingAnswer,
+  type Objective,
+  type ObjectiveAnswer,
 } from './rep'
 
 // From the prompt box only a bare digit presses a band button.
@@ -58,9 +68,9 @@ const PRESS_HOTKEY = '1'
 
 const IDLE: Now = { doing: 'idle', helpers: 0, isWorking: false, mark: '' }
 
-// Declared to hold the objective (types/index.d.ts); until the objective writer
-// fills it, it still carries the reading, so it is typed as the reading here.
-const readingA = atom({ plugin: 'owner-rep', key: 'reading' } as const, null) as unknown as Atom<Reading | null>
+// The objective held for the job in hand, for the row and the card. Kept under a
+// shape tag, so a value an older build wrote there (the reading) reads as absent.
+const readingA = atom({ plugin: 'owner-rep', key: 'reading' } as const, null, { shape: 'objective-1' })
 const nowA = atom({ plugin: 'owner-rep', key: 'now' } as const, IDLE)
 const noteA = atom({ plugin: 'owner-rep', key: 'note' } as const, null)
 const briefA = atom({ plugin: 'owner-rep', key: 'brief' } as const, null)
@@ -71,7 +81,12 @@ const helpersA = atom({ plugin: 'owner-rep', key: 'helperIds' } as const, [])
 type Rec = {
   id: string
   at: number
-  reading: Reading | null
+  // The objective held for the job in hand; null until the writer has written it.
+  objective: Objective | null
+  // The number of the job's first message while no objective is held; a new job sets it.
+  jobStart: number
+  // An old-shape reading's text, kept until the first objective takes it as a version.
+  stale?: { text: string; cause: string; at: number }
   owner: OwnerMsg[]
   // The last number given to an owner message.
   counter: number
@@ -91,6 +106,9 @@ type Rec = {
   lastCheckCached: number
   lastCheckMs: number
   lastCheckRefused: number
+  // The objective writer's own calls and their tokens.
+  objectiveCalls: number
+  objectiveTokens: number
 }
 
 const isRec = (v: unknown): v is Rec =>
@@ -99,7 +117,8 @@ const isRec = (v: unknown): v is Rec =>
 const freshRec = (id: string): Rec => ({
   id,
   at: Date.now(),
-  reading: null,
+  objective: null,
+  jobStart: 1,
   owner: [],
   counter: 0,
   past: [],
@@ -116,6 +135,8 @@ const freshRec = (id: string): Rec => ({
   lastCheckCached: 0,
   lastCheckMs: 0,
   lastCheckRefused: 0,
+  objectiveCalls: 0,
+  objectiveTokens: 0,
 })
 
 async function loadRec($: EngineInterface, id: string): Promise<Rec> {
@@ -141,9 +162,37 @@ async function saveRec($: EngineInterface, rec: Rec): Promise<void> {
   await $.store.set('sessions', kept)
 }
 
+// Every change to a session's record runs alone, from its load to its save,
+// so two hooks that finish together never save over each other: a look that
+// landed beside the objective writer once saved the old objective back.
+const changing = new Map<string, Promise<void>>()
+async function changeRec<T>($: EngineInterface, id: string, change: (rec: Rec) => T | Promise<T>): Promise<T> {
+  const before = changing.get(id) ?? Promise.resolve()
+  let done: () => void = () => undefined
+  const mine = new Promise<void>(r => (done = r))
+  const turn = before.then(() => mine)
+  changing.set(id, turn)
+  await before
+  try {
+    const rec = await loadRec($, id)
+    const out = await change(rec)
+    await saveRec($, rec)
+    return out
+  } finally {
+    done()
+    if (changing.get(id) === turn) changing.delete(id)
+  }
+}
+
+// The number of the job's first message, and the job's messages.
+const jobOf = (rec: Rec): number => rec.objective?.since ?? rec.jobStart
+const jobMsgs = (rec: Rec): OwnerMsg[] => rec.owner.filter(m => m.n >= jobOf(rec))
+// The numbers of his own messages and notes from `from` on: never a draft's.
+const hisFrom = (rec: Rec, from: number): number[] => rec.owner.filter(m => m.kind !== 'draft' && m.n >= from).map(m => m.n)
+
 const memoryOf = (rec: Rec): Memory => ({
-  reading: rec.reading,
-  owner: rec.owner,
+  objective: rec.objective,
+  owner: jobMsgs(rec),
   past: rec.past,
   seen: rec.seen,
   others: rec.others,
@@ -165,32 +214,158 @@ async function contextOf($: EngineInterface): Promise<Memory['context']> {
   }
 }
 
-// Applies what the model said about the reading to the record. `saw` is how
-// many of the owner's messages the look was given. The reading moves only on
-// the owner's own words: a revision from a look that saw no message of his
-// beyond what the held reading was built from is refused, whatever the agent
-// did meanwhile. Looks overlap, and one that saw fewer messages can land
-// later than one that saw more; counting what each saw, not what has arrived
-// by the time it lands, keeps a late answer from taking a newer one's place.
-// A new job closes the old reading into `past`. Returns true when the record
-// changed.
-function takeReading(rec: Rec, a: ReadingAnswer, now: number, saw: number): boolean {
+// The writer does not see the conversation, so a condition it marks shown is
+// taken only as already held shown, and one it marks closed only when the
+// number cited is one of his own messages on the job; otherwise it is open.
+function honest(proposed: Condition[], held: Condition[], his: readonly number[]): Condition[] {
+  return proposed.map(c => {
+    const h = held.find(x => same(x.text, c.text))
+    if (c.state === 'shown' && h?.state !== 'shown' && h?.state !== 'closed') return { ...c, state: 'open', by: '' }
+    if (c.state === 'closed' && !his.includes(Number(c.by.slice(1))) && h?.state !== 'closed') return { ...c, state: 'open', by: '' }
+    return c
+  })
+}
+
+// Applies the objective writer's answer to the record. `saw` is the number of
+// the last of his messages the writer was shown. The objective moves only on
+// his own words: an answer from a writer that saw no message of his or note
+// beyond what the held objective was built from is refused, so a draft never
+// moves it, and a write that lands after a newer one cannot take its place. A
+// correction rebuilds the result, the purpose and the step whole and keeps
+// every held condition the writer let go without a message of his that says
+// so; a new job closes the old objective into `past`. True when it changed.
+function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number): boolean {
   if (a === null || a.kind === 'holds') return false
-  const held = rec.reading
+  const held = rec.objective
   if (held === null) {
-    rec.reading = { text: a.text, openedAt: now, since: 0, from: saw, movedAt: null, cause: '', revisions: 0 }
+    const his = hisFrom(rec, rec.jobStart).filter(n => n <= saw)
+    rec.objective = {
+      ...a.parts,
+      done: honest(a.parts.done, [], his),
+      openedAt: now,
+      since: his.length > 0 ? Math.min(...his) : rec.jobStart,
+      from: saw,
+      movedAt: null,
+      cause: a.cause,
+      revisions: 0,
+      versions: rec.stale === undefined ? [] : [{ at: rec.stale.at, cause: 'rebuilt from the old shape', text: rec.stale.text }],
+    }
+    delete rec.stale
     return true
   }
   if (saw <= held.from) return false
+  const fresh = hisFrom(rec, held.from + 1).filter(n => n <= saw)
+  if (fresh.length === 0) return false
+  const version = { at: now, cause: a.cause, text: objectiveText(held) }
   if (a.isNewJob) {
-    rec.past = [...rec.past, firstSentence(held.text)].slice(-PAST_MAX)
-    rec.reading = { text: a.text, openedAt: now, since: held.from, from: saw, movedAt: now, cause: a.cause, revisions: 0 }
+    const since = Math.min(...fresh)
+    rec.past = [...rec.past, held.result].slice(-PAST_MAX)
+    rec.jobStart = since
+    rec.objective = {
+      ...a.parts,
+      done: honest(a.parts.done, [], hisFrom(rec, since)),
+      openedAt: now,
+      since,
+      from: saw,
+      movedAt: now,
+      cause: a.cause,
+      revisions: 0,
+      versions: [version],
+    }
     return true
   }
-  // A correction keeps the result, the first sentence, unless he replaced it.
-  const text = a.isReplaced ? a.text : keepResult(held.text, a.text)
-  rec.reading = { ...held, text, from: saw, movedAt: now, cause: a.cause, revisions: held.revisions + 1 }
+  const his = hisFrom(rec, held.since)
+  rec.objective = {
+    ...held,
+    result: a.parts.result,
+    purpose: a.parts.purpose,
+    step: a.parts.step,
+    done: mergeConditions(held.done, honest(a.parts.done, held.done, his), a.dropped, his),
+    from: saw,
+    movedAt: now,
+    cause: a.cause,
+    revisions: held.revisions + 1,
+    versions: [...held.versions, version].slice(-VERSIONS_MAX),
+  }
   return true
+}
+
+// Applies a look's or a briefing's marks to the held conditions: one the
+// conversation showed, with where, becomes shown; one he closed in a message
+// of his own on the job becomes closed with that number. A draft's number
+// closes nothing, and a shown mark without a where is not taken. True when a
+// condition moved.
+function applyMarks(
+  rec: Rec,
+  shown: Array<{ text: string; by: string }>,
+  closed: Array<{ text: string; by: number | null }>,
+): boolean {
+  const o = rec.objective
+  if (o === null) return false
+  const his = hisFrom(rec, o.since)
+  let changed = false
+  const done = o.done.map((c): Condition => {
+    const close = closed.find(x => x.by !== null && his.includes(x.by) && same(x.text, c.text))
+    if (close !== undefined && c.state !== 'closed') {
+      changed = true
+      return { ...c, state: 'closed', by: `#${close.by}` }
+    }
+    const show = shown.find(x => x.by !== '' && same(x.text, c.text))
+    if (show !== undefined && (c.state === 'open' || c.state === 'not-shown')) {
+      changed = true
+      return { ...c, state: 'shown', by: show.by }
+    }
+    return c
+  })
+  if (changed) rec.objective = { ...o, done }
+  return changed
+}
+
+// The objective writer running for a session; one at a time per session.
+const writing = new Map<string, Promise<void>>()
+
+// The objective writer: a plain completion of its own over his messages on the
+// job, never the conversation, so nothing the agent says can move what it
+// writes. A request while one runs joins it, and a message of his that came in
+// meanwhile is written from when it lands. A load or a press asks only for the
+// first objective, and a message or a note for a rebuild. Never awaited by the
+// prompt hook that starts it, so the agent is never slowed.
+async function rebuildObjective($: EngineInterface, sid: string, cause: 'message' | 'note' | 'load' | 'press'): Promise<void> {
+  const running = writing.get(sid)
+  if (running !== undefined) return running
+  const run = writeObjective($, sid, cause === 'load' || cause === 'press').finally(() => writing.delete(sid))
+  writing.set(sid, run)
+  return run
+}
+
+async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolean): Promise<void> {
+  for (;;) {
+    const rec = await loadRec($, sid)
+    if (onlyFirst && rec.objective !== null) return
+    if (hisFrom(rec, jobOf(rec)).length === 0) return
+    const saw = rec.counter
+    const result = await $.model
+      .complete({
+        model: OBJECTIVE_MODEL,
+        prompt: objectivePrompt({ objective: rec.objective, owner: jobMsgs(rec), past: rec.past }),
+        maxTokens: OBJECTIVE_MAX_TOKENS,
+        effort: 'high',
+        timeoutMs: 60000,
+      })
+      .catch(() => null)
+    const after = await changeRec($, sid, rec => {
+      if (result === null) return rec
+      rec.objectiveCalls += 1
+      rec.objectiveTokens += tokensOf(result.usage)
+      if (result.isAnswered) takeObjective(rec, parseObjective(result.text), Date.now(), saw)
+      return rec
+    })
+    // The row shows what the record holds, whichever write put it there.
+    await update($, readingA, () => after.objective)
+    // A message of his that came in while the writer worked is written from now.
+    if (!after.owner.some(m => m.kind !== 'draft' && m.n > saw)) return
+    onlyFirst = false
+  }
 }
 
 async function setNow($: EngineInterface, patch: Partial<Now>): Promise<void> {
@@ -204,29 +379,28 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
   const rec = await loadRec($, sid)
   // Typing past notes backs the watch off; a note to the rep is never skipped.
   if (rec.skip > 0 && reason !== 'note') {
-    await saveRec($, { ...rec, skip: rec.skip - 1 })
+    await changeRec($, sid, r => {
+      r.skip = Math.max(0, r.skip - 1)
+    })
     return
   }
-  const saw = rec.counter
   const result = await $.model.fork({ prompt: watchPrompt({ ...memoryOf(rec), context: await contextOf($) }, reason) })
-  const after = await loadRec($, sid)
-  after.calls += 1
-  after.tokens += tokensOf('usage' in result ? result.usage : null)
-  after.cached += cachedOf('usage' in result ? result.usage : null)
-  if (!result.isAnswered) {
-    await saveRec($, after)
-    return
-  }
-  const answer = parseWatch(result.text)
-  if (takeReading(after, answer.reading, Date.now(), saw)) await update($, readingA, () => after.reading)
-  const view = await read($, viewA)
-  if (answer.flag !== null && view === 'row' && ![...after.seen].some(s => same(s, answer.flag ?? ''))) {
-    after.seen = [...after.seen, answer.flag].slice(-SEEN_MAX)
-    const note: Note = { line: answer.flag, why: answer.why, shownAt: Date.now(), turnId }
-    await update($, noteA, () => note)
-    await update($, viewA, () => 'note')
-  }
-  await saveRec($, after)
+  const usage = 'usage' in result ? result.usage : null
+  await changeRec($, sid, async after => {
+    after.calls += 1
+    after.tokens += tokensOf(usage)
+    after.cached += cachedOf(usage)
+    if (!result.isAnswered) return
+    const answer = parseWatch(result.text)
+    if (applyMarks(after, answer.shown, answer.closed)) await update($, readingA, () => after.objective)
+    const view = await read($, viewA)
+    if (answer.flag !== null && view === 'row' && ![...after.seen].some(s => same(s, answer.flag ?? ''))) {
+      after.seen = [...after.seen, answer.flag].slice(-SEEN_MAX)
+      const note: Note = { line: answer.flag, why: answer.why, shownAt: Date.now(), turnId }
+      await update($, noteA, () => note)
+      await update($, viewA, () => 'note')
+    }
+  })
 }
 
 // The press: an instant read over the same copy, drawn in the band.
@@ -236,16 +410,18 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
   await update($, viewA, () => 'reading')
   await setNow($, { mark: '' }).catch(() => undefined)
   try {
+    // No objective yet: it is written first, so the briefing measures against it.
+    if ((await loadRec($, sid)).objective === null) await rebuildObjective($, sid, 'press')
     const rec = await loadRec($, sid)
-    const saw = rec.counter
     const context = await contextOf($)
     const result = await $.model.fork({ prompt: briefPrompt({ ...memoryOf(rec), context }) })
-    const after = await loadRec($, sid)
-    after.calls += 1
-    after.tokens += tokensOf('usage' in result ? result.usage : null)
-    after.cached += cachedOf('usage' in result ? result.usage : null)
+    const usage = 'usage' in result ? result.usage : null
     if (!result.isAnswered) {
-      await saveRec($, after)
+      await changeRec($, sid, after => {
+        after.calls += 1
+        after.tokens += tokensOf(usage)
+        after.cached += cachedOf(usage)
+      })
       await update($, viewA, () => 'row')
       $.ui.toast(
         result.reason === 'nothing-to-fork'
@@ -254,28 +430,35 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       )
       return
     }
-    const a = parseBrief(result.text)
-    if (takeReading(after, a.reading, Date.now(), saw)) await update($, readingA, () => after.reading)
-    const brief: Brief = {
-      reading: after.reading?.text ?? '',
-      revised: revisedLine(after.reading),
-      well: a.well,
-      stands: a.stands,
-      means: a.means,
-      leftOut: a.leftOut,
-      next: a.next,
-      message: a.message,
-      does: a.does,
-      at: Date.now(),
-      spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens),
-      size: context === undefined ? '' : `conversation at ${context.percent} percent of its window`,
-      isChecking: false,
-      checked: null,
-      checkNote: '',
-      checkCost: checkCostText(after.lastCheckTokens, after.lastCheckCached, after.lastCheckMs, after.lastCheckRefused),
-    }
-    after.lastBrief = { at: brief.at, next: brief.next, message: brief.message }
-    await saveRec($, after)
+    const parsed = parseBrief(result.text)
+    const { a, brief } = await changeRec($, sid, async after => {
+      after.calls += 1
+      after.tokens += tokensOf(usage)
+      after.cached += cachedOf(usage)
+      if (applyMarks(after, parsed.shown, parsed.closed)) await update($, readingA, () => after.objective)
+      // A stop or a going-well line while a condition is open is refused.
+      const a = gateVerdict(parsed, openConditions(after.objective)).answer
+      const brief: Brief = {
+        reading: after.objective === null ? '' : objectiveText(after.objective),
+        revised: revisedLine(after.objective),
+        well: a.well,
+        stands: a.stands,
+        means: a.means,
+        leftOut: a.leftOut,
+        next: a.next,
+        message: a.message,
+        does: a.does,
+        at: Date.now(),
+        spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens),
+        size: context === undefined ? '' : `conversation at ${context.percent} percent of its window`,
+        isChecking: false,
+        checked: null,
+        checkNote: '',
+        checkCost: checkCostText(after.lastCheckTokens, after.lastCheckCached, after.lastCheckMs, after.lastCheckRefused),
+      }
+      after.lastBrief = { at: brief.at, next: brief.next, message: brief.message }
+      return { a, brief }
+    })
     await update($, noteA, () => null)
     await update($, briefA, () => brief)
     await update($, viewA, () => 'brief')
@@ -331,8 +514,8 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       sessionId: sid,
       cwd,
       copy,
-      reading: rec.reading?.text ?? '',
-      owner: rec.reading === null ? rec.owner : rec.owner.filter(m => m.n > (rec.reading?.since ?? 0)),
+      reading: rec.objective === null ? '' : objectiveText(rec.objective),
+      owner: jobMsgs(rec),
       brief: instant,
       writtenAt: new Date(at).toISOString(),
     })
@@ -371,29 +554,30 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       const why = stderr.trim().split('\n').pop() ?? ''
       return finish({ checkNote: `The check could not run${end.code === null ? '' : ` (exit ${end.code})`}${why === '' ? '' : `: ${fit(why, 160)}`}.` })
     }
-    const after = await loadRec($, sid)
-    after.checks += 1
-    after.checkTokens += got.tokens
-    after.lastCheckTokens = got.tokens
-    after.lastCheckCached = got.cached
-    after.lastCheckMs = Date.now() - startedAt
-    after.lastCheckRefused = got.refused
-    const c = parseCheck(got.text)
-    const checked: Checked = { holds: c.holds, wrong: c.wrong, notShown: c.notShown, changed: c.changed, looked: c.looked, refused: got.refused }
-    const hasLeft = parts_hasLeft(got.text)
-    const patch: Partial<Brief> = {
-      checked,
-      stands: c.stands === '' ? instant.stands : c.stands,
-      means: c.means === '' ? instant.means : c.means,
-      leftOut: hasLeft ? c.leftOut : instant.leftOut,
-      next: c.next === '' ? instant.next : c.next,
-      message: c.message === '' ? instant.message : c.message,
-      does: c.does === '' ? instant.does : c.does,
-      spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens),
-      checkCost: checkCostText(after.lastCheckTokens, after.lastCheckCached, after.lastCheckMs, after.lastCheckRefused),
-    }
-    after.lastBrief = { at, next: patch.next ?? '', message: patch.message ?? '' }
-    await saveRec($, after)
+    const patch = await changeRec($, sid, after => {
+      after.checks += 1
+      after.checkTokens += got.tokens
+      after.lastCheckTokens = got.tokens
+      after.lastCheckCached = got.cached
+      after.lastCheckMs = Date.now() - startedAt
+      after.lastCheckRefused = got.refused
+      const c = parseCheck(got.text)
+      const checked: Checked = { holds: c.holds, wrong: c.wrong, notShown: c.notShown, changed: c.changed, looked: c.looked, refused: got.refused }
+      const hasLeft = parts_hasLeft(got.text)
+      const patch: Partial<Brief> = {
+        checked,
+        stands: c.stands === '' ? instant.stands : c.stands,
+        means: c.means === '' ? instant.means : c.means,
+        leftOut: hasLeft ? c.leftOut : instant.leftOut,
+        next: c.next === '' ? instant.next : c.next,
+        message: c.message === '' ? instant.message : c.message,
+        does: c.does === '' ? instant.does : c.does,
+        spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens),
+        checkCost: checkCostText(after.lastCheckTokens, after.lastCheckCached, after.lastCheckMs, after.lastCheckRefused),
+      }
+      after.lastBrief = { at, next: patch.next ?? '', message: patch.message ?? '' }
+      return patch
+    })
     await finish(patch)
   } catch (error) {
     const why = error instanceof Error ? error.message : String(error)
@@ -445,16 +629,14 @@ let lastAnswer = ''
 function pushOwner(rec: Rec, kind: OwnerKind, text: string): void {
   rec.owner = trimOwner(
     [...rec.owner, { n: ++rec.counter, kind, text: fit(text, OWNER_CUT), prior: fit(lastAnswer, PRIOR_CUT) }],
-    rec.reading?.since ?? 0,
+    jobOf(rec),
   )
 }
 
 // A note to the rep, typed behind the prefix: recorded as his, marked as said
 // to the rep, and read at once. The agent never sees it.
 async function takeNote($: EngineInterface, sid: string, note: string): Promise<void> {
-  const rec = await loadRec($, sid)
-  pushOwner(rec, 'note', note)
-  await saveRec($, rec)
+  await changeRec($, sid, rec => pushOwner(rec, 'note', note))
 }
 
 // "Tell the rep": the prefix goes into the owner's own prompt box, he types
@@ -480,10 +662,9 @@ async function rememberOther($: EngineInterface, id: string, text: string): Prom
   const line = text.replace(/\s+/g, ' ').trim()
   if (line === '' || line === lastOther || id === '') return
   lastOther = line
-  const rec = await loadRec($, id)
-  if (rec.others.some(o => same(o, line))) return
-  rec.others = [...rec.others, fit(line, 400)].slice(-OTHERS_MAX)
-  await saveRec($, rec)
+  await changeRec($, id, rec => {
+    if (!rec.others.some(o => same(o, line))) rec.others = [...rec.others, fit(line, 400)].slice(-OTHERS_MAX)
+  })
 }
 
 async function clearNote($: EngineInterface): Promise<void> {
@@ -537,7 +718,12 @@ export const register: Register = on => {
     try {
       const id = await sessionId($)
       const rec = await loadRec($, id)
-      await update($, readingA, () => rec.reading)
+      await update($, readingA, () => rec.objective)
+      // A record with messages of his and no objective yet (a write that never
+      // landed, or one saved by an older build) is written now.
+      if (rec.objective === null && hisFrom(rec, jobOf(rec)).length > 0) {
+        rebuildObjective($, id, 'load').catch(() => undefined)
+      }
       await update($, viewA, v => (v === 'reading' ? 'row' : (v ?? 'row')))
       await setNow($, { isWorking: false, doing: 'idle', mark: '' })
     } catch {
@@ -556,12 +742,15 @@ export const register: Register = on => {
         try {
           const id = await sessionId($)
           await takeNote($, id, note)
+          // The note is his and can move the objective: the writer reads it first.
+          rebuildObjective($, id, 'note').catch(() => undefined)
           // A dropped prompt stays in the box for editing; a note the rep has
           // taken must not, or the next digit lands after it as text. A fill
           // made now is undone by the drop, so it is made once the drop has landed.
           $.clock.after(NOTE_CLEAR_MS, () => {
             $.prompt.fill({ text: '', mode: 'replace' }).catch(() => undefined)
           })
+          // The look reads the note against the work at once.
           if (!inFlight.has('note')) {
             inFlight.add('note')
             look($, id, 'note', '')
@@ -575,30 +764,37 @@ export const register: Register = on => {
       }
       try {
         const id = await sessionId($)
-        const rec = await loadRec($, id)
         const view = await read($, viewA)
-        // A message the rep drafted and he sent is recorded as the rep's words,
-        // marked, never as his: the model must not grade against a job the rep wrote.
-        // It is matched against the stored briefing, so it survives a reload; what
-        // he added after the draft is his own message, numbered after it.
-        const split = draftSplit(e.text, rec.lastBrief?.message ?? '')
-        if (split === null) pushOwner(rec, 'his', e.text)
-        else {
-          pushOwner(rec, 'draft', split.draft)
-          if (split.his !== '') pushOwner(rec, 'his', split.his)
-          rec.lastSent = { text: split.draft, at: Date.now() }
-          if (view === 'brief') await update($, viewA, () => 'row')
-        }
-        if (view === 'note') {
-          promptsPastNote += 1
-          if (promptsPastNote >= CLEAR_AFTER_PROMPTS) {
-            promptsPastNote = 0
-            rec.typedPast += 1
-            rec.skip = skipAfter(rec.typedPast)
-            await clearNote($)
+        const { rec, split, isHis } = await changeRec($, id, async rec => {
+          // A message the rep drafted and he sent is recorded as the rep's words,
+          // marked, never as his: the model must not grade against a job the rep wrote.
+          // It is matched against the stored briefing, so it survives a reload; what
+          // he added after the draft is his own message, numbered after it.
+          const split = draftSplit(e.text, rec.lastBrief?.message ?? '')
+          const isHis = split === null || split.his !== ''
+          if (split === null) pushOwner(rec, 'his', e.text)
+          else {
+            pushOwner(rec, 'draft', split.draft)
+            if (split.his !== '') pushOwner(rec, 'his', split.his)
+            rec.lastSent = { text: split.draft, at: Date.now() }
+            // A draft is the rep's words: it moves the step it asks for and nothing else.
+            if (rec.objective !== null) rec.objective = { ...rec.objective, step: firstSentence(split.draft) }
+            if (view === 'brief') await update($, viewA, () => 'row')
           }
-        }
-        await saveRec($, rec)
+          if (view === 'note') {
+            promptsPastNote += 1
+            if (promptsPastNote >= CLEAR_AFTER_PROMPTS) {
+              promptsPastNote = 0
+              rec.typedPast += 1
+              rec.skip = skipAfter(rec.typedPast)
+              await clearNote($)
+            }
+          }
+          return { rec, split, isHis }
+        })
+        if (split !== null) await update($, readingA, () => rec.objective)
+        // A message of his can move the objective: the writer reads it, never the agent's words.
+        if (isHis) rebuildObjective($, id, 'message').catch(() => undefined)
       } catch {
         // Recording is best effort; the prompt goes on.
       }
@@ -753,9 +949,10 @@ export const register: Register = on => {
     const tellButton4 = <Button key="tell" plain hotkey="4" label="Tell the rep" onPress={tell} />
     const headGlyph = marked ? '◆' : '◇'
     const headColor = marked ? 'warning' : 'suggestion'
-    // The row shows the reading's first sentence; the card shows it whole.
-    const readingText = reading?.text ?? 'working out the result you want from your messages…'
-    const head = lead(headGlyph, headColor, 'Owner rep', firstSentence(readingText))
+    // The row shows the result; the card shows the objective whole.
+    const placeholder = 'working out the result you want from your messages…'
+    const readingText = reading === null ? placeholder : objectiveText(reading)
+    const head = lead(headGlyph, headColor, 'Owner rep', reading?.result ?? placeholder)
 
     if (view === 'note' && note !== null && !hasBeneath) {
       const clear = () => {
@@ -949,8 +1146,7 @@ export const register: Register = on => {
   on('session.end', async ($, e, next) => {
     try {
       const id = await sessionId($)
-      const rec = await loadRec($, id)
-      await saveRec($, rec)
+      await changeRec($, id, () => undefined)
     } catch {
       // Nothing to save.
     }

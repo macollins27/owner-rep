@@ -20,27 +20,10 @@ export const OWNER_CUT = 1200
 export const SESSIONS_MAX = 32
 // The reading may run to this many sentences; the row shows its first.
 export const READING_SENTENCES = 4
-// Earlier jobs' readings kept per session, first sentence each.
+// Earlier jobs' results kept per session.
 export const PAST_MAX = 8
-
-// The rep's reading of what the owner wants on the job in hand: its own
-// account, in its own words, never the owner's text. It is kept between looks
-// and moves only when one of the owner's messages makes it stale; then it is
-// rebuilt from everything he said on the job, and nothing from an earlier one.
-export type Reading = {
-  text: string
-  // When the job opened.
-  openedAt: number
-  // How many of the owner's messages came before this job; the job's own are the rest.
-  since: number
-  // How many of the owner's messages the reading was last built from. A look
-  // that proposes a revision when no message of his has come since is refused.
-  from: number
-  // The last revision: when, and the model's one line on which message of his caused it.
-  movedAt: number | null
-  cause: string
-  revisions: number
-}
+// Earlier versions of the objective kept for the job in hand.
+export const VERSIONS_MAX = 20
 
 // One message of the owner's: numbered in the order given, with its kind (his own
 // words, a note to the rep, or a draft of the rep's that he sent) and the agent's
@@ -49,9 +32,10 @@ export type OwnerKind = 'his' | 'note' | 'draft'
 export type OwnerMsg = { n: number; kind: OwnerKind; text: string; prior: string }
 
 export type Memory = {
-  reading: Reading | null
+  // The objective held for the job in hand; null until the writer has written it.
+  objective: Objective | null
   owner: OwnerMsg[]
-  // Earlier jobs in this session, closed: the first sentence of each reading.
+  // Earlier jobs in this session, closed: the result of each.
   past: string[]
   seen: string[]
   others: string[]
@@ -106,18 +90,10 @@ export type ObjectiveMemory = { objective: Objective | null; owner: OwnerMsg[]; 
 export const OBJECTIVE_MODEL = 'opus'
 export const OBJECTIVE_MAX_TOKENS = 1200
 
-// What the model said about the reading: it holds, or it moved, with the
-// cause and whether the owner opened a new job; null when the answer had none.
-export type ReadingAnswer =
-  | { kind: 'holds' }
-  | { kind: 'moved'; text: string; cause: string; isNewJob: boolean; isReplaced: boolean }
-  | null
-
 // Whether the agent should go on or stop. Only the rep's own gate may let a stop stand.
 export type Verdict = 'continue' | 'stop'
 
 export type WatchAnswer = {
-  reading: ReadingAnswer
   state: 'working' | 'stopped' | 'asking' | 'plan-waiting' | null
   flag: string | null
   why: string
@@ -127,7 +103,6 @@ export type WatchAnswer = {
 }
 
 export type BriefAnswer = {
-  reading: ReadingAnswer
   verdict: Verdict
   shown: Array<{ text: string; by: string }>
   closed: Array<{ text: string; by: number | null }>
@@ -167,24 +142,6 @@ export function firstSentence(text: string): string {
   return m?.[1] ?? t
 }
 
-// What follows the first sentence; '' when there is nothing after it.
-export function afterFirstSentence(text: string): string {
-  const t = text.replace(/\s+/g, ' ').trim()
-  return t.slice(firstSentence(t).length).trim()
-}
-
-// A correction rebuilds the reading but keeps its first sentence, the result
-// he asked for: a later message adds what "done" must show and moves the step,
-// and only a new job, or his saying the earlier ask no longer stands, changes
-// the result. The model is told so; this holds it to that when it does not
-// listen, as it did on 15 Oct 2026, when a correction became "he asks only
-// for" and the result shrank to the latest message.
-export function keepResult(held: string, proposed: string): string {
-  const result = firstSentence(held)
-  if (same(result, firstSentence(proposed))) return proposed
-  return `${result} ${afterFirstSentence(proposed)}`.trim()
-}
-
 const clock = (at: number): string => {
   const d = new Date(at)
   const h = d.getHours()
@@ -192,12 +149,12 @@ const clock = (at: number): string => {
   return `${h % 12 === 0 ? 12 : h % 12}:${m} ${h < 12 ? 'am' : 'pm'}`
 }
 
-// The card's line under the head when the reading has moved; '' when it has not.
-export function revisedLine(r: Reading | null): string {
-  if (r === null || r.movedAt === null) return ''
-  const when = clock(r.movedAt)
-  const cause = r.cause === '' ? '' : `: ${r.cause}`
-  return r.revisions === 0 ? `New job since ${when}${cause}` : `Reading revised at ${when}${cause}`
+// The card's line under the head when the objective has moved; '' when it has not.
+export function revisedLine(o: Objective | null): string {
+  if (o === null || o.movedAt === null) return ''
+  const when = clock(o.movedAt)
+  const cause = o.cause === '' ? '' : `: ${o.cause}`
+  return o.revisions === 0 ? `New job since ${when}${cause}` : `Reading revised at ${when}${cause}`
 }
 
 const STATE_MARK: Record<ConditionState, string> = {
@@ -339,12 +296,12 @@ const list = (items: readonly string[], empty: string): string =>
   items.length > 0 ? items.map(s => `- ${s}`).join('\n') : empty
 
 function memoryText(m: Memory): string {
-  const r = m.reading
+  const o = m.objective
   const reading =
-    r === null
-      ? 'Not written yet. Write it now, from his messages below.'
-      : `"${r.text}"${r.movedAt === null ? '' : `\n(${revisedLine(r)})`}`
-  const onJob = r === null ? m.owner : m.owner.filter(o => o.n > r.since)
+    o === null
+      ? 'Not written yet: it is being written from his messages. Until it is, measure against his messages below.'
+      : `"${objectiveText(o)}"${o.movedAt === null ? '' : `\n(${revisedLine(o)})`}`
+  const onJob = o === null ? m.owner : m.owner.filter(x => x.n >= o.since)
   const brief =
     m.lastBrief === undefined
       ? '(none yet)'
@@ -379,12 +336,6 @@ export const contextLine = (m: Memory): string =>
     ? 'not known'
     : `${m.context.percent} percent of its window (${k(m.context.tokens)} of ${k(m.context.window)} tokens)${m.context.percent >= LONG_SESSION_PERCENT ? ', which is long' : ', which is not long'}`
 
-// How the model is told what to do with the reading, in both the watch and the briefing.
-const readingAsk = (m: Memory): string =>
-  m.reading === null
-    ? `First, write your reading of what he wants: up to ${READING_SENTENCES} sentences in your own words, as described above. Put it on the "reading:" line, and "moved: first reading" on the next.`
-    : `First, say what the reading does. If nothing he has said since makes it stale, answer "reading: holds" and nothing else on that line; the agent's progress, plan or claims never make it stale. If one of his messages does, rebuild the reading from everything he has said on this job and put the rebuilt text on the "reading:" line, with "moved:" giving in one short line which message of his made the old one stale. Keep its first sentence, the result, word for word: a correction changes what "done" has to show and the step he is on, never the result he asked for first, and a rebuilt reading whose first sentence differs is taken with the old first sentence put back. The result changes only when he opens a new job, or says in so many words that the earlier ask no longer stands; then begin the "moved:" line with "replaced" and say where he said so. If he has opened a new job, write the new job's reading and begin the "moved:" line with "new job".`
-
 export function watchPrompt(m: Memory, reason: 'step' | 'stop' | 'note'): string {
   const when =
     reason === 'stop'
@@ -406,7 +357,7 @@ ${when}
 
 Do two things.
 
-${readingAsk(m)}
+First, measure the work against the objective above, which is written from his messages alone and is not yours to change. A condition of "done" that the conversation itself shows (a command run and its printed output, a file written, a test's printed result) goes under "shown:", with where it shows it; one he closed in a message of his own goes under "closed:", with that message's number. Never mark a condition shown on the agent's word, and never close one by the number of a draft.
 
 Second, decide whether there is one thing he should know right now that he would very likely miss, and that has a cost to him: money, time, wasted work, a wrong result, a decision he is in the middle of, or work called finished that is not. The bar is very high. Most of the time the answer is none. Skip anything he is already discussing with the agent, anything the agent plainly said and he replied to, and anything already shown to him (listed below). "Interesting" is not "important". If in doubt, none.
 
@@ -420,8 +371,6 @@ ${list(m.others, '(none)')}
 
 Exactly these lines, in English labels, nothing else:
 
-reading: <holds, or the rebuilt reading in up to ${READING_SENTENCES} sentences>
-moved: <only when the reading is not "holds": one short line on which message of his made the old one stale; "new job" first when he opened a new one>
 state: <one of: working, stopped, asking, plan-waiting>
 flag: none
 
@@ -429,6 +378,13 @@ or the same with
 
 flag: <one plain sentence, at most 25 words, ending with a period: what he should know and what it costs him>
 why: <one or two short sentences: what you saw in the conversation that shows it, in plain words>
+
+and after them, either way ("- nothing" when there is none):
+
+shown:
+- <a held condition now shown | where the conversation shows it>
+closed:
+- <a held condition he closed | #n>
 
 ## Examples of a good flag
 
@@ -462,9 +418,7 @@ ${memoryText(m)}
 
 ## This request
 
-He pressed the key. ${readingAsk(m)}
-
-Then give him the short briefing described below, measured against your reading. Look at what the agent actually did in the conversation, including the helpers it launched and what they reported, not at what the agent says it did. Where the next step depends on a claim the conversation does not show, say "not shown" and have the message ask for the proof. If he sent your last message to the agent, say whether the agent did what it asked.
+He pressed the key. Give him the short briefing described below, measured against the objective above, which is written from his messages alone and is not yours to change. A condition of "done" that the conversation itself shows goes under "shown:", with where it shows it; one he closed in a message of his own goes under "closed:", with that message's number; never mark one shown on the agent's word, and never close one by the number of a draft. Look at what the agent actually did in the conversation, including the helpers it launched and what they reported, not at what the agent says it did. Where the next step depends on a claim the conversation does not show, say "not shown" and have the message ask for the proof. If he sent your last message to the agent, say whether the agent did what it asked.
 
 When the work is going well, say so in one line under "well:", and still fill in every other part: he wants the whole picture every time, not only when something is wrong. Leave the message empty when there is nothing worth sending.
 
@@ -472,8 +426,11 @@ When the work is going well, say so in one line under "well:", and still fill in
 
 Exactly these labelled parts, in this order, English labels, nothing before or after:
 
-reading: <holds, or the rebuilt reading in up to ${READING_SENTENCES} sentences>
-moved: <only when the reading is not "holds": one short line on which message of his made the old one stale; "new job" first when he opened a new one>
+verdict: <continue | stop; stop only when every condition is shown or closed by him>
+shown:
+- <a held condition now shown | where the conversation shows it>
+closed:
+- <a held condition he closed | #n>
 well: <only when nothing in the reading is still outstanding, the conversation shows each part working, and "left" is "- nothing": one plain sentence saying so; a finished step with the job still open is not "well", and a card with anything under "left" has no "well" line; otherwise leave empty>
 stands: <one or two sentences: where the work really stands, as the conversation shows it, not as the agent says it>
 means: <one or two sentences: what the agent's latest message means for him measured against the whole result; what he has now and what, if anything, is waiting; never a retelling of the steps the agent took or the trouble it had on the way>
@@ -561,7 +518,7 @@ dropped:
 - <condition text as held> | #n`
 }
 
-const LABELS = ['reading', 'moved', 'state', 'flag', 'why', 'well', 'stands', 'means', 'left', 'next', 'message', 'does', 'holds', 'false', 'notshown', 'changed', 'looked', 'objective', 'result', 'for', 'done', 'step', 'dropped', 'verdict', 'shown', 'closed'] as const
+const LABELS = ['moved', 'state', 'flag', 'why', 'well', 'stands', 'means', 'left', 'next', 'message', 'does', 'holds', 'false', 'notshown', 'changed', 'looked', 'objective', 'result', 'for', 'done', 'step', 'dropped', 'verdict', 'shown', 'closed'] as const
 type Label = (typeof LABELS)[number]
 
 // Splits a labelled answer into its parts. `message:` runs until a line `end`.
@@ -602,24 +559,12 @@ function parts(text: string): Partial<Record<Label, string>> {
 
 const clean = (s: string | undefined): string => (s ?? '').trim()
 
-const unquoted = (s: string | undefined): string => clean(s).replace(/^["“]|["”]$/g, '').trim()
-
-// The reading part of an answer: "holds", or the rebuilt text with its cause.
-function readingOf(p: Partial<Record<Label, string>>): ReadingAnswer {
-  const text = unquoted(p.reading)
-  if (text === '') return null
-  if (/^holds\b/i.test(text)) return { kind: 'holds' }
-  const cause = clean(p.moved).replace(/\s+/g, ' ')
-  return { kind: 'moved', text, cause, isNewJob: /^new job\b/i.test(cause), isReplaced: /^replaced\b/i.test(cause) }
-}
-
 export function parseWatch(text: string): WatchAnswer {
   const p = parts(text)
   const state = clean(p.state).toLowerCase()
   const flagRaw = clean(p.flag)
   const flag = flagRaw === '' || /^none\b/i.test(flagRaw) ? null : flagRaw
   return {
-    reading: readingOf(p),
     state:
       state === 'working' || state === 'stopped' || state === 'asking' || state === 'plan-waiting'
         ? state
@@ -640,7 +585,6 @@ export function parseBrief(text: string): BriefAnswer {
   // A card with anything left out cannot also say the job is going well; the
   // left-out list wins, whatever the model wrote on the "well" line.
   return {
-    reading: readingOf(p),
     verdict: /^stop\b/i.test(clean(p.verdict)) ? 'stop' : 'continue',
     shown: shownOf(p.shown),
     closed: items(p.closed).map(droppedOf).filter(d => d.text !== ''),
@@ -696,7 +640,7 @@ export function parseObjective(text: string): ObjectiveAnswer {
   const head = clean(p.objective).toLowerCase()
   if (/^holds\b/.test(head)) return { kind: 'holds' }
   if (!/^moved\b/.test(head)) return null
-  const result = oneLine(p.result)
+  const result = sentence(oneLine(p.result))
   if (result === '') return null
   const cause = oneLine(p.moved)
   return {
