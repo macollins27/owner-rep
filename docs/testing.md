@@ -56,6 +56,8 @@ entry that proves the test bites (all added 14 Oct 2026):
 | Tell the rep puts the prefix in the prompt box | `rule: Tell the rep puts…` | `tell-prefix-dropped` |
 | While the rep reads, the row says so and a second press starts no second read | `rule: while the rep reads…` | `reading-state-unmarked` |
 | The checked card folds its lists to counts on a small band | `rule: the checked card folds…` | `checked-lists-never-fold` |
+| When the checked card folds, the claims that hold become a count before the failed ones go | `rule: when the checked card folds…` | `holds-outlive-failures` |
+| Rows are counted as the band wraps them, at words, so a card that fits by its count fits on screen | `rowsOf counts rows…` | `rows-counted-by-cells` |
 | The watch looks every `CHECK_EVERY` model requests, through `turn.step` | `rule: the watch looks every…` | `step-look-dropped` |
 
 Three things the kit taught while writing these. The engine strips a refusal cause that a
@@ -81,13 +83,14 @@ The doctor also earned its place here: the first version of the stale-check test
 its defect planted, because the held check answered with text that was not a result, so the
 stale answer had nothing to write. The doctor reported it as survived and the test was fixed.
 
-**Status.** 43 tests: the parsers, the status words (including the variable-first command, read
+**Status.** 45 tests: the parsers, the status words (including the variable-first command, read
 through the mounted strip), the note to the rep, the checker's prompt and tools, the row on
 both surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-
 failure toast, the nineteen sequence rules above, the card folding to a small band, the brief
 carrying the whole-ask rule and the session's size as a figure, the helper count, the prompt
-box's refusals, the check's three failure paths, and the session end saving the record. Twenty-
-nine doctor entries, all caught.
+box's refusals, the check's three failure paths, the word-wrapped row count, the checked card
+keeping its failed claims as it folds, and the session end saving the record. Thirty-four
+doctor entries, all caught.
 
 ## Layer 2: a real session
 
@@ -131,7 +134,15 @@ sat under the engine's "↓ 4 more" row, and a bare digit arms only a button who
 window (the engine's rule, stated on `AbovePrompt.maxRows` in the API declarations). The
 owner's "2" went into the prompt box as text and the card stayed up. Fixed the same day:
 `fitCard` folds the card's body to the band's rows, body first and buttons never, and the
-rerun showed the buttons' row inside the window and the digit closing the card. The kit
+rerun showed the buttons' row inside the window and the digit closing the card. On 14 Oct
+2026 a session run for the README's pictures, at 200 columns and 60 rows, found the same
+fault's remainder: the row count took cells, the band wraps at words, and a long paragraph
+took one row more than counted, so a card of exactly the band's rows by the count scrolled by
+two on screen, and the digit for the check went into the prompt box. `rowsOf` now counts at
+words (the `rowsOf counts rows…` test, doctor entry `rows-counted-by-cells`); the proof on
+screen is the README's briefing picture, taken at that size after the fix with the buttons in
+view. The same session showed the paid check's findings folding to a bare count on an ordinary
+band, so the fold now counts the holding claims first and keeps the failed ones listed. The kit
 test for it mounts the band with eight rows; the doctor entry is `card-overflows-band`.
 Scenario 6 was added the same day after a card gave a green line for a finished step with the
 job open and called a 48 percent session very long: the brief now carries the rule that the
