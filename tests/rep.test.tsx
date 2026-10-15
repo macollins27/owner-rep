@@ -1484,6 +1484,8 @@ test('mergeConditions keeps every held condition the model drops without his cit
   expect(mergeConditions(held, proposed, [{ text: 'install the newest build', by: 3 }], [1, 2])).toEqual([held[1], held[0], held[2]])   // #3 is a draft, not his
   expect(mergeConditions(held, proposed, [{ text: 'install the newest build', by: null }], [1, 2])).toEqual([held[1], held[0], held[2]])
   expect(mergeConditions(held, [c('roadmap fixed', 'open')], [], [1])[0]).toEqual(held[2])   // shown is not moved back to open
+  const closedHeld = c('roadmap fixed', 'closed', '#2')
+  expect(mergeConditions([closedHeld], [c('roadmap fixed', 'shown', 'diff printed')], [], [1, 2])).toEqual([closedHeld])   // closed is not moved back to shown, and keeps its #n
 })
 
 test('gateVerdict refuses stop and well while a condition is open, and lists the open ones', () => {

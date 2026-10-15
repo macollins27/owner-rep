@@ -1293,10 +1293,10 @@ export function mergeConditions(
   dropped: Array<{ text: string; by: number | null }>,
   his: readonly number[],
 ): Condition[] {
-  const ahead = (s: ConditionState): boolean => s === 'shown' || s === 'closed'
+  const rank = (s: ConditionState): number => (s === 'closed' ? 2 : s === 'shown' ? 1 : 0)
   const out = proposed.map(p => {
     const h = held.find(x => same(x.text, p.text))
-    return h !== undefined && ahead(h.state) && !ahead(p.state) ? { ...p, state: h.state, by: h.by } : p
+    return h !== undefined && rank(p.state) < rank(h.state) ? { ...p, state: h.state, by: h.by } : p
   })
   for (const h of held) {
     if (out.some(p => same(p.text, h.text))) continue
