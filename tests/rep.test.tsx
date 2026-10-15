@@ -1090,9 +1090,9 @@ test('rule: a message the rep drafted and the owner sent is listed to the model 
   const last = prompts[prompts.length - 1] ?? ''
   const onJob = last.slice(last.indexOf('His own messages on this job'), last.indexOf('Jobs before this one'))
   expect(onJob).toMatch(/\n- #1 fix the strip so it never shows code\n/)
-  expect(onJob).toMatch(new RegExp(`\\n- ${SENT_MARK.replace(/[()]/g, '\\$&')}Show me the run\\.\\n`))
+  expect(onJob).toMatch(new RegExp(`\\n- #2 ${SENT_MARK.replace(/[()]/g, '\\$&')}Show me the run\\.\\n`))
   expect(onJob).toMatch(/\n- #3 and the tests after it(\n|$)/)
-  expect(onJob).not.toMatch(/\n- Show me the run\./)
+  expect(onJob).not.toMatch(/\n- #2 Show me the run\./)
   expect(last).toMatch(/He sent the agent this message:\n"""\nShow me the run\.\n"""/)
 })
 
