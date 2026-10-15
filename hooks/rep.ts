@@ -814,11 +814,31 @@ export type CardText = {
   spent: string
 }
 
-// Rows a wrapped text takes in `width` cells, one per paragraph at least.
+// Rows a wrapped text takes in `width` cells, one per paragraph at least. The band
+// wraps at words, so a row ends where the next word would not fit, not at the cell
+// count; a word longer than the width breaks across rows. Counting cells alone says
+// one row too few for a long paragraph, and a card believed to fit then scrolls,
+// its buttons out of a digit's reach.
 export const rowsOf = (text: string, width: number): number => {
   if (text === '') return 0
   const w = Math.max(1, width)
-  return text.split('\n').reduce((n, line) => n + Math.max(1, Math.ceil(line.length / w)), 0)
+  return text.split('\n').reduce((n, line) => {
+    let rows = 1
+    let used = 0
+    for (const word of line.split(' ')) {
+      if (used === 0) used = word.length
+      else if (used + 1 + word.length <= w) used += 1 + word.length
+      else {
+        rows += 1
+        used = word.length
+      }
+      while (used > w) {
+        rows += 1
+        used -= w
+      }
+    }
+    return n + rows
+  }, 0)
 }
 
 // The card's rows as the band draws it: a top margin, the head, each part in
@@ -870,9 +890,27 @@ export function fitCard(card: CardText, maxRows: number, cols: number): CardText
     () => (c = { ...c, next: oneRow(c.next, 'Next: ') }),
     () => (c = { ...c, well: oneRow(c.well, '') }),
     () => (c = { ...c, leftOut: c.leftOut.length > 1 ? [fit(c.leftOut.join('; '), Math.max(8, w - 4))] : c.leftOut.map(i => oneRow(i, '  - ')) }),
+    // The claims that hold become a count and the ones that failed stay, one row
+    // each: a check is paid for to find what does not hold, so those go last.
     () => {
       if (c.checked === null) return
       const k = c.checked
+      const held = k.holds.length === 0 ? '' : `Checked: ${k.holds.length} hold.`
+      c = {
+        ...c,
+        checked: {
+          holds: [],
+          wrong: k.wrong.map(i => oneRow(i, '  false  ')),
+          notShown: k.notShown.map(i => oneRow(i, '  not shown  ')),
+          changed: k.changed.map(i => oneRow(i, '  since then  ')),
+          looked: held,
+        },
+      }
+    },
+    () => (c = { ...c, reading: oneRow(c.reading, 'Owner rep · ') }),
+    () => {
+      if (c.checked === null || card.checked === null) return
+      const k = card.checked
       const parts = [
         [k.holds.length, 'hold'],
         [k.wrong.length, 'false'],
@@ -882,7 +920,6 @@ export function fitCard(card: CardText, maxRows: number, cols: number): CardText
       const line = parts.filter(([n]) => n > 0).map(([n, word]) => `${n} ${word}`).join(', ')
       c = { ...c, checked: { holds: [], wrong: [], notShown: [], changed: [], looked: line === '' ? '' : `Checked: ${line}.` } }
     },
-    () => (c = { ...c, reading: oneRow(c.reading, 'Owner rep · ') }),
     // Whole parts go when one row each is still too much, the least telling first.
     () => (c = { ...c, checkCost: '' }),
     () => (c = { ...c, leftOut: [] }),
@@ -898,7 +935,14 @@ export function fitCard(card: CardText, maxRows: number, cols: number): CardText
     const room = maxRows - (cardRows({ ...c, message: '' }, cols) + 2)
     const mw = Math.max(1, cols - 6)
     const rows = Math.max(1, room)
-    if (rowsOf(c.message, mw) > rows) c = { ...c, message: fit(c.message, Math.max(8, rows * mw - 2)) }
+    // Cut to the cells the rows hold, then shorter while the words still wrap past them.
+    let limit = rows * mw - 2
+    let message = c.message
+    while (rowsOf(message, mw) > rows && limit > 8) {
+      message = fit(c.message, Math.max(8, limit))
+      limit -= 8
+    }
+    if (message !== c.message) c = { ...c, message }
   }
   for (const fold of folds) {
     fold()

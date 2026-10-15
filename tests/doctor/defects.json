@@ -190,5 +190,17 @@
     "breaks": "The card folds the revision line away first, so on a band of ordinary height the owner never sees that the reading moved.",
     "patch": "revised-line-folds-first.patch",
     "fixed": "2026-10-14"
+  },
+  {
+    "name": "rows-counted-by-cells",
+    "breaks": "Rows are counted by cells while the band wraps at words, so a long paragraph takes one row more than counted and a card believed to fit scrolls with its buttons out of a digit's reach.",
+    "patch": "rows-counted-by-cells.patch",
+    "fixed": "2026-10-14"
+  },
+  {
+    "name": "holds-outlive-failures",
+    "breaks": "The checked card's first fold drops the failed claims with the holding ones, so on an ordinary band the owner sees a count and never which claim was false.",
+    "patch": "holds-outlive-failures.patch",
+    "fixed": "2026-10-14"
   }
 ]

@@ -1,0 +1,23 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 4a9d594..03768a6 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -890,17 +890,7 @@ export function fitCard(card: CardText, maxRows: number, cols: number): CardText
+     () => {
+       if (c.checked === null) return
+       const k = c.checked
+-      const held = k.holds.length === 0 ? '' : `Checked: ${k.holds.length} hold.`
+-      c = {
+-        ...c,
+-        checked: {
+-          holds: [],
+-          wrong: k.wrong.map(i => oneRow(i, '  false  ')),
+-          notShown: k.notShown.map(i => oneRow(i, '  not shown  ')),
+-          changed: k.changed.map(i => oneRow(i, '  since then  ')),
+-          looked: held,
+-        },
+-      }
++      c = { ...c, checked: { holds: [], wrong: [], notShown: [], changed: [], looked: `Checked: ${k.holds.length} hold.` } }
+     },
+     () => (c = { ...c, reading: oneRow(c.reading, 'Owner rep · ') }),
+     () => {

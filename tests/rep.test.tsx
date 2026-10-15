@@ -1,7 +1,7 @@
 import type { On } from 'claude-code'
 import { expect, mock, test, type Engine } from 'claude-code/testing'
 
-import { CHECK_EVERY, CHECK_TIMEOUT_MS, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, same, textOf, watchPrompt } from '../hooks/rep'
+import { CHECK_EVERY, CHECK_TIMEOUT_MS, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt } from '../hooks/rep'
 
 // A band with room for a whole card; the fold-to-fit test narrows it.
 const BAND = {
@@ -976,6 +976,48 @@ test('rule: while the rep reads, the row says so and a second press starts no se
   await press
   expect(await ui.find({ type: 'Text', text: /The card\./ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /reading the whole session/ })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('rowsOf counts rows as the band wraps them, at words', () => {
+  // Three words of five in nine cells: a row ends where the next word would not fit.
+  expect(rowsOf('aaaaa bbbbb ccccc', 9)).toBe(3)
+  expect(Math.ceil('aaaaa bbbbb ccccc'.length / 9)).toBe(2)
+  // A word longer than the width breaks across rows; a paragraph break starts a row.
+  expect(rowsOf('a'.repeat(25), 10)).toBe(3)
+  expect(rowsOf('one\ntwo', 40)).toBe(2)
+  expect(rowsOf('', 40)).toBe(0)
+})
+
+test('rule: when the checked card folds, the claims that hold become a count before the failed ones go', async ($, on) => {
+  session(on)
+  quietBand(on)
+  on('session.cwd', () => ({ value: '/tmp/x' }))
+  mock.clock(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF(LONG('Stands')), usage: USAGE } }))
+  on('process.spawn', async function* () {
+    yield {
+      stream: 'stdout',
+      text: JSON.stringify({
+        type: 'result',
+        result: `holds:\n- the file exists\nfalse:\n- the tests passed; two fail\nnotshown:\n- the live run\nchanged:\n- the helper finished\nstands: ${LONG('Checked')}\nmeans:\nleft:\n- nothing\nnext:\nmessage:\nend\ndoes:\nlooked: Read the record.`,
+        usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+      }),
+    }
+    return { value: { code: 0, signal: null } }
+  })
+  // One row short of the whole list: the holding claim folds to a count, the three that failed stay.
+  const narrow = { ...BAND, props: { ...BAND.props, maxRows: 14, scroll: { offset: 0, bodyRows: 13 } } }
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...narrow })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+  expect(await ui.find({ type: 'Text', text: /^Checked: 1 hold\.$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /the file exists/ })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: /the tests passed; two fail/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /the live run/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /the helper finished/ })).toBeDefined()
+  expect((await ui.find({ key: 'close' }))?.props.hotkey).toBe('2')
+  expect((await ui.find({ key: 'put' }))?.props.hotkey).toBe('1')
   await ui.unmount()
 })
 
