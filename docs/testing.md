@@ -58,6 +58,8 @@ entry that proves the test bites (all added 14 Oct 2026):
 | The checked card folds its lists to counts on a small band | `rule: the checked card folds…` | `checked-lists-never-fold` |
 | When the checked card folds, the claims that hold become a count before the failed ones go | `rule: when the checked card folds…` | `holds-outlive-failures` |
 | Rows are counted as the band wraps them, at words, so a card that fits by its count fits on screen | `rowsOf counts rows…` | `rows-counted-by-cells` |
+| A card with anything left out never also says the work is going well | `a card with anything left out…` | `well-with-left` |
+| The briefs say a chore left for the owner is the agent's unfinished work, never his next step | `the briefs say a chore…` | `chore-to-owner` |
 | The watch looks every `CHECK_EVERY` model requests, through `turn.step` | `rule: the watch looks every…` | `step-look-dropped` |
 
 Three things the kit taught while writing these. The engine strips a refusal cause that a

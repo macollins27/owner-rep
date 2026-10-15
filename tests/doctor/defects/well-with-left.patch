@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 17d8b62..14f09ba 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -412,7 +412,7 @@ export function parseBrief(text: string): BriefAnswer {
+   // left-out list wins, whatever the model wrote on the "well" line.
+   return {
+     reading: readingOf(p),
+-    well: leftOut.length > 0 ? '' : clean(p.well),
++    well: clean(p.well),
+     stands: clean(p.stands),
+     means: clean(p.means),
+     leftOut,

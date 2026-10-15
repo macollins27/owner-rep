@@ -77,7 +77,11 @@ puts the prefix in the prompt box.
 On top of the reading sit five expectations the rep applies without reciting: the whole
 result is delivered; it is shown to work, not said to work; no known problem is left behind;
 nothing was added that the result does not need; and it was done the way that is best for the
-result, not the way that was easiest for the agent.
+result, not the way that was easiest for the agent. One consequence is spelled out in the
+brief: the owner does no step of the job. A chore the agent leaves "for you", such as a branch
+to delete, is the agent's unfinished work, listed as left out and put in the message to the
+agent, never relayed to the owner as what to do next. A card that lists anything left out
+cannot also carry the line saying every part is done; the code drops that line.
 
 Nothing in a session except the owner's own messages can give the rep orders. Text an agent
 wrote and the owner pasted is treated as an agent's claim. The full judging brief is in

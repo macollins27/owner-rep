@@ -202,5 +202,17 @@
     "breaks": "The checked card's first fold drops the failed claims with the holding ones, so on an ordinary band the owner sees a count and never which claim was false.",
     "patch": "holds-outlive-failures.patch",
     "fixed": "2026-10-14"
+  },
+  {
+    "name": "well-with-left",
+    "breaks": "The parser keeps the going-well line when the left-out list has items, so one card tells the owner every part is done and, three lines down, that something was not.",
+    "patch": "well-with-left.patch",
+    "fixed": "2026-10-14"
+  },
+  {
+    "name": "chore-to-owner",
+    "breaks": "The briefs lose the rule that a chore the agent leaves for the owner is the agent's unfinished work, so the rep relays the agent's to-do list to him as his next step.",
+    "patch": "chore-to-owner.patch",
+    "fixed": "2026-10-14"
   }
 ]
