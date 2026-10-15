@@ -1,0 +1,29 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 4a9d594..c7b6354 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -818,23 +818,7 @@ export type CardText = {
+ export const rowsOf = (text: string, width: number): number => {
+   if (text === '') return 0
+   const w = Math.max(1, width)
+-  return text.split('\n').reduce((n, line) => {
+-    let rows = 1
+-    let used = 0
+-    for (const word of line.split(' ')) {
+-      if (used === 0) used = word.length
+-      else if (used + 1 + word.length <= w) used += 1 + word.length
+-      else {
+-        rows += 1
+-        used = word.length
+-      }
+-      while (used > w) {
+-        rows += 1
+-        used -= w
+-      }
+-    }
+-    return n + rows
+-  }, 0)
++  return text.split('\n').reduce((n, line) => n + Math.max(1, Math.ceil(line.length / w)), 0)
+ }
+ 
+ // The card's rows as the band draws it: a top margin, the head, each part in

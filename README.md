@@ -37,12 +37,16 @@ The **briefing** is a card: where the work really stands, what the agent's last 
 what was left out, what should happen next, and a message to the agent, written and ready. One
 press puts that message in the prompt box. Nothing is sent until the owner presses Enter. The
 card is folded to fit the rows the band has, body first and buttons never, so the digit that
-closes it or puts its message in the prompt always reaches a button on screen.
+closes it or puts its message in the prompt always reaches a button on screen. Rows are
+counted as the band wraps them, at words, because a count by cells says one row too few for
+a long paragraph and the card then scrolls with its buttons out of reach.
 
 The **check** reads outside the conversation. It opens the session's full record through
 agentsview, a local tool that indexes every coding-agent session on the machine, opens the files the agent claims to
 have changed, runs the project's own tests, and rewrites the card with each claim marked
-**holds**, **false**, **not shown**, or **changed since** the briefing was written.
+**holds**, **false**, **not shown**, or **changed since** the briefing was written. When the
+band is short, the claims that hold fold to a count first and the ones that failed stay
+listed, because the check is paid for to find what does not hold.
 
 ![The card after a check, each claim marked](docs/checked.png)
 
@@ -131,7 +135,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 43 tests in tests/rep.test.tsx, under a second
+claude plugin test .          # 45 tests in tests/rep.test.tsx, under a second
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: six real sessions in tmux, the strip captured to tests/live/captures
 ```
