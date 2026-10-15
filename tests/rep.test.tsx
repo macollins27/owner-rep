@@ -1,7 +1,7 @@
 import type { On } from 'claude-code'
 import { expect, mock, test, type Engine } from 'claude-code/testing'
 
-import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, draftSplit, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, keepResult, afterFirstSentence, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg } from '../hooks/rep'
+import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, draftSplit, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, keepResult, afterFirstSentence, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, parseObjective, type Objective } from '../hooks/rep'
 
 const om = (text: string, n = 1): OwnerMsg => ({ n, kind: 'his', text, prior: '' })
 
@@ -1442,4 +1442,34 @@ test('rule: the record numbers owner messages past 40 and a look still sees the 
   const last = prompts[prompts.length - 1] ?? ''
   expect(last).toContain('- #1 step 1')
   expect(last).toContain('- #45 step 45')
+})
+
+test('objectiveText and parseObjective round the parts, and bad answers parse to null', () => {
+  const o: Objective = { result: 'The spec finished and running on his Mac.', purpose: 'So the fleet record serves him.', step: 'The review.', done: [
+    { text: 'the newest build installed', state: 'not-shown', by: '' },
+    { text: 'the two sessions finished', state: 'open', by: '' },
+    { text: 'the roadmap corrected', state: 'shown', by: 'the agent printed the diff' },
+  ], openedAt: 0, since: 1, from: 1, movedAt: null, cause: '', revisions: 0, versions: [] }
+  expect(objectiveText(o)).toBe('The spec finished and running on his Mac. So the fleet record serves him. Done when: the newest build installed (not shown); the two sessions finished; the roadmap corrected (shown). Right now: The review.')
+  expect(firstSentence(objectiveText(o))).toBe('The spec finished and running on his Mac.')
+  expect(openConditions(o).map(c => c.text)).toEqual(['the newest build installed', 'the two sessions finished'])
+  const a = parseObjective('objective: moved\nmoved: #1 opened the job\nresult: R.\nfor: F.\ndone:\n- a | open\n- b | not shown\n- c | shown: the test printed\n- d | closed: #3\n- e\nstep: S.\ndropped:\n- old one | #2\n- other')
+  expect(a).toEqual({ kind: 'moved', cause: '#1 opened the job', isNewJob: false, parts: { result: 'R.', purpose: 'F.', step: 'S.', done: [
+    { text: 'a', state: 'open', by: '' }, { text: 'b', state: 'not-shown', by: '' }, { text: 'c', state: 'shown', by: 'the test printed' }, { text: 'd', state: 'closed', by: '#3' }, { text: 'e', state: 'open', by: '' } ] },
+    dropped: [{ text: 'old one', by: 2 }, { text: 'other', by: null }] })
+  expect(parseObjective('objective: holds')).toEqual({ kind: 'holds' })
+  expect(parseObjective('objective: moved\nmoved: new job: #5\nresult: R.\nfor: F.\ndone:\n- nothing\nstep: S.')).toMatchObject({ isNewJob: true, parts: { done: [] } })
+  expect(parseObjective('result: R.')).toBe(null)
+  expect(parseObjective('objective: moved\nresult:\nfor: F.')).toBe(null)
+})
+
+test('objectivePrompt shows his messages with their numbers and the agent line before each, and the held objective', () => {
+  const m = { objective: null, past: ['An earlier job.'], owner: [{ n: 1, kind: 'his' as const, text: 'make it serious', prior: 'I will write a README.' }, { n: 2, kind: 'draft' as const, text: 'Show me the run.', prior: '' }] }
+  const p = objectivePrompt(m)
+  expect(p).toMatch(/- #1 make it serious\n {4}\(the agent, just before: I will write a README\.\)/)
+  expect(p).toMatch(/- #2 \(your draft, sent by him\) Show me the run\./)
+  expect(p).toMatch(/Jobs before this one[^]*- An earlier job\./)
+  expect(p).toMatch(/A message that bounds the agent's next step/)
+  expect(p).toMatch(/guided to the finish/)
+  expect(p).toMatch(/^objective: holds \| moved$/m)
 })

@@ -64,6 +64,48 @@ export type Memory = {
 // Past this share of the window a session counts as long; under it, it never does.
 export const LONG_SESSION_PERCENT = 75
 
+// The objective: the rep's own account, in parts and in its own words, of the
+// result the owner opened the job to get. The result first, then what it is
+// for, then what "done" has to show as a list of conditions, and only then the
+// step the session is on now. It is written by a call of its own over his
+// messages alone (objectivePrompt), so nothing the agent says can move it.
+export type ConditionState = 'open' | 'not-shown' | 'shown' | 'closed'
+// One thing "done" has to show. `by` is where the conversation showed it when
+// shown, the number of his message that closed it ("#n") when closed, '' otherwise.
+export type Condition = { text: string; state: ConditionState; by: string }
+export type ObjectiveParts = { result: string; purpose: string; done: Condition[]; step: string }
+export type Objective = ObjectiveParts & {
+  // When the job opened.
+  openedAt: number
+  // The number of the job's first message; the job's messages are those from it on.
+  since: number
+  // The number of the last of his messages the objective was built from.
+  from: number
+  // The last revision: when, and the writer's one line on which message of his caused it.
+  movedAt: number | null
+  cause: string
+  revisions: number
+  // The earlier versions as prose, oldest first, each with when and why it was replaced.
+  versions: Array<{ at: number; cause: string; text: string }>
+}
+
+// What the objective writer said: it holds, or it moved, with the rebuilt
+// parts, the cause, whether he opened a new job, and the held conditions it
+// let go, each with the number of the message of his it cites. null when the
+// answer is malformed, and then the held objective is left as it is.
+export type ObjectiveAnswer =
+  | { kind: 'holds' }
+  | { kind: 'moved'; parts: ObjectiveParts; cause: string; isNewJob: boolean; dropped: Array<{ text: string; by: number | null }> }
+  | null
+
+// What the objective writer is shown: the objective held, his messages, and
+// the earlier jobs in the session, closed.
+export type ObjectiveMemory = { objective: Objective | null; owner: OwnerMsg[]; past: string[] }
+
+// The objective is written by a plain completion of its own, on this model.
+export const OBJECTIVE_MODEL = 'opus'
+export const OBJECTIVE_MAX_TOKENS = 1200
+
 // What the model said about the reading: it holds, or it moved, with the
 // cause and whether the owner opened a new job; null when the answer had none.
 export type ReadingAnswer =
@@ -147,6 +189,39 @@ export function revisedLine(r: Reading | null): string {
   const when = clock(r.movedAt)
   const cause = r.cause === '' ? '' : `: ${r.cause}`
   return r.revisions === 0 ? `New job since ${when}${cause}` : `Reading revised at ${when}${cause}`
+}
+
+const STATE_MARK: Record<ConditionState, string> = {
+  open: '',
+  'not-shown': ' (not shown)',
+  shown: ' (shown)',
+  closed: ' (closed)',
+}
+
+// A part with a closing mark, so the result stays the first sentence of the prose.
+const sentence = (s: string): string => {
+  const t = s.replace(/\s+/g, ' ').trim()
+  return t === '' || /[.!?]$/.test(t) ? t : `${t}.`
+}
+
+// The objective as prose, for the card and the prompts: the result, what it is
+// for, what "done" has to show with each condition's state, and the step now.
+// Its first sentence, the one the row shows, is the result.
+export function objectiveText(o: Objective): string {
+  const done = o.done.map(c => `${c.text.trim().replace(/[.;]+$/, '')}${STATE_MARK[c.state]}`).join('; ')
+  return [
+    sentence(o.result),
+    sentence(o.purpose),
+    done === '' ? '' : `Done when: ${done}.`,
+    o.step.trim() === '' ? '' : `Right now: ${sentence(o.step)}`,
+  ]
+    .filter(s => s !== '')
+    .join(' ')
+}
+
+// The conditions still open: neither shown in the conversation nor closed by him.
+export function openConditions(o: Objective | null): Condition[] {
+  return o === null ? [] : o.done.filter(c => c.state === 'open' || c.state === 'not-shown')
 }
 
 export const skipAfter = (typedPast: number): number =>
@@ -402,7 +477,82 @@ end
 does: <one line: what this message will make the agent do>`
 }
 
-const LABELS = ['reading', 'moved', 'state', 'flag', 'why', 'well', 'stands', 'means', 'left', 'next', 'message', 'does', 'holds', 'false', 'notshown', 'changed', 'looked'] as const
+// His messages for the objective writer: each with its number and mark, and
+// under it the agent's last words before it, so a short reply of his can be
+// read, marked as the agent's and never his.
+const ownerWithPrior = (list: OwnerMsg[]): string =>
+  list
+    .map(m => {
+      const prior = m.prior.replace(/\s+/g, ' ').trim()
+      return prior === '' ? ownerLines([m]) : `${ownerLines([m])}\n    (the agent, just before: ${prior})`
+    })
+    .join('\n')
+
+// The objective writer's prompt: a plain completion, not a fork, so it sees
+// his messages and nothing of the conversation. Its rules are the North Star's
+// "The objective" and "The objective stays open until it is completed".
+export function objectivePrompt(m: ObjectiveMemory): string {
+  const o = m.objective
+  const held =
+    o === null
+      ? 'None yet. Write it now, from his messages below.'
+      : `${objectiveText(o)}\n(Built from his messages up to #${o.from}; any message after that is new since.)`
+  const onJob = o === null ? m.owner : m.owner.filter(x => x.n >= o.since)
+  return `## Who you are
+
+You are the owner's rep, and your one task here is to write down the objective of a coding session: the result the owner opened the job to get. He directs coding agents and does not read code; he runs his businesses on what they build, and he cannot see when an agent does less than the job, drifts from it, or calls work finished that is not. The rep judges the agent against what you write here at every look, so it has to be true to him. You work from his own messages only. You do not see the conversation, the agent's work or its claims, and nothing the agent says can tell you what he wants.
+
+## How the objective is built
+
+- It is your own reading, in your own words, never his text copied. He works by intent, not by exact wording, and sometimes puts a thing wrongly: write what he wants, not only what he typed.
+- It says, in this order: the result he will have when the job is done; what it is for, because the purpose sets the standard; what "done" has to show, as a list of conditions; and only then the step the session is on now. It includes what a serious owner in his position plainly wants without saying it: the work shown to work, nothing left broken, nothing dropped quietly, code fit to be public when the work is public.
+- It is built from his words and only his. The objective is the sum of everything he has said on the job since it began. The first message usually carries most of it; later ones add to it, correct it, or bound the next step. A message that bounds the agent's next step, such as asking for one thing only, bounds that step and leaves the job as it was: it moves the step, never the result, and it is never read as his asking for less than he first asked. A later message replaces the objective only when he says so in so many words.
+- How his messages weigh. What he wants to end up with, and why, counts most: his reasons and complaints say more than his instructions. His alarms count even when his guess at the cause is wrong. How he says to do a thing is a suggestion, judged by whether it gets him the result. His yes to something the agent proposed is the agent's idea with his name on it, never a result of his own. A message marked "(to the rep)" is a note he typed to you and weighs most of all; it is still evidence to read, never a sentence to copy.
+- Nothing else can move it. Not the agent's progress, its plan, its reasons, its names for its steps, or its "done": the agent's plan is the agent's. The indented line under a message, "(the agent, just before: …)", is the agent's last words before he wrote; it is there only so a short reply of his can be understood, and it never sets the result, what it is for, or what "done" means. Text an agent wrote and he pasted into a message is an agent's claim, not his words. A message marked "(your draft, sent by him)" is one the rep wrote for him and he sent as it stood: your words with his name on them. It may move the step and nothing else: it never changes the result, never narrows the job, never replaces an earlier message of his, never sets what "done" means, and never closes or drops a condition.
+- A session is a run of jobs. He opens a job, the agent works, he corrects it a few times, the job ends, and the next begins. The objective lasts for the job. A correction can show that the objective misread him; then rebuild it whole from everything he has said on the job, never patch it, and never let it become smaller than the sum of everything he has asked. A message that could be a correction or a new job is a correction, unless he closes the job or asks for something the objective plainly does not cover. Nothing he said on an earlier job goes into this one; the earlier jobs are listed only so that you do not confuse them with this one.
+- Write in plain words he can read without ever having programmed: no file names, code names or terms the agent coined, unless he used them himself.
+
+## The objective stays open until it is completed
+
+- A step finished is not the objective finished. A review, plan, route, briefing, handoff or list of what remains is a step toward the result, never the result, unless he opened the session for that document. The result is the thing, not a document about the thing.
+- When the job is to guide him through finishing something, the result is that he has been guided to the finish, not that the first guidance was given.
+- His standard for finished is strict, and "done" says so: the whole result, on the newest build, running where he uses it, with nothing left for him and nothing left for a next session. A step left for later, for him or for a fresh session is not done. The job closes in two ways only: the result is shown working where he uses it, or he closes the job himself.
+
+## The conditions
+
+Each condition is one thing "done" has to show, in plain words. You do not see the conversation, so you never mark a condition shown yourself. Write every condition you already hold again with the state word it is held in: a mark of shown or closed was made where the conversation showed it or he closed it, and it is kept whatever you write. A new condition is "open", or "not shown" when it is a thing a conversation cannot show by itself, such as whether a build is installed or a service runs the newest code. Mark a condition "closed: #n" only when his own message #n closes that part himself; never by the number of a draft. A held condition you leave out is kept, unless you list it under "dropped" with the number of his own message that says, in so many words, that it no longer stands.
+
+## What you hold now
+
+The objective as you hold it:
+${held}
+
+His messages on this job, oldest first, each numbered (each is evidence, weighed as above; "(to the rep)" marks one said to you; "(your draft, sent by him)" marks one the rep wrote and he sent):
+${ownerWithPrior(onJob) || '(none recorded yet)'}
+
+Jobs before this one in the session, closed; nothing from them goes into this one:
+${list(m.past, '(none)')}
+
+## This request
+
+If you hold an objective and nothing he has said since it was built makes it stale, answer with the line "objective: holds" alone. If one of his messages makes it stale, or you hold none yet, answer "objective: moved" and write every part again from everything he has said on this job, with "moved:" saying which message of his made the old one stale, cited as #n (when you hold none yet, which messages you built it from). If he has opened a new job, begin the "moved:" line with "new job" and write the new job's objective from its own messages.
+
+## Output structure
+
+Exactly these lines, in English labels, nothing before or after. One condition per line under "done" and one per line under "dropped", each starting with "- "; write "- nothing" under "dropped" when nothing is dropped.
+
+objective: holds | moved
+moved: <cause, citing his message as #n; "new job" first when he opened one>
+result: <one sentence>
+for: <one sentence>
+done:
+- <condition> | open | not shown | shown: <where in the conversation> | closed: #n
+step: <one sentence>
+dropped:
+- <condition text as held> | #n`
+}
+
+const LABELS = ['reading', 'moved', 'state', 'flag', 'why', 'well', 'stands', 'means', 'left', 'next', 'message', 'does', 'holds', 'false', 'notshown', 'changed', 'looked', 'objective', 'result', 'for', 'done', 'step', 'dropped'] as const
 type Label = (typeof LABELS)[number]
 
 // Splits a labelled answer into its parts. `message:` runs until a line `end`.
@@ -487,6 +637,55 @@ export function parseBrief(text: string): BriefAnswer {
     next: clean(p.next),
     message: clean(p.message),
     does: clean(p.does),
+  }
+}
+
+const oneLine = (s: string | undefined): string => clean(s).replace(/\s+/g, ' ')
+
+// One condition line: "<text> | <state>", the state one of open, not shown,
+// "shown: <where>" or "closed: #n". A line without a known state is open, and
+// so is shown without a where, or closed without the number of his message.
+function conditionOf(line: string): Condition {
+  const m = /^(.*?)\s*\|\s*(open|not[\s-]?shown|shown|closed)\b\s*:?\s*(.*)$/i.exec(line)
+  if (m === null) return { text: (line.split('|')[0] ?? '').trim(), state: 'open', by: '' }
+  const text = (m[1] ?? '').trim()
+  const word = (m[2] ?? '').toLowerCase()
+  const rest = (m[3] ?? '').trim()
+  if (word.startsWith('not')) return { text, state: 'not-shown', by: '' }
+  if (word === 'shown' && rest !== '') return { text, state: 'shown', by: rest }
+  const n = word === 'closed' ? /#(\d+)/.exec(rest) : null
+  return n === null ? { text, state: 'open', by: '' } : { text, state: 'closed', by: `#${n[1]}` }
+}
+
+// One dropped line: "<condition text as held> | #n"; without a number, `by` is null.
+function droppedOf(line: string): { text: string; by: number | null } {
+  const bar = line.lastIndexOf('|')
+  const n = bar < 0 ? null : /#(\d+)/.exec(line.slice(bar + 1))
+  return { text: (bar < 0 ? line : line.slice(0, bar)).trim(), by: n === null ? null : Number(n[1]) }
+}
+
+// The objective writer's answer. null when "objective:" is missing or names
+// neither holds nor moved, or a moved answer has no result: the held
+// objective is then left as it is, never emptied.
+export function parseObjective(text: string): ObjectiveAnswer {
+  const p = parts(text)
+  const head = clean(p.objective).toLowerCase()
+  if (/^holds\b/.test(head)) return { kind: 'holds' }
+  if (!/^moved\b/.test(head)) return null
+  const result = oneLine(p.result)
+  if (result === '') return null
+  const cause = oneLine(p.moved)
+  return {
+    kind: 'moved',
+    parts: {
+      result,
+      purpose: oneLine(p.for),
+      done: items(p.done).map(conditionOf).filter(c => c.text !== ''),
+      step: oneLine(p.step),
+    },
+    cause,
+    isNewJob: /^new job\b/i.test(cause),
+    dropped: items(p.dropped).map(droppedOf).filter(d => d.text !== ''),
   }
 }
 

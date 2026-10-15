@@ -1,5 +1,5 @@
 import { atom, read, update } from 'claude-code'
-import type { EngineInterface, Register, RenderChildren } from 'claude-code'
+import type { Atom, EngineInterface, Register, RenderChildren } from 'claude-code'
 
 type RenderNodeList = RenderChildren[]
 
@@ -58,7 +58,9 @@ const PRESS_HOTKEY = '1'
 
 const IDLE: Now = { doing: 'idle', helpers: 0, isWorking: false, mark: '' }
 
-const readingA = atom({ plugin: 'owner-rep', key: 'reading' } as const, null)
+// Declared to hold the objective (types/index.d.ts); until the objective writer
+// fills it, it still carries the reading, so it is typed as the reading here.
+const readingA = atom({ plugin: 'owner-rep', key: 'reading' } as const, null) as unknown as Atom<Reading | null>
 const nowA = atom({ plugin: 'owner-rep', key: 'now' } as const, IDLE)
 const noteA = atom({ plugin: 'owner-rep', key: 'note' } as const, null)
 const briefA = atom({ plugin: 'owner-rep', key: 'brief' } as const, null)

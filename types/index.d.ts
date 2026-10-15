@@ -9,6 +9,24 @@ export type Reading = {
   revisions: number
 }
 
+// The objective the rep holds for the job in hand: the same shapes as in
+// hooks/rep.ts, declared again here because this file must stand alone.
+export type ConditionState = 'open' | 'not-shown' | 'shown' | 'closed'
+export type Condition = { text: string; state: ConditionState; by: string }
+export type Objective = {
+  result: string
+  purpose: string
+  done: Condition[]
+  step: string
+  openedAt: number
+  since: number
+  from: number
+  movedAt: number | null
+  cause: string
+  revisions: number
+  versions: Array<{ at: number; cause: string; text: string }>
+}
+
 export type Now = {
   doing: string
   helpers: number
@@ -62,7 +80,8 @@ export type View = 'row' | 'note' | 'reading' | 'brief'
 declare module 'claude-code' {
   interface PluginState {
     'owner-rep': {
-      reading: Reading | null
+      // The objective the rep holds for the job in hand; the row shows its result.
+      reading: Objective | null
       now: Now
       note: Note | null
       brief: Brief | null
