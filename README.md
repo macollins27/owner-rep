@@ -27,7 +27,7 @@ Behind that row are three reads of increasing cost.
 |---|---|---|---|
 | **Watch** | Every eighth model request of a turn, and at every stop | A fresh model instance over the agent's cached conversation, no tools | Mostly cache reads; never blocks the agent |
 | **Briefing** | On a press (`1` or click) | Same mechanism, longer brief | One model call |
-| **Check** | On a second press, only when chosen | A separate headless `claude -p` run with read-only tools, over the session record and the real files | Measured at about 210k fresh tokens plus 2.2M cache reads, about two minutes |
+| **Check** | On a second press, only when chosen | A separate headless `claude -p` run in a throwaway copy of the project, fenced, over the session record and the real files | Measured at about 210k fresh tokens plus 2.2M cache reads, about two minutes |
 
 The **watch** stays silent unless it finds something with a cost to the owner: work dropped
 or shrunk, a claim not shown, a test never run, the easy option taken in place of the right
@@ -127,12 +127,23 @@ conversation, so a read costs little and never slows the agent. The rep's indepe
 from its brief, which tells the model to treat everything the agent wrote as a claim, and,
 for the check step, from reading outside the conversation altogether.
 
-The check step spawns `claude -p` with `--output-format json`, a turn limit, a fifteen-minute
-timeout, an explicit allowlist (read, search, git log and diff, agentsview, GitHub viewing,
-and the common test runners) and an explicit denylist (anything that edits, sends, fetches
-the web or launches helpers). The brief states both limits and tells the checker to run one
-plain command per call and nothing that takes over a minute, because the sandbox refuses
-compound commands and a refusal costs a turn. It runs with the installing user's permissions and cannot change a file.
+The check step runs in a room, not under a list of allowed commands. The rep first makes a
+throwaway copy of the project as it stands, uncommitted work included (an APFS clone, made in
+a moment and taking no space until written to), and spawns `claude -p` in it with
+`--output-format json`, a turn limit and a fifteen-minute timeout. Inside the copy nothing
+needs approval: the shell, the file tools and the agentsview tools are allowed outright, and
+the only tool-level denials are the ones that edit through a tool, send, fetch the web or
+launch helpers. The fence is Claude Code's built-in sandbox, passed as settings for that run:
+writes are denied to the owner's work (the real project folder, `~/Developer`, `~/Documents`,
+`~/work`) and to the files Claude Code reads its own configuration from, and the network is
+closed except for this Mac, where agentsview answers. The owner's own guard hooks fire inside
+the run as they do for every agent. The copy is removed when the run ends. The run's answer
+carries the count of refused commands; the card shows it, and the right number is zero,
+because a refusal in a room where nothing needs approval means the room has a hole. All of
+this was measured on this build before it was built: bypassing approvals switches the
+sandbox off, so the run does not bypass them; `denyWrite` beats `allowWrite`; and a
+prefix allowlist, the earlier design, refused every compound command and cost a turn each
+time, which is why checks ran out of time.
 A newer press makes an older run's answer stale, and the card is only rewritten by the run
 that belongs to it.
 

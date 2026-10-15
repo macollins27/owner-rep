@@ -31,7 +31,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 51 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 54 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: six real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -103,13 +103,24 @@ Three reads of increasing cost, all measured against the held reading:
 2. **Briefing**: `pressBrief()` on the Rep button, another fork, drawn as the card. The
    model's answer is labelled lines (`reading:`, `moved:`, `stands:`, `means:`, `left:`,
    `next:`, `message:` … `end`, `does:`); `parseBrief` splits them.
-3. **Check**: `pressCheck()` → `runCheck()` spawns a headless `claude -p` with
-   `CHECK_ALLOWED_TOOLS` (read, search, agentsview, the project's own tests) and
-   `CHECK_DISALLOWED_TOOLS` (anything that edits, sends or launches helpers), five-minute
-   timeout, JSON output. Its answer rewrites the card, with each claim marked holds, false,
-   not shown or changed since. A newer press (`checkEpoch`) makes an older run stale, and
-   `lastInstant` ties "Check it" to the card that is up. The check costs real money and runs
-   only on a press; the card states the measured figure (`FIRST_CHECK_*`, then the last run).
+3. **Check**: `pressCheck()` → `runCheck()` first makes a throwaway copy of the agent's
+   folder (`makeCopy`: an APFS clone, `cp -Rc`, into `checkCopyDir` under `~/.cache`), then
+   spawns a headless `claude -p` in it with `--permission-mode default`, `CHECK_ALLOWED_TOOLS`
+   allowed outright (the shell, the file tools, the direct agentsview tools), `CHECK_DISALLOWED_TOOLS`
+   (anything that edits through a tool, sends, fetches the web or launches helpers) and
+   `--settings` from `checkSettings`: the built-in sandbox with writes denied to the owner's
+   work and Claude Code's own configuration (`checkDenyWrite`) and the network closed except
+   for this Mac. Measured 15 Oct 2026: bypassing approvals switches the sandbox off, so the
+   run does not; the owner's guard hooks fire inside the run; `denyWrite` beats `allowWrite`.
+   The copy is removed when the run ends; when it cannot be made the run uses the agent's
+   folder with writes there denied, and the brief says so. Fifteen-minute timeout
+   (`CHECK_TIMEOUT_MS`), 120 turns, JSON output; `permission_denials` in the output is the
+   refusal count, shown on the checked card (`refusedLine`) and on the next card's price line
+   (`checkCostText`); the right number is zero. Its answer rewrites the card, with each claim
+   marked holds, false, not shown or changed since. A newer press (`checkEpoch`) makes an
+   older run stale, and `lastInstant` ties "Check it" to the card that is up. The check costs
+   real money and runs only on a press; the card states the measured figure (`FIRST_CHECK_*`,
+   then the last run).
 
 **The reading** (`Reading` in `types/index.d.ts`, `takeReading` in `register.tsx`) is the
 rep's own account of what the owner wants on the job in hand, up to `READING_SENTENCES`

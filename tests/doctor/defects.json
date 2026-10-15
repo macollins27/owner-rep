@@ -238,5 +238,23 @@
     "breaks": "The briefs lose the rule that a document about the result is not the result, so a session opened to get a product finished is called done once a review, route or plan is written.",
     "patch": "route-as-result.patch",
     "fixed": "2026-10-15"
+  },
+  {
+    "name": "check-outside-copy",
+    "breaks": "The check's run is started in the agent's own folder instead of the throwaway copy, so what the checker runs and writes lands in the folder the agent is working in.",
+    "patch": "check-outside-copy.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "refusals-unreported",
+    "breaks": "The count of refused commands is always zero, so a check whose room has a hole looks clean on the card and the owner cannot see that the checker was stopped.",
+    "patch": "refusals-unreported.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "room-bypassed",
+    "breaks": "The check's run bypasses approvals instead of running in the default mode with its tools allowed, which switches the built-in sandbox off (measured 15 Oct 2026), so the fence around the owner's work and the network is gone.",
+    "patch": "room-bypassed.patch",
+    "fixed": "2026-10-15"
   }
 ]

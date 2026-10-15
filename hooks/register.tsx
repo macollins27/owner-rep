@@ -22,6 +22,10 @@ import {
   cachedOf,
   checkArgv,
   checkCostText,
+  checkCopiesDir,
+  checkCopyDir,
+  checkSettings,
+  refusedLine,
   checkPrompt,
   doingFor,
   firstSentence,
@@ -79,6 +83,7 @@ type Rec = {
   lastCheckTokens: number
   lastCheckCached: number
   lastCheckMs: number
+  lastCheckRefused: number
 }
 
 const isRec = (v: unknown): v is Rec =>
@@ -102,6 +107,7 @@ const freshRec = (id: string): Rec => ({
   lastCheckTokens: 0,
   lastCheckCached: 0,
   lastCheckMs: 0,
+  lastCheckRefused: 0,
 })
 
 async function loadRec($: EngineInterface, id: string): Promise<Rec> {
@@ -254,7 +260,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       isChecking: false,
       checked: null,
       checkNote: '',
-      checkCost: checkCostText(after.lastCheckTokens, after.lastCheckCached, after.lastCheckMs),
+      checkCost: checkCostText(after.lastCheckTokens, after.lastCheckCached, after.lastCheckMs, after.lastCheckRefused),
     }
     after.lastBrief = { at: brief.at, next: brief.next, message: brief.message }
     await saveRec($, after)
@@ -307,16 +313,19 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
   try {
     const rec = await loadRec($, sid)
     const cwd = await $.session.cwd()
+    const home = (await $.env.get('HOME')) ?? '/tmp'
+    const copy = await makeCopy($, home, sid, cwd)
     const prompt = checkPrompt({
       sessionId: sid,
       cwd,
+      copy,
       reading: rec.reading?.text ?? '',
       owner: rec.reading === null ? rec.owner : rec.owner.slice(rec.reading.since),
       brief: instant,
       writtenAt: new Date(at).toISOString(),
     })
     const startedAt = Date.now()
-    const stream = $.process.spawn({ argv: checkArgv(prompt), cwd })
+    const stream = $.process.spawn({ argv: checkArgv(prompt, checkSettings(home, cwd)), cwd: copy })
     let stdout = ''
     let stderr = ''
     let timedOut = false
@@ -342,6 +351,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
     } finally {
       stop.cancel()
       if (activeCheck !== null && epoch === checkEpoch) activeCheck = null
+      if (copy !== cwd) $.process.run(['rm', '-rf', copy], { timeoutMs: 120000 }).catch(() => undefined)
     }
     if (timedOut) return finish({ checkNote: `The check ran out of time (${CHECK_TIMEOUT_WORDS}) and was stopped.` })
     const got = resultOf(stdout)
@@ -355,8 +365,9 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
     after.lastCheckTokens = got.tokens
     after.lastCheckCached = got.cached
     after.lastCheckMs = Date.now() - startedAt
+    after.lastCheckRefused = got.refused
     const c = parseCheck(got.text)
-    const checked: Checked = { holds: c.holds, wrong: c.wrong, notShown: c.notShown, changed: c.changed, looked: c.looked }
+    const checked: Checked = { holds: c.holds, wrong: c.wrong, notShown: c.notShown, changed: c.changed, looked: c.looked, refused: got.refused }
     const hasLeft = parts_hasLeft(got.text)
     const patch: Partial<Brief> = {
       checked,
@@ -367,7 +378,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       message: c.message === '' ? instant.message : c.message,
       does: c.does === '' ? instant.does : c.does,
       spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens),
-      checkCost: checkCostText(after.lastCheckTokens, after.lastCheckCached, after.lastCheckMs),
+      checkCost: checkCostText(after.lastCheckTokens, after.lastCheckCached, after.lastCheckMs, after.lastCheckRefused),
     }
     after.lastBrief = { at, next: patch.next ?? '', message: patch.message ?? '' }
     await saveRec($, after)
@@ -376,6 +387,24 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
     const why = error instanceof Error ? error.message : String(error)
     await finish({ checkNote: `The check failed: ${fit(why, 160)}` }).catch(() => undefined)
   }
+}
+
+// The throwaway copy the check runs in: an APFS clone (cp -c) of the agent's folder as it
+// stands, uncommitted work included, made in a moment and taking no space until written
+// to (a 6.5 GB project cloned in 14 s on 15 Oct 2026). When the clone cannot be made the
+// check runs in the agent's own folder with writes there denied by the room, and the
+// brief says so.
+async function makeCopy($: EngineInterface, home: string, sid: string, cwd: string): Promise<string> {
+  const copy = checkCopyDir(home, sid)
+  try {
+    await $.process.run(['rm', '-rf', copy], { timeoutMs: 120000 })
+    await $.process.run(['mkdir', '-p', checkCopiesDir(home)], { timeoutMs: 30000 })
+    const made = await $.process.run(['cp', '-Rc', cwd, copy], { timeoutMs: 600000 })
+    if (made.exitCode === 0) return copy
+  } catch {
+    // fall through: no copy
+  }
+  return cwd
 }
 
 async function putMessage($: EngineInterface, text: string): Promise<void> {
@@ -810,6 +839,9 @@ export const register: Register = on => {
                   {shown.checked.looked}
                 </Text>
               ) : undefined}
+              <Text dimColor wrap="wrap">
+                {refusedLine(shown.checked.refused)}
+              </Text>
             </Box>
           ) : undefined}
           {shown.isChecking ? (

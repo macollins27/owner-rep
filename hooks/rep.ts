@@ -490,80 +490,55 @@ export const CHECK_TIMEOUT_MS = 900000
 export const CHECK_TIMEOUT_WORDS = 'fifteen minutes'
 export const CHECK_MAX_TURNS = '120'
 
-// What the checker may do: read, search, the session record, and the
-// project's own checks. Nothing that changes a file or sends anything.
-export const CHECK_ALLOWED_TOOLS = [
-  'Read',
-  'Glob',
-  'Grep',
-  'mcp__agentsview',
-  'Bash(agentsview:*)',
-  'Bash(grep:*)',
-  'Bash(cut:*)',
-  'Bash(diff:*)',
-  'Bash(stat:*)',
-  'Bash(which:*)',
-  'Bash(ls:*)',
-  'Bash(cat:*)',
-  'Bash(head:*)',
-  'Bash(tail:*)',
-  'Bash(wc:*)',
-  'Bash(find:*)',
-  'Bash(git status:*)',
-  'Bash(git log:*)',
-  'Bash(git diff:*)',
-  'Bash(git show:*)',
-  'Bash(git branch:*)',
-  'Bash(git worktree list:*)',
-  'Bash(git rev-parse:*)',
-  'Bash(git ls-files:*)',
-  'Bash(git ls-remote:*)',
-  'Bash(git remote -v:*)',
-  'Bash(gh pr view:*)',
-  'Bash(gh pr list:*)',
-  'Bash(gh pr checks:*)',
-  'Bash(gh run list:*)',
-  'Bash(gh run view:*)',
-  'Bash(gh repo view:*)',
-  'Bash(gh issue view:*)',
-  'Bash(gh issue list:*)',
-  'Bash(npm test:*)',
-  'Bash(npm run test:*)',
-  'Bash(npm run check:*)',
-  'Bash(npm run lint:*)',
-  'Bash(npm run typecheck:*)',
-  'Bash(pnpm test:*)',
-  'Bash(pnpm run test:*)',
-  'Bash(pnpm tsc:*)',
-  'Bash(yarn test:*)',
-  'Bash(bun test:*)',
-  'Bash(npx tsc:*)',
-  'Bash(tsc:*)',
-  'Bash(~/Library/pnpm/tsc:*)',
-  'Bash(~/.local/bin/tsc:*)',
-  'Bash(node --test:*)',
-  'Bash(pytest:*)',
-  'Bash(python -m pytest:*)',
-  'Bash(python3 -m pytest:*)',
-  'Bash(python3 -I:*)',
-  'Bash(ruff check:*)',
-  'Bash(go test:*)',
-  'Bash(go vet:*)',
-  'Bash(cargo test:*)',
-  'Bash(cargo check:*)',
-  'Bash(make test:*)',
-  'Bash(make check:*)',
-  'Bash(bin/gate:*)',
-  'Bash(./bin/gate:*)',
-  'Bash(claude plugin validate:*)',
-  'Bash(claude plugin test:*)',
-  'Bash(docker ps:*)',
-  'Bash(docker compose ps:*)',
-].join(',')
+// What the checker may use: the shell, the file tools and the session record (the direct
+// agentsview tools among them). The shell is fenced by the room (checkSettings), not by a
+// list of command prefixes: a prefix list refused every compound command and could not
+// tell a harmless read from a write, so every check lost turns to refusals.
+export const CHECK_ALLOWED_TOOLS = 'Bash,Read,Glob,Grep,LS,ToolSearch,mcp__agentsview'
 
 export const CHECK_DISALLOWED_TOOLS = 'Edit,Write,MultiEdit,NotebookEdit,Agent,Task,SendMessage,WebFetch,WebSearch,Artifact'
 
-export const checkArgv = (prompt: string): string[] => [
+// The room the check runs in. The working directory is a throwaway copy of the agent's
+// folder (checkCopyDir), writable as any working directory is; the built-in sandbox
+// denies writes to the owner's work and to the places Claude Code reads its own
+// configuration from, and closes the network except for this Mac, where agentsview
+// answers. Measured on 15 Oct 2026: with approvals bypassed the sandbox is off, so the
+// run uses the default permission mode with the tools above allowed outright; the
+// owner's own guard hooks fire inside the run as they do for every agent; `denyWrite`
+// beats `allowWrite`, so the copy cannot sit under a denied folder; and the owner's
+// settings make the whole home folder a working directory, so the fence is a deny list.
+export const checkDenyWrite = (home: string, real: string): string[] => [
+  real,
+  `${home}/Developer`,
+  `${home}/Documents`,
+  `${home}/Desktop`,
+  `${home}/work`,
+  `${home}/.ssh`,
+  `${home}/.config`,
+  `${home}/.claude/settings.json`,
+  `${home}/.claude/settings.local.json`,
+  `${home}/.claude/CLAUDE.md`,
+  `${home}/.claude/hooks`,
+  `${home}/.claude/plugins`,
+  `${home}/.claude/projects`,
+  `${home}/.claude/tools`,
+  `${home}/.claude/keybindings.json`,
+]
+
+export const checkCopiesDir = (home: string): string => `${home}/.cache/owner-rep/checks`
+export const checkCopyDir = (home: string, sessionId: string): string => `${checkCopiesDir(home)}/${sessionId === '' ? 'session' : sessionId}`
+
+export const checkSettings = (home: string, real: string): string =>
+  JSON.stringify({
+    sandbox: {
+      enabled: true,
+      enabledPlatforms: ['darwin', 'linux'],
+      filesystem: { denyWrite: checkDenyWrite(home, real) },
+      network: { allowedDomains: [], allowLocalBinding: true },
+    },
+  })
+
+export const checkArgv = (prompt: string, settings: string): string[] => [
   'claude',
   '-p',
   prompt,
@@ -571,6 +546,10 @@ export const checkArgv = (prompt: string): string[] => [
   'json',
   '--max-turns',
   CHECK_MAX_TURNS,
+  '--permission-mode',
+  'default',
+  '--settings',
+  settings,
   '--allowedTools',
   CHECK_ALLOWED_TOOLS,
   '--disallowedTools',
@@ -580,6 +559,7 @@ export const checkArgv = (prompt: string): string[] => [
 export type CheckArgs = {
   sessionId: string
   cwd: string
+  copy: string
   reading: string
   owner: string[]
   brief: BriefAnswer
@@ -605,15 +585,18 @@ export function checkPrompt(a: CheckArgs): string {
 ## The session
 
 Session id: ${a.sessionId}
-Working directory: ${a.cwd}
+The agent's folder: ${a.cwd}
+Your working directory: ${a.copy === a.cwd ? `${a.cwd} (the agent's own folder: the throwaway copy could not be made, so writes there are denied)` : `${a.copy}, a throwaway copy of the agent's folder taken as this check began, uncommitted work included`}
 
 The full record of the session is in agentsview. Refresh it first with \`agentsview sync\`, giving that one call a timeout of 60000 milliseconds; if it has not finished by then, go on without it: the transcript file is always current and agentsview is at most a few minutes behind. Read the newest messages with \`agentsview session messages ${a.sessionId} --role user,assistant --direction desc --limit 40\` (no \`--from\`: that gives the newest page), the whole record from the start with \`--from 0 --limit 200\` and higher \`--from\` values for later pages, and \`agentsview session tool-calls ${a.sessionId}\` for what the agent actually ran and what came back. If agentsview does not have the session, the transcript file is \`~/.claude/projects/*/${a.sessionId}.jsonl\`. Helpers the agent launched have their own records; \`agentsview session list --include-children\` finds them. The agentsview tools Claude Code offers directly (their names begin \`mcp__agentsview__\`) read the same record and are allowed too.
 
 Read any file you need. Run the project's own checks (its tests, its type check, its gate) when a claim says they pass; the record shows the exact command the agent used, so run that one, once. You may run only read-only commands and the project's own checks. Never change a file and never send anything to anyone.
 
-## Your time
+## Your room and your time
 
-You have ${CHECK_TIMEOUT_WORDS} and ${CHECK_MAX_TURNS} turns in all, and an answer that never arrives is worth nothing to him, so spend them on reading and on the proof that matters most. Every command runs through a sandbox that allows only simple commands: run one plain command per call, with no \`&&\`, \`;\`, pipes, \`cd\`, output redirection or shell variables, since any of those gets the whole call refused and the turn is lost. Use the Read, Grep and Glob tools on files rather than shell commands. The git commands you may run work only in the working directory: a \`git -C\`, \`--git-dir\` or \`--work-tree\` form is refused every time, so for another repository read its files with Read and Glob, or say under "looked" that you could not run git there. Do not start anything you expect to run longer than a minute: a tool that reruns a suite many times (a defect-planting or mutation run), a full build, a long crawl; say under "looked" that you did not run it and judge that claim from the record instead. When a command is refused, try it once more as one plain command at most, then say so under "looked" rather than guessing.
+You run in your working directory, the copy. Run the project's checks and anything else you need there, write what you like there; nothing you do in it reaches the agent's folder, and the copy is removed when you finish. When a claim is about what is on disk now, read the agent's own folder with Read, Glob and Grep, since the copy is of one moment. No command needs approval, so none is refused for its shape. Two things still stop a command: the owner's own guard, which refuses for every agent on this machine the few things it refuses (rewriting shared history, deleting his data, making anything public), and the fence, which denies writes outside the copy and closes the network except for this Mac; a "sandbox violation" means you hit the fence and says nothing about the claim. If a command is refused, say so under "looked" rather than guessing.
+
+You have ${CHECK_TIMEOUT_WORDS} and ${CHECK_MAX_TURNS} turns in all, and an answer that never arrives is worth nothing to him, so spend them on reading and on the proof that matters most. Run the project's test command and its type check once each, the way the record shows the agent ran them. A slower tool, one that reruns the suite many times (a defect-planting or mutation run) or a full build, is worth its minutes only when a claim turns on it; otherwise say under "looked" that you did not run it and judge that claim from the record.
 
 ## What he wants, as the rep reads it
 
@@ -686,16 +669,18 @@ export function parseCheck(text: string): CheckAnswer {
 }
 
 // The answer text out of a headless run's JSON output, or null.
-export function resultOf(stdout: string): { text: string; tokens: number; cached: number } | null {
+export function resultOf(stdout: string): { text: string; tokens: number; cached: number; refused: number } | null {
   const start = stdout.indexOf('{')
   if (start < 0) return null
   try {
-    const d = JSON.parse(stdout.slice(start)) as { result?: unknown; usage?: Partial<Usage> }
+    const d = JSON.parse(stdout.slice(start)) as { result?: unknown; usage?: Partial<Usage>; permission_denials?: unknown }
     if (typeof d.result !== 'string') return null
     const u = d.usage ?? {}
     const cached = u.cache_read_input_tokens ?? 0
     const tokens = (u.input_tokens ?? 0) + (u.output_tokens ?? 0) + cached + (u.cache_creation_input_tokens ?? 0)
-    return { text: d.result, tokens, cached }
+    // Every tool call the run was refused, by a permission rule or by the owner's guard.
+    const refused = Array.isArray(d.permission_denials) ? d.permission_denials.length : 0
+    return { text: d.result, tokens, cached, refused }
   } catch {
     return null
   }
@@ -830,9 +815,17 @@ const millions = (n: number): string =>
 const costWords = (tokens: number, cached: number, ms: number): string =>
   `${millions(Math.max(0, tokens - cached))} fresh tokens plus ${millions(cached)} re-read from cache, in ${minutes(ms)}`
 
-export function checkCostText(lastTokens: number, lastCached: number, lastMs: number): string {
-  const lead = 'Check it starts a separate read-only Claude Code run over the session record and the files.'
-  if (lastTokens > 0) return `${lead} The last check here used ${costWords(lastTokens, lastCached, lastMs)}.`
+// How many of the check's commands were refused. The right number is zero: the check runs
+// in a room where nothing needs approval, so a refusal means the room has a hole.
+export const refusedWords = (n: number): string =>
+  n === 0 ? 'no command refused' : `${n} command${n === 1 ? '' : 's'} refused`
+
+// The line under the checker's own account of what it looked at.
+export const refusedLine = (n: number): string => `The check's run had ${refusedWords(n)}.`
+
+export function checkCostText(lastTokens: number, lastCached: number, lastMs: number, lastRefused = 0): string {
+  const lead = 'Check it starts a separate Claude Code run in a throwaway copy of the project, over the session record and the files.'
+  if (lastTokens > 0) return `${lead} The last check here used ${costWords(lastTokens, lastCached, lastMs)}, with ${refusedWords(lastRefused)}.`
   return `${lead} The first one measured used ${costWords(FIRST_CHECK_TOKENS, FIRST_CHECK_CACHED, FIRST_CHECK_MS)}.`
 }
 
@@ -859,7 +852,7 @@ export type CardText = {
   means: string
   leftOut: string[]
   next: string
-  checked: { holds: string[]; wrong: string[]; notShown: string[]; changed: string[]; looked: string } | null
+  checked: { holds: string[]; wrong: string[]; notShown: string[]; changed: string[]; looked: string; refused: number } | null
   isChecking: boolean
   checkNote: string
   checkCost: string
@@ -958,6 +951,7 @@ export function fitCard(card: CardText, maxRows: number, cols: number): CardText
           notShown: k.notShown.map(i => oneRow(i, '  not shown  ')),
           changed: k.changed.map(i => oneRow(i, '  since then  ')),
           looked: held,
+          refused: k.refused,
         },
       }
     },
@@ -972,7 +966,7 @@ export function fitCard(card: CardText, maxRows: number, cols: number): CardText
         [k.changed.length, 'changed since'],
       ] as const
       const line = parts.filter(([n]) => n > 0).map(([n, word]) => `${n} ${word}`).join(', ')
-      c = { ...c, checked: { holds: [], wrong: [], notShown: [], changed: [], looked: line === '' ? '' : `Checked: ${line}.` } }
+      c = { ...c, checked: { holds: [], wrong: [], notShown: [], changed: [], looked: line === '' ? '' : `Checked: ${line}.`, refused: c.checked.refused } }
     },
     // Whole parts go when one row each is still too much, the least telling first.
     () => (c = { ...c, checkCost: '' }),
