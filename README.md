@@ -69,6 +69,28 @@ said on that job and nothing from an earlier one. The agent's words can never mo
 the code enforces that: a revision proposed when the owner has said nothing new is refused.
 The card shows when and why the reading last moved, and the row shows its first sentence.
 
+A correction keeps the first sentence. The reading opens with the result the owner asked for,
+and a later message on the job adds to what "done" has to show or moves the step; it never
+makes the result smaller. The code holds the model to this: a rebuilt reading whose first
+sentence differs is taken with the old first sentence put back. Only a new job, or the
+owner saying in so many words that the earlier ask no longer stands, changes the result, and
+the model marks the second case `replaced` where the card shows the cause. This came from a
+session on 15 Oct 2026 in which a message that bounded the agent's next step ("only tell me
+why") was read as the owner asking for less, the reading shrank to the latest message, and
+the rep called the session finished with the product it was opened for not on the owner's
+screen.
+
+The same session showed two more faults, both fixed. A message the rep had drafted and the
+owner sent through "Put message in prompt" was recorded as the owner's own words, so the rep
+graded the agent against a job the rep had written; such a message is now recorded marked as
+the rep's draft, and the brief weighs it like a "yes" to an agent's proposal: it adds a step
+and never narrows the job or sets what "done" means. And the brief now says that the result
+is the thing, never a document about the thing: when a session is opened to get something
+built, installed or on the owner's screen, a review, route or plan is a step toward it, the
+job stays open until the thing is shown working where the owner uses it, and whether a build
+is installed or a service runs the newest code is "not shown" to the rep unless the
+conversation shows it.
+
 The owner never types the reading. To steer the rep they type a prompt beginning
 `Owner rep:`; the rep takes the note, drops the prompt before the agent sees it, lists it to
 the model as said to the rep with the highest weight, and reads again at once. "Tell the rep"

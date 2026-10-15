@@ -21,7 +21,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 47 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 51 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: six real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -112,7 +112,10 @@ whatever the model says, and a look that lands late cannot take a newer look's p
 new job pushes the old reading's first sentence onto `rec.past` and starts the job's message
 range (`since`) after the old one. The model is shown only the job's messages and the closed
 readings of earlier jobs. The card shows `revisedLine` under the head; the row shows
-`firstSentence`. There is no stored parts list: the model reads the open parts from the
+`firstSentence`. A correction keeps that first sentence, the result: `keepResult` puts the
+held first sentence back when the rebuilt text's differs, and only a new job or a cause
+beginning `replaced` (`isReplaced`) takes the text whole, so a message that bounds the next
+step cannot shrink the result to itself (15 Oct 2026). There is no stored parts list: the model reads the open parts from the
 reading and the job's messages at each look, so one thing is held and revised, not two.
 
 State lives in two places. Atoms (`atom({plugin, key})`) are per-session UI state that drives
@@ -122,7 +125,9 @@ spend counters), capped at `SESSIONS_MAX` newest. `loadRec`/`saveRec` are the on
 out.
 
 The owner's own messages are the only input that can steer the rep. `prompt.submit` records
-each prompt into `rec.owner`; a prompt beginning `Owner rep` and a colon (`noteTyped`) is a
+each prompt into `rec.owner`; a prompt that is the card's own message, sent through "Put
+message in prompt", is recorded with `SENT_MARK` so the model weighs it as the rep's draft
+and never as the owner's words; a prompt beginning `Owner rep` and a colon (`noteTyped`) is a
 note to the rep: it is recorded marked `(to the rep)`, a look starts at once, and the prompt
 is dropped so the agent never sees it. "Tell the rep" fills the prompt box with the prefix.
 The rep never sends anything itself: "Put message in prompt" fills the prompt box and the
