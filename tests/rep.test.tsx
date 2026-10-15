@@ -1781,3 +1781,44 @@ test('gateVerdict refuses stop and well while a condition is open, and lists the
   expect(gateVerdict(parseBrief('verdict: continue\nstands: s\nleft:\n- nothing\nnext: Go on.\nmessage:\nend\ndoes:'), open).refused).toBe(false)
   expect(parseBrief('stands: s\nleft:\n- nothing\nshown:\n- a | the diff\nclosed:\n- b | #4\nmessage:\nend\ndoes:')).toMatchObject({ verdict: 'continue', shown: [{ text: 'a', by: 'the diff' }], closed: [{ text: 'b', by: 4 }] })
 })
+
+test('rule: a record saved in the old shape is rebuilt on the next press, with the old text kept as a version', async ($, on) => {
+  const draft = 'Now do two things: finish the sessions, then install.'
+  const old = {
+    id: 'test-session',
+    at: Date.now(),
+    reading: { text: 'An account of where the spec stands and the route.', openedAt: 1, since: 0, from: 3, movedAt: 2, cause: 'the third message', revisions: 2 },
+    owner: ['Guide me until the spec is finished', 'Nothing is finished until the newest build is installed', draft],
+    lastSent: { text: draft, at: 3 },
+    past: [],
+    seen: [],
+    others: [],
+  }
+  const rec = kept(on, { sessions: { 'test-session': old } })
+  quietBand(on)
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  let answer: string | null = null
+  const writes = writer(on, () => answer)
+  const unused = () => OBJ('Guidance until the spec is finished and running on his Mac.', ['the newest build installed | not shown', 'the two stopped-short sessions finished | not shown'], '#1 opened the job; #2 set the standard')
+  const looks: string[] = []
+  on('model.fork', (_$, e) => {
+    looks.push(String(e.prompt))
+    return { value: { isAnswered: true, text: BRIEF('Fine.'), usage: USAGE } }
+  })
+  // The write at the session's start gets no answer, so the press writes it.
+  await $.session.start({ cwd: '/tmp/x', surface: 'terminal', isInteractive: true })
+  await settle($)
+  expect(rec()?.objective).toBe(null)
+  answer = unused()
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  expect(writes).toHaveLength(2)
+  expect(writes[1]).toMatch(/\n- #1 Guide me until the spec is finished\n- #2 Nothing is finished until the newest build is installed\n- #3 \(your draft, sent by him\) Now do two things/)
+  expect(await ui.find({ type: 'Text', text: /Guidance until the spec is finished and running on his Mac\./ })).toBeDefined()
+  await ui.unmount()
+  expect(looks[0]).toMatch(/Done when: the newest build installed \(not shown\); the two stopped-short sessions finished \(not shown\)\./)
+  const held = rec() as unknown as { reading?: unknown; stale?: unknown; objective: Objective | null }
+  expect(held.reading).toBeUndefined()
+  expect(held.stale).toBeUndefined()
+  expect(held.objective?.versions[0]).toMatchObject({ cause: 'rebuilt from the old shape', text: 'An account of where the spec stands and the route.' })
+})

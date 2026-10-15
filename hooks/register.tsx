@@ -146,6 +146,14 @@ async function loadRec($: EngineInterface, id: string): Promise<Rec> {
   const out: Rec = { ...freshRec(id), ...rec }
   if (typeof (out.owner as unknown[])[0] === 'string') out.owner = migrateOwner(out.owner as unknown[], out.lastSent?.text)
   out.counter = Math.max(out.counter, ...out.owner.map(m => m.n), 0)
+  // A record saved with a reading and no objective is the old shape: its text waits as a version.
+  const old = (rec as { reading?: { text?: unknown; cause?: unknown; movedAt?: unknown; openedAt?: unknown; since?: unknown } }).reading
+  if (old !== undefined && old !== null && typeof old.text === 'string' && !('objective' in rec)) {
+    out.objective = null
+    out.stale = { text: old.text, cause: String(old.cause ?? ''), at: Number(old.movedAt ?? old.openedAt ?? 0) }
+    out.jobStart = Number(old.since ?? 0) + 1
+  }
+  delete (out as { reading?: unknown }).reading
   return out
 }
 
