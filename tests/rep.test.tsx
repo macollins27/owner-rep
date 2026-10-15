@@ -1209,6 +1209,71 @@ test("rule: a write that lands late cannot take a newer write's place, and a mes
   expect(rec()?.objectiveCalls).toBe(3)
 })
 
+test('rule: a message whose record waits behind the writer\'s save, and joins the write, is still written', async ($, on) => {
+  // The store kept here rather than by kept(), so its writes can be held.
+  const store: Record<string, unknown> = {}
+  const rec = () => (store.sessions as Record<string, Stored> | undefined)?.['test-session']
+  on('session.id', () => ({ value: 'test-session' }))
+  on('prompt.submit', (_$, e) => ({ text: e.text }))
+  on('store.get', (_$, e) => ({ value: store[e.key] }))
+  quietBand(on)
+  const prompts: string[] = []
+  // Holds: the writer's save of its answer, and its update of the row after it.
+  let holdSave = false
+  let holdRow = false
+  let releaseSave: () => void = () => undefined
+  let releaseRow: () => void = () => undefined
+  let saveHeld: () => void = () => undefined
+  let rowHeld: () => void = () => undefined
+  const saveIsHeld = new Promise<void>(r => (saveHeld = r))
+  const rowIsHeld = new Promise<void>(r => (rowHeld = r))
+  on('model.complete', (_$, e) => {
+    prompts.push(String(e.prompt))
+    const n = prompts.length
+    // The second write's save is the next store write after its call.
+    if (n === 2) holdSave = true
+    return { value: { isAnswered: true, text: OBJ(`Write ${n}.`, ['the steps finished | open'], `#${n} added a step`), usage: USAGE } }
+  })
+  on('store.set', async (_$, e) => {
+    if (holdSave) {
+      holdSave = false
+      saveHeld()
+      await new Promise<void>(r => (releaseSave = r))
+    }
+    store[e.key] = e.value
+    return { value: undefined }
+  })
+  on('state.set', async (_$, e, next) => {
+    if (holdRow && (e as { key?: string }).key === 'reading') {
+      holdRow = false
+      rowHeld()
+      await new Promise<void>(r => (releaseRow = r))
+    }
+    return next(e)
+  })
+  await $.prompt.submit(typed('a README'))
+  await settle($)
+  expect(rec()?.objective).toMatchObject({ result: 'Write 1.', from: 1 })
+  // His second message: its write answers, and its save is held.
+  await $.prompt.submit(typed('now a licence'))
+  await saveIsHeld
+  // His third arrives while that save is held: its record waits behind it.
+  const third = $.prompt.submit(typed('and the tests'))
+  // The save lands without #3; the row update after it is held until #3 is
+  // saved and its request has joined the running write.
+  holdRow = true
+  releaseSave()
+  await rowIsHeld
+  await third
+  releaseRow()
+  await settle($)
+  await settle($)
+  expect(prompts).toHaveLength(3)
+  expect(prompts[2]).toMatch(/\n- #3 and the tests/)
+  expect(rec()?.objective).toMatchObject({ result: 'Write 3.', from: 3 })
+  expect(await rowSays($, /^Owner rep · Write 3\.$/)).toBe(true)
+})
+
 test('rule: a draft, a note and a message all count by number, so a write after 41 messages still moves the objective', async ($, on) => {
   const rec = kept(on)
   quietBand(on)
@@ -1302,8 +1367,30 @@ test('rule: with no objective held, a press writes it before the briefing, which
   expect(order).toEqual(['write', 'write', 'brief'])
   expect(looks[0]).toMatch(/A licence file with the full MIT text\. So he can rely on it\. Done when: the file committed\./)
   expect(await ui.find({ type: 'Text', text: /A licence file with the full MIT text\. So he can rely on it\./ })).toBeDefined()
+  // The price line counts the writer's calls beside the looks: two writes, one unanswered.
+  expect(await ui.find({ type: 'Text', text: /^Owner rep: 1 look, 2 objective writes \(2k tokens\) this session;/ })).toBeDefined()
   await ui.unmount()
   expect(rec()?.objective?.since).toBe(1)
+})
+
+test('rule: a writer call that throws saves nothing and counts nothing', async ($, on) => {
+  const store: Record<string, unknown> = unwritten()
+  const saved = (store.sessions as Record<string, { at: number }>)['test-session']
+  if (saved === undefined) throw new Error('no record')
+  saved.at = 1
+  const rec = kept(on, store)
+  quietBand(on)
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  let calls = 0
+  on('model.complete', () => {
+    calls += 1
+    throw new Error('the model is unreachable')
+  })
+  await $.session.start({ cwd: '/tmp/x', surface: 'terminal', isInteractive: true })
+  await settle($)
+  expect(calls).toBe(1)
+  expect((rec() as unknown as { at: number }).at).toBe(1)
+  expect(rec()?.objective).toBe(null)
 })
 
 test('rule: a session that starts with his messages and no objective writes it', async ($, on) => {

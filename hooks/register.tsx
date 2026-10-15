@@ -321,50 +321,73 @@ function applyMarks(
   return changed
 }
 
-// The objective writer running for a session; one at a time per session.
-const writing = new Map<string, Promise<void>>()
+// The objective writer running for a session, one at a time per session, and
+// whether a message of his or a note asked for a write while it ran.
+type Writing = { run: Promise<void>; again: boolean }
+const writing = new Map<string, Writing>()
 
 // The objective writer: a plain completion of its own over his messages on the
 // job, never the conversation, so nothing the agent says can move what it
-// writes. A request while one runs joins it, and a message of his that came in
-// meanwhile is written from when it lands. A load or a press asks only for the
+// writes. A request while one runs joins it, and a message or note that joins
+// is written after the write in hand. A load or a press asks only for the
 // first objective, and a message or a note for a rebuild. Never awaited by the
 // prompt hook that starts it, so the agent is never slowed.
 async function rebuildObjective($: EngineInterface, sid: string, cause: 'message' | 'note' | 'load' | 'press'): Promise<void> {
   const running = writing.get(sid)
-  if (running !== undefined) return running
-  const run = writeObjective($, sid, cause === 'load' || cause === 'press').finally(() => writing.delete(sid))
-  writing.set(sid, run)
-  return run
+  if (running !== undefined) {
+    if (cause === 'message' || cause === 'note') running.again = true
+    return running.run
+  }
+  const entry: Writing = { run: Promise.resolve(), again: false }
+  writing.set(sid, entry)
+  entry.run = writeObjective($, sid, cause === 'load' || cause === 'press', entry).finally(() => {
+    if (writing.get(sid) === entry) writing.delete(sid)
+  })
+  return entry.run
 }
 
-async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolean): Promise<void> {
+async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolean, entry: Writing): Promise<void> {
+  // The last message number a write in this run was shown; a rerun with
+  // nothing of his past it makes no call.
+  let shown = -1
   for (;;) {
+    entry.again = false
     const rec = await loadRec($, sid)
-    if (onlyFirst && rec.objective !== null) return
-    if (hisFrom(rec, jobOf(rec)).length === 0) return
     const saw = rec.counter
-    const result = await $.model
-      .complete({
-        model: OBJECTIVE_MODEL,
-        prompt: objectivePrompt({ objective: rec.objective, owner: jobMsgs(rec), past: rec.past }),
-        maxTokens: OBJECTIVE_MAX_TOKENS,
-        effort: 'high',
-        timeoutMs: 60000,
-      })
-      .catch(() => null)
-    const after = await changeRec($, sid, rec => {
-      if (result === null) return rec
-      rec.objectiveCalls += 1
-      rec.objectiveTokens += tokensOf(result.usage)
-      if (result.isAnswered) takeObjective(rec, parseObjective(result.text), Date.now(), saw)
-      return rec
-    })
-    // The row shows what the record holds, whichever write put it there.
-    await update($, readingA, () => after.objective)
-    // A message of his that came in while the writer worked is written from now.
-    if (!after.owner.some(m => m.kind !== 'draft' && m.n > saw)) return
+    const due = !(onlyFirst && rec.objective !== null) && hisFrom(rec, Math.max(jobOf(rec), shown + 1)).length > 0
+    if (due) {
+      shown = saw
+      const result = await $.model
+        .complete({
+          model: OBJECTIVE_MODEL,
+          prompt: objectivePrompt({ objective: rec.objective, owner: jobMsgs(rec), past: rec.past }),
+          maxTokens: OBJECTIVE_MAX_TOKENS,
+          effort: 'high',
+          timeoutMs: 60000,
+        })
+        .catch(() => null)
+      // A call that threw changed nothing, so nothing is saved.
+      if (result !== null) {
+        const after = await changeRec($, sid, r => {
+          r.objectiveCalls += 1
+          r.objectiveTokens += tokensOf(result.usage)
+          if (result.isAnswered) takeObjective(r, parseObjective(result.text), Date.now(), saw)
+          return r
+        })
+        // The row shows what the record holds, whichever write put it there.
+        await update($, readingA, () => after.objective)
+      }
+    }
     onlyFirst = false
+    // A message of his or a note that came in during the write is written now:
+    // one whose request joined this run, or one saved after the write was shown
+    // the messages. The check and the release are one step, so a request that
+    // comes after it starts a run of its own.
+    const now = await loadRec($, sid)
+    if (!entry.again && !now.owner.some(m => m.kind !== 'draft' && m.n > saw)) {
+      if (writing.get(sid) === entry) writing.delete(sid)
+      return
+    }
   }
 }
 
@@ -449,7 +472,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
         message: a.message,
         does: a.does,
         at: Date.now(),
-        spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens),
+        spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens, after.objectiveCalls, after.objectiveTokens),
         size: context === undefined ? '' : `conversation at ${context.percent} percent of its window`,
         isChecking: false,
         checked: null,
@@ -572,7 +595,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
         next: c.next === '' ? instant.next : c.next,
         message: c.message === '' ? instant.message : c.message,
         does: c.does === '' ? instant.does : c.does,
-        spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens),
+        spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens, after.objectiveCalls, after.objectiveTokens),
         checkCost: checkCostText(after.lastCheckTokens, after.lastCheckCached, after.lastCheckMs, after.lastCheckRefused),
       }
       after.lastBrief = { at, next: patch.next ?? '', message: patch.message ?? '' }

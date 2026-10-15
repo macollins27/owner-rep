@@ -1056,11 +1056,12 @@ export function checkCostText(lastTokens: number, lastCached: number, lastMs: nu
   return `${lead} The first one measured used ${costWords(FIRST_CHECK_TOKENS, FIRST_CHECK_CACHED, FIRST_CHECK_MS)}.`
 }
 
-export function spentText(calls: number, tokens: number, cached: number, checks = 0, checkTokens = 0): string {
+export function spentText(calls: number, tokens: number, cached: number, checks = 0, checkTokens = 0, writes = 0, writeTokens = 0): string {
   const fresh = Math.max(0, tokens - cached)
   const looks = `${calls} look${calls === 1 ? '' : 's'}`
+  const written = writes > 0 ? `, ${writes} objective write${writes === 1 ? '' : 's'} (${k(writeTokens)} tokens)` : ''
   const checked = checks > 0 ? `, ${checks} check${checks === 1 ? '' : 's'} (${k(checkTokens)} tokens, mostly cache)` : ''
-  return `Owner rep: ${looks}${checked} this session; looks used ${k(fresh)} fresh tokens and ${k(cached)} re-read from cache`
+  return `Owner rep: ${looks}${written}${checked} this session; looks used ${k(fresh)} fresh tokens and ${k(cached)} re-read from cache`
 }
 
 // --- Fitting the briefing card into the band's rows. ---
