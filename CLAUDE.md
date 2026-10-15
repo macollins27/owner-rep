@@ -10,7 +10,7 @@ when the agent cuts a corner, and briefing the owner on a press. The README expl
 problem, the design decisions and the judging method; read it first when changing the rep's
 behaviour rather than its plumbing.
 
-`NORTH_STAR.md` at the root says what the rep is for: it builds a true picture of the
+`NORTH_STAR.md` at the root is kept out of the public repository (ignored, like `plans/`), so it lives only on this Mac; read it from the folder, never expect it on GitHub. It says what the rep is for: it builds a true picture of the
 session's objective from the owner's words, keeps that objective open until it is completed,
 judges the agent against it the whole time, and gives the owner the plain picture and the
 message that keep the agent on it. That purpose has not changed since the mod was built and
