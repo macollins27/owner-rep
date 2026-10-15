@@ -10,10 +10,13 @@ import {
   CHECK_TIMEOUT_WORDS,
   CLEAR_AFTER_PROMPTS,
   NOTE_CLEAR_MS,
-  NOTE_MARK,
   NOTE_PREFIX,
   OWNER_CUT,
-  OWNER_MAX,
+  PRIOR_CUT,
+  type OwnerKind,
+  type OwnerMsg,
+  trimOwner,
+  migrateOwner,
   PAST_MAX,
   SEEN_MAX,
   SESSIONS_MAX,
@@ -33,7 +36,6 @@ import {
   fit,
   noteTyped,
   keepResult,
-  SENT_MARK,
   parseBrief,
   parseCheck,
   parseWatch,
@@ -67,7 +69,9 @@ type Rec = {
   id: string
   at: number
   reading: Reading | null
-  owner: string[]
+  owner: OwnerMsg[]
+  // The last number given to an owner message.
+  counter: number
   past: string[]
   seen: string[]
   others: string[]
@@ -94,6 +98,7 @@ const freshRec = (id: string): Rec => ({
   at: Date.now(),
   reading: null,
   owner: [],
+  counter: 0,
   past: [],
   seen: [],
   others: [],
@@ -113,7 +118,11 @@ const freshRec = (id: string): Rec => ({
 async function loadRec($: EngineInterface, id: string): Promise<Rec> {
   const all = await $.store.get('sessions')
   const rec = typeof all === 'object' && all !== null ? (all as Record<string, unknown>)[id] : undefined
-  return isRec(rec) ? { ...freshRec(id), ...rec } : freshRec(id)
+  if (!isRec(rec)) return freshRec(id)
+  const out: Rec = { ...freshRec(id), ...rec }
+  if (typeof (out.owner as unknown[])[0] === 'string') out.owner = migrateOwner(out.owner as unknown[], out.lastSent?.text)
+  out.counter = Math.max(out.counter, ...out.owner.map(m => m.n), 0)
+  return out
 }
 
 async function saveRec($: EngineInterface, rec: Rec): Promise<void> {
@@ -195,7 +204,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
     await saveRec($, { ...rec, skip: rec.skip - 1 })
     return
   }
-  const saw = rec.owner.length
+  const saw = rec.counter
   const result = await $.model.fork({ prompt: watchPrompt({ ...memoryOf(rec), context: await contextOf($) }, reason) })
   const after = await loadRec($, sid)
   after.calls += 1
@@ -225,7 +234,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
   await setNow($, { mark: '' }).catch(() => undefined)
   try {
     const rec = await loadRec($, sid)
-    const saw = rec.owner.length
+    const saw = rec.counter
     const context = await contextOf($)
     const result = await $.model.fork({ prompt: briefPrompt({ ...memoryOf(rec), context }) })
     const after = await loadRec($, sid)
@@ -320,7 +329,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       cwd,
       copy,
       reading: rec.reading?.text ?? '',
-      owner: rec.reading === null ? rec.owner : rec.owner.slice(rec.reading.since),
+      owner: rec.reading === null ? rec.owner : rec.owner.filter(m => m.n > (rec.reading?.since ?? 0)),
       brief: instant,
       writtenAt: new Date(at).toISOString(),
     })
@@ -426,11 +435,22 @@ async function putMessage($: EngineInterface, text: string): Promise<void> {
   $.ui.toast('The message is in your prompt box. Enter sends it; nothing is sent until you do.')
 }
 
+// The agent's last answer, the "prior" of the owner's next message.
+let lastAnswer = ''
+
+// Records one owner message with the next number and the agent's last answer.
+function pushOwner(rec: Rec, kind: OwnerKind, text: string): void {
+  rec.owner = trimOwner(
+    [...rec.owner, { n: ++rec.counter, kind, text: fit(text, OWNER_CUT), prior: fit(lastAnswer, PRIOR_CUT) }],
+    rec.reading?.since ?? 0,
+  )
+}
+
 // A note to the rep, typed behind the prefix: recorded as his, marked as said
 // to the rep, and read at once. The agent never sees it.
 async function takeNote($: EngineInterface, sid: string, note: string): Promise<void> {
   const rec = await loadRec($, sid)
-  rec.owner = [...rec.owner, fit(`${NOTE_MARK}${note}`, OWNER_CUT)].slice(-OWNER_MAX)
+  pushOwner(rec, 'note', note)
   await saveRec($, rec)
 }
 
@@ -558,7 +578,7 @@ export const register: Register = on => {
         // A message the rep drafted and he sent is recorded as the rep's words,
         // marked, never as his: the model must not grade against a job the rep wrote.
         const isDraft = brief !== null && brief.message !== '' && same(e.text, brief.message)
-        rec.owner = [...rec.owner, fit(`${isDraft ? SENT_MARK : ''}${e.text}`, OWNER_CUT)].slice(-OWNER_MAX)
+        pushOwner(rec, isDraft ? 'draft' : 'his', e.text)
         if (isDraft) {
           rec.lastSent = { text: brief.message, at: Date.now() }
           if (view === 'brief') await update($, viewA, () => 'row')
@@ -640,6 +660,7 @@ export const register: Register = on => {
       )
       return next(e)
     }
+    lastAnswer = e.answer
     const asking = /\?\s*$/.test(e.answer.trim())
     const doing = e.isAborted ? 'stopped by you' : asking ? 'asking you' : 'stopped, waiting on you'
     lastDoing = doing

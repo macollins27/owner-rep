@@ -12,6 +12,10 @@ export const TYPED_PAST_FREE = 2
 export const SKIP_MAX = 16
 export const SEEN_MAX = 40
 export const OWNER_MAX = 40
+// The job's own messages are kept whole up to this many.
+export const JOB_MAX = 200
+// The agent's last answer before a message, cut to this.
+export const PRIOR_CUT = 400
 export const OWNER_CUT = 1200
 export const SESSIONS_MAX = 32
 // The reading may run to this many sentences; the row shows its first.
@@ -38,9 +42,15 @@ export type Reading = {
   revisions: number
 }
 
+// One message of the owner's: numbered in the order given, with its kind (his own
+// words, a note to the rep, or a draft of the rep's that he sent) and the agent's
+// last answer before it.
+export type OwnerKind = 'his' | 'note' | 'draft'
+export type OwnerMsg = { n: number; kind: OwnerKind; text: string; prior: string }
+
 export type Memory = {
   reading: Reading | null
-  owner: string[]
+  owner: OwnerMsg[]
   // Earlier jobs in this session, closed: the first sentence of each reading.
   past: string[]
   seen: string[]
@@ -210,6 +220,37 @@ Look especially for: work put off, shrunk or quietly dropped; checks that were n
 - No hedging, no labels, no scores, no emoji.
 - The test of every answer: after reading it, he knows what is really going on and what to do next, without reading anything technical and without taking the agent's word for it.`
 
+// Every message with n >= since, the newest JOB_MAX of them; of those before
+// since, at most OWNER_MAX of the newest.
+export function trimOwner(list: OwnerMsg[], since: number): OwnerMsg[] {
+  const job = list.filter(m => m.n >= since).slice(-JOB_MAX)
+  const before = list.filter(m => m.n < since).slice(-OWNER_MAX)
+  return [...before, ...job]
+}
+
+// One line per message: "- #n text", with the mark words for a note or a draft.
+export function ownerLines(list: OwnerMsg[]): string {
+  return list
+    .map(m => `- #${m.n} ${m.kind === 'note' ? NOTE_MARK : m.kind === 'draft' ? SENT_MARK : ''}${m.text}`)
+    .join('\n')
+}
+
+// Turns a stored list of strings (the old record) into numbered messages.
+export function migrateOwner(old: unknown[], lastSent?: string): OwnerMsg[] {
+  return old.map((v, i) => {
+    let text = String(v)
+    let kind: OwnerKind = 'his'
+    if (text.startsWith(NOTE_MARK)) {
+      kind = 'note'
+      text = text.slice(NOTE_MARK.length)
+    } else if (text.startsWith(SENT_MARK)) {
+      kind = 'draft'
+      text = text.slice(SENT_MARK.length)
+    } else if (lastSent !== undefined && text === lastSent) kind = 'draft'
+    return { n: i + 1, kind, text, prior: '' }
+  })
+}
+
 const list = (items: readonly string[], empty: string): string =>
   items.length > 0 ? items.map(s => `- ${s}`).join('\n') : empty
 
@@ -219,7 +260,7 @@ function memoryText(m: Memory): string {
     r === null
       ? 'Not written yet. Write it now, from his messages below.'
       : `"${r.text}"${r.movedAt === null ? '' : `\n(${revisedLine(r)})`}`
-  const onJob = r === null ? m.owner : m.owner.slice(r.since)
+  const onJob = r === null ? m.owner : m.owner.filter(o => o.n > r.since)
   const brief =
     m.lastBrief === undefined
       ? '(none yet)'
@@ -236,7 +277,7 @@ ${reading}
 The conversation's size: ${contextLine(m)}
 
 His own messages on this job, oldest first (each is evidence, see the weights above; "(to the rep)" marks one said to you; "(your draft, sent by him)" marks one you wrote and he sent):
-${list(onJob, '(none recorded yet)')}
+${ownerLines(onJob) || '(none recorded yet)'}
 
 Jobs before this one in the session, closed; nothing from them is part of this grade:
 ${list(m.past, '(none)')}
@@ -561,7 +602,7 @@ export type CheckArgs = {
   cwd: string
   copy: string
   reading: string
-  owner: string[]
+  owner: OwnerMsg[]
   brief: BriefAnswer
   writtenAt: string
 }
@@ -603,7 +644,7 @@ You have ${CHECK_TIMEOUT_WORDS} and ${CHECK_MAX_TURNS} turns in all, and an answ
 ${a.reading === '' ? '(not written yet)' : a.reading}
 
 His own messages on this job, oldest first (a line marked "(to the rep)" was said to the rep, not the agent; one marked "(your draft, sent by him)" was written by the rep and sent by the owner, so it is the rep's words, not his):
-${list(a.owner, '(none recorded)')}
+${ownerLines(a.owner) || '(none recorded)'}
 
 ## The briefing written from the conversation alone
 

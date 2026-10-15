@@ -1,7 +1,9 @@
 import type { On } from 'claude-code'
 import { expect, mock, test, type Engine } from 'claude-code/testing'
 
-import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, keepResult, afterFirstSentence, SENT_MARK } from '../hooks/rep'
+import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, keepResult, afterFirstSentence, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg } from '../hooks/rep'
+
+const om = (text: string, n = 1): OwnerMsg => ({ n, kind: 'his', text, prior: '' })
 
 // A band with room for a whole card; the fold-to-fit test narrows it.
 const BAND = {
@@ -71,13 +73,13 @@ test('a card with anything left out never also says the work is going well', asy
 })
 
 test('the briefs say a chore left for the owner is the agent\'s unfinished work, never his next step', async () => {
-  const m = { reading: { text: 'x', openedAt: 0, since: 0, from: 1, movedAt: null, cause: '', revisions: 0 }, owner: ['Build it.'], past: [], seen: [], others: [] }
+  const m = { reading: { text: 'x', openedAt: 0, since: 0, from: 1, movedAt: null, cause: '', revisions: 0 }, owner: [om('Build it.')], past: [], seen: [], others: [] }
   for (const p of [briefPrompt(m), watchPrompt(m, 'stop')]) {
     expect(p).toMatch(/He does no step of the job himself, ever\./)
     expect(p).toMatch(/Never relay such a chore to him as his next step/)
   }
   expect(briefPrompt(m)).toMatch(/next: <one or two sentences: what the agent should do next, or that it should stop;.*never a step for him to do/)
-  expect(checkPrompt({ sessionId: 's', cwd: '/tmp', owner: ['Build it.'], reading: 'x', brief: parseBrief('reading: holds\nstands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm' } as never)).toMatch(/never a step for the owner to do/)
+  expect(checkPrompt({ sessionId: 's', cwd: '/tmp', owner: [om('Build it.')], reading: 'x', brief: parseBrief('reading: holds\nstands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm' } as never)).toMatch(/never a step for the owner to do/)
 })
 
 test('helpers: fit cuts with an ellipsis, same ignores case and a final period, doingFor names the work', async () => {
@@ -181,7 +183,7 @@ test('rule: a note to the rep is dropped before the agent sees it and cleared fr
   await ui.unmount()
   expect(prompts).toHaveLength(1)
   expect(prompts[0]).toMatch(/told you something directly/)
-  expect(prompts[0]).toMatch(/- \(to the rep\) the tests matter more to me than speed/)
+  expect(prompts[0]).toMatch(/- #1 \(to the rep\) the tests matter more to me than speed/)
   ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   expect(await ui.find({ type: 'Text', text: /^Owner rep · The strip reads plainly in every state, so he can trust it at a glance\.$/ })).toBeDefined()
   await ui.unmount()
@@ -197,11 +199,11 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   const brief = parseBrief('reading: holds\nstands: s\nmeans: m\nleft:\n- a\nnext: n\nmessage:\nhello\nend\ndoes: d')
   const copy = checkCopyDir('/Users/o', 'abc-123')
   expect(copy).toBe('/Users/o/.cache/owner-rep/checks/abc-123')
-  const prompt = checkPrompt({ sessionId: 'abc-123', cwd: '/tmp/x', copy, reading: 'the result', owner: ['first ask'], brief, writtenAt: '2026-10-13T23:05:00.000Z' })
+  const prompt = checkPrompt({ sessionId: 'abc-123', cwd: '/tmp/x', copy, reading: 'the result', owner: [om('first ask')], brief, writtenAt: '2026-10-13T23:05:00.000Z' })
   expect(prompt).toContain('abc-123')
   expect(prompt).toContain(`Your working directory: ${copy}, a throwaway copy`)
   expect(prompt).toContain("The agent's folder: /tmp/x")
-  const noCopy = checkPrompt({ sessionId: 'abc-123', cwd: '/tmp/x', copy: '/tmp/x', reading: 'the result', owner: ['first ask'], brief, writtenAt: '2026-10-13T23:05:00.000Z' })
+  const noCopy = checkPrompt({ sessionId: 'abc-123', cwd: '/tmp/x', copy: '/tmp/x', reading: 'the result', owner: [om('first ask')], brief, writtenAt: '2026-10-13T23:05:00.000Z' })
   expect(noCopy).toContain('the throwaway copy could not be made, so writes there are denied')
   expect(prompt).toContain('2026-10-13T23:05:00.000Z')
   expect(prompt).toContain('changed:')
@@ -613,9 +615,9 @@ test('rule: the store keeps only the newest SESSIONS_MAX sessions', async ($, on
   on('prompt.submit', ($, e) => ({ text: e.text }))
   quietBand(on)
   await $.prompt.submit(typed('a prompt from the newest session'))
-  const kept = store.sessions as Record<string, { owner: string[] }>
+  const kept = store.sessions as Record<string, { owner: OwnerMsg[] }>
   expect(Object.keys(kept)).toHaveLength(SESSIONS_MAX)
-  expect(kept['test-session']?.owner).toEqual(['a prompt from the newest session'])
+  expect(kept['test-session']?.owner).toEqual([{ n: 1, kind: 'his', text: 'a prompt from the newest session', prior: '' }])
   expect(kept.s0).toBeUndefined()
   expect(kept.s1).toBeDefined()
 })
@@ -692,7 +694,7 @@ test('rule: with few rows in the band the card still draws its buttons and folds
 // --- The brief judges against the sum of the owner's messages, and calls a session long only by a figure. ---
 
 test('the brief carries the whole-ask rule, the size as a figure, and the green line tied to the sum', async () => {
-  const m = { reading: null, owner: ['make this serious, with many tests', 'now just add a licence'], past: [], seen: [], others: [] }
+  const m = { reading: null, owner: [om('make this serious, with many tests'), om('now just add a licence', 2)], past: [], seen: [], others: [] }
   const p = briefPrompt({ ...m, context: { tokens: 242500, window: 500000, percent: 48 } })
   expect(p).toMatch(/His messages on a job add up/)
   expect(p).toMatch(/Not written yet\. Write it now/)
@@ -898,13 +900,13 @@ test('rule: the session end saves the record, so the next session finds the read
   const savesBefore = saves
   await $.session.end({ reason: 'other', sessionId: 'test-session', resume: { id: 'test-session' } } as never)
   expect(saves).toBe(savesBefore + 1)
-  const rec = (store.sessions as Record<string, { at: number; reading: { text: string } | null; owner: string[] }>)['test-session']
+  const rec = (store.sessions as Record<string, { at: number; reading: { text: string } | null; owner: OwnerMsg[] }>)['test-session']
   expect(rec?.reading?.text).toBe('The reading kept across sessions.')
-  expect(rec?.owner).toEqual(['build the thing'])
+  expect(rec?.owner).toEqual([{ n: 1, kind: 'his', text: 'build the thing', prior: '' }])
 })
 
 test('the briefs weigh a message the rep drafted as the rep\'s words, and say a document about the result is not the result', async () => {
-  const m = { reading: { text: 'x', openedAt: 0, since: 0, from: 1, movedAt: null, cause: '', revisions: 0 }, owner: ['Build it.'], past: [], seen: [], others: [] }
+  const m = { reading: { text: 'x', openedAt: 0, since: 0, from: 1, movedAt: null, cause: '', revisions: 0 }, owner: [om('Build it.')], past: [], seen: [], others: [] }
   for (const p of [briefPrompt(m), watchPrompt(m, 'stop')]) {
     expect(p).toMatch(/A message marked "\(your draft, sent by him\)": one you wrote for him after a briefing and he sent as it stood/)
     expect(p).toMatch(/never narrows the job, never replaces an earlier message of his, and never sets what "done" means/)
@@ -916,7 +918,7 @@ test('the briefs weigh a message the rep drafted as the rep\'s words, and say a 
     expect(p).toMatch(/"\(your draft, sent by him\)" marks one you wrote and he sent/)
   }
   expect(briefPrompt(m)).toMatch(/next: <.*stop only when the result itself is shown, never because a document about it was delivered/)
-  expect(checkPrompt({ sessionId: 's', cwd: '/tmp', owner: ['Build it.'], reading: 'x', brief: parseBrief('reading: holds\nstands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm' } as never)).toMatch(/written by the rep and sent by the owner, so it is the rep's words, not his/)
+  expect(checkPrompt({ sessionId: 's', cwd: '/tmp', owner: [om('Build it.')], reading: 'x', brief: parseBrief('reading: holds\nstands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm' } as never)).toMatch(/written by the rep and sent by the owner, so it is the rep's words, not his/)
 })
 
 test('keepResult: a correction keeps the reading\'s first sentence; "replaced" in the cause is parsed', () => {
@@ -1023,7 +1025,7 @@ test("rule: a new job closes the old reading; the earlier job's messages leave t
   await ui.unmount()
   const last = prompts[prompts.length - 1] ?? ''
   const onJob = last.slice(last.indexOf('His own messages on this job'), last.indexOf('Jobs before this one'))
-  expect(onJob).toMatch(/- that is done; now a licence file/)
+  expect(onJob).toMatch(/- #2 that is done; now a licence file/)
   expect(onJob).not.toMatch(/fix the strip so it never shows code/)
   expect(last).toMatch(/Jobs before this one[^]*- The strip reads plainly in every state\./)
 })
@@ -1087,9 +1089,9 @@ test('rule: a message the rep drafted and the owner sent is listed to the model 
   await settle($)
   const last = prompts[prompts.length - 1] ?? ''
   const onJob = last.slice(last.indexOf('His own messages on this job'), last.indexOf('Jobs before this one'))
-  expect(onJob).toMatch(/\n- fix the strip so it never shows code\n/)
+  expect(onJob).toMatch(/\n- #1 fix the strip so it never shows code\n/)
   expect(onJob).toMatch(new RegExp(`\\n- ${SENT_MARK.replace(/[()]/g, '\\$&')}Show me the run\\.\\n`))
-  expect(onJob).toMatch(/\n- and the tests after it(\n|$)/)
+  expect(onJob).toMatch(/\n- #3 and the tests after it(\n|$)/)
   expect(onJob).not.toMatch(/\n- Show me the run\./)
   expect(last).toMatch(/He sent the agent this message:\n"""\nShow me the run\.\n"""/)
 })
@@ -1244,7 +1246,7 @@ const raceTest = (noteFirst: boolean) =>
     on('model.fork', async ($, e) => {
       forks += 1
       if (forks === 1) return { value: { isAnswered: true, text: reads('The README alone.', 'first reading'), usage: USAGE } }
-      const seesNote = /- \(to the rep\) the tests matter most/.test(String(e.prompt))
+      const seesNote = /- #\d+ \(to the rep\) the tests matter most/.test(String(e.prompt))
       await new Promise<void>(release => {
         held.push({ release, seesNote })
         onHeld?.()
@@ -1373,4 +1375,37 @@ test('rule: the card says how many of the check\'s commands were refused, and th
   expect(await ui.find({ type: 'Text', text: /The check's run had no command refused\./ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /2 commands refused/ })).toBeUndefined()
   await ui.unmount()
+})
+
+test('trimOwner keeps the whole job past OWNER_MAX and migrateOwner reads the old marks', () => {
+  const list = Array.from({ length: 60 }, (_, i) => ({ n: i + 1, kind: 'his' as const, text: `m${i + 1}`, prior: '' }))
+  const kept = trimOwner(list, 15)
+  expect(kept.find(m => m.n === 15)).toBeDefined()
+  expect(kept.length).toBe(60)
+  expect(kept[kept.length - 1]?.n).toBe(60)
+  expect(trimOwner(list, 58).filter(m => m.n < 58).length).toBe(OWNER_MAX)
+  const old = ['build it', `${NOTE_MARK}tests matter most`, `${SENT_MARK}Show me the run.`, 'Finish the slice.']
+  expect(migrateOwner(old, 'Finish the slice.')).toEqual([
+    { n: 1, kind: 'his', text: 'build it', prior: '' },
+    { n: 2, kind: 'note', text: 'tests matter most', prior: '' },
+    { n: 3, kind: 'draft', text: 'Show me the run.', prior: '' },
+    { n: 4, kind: 'draft', text: 'Finish the slice.', prior: '' },
+  ])
+  expect(ownerLines([{ n: 2, kind: 'note', text: 'x', prior: '' }])).toBe('- #2 (to the rep) x')
+})
+
+test('rule: the record numbers owner messages past 40 and a look still sees the job whole', async ($, on) => {
+  session(on)
+  quietBand(on)
+  const prompts: string[] = []
+  on('model.fork', (_$, e) => {
+    prompts.push(String(e.prompt))
+    return { value: { isAnswered: true, text: HOLDS, usage: USAGE } }
+  })
+  for (let i = 1; i <= 45; i++) await $.prompt.submit(typed(`step ${i}`))
+  await $.turn.complete(stop('t1'))
+  await settle($)
+  const last = prompts[prompts.length - 1] ?? ''
+  expect(last).toContain('- #1 step 1')
+  expect(last).toContain('- #45 step 45')
 })
