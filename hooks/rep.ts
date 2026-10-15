@@ -738,9 +738,15 @@ export const DRAFT_MIN = 20
 // added after it, or null when the prompt does not begin with the draft.
 export function draftSplit(text: string, draft: string): { draft: string; his: string } | null {
   if (draft.length < DRAFT_MIN) return null
+  // The draft's own closing full stop may be missing from what he sent, so the
+  // match runs on the draft without it and the remainder starts after that.
+  const core = draft.trim().replace(/\.$/, '')
   const lead = text.trimStart()
-  if (!same(lead.slice(0, draft.length), draft)) return null
-  return { draft, his: lead.slice(draft.length).trim() }
+  if (lead.slice(0, core.length).toLowerCase() !== core.toLowerCase()) return null
+  const rest = lead.slice(core.length)
+  // The draft must end where a word ends, or he has typed a longer word.
+  if (rest !== '' && !/^[\s.]/.test(rest)) return null
+  return { draft, his: rest.replace(/^\s*\.?/, '').trim() }
 }
 
 // Cuts a string to `width` cells, with an ellipsis when cut.

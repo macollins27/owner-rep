@@ -1102,6 +1102,14 @@ test('draftSplit: an exact draft, an edited draft, a short reply', () => {
   expect(draftSplit(`${d} Also the licence.`, d)).toEqual({ draft: d, his: 'Also the licence.' })
   expect(draftSplit('yes', 'yes')).toBe(null)
   expect(draftSplit('something else', d)).toBe(null)
+  // The closing full stop is missing from the draft or from what he sent: his words stay whole.
+  const bare = 'Show me the run and the test output'
+  expect(draftSplit(`${bare} also the tests`, `${bare}.`)).toEqual({ draft: `${bare}.`, his: 'also the tests' })
+  expect(draftSplit(`${bare}. Also x`, bare)).toEqual({ draft: bare, his: 'Also x' })
+  // Only a full stop or only blanks after the draft add nothing; a longer word is not the draft.
+  expect(draftSplit(`${bare}`, `${bare}.`)).toEqual({ draft: `${bare}.`, his: '' })
+  expect(draftSplit(`${d}   \n `, d)).toEqual({ draft: d, his: '' })
+  expect(draftSplit(`${bare}s are shown`, bare)).toBe(null)
 })
 
 test('rule: a draft is recognised from the record after a reload, and an edited draft is split', async ($, on) => {
