@@ -1,7 +1,7 @@
 import type { On } from 'claude-code'
 import { expect, mock, test, type Engine } from 'claude-code/testing'
 
-import { CHECK_EVERY, CHECK_TIMEOUT_MS, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, keepResult, afterFirstSentence, SENT_MARK } from '../hooks/rep'
+import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, keepResult, afterFirstSentence, SENT_MARK } from '../hooks/rep'
 
 // A band with room for a whole card; the fold-to-fit test narrows it.
 const BAND = {
@@ -195,8 +195,14 @@ test('rule: a note to the rep is dropped before the agent sees it and cleared fr
 
 test('the checker: its prompt names the session, its tools are read-only, and its answer parses', async () => {
   const brief = parseBrief('reading: holds\nstands: s\nmeans: m\nleft:\n- a\nnext: n\nmessage:\nhello\nend\ndoes: d')
-  const prompt = checkPrompt({ sessionId: 'abc-123', cwd: '/tmp/x', reading: 'the result', owner: ['first ask'], brief, writtenAt: '2026-10-13T23:05:00.000Z' })
+  const copy = checkCopyDir('/Users/o', 'abc-123')
+  expect(copy).toBe('/Users/o/.cache/owner-rep/checks/abc-123')
+  const prompt = checkPrompt({ sessionId: 'abc-123', cwd: '/tmp/x', copy, reading: 'the result', owner: ['first ask'], brief, writtenAt: '2026-10-13T23:05:00.000Z' })
   expect(prompt).toContain('abc-123')
+  expect(prompt).toContain(`Your working directory: ${copy}, a throwaway copy`)
+  expect(prompt).toContain("The agent's folder: /tmp/x")
+  const noCopy = checkPrompt({ sessionId: 'abc-123', cwd: '/tmp/x', copy: '/tmp/x', reading: 'the result', owner: ['first ask'], brief, writtenAt: '2026-10-13T23:05:00.000Z' })
+  expect(noCopy).toContain('the throwaway copy could not be made, so writes there are denied')
   expect(prompt).toContain('2026-10-13T23:05:00.000Z')
   expect(prompt).toContain('changed:')
   expect(prompt).toContain('the result')
@@ -204,26 +210,31 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   expect(prompt).toContain('stands: s')
   expect(prompt).toContain('--direction desc --limit 40')
   expect(prompt).not.toContain('--from -40')
-  const argv = checkArgv(prompt)
+  const settings = checkSettings('/Users/o', '/tmp/x')
+  const room = JSON.parse(settings) as { sandbox: { enabled: boolean; filesystem: { denyWrite: string[]; allowWrite?: string[] }; network: { allowedDomains: string[] } } }
+  expect(room.sandbox.enabled).toBe(true)
+  expect(room.sandbox.filesystem.denyWrite).toContain('/tmp/x')
+  expect(room.sandbox.filesystem.denyWrite).toContain('/Users/o/Developer')
+  expect(room.sandbox.filesystem.denyWrite).toContain('/Users/o/.claude/hooks')
+  expect(room.sandbox.filesystem.denyWrite.some(p => copy.startsWith(p))).toBe(false)
+  expect(room.sandbox.network.allowedDomains).toEqual([])
+  const argv = checkArgv(prompt, settings)
   expect(argv[0]).toBe('claude')
   expect(argv[1]).toBe('-p')
+  expect(argv[argv.indexOf('--permission-mode') + 1]).toBe('default')
+  expect(argv[argv.indexOf('--settings') + 1]).toBe(settings)
   const allowed = argv[argv.indexOf('--allowedTools') + 1] ?? ''
-  expect(allowed).toContain('Bash(agentsview:*)')
+  expect(allowed.split(',')).toContain('Bash')
   expect(allowed).toContain('mcp__agentsview')
-  expect(allowed).toContain('Bash(gh pr view:*)')
-  expect(allowed).not.toContain('Bash(gh pr merge')
+  expect(allowed).not.toContain('Write')
   expect(argv[argv.indexOf('--max-turns') + 1]).toBe('120')
   expect(prompt).toContain('fifteen minutes and 120 turns')
-  expect(prompt).toContain('one plain command per call')
-  expect(prompt).toContain('longer than a minute')
-  expect(prompt).toContain('`git -C`, `--git-dir` or `--work-tree` form is refused')
+  expect(prompt).toContain('No command needs approval')
   expect(prompt).toContain('timeout of 60000 milliseconds')
-  expect(allowed).toContain('Bash(~/Library/pnpm/tsc:*)')
-  expect(allowed).toContain('Bash(npx tsc:*)')
-  expect(allowed).not.toContain('Write')
   const disallowed = argv[argv.indexOf('--disallowedTools') + 1] ?? ''
   expect(disallowed).toContain('Edit')
   expect(disallowed).toContain('SendMessage')
+  expect(disallowed).toContain('WebFetch')
   const c = parseCheck('holds:\n- the file exists\nfalse:\n- tests passed; the last run printed 2 failures\nnotshown:\n- nothing\nchanged:\n- the helper finished at 23:17\nstands: Two tests fail.\nmeans: Not done.\nleft:\n- the live run\nnext: Fix them.\nmessage:\nTwo tests fail. Fix them and show the run.\nend\ndoes: Makes it fix the tests.\nlooked: Read the record and ran the tests; could not open the helper logs.')
   expect(c.holds).toEqual(['the file exists'])
   expect(c.changed).toEqual(['the helper finished at 23:17'])
@@ -237,9 +248,13 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   const out = resultOf('noise\n' + JSON.stringify({ type: 'result', result: 'holds:\n- x', usage: { input_tokens: 5, output_tokens: 7, cache_read_input_tokens: 1, cache_creation_input_tokens: 2 } }))
   expect(out?.text).toBe('holds:\n- x')
   expect(out?.tokens).toBe(15)
+  expect(out?.refused).toBe(0)
+  expect(resultOf(JSON.stringify({ type: 'result', result: 'holds:\n- x', permission_denials: [{ tool_name: 'Bash' }, { tool_name: 'Bash' }] }))?.refused).toBe(2)
   expect(resultOf('not json')).toBe(null)
   expect(checkCostText(0, 0, 0)).toContain('210k fresh tokens plus 2.3 million re-read from cache, in 2 minutes')
-  expect(checkCostText(850000, 800000, 95000)).toContain('50k fresh tokens plus 800k re-read from cache, in 2 minutes')
+  expect(checkCostText(850000, 800000, 95000)).toContain('50k fresh tokens plus 800k re-read from cache, in 2 minutes, with no command refused')
+  expect(checkCostText(850000, 800000, 95000, 1)).toContain('with 1 command refused')
+  expect(checkCostText(850000, 800000, 95000, 2)).toContain('with 2 commands refused')
   expect(out?.cached).toBe(1)
 })
 
@@ -317,6 +332,7 @@ test('pressing Rep reads the conversation and draws the briefing with the messag
     usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
   })
   mock.clock(on)
+  room(on)
   on('process.spawn', async function* () {
     yield { stream: 'stdout', text: checked }
     return { value: { code: 0, signal: null } }
@@ -457,6 +473,7 @@ const CHECKED = (stands: string) =>
 // A check run the test holds open and releases when it chooses.
 const heldCheck = (on: On, text: () => string) => {
   let release: () => void = () => undefined
+  room(on)
   on('process.spawn', async function* () {
     await new Promise<void>(r => (release = r))
     yield { stream: 'stdout', text: text() }
@@ -795,10 +812,23 @@ test('rule: Tell the rep puts the prefix in the prompt box, from the row and fro
   await ui.unmount()
 })
 
+// The room's commands (the copy made and removed) answered without running anything;
+// `runs` keeps each argv so a test can read what the rep asked for.
+const room = (on: On): string[][] => {
+  const runs: string[][] = []
+  on('env.get', () => ({ value: '/Users/o' }))
+  on('process.run', (_$, e) => {
+    runs.push([...e.argv])
+    return { value: { exitCode: 0, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
+  return runs
+}
+
 // A card with the check pressed, the check's run answered by `spawn`.
 const checkWith = async ($: Engine, on: On, spawn: () => AsyncGenerator<unknown, unknown>) => {
   session(on)
   quietBand(on)
+  room(on)
   on('session.cwd', () => ({ value: '/tmp/x' }))
   on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
   on('process.spawn', spawn as never)
@@ -1100,6 +1130,7 @@ test('rule: when the checked card folds, the claims that hold become a count bef
   session(on)
   quietBand(on)
   on('session.cwd', () => ({ value: '/tmp/x' }))
+  room(on)
   mock.clock(on)
   on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF(LONG('Stands')), usage: USAGE } }))
   on('process.spawn', async function* () {
@@ -1132,6 +1163,7 @@ test('rule: the checked card folds its lists to counts on a small band and keeps
   session(on)
   quietBand(on)
   on('session.cwd', () => ({ value: '/tmp/x' }))
+  room(on)
   mock.clock(on)
   on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF(LONG('Stands')), usage: USAGE } }))
   on('process.spawn', async function* () {
@@ -1253,3 +1285,92 @@ const raceTest = (noteFirst: boolean) =>
   })
 raceTest(true)
 raceTest(false)
+
+// The check's run answered with a given count of refused commands.
+const CHECKED_WITH = (refused: number): string =>
+  JSON.stringify({
+    type: 'result',
+    result: 'holds:\n- the file exists\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nstands: Done.\nmeans: Done.\nleft:\n- nothing\nnext: Stop.\nmessage:\n\nend\ndoes: Nothing.\nlooked: Read the record.',
+    usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+    permission_denials: Array.from({ length: refused }, () => ({ tool_name: 'Bash' })),
+  })
+
+test('rule: the check runs in a throwaway copy of the project, fenced, and the copy is removed when the run ends', async ($, on) => {
+  session(on)
+  quietBand(on)
+  const runs = room(on)
+  on('session.cwd', () => ({ value: '/tmp/x' }))
+  mock.clock(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  let seen: { cwd?: string; argv?: readonly string[] } = {}
+  on('process.spawn', async function* (_$, e) {
+    seen = { cwd: e.cwd, argv: e.argv }
+    yield { stream: 'stdout', text: CHECKED_WITH(0) }
+    return { value: { code: 0, signal: null } }
+  })
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+  const made = runs.find(r => r[0] === 'cp')
+  expect(made?.slice(0, 3)).toEqual(['cp', '-Rc', '/tmp/x'])
+  const copy = made?.[3] ?? ''
+  expect(copy.startsWith('/Users/o/.cache/owner-rep/checks/')).toBe(true)
+  expect(copy.length).toBeGreaterThan('/Users/o/.cache/owner-rep/checks/'.length)
+  expect(seen.cwd).toBe(copy)
+  const argv = seen.argv ?? []
+  expect(argv[argv.indexOf('--permission-mode') + 1]).toBe('default')
+  expect(argv[argv.indexOf('--settings') + 1]).toBe(checkSettings('/Users/o', '/tmp/x'))
+  expect(argv[argv.indexOf('--allowedTools') + 1]?.split(',')).toContain('Bash')
+  expect(runs.filter(r => r[0] === 'rm' && r[2] === copy).length).toBeGreaterThanOrEqual(2)
+  expect(runs.findIndex(r => r[0] === 'cp')).toBeLessThan(runs.length - 1)
+  await ui.unmount()
+})
+
+test('rule: when the copy cannot be made the check runs in the agent\'s folder, with writes there denied, and the brief says so', async ($, on) => {
+  session(on)
+  quietBand(on)
+  on('env.get', () => ({ value: '/Users/o' }))
+  on('process.run', (_$, e) => ({ value: { exitCode: e.argv[0] === 'cp' ? 1 : 0, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }))
+  on('session.cwd', () => ({ value: '/tmp/x' }))
+  mock.clock(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  let seen: { cwd?: string; prompt?: string } = {}
+  on('process.spawn', async function* (_$, e) {
+    seen = { cwd: e.cwd, prompt: e.argv[2] }
+    yield { stream: 'stdout', text: CHECKED_WITH(0) }
+    return { value: { code: 0, signal: null } }
+  })
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+  expect(seen.cwd).toBe('/tmp/x')
+  expect(seen.prompt).toContain('the throwaway copy could not be made, so writes there are denied')
+  await ui.unmount()
+})
+
+test('rule: the card says how many of the check\'s commands were refused, and the right number is zero', async ($, on) => {
+  session(on)
+  quietBand(on)
+  room(on)
+  on('session.cwd', () => ({ value: '/tmp/x' }))
+  mock.clock(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  let refused = 2
+  on('process.spawn', async function* () {
+    yield { stream: 'stdout', text: CHECKED_WITH(refused) }
+    return { value: { code: 0, signal: null } }
+  })
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+  expect(await ui.find({ type: 'Text', text: /The check's run had 2 commands refused\./ })).toBeDefined()
+  // The next card's price line carries the last run's count too.
+  await ui.press({ key: 'close' })
+  await ui.press({ key: 'rep' })
+  expect(await ui.find({ type: 'Text', text: /re-read from cache, in 1 minute, with 2 commands refused/ })).toBeDefined()
+  refused = 0
+  await ui.press({ key: 'check' })
+  expect(await ui.find({ type: 'Text', text: /The check's run had no command refused\./ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /2 commands refused/ })).toBeUndefined()
+  await ui.unmount()
+})

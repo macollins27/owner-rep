@@ -29,6 +29,8 @@ export type Checked = {
   notShown: string[]
   changed: string[]
   looked: string
+  // How many of the run's commands were refused; the right number is zero.
+  refused: number
 }
 
 export type Brief = {

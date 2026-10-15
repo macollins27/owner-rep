@@ -53,6 +53,9 @@ entry that proves the test bites (all added 14 Oct 2026):
 | A new job closes the old reading; the earlier job's messages leave the brief | `rule: a new job closes…` | `earlier-job-leaks` |
 | A look that lands late cannot take a newer look's place, in either order | `rule: a look that lands late…` (two tests) | `late-look-wins` |
 | The revision line outlasts the parts that restate the agent's work when the card folds | `fitCard folds the body…` | `revised-line-folds-first` |
+| The check runs in a throwaway copy of the project, fenced, and the copy is removed when the run ends | `rule: the check runs in a throwaway copy…` | `check-outside-copy`, `room-bypassed` |
+| When the copy cannot be made the check runs in the agent's folder, with writes there denied, and the brief says so | `rule: when the copy cannot be made…` | (prompt text; covered by the test) |
+| The card says how many of the check's commands were refused, and the right number is zero | `rule: the card says how many…` | `refusals-unreported` |
 | Tell the rep puts the prefix in the prompt box | `rule: Tell the rep puts…` | `tell-prefix-dropped` |
 | While the rep reads, the row says so and a second press starts no second read | `rule: while the rep reads…` | `reading-state-unmarked` |
 | The checked card folds its lists to counts on a small band | `rule: the checked card folds…` | `checked-lists-never-fold` |
@@ -96,7 +99,7 @@ carrying the whole-ask rule and the session's size as a figure, the helper count
 box's refusals, the check's three failure paths, the word-wrapped row count, the checked card
 keeping its failed claims as it folds, the session end saving the record, the kept result
 sentence, the rep's draft marked in the owner's list, and the brief's rules on the draft's
-weight and on a document not being the result. Forty doctor entries, all caught.
+weight and on a document not being the result. Forty-three doctor entries, all caught (the three for the check's room added 15 Oct 2026).
 
 ## Layer 2: a real session
 
