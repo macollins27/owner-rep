@@ -35,6 +35,7 @@ import {
   fitCard,
   fit,
   noteTyped,
+  draftSplit,
   keepResult,
   parseBrief,
   parseCheck,
@@ -574,13 +575,16 @@ export const register: Register = on => {
         const id = await sessionId($)
         const rec = await loadRec($, id)
         const view = await read($, viewA)
-        const brief = await read($, briefA)
         // A message the rep drafted and he sent is recorded as the rep's words,
         // marked, never as his: the model must not grade against a job the rep wrote.
-        const isDraft = brief !== null && brief.message !== '' && same(e.text, brief.message)
-        pushOwner(rec, isDraft ? 'draft' : 'his', e.text)
-        if (isDraft) {
-          rec.lastSent = { text: brief.message, at: Date.now() }
+        // It is matched against the stored briefing, so it survives a reload; what
+        // he added after the draft is his own message, numbered after it.
+        const split = draftSplit(e.text, rec.lastBrief?.message ?? '')
+        if (split === null) pushOwner(rec, 'his', e.text)
+        else {
+          pushOwner(rec, 'draft', split.draft)
+          if (split.his !== '') pushOwner(rec, 'his', split.his)
+          rec.lastSent = { text: split.draft, at: Date.now() }
           if (view === 'brief') await update($, viewA, () => 'row')
         }
         if (view === 'note') {

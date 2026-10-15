@@ -1,7 +1,7 @@
 import type { On } from 'claude-code'
 import { expect, mock, test, type Engine } from 'claude-code/testing'
 
-import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, keepResult, afterFirstSentence, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg } from '../hooks/rep'
+import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, draftSplit, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, keepResult, afterFirstSentence, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg } from '../hooks/rep'
 
 const om = (text: string, n = 1): OwnerMsg => ({ n, kind: 'his', text, prior: '' })
 
@@ -1076,13 +1076,13 @@ test('rule: a message the rep drafted and the owner sent is listed to the model 
   await $.prompt.submit(typed('fix the strip so it never shows code'))
   await $.turn.complete(stop('t1'))
   await settle($)
-  answer = BRIEF('Fine.').replace('reading: A judge mod.', 'reading: holds')
+  answer = BRIEF('Fine.').replace('reading: A judge mod.', 'reading: holds').replace('Show me the run.', 'Show me the run and the test output.')
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   await ui.press({ key: 'rep' })
   await ui.press({ key: 'put' })
   await ui.unmount()
   // He sends the rep's message as it stood, then types one of his own.
-  await $.prompt.submit(typed('Show me the run.'))
+  await $.prompt.submit(typed('Show me the run and the test output.'))
   await $.prompt.submit(typed('and the tests after it'))
   answer = HOLDS
   await $.turn.complete(stop('t2'))
@@ -1090,10 +1090,36 @@ test('rule: a message the rep drafted and the owner sent is listed to the model 
   const last = prompts[prompts.length - 1] ?? ''
   const onJob = last.slice(last.indexOf('His own messages on this job'), last.indexOf('Jobs before this one'))
   expect(onJob).toMatch(/\n- #1 fix the strip so it never shows code\n/)
-  expect(onJob).toMatch(new RegExp(`\\n- #2 ${SENT_MARK.replace(/[()]/g, '\\$&')}Show me the run\\.\\n`))
+  expect(onJob).toMatch(new RegExp(`\\n- #2 ${SENT_MARK.replace(/[()]/g, '\\$&')}Show me the run and the test output\\.\\n`))
   expect(onJob).toMatch(/\n- #3 and the tests after it(\n|$)/)
-  expect(onJob).not.toMatch(/\n- #2 Show me the run\./)
-  expect(last).toMatch(/He sent the agent this message:\n"""\nShow me the run\.\n"""/)
+  expect(onJob).not.toMatch(/\n- #2 Show me the run and the test output\./)
+  expect(last).toMatch(/He sent the agent this message:\n"""\nShow me the run and the test output\.\n"""/)
+})
+
+test('draftSplit: an exact draft, an edited draft, a short reply', () => {
+  const d = 'Show me the run and the test output after it.'
+  expect(draftSplit(d, d)).toEqual({ draft: d, his: '' })
+  expect(draftSplit(`${d} Also the licence.`, d)).toEqual({ draft: d, his: 'Also the licence.' })
+  expect(draftSplit('yes', 'yes')).toBe(null)
+  expect(draftSplit('something else', d)).toBe(null)
+})
+
+test('rule: a draft is recognised from the record after a reload, and an edited draft is split', async ($, on) => {
+  const d = 'Show me the run and the test output after it.'
+  // The card was drawn by an earlier process: only the stored record holds its message.
+  session(on, { sessions: { 'test-session': { id: 'test-session', at: Date.now(), reading: null, owner: [], counter: 1, lastBrief: { at: 1, next: 'Run it.', message: d } } } })
+  quietBand(on)
+  const prompts: string[] = []
+  on('model.fork', ($, e) => {
+    prompts.push(String(e.prompt))
+    return { value: { isAnswered: true, text: HOLDS, usage: USAGE } }
+  })
+  await $.prompt.submit(typed(`${d} And the tests.`))
+  await $.turn.complete(stop('t1'))
+  await settle($)
+  const last = prompts[prompts.length - 1] ?? ''
+  expect(last).toMatch(new RegExp(`\\n- #2 ${SENT_MARK.replace(/[()]/g, '\\$&')}${d.replace(/\./g, '\\.')}\\n`))
+  expect(last).toMatch(/\n- #3 And the tests\.(\n|$)/)
 })
 
 test('rule: while the rep reads, the row says so and a second press starts no second read', async ($, on) => {

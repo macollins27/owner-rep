@@ -730,6 +730,19 @@ export function resultOf(stdout: string): { text: string; tokens: number; cached
 export const same = (a: string, b: string): boolean =>
   a.trim().toLowerCase().replace(/\.$/, '') === b.trim().toLowerCase().replace(/\.$/, '')
 
+// A draft shorter than this is a short reply ("yes", "go ahead") that may match
+// by chance, so it is never taken for the rep's draft.
+export const DRAFT_MIN = 20
+
+// Splits a submitted prompt into the rep's drafted message and whatever he
+// added after it, or null when the prompt does not begin with the draft.
+export function draftSplit(text: string, draft: string): { draft: string; his: string } | null {
+  if (draft.length < DRAFT_MIN) return null
+  const lead = text.trimStart()
+  if (!same(lead.slice(0, draft.length), draft)) return null
+  return { draft, his: lead.slice(draft.length).trim() }
+}
+
 // Cuts a string to `width` cells, with an ellipsis when cut.
 export function fit(text: string, width: number): string {
   const t = text.replace(/\s+/g, ' ').trim()
