@@ -105,10 +105,12 @@ conversation, so a read costs little and never slows the agent. The rep's indepe
 from its brief, which tells the model to treat everything the agent wrote as a claim, and,
 for the check step, from reading outside the conversation altogether.
 
-The check step spawns `claude -p` with `--output-format json`, a turn limit, a five-minute
-timeout, an explicit allowlist (read, search, git log and diff, agentsview, and the common
-test runners) and an explicit denylist (anything that edits, sends, fetches the web or
-launches helpers). It runs with the installing user's permissions and cannot change a file.
+The check step spawns `claude -p` with `--output-format json`, a turn limit, a fifteen-minute
+timeout, an explicit allowlist (read, search, git log and diff, agentsview, GitHub viewing,
+and the common test runners) and an explicit denylist (anything that edits, sends, fetches
+the web or launches helpers). The brief states both limits and tells the checker to run one
+plain command per call and nothing that takes over a minute, because the sandbox refuses
+compound commands and a refusal costs a turn. It runs with the installing user's permissions and cannot change a file.
 A newer press makes an older run's answer stale, and the card is only rewritten by the run
 that belongs to it.
 

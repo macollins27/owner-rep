@@ -209,6 +209,14 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   expect(argv[1]).toBe('-p')
   const allowed = argv[argv.indexOf('--allowedTools') + 1] ?? ''
   expect(allowed).toContain('Bash(agentsview:*)')
+  expect(allowed).toContain('mcp__agentsview')
+  expect(allowed).toContain('Bash(gh pr view:*)')
+  expect(allowed).not.toContain('Bash(gh pr merge')
+  expect(argv[argv.indexOf('--max-turns') + 1]).toBe('120')
+  expect(prompt).toContain('fifteen minutes and 120 turns')
+  expect(prompt).toContain('one plain command per call')
+  expect(prompt).toContain('longer than a minute')
+  expect(prompt).toContain('timeout of 60000 milliseconds')
   expect(allowed).toContain('Bash(~/Library/pnpm/tsc:*)')
   expect(allowed).toContain('Bash(npx tsc:*)')
   expect(allowed).not.toContain('Write')
@@ -811,7 +819,7 @@ test('rule: a check that prints no result says it could not run, with the exit c
   await ui.unmount()
 })
 
-test('rule: a check that outlasts its five minutes is stopped and says so', async ($, on) => {
+test('rule: a check that outlasts its fifteen minutes is stopped and says so', async ($, on) => {
   const clock = mock.clock(on)
   let kill: () => void = () => undefined
   const ui = await checkWith($, on, async function* () {
@@ -823,7 +831,7 @@ test('rule: a check that outlasts its five minutes is stopped and says so', asyn
   await clock.advance(CHECK_TIMEOUT_MS + 1)
   kill()
   await press
-  expect(await ui.find({ type: 'Text', text: /ran out of time \(five minutes\) and was stopped/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /ran out of time \(fifteen minutes\) and was stopped/ })).toBeDefined()
   await ui.unmount()
 })
 
