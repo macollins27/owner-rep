@@ -947,7 +947,16 @@ test('the briefs are built from the North Star: open until completed with both q
   }
   expect(briefPrompt(m)).toMatch(/verdict: <continue \| stop; stop only when every condition is shown or closed by him>/)
   expect(briefPrompt(m)).toMatch(/say whether the agent did the step that message asked for/)
-  expect(checkPrompt({ sessionId: 's', cwd: '/tmp', copy: '/tmp', owner: [om('Build it.')], reading: 'x', brief: parseBrief('stands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm', conditions: OBJECTIVE_FIXTURE.done } as never)).toMatch(/Conditions the rep holds open:[^]*- the newest build installed \(not shown\)/)
+  const check = checkPrompt({ sessionId: 's', cwd: '/tmp', copy: '/tmp', owner: [om('Build it.')], reading: 'x', brief: parseBrief('stands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm', conditions: OBJECTIVE_FIXTURE.done })
+  expect(check).toMatch(/Conditions the rep holds open:[^]*- the newest build installed \(not shown\)/)
+  // The checker rewrites the card, so it carries the open-until-completed rule too.
+  expect(check).toMatch(/is a step toward the objective, never the objective, unless he opened the session for that document/)
+  expect(check).toMatch(/guided to the finish/)
+  expect(check).toMatch(/While any condition the rep holds open is still open after your checking, no part of the card says the job or the session is finished/)
+  expect(check).toMatch(/left:\n- <[^>]*a condition still open that the agent called done/)
+  // Plain words for the card; the shown and closed lines are for the record.
+  expect(check).toMatch(/Write every part the card shows \([^)]*\) for the owner/)
+  expect(check).toMatch(/The "shown:" and "closed:" lines are not on the card/)
 })
 
 // --- The objective: written by a call of its own from the owner's messages, held in parts, moved only by his words. ---
@@ -1711,7 +1720,7 @@ test('rule: the check is given the conditions the rep holds open, and its shown 
       'test-session': {
         id: 'test-session',
         at: Date.now(),
-        objective: { ...OBJECTIVE_FIXTURE, from: 2 },
+        objective: { ...OBJECTIVE_FIXTURE, done: [...OBJECTIVE_FIXTURE.done, { text: 'the README written', state: 'open', by: '' }], from: 2 },
         jobStart: 1,
         owner: [om('finish the spec and put it on my Mac'), om('and the two other sessions', 2), { n: 3, kind: 'draft', text: 'Check the two sessions and report back.', prior: '' }],
         counter: 3,
@@ -1734,8 +1743,8 @@ test('rule: the check is given the conditions the rep holds open, and its shown 
       stream: 'stdout',
       text: JSON.stringify({
         type: 'result',
-        // A draft's number closes nothing; a shown line names where the record shows it.
-        result: 'holds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n- the newest build installed | the install command in the record printed the new version\nclosed:\n- the two sessions finished | #3\nstands: Installed.\nmeans: Half done.\nleft:\n- the two sessions\nnext: Finish them.\nmessage:\nFinish the two sessions.\nend\ndoes: Makes it finish them.\nlooked: Read the record.',
+        // A draft's number closes nothing; his own number does; a shown line names where the record shows it.
+        result: 'holds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n- the newest build installed | the install command in the record printed the new version\nclosed:\n- the two sessions finished | #3\n- the README written (open) | #1\nstands: Installed.\nmeans: Half done.\nleft:\n- the two sessions\nnext: Finish them.\nmessage:\nFinish the two sessions.\nend\ndoes: Makes it finish them.\nlooked: Read the record.',
         usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
       }),
     }
@@ -1749,8 +1758,9 @@ test('rule: the check is given the conditions the rep holds open, and its shown 
   expect(rec()?.objective?.done).toEqual([
     { text: 'the newest build installed', state: 'shown', by: 'the install command in the record printed the new version' },
     { text: 'the two sessions finished', state: 'open', by: '' },
+    { text: 'the README written', state: 'closed', by: '#1' },
   ])
-  expect(await ui.find({ type: 'Text', text: /Done when: the newest build installed \(shown\); the two sessions finished\./ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Done when: the newest build installed \(shown\); the two sessions finished; the README written \(closed\)\./ })).toBeDefined()
   await ui.unmount()
 })
 

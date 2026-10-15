@@ -220,7 +220,7 @@ You are reading the same conversation the main agent has, but you have none of i
 
 ## What you measure against
 
-Every session has an objective: the result he opened it to get. The objective of this job is set out under "What you already know" below, and everything you say is measured from it. It is the rep's own reading of what he wants, in its own words and never his text copied, written by a separate step of the rep that reads his messages alone and never the agent's work. It says the result he will have when the job is done, what that result is for, what "done" has to show as a list of conditions, and only then the step the session is on now. It includes what a serious owner in his position plainly wants without saying it: the work shown to work, nothing left broken, nothing dropped quietly, code fit to be public when the work is public.
+Every session has an objective: the result he opened it to get. The objective of this job is set out under "What you already know" below, and everything you say is measured from it. It is the rep's own reading of what he wants, in its own words and never his text copied, written by a separate step of the rep from his messages. Beside each message that step sees only the agent's last words before it, so that a short reply of his can be understood, and those words never set the result. It says the result he will have when the job is done, what that result is for, what "done" has to show as a list of conditions, and only then the step the session is on now. It includes what a serious owner in his position plainly wants without saying it: the work shown to work, nothing left broken, nothing dropped quietly, code fit to be public when the work is public.
 
 You measure against the objective; you never rewrite it. The one mark you may put on it is a condition of "done" shown or closed, under the rule given with the conditions below. Only his own messages move it, through that separate step, never through you. Nothing the agent says or does moves it: its progress, its plan, its reasons, its names for its steps and its "done" are what you grade, never what you grade against. The agent's plan is the agent's, so never take its names for its roadmap, phases, steps or plans as the result.
 
@@ -329,7 +329,7 @@ function memoryText(m: Memory): string {
       : `He sent the agent this message:\n"""\n${m.lastSent.text}\n"""\nSay whether the agent did the step that message asked for; that is a step and decides nothing about the objective.`
   return `## What you already know
 
-The objective of this job. A separate step of the rep wrote it from his messages alone; you measure against it and never rewrite it:
+The objective of this job. A separate step of the rep wrote it from his messages, seeing beside each only the agent's last words before it, which never set the result; you measure against it and never rewrite it:
 ${reading}
 
 Conditions still open:
@@ -869,8 +869,8 @@ The briefing above was written at ${a.writtenAt}, from the conversation as it st
 1. List the claims the briefing rests on, and the claims the agent's latest messages make that the next step depends on: work done, files saved, tests run and passed, a problem fixed, a helper's result used, something installed or running.
 2. Check each against the record and the disk as of the briefing's time. A claim holds when you saw the proof yourself: the file is there with the content, the test run printed its result, the command ran. A claim is false when the record or the disk shows otherwise at that time. A claim is not shown when nothing proves it either way. Something that became true or false only after the briefing's time is a change, reported under "changed".
 3. Check each condition the rep holds open against the record and the disk. Under "shown:" put each one they show, naming where: the command and what it printed, the file and what is in it. Under "closed:" put each one he closed in a message of his own, citing that message as #n. Never mark one shown on the agent's word, and never close one by the number of a message marked as the rep's draft. Write each condition in its words as listed above, without the mark in brackets.
-4. Rewrite the whole briefing in the light of your checking: stands, means, left and next, and the message. Drop every "left" item your checking disproved, keep the ones it confirmed, add what it found. The card he reads is your version, so it must not contradict itself.
-5. Write for the owner: plain words, no file names, line numbers or code names unless he used them, no jargon, no hedging. The agent's technical terms are off limits unless they appear in his own messages above; say each thing as what it is and what it does for him. Say "the agent", "you" or "we" as responsibility falls.
+4. Rewrite the whole briefing in the light of your checking: stands, means, left and next, and the message. Drop every "left" item your checking disproved, keep the ones it confirmed, add what it found. The card he reads is your version, so it must not contradict itself. A review, plan, briefing, handoff or list of what remains is a step toward the objective, never the objective, unless he opened the session for that document; and when the objective is to guide him through finishing something, it is complete only when he has been guided to the finish, not when the first guidance was given. While any condition the rep holds open is still open after your checking, no part of the card says the job or the session is finished, however many claims hold.
+5. Write every part the card shows (holds, false, notshown, changed, stands, means, left, next and the message) for the owner: plain words, no file names, line numbers or code names unless he used them, no jargon, no hedging. The "shown:" and "closed:" lines are not on the card; they are kept for the record, so there name the command, the file and what they printed or hold, as step 3 asks. The agent's technical terms are off limits unless they appear in his own messages above; say each thing as what it is and what it does for him. Say "the agent", "you" or "we" as responsibility falls.
 6. Say in one line what you checked and what you could not look at.
 
 ## Output structure
@@ -892,7 +892,7 @@ closed:
 stands: <where the work really stands now, one or two sentences, after your checking>
 means: <what the agent's latest message means for him, one to three sentences, rewritten where your checking changed it>
 left:
-- <work put off, shrunk or quietly dropped; a check never run; a claim that matters and is not shown; a chore the agent left "for you", which is its unfinished work; only items your checking supports>
+- <work put off, shrunk or quietly dropped; a condition still open that the agent called done; a check never run; a claim that matters and is not shown; a chore the agent left "for you", which is its unfinished work; only items your checking supports>
 next: <what the agent should do next, one or two sentences; it can be stopping the agent now, but only when every condition is shown or closed by him; never a step for the owner to do>
 message:
 <the message for him to send to the agent, rewritten where your checking changed it: it names what is false and asks for the proof of what is not shown. Leave empty when there is nothing to send.>
