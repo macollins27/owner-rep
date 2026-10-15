@@ -2147,3 +2147,37 @@ test('rule: a check that says stop while a condition is open is refused on the c
   expect(rec()?.lastBrief?.next).toMatch(/^The job is still open: two sessions finished\./)
   expect(rec()?.lastBrief?.message).toBe(OPEN_MESSAGE([c('two sessions finished', 'open')]))
 })
+
+test('rule: a check that shows every condition after a refused briefing does not carry the rep\'s not-finished texts', async ($, on) => {
+  const rec = openJob(on)
+  quietBand(on)
+  room(on)
+  on('session.cwd', () => ({ value: '/tmp/x' }))
+  mock.clock(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: STOP_BRIEF(), usage: USAGE } }))
+  on('process.spawn', async function* () {
+    yield {
+      stream: 'stdout',
+      text: JSON.stringify({
+        type: 'result',
+        result: 'verdict: stop\nholds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n- the newest build installed | the install command printed the new version\n- two sessions finished | both session records end with their results\nclosed:\n- nothing\nstands: The build is installed and both sessions are finished.\nmeans: Both conditions are shown in the record.\nleft:\n- nothing\nnext: Stop the agent; the job is finished.\nmessage:\nend\ndoes:\nlooked: Read the record.',
+        usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+      }),
+    }
+    return { value: { code: 0, signal: null } }
+  })
+  await started($)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  // The briefing is refused: its message is the rep's.
+  expect(rec()?.lastBrief?.message).toBe(OPEN_MESSAGE(OPEN_JOB_OPEN))
+  await ui.press({ key: 'check' })
+  expect(rec()?.objective?.done.map(x => x.state)).toEqual(['shown', 'shown'])
+  // Nothing is open, so the checker's card stands; its empty message stays empty.
+  expect(await ui.find({ type: 'Text', text: /^Means: Both conditions are shown in the record\.$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^Next: Stop the agent; the job is finished\.$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /The job is not finished|has not shown the objective complete|The job is still open|Keeps the agent on the job/ })).toBeUndefined()
+  expect(await ui.find({ key: 'put' })).toBeUndefined()
+  await ui.unmount()
+  expect(rec()?.lastBrief).toMatchObject({ next: 'Stop the agent; the job is finished.', message: '' })
+})

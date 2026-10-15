@@ -509,7 +509,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     await update($, noteA, () => null)
     await update($, briefA, () => brief)
     await update($, viewA, () => 'brief')
-    lastInstant = { at: brief.at, answer: a }
+    lastInstant = { at: brief.at, answer: a, refused: taken.refused }
   } catch {
     await update($, viewA, () => 'row')
     $.ui.toast('Owner rep: the reading failed. Press again.')
@@ -526,8 +526,9 @@ const parts_hasLeft = (text: string): boolean => /^\s*left:/im.test(text)
 // stale, and a reload of this module kills the child.
 let checkEpoch = 0
 let activeCheck: { stop: () => void } | null = null
-// The instant read the card was drawn from, kept for "Check it".
-let lastInstant: { at: number; answer: BriefAnswer } | null = null
+// The instant read the card was drawn from, kept for "Check it", and whether
+// the gate refused it (its meaning, next, message and does are then the rep's).
+let lastInstant: { at: number; answer: BriefAnswer; refused: boolean } | null = null
 
 // "Check it": the owner chose to pay for the check on the card that is up.
 async function pressCheck($: EngineInterface, sid: string): Promise<void> {
@@ -538,9 +539,9 @@ async function pressCheck($: EngineInterface, sid: string): Promise<void> {
   }
   if (b.isChecking) return
   await update($, briefA, x => (x === null ? x : { ...x, isChecking: true, checkNote: '' }))
-  await runCheck($, sid, b.at, lastInstant.answer)
+  await runCheck($, sid, b.at, lastInstant.answer, lastInstant.refused)
 }
-async function runCheck($: EngineInterface, sid: string, at: number, instant: BriefAnswer): Promise<void> {
+async function runCheck($: EngineInterface, sid: string, at: number, instant: BriefAnswer, refused: boolean): Promise<void> {
   const epoch = ++checkEpoch
   activeCheck?.stop()
   activeCheck = null
@@ -619,7 +620,12 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       // and the instant read's where it did not, verdict and going-well line
       // included, goes through the same gate as the briefing: a stop or a
       // going-well line while a condition is still open after the check's
-      // marks is refused. The check is not asked again.
+      // marks is refused. The check is not asked again. When the briefing was
+      // refused, its meaning, next, message and does are the rep's texts for the
+      // conditions open then, which the check may have shown since: they are
+      // never carried over. A part the checker left empty stays empty, and the
+      // gate writes them again for whatever is still open.
+      const or = (mine: string, theirs: string): string => (mine !== '' ? mine : refused ? '' : theirs)
       const card = gateVerdict(
         {
           verdict: c.verdict ?? instant.verdict,
@@ -627,11 +633,11 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
           closed: [],
           well: instant.well,
           stands: c.stands === '' ? instant.stands : c.stands,
-          means: c.means === '' ? instant.means : c.means,
+          means: or(c.means, instant.means),
           leftOut: hasLeft ? c.leftOut : instant.leftOut,
-          next: c.next === '' ? instant.next : c.next,
-          message: c.message === '' ? instant.message : c.message,
-          does: c.does === '' ? instant.does : c.does,
+          next: or(c.next, instant.next),
+          message: or(c.message, instant.message),
+          does: or(c.does, instant.does),
         },
         openConditions(after.objective),
       ).answer
