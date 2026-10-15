@@ -10,15 +10,21 @@ when the agent cuts a corner, and briefing the owner on a press. The README expl
 problem, the design decisions and the judging method; read it first when changing the rep's
 behaviour rather than its plumbing.
 
-`NORTH_STAR.md` at the root is kept out of the public repository (ignored, like `plans/`), so it lives only on this Mac; read it from the folder, never expect it on GitHub. It says what the rep is for: it builds a true picture of the
+`NORTH_STAR.md` at the root says what the rep is for: it builds a true picture of the
 session's objective from the owner's words, keeps that objective open until it is completed,
 judges the agent against it the whole time, and gives the owner the plain picture and the
 message that keep the agent on it. That purpose has not changed since the mod was built and
 does not change; every fix the owner asks for is a repair of that picture, never a new one.
 Read it before any change to the rep's brief, its reading of the objective, or what it says
-to the owner, and say in one sentence which part of it the change serves. A fix that seems to
-conflict with it has been misread: ask the owner what he means before building. The file
-changes only when the owner says the North Star itself has changed.
+to the owner, and say in one sentence which part of it the change serves. The brief in
+`hooks/rep.ts` is built from it, never the reverse; where they differ, the North Star wins.
+A fix that seems to conflict with it has been misread: ask the owner what he means before
+building. The file changes only when the owner says the North Star itself has changed.
+`docs/north-star-history.md` records every repair (what was not delivered, what changed,
+what was shown) and the sources, by session and message, for every sentence of the North
+Star; read it before fixing, and add each repair to it. Both files, and `archive/`, are
+kept out of the public repository (ignored, like `plans/`), so they live only on this Mac:
+read them from the folder, never expect them on GitHub.
 
 The mod is installed at user scope straight from this folder (see `~/.claude/settings.json`),
 so an edit here reaches a live session after `/reload-plugins` or a restart, with no version

@@ -3,5 +3,5 @@ node_modules/
 *.js
 plans/
 NORTH_STAR.md
-NORTH_STAR.proposed.md
+archive/
 docs/north-star-history.md
