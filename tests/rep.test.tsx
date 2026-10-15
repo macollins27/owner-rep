@@ -216,6 +216,7 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   expect(prompt).toContain('fifteen minutes and 120 turns')
   expect(prompt).toContain('one plain command per call')
   expect(prompt).toContain('longer than a minute')
+  expect(prompt).toContain('`git -C`, `--git-dir` or `--work-tree` form is refused')
   expect(prompt).toContain('timeout of 60000 milliseconds')
   expect(allowed).toContain('Bash(~/Library/pnpm/tsc:*)')
   expect(allowed).toContain('Bash(npx tsc:*)')
