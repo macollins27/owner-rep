@@ -27,6 +27,8 @@ import {
   fitCard,
   fit,
   noteTyped,
+  keepResult,
+  SENT_MARK,
   parseBrief,
   parseCheck,
   parseWatch,
@@ -166,7 +168,9 @@ function takeReading(rec: Rec, a: ReadingAnswer, now: number, saw: number): bool
     rec.reading = { text: a.text, openedAt: now, since: held.from, from: saw, movedAt: now, cause: a.cause, revisions: 0 }
     return true
   }
-  rec.reading = { ...held, text: a.text, from: saw, movedAt: now, cause: a.cause, revisions: held.revisions + 1 }
+  // A correction keeps the result, the first sentence, unless he replaced it.
+  const text = a.isReplaced ? a.text : keepResult(held.text, a.text)
+  rec.reading = { ...held, text, from: saw, movedAt: now, cause: a.cause, revisions: held.revisions + 1 }
   return true
 }
 
@@ -519,10 +523,13 @@ export const register: Register = on => {
       try {
         const id = await sessionId($)
         const rec = await loadRec($, id)
-        rec.owner = [...rec.owner, fit(e.text, OWNER_CUT)].slice(-OWNER_MAX)
         const view = await read($, viewA)
         const brief = await read($, briefA)
-        if (brief !== null && brief.message !== '' && same(e.text, brief.message)) {
+        // A message the rep drafted and he sent is recorded as the rep's words,
+        // marked, never as his: the model must not grade against a job the rep wrote.
+        const isDraft = brief !== null && brief.message !== '' && same(e.text, brief.message)
+        rec.owner = [...rec.owner, fit(`${isDraft ? SENT_MARK : ''}${e.text}`, OWNER_CUT)].slice(-OWNER_MAX)
+        if (isDraft) {
           rec.lastSent = { text: brief.message, at: Date.now() }
           if (view === 'brief') await update($, viewA, () => 'row')
         }
