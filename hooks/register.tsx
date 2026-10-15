@@ -546,6 +546,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       cwd,
       copy,
       reading: rec.objective === null ? '' : objectiveText(rec.objective),
+      conditions: openConditions(rec.objective),
       owner: jobMsgs(rec),
       brief: instant,
       writtenAt: new Date(at).toISOString(),
@@ -585,7 +586,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       const why = stderr.trim().split('\n').pop() ?? ''
       return finish({ checkNote: `The check could not run${end.code === null ? '' : ` (exit ${end.code})`}${why === '' ? '' : `: ${fit(why, 160)}`}.` })
     }
-    const patch = await changeRec($, sid, after => {
+    const patch = await changeRec($, sid, async after => {
       after.checks += 1
       after.checkTokens += got.tokens
       after.lastCheckTokens = got.tokens
@@ -593,10 +594,14 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       after.lastCheckMs = Date.now() - startedAt
       after.lastCheckRefused = got.refused
       const c = parseCheck(got.text)
+      // A condition the check saw shown, or he closed, moves under the same rule as a look's.
+      const marked = applyMarks(after, c.shown, c.closed)
+      if (marked) await update($, readingA, () => after.objective)
       const checked: Checked = { holds: c.holds, wrong: c.wrong, notShown: c.notShown, changed: c.changed, looked: c.looked, refused: got.refused }
       const hasLeft = parts_hasLeft(got.text)
       const patch: Partial<Brief> = {
         checked,
+        ...(marked && after.objective !== null ? { reading: objectiveText(after.objective) } : {}),
         stands: c.stands === '' ? instant.stands : c.stands,
         means: c.means === '' ? instant.means : c.means,
         leftOut: hasLeft ? c.leftOut : instant.leftOut,

@@ -20,6 +20,18 @@ const USAGE = { input_tokens: 10, output_tokens: 20, cache_read_input_tokens: 10
 // An objective held for the job, for the prompt and render fixtures.
 const OBJ_FIXTURE: Objective = { result: 'x', purpose: '', done: [], step: '', openedAt: 0, since: 1, from: 1, movedAt: null, cause: '', revisions: 0, versions: [] }
 
+// An objective with conditions of "done" still open, for the brief and check prompt tests.
+const OBJECTIVE_FIXTURE: Objective = {
+  ...OBJ_FIXTURE,
+  result: 'The spec finished and running on his Mac.',
+  purpose: 'So he can use it every day.',
+  done: [
+    { text: 'the newest build installed', state: 'not-shown', by: '' },
+    { text: 'the two sessions finished', state: 'open', by: '' },
+  ],
+  step: 'The agent checks the two sessions.',
+}
+
 // An answer from the objective writer; `on('model.complete', …)` stubs its call.
 const OBJ = (result: string, done: string[], cause = '#1 opened the job') =>
   `objective: moved\nmoved: ${cause}\nresult: ${result}\nfor: So he can rely on it.\ndone:\n${done.map(d => `- ${d}`).join('\n') || '- nothing'}\nstep: The first step.`
@@ -87,7 +99,7 @@ test('the briefs say a chore left for the owner is the agent\'s unfinished work,
     expect(p).toMatch(/Never relay such a chore to him as his next step/)
   }
   expect(briefPrompt(m)).toMatch(/next: <one or two sentences: what the agent should do next, or that it should stop;.*never a step for him to do/)
-  expect(checkPrompt({ sessionId: 's', cwd: '/tmp', owner: [om('Build it.')], reading: 'x', brief: parseBrief('stands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm' } as never)).toMatch(/never a step for the owner to do/)
+  expect(checkPrompt({ sessionId: 's', cwd: '/tmp', owner: [om('Build it.')], reading: 'x', brief: parseBrief('stands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm', conditions: [] } as never)).toMatch(/never a step for the owner to do/)
 })
 
 test('helpers: fit cuts with an ellipsis, same ignores case and a final period, doingFor names the work', async () => {
@@ -215,11 +227,11 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   const brief = parseBrief('reading: holds\nstands: s\nmeans: m\nleft:\n- a\nnext: n\nmessage:\nhello\nend\ndoes: d')
   const copy = checkCopyDir('/Users/o', 'abc-123')
   expect(copy).toBe('/Users/o/.cache/owner-rep/checks/abc-123')
-  const prompt = checkPrompt({ sessionId: 'abc-123', cwd: '/tmp/x', copy, reading: 'the result', owner: [om('first ask')], brief, writtenAt: '2026-10-13T23:05:00.000Z' })
+  const prompt = checkPrompt({ sessionId: 'abc-123', cwd: '/tmp/x', copy, reading: 'the result', owner: [om('first ask')], brief, writtenAt: '2026-10-13T23:05:00.000Z', conditions: [] })
   expect(prompt).toContain('abc-123')
   expect(prompt).toContain(`Your working directory: ${copy}, a throwaway copy`)
   expect(prompt).toContain("The agent's folder: /tmp/x")
-  const noCopy = checkPrompt({ sessionId: 'abc-123', cwd: '/tmp/x', copy: '/tmp/x', reading: 'the result', owner: [om('first ask')], brief, writtenAt: '2026-10-13T23:05:00.000Z' })
+  const noCopy = checkPrompt({ sessionId: 'abc-123', cwd: '/tmp/x', copy: '/tmp/x', reading: 'the result', owner: [om('first ask')], brief, writtenAt: '2026-10-13T23:05:00.000Z', conditions: [] })
   expect(noCopy).toContain('the throwaway copy could not be made, so writes there are denied')
   expect(prompt).toContain('2026-10-13T23:05:00.000Z')
   expect(prompt).toContain('changed:')
@@ -715,7 +727,7 @@ test('the brief carries the whole-ask rule, the size as a figure, and the green 
   expect(p).toMatch(/Not written yet: it is being written from his messages/)
   expect(p).toMatch(/48 percent of its window \(243k of 500k tokens\), which is not long/)
   expect(p).toMatch(new RegExp(`long only past ${LONG_SESSION_PERCENT} percent`))
-  expect(p).toMatch(/well: <only when nothing in the reading is still outstanding/)
+  expect(p).toMatch(/well: <only when every condition is shown or closed by him/)
   expect(p).toMatch(/means: <.*measured against the whole result/)
   expect(p).toMatch(/never started/)
   expect(contextLine(m)).toBe('not known')
@@ -921,19 +933,21 @@ test('rule: the session end saves the record, so the next session finds the obje
   expect(rec?.owner).toEqual([{ n: 1, kind: 'his', text: 'build the thing', prior: '' }])
 })
 
-test('the briefs weigh a message the rep drafted as the rep\'s words, and say a document about the result is not the result', async () => {
-  const m = { objective: OBJ_FIXTURE, owner: [om('Build it.')], past: [], seen: [], others: [] }
+test('the briefs are built from the North Star: open until completed with both qualifications, a draft moves only the step, verdict and marks', () => {
+  const m = { objective: OBJECTIVE_FIXTURE, owner: [{ n: 1, kind: 'his' as const, text: 'Build it.', prior: '' }], past: [], seen: [], others: [] }
   for (const p of [briefPrompt(m), watchPrompt(m, 'stop')]) {
-    expect(p).toMatch(/A message marked "\(your draft, sent by him\)": one you wrote for him after a briefing and he sent as it stood/)
-    expect(p).toMatch(/never narrows the job, never replaces an earlier message of his, and never sets what "done" means/)
-    expect(p).toMatch(/bounds that step and leaves the job as it was/)
-    expect(p).toMatch(/The result is the thing, never a document about the thing\./)
-    expect(p).toMatch(/an agent that delivered the document has not delivered the result/)
-    expect(p).toMatch(/whether a build is installed, a service runs the newest code or a product is on his Mac is "not shown" to you unless the conversation shows it/)
-    expect(p).toMatch(/"\(your draft, sent by him\)" marks one you wrote and he sent/)
+    expect(p).toMatch(/A step finished is not the objective finished/)
+    expect(p).toMatch(/unless the owner opened the session for that document/)
+    expect(p).toMatch(/guided to the finish/)
+    expect(p).toMatch(/A message marked "\(your draft, sent by him\)"[^]*moves only the step/)
+    expect(p).toMatch(/Done when: /)
+    expect(p).toMatch(/Conditions still open:/)
+    expect(p).not.toMatch(/Keep its first sentence/)
+    expect(p).not.toMatch(/The result is the thing, never a document about the thing/)
   }
-  expect(briefPrompt(m)).toMatch(/next: <.*stop only when the result itself is shown, never because a document about it was delivered/)
-  expect(checkPrompt({ sessionId: 's', cwd: '/tmp', owner: [om('Build it.')], reading: 'x', brief: parseBrief('stands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm' } as never)).toMatch(/written by the rep and sent by the owner, so it is the rep's words, not his/)
+  expect(briefPrompt(m)).toMatch(/verdict: <continue \| stop; stop only when every condition is shown or closed by him>/)
+  expect(briefPrompt(m)).toMatch(/say whether the agent did the step that message asked for/)
+  expect(checkPrompt({ sessionId: 's', cwd: '/tmp', copy: '/tmp', owner: [om('Build it.')], reading: 'x', brief: parseBrief('stands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm', conditions: OBJECTIVE_FIXTURE.done } as never)).toMatch(/Conditions the rep holds open:[^]*- the newest build installed \(not shown\)/)
 })
 
 // --- The objective: written by a call of its own from the owner's messages, held in parts, moved only by his words. ---
@@ -1075,7 +1089,7 @@ test('rule: a correction rebuilds the whole objective, and an open condition the
   next = OBJ('Only the reason the README is wrong.', ['the reason given | open'], '#2 asked only for the reason')
   await $.prompt.submit(typed('just tell me why the README is wrong'))
   await settle($)
-  expect(writes[1]).toMatch(/Done when: the README written; the tests green on GitHub \(not shown\)\./)
+  expect(writes[1]).toMatch(/done:\n- the README written \| open\n- the tests green on GitHub \| not shown\n/)
   expect(await rowSays($, /^Owner rep · Only the reason the README is wrong\.$/)).toBe(true)
   expect(rec()?.objective?.done).toEqual([
     { text: 'the reason given', state: 'open', by: '' },
@@ -1688,6 +1702,55 @@ test('rule: the card says how many of the check\'s commands were refused, and th
   await ui.press({ key: 'check' })
   expect(await ui.find({ type: 'Text', text: /The check's run had no command refused\./ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /2 commands refused/ })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('rule: the check is given the conditions the rep holds open, and its shown and closed lines move them', async ($, on) => {
+  const rec = kept(on, {
+    sessions: {
+      'test-session': {
+        id: 'test-session',
+        at: Date.now(),
+        objective: { ...OBJECTIVE_FIXTURE, from: 2 },
+        jobStart: 1,
+        owner: [om('finish the spec and put it on my Mac'), om('and the two other sessions', 2), { n: 3, kind: 'draft', text: 'Check the two sessions and report back.', prior: '' }],
+        counter: 3,
+        past: [],
+        seen: [],
+        others: [],
+      },
+    },
+  })
+  quietBand(on)
+  room(on)
+  on('session.cwd', () => ({ value: '/tmp/x' }))
+  mock.clock(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  let prompt = ''
+  on('process.spawn', async function* (_$, e) {
+    prompt = e.argv[2] ?? ''
+    yield {
+      stream: 'stdout',
+      text: JSON.stringify({
+        type: 'result',
+        // A draft's number closes nothing; a shown line names where the record shows it.
+        result: 'holds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n- the newest build installed | the install command in the record printed the new version\nclosed:\n- the two sessions finished | #3\nstands: Installed.\nmeans: Half done.\nleft:\n- the two sessions\nnext: Finish them.\nmessage:\nFinish the two sessions.\nend\ndoes: Makes it finish them.\nlooked: Read the record.',
+        usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+      }),
+    }
+    return { value: { code: 0, signal: null } }
+  })
+  await $.session.start({ cwd: '/tmp/x', surface: 'terminal', isInteractive: true })
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+  expect(prompt).toMatch(/Conditions the rep holds open:\n- the newest build installed \(not shown\)\n- the two sessions finished\n/)
+  expect(rec()?.objective?.done).toEqual([
+    { text: 'the newest build installed', state: 'shown', by: 'the install command in the record printed the new version' },
+    { text: 'the two sessions finished', state: 'open', by: '' },
+  ])
+  expect(await ui.find({ type: 'Text', text: /Done when: the newest build installed \(shown\); the two sessions finished\./ })).toBeDefined()
   await ui.unmount()
 })
 
