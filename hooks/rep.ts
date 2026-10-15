@@ -158,6 +158,8 @@ On top of that sentence sit five expectations for every job. Apply them without 
 4. Nothing was added that the result does not need.
 5. It was done the way that is best for the result, not the way that was easiest for the agent to finish: a smaller version, a simpler thing, or a test it can pass in place of the job.
 
+He does no step of the job himself, ever. Anything the agent leaves "for you", "when convenient" or "as a follow-up" (a branch to delete, a copy to remove, a check to run, a file to tidy) is the agent's unfinished work: it goes under "left", and the message tells the agent to finish it. Never relay such a chore to him as his next step, and never write a "next" that has him doing a step. Only two things ever come to him: a question about what he wants, and the message to send.
+
 ## How you make up your mind
 
 - By checking, not believing. A claim the next step depends on ends as one of three: shown true in the conversation; shown false; or not shown. Say "not shown" plainly and ask for the proof in the message. Never report "not shown" as a failure. When the agent admits a failure, do not ask for proof of the admission; say what it means for him and how far it goes.
@@ -320,12 +322,12 @@ Exactly these labelled parts, in this order, English labels, nothing before or a
 
 reading: <holds, or the rebuilt reading in up to ${READING_SENTENCES} sentences>
 moved: <only when the reading is not "holds": one short line on which message of his made the old one stale; "new job" first when he opened a new one>
-well: <only when nothing in the reading is still outstanding and the conversation shows each part working: one plain sentence saying so; a finished step with the job still open is not "well"; otherwise leave empty>
+well: <only when nothing in the reading is still outstanding, the conversation shows each part working, and "left" is "- nothing": one plain sentence saying so; a finished step with the job still open is not "well", and a card with anything under "left" has no "well" line; otherwise leave empty>
 stands: <one or two sentences: where the work really stands, as the conversation shows it, not as the agent says it>
-means: <one to three sentences: what the agent's latest message means for him measured against the whole result, not on its own; a translation of what matters, not a retelling>
+means: <one or two sentences: what the agent's latest message means for him measured against the whole result; what he has now and what, if anything, is waiting; never a retelling of the steps the agent took or the trouble it had on the way>
 left:
-- <one line per item: work put off, shrunk or quietly dropped; a part of the reading, or of what he asked for in any message on this job, that was never started; a check never run; a claim that matters and is not shown. Write "- nothing" when there is nothing.>
-next: <one or two sentences: what should happen next; it can be stopping the agent now; only a decision that is truly his comes to him, as one plain question>
+- <one line per item: work put off, shrunk or quietly dropped; a part of the reading, or of what he asked for in any message on this job, that was never started; a check never run; a claim that matters and is not shown; a chore the agent left "for you". Each item says in a few words why it matters. Write "- nothing" when there is nothing.>
+next: <one or two sentences: what the agent should do next, or that it should stop; never a step for him to do; only a decision that is truly his comes to him, as one plain question>
 message:
 <the message for him to send to the agent, written to the agent, specific and professional, several lines if needed. It asks for the proof of what is not shown and pushes the agent off the easy option onto the right one. Leave empty when there is nothing to send.>
 end
@@ -406,9 +408,11 @@ export function parseBrief(text: string): BriefAnswer {
     .split('\n')
     .map(l => l.replace(/^\s*[-*•]\s*/, '').trim())
     .filter(l => l !== '' && !/^nothing\.?$/i.test(l))
+  // A card with anything left out cannot also say the job is going well; the
+  // left-out list wins, whatever the model wrote on the "well" line.
   return {
     reading: readingOf(p),
-    well: clean(p.well),
+    well: leftOut.length > 0 ? '' : clean(p.well),
     stands: clean(p.stands),
     means: clean(p.means),
     leftOut,
@@ -595,8 +599,8 @@ changed:
 stands: <where the work really stands now, one or two sentences, after your checking>
 means: <what the agent's latest message means for him, one to three sentences, rewritten where your checking changed it>
 left:
-- <work put off, shrunk or quietly dropped; a check never run; a claim that matters and is not shown; only items your checking supports>
-next: <what should happen next, one or two sentences; it can be stopping the agent now>
+- <work put off, shrunk or quietly dropped; a check never run; a claim that matters and is not shown; a chore the agent left "for you", which is its unfinished work; only items your checking supports>
+next: <what the agent should do next, one or two sentences; it can be stopping the agent now; never a step for the owner to do>
 message:
 <the message for him to send to the agent, rewritten where your checking changed it: it names what is false and asks for the proof of what is not shown. Leave empty when there is nothing to send.>
 end
@@ -841,9 +845,10 @@ export function cardRows(c: CardText, cols: number): number {
 }
 
 // Folds the card until it fits `maxRows`, least important part first: the
-// spend line, the agent's "does" line, the check's cost text, the left-out
-// list to one line, then means, stands, next and the going-well line to one
-// row each, the checked lists to counts, the reading to one row, and then whole
+// spend line, the agent's "does" line, the check's cost text, then means,
+// stands, next and the going-well line to one row each, the left-out list to
+// one line after them (what was left out is worth more than a restatement of
+// what was done), the checked lists to counts, the reading to one row, and then whole
 // parts dropped, least telling first. The revision line, one row saying that
 // and why the reading moved, goes late: after the parts that restate the
 // agent's work and before what stands. After each fold the message is cut to
@@ -860,11 +865,11 @@ export function fitCard(card: CardText, maxRows: number, cols: number): CardText
     () => (c = { ...c, spent: '' }),
     () => (c = { ...c, does: '' }),
     () => (c = { ...c, checkCost: oneRow(c.checkCost, '') }),
-    () => (c = { ...c, leftOut: c.leftOut.length > 1 ? [fit(c.leftOut.join('; '), Math.max(8, w - 4))] : c.leftOut.map(i => oneRow(i, '  - ')) }),
     () => (c = { ...c, means: oneRow(c.means, 'Means: ') }),
     () => (c = { ...c, stands: oneRow(c.stands, 'Stands: ') }),
     () => (c = { ...c, next: oneRow(c.next, 'Next: ') }),
     () => (c = { ...c, well: oneRow(c.well, '') }),
+    () => (c = { ...c, leftOut: c.leftOut.length > 1 ? [fit(c.leftOut.join('; '), Math.max(8, w - 4))] : c.leftOut.map(i => oneRow(i, '  - ')) }),
     () => {
       if (c.checked === null) return
       const k = c.checked
