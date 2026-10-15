@@ -113,15 +113,24 @@ export type ReadingAnswer =
   | { kind: 'moved'; text: string; cause: string; isNewJob: boolean; isReplaced: boolean }
   | null
 
+// Whether the agent should go on or stop. Only the rep's own gate may let a stop stand.
+export type Verdict = 'continue' | 'stop'
+
 export type WatchAnswer = {
   reading: ReadingAnswer
   state: 'working' | 'stopped' | 'asking' | 'plan-waiting' | null
   flag: string | null
   why: string
+  // Conditions the conversation showed, with where; and those he closed, with his message's number.
+  shown: Array<{ text: string; by: string }>
+  closed: Array<{ text: string; by: number | null }>
 }
 
 export type BriefAnswer = {
   reading: ReadingAnswer
+  verdict: Verdict
+  shown: Array<{ text: string; by: string }>
+  closed: Array<{ text: string; by: number | null }>
   well: string
   stands: string
   means: string
@@ -552,7 +561,7 @@ dropped:
 - <condition text as held> | #n`
 }
 
-const LABELS = ['reading', 'moved', 'state', 'flag', 'why', 'well', 'stands', 'means', 'left', 'next', 'message', 'does', 'holds', 'false', 'notshown', 'changed', 'looked', 'objective', 'result', 'for', 'done', 'step', 'dropped'] as const
+const LABELS = ['reading', 'moved', 'state', 'flag', 'why', 'well', 'stands', 'means', 'left', 'next', 'message', 'does', 'holds', 'false', 'notshown', 'changed', 'looked', 'objective', 'result', 'for', 'done', 'step', 'dropped', 'verdict', 'shown', 'closed'] as const
 type Label = (typeof LABELS)[number]
 
 // Splits a labelled answer into its parts. `message:` runs until a line `end`.
@@ -617,6 +626,8 @@ export function parseWatch(text: string): WatchAnswer {
         : null,
     flag,
     why: clean(p.why),
+    shown: shownOf(p.shown),
+    closed: items(p.closed).map(droppedOf).filter(d => d.text !== ''),
   }
 }
 
@@ -630,6 +641,9 @@ export function parseBrief(text: string): BriefAnswer {
   // left-out list wins, whatever the model wrote on the "well" line.
   return {
     reading: readingOf(p),
+    verdict: /^stop\b/i.test(clean(p.verdict)) ? 'stop' : 'continue',
+    shown: shownOf(p.shown),
+    closed: items(p.closed).map(droppedOf).filter(d => d.text !== ''),
     well: leftOut.length > 0 ? '' : clean(p.well),
     stands: clean(p.stands),
     means: clean(p.means),
@@ -655,6 +669,16 @@ function conditionOf(line: string): Condition {
   if (word === 'shown' && rest !== '') return { text, state: 'shown', by: rest }
   const n = word === 'closed' ? /#(\d+)/.exec(rest) : null
   return n === null ? { text, state: 'open', by: '' } : { text, state: 'closed', by: `#${n[1]}` }
+}
+
+// The lines of a shown list: "<condition text> | <where in the conversation>".
+function shownOf(raw: string | undefined): Array<{ text: string; by: string }> {
+  return items(raw)
+    .map(l => {
+      const bar = l.indexOf('|')
+      return { text: (bar < 0 ? l : l.slice(0, bar)).trim(), by: bar < 0 ? '' : l.slice(bar + 1).trim() }
+    })
+    .filter(x => x.text !== '')
 }
 
 // One dropped line: "<condition text as held> | #n"; without a number, `by` is null.
@@ -1257,4 +1281,43 @@ export function fitCard(card: CardText, maxRows: number, cols: number): CardText
     if (!over()) break
   }
   return c
+}
+
+// The proposed conditions plus every held one the model left out, unless a
+// message of his (one of `his`, never a draft) is cited for dropping it. A
+// held condition listed again takes the proposed text, but a shown or closed
+// state is never moved back to open or not shown.
+export function mergeConditions(
+  held: Condition[],
+  proposed: Condition[],
+  dropped: Array<{ text: string; by: number | null }>,
+  his: readonly number[],
+): Condition[] {
+  const ahead = (s: ConditionState): boolean => s === 'shown' || s === 'closed'
+  const out = proposed.map(p => {
+    const h = held.find(x => same(x.text, p.text))
+    return h !== undefined && ahead(h.state) && !ahead(p.state) ? { ...p, state: h.state, by: h.by } : p
+  })
+  for (const h of held) {
+    if (out.some(p => same(p.text, h.text))) continue
+    const gone = dropped.some(d => d.by !== null && his.includes(d.by) && same(d.text, h.text))
+    if (!gone) out.push(h)
+  }
+  return out
+}
+
+// What the agent is told when a stop is refused.
+export const OPEN_NEXT = (open: Condition[]): string =>
+  `The job is still open: ${open.map(c => c.text).join('; ')}. The agent shows these, or says what stands in the way, before anything stops.`
+
+// The objective is not finished while a condition is open: a stop verdict or a
+// going-well line is refused, the conditions are listed as left out, and the
+// agent is told to show them.
+export function gateVerdict(a: BriefAnswer, open: Condition[]): { answer: BriefAnswer; refused: boolean } {
+  if (open.length === 0 || (a.verdict !== 'stop' && a.well === '')) return { answer: a, refused: false }
+  const leftOut = [...a.leftOut]
+  for (const c of open) {
+    if (!leftOut.some(l => same(l, c.text))) leftOut.push(c.state === 'not-shown' ? `${c.text} (not shown)` : c.text)
+  }
+  return { answer: { ...a, verdict: 'continue', well: '', next: OPEN_NEXT(open), leftOut }, refused: true }
 }

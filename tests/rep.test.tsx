@@ -1,7 +1,7 @@
 import type { On } from 'claude-code'
 import { expect, mock, test, type Engine } from 'claude-code/testing'
 
-import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, draftSplit, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, keepResult, afterFirstSentence, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, parseObjective, type Objective } from '../hooks/rep'
+import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, draftSplit, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, keepResult, afterFirstSentence, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, parseObjective, type Objective, mergeConditions, gateVerdict, type Condition } from '../hooks/rep'
 
 const om = (text: string, n = 1): OwnerMsg => ({ n, kind: 'his', text, prior: '' })
 
@@ -1472,4 +1472,30 @@ test('objectivePrompt shows his messages with their numbers and the agent line b
   expect(p).toMatch(/A message that bounds the agent's next step/)
   expect(p).toMatch(/guided to the finish/)
   expect(p).toMatch(/^objective: holds \| moved$/m)
+})
+
+const c = (text: string, state: Condition['state'], by = ''): Condition => ({ text, state, by })
+
+test('mergeConditions keeps every held condition the model drops without his cited message', () => {
+  const held = [c('install the newest build', 'not-shown'), c('two sessions finished', 'open'), c('roadmap fixed', 'shown', 'diff printed')]
+  const proposed = [c('two sessions finished', 'open')]
+  expect(mergeConditions(held, proposed, [], [1, 2])).toEqual([held[1], held[0], held[2]])
+  expect(mergeConditions(held, proposed, [{ text: 'install the newest build', by: 2 }], [1, 2])).toEqual([held[1], held[2]])
+  expect(mergeConditions(held, proposed, [{ text: 'install the newest build', by: 3 }], [1, 2])).toEqual([held[1], held[0], held[2]])   // #3 is a draft, not his
+  expect(mergeConditions(held, proposed, [{ text: 'install the newest build', by: null }], [1, 2])).toEqual([held[1], held[0], held[2]])
+  expect(mergeConditions(held, [c('roadmap fixed', 'open')], [], [1])[0]).toEqual(held[2])   // shown is not moved back to open
+})
+
+test('gateVerdict refuses stop and well while a condition is open, and lists the open ones', () => {
+  const a = parseBrief('verdict: stop\nwell: All done.\nstands: s\nmeans: m\nleft:\n- nothing\nnext: Stop.\nmessage:\nend\ndoes:')
+  const open = [c('the newest build installed', 'not-shown'), c('two sessions finished', 'open')]
+  const g = gateVerdict(a, open)
+  expect(g.refused).toBe(true)
+  expect(g.answer.verdict).toBe('continue')
+  expect(g.answer.well).toBe('')
+  expect(g.answer.next).toBe('The job is still open: the newest build installed; two sessions finished. The agent shows these, or says what stands in the way, before anything stops.')
+  expect(g.answer.leftOut).toEqual(['the newest build installed (not shown)', 'two sessions finished'])
+  expect(gateVerdict(a, []).refused).toBe(false)
+  expect(gateVerdict(parseBrief('verdict: continue\nstands: s\nleft:\n- nothing\nnext: Go on.\nmessage:\nend\ndoes:'), open).refused).toBe(false)
+  expect(parseBrief('stands: s\nleft:\n- nothing\nshown:\n- a | the diff\nclosed:\n- b | #4\nmessage:\nend\ndoes:')).toMatchObject({ verdict: 'continue', shown: [{ text: 'a', by: 'the diff' }], closed: [{ text: 'b', by: 4 }] })
 })
