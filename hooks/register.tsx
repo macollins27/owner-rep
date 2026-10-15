@@ -36,6 +36,7 @@ import {
   fit,
   noteTyped,
   draftSplit,
+  askAgain,
   gateVerdict,
   mergeConditions,
   OBJECTIVE_MAX_TOKENS,
@@ -443,32 +444,47 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
   try {
     // No objective yet: it is written first, so the briefing measures against it.
     if ((await loadRec($, sid)).objective === null) await rebuildObjective($, sid, 'press')
-    const rec = await loadRec($, sid)
     const context = await contextOf($)
-    const result = await $.model.fork({ prompt: briefPrompt({ ...memoryOf(rec), context }) })
-    const usage = 'usage' in result ? result.usage : null
-    if (!result.isAnswered) {
-      await changeRec($, sid, after => {
+    // One read of the conversation: its spend counted, and when it answered,
+    // its marks applied and its verdict through the gate, against the
+    // conditions still open after them.
+    const ask = async (extra: string) => {
+      const rec = await loadRec($, sid)
+      const prompt = briefPrompt({ ...memoryOf(rec), context })
+      const result = await $.model.fork({ prompt: extra === '' ? prompt : `${prompt}\n\n${extra}` })
+      const usage = 'usage' in result ? result.usage : null
+      return changeRec($, sid, async after => {
         after.calls += 1
         after.tokens += tokensOf(usage)
         after.cached += cachedOf(usage)
+        if (!result.isAnswered) return { reason: result.reason }
+        const parsed = parseBrief(result.text)
+        if (applyMarks(after, parsed.shown, parsed.closed)) await update($, readingA, () => after.objective)
+        const left = openConditions(after.objective)
+        return { ...gateVerdict(parsed, left), open: left }
       })
+    }
+    const first = await ask('')
+    if ('reason' in first) {
       await update($, viewA, () => 'row')
       $.ui.toast(
-        result.reason === 'nothing-to-fork'
+        first.reason === 'nothing-to-fork'
           ? 'Owner rep: nothing to read yet. Ask the agent something first.'
-          : `Owner rep: the model did not answer (${result.reason}). Press again.`,
+          : `Owner rep: the model did not answer (${first.reason}). Press again.`,
       )
       return
     }
-    const parsed = parseBrief(result.text)
-    const { a, brief } = await changeRec($, sid, async after => {
-      after.calls += 1
-      after.tokens += tokensOf(usage)
-      after.cached += cachedOf(usage)
-      if (applyMarks(after, parsed.shown, parsed.closed)) await update($, readingA, () => after.objective)
-      // A stop or a going-well line while a condition is open is refused.
-      const a = gateVerdict(parsed, openConditions(after.objective)).answer
+    // A stop or a going-well line while a condition is open is refused, and
+    // the brief is asked once more with the open conditions named; that
+    // answer passes the same gate. Two reads at most: when the second does
+    // not answer, the first one's gated answer stands.
+    let taken = first
+    if (first.refused) {
+      const again = await ask(askAgain(first.open))
+      if (!('reason' in again)) taken = again
+    }
+    const a = taken.answer
+    const brief = await changeRec($, sid, after => {
       const brief: Brief = {
         reading: after.objective === null ? '' : objectiveText(after.objective),
         revised: revisedLine(after.objective),
@@ -488,7 +504,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
         checkCost: checkCostText(after.lastCheckTokens, after.lastCheckCached, after.lastCheckMs, after.lastCheckRefused),
       }
       after.lastBrief = { at: brief.at, next: brief.next, message: brief.message }
-      return { a, brief }
+      return brief
     })
     await update($, noteA, () => null)
     await update($, briefA, () => brief)
@@ -599,15 +615,36 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       if (marked) await update($, readingA, () => after.objective)
       const checked: Checked = { holds: c.holds, wrong: c.wrong, notShown: c.notShown, changed: c.changed, looked: c.looked, refused: got.refused }
       const hasLeft = parts_hasLeft(got.text)
+      // The card the check leaves, each part the checker's where it gave one
+      // and the instant read's where it did not, verdict and going-well line
+      // included, goes through the same gate as the briefing: a stop or a
+      // going-well line while a condition is still open after the check's
+      // marks is refused. The check is not asked again.
+      const card = gateVerdict(
+        {
+          verdict: c.verdict ?? instant.verdict,
+          shown: [],
+          closed: [],
+          well: instant.well,
+          stands: c.stands === '' ? instant.stands : c.stands,
+          means: c.means === '' ? instant.means : c.means,
+          leftOut: hasLeft ? c.leftOut : instant.leftOut,
+          next: c.next === '' ? instant.next : c.next,
+          message: c.message === '' ? instant.message : c.message,
+          does: c.does === '' ? instant.does : c.does,
+        },
+        openConditions(after.objective),
+      ).answer
       const patch: Partial<Brief> = {
         checked,
         ...(marked && after.objective !== null ? { reading: objectiveText(after.objective) } : {}),
-        stands: c.stands === '' ? instant.stands : c.stands,
-        means: c.means === '' ? instant.means : c.means,
-        leftOut: hasLeft ? c.leftOut : instant.leftOut,
-        next: c.next === '' ? instant.next : c.next,
-        message: c.message === '' ? instant.message : c.message,
-        does: c.does === '' ? instant.does : c.does,
+        well: card.well,
+        stands: card.stands,
+        means: card.means,
+        leftOut: card.leftOut,
+        next: card.next,
+        message: card.message,
+        does: card.does,
         spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens, after.objectiveCalls, after.objectiveTokens),
         checkCost: checkCostText(after.lastCheckTokens, after.lastCheckCached, after.lastCheckMs, after.lastCheckRefused),
       }

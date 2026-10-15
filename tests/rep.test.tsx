@@ -968,7 +968,7 @@ const HOLDS = 'state: stopped\nflag: none'
 const settle = async ($: Engine) => (await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })).unmount()
 
 // What the store holds for the session, as the tests read it back.
-type Stored = { objective: Objective | null; owner: OwnerMsg[]; past: string[]; jobStart: number; objectiveCalls: number; objectiveTokens: number }
+type Stored = { objective: Objective | null; owner: OwnerMsg[]; past: string[]; jobStart: number; objectiveCalls: number; objectiveTokens: number; calls: number; seen: string[]; lastBrief?: { next: string } }
 
 // A session whose store the test reads back: the function returns the record as saved.
 const kept = (on: On, store: Record<string, unknown> = {}) => {
@@ -1894,4 +1894,197 @@ test('rule: a record saved in the old shape is rebuilt on the next press, with t
   expect(held.reading).toBeUndefined()
   expect(held.stale).toBeUndefined()
   expect(held.objective?.versions[0]).toMatchObject({ cause: 'rebuilt from the old shape', text: 'An account of where the spec stands and the route.' })
+})
+
+// --- The gate through the kit: a stop or a going-well line is refused while a condition is open. ---
+
+// A session holding an objective whose two conditions of done are still open,
+// his two messages on the job, and a message the rep drafted that he sent (#3).
+const OPEN_JOB = (): Record<string, unknown> => ({
+  sessions: {
+    'test-session': {
+      id: 'test-session',
+      at: Date.now(),
+      objective: {
+        ...OBJ_FIXTURE,
+        result: 'The release built, installed and running here.',
+        purpose: 'So the team can use it.',
+        done: [c('the newest build installed', 'not-shown'), c('two sessions finished', 'open')],
+        step: 'The agent finishes the sessions.',
+        from: 2,
+      },
+      jobStart: 1,
+      owner: [om('ship the release and install it here'), om('and finish the two other sessions', 2), { n: 3, kind: 'draft', text: 'Finish the two sessions and report back.', prior: '' }],
+      counter: 3,
+      past: [],
+      seen: [],
+      others: [],
+    },
+  },
+})
+
+// The planted record kept for the test to read back; the session's start is answered.
+const openJob = (on: On) => {
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  return kept(on, OPEN_JOB())
+}
+
+// The session started over the planted record, so the strip knows its id and holds the objective.
+const started = ($: Engine) => $.session.start({ cwd: '/tmp/x', surface: 'terminal', isInteractive: true })
+
+// A briefing that says stop and that the work is going well, with any marks given.
+const STOP_BRIEF = (marks = '') =>
+  `verdict: stop\n${marks}well: All done.\nstands: Both parts are finished.\nmeans: Nothing is waiting.\nleft:\n- nothing\nnext: Stop the agent; the job is finished.\nmessage:\nWrap up and stop here.\nend\ndoes: Makes the agent stop.`
+
+// The part of a brief's prompt added when it is asked once more; '' when there is none.
+const again = (prompt: string | undefined): string => {
+  const p = prompt ?? ''
+  const at = p.indexOf('## Asked once more')
+  return at < 0 ? '' : p.slice(at)
+}
+
+// The Text elements drawn in the success colour: the going-well line and a check's "holds".
+const greens = async (ui: { findAll: (q: { type: string }) => Promise<Array<{ props: Record<string, unknown>; text: string }>> }) =>
+  (await ui.findAll({ type: 'Text' })).filter(t => t.props.color === 'success').map(t => t.text)
+
+test('rule: a briefing that says stop while a condition is open is asked once more, then refused: the card lists the open conditions and does not say stop', async ($, on) => {
+  const rec = openJob(on)
+  quietBand(on)
+  const prompts: string[] = []
+  on('model.fork', (_$, e) => {
+    prompts.push(String(e.prompt))
+    return { value: { isAnswered: true, text: STOP_BRIEF(), usage: USAGE } }
+  })
+  await started($)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  // Two forks: the brief, then the same brief with the open conditions named.
+  expect(prompts).toHaveLength(2)
+  expect(prompts[1]?.startsWith(prompts[0] ?? '-')).toBe(true)
+  expect(prompts[0]).not.toMatch(/## Asked once more/)
+  expect(again(prompts[1])).toMatch(/said the agent should stop, or that the work is going well, while these conditions of done are still open:\n- the newest build installed \(not shown\)\n- two sessions finished\n/)
+  // The card: the gate's next, no going-well line, both conditions left out, the model's message kept.
+  expect(await ui.find({ type: 'Text', text: /^Next: The job is still open: the newest build installed; two sessions finished\. The agent shows these/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Stop the agent/ })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: /All done/ })).toBeUndefined()
+  expect(await greens(ui)).toEqual([])
+  expect(await ui.find({ type: 'Text', text: /^Left out:$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^ {2}- the newest build installed \(not shown\)$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^ {2}- two sessions finished$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^Wrap up and stop here\.$/ })).toBeDefined()
+  expect(await ui.find({ key: 'put' })).toBeDefined()
+  // Both forks are counted.
+  expect(await ui.find({ type: 'Text', text: /^Owner rep: 2 looks this session;/ })).toBeDefined()
+  await ui.unmount()
+  expect(rec()?.calls).toBe(2)
+  expect(rec()?.objective?.done.map(x => x.state)).toEqual(['not-shown', 'open'])
+  expect(rec()?.lastBrief?.next).toMatch(/^The job is still open:/)
+})
+
+test('rule: a briefing that marks a condition shown moves it, and stop is allowed once every condition is shown or closed', async ($, on) => {
+  const rec = openJob(on)
+  quietBand(on)
+  const prompts: string[] = []
+  let answer = ''
+  on('model.fork', (_$, e) => {
+    prompts.push(String(e.prompt))
+    return { value: { isAnswered: true, text: answer, usage: USAGE } }
+  })
+  // A closed line citing the rep's own draft (#3) closes nothing, so the stop is still refused.
+  answer = STOP_BRIEF('shown:\n- the newest build installed | the install log printed the revision\nclosed:\n- two sessions finished | #3\n')
+  await started($)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  expect(rec()?.objective?.done).toEqual([
+    { text: 'the newest build installed', state: 'shown', by: 'the install log printed the revision' },
+    { text: 'two sessions finished', state: 'open', by: '' },
+  ])
+  expect(prompts).toHaveLength(2)
+  expect(again(prompts[1])).toMatch(/still open:\n- two sessions finished\n\n/)
+  expect(await ui.find({ type: 'Text', text: /^Next: The job is still open: two sessions finished\./ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /All done/ })).toBeUndefined()
+  await ui.press({ key: 'close' })
+  // His own message (#2) closes the other; with every condition shown or closed the stop stands, asked once.
+  answer = STOP_BRIEF('closed:\n- two sessions finished | #2\n')
+  await ui.press({ key: 'rep' })
+  expect(prompts).toHaveLength(3)
+  expect(rec()?.objective?.done).toEqual([
+    { text: 'the newest build installed', state: 'shown', by: 'the install log printed the revision' },
+    { text: 'two sessions finished', state: 'closed', by: '#2' },
+  ])
+  expect(await ui.find({ type: 'Text', text: /^Next: Stop the agent; the job is finished\.$/ })).toBeDefined()
+  expect(await greens(ui)).toEqual(['All done.'])
+  expect(await ui.find({ type: 'Text', text: /^Left out:$/ })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: /The job is still open/ })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: /Done when: the newest build installed \(shown\); two sessions finished \(closed\)\./ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('rule: the watch marks a condition shown and flags work called finished while one is open', async ($, on) => {
+  const rec = openJob(on)
+  quietBand(on)
+  const flag = 'The agent called the job finished, but two sessions are still open.'
+  on('model.fork', () => ({
+    value: {
+      isAnswered: true,
+      text: `state: stopped\nflag: ${flag}\nwhy: Its last message says done, and nothing shows the two sessions finished.\nshown:\n- the newest build installed | the install log printed the revision\nclosed:\n- two sessions finished | #3`,
+      usage: USAGE,
+    },
+  }))
+  await $.turn.complete(stop('t1', 'All finished.'))
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  expect(await ui.find({ type: 'Text', text: flag })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /nothing shows the two sessions finished/ })).toBeDefined()
+  expect(await ui.find({ key: 'fine' })).toBeDefined()
+  await ui.unmount()
+  // The shown line moves its condition; a draft's number (#3) closes nothing.
+  expect(rec()?.objective?.done).toEqual([
+    { text: 'the newest build installed', state: 'shown', by: 'the install log printed the revision' },
+    { text: 'two sessions finished', state: 'open', by: '' },
+  ])
+  expect(rec()?.seen).toEqual([flag])
+})
+
+test('rule: a check that says stop while a condition is open is refused on the checked card', async ($, on) => {
+  expect(parseCheck('verdict: stop\nholds:\n- nothing').verdict).toBe('stop')
+  expect(parseCheck('holds:\n- nothing').verdict).toBe(null)
+  const rec = openJob(on)
+  quietBand(on)
+  room(on)
+  on('session.cwd', () => ({ value: '/tmp/x' }))
+  mock.clock(on)
+  let forks = 0
+  on('model.fork', () => {
+    forks += 1
+    return { value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }
+  })
+  let prompt = ''
+  on('process.spawn', async function* (_$, e) {
+    prompt = e.argv[2] ?? ''
+    yield {
+      stream: 'stdout',
+      text: JSON.stringify({
+        type: 'result',
+        result: 'verdict: stop\nholds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n- the newest build installed | the install command in the record printed the new version\nclosed:\n- nothing\nstands: Everything is in place.\nmeans: The job is finished.\nleft:\n- nothing\nnext: Stop the agent; the job is finished.\nmessage:\nStop here.\nend\ndoes: Makes the agent stop.\nlooked: Read the record.',
+        usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+      }),
+    }
+    return { value: { code: 0, signal: null } }
+  })
+  await started($)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+  expect(prompt).toMatch(/verdict: <continue \| stop; stop only when every condition is shown or closed by him>/)
+  // The check's marks are taken; one condition stays open, so its stop is refused, with no second run.
+  expect(rec()?.objective?.done.map(x => x.state)).toEqual(['shown', 'open'])
+  expect(await ui.find({ type: 'Text', text: /Everything is in place/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^Next: The job is still open: two sessions finished\./ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Stop the agent/ })).toBeUndefined()
+  expect(await greens(ui)).toEqual([])
+  expect(await ui.find({ type: 'Text', text: /^Left out:$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^ {2}- two sessions finished$/ })).toBeDefined()
+  expect(forks).toBe(1)
+  await ui.unmount()
+  expect(rec()?.lastBrief?.next).toMatch(/^The job is still open: two sessions finished\./)
 })

@@ -713,6 +713,8 @@ export const OTHERS_MAX = 10
 // tools, agentsview and the files, started by the mod after the instant read.
 
 export type CheckAnswer = {
+  // The checker's verdict; null when it gave none, and the card's verdict then stands.
+  verdict: Verdict | null
   holds: string[]
   wrong: string[]
   notShown: string[]
@@ -877,6 +879,7 @@ The briefing above was written at ${a.writtenAt}, from the conversation as it st
 
 Exactly these labelled parts, in this order, nothing before or after. One item per line under holds, false, notshown, changed, shown, closed and left, each starting with "- ", in plain words; write "- nothing" under a part with nothing.
 
+verdict: <continue | stop; stop only when every condition is shown or closed by him>
 holds:
 - <a claim that holds as of the briefing's time, and in a few words what showed it>
 false:
@@ -893,7 +896,7 @@ stands: <where the work really stands now, one or two sentences, after your chec
 means: <what the agent's latest message means for him, one to three sentences, rewritten where your checking changed it>
 left:
 - <work put off, shrunk or quietly dropped; a condition still open that the agent called done; a check never run; a claim that matters and is not shown; a chore the agent left "for you", which is its unfinished work; only items your checking supports>
-next: <what the agent should do next, one or two sentences; it can be stopping the agent now, but only when every condition is shown or closed by him; never a step for the owner to do>
+next: <what the agent should do next, one or two sentences; it can be stopping the agent now, but only with a stop verdict, when every condition is shown or closed by him; never a step for the owner to do>
 message:
 <the message for him to send to the agent, rewritten where your checking changed it: it names what is false and asks for the proof of what is not shown. Leave empty when there is nothing to send.>
 end
@@ -910,6 +913,7 @@ const items = (s: string | undefined): string[] =>
 export function parseCheck(text: string): CheckAnswer {
   const p = parts(text)
   return {
+    verdict: p.verdict === undefined ? null : /^stop\b/i.test(clean(p.verdict)) ? 'stop' : 'continue',
     holds: items(p.holds),
     wrong: items(p.false),
     notShown: items(p.notshown),
@@ -1304,6 +1308,16 @@ export function mergeConditions(
 // What the agent is told when a stop is refused.
 export const OPEN_NEXT = (open: Condition[]): string =>
   `The job is still open: ${open.map(c => c.text).join('; ')}. The agent shows these, or says what stands in the way, before anything stops.`
+
+// Added to the brief when its answer said stop, or that the work is going
+// well, while a condition was open: the brief is asked once more, with the
+// open conditions named.
+export const askAgain = (open: Condition[]): string => `## Asked once more
+
+Your answer to this request said the agent should stop, or that the work is going well, while these conditions of done are still open:
+${list(open.map(conditionLine), '- none')}
+
+Neither may stand while any of them is open. Look at the conversation again: put under "shown:" each one it now shows, with where it shows it, and under "closed:" each one he closed in a message of his own, with that message's number. Then give the whole briefing again, in the same structure: while any of them stays open the verdict is "continue", "well" is empty, and "next" says what the agent does to show it or what stands in the way.`
 
 // The objective is not finished while a condition is open: a stop verdict or a
 // going-well line is refused, the conditions are listed as left out, and the
