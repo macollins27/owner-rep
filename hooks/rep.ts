@@ -456,8 +456,12 @@ export type CheckAnswer = {
   looked: string
 }
 
-export const CHECK_TIMEOUT_MS = 300000
-export const CHECK_MAX_TURNS = '60'
+// The check's budget. Measured runs take two to five minutes: the record is read,
+// the suite run once, and a sandbox refusal costs a turn each. The brief tells the
+// checker both figures so it spends them on proof rather than on retries.
+export const CHECK_TIMEOUT_MS = 900000
+export const CHECK_TIMEOUT_WORDS = 'fifteen minutes'
+export const CHECK_MAX_TURNS = '120'
 
 // What the checker may do: read, search, the session record, and the
 // project's own checks. Nothing that changes a file or sends anything.
@@ -465,7 +469,13 @@ export const CHECK_ALLOWED_TOOLS = [
   'Read',
   'Glob',
   'Grep',
+  'mcp__agentsview',
   'Bash(agentsview:*)',
+  'Bash(grep:*)',
+  'Bash(cut:*)',
+  'Bash(diff:*)',
+  'Bash(stat:*)',
+  'Bash(which:*)',
   'Bash(ls:*)',
   'Bash(cat:*)',
   'Bash(head:*)',
@@ -477,6 +487,19 @@ export const CHECK_ALLOWED_TOOLS = [
   'Bash(git diff:*)',
   'Bash(git show:*)',
   'Bash(git branch:*)',
+  'Bash(git worktree list:*)',
+  'Bash(git rev-parse:*)',
+  'Bash(git ls-files:*)',
+  'Bash(git ls-remote:*)',
+  'Bash(git remote -v:*)',
+  'Bash(gh pr view:*)',
+  'Bash(gh pr list:*)',
+  'Bash(gh pr checks:*)',
+  'Bash(gh run list:*)',
+  'Bash(gh run view:*)',
+  'Bash(gh repo view:*)',
+  'Bash(gh issue view:*)',
+  'Bash(gh issue list:*)',
   'Bash(npm test:*)',
   'Bash(npm run test:*)',
   'Bash(npm run check:*)',
@@ -557,9 +580,13 @@ export function checkPrompt(a: CheckArgs): string {
 Session id: ${a.sessionId}
 Working directory: ${a.cwd}
 
-The full record of the session is in agentsview. Refresh it first with \`agentsview sync\`. Read the newest messages with \`agentsview session messages ${a.sessionId} --role user,assistant --direction desc --limit 40\` (no \`--from\`: that gives the newest page), the whole record from the start with \`--from 0 --limit 200\` and higher \`--from\` values for later pages, and \`agentsview session tool-calls ${a.sessionId}\` for what the agent actually ran and what came back. If agentsview does not have the session, the transcript file is \`~/.claude/projects/*/${a.sessionId}.jsonl\`. Helpers the agent launched have their own records; \`agentsview session list --include-children\` finds them.
+The full record of the session is in agentsview. Refresh it first with \`agentsview sync\`, giving that one call a timeout of 60000 milliseconds; if it has not finished by then, go on without it: the transcript file is always current and agentsview is at most a few minutes behind. Read the newest messages with \`agentsview session messages ${a.sessionId} --role user,assistant --direction desc --limit 40\` (no \`--from\`: that gives the newest page), the whole record from the start with \`--from 0 --limit 200\` and higher \`--from\` values for later pages, and \`agentsview session tool-calls ${a.sessionId}\` for what the agent actually ran and what came back. If agentsview does not have the session, the transcript file is \`~/.claude/projects/*/${a.sessionId}.jsonl\`. Helpers the agent launched have their own records; \`agentsview session list --include-children\` finds them. The agentsview tools Claude Code offers directly (their names begin \`mcp__agentsview__\`) read the same record and are allowed too.
 
-Read any file you need. Run the project's own checks (its tests, its type check, its gate) when a claim says they pass; the record shows the exact command the agent used, so run that one. You may run only read-only commands and the project's own checks; if a command you need is refused, say so under "looked" rather than guessing. Never change a file and never send anything to anyone.
+Read any file you need. Run the project's own checks (its tests, its type check, its gate) when a claim says they pass; the record shows the exact command the agent used, so run that one, once. You may run only read-only commands and the project's own checks. Never change a file and never send anything to anyone.
+
+## Your time
+
+You have ${CHECK_TIMEOUT_WORDS} and ${CHECK_MAX_TURNS} turns in all, and an answer that never arrives is worth nothing to him, so spend them on reading and on the proof that matters most. Every command runs through a sandbox that allows only simple commands: run one plain command per call, with no \`&&\`, \`;\`, pipes, \`cd\`, output redirection or shell variables, since any of those gets the whole call refused and the turn is lost. Use the Read, Grep and Glob tools on files rather than shell commands. Do not start anything you expect to run longer than a minute: a tool that reruns a suite many times (a defect-planting or mutation run), a full build, a long crawl; say under "looked" that you did not run it and judge that claim from the record instead. When a command is refused, try it once more as one plain command at most, then say so under "looked" rather than guessing.
 
 ## What he wants, as the rep reads it
 

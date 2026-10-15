@@ -7,6 +7,7 @@ import type { Brief, Checked, Note, Now, Reading, View } from '../types'
 import {
   CHECK_EVERY,
   CHECK_TIMEOUT_MS,
+  CHECK_TIMEOUT_WORDS,
   CLEAR_AFTER_PROMPTS,
   NOTE_CLEAR_MS,
   NOTE_MARK,
@@ -338,7 +339,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       stop.cancel()
       if (activeCheck !== null && epoch === checkEpoch) activeCheck = null
     }
-    if (timedOut) return finish({ checkNote: 'The check ran out of time (five minutes) and was stopped.' })
+    if (timedOut) return finish({ checkNote: `The check ran out of time (${CHECK_TIMEOUT_WORDS}) and was stopped.` })
     const got = resultOf(stdout)
     if (got === null) {
       const why = stderr.trim().split('\n').pop() ?? ''
