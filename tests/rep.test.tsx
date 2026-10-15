@@ -63,6 +63,23 @@ test('a briefing parses every part, the message block whole, and "- nothing" as 
   expect(parseBrief('reading: x\nwell: Going well.\nleft:\n- nothing\nmessage:\nend\ndoes:').leftOut).toEqual([])
 })
 
+test('a card with anything left out never also says the work is going well', async () => {
+  const b = parseBrief('reading: holds\nwell: Every part is shown done.\nstands: x\nmeans: y\nleft:\n- two conversations were kept rather than rewritten\nnext: z\nmessage:\nend\ndoes:')
+  expect(b.leftOut).toEqual(['two conversations were kept rather than rewritten'])
+  expect(b.well).toBe('')
+  expect(parseBrief('reading: holds\nwell: Every part is shown done.\nleft:\n- nothing\nmessage:\nend\ndoes:').well).toBe('Every part is shown done.')
+})
+
+test('the briefs say a chore left for the owner is the agent\'s unfinished work, never his next step', async () => {
+  const m = { reading: { text: 'x', openedAt: 0, since: 0, from: 1, movedAt: null, cause: '', revisions: 0 }, owner: ['Build it.'], past: [], seen: [], others: [] }
+  for (const p of [briefPrompt(m), watchPrompt(m, 'stop')]) {
+    expect(p).toMatch(/He does no step of the job himself, ever\./)
+    expect(p).toMatch(/Never relay such a chore to him as his next step/)
+  }
+  expect(briefPrompt(m)).toMatch(/next: <one or two sentences: what the agent should do next, or that it should stop; never a step for him to do/)
+  expect(checkPrompt({ sessionId: 's', cwd: '/tmp', owner: ['Build it.'], reading: 'x', brief: parseBrief('reading: holds\nstands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm' } as never)).toMatch(/never a step for the owner to do/)
+})
+
 test('helpers: fit cuts with an ellipsis, same ignores case and a final period, doingFor names the work', async () => {
   expect(fit('a long sentence here', 10)).toBe('a long se…')
   expect(fit('short', 10)).toBe('short')
