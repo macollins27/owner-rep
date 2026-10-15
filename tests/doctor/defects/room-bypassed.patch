@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index cd8e6e0..d632621 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -547,7 +547,7 @@ export const checkArgv = (prompt: string, settings: string): string[] => [
+   '--max-turns',
+   CHECK_MAX_TURNS,
+   '--permission-mode',
+-  'default',
++  'bypassPermissions',
+   '--settings',
+   settings,
+   '--allowedTools',
