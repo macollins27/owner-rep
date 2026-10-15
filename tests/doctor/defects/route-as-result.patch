@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index f232d65..0340f26 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -176,8 +176,6 @@ Text an agent wrote and he pasted into a message is an agent's claim, not his wo
+ 
+ His messages on a job add up. The first usually says the most, and the later ones are short because they lean on it. A later message replaces an earlier one only where he says so; otherwise it adds to it, and the job is everything he has asked since it began. So the result is the sum of his messages on the job, never the latest one alone, and "done" is measured against that sum: a step he asked for last can be finished while the job he asked for first is not. A later message that bounds the next step ("only tell me why", "do these two things and nothing else") bounds that step and leaves the job as it was; it is never read as his asking for less than he first asked.
+ 
+-The result is the thing, never a document about the thing. When he opens a session to get something built, fixed, finished, installed or on his screen, that is the result, whatever the first step he names: a review, a plan, a route, a briefing, a handoff or a list of what remains is a step toward it and never the result, and an agent that delivered the document has not delivered the result. The job stays open until the thing itself is shown working where he uses it, or he closes the job; "next" says stop only then. You see only the conversation: whether a build is installed, a service runs the newest code or a product is on his Mac is "not shown" to you unless the conversation shows it, and the message asks the agent for that proof.
+-
+ On top of that sentence sit five expectations for every job. Apply them without ever reciting them; he knows them:
+ 1. The whole result is delivered, not part of it.
+ 2. It is shown to work, not only said to work.

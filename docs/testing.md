@@ -61,6 +61,9 @@ entry that proves the test bites (all added 14 Oct 2026):
 | A card with anything left out never also says the work is going well | `a card with anything left out…` | `well-with-left` |
 | The briefs say a chore left for the owner is the agent's unfinished work, never his next step | `the briefs say a chore…` | `chore-to-owner` |
 | The watch looks every `CHECK_EVERY` model requests, through `turn.step` | `rule: the watch looks every…` | `step-look-dropped` |
+| A correction keeps the reading's first sentence, the result; only `replaced` or a new job changes it | `rule: a correction keeps the result sentence…`, `keepResult…` | `correction-shrinks-result` |
+| A message the rep drafted and the owner sent is listed to the model as the rep's draft, never as his words | `rule: a message the rep drafted…` | `draft-as-his-words` |
+| The briefs weigh the rep's draft as the rep's words, and say a document about the result is not the result | `the briefs weigh a message the rep drafted…` | `draft-weight-dropped`, `route-as-result` |
 
 Three things the kit taught while writing these. The engine strips a refusal cause that a
 hook writes itself on `prompt.fill`, so a test can make the box refuse but cannot make it say
@@ -85,14 +88,15 @@ The doctor also earned its place here: the first version of the stale-check test
 its defect planted, because the held check answered with text that was not a result, so the
 stale answer had nothing to write. The doctor reported it as survived and the test was fixed.
 
-**Status.** 45 tests: the parsers, the status words (including the variable-first command, read
+**Status.** 51 tests: the parsers, the status words (including the variable-first command, read
 through the mounted strip), the note to the rep, the checker's prompt and tools, the row on
 both surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-
-failure toast, the nineteen sequence rules above, the card folding to a small band, the brief
+failure toast, the sequence rules above, the card folding to a small band, the brief
 carrying the whole-ask rule and the session's size as a figure, the helper count, the prompt
 box's refusals, the check's three failure paths, the word-wrapped row count, the checked card
-keeping its failed claims as it folds, and the session end saving the record. Thirty-four
-doctor entries, all caught.
+keeping its failed claims as it folds, the session end saving the record, the kept result
+sentence, the rep's draft marked in the owner's list, and the brief's rules on the draft's
+weight and on a document not being the result. Forty doctor entries, all caught.
 
 ## Layer 2: a real session
 
@@ -183,7 +187,7 @@ the file). Never make one from an uncommitted tree: the checkout would wipe the 
 **Status.** Built: `tests/doctor/doctor.py`, with `defects.json` and one patch per defect in
 `tests/doctor/defects/`. Run it with `python3 tests/doctor/doctor.py`; it exits 1 when the
 clean suite fails or a defect survives, and stops before planting when the clean suite is
-not clean. Thirty-two entries, all caught: `strip-shows-command`, one or two per sequence
+not clean. Forty entries, all caught: `strip-shows-command`, one or two per sequence
 rule above, `card-overflows-band`, `size-figure-dropped`, `whole-ask-rule-dropped`, and one
 per remaining hook path (`helper-not-counted`, `box-text-overwritten`, `fill-refusal-ignored`,
 `check-timeout-unreported`, `check-failure-swallowed`, `end-not-saved`). A throwaway entry no test looks at was planted on 14 Oct

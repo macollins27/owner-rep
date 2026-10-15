@@ -214,5 +214,29 @@
     "breaks": "The briefs lose the rule that a chore the agent leaves for the owner is the agent's unfinished work, so the rep relays the agent's to-do list to him as his next step.",
     "patch": "chore-to-owner.patch",
     "fixed": "2026-10-14"
+  },
+  {
+    "name": "draft-as-his-words",
+    "breaks": "A message the rep drafted and the owner sent is recorded in his list as his own words, unmarked, so the model grades the agent against a job the rep wrote and takes the rep's \"nothing else\" as the owner narrowing his job.",
+    "patch": "draft-as-his-words.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "draft-weight-dropped",
+    "breaks": "The briefs lose the weight for a message marked as the rep's draft, so the model reads one as the owner's words with full authority over what \"done\" means.",
+    "patch": "draft-weight-dropped.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "correction-shrinks-result",
+    "breaks": "A correction replaces the whole reading with the model's rebuilt text, so a message that bounds the next step shrinks the result to the latest message and the first message's ask is dropped.",
+    "patch": "correction-shrinks-result.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "route-as-result",
+    "breaks": "The briefs lose the rule that a document about the result is not the result, so a session opened to get a product finished is called done once a review, route or plan is written.",
+    "patch": "route-as-result.patch",
+    "fixed": "2026-10-15"
   }
 ]

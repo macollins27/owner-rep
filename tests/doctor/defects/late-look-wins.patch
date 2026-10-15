@@ -1,8 +1,8 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 2d59d32..732b224 100644
+index 61c3ff0..3ff5781 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -160,13 +160,13 @@ function takeReading(rec: Rec, a: ReadingAnswer, now: number, saw: number): bool
+@@ -162,15 +162,15 @@ function takeReading(rec: Rec, a: ReadingAnswer, now: number, saw: number): bool
      rec.reading = { text: a.text, openedAt: now, since: 0, from: saw, movedAt: null, cause: '', revisions: 0 }
      return true
    }
@@ -14,8 +14,10 @@ index 2d59d32..732b224 100644
 +    rec.reading = { text: a.text, openedAt: now, since: held.from, from: rec.owner.length, movedAt: now, cause: a.cause, revisions: 0 }
      return true
    }
--  rec.reading = { ...held, text: a.text, from: saw, movedAt: now, cause: a.cause, revisions: held.revisions + 1 }
-+  rec.reading = { ...held, text: a.text, from: rec.owner.length, movedAt: now, cause: a.cause, revisions: held.revisions + 1 }
+   // A correction keeps the result, the first sentence, unless he replaced it.
+   const text = a.isReplaced ? a.text : keepResult(held.text, a.text)
+-  rec.reading = { ...held, text, from: saw, movedAt: now, cause: a.cause, revisions: held.revisions + 1 }
++  rec.reading = { ...held, text, from: rec.owner.length, movedAt: now, cause: a.cause, revisions: held.revisions + 1 }
    return true
  }
  
