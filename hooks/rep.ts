@@ -1309,24 +1309,52 @@ export function mergeConditions(
 export const OPEN_NEXT = (open: Condition[]): string =>
   `The job is still open: ${open.map(c => c.text).join('; ')}. The agent shows these, or says what stands in the way, before anything stops.`
 
+// What a refused card says the agent's work means for him: the objective is
+// not shown complete, with the conditions still open and their marks.
+export const OPEN_MEANS = (open: Condition[]): string =>
+  `The agent has not shown the objective complete: ${open.map(conditionLine).join('; ')} ${open.length === 1 ? 'is' : 'are'} still open.`
+
+// The message a refused card offers to send in place of the model's: it keeps
+// the agent on the job, never tells it to stop.
+export const OPEN_MESSAGE = (open: Condition[]): string =>
+  `The job is not finished. These conditions of done are still open:\n${list(open.map(conditionLine), '- none')}\nBefore anything stops, show each one working, or say what stands in the way.`
+
+// What sending that message makes the agent do.
+export const OPEN_DOES = 'Keeps the agent on the job until it shows each open condition working or says what stands in the way.'
+
 // Added to the brief when its answer said stop, or that the work is going
 // well, while a condition was open: the brief is asked once more, with the
 // open conditions named.
 export const askAgain = (open: Condition[]): string => `## Asked once more
 
-Your answer to this request said the agent should stop, or that the work is going well, while these conditions of done are still open:
+The first answer to this request said the agent should stop, or that the work is going well, while these conditions of done are still open:
 ${list(open.map(conditionLine), '- none')}
 
-Neither may stand while any of them is open. Look at the conversation again: put under "shown:" each one it now shows, with where it shows it, and under "closed:" each one he closed in a message of his own, with that message's number. Then give the whole briefing again, in the same structure: while any of them stays open the verdict is "continue", "well" is empty, and "next" says what the agent does to show it or what stands in the way.`
+Neither may stand while any of them is open. Look at the conversation again: put under "shown:" each one it now shows, with where it shows it, and under "closed:" each one he closed in a message of his own, with that message's number. Then give the whole briefing again, in the same structure: while any of them stays open the verdict is "continue", "well" is empty, "stands", "means" and "message" do not call the work finished or tell the agent to stop, and "next" says what the agent does to show it or what stands in the way.`
 
 // The objective is not finished while a condition is open: a stop verdict or a
 // going-well line is refused, the conditions are listed as left out, and the
-// agent is told to show them.
+// card's meaning, next step, message and what it does are replaced with the
+// rep's own, so nothing on a refused card calls the work finished or offers
+// the agent a stop. What the agent did ("stands") is kept as the model wrote it.
 export function gateVerdict(a: BriefAnswer, open: Condition[]): { answer: BriefAnswer; refused: boolean } {
   if (open.length === 0 || (a.verdict !== 'stop' && a.well === '')) return { answer: a, refused: false }
   const leftOut = [...a.leftOut]
   for (const c of open) {
-    if (!leftOut.some(l => same(l, c.text))) leftOut.push(c.state === 'not-shown' ? `${c.text} (not shown)` : c.text)
+    // An entry already listed, with or without its state mark, is not listed again.
+    if (!leftOut.some(l => same(bare(l), c.text))) leftOut.push(c.state === 'not-shown' ? `${c.text} (not shown)` : c.text)
   }
-  return { answer: { ...a, verdict: 'continue', well: '', next: OPEN_NEXT(open), leftOut }, refused: true }
+  return {
+    answer: {
+      ...a,
+      verdict: 'continue',
+      well: '',
+      means: OPEN_MEANS(open),
+      next: OPEN_NEXT(open),
+      message: OPEN_MESSAGE(open),
+      does: OPEN_DOES,
+      leftOut,
+    },
+    refused: true,
+  }
 }
