@@ -3500,6 +3500,61 @@ test('rule: a card message he sent in the session this one was forked from is re
   ])
 })
 
+// A session the rep holds no record of, whose start's grep of the transcript is held until
+// the test lets it go; `greps` counts the reads.
+const heldSeed = (on: On) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS }))
+  mock.env(on, { HOME: '/Users/o' })
+  on('session.cwd', () => ({ value: CWD }))
+  let release: () => void = () => undefined
+  const gate = new Promise<void>(r => (release = r))
+  const reads = { greps: 0 }
+  on('process.run', async () => {
+    reads.greps += 1
+    await gate
+    const lines = SEEDED_FILE.split('\n').filter(l => l.includes('"kind":"human"'))
+    return { value: { exitCode: 0, stdout: `${lines.join('\n')}\n`, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
+  writer(on, () => OBJ('A licence file with the MIT text and this year, and a changelog.', ['the file pushed | open'], '#1 to #3'))
+  return { rec, release: () => release(), reads }
+}
+
+// Whether a submit is still held a tenth of a second of real time after it is sent, by the
+// runtime's timer, which the kit's declarations do not list.
+const heldBack = async (sent: Promise<unknown>) => {
+  const wait = (globalThis as unknown as { setTimeout: (f: () => void, ms: number) => unknown }).setTimeout
+  return (await Promise.race([sent.then(() => 'sent'), new Promise(r => wait(() => r('held'), 100))])) === 'held'
+}
+
+test('rule: a prompt he sends while the start is still reading the session waits for that read, so his seeded messages come first and the prompt last', async ($, on) => {
+  const { rec, release, reads } = heldSeed(on)
+  await started($)
+  const sent = $.prompt.submit(typed('Also add a changelog.'))
+  // The prompt is held behind the start's read, not recorded ahead of it.
+  expect(await heldBack(sent)).toBe(true)
+  release()
+  await sent
+  await settle($)
+  expect(rec()?.owner).toEqual([...SEEDED, { n: 3, kind: 'his', text: 'Also add a changelog.', prior: '' }])
+  // The prompt's own seed is the start's read, not a second one.
+  expect(reads.greps).toBe(1)
+})
+
+test('rule: a note to the rep sent while the start is still reading the session waits for that read, and is numbered after his seeded messages', async ($, on) => {
+  const { rec, release, reads } = heldSeed(on)
+  await started($)
+  const sent = $.prompt.submit(typed('Owner rep: the year matters most.'))
+  expect(await heldBack(sent)).toBe(true)
+  release()
+  await sent
+  await settle($)
+  expect(rec()?.owner).toEqual([...SEEDED, { n: 3, kind: 'note', text: 'the year matters most.', prior: '' }])
+  expect(reads.greps).toBe(1)
+})
+
 test('rule: a record that holds a message of his is not seeded from the session, at a start or a press', async ($, on) => {
   const rec = kept(on, unwritten())
   on('session.start', (_$, e) => ({ cwd: e.cwd }))

@@ -1,10 +1,10 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 8df3376..2d3698e 100644
+index 1e7dd4a..ed42cfd 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -910,6 +910,7 @@ async function storedDrafts($: EngineInterface): Promise<string[]> {
- // it never adds to a live record. Says whether it recorded any.
- async function seedOwner($: EngineInterface, sid: string): Promise<boolean> {
+@@ -920,6 +920,7 @@ function seedOwner($: EngineInterface, sid: string): Promise<boolean> {
+ }
+ async function seedOnce($: EngineInterface, sid: string): Promise<boolean> {
    const has = (rec: Rec) => rec.owner.some(m => m.kind !== 'draft')
 +  return false
    if (has(await loadRec($, sid))) return false

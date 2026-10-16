@@ -907,8 +907,18 @@ async function storedDrafts($: EngineInterface): Promise<string[]> {
 // and recorded in order as `prompt.submit` records them, each with the agent's last words
 // before it, a draft he sent split off as the rep's, matched against the drafts of every
 // record in the store. It does nothing when the record holds a message or a note of his, so
-// it never adds to a live record. Says whether it recorded any.
-async function seedOwner($: EngineInterface, sid: string): Promise<boolean> {
+// it never adds to a live record. Says whether it recorded any. One read per session at a
+// time: a seed asked for while one runs (the start's, when he sends a prompt at once) is
+// that one, and `prompt.submit` waits for it, so his live prompt is numbered after it.
+const seeding = new Map<string, Promise<boolean>>()
+function seedOwner($: EngineInterface, sid: string): Promise<boolean> {
+  const running = seeding.get(sid)
+  if (running !== undefined) return running
+  const seed = seedOnce($, sid).finally(() => seeding.delete(sid))
+  seeding.set(sid, seed)
+  return seed
+}
+async function seedOnce($: EngineInterface, sid: string): Promise<boolean> {
   const has = (rec: Rec) => rec.owner.some(m => m.kind !== 'draft')
   if (has(await loadRec($, sid))) return false
   const rows = await $.session.messages().catch(() => [])
@@ -1055,6 +1065,8 @@ export const register: Register = on => {
         if (note === '') return { drop: 'Owner rep: nothing after the prefix, so nothing noted.' }
         try {
           const id = await sessionId($)
+          // His messages read from the session first, so the note is numbered after them.
+          await seedOwner($, id).catch(() => false)
           await takeNote($, id, note)
           // The note is his and can move the objective: the writer reads it first.
           rebuildObjective($, id, 'note').catch(() => undefined)
@@ -1078,6 +1090,9 @@ export const register: Register = on => {
       const note = noted === null ? '' : noted.note
       try {
         const id = await sessionId($)
+        // A session the rep holds no record of has his messages read from the session
+        // first (or the start's read finished), so this prompt is numbered after them.
+        const seeded = await seedOwner($, id).catch(() => false)
         const view = await read($, viewA)
         const { rec, split, isHis } = await changeRec($, id, async rec => {
           // A message the rep drafted and he sent is recorded as the rep's words,
@@ -1111,7 +1126,7 @@ export const register: Register = on => {
         // The note is numbered after the prompt it was typed behind.
         if (note !== '') await takeNote($, id, note)
         // A message of his can move the objective: the writer reads it, never the agent's words.
-        if (isHis || note !== '') rebuildObjective($, id, note !== '' ? 'note' : 'message').catch(() => undefined)
+        if (isHis || note !== '' || seeded) rebuildObjective($, id, note !== '' ? 'note' : 'message').catch(() => undefined)
         if (note !== '') {
           lookAtNote(id)
           $.ui.toast('Owner rep: the part after "Owner rep:" went to the rep only; the agent got the rest.')

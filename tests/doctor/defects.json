@@ -520,5 +520,17 @@
     "breaks": "A slash command he ran is matched and recorded in the engine's saved tags rather than as he typed it, so a command with words after it is never proven his, and a bare one counts as a message.",
     "patch": "command-form-raw.patch",
     "fixed": "2026-10-16"
+  },
+  {
+    "name": "seed-races-prompt",
+    "breaks": "A prompt he sends while the session is still being read for his messages is recorded first, and the read then finds his message on record and seeds nothing, so every earlier message of his is lost to the objective.",
+    "patch": "seed-races-prompt.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "seed-races-note",
+    "breaks": "A note to the rep sent while the session is still being read for his messages is recorded first, and the read then seeds nothing, so the objective is written from the note alone.",
+    "patch": "seed-races-note.patch",
+    "fixed": "2026-10-16"
   }
 ]
