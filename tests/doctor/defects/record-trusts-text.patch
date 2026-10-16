@@ -1,8 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 7dc8332..e6349d5 100644
+index 0d26727..9273152 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -836,7 +836,7 @@ export function recordText(rows: readonly RecordRow[], budget: number, human?: R
+@@ -839,7 +839,7 @@ export function recordText(rows: readonly RecordRow[], budget: number, human?: R
        continue
      }
      if (text === '') continue
@@ -10,4 +10,4 @@ index 7dc8332..e6349d5 100644
 +    const his = !notTyped(text)
      entries.push(
        his
-         ? `#${n} the person:\n${headTail(typedForm(row.text), RECORD_ENTRY_CUT)}`
+         ? `entry ${n} the person:\n${headTail(typedForm(row.text), RECORD_ENTRY_CUT)}`

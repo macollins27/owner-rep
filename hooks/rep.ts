@@ -803,7 +803,8 @@ const compactJson = (v: unknown): string => {
 }
 
 // The session as a record for a reader that cannot fork it: one numbered entry per row,
-// oldest first. His rows are "the person": with the keys proven from the transcript (`human`),
+// oldest first, each labelled "entry N", never "#N", which is how his messages on the job
+// are numbered, so no record entry can be cited (or read by applyMarks) as one of them. His rows are "the person": with the keys proven from the transcript (`human`),
 // only a row whose key is among them, NOT_TYPED applied after as a second filter; with none
 // (the file could not be read), any row NOT_TYPED does not name. Every other row on his side
 // is the session's. The agent's rows carry each tool use on one line, its input as compact
@@ -826,7 +827,7 @@ export function recordText(rows: readonly RecordRow[], budget: number, human?: R
         if (u.text !== undefined && u.tool_use_id !== undefined) printed.add(u.tool_use_id)
         lines.push(`- used ${u.tool} ${input} → ${result}`)
       }
-      if (lines.length > 0) entries.push(`#${n} the agent:\n${lines.join('\n')}`)
+      if (lines.length > 0) entries.push(`entry ${n} the agent:\n${lines.join('\n')}`)
       continue
     }
     const text = withoutReminders(row.text)
@@ -834,15 +835,15 @@ export function recordText(rows: readonly RecordRow[], budget: number, human?: R
     if ((row.toolResults ?? []).length > 0) {
       const lines = results.map(r => `- ${r.isError ? '(error) ' : ''}${headTail(oneLine(r.text), RECORD_TOOL_CUT)}`)
       if (text !== '') lines.push(headTail(text, RECORD_TOOL_CUT))
-      if (lines.length > 0) entries.push(`#${n} tool results returned to the agent (not the person's words):\n${lines.join('\n')}`)
+      if (lines.length > 0) entries.push(`entry ${n} tool results returned to the agent (not the person's words):\n${lines.join('\n')}`)
       continue
     }
     if (text === '') continue
     const his = human === undefined ? !notTyped(text) : human.has(typedKey(row.text)) && !notTyped(typedForm(row.text))
     entries.push(
       his
-        ? `#${n} the person:\n${headTail(typedForm(row.text), RECORD_ENTRY_CUT)}`
-        : `#${n} the session (written by Claude Code, not typed by the person):\n${headTail(text, RECORD_ENTRY_CUT)}`,
+        ? `entry ${n} the person:\n${headTail(typedForm(row.text), RECORD_ENTRY_CUT)}`
+        : `entry ${n} the session (written by Claude Code, not typed by the person):\n${headTail(text, RECORD_ENTRY_CUT)}`,
     )
   }
   const fencedEntries = entries.map(e => fenceTag(e, 'session_record'))
@@ -856,7 +857,7 @@ export function recordText(rows: readonly RecordRow[], budget: number, human?: R
   }
   const kept = fencedEntries.slice(from)
   if (kept.length === 0) return '(nothing recorded)'
-  const head = from > 0 ? [`[The oldest ${from} ${from === 1 ? 'entry is' : 'entries are'} left out to keep the record within its size; it starts at #${from + 1}.]`] : []
+  const head = from > 0 ? [`[The oldest ${from} ${from === 1 ? 'entry is' : 'entries are'} left out to keep the record within its size; it starts at entry ${from + 1}.]`] : []
   return [...head, ...kept].join('\n\n')
 }
 

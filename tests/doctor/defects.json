@@ -604,5 +604,11 @@
     "breaks": "the press never falls back to the session record, so a briefing in a reopened session says there is nothing to read",
     "patch": "press-skips-record.patch",
     "fixed": "2026-10-16"
+  },
+  {
+    "name": "record-numbers-as-messages",
+    "breaks": "The session record labels its entries #N, the form his numbered messages take, so a record entry can be cited, and read by applyMarks, as one of his messages.",
+    "patch": "record-numbers-as-messages.patch",
+    "fixed": "2026-10-16"
   }
 ]
