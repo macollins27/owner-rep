@@ -48,7 +48,7 @@ entry that proves the test bites (added 14 Oct 2026; the objective's rules 15 Oc
 | The note waits while another mod draws beneath | `rule: the note waits…` | `note-over-other-mod` |
 | The digit hotkeys leave the row while another mod draws, and come back | `rule: the digit hotkeys…` | `digits-doubled` |
 | The store keeps only the newest `SESSIONS_MAX` sessions | `rule: the store keeps…` | `sessions-unbounded` |
-| A record the store lets go leaves its drafts in a kept list of up to `DROPPED_DRAFTS_MAX`, newest first, each once, and a seed reads that list, so a card message he sent in a session whose record was let go is still the rep's draft | `rule: a record the store lets go leaves its drafts…`, `recDrafts takes a record's cards' messages…`, `rule: a card message he sent in a session whose record the store has let go…` | `dropped-drafts-lost`, `dropped-drafts-unread`, `dropped-drafts-uncapped`, `dropped-drafts-oldest-first` |
+| A record the store lets go leaves its drafts in a kept list of up to `DROPPED_DRAFTS_MAX`, newest first, each once, and a seed reads that list, so a card message he sent in a session whose record was let go is still the rep's draft; the seed reads the records before that list, the reverse of the order they are written, so a record let go between its two reads is found in one | `rule: a record the store lets go leaves its drafts…`, `recDrafts takes a record's cards' messages…`, `rule: a card message he sent in a session whose record the store has let go…`, `rule: a record let go while the drafts are being read…` | `dropped-drafts-lost`, `dropped-drafts-unread`, `dropped-drafts-uncapped`, `dropped-drafts-oldest-first`, `dropped-drafts-read-order` |
 | The objective is written by its own call from the owner's messages, never by the looks; the row shows its result | `rule: the objective is written by its own call…` | `looks-write-objective`, `writer-forks-conversation`, `row-shows-whole-reading` |
 | The agent's words never move the objective; a message of the owner's does, with the cause on the card; a draft he sent moves only the step | `rule: the agent's words never move…` | `revision-cause-dropped`, `draft-moves-result` |
 | A note to the rep is dropped before the agent sees it and cleared from the box, listed as said to the rep, read at once | `rule: a note to the rep…` | `note-reaches-agent`, `note-never-read`, `note-left-in-box` |
@@ -123,7 +123,7 @@ objective it checked came from the writer's own call. The test now sends a furth
 the writer answers with `objective: holds` and a look whose answer carries an objective in
 the writer's shape, and asserts that the objective is unchanged.
 
-**Status.** 149 tests: the parsers, the status words (including the variable-first command, read
+**Status.** 150 tests: the parsers, the status words (including the variable-first command, read
 through the mounted strip), the note to the rep, the checker's prompt and tools, the row on
 both surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-
 failure toast, the sequence rules above, the card folding to a small band, the brief
@@ -171,11 +171,11 @@ hand-back forms refused; after it, a wait on him negated with words between ("Do
 wait for him") going on, and approval from someone else not read as his; after the replay
 of the guidance session, a draft he sent that the forked-from record holds only among his
 messages recognised as the rep's, and the drafts of a record the store lets go kept in a list
-of their own, newest first, and read by the seed; and a `/clear`: his messages after it filed under the new
+of their own, newest first, and read by the seed after the records, so one let go between the two reads is in one of them; and a `/clear`: his messages after it filed under the new
 session, the old session's objective off the row at once, a write, a briefing or a check the
 old session started landing in its own record without drawing, a press straight after it read
 under the new id, and a session resumed in the same window read for his messages before his
-next one is recorded under it. A hundred and sixty doctor entries, all caught.
+next one is recorded under it. A hundred and sixty-one doctor entries, all caught.
 
 ## Layer 2: a real session
 
@@ -297,7 +297,7 @@ the file). Never make one from an uncommitted tree: the checkout would wipe the 
 **Status.** Built: `tests/doctor/doctor.py`, with `defects.json` and one patch per defect in
 `tests/doctor/defects/`. Run it with `python3 tests/doctor/doctor.py`; it exits 1 when the
 clean suite fails or a defect survives, and stops before planting when the clean suite is
-not clean. A hundred and sixty entries, all caught: `strip-shows-command`, one or more per sequence
+not clean. A hundred and sixty-one entries, all caught: `strip-shows-command`, one or more per sequence
 rule above, `card-overflows-band`, `size-figure-dropped`, `whole-ask-rule-dropped`, and one
 per remaining hook path (`helper-not-counted`, `box-text-overwritten`, `fill-refusal-ignored`,
 `check-timeout-unreported`, `check-failure-swallowed`, `end-not-saved`), and six for a

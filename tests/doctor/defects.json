@@ -948,6 +948,12 @@
     "fixed": "2026-10-16"
   },
   {
+    "name": "dropped-drafts-read-order",
+    "breaks": "The drafts reader reads the kept list before the records, the order the store writes them, so a record let go between the two reads is in neither and a card message he sent there is seeded as his own words.",
+    "patch": "dropped-drafts-read-order.patch",
+    "fixed": "2026-10-16"
+  },
+  {
     "name": "dropped-drafts-uncapped",
     "breaks": "The kept drafts of records let go grow without end.",
     "patch": "dropped-drafts-uncapped.patch",

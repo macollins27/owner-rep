@@ -37,7 +37,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 149 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 150 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -327,7 +327,9 @@ next step and message, the last `DRAFTS_MAX` (3) cards' messages in `rec.drafts`
 at `SESSIONS_MAX` newest. A record `saveRec` lets go leaves its drafts (`recDrafts`: its
 `rec.drafts`, last briefing's message and messages held as `draft`) in the key
 `droppedDrafts`, newest first, each once, up to `DROPPED_DRAFTS_MAX` (200) (`keepDropped`);
-a fork's own first save can let go the record it was forked from. `loadRec`/`saveRec` are the only way in and out, and `changeRec`
+a fork's own first save can let go the record it was forked from. `storedDrafts` reads
+`sessions` before `droppedDrafts`, the reverse of `saveRec`'s order, so a record let go
+between its two reads is in one of them. `loadRec`/`saveRec` are the only way in and out, and `changeRec`
 runs each change alone from its load to its save, so two hooks that finish together never save
 over each other. Atoms and the module's own values outlive a session: a `/clear` or a resume
 goes on in the same process under a new session id, and no `session.start` fires for it. So
