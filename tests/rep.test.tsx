@@ -1,7 +1,7 @@
 import type { On } from 'claude-code'
 import { expect, mock, test, type Engine } from 'claude-code/testing'
 
-import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, type Condition } from '../hooks/rep'
+import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition } from '../hooks/rep'
 
 const om = (text: string, n = 1): OwnerMsg => ({ n, kind: 'his', text, prior: '' })
 
@@ -971,7 +971,7 @@ const HOLDS = 'state: stopped\nflag: none'
 const settle = async ($: Engine) => (await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })).unmount()
 
 // What the store holds for the session, as the tests read it back.
-type Stored = { objective: Objective | null; owner: OwnerMsg[]; past: string[]; jobStart: number; objectiveCalls: number; objectiveTokens: number; calls: number; checks: number; seen: string[]; lastBrief?: { at: number; next: string; message: string }; drafts?: string[]; objectiveFailed?: number }
+type Stored = { objective: Objective | null; owner: OwnerMsg[]; past: string[]; jobStart: number; objectiveCalls: number; objectiveTokens: number; calls: number; checks: number; seen: string[]; lastBrief?: { at: number; next: string; message: string }; drafts?: string[]; objectiveFailed?: number; objectiveWhy?: string }
 
 // A session whose store the test reads back: the function returns the record as saved.
 const kept = (on: On, store: Record<string, unknown> = {}) => {
@@ -1369,18 +1369,20 @@ test('rule: the writer not answering leaves the objective as it was and the next
   await settle($)
   expect(await rowSays($, /^Owner rep · working out the result you want from your messages…$/)).toBe(true)
   expect(rec()?.objective).toBe(null)
-  expect(rec()?.objectiveCalls).toBe(1)
+  // The empty reply is tried again twice, each a call.
+  expect(rec()?.objectiveCalls).toBe(3)
+  expect(rec()?.objectiveFailed).toBe(1)
   // A malformed answer is no better: the objective is left as it was.
   answer = 'result: A licence file.'
   await $.prompt.submit(typed('the MIT one'))
   await settle($)
   expect(rec()?.objective).toBe(null)
-  expect(rec()?.objectiveCalls).toBe(2)
+  expect(rec()?.objectiveCalls).toBe(6)
   answer = OBJ('A licence file with the full MIT text.', ['the file committed | open'])
   await $.prompt.submit(typed('with this year on it'))
   await settle($)
-  expect(writes).toHaveLength(3)
-  expect(writes[2]).toMatch(/\n- #1 add a licence\n- #2 the MIT one\n- #3 with this year on it\n/)
+  expect(writes).toHaveLength(7)
+  expect(writes[6]).toMatch(/\n- #1 add a licence\n- #2 the MIT one\n- #3 with this year on it\n/)
   expect(rec()?.objective).toMatchObject({ result: 'A licence file with the full MIT text.', since: 1, from: 3 })
   expect(await rowSays($, /^Owner rep · A licence file with the full MIT text\.$/)).toBe(true)
 })
@@ -1411,17 +1413,17 @@ test('rule: with no objective held, a press writes it before the briefing, which
   // The write at the session's start gets no answer: no objective yet.
   await $.session.start({ cwd: '/tmp/x', surface: 'terminal', isInteractive: true })
   await settle($)
-  expect(order).toEqual(['write'])
+  expect(order).toEqual(['write', 'write', 'write'])
   expect(rec()?.objective).toBe(null)
   answer = OBJ('A licence file with the full MIT text.', ['the file committed | open'])
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   await ui.press({ key: 'rep' })
-  expect(order).toEqual(['write', 'write', 'brief'])
+  expect(order).toEqual(['write', 'write', 'write', 'write', 'brief'])
   expect(looks[0]).toMatch(/A licence file with the full MIT text\. So he can rely on it\. Done when: the file committed\./)
   expect(await ui.find({ type: 'Text', text: /A licence file with the full MIT text\. So he can rely on it\./ })).toBeDefined()
-  // The price line counts the writer's calls beside the looks: two writes, and the
-  // unanswered one also as a failed write.
-  expect(await ui.find({ type: 'Text', text: /^Owner rep: 1 look, 2 objective writes \(2k tokens\), 1 objective write failed this session;/ })).toBeDefined()
+  // The price line counts the writer's calls beside the looks: four writes (the start's three attempts, all
+  // unanswered, count as one failed write, then the press's).
+  expect(await ui.find({ type: 'Text', text: /^Owner rep: 1 look, 4 objective writes \(4k tokens\), 1 objective write failed \(last: the model sent back nothing\) this session;/ })).toBeDefined()
   await ui.unmount()
   expect(rec()?.objective?.since).toBe(1)
 })
@@ -1463,16 +1465,109 @@ test('rule: a held objective stays as it was when the write for his next message
   expect(rec()?.objectiveFailed).toBe(1)
   await $.prompt.submit(typed('with a footer'))
   await settle($)
-  expect(calls).toBe(2)
+  // The empty reply is retried twice: three more calls after the thrown one.
+  expect(calls).toBe(4)
   expect(rec()?.objective).toEqual(OBJECTIVE_FIXTURE)
-  expect(rec()?.objectiveCalls).toBe(1)
+  expect(rec()?.objectiveCalls).toBe(3)
   expect(rec()?.objectiveFailed).toBe(2)
+})
+
+test('rule: an empty write is retried at the highest effort and the retry\'s objective is taken', async ($, on) => {
+  const rec = kept(on, unwritten())
+  quietBand(on)
+  const asks: Array<{ effort: unknown; maxTokens: number | undefined; timeoutMs: number | undefined }> = []
+  on('model.complete', (_$, e) => {
+    asks.push({ effort: e.effort, maxTokens: e.maxTokens, timeoutMs: e.timeoutMs })
+    return { value: asks.length === 1 ? { isAnswered: false, reason: 'empty-reply', usage: USAGE } : { isAnswered: true, text: OBJ('A licence file with the full MIT text.', ['the file committed | open']), usage: USAGE } }
+  })
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  await $.session.start({ cwd: '/tmp/x', surface: 'terminal', isInteractive: true })
+  await settle($)
+  expect(asks).toEqual([
+    { effort: 'high', maxTokens: OBJECTIVE_MAX_TOKENS, timeoutMs: OBJECTIVE_TIMEOUT_MS },
+    { effort: OBJECTIVE_RETRY_EFFORT, maxTokens: OBJECTIVE_RETRY_MAX_TOKENS, timeoutMs: OBJECTIVE_RETRY_TIMEOUT_MS },
+  ])
+  expect(rec()?.objective?.result).toMatch(/licence file/)
+  expect(rec()?.objectiveCalls).toBe(2)
+  expect(rec()?.objectiveFailed ?? 0).toBe(0)
+})
+
+test('rule: a holds answer with nothing held is a failed attempt and is retried', async ($, on) => {
+  const rec = kept(on, unwritten())
+  quietBand(on)
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  let calls = 0
+  on('model.complete', () => {
+    calls += 1
+    return { value: { isAnswered: true, text: calls === 1 ? 'objective: holds' : OBJ('A licence file with the full MIT text.', ['the file committed | open']), usage: USAGE } }
+  })
+  await $.session.start({ cwd: '/tmp/x', surface: 'terminal', isInteractive: true })
+  await settle($)
+  expect(calls).toBe(2)
+  expect(rec()?.objective?.result).toMatch(/licence file/)
+  expect(rec()?.objectiveFailed ?? 0).toBe(0)
+})
+
+test('rule: a write whose every attempt fails is one failed write, and the price line names the last cause in plain words', async ($, on) => {
+  const rec = kept(on, unwritten())
+  quietBand(on)
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  let calls = 0
+  on('model.complete', () => {
+    calls += 1
+    return { value: { isAnswered: false, reason: 'empty-reply', usage: USAGE } }
+  })
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('Fine.'), usage: USAGE } }))
+  await $.session.start({ cwd: '/tmp/x', surface: 'terminal', isInteractive: true })
+  await settle($)
+  expect(calls).toBe(3)
+  expect(rec()?.objective).toBe(null)
+  expect(rec()?.objectiveCalls).toBe(3)
+  expect(rec()?.objectiveFailed).toBe(1)
+  expect(rec()?.objectiveWhy).toMatch(/^empty-reply/)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  // The press writes once more (three more attempts), so the line counts two failed writes.
+  expect(await ui.find({ type: 'Text', text: /2 objective writes failed \(last: the model sent back nothing\)/ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('rule: a write cut short is not retried', async ($, on) => {
+  const rec = kept(on, unwritten())
+  quietBand(on)
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  let calls = 0
+  on('model.complete', () => {
+    calls += 1
+    return { value: { isAnswered: false, reason: 'aborted', usage: USAGE } }
+  })
+  await $.session.start({ cwd: '/tmp/x', surface: 'terminal', isInteractive: true })
+  await settle($)
+  expect(calls).toBe(1)
+  expect(rec()?.objectiveFailed).toBe(1)
+  expect(rec()?.objectiveWhy).toMatch(/^aborted/)
+})
+
+test('failureWords turns a recorded cause into words and leaves an unknown one empty', () => {
+  expect(failureWords('empty-reply (0 output tokens)')).toBe('the model sent back nothing')
+  expect(failureWords('api-error 529 overloaded')).toBe('the model service returned an error')
+  expect(failureWords('aborted')).toBe('the call was cut short')
+  expect(failureWords('unreadable: result: x')).toBe('its answer could not be read')
+  expect(failureWords('holds-with-none')).toBe('it answered with no objective to hold')
+  expect(failureWords('refused')).toBe('the call was not sent')
+  expect(failureWords('')).toBe('')
+  expect(spentText(0, 0, 0, 0, 0, 3, 3000, 1, 'empty-reply')).toContain(', 1 objective write failed (last: the model sent back nothing)')
 })
 
 test('rule: the writer asks for its measured limits, and an answered write it cannot read is counted as failed and changes nothing', async ($, on) => {
   // One real write, measured 16 Oct 2026, took 20 seconds and 1,847 output tokens, most of them thinking.
   expect(OBJECTIVE_MAX_TOKENS).toBeGreaterThanOrEqual(4000)
   expect(OBJECTIVE_TIMEOUT_MS).toBeGreaterThanOrEqual(90000)
+  // Max effort took 40 to 51 s and 3,873 to 5,024 output tokens on one short ask, measured 16 Oct 2026.
+  expect(OBJECTIVE_RETRIES).toBeGreaterThanOrEqual(2)
+  expect(OBJECTIVE_RETRY_EFFORT).toBe('max')
+  expect(OBJECTIVE_RETRY_MAX_TOKENS).toBeGreaterThanOrEqual(8000)
+  expect(OBJECTIVE_RETRY_TIMEOUT_MS).toBeGreaterThanOrEqual(120000)
   const rec = kept(on, {
     sessions: {
       'test-session': { id: 'test-session', at: Date.now(), objective: OBJECTIVE_FIXTURE, jobStart: 1, owner: [om('build the spec')], counter: 1, past: [], seen: [], others: [] },
@@ -1488,22 +1583,25 @@ test('rule: the writer asks for its measured limits, and an answered write it ca
   })
   await $.prompt.submit(typed('and add a second page'))
   await settle($)
-  expect(asks).toEqual([{ maxTokens: OBJECTIVE_MAX_TOKENS, timeoutMs: OBJECTIVE_TIMEOUT_MS }])
+  // An answer it cannot read is retried at the highest effort, twice; all three failing is one failed write.
+  const retry = { maxTokens: OBJECTIVE_RETRY_MAX_TOKENS, timeoutMs: OBJECTIVE_RETRY_TIMEOUT_MS }
+  expect(asks).toEqual([{ maxTokens: OBJECTIVE_MAX_TOKENS, timeoutMs: OBJECTIVE_TIMEOUT_MS }, retry, retry])
   expect(rec()?.objective).toEqual(OBJECTIVE_FIXTURE)
-  expect(rec()?.objectiveCalls).toBe(1)
+  expect(rec()?.objectiveCalls).toBe(3)
   expect(rec()?.objectiveFailed).toBe(1)
+  expect(rec()?.objectiveWhy).toMatch(/^unreadable: result: The spec finished/)
   // A moved answer cut off before its result is unreadable too.
   answer = 'objective: moved\nmoved: #3 asked for a footer'
   await $.prompt.submit(typed('with a footer'))
   await settle($)
   expect(rec()?.objective).toEqual(OBJECTIVE_FIXTURE)
-  expect(rec()?.objectiveCalls).toBe(2)
+  expect(rec()?.objectiveCalls).toBe(6)
   expect(rec()?.objectiveFailed).toBe(2)
   // An answer that says the objective holds is read, and is no failure.
   answer = 'objective: holds'
   await $.prompt.submit(typed('thanks'))
   await settle($)
-  expect(asks).toHaveLength(3)
+  expect(asks).toHaveLength(7)
   expect(rec()?.objective).toEqual(OBJECTIVE_FIXTURE)
   expect(rec()?.objectiveFailed).toBe(2)
 })
@@ -2167,8 +2265,8 @@ test('rule: a record saved in the old shape is rebuilt on the next press, with t
   answer = unused()
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   await ui.press({ key: 'rep' })
-  expect(writes).toHaveLength(2)
-  expect(writes[1]).toMatch(/\n- #1 Guide me until the spec is finished\n- #2 Nothing is finished until the newest build is installed\n- #3 \(your draft, sent by him\) Now do two things/)
+  expect(writes).toHaveLength(4)
+  expect(writes[3]).toMatch(/\n- #1 Guide me until the spec is finished\n- #2 Nothing is finished until the newest build is installed\n- #3 \(your draft, sent by him\) Now do two things/)
   expect(await ui.find({ type: 'Text', text: /Guidance until the spec is finished and running on his Mac\./ })).toBeDefined()
   await ui.unmount()
   expect(looks[0]).toMatch(/Done when: the newest build installed \(not shown\); the two stopped-short sessions finished \(not shown\)\./)

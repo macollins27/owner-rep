@@ -46,6 +46,10 @@ import {
   OBJECTIVE_MAX_TOKENS,
   OBJECTIVE_MODEL,
   OBJECTIVE_TIMEOUT_MS,
+  OBJECTIVE_RETRIES,
+  OBJECTIVE_RETRY_EFFORT,
+  OBJECTIVE_RETRY_MAX_TOKENS,
+  OBJECTIVE_RETRY_TIMEOUT_MS,
   objectivePrompt,
   objectiveText,
   openConditions,
@@ -397,31 +401,45 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
     const due = !(onlyFirst && rec.objective !== null) && hisFrom(rec, Math.max(jobOf(rec), shown + 1)).length > 0
     if (due) {
       shown = saw
-      const result = await $.model
-        .complete({
-          model: OBJECTIVE_MODEL,
-          prompt: objectivePrompt({ objective: rec.objective, owner: jobMsgs(rec), past: rec.past }),
-          maxTokens: OBJECTIVE_MAX_TOKENS,
-          effort: 'high',
-          timeoutMs: OBJECTIVE_TIMEOUT_MS,
+      // Up to 1 + OBJECTIVE_RETRIES attempts over the same prompt: an empty or errored
+      // reply, an answer that cannot be read and a "holds" with nothing held are tried
+      // again at the highest effort; a call that threw or was cut short is not. Only a
+      // write whose every attempt failed counts as failed, with the last cause.
+      const prompt = objectivePrompt({ objective: rec.objective, owner: jobMsgs(rec), past: rec.past })
+      let after = rec
+      for (let attempt = 0; attempt <= OBJECTIVE_RETRIES; attempt++) {
+        const retry = attempt > 0
+        const result = await $.model
+          .complete({
+            model: OBJECTIVE_MODEL,
+            prompt,
+            maxTokens: retry ? OBJECTIVE_RETRY_MAX_TOKENS : OBJECTIVE_MAX_TOKENS,
+            effort: retry ? OBJECTIVE_RETRY_EFFORT : 'high',
+            timeoutMs: retry ? OBJECTIVE_RETRY_TIMEOUT_MS : OBJECTIVE_TIMEOUT_MS,
+          })
+          .catch(() => null)
+        let again = false
+        after = await changeRec($, sid, r => {
+          if (result !== null) {
+            r.objectiveCalls += 1
+            r.objectiveTokens += tokensOf(result.usage)
+          }
+          const answer = result !== null && result.isAnswered ? parseObjective(result.text) : null
+          const none = answer !== null && answer.kind === 'holds' && r.objective === null
+          if (answer !== null && !none) {
+            takeObjective(r, answer, Date.now(), saw)
+            return r
+          }
+          const cut = result !== null && !result.isAnswered && result.reason === 'aborted'
+          again = result !== null && !cut && attempt < OBJECTIVE_RETRIES
+          if (!again) {
+            r.objectiveFailed += 1
+            r.objectiveWhy = none ? 'holds-with-none' : writeFailure(result)
+          }
+          return r
         })
-        .catch(() => null)
-      // A call that threw or came back unanswered leaves the objective as it
-      // was and is counted as a failed write, which the price line shows; so is
-      // an answer that cannot be read (no "objective:" head, or moved with no
-      // result), which is what a reply cut off at its cap looks like.
-      const after = await changeRec($, sid, r => {
-        if (result !== null) {
-          r.objectiveCalls += 1
-          r.objectiveTokens += tokensOf(result.usage)
-        }
-        const answer = result !== null && result.isAnswered ? parseObjective(result.text) : null
-        if (answer === null) {
-          r.objectiveFailed += 1
-          r.objectiveWhy = writeFailure(result)
-        } else takeObjective(r, answer, Date.now(), saw)
-        return r
-      })
+        if (!again) break
+      }
       // The row shows what the record holds, whichever write put it there.
       await update($, readingA, () => after.objective)
     }
@@ -536,7 +554,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
         message: a.message,
         does: a.does,
         at: Date.now(),
-        spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens, after.objectiveCalls, after.objectiveTokens, after.objectiveFailed),
+        spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens, after.objectiveCalls, after.objectiveTokens, after.objectiveFailed, after.objectiveWhy),
         size: context === undefined ? '' : `conversation at ${context.percent} percent of its window`,
         isChecking: false,
         checked: null,
@@ -702,7 +720,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
         next: card.next,
         message: card.message,
         does: card.does,
-        spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens, after.objectiveCalls, after.objectiveTokens, after.objectiveFailed),
+        spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens, after.objectiveCalls, after.objectiveTokens, after.objectiveFailed, after.objectiveWhy),
         checkCost: checkCostText(after.lastCheckTokens, after.lastCheckCached, after.lastCheckMs, after.lastCheckRefused),
       }
       after.lastBrief = { at, next: patch.next ?? '', message: patch.message ?? '' }
