@@ -2553,6 +2553,8 @@ test('STOP_NEXT refuses only a next step that stops the agent or the job, calls 
     'Let the suite finish, then fix what fails.',
     "Don't wait for his reply; push the fix.",
     'There is no need to wait for him; run the suite.',
+    'Rather than wait for him, finish the README and push it.',
+    'Instead of waiting on his reply, run the doctor and push.',
     'Once the suite is green, the agent can end the session.',
   ]
   for (const next of refuse) {
