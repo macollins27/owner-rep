@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 30b4585..e4616ab 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1806,7 +1806,7 @@ export const UNWRITTEN_DOES = 'Keeps the agent on the job until it shows each pa
+ 
+ // The start of a clause in a next step: its start or a stop mark, then a joining word
+ // ("and", "and then", "so", "then", "now").
+-const CLAUSE = String.raw`(?:^|[.;:!?,]\s*)(?:(?:and(?:\s+then)?|so|then|now)\s+)?`
++const CLAUSE = String.raw`(?:^|[.;:!?,]\s*)(?:(?:and|so|then|now)\s+)?`
+ // The end of a clause, looked at and not taken.
+ const CLAUSE_END = String.raw`(?=\s*(?:[.;:!?,]|$))`
+ // Where a stop said to or of the agent starts: at a clause's start, after the

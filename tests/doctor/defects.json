@@ -676,5 +676,47 @@
     "breaks": "a queued command marked meta on its attachment is proven his",
     "patch": "queued-meta-taken.patch",
     "fixed": "2026-10-16"
+  },
+  {
+    "name": "wait-on-him-reply-passed",
+    "breaks": "A wait on him with more words after it (\"Stop and wait for him to reply.\", \"Stop and wait for his reply before going on.\") passes the gate while a condition is open.",
+    "patch": "wait-on-him-reply-passed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "wait-on-him-words-narrow",
+    "breaks": "A wait on his approval, his answer, his go-ahead, the owner's reply, a decision or confirmation passes the gate while a condition is open.",
+    "patch": "wait-on-him-words-narrow.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "wait-until-passed",
+    "breaks": "\"Stop and wait until he replies.\" passes the gate while a condition is open.",
+    "patch": "wait-until-passed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "ask-him-passed",
+    "breaks": "\"Stop and ask him what he wants.\" passes the gate while a condition is open.",
+    "patch": "ask-him-passed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "stop-here-and-wait-passed",
+    "breaks": "\"Stop here and wait for him.\" passes the gate while a condition is open.",
+    "patch": "stop-here-and-wait-passed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "end-after-and-then-passed",
+    "breaks": "\"Fix the bug, and then the job can end.\" passes the gate while a condition is open.",
+    "patch": "end-after-and-then-passed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "clause-and-then-missed",
+    "breaks": "A stop or a wrap-up after \", and then\" (\"Fix the bug, and then stop the agent.\", \"Fix the bug, and then wrap things up.\") passes the gate while a condition is open.",
+    "patch": "clause-and-then-missed.patch",
+    "fixed": "2026-10-16"
   }
 ]

@@ -1804,8 +1804,9 @@ export const UNWRITTEN_NEXT = 'The objective is not written yet, so the agent st
 export const UNWRITTEN_MESSAGE = 'The job is not finished. Stay on it, and show each part working, or say what stands in the way, before anything stops.'
 export const UNWRITTEN_DOES = 'Keeps the agent on the job until it shows each part working or says what stands in the way.'
 
-// The start of a clause in a next step: its start or a stop mark, then a joining word.
-const CLAUSE = String.raw`(?:^|[.;:!?,]\s*)(?:(?:and|so|then|now)\s+)?`
+// The start of a clause in a next step: its start or a stop mark, then a joining word
+// ("and", "and then", "so", "then", "now").
+const CLAUSE = String.raw`(?:^|[.;:!?,]\s*)(?:(?:and(?:\s+then)?|so|then|now)\s+)?`
 // The end of a clause, looked at and not taken.
 const CLAUSE_END = String.raw`(?=\s*(?:[.;:!?,]|$))`
 // Where a stop said to or of the agent starts: at a clause's start, after the
@@ -1835,22 +1836,29 @@ const AND_STOP = String.raw`${CLAUSE}(?:(?!\bnot\b|\bnever\b|n't\b)[^.;:!?,])*?(
 // "stop working" with what it works on ("on it", "on this", "on the job",
 // "on the work", "on the task"), from the same start as a stop, to the clause end.
 const STOP_WORK = String.raw`${STOP_LEAD}stops?\s+work(?:ing)?\s+on\s+(?:it|this|the (?:job|work|task))${STOP_WHEN}${CLAUSE_END}`
-// The owner, or his word, as what a stop waits for: "wait for him", "wait
-// for your reply", "wait for further instructions".
-const WAIT_ON_HIM = String.raw`(?:\s+for\s+(?:him|the owner|you|your reply|his reply|(?:further\s+)?instructions))?`
-// "stop and" a finishing step (report, hand over, summarise, tell him or the
-// owner), only when it runs to the end of the sentence: "Stop and report back
-// to him." ends the work, while "Stop and report what failed, then fix it"
-// goes on past its comma. "wait" ends it only bare or waiting on him ("Stop
-// and wait for him."): waiting on a run ("Stop and wait for the GitHub run to
-// finish") keeps the job going.
-const STOP_TO_REPORT = String.raw`${STOP_LEAD}stops?\s+and\s+(?:then\s+)?(?:(?:report|hand\s+(?:(?:it|everything|the (?:work|job))\s+)?over|summari[sz]e|tell\s+(?:him|the owner))\b[^.!?;,]*|wait${WAIT_ON_HIM}${STOP_WHEN})(?=\s*(?:[.!?;]|$))`
+// The owner, or his word, as what a stop waits for: a wait "for", "on",
+// "until" or "till" whose next words are him, he, his, the owner (or the
+// owner's), you, your, approval, (further) instructions, a reply, an answer, a
+// decision, confirmation or the go-ahead, whatever follows them to the end of
+// the sentence ("wait for him to reply", "wait until he replies", "wait for
+// his approval", "wait for further instructions from him").
+const WAIT_ON_HIM = String.raw`\s+(?:for|on|until|till)\s+(?:him|he|his|the owner|you|your|approval|(?:further\s+)?instructions|a reply|an answer|a decision|confirmation|the go-ahead)\b[^.!?;]*`
+// "stop and" (or "stop here and") a finishing step (report, hand over,
+// summarise, tell him or the owner), only when it runs to the end of the
+// sentence: "Stop and report back to him." ends the work, while "Stop and
+// report what failed, then fix it" goes on past its comma. A wait ends it
+// bare or waiting on him, and asking him ends it, whatever follows to the end
+// of the sentence ("Stop and wait for him to reply.", "Stop here and wait for
+// him.", "Stop and ask him what he wants."): waiting on a run ("Stop and wait
+// for the GitHub run to finish") keeps the job going.
+const STOP_TO_REPORT = String.raw`${STOP_LEAD}stops?${STOP_WHEN}\s+and\s+(?:then\s+)?(?:(?:report|hand\s+(?:(?:it|everything|the (?:work|job))\s+)?over|summari[sz]e|tell\s+(?:him|the owner))\b[^.!?;,]*|wait${STOP_WHEN}(?:${WAIT_ON_HIM})?|ask\s+(?:him|the owner|you)\b[^.!?;]*)(?=\s*(?:[.!?;]|$))`
 // The start of a clause that a condition before a comma does not open: the
 // start, or a stop mark other than a comma, then a joining word; or a comma
-// with "and", "so" or "now", which join a clause of its own ("The suite is
-// green, so the session can end"), where "then" after a comma closes a
-// condition ("If the suite is green, then the job can end").
-const SENTENCE = String.raw`(?:(?:^|[.;:!?]\s*)(?:(?:and|so|then|now)\s+)?|,\s*(?:and|so|now)\s+)`
+// with "and", "and then", "so" or "now", which join a clause of its own ("The
+// suite is green, so the session can end", "Fix the bug, and then the job can
+// end"), where a bare "then" after a comma closes a condition ("If the suite
+// is green, then the job can end").
+const SENTENCE = String.raw`(?:(?:^|[.;:!?]\s*)(?:(?:and(?:\s+then)?|so|then|now)\s+)?|,\s*(?:and(?:\s+then)?|so|now)\s+)`
 // The session, the job or the work said to end ("can", "should", "may" and the
 // like, with "now", "here"), as a clause of its own after a sentence's start
 // or a stop mark: "The session can end only after …" and "Once the run is
@@ -1869,20 +1877,22 @@ const WRAP_SAID = String.raw`${STOP_LEAD}wrap\s+(?:(?:it|things|everything|the (
 // the session.", "Nothing is left to do.", "Fix the parser and stop.", "Wrap up
 // and stop.", "Stop working on it.", "The agent should stop and report back to
 // him.", "Stop and wait for him.", "The session can end.", "The job can end
-// here.", "Wrap things up." It lets through a step that only carries the word
-// and goes on: "stop" with something after it ("stop guessing and run the real
-// suite", "Fix the stop button", "Stop the timer before you read it", "Have the
-// agent stop and run the suite"), "stops" said of a program ("Make sure the
-// script runs once and stops"), a wait on a run ("Stop and wait for the GitHub
-// run to finish"), a finishing step that goes on past a comma ("Stop and
-// report what failed, then fix it"), an end with a condition ("The session
-// can end only after the suite is green", "Once the run is green, the session
-// can end"), "Don't stop until …", a
-// part called complete ("show the install is complete"), a check that the work
-// is done ("Check that the work is done before …"), "Mark nothing as done
-// until …", a step toward a finish ("Finish the two sessions, then show each
-// one done") and a wrap of something else ("Wrap the slow tests in one
-// helper"). The rep's own texts (OPEN_NEXT, UNWRITTEN_NEXT) never match.
+// here.", "Fix the bug, and then the job can end.", "Wrap things up." It lets
+// through a step that only carries the word and goes on: "stop" with something
+// after it ("stop guessing and run the real suite", "Fix the stop button",
+// "Stop the timer before you read it", "Have the agent stop and run the
+// suite"), "stops" said of a program ("Make sure the script runs once and
+// stops"), a wait on a run ("Stop and wait for the GitHub run to finish"),
+// where a wait on him ("Stop and wait for his approval.") or asking him ("Stop
+// and ask him what he wants.") is refused, a finishing step that goes on past a
+// comma ("Stop and report what failed, then fix it"), an end with a condition
+// ("The session can end only after the suite is green", "Once the run is green,
+// the session can end"), "Don't stop until …", a part called complete ("show
+// the install is complete"), a check that the work is done ("Check that the
+// work is done before …"), "Mark nothing as done until …", a step toward a
+// finish ("Finish the two sessions, then show each one done") and a wrap of
+// something else ("Wrap the slow tests in one helper"). The rep's own texts
+// (OPEN_NEXT, UNWRITTEN_NEXT) never match.
 export const STOP_NEXT = new RegExp(
   [STOP_SAID, FINISHED_SAID, NOTHING_SAID, CLOSE_SAID, AND_STOP, STOP_WORK, STOP_TO_REPORT, END_SAID, WRAP_SAID].join('|'),
   'i',

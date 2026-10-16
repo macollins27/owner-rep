@@ -1,11 +1,11 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 6de508d..496fd7c 100644
+index 30b4585..652c8e6 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1586,10 +1586,7 @@ const WRAP_SAID = String.raw`${STOP_LEAD}wrap\s+(?:(?:it|things|everything|the (
- // until …", a step toward a finish ("Finish the two sessions, then show each
- // one done") and a wrap of something else ("Wrap the slow tests in one
- // helper"). The rep's own texts (OPEN_NEXT, UNWRITTEN_NEXT) never match.
+@@ -1893,10 +1893,7 @@ const WRAP_SAID = String.raw`${STOP_LEAD}wrap\s+(?:(?:it|things|everything|the (
+ // finish ("Finish the two sessions, then show each one done") and a wrap of
+ // something else ("Wrap the slow tests in one helper"). The rep's own texts
+ // (OPEN_NEXT, UNWRITTEN_NEXT) never match.
 -export const STOP_NEXT = new RegExp(
 -  [STOP_SAID, FINISHED_SAID, NOTHING_SAID, CLOSE_SAID, AND_STOP, STOP_WORK, STOP_TO_REPORT, END_SAID, WRAP_SAID].join('|'),
 -  'i',

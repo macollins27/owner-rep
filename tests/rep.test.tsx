@@ -2461,6 +2461,34 @@ test('STOP_NEXT refuses only a next step that stops the agent or the job, calls 
     'Fix the parser; the job can end here.',
     'The suite is green, so the session can end now.',
     'Everything is shown, and the job can end.',
+    // A wait on him, whatever follows, and asking him.
+    'Stop and wait for him to reply.',
+    "Stop and wait for the owner's reply.",
+    'Stop and wait for his approval.',
+    'Stop and wait until he replies.',
+    'Stop and ask him what he wants.',
+    'Stop and wait for the owner to confirm.',
+    'Stop and wait for his answer.',
+    'Stop and wait for his go-ahead.',
+    'Stop and wait for further instructions from him.',
+    'The agent should stop and wait for him to decide.',
+    'Stop and wait for his reply before going on.',
+    'Stop here and wait for him.',
+    'Stop and wait on you.',
+    'Stop and wait for approval.',
+    'Stop and wait for a reply.',
+    'Stop and wait for an answer.',
+    'Stop and wait for a decision.',
+    'Stop and wait for confirmation.',
+    'Stop and wait for the go-ahead.',
+    'Stop and wait for your answer, then carry on.',
+    'Stop and wait till he says which file.',
+    'Stop and ask the owner which build to keep.',
+    // An end after ", and then", or "and then" at a clause's start.
+    'Fix the bug, and then the job can end.',
+    'Fix the bug. And then the session can end.',
+    'Fix the bug, and then stop the agent.',
+    'Fix the bug, and then wrap things up.',
   ]
   const pass = [
     'The agent should stop patching the test and fix the parser itself.',
@@ -2487,6 +2515,10 @@ test('STOP_NEXT refuses only a next step that stops the agent or the job, calls 
     'Once the run is green, the session can end.',
     'When the install is shown on his Mac, the job can end.',
     'If the suite is green, then the job can end.',
+    'Stop and wait here for the CI run.',
+    'Stop and wait for the build, then ask him.',
+    'Fix the bug, and then run the suite.',
+    'Ask him which file he meant, then fix it.',
   ]
   for (const next of refuse) {
     expect([next, STOP_NEXT.test(next)]).toEqual([next, true])

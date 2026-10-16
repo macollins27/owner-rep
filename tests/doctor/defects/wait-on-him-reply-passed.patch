@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 30b4585..f87cac6 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1842,7 +1842,7 @@ const STOP_WORK = String.raw`${STOP_LEAD}stops?\s+work(?:ing)?\s+on\s+(?:it|this
+ // decision, confirmation or the go-ahead, whatever follows them to the end of
+ // the sentence ("wait for him to reply", "wait until he replies", "wait for
+ // his approval", "wait for further instructions from him").
+-const WAIT_ON_HIM = String.raw`\s+(?:for|on|until|till)\s+(?:him|he|his|the owner|you|your|approval|(?:further\s+)?instructions|a reply|an answer|a decision|confirmation|the go-ahead)\b[^.!?;]*`
++const WAIT_ON_HIM = String.raw`\s+(?:for|on|until|till)\s+(?:him|he|his|the owner|you|your|approval|(?:further\s+)?instructions|a reply|an answer|a decision|confirmation|the go-ahead)`
+ // "stop and" (or "stop here and") a finishing step (report, hand over,
+ // summarise, tell him or the owner), only when it runs to the end of the
+ // sentence: "Stop and report back to him." ends the work, while "Stop and
