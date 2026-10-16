@@ -466,5 +466,11 @@
     "breaks": "In a reopened session, or after /clear, where there is nothing to fork, the briefing says there is nothing to read yet and the watch reads nothing, though the session's record is there to read.",
     "patch": "reopened-no-fallback.patch",
     "fixed": "2026-10-16"
+  },
+  {
+    "name": "reopened-no-seed",
+    "breaks": "A session the rep holds no record of (reopened after its record was dropped, forked with a new id, or older than the mod) keeps no message of his until he types again, so the card says the objective is not written yet.",
+    "patch": "reopened-no-seed.patch",
+    "fixed": "2026-10-16"
   }
 ]

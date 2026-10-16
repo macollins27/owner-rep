@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index fbdfd7b..bb3ea7e 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -844,6 +844,7 @@ function pushOwner(rec: Rec, kind: OwnerKind, text: string, prior: string = last
+ // note of his, so it never adds to a live record. Says whether it recorded any.
+ async function seedOwner($: EngineInterface, sid: string): Promise<boolean> {
+   const has = (rec: Rec) => rec.owner.some(m => m.kind !== 'draft')
++  return false
+   if (has(await loadRec($, sid))) return false
+   const typed = typedPrompts(await $.session.messages().catch(() => []))
+   if (typed.length === 0) return false
