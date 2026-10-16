@@ -227,13 +227,15 @@ for n in $want; do
       print -r -- "$card" | grep -qE 'objective writes? failed' ; [[ $? -ne 0 ]]; verdict 'no failed objective write on the price line' $?
       stop ;;
     9)
-      echo "9 reopened: a session reopened with --continue and pressed before anything is sent in it; Brief me reads the session and draws the card with the objective, and a message typed while the first turn ran is recorded as his"
+      echo "9 reopened: a session reopened with --continue and pressed before anything is sent in it; Brief me reads the session and draws the card with the objective, and a message typed while the first turn ran a twenty-second ping is recorded as his"
       start || { bad=1; fails=$((fails+1)); stop; continue; }
-      first='Run the shell command sleep 20, then reply with the single word done and nothing else.'
+      # Claude Code refuses a foreground sleep, so the first turn runs a ping of twenty packets
+      # instead, about twenty seconds in the foreground.
+      first='Run the shell command ping -c 20 127.0.0.1 in the foreground, then reply with the single word done and nothing else.'
       queued='Typed while you worked: after done, add the word queued on its own line.'
       send $first
-      # The second message is typed while that turn runs, so Claude Code queues it and saves it
-      # as a queued command, not as a user line.
+      # The second message is typed while the ping runs, so Claude Code queues it and saves it
+      # as a queued command, not as a user line, and it is never a row of the session.
       sleep 8
       send $queued
       wait_for '^\s*stopped, waiting on you' 120
@@ -265,7 +267,7 @@ for n in $want; do
       print -r -- "$card" | grep -qE 'objective writes? failed' ; [[ $? -ne 0 ]]; verdict 'no failed objective write on the price line' $?
       # The fork's record: the newest record under a session id new since the fork started that
       # holds the first prompt. It must hold the queued message as his (kind his), which only the
-      # queued command's line in the transcript can prove.
+      # queued command's line in the transcript holds.
       sleep 2
       if [[ -z $store ]]; then
         echo "  no owner-rep store file under ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/store"
