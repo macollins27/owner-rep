@@ -430,5 +430,23 @@
     "breaks": "A failed attempt is retried over the old prompt even after a newer message of the owner's arrived, so the retry spends a max-effort call on outdated messages and the write is counted failed.",
     "patch": "writer-retries-stale-prompt.patch",
     "fixed": "2026-10-16"
+  },
+  {
+    "name": "writer-unfenced",
+    "breaks": "His messages reach the objective writer without the fence and the note that they are records, so a message that reads like a command is taken as an order to the writer and comes back empty.",
+    "patch": "writer-unfenced.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "writer-no-system",
+    "breaks": "The objective writer is sent no system prompt, so its rules never reach it.",
+    "patch": "writer-no-system.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "writer-fence-closable",
+    "breaks": "A fence tag typed in a message, or in the agent's words under it, is printed as it stands, so a message can close the fence and what follows reads as the writer's own instructions.",
+    "patch": "writer-fence-closable.patch",
+    "fixed": "2026-10-16"
   }
 ]
