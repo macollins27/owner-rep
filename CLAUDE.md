@@ -37,7 +37,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 134 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 140 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -146,9 +146,10 @@ call writes (below):
    `$.session.messages()` and, when there are rows, makes one `$.model.complete`
    (`OBJECTIVE_MODEL`, high effort, `RECORD_SYSTEM`, `RECORD_MAX_TOKENS` 16,000,
    `RECORD_TIMEOUT_MS` four minutes) over `recordPrompt`: the rows printed by `recordText`
-   as entries labelled `entry N`, never `#N` (his rows as the person only where `humanSet`
-   proves them from the transcript, `NOT_TYPED` applied after as a second filter, and with
-   no transcript read, `NOT_TYPED` alone; every other row on his side as the session's),
+   as entries labelled `entry N`, never `#N` (his rows as the person only where their key is
+   one of his messages that `heldItems` read from the transcript, `NOT_TYPED` applied after
+   as a second filter, and with no transcript read, `NOT_TYPED` alone; every other row on
+   his side as the session's),
    each tool use on one line with its result, a row of tool
    results shown only for results not already printed), each message cut to
    `RECORD_ENTRY_CUT` (3,000) and each tool input or result to `RECORD_TOOL_CUT` (600),
@@ -250,36 +251,47 @@ text in `rec.stale` (kept as the first version when the objective is written) an
 
 A session the rep holds no record of (its record fell out of the newest `SESSIONS_MAX`, it
 was forked with a new id, or it is older than the mod) has none of his messages. `seedOwner`
-fills such a record, one with no message or note of his, from `$.session.messages()`. His
-rows are proven from the session's transcript file, never guessed from their text. The
-classic hooks `classic.SessionStart` and `classic.UserPromptSubmit` carry the file's path
+fills such a record, one with no message or note of his, from the session's transcript file,
+in the file's order, never from the rows' text: a message he typed while the agent worked
+is saved only as an attachment line, never as a row of `$.session.messages()` (measured on
+Claude Code 2.1.301), so the file is the only place it is found. The classic hooks
+`classic.SessionStart` and `classic.UserPromptSubmit` carry the file's path
 (`transcript_path`); `holdTranscript` keeps it per session id in a module-level map, a
 later prompt's path replacing the start's, and each event is passed on untouched. With no
-path held, `humanSet` looks for `<id>.jsonl` by name, `find <config>/projects -maxdepth 2`
+path held, `heldItems` looks for `<id>.jsonl` by name, `find <config>/projects -maxdepth 2`
 (the config folder `CLAUDE_CONFIG_DIR`, else `~/.claude`), and with none found it is null.
 The file is read through `$.process.run` with `humanRead` (`sed`, `HUMAN_READ_TIMEOUT_MS`),
 which prints only the lines holding `"kind":"human"`, every picture's `"data"` blanked so a
 message with a picture stays under the output cap. A read cut at that cap
-(`isStdoutTruncated`) proves nothing: the session's own file cut makes `humanSet` null, and
-a cut file in the scan is skipped. `humanTexts` keeps the lines of type user with origin
-kind `human` and not `isMeta`, and the lines of type attachment holding a `queued_command`
-of origin kind `human` (a message he typed while the agent worked), meta on neither the
-line nor the attachment, each as its `typedKey` (a command in its typed `/name args` form,
-`typedForm`, reminders removed, whitespace folded). When the session's own file cannot be
-read (as for a session forked with a new id whose file is not written yet; the path held
-still names the right folder), the newest `.jsonl` files in its folder (`folderOf`,
-`ls -t`) are read one at a time, at most `HUMAN_SCAN_MAX` (40), within
-`HUMAN_SCAN_BUDGET_MS` (30 seconds) for the whole scan, each read given no more than the
-time left, stopping once every `candidateKeys` row is proven. A match in another session's
-file in the same folder is still a line he typed, so it counts; a scan repeated at each
-start and press costs milliseconds, so nothing caches it. `typedPrompts` keeps the user rows
-with no tool results whose key is in that set, with `NOT_TYPED` (task notifications, slash
-command output, shell escapes, teammate messages, the compaction summary, a skill's base
-directory, the interrupt mark) still applied as a second filter, each with `prior` from the
-agent's last text before it; each is recorded as `his` through `pushOwner`, a draft he sent
-split off as `prompt.submit` does, matched against every record's drafts and last message
-in the store (`storedDrafts`), so a card he sent in the session this one was forked from is
-still the rep's draft. `seedOwner` runs one seed per session at a time (`seeding`), and
+(`isStdoutTruncated`) counts as no read: the session's own file cut makes `heldItems` null,
+and a cut file in the scan is skipped. `humanItems` reads, in file order, the lines of type
+user with origin kind `human` and not `isMeta`, and the lines of type attachment holding a
+`queued_command` of origin kind `human` (a message he typed while the agent worked,
+`queued`), meta on neither the line nor the attachment, each as a `HumanItem`: its `text` in
+`typedForm` (a command as `/name args`, reminders removed), its `key` the `typedKey`
+(whitespace folded); one with an empty key or a text `NOT_TYPED` names is skipped, and one
+sent twice is two items. `humanTexts` is the set of their keys, which the record read labels
+by. When the session's own file cannot be read (a session forked with a new id has none
+until its first message is saved; the path held still names the right folder), the newest
+`.jsonl` files in its folder (`folderOf`, `ls -t`) are read one at a time, at most
+`HUMAN_SCAN_MAX` (40), within `HUMAN_SCAN_BUDGET_MS` (30 seconds) for the whole scan, each
+read given no more than the time left. A fork's rows are its parent's and then its own, so
+`forkItems` matches the fork's candidate rows (`forkCandidates`: user rows with no tool
+results, a key, and nothing `NOT_TYPED` names, in order) to a file's typed items in order,
+a row with no match leaving the place where it was, and keeps the items up to the last
+match and the queued ones right after it (what he typed while the agent answered his last
+message before the fork), never the parent's later messages. The file with the most matches
+is taken, the newest on a tie, and the scan stops once a file matches every candidate; none
+is taken when no file matched, and `heldItems` is null when no file could be read whole. A
+scan repeated at each start and press costs milliseconds, so nothing caches it.
+`typedFromItems` gives each item, in order, the end of the agent's last text before the row
+it matches (the next of his side's rows with no tool results and the same key, past the
+last one matched) as its `prior`; a queued item, or one no row holds (from before a
+compaction), keeps its place with no prior. Each is recorded as `his` through `pushOwner`, a
+draft he sent split off as `prompt.submit` does, matched against every record's drafts and
+last message in the store (`storedDrafts`), so a card he sent in the session this one was
+forked from is still the rep's draft. A session with no candidate row is not read. `seedOwner`
+runs one seed per session at a time (`seeding`), and
 `prompt.submit` awaits it before recording a prompt or a note, so a prompt sent during the
 start's read is numbered after the seeded messages; the objective is rewritten when that
 seed recorded any. `session.start` runs it without waiting and writes the objective when it

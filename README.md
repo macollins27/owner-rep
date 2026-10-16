@@ -191,8 +191,8 @@ owner's numbered messages take, so no entry can be cited as one of his) fenced a
 (each message cut to 3,000 characters, each tool's input and result to 600, the oldest
 entries left out past 200,000 characters, with a line saying how many), a system prompt
 saying the task means that record wherever it speaks of the conversation, and then the same
-task the fork would have had. Only the rows the session's transcript proves he typed are
-labelled as the person's; when no transcript can be read, every row on his side that is not
+task the fork would have had. Only the rows that are one of his messages in the session's
+transcript file are labelled as the person's; when no transcript can be read, every row on his side that is not
 a kind Claude Code is known to write there. The watch's own looks, on a step and at a turn's end, skip quietly
 instead, so a new session's first turn pays for no record read. With no record to read, as
 after `/clear`, the briefing says there is nothing to read yet.
@@ -225,19 +225,23 @@ and the 40 before it), flags already shown, notes other mods have shown, and spe
 that count the writer's calls beside the looks. A record saved by a build from before the
 objective is rebuilt from the owner's messages on the next start, press or message, with its
 old text kept as an earlier version. A session the rep holds no record of (one whose record
-was dropped from the 32, one forked with a new id, one older than the mod) has the prompts
-the owner typed read back from the session at its start and on a press, each with the end
-of the agent's words before it. Each is proven his from the session's transcript file under
-`~/.claude/projects/`: only a line there with a human origin that is not marked meta counts
-(a user line, or the queued-command line Claude Code saves for a message typed while the
-agent works). The file is the one Claude Code names to the mod's hooks, or, when none was
-named, the one found by the session's id; it is read with `sed`, picture data blanked so the
-read stays under the output cap, and a read cut at that cap proves nothing. For a session
-forked with a new id whose file is not written yet, the newest transcripts in that file's
-folder are read, at most 40 within 30 seconds, stopping once every row is proven; a match in
-another session's file there is still a line the owner typed. A row the transcript does not
-prove (task notifications, another session's message, the summary of a compacted
-conversation) is never taken as his, and when no transcript can be read nothing is seeded.
+was dropped from the 32, one forked with a new id, one older than the mod) has the owner's
+messages read back at its start and on a press from the session's transcript file under
+`~/.claude/projects/`, in the file's order: only a line there with a human origin that is not
+marked meta counts (a user line, or the queued-command line Claude Code saves for a message
+typed while the agent works, which is never one of the session's rows at all). Each message
+gets the end of the agent's words before it from the session's rows; a queued message, or
+one whose row is gone (from before a compaction), gets none. The file is the one Claude Code
+names to the mod's hooks, or, when none was named, the one found by the session's id; it is
+read with `sed`, picture data blanked so the read stays under the output cap, and a read cut
+at that cap counts as no read. A session forked with a new id has no file of its own until
+its first message is saved, so the newest transcripts in that file's folder are read, at
+most 40 within 30 seconds, and the one whose messages match the most of the fork's rows in
+order (the newest on a tie) gives its part up to the last matched message, with the
+messages queued right after it; the parent's later messages are never taken, and the scan
+stops once a file matches every row that could be his. A row the transcript does not hold as his (task
+notifications, another session's message, the summary of a compacted conversation) is never
+taken as his, and when no transcript can be read nothing is seeded.
 A message the rep drafted that he sent in any session the rep holds, the one forked from
 included, is recognised as the rep's draft. A prompt or a note he sends while that read is
 still running waits for it, so his earlier messages are numbered first. A record that
@@ -264,7 +268,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 134 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 140 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -282,7 +286,7 @@ tsc -p . --noEmit             # needs .claude-plugin/types/, see below
 The tests cover the parsers, the row on both surfaces, the shared strip, the press, the
 objective writer and its rules (the guard, corrections, new jobs, drafts, the marks and the
 gate), the note to the rep, the stop forms the gate reads, the record read where there is
-nothing to fork, the seeding of his messages proven from a stubbed transcript, and a press
+nothing to fork, the seeding of his messages from a stubbed transcript, and a press
 followed by a check on a stubbed run. The test kit stubs the model and the
 band; no test spawns a real check.
 
@@ -303,7 +307,7 @@ own calls read the prompt box, the session id and working directory, the session
 messages, a small per-session store, and the model through the session's own credentials,
 take the transcript path Claude Code gives its hooks at the session's start and with each
 prompt, and run `sed`, `ls` and `find` over the session's transcripts under
-`~/.claude/projects/` (or the folder `CLAUDE_CONFIG_DIR` names) to prove which messages the
+`~/.claude/projects/` (or the folder `CLAUDE_CONFIG_DIR` names) to read which messages the
 person typed. The check step
 starts a separate Claude Code run that may read files, search, run the project's own tests
 and read agentsview; it may not edit, send, or launch helpers. The rep never sends anything
