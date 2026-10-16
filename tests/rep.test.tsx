@@ -3704,6 +3704,49 @@ test('rule: a session start with no record of the session records his messages f
   expect(rec()?.objective?.result).toBe('A licence file with the MIT text and this year.')
 })
 
+test('rule: a seeded session that held more than one job starts the job where the first write says the new one opened, and the earlier job\'s messages leave the writer and the briefing', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  const looks: string[] = []
+  on('model.fork', (_$, e) => {
+    looks.push(String(e.prompt))
+    return { value: { isAnswered: true, text: BRIEF('Fine.'), usage: USAGE } }
+  })
+  on('session.messages', () => ({
+    value: [
+      { role: 'user', text: 'Fix the login bug.', toolUses: [] },
+      { role: 'assistant', text: 'Fixed: the session cookie was dropped on the redirect.', toolUses: [] },
+      { role: 'user', text: 'Thanks, that works. Now rewrite the README for new users.', toolUses: [] },
+      { role: 'assistant', text: 'Starting on the README.', toolUses: [] },
+    ] satisfies SessionMessage[],
+  }))
+  transcript(on, { 'test-session.jsonl': [LINE('Fix the login bug.'), LINE('Thanks, that works. Now rewrite the README for new users.')].join('\n') })
+  let next = OBJ('A README a new user can follow from install to first run.', ['the README rewritten for new users | open'], 'new job #2 asked for the README once the login fix worked')
+  const writes = writer(on, () => next)
+  await started($)
+  await settle($)
+  expect(rec()?.owner.map(m => m.n)).toEqual([1, 2])
+  expect(rec()?.objective).toMatchObject({ result: 'A README a new user can follow from install to first run.', since: 2 })
+  expect(rec()?.jobStart).toBe(2)
+  // The next write is shown the README job's messages only.
+  next = 'objective: holds'
+  await $.prompt.submit(typed('Keep it short.'))
+  await settle($)
+  const last = writes[writes.length - 1] ?? ''
+  expect(last).toMatch(/\n- #2 Thanks, that works\. Now rewrite the README/)
+  expect(last).toMatch(/\n- #3 Keep it short\./)
+  expect(last).not.toMatch(/- #1 |Fix the login bug/)
+  // So is the briefing.
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.unmount()
+  const brief = looks[looks.length - 1] ?? ''
+  const onJob = brief.slice(brief.indexOf('His own messages on this job'))
+  expect(onJob).toMatch(/- #2 Thanks, that works\. Now rewrite the README/)
+  expect(brief).not.toMatch(/- #1 |Fix the login bug/)
+})
+
 test('rule: a session forked with a new id, its own transcript not saved yet, takes his messages from the newest transcripts in the folder of the path Claude Code gave it, one read each, stopping once every row that could be his is matched', async ($, on) => {
   const rec = kept(on, {})
   on('session.start', (_$, e) => ({ cwd: e.cwd }))

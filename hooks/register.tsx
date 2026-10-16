@@ -287,7 +287,15 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number): 
   if (a === null || a.kind === 'holds') return false
   const held = rec.objective
   if (held === null) {
-    const his = hisFrom(rec, rec.jobStart).filter(n => n <= saw)
+    let his = hisFrom(rec, rec.jobStart).filter(n => n <= saw)
+    // A session seeded from its transcript can hold more than one job, all recorded as one:
+    // when the first write says a new job opened at a message of his after the first, the job
+    // starts there, and the earlier messages are no longer his messages on this job.
+    const opened = a.isNewJob ? Number(a.cause.match(/#(\d+)/)?.[1] ?? Number.NaN) : Number.NaN
+    if (his.includes(opened) && opened > Math.min(...his)) {
+      rec.jobStart = opened
+      his = his.filter(n => n >= opened)
+    }
     rec.objective = {
       ...a.parts,
       done: honest(a.parts.done, [], his),

@@ -808,5 +808,11 @@
     "breaks": "A fork's part of another session's messages is chosen without counting his messages inside the matched span that the fork does not hold, so a parent that went on after the fork and repeated a message gives the fork the parent's later messages.",
     "patch": "fork-items-gaps-ignored.patch",
     "fixed": "2026-10-16"
+  },
+  {
+    "name": "first-write-new-job-ignored",
+    "breaks": "A session seeded from its transcript keeps every job it held as one: the first write's new job is ignored, so the earlier job's messages are shown to the writer and the briefing as this job's.",
+    "patch": "first-write-new-job-ignored.patch",
+    "fixed": "2026-10-16"
   }
 ]
