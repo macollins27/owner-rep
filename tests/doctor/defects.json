@@ -586,5 +586,23 @@
     "breaks": "STOP_TO_REPORT no longer refuses a wait on him, so \"Stop and wait for him.\" and a bare \"stop and wait.\" pass while a condition is open",
     "patch": "wait-on-him-passed.patch",
     "fixed": "2026-10-16"
+  },
+  {
+    "name": "step-look-reads-record",
+    "breaks": "readSession falls back to the session record for every look, so each step look and stop look in a new session's first turn pays a full record read",
+    "patch": "step-look-reads-record.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "note-look-skips-record",
+    "breaks": "the look after his note never falls back to the session record, so a note in a reopened session reads nothing and moves no condition",
+    "patch": "note-look-skips-record.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "press-skips-record",
+    "breaks": "the press never falls back to the session record, so a briefing in a reopened session says there is nothing to read",
+    "patch": "press-skips-record.patch",
+    "fixed": "2026-10-16"
   }
 ]

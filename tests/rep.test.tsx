@@ -3323,28 +3323,53 @@ test('rule: in a reopened session, where there is nothing to fork, the briefing 
   expect(after).toMatch(/^verdict: /m)
 })
 
-test('rule: a look in a reopened session reads the session record and applies its marks', async ($, on) => {
+test('rule: with nothing to fork, the watch\'s own looks on a step and at a turn\'s end read nothing more, and only the look after his note reads the session record and applies its marks', async ($, on) => {
   const rec = openJob(on)
   quietBand(on)
-  on('model.fork', () => ({ value: { isAnswered: false, reason: 'nothing-to-fork' } }))
+  let forks = 0
+  on('model.fork', () => {
+    forks += 1
+    return { value: { isAnswered: false, reason: 'nothing-to-fork' } }
+  })
   on('session.messages', () => ({ value: REOPENED_ROWS }))
   transcript(on, { 'test-session.jsonl': REOPENED_FILE })
+  const systems: string[] = []
   const prompts: string[] = []
   on('model.complete', (_$, e) => {
+    systems.push(String(e.system))
     if (e.system === RECORD_SYSTEM) prompts.push(String(e.prompt))
     const text = e.system === RECORD_SYSTEM ? `${HOLDS}\nshown:\n- the newest build installed | the install command in the record printed installed` : 'objective: holds'
     return { value: { isAnswered: true, text, usage: USAGE } }
   })
+  on('turn.step', async function* (_$, e) {
+    return { turnId: e.turnId, index: e.index, answer: '', toolUses: [], stopReason: 'end_turn', usage: null }
+  })
   await started($)
+  const held = rec()?.objective?.done
+  // A new session's first turn, or a reopened one: the step look and the stop look find nothing to fork.
+  for (let index = 0; index <= CHECK_EVERY; index++) {
+    for await (const _ of $.turn.step({ turnId: 't1', index, model: 'm', messageCount: index + 1 })) {
+      // The step's chunks are the engine's; the hook passes them on.
+    }
+  }
+  await settle($)
   await $.turn.complete(stop('t1', 'Installed.'))
   await settle($)
+  expect(forks).toBe(2)
+  expect(systems).toEqual([])
+  expect(rec()?.objective?.done).toEqual(held)
+  // His note starts a look that reads the record in the fork's place.
+  await $.prompt.submit({ text: 'Owner rep: check the install landed', wait: false, origin: { kind: 'composer' } })
+  await settle($)
+  await settle($)
+  expect(forks).toBe(3)
   expect(prompts.length).toBe(1)
   expect(prompts[0]).toMatch(/<\/session_record>\n[\s\S]*^state: /m)
+  expect(prompts[0]).toMatch(/told you something directly/)
   expect(rec()?.objective?.done).toEqual([
     { text: 'the newest build installed', state: 'shown', by: 'the install command in the record printed installed' },
     { text: 'two sessions finished', state: 'open', by: '' },
   ])
-  expect(rec()?.calls).toBe(1)
 })
 
 // --- A session the rep holds no record of: his typed messages are read from the session, each proven his from its transcript. ---

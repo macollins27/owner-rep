@@ -485,17 +485,21 @@ async function setNow($: EngineInterface, patch: Partial<Now>): Promise<void> {
 }
 
 // One read of the conversation for the watch or the briefing: a fork of it. A fork has
-// nothing to fork before the first response of the process (a session reopened with
-// --continue or --resume) and after /clear; then the session's record is read instead, by
-// one plain completion over the rows `$.session.messages()` returns (recordPrompt), with
-// the same task, his rows proven from the session's transcript (humanSet) and labelled as
-// the session's when they cannot be. With no rows the fork's answer stands, so the caller
-// says there is nothing to read yet. A completion that throws reads as an API error, which
-// the callers already show. Either way the result has the fork's shape, so its spend is
+// nothing to fork before the first response of the process: in a session reopened with
+// --continue or --resume, after /clear, and through the whole first turn of a new session.
+// Then, only for a read he started (`fallback`: his press, and the look after his note),
+// the session's record is read instead, by one plain completion over the rows
+// `$.session.messages()` returns (recordPrompt), with the same task, his rows proven from
+// the session's transcript (humanSet) and labelled as the session's when they cannot be.
+// The watch's own looks, on a step and at a turn's end, skip quietly instead: a record
+// read on each of them would be paid on every look of every new session's first turn.
+// With no rows, or no fallback, the fork's answer stands, so the caller says there is
+// nothing to read yet or skips. A completion that throws reads as an API error, which the
+// callers already show. Either way the result has the fork's shape, so its spend is
 // counted as a fork's.
-async function readSession($: EngineInterface, sid: string, prompt: string): Promise<ModelForkResult> {
+async function readSession($: EngineInterface, sid: string, prompt: string, fallback: boolean): Promise<ModelForkResult> {
   const forked = await $.model.fork({ prompt })
-  if (forked.isAnswered || forked.reason !== 'nothing-to-fork') return forked
+  if (!fallback || forked.isAnswered || forked.reason !== 'nothing-to-fork') return forked
   const rows = await $.session.messages().catch(() => [])
   if (rows.length === 0) return forked
   const human = await humanSet($, sid, rows)
@@ -531,7 +535,8 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
     })
     return
   }
-  const result = await readSession($, sid, watchPrompt({ ...memoryOf(rec), context: await contextOf($) }, reason))
+  // Only the look after his note falls back to the record when there is nothing to fork.
+  const result = await readSession($, sid, watchPrompt({ ...memoryOf(rec), context: await contextOf($) }, reason), reason === 'note')
   const usage = 'usage' in result ? result.usage : null
   await changeRec($, sid, async after => {
     after.calls += 1
@@ -568,7 +573,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     const ask = async (extra: string) => {
       const rec = await loadRec($, sid)
       const prompt = briefPrompt({ ...memoryOf(rec), context })
-      const result = await readSession($, sid, extra === '' ? prompt : `${prompt}\n\n${extra}`)
+      const result = await readSession($, sid, extra === '' ? prompt : `${prompt}\n\n${extra}`, true)
       const usage = 'usage' in result ? result.usage : null
       return changeRec($, sid, async after => {
         after.calls += 1
