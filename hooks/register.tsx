@@ -884,8 +884,10 @@ function holdTranscript(id: unknown, path: unknown): void {
 // time, at most HUMAN_SCAN_MAX within HUMAN_SCAN_BUDGET_MS, a cut read skipped, and the file
 // whose items match the most of the fork's rows (forkItems; the newest on a tie) gives its
 // part up to the last match and the queued messages right after it, the scan stopping once
-// every row that could be his is matched; none when no file matched any. Null when nothing
-// could be read, in the session's own file or in the scan.
+// every row that could be his is matched. Null when nothing could be read in the session's own
+// file, and when the scan matched none of the fork's rows, whether no file could be read whole
+// or the files read hold none of them: a file that matches nothing proves nothing about who
+// wrote the rows.
 async function heldItems($: EngineInterface, sid: string, rows: readonly RecordRow[]): Promise<HumanItem[] | null> {
   try {
     let path = transcripts.get(sid) ?? ''
@@ -912,19 +914,17 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
       .filter(f => f.endsWith('.jsonl'))
       .slice(0, HUMAN_SCAN_MAX)
     const want = forkCandidates(rows).length
-    let readAny = false
     let best: { items: HumanItem[]; matched: number } = { items: [], matched: 0 }
     for (const file of files) {
       const remaining = await left()
       if (remaining <= 0) break
       const found = await read(`${folder}/${file}`, Math.min(HUMAN_READ_TIMEOUT_MS, remaining))
       if (found.exitCode !== 0 || found.isStdoutTruncated) continue
-      readAny = true
       const part = forkItems(humanItems(found.stdout), rows)
       if (part.matched > best.matched) best = part
       if (best.matched === want) break
     }
-    return readAny ? best.items : null
+    return best.matched > 0 ? best.items : null
   } catch {
     return null
   }

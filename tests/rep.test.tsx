@@ -4047,7 +4047,10 @@ test('rule: of two files in a fork\'s folder that match its rows equally, the ne
   expect(runs.filter(r => r[0] === 'sed').length).toBe(3)
 })
 
-test('rule: a scan of a fork\'s folder in which no file could be read whole reads nothing: nothing is seeded, and the record read labels his rows by their text, never as the session\'s', async ($, on) => {
+// A fork whose own file is not saved yet, its folder's scan given these files: whatever the scan
+// read, it matched none of the fork's rows, so it proves nothing. Nothing is seeded, and the
+// record read labels his rows by their text, never as the session's.
+const scanProvesNothing = (files: Record<string, string>, cut: string[]) => async ($: Engine, on: On) => {
   const rec = kept(on, {})
   on('session.start', (_$, e) => ({ cwd: e.cwd }))
   quietBand(on)
@@ -4057,8 +4060,7 @@ test('rule: a scan of a fork\'s folder in which no file could be read whole read
     { role: 'user', text: 'Now push it.', toolUses: [] },
   ]
   on('session.messages', () => ({ value: rows }))
-  // The fork's own file is not saved yet, and the only other file's read is cut.
-  const runs = transcript(on, { 'parent.jsonl': [LINE('Add a licence file.'), LINE('Now push it.')].join('\n') }, { cut: ['parent.jsonl'] })
+  const runs = transcript(on, files, { cut })
   on('model.fork', () => ({ value: { isAnswered: false, reason: 'nothing-to-fork' } }))
   const records: string[] = []
   const writes: string[] = []
@@ -4081,7 +4083,11 @@ test('rule: a scan of a fork\'s folder in which no file could be read whole read
   expect(records[0]).toMatch(/^entry 3 the person:\nNow push it\.$/m)
   expect(records[0]).not.toMatch(/the session \(written by Claude Code/)
   expect(runs.filter(r => r[0] === 'sed').length).toBeGreaterThan(1)
-})
+}
+
+test('rule: a scan of a fork\'s folder in which no file could be read whole proves nothing: nothing is seeded, and the record read labels his rows by their text, never as the session\'s', scanProvesNothing({ 'parent.jsonl': [LINE('Add a licence file.'), LINE('Now push it.')].join('\n') }, ['parent.jsonl']))
+
+test('rule: a scan of a fork\'s folder whose files are read whole but hold none of the fork\'s rows proves nothing: nothing is seeded, and the record read labels his rows by their text, never as the session\'s', scanProvesNothing({ 'other.jsonl': [LINE('Plan the trip.'), LINE('Book the train.')].join('\n') }, []))
 
 // A session the rep holds no record of, whose start's read of the transcript is held until
 // the test lets it go; `reads` counts them.

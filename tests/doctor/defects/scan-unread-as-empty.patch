@@ -1,12 +1,12 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index f0e1e30..0a9a02c 100644
+index 57024de..02d5fb9 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -916,7 +916,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
+@@ -924,7 +924,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
        if (part.matched > best.matched) best = part
        if (best.matched === want) break
      }
--    return readAny ? best.items : null
+-    return best.matched > 0 ? best.items : null
 +    return best.items
    } catch {
      return null

@@ -1,9 +1,9 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index f0e1e30..eb6b942 100644
+index 57024de..0b5eefc 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -880,7 +880,7 @@ function holdTranscript(id: unknown, path: unknown): void {
- // could be read, in the session's own file or in the scan.
+@@ -890,7 +890,7 @@ function holdTranscript(id: unknown, path: unknown): void {
+ // wrote the rows.
  async function heldItems($: EngineInterface, sid: string, rows: readonly RecordRow[]): Promise<HumanItem[] | null> {
    try {
 -    let path = transcripts.get(sid) ?? ''

@@ -769,7 +769,7 @@
   },
   {
     "name": "scan-unread-as-empty",
-    "breaks": "A scan of a fork's folder in which no file could be read whole comes back as a read that found nothing of his, so the record read labels every one of his rows as written by Claude Code.",
+    "breaks": "A scan of a fork's folder that matched none of the fork's rows, because no file could be read whole or because the files read hold none of them, comes back as a read that found nothing of his, so the record read labels every one of his rows as written by Claude Code.",
     "patch": "scan-unread-as-empty.patch",
     "fixed": "2026-10-16"
   },
