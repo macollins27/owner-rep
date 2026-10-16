@@ -1,11 +1,12 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 9360e96..0b11797 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -520,7 +520,7 @@
+@@ -554,7 +554,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
          message: a.message,
          does: a.does,
          at: Date.now(),
--        spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens, after.objectiveCalls, after.objectiveTokens, after.objectiveFailed),
+-        spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens, after.objectiveCalls, after.objectiveTokens, after.objectiveFailed, after.objectiveWhy),
 +        spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens, after.objectiveCalls, after.objectiveTokens),
          size: context === undefined ? '' : `conversation at ${context.percent} percent of its window`,
          isChecking: false,

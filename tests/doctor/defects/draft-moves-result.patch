@@ -1,8 +1,8 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index ec82737..0ce6521 100644
+index 9360e96..8f6b0e6 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -263,7 +263,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number):
+@@ -285,7 +285,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number):
      return true
    }
    if (saw <= held.from) return false
@@ -11,7 +11,7 @@ index ec82737..0ce6521 100644
    if (fresh.length === 0) return false
    const version = { at: now, cause: a.cause, text: objectiveText(held) }
    if (a.isNewJob) {
-@@ -363,7 +363,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
+@@ -398,7 +398,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
      entry.again = false
      const rec = await loadRec($, sid)
      const saw = rec.counter
@@ -19,8 +19,8 @@ index ec82737..0ce6521 100644
 +    const due = !(onlyFirst && rec.objective !== null) && rec.owner.some(m => m.n >= Math.max(jobOf(rec), shown + 1))
      if (due) {
        shown = saw
-       const result = await $.model
-@@ -873,7 +873,7 @@ export const register: Register = on => {
+       // Up to 1 + OBJECTIVE_RETRIES attempts over the same prompt: an empty or errored
+@@ -947,7 +947,7 @@ export const register: Register = on => {
          })
          if (split !== null) await update($, readingA, () => rec.objective)
          // A message of his can move the objective: the writer reads it, never the agent's words.

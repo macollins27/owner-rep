@@ -1,18 +1,18 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 03f57a9..48c9db3 100644
+index 9360e96..5dbeb96 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -391,12 +391,8 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
-     if (due) {
-       shown = saw
-       const result = await $.model
--        .complete({
--          model: OBJECTIVE_MODEL,
-+        .fork({
-           prompt: objectivePrompt({ objective: rec.objective, owner: jobMsgs(rec), past: rec.past }),
--          maxTokens: OBJECTIVE_MAX_TOKENS,
--          effort: 'high',
--          timeoutMs: OBJECTIVE_TIMEOUT_MS,
-         })
-         .catch(() => null)
-       // A call that threw or came back unanswered leaves the objective as it
+@@ -410,12 +410,8 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
+       for (let attempt = 0; attempt <= OBJECTIVE_RETRIES; attempt++) {
+         const retry = attempt > 0
+         const result = await $.model
+-          .complete({
+-            model: OBJECTIVE_MODEL,
++          .fork({
+             prompt,
+-            maxTokens: retry ? OBJECTIVE_RETRY_MAX_TOKENS : OBJECTIVE_MAX_TOKENS,
+-            effort: retry ? OBJECTIVE_RETRY_EFFORT : 'high',
+-            timeoutMs: retry ? OBJECTIVE_RETRY_TIMEOUT_MS : OBJECTIVE_TIMEOUT_MS,
+           })
+           .catch(() => null)
+         let again = false

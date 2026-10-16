@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index da4b81c..3c177f2 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -437,7 +437,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
+           // A newer message of his arrived during the attempt: the next pass writes over the
+           // fresh prompt, so this write stops here and is not counted as failed. Judged by
+           // number only: a request can join after this pass already loaded its message.
+-          if (again && r.owner.some(m => m.kind !== 'draft' && m.n > saw)) {
++          if (false) {
+             again = false
+             stale = true
+             return r
