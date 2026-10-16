@@ -3230,9 +3230,29 @@ test('humanTexts keeps only the rows he typed, origin human and not meta, a list
   // A command he ran reads as prompt.submit sees it; a bare one is no message.
   expect([...humanTexts(LINE('<command-message>rep</command-message>\n<command-name>/rep</command-name>\n<command-args>some words</command-args>', { origin: { kind: 'human' } }))]).toEqual(['/rep some words'])
   expect([...humanTexts(LINE('<command-message>clear</command-message>\n<command-name>/clear</command-name>\n<command-args></command-args>', { origin: { kind: 'human' } }))]).toEqual([])
-  // A read cut short: every whole line is read, the cut one skipped.
+  // A line that does not parse is skipped, and every whole one read.
   const file = [LINE('First.'), ...ENGINE_LINES, LINE('Second.'), LINE('Third, cut off.').slice(0, 40)].join('\n')
   expect([...humanTexts(file)]).toEqual(['First.', 'Second.'])
+})
+
+// A line Claude Code saves for a message typed while the agent works: an attachment of a
+// queued command, his text in its prompt.
+const QUEUED = (prompt: unknown, extra: Record<string, unknown> = {}, origin: unknown = { kind: 'human' }) =>
+  JSON.stringify({ parentUuid: 'p', isSidechain: false, attachment: { type: 'queued_command', prompt, commandMode: 'prompt', origin, timestamp: '2026-10-16T09:00:00.000Z' }, type: 'attachment', uuid: 'q', ...extra })
+
+test('humanTexts takes a message he typed while the agent worked, saved as a queued command of human origin, and no queued command of any other origin', () => {
+  expect([...humanTexts(QUEUED('Not that file,  the other one.'))]).toEqual(['Not that file, the other one.'])
+  // Its prompt as a list of blocks: the text blocks joined.
+  expect([...humanTexts(QUEUED([{ type: 'text', text: 'Stop there.' }, { type: 'image', source: { data: '' } }, { type: 'text', text: 'Use the old one.' }]))]).toEqual(['Stop there. Use the old one.'])
+  // A task notification queued behind the turn, one with no origin, a meta one, or another kind of attachment: not his.
+  expect([...humanTexts(QUEUED('<task-notification>\n<task-id>b1</task-id>\n</task-notification>', {}, { kind: 'task-notification' }))]).toEqual([])
+  expect([...humanTexts(QUEUED('Run the nightly report.', {}, null))]).toEqual([])
+  expect([...humanTexts(QUEUED('Marked meta.', { isMeta: true }))]).toEqual([])
+  // Another session's message queued behind the turn carries its meta mark on the attachment.
+  expect([...humanTexts(JSON.stringify({ type: 'attachment', attachment: { type: 'queued_command', prompt: 'A report from a helper.', commandMode: 'prompt', isMeta: true, origin: { kind: 'human' } } }))]).toEqual([])
+  expect([...humanTexts(JSON.stringify({ type: 'attachment', attachment: { type: 'edited_text_file', prompt: 'A file changed.', origin: { kind: 'human' } } }))]).toEqual([])
+  // His typed lines and his queued one, read from one file.
+  expect([...humanTexts([LINE('First.'), QUEUED('Typed during the turn.'), ...ENGINE_LINES].join('\n'))]).toEqual(['First.', 'Typed during the turn.'])
 })
 
 test('typedForm reads a command as prompt.submit sees it and a message without its reminders, and typedKey folds whitespace', () => {

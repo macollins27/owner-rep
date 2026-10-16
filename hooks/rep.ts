@@ -732,13 +732,17 @@ function contentText(content: unknown): string {
 }
 
 // The session's transcript file says who wrote each row, which `$.session.messages()` does
-// not: a row he typed is a line with type "user", origin kind "human" and no isMeta; every
-// row the engine writes into his side (a task notification, another session's message, a
-// skill's body, a usage-limit note, a scheduled task, an automatic continuation, a compact
-// summary, an idle notice) has another origin or none, or is meta. The keys (typedKey) of
-// his rows in the lines given. A line that does not parse is skipped: the read may be cut.
+// not: a row he typed is a line with type "user", origin kind "human" and no isMeta, or, when
+// he typed it while the agent was working, a line with type "attachment" holding a
+// "queued_command" of origin kind "human", meta neither on the line nor on the attachment,
+// his text in its prompt. Every row the engine writes into his side (a task notification,
+// another session's message, a skill's body, a usage-limit note, a scheduled task, an
+// automatic continuation, a compact summary, an idle notice) has another origin or none, or
+// is meta. The keys (typedKey) of his rows in the lines given. A line that does not parse is
+// skipped.
 export function humanTexts(jsonl: string): Set<string> {
   const out = new Set<string>()
+  const kindOf = (o: unknown) => (typeof o === 'object' && o !== null ? (o as { kind?: unknown }).kind : undefined)
   for (const line of jsonl.split('\n')) {
     if (line.trim() === '') continue
     let row: unknown
@@ -748,11 +752,17 @@ export function humanTexts(jsonl: string): Set<string> {
       continue
     }
     if (typeof row !== 'object' || row === null) continue
-    const r = row as { type?: unknown; isMeta?: unknown; origin?: unknown; message?: unknown }
-    const origin = typeof r.origin === 'object' && r.origin !== null ? (r.origin as { kind?: unknown }).kind : undefined
-    if (r.type !== 'user' || r.isMeta === true || origin !== 'human') continue
-    const message = typeof r.message === 'object' && r.message !== null ? (r.message as { content?: unknown }) : {}
-    const key = typedKey(contentText(message.content))
+    const r = row as { type?: unknown; isMeta?: unknown; origin?: unknown; message?: unknown; attachment?: unknown }
+    if (r.isMeta === true) continue
+    let text = ''
+    if (r.type === 'user' && kindOf(r.origin) === 'human') {
+      const message = typeof r.message === 'object' && r.message !== null ? (r.message as { content?: unknown }) : {}
+      text = contentText(message.content)
+    } else if (r.type === 'attachment' && typeof r.attachment === 'object' && r.attachment !== null) {
+      const a = r.attachment as { type?: unknown; origin?: unknown; prompt?: unknown; isMeta?: unknown }
+      if (a.type === 'queued_command' && a.isMeta !== true && kindOf(a.origin) === 'human') text = contentText(a.prompt)
+    }
+    const key = typedKey(text)
     if (key !== '') out.add(key)
   }
   return out

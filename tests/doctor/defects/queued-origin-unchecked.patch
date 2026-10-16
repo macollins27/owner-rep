@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index ea9dccf..5b3f6b7 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -760,7 +760,7 @@ export function humanTexts(jsonl: string): Set<string> {
+       text = contentText(message.content)
+     } else if (r.type === 'attachment' && typeof r.attachment === 'object' && r.attachment !== null) {
+       const a = r.attachment as { type?: unknown; origin?: unknown; prompt?: unknown; isMeta?: unknown }
+-      if (a.type === 'queued_command' && a.isMeta !== true && kindOf(a.origin) === 'human') text = contentText(a.prompt)
++      if (a.type === 'queued_command' && a.isMeta !== true) text = contentText(a.prompt)
+     }
+     const key = typedKey(text)
+     if (key !== '') out.add(key)

@@ -7,7 +7,9 @@
 #     tests/live/live.sh 2 4        # only these
 #
 # Each scenario's whole screen is saved in tests/live/captures/<n>-<name>.txt, and the strip's
-# lines are printed in the report. Exit 0 when every scenario run showed what it should.
+# lines are printed in the report. Scenario 9 also reads the rep's store file under
+# ~/.claude/plugins/store/ (owner-rep_owner-rep-*.json) to show what the reopened session
+# recorded. Exit 0 when every scenario run showed what it should.
 #
 # The sessions run in a scratch folder under the system temp directory, in bypass mode, with
 # the nested-session variables unset (set, claude falls into print mode and exits). The mod
@@ -225,13 +227,24 @@ for n in $want; do
       print -r -- "$card" | grep -qE 'objective writes? failed' ; [[ $? -ne 0 ]]; verdict 'no failed objective write on the price line' $?
       stop ;;
     9)
-      echo "9 reopened: a session reopened with --continue and pressed before anything is sent in it; Brief me reads the session and draws the card with the objective"
+      echo "9 reopened: a session reopened with --continue and pressed before anything is sent in it; Brief me reads the session and draws the card with the objective, and a message typed while the first turn ran is recorded as his"
       start || { bad=1; fails=$((fails+1)); stop; continue; }
-      send 'Reply with the single word done and nothing else.'
-      wait_for '^\s*stopped, waiting on you' 60
+      first='Run the shell command sleep 20, then reply with the single word done and nothing else.'
+      queued='Typed while you worked: after done, add the word queued on its own line.'
+      send $first
+      # The second message is typed while that turn runs, so Claude Code queues it and saves it
+      # as a queued command, not as a user line.
+      sleep 8
+      send $queued
+      wait_for '^\s*stopped, waiting on you' 120
       sleep 2
       send '/exit'
       sleep 3
+      # The rep's store, as the mod's $.store writes it (the file name carries a hash), and the
+      # session ids it holds before the fork, so the fork's record is the new one.
+      store=$(find "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/store" -maxdepth 1 -name 'owner-rep_owner-rep-*.json' 2>/dev/null | head -1)
+      ids_before=$(mktemp -t owner-rep-live-ids)
+      [[ -n $store ]] && python3 -I -c 'import json, sys; print("\n".join(json.load(open(sys.argv[1])).get("sessions", {}).keys()))' $store > $ids_before
       # The same folder, the same unset variables and flags; --fork-session gives the reopened
       # session a new id, so the rep holds no record of it and must read the session itself.
       start $LIVE_DIR --continue --fork-session || { bad=1; fails=$((fails+1)); stop; continue; }
@@ -250,6 +263,34 @@ for n in $want; do
       [[ $saw_nothing -ne 0 ]] ; verdict 'no "nothing to read yet" in the pane at any time' $?
       print -r -- "$card" | grep -q 'working out the result you want' ; [[ $? -ne 0 ]]; verdict 'the card head shows the objective, not the placeholder' $?
       print -r -- "$card" | grep -qE 'objective writes? failed' ; [[ $? -ne 0 ]]; verdict 'no failed objective write on the price line' $?
+      # The fork's record: the newest record under a session id new since the fork started that
+      # holds the first prompt. It must hold the queued message as his (kind his), which only the
+      # queued command's line in the transcript can prove.
+      sleep 2
+      if [[ -z $store ]]; then
+        echo "  no owner-rep store file under ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/store"
+        false
+      else
+        python3 -I - $store $ids_before $first $queued <<'PY'
+import json, sys
+store, before, first, queued = sys.argv[1:5]
+fold = lambda t: " ".join(str(t).split())
+old = set(open(before).read().split())
+recs = [(k, r) for k, r in json.load(open(store)).get("sessions", {}).items() if k not in old]
+forks = [(k, r) for k, r in recs if any(isinstance(m, dict) and fold(m.get("text", "")) == fold(first) for m in r.get("owner", []))]
+if not forks:
+    print("  no new record holding the first prompt")
+    sys.exit(1)
+k, r = max(forks, key=lambda kr: kr[1].get("at", 0))
+print(f"  the fork's record {k}:")
+for m in r.get("owner", []):
+    if isinstance(m, dict):
+        print(f"  | #{m.get('n')} {m.get('kind')}: {fold(m.get('text', ''))[:80]}")
+sys.exit(0 if any(isinstance(m, dict) and m.get("kind") == "his" and fold(queued) in fold(m.get("text", "")) for m in r.get("owner", [])) else 1)
+PY
+      fi
+      verdict "the queued message recorded as his in the fork's record" $?
+      rm -f $ids_before
       stop ;;
   esac
   [[ $bad -gt 0 ]] && fails=$((fails+1))

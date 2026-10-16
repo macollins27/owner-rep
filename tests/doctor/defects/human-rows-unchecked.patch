@@ -1,13 +1,15 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 7dc8332..c4c64d7 100644
+index ea9dccf..06c383f 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -748,7 +748,7 @@ export function humanTexts(jsonl: string): Set<string> {
+@@ -753,9 +753,8 @@ export function humanTexts(jsonl: string): Set<string> {
+     }
      if (typeof row !== 'object' || row === null) continue
-     const r = row as { type?: unknown; isMeta?: unknown; origin?: unknown; message?: unknown }
-     const origin = typeof r.origin === 'object' && r.origin !== null ? (r.origin as { kind?: unknown }).kind : undefined
--    if (r.type !== 'user' || r.isMeta === true || origin !== 'human') continue
-+    if (r.type !== 'user') continue
-     const message = typeof r.message === 'object' && r.message !== null ? (r.message as { content?: unknown }) : {}
-     const key = typedKey(contentText(message.content))
-     if (key !== '') out.add(key)
+     const r = row as { type?: unknown; isMeta?: unknown; origin?: unknown; message?: unknown; attachment?: unknown }
+-    if (r.isMeta === true) continue
+     let text = ''
+-    if (r.type === 'user' && kindOf(r.origin) === 'human') {
++    if (r.type === 'user') {
+       const message = typeof r.message === 'object' && r.message !== null ? (r.message as { content?: unknown }) : {}
+       text = contentText(message.content)
+     } else if (r.type === 'attachment' && typeof r.attachment === 'object' && r.attachment !== null) {

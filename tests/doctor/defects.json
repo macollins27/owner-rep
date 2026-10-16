@@ -658,5 +658,23 @@
     "breaks": "Each read in the scan of a forked session's folder is allowed its full time even when less is left, so a slow disk holds his first prompt well past the scan's limit.",
     "patch": "scan-timeout-fixed.patch",
     "fixed": "2026-10-16"
+  },
+  {
+    "name": "queued-message-unproven",
+    "breaks": "a message he typed while the agent worked, saved as a queued command, is never proven his, so a reopened session labels it the session's",
+    "patch": "queued-message-unproven.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "queued-origin-unchecked",
+    "breaks": "a queued task notification or another session's queued message is proven his because the queued command's origin is not checked",
+    "patch": "queued-origin-unchecked.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "queued-meta-taken",
+    "breaks": "a queued command marked meta on its attachment is proven his",
+    "patch": "queued-meta-taken.patch",
+    "fixed": "2026-10-16"
   }
 ]
