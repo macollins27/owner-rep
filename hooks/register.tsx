@@ -940,6 +940,13 @@ async function storedDrafts($: EngineInterface): Promise<string[]> {
     if (!isRec(r)) continue
     if (Array.isArray(r.drafts)) out.push(...r.drafts.filter((d): d is string => typeof d === 'string'))
     if (typeof r.lastBrief?.message === 'string') out.push(r.lastBrief.message)
+    // A message the record already holds as the rep's draft he sent: a card more than
+    // DRAFTS_MAX back, or a record from a build that kept no list of drafts. One cut to
+    // OWNER_CUT (it ends in an ellipsis) is not the whole draft and is left out.
+    for (const m of r.owner as unknown[]) {
+      const d = m as Partial<OwnerMsg> | null
+      if (typeof d === 'object' && d !== null && d.kind === 'draft' && typeof d.text === 'string' && !d.text.endsWith('…')) out.push(d.text)
+    }
   }
   return out
 }
@@ -951,7 +958,7 @@ async function storedDrafts($: EngineInterface): Promise<string[]> {
 // read nothing is seeded), and recorded in that order as `prompt.submit` records them, each
 // with the agent's last words before it from the session's rows, none when no row holds it
 // (typedFromItems), a draft he sent split off as the rep's, matched against the drafts of every
-// record in the store. It does nothing when the record holds a message or a note of his, so
+// record in the store, those it holds among his messages included. It does nothing when the record holds a message or a note of his, so
 // it never adds to a live record. Says whether it recorded any. One read per session at a
 // time: a seed asked for while one runs (the start's, when he sends a prompt at once) is
 // that one, and `prompt.submit` waits for it, so his live prompt is numbered after it.
