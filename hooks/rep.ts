@@ -472,9 +472,6 @@ end
 does: <one line: what this message will make the agent do>`
 }
 
-// His messages for the objective writer: each with its number and mark, and
-// under it the agent's last words before it, so a short reply of his can be
-// read, marked as the agent's and never his.
 // A held condition as the writer is shown it and writes it back: its text and state word.
 const heldLine = (c: Condition): string =>
   `- ${c.text} | ${c.state === 'not-shown' ? 'not shown' : c.state === 'shown' ? `shown: ${c.by}` : c.state === 'closed' ? `closed: ${c.by}` : 'open'}`
@@ -483,6 +480,9 @@ const heldLine = (c: Condition): string =>
 const heldParts = (o: Objective): string =>
   [`result: ${o.result}`, `for: ${o.purpose}`, 'done:', ...(o.done.length === 0 ? ['- nothing'] : o.done.map(heldLine)), `step: ${o.step}`].join('\n')
 
+// His messages for the objective writer: each with its number and mark, and
+// under it the end of the agent's last words before it, so a short reply of
+// his can be read, marked as the agent's and never his.
 const ownerWithPrior = (list: OwnerMsg[]): string =>
   list
     .map(m => {
@@ -492,7 +492,8 @@ const ownerWithPrior = (list: OwnerMsg[]): string =>
     .join('\n')
 
 // The objective writer's prompt: a plain completion, not a fork, so it sees
-// his messages and nothing of the conversation. Its rules are the North Star's
+// his messages and, of the conversation, only the agent's last words before
+// each, marked as the agent's. Its rules are the North Star's
 // "The objective" and "The objective stays open until it is completed".
 export function objectivePrompt(m: ObjectiveMemory): string {
   const o = m.objective

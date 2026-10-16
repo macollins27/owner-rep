@@ -173,8 +173,9 @@ rep's drafts can move it and a write that lands late cannot take a newer one's p
 correction takes the result, purpose and step whole and runs the conditions through
 `mergeConditions`, which keeps every held condition the writer leaves out unless `dropped:`
 cites the number of a message of his new since the held objective was built (past `from`);
-`honest` turns a `shown` the writer adds (it never sees
-the conversation) and a `closed` that cites no such message back to open. A condition
+`honest` turns a `shown` the writer adds (of the conversation it sees only the agent's last
+words before each of his messages, marked as the agent's) and a `closed` that cites no such
+message back to open. A condition
 listed twice, or with a state mark copied into its text, is kept once (`parseObjective`,
 `mergeConditions`). A new job pushes
 the old result onto `rec.past` and starts the job (`since`, `rec.jobStart`) at its first new

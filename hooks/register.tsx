@@ -233,9 +233,11 @@ async function contextOf($: EngineInterface): Promise<Memory['context']> {
   }
 }
 
-// The writer does not see the conversation, so a condition it marks shown is
-// taken only as already held shown, and one it marks closed only when the
-// number cited is one of his own messages on the job; otherwise it is open.
+// The writer sees the conversation only as the agent's last words before each
+// of his messages, so a condition it marks shown is taken only as already held
+// shown, and one it marks closed only when the number cited is one of the
+// messages of his it is given (on a correction, those sent after the held
+// objective was built); otherwise it is open.
 function honest(proposed: Condition[], held: Condition[], his: readonly number[]): Condition[] {
   return proposed.map(c => {
     const h = held.find(x => same(x.text, c.text))

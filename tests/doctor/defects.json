@@ -120,10 +120,10 @@
     "fixed": "tested 2026-10-14; remade 2026-10-15"
   },
   {
-    "name": "agent-moves-reading",
-    "breaks": "The objective writer reads the agent's conversation instead of the owner's messages alone, so the agent's own account of the job can move the objective.",
-    "patch": "agent-moves-reading.patch",
-    "fixed": "tested 2026-10-14; remade 2026-10-15"
+    "name": "writer-forks-conversation",
+    "breaks": "The objective writer's call is made as a fork of the agent's whole conversation instead of a plain completion over the owner's messages, so the writer reads everything the agent said, its account of the job included.",
+    "patch": "writer-forks-conversation.patch",
+    "fixed": "tested 2026-10-14 as agent-moves-reading; renamed and remade 2026-10-15"
   },
   {
     "name": "revision-cause-dropped",

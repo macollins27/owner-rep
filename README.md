@@ -84,7 +84,7 @@ the result.
 
 Each condition is in one of four states: open; not shown, for a thing a conversation cannot
 show by itself, such as whether a build is installed or a service runs the newest code;
-shown; or closed by the owner. Open and not shown both count as open. The writer never sees the conversation, so it can mark nothing shown. The watch,
+shown; or closed by the owner. Open and not shown both count as open. The writer sees nothing of the conversation but the agent's last words before each of the owner's messages, marked as the agent's, so it can mark nothing shown: the code puts a condition it marks shown back to open unless it was already held so. The watch,
 the briefing and the check mark a condition shown only by naming where the conversation or
 the disk shows it, and closed only by citing a message of the owner's. The objective stays
 open until every condition is shown or closed: a briefing that says the agent should stop,
@@ -147,8 +147,11 @@ The watch and the briefing use `$.model.fork`, the same mechanism as Claude Code
 conversation, so a read costs little and never slows the agent. The rep's independence comes
 from its brief, which tells the model to treat everything the agent wrote as a claim, and,
 for the check step, from reading outside the conversation altogether. The objective writer is
-the exception to the fork: a plain completion (`$.model.complete`) that is never shown the
-conversation, so nothing the agent says in it can reach the objective.
+the exception to the fork: a plain completion (`$.model.complete`) shown the agent's words
+only as the line before each of the owner's messages, marked as the agent's. Its brief says
+that line is there only so a short reply can be understood and never sets the result, and
+the code takes a write only when it saw a message of the owner's past the ones the objective
+was built from, so the agent's words alone never move it.
 
 The check step runs in a room, not under a list of allowed commands. The rep first makes a
 throwaway copy of the project as it stands, uncommitted work included (an APFS clone, made in
@@ -255,9 +258,10 @@ it may not edit, send, or launch helpers. The rep never sends anything to an age
   job.
 - **The objective has a writer of its own.** The looks once rewrote the rep's account of the
   job from the conversation, where the agent's words sit beside the owner's. A separate call
-  shown only the owner's messages cannot be talked round by the agent, and holding the
-  account in parts lets the code keep each condition of "done" until it is shown or the
-  owner lets it go.
+  shown the owner's messages, and of the agent's words only the last ones before each of
+  them, marked as the agent's and never setting the result, reads the job from the owner
+  rather than from the agent's account of it, and holding the account in parts lets the code
+  keep each condition of "done" until it is shown or the owner lets it go.
 - **The check costs real money, so it runs only when chosen.** The card states the last
   measured cost beside the button.
 - **The check runs outside the session.** A headless, read-only run, so the agent never

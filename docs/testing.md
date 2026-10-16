@@ -48,7 +48,7 @@ entry that proves the test bites (added 14 Oct 2026; the objective's rules 15 Oc
 | The note waits while another mod draws beneath | `rule: the note waits…` | `note-over-other-mod` |
 | The digit hotkeys leave the row while another mod draws, and come back | `rule: the digit hotkeys…` | `digits-doubled` |
 | The store keeps only the newest `SESSIONS_MAX` sessions | `rule: the store keeps…` | `sessions-unbounded` |
-| The objective is written by its own call from the owner's messages, never by the looks; the row shows its result | `rule: the objective is written by its own call…` | `looks-write-objective`, `agent-moves-reading`, `row-shows-whole-reading` |
+| The objective is written by its own call from the owner's messages, never by the looks; the row shows its result | `rule: the objective is written by its own call…` | `looks-write-objective`, `writer-forks-conversation`, `row-shows-whole-reading` |
 | The agent's words never move the objective; a message of the owner's does, with the cause on the card; a draft he sent moves only the step | `rule: the agent's words never move…` | `revision-cause-dropped`, `draft-moves-result` |
 | A note to the rep is dropped before the agent sees it and cleared from the box, listed as said to the rep, read at once | `rule: a note to the rep…` | `note-reaches-agent`, `note-never-read`, `note-left-in-box` |
 | A new job closes the old objective; its result is listed as closed and the earlier job's messages leave the writer | `rule: a new job closes…` | `earlier-job-leaks` |
