@@ -37,7 +37,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 115 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 125 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -120,10 +120,15 @@ call writes (below):
    verdict other than `continue` (a `stop`, or none given, which `verdictOf` reads as
    `missing`, never as continue), a `well:` line, or a `next:` that `STOP_NEXT` reads as
    telling the agent or the job to stop, calling the work finished, saying nothing is left,
-   closing the session, wrapping up, stopping work on it, stopping to report or saying the
-   session can end, each said as a clause of its own (a step that only carries the
+   closing the session, wrapping up, stopping work on it, stopping to report, stopping to
+   wait bare or for him (`WAIT_ON_HIM`: him, the owner, you, your or his reply, further
+   instructions) or saying the session can end at a sentence's start or after a stop mark
+   other than a comma (`SENTENCE`; a comma with "and", "so" or "now" counts, "then" after a
+   comma closes a condition), each said as a clause of its own (a step that only carries the
    word and goes on, as "stop guessing and run the suite" or "Don't stop until …", keeps the
-   model's own next step; so does a pair such as "make the timer start and stop"). A refused answer is asked once
+   model's own next step; so do a pair such as "make the timer start and stop", the bare
+   "and stop" only being read, never "and stops" said of a program, a wait on a CI run and
+   "Once the run is green, the session can end"). A refused answer is asked once
    more (`askAgain`, naming the open conditions); when that is refused too, or does not
    answer, the card lists the open conditions as left out and its meaning, next step,
    message and what it does are the rep's own (`OPEN_MEANS`, `OPEN_NEXT`, `OPEN_MESSAGE`,
@@ -132,12 +137,16 @@ call writes (below):
 
    The watch and the briefing (and its second ask) read through one helper, `readSession`.
    A fork answers `nothing-to-fork` before the first response of the process (a session
-   reopened with `--continue` or `--resume`) and after `/clear`; the helper then reads
+   reopened with `--continue` or `--resume`), after `/clear`, and through the whole first
+   turn of a new session. Only for a read he started (`fallback`: the press's `ask`, its
+   second ask included, and `look` with reason `note`) the helper then reads
    `$.session.messages()` and, when there are rows, makes one `$.model.complete`
    (`OBJECTIVE_MODEL`, high effort, `RECORD_SYSTEM`, `RECORD_MAX_TOKENS` 16,000,
    `RECORD_TIMEOUT_MS` four minutes) over `recordPrompt`: the rows printed by `recordText`
-   as a numbered record (his rows as the person, rows the engine wrote into his side
-   (`NOT_TYPED`) as the session's, each tool use on one line with its result, a row of tool
+   as entries labelled `entry N`, never `#N` (his rows as the person only where `humanSet`
+   proves them from the transcript, `NOT_TYPED` applied after as a second filter, and with
+   no transcript read, `NOT_TYPED` alone; every other row on his side as the session's),
+   each tool use on one line with its result, a row of tool
    results shown only for results not already printed), each message cut to
    `RECORD_ENTRY_CUT` (3,000) and each tool input or result to `RECORD_TOOL_CUT` (600),
    head and tail kept around a marked gap, the oldest entries left out past `RECORD_BUDGET`
@@ -145,6 +154,8 @@ call writes (below):
    fence tag inside printed with `‹ ›`, then the same task the fork would have had. Its
    result has the fork's shape, so its spend is counted the same; a throw reads as an API
    error. With no rows the fork's answer stands and the toast says there is nothing to read.
+   The step look and the stop look pass no fallback and skip quietly on `nothing-to-fork`:
+   a record read on each would be paid on every look of every new session's first turn.
 3. **Check**: `pressCheck()` → `runCheck()` first makes a throwaway copy of the agent's
    folder (`makeCopy`: an APFS clone, `cp -Rc`, into `checkCopyDir` under `~/.cache`), then
    spawns a headless `claude -p` in it with `--permission-mode default`, `CHECK_ALLOWED_TOOLS`
@@ -236,15 +247,29 @@ text in `rec.stale` (kept as the first version when the objective is written) an
 
 A session the rep holds no record of (its record fell out of the newest `SESSIONS_MAX`, it
 was forked with a new id, or it is older than the mod) has none of his messages. `seedOwner`
-fills such a record, one with no message or note of his, from `$.session.messages()`:
-`typedPrompts` keeps the user rows with no tool results whose text, `<system-reminder>`
-blocks removed, is not empty and does not start with one of `NOT_TYPED` (what the engine, a
-subagent or a tool writes there: task notifications, slash commands and their output, shell
-escapes, teammate messages, the compaction summary, a skill's base directory, the interrupt
-mark), each with `prior` from the agent's last text before it; each is recorded as `his`
-through `pushOwner`, a draft he sent split off as `prompt.submit` does. `session.start` runs
-it without waiting and writes the objective when it recorded any; `pressBrief` awaits it
-before its objective-null write. A record that holds a message or note of his is never seeded.
+fills such a record, one with no message or note of his, from `$.session.messages()`. His
+rows are proven from the session's transcript file, never guessed from their text:
+`humanSet` greps `<config>/projects/<projectFolder>/<id>.jsonl` (the config folder
+`CLAUDE_CONFIG_DIR`, else `~/.claude`) for `HUMAN_MARK` through `$.process.run`, with
+`HUMAN_GREP_TIMEOUT_MS`, and `humanTexts` keeps the lines of type user with origin kind
+`human` and not `isMeta`, each as its `typedKey` (a command in its typed `/name args` form,
+`typedForm`, reminders removed, whitespace folded). When the session's own file is missing
+(grep exits other than 0 or 1, as for a session forked with a new id whose file is not
+written yet), the folder's newest `.jsonl` files (`ls -t`) are grepped one at a time, at
+most `HUMAN_SCAN_MAX` (40), stopping once every `candidateKeys` row is proven. When nothing
+can be read, `humanSet` is null and nothing is seeded. `typedPrompts` keeps the user rows
+with no tool results whose key is in that set, with `NOT_TYPED` (task notifications, slash
+command output, shell escapes, teammate messages, the compaction summary, a skill's base
+directory, the interrupt mark) still applied as a second filter, each with `prior` from the
+agent's last text before it; each is recorded as `his` through `pushOwner`, a draft he sent
+split off as `prompt.submit` does, matched against every record's drafts and last message
+in the store (`storedDrafts`), so a card he sent in the session this one was forked from is
+still the rep's draft. `seedOwner` runs one seed per session at a time (`seeding`), and
+`prompt.submit` awaits it before recording a prompt or a note, so a prompt sent during the
+start's read is numbered after the seeded messages; the objective is rewritten when that
+seed recorded any. `session.start` runs it without waiting and writes the objective when it
+recorded any; `pressBrief` awaits it before its objective-null write. A record that holds a
+message or note of his is never seeded.
 
 State lives in two places. Atoms (`atom({plugin, key})`) are per-session UI state that drives
 the render. The `$.store` key `sessions` holds a `Rec` per session id (the objective, the
@@ -265,10 +290,13 @@ prompt beginning `Owner rep` and a colon (`noteTyped`) is a note to the rep: it 
 a `note`, listed with `NOTE_MARK` (`(to the rep)`), the objective is rewritten and a look
 starts at once, and the prompt is dropped so the agent never sees it. `noteSplit` also finds
 the prefix typed after other text (`NOTE_PLACES`): at the start of a line, after a sentence's
-end and a space, or glued to the text before it in its capitalised form, never inside a
-sentence. The text before it is then a prompt to the agent, handled as any prompt (recorded
-as his message, a draft split off) and sent on without the note; the note is recorded after
-it, the objective is rewritten, a look starts, and a toast says the agent got the rest. "Tell the rep" fills the
+end (a closing quote or bracket allowed) and a space, or in its capitalised form glued to a
+letter, a digit or a sentence's end, never inside a sentence, and never in a slash command's
+line (`e.command` set), whose arguments stay the command's. The text before it is then a
+prompt to the agent, handled as any prompt (recorded as his message, a draft split off) and
+sent on without the note; the note is recorded after it, the objective is rewritten, a look
+starts, and a toast says the agent got the rest. A prefix after text with nothing after it
+notes nothing; the agent gets the text and a toast says nothing was noted. "Tell the rep" fills the
 prompt box with the prefix. The rep never sends anything itself: "Put message in prompt" fills
 the prompt box and the owner presses Enter.
 

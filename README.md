@@ -103,9 +103,10 @@ writer never raises a condition's state, and the looks, the briefings and the wr
 shown what the check found beside it. The objective stays open until every condition is
 shown or closed. While a condition is open, the gate refuses a briefing that says the agent
 should stop, that gives no verdict, whose next step tells the agent to stop, to wrap up, to
-stop and report, or calls the work finished or says the session can end (a step that only
-carries the word and goes on, such as stopping a wrong approach, is let through), or that
-says the work is going well. Such a briefing is asked once more with
+stop and report, to stop and wait for the owner, or calls the work finished or says the
+session can end (a step that only carries the word and goes on, such as stopping a wrong
+approach, waiting on a CI run, a program that "runs once and stops", or an end put after a
+condition, is let through), or that says the work is going well. Such a briefing is asked once more with
 the open conditions named, and if it still does any of these the card is refused. While no
 objective is written, any of the same is refused at once, and the card says the objective is
 not written yet. A refused card lists the open conditions as left out, and its meaning, next
@@ -131,9 +132,12 @@ The owner never types the objective. To steer the rep they type a prompt beginni
 `Owner rep:`; the rep takes the note, drops the prompt before the agent sees it, lists it to
 the model as said to the rep with the highest weight, rewrites the objective with it, and
 reads again at once. The prefix also counts typed after a prompt to the agent, on a line of
-its own, after a sentence's end, or run straight onto the text in its capitalised form; the
-agent then gets the prompt without the note, and the note goes to the rep alone, numbered
-after it. A mention inside a sentence, as in "ask the owner rep: is it done", is not a note.
+its own, after a sentence's end (a closing quote or bracket included), or in its capitalised
+form run straight onto a word or a sentence's end; the agent then gets the prompt without the
+note, and the note goes to the rep alone, numbered after it. A mention inside a sentence, as
+in "ask the owner rep: is it done", is not a note, and neither is the prefix inside a slash
+command's arguments, which stay the command's. A prefix after text with nothing after it
+notes nothing, and a toast says so.
 "Tell the rep" puts the prefix in the prompt box.
 
 On top of the objective sit five expectations the rep applies without reciting: the whole
@@ -178,14 +182,20 @@ line is there only so a short reply can be understood and never sets the result,
 the code takes a write only when it saw a message of the owner's past the ones the objective
 was built from, so the agent's words alone never move it.
 
-A fork has nothing to fork before the first response of the process, as in a session
-reopened with `--continue` or `--resume`, and after `/clear`. The watch and the briefing then
-read the session's own record (`$.session.messages()`) instead: one plain completion, given
-the record as numbered entries fenced as data (each message cut to 3,000 characters, each
-tool's input and result to 600, the oldest entries left out past 200,000 characters, with a
-line saying how many), a system prompt saying the task means that record wherever it speaks
-of the conversation, and then the same task the fork would have had. With no record to read,
-as after `/clear`, the briefing says there is nothing to read yet.
+A fork has nothing to fork before the first response of the process: in a session reopened
+with `--continue` or `--resume`, after `/clear`, and through the whole first turn of a new
+session. A read the owner started, a press of the Rep button or the look after a note, then
+reads the session's own record (`$.session.messages()`) instead: one plain completion, given
+the record as entries labelled `entry 1`, `entry 2` and so on (never `#1`, the form the
+owner's numbered messages take, so no entry can be cited as one of his) fenced as data
+(each message cut to 3,000 characters, each tool's input and result to 600, the oldest
+entries left out past 200,000 characters, with a line saying how many), a system prompt
+saying the task means that record wherever it speaks of the conversation, and then the same
+task the fork would have had. Only the rows the session's transcript proves he typed are
+labelled as the person's; when no transcript can be read, every row on his side that is not
+a kind Claude Code is known to write there. The watch's own looks, on a step and at a turn's end, skip quietly
+instead, so a new session's first turn pays for no record read. With no record to read, as
+after `/clear`, the briefing says there is nothing to read yet.
 
 The check step runs in a room, not under a list of allowed commands. The rep first makes a
 throwaway copy of the project as it stands, uncommitted work included (an APFS clone, made in
@@ -217,10 +227,17 @@ objective is rebuilt from the owner's messages on the next start, press or messa
 old text kept as an earlier version. A session the rep holds no record of (one whose record
 was dropped from the 32, one forked with a new id, one older than the mod) has the prompts
 the owner typed read back from the session at its start and on a press, each with the end
-of the agent's words before it; what the engine, a subagent or a tool wrote into the owner's
-side (task notifications, slash commands and their output, the summary of a compacted
-conversation) is never taken as his. A record that already holds a message of his is never
-seeded. Nothing leaves the machine except the model calls the session already makes.
+of the agent's words before it. Each is proven his from the session's transcript file under
+`~/.claude/projects/`: only a user line there with a human origin that is not marked meta
+counts, found by a `grep` of the session's own file, or, for a session
+forked with a new id whose file is not written yet, of the project folder's newest
+transcripts, at most 40, stopping once every row is proven. A row the transcript does not
+prove (task notifications, another session's message, the summary of a compacted
+conversation) is never taken as his, and when no transcript can be read nothing is seeded.
+A message the rep drafted that he sent in any session the rep holds, the one forked from
+included, is recognised as the rep's draft. A prompt or a note he sends while that read is
+still running waits for it, so his earlier messages are numbered first. A record that
+already holds a message of his is never seeded. Nothing leaves the machine except the model calls the session already makes.
 
 The band above the prompt is a strip shared with other mods. The rep draws first and keeps
 whatever is beneath it. While another mod's note is up, the rep's own note waits and its
@@ -243,7 +260,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 115 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 125 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -260,7 +277,9 @@ tsc -p . --noEmit             # needs .claude-plugin/types/, see below
 
 The tests cover the parsers, the row on both surfaces, the shared strip, the press, the
 objective writer and its rules (the guard, corrections, new jobs, drafts, the marks and the
-gate), the note to the rep, and a press followed by a check on a stubbed run. The test kit stubs the model and the
+gate), the note to the rep, the stop forms the gate reads, the record read where there is
+nothing to fork, the seeding of his messages proven from a stubbed transcript, and a press
+followed by a check on a stubbed run. The test kit stubs the model and the
 band; no test spawns a real check.
 
 Type-checking needs the mods API declarations, which Claude Code writes into a mod's
@@ -276,10 +295,13 @@ of the mod.
 ## What it can reach
 
 Like every Claude Code mod, it runs with the permissions of the person who installs it. Its
-own calls read the prompt box, the session id and working directory, a small per-session
-store, and the model through the session's own credentials. The check step starts a separate
-Claude Code run that may read files, search, run the project's own tests and read agentsview;
-it may not edit, send, or launch helpers. The rep never sends anything to an agent by itself.
+own calls read the prompt box, the session id and working directory, the session's
+messages, a small per-session store, and the model through the session's own credentials,
+and run `grep` and `ls` over the session's transcripts under `~/.claude/projects/` (or the
+folder `CLAUDE_CONFIG_DIR` names) to prove which messages the person typed. The check step
+starts a separate Claude Code run that may read files, search, run the project's own tests
+and read agentsview; it may not edit, send, or launch helpers. The rep never sends anything
+to an agent by itself.
 
 ## Decisions along the way
 
