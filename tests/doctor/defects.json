@@ -454,5 +454,11 @@
     "breaks": "A note to the rep is found only at the start of the prompt, so one typed after other text in the box goes to the agent with the rest.",
     "patch": "note-after-text-leaks.patch",
     "fixed": "2026-10-16"
+  },
+  {
+    "name": "stop-wording-slips",
+    "breaks": "A next step that says to wrap up and stop, to stop working on it, to stop and report, or that the session can end gets past the gate while a condition is open.",
+    "patch": "stop-wording-slips.patch",
+    "fixed": "2026-10-16"
   }
 ]

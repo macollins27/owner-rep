@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 6de508d..0b64f87 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1587,7 +1587,7 @@ const WRAP_SAID = String.raw`${STOP_LEAD}wrap\s+(?:(?:it|things|everything|the (
+ // one done") and a wrap of something else ("Wrap the slow tests in one
+ // helper"). The rep's own texts (OPEN_NEXT, UNWRITTEN_NEXT) never match.
+ export const STOP_NEXT = new RegExp(
+-  [STOP_SAID, FINISHED_SAID, NOTHING_SAID, CLOSE_SAID, AND_STOP, STOP_WORK, STOP_TO_REPORT, END_SAID, WRAP_SAID].join('|'),
++  [STOP_SAID, FINISHED_SAID, NOTHING_SAID, CLOSE_SAID].join('|'),
+   'i',
+ )
+ 
