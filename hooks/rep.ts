@@ -1943,13 +1943,17 @@ const AND_STOP = String.raw`${CLAUSE}(?:(?!\bnot\b|\bnever\b|n't\b)[^.;:!?,])*?(
 // "stop working" with what it works on ("on it", "on this", "on the job",
 // "on the work", "on the task"), from the same start as a stop, to the clause end.
 const STOP_WORK = String.raw`${STOP_LEAD}stops?\s+work(?:ing)?\s+on\s+(?:it|this|the (?:job|work|task))${STOP_WHEN}${CLAUSE_END}`
-// The owner, or his word, as what a stop waits for: a wait "for", "on",
-// "until" or "till" whose next words are him, he, his, the owner (or the
-// owner's), you, your, approval, (further) instructions, a reply, an answer, a
-// decision, confirmation or the go-ahead, whatever follows them to the end of
-// the sentence ("wait for him to reply", "wait until he replies", "wait for
-// his approval", "wait for further instructions from him").
-const WAIT_ON_HIM = String.raw`\s+(?:for|on|until|till)\s+(?:him|he|his|the owner|you|your|approval|(?:further\s+)?instructions|a reply|an answer|a decision|confirmation|the go-ahead)\b[^.!?;]*`
+// The owner, or his word, as what is waited for: him, he, his, the owner (or the owner's),
+// you; "your" only with a word of his ("your reply", "your go-ahead", "your call"), so "your
+// build" and "your test run" are runs; approval, (further) instructions, a reply, an answer,
+// the go-ahead; "a decision" only at the clause's end or with "from", "by", "on" or "about"
+// after it ("a decision tree" is a thing that trains); "confirmation" only at the clause's end
+// or from or by him, the owner or you ("confirmation emails" arrive in an inbox).
+const ON_HIM = String.raw`(?:him|he|his|the owner|you|your\s+(?:reply|answer|response|go-ahead|approval|decision|confirmation|instructions|input|say|sign-off|feedback|review|ok|okay|call|word)|approval|(?:further\s+)?instructions|a reply|an answer|a decision(?=\s*(?:[.;:!?,]|$)|\s+(?:from|by|on|about)\b)|confirmation(?=\s*(?:[.;:!?,]|$)|\s+(?:from|by)\s+(?:him|the owner|you)\b)|the go-ahead)\b`
+// A wait "for", "on", "until" or "till" whose next words are ON_HIM, whatever follows them to
+// the end of the sentence ("wait for him to reply", "wait until he replies", "wait for his
+// approval", "wait for further instructions from him").
+const WAIT_ON_HIM = String.raw`\s+(?:for|on|until|till)\s+${ON_HIM}[^.!?;]*`
 // "stop and" (or "stop here and") a finishing step (report, hand over,
 // summarise, tell him or the owner), only when it runs to the end of the
 // sentence: "Stop and report back to him." ends the work, while "Stop and

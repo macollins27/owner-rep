@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 0f7fabd..5456805 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1949,7 +1949,7 @@ const STOP_WORK = String.raw`${STOP_LEAD}stops?\s+work(?:ing)?\s+on\s+(?:it|this
+ // the go-ahead; "a decision" only at the clause's end or with "from", "by", "on" or "about"
+ // after it ("a decision tree" is a thing that trains); "confirmation" only at the clause's end
+ // or from or by him, the owner or you ("confirmation emails" arrive in an inbox).
+-const ON_HIM = String.raw`(?:him|he|his|the owner|you|your\s+(?:reply|answer|response|go-ahead|approval|decision|confirmation|instructions|input|say|sign-off|feedback|review|ok|okay|call|word)|approval|(?:further\s+)?instructions|a reply|an answer|a decision(?=\s*(?:[.;:!?,]|$)|\s+(?:from|by|on|about)\b)|confirmation(?=\s*(?:[.;:!?,]|$)|\s+(?:from|by)\s+(?:him|the owner|you)\b)|the go-ahead)\b`
++const ON_HIM = String.raw`(?:him|he|his|the owner|you|your\s+(?:reply|answer|response|go-ahead|approval|decision|confirmation|instructions|input|say|sign-off|feedback|review|ok|okay|call|word)|approval|(?:further\s+)?instructions|a reply|an answer|a decision|confirmation(?=\s*(?:[.;:!?,]|$)|\s+(?:from|by)\s+(?:him|the owner|you)\b)|the go-ahead)\b`
+ // A wait "for", "on", "until" or "till" whose next words are ON_HIM, whatever follows them to
+ // the end of the sentence ("wait for him to reply", "wait until he replies", "wait for his
+ // approval", "wait for further instructions from him").

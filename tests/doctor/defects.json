@@ -685,7 +685,7 @@
   },
   {
     "name": "wait-on-him-words-narrow",
-    "breaks": "A wait on his approval, his answer, his go-ahead, the owner's reply, a decision or confirmation passes the gate while a condition is open.",
+    "breaks": "A wait on his approval, his answer, his go-ahead, the owner's reply, a decision on something or confirmation from him passes the gate while a condition is open.",
     "patch": "wait-on-him-words-narrow.patch",
     "fixed": "2026-10-16"
   },
@@ -813,6 +813,24 @@
     "name": "first-write-new-job-ignored",
     "breaks": "A session seeded from its transcript keeps every job it held as one: the first write's new job is ignored, so the earlier job's messages are shown to the writer and the briefing as this job's.",
     "patch": "first-write-new-job-ignored.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "wait-your-any",
+    "breaks": "A wait on anything after \"your\" counts as a wait on him, so \"Stop and wait for your build to finish, then push.\" is refused while a condition is open.",
+    "patch": "wait-your-any.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "wait-confirmation-any",
+    "breaks": "A wait on anything that starts with \"confirmation\" counts as a wait on him, so \"Stop and wait for confirmation emails to arrive in the test inbox, then check them.\" is refused while a condition is open.",
+    "patch": "wait-confirmation-any.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "wait-decision-any",
+    "breaks": "A wait on anything that starts with \"a decision\" counts as a wait on him, so \"Stop and wait for a decision tree to train, then evaluate it.\" is refused while a condition is open.",
+    "patch": "wait-decision-any.patch",
     "fixed": "2026-10-16"
   }
 ]

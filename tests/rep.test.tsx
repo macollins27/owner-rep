@@ -2484,6 +2484,11 @@ test('STOP_NEXT refuses only a next step that stops the agent or the job, calls 
     'Stop and wait for your answer, then carry on.',
     'Stop and wait till he says which file.',
     'Stop and ask the owner which build to keep.',
+    // "your" with a word of his, confirmation from him, a decision on something.
+    'Stop and wait for your reply.',
+    'Stop and wait for your go-ahead.',
+    'Stop and wait for confirmation from him.',
+    'Stop and wait for a decision on the pricing.',
     // An end after ", and then", or "and then" at a clause's start.
     'Fix the bug, and then the job can end.',
     'Fix the bug. And then the session can end.',
@@ -2519,6 +2524,11 @@ test('STOP_NEXT refuses only a next step that stops the agent or the job, calls 
     'Stop and wait for the build, then ask him.',
     'Fix the bug, and then run the suite.',
     'Ask him which file he meant, then fix it.',
+    // A run of the agent's, emails and a model: none of them him.
+    'Stop and wait for your build to finish, then push.',
+    'Stop and wait for your test run to finish.',
+    'Stop and wait for confirmation emails to arrive in the test inbox, then check them.',
+    'Stop and wait for a decision tree to train, then evaluate it.',
   ]
   for (const next of refuse) {
     expect([next, STOP_NEXT.test(next)]).toEqual([next, true])
