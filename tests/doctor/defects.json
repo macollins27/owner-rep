@@ -880,5 +880,17 @@
     "breaks": "A wait on him said not to happen (\"Don't wait for his reply; push the fix.\") is refused as a stop.",
     "patch": "wait-negation-refused.patch",
     "fixed": "2026-10-16"
+  },
+  {
+    "name": "wait-negation-gap",
+    "breaks": "A wait on him said not to happen with words between (\"Don't just wait for him, run the suite.\", \"Do not stop and wait for him; run the suite.\") is refused as a stop.",
+    "patch": "wait-negation-gap.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "approval-from-anyone",
+    "breaks": "A wait on approval from someone other than him (\"Wait for approval from the CI gate, then merge.\") is refused as a wait on him.",
+    "patch": "approval-from-anyone.patch",
+    "fixed": "2026-10-16"
   }
 ]

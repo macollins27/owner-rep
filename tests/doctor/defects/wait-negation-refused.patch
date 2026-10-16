@@ -1,12 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 603d998..aff433c 100644
+index 4f48431..308a6be 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1965,7 +1965,7 @@ const WAIT_ON_HIM = String.raw`\s+(?:for|on|until|till)\s+${ON_HIM}[^.!?;]*`
- const STOP_TO_REPORT = String.raw`${STOP_LEAD}stops?(?:\s+work(?:ing)?)?${STOP_WHEN}\s+and\s+(?:then\s+)?(?:(?:report|hand\s+(?:(?:it|everything|the (?:work|job))\s+)?over|summari[sz]e|tell\s+(?:him|the owner))\b[^.!?;,]*|wait${STOP_WHEN}(?:${WAIT_ON_HIM})?|await(?:\s+${ON_HIM}[^.!?;]*)?|ask\s+(?:him|the owner|you)\b[^.!?;]*)(?=\s*(?:[.!?;]|$))`
+@@ -1966,7 +1966,7 @@ const STOP_TO_REPORT = String.raw`${STOP_LEAD}stops?(?:\s+work(?:ing)?)?${STOP_W
  // Not said after a negation: "Don't wait for him", "never let him decide", "no need to check
- // in with him", "Rather than wait for him, …" go on.
--const NOT_NEGATED = String.raw`(?<!(?:\bnot|\bnever|n't|\bno need to|\brather than|\binstead of|\bwithout)\s+)`
+ // in with him", "Rather than wait for him, …" go on, and so do "Don't just wait for him" and
+ // "Do not stop and wait for him", with "just", "simply", "merely", "stop" or "and" between.
+-const NOT_NEGATED = String.raw`(?<!(?:\bnot|\bnever|n't|\bno need to|\brather than|\binstead of|\bwithout)(?:\s+(?:just|simply|merely|stop|and))*\s+)`
 +const NOT_NEGATED = ''
  // A wait on him as the verb of any clause, with or without a stop: "Wait for his go-ahead.",
  // "Wait for him to reply.", "Report and wait for him.", "Stop and await his reply."
