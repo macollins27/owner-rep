@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 2ac8289..8739196 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -695,7 +695,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
+       // look's, and a reopened one moves shown only here; one held shown that the
+       // check found is not so goes back to not shown, marked reopened.
+       const marked = applyMarks(after, c.shown, c.closed, { reopen: c.reopen })
+-      if (marked && onScreen(sid)) await update($, readingA, () => after.objective)
++      if (marked) await update($, readingA, () => after.objective)
+       const checked: Checked = { holds: c.holds, wrong: c.wrong, notShown: c.notShown, changed: c.changed, looked: c.looked, refused: got.refused }
+       const hasLeft = parts_hasLeft(got.text)
+       // The card the check leaves, each part the checker's where it gave one
