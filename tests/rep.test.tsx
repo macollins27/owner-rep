@@ -4003,6 +4003,55 @@ test('rule: a card message he sent in a session whose record the store has let g
   ])
 })
 
+test('rule: a record let go while the drafts are being read is still found, its drafts in the records or in the kept list', async ($, on) => {
+  // The store lets the parent go between the reader's two reads: the moment the kept list is
+  // read, its drafts move there and the record leaves. Read records first, then the list.
+  const drafted = 'Run it on the real data and show me the result.'
+  const store: Record<string, unknown> = {
+    sessions: { parent: { id: 'parent', at: 1, owner: [{ n: 1, kind: 'his', text: 'Build the report.', prior: '' }], counter: 1, drafts: [drafted] } },
+    droppedDrafts: [],
+  }
+  let moved = false
+  on('store.get', (_$, e) => {
+    const value = store[e.key]
+    if (e.key === 'droppedDrafts' && !moved) {
+      moved = true
+      store.droppedDrafts = [drafted]
+      const { parent: _gone, ...rest } = store.sessions as Record<string, unknown>
+      store.sessions = rest
+    }
+    return { value }
+  })
+  on('store.set', (_$, e) => {
+    store[e.key] = e.value
+    return { value: undefined }
+  })
+  on('session.id', () => ({ value: 'test-session' }))
+  on('turn.complete', () => ({ text: '' }))
+  on('prompt.submit', (_$, e) => ({ text: e.text }))
+  on('ui.toast', () => ({ value: undefined }))
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({
+    value: [
+      { role: 'user', text: 'Build the report.', toolUses: [] },
+      { role: 'assistant', text: 'Built.', toolUses: [] },
+      { role: 'user', text: `${drafted} And keep the log.`, toolUses: [] },
+    ] satisfies SessionMessage[],
+  }))
+  transcript(on, { 'test-session.jsonl': [LINE('Build the report.'), LINE(`${drafted} And keep the log.`)].join('\n') })
+  writer(on, () => OBJ('The report run on the real data, with the log kept.', ['the run shown | open']))
+  await giveTranscript($, on, HELD('test-session.jsonl'))
+  await started($)
+  await settle($)
+  expect(moved).toBe(true)
+  expect((store.sessions as Record<string, Stored>)['test-session']?.owner).toEqual([
+    { n: 1, kind: 'his', text: 'Build the report.', prior: '' },
+    { n: 2, kind: 'draft', text: drafted, prior: 'Built.' },
+    { n: 3, kind: 'his', text: 'And keep the log.', prior: 'Built.' },
+  ])
+})
+
 test('rule: the transcript path Claude Code gives the session is the file read, wherever the session has moved since, and no search by name is run', async ($, on) => {
   const rec = kept(on, {})
   on('session.start', (_$, e) => ({ cwd: e.cwd }))
