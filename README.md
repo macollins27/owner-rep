@@ -103,8 +103,8 @@ writer never raises a condition's state, and the looks, the briefings and the wr
 shown what the check found beside it. The objective stays open until every condition is
 shown or closed. While a condition is open, the gate refuses a briefing that says the agent
 should stop, that gives no verdict, whose next step tells the agent to stop, to wrap up, to
-stop and report, to stop and wait for the owner, or calls the work finished or says the
-session can end (a step that only carries the word and goes on, such as stopping a wrong
+stop and report, to stop and wait for the owner or his word, to stop and ask him, or calls
+the work finished or says the session can end (a step that only carries the word and goes on, such as stopping a wrong
 approach, waiting on a CI run, a program that "runs once and stops", or an end put after a
 condition, is let through), or that says the work is going well. Such a briefing is asked once more with
 the open conditions named, and if it still does any of these the card is refused. While no
@@ -228,10 +228,14 @@ old text kept as an earlier version. A session the rep holds no record of (one w
 was dropped from the 32, one forked with a new id, one older than the mod) has the prompts
 the owner typed read back from the session at its start and on a press, each with the end
 of the agent's words before it. Each is proven his from the session's transcript file under
-`~/.claude/projects/`: only a user line there with a human origin that is not marked meta
-counts, found by a `grep` of the session's own file, or, for a session
-forked with a new id whose file is not written yet, of the project folder's newest
-transcripts, at most 40, stopping once every row is proven. A row the transcript does not
+`~/.claude/projects/`: only a line there with a human origin that is not marked meta counts
+(a user line, or the queued-command line Claude Code saves for a message typed while the
+agent works). The file is the one Claude Code names to the mod's hooks, or, when none was
+named, the one found by the session's id; it is read with `sed`, picture data blanked so the
+read stays under the output cap, and a read cut at that cap proves nothing. For a session
+forked with a new id whose file is not written yet, the newest transcripts in that file's
+folder are read, at most 40 within 30 seconds, stopping once every row is proven; a match in
+another session's file there is still a line the owner typed. A row the transcript does not
 prove (task notifications, another session's message, the summary of a compacted
 conversation) is never taken as his, and when no transcript can be read nothing is seeded.
 A message the rep drafted that he sent in any session the rep holds, the one forked from
@@ -260,7 +264,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 125 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 134 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -297,8 +301,10 @@ of the mod.
 Like every Claude Code mod, it runs with the permissions of the person who installs it. Its
 own calls read the prompt box, the session id and working directory, the session's
 messages, a small per-session store, and the model through the session's own credentials,
-and run `grep` and `ls` over the session's transcripts under `~/.claude/projects/` (or the
-folder `CLAUDE_CONFIG_DIR` names) to prove which messages the person typed. The check step
+take the transcript path Claude Code gives its hooks at the session's start and with each
+prompt, and run `sed`, `ls` and `find` over the session's transcripts under
+`~/.claude/projects/` (or the folder `CLAUDE_CONFIG_DIR` names) to prove which messages the
+person typed. The check step
 starts a separate Claude Code run that may read files, search, run the project's own tests
 and read agentsview; it may not edit, send, or launch helpers. The rep never sends anything
 to an agent by itself.

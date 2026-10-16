@@ -37,7 +37,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 125 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 134 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -120,11 +120,14 @@ call writes (below):
    verdict other than `continue` (a `stop`, or none given, which `verdictOf` reads as
    `missing`, never as continue), a `well:` line, or a `next:` that `STOP_NEXT` reads as
    telling the agent or the job to stop, calling the work finished, saying nothing is left,
-   closing the session, wrapping up, stopping work on it, stopping to report, stopping to
-   wait bare or for him (`WAIT_ON_HIM`: him, the owner, you, your or his reply, further
-   instructions) or saying the session can end at a sentence's start or after a stop mark
-   other than a comma (`SENTENCE`; a comma with "and", "so" or "now" counts, "then" after a
-   comma closes a condition), each said as a clause of its own (a step that only carries the
+   closing the session, wrapping up, stopping work on it, stopping (or stopping here) to
+   report, to wait bare or on him (`WAIT_ON_HIM`: a wait for, on, until or till him, he,
+   his, the owner, you, your, approval, further instructions, a reply, an answer, a
+   decision, confirmation or the go-ahead, whatever follows to the sentence's end) or to ask
+   him, or saying the session can end at a sentence's start or after a stop mark other than
+   a comma (`SENTENCE`; a comma with "and", "and then", "so" or "now" counts, a bare "then"
+   after a comma closes a condition; `CLAUSE` takes "and then" as a clause's start too),
+   each said as a clause of its own (a step that only carries the
    word and goes on, as "stop guessing and run the suite" or "Don't stop until …", keeps the
    model's own next step; so do a pair such as "make the timer start and stop", the bare
    "and stop" only being read, never "and stops" said of a program, a wait on a CI run and
@@ -248,16 +251,28 @@ text in `rec.stale` (kept as the first version when the objective is written) an
 A session the rep holds no record of (its record fell out of the newest `SESSIONS_MAX`, it
 was forked with a new id, or it is older than the mod) has none of his messages. `seedOwner`
 fills such a record, one with no message or note of his, from `$.session.messages()`. His
-rows are proven from the session's transcript file, never guessed from their text:
-`humanSet` greps `<config>/projects/<projectFolder>/<id>.jsonl` (the config folder
-`CLAUDE_CONFIG_DIR`, else `~/.claude`) for `HUMAN_MARK` through `$.process.run`, with
-`HUMAN_GREP_TIMEOUT_MS`, and `humanTexts` keeps the lines of type user with origin kind
-`human` and not `isMeta`, each as its `typedKey` (a command in its typed `/name args` form,
-`typedForm`, reminders removed, whitespace folded). When the session's own file is missing
-(grep exits other than 0 or 1, as for a session forked with a new id whose file is not
-written yet), the folder's newest `.jsonl` files (`ls -t`) are grepped one at a time, at
-most `HUMAN_SCAN_MAX` (40), stopping once every `candidateKeys` row is proven. When nothing
-can be read, `humanSet` is null and nothing is seeded. `typedPrompts` keeps the user rows
+rows are proven from the session's transcript file, never guessed from their text. The
+classic hooks `classic.SessionStart` and `classic.UserPromptSubmit` carry the file's path
+(`transcript_path`); `holdTranscript` keeps it per session id in a module-level map, a
+later prompt's path replacing the start's, and each event is passed on untouched. With no
+path held, `humanSet` looks for `<id>.jsonl` by name, `find <config>/projects -maxdepth 2`
+(the config folder `CLAUDE_CONFIG_DIR`, else `~/.claude`), and with none found it is null.
+The file is read through `$.process.run` with `humanRead` (`sed`, `HUMAN_READ_TIMEOUT_MS`),
+which prints only the lines holding `"kind":"human"`, every picture's `"data"` blanked so a
+message with a picture stays under the output cap. A read cut at that cap
+(`isStdoutTruncated`) proves nothing: the session's own file cut makes `humanSet` null, and
+a cut file in the scan is skipped. `humanTexts` keeps the lines of type user with origin
+kind `human` and not `isMeta`, and the lines of type attachment holding a `queued_command`
+of origin kind `human` (a message he typed while the agent worked), meta on neither the
+line nor the attachment, each as its `typedKey` (a command in its typed `/name args` form,
+`typedForm`, reminders removed, whitespace folded). When the session's own file cannot be
+read (as for a session forked with a new id whose file is not written yet; the path held
+still names the right folder), the newest `.jsonl` files in its folder (`folderOf`,
+`ls -t`) are read one at a time, at most `HUMAN_SCAN_MAX` (40), within
+`HUMAN_SCAN_BUDGET_MS` (30 seconds) for the whole scan, each read given no more than the
+time left, stopping once every `candidateKeys` row is proven. A match in another session's
+file in the same folder is still a line he typed, so it counts; a scan repeated at each
+start and press costs milliseconds, so nothing caches it. `typedPrompts` keeps the user rows
 with no tool results whose key is in that set, with `NOT_TYPED` (task notifications, slash
 command output, shell escapes, teammate messages, the compaction summary, a skill's base
 directory, the interrupt mark) still applied as a second filter, each with `prior` from the
