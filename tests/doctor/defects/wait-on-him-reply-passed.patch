@@ -1,5 +1,5 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 0f7fabd..5b4d7dc 100644
+index 603d998..9df0f81 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
 @@ -1953,7 +1953,7 @@ const ON_HIM = String.raw`(?:him|he|his|the owner|you|your\s+(?:reply|answer|res
@@ -8,6 +8,6 @@ index 0f7fabd..5b4d7dc 100644
  // approval", "wait for further instructions from him").
 -const WAIT_ON_HIM = String.raw`\s+(?:for|on|until|till)\s+${ON_HIM}[^.!?;]*`
 +const WAIT_ON_HIM = String.raw`\s+(?:for|on|until|till)\s+${ON_HIM}(?=\s*(?:[.!?;]|$))`
- // "stop and" (or "stop here and") a finishing step (report, hand over,
- // summarise, tell him or the owner), only when it runs to the end of the
- // sentence: "Stop and report back to him." ends the work, while "Stop and
+ // "stop and" (or "stop here and", "stop work and", "stop working and") a finishing step
+ // (report, hand over, summarise, tell him or the owner), only when it runs to the end of the
+ // sentence: "Stop and report back to him." ends the work, while "Stop and report what failed,

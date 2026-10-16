@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 30b4585..652c8e6 100644
+index 349973f..b9801db 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1893,10 +1893,7 @@ const WRAP_SAID = String.raw`${STOP_LEAD}wrap\s+(?:(?:it|things|everything|the (
- // finish ("Finish the two sessions, then show each one done") and a wrap of
- // something else ("Wrap the slow tests in one helper"). The rep's own texts
+@@ -2031,10 +2031,7 @@ const WRAP_SAID = String.raw`${STOP_LEAD}wrap\s+(?:(?:it|things|everything|the (
+ // said not to happen ("Don't wait for his reply; push the fix"), a lockfile
+ // checked in and a file handed to a program. The rep's own texts
  // (OPEN_NEXT, UNWRITTEN_NEXT) never match.
 -export const STOP_NEXT = new RegExp(
--  [STOP_SAID, FINISHED_SAID, NOTHING_SAID, CLOSE_SAID, AND_STOP, STOP_WORK, STOP_TO_REPORT, END_SAID, WRAP_SAID].join('|'),
+-  [STOP_SAID, FINISHED_SAID, NOTHING_SAID, CLOSE_SAID, AND_STOP, STOP_WORK, STOP_TO_REPORT, WAIT_SAID, ASK_BACK_SAID, HAND_BACK_SAID, THEN_WAIT, END_SAID, AGENT_ENDS, WRAP_SAID].join('|'),
 -  'i',
 -)
 +export const STOP_NEXT = /\bstop(?:s|ped|ping)?\b|\b(?:is|are|all|been|now|as|job|work) (?:done|finished|complete)\b|\bnothing (?:is |more )?(?:left|to do|remains)\b/i

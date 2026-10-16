@@ -2489,6 +2489,21 @@ test('STOP_NEXT refuses only a next step that stops the agent or the job, calls 
     'Stop and wait for your go-ahead.',
     'Stop and wait for confirmation from him.',
     'Stop and wait for a decision on the pricing.',
+    // A wait on him with or without a stop, "await", a check-in, his decision, the work handed
+    // back, a bare wait after ", then", and the agent ending the session.
+    'Stop and await his reply.',
+    'Stop and check in with him.',
+    'Stop and let him decide.',
+    'Stop work and wait for him.',
+    'Stop working and wait.',
+    'Stop work and wait here.',
+    'Stop here and wait.',
+    'Stop and report, then wait.',
+    'Report and wait for him.',
+    'Wait for his go-ahead.',
+    'Wait for him to reply.',
+    'Hand it over to him.',
+    'The agent can end the session.',
     // An end after ", and then", or "and then" at a clause's start.
     'Fix the bug, and then the job can end.',
     'Fix the bug. And then the session can end.',
@@ -2529,6 +2544,16 @@ test('STOP_NEXT refuses only a next step that stops the agent or the job, calls 
     'Stop and wait for your test run to finish.',
     'Stop and wait for confirmation emails to arrive in the test inbox, then check them.',
     'Stop and wait for a decision tree to train, then evaluate it.',
+    // A wait on a run, a step after ", then", a file handed to a program, a lockfile checked
+    // in, a suite let finish; a wait on him said not to happen, and an end with a condition.
+    'Wait for the GitHub run to finish, then merge.',
+    'Report the failing test, then fix it.',
+    'Hand the new file to the parser and rerun it.',
+    'Check in the lockfile and push.',
+    'Let the suite finish, then fix what fails.',
+    "Don't wait for his reply; push the fix.",
+    'There is no need to wait for him; run the suite.',
+    'Once the suite is green, the agent can end the session.',
   ]
   for (const next of refuse) {
     expect([next, STOP_NEXT.test(next)]).toEqual([next, true])

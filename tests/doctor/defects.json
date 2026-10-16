@@ -583,7 +583,7 @@
   },
   {
     "name": "wait-on-him-passed",
-    "breaks": "STOP_TO_REPORT no longer refuses a wait on him, so \"Stop and wait for him.\" and a bare \"stop and wait.\" pass while a condition is open",
+    "breaks": "STOP_TO_REPORT no longer refuses a bare wait or one on him after a stop, so \"stop and wait.\" passes while a condition is open.",
     "patch": "wait-on-him-passed.patch",
     "fixed": "2026-10-16"
   },
@@ -703,7 +703,7 @@
   },
   {
     "name": "stop-here-and-wait-passed",
-    "breaks": "\"Stop here and wait for him.\" passes the gate while a condition is open.",
+    "breaks": "\"Stop here and wait.\" passes the gate while a condition is open.",
     "patch": "stop-here-and-wait-passed.patch",
     "fixed": "2026-10-16"
   },
@@ -831,6 +831,54 @@
     "name": "wait-decision-any",
     "breaks": "A wait on anything that starts with \"a decision\" counts as a wait on him, so \"Stop and wait for a decision tree to train, then evaluate it.\" is refused while a condition is open.",
     "patch": "wait-decision-any.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "wait-on-him-unstopped-passed",
+    "breaks": "A wait on him said without a stop (\"Wait for his go-ahead.\", \"Wait for him to reply.\", \"Report and wait for him.\") passes the gate while a condition is open.",
+    "patch": "wait-on-him-unstopped-passed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "hand-back-passed",
+    "breaks": "\"Hand it over to him.\" passes the gate while a condition is open.",
+    "patch": "hand-back-passed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "check-in-passed",
+    "breaks": "\"Stop and check in with him.\" and \"Stop and let him decide.\" pass the gate while a condition is open.",
+    "patch": "check-in-passed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "then-wait-passed",
+    "breaks": "\"Stop and report, then wait.\" passes the gate while a condition is open.",
+    "patch": "then-wait-passed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "agent-ends-passed",
+    "breaks": "\"The agent can end the session.\" passes the gate while a condition is open.",
+    "patch": "agent-ends-passed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "stop-work-and-wait-passed",
+    "breaks": "\"Stop working and wait.\" passes the gate while a condition is open.",
+    "patch": "stop-work-and-wait-passed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "await-passed",
+    "breaks": "\"Stop and await his reply.\" passes the gate while a condition is open.",
+    "patch": "await-passed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "wait-negation-refused",
+    "breaks": "A wait on him said not to happen (\"Don't wait for his reply; push the fix.\") is refused as a stop.",
+    "patch": "wait-negation-refused.patch",
     "fixed": "2026-10-16"
   }
 ]
