@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 8df3376..f5db16f 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -865,7 +865,7 @@ async function humanSet($: EngineInterface, sid: string, rows: readonly RecordRo
+     const grep = (file: string) => $.process.run(['grep', '-h', '-F', HUMAN_MARK, `${folder}/${file}`], { timeoutMs: HUMAN_GREP_TIMEOUT_MS })
+     const own = await grep(`${sid}.jsonl`)
+     if (own.exitCode === 0) return humanTexts(own.stdout)
+-    if (own.exitCode === 1) return new Set()
++    if (own.exitCode !== 0) return new Set()
+     const listed = await $.process.run(['ls', '-t', folder], { timeoutMs: HUMAN_GREP_TIMEOUT_MS })
+     if (listed.exitCode !== 0) return null
+     const files = listed.stdout

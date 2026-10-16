@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 8df3376..c305945 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -872,7 +872,6 @@ async function humanSet($: EngineInterface, sid: string, rows: readonly RecordRo
+       .split('\n')
+       .map(f => f.trim())
+       .filter(f => f.endsWith('.jsonl'))
+-      .slice(0, HUMAN_SCAN_MAX)
+     const want = [...candidateKeys(rows)]
+     const human = new Set<string>()
+     for (const file of files) {

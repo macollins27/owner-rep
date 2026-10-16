@@ -57,6 +57,13 @@ import {
   RECORD_TIMEOUT_MS,
   recordPrompt,
   typedPrompts,
+  humanTexts,
+  candidateKeys,
+  projectFolder,
+  HUMAN_MARK,
+  HUMAN_GREP_TIMEOUT_MS,
+  HUMAN_SCAN_MAX,
+  type RecordRow,
   objectiveText,
   openConditions,
   parseBrief,
@@ -481,19 +488,22 @@ async function setNow($: EngineInterface, patch: Partial<Now>): Promise<void> {
 // nothing to fork before the first response of the process (a session reopened with
 // --continue or --resume) and after /clear; then the session's record is read instead, by
 // one plain completion over the rows `$.session.messages()` returns (recordPrompt), with
-// the same task. With no rows the fork's answer stands, so the caller says there is nothing
-// to read yet. A completion that throws reads as an API error, which the callers already
-// show. Either way the result has the fork's shape, so its spend is counted as a fork's.
-async function readSession($: EngineInterface, prompt: string): Promise<ModelForkResult> {
+// the same task, his rows proven from the session's transcript (humanSet) and labelled as
+// the session's when they cannot be. With no rows the fork's answer stands, so the caller
+// says there is nothing to read yet. A completion that throws reads as an API error, which
+// the callers already show. Either way the result has the fork's shape, so its spend is
+// counted as a fork's.
+async function readSession($: EngineInterface, sid: string, prompt: string): Promise<ModelForkResult> {
   const forked = await $.model.fork({ prompt })
   if (forked.isAnswered || forked.reason !== 'nothing-to-fork') return forked
   const rows = await $.session.messages().catch(() => [])
   if (rows.length === 0) return forked
+  const human = await humanSet($, sid, rows)
   return $.model
     .complete({
       model: OBJECTIVE_MODEL,
       system: RECORD_SYSTEM,
-      prompt: recordPrompt(rows, prompt),
+      prompt: recordPrompt(rows, prompt, human ?? undefined),
       maxTokens: RECORD_MAX_TOKENS,
       effort: 'high',
       timeoutMs: RECORD_TIMEOUT_MS,
@@ -521,7 +531,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
     })
     return
   }
-  const result = await readSession($, watchPrompt({ ...memoryOf(rec), context: await contextOf($) }, reason))
+  const result = await readSession($, sid, watchPrompt({ ...memoryOf(rec), context: await contextOf($) }, reason))
   const usage = 'usage' in result ? result.usage : null
   await changeRec($, sid, async after => {
     after.calls += 1
@@ -558,7 +568,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     const ask = async (extra: string) => {
       const rec = await loadRec($, sid)
       const prompt = briefPrompt({ ...memoryOf(rec), context })
-      const result = await readSession($, extra === '' ? prompt : `${prompt}\n\n${extra}`)
+      const result = await readSession($, sid, extra === '' ? prompt : `${prompt}\n\n${extra}`)
       const usage = 'usage' in result ? result.usage : null
       return changeRec($, sid, async after => {
         after.calls += 1
@@ -836,21 +846,82 @@ function pushOwner(rec: Rec, kind: OwnerKind, text: string, prior: string = last
   )
 }
 
+// The keys of the rows he typed, proven from the session's transcript file, which says who
+// wrote each row where `$.session.messages()` does not (humanTexts). The file is
+// <config>/projects/<folder>/<id>.jsonl, the config folder CLAUDE_CONFIG_DIR or ~/.claude;
+// grep keeps only the lines marked human, so a long session's read stays small. A grep that
+// finds none means none of the rows is his. A session forked with a new id has no file of its
+// own until its first message is saved: the folder's newest files are read instead, one grep
+// each so every read stays under the output cap, at most HUMAN_SCAN_MAX, stopping once every
+// row that could be his (candidateKeys) is proven. Null when nothing could be read: then no
+// row is taken as his.
+async function humanSet($: EngineInterface, sid: string, rows: readonly RecordRow[]): Promise<Set<string> | null> {
+  try {
+    const set = await $.env.get('CLAUDE_CONFIG_DIR')
+    const home = await $.env.get('HOME')
+    const config = set !== undefined && set !== '' ? set : home !== undefined && home !== '' ? `${home}/.claude` : null
+    if (config === null) return null
+    const folder = projectFolder(config, await $.session.cwd())
+    const grep = (file: string) => $.process.run(['grep', '-h', '-F', HUMAN_MARK, `${folder}/${file}`], { timeoutMs: HUMAN_GREP_TIMEOUT_MS })
+    const own = await grep(`${sid}.jsonl`)
+    if (own.exitCode === 0) return humanTexts(own.stdout)
+    if (own.exitCode === 1) return new Set()
+    const listed = await $.process.run(['ls', '-t', folder], { timeoutMs: HUMAN_GREP_TIMEOUT_MS })
+    if (listed.exitCode !== 0) return null
+    const files = listed.stdout
+      .split('\n')
+      .map(f => f.trim())
+      .filter(f => f.endsWith('.jsonl'))
+      .slice(0, HUMAN_SCAN_MAX)
+    const want = [...candidateKeys(rows)]
+    const human = new Set<string>()
+    for (const file of files) {
+      const found = await grep(file)
+      if (found.exitCode === 0) for (const key of humanTexts(found.stdout)) human.add(key)
+      if (want.every(k => human.has(k))) break
+    }
+    return human
+  } catch {
+    return null
+  }
+}
+
+// The rep's drafts kept in every session's record, the cards' messages and the last
+// briefing's, so a draft he sent is known in a session forked from the one that drew it.
+async function storedDrafts($: EngineInterface): Promise<string[]> {
+  const all = await $.store.get('sessions')
+  if (typeof all !== 'object' || all === null) return []
+  const out: string[] = []
+  for (const r of Object.values(all as Record<string, unknown>)) {
+    if (!isRec(r)) continue
+    if (Array.isArray(r.drafts)) out.push(...r.drafts.filter((d): d is string => typeof d === 'string'))
+    if (typeof r.lastBrief?.message === 'string') out.push(r.lastBrief.message)
+  }
+  return out
+}
+
 // A session the rep holds no record of has none of his messages: one reopened after its
 // record fell out of the newest SESSIONS_MAX, one forked with a new id, one from before the
-// mod was installed. His typed messages are then read from the session's rows and recorded
-// in order as `prompt.submit` records them, each with the agent's last words before it, a
-// draft he sent split off as the rep's. It does nothing when the record holds a message or a
-// note of his, so it never adds to a live record. Says whether it recorded any.
+// mod was installed. His typed messages are then read from the session's rows, each proven
+// his from the session's transcript (humanSet; when it cannot be read nothing is seeded),
+// and recorded in order as `prompt.submit` records them, each with the agent's last words
+// before it, a draft he sent split off as the rep's, matched against the drafts of every
+// record in the store. It does nothing when the record holds a message or a note of his, so
+// it never adds to a live record. Says whether it recorded any.
 async function seedOwner($: EngineInterface, sid: string): Promise<boolean> {
   const has = (rec: Rec) => rec.owner.some(m => m.kind !== 'draft')
   if (has(await loadRec($, sid))) return false
-  const typed = typedPrompts(await $.session.messages().catch(() => []))
+  const rows = await $.session.messages().catch(() => [])
+  if (candidateKeys(rows).size === 0) return false
+  const human = await humanSet($, sid, rows)
+  if (human === null) return false
+  const typed = typedPrompts(rows, human)
   if (typed.length === 0) return false
+  const others = await storedDrafts($)
   return changeRec($, sid, rec => {
     if (has(rec)) return false
     for (const t of typed) {
-      const split = draftSplitAny(t.text, [...rec.drafts, rec.lastBrief?.message ?? ''])
+      const split = draftSplitAny(t.text, [...rec.drafts, rec.lastBrief?.message ?? '', ...others])
       if (split === null) pushOwner(rec, 'his', t.text, t.prior)
       else {
         pushOwner(rec, 'draft', split.draft, t.prior)

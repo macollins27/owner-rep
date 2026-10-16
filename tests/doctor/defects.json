@@ -472,5 +472,53 @@
     "breaks": "A session the rep holds no record of (reopened after its record was dropped, forked with a new id, or older than the mod) keeps no message of his until he types again, so the card says the objective is not written yet.",
     "patch": "reopened-no-seed.patch",
     "fixed": "2026-10-16"
+  },
+  {
+    "name": "seed-trusts-text",
+    "breaks": "A row the engine wrote on his side that no prefix on NOT_TYPED names (another session's message, an idle notice, a scheduled task) is seeded as a message of his, and the objective is written from words he never typed.",
+    "patch": "seed-trusts-text.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "human-rows-unchecked",
+    "breaks": "Rows of the session's transcript that the engine wrote, meta rows and rows with another origin or none, are taken as typed by him, so the proof proves nothing.",
+    "patch": "human-rows-unchecked.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "record-trusts-text",
+    "breaks": "The record read in a reopened session labels a row the engine wrote as the person's whenever no prefix names it, though the transcript says otherwise, so the briefing reads the engine's words as his.",
+    "patch": "record-trusts-text.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "seed-no-folder-scan",
+    "breaks": "A session forked with a new id, whose own transcript is not saved yet, has none of his messages proven, so its objective is not written until he types again.",
+    "patch": "seed-no-folder-scan.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "human-scan-uncapped",
+    "breaks": "The scan of a forked session's folder reads every transcript in it, however many, before the press can go on.",
+    "patch": "human-scan-uncapped.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "human-scan-no-stop",
+    "breaks": "The scan of a forked session's folder reads on after every row that could be his is proven, paying for reads that change nothing.",
+    "patch": "human-scan-no-stop.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "fork-draft-as-his",
+    "breaks": "A card message he sent in the session this one was forked from is recorded as his own words, so the objective is written from the rep's draft.",
+    "patch": "fork-draft-as-his.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "command-form-raw",
+    "breaks": "A slash command he ran is matched and recorded in the engine's saved tags rather than as he typed it, so a command with words after it is never proven his, and a bare one counts as a message.",
+    "patch": "command-form-raw.patch",
+    "fixed": "2026-10-16"
   }
 ]

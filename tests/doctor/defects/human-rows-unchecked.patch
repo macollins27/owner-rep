@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 7dc8332..c4c64d7 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -748,7 +748,7 @@ export function humanTexts(jsonl: string): Set<string> {
+     if (typeof row !== 'object' || row === null) continue
+     const r = row as { type?: unknown; isMeta?: unknown; origin?: unknown; message?: unknown }
+     const origin = typeof r.origin === 'object' && r.origin !== null ? (r.origin as { kind?: unknown }).kind : undefined
+-    if (r.type !== 'user' || r.isMeta === true || origin !== 'human') continue
++    if (r.type !== 'user') continue
+     const message = typeof r.message === 'object' && r.message !== null ? (r.message as { content?: unknown }) : {}
+     const key = typedKey(contentText(message.content))
+     if (key !== '') out.add(key)
