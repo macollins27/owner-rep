@@ -37,9 +37,9 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 106 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 115 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
-tests/live/live.sh              # on demand: eight real sessions in tmux, the strip captured to tests/live/captures
+tests/live/live.sh              # on demand: nine real sessions in tmux, the strip captured to tests/live/captures
 ```
 
 GitHub runs validate, test, the type check and the doctor on every push
@@ -119,15 +119,32 @@ call writes (below):
    `applyMarks` takes the marks, and `gateVerdict` refuses, while a condition is open, a
    verdict other than `continue` (a `stop`, or none given, which `verdictOf` reads as
    `missing`, never as continue), a `well:` line, or a `next:` that `STOP_NEXT` reads as
-   telling the agent or the job to stop, calling the work finished, saying nothing is left
-   or closing the session, each said as a clause of its own (a step that only carries the
+   telling the agent or the job to stop, calling the work finished, saying nothing is left,
+   closing the session, wrapping up, stopping work on it, stopping to report or saying the
+   session can end, each said as a clause of its own (a step that only carries the
    word and goes on, as "stop guessing and run the suite" or "Don't stop until …", keeps the
-   model's own next step). A refused answer is asked once
+   model's own next step; so does a pair such as "make the timer start and stop"). A refused answer is asked once
    more (`askAgain`, naming the open conditions); when that is refused too, or does not
    answer, the card lists the open conditions as left out and its meaning, next step,
    message and what it does are the rep's own (`OPEN_MEANS`, `OPEN_NEXT`, `OPEN_MESSAGE`,
    `OPEN_DOES`), never a stop. With no objective written (`gateOpen` is null) the same
    answers are refused, never let through, with `UNWRITTEN_*` texts, and not asked again.
+
+   The watch and the briefing (and its second ask) read through one helper, `readSession`.
+   A fork answers `nothing-to-fork` before the first response of the process (a session
+   reopened with `--continue` or `--resume`) and after `/clear`; the helper then reads
+   `$.session.messages()` and, when there are rows, makes one `$.model.complete`
+   (`OBJECTIVE_MODEL`, high effort, `RECORD_SYSTEM`, `RECORD_MAX_TOKENS` 16,000,
+   `RECORD_TIMEOUT_MS` four minutes) over `recordPrompt`: the rows printed by `recordText`
+   as a numbered record (his rows as the person, rows the engine wrote into his side
+   (`NOT_TYPED`) as the session's, each tool use on one line with its result, a row of tool
+   results shown only for results not already printed), each message cut to
+   `RECORD_ENTRY_CUT` (3,000) and each tool input or result to `RECORD_TOOL_CUT` (600),
+   head and tail kept around a marked gap, the oldest entries left out past `RECORD_BUDGET`
+   (200,000 characters) with a line saying how many, fenced in `<session_record>` with any
+   fence tag inside printed with `‹ ›`, then the same task the fork would have had. Its
+   result has the fork's shape, so its spend is counted the same; a throw reads as an API
+   error. With no rows the fork's answer stands and the toast says there is nothing to read.
 3. **Check**: `pressCheck()` → `runCheck()` first makes a throwaway copy of the agent's
    folder (`makeCopy`: an APFS clone, `cp -Rc`, into `checkCopyDir` under `~/.cache`), then
    spawns a headless `claude -p` in it with `--permission-mode default`, `CHECK_ALLOWED_TOOLS`
@@ -217,6 +234,18 @@ old marks), and a record with a `reading` and no `objective` gets `objective: nu
 text in `rec.stale` (kept as the first version when the objective is written) and
 `rec.jobStart` at the old job's first message; the next start, press or message writes it.
 
+A session the rep holds no record of (its record fell out of the newest `SESSIONS_MAX`, it
+was forked with a new id, or it is older than the mod) has none of his messages. `seedOwner`
+fills such a record, one with no message or note of his, from `$.session.messages()`:
+`typedPrompts` keeps the user rows with no tool results whose text, `<system-reminder>`
+blocks removed, is not empty and does not start with one of `NOT_TYPED` (what the engine, a
+subagent or a tool writes there: task notifications, slash commands and their output, shell
+escapes, teammate messages, the compaction summary, a skill's base directory, the interrupt
+mark), each with `prior` from the agent's last text before it; each is recorded as `his`
+through `pushOwner`, a draft he sent split off as `prompt.submit` does. `session.start` runs
+it without waiting and writes the objective when it recorded any; `pressBrief` awaits it
+before its objective-null write. A record that holds a message or note of his is never seeded.
+
 State lives in two places. Atoms (`atom({plugin, key})`) are per-session UI state that drives
 the render. The `$.store` key `sessions` holds a `Rec` per session id (the objective, the
 results of earlier jobs, the owner's numbered messages and the counter, the last briefing's
@@ -234,7 +263,12 @@ recognised after a reload and from an earlier card: the draft is recorded as a
 the owner's words, and whatever he typed after it is his own message, numbered after it. A
 prompt beginning `Owner rep` and a colon (`noteTyped`) is a note to the rep: it is recorded as
 a `note`, listed with `NOTE_MARK` (`(to the rep)`), the objective is rewritten and a look
-starts at once, and the prompt is dropped so the agent never sees it. "Tell the rep" fills the
+starts at once, and the prompt is dropped so the agent never sees it. `noteSplit` also finds
+the prefix typed after other text (`NOTE_PLACES`): at the start of a line, after a sentence's
+end and a space, or glued to the text before it in its capitalised form, never inside a
+sentence. The text before it is then a prompt to the agent, handled as any prompt (recorded
+as his message, a draft split off) and sent on without the note; the note is recorded after
+it, the objective is rewritten, a look starts, and a toast says the agent got the rest. "Tell the rep" fills the
 prompt box with the prefix. The rep never sends anything itself: "Put message in prompt" fills
 the prompt box and the owner presses Enter.
 

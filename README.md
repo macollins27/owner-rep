@@ -102,9 +102,10 @@ later check shows it: a look or a briefing that marks it shown again moves nothi
 writer never raises a condition's state, and the looks, the briefings and the writer are
 shown what the check found beside it. The objective stays open until every condition is
 shown or closed. While a condition is open, the gate refuses a briefing that says the agent
-should stop, that gives no verdict, whose next step tells the agent to stop or calls the work
-finished (a step that only carries the word and goes on, such as stopping a wrong approach,
-is let through), or that says the work is going well. Such a briefing is asked once more with
+should stop, that gives no verdict, whose next step tells the agent to stop, to wrap up, to
+stop and report, or calls the work finished or says the session can end (a step that only
+carries the word and goes on, such as stopping a wrong approach, is let through), or that
+says the work is going well. Such a briefing is asked once more with
 the open conditions named, and if it still does any of these the card is refused. While no
 objective is written, any of the same is refused at once, and the card says the objective is
 not written yet. A refused card lists the open conditions as left out, and its meaning, next
@@ -129,7 +130,11 @@ result, narrows the job, sets what "done" means or closes a condition.
 The owner never types the objective. To steer the rep they type a prompt beginning
 `Owner rep:`; the rep takes the note, drops the prompt before the agent sees it, lists it to
 the model as said to the rep with the highest weight, rewrites the objective with it, and
-reads again at once. "Tell the rep" puts the prefix in the prompt box.
+reads again at once. The prefix also counts typed after a prompt to the agent, on a line of
+its own, after a sentence's end, or run straight onto the text in its capitalised form; the
+agent then gets the prompt without the note, and the note goes to the rep alone, numbered
+after it. A mention inside a sentence, as in "ask the owner rep: is it done", is not a note.
+"Tell the rep" puts the prefix in the prompt box.
 
 On top of the objective sit five expectations the rep applies without reciting: the whole
 result is delivered; it is shown to work, not said to work; no known problem is left behind;
@@ -173,6 +178,15 @@ line is there only so a short reply can be understood and never sets the result,
 the code takes a write only when it saw a message of the owner's past the ones the objective
 was built from, so the agent's words alone never move it.
 
+A fork has nothing to fork before the first response of the process, as in a session
+reopened with `--continue` or `--resume`, and after `/clear`. The watch and the briefing then
+read the session's own record (`$.session.messages()`) instead: one plain completion, given
+the record as numbered entries fenced as data (each message cut to 3,000 characters, each
+tool's input and result to 600, the oldest entries left out past 200,000 characters, with a
+line saying how many), a system prompt saying the task means that record wherever it speaks
+of the conversation, and then the same task the fork would have had. With no record to read,
+as after `/clear`, the briefing says there is nothing to read yet.
+
 The check step runs in a room, not under a list of allowed commands. The rep first makes a
 throwaway copy of the project as it stands, uncommitted work included (an APFS clone, made in
 a moment and taking no space until written to), and spawns `claude -p` in it with
@@ -200,8 +214,13 @@ messages, notes to the rep and sent drafts, each numbered (the job's kept whole 
 and the 40 before it), flags already shown, notes other mods have shown, and spend counters
 that count the writer's calls beside the looks. A record saved by a build from before the
 objective is rebuilt from the owner's messages on the next start, press or message, with its
-old text kept as an earlier version. Nothing leaves the machine except the model calls the
-session already makes.
+old text kept as an earlier version. A session the rep holds no record of (one whose record
+was dropped from the 32, one forked with a new id, one older than the mod) has the prompts
+the owner typed read back from the session at its start and on a press, each with the end
+of the agent's words before it; what the engine, a subagent or a tool wrote into the owner's
+side (task notifications, slash commands and their output, the summary of a compacted
+conversation) is never taken as his. A record that already holds a message of his is never
+seeded. Nothing leaves the machine except the model calls the session already makes.
 
 The band above the prompt is a strip shared with other mods. The rep draws first and keeps
 whatever is beneath it. While another mod's note is up, the rep's own note waits and its
@@ -224,9 +243,9 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 103 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 115 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
-tests/live/live.sh              # on demand: eight real sessions in tmux, the strip captured to tests/live/captures
+tests/live/live.sh              # on demand: nine real sessions in tmux, the strip captured to tests/live/captures
 ```
 
 GitHub runs the validation, the tests, the type check and the doctor on every push
