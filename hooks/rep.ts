@@ -982,6 +982,28 @@ export function draftSplit(text: string, draft: string): { draft: string; his: s
   return { draft, his: rest.replace(/^\s*\.?/, '').trim() }
 }
 
+// The messages of the last few cards, newest first, kept so a message he sends
+// from a card that is no longer the newest is still taken for the rep's draft.
+export const DRAFTS_MAX = 3
+
+// The kept messages with `message` put first: an empty one is not kept, and one
+// already kept moves to the front instead of being kept twice.
+export function keepDraft(drafts: readonly string[], message: string): string[] {
+  if (message.trim() === '') return [...drafts].slice(0, DRAFTS_MAX)
+  return [message, ...drafts.filter(d => !sameFolded(d, message))].slice(0, DRAFTS_MAX)
+}
+
+// The kept draft the prompt begins with, and what he added after it; the longest
+// match wins, so a draft that begins another is not taken for it. null when none matches.
+export function draftSplitAny(text: string, drafts: readonly string[]): { draft: string; his: string } | null {
+  let best: { draft: string; his: string } | null = null
+  for (const d of drafts) {
+    const s = draftSplit(text, d)
+    if (s !== null && (best === null || s.draft.length > best.draft.length)) best = s
+  }
+  return best
+}
+
 // Cuts a string to `width` cells, with an ellipsis when cut.
 export function fit(text: string, width: number): string {
   const t = text.replace(/\s+/g, ' ').trim()

@@ -37,7 +37,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 75 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 79 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: six real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -94,7 +94,7 @@ Two modules, deliberately split:
 - `hooks/rep.ts` is pure functions and constants, no `$`. It holds the rep's prompts (the
   watch brief, the briefing brief, the objective writer's prompt, the checker brief), the
   parsers for the model's labelled answers (`parseWatch`, `parseBrief`, `parseObjective`,
-  `parseCheck`), the objective's rules that need no engine (`trimOwner`, `draftSplit`,
+  `parseCheck`), the objective's rules that need no engine (`trimOwner`, `draftSplit`, `keepDraft`,
   `mergeConditions`, `gateVerdict`, `objectiveText`), the check run's argv and read-only tool
   allowlist, and the cost arithmetic. Anything that can be unit-tested lives here.
 - `hooks/register.tsx` is the engine side: hooks, state atoms, the store record, the band
@@ -138,7 +138,9 @@ call writes (below):
    marked holds, false, not shown or changed since; it is given the conditions held open,
    its `shown:` and `closed:` lines move them, and its verdict passes the same gate, so a
    check never says stop while a condition is open. A newer press (`checkEpoch`) makes an
-   older run stale, and `lastInstant` ties "Check it" to the card that is up. The check costs
+   older run stale, and `lastInstant` ties "Check it" to the card that is up; a stale run's
+   answer, inside the record's lock, counts its spend and nothing else (no marks, no
+   `lastBrief`, no draft), so the card on record stays the newer one. The check costs
    real money and runs only on a press; the card states the measured figure (`FIRST_CHECK_*`,
    then the last run).
 
@@ -183,15 +185,16 @@ text in `rec.stale` (kept as the first version when the objective is written) an
 State lives in two places. Atoms (`atom({plugin, key})`) are per-session UI state that drives
 the render. The `$.store` key `sessions` holds a `Rec` per session id (the objective, the
 results of earlier jobs, the owner's numbered messages and the counter, the last briefing's
-message, flags already seen, other mods' notes, spend counters with the writer's own), capped
+next step and message, the last `DRAFTS_MAX` (3) cards' messages in `rec.drafts`, flags already seen, other mods' notes, spend counters with the writer's own), capped
 at `SESSIONS_MAX` newest. `loadRec`/`saveRec` are the only way in and out, and `changeRec`
 runs each change alone from its load to its save, so two hooks that finish together never save
 over each other.
 
 The owner's own messages are the only input that can steer the rep. `prompt.submit` records
 each prompt into `rec.owner` (`pushOwner`); a prompt that begins with the card's own message,
-sent through "Put message in prompt", is split by `draftSplit` against
-`rec.lastBrief.message`, so it is recognised after a reload: the draft is recorded as a
+sent through "Put message in prompt", is split by `draftSplitAny` against the last three
+cards' messages (`rec.drafts`, fed by `keepDraft` wherever a card's message is set), so it is
+recognised after a reload and from an earlier card: the draft is recorded as a
 `draft`, listed to the model with `SENT_MARK` so it is weighed as the rep's draft and never as
 the owner's words, and whatever he typed after it is his own message, numbered after it. A
 prompt beginning `Owner rep` and a colon (`noteTyped`) is a note to the rep: it is recorded as

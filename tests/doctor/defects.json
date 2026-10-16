@@ -24,6 +24,12 @@
     "fixed": "tested 2026-10-14"
   },
   {
+    "name": "stale-check-on-record",
+    "breaks": "A check that lands after a newer press still writes its marks and its message into the record, so the newer card's message he sends is taken for his own words and the stale run moves conditions.",
+    "patch": "stale-check-on-record.patch",
+    "fixed": "2026-10-15"
+  },
+  {
     "name": "flag-replaces-card",
     "breaks": "A watch flag replaces the briefing card instead of waiting for the row.",
     "patch": "flag-replaces-card.patch",
@@ -214,6 +220,12 @@
     "breaks": "A message the rep drafted and the owner sent is recorded in his list as his own words, unmarked, so the model grades the agent against a job the rep wrote and takes the rep's \"nothing else\" as the owner narrowing his job.",
     "patch": "draft-as-his-words.patch",
     "fixed": "2026-10-15; remade 2026-10-15"
+  },
+  {
+    "name": "drafts-forgotten",
+    "breaks": "Only the newest card's message is kept for knowing a draft, so a message he sends from an earlier card is recorded as his own words and can move the objective.",
+    "patch": "drafts-forgotten.patch",
+    "fixed": "2026-10-15"
   },
   {
     "name": "draft-weight-dropped",

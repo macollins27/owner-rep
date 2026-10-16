@@ -1,7 +1,7 @@
 import type { On } from 'claude-code'
 import { expect, mock, test, type Engine } from 'claude-code/testing'
 
-import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, draftSplit, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, type Condition } from '../hooks/rep'
+import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, draftSplit, draftSplitAny, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, type Condition } from '../hooks/rep'
 
 const om = (text: string, n = 1): OwnerMsg => ({ n, kind: 'his', text, prior: '' })
 
@@ -968,7 +968,7 @@ const HOLDS = 'state: stopped\nflag: none'
 const settle = async ($: Engine) => (await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })).unmount()
 
 // What the store holds for the session, as the tests read it back.
-type Stored = { objective: Objective | null; owner: OwnerMsg[]; past: string[]; jobStart: number; objectiveCalls: number; objectiveTokens: number; calls: number; seen: string[]; lastBrief?: { next: string; message: string } }
+type Stored = { objective: Objective | null; owner: OwnerMsg[]; past: string[]; jobStart: number; objectiveCalls: number; objectiveTokens: number; calls: number; checks: number; seen: string[]; lastBrief?: { at: number; next: string; message: string }; drafts?: string[] }
 
 // A session whose store the test reads back: the function returns the record as saved.
 const kept = (on: On, store: Record<string, unknown> = {}) => {
@@ -1496,6 +1496,18 @@ test('draftSplit: an exact draft, an edited draft, a short reply', () => {
   expect(draftSplit(`${bare}`, `${bare}.`)).toEqual({ draft: `${bare}.`, his: '' })
   expect(draftSplit(`${d}   \n `, d)).toEqual({ draft: d, his: '' })
   expect(draftSplit(`${bare}s are shown`, bare)).toBe(null)
+})
+
+test('keepDraft keeps the newest DRAFTS_MAX messages once each; draftSplitAny takes the longest kept draft the prompt begins with', () => {
+  const a = 'Show me the run and the test output after it.'
+  const b = 'Show me the run and the test output after it, and the log.'
+  expect(DRAFTS_MAX).toBe(3)
+  expect(keepDraft([], '')).toEqual([])
+  expect(keepDraft(['x', 'y', 'z'], 'w')).toEqual(['w', 'x', 'y'])
+  expect(keepDraft(['x', 'y', 'z'], 'y')).toEqual(['y', 'x', 'z'])
+  expect(draftSplitAny(`${b} Then stop.`, [a, b])).toEqual({ draft: b, his: 'Then stop.' })
+  expect(draftSplitAny(`${a} Then stop.`, [b, a])).toEqual({ draft: a, his: 'Then stop.' })
+  expect(draftSplitAny('something else entirely', [a, b, ''])).toBe(null)
 })
 
 test('rule: a draft is recognised from the record after a reload, and an edited draft is split', async ($, on) => {
@@ -2210,4 +2222,76 @@ test('rule: a check that shows every condition after a refused briefing does not
   expect(await ui.find({ key: 'put' })).toBeUndefined()
   await ui.unmount()
   expect(rec()?.lastBrief).toMatchObject({ next: 'Stop the agent; the job is finished.', message: '' })
+})
+
+// --- The card on record: a stale check leaves it alone, and the last few cards' messages are kept. ---
+
+// A briefing that says continue, numbered, with a message long enough to be taken for the rep's draft.
+const CARD = (n: number) =>
+  `verdict: continue\nwell:\nstands: Card ${n}.\nmeans: The work is under way.\nleft:\n- nothing\nnext: Run it live.\nmessage:\n${CARD_MESSAGE(n)}\nend\ndoes: Makes the agent run it.`
+const CARD_MESSAGE = (n: number) => `Card ${n}: run it on the real data and show me the result.`
+
+// A check's output that shows the first condition of OPEN_JOB and rewrites the message.
+const CHECK_SHOWS = () =>
+  JSON.stringify({
+    type: 'result',
+    result: 'verdict: continue\nholds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n- the newest build installed | the install log printed the revision\nclosed:\n- nothing\nstands: OLD-CHECK.\nmeans:\nleft:\n- nothing\nnext:\nmessage:\nOLD-CHECK: the first card, checked and rewritten for the agent.\nend\ndoes:\nlooked: Read the record.',
+    usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+  })
+
+test("rule: a check that lands after a newer press changes nothing on record: its marks are not taken, and the newer card's message, sent, is the rep's draft", async ($, on) => {
+  const rec = openJob(on)
+  quietBand(on)
+  on('session.cwd', () => ({ value: '/tmp/x' }))
+  mock.clock(on)
+  const writes = writer(on, () => 'objective: holds')
+  let briefs = 0
+  on('model.fork', () => ({ value: { isAnswered: true, text: CARD(++briefs), usage: USAGE } }))
+  const release = heldCheck(on, CHECK_SHOWS)
+  await started($)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  const check = ui.press({ key: 'check' })
+  await ui.press({ key: 'close' })
+  await ui.press({ key: 'rep' })
+  expect(await ui.find({ type: 'Text', text: /Card 2\./ })).toBeDefined()
+  release()
+  await check
+  await ui.unmount()
+  // The run's spend is counted; nothing else it said is taken.
+  expect(rec()?.checks).toBe(1)
+  expect(rec()?.objective?.done.map(x => x.state)).toEqual(['not-shown', 'open'])
+  expect(rec()?.lastBrief?.message).toBe(CARD_MESSAGE(2))
+  await $.prompt.submit(typed(CARD_MESSAGE(2)))
+  await settle($)
+  expect(rec()?.owner.at(-1)).toMatchObject({ n: 4, kind: 'draft', text: CARD_MESSAGE(2) })
+  expect(writes).toHaveLength(0)
+})
+
+test("rule: the last three cards' messages are kept, so an earlier card's message he sends is still the rep's draft", async ($, on) => {
+  const rec = openJob(on)
+  quietBand(on)
+  const writes = writer(on, () => 'objective: holds')
+  let briefs = 0
+  on('model.fork', () => ({ value: { isAnswered: true, text: CARD(++briefs), usage: USAGE } }))
+  await started($)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  for (let i = 0; i < 4; i++) {
+    await ui.press({ key: 'rep' })
+    await ui.press({ key: 'close' })
+  }
+  await ui.unmount()
+  expect(rec()?.drafts).toEqual([CARD_MESSAGE(4), CARD_MESSAGE(3), CARD_MESSAGE(2)])
+  // An earlier card's message, with a line of his after it: the draft is the rep's, the rest his.
+  await $.prompt.submit(typed(`${CARD_MESSAGE(2)} And keep the old flag working.`))
+  await settle($)
+  expect(rec()?.owner.slice(-2)).toMatchObject([
+    { n: 4, kind: 'draft', text: CARD_MESSAGE(2) },
+    { n: 5, kind: 'his', text: 'And keep the old flag working.' },
+  ])
+  expect(writes).toHaveLength(1)
+  // One card older than the kept three is not recognised.
+  await $.prompt.submit(typed(CARD_MESSAGE(1)))
+  await settle($)
+  expect(rec()?.owner.at(-1)).toMatchObject({ n: 6, kind: 'his' })
 })

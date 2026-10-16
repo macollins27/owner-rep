@@ -35,7 +35,8 @@ import {
   fitCard,
   fit,
   noteTyped,
-  draftSplit,
+  draftSplitAny,
+  keepDraft,
   askAgain,
   gateVerdict,
   mergeConditions,
@@ -95,6 +96,8 @@ type Rec = {
   seen: string[]
   others: string[]
   lastBrief?: { at: number; next: string; message: string }
+  // The last DRAFTS_MAX cards' messages, newest first, for knowing a draft he sends.
+  drafts: string[]
   lastSent?: { text: string; at: number }
   typedPast: number
   skip: number
@@ -125,6 +128,7 @@ const freshRec = (id: string): Rec => ({
   past: [],
   seen: [],
   others: [],
+  drafts: [],
   typedPast: 0,
   skip: 0,
   calls: 0,
@@ -504,6 +508,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
         checkCost: checkCostText(after.lastCheckTokens, after.lastCheckCached, after.lastCheckMs, after.lastCheckRefused),
       }
       after.lastBrief = { at: brief.at, next: brief.next, message: brief.message }
+      after.drafts = keepDraft(after.drafts, brief.message)
       return brief
     })
     await update($, noteA, () => null)
@@ -610,6 +615,10 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       after.lastCheckCached = got.cached
       after.lastCheckMs = Date.now() - startedAt
       after.lastCheckRefused = got.refused
+      // A run a newer press made stale changes nothing more: its marks are not
+      // taken and the card on record stays the newer one, so the message he
+      // sends from that card is still known for the rep's draft.
+      if (epoch !== checkEpoch || after.lastBrief?.at !== at) return null
       const c = parseCheck(got.text)
       // A condition the check saw shown, or he closed, moves under the same rule as a look's.
       const marked = applyMarks(after, c.shown, c.closed)
@@ -655,9 +664,10 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
         checkCost: checkCostText(after.lastCheckTokens, after.lastCheckCached, after.lastCheckMs, after.lastCheckRefused),
       }
       after.lastBrief = { at, next: patch.next ?? '', message: patch.message ?? '' }
+      after.drafts = keepDraft(after.drafts, patch.message ?? '')
       return patch
     })
-    await finish(patch)
+    if (patch !== null) await finish(patch)
   } catch (error) {
     const why = error instanceof Error ? error.message : String(error)
     await finish({ checkNote: `The check failed: ${fit(why, 160)}` }).catch(() => undefined)
@@ -847,9 +857,10 @@ export const register: Register = on => {
         const { rec, split, isHis } = await changeRec($, id, async rec => {
           // A message the rep drafted and he sent is recorded as the rep's words,
           // marked, never as his: the model must not grade against a job the rep wrote.
-          // It is matched against the stored briefing, so it survives a reload; what
-          // he added after the draft is his own message, numbered after it.
-          const split = draftSplit(e.text, rec.lastBrief?.message ?? '')
+          // It is matched against the last few cards' messages as stored, so it
+          // survives a reload and a newer card; what he added after the draft is
+          // his own message, numbered after it.
+          const split = draftSplitAny(e.text, [...rec.drafts, rec.lastBrief?.message ?? ''])
           const isHis = split === null || split.his !== ''
           if (split === null) pushOwner(rec, 'his', e.text)
           else {
