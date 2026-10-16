@@ -1523,8 +1523,8 @@ export function keepDraft(drafts: readonly string[], message: string): string[] 
 
 // Every draft a stored record holds: its cards' messages, its last briefing's, and the
 // messages it holds as the rep's draft he sent (a card more than DRAFTS_MAX back, or a
-// record from a build that kept no list of drafts). One cut to OWNER_CUT ends in an
-// ellipsis that what he sent does not have, so it matches nothing.
+// record from a build that kept no list of drafts), newest first. One cut to OWNER_CUT
+// ends in an ellipsis that what he sent does not have, so it matches nothing.
 export function recDrafts(r: unknown): string[] {
   if (typeof r !== 'object' || r === null) return []
   const { drafts, lastBrief, owner } = r as { drafts?: unknown; lastBrief?: { message?: unknown } | null; owner?: unknown }
@@ -1532,7 +1532,7 @@ export function recDrafts(r: unknown): string[] {
   if (Array.isArray(drafts)) out.push(...drafts.filter((d): d is string => typeof d === 'string'))
   if (typeof lastBrief?.message === 'string') out.push(lastBrief.message)
   if (Array.isArray(owner)) {
-    for (const m of owner) {
+    for (const m of [...owner].reverse()) {
       const d = m as Partial<OwnerMsg> | null
       if (typeof d === 'object' && d !== null && d.kind === 'draft' && typeof d.text === 'string') out.push(d.text)
     }

@@ -777,8 +777,8 @@ test('recDrafts takes a record\'s cards\' messages, its last briefing\'s and the
   expect(recDrafts({
     drafts: ['Card two: show me the log.', 7],
     lastBrief: { message: 'Card three: run the suite.' },
-    owner: [om('build it'), { n: 2, kind: 'draft', text: 'Card one: build it on main.', prior: '' }],
-  })).toEqual(['Card two: show me the log.', 'Card three: run the suite.', 'Card one: build it on main.'])
+    owner: [om('build it'), { n: 2, kind: 'draft', text: 'Card zero: plan it.', prior: '' }, { n: 3, kind: 'draft', text: 'Card one: build it on main.', prior: '' }],
+  })).toEqual(['Card two: show me the log.', 'Card three: run the suite.', 'Card one: build it on main.', 'Card zero: plan it.'])
   expect(recDrafts(null)).toEqual([])
   expect(recDrafts({ lastBrief: null, owner: 'none' })).toEqual([])
   expect(keepDropped(['Older card: ship it.', 'Oldest card: test it.'], ['Newer card: run it.', 'older card:  ship it', ' '])).toEqual([
