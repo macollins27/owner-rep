@@ -103,10 +103,13 @@ writer never raises a condition's state, and the looks, the briefings and the wr
 shown what the check found beside it. The objective stays open until every condition is
 shown or closed. While a condition is open, the gate refuses a briefing that says the agent
 should stop, that gives no verdict, whose next step tells the agent to stop, to wrap up, to
-stop and report, to stop and wait for the owner or his word, to stop and ask him, or calls
-the work finished or says the session can end (a step that only carries the word and goes on, such as stopping a wrong
-approach, waiting on a CI run, a program that "runs once and stops", or an end put after a
-condition, is let through), or that says the work is going well. Such a briefing is asked once more with
+stop and report, to wait for or await the owner or his word (with a stop or without), to stop
+and ask him, to check in with him or let him decide, to hand the work back to him, or to wait
+after a ", then", or calls the work finished or says the session or the agent can end it (a
+step that only carries the word and goes on, such as stopping a wrong approach, waiting on a
+CI run or on the agent's own build, a program that "runs once and stops", a step that says
+not to wait for him, or an end put after a condition, is let through), or that says the work
+is going well. Such a briefing is asked once more with
 the open conditions named, and if it still does any of these the card is refused. While no
 objective is written, any of the same is refused at once, and the card says the objective is
 not written yet. A refused card lists the open conditions as left out, and its meaning, next
@@ -231,7 +234,9 @@ messages read back at its start and on a press from the session's transcript fil
 marked meta counts (a user line, or the queued-command line Claude Code saves for a message
 typed while the agent works, which is never one of the session's rows at all). Each message
 gets the end of the agent's words before it from the session's rows; a queued message, or
-one whose row is gone (from before a compaction), gets none. The file is the one Claude Code
+one whose row is gone (from before a compaction), gets none. After a compaction the rows hold
+only the conversation's tail, so his messages are lined up with them from the end: a short
+reply he sent both before and after it gets its prior only at its later place. The file is the one Claude Code
 names to the mod's hooks, or, when none was named, the one found by the session's id; it is
 read with `sed`, picture data blanked so the read stays under the output cap, and a read cut
 at that cap counts as no read. A session forked with a new id has no file of its own until
@@ -239,13 +244,19 @@ its first message is saved, so the newest transcripts in that file's folder are 
 most 40 within 30 seconds, and the one whose messages match the most of the fork's rows in
 order (the newest on a tie) gives its part up to the last matched message, with the
 messages queued right after it; the parent's later messages are never taken, and the scan
-stops once a file matches every row that could be his. A row the transcript does not hold as his (task
+stops once a file matches every row that could be his. Within a file the rows are lined up
+from the end, and where they fit more than one place, the place with the fewest of his
+messages left between the matched ones, then the latest, is taken, so a fork of a compacted
+parent keeps every message up to the fork. A scan in which no file matched any row proves
+nothing, and nothing is seeded from it. A row the transcript does not hold as his (task
 notifications, another session's message, the summary of a compacted conversation) is never
 taken as his, and when no transcript can be read nothing is seeded.
 A message the rep drafted that he sent in any session the rep holds, the one forked from
 included, is recognised as the rep's draft. A prompt or a note he sends while that read is
 still running waits for it, so his earlier messages are numbered first. A record that
-already holds a message of his is never seeded. Nothing leaves the machine except the model calls the session already makes.
+already holds a message of his is never seeded. When the first objective written for a
+seeded session says a new job opened at a later message of his, the job starts there, so a
+fork of a session that had finished one job is not judged against that job's messages. Nothing leaves the machine except the model calls the session already makes.
 
 The band above the prompt is a strip shared with other mods. The rep draws first and keeps
 whatever is beneath it. While another mod's note is up, the rep's own note waits and its
@@ -268,7 +279,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 140 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 142 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions in tmux, the strip captured to tests/live/captures
 ```

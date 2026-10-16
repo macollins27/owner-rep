@@ -37,7 +37,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 140 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 142 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -120,18 +120,26 @@ call writes (below):
    verdict other than `continue` (a `stop`, or none given, which `verdictOf` reads as
    `missing`, never as continue), a `well:` line, or a `next:` that `STOP_NEXT` reads as
    telling the agent or the job to stop, calling the work finished, saying nothing is left,
-   closing the session, wrapping up, stopping work on it, stopping (or stopping here) to
-   report, to wait bare or on him (`WAIT_ON_HIM`: a wait for, on, until or till him, he,
-   his, the owner, you, your, approval, further instructions, a reply, an answer, a
-   decision, confirmation or the go-ahead, whatever follows to the sentence's end) or to ask
-   him, or saying the session can end at a sentence's start or after a stop mark other than
+   closing the session, wrapping up, stopping work on it, stopping (or stopping here, or
+   stopping work) to report, to wait bare or on him, to await him or to ask him
+   (`STOP_TO_REPORT`), a wait for or an await of him with no stop at all (`WAIT_SAID`;
+   `WAIT_ON_HIM` over `ON_HIM`: a wait for, on, until or till him, he, his, the owner, you,
+   approval, further instructions, a reply, an answer or the go-ahead, "your" only before a
+   word naming his say such as reply, approval, go-ahead or decision, "a decision" only at
+   the clause's end or before from, by, on or about, "confirmation" only at the clause's end
+   or from him, the owner or you, whatever follows to the sentence's end), a check-in with
+   him or letting him decide, choose or pick (`ASK_BACK_SAID`), handing it, the work or the
+   job over or back to him (`HAND_BACK_SAID`), these three let through after "not",
+   "never", "n't" or "no need to" (`NOT_NEGATED`), a bare wait after ", then"
+   (`THEN_WAIT`), the agent ending the session (`AGENT_ENDS`), or saying the session can
+   end at a sentence's start or after a stop mark other than
    a comma (`SENTENCE`; a comma with "and", "and then", "so" or "now" counts, a bare "then"
    after a comma closes a condition; `CLAUSE` takes "and then" as a clause's start too),
    each said as a clause of its own (a step that only carries the
    word and goes on, as "stop guessing and run the suite" or "Don't stop until …", keeps the
    model's own next step; so do a pair such as "make the timer start and stop", the bare
-   "and stop" only being read, never "and stops" said of a program, a wait on a CI run and
-   "Once the run is green, the session can end"). A refused answer is asked once
+   "and stop" only being read, never "and stops" said of a program, a wait on a CI run or
+   on "your build", and "Once the run is green, the session can end"). A refused answer is asked once
    more (`askAgain`, naming the open conditions); when that is refused too, or does not
    answer, the card lists the open conditions as left out and its meaning, next step,
    message and what it does are the rep's own (`OPEN_MEANS`, `OPEN_NEXT`, `OPEN_MESSAGE`,
@@ -228,7 +236,9 @@ message back to open. A condition
 listed twice, or with a state mark copied into its text, is kept once (`parseObjective`,
 `mergeConditions`). A new job pushes
 the old result onto `rec.past` and starts the job (`since`, `rec.jobStart`) at its first new
-message. The looks, the briefing and the check never write the objective: `applyMarks` takes
+message. The first write, which has nothing held to push, starts the job at the message its
+`moved: new job #n` cites when n is one of his messages after the first, so a seeded session
+whose transcript held an earlier job does not show that job's messages as this one's. The looks, the briefing and the check never write the objective: `applyMarks` takes
 their `shown:` lines when they name where, their `closed:` lines only when the number is a
 message of his on the job sent after `from` (one the objective was built from had its say
 when it was written), and the check's `reopen:` lines when they say what shows otherwise; a look's or a briefing's
@@ -277,17 +287,27 @@ until its first message is saved; the path held still names the right folder), t
 `HUMAN_SCAN_MAX` (40), within `HUMAN_SCAN_BUDGET_MS` (30 seconds) for the whole scan, each
 read given no more than the time left. A fork's rows are its parent's and then its own, so
 `forkItems` matches the fork's candidate rows (`forkCandidates`: user rows with no tool
-results, a key, and nothing `NOT_TYPED` names, in order) to a file's typed items in order,
-a row with no match leaving the place where it was, and keeps the items up to the last
-match and the queued ones right after it (what he typed while the agent answered his last
-message before the fork), never the parent's later messages. The file with the most matches
-is taken, the newest on a tie, and the scan stops once a file matches every candidate; none
-is taken when no file matched, and `heldItems` is null when no file could be read whole. A
+results, a key, and nothing `NOT_TYPED` names, in order) to a file's typed items from the
+end, since after a compaction the rows are only the conversation's tail: each typed item
+whose key is a candidate is tried as the last match, and the candidates are taken from last
+to first, each matched to the latest typed item with its key before the one matched after
+it, a row with no match leaving the place where it was. Of those tries it takes the most
+matched, then the fewest typed items left unmatched between the first and last match, then
+the latest last match, and keeps the items up to that match and the queued ones right after
+it (what he typed while the agent answered his last message before the fork), never the
+parent's later messages. The file with the most matches
+is taken, the newest on a tie, and the scan stops once a file matches every candidate;
+`heldItems` is null when the best file matched none, whether or not any file was read
+whole, so the record read labels his rows by their text rather than calling them all the
+session's. A
 scan repeated at each start and press costs milliseconds, so nothing caches it.
-`typedFromItems` gives each item, in order, the end of the agent's last text before the row
-it matches (the next of his side's rows with no tool results and the same key, past the
-last one matched) as its `prior`; a queued item, or one no row holds (from before a
-compaction), keeps its place with no prior. Each is recorded as `his` through `pushOwner`, a
+`typedFromItems` gives each item the end of the agent's last text before the row it matches
+as its `prior`, lining them up from the end because after a compaction the rows hold only
+the tail: walking the items from last to first, each typed one takes the latest of his
+side's rows with no tool results and the same key before the row matched after it, so a
+short reply he sent before and after a compaction gets its prior only at its later place; a
+queued item, or one no row holds (from before a compaction), keeps its place with no
+prior. Each is recorded as `his` through `pushOwner`, a
 draft he sent split off as `prompt.submit` does, matched against every record's drafts and
 last message in the store (`storedDrafts`), so a card he sent in the session this one was
 forked from is still the rep's draft. A session with no candidate row is not read. `seedOwner`
