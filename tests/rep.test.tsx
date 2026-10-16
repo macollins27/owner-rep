@@ -1,7 +1,7 @@
 import type { On } from 'claude-code'
 import { expect, mock, test, type Engine } from 'claude-code/testing'
 
-import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition } from '../hooks/rep'
+import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition } from '../hooks/rep'
 
 const om = (text: string, n = 1): OwnerMsg => ({ n, kind: 'his', text, prior: '' })
 
@@ -221,6 +221,75 @@ test('rule: a note to the rep is dropped before the agent sees it and cleared fr
   expect(reached).toBe(false)
   await (await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })).unmount()
   expect(prompts).toHaveLength(2)
+})
+
+test('noteSplit finds a note at the start of the prompt or of a line, after a sentence, or glued on as the capitalised prefix, and never in the middle of a sentence', async () => {
+  expect(noteSplit('Owner rep: the tests matter more than speed')).toEqual({ before: '', note: 'the tests matter more than speed' })
+  expect(noteSplit('  owner rep goal: a judge that works')).toEqual({ before: '', note: 'a judge that works' })
+  expect(noteSplit('Run the suite.\nOwner rep: he wants the GitHub run green too')).toEqual({ before: 'Run the suite.', note: 'he wants the GitHub run green too' })
+  expect(noteSplit('Run the suite\n\t owner rep note: the run matters')).toEqual({ before: 'Run the suite', note: 'the run matters' })
+  expect(noteSplit('Done. Owner rep: check the install yourself')).toEqual({ before: 'Done.', note: 'check the install yourself' })
+  expect(noteSplit('Ship it! owner rep: he means the store build')).toEqual({ before: 'Ship it!', note: 'he means the store build' })
+  expect(noteSplit('fix itOwner rep: x')).toEqual({ before: 'fix it', note: 'x' })
+  // The first place wins; the rest of the text after it is the note.
+  expect(noteSplit('Done. Owner rep: one\nOwner rep: two')).toEqual({ before: 'Done.', note: 'one\nOwner rep: two' })
+  expect(noteSplit('Carry on.\nOwner rep:')).toEqual({ before: 'Carry on.', note: '' })
+  // A mention inside a sentence is the owner talking to the agent about the rep.
+  expect(noteSplit('tell the owner rep: fine')).toBe(null)
+  expect(noteSplit('As the Owner rep: x')).toBe(null)
+  expect(noteSplit('fix itowner rep: x')).toBe(null)
+  expect(noteSplit('fix the tests')).toBe(null)
+  // noteTyped is the case with nothing before the prefix.
+  expect(noteTyped('Done. Owner rep: x')).toBe(null)
+})
+
+test('rule: a note typed after other text goes to the rep only: the agent gets the text before it, recorded as his message, and the note is numbered after it', async ($, on) => {
+  const store: Record<string, unknown> = {}
+  on('store.get', (_$, e) => ({ value: store[e.key] }))
+  on('store.set', (_$, e) => {
+    store[e.key] = e.value
+    return { value: undefined }
+  })
+  quietBand(on)
+  on('session.id', () => ({ value: 'test-session' }))
+  const toasts: string[] = []
+  on('ui.toast', (_$, e) => {
+    toasts.push(e.text)
+    return { value: undefined }
+  })
+  const agent: string[] = []
+  on('prompt.submit', (_$, e) => {
+    agent.push(e.text)
+    return { text: e.text }
+  })
+  const looks: string[] = []
+  on('model.fork', (_$, e) => {
+    looks.push(String(e.prompt))
+    return { value: { isAnswered: true, text: HOLDS, usage: USAGE } }
+  })
+  const writes = writer(on, () => OBJ('A suite that runs green here and on GitHub.', ['the GitHub run green | open']))
+  const result = await $.prompt.submit(typed('Run the suite.\nOwner rep: he wants the GitHub run green too'))
+  expect(result.drop).toBeUndefined()
+  expect(result.text).toBe('Run the suite.')
+  expect(agent).toEqual(['Run the suite.'])
+  await settle($)
+  const rec = () => (store.sessions as Record<string, Stored>)['test-session'] as Stored
+  expect(rec().owner.map(m => [m.n, m.kind, m.text])).toEqual([
+    [1, 'his', 'Run the suite.'],
+    [2, 'note', 'he wants the GitHub run green too'],
+  ])
+  expect(toasts).toContain('Owner rep: the part after "Owner rep:" went to the rep only; the agent got the rest.')
+  // The note is read at once, as a note alone is, and the writer reads both.
+  expect(looks).toHaveLength(1)
+  expect(looks[0]).toMatch(/- #2 \(to the rep\) he wants the GitHub run green too/)
+  expect(writes.at(-1)).toContain('Run the suite.')
+  expect(writes.at(-1)).toContain('he wants the GitHub run green too')
+  // An empty note after a later prefix: the agent gets the text before it, and no note is taken.
+  const empty = await $.prompt.submit(typed('Carry on.\nOwner rep:'))
+  expect(empty.text).toBe('Carry on.')
+  await settle($)
+  expect(rec().owner.map(m => [m.n, m.kind, m.text]).slice(2)).toEqual([[3, 'his', 'Carry on.']])
+  expect(toasts.filter(t => /went to the rep only/.test(t))).toHaveLength(1)
 })
 
 test('the checker: its prompt names the session, its tools are read-only, and its answer parses', async () => {

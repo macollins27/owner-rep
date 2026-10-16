@@ -36,7 +36,7 @@ import {
   fitCard,
   fit,
   fitTail,
-  noteTyped,
+  noteSplit,
   draftSplitAny,
   keepDraft,
   askAgain,
@@ -900,8 +900,18 @@ export const register: Register = on => {
     // The engine stamps the origin; the test kit's own submit carries none.
     const kind = e.origin?.kind ?? 'composer'
     if (kind === 'composer' || kind === 'bridge') {
-      const note = noteTyped(e.text)
-      if (note !== null) {
+      // A note to the rep, alone or typed after a prompt to the agent.
+      const noted = noteSplit(e.text)
+      // The look reads a note against the work at once.
+      const lookAtNote = (id: string) => {
+        if (inFlight.has('note')) return
+        inFlight.add('note')
+        look($, id, 'note', '')
+          .catch(() => undefined)
+          .finally(() => inFlight.delete('note'))
+      }
+      if (noted !== null && noted.before === '') {
+        const note = noted.note
         if (note === '') return { drop: 'Owner rep: nothing after the prefix, so nothing noted.' }
         try {
           const id = await sessionId($)
@@ -914,18 +924,18 @@ export const register: Register = on => {
           $.clock.after(NOTE_CLEAR_MS, () => {
             $.prompt.fill({ text: '', mode: 'replace' }).catch(() => undefined)
           })
-          // The look reads the note against the work at once.
-          if (!inFlight.has('note')) {
-            inFlight.add('note')
-            look($, id, 'note', '')
-              .catch(() => undefined)
-              .finally(() => inFlight.delete('note'))
-          }
+          lookAtNote(id)
         } catch {
           // The note is dropped either way; the agent never sees it.
         }
         return { drop: 'Owner rep: noted, and reading again. The agent did not see this.' }
       }
+      // A note typed after other text: the text before it is a prompt to the
+      // agent and goes the normal way below; the note goes to the rep only, and
+      // the agent gets the prompt without it. Nothing is dropped, so the box
+      // needs no emptying.
+      const text = noted === null ? e.text : noted.before
+      const note = noted === null ? '' : noted.note
       try {
         const id = await sessionId($)
         const view = await read($, viewA)
@@ -935,9 +945,9 @@ export const register: Register = on => {
           // It is matched against the last few cards' messages as stored, so it
           // survives a reload and a newer card; what he added after the draft is
           // his own message, numbered after it.
-          const split = draftSplitAny(e.text, [...rec.drafts, rec.lastBrief?.message ?? ''])
+          const split = draftSplitAny(text, [...rec.drafts, rec.lastBrief?.message ?? ''])
           const isHis = split === null || split.his !== ''
-          if (split === null) pushOwner(rec, 'his', e.text)
+          if (split === null) pushOwner(rec, 'his', text)
           else {
             pushOwner(rec, 'draft', split.draft)
             if (split.his !== '') pushOwner(rec, 'his', split.his)
@@ -958,11 +968,19 @@ export const register: Register = on => {
           return { rec, split, isHis }
         })
         if (split !== null) await update($, readingA, () => rec.objective)
+        // The note is numbered after the prompt it was typed behind.
+        if (note !== '') await takeNote($, id, note)
         // A message of his can move the objective: the writer reads it, never the agent's words.
-        if (isHis) rebuildObjective($, id, 'message').catch(() => undefined)
+        if (isHis || note !== '') rebuildObjective($, id, note !== '' ? 'note' : 'message').catch(() => undefined)
+        if (note !== '') {
+          lookAtNote(id)
+          $.ui.toast('Owner rep: the part after "Owner rep:" went to the rep only; the agent got the rest.')
+        }
       } catch {
         // Recording is best effort; the prompt goes on.
       }
+      // The agent never sees the note, even when recording it failed.
+      if (noted !== null) return next({ ...e, text })
     }
     return next(e)
   })

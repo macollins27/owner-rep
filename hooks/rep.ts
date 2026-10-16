@@ -138,14 +138,45 @@ export type BriefAnswer = {
 }
 
 // What the owner types into his prompt box to tell the rep something in his
-// own words: a prompt that starts with "Owner rep" and a colon, with or without
-// a word between ("Owner rep:", "Owner rep goal:", "Owner rep note:"). The rep
-// takes it, lists it to the model as said to the rep, and the agent never sees
-// it. A real prompt to an agent does not start this way.
+// own words: "Owner rep" and a colon, with or without a word between ("Owner
+// rep:", "Owner rep goal:", "Owner rep note:"). The rep takes it, lists it to
+// the model as said to the rep, and the agent never sees it. A real prompt to
+// an agent does not start this way.
 export const NOTE_PREFIX = 'Owner rep:'
+// The places the prefix counts, each searched on its own; the one found first
+// in the text wins. Anywhere else, as in "ask the owner rep: is it done", it is
+// a mention inside a sentence to the agent, not a note.
+const NOTE_PLACES: readonly RegExp[] = [
+  // At the start of the prompt, after any blank space: a note alone.
+  /^\s*owner rep(?:\s+[a-z]+)?\s*:/i,
+  // At the start of a line, after any spaces or tabs: typed below a prompt.
+  /(?<=\n[ \t]*)owner rep(?:\s+[a-z]+)?\s*:/i,
+  // After a sentence's end and a space: typed on after a prompt's last sentence.
+  /(?<=[.!?][ \t]+)owner rep(?:\s+[a-z]+)?\s*:/i,
+  // Glued to the end of other text with no space, and only as the capitalised
+  // prefix: a word running straight into it is two texts run together, which
+  // a lower-case "rep" inside a word never is.
+  /(?<=\S)Owner rep(?:\s+[A-Za-z]+)?\s*:/,
+]
+// Splits a prompt at a note to the rep: `before` is what the agent gets (empty
+// for a note alone), `note` is what follows the colon. Null when no prefix
+// stands in one of the places above.
+export function noteSplit(text: string): { before: string; note: string } | null {
+  let at = -1
+  let end = -1
+  for (const place of NOTE_PLACES) {
+    const m = place.exec(text)
+    if (m !== null && (at === -1 || m.index < at)) {
+      at = m.index
+      end = m.index + m[0].length
+    }
+  }
+  return at === -1 ? null : { before: text.slice(0, at).trim(), note: text.slice(end).trim() }
+}
+// A prompt that is a note alone: the note's text, or null.
 export const noteTyped = (text: string): string | null => {
-  const m = /^\s*owner rep(?:\s+[a-z]+)?\s*:\s*([\s\S]*)$/i.exec(text)
-  return m === null ? null : (m[1] ?? '').trim()
+  const split = noteSplit(text)
+  return split === null || split.before !== '' ? null : split.note
 }
 // How a note to the rep is marked in the list of the owner's messages.
 export const NOTE_MARK = '(to the rep) '
