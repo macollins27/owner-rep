@@ -916,5 +916,11 @@
     "breaks": "The kept drafts of records let go grow without end.",
     "patch": "dropped-drafts-uncapped.patch",
     "fixed": "2026-10-16"
+  },
+  {
+    "name": "dropped-drafts-oldest-first",
+    "breaks": "A record's drafts held among his messages are taken oldest first, so the kept list's cap could keep an older draft over a newer one.",
+    "patch": "dropped-drafts-oldest-first.patch",
+    "fixed": "2026-10-16"
   }
 ]

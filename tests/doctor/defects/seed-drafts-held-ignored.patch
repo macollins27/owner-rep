@@ -1,5 +1,5 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 2f9cc80..bbce2d2 100644
+index 1b6e2d0..ef1e333 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
 @@ -1531,12 +1531,6 @@ export function recDrafts(r: unknown): string[] {
@@ -7,7 +7,7 @@ index 2f9cc80..bbce2d2 100644
    if (Array.isArray(drafts)) out.push(...drafts.filter((d): d is string => typeof d === 'string'))
    if (typeof lastBrief?.message === 'string') out.push(lastBrief.message)
 -  if (Array.isArray(owner)) {
--    for (const m of owner) {
+-    for (const m of [...owner].reverse()) {
 -      const d = m as Partial<OwnerMsg> | null
 -      if (typeof d === 'object' && d !== null && d.kind === 'draft' && typeof d.text === 'string') out.push(d.text)
 -    }
