@@ -528,7 +528,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
         after.cached += cachedOf(usage)
         if (!result.isAnswered) return { reason: result.reason }
         const parsed = parseBrief(result.text)
-        if (applyMarks(after, parsed.shown, parsed.closed)) await update($, readingA, () => after.objective)
+        if (applyMarks(after, parsed.shown, parsed.closed) && onScreen(sid)) await update($, readingA, () => after.objective)
         const left = gateOpen(after.objective)
         return { ...gateVerdict(parsed, left), open: left }
       })
@@ -695,7 +695,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       // look's, and a reopened one moves shown only here; one held shown that the
       // check found is not so goes back to not shown, marked reopened.
       const marked = applyMarks(after, c.shown, c.closed, { reopen: c.reopen })
-      if (marked) await update($, readingA, () => after.objective)
+      if (marked && onScreen(sid)) await update($, readingA, () => after.objective)
       const checked: Checked = { holds: c.holds, wrong: c.wrong, notShown: c.notShown, changed: c.changed, looked: c.looked, refused: got.refused }
       const hasLeft = parts_hasLeft(got.text)
       // The card the check leaves, each part the checker's where it gave one
@@ -894,7 +894,7 @@ const onScreen = (id: string): boolean => !ended && id === currentId
 // older build), a write started now.
 async function enterSession($: EngineInterface, id: string): Promise<void> {
   const rec = await loadRec($, id)
-  await update($, readingA, () => rec.objective)
+  if (onScreen(id)) await update($, readingA, () => rec.objective)
   if (rec.objective === null && hisFrom(rec, jobOf(rec)).length > 0) {
     rebuildObjective($, id, 'load').catch(() => undefined)
   }
@@ -994,7 +994,7 @@ export const register: Register = on => {
           }
           return { rec, split, isHis }
         })
-        if (split !== null) await update($, readingA, () => rec.objective)
+        if (split !== null && onScreen(id)) await update($, readingA, () => rec.objective)
         // A message of his can move the objective: the writer reads it, never the agent's words.
         if (isHis) rebuildObjective($, id, 'message').catch(() => undefined)
       } catch {
