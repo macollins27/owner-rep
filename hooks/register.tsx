@@ -318,15 +318,18 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number): 
 // one he closed in a message of his own on the job, after the one the
 // objective was last built from, becomes closed with that number (a message
 // the writer already read and kept the condition open after closes nothing);
-// one held shown that the check found is not so goes back to not shown; one
-// the conversation showed, with where, becomes shown. A draft's number closes
-// nothing, and a shown or reopen mark without a where is not taken. True when
-// a condition moved.
+// one held shown that the check found is not so goes back to not shown and is
+// marked reopened; one the conversation showed, with where, becomes shown,
+// except that a reopened one moves shown only on the check's own mark (`check`
+// is the check's marks, null for a look or a briefing), so a look rereading
+// the same conversation cannot undo what the paid check found. A draft's
+// number closes nothing, and a shown or reopen mark without a where is not
+// taken. True when a condition moved.
 function applyMarks(
   rec: Rec,
   shown: Array<{ text: string; by: string }>,
   closed: Array<{ text: string; by: number | null }>,
-  reopen: Array<{ text: string; by: string }> = [],
+  check: { reopen: Array<{ text: string; by: string }> } | null = null,
 ): boolean {
   const o = rec.objective
   if (o === null) return false
@@ -336,17 +339,17 @@ function applyMarks(
     const close = closed.find(x => x.by !== null && his.includes(x.by) && same(x.text, c.text))
     if (close !== undefined && c.state !== 'closed') {
       changed = true
-      return { ...c, state: 'closed', by: `#${close.by}` }
+      return { text: c.text, state: 'closed', by: `#${close.by}` }
     }
-    const back = reopen.find(x => x.by !== '' && same(x.text, c.text))
+    const back = check?.reopen.find(x => x.by !== '' && same(x.text, c.text))
     if (back !== undefined && c.state === 'shown') {
       changed = true
-      return { ...c, state: 'not-shown', by: back.by }
+      return { text: c.text, state: 'not-shown', by: back.by, reopened: true }
     }
     const show = shown.find(x => x.by !== '' && same(x.text, c.text))
-    if (show !== undefined && (c.state === 'open' || c.state === 'not-shown')) {
+    if (show !== undefined && (c.state === 'open' || c.state === 'not-shown') && !(c.reopened === true && check === null)) {
       changed = true
-      return { ...c, state: 'shown', by: show.by }
+      return { text: c.text, state: 'shown', by: show.by }
     }
     return c
   })
@@ -650,8 +653,9 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       if (epoch !== checkEpoch || after.lastBrief?.at !== at) return null
       const c = parseCheck(got.text)
       // A condition the check saw shown, or he closed, moves under the same rule as a
-      // look's; one held shown that the check found is not so goes back to not shown.
-      const marked = applyMarks(after, c.shown, c.closed, c.reopen)
+      // look's, and a reopened one moves shown only here; one held shown that the
+      // check found is not so goes back to not shown, marked reopened.
+      const marked = applyMarks(after, c.shown, c.closed, { reopen: c.reopen })
       if (marked) await update($, readingA, () => after.objective)
       const checked: Checked = { holds: c.holds, wrong: c.wrong, notShown: c.notShown, changed: c.changed, looked: c.looked, refused: got.refused }
       const hasLeft = parts_hasLeft(got.text)

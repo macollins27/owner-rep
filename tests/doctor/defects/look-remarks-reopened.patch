@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index fa77064..4902610 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -347,7 +347,7 @@ function applyMarks(
+       return { text: c.text, state: 'not-shown', by: back.by, reopened: true }
+     }
+     const show = shown.find(x => x.by !== '' && same(x.text, c.text))
+-    if (show !== undefined && (c.state === 'open' || c.state === 'not-shown') && !(c.reopened === true && check === null)) {
++    if (show !== undefined && (c.state === 'open' || c.state === 'not-shown')) {
+       changed = true
+       return { text: c.text, state: 'shown', by: show.by }
+     }

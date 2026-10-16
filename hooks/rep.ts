@@ -58,8 +58,12 @@ export const LONG_SESSION_PERCENT = 75
 // messages alone (objectivePrompt), so nothing the agent says can move it.
 export type ConditionState = 'open' | 'not-shown' | 'shown' | 'closed'
 // One thing "done" has to show. `by` is where the conversation showed it when
-// shown, the number of his message that closed it ("#n") when closed, '' otherwise.
-export type Condition = { text: string; state: ConditionState; by: string }
+// shown, the number of his message that closed it ("#n") when closed, what the
+// check found when the check reopened it, '' otherwise. `reopened` is set when
+// the check moved it back from shown to not shown: then only a check's own
+// shown mark moves it shown again, and the looks, the briefings and the writer
+// are shown what the check found. Absent, as on older records, it is not reopened.
+export type Condition = { text: string; state: ConditionState; by: string; reopened?: boolean }
 export type ObjectiveParts = { result: string; purpose: string; done: Condition[]; step: string }
 export type Objective = ObjectiveParts & {
   // When the job opened.
@@ -185,9 +189,23 @@ const sentence = (s: string): string => {
 // One condition with its state's mark, as the prose and the open lists show it.
 const conditionLine = (c: Condition): string => `${c.text.trim().replace(/[.;]+$/, '')}${STATE_MARK[c.state]}`
 
+// What the check found beside a condition it reopened, '' for any other.
+const found = (c: Condition): string =>
+  c.reopened === true && c.state === 'not-shown' ? (c.by.trim().replace(/[.;]+$/, '') || 'that it is not so') : ''
+
+// One condition as a model is shown it: as the card shows it, and beside one
+// the check reopened, what the check found, so a look, a briefing or a check
+// does not propose it shown again on the same evidence. The card never shows
+// the check's words there.
+const promptLine = (c: Condition): string =>
+  found(c) === '' ? conditionLine(c) : `${c.text.trim().replace(/[.;]+$/, '')} (not shown: the check found ${found(c)})`
+
 // The conditions still open as a list, one "- <condition> (mark)" line each.
 const openLines = (o: Objective | null, none: string): string =>
-  list(openConditions(o).map(conditionLine), none)
+  list(openConditions(o).map(promptLine), none)
+
+// Whether a condition held open is one the check reopened.
+const anyReopened = (o: Objective | null): boolean => openConditions(o).some(c => found(c) !== '')
 
 export function objectiveText(o: Objective): string {
   const done = o.done.map(conditionLine).join('; ')
@@ -343,7 +361,7 @@ ${reading}
 
 Conditions still open:
 ${o === null ? '- none written yet' : openLines(o, '- none: every condition is shown, or closed by him')}
-A look or a briefing may mark one of these shown only by naming where the conversation itself shows it (a command run and its printed output, a file written, a test's printed result), never on the agent's word; and closed only by citing the number of a message of his own that closes it${o === null ? '' : `, sent after #${o.from}, the last message the objective was built from (one up to it was read when the objective was written)`}, never the number of a draft.
+A look or a briefing may mark one of these shown only by naming where the conversation itself shows it (a command run and its printed output, a file written, a test's printed result), never on the agent's word; and closed only by citing the number of a message of his own that closes it${o === null ? '' : `, sent after #${o.from}, the last message the objective was built from (one up to it was read when the objective was written)`}, never the number of a draft.${anyReopened(o) ? ' A condition marked "not shown: the check found …" is one the paid check looked at outside the conversation and found not so: a look or a briefing cannot mark it shown; only a later check can. Say what still stands in the way of it.' : ''}
 
 The conversation's size: ${contextLine(m)}
 
@@ -476,9 +494,10 @@ end
 does: <one line: what this message will make the agent do>`
 }
 
-// A held condition as the writer is shown it and writes it back: its text and state word.
+// A held condition as the writer is shown it and writes it back: its text and
+// state word, and beside one the check reopened, what the check found.
 const heldLine = (c: Condition): string =>
-  `- ${c.text} | ${c.state === 'not-shown' ? 'not shown' : c.state === 'shown' ? `shown: ${c.by}` : c.state === 'closed' ? `closed: ${c.by}` : 'open'}`
+  `- ${c.text} | ${found(c) !== '' ? `not shown: the check found ${found(c)}` : c.state === 'not-shown' ? 'not shown' : c.state === 'shown' ? `shown: ${c.by}` : c.state === 'closed' ? `closed: ${c.by}` : 'open'}`
 
 // The held objective in the writer's own labelled parts, so it is written back as it stands.
 const heldParts = (o: Objective): string =>
@@ -504,7 +523,11 @@ export function objectivePrompt(m: ObjectiveMemory): string {
   const held =
     o === null
       ? 'None yet. Write it now, from his messages below.'
-      : `${heldParts(o)}\n(Built from his messages up to #${o.from}; any message after that is new since.)`
+      : `${heldParts(o)}\n(Built from his messages up to #${o.from}; any message after that is new since.)${
+          anyReopened(o)
+            ? '\n(A condition held "not shown: the check found …" is one the paid check found not so. Write it back as held: only a later check can mark it shown.)'
+            : ''
+        }`
   const onJob = o === null ? m.owner : m.owner.filter(x => x.n >= o.since)
   return `## Who you are
 
@@ -663,8 +686,9 @@ function conditionOf(line: string): Condition {
   return n === null ? { text, state: 'open', by: '' } : { text, state: 'closed', by: `#${n[1]}` }
 }
 
-// A condition's text without a state mark the model copied with it, such as "(not shown)".
-const bare = (s: string): string => s.trim().replace(/\s*\((?:open|not shown|shown|closed)\)$/i, '')
+// A condition's text without a state mark the model copied with it, such as
+// "(not shown)" or "(not shown: the check found …)".
+const bare = (s: string): string => s.trim().replace(/\s*\((?:open|not shown|shown|closed)(?::[^()]*)?\)$/i, '')
 
 // The lines of a shown list: "<condition text> | <where in the conversation>".
 function shownOf(raw: string | undefined): Array<{ text: string; by: string }> {
@@ -878,7 +902,7 @@ You have ${CHECK_TIMEOUT_WORDS} and ${CHECK_MAX_TURNS} turns in all, and an answ
 ${a.reading === '' ? '(not written yet)' : a.reading}
 
 Conditions the rep holds open:
-${list(a.conditions.map(conditionLine), '- none')}
+${list(a.conditions.map(promptLine), '- none')}
 
 Conditions the rep holds shown, each with where it was shown:
 ${list(a.shown.map(c => `${c.text} | ${c.by}`), '- none')}
@@ -1362,23 +1386,26 @@ export function fitCard(card: CardText, maxRows: number, cols: number): CardText
 }
 
 // The proposed conditions plus every held one the model left out, unless a
-// message of his (one of `his`, never a draft) is cited for dropping it. A
-// held condition listed again takes the proposed text, but a shown or closed
-// state is never moved back to open or not shown. Texts are compared without
-// a state mark, and a condition the model listed twice is kept once (the
-// first), so the list cannot grow by repeats.
+// message of his (one of `his`, never a draft) is cited for dropping it. The
+// writer does not see the conversation, so it never raises a state: a held
+// condition listed again takes the proposed text and keeps its held state,
+// where and reopened mark, unless the proposed one closes it (a close has
+// already passed the citation rules); a condition new to the list proposed
+// shown starts open. Texts are compared without a state mark, and a condition
+// the model listed twice is kept once (the first), so the list cannot grow by repeats.
 export function mergeConditions(
   held: Condition[],
   proposed: Condition[],
   dropped: Array<{ text: string; by: number | null }>,
   his: readonly number[],
 ): Condition[] {
-  const rank = (s: ConditionState): number => (s === 'closed' ? 2 : s === 'shown' ? 1 : 0)
   const like = (a: string, b: string): boolean => same(bare(a), bare(b))
   const once = proposed.filter((p, i) => proposed.findIndex(q => like(q.text, p.text)) === i)
-  const out = once.map(p => {
+  const out = once.map((p): Condition => {
     const h = held.find(x => like(x.text, p.text))
-    return h !== undefined && rank(p.state) < rank(h.state) ? { ...p, state: h.state, by: h.by } : p
+    if (h === undefined) return p.state === 'shown' ? { text: p.text, state: 'open', by: '' } : p
+    if (p.state === 'closed' && h.state !== 'closed') return { text: p.text, state: 'closed', by: p.by }
+    return { ...h, text: p.text }
   })
   for (const h of held) {
     if (out.some(p => like(p.text, h.text))) continue
@@ -1430,7 +1457,7 @@ export const gateOpen = (o: Objective | null): Condition[] | null => (o === null
 export const askAgain = (open: Condition[]): string => `## Asked once more
 
 The first answer to this request said the agent should stop, gave no verdict, called the work finished in its next step, or said the work is going well, while these conditions of done are still open:
-${list(open.map(conditionLine), '- none')}
+${list(open.map(promptLine), '- none')}
 
 None of these may stand while any of them is open. Look at the conversation again: put under "shown:" each one it now shows, with where it shows it, and under "closed:" each one he closed in a message of his own, with that message's number. Then give the whole briefing again, in the same structure: while any of them stays open the verdict is "continue", "well" is empty, "stands", "means" and "message" do not call the work finished or tell the agent to stop, and "next" says what the agent does to show it or what stands in the way.`
 

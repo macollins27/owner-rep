@@ -1,7 +1,9 @@
 // The objective the rep holds for the job in hand: the same shapes as in
 // hooks/rep.ts, declared again here because this file must stand alone.
 export type ConditionState = 'open' | 'not-shown' | 'shown' | 'closed'
-export type Condition = { text: string; state: ConditionState; by: string }
+// `reopened`: the check moved it back from shown to not shown, so only a
+// check's own shown mark moves it shown again. Absent means not reopened.
+export type Condition = { text: string; state: ConditionState; by: string; reopened?: boolean }
 export type Objective = {
   result: string
   purpose: string

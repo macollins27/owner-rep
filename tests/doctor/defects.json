@@ -21,13 +21,13 @@
     "name": "stale-check-wins",
     "breaks": "An older check run's answer rewrites the newer card the owner is looking at.",
     "patch": "stale-check-wins.patch",
-    "fixed": "tested 2026-10-14; remade 2026-10-15"
+    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-16"
   },
   {
     "name": "stale-check-on-record",
     "breaks": "A check that lands after a newer press still writes its marks and its message into the record, so the newer card's message he sends is taken for his own words and the stale run moves conditions.",
     "patch": "stale-check-on-record.patch",
-    "fixed": "2026-10-15"
+    "fixed": "2026-10-15; remade 2026-10-16"
   },
   {
     "name": "flag-replaces-card",
@@ -255,7 +255,7 @@
     "name": "condition-dropped-uncited",
     "breaks": "A correction keeps only the conditions the writer wrote again, so a message that bounds the next step drops parts of what \"done\" means that the owner never let go.",
     "patch": "condition-dropped-uncited.patch",
-    "fixed": "2026-10-15"
+    "fixed": "2026-10-15; remade 2026-10-16"
   },
   {
     "name": "stop-while-open",
@@ -309,7 +309,7 @@
     "name": "marks-uncited",
     "breaks": "A look or a briefing can close a condition by citing any message number, a draft's included, so a condition the owner never let go is closed on the rep's or the agent's say.",
     "patch": "marks-uncited.patch",
-    "fixed": "2026-10-15"
+    "fixed": "2026-10-15; remade 2026-10-16"
   },
   {
     "name": "mark-cites-built-message",
@@ -327,7 +327,7 @@
     "name": "reopen-ignored",
     "breaks": "A check that finds a condition held shown is not so leaves it shown, so a stop passes the gate on a showing the check disproved.",
     "patch": "reopen-ignored.patch",
-    "fixed": "2026-10-15"
+    "fixed": "2026-10-15; remade 2026-10-16"
   },
   {
     "name": "shown-not-sent",
@@ -345,7 +345,7 @@
     "name": "conditions-pile-up",
     "breaks": "A condition the writer lists twice, or with a state mark copied into its text, is kept twice, so the list of what done means grows by repeats.",
     "patch": "conditions-pile-up.patch",
-    "fixed": "2026-10-15"
+    "fixed": "2026-10-15; remade 2026-10-16"
   },
   {
     "name": "writer-failure-uncounted",
@@ -393,6 +393,18 @@
     "name": "writer-unreadable-uncounted",
     "breaks": "A writer reply that arrives but cannot be read, as one cut off at its cap, is not counted as a failed write, so the objective never moves while the price line says nothing went wrong.",
     "patch": "writer-unreadable-uncounted.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "look-remarks-reopened",
+    "breaks": "A look or a briefing that marks a condition the check reopened as shown moves it shown again, so the next stop passes the gate though the paid check found the claim false.",
+    "patch": "look-remarks-reopened.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "merge-raises-state",
+    "breaks": "The writer's merge takes a proposed state over the held one by rank, so a correction can drop the check's reopened mark and its finding, and the merge alone would raise a condition to shown.",
+    "patch": "merge-raises-state.patch",
     "fixed": "2026-10-16"
   }
 ]

@@ -37,7 +37,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 91 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 94 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: six real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -141,8 +141,10 @@ call writes (below):
    (`checkCostText`); the right number is zero. Its answer rewrites the card, with each claim
    marked holds, false, not shown or changed since; it is given the conditions held open and
    those held shown with where (`CheckArgs.shown`), its `shown:` and `closed:` lines move
-   them, a `reopen:` line puts one held shown back to not shown, and its verdict passes the
-   same gate, so a check never says stop while a condition is open. The briefing's going-well
+   them, a `reopen:` line puts one held shown back to not shown and marks it `reopened`
+   (after that only a check's own `shown:` line moves it shown again, and the looks, the
+   briefings, the writer and the next check are shown what the check found beside it), and
+   its verdict passes the same gate, so a check never says stop while a condition is open. The briefing's going-well
    line does not survive a check that found a claim false or left something out. A newer press (`checkEpoch`) makes an
    older run stale, and `lastInstant` ties "Check it" to the card that is up; a stale run's
    answer, inside the record's lock, counts its spend and nothing else (no marks, no
@@ -174,7 +176,9 @@ or a note past `from` (`hisFrom` never counts a draft), so neither the agent's w
 rep's drafts can move it and a write that lands late cannot take a newer one's place. A
 correction takes the result, purpose and step whole and runs the conditions through
 `mergeConditions`, which keeps every held condition the writer leaves out unless `dropped:`
-cites the number of a message of his new since the held objective was built (past `from`);
+cites the number of a message of his new since the held objective was built (past `from`),
+and never raises a state: a held condition keeps its state, where and `reopened` mark unless
+the writer closes it, and a new one proposed shown starts open;
 `honest` turns a `shown` the writer adds (of the conversation it sees only the agent's last
 words before each of his messages, marked as the agent's) and a `closed` that cites no such
 message back to open. A condition
@@ -184,7 +188,9 @@ the old result onto `rec.past` and starts the job (`since`, `rec.jobStart`) at i
 message. The looks, the briefing and the check never write the objective: `applyMarks` takes
 their `shown:` lines when they name where, their `closed:` lines only when the number is a
 message of his on the job sent after `from` (one the objective was built from had its say
-when it was written), and the check's `reopen:` lines when they say what shows otherwise. A draft moves only `step`, set to the draft's `firstSentence` in
+when it was written), and the check's `reopen:` lines when they say what shows otherwise; a look's or a briefing's
+`shown:` line does not move a condition marked `reopened` (only the check's does, the fourth
+argument). A new job's conditions start with no mark. A draft moves only `step`, set to the draft's `firstSentence` in
 `prompt.submit`. The card shows `revisedLine` under the head and `objectiveText` as its
 reading; the row shows `result`.
 

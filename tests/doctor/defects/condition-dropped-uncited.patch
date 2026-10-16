@@ -1,9 +1,10 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
+index e485b6e..27cef79 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1358,11 +1358,6 @@
-     const h = held.find(x => like(x.text, p.text))
-     return h !== undefined && rank(p.state) < rank(h.state) ? { ...p, state: h.state, by: h.by } : p
+@@ -1407,11 +1407,6 @@ export function mergeConditions(
+     if (p.state === 'closed' && h.state !== 'closed') return { text: p.text, state: 'closed', by: p.by }
+     return { ...h, text: p.text }
    })
 -  for (const h of held) {
 -    if (out.some(p => like(p.text, h.text))) continue

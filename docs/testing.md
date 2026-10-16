@@ -72,6 +72,8 @@ entry that proves the test bites (added 14 Oct 2026; the objective's rules 15 Oc
 | A condition is marked shown or closed only by a look, a briefing or a check citing a message of the owner's for a close; the writer cannot mark one shown | `rule: the writer cannot mark…`, `rule: a briefing that marks…`, `rule: the watch marks…`, `rule: the check is given the conditions…` | `marks-uncited` |
 | A close or a drop cites a message of the owner's after the ones the objective was built from: a look, a briefing, a check or the writer citing one it was built from moves nothing | `rule: the check is given the conditions…`, `rule: the writer cannot mark…` | `mark-cites-built-message`, `writer-cites-built-message` |
 | The check is given the conditions held shown and puts one back to not shown when the record or the disk shows otherwise; the gate then refuses the stop | `rule: a check that finds a condition held shown…` | `reopen-ignored`, `shown-not-sent` |
+| A condition the check reopened stays not shown until a check shows it: a look's or a briefing's shown mark leaves it, the stop is still refused, the models are shown what the check found beside it, and a later check's own mark moves it | `rule: a condition the check reopened stays not shown…` | `look-remarks-reopened` |
+| The writer never raises a condition: a held one keeps its state, where and reopened mark unless the writer closes it, a new one proposed shown starts open, and a new job starts with no mark | `rule: the writer never raises a condition…`, `mergeConditions never raises a state…` | `merge-raises-state` |
 | The going-well line does not stand on a checked card beside a false claim or anything left out | `rule: the going-well line does not stand…` | `well-beside-false` |
 | A condition listed twice, or with a state mark copied into its text, is kept once | `a condition listed twice is kept once…` | `conditions-pile-up` |
 | A card cannot say stop, or that the work is going well, while a condition is open: the briefing is asked once more, then refused with the open conditions listed; the check passes the same gate | `gateVerdict refuses…`, `rule: a briefing that says stop…`, `rule: a briefing asked once more…`, `rule: a check that says stop…` | `stop-while-open` |
@@ -114,7 +116,7 @@ objective it checked came from the writer's own call. The test now sends a furth
 the writer answers with `objective: holds` and a look whose answer carries an objective in
 the writer's shape, and asserts that the objective is unchanged.
 
-**Status.** 91 tests: the parsers, the status words (including the variable-first command, read
+**Status.** 94 tests: the parsers, the status words (including the variable-first command, read
 through the mounted strip), the note to the rep, the checker's prompt and tools, the row on
 both surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-
 failure toast, the sequence rules above, the card folding to a small band, the brief
@@ -125,13 +127,14 @@ keeping its failed claims as it folds, the session end saving the record, and, f
 a correction, the marks, the gate on stop and going-well (with no objective written, with
 no verdict, and on a next step that says stop), closes cited past the messages the objective
 was built from, a check reopening a condition held shown and clearing the going-well line
-beside a false claim, conditions kept once, the numbered and trimmed record of
+beside a false claim, a reopened condition held not shown until a check shows it (no look,
+briefing or writer raising it), conditions kept once, the numbered and trimmed record of
 the owner's messages, the writer's failure paths (a failed write counted, named on the price
 line and leaving the objective as it was, an answer it cannot read counted with them, and its
 reply cap and time set from a measured write), his long messages reaching the writer whole, the
 agent's words before a message kept from their end, the rep's draft recognised before and after
 a reload, the record saved in the old shape, a stale check leaving the record alone, and
-the last three cards' messages kept for knowing a draft. Sixty-six doctor entries, all caught.
+the last three cards' messages kept for knowing a draft. Sixty-eight doctor entries, all caught.
 
 ## Layer 2: a real session
 
@@ -222,7 +225,7 @@ the file). Never make one from an uncommitted tree: the checkout would wipe the 
 **Status.** Built: `tests/doctor/doctor.py`, with `defects.json` and one patch per defect in
 `tests/doctor/defects/`. Run it with `python3 tests/doctor/doctor.py`; it exits 1 when the
 clean suite fails or a defect survives, and stops before planting when the clean suite is
-not clean. Sixty-six entries, all caught: `strip-shows-command`, one or more per sequence
+not clean. Sixty-eight entries, all caught: `strip-shows-command`, one or more per sequence
 rule above, `card-overflows-band`, `size-figure-dropped`, `whole-ask-rule-dropped`, and one
 per remaining hook path (`helper-not-counted`, `box-text-overwritten`, `fill-refusal-ignored`,
 `check-timeout-unreported`, `check-failure-swallowed`, `end-not-saved`). A throwaway entry no test looks at was planted on 14 Oct

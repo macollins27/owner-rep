@@ -2017,6 +2017,24 @@ test('mergeConditions keeps every held condition the model drops without his cit
   expect(mergeConditions([closedHeld], [c('roadmap fixed', 'shown', 'diff printed')], [], [1, 2])).toEqual([closedHeld])   // closed is not moved back to shown, and keeps its #n
 })
 
+test('mergeConditions never raises a state: a held condition keeps its state unless the proposed one closes it, and a new one proposed shown starts open', () => {
+  const reopened: Condition = { text: 'the newest build installed', state: 'not-shown', by: 'the install failed', reopened: true }
+  const held = [reopened, c('two sessions finished', 'open'), c('roadmap fixed', 'shown', 'diff printed'), c('the year current', 'not-shown')]
+  const proposed = [
+    c('the newest build installed', 'shown', 'the agent said so'),
+    c('two sessions finished', 'shown', 'the agent said so'),
+    c('roadmap fixed', 'open'),
+    c('the year current', 'open'),
+    c('the notes updated', 'shown', 'the agent said so'),
+  ]
+  expect(mergeConditions(held, proposed, [], [2])).toEqual([reopened, c('two sessions finished', 'open'), c('roadmap fixed', 'shown', 'diff printed'), c('the year current', 'not-shown'), c('the notes updated', 'open')])
+  // A proposed text with the check's mark copied onto it still matches the held one.
+  expect(mergeConditions(held, [c('the newest build installed (not shown: the check found the install failed)', 'shown', 'x')], [], [2])[0]).toMatchObject({ state: 'not-shown', reopened: true })
+  // Closing is the one move the writer makes, under the citation rules applied before the merge; the closed condition is no longer reopened.
+  const closed = mergeConditions(held, [c('the newest build installed', 'closed', '#2')], [], [2])[0]
+  expect(closed).toEqual(c('the newest build installed', 'closed', '#2'))
+})
+
 test('gateVerdict refuses stop and well while a condition is open, and lists the open ones', () => {
   const a = parseBrief('verdict: stop\nwell: All done.\nstands: s\nmeans: m\nleft:\n- nothing\nnext: Stop.\nmessage:\nend\ndoes:')
   const open = [c('the newest build installed', 'not-shown'), c('two sessions finished', 'open')]
@@ -2537,10 +2555,10 @@ const ALL_SHOWN = (): Record<string, unknown> => ({
 })
 
 // A check's output with the given parts in place of the empty ones.
-const CHECK_OUT = (verdict: string, part: { false?: string; reopen?: string; left?: string }) =>
+const CHECK_OUT = (verdict: string, part: { false?: string; reopen?: string; left?: string; shown?: string }) =>
   JSON.stringify({
     type: 'result',
-    result: `verdict: ${verdict}\nholds:\n- nothing\nfalse:\n${part.false ?? '- nothing'}\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n- nothing\nclosed:\n- nothing\nreopen:\n${part.reopen ?? '- nothing'}\nstands: Checked.\nmeans:\nleft:\n${part.left ?? '- nothing'}\nnext:\nmessage:\nend\ndoes:\nlooked: Read the record.`,
+    result: `verdict: ${verdict}\nholds:\n- nothing\nfalse:\n${part.false ?? '- nothing'}\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n${part.shown ?? '- nothing'}\nclosed:\n- nothing\nreopen:\n${part.reopen ?? '- nothing'}\nstands: Checked.\nmeans:\nleft:\n${part.left ?? '- nothing'}\nnext:\nmessage:\nend\ndoes:\nlooked: Read the record.`,
     usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
   })
 
@@ -2571,13 +2589,107 @@ test('rule: a check that finds a condition held shown is not so moves it back to
   await ui.press({ key: 'check' })
   expect(prompt).toMatch(/Conditions the rep holds shown, each with where it was shown:\n- the newest build installed \| the install log printed the revision\n- two sessions finished \| both sessions printed their results\n/)
   expect(rec()?.objective?.done).toEqual([
-    { text: 'the newest build installed', state: 'not-shown', by: 'the install command in the record failed' },
+    { text: 'the newest build installed', state: 'not-shown', by: 'the install command in the record failed', reopened: true },
     { text: 'two sessions finished', state: 'shown', by: 'both sessions printed their results' },
   ])
   expect(await ui.find({ type: 'Text', text: /^Next: The job is still open: the newest build installed\./ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /Stop the agent|Wrap up and stop here/ })).toBeUndefined()
   expect(await greens(ui)).toEqual([])
   await ui.unmount()
+})
+
+// The condition the check found not so, as the record holds it after the check.
+const REOPENED: Condition = { text: 'the newest build installed', state: 'not-shown', by: 'the install command in the record failed', reopened: true }
+
+test('rule: a condition the check reopened stays not shown until a check shows it: a look or a briefing marking it shown leaves it, and the stop is still refused', async ($, on) => {
+  const rec = kept(on, ALL_SHOWN())
+  quietBand(on)
+  checkRoom(on)
+  const forks: string[] = []
+  let fork = STOP_BRIEF()
+  on('model.fork', (_$, e) => {
+    forks.push(String(e.prompt))
+    return { value: { isAnswered: true, text: fork, usage: USAGE } }
+  })
+  const checks: string[] = []
+  let out = CHECK_OUT('stop', { reopen: '- the newest build installed | the install command in the record failed' })
+  on('process.spawn', async function* (_$, e) {
+    checks.push(e.argv[2] ?? '')
+    yield { stream: 'stdout', text: out }
+    return { value: { code: 0, signal: null } }
+  })
+  await started($)
+  let ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+  expect(rec()?.objective?.done[0]).toEqual(REOPENED)
+  await ui.press({ key: 'close' })
+  await ui.unmount()
+  // A look that marks it shown from the conversation leaves it not shown, and was shown what the check found.
+  fork = `${HOLDS}\nshown:\n- the newest build installed | the agent printed the install log`
+  await $.turn.complete(stop('t1'))
+  await settle($)
+  expect(rec()?.objective?.done[0]).toEqual(REOPENED)
+  const look = forks.at(-1) ?? ''
+  expect(look).toMatch(/Conditions still open:\n- the newest build installed \(not shown: the check found the install command in the record failed\)\n/)
+  expect(look).toMatch(/a look or a briefing cannot mark it shown; only a later check can/)
+  // A briefing that marks it shown and says stop: the mark is not taken, and the stop is refused.
+  fork = STOP_BRIEF('shown:\n- the newest build installed | the agent says it is installed\n')
+  ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  expect(rec()?.objective?.done[0]).toEqual(REOPENED)
+  expect(again(forks.at(-1))).toMatch(/- the newest build installed \(not shown: the check found the install command in the record failed\)\n/)
+  expect(await ui.find({ type: 'Text', text: /^Next: The job is still open: the newest build installed\./ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Stop the agent|Wrap up and stop here/ })).toBeUndefined()
+  // The card never shows the check's words beside the condition.
+  expect(await ui.find({ type: 'Text', text: /the check found/ })).toBeUndefined()
+  // A later check is told what the last one found, and its own shown mark moves it.
+  out = CHECK_OUT('continue', { shown: '- the newest build installed | the install log in the record printed the revision' })
+  await ui.press({ key: 'check' })
+  expect(checks[1]).toMatch(/Conditions the rep holds open:\n- the newest build installed \(not shown: the check found the install command in the record failed\)\n/)
+  expect(rec()?.objective?.done[0]).toEqual({ text: 'the newest build installed', state: 'shown', by: 'the install log in the record printed the revision' })
+  expect(Object.keys(rec()?.objective?.done[0] ?? {})).not.toContain('reopened')
+  await ui.unmount()
+})
+
+test('rule: the writer never raises a condition: a reopened one it proposes shown stays not shown, it is shown what the check found, a new one proposed shown starts open, and a new job starts clean', async ($, on) => {
+  const rec = kept(on, ALL_SHOWN())
+  quietBand(on)
+  checkRoom(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: STOP_BRIEF(), usage: USAGE } }))
+  on('process.spawn', async function* () {
+    yield { stream: 'stdout', text: CHECK_OUT('stop', { reopen: '- the newest build installed | the install command in the record failed' }) }
+    return { value: { code: 0, signal: null } }
+  })
+  let next = OBJ(
+    'The release built and installed here.',
+    ['the newest build installed | shown: the install log printed the revision', 'two sessions finished | shown: both sessions printed their results', 'the release notes updated | shown: the agent said so'],
+    '#2 asked for the release notes too',
+  )
+  const writes = writer(on, () => next)
+  await started($)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+  await ui.press({ key: 'close' })
+  await ui.unmount()
+  await $.prompt.submit(typed('update the release notes too'))
+  await settle($)
+  expect(writes.at(-1)).toMatch(/\ndone:\n- the newest build installed \| not shown: the check found the install command in the record failed\n- two sessions finished \| shown: both sessions printed their results\n/)
+  expect(writes.at(-1)).toMatch(/only a later check can mark it shown/)
+  expect(rec()?.objective?.from).toBe(2)
+  expect(rec()?.objective?.done).toEqual([
+    REOPENED,
+    { text: 'two sessions finished', state: 'shown', by: 'both sessions printed their results' },
+    { text: 'the release notes updated', state: 'open', by: '' },
+  ])
+  // A new job: the old conditions go with the old objective, and nothing it lists starts reopened.
+  next = OBJ('A licence file in the repository.', ['the newest build installed | not shown'], 'new job: #3 closed the release and asked for a licence')
+  await $.prompt.submit(typed('the release is fine; now add a licence file'))
+  await settle($)
+  expect(rec()?.past).toEqual(['The release built and installed here.'])
+  expect(rec()?.objective?.done).toEqual([{ text: 'the newest build installed', state: 'not-shown', by: '' }])
+  expect(Object.keys(rec()?.objective?.done[0] ?? {})).not.toContain('reopened')
 })
 
 test('rule: the going-well line does not stand on a checked card beside a false claim or anything left out', async ($, on) => {
