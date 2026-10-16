@@ -302,7 +302,7 @@ export function migrateOwner(old: unknown[], lastSent?: string): OwnerMsg[] {
     } else if (text.startsWith(SENT_MARK)) {
       kind = 'draft'
       text = text.slice(SENT_MARK.length)
-    } else if (lastSent !== undefined && text === lastSent) kind = 'draft'
+    } else if (lastSent !== undefined && sameFolded(text, lastSent)) kind = 'draft'
     return { n: i + 1, kind, text, prior: '' }
   })
 }
@@ -949,6 +949,11 @@ export function resultOf(stdout: string): { text: string; tokens: number; cached
 export const same = (a: string, b: string): boolean =>
   a.trim().toLowerCase().replace(/\.$/, '') === b.trim().toLowerCase().replace(/\.$/, '')
 
+// `same` with every run of whitespace read as one space: the old record kept
+// the owner's messages with line breaks flattened, the rep's draft keeps them.
+export const sameFolded = (a: string, b: string): boolean =>
+  same(a.replace(/\s+/g, ' '), b.replace(/\s+/g, ' '))
+
 // A draft shorter than this is a short reply ("yes", "go ahead") that may match
 // by chance, so it is never taken for the rep's draft.
 export const DRAFT_MIN = 20
@@ -961,8 +966,17 @@ export function draftSplit(text: string, draft: string): { draft: string; his: s
   // match runs on the draft without it and the remainder starts after that.
   const core = draft.trim().replace(/\.$/, '')
   const lead = text.trimStart()
-  if (lead.slice(0, core.length).toLowerCase() !== core.toLowerCase()) return null
-  const rest = lead.slice(core.length)
+  // Only the comparison folds whitespace: a break in the draft matches any run of
+  // whitespace in what he sent, and what follows is cut from his text exactly.
+  const lead0 = new RegExp(
+    core
+      .split(/\s+/)
+      .map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+      .join('\\s+'),
+    'iy',
+  ).exec(lead)
+  if (lead0 === null) return null
+  const rest = lead.slice(lead0[0].length)
   // The draft must end where a word ends, or he has typed a longer word.
   if (rest !== '' && !/^[\s.]/.test(rest)) return null
   return { draft, his: rest.replace(/^\s*\.?/, '').trim() }

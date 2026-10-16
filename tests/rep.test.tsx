@@ -1794,6 +1794,21 @@ test('trimOwner keeps the whole job past OWNER_MAX and migrateOwner reads the ol
     { n: 4, kind: 'draft', text: 'Finish the slice.', prior: '' },
   ])
   expect(ownerLines([{ n: 2, kind: 'note', text: 'x', prior: '' }])).toBe('- #2 (to the rep) x')
+  // The old record flattened line breaks to single spaces; the draft kept them.
+  const flat = 'First, run the suite.\n\nSecond, show the output.'
+  expect(migrateOwner(['build it', 'First, run the suite. Second, show the output.'], flat)).toEqual([
+    { n: 1, kind: 'his', text: 'build it', prior: '' },
+    { n: 2, kind: 'draft', text: 'First, run the suite. Second, show the output.', prior: '' },
+  ])
+})
+
+test('draftSplit: a draft with a paragraph break is recognised kept or flattened', () => {
+  const d = 'First, run the suite.\n\nSecond, show the output.'
+  expect(draftSplit(d, d)).toEqual({ draft: d, his: '' })
+  expect(draftSplit('First, run the suite. Second, show the output.', d)).toEqual({ draft: d, his: '' })
+  expect(draftSplit(`${d} Also the licence.`, d)).toEqual({ draft: d, his: 'Also the licence.' })
+  expect(draftSplit('First, run the suite.\nSecond, show the output. Also x', d)).toEqual({ draft: d, his: 'Also x' })
+  expect(draftSplit('First, run the suite.\n\nSecond, show the outputs', d)).toBe(null)
 })
 
 test('rule: the record numbers owner messages past 40 and a look still sees the job whole', async ($, on) => {
