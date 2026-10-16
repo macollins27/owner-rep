@@ -942,10 +942,10 @@ async function storedDrafts($: EngineInterface): Promise<string[]> {
     if (typeof r.lastBrief?.message === 'string') out.push(r.lastBrief.message)
     // A message the record already holds as the rep's draft he sent: a card more than
     // DRAFTS_MAX back, or a record from a build that kept no list of drafts. One cut to
-    // OWNER_CUT (it ends in an ellipsis) is not the whole draft and is left out.
+    // OWNER_CUT ends in an ellipsis that what he sent does not have, so it matches nothing.
     for (const m of r.owner as unknown[]) {
       const d = m as Partial<OwnerMsg> | null
-      if (typeof d === 'object' && d !== null && d.kind === 'draft' && typeof d.text === 'string' && !d.text.endsWith('…')) out.push(d.text)
+      if (typeof d === 'object' && d !== null && d.kind === 'draft' && typeof d.text === 'string') out.push(d.text)
     }
   }
   return out
