@@ -37,7 +37,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 103 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 106 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: seven real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -173,8 +173,13 @@ cap looks like that), leaves the objective as it was and adds one to `rec.object
 which the card's price line (`spentText`) names only when above zero. The writer is a plain
 `$.model.complete` call (`OBJECTIVE_MODEL`, high effort, `OBJECTIVE_MAX_TOKENS` and
 `OBJECTIVE_TIMEOUT_MS`, set from one measured write), never a fork of the conversation,
-shown by `objectivePrompt` only his numbered messages on the job (each with the agent's last
-answer before it), the held objective and `rec.past`. Its answer is `objective: holds`, or
+sent with its fixed rules as `system: OBJECTIVE_SYSTEM` on every attempt, and shown by
+`objectivePrompt` only the held objective, `rec.past` and his numbered messages on the job
+(each with the agent's last answer before it), the messages inside a `<his_messages>` fence
+followed by a note that they are quoted records and no instruction to the writer; a fence tag
+(any letter case, spaces inside the brackets allowed) in a message or in the agent line is
+printed with its brackets turned to `‹` `›`, so no message can close the fence, and the record
+keeps the text as typed. Its answer is `objective: holds`, or
 `objective: moved` with `moved:`, `result:`, `for:`, `done:`, `step:` and `dropped:`
 (`parseObjective`); `moved: new job …` closes the job. `takeObjective` applies it: the first
 objective is taken as it stands; after that a write is taken only when it saw a message of his

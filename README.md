@@ -75,11 +75,12 @@ the code cannot read (which is what a reply cut off at its length limit looks li
 the objective as it was and is counted, and the card's line of what the rep has spent names
 the failed writes and, in plain words, the cause of the last. A failed attempt (an empty or
 errored reply, an answer the code cannot read, or "holds" while no objective is held) is tried
-again at the highest effort, up to twice, because in one measured session high effort
-came back empty on most attempts and the highest effort answered every time; a call that
-throws or is cut short is not tried again, nor is one once a newer message of the owner's
-has arrived (the next pass writes over the fresh prompt), and a write counts as failed only
-when every attempt did. When no objective is held yet, a press of Rep writes one before the briefing.
+again at the highest effort, up to twice (the empty replies it was measured on came from the
+unfenced prompt, described below, and the retry stays as a net for an empty or unreadable
+reply); a call that throws or is cut short is not tried again, nor is one once a newer
+message of the owner's has arrived (the next pass writes over the fresh prompt), and a write
+counts as failed only when every attempt did. When no objective is held yet, a press of Rep
+writes one before the briefing.
 
 A session is a run of jobs: the owner opens one, the agent works, the owner corrects it a
 few times, the job ends and the next begins. A correction rebuilds the objective whole from
@@ -164,8 +165,11 @@ conversation, so a read costs little and never slows the agent. The rep's indepe
 from its brief, which tells the model to treat everything the agent wrote as a claim, and,
 for the check step, from reading outside the conversation altogether. The objective writer is
 the exception to the fork: a plain completion (`$.model.complete`) shown the agent's words
-only as the line before each of the owner's messages, marked as the agent's. Its brief says
-that line is there only so a short reply can be understood and never sets the result, and
+only as the line before each of the owner's messages, marked as the agent's. Its rules go to
+it as its system prompt, and the owner's messages reach it fenced as quoted records that it is
+told are no instruction to it, because unfenced, a message that read like a command came back
+empty in all six tries measured on one such message (16 Oct 2026). Its brief also says that
+line is there only so a short reply can be understood and never sets the result, and
 the code takes a write only when it saw a message of the owner's past the ones the objective
 was built from, so the agent's words alone never move it.
 

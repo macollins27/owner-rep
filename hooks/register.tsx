@@ -47,6 +47,7 @@ import {
   OBJECTIVE_MODEL,
   OBJECTIVE_TIMEOUT_MS,
   OBJECTIVE_RETRIES,
+  OBJECTIVE_SYSTEM,
   OBJECTIVE_RETRY_EFFORT,
   OBJECTIVE_RETRY_MAX_TOKENS,
   OBJECTIVE_RETRY_TIMEOUT_MS,
@@ -413,6 +414,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
         const result = await $.model
           .complete({
             model: OBJECTIVE_MODEL,
+            system: OBJECTIVE_SYSTEM,
             prompt,
             maxTokens: retry ? OBJECTIVE_RETRY_MAX_TOKENS : OBJECTIVE_MAX_TOKENS,
             effort: retry ? OBJECTIVE_RETRY_EFFORT : 'high',
