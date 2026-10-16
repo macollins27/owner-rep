@@ -487,8 +487,9 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
         })
         if (!again || stale) break
       }
-      // The row shows what the record holds, whichever write put it there.
-      await update($, readingA, () => after.objective)
+      // The row shows what the record holds, whichever write put it there,
+      // while its session is the one on screen.
+      if (onScreen(sid)) await update($, readingA, () => after.objective)
     }
     onlyFirst = false
     // A message of his or a note that came in during the write is written now:
@@ -568,9 +569,9 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
     after.cached += cachedOf(usage)
     if (!result.isAnswered) return
     const answer = parseWatch(result.text)
-    if (applyMarks(after, answer.shown, answer.closed)) await update($, readingA, () => after.objective)
+    if (applyMarks(after, answer.shown, answer.closed) && onScreen(sid)) await update($, readingA, () => after.objective)
     const view = await read($, viewA)
-    if (answer.flag !== null && view === 'row' && ![...after.seen].some(s => same(s, answer.flag ?? ''))) {
+    if (answer.flag !== null && view === 'row' && onScreen(sid) && ![...after.seen].some(s => same(s, answer.flag ?? ''))) {
       after.seen = [...after.seen, answer.flag].slice(-SEEN_MAX)
       const note: Note = { line: answer.flag, why: answer.why, shownAt: Date.now(), turnId }
       await update($, noteA, () => note)
@@ -605,7 +606,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
         after.cached += cachedOf(usage)
         if (!result.isAnswered) return { reason: result.reason }
         const parsed = parseBrief(result.text)
-        if (applyMarks(after, parsed.shown, parsed.closed)) await update($, readingA, () => after.objective)
+        if (applyMarks(after, parsed.shown, parsed.closed) && onScreen(sid)) await update($, readingA, () => after.objective)
         const left = gateOpen(after.objective)
         return { ...gateVerdict(parsed, left), open: left }
       })
@@ -655,6 +656,8 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       after.drafts = keepDraft(after.drafts, brief.message)
       return brief
     })
+    // A /clear while it read leaves the card to the session that asked for it.
+    if (!onScreen(sid)) return
     await update($, noteA, () => null)
     await update($, briefA, () => brief)
     await update($, viewA, () => 'brief')
@@ -696,7 +699,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
   activeCheck = null
   const isStale = async (): Promise<boolean> => {
     const b = await read($, briefA)
-    return epoch !== checkEpoch || b === null || b.at !== at
+    return epoch !== checkEpoch || b === null || b.at !== at || !onScreen(sid)
   }
   const finish = async (patch: Partial<Brief>): Promise<void> => {
     if (await isStale()) return
@@ -770,7 +773,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       // look's, and a reopened one moves shown only here; one held shown that the
       // check found is not so goes back to not shown, marked reopened.
       const marked = applyMarks(after, c.shown, c.closed, { reopen: c.reopen })
-      if (marked) await update($, readingA, () => after.objective)
+      if (marked && onScreen(sid)) await update($, readingA, () => after.objective)
       const checked: Checked = { holds: c.holds, wrong: c.wrong, notShown: c.notShown, changed: c.changed, looked: c.looked, refused: got.refused }
       const hasLeft = parts_hasLeft(got.text)
       // The card the check leaves, each part the checker's where it gave one
@@ -1020,10 +1023,11 @@ async function tellRep($: EngineInterface): Promise<void> {
 
 // What another mod showed in the strip, kept so the rep never repeats it.
 let lastOther = ''
-async function rememberOther($: EngineInterface, id: string, text: string): Promise<void> {
+async function rememberOther($: EngineInterface, text: string): Promise<void> {
   const line = text.replace(/\s+/g, ' ').trim()
-  if (line === '' || line === lastOther || id === '') return
+  if (line === '' || line === lastOther) return
   lastOther = line
+  const id = await sessionId($)
   await changeRec($, id, rec => {
     if (!rec.others.some(o => same(o, line))) rec.others = [...rec.others, fit(line, 400)].slice(-OTHERS_MAX)
   })
@@ -1064,11 +1068,54 @@ function drawsSomething(tree: unknown): boolean {
   return false
 }
 
-// The session's id, read once per load of the module.
-let sid = ''
+// The session on screen. A /clear or a resume goes on in this same process
+// under a new id, and no session.start fires for it, so the id is read on
+// every call and a new one is taken up as a start would take it up. `ended`
+// is set when a /clear or a resume ended the session on screen: until the next
+// id is read, no session is on screen, so a run the old one started draws nothing.
+let currentId = ''
+let ended = false
 async function sessionId($: EngineInterface): Promise<string> {
-  if (sid === '') sid = await $.session.id()
-  return sid
+  const id = await $.session.id()
+  if (id !== currentId || ended) {
+    const isNew = ended || currentId !== ''
+    currentId = id
+    ended = false
+    if (isNew) await enterSession($, id)
+  }
+  return id
+}
+const onScreen = (id: string): boolean => !ended && id === currentId
+
+// A session taken up: its objective on the row; when the rep holds no record of
+// it, his typed messages read from the session and the objective written from
+// them when any were found; and, when it has messages of his and no objective
+// yet (a write that never landed, or one saved by an older build), a write
+// started now.
+async function enterSession($: EngineInterface, id: string): Promise<void> {
+  const rec = await loadRec($, id)
+  if (onScreen(id)) await update($, readingA, () => rec.objective)
+  seedOwner($, id)
+    .then(seeded => (seeded ? rebuildObjective($, id, 'load') : undefined))
+    .catch(() => undefined)
+  if (rec.objective === null && hisFrom(rec, jobOf(rec)).length > 0) {
+    rebuildObjective($, id, 'load').catch(() => undefined)
+  }
+}
+
+// A session left by a /clear or a resume: what the screen and this module hold
+// is the ended session's, so the next one starts from nothing of it.
+async function leaveSession($: EngineInterface): Promise<void> {
+  ended = true
+  lastAnswer = ''
+  lastInstant = null
+  lastOther = ''
+  await update($, readingA, () => null)
+  await update($, briefA, () => null)
+  await update($, noteA, () => null)
+  await update($, helpersA, () => [])
+  await update($, nowA, () => IDLE)
+  await update($, viewA, () => 'row')
 }
 
 export const register: Register = on => {
@@ -1078,19 +1125,9 @@ export const register: Register = on => {
 
   on('session.start', async ($, e, next) => {
     try {
-      const id = await sessionId($)
-      const rec = await loadRec($, id)
-      await update($, readingA, () => rec.objective)
-      // A session the rep holds no record of: his typed messages are read from the
-      // session, and the objective is written from them when any were found.
-      seedOwner($, id)
-        .then(seeded => (seeded ? rebuildObjective($, id, 'load') : undefined))
-        .catch(() => undefined)
-      // A record with messages of his and no objective yet (a write that never
-      // landed, or one saved by an older build) is written now.
-      if (rec.objective === null && hisFrom(rec, jobOf(rec)).length > 0) {
-        rebuildObjective($, id, 'load').catch(() => undefined)
-      }
+      currentId = await $.session.id()
+      ended = false
+      await enterSession($, currentId)
       await update($, viewA, v => (v === 'reading' ? 'row' : (v ?? 'row')))
       await setNow($, { isWorking: false, doing: 'idle', mark: '' })
     } catch {
@@ -1187,7 +1224,7 @@ export const register: Register = on => {
           }
           return { rec, split, isHis }
         })
-        if (split !== null) await update($, readingA, () => rec.objective)
+        if (split !== null && onScreen(id)) await update($, readingA, () => rec.objective)
         // The note is numbered after the prompt it was typed behind.
         if (note !== '') await takeNote($, id, note)
         // A message of his can move the objective: the writer reads it, never the agent's words.
@@ -1294,7 +1331,6 @@ export const register: Register = on => {
     const now = (await read($, nowA)) ?? IDLE
     const note = await read($, noteA)
     const brief = await read($, briefA)
-    const id = sid
 
     // The band is one strip shared with every other mod, "You should know"
     // among them, and this mod draws first. Whatever is beneath is kept under
@@ -1303,10 +1339,13 @@ export const register: Register = on => {
     // the owner asked for, takes the strip alone.
     const beneath = await next(e)
     const hasBeneath = drawsSomething(beneath)
-    if (hasBeneath) rememberOther($, id, textOf(beneath)).catch(() => undefined)
+    if (hasBeneath) rememberOther($, textOf(beneath)).catch(() => undefined)
 
+    // A press reads the id then, so one made just after a /clear is the new session's.
     const onPress = () => {
-      pressBrief($, id).catch(() => undefined)
+      sessionId($)
+        .then(id => pressBrief($, id))
+        .catch(() => undefined)
     }
     const tell = () => {
       tellRep($).catch(() => undefined)
@@ -1512,7 +1551,9 @@ export const register: Register = on => {
                 hotkey="3"
                 label="Check it"
                 onPress={() => {
-                  pressCheck($, id).catch(() => undefined)
+                  sessionId($)
+                    .then(id => pressCheck($, id))
+                    .catch(() => undefined)
                 }}
               />
             ) : undefined,
@@ -1550,10 +1591,15 @@ export const register: Register = on => {
 
   on('session.end', async ($, e, next) => {
     try {
-      const id = await sessionId($)
-      await changeRec($, id, () => undefined)
+      await changeRec($, e.sessionId, () => undefined)
     } catch {
       // Nothing to save.
+    }
+    // After a /clear or a resume the process goes on under another session.
+    if (e.reason === 'clear' || e.reason === 'resume') {
+      lastDoing = ''
+      promptsPastNote = 0
+      await leaveSession($).catch(() => undefined)
     }
     return next(e)
   })

@@ -37,7 +37,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 146 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 149 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -316,8 +316,8 @@ from a session whose record was let go is too. A session with no candidate row i
 runs one seed per session at a time (`seeding`), and
 `prompt.submit` awaits it before recording a prompt or a note, so a prompt sent during the
 start's read is numbered after the seeded messages; the objective is rewritten when that
-seed recorded any. `session.start` runs it without waiting and writes the objective when it
-recorded any; `pressBrief` awaits it before its objective-null write. A record that holds a
+seed recorded any. `enterSession` (a start, or a new id taken up after a `/clear` or a
+resume) runs it without waiting and writes the objective when it recorded any; `pressBrief` awaits it before its objective-null write. A record that holds a
 message or note of his is never seeded.
 
 State lives in two places. Atoms (`atom({plugin, key})`) are per-session UI state that drives
@@ -329,7 +329,13 @@ at `SESSIONS_MAX` newest. A record `saveRec` lets go leaves its drafts (`recDraf
 `droppedDrafts`, newest first, each once, up to `DROPPED_DRAFTS_MAX` (200) (`keepDropped`);
 a fork's own first save can let go the record it was forked from. `loadRec`/`saveRec` are the only way in and out, and `changeRec`
 runs each change alone from its load to its save, so two hooks that finish together never save
-over each other.
+over each other. Atoms and the module's own values outlive a session: a `/clear` or a resume
+goes on in the same process under a new session id, and no `session.start` fires for it. So
+`sessionId` reads the id on every call and takes up a new one as a start would
+(`enterSession`); `session.end` with reason `clear` or `resume` empties the screen and the
+carried values (`leaveSession`); and a write, look, briefing or check the ended session
+started draws nothing (`onScreen`). Reading the id once per load filed every message after a
+`/clear` under the ended session until 16 Oct 2026.
 
 The owner's own messages are the only input that can steer the rep. `prompt.submit` records
 each prompt into `rec.owner` (`pushOwner`); a prompt that begins with the card's own message,

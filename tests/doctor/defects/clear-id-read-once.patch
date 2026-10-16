@@ -1,0 +1,21 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 57aadf7..9f0a7c3 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -878,14 +878,8 @@ function drawsSomething(tree: unknown): boolean {
+ let currentId = ''
+ let ended = false
+ async function sessionId($: EngineInterface): Promise<string> {
+-  const id = await $.session.id()
+-  if (id !== currentId || ended) {
+-    const isNew = ended || currentId !== ''
+-    currentId = id
+-    ended = false
+-    if (isNew) await enterSession($, id)
+-  }
+-  return id
++  if (currentId === '') currentId = await $.session.id()
++  return currentId
+ }
+ const onScreen = (id: string): boolean => !ended && id === currentId
+ 

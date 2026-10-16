@@ -450,6 +450,42 @@
     "fixed": "2026-10-16"
   },
   {
+    "name": "clear-id-read-once",
+    "breaks": "The session id is read once per load of the module, so after a /clear his messages are filed under the session that ended and the new one never gets an objective.",
+    "patch": "clear-id-read-once.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "clear-screen-kept",
+    "breaks": "A /clear leaves the ended session's objective, card, note and last answer in place, so the new session's row shows the old job until something redraws it.",
+    "patch": "clear-screen-kept.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "clear-late-write-draws",
+    "breaks": "An objective write the ended session started lands after the /clear and draws its result on the new session's row.",
+    "patch": "clear-late-write-draws.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "clear-press-old-id",
+    "breaks": "A press of Brief me after a /clear, before anything is typed or the module reads the id again, reads and records under the session that ended.",
+    "patch": "clear-press-old-id.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "clear-brief-marks-draw",
+    "breaks": "A briefing still running at a /clear marks a condition and draws the ended session's objective on the new session's row.",
+    "patch": "clear-brief-marks-draw.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "clear-check-marks-draw",
+    "breaks": "A check still running at a /clear reopens a condition and draws the ended session's objective on the new session's row.",
+    "patch": "clear-check-marks-draw.patch",
+    "fixed": "2026-10-16"
+  },
+  {
     "name": "note-after-text-leaks",
     "breaks": "A note to the rep is found only at the start of the prompt, so one typed after other text in the box goes to the agent with the rest.",
     "patch": "note-after-text-leaks.patch",

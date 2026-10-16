@@ -1,0 +1,15 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 57aadf7..ebd8d73 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1103,9 +1103,7 @@ export const register: Register = on => {
+ 
+     // A press reads the id then, so one made just after a /clear is the new session's.
+     const onPress = () => {
+-      sessionId($)
+-        .then(id => pressBrief($, id))
+-        .catch(() => undefined)
++      pressBrief($, currentId).catch(() => undefined)
+     }
+     const tell = () => {
+       tellRep($).catch(() => undefined)
