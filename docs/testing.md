@@ -265,6 +265,9 @@ job open and called a 48 percent session very long: the brief now carries the ru
 owner's messages add up and gets the engine's own size figure, and the rerun showed the card
 listing the untouched parts of the first message with a message drafted and "conversation at
 5 percent of its window" on its buttons row.
+The whole run of nine was repeated on 16 Oct 2026 on main after the drafts kept for records
+the store lets go were merged, and all nine showed what they should; the captures in
+`tests/live/captures/` are that run's, scenario 9's reopened session among them.
 
 ## The doctor
 
