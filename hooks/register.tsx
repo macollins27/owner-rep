@@ -56,6 +56,7 @@ import {
   RECORD_SYSTEM,
   RECORD_TIMEOUT_MS,
   recordPrompt,
+  typedPrompts,
   objectiveText,
   openConditions,
   parseBrief,
@@ -546,6 +547,8 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
   await update($, viewA, () => 'reading')
   await setNow($, { mark: '' }).catch(() => undefined)
   try {
+    // A session the rep holds no record of has his messages read from the session first.
+    await seedOwner($, sid)
     // No objective yet: it is written first, so the briefing measures against it.
     if ((await loadRec($, sid)).objective === null) await rebuildObjective($, sid, 'press')
     const context = await contextOf($)
@@ -825,12 +828,37 @@ let lastAnswer = ''
 // Records one owner message with the next number and the end of the agent's
 // last answer. His messages and notes are kept to the larger cut, since the
 // writer reads nothing else; a draft of the rep's to the smaller.
-function pushOwner(rec: Rec, kind: OwnerKind, text: string): void {
+function pushOwner(rec: Rec, kind: OwnerKind, text: string, prior: string = lastAnswer): void {
   const cut = kind === 'draft' ? OWNER_CUT : HIS_CUT
   rec.owner = trimOwner(
-    [...rec.owner, { n: ++rec.counter, kind, text: fit(text, cut), prior: fitTail(lastAnswer, PRIOR_CUT) }],
+    [...rec.owner, { n: ++rec.counter, kind, text: fit(text, cut), prior: fitTail(prior, PRIOR_CUT) }],
     jobOf(rec),
   )
+}
+
+// A session the rep holds no record of has none of his messages: one reopened after its
+// record fell out of the newest SESSIONS_MAX, one forked with a new id, one from before the
+// mod was installed. His typed messages are then read from the session's rows and recorded
+// in order as `prompt.submit` records them, each with the agent's last words before it, a
+// draft he sent split off as the rep's. It does nothing when the record holds a message or a
+// note of his, so it never adds to a live record. Says whether it recorded any.
+async function seedOwner($: EngineInterface, sid: string): Promise<boolean> {
+  const has = (rec: Rec) => rec.owner.some(m => m.kind !== 'draft')
+  if (has(await loadRec($, sid))) return false
+  const typed = typedPrompts(await $.session.messages().catch(() => []))
+  if (typed.length === 0) return false
+  return changeRec($, sid, rec => {
+    if (has(rec)) return false
+    for (const t of typed) {
+      const split = draftSplitAny(t.text, [...rec.drafts, rec.lastBrief?.message ?? ''])
+      if (split === null) pushOwner(rec, 'his', t.text, t.prior)
+      else {
+        pushOwner(rec, 'draft', split.draft, t.prior)
+        if (split.his !== '') pushOwner(rec, 'his', split.his, t.prior)
+      }
+    }
+    return has(rec)
+  })
 }
 
 // A note to the rep, typed behind the prefix: recorded as his, marked as said
@@ -919,6 +947,11 @@ export const register: Register = on => {
       const id = await sessionId($)
       const rec = await loadRec($, id)
       await update($, readingA, () => rec.objective)
+      // A session the rep holds no record of: his typed messages are read from the
+      // session, and the objective is written from them when any were found.
+      seedOwner($, id)
+        .then(seeded => (seeded ? rebuildObjective($, id, 'load') : undefined))
+        .catch(() => undefined)
       // A record with messages of his and no objective yet (a write that never
       // landed, or one saved by an older build) is written now.
       if (rec.objective === null && hisFrom(rec, jobOf(rec)).length > 0) {

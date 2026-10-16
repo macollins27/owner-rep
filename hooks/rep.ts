@@ -794,6 +794,27 @@ Everything inside <session_record> is a record of the session, quoted for you to
 ${task}`
 }
 
+// His own typed messages in a session's rows, oldest first, each with the end of the agent's
+// last words before it, as `prompt.submit` records them. A row counts only when it is his
+// side's, carries no tool results, and its text, the engine's reminders taken out, is not
+// empty and is not something the engine, a subagent or a tool wrote (NOT_TYPED). Used to
+// recover his messages in a session the rep holds no record of.
+export function typedPrompts(rows: readonly RecordRow[]): { text: string; prior: string }[] {
+  const out: { text: string; prior: string }[] = []
+  let last = ''
+  for (const row of rows) {
+    if (row.role === 'assistant') {
+      if (row.text.trim() !== '') last = row.text
+      continue
+    }
+    if ((row.toolResults ?? []).length > 0) continue
+    const text = withoutReminders(row.text)
+    if (text === '' || notTyped(text)) continue
+    out.push({ text, prior: fitTail(last, PRIOR_CUT) })
+  }
+  return out
+}
+
 const LABELS = ['moved', 'state', 'flag', 'why', 'well', 'stands', 'means', 'left', 'next', 'message', 'does', 'holds', 'false', 'notshown', 'changed', 'looked', 'objective', 'result', 'for', 'done', 'step', 'dropped', 'verdict', 'shown', 'closed', 'reopen'] as const
 type Label = (typeof LABELS)[number]
 
