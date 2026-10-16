@@ -460,5 +460,11 @@
     "breaks": "A next step that says to wrap up and stop, to stop working on it, to stop and report, or that the session can end gets past the gate while a condition is open.",
     "patch": "stop-wording-slips.patch",
     "fixed": "2026-10-16"
+  },
+  {
+    "name": "reopened-no-fallback",
+    "breaks": "In a reopened session, or after /clear, where there is nothing to fork, the briefing says there is nothing to read yet and the watch reads nothing, though the session's record is there to read.",
+    "patch": "reopened-no-fallback.patch",
+    "fixed": "2026-10-16"
   }
 ]
