@@ -1,0 +1,44 @@
+
+ ▐▛███▛█   Claude Code v2.1.301
+▝▜██████▀  Opus 5.5 with xhigh effort · Claude Max
+ ▝▝   ▝▝   /private/var/folders/mf/g9s916lj533085gbqr23mm9m0000gn/T/owner-rep-live.mRLITZSibe
+
+
+❯ Reply with the single word done and nothing else.
+
+⏺ done
+
+✻ Worked for 4s · done 1:24 AM
+
+
+
+
+
+
+
+
+
+
+
+
+
+                                                                                                                                                                      [-]
+◇ Owner rep · The agent answers him with the single word "done" and nothing else. He wants a bare, exact reply, most likely as a quick check that the agent is there
+  and follows a plain instruction to the letter, so the reply must be exactly what he asked for. Done when: The agent's reply is the single word "done" (shown); The
+  reply has nothing else in it: no greeting, explanation, summary, formatting or extra words (shown); Nothing in his project or setup is changed, started or touched
+  as part of answering (shown). Right now: The agent sends the one-word reply "done" and nothing more.
+  The agent replied with exactly the one word you asked for and touched nothing.
+  Stands: The agent replied "done" and did nothing else. It did not change, start or open anything in your project.
+  Means: The agent is there and followed your plain instruction exactly. Nothing is waiting.
+  Next: The agent should stop. This job is finished.
+  Check it starts a separate Claude Code run in a throwaway copy of the project, over the session record and the files. The first one measured used 210k fresh tokens
+  plus 2.3 million re-read from cache, in 2 minutes.
+  3: Check it   2: Fine, close   4: Tell the rep   0: Later   conversation at 4 percent of its window
+  Owner rep: 2 looks, 1 objective write (3k tokens) this session; looks used 19k fresh tokens and 75k re-read from cache
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ 
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  [Opus 5.5] │ owner-rep-live.mRLITZSibe +owner-rep-live.mRLITZSi… +maxwellcollins git:(main) │ One-word 'done' response
+  Context ░░░░░░░░░░ 4% │ Usage █░░░░░░░░░ 14% (resets in 1h 36m)
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents

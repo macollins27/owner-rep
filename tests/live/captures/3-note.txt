@@ -1,14 +1,14 @@
 
- ▐▛███▛█   Claude Code v2.1.300
-▝▜██████▀  Fable 5.1 with high effort · Claude Max
- ▝▝   ▝▝   /private/var/folders/mf/g9s916lj533085gbqr23mm9m0000gn/T/owner-rep-live.f4riOdpEhl
+ ▐▛███▛█   Claude Code v2.1.301
+▝▜██████▀  Opus 5.5 with xhigh effort · Claude Max
+ ▝▝   ▝▝   /private/var/folders/mf/g9s916lj533085gbqr23mm9m0000gn/T/owner-rep-live.b8Q98tCjKu
 
 
 ❯ Reply with the single word done and nothing else.
 
 ⏺ done
 
-✻ Sautéed for 1s · done 7:18 PM
+✻ Churned for 1s · done 1:14 AM
 
 ⏺ Prompt dropped by a hook: Owner rep: noted, and reading again. The agent did not see this.
 
@@ -33,12 +33,12 @@
 
 
                                                                                                                                                                       [-]
-◆ Owner rep · He wants the agent to reply with just the single word "done" and nothing more, likely as a quick check that the session is wired up and responding.
+◆ Owner rep · The agent answers him with the single word "done" and nothing else.
   stopped, waiting on you   1: Brief me   2: Tell the rep
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ❯ 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  [Fable 5.1] │ owner-rep-live.f4riOdpEhl +owner-rep-live.f4riOdpE… +maxwellcollins git:(main) │ Done
-  Context ░░░░░░░░░░ 4% │ Usage █████░░░░░ 48% (resets in 1h 42m)
+  [Opus 5.5] │ owner-rep-live.b8Q98tCjKu +owner-rep-live.b8Q98tCj… +maxwellcollins git:(main) │ Done
+  Context ░░░░░░░░░░ 4% │ Usage █░░░░░░░░░ 13% (resets in 1h 46m)
   ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents
