@@ -707,6 +707,23 @@ function droppedOf(line: string): { text: string; by: number | null } {
   return { text: bare(bar < 0 ? line : line.slice(0, bar)), by: n === null ? null : Number(n[1]) }
 }
 
+// Why one write left the objective as it was, kept on the record so a failed
+// write can be told apart: the engine's reason for an unanswered call (with
+// the HTTP status and kind for an error), or the start of an answer that could
+// not be read. Null is a call the engine refused to send.
+export type WriteResult =
+  | { isAnswered: true; text: string }
+  | { isAnswered: false; reason: string; status?: number | null; error?: string; usage?: { output_tokens: number } }
+  | null
+export function writeFailure(result: WriteResult): string {
+  if (result === null) return 'refused'
+  if (!result.isAnswered) {
+    if (result.reason === 'api-error') return `api-error ${result.status ?? 'no response'} ${result.error ?? ''}`.trim()
+    return result.usage === undefined ? result.reason : `${result.reason} (${result.usage.output_tokens} output tokens)`
+  }
+  return `unreadable: ${result.text.replace(/\s+/g, ' ').trim().slice(0, 160)}`
+}
+
 // The objective writer's answer. null when "objective:" is missing or names
 // neither holds nor moved, or a moved answer has no result: the held
 // objective is then left as it is, never emptied.

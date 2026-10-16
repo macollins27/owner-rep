@@ -52,6 +52,7 @@ import {
   parseBrief,
   parseCheck,
   parseObjective,
+  writeFailure,
   parseWatch,
   resultOf,
   revisedLine,
@@ -120,6 +121,8 @@ type Rec = {
   // Writer calls that threw, came back unanswered, or answered with nothing
   // parseObjective can read; each left the objective as it was.
   objectiveFailed: number
+  // Why the last failed write failed: the engine's reason, or that the answer could not be read.
+  objectiveWhy: string
 }
 
 const isRec = (v: unknown): v is Rec =>
@@ -150,6 +153,7 @@ const freshRec = (id: string): Rec => ({
   objectiveCalls: 0,
   objectiveTokens: 0,
   objectiveFailed: 0,
+  objectiveWhy: '',
 })
 
 async function loadRec($: EngineInterface, id: string): Promise<Rec> {
@@ -412,8 +416,10 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
           r.objectiveTokens += tokensOf(result.usage)
         }
         const answer = result !== null && result.isAnswered ? parseObjective(result.text) : null
-        if (answer === null) r.objectiveFailed += 1
-        else takeObjective(r, answer, Date.now(), saw)
+        if (answer === null) {
+          r.objectiveFailed += 1
+          r.objectiveWhy = writeFailure(result)
+        } else takeObjective(r, answer, Date.now(), saw)
         return r
       })
       // The row shows what the record holds, whichever write put it there.
