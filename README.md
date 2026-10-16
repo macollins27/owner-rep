@@ -252,7 +252,9 @@ nothing, and nothing is seeded from it. A row the transcript does not hold as hi
 notifications, another session's message, the summary of a compacted conversation) is never
 taken as his, and when no transcript can be read nothing is seeded.
 A message the rep drafted that he sent in any session the rep holds, the one forked from
-included, is recognised as the rep's draft. A prompt or a note he sends while that read is
+included, is recognised as the rep's draft, and so is one a record holds among his messages
+as a draft, so a card more than three back, or one sent under a build that kept no list of
+drafts, is not taken as his. A prompt or a note he sends while that read is
 still running waits for it, so his earlier messages are numbered first. A record that
 already holds a message of his is never seeded. When the first objective written for a
 seeded session says a new job opened at a later message of his, the job starts there, so a
@@ -279,7 +281,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 145 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 146 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions in tmux, the strip captured to tests/live/captures
 ```

@@ -37,7 +37,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 145 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 146 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -308,9 +308,10 @@ side's rows with no tool results and the same key before the row matched after i
 short reply he sent before and after a compaction gets its prior only at its later place; a
 queued item, or one no row holds (from before a compaction), keeps its place with no
 prior. Each is recorded as `his` through `pushOwner`, a
-draft he sent split off as `prompt.submit` does, matched against every record's drafts and
-last message in the store (`storedDrafts`), so a card he sent in the session this one was
-forked from is still the rep's draft. A session with no candidate row is not read. `seedOwner`
+draft he sent split off as `prompt.submit` does, matched against every record's drafts, last
+message and messages held as `draft` in the store (`storedDrafts`), so a card he sent in the
+session this one was forked from is still the rep's draft, even one more than `DRAFTS_MAX`
+back or sent under a build that kept no `rec.drafts`. A session with no candidate row is not read. `seedOwner`
 runs one seed per session at a time (`seeding`), and
 `prompt.submit` awaits it before recording a prompt or a note, so a prompt sent during the
 start's read is numbered after the seeded messages; the objective is rewritten when that

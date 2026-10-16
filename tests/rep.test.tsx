@@ -3890,6 +3890,44 @@ test('rule: a card message he sent in the session this one was forked from is re
   ])
 })
 
+test('rule: a card message he sent that the forked-from record holds only among his messages as a draft is recorded as the rep\'s draft, and one cut short is not', async ($, on) => {
+  // A record from a build that kept no list of drafts, or a card more than DRAFTS_MAX back:
+  // the draft is known only as a message of kind draft.
+  const drafted = 'Run it on the real data and show me the result.'
+  const cut = 'Print the whole log for every run of the…'
+  const rec = kept(on, {
+    sessions: {
+      'parent-session': {
+        id: 'parent-session', at: Date.now(), objective: null, jobStart: 1, counter: 3, past: [], seen: [], others: [], drafts: [],
+        owner: [om('build the report'), { n: 2, kind: 'draft', text: drafted, prior: '' }, { n: 3, kind: 'draft', text: cut, prior: '' }],
+        lastBrief: { at: 1, next: 'Ship it.', message: 'A later card: ship it to the server and show me.' },
+      },
+    },
+  })
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  const long = 'Print the whole log for every run of the suite and keep it.'
+  on('session.messages', () => ({
+    value: [
+      { role: 'user', text: 'Build the report.', toolUses: [] },
+      { role: 'assistant', text: 'Built.', toolUses: [] },
+      { role: 'user', text: drafted, toolUses: [] },
+      { role: 'assistant', text: 'Ran it.', toolUses: [] },
+      { role: 'user', text: long, toolUses: [] },
+    ] satisfies SessionMessage[],
+  }))
+  transcript(on, { 'parent-session.jsonl': [LINE('Build the report.'), LINE(drafted), LINE(long)].join('\n') })
+  writer(on, () => OBJ('The report run on the real data.', ['the run shown | open']))
+  await giveTranscript($, on)
+  await started($)
+  await settle($)
+  expect(rec()?.owner).toEqual([
+    { n: 1, kind: 'his', text: 'Build the report.', prior: '' },
+    { n: 2, kind: 'draft', text: drafted, prior: 'Built.' },
+    { n: 3, kind: 'his', text: long, prior: 'Ran it.' },
+  ])
+})
+
 test('rule: the transcript path Claude Code gives the session is the file read, wherever the session has moved since, and no search by name is run', async ($, on) => {
   const rec = kept(on, {})
   on('session.start', (_$, e) => ({ cwd: e.cwd }))
