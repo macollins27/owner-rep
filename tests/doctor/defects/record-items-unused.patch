@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index f0e1e30..bf03e24 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -512,7 +512,7 @@ async function readSession($: EngineInterface, sid: string, prompt: string, fall
+     .complete({
+       model: OBJECTIVE_MODEL,
+       system: RECORD_SYSTEM,
+-      prompt: recordPrompt(rows, prompt, items === null ? undefined : new Set(items.map(i => i.key))),
++      prompt: recordPrompt(rows, prompt, undefined),
+       maxTokens: RECORD_MAX_TOKENS,
+       effort: 'high',
+       timeoutMs: RECORD_TIMEOUT_MS,

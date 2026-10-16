@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 57024de..02d5fb9 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -924,7 +924,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
+       if (part.matched > best.matched) best = part
+       if (best.matched === want) break
+     }
+-    return best.matched > 0 ? best.items : null
++    return best.items
+   } catch {
+     return null
+   }

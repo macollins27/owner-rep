@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 30b4585..bf9aa09 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1858,7 +1858,7 @@ const STOP_TO_REPORT = String.raw`${STOP_LEAD}stops?${STOP_WHEN}\s+and\s+(?:then
+ // suite is green, so the session can end", "Fix the bug, and then the job can
+ // end"), where a bare "then" after a comma closes a condition ("If the suite
+ // is green, then the job can end").
+-const SENTENCE = String.raw`(?:(?:^|[.;:!?]\s*)(?:(?:and(?:\s+then)?|so|then|now)\s+)?|,\s*(?:and(?:\s+then)?|so|now)\s+)`
++const SENTENCE = String.raw`(?:(?:^|[.;:!?]\s*)(?:(?:and(?:\s+then)?|so|then|now)\s+)?)`
+ // The session, the job or the work said to end ("can", "should", "may" and the
+ // like, with "now", "here"), as a clause of its own after a sentence's start
+ // or a stop mark: "The session can end only after …" and "Once the run is

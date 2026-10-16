@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 8df3376..eb7262a 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -921,7 +921,7 @@ async function seedOwner($: EngineInterface, sid: string): Promise<boolean> {
+   return changeRec($, sid, rec => {
+     if (has(rec)) return false
+     for (const t of typed) {
+-      const split = draftSplitAny(t.text, [...rec.drafts, rec.lastBrief?.message ?? '', ...others])
++      const split = draftSplitAny(t.text, [...rec.drafts, rec.lastBrief?.message ?? ''])
+       if (split === null) pushOwner(rec, 'his', t.text, t.prior)
+       else {
+         pushOwner(rec, 'draft', split.draft, t.prior)

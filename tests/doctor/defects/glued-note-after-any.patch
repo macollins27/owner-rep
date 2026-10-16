@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index d9b3715..fbaa720 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -158,7 +158,7 @@ const NOTE_PLACES: readonly RegExp[] = [
+   // capitalised prefix: a word running straight into it is two texts run
+   // together, which a lower-case "rep" inside a word never is. After a quote, a
+   // bracket, a dash or a backtick it is a mention ("x)Owner rep: y", `Owner rep:`).
+-  /(?<=[A-Za-z0-9.!?])Owner rep(?:\s+[A-Za-z]+)?\s*:/,
++  /(?<=\S)Owner rep(?:\s+[A-Za-z]+)?\s*:/,
+ ]
+ // Splits a prompt at a note to the rep: `before` is what the agent gets (empty
+ // for a note alone), `note` is what follows the colon. Null when no prefix

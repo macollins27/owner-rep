@@ -37,9 +37,9 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 106 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 142 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
-tests/live/live.sh              # on demand: eight real sessions in tmux, the strip captured to tests/live/captures
+tests/live/live.sh              # on demand: nine real sessions in tmux, the strip captured to tests/live/captures
 ```
 
 GitHub runs validate, test, the type check and the doctor on every push
@@ -119,15 +119,55 @@ call writes (below):
    `applyMarks` takes the marks, and `gateVerdict` refuses, while a condition is open, a
    verdict other than `continue` (a `stop`, or none given, which `verdictOf` reads as
    `missing`, never as continue), a `well:` line, or a `next:` that `STOP_NEXT` reads as
-   telling the agent or the job to stop, calling the work finished, saying nothing is left
-   or closing the session, each said as a clause of its own (a step that only carries the
+   telling the agent or the job to stop, calling the work finished, saying nothing is left,
+   closing the session, wrapping up, stopping work on it, stopping (or stopping here, or
+   stopping work) to report, to wait bare or on him, to await him or to ask him
+   (`STOP_TO_REPORT`), a wait for or an await of him with no stop at all (`WAIT_SAID`;
+   `WAIT_ON_HIM` over `ON_HIM`: a wait for, on, until or till him, he, his, the owner, you,
+   approval, further instructions, a reply, an answer or the go-ahead, "your" only before a
+   word naming his say such as reply, approval, go-ahead or decision, "a decision" only at
+   the clause's end or before from, by, on or about, "confirmation" only at the clause's end
+   or from him, the owner or you, whatever follows to the sentence's end), a check-in with
+   him or letting him decide, choose or pick (`ASK_BACK_SAID`), handing it, the work or the
+   job over or back to him (`HAND_BACK_SAID`), these three let through after "not",
+   "never", "n't" or "no need to" (`NOT_NEGATED`), a bare wait after ", then"
+   (`THEN_WAIT`), the agent ending the session (`AGENT_ENDS`), or saying the session can
+   end at a sentence's start or after a stop mark other than
+   a comma (`SENTENCE`; a comma with "and", "and then", "so" or "now" counts, a bare "then"
+   after a comma closes a condition; `CLAUSE` takes "and then" as a clause's start too),
+   each said as a clause of its own (a step that only carries the
    word and goes on, as "stop guessing and run the suite" or "Don't stop until …", keeps the
-   model's own next step). A refused answer is asked once
+   model's own next step; so do a pair such as "make the timer start and stop", the bare
+   "and stop" only being read, never "and stops" said of a program, a wait on a CI run or
+   on "your build", and "Once the run is green, the session can end"). A refused answer is asked once
    more (`askAgain`, naming the open conditions); when that is refused too, or does not
    answer, the card lists the open conditions as left out and its meaning, next step,
    message and what it does are the rep's own (`OPEN_MEANS`, `OPEN_NEXT`, `OPEN_MESSAGE`,
    `OPEN_DOES`), never a stop. With no objective written (`gateOpen` is null) the same
    answers are refused, never let through, with `UNWRITTEN_*` texts, and not asked again.
+
+   The watch and the briefing (and its second ask) read through one helper, `readSession`.
+   A fork answers `nothing-to-fork` before the first response of the process (a session
+   reopened with `--continue` or `--resume`), after `/clear`, and through the whole first
+   turn of a new session. Only for a read he started (`fallback`: the press's `ask`, its
+   second ask included, and `look` with reason `note`) the helper then reads
+   `$.session.messages()` and, when there are rows, makes one `$.model.complete`
+   (`OBJECTIVE_MODEL`, high effort, `RECORD_SYSTEM`, `RECORD_MAX_TOKENS` 16,000,
+   `RECORD_TIMEOUT_MS` four minutes) over `recordPrompt`: the rows printed by `recordText`
+   as entries labelled `entry N`, never `#N` (his rows as the person only where their key is
+   one of his messages that `heldItems` read from the transcript, `NOT_TYPED` applied after
+   as a second filter, and with no transcript read, `NOT_TYPED` alone; every other row on
+   his side as the session's),
+   each tool use on one line with its result, a row of tool
+   results shown only for results not already printed), each message cut to
+   `RECORD_ENTRY_CUT` (3,000) and each tool input or result to `RECORD_TOOL_CUT` (600),
+   head and tail kept around a marked gap, the oldest entries left out past `RECORD_BUDGET`
+   (200,000 characters) with a line saying how many, fenced in `<session_record>` with any
+   fence tag inside printed with `‹ ›`, then the same task the fork would have had. Its
+   result has the fork's shape, so its spend is counted the same; a throw reads as an API
+   error. With no rows the fork's answer stands and the toast says there is nothing to read.
+   The step look and the stop look pass no fallback and skip quietly on `nothing-to-fork`:
+   a record read on each would be paid on every look of every new session's first turn.
 3. **Check**: `pressCheck()` → `runCheck()` first makes a throwaway copy of the agent's
    folder (`makeCopy`: an APFS clone, `cp -Rc`, into `checkCopyDir` under `~/.cache`), then
    spawns a headless `claude -p` in it with `--permission-mode default`, `CHECK_ALLOWED_TOOLS`
@@ -196,7 +236,9 @@ message back to open. A condition
 listed twice, or with a state mark copied into its text, is kept once (`parseObjective`,
 `mergeConditions`). A new job pushes
 the old result onto `rec.past` and starts the job (`since`, `rec.jobStart`) at its first new
-message. The looks, the briefing and the check never write the objective: `applyMarks` takes
+message. The first write, which has nothing held to push, starts the job at the message its
+`moved: new job #n` cites when n is one of his messages after the first, so a seeded session
+whose transcript held an earlier job does not show that job's messages as this one's. The looks, the briefing and the check never write the objective: `applyMarks` takes
 their `shown:` lines when they name where, their `closed:` lines only when the number is a
 message of his on the job sent after `from` (one the objective was built from had its say
 when it was written), and the check's `reopen:` lines when they say what shows otherwise; a look's or a briefing's
@@ -217,6 +259,65 @@ old marks), and a record with a `reading` and no `objective` gets `objective: nu
 text in `rec.stale` (kept as the first version when the objective is written) and
 `rec.jobStart` at the old job's first message; the next start, press or message writes it.
 
+A session the rep holds no record of (its record fell out of the newest `SESSIONS_MAX`, it
+was forked with a new id, or it is older than the mod) has none of his messages. `seedOwner`
+fills such a record, one with no message or note of his, from the session's transcript file,
+in the file's order, never from the rows' text: a message he typed while the agent worked
+is saved only as an attachment line, never as a row of `$.session.messages()` (measured on
+Claude Code 2.1.301), so the file is the only place it is found. The classic hooks
+`classic.SessionStart` and `classic.UserPromptSubmit` carry the file's path
+(`transcript_path`); `holdTranscript` keeps it per session id in a module-level map, a
+later prompt's path replacing the start's, and each event is passed on untouched. With no
+path held, `heldItems` looks for `<id>.jsonl` by name, `find <config>/projects -maxdepth 2`
+(the config folder `CLAUDE_CONFIG_DIR`, else `~/.claude`), and with none found it is null.
+The file is read through `$.process.run` with `humanRead` (`sed`, `HUMAN_READ_TIMEOUT_MS`),
+which prints only the lines holding `"kind":"human"`, every picture's `"data"` blanked so a
+message with a picture stays under the output cap. A read cut at that cap
+(`isStdoutTruncated`) counts as no read: the session's own file cut makes `heldItems` null,
+and a cut file in the scan is skipped. `humanItems` reads, in file order, the lines of type
+user with origin kind `human` and not `isMeta`, and the lines of type attachment holding a
+`queued_command` of origin kind `human` (a message he typed while the agent worked,
+`queued`), meta on neither the line nor the attachment, each as a `HumanItem`: its `text` in
+`typedForm` (a command as `/name args`, reminders removed), its `key` the `typedKey`
+(whitespace folded); one with an empty key or a text `NOT_TYPED` names is skipped, and one
+sent twice is two items. `humanTexts` is the set of their keys, which the record read labels
+by. When the session's own file cannot be read (a session forked with a new id has none
+until its first message is saved; the path held still names the right folder), the newest
+`.jsonl` files in its folder (`folderOf`, `ls -t`) are read one at a time, at most
+`HUMAN_SCAN_MAX` (40), within `HUMAN_SCAN_BUDGET_MS` (30 seconds) for the whole scan, each
+read given no more than the time left. A fork's rows are its parent's and then its own, so
+`forkItems` matches the fork's candidate rows (`forkCandidates`: user rows with no tool
+results, a key, and nothing `NOT_TYPED` names, in order) to a file's typed items from the
+end, since after a compaction the rows are only the conversation's tail: each typed item
+whose key is a candidate is tried as the last match, and the candidates are taken from last
+to first, each matched to the latest typed item with its key before the one matched after
+it, a row with no match leaving the place where it was. Of those tries it takes the most
+matched, then the fewest typed items left unmatched between the first and last match, then
+the latest last match, and keeps the items up to that match and the queued ones right after
+it (what he typed while the agent answered his last message before the fork), never the
+parent's later messages. The file with the most matches
+is taken, the newest on a tie, and the scan stops once a file matches every candidate;
+`heldItems` is null when the best file matched none, whether or not any file was read
+whole, so the record read labels his rows by their text rather than calling them all the
+session's. A
+scan repeated at each start and press costs milliseconds, so nothing caches it.
+`typedFromItems` gives each item the end of the agent's last text before the row it matches
+as its `prior`, lining them up from the end because after a compaction the rows hold only
+the tail: walking the items from last to first, each typed one takes the latest of his
+side's rows with no tool results and the same key before the row matched after it, so a
+short reply he sent before and after a compaction gets its prior only at its later place; a
+queued item, or one no row holds (from before a compaction), keeps its place with no
+prior. Each is recorded as `his` through `pushOwner`, a
+draft he sent split off as `prompt.submit` does, matched against every record's drafts and
+last message in the store (`storedDrafts`), so a card he sent in the session this one was
+forked from is still the rep's draft. A session with no candidate row is not read. `seedOwner`
+runs one seed per session at a time (`seeding`), and
+`prompt.submit` awaits it before recording a prompt or a note, so a prompt sent during the
+start's read is numbered after the seeded messages; the objective is rewritten when that
+seed recorded any. `session.start` runs it without waiting and writes the objective when it
+recorded any; `pressBrief` awaits it before its objective-null write. A record that holds a
+message or note of his is never seeded.
+
 State lives in two places. Atoms (`atom({plugin, key})`) are per-session UI state that drives
 the render. The `$.store` key `sessions` holds a `Rec` per session id (the objective, the
 results of earlier jobs, the owner's numbered messages and the counter, the last briefing's
@@ -234,7 +335,15 @@ recognised after a reload and from an earlier card: the draft is recorded as a
 the owner's words, and whatever he typed after it is his own message, numbered after it. A
 prompt beginning `Owner rep` and a colon (`noteTyped`) is a note to the rep: it is recorded as
 a `note`, listed with `NOTE_MARK` (`(to the rep)`), the objective is rewritten and a look
-starts at once, and the prompt is dropped so the agent never sees it. "Tell the rep" fills the
+starts at once, and the prompt is dropped so the agent never sees it. `noteSplit` also finds
+the prefix typed after other text (`NOTE_PLACES`): at the start of a line, after a sentence's
+end (a closing quote or bracket allowed) and a space, or in its capitalised form glued to a
+letter, a digit or a sentence's end, never inside a sentence, and never in a slash command's
+line (`e.command` set), whose arguments stay the command's. The text before it is then a
+prompt to the agent, handled as any prompt (recorded as his message, a draft split off) and
+sent on without the note; the note is recorded after it, the objective is rewritten, a look
+starts, and a toast says the agent got the rest. A prefix after text with nothing after it
+notes nothing; the agent gets the text and a toast says nothing was noted. "Tell the rep" fills the
 prompt box with the prefix. The rep never sends anything itself: "Put message in prompt" fills
 the prompt box and the owner presses Enter.
 

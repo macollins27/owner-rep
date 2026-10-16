@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index d9b3715..02c93e8 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -153,7 +153,7 @@ const NOTE_PLACES: readonly RegExp[] = [
+   /(?<=\n[ \t]*)owner rep(?:\s+[a-z]+)?\s*:/i,
+   // After a sentence's end, any closing quotes or brackets, and a space: typed on
+   // after a prompt's last sentence, as in: He said "go." Owner rep: …
+-  /(?<=[.!?]["'”’)\]]*[ \t]+)owner rep(?:\s+[a-z]+)?\s*:/i,
++  /(?<=[.!?][ \t]+)owner rep(?:\s+[a-z]+)?\s*:/i,
+   // Glued with no space to the end of a word or a sentence, and only as the
+   // capitalised prefix: a word running straight into it is two texts run
+   // together, which a lower-case "rep" inside a word never is. After a quote, a

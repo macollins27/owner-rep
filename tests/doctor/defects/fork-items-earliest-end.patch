@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index dd33d68..914eeb1 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -900,7 +900,7 @@ export function forkItems(items: readonly HumanItem[], rows: readonly RecordRow[
+     }
+     if (end < 0) continue
+     const gaps = (typedBefore[end + 1] ?? 0) - (typedBefore[start] ?? 0) - matched
+-    if (best === null || matched > best.matched || (matched === best.matched && (gaps < best.gaps || (gaps === best.gaps && end > best.end)))) {
++    if (best === null || matched > best.matched || (matched === best.matched && (gaps < best.gaps || (gaps === best.gaps && end < best.end)))) {
+       best = { matched, gaps, end }
+     }
+   }

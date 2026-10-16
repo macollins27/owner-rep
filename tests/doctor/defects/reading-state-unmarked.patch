@@ -1,8 +1,8 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index ec82737..bedd527 100644
+index fbdfd7b..6a7b284 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -438,8 +438,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+@@ -543,8 +543,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
  // The press: an instant read over the same copy, drawn in the band.
  async function pressBrief($: EngineInterface, sid: string): Promise<void> {
    const view = await read($, viewA)
@@ -11,4 +11,4 @@ index ec82737..bedd527 100644
 +  await update($, viewA, () => 'row')
    await setNow($, { mark: '' }).catch(() => undefined)
    try {
-     // No objective yet: it is written first, so the briefing measures against it.
+     // A session the rep holds no record of has his messages read from the session first.

@@ -1,8 +1,8 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 9360e96..8f6b0e6 100644
+index 1e7dd4a..abe1aee 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -285,7 +285,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number):
+@@ -299,7 +299,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number):
      return true
    }
    if (saw <= held.from) return false
@@ -11,7 +11,7 @@ index 9360e96..8f6b0e6 100644
    if (fresh.length === 0) return false
    const version = { at: now, cause: a.cause, text: objectiveText(held) }
    if (a.isNewJob) {
-@@ -398,7 +398,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
+@@ -412,7 +412,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
      entry.again = false
      const rec = await loadRec($, sid)
      const saw = rec.counter
@@ -20,12 +20,12 @@ index 9360e96..8f6b0e6 100644
      if (due) {
        shown = saw
        // Up to 1 + OBJECTIVE_RETRIES attempts over the same prompt: an empty or errored
-@@ -947,7 +947,7 @@ export const register: Register = on => {
-         })
-         if (split !== null) await update($, readingA, () => rec.objective)
+@@ -1126,7 +1126,7 @@ export const register: Register = on => {
+         // The note is numbered after the prompt it was typed behind.
+         if (note !== '') await takeNote($, id, note)
          // A message of his can move the objective: the writer reads it, never the agent's words.
--        if (isHis) rebuildObjective($, id, 'message').catch(() => undefined)
-+        rebuildObjective($, id, 'message').catch(() => undefined)
-       } catch {
-         // Recording is best effort; the prompt goes on.
-       }
+-        if (isHis || note !== '' || seeded) rebuildObjective($, id, note !== '' ? 'note' : 'message').catch(() => undefined)
++        rebuildObjective($, id, note !== '' ? 'note' : 'message').catch(() => undefined)
+         if (note !== '') {
+           lookAtNote(id)
+           $.ui.toast('Owner rep: the part after "Owner rep:" went to the rep only; the agent got the rest.')

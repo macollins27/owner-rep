@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 71aac13..46ca033 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -164,7 +164,7 @@ const NOTE_PLACES: readonly RegExp[] = [
+ export function noteSplit(text: string): { before: string; note: string } | null {
+   let at = -1
+   let end = -1
+-  for (const place of NOTE_PLACES) {
++  for (const place of NOTE_PLACES.slice(0, 1)) {
+     const m = place.exec(text)
+     if (m !== null && (at === -1 || m.index < at)) {
+       at = m.index

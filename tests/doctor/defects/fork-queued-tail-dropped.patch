@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index dd33d68..e7a7975 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -906,7 +906,6 @@ export function forkItems(items: readonly HumanItem[], rows: readonly RecordRow[
+   }
+   if (best === null) return { items: [], matched: 0 }
+   let stop = best.end + 1
+-  while (stop < items.length && items[stop]?.queued === true) stop += 1
+   return { items: items.slice(0, stop), matched: best.matched }
+ }
+ 

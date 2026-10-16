@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 603d998..a2c7675 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1990,7 +1990,7 @@ const SENTENCE = String.raw`(?:(?:^|[.;:!?]\s*)(?:(?:and(?:\s+then)?|so|then|now
+ // like, with "now", "here"), as a clause of its own after a sentence's start
+ // or a stop mark: "The session can end only after …" and "Once the run is
+ // green, the session can end" both put a condition on the end, and go on.
+-const END_SAID = String.raw`${SENTENCE}(?:the|this)\s+(?:session|job|work)\s+(?:can|could|should|may|will|must)\s+(?:now\s+)?end(?:\s+(?:here|now))?${CLAUSE_END}`
++const END_SAID = String.raw`${CLAUSE}(?:the|this)\s+(?:session|job|work)\s+(?:can|could|should|may|will|must)\s+(?:now\s+)?end(?:\s+(?:here|now))?${CLAUSE_END}`
+ // The agent (or "you") said to end the session, as a clause of its own, from the same start as
+ // END_SAID: "The agent can end the session." "Once the suite is green, the agent can end the
+ // session" puts a condition on it, and goes on.

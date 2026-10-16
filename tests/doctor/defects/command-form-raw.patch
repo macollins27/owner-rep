@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 7dc8332..024ccec 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -707,7 +707,7 @@ export const notTyped = (text: string): boolean => NOT_TYPED.some(p => text.star
+ // one with no arguments (a bare /clear or /reload-plugins) is no message of his: ''.
+ export function typedForm(text: string): string {
+   const t = withoutReminders(text)
+-  if (!/^<command-(?:message|name)>/.test(t)) return t
++  return t
+   const name = (t.match(/<command-name>([\s\S]*?)<\/command-name>/)?.[1] ?? '').trim()
+   const args = (t.match(/<command-args>([\s\S]*?)<\/command-args>/)?.[1] ?? '').trim()
+   if (name === '' || args === '') return ''
