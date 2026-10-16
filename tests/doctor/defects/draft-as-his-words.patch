@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 61c3ff0..c2801bd 100644
+index ec82737..317fa17 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -528,7 +528,7 @@ export const register: Register = on => {
-         // A message the rep drafted and he sent is recorded as the rep's words,
-         // marked, never as his: the model must not grade against a job the rep wrote.
-         const isDraft = brief !== null && brief.message !== '' && same(e.text, brief.message)
--        rec.owner = [...rec.owner, fit(`${isDraft ? SENT_MARK : ''}${e.text}`, OWNER_CUT)].slice(-OWNER_MAX)
-+        rec.owner = [...rec.owner, fit(e.text, OWNER_CUT)].slice(-OWNER_MAX)
-         if (isDraft) {
-           rec.lastSent = { text: brief.message, at: Date.now() }
-           if (view === 'brief') await update($, viewA, () => 'row')
+@@ -853,7 +853,7 @@ export const register: Register = on => {
+           const isHis = split === null || split.his !== ''
+           if (split === null) pushOwner(rec, 'his', e.text)
+           else {
+-            pushOwner(rec, 'draft', split.draft)
++            pushOwner(rec, 'his', split.draft)
+             if (split.his !== '') pushOwner(rec, 'his', split.his)
+             rec.lastSent = { text: split.draft, at: Date.now() }
+             // A draft is the rep's words: it moves the step it asks for and nothing else.

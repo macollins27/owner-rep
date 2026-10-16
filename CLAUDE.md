@@ -37,7 +37,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 54 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 75 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: six real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -48,7 +48,7 @@ declarations for the Claude Code build the workflow installs; move both together
 `tests/ci/declarations.sh` runs first there and fails the run when the installed build is
 not the one stamped on the pinned copy's first line, so the two cannot drift apart unseen.
 
-`claude plugin test` has no filter flag. Run the whole file; it takes well under a second.
+`claude plugin test` has no filter flag. Run the whole file; it takes a few seconds.
 `claude plugin validate` reports one expected warning, that a root `CLAUDE.md` is not shipped
 as plugin context. That is intended: this file is for work on the repository.
 
@@ -92,23 +92,35 @@ never by spawning a real run.
 Two modules, deliberately split:
 
 - `hooks/rep.ts` is pure functions and constants, no `$`. It holds the rep's prompts (the
-  watch brief, the briefing brief, the checker brief), the parsers for the model's labelled
-  answers (`parseWatch`, `parseBrief`, `parseCheck`), the check run's argv and read-only tool
+  watch brief, the briefing brief, the objective writer's prompt, the checker brief), the
+  parsers for the model's labelled answers (`parseWatch`, `parseBrief`, `parseObjective`,
+  `parseCheck`), the objective's rules that need no engine (`trimOwner`, `draftSplit`,
+  `mergeConditions`, `gateVerdict`, `objectiveText`), the check run's argv and read-only tool
   allowlist, and the cost arithmetic. Anything that can be unit-tested lives here.
 - `hooks/register.tsx` is the engine side: hooks, state atoms, the store record, the band
   render, and the spawn of the check run. `hooks/hooks.json` names it as the only module.
 - `types/index.d.ts` declares the mod's `PluginState` keys (`reading`, `now`, `note`, `brief`,
-  `view`, `helperIds`) and the `Reading`/`Brief`/`Checked`/`Now`/`Note` shapes the render reads.
+  `view`, `helperIds`) and the `Objective`/`Condition`/`Brief`/`Checked`/`Now`/`Note` shapes
+  the render reads. The `reading` key holds the objective under a shape tag (`objective-1`),
+  so what an older build wrote there reads as absent.
 
-Three reads of increasing cost, all measured against the held reading:
+Three reads of increasing cost, all measured against the held objective, which a fourth
+call writes (below):
 
 1. **Watch**: `look()` runs on `turn.step` every `CHECK_EVERY` (8) model requests and on every
    `turn.complete`, via `$.model.fork` over the agent's cached conversation. It is never
-   awaited by the hook that starts it. A flag becomes a "Heads up" note only when the view is
-   `row` and the flag was not already shown. Typing past notes backs the watch off (`skipAfter`).
+   awaited by the hook that starts it. Its answer is `state:`, `flag:`, `why:`, `shown:` and
+   `closed:`; it marks conditions and never writes the objective. A flag becomes a "Heads up"
+   note only when the view is `row` and the flag was not already shown. Typing past notes
+   backs the watch off (`skipAfter`).
 2. **Briefing**: `pressBrief()` on the Rep button, another fork, drawn as the card. The
-   model's answer is labelled lines (`reading:`, `moved:`, `stands:`, `means:`, `left:`,
-   `next:`, `message:` … `end`, `does:`); `parseBrief` splits them.
+   model's answer is labelled lines (`verdict:`, `shown:`, `closed:`, `well:`, `stands:`,
+   `means:`, `left:`, `next:`, `message:` … `end`, `does:`); `parseBrief` splits them,
+   `applyMarks` takes the marks, and `gateVerdict` refuses a `stop` or a `well:` line while a
+   condition is open. A refused answer is asked once more (`askAgain`, naming the open
+   conditions); when that is refused too, or does not answer, the card lists the open
+   conditions as left out and its meaning, next step, message and what it does are the rep's
+   own (`OPEN_MEANS`, `OPEN_NEXT`, `OPEN_MESSAGE`, `OPEN_DOES`), never a stop.
 3. **Check**: `pressCheck()` → `runCheck()` first makes a throwaway copy of the agent's
    folder (`makeCopy`: an APFS clone, `cp -Rc`, into `checkCopyDir` under `~/.cache`), then
    spawns a headless `claude -p` in it with `--permission-mode default`, `CHECK_ALLOWED_TOOLS`
@@ -123,42 +135,70 @@ Three reads of increasing cost, all measured against the held reading:
    (`CHECK_TIMEOUT_MS`), 120 turns, JSON output; `permission_denials` in the output is the
    refusal count, shown on the checked card (`refusedLine`) and on the next card's price line
    (`checkCostText`); the right number is zero. Its answer rewrites the card, with each claim
-   marked holds, false, not shown or changed since. A newer press (`checkEpoch`) makes an
+   marked holds, false, not shown or changed since; it is given the conditions held open,
+   its `shown:` and `closed:` lines move them, and its verdict passes the same gate, so a
+   check never says stop while a condition is open. A newer press (`checkEpoch`) makes an
    older run stale, and `lastInstant` ties "Check it" to the card that is up. The check costs
    real money and runs only on a press; the card states the measured figure (`FIRST_CHECK_*`,
    then the last run).
 
-**The reading** (`Reading` in `types/index.d.ts`, `takeReading` in `register.tsx`) is the
-rep's own account of what the owner wants on the job in hand, up to `READING_SENTENCES`
-sentences, never the owner's text. Every watch and briefing answer begins `reading: holds` or
-a rebuilt reading with a `moved:` line naming the owner's message that made the old one
-stale (`moved: new job …` closes the job). `takeReading` applies it: the first reading is
-taken as is; after that a revision is taken only when the look that proposed it saw more of
-`rec.owner` than the reading was built from (`from`), so the agent's words can never move it,
-whatever the model says, and a look that lands late cannot take a newer look's place; a
-new job pushes the old reading's first sentence onto `rec.past` and starts the job's message
-range (`since`) after the old one. The model is shown only the job's messages and the closed
-readings of earlier jobs. The card shows `revisedLine` under the head; the row shows
-`firstSentence`. A correction keeps that first sentence, the result: `keepResult` puts the
-held first sentence back when the rebuilt text's differs, and only a new job or a cause
-beginning `replaced` (`isReplaced`) takes the text whole, so a message that bounds the next
-step cannot shrink the result to itself (15 Oct 2026). There is no stored parts list: the model reads the open parts from the
-reading and the job's messages at each look, so one thing is held and revised, not two.
+**The objective** (`Objective` in `hooks/rep.ts`, declared again in `types/index.d.ts`) is the
+rep's own account of what the owner wants on the job in hand, never the owner's text, held in
+parts: `result`, `purpose`, `done` (a list of `Condition`s, each `open`, `not-shown`, `shown`
+or `closed`, with `by` saying where it was shown or which message of his closed it) and
+`step`; with `since` (the number of the job's first message), `from` (the last message number
+the write that built it was shown), `movedAt`, `cause`, `revisions` and up to `VERSIONS_MAX`
+earlier `versions`. Only `rebuildObjective` writes it: on each message of his and each note,
+never on a draft, and on a session start or a press when none is held. `writeObjective` runs
+one write per session at a time; a request during a write joins it (`again`), and a message
+saved after the write was shown its messages is written next. The writer is a plain
+`$.model.complete` call (`OBJECTIVE_MODEL`, high effort), never a fork of the conversation,
+shown by `objectivePrompt` only his numbered messages on the job (each with the agent's last
+answer before it), the held objective and `rec.past`. Its answer is `objective: holds`, or
+`objective: moved` with `moved:`, `result:`, `for:`, `done:`, `step:` and `dropped:`
+(`parseObjective`); `moved: new job …` closes the job. `takeObjective` applies it: the first
+objective is taken as it stands; after that a write is taken only when it saw a message of his
+or a note past `from` (`hisFrom` never counts a draft), so neither the agent's words nor the
+rep's drafts can move it and a write that lands late cannot take a newer one's place. A
+correction takes the result, purpose and step whole and runs the conditions through
+`mergeConditions`, which keeps every held condition the writer leaves out unless `dropped:`
+cites the number of a message of his; `honest` turns a `shown` the writer adds (it never sees
+the conversation) and a `closed` that cites no message of his back to open. A new job pushes
+the old result onto `rec.past` and starts the job (`since`, `rec.jobStart`) at its first new
+message. The looks, the briefing and the check never write the objective: `applyMarks` takes
+their `shown:` lines when they name where, and their `closed:` lines only when the number is a
+message of his on the job. A draft moves only `step`, set to the draft's `firstSentence` in
+`prompt.submit`. The card shows `revisedLine` under the head and `objectiveText` as its
+reading; the row shows `result`.
+
+Owner messages are `OwnerMsg`s: `n`, `kind` (`his`, `note` or `draft`), `text`, and `prior`,
+the agent's last answer before it. `rec.counter` gives every message its number, drafts
+included, so the guards compare numbers, never list lengths, and `trimOwner` keeps the job's
+messages whole up to `JOB_MAX` (200) and `OWNER_MAX` (40) from before it. `loadRec` migrates
+older records: a list of strings becomes numbered messages (`migrateOwner`, which reads the
+old marks), and a record with a `reading` and no `objective` gets `objective: null`, its old
+text in `rec.stale` (kept as the first version when the objective is written) and
+`rec.jobStart` at the old job's first message; the next start, press or message writes it.
 
 State lives in two places. Atoms (`atom({plugin, key})`) are per-session UI state that drives
-the render. The `$.store` key `sessions` holds a `Rec` per session id (the reading, the
-earlier jobs' readings, the owner's recent prompts, flags already seen, other mods' notes,
-spend counters), capped at `SESSIONS_MAX` newest. `loadRec`/`saveRec` are the only way in and
-out.
+the render. The `$.store` key `sessions` holds a `Rec` per session id (the objective, the
+results of earlier jobs, the owner's numbered messages and the counter, the last briefing's
+message, flags already seen, other mods' notes, spend counters with the writer's own), capped
+at `SESSIONS_MAX` newest. `loadRec`/`saveRec` are the only way in and out, and `changeRec`
+runs each change alone from its load to its save, so two hooks that finish together never save
+over each other.
 
 The owner's own messages are the only input that can steer the rep. `prompt.submit` records
-each prompt into `rec.owner`; a prompt that is the card's own message, sent through "Put
-message in prompt", is recorded with `SENT_MARK` so the model weighs it as the rep's draft
-and never as the owner's words; a prompt beginning `Owner rep` and a colon (`noteTyped`) is a
-note to the rep: it is recorded marked `(to the rep)`, a look starts at once, and the prompt
-is dropped so the agent never sees it. "Tell the rep" fills the prompt box with the prefix.
-The rep never sends anything itself: "Put message in prompt" fills the prompt box and the
-owner presses Enter.
+each prompt into `rec.owner` (`pushOwner`); a prompt that begins with the card's own message,
+sent through "Put message in prompt", is split by `draftSplit` against
+`rec.lastBrief.message`, so it is recognised after a reload: the draft is recorded as a
+`draft`, listed to the model with `SENT_MARK` so it is weighed as the rep's draft and never as
+the owner's words, and whatever he typed after it is his own message, numbered after it. A
+prompt beginning `Owner rep` and a colon (`noteTyped`) is a note to the rep: it is recorded as
+a `note`, listed with `NOTE_MARK` (`(to the rep)`), the objective is rewritten and a look
+starts at once, and the prompt is dropped so the agent never sees it. "Tell the rep" fills the
+prompt box with the prefix. The rep never sends anything itself: "Put message in prompt" fills
+the prompt box and the owner presses Enter.
 
 The `AbovePrompt` band is a strip shared with other mods ("You should know" among them) and
 this mod draws first. Rules the render enforces: whatever is beneath is kept under the row;

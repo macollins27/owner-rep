@@ -1,12 +1,12 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index faabc01..6e64cf3 100644
+index ec82737..e04c0a5 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -678,7 +678,7 @@ export const register: Register = on => {
-     const headColor = marked ? 'warning' : 'suggestion'
-     // The row shows the reading's first sentence; the card shows it whole.
-     const readingText = reading?.text ?? 'working out the result you want from your messages…'
--    const head = lead(headGlyph, headColor, 'Owner rep', firstSentence(readingText))
+@@ -1031,7 +1031,7 @@ export const register: Register = on => {
+     // The row shows the result; the card shows the objective whole.
+     const placeholder = 'working out the result you want from your messages…'
+     const readingText = reading === null ? placeholder : objectiveText(reading)
+-    const head = lead(headGlyph, headColor, 'Owner rep', reading?.result ?? placeholder)
 +    const head = lead(headGlyph, headColor, 'Owner rep', readingText)
  
      if (view === 'note' && note !== null && !hasBeneath) {

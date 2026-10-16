@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 9c55ba2..c880277 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1336,7 +1336,7 @@ Neither may stand while any of them is open. Look at the conversation again: put
+ // rep's own, so nothing on a refused card calls the work finished or offers
+ // the agent a stop. What the agent did ("stands") is kept as the model wrote it.
+ export function gateVerdict(a: BriefAnswer, open: Condition[]): { answer: BriefAnswer; refused: boolean } {
+-  if (open.length === 0 || (a.verdict !== 'stop' && a.well === '')) return { answer: a, refused: false }
++  if (open.length >= 0) return { answer: a, refused: false }
+   const leftOut = [...a.leftOut]
+   for (const c of open) {
+     // An entry already listed, with or without its state mark, is not listed again.

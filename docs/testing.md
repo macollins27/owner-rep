@@ -35,7 +35,7 @@ unawaited call had started, which looked like the kit not reaching the hook. Awa
 engine call before asserting.
 
 The sequence rules the hooks enforce, each with a test driven through the kit and a doctor
-entry that proves the test bites (all added 14 Oct 2026):
+entry that proves the test bites (added 14 Oct 2026; the objective's rules 15 Oct 2026):
 
 | Rule | Test | Doctor entry |
 | --- | --- | --- |
@@ -47,11 +47,11 @@ entry that proves the test bites (all added 14 Oct 2026):
 | The note waits while another mod draws beneath | `rule: the note waits…` | `note-over-other-mod` |
 | The digit hotkeys leave the row while another mod draws, and come back | `rule: the digit hotkeys…` | `digits-doubled` |
 | The store keeps only the newest `SESSIONS_MAX` sessions | `rule: the store keeps…` | `sessions-unbounded` |
-| The reading is kept when the answer says it holds; the row shows its first sentence | `rule: the reading is kept…` | `reading-rewritten-each-look`, `row-shows-whole-reading` |
-| The agent's words never move the reading; the owner's do, with the cause on the card | `rule: the agent's words never move…` | `agent-moves-reading`, `revision-cause-dropped` |
+| The objective is written by its own call from the owner's messages, never by the looks; the row shows its result | `rule: the objective is written by its own call…` | `looks-write-objective`, `agent-moves-reading`, `row-shows-whole-reading` |
+| The agent's words never move the objective; a message of the owner's does, with the cause on the card; a draft he sent moves only the step | `rule: the agent's words never move…` | `revision-cause-dropped`, `draft-moves-result` |
 | A note to the rep is dropped before the agent sees it and cleared from the box, listed as said to the rep, read at once | `rule: a note to the rep…` | `note-reaches-agent`, `note-never-read`, `note-left-in-box` |
-| A new job closes the old reading; the earlier job's messages leave the brief | `rule: a new job closes…` | `earlier-job-leaks` |
-| A look that lands late cannot take a newer look's place, in either order | `rule: a look that lands late…` (two tests) | `late-look-wins` |
+| A new job closes the old objective; its result is listed as closed and the earlier job's messages leave the writer | `rule: a new job closes…` | `earlier-job-leaks` |
+| A write that lands late cannot take a newer write's place, and a message during a write is written after it | `rule: a write that lands late…` | `late-look-wins` |
 | The revision line outlasts the parts that restate the agent's work when the card folds | `fitCard folds the body…` | `revised-line-folds-first` |
 | The check runs in a throwaway copy of the project, fenced, and the copy is removed when the run ends | `rule: the check runs in a throwaway copy…` | `check-outside-copy`, `room-bypassed` |
 | When the copy cannot be made the check runs in the agent's folder, with writes there denied, and the brief says so | `rule: when the copy cannot be made…` | (prompt text; covered by the test) |
@@ -64,9 +64,13 @@ entry that proves the test bites (all added 14 Oct 2026):
 | A card with anything left out never also says the work is going well | `a card with anything left out…` | `well-with-left` |
 | The briefs say a chore left for the owner is the agent's unfinished work, never his next step | `the briefs say a chore…` | `chore-to-owner` |
 | The watch looks every `CHECK_EVERY` model requests, through `turn.step` | `rule: the watch looks every…` | `step-look-dropped` |
-| A correction keeps the reading's first sentence, the result; only `replaced` or a new job changes it | `rule: a correction keeps the result sentence…`, `keepResult…` | `correction-shrinks-result` |
-| A message the rep drafted and the owner sent is listed to the model as the rep's draft, never as his words | `rule: a message the rep drafted…` | `draft-as-his-words` |
-| The briefs weigh the rep's draft as the rep's words, and say a document about the result is not the result | `the briefs weigh a message the rep drafted…` | `draft-weight-dropped`, `route-as-result` |
+| A correction rebuilds the whole objective, and keeps every held condition the writer drops unless a message of the owner's is cited for it | `rule: a correction rebuilds the whole objective…`, `mergeConditions keeps…` | `condition-dropped-uncited` |
+| A message the rep drafted and the owner sent is listed to the model as the rep's draft, never as his words, and is still recognised after a reload | `rule: a message the rep drafted…`, `rule: a draft is recognised…` | `draft-as-his-words` |
+| The briefs are built from the North Star: the objective stays open until completed, and the rep's draft weighs as the rep's words | `the briefs are built from the North Star…` | `draft-weight-dropped` |
+| A condition is marked shown or closed only by a look, a briefing or a check citing a message of the owner's for a close; the writer cannot mark one shown | `rule: the writer cannot mark…`, `rule: a briefing that marks…`, `rule: the watch marks…`, `rule: the check is given the conditions…` | `marks-uncited` |
+| A card cannot say stop, or that the work is going well, while a condition is open: the briefing is asked once more, then refused with the open conditions listed; the check passes the same gate | `gateVerdict refuses…`, `rule: a briefing that says stop…`, `rule: a briefing asked once more…`, `rule: a check that says stop…` | `stop-while-open` |
+| The record keeps the whole job past 40 messages and numbers each one, so a write after many messages still sees the first | `trimOwner keeps…`, `rule: the record numbers…`, `rule: a draft, a note and a message all count by number…` | `owner-cap-freezes` |
+| A record saved in the old shape is rebuilt from the owner's messages on the next press, the old text kept as a version | `rule: a record saved in the old shape…` | `old-reading-converted` |
 
 Three things the kit taught while writing these. The engine strips a refusal cause that a
 hook writes itself on `prompt.fill`, so a test can make the box refuse but cannot make it say
@@ -91,15 +95,23 @@ The doctor also earned its place here: the first version of the stale-check test
 its defect planted, because the held check answered with text that was not a result, so the
 stale answer had nothing to write. The doctor reported it as survived and the test was fixed.
 
-**Status.** 51 tests: the parsers, the status words (including the variable-first command, read
+And again on 15 Oct 2026: `looks-write-objective`, a look taking an objective from its own
+answer, survived at first, because the test of the writer made only one look and every
+objective it checked came from the writer's own call. The test now sends a further message
+the writer answers with `objective: holds` and a look whose answer carries an objective in
+the writer's shape, and asserts that the objective is unchanged.
+
+**Status.** 75 tests: the parsers, the status words (including the variable-first command, read
 through the mounted strip), the note to the rep, the checker's prompt and tools, the row on
 both surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-
 failure toast, the sequence rules above, the card folding to a small band, the brief
 carrying the whole-ask rule and the session's size as a figure, the helper count, the prompt
 box's refusals, the check's three failure paths, the word-wrapped row count, the checked card
-keeping its failed claims as it folds, the session end saving the record, the kept result
-sentence, the rep's draft marked in the owner's list, and the brief's rules on the draft's
-weight and on a document not being the result. Forty-three doctor entries, all caught (the three for the check's room added 15 Oct 2026).
+keeping its failed claims as it folds, the session end saving the record, and, from 15 Oct
+2026, the objective: its writer call and the parser of its parts, the conditions kept through
+a correction, the marks, the gate on stop and going-well, the numbered and trimmed record of
+the owner's messages, the writer's failure paths, the rep's draft recognised before and after
+a reload, and the record saved in the old shape. Forty-seven doctor entries, all caught.
 
 ## Layer 2: a real session
 
@@ -112,7 +124,7 @@ asserts on the captured text. The nested-session environment variables (`CLAUDEC
 `CLAUDE_CODE_SESSION_ID`, `CLAUDE_CODE_CHILD_SESSION`, the messaging socket and token) must be
 unset or `claude` falls into print mode and exits. Scenarios, one capture each:
 
-1. Idle: the row draws with the placeholder reading and "idle".
+1. Idle: the row draws with the placeholder goal and "idle".
 2. A shell command that begins by setting a variable: the status is "running <program>" and
    no character of the command appears in the strip.
 3. `Owner rep: ...` typed as a prompt after a first exchange: the agent never answers it, the
@@ -190,11 +202,13 @@ the file). Never make one from an uncommitted tree: the checkout would wipe the 
 **Status.** Built: `tests/doctor/doctor.py`, with `defects.json` and one patch per defect in
 `tests/doctor/defects/`. Run it with `python3 tests/doctor/doctor.py`; it exits 1 when the
 clean suite fails or a defect survives, and stops before planting when the clean suite is
-not clean. Forty entries, all caught: `strip-shows-command`, one or two per sequence
+not clean. Forty-seven entries, all caught: `strip-shows-command`, one or more per sequence
 rule above, `card-overflows-band`, `size-figure-dropped`, `whole-ask-rule-dropped`, and one
 per remaining hook path (`helper-not-counted`, `box-text-overwritten`, `fill-refusal-ignored`,
 `check-timeout-unreported`, `check-failure-swallowed`, `end-not-saved`). A throwaway entry no test looks at was planted on 14 Oct
-2026 to show the survivor path reports and exits 1; it was not kept.
+2026 to show the survivor path reports and exits 1; it was not kept. Entries whose rule was
+replaced move to `tests/doctor/defects/archive/` with a note in its `ARCHIVED.md` naming the
+successor; three moved there on 15 Oct 2026, when the objective replaced the reading.
 
 ## Order of work
 
@@ -217,4 +231,8 @@ per remaining hook path (`helper-not-counted`, `box-text-overwritten`, `fill-ref
    type check; shown red on its branch against the pin from 2.1.296 while the run
    installed 2.1.300, then green once the pin moved to 2.1.300. It is a step of the run,
    not a rule of the mod, so the doctor does not plant against it; the red run is its proof.
-8. Keep growing the defect list as bugs are fixed.
+8. ~~The objective in place of the reading: written by its own call from the owner's
+   messages, kept open until it is completed, with its conditions, the marks that move
+   them, and the gate on a card that says stop.~~ Done 15 Oct 2026 in layer 1, with a test
+   and a doctor entry per rule; three entries of the reading's rules archived.
+9. Keep growing the defect list as bugs are fixed.

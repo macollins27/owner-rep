@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 311727d..466fdc4 100644
+index ec82737..605837f 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -477,7 +477,7 @@ export const register: Register = on => {
-           if (promptsPastNote >= CLEAR_AFTER_PROMPTS) {
-             promptsPastNote = 0
-             rec.typedPast += 1
--            rec.skip = skipAfter(rec.typedPast)
-+            rec.skip = 0
-             await clearNote($)
+@@ -865,7 +865,7 @@ export const register: Register = on => {
+             if (promptsPastNote >= CLEAR_AFTER_PROMPTS) {
+               promptsPastNote = 0
+               rec.typedPast += 1
+-              rec.skip = skipAfter(rec.typedPast)
++              rec.skip = 0
+               await clearNote($)
+             }
            }
-         }

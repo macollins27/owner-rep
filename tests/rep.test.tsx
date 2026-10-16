@@ -1005,11 +1005,13 @@ const rowSays = async ($: Engine, text: RegExp) => {
 test('rule: the objective is written by its own call from his messages, not by the looks', async ($, on) => {
   const rec = kept(on)
   quietBand(on)
-  const writes = writer(on, () => OBJ('A public project employers can inspect.', ['the README written | open', 'the tests green on GitHub | not shown']))
+  let next = OBJ('A public project employers can inspect.', ['the README written | open', 'the tests green on GitHub | not shown'])
+  const writes = writer(on, () => next)
   const looks: string[] = []
+  let look = HOLDS
   on('model.fork', (_$, e) => {
     looks.push(String(e.prompt))
-    return { value: { isAnswered: true, text: HOLDS, usage: USAGE } }
+    return { value: { isAnswered: true, text: look, usage: USAGE } }
   })
   await $.prompt.submit(typed('make this a serious public repository'))
   await settle($)
@@ -1038,6 +1040,19 @@ test('rule: the objective is written by its own call from his messages, not by t
   expect(looks).toHaveLength(1)
   expect(looks[0]).toMatch(/Done when: the README written; the tests green on GitHub \(not shown\)\./)
   expect(writes).toHaveLength(1)
+  // His next message leaves the objective as it stands. A look that then answers with an
+  // objective of its own, in the writer's shape, moves nothing, though a message of his
+  // is past what the objective was built from.
+  next = 'objective: holds'
+  await $.prompt.submit(typed('keep going'))
+  await settle($)
+  look = `${HOLDS}\n${OBJ('What the agent says the job is.', ['the agent says it is done | open'], '#2 the agent said so')}`
+  await $.turn.complete(stop('t2'))
+  await settle($)
+  expect(looks).toHaveLength(2)
+  expect(writes).toHaveLength(2)
+  expect(rec()?.objective).toMatchObject({ result: 'A public project employers can inspect.', from: 1, revisions: 0 })
+  expect(await rowSays($, /^Owner rep · A public project employers can inspect\.$/)).toBe(true)
 })
 
 test("rule: the agent's words never move the objective; a message of his does, and a draft moves only the step", async ($, on) => {

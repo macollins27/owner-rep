@@ -1,13 +1,13 @@
-diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 8659e64..f4e4464 100644
---- a/hooks/rep.ts
-+++ b/hooks/rep.ts
-@@ -186,7 +186,7 @@ function memoryText(m: Memory): string {
-     r === null
-       ? 'Not written yet. Write it now, from his messages below.'
-       : `"${r.text}"${r.movedAt === null ? '' : `\n(${revisedLine(r)})`}`
--  const onJob = r === null ? m.owner : m.owner.slice(r.since)
-+  const onJob = m.owner
-   const brief =
-     m.lastBrief === undefined
-       ? '(none yet)'
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index ec82737..3c2cc48 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -267,7 +267,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number):
+   if (fresh.length === 0) return false
+   const version = { at: now, cause: a.cause, text: objectiveText(held) }
+   if (a.isNewJob) {
+-    const since = Math.min(...fresh)
++    const since = held.since
+     rec.past = [...rec.past, held.result].slice(-PAST_MAX)
+     rec.jobStart = since
+     rec.objective = {

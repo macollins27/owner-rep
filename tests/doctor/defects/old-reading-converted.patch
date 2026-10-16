@@ -1,0 +1,26 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index ec82737..3c26a63 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -150,8 +150,19 @@ async function loadRec($: EngineInterface, id: string): Promise<Rec> {
+   // A record saved with a reading and no objective is the old shape: its text waits as a version.
+   const old = (rec as { reading?: { text?: unknown; cause?: unknown; movedAt?: unknown; openedAt?: unknown; since?: unknown } }).reading
+   if (old !== undefined && old !== null && typeof old.text === 'string' && !('objective' in rec)) {
+-    out.objective = null
+-    out.stale = { text: old.text, cause: String(old.cause ?? ''), at: Number(old.movedAt ?? old.openedAt ?? 0) }
++    out.objective = {
++      result: old.text,
++      purpose: '',
++      done: [],
++      step: '',
++      openedAt: Number(old.openedAt ?? 0),
++      since: Number(old.since ?? 0) + 1,
++      from: out.counter,
++      movedAt: null,
++      cause: String(old.cause ?? ''),
++      revisions: 0,
++      versions: [],
++    }
+     out.jobStart = Number(old.since ?? 0) + 1
+   }
+   delete (out as { reading?: unknown }).reading

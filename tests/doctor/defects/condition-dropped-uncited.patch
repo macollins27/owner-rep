@@ -1,0 +1,16 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 9c55ba2..6c0dbfb 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1295,11 +1295,6 @@ export function mergeConditions(
+     const h = held.find(x => same(x.text, p.text))
+     return h !== undefined && rank(p.state) < rank(h.state) ? { ...p, state: h.state, by: h.by } : p
+   })
+-  for (const h of held) {
+-    if (out.some(p => same(p.text, h.text))) continue
+-    const gone = dropped.some(d => d.by !== null && his.includes(d.by) && same(d.text, h.text))
+-    if (!gone) out.push(h)
+-  }
+   return out
+ }
+ 
