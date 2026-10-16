@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index f0e1e30..2c39669 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -962,7 +962,7 @@ async function seedOnce($: EngineInterface, sid: string): Promise<boolean> {
+   if (candidateKeys(rows).size === 0) return false
+   const items = await heldItems($, sid, rows)
+   if (items === null) return false
+-  const typed = typedFromItems(items, rows)
++  const typed = typedFromItems([...items, ...forkCandidates(rows).filter(k => !items.some(i => i.key === k)).map(k => ({ key: k, text: k, queued: false }))], rows)
+   if (typed.length === 0) return false
+   const others = await storedDrafts($)
+   return changeRec($, sid, rec => {

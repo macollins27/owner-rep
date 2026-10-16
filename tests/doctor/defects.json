@@ -484,5 +484,449 @@
     "breaks": "A check still running at a /clear reopens a condition and draws the ended session's objective on the new session's row.",
     "patch": "clear-check-marks-draw.patch",
     "fixed": "2026-10-16"
+  },
+  {
+    "name": "note-after-text-leaks",
+    "breaks": "A note to the rep is found only at the start of the prompt, so one typed after other text in the box goes to the agent with the rest.",
+    "patch": "note-after-text-leaks.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "stop-wording-slips",
+    "breaks": "A next step that says to wrap up and stop, to stop working on it, to stop and report, or that the session can end gets past the gate while a condition is open.",
+    "patch": "stop-wording-slips.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "reopened-no-fallback",
+    "breaks": "In a reopened session, or after /clear, where there is nothing to fork, the briefing says there is nothing to read yet and the watch reads nothing, though the session's record is there to read.",
+    "patch": "reopened-no-fallback.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "reopened-no-seed",
+    "breaks": "A session the rep holds no record of (reopened after its record was dropped, forked with a new id, or older than the mod) keeps no message of his until he types again, so the card says the objective is not written yet.",
+    "patch": "reopened-no-seed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "seed-trusts-text",
+    "breaks": "A row the engine wrote on his side that no prefix on NOT_TYPED names (another session's message, an idle notice, a scheduled task), and that the transcript does not hold as his, is seeded as a message of his, and the objective is written from words he never typed.",
+    "patch": "seed-trusts-text.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "human-rows-unchecked",
+    "breaks": "Lines of the session's transcript that the engine wrote, meta lines and lines with another origin or none, are read as messages he typed, so the seed takes words he never typed and the record read labels them his.",
+    "patch": "human-rows-unchecked.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "record-trusts-text",
+    "breaks": "The record read in a reopened session labels a row the engine wrote as the person's whenever no prefix names it, though the transcript says otherwise, so the briefing reads the engine's words as his.",
+    "patch": "record-trusts-text.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "seed-no-folder-scan",
+    "breaks": "A session forked with a new id, whose own transcript is not saved yet, has none of his messages read, so its objective is not written until he types again.",
+    "patch": "seed-no-folder-scan.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "human-scan-uncapped",
+    "breaks": "The scan of a forked session's folder reads every transcript in it, however many, before the press can go on.",
+    "patch": "human-scan-uncapped.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "human-scan-no-stop",
+    "breaks": "The scan of a forked session's folder reads on after a file has matched every row that could be his, paying for reads that change nothing.",
+    "patch": "human-scan-no-stop.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "fork-draft-as-his",
+    "breaks": "A card message he sent in the session this one was forked from is recorded as his own words, so the objective is written from the rep's draft.",
+    "patch": "fork-draft-as-his.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "command-form-raw",
+    "breaks": "A slash command he ran is matched and recorded in the engine's saved tags rather than as he typed it, so a command with words after it is never proven his, and a bare one counts as a message.",
+    "patch": "command-form-raw.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "seed-races-prompt",
+    "breaks": "A prompt he sends while the session is still being read for his messages is recorded first, and the read then finds his message on record and seeds nothing, so every earlier message of his is lost to the objective.",
+    "patch": "seed-races-prompt.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "seed-races-note",
+    "breaks": "A note to the rep sent while the session is still being read for his messages is recorded first, and the read then seeds nothing, so the objective is written from the note alone.",
+    "patch": "seed-races-note.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "glued-note-after-any",
+    "breaks": "A prefix glued after a bracket, a dash, a quote or a backtick, as when he quotes the prefix to the agent, is split off as a note: the agent loses the rest of his prompt and the rep takes a mention for his words.",
+    "patch": "glued-note-after-any.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "note-after-quote-missed",
+    "breaks": "A note typed after a sentence that closes a quote or a bracket is not split off, so the agent reads the note meant for the rep.",
+    "patch": "note-after-quote-missed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "note-split-in-command",
+    "breaks": "A prefix inside a slash command's arguments is split off as a note, though the engine applies no rewrite to a command, so the rep records a note the agent still sees.",
+    "patch": "note-split-in-command.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "empty-note-silent",
+    "breaks": "A prefix with nothing after it, behind a prompt, is taken out of the prompt without a word, so he believes the rep was told something.",
+    "patch": "empty-note-silent.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "and-stops-refused",
+    "breaks": "AND_STOP refuses \"stops\" said of a program, so \"Make sure the job runs once and stops.\" is taken as telling the agent to stop",
+    "patch": "and-stops-refused.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "end-after-condition-refused",
+    "breaks": "END_SAID refuses an end after a condition and a comma, so \"Once the run is green, the session can end.\" is taken as ending the job",
+    "patch": "end-after-condition-refused.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "end-after-so-passed",
+    "breaks": "END_SAID lets an end joined by a comma and \"so\" or \"and\" through, so \"The suite is green, so the session can end now.\" passes while a condition is open",
+    "patch": "end-after-so-passed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "wait-on-ci-refused",
+    "breaks": "STOP_TO_REPORT refuses any \"stop and wait\", so waiting on the GitHub run or the CI run is taken as a stop",
+    "patch": "wait-on-ci-refused.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "wait-on-him-passed",
+    "breaks": "STOP_TO_REPORT no longer refuses a bare wait or one on him after a stop, so \"stop and wait.\" passes while a condition is open.",
+    "patch": "wait-on-him-passed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "step-look-reads-record",
+    "breaks": "readSession falls back to the session record for every look, so each step look and stop look in a new session's first turn pays a full record read",
+    "patch": "step-look-reads-record.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "note-look-skips-record",
+    "breaks": "the look after his note never falls back to the session record, so a note in a reopened session reads nothing and moves no condition",
+    "patch": "note-look-skips-record.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "press-skips-record",
+    "breaks": "the press never falls back to the session record, so a briefing in a reopened session says there is nothing to read",
+    "patch": "press-skips-record.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "record-numbers-as-messages",
+    "breaks": "The session record labels its entries #N, the form his numbered messages take, so a record entry can be cited, and read by applyMarks, as one of his messages.",
+    "patch": "record-numbers-as-messages.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "truncated-read-trusted",
+    "breaks": "A read of the session's transcript cut at the output cap is taken as whole: his oldest messages are seeded alone, and his newest are labelled in the record as written by Claude Code.",
+    "patch": "truncated-read-trusted.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "scan-cut-read-trusted",
+    "breaks": "In the scan of a forked session's folder, a file whose read was cut at the output cap is taken as read whole, so the part taken from it rests on a part of the file.",
+    "patch": "scan-cut-read-trusted.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "picture-data-kept",
+    "breaks": "The read of a transcript keeps the data of every picture he pasted, so a few pictures push the read past the output cap and his newest messages are lost.",
+    "patch": "picture-data-kept.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "transcript-path-ignored",
+    "breaks": "The transcript path Claude Code gives the session is never used: a forked session finds no file and seeds nothing, and every read starts with a search by name.",
+    "patch": "transcript-path-ignored.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "prompt-path-not-held",
+    "breaks": "The transcript path a prompt carries is not held, so a session that never had a start hook of its own (or whose path changed) reads a file Claude Code no longer writes to.",
+    "patch": "prompt-path-not-held.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "find-fallback-missing",
+    "breaks": "With no transcript path given, the session's file is never searched for by name, so a session reopened in place has none of his messages proven.",
+    "patch": "find-fallback-missing.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "scan-unbounded",
+    "breaks": "The scan of a forked session's folder runs on past its 30 seconds, reading file after file while his first prompt waits.",
+    "patch": "scan-unbounded.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "scan-timeout-fixed",
+    "breaks": "Each read in the scan of a forked session's folder is allowed its full time even when less is left, so a slow disk holds his first prompt well past the scan's limit.",
+    "patch": "scan-timeout-fixed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "queued-message-unproven",
+    "breaks": "A message he typed while the agent worked, saved as a queued command, is never read as his: the seed loses it, and a reopened session's record read labels it the session's.",
+    "patch": "queued-message-unproven.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "queued-origin-unchecked",
+    "breaks": "A queued task notification or another session's queued message is read as his because the queued command's origin is not checked.",
+    "patch": "queued-origin-unchecked.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "queued-meta-taken",
+    "breaks": "A queued command marked meta on its attachment is read as his.",
+    "patch": "queued-meta-taken.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "wait-on-him-reply-passed",
+    "breaks": "A wait on him with more words after it (\"Stop and wait for him to reply.\", \"Stop and wait for his reply before going on.\") passes the gate while a condition is open.",
+    "patch": "wait-on-him-reply-passed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "wait-on-him-words-narrow",
+    "breaks": "A wait on his approval, his answer, his go-ahead, the owner's reply, a decision on something or confirmation from him passes the gate while a condition is open.",
+    "patch": "wait-on-him-words-narrow.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "wait-until-passed",
+    "breaks": "\"Stop and wait until he replies.\" passes the gate while a condition is open.",
+    "patch": "wait-until-passed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "ask-him-passed",
+    "breaks": "\"Stop and ask him what he wants.\" passes the gate while a condition is open.",
+    "patch": "ask-him-passed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "stop-here-and-wait-passed",
+    "breaks": "\"Stop here and wait.\" passes the gate while a condition is open.",
+    "patch": "stop-here-and-wait-passed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "end-after-and-then-passed",
+    "breaks": "\"Fix the bug, and then the job can end.\" passes the gate while a condition is open.",
+    "patch": "end-after-and-then-passed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "clause-and-then-missed",
+    "breaks": "A stop or a wrap-up after \", and then\" (\"Fix the bug, and then stop the agent.\", \"Fix the bug, and then wrap things up.\") passes the gate while a condition is open.",
+    "patch": "clause-and-then-missed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "fork-items-tail-kept",
+    "breaks": "A fork with no file of its own yet takes every message in the parent's file after its last matched one, so what he sent the parent after the fork is seeded as the fork's.",
+    "patch": "fork-items-tail-kept.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "fork-queued-tail-dropped",
+    "breaks": "A fork with no file of its own yet loses the messages he typed while the agent answered his last message before the fork.",
+    "patch": "fork-queued-tail-dropped.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "fork-items-rematch",
+    "breaks": "A fork's row is matched to the same message of the other file as the row after it, so a message he sent once matches two rows that say it and the file looks a better match than it is.",
+    "patch": "fork-items-rematch.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "fork-misses-counted",
+    "breaks": "A fork's row that no message in a file holds counts as matched, so every file that matches anything looks like a full match and the scan can stop before the parent's file.",
+    "patch": "fork-misses-counted.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "queued-prior-carried",
+    "breaks": "A queued message, or one no row holds, is given the prior of the message before it, so the writer is told the agent had just said something it had not said when he typed it.",
+    "patch": "queued-prior-carried.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "typed-cursor-stuck",
+    "breaks": "A message sent twice is matched to the same row both times, so the earlier sending is given the agent's words from before the later one.",
+    "patch": "typed-cursor-stuck.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "scan-first-match-taken",
+    "breaks": "The scan of a forked session's folder takes the first file that matches any of the fork's rows, such as a sibling session sharing only his first message, instead of the file that matches the most.",
+    "patch": "scan-first-match-taken.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "scan-tie-takes-older",
+    "breaks": "Of two files that match a fork's rows equally, the older is taken instead of the newer.",
+    "patch": "scan-tie-takes-older.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "scan-unread-as-empty",
+    "breaks": "A scan of a fork's folder that matched none of the fork's rows, because no file could be read whole or because the files read hold none of them, comes back as a read that found nothing of his, so the record read labels every one of his rows as written by Claude Code.",
+    "patch": "scan-unread-as-empty.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "record-items-unused",
+    "breaks": "The record read ignores the messages read from the transcript and labels rows by NOT_TYPED alone, so another session's message is shown as his words.",
+    "patch": "record-items-unused.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "human-items-deduped",
+    "breaks": "A message he sent twice is read from the transcript once, so the seed records it once.",
+    "patch": "human-items-deduped.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "human-items-not-typed-kept",
+    "breaks": "A line marked his whose text NOT_TYPED names (a command's output, an interrupt mark, a compact summary) is read as a message he typed.",
+    "patch": "human-items-not-typed-kept.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "typed-forward-walk",
+    "breaks": "His messages are matched to the rows from the start again, so after a compaction a short reply he sent before it takes the prior of its later sending, and the later one gets none.",
+    "patch": "typed-forward-walk.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "fork-items-earliest-end",
+    "breaks": "A fork's part of another session's messages ends at the earliest of equal matches, so a fork of a compacted parent drops every message he sent after the first sending of its short replies.",
+    "patch": "fork-items-earliest-end.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "fork-items-gaps-ignored",
+    "breaks": "A fork's part of another session's messages is chosen without counting his messages inside the matched span that the fork does not hold, so a parent that went on after the fork and repeated a message gives the fork the parent's later messages.",
+    "patch": "fork-items-gaps-ignored.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "first-write-new-job-ignored",
+    "breaks": "A session seeded from its transcript keeps every job it held as one: the first write's new job is ignored, so the earlier job's messages are shown to the writer and the briefing as this job's.",
+    "patch": "first-write-new-job-ignored.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "wait-your-any",
+    "breaks": "A wait on anything after \"your\" counts as a wait on him, so \"Stop and wait for your build to finish, then push.\" is refused while a condition is open.",
+    "patch": "wait-your-any.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "wait-confirmation-any",
+    "breaks": "A wait on anything that starts with \"confirmation\" counts as a wait on him, so \"Stop and wait for confirmation emails to arrive in the test inbox, then check them.\" is refused while a condition is open.",
+    "patch": "wait-confirmation-any.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "wait-decision-any",
+    "breaks": "A wait on anything that starts with \"a decision\" counts as a wait on him, so \"Stop and wait for a decision tree to train, then evaluate it.\" is refused while a condition is open.",
+    "patch": "wait-decision-any.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "wait-on-him-unstopped-passed",
+    "breaks": "A wait on him said without a stop (\"Wait for his go-ahead.\", \"Wait for him to reply.\", \"Report and wait for him.\") passes the gate while a condition is open.",
+    "patch": "wait-on-him-unstopped-passed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "hand-back-passed",
+    "breaks": "\"Hand it over to him.\" passes the gate while a condition is open.",
+    "patch": "hand-back-passed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "check-in-passed",
+    "breaks": "\"Stop and check in with him.\" and \"Stop and let him decide.\" pass the gate while a condition is open.",
+    "patch": "check-in-passed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "then-wait-passed",
+    "breaks": "\"Stop and report, then wait.\" passes the gate while a condition is open.",
+    "patch": "then-wait-passed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "agent-ends-passed",
+    "breaks": "\"The agent can end the session.\" passes the gate while a condition is open.",
+    "patch": "agent-ends-passed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "stop-work-and-wait-passed",
+    "breaks": "\"Stop working and wait.\" passes the gate while a condition is open.",
+    "patch": "stop-work-and-wait-passed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "await-passed",
+    "breaks": "\"Stop and await his reply.\" passes the gate while a condition is open.",
+    "patch": "await-passed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "wait-negation-refused",
+    "breaks": "A wait on him said not to happen (\"Don't wait for his reply; push the fix.\") is refused as a stop.",
+    "patch": "wait-negation-refused.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "wait-negation-gap",
+    "breaks": "A wait on him said not to happen with words between (\"Don't just wait for him, run the suite.\", \"Do not stop and wait for him; run the suite.\") is refused as a stop.",
+    "patch": "wait-negation-gap.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "approval-from-anyone",
+    "breaks": "A wait on approval from someone other than him (\"Wait for approval from the CI gate, then merge.\") is refused as a wait on him.",
+    "patch": "approval-from-anyone.patch",
+    "fixed": "2026-10-16"
   }
 ]

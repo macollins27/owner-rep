@@ -1,0 +1,16 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index ee9db46..c84b6ef 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -760,10 +760,9 @@ export function humanItems(jsonl: string): HumanItem[] {
+     }
+     if (typeof row !== 'object' || row === null) continue
+     const r = row as { type?: unknown; isMeta?: unknown; origin?: unknown; message?: unknown; attachment?: unknown }
+-    if (r.isMeta === true) continue
+     let raw = ''
+     let queued = false
+-    if (r.type === 'user' && kindOf(r.origin) === 'human') {
++    if (r.type === 'user') {
+       const message = typeof r.message === 'object' && r.message !== null ? (r.message as { content?: unknown }) : {}
+       raw = contentText(message.content)
+     } else if (r.type === 'attachment' && typeof r.attachment === 'object' && r.attachment !== null) {

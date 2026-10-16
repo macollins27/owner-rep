@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index faabc01..23806c2 100644
+index 639f51a..c13982e 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -487,7 +487,7 @@ export const register: Register = on => {
-     const kind = e.origin?.kind ?? 'composer'
-     if (kind === 'composer' || kind === 'bridge') {
-       const note = noteTyped(e.text)
--      if (note !== null) {
-+      if (note !== null && e.text === '') {
-         if (note === '') return { drop: 'Owner rep: nothing after the prefix, so nothing noted.' }
-         try {
-           const id = await sessionId($)
+@@ -1053,7 +1053,7 @@ export const register: Register = on => {
+       // A note to the rep, alone or typed after a prompt to the agent. A slash
+       // command's line is the command's: the engine applies no rewrite to it, so
+       // a prefix in its arguments is never split off as a note.
+-      const noted = e.command === undefined ? noteSplit(e.text) : null
++      const noted = e.text === '' ? noteSplit(e.text) : null
+       // The look reads a note against the work at once.
+       const lookAtNote = (id: string) => {
+         if (inFlight.has('note')) return

@@ -102,9 +102,14 @@ later check shows it: a look or a briefing that marks it shown again moves nothi
 writer never raises a condition's state, and the looks, the briefings and the writer are
 shown what the check found beside it. The objective stays open until every condition is
 shown or closed. While a condition is open, the gate refuses a briefing that says the agent
-should stop, that gives no verdict, whose next step tells the agent to stop or calls the work
-finished (a step that only carries the word and goes on, such as stopping a wrong approach,
-is let through), or that says the work is going well. Such a briefing is asked once more with
+should stop, that gives no verdict, whose next step tells the agent to stop, to wrap up, to
+stop and report, to wait for or await the owner or his word (with a stop or without), to stop
+and ask him, to check in with him or let him decide, to hand the work back to him, or to wait
+after a ", then", or calls the work finished or says the session or the agent can end it (a
+step that only carries the word and goes on, such as stopping a wrong approach, waiting on a
+CI run or on the agent's own build, a program that "runs once and stops", a step that says
+not to wait for him, or an end put after a condition, is let through), or that says the work
+is going well. Such a briefing is asked once more with
 the open conditions named, and if it still does any of these the card is refused. While no
 objective is written, any of the same is refused at once, and the card says the objective is
 not written yet. A refused card lists the open conditions as left out, and its meaning, next
@@ -129,7 +134,14 @@ result, narrows the job, sets what "done" means or closes a condition.
 The owner never types the objective. To steer the rep they type a prompt beginning
 `Owner rep:`; the rep takes the note, drops the prompt before the agent sees it, lists it to
 the model as said to the rep with the highest weight, rewrites the objective with it, and
-reads again at once. "Tell the rep" puts the prefix in the prompt box.
+reads again at once. The prefix also counts typed after a prompt to the agent, on a line of
+its own, after a sentence's end (a closing quote or bracket included), or in its capitalised
+form run straight onto a word or a sentence's end; the agent then gets the prompt without the
+note, and the note goes to the rep alone, numbered after it. A mention inside a sentence, as
+in "ask the owner rep: is it done", is not a note, and neither is the prefix inside a slash
+command's arguments, which stay the command's. A prefix after text with nothing after it
+notes nothing, and a toast says so.
+"Tell the rep" puts the prefix in the prompt box.
 
 On top of the objective sit five expectations the rep applies without reciting: the whole
 result is delivered; it is shown to work, not said to work; no known problem is left behind;
@@ -173,6 +185,21 @@ line is there only so a short reply can be understood and never sets the result,
 the code takes a write only when it saw a message of the owner's past the ones the objective
 was built from, so the agent's words alone never move it.
 
+A fork has nothing to fork before the first response of the process: in a session reopened
+with `--continue` or `--resume`, after `/clear`, and through the whole first turn of a new
+session. A read the owner started, a press of the Rep button or the look after a note, then
+reads the session's own record (`$.session.messages()`) instead: one plain completion, given
+the record as entries labelled `entry 1`, `entry 2` and so on (never `#1`, the form the
+owner's numbered messages take, so no entry can be cited as one of his) fenced as data
+(each message cut to 3,000 characters, each tool's input and result to 600, the oldest
+entries left out past 200,000 characters, with a line saying how many), a system prompt
+saying the task means that record wherever it speaks of the conversation, and then the same
+task the fork would have had. Only the rows that are one of his messages in the session's
+transcript file are labelled as the person's; when no transcript can be read, every row on his side that is not
+a kind Claude Code is known to write there. The watch's own looks, on a step and at a turn's end, skip quietly
+instead, so a new session's first turn pays for no record read. With no record to read, as
+after `/clear`, the briefing says there is nothing to read yet.
+
 The check step runs in a room, not under a list of allowed commands. The rep first makes a
 throwaway copy of the project as it stands, uncommitted work included (an APFS clone, made in
 a moment and taking no space until written to), and spawns `claude -p` in it with
@@ -200,8 +227,36 @@ messages, notes to the rep and sent drafts, each numbered (the job's kept whole 
 and the 40 before it), flags already shown, notes other mods have shown, and spend counters
 that count the writer's calls beside the looks. A record saved by a build from before the
 objective is rebuilt from the owner's messages on the next start, press or message, with its
-old text kept as an earlier version. Nothing leaves the machine except the model calls the
-session already makes.
+old text kept as an earlier version. A session the rep holds no record of (one whose record
+was dropped from the 32, one forked with a new id, one older than the mod) has the owner's
+messages read back at its start and on a press from the session's transcript file under
+`~/.claude/projects/`, in the file's order: only a line there with a human origin that is not
+marked meta counts (a user line, or the queued-command line Claude Code saves for a message
+typed while the agent works, which is never one of the session's rows at all). Each message
+gets the end of the agent's words before it from the session's rows; a queued message, or
+one whose row is gone (from before a compaction), gets none. After a compaction the rows hold
+only the conversation's tail, so his messages are lined up with them from the end: a short
+reply he sent both before and after it gets its prior only at its later place. The file is the one Claude Code
+names to the mod's hooks, or, when none was named, the one found by the session's id; it is
+read with `sed`, picture data blanked so the read stays under the output cap, and a read cut
+at that cap counts as no read. A session forked with a new id has no file of its own until
+its first message is saved, so the newest transcripts in that file's folder are read, at
+most 40 within 30 seconds, and the one whose messages match the most of the fork's rows in
+order (the newest on a tie) gives its part up to the last matched message, with the
+messages queued right after it; the parent's later messages are never taken, and the scan
+stops once a file matches every row that could be his. Within a file the rows are lined up
+from the end, and where they fit more than one place, the place with the fewest of his
+messages left between the matched ones, then the latest, is taken, so a fork of a compacted
+parent keeps every message up to the fork. A scan in which no file matched any row proves
+nothing, and nothing is seeded from it. A row the transcript does not hold as his (task
+notifications, another session's message, the summary of a compacted conversation) is never
+taken as his, and when no transcript can be read nothing is seeded.
+A message the rep drafted that he sent in any session the rep holds, the one forked from
+included, is recognised as the rep's draft. A prompt or a note he sends while that read is
+still running waits for it, so his earlier messages are numbered first. A record that
+already holds a message of his is never seeded. When the first objective written for a
+seeded session says a new job opened at a later message of his, the job starts there, so a
+fork of a session that had finished one job is not judged against that job's messages. Nothing leaves the machine except the model calls the session already makes.
 
 The band above the prompt is a strip shared with other mods. The rep draws first and keeps
 whatever is beneath it. While another mod's note is up, the rep's own note waits and its
@@ -224,9 +279,9 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 103 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 145 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
-tests/live/live.sh              # on demand: eight real sessions in tmux, the strip captured to tests/live/captures
+tests/live/live.sh              # on demand: nine real sessions in tmux, the strip captured to tests/live/captures
 ```
 
 GitHub runs the validation, the tests, the type check and the doctor on every push
@@ -241,7 +296,9 @@ tsc -p . --noEmit             # needs .claude-plugin/types/, see below
 
 The tests cover the parsers, the row on both surfaces, the shared strip, the press, the
 objective writer and its rules (the guard, corrections, new jobs, drafts, the marks and the
-gate), the note to the rep, and a press followed by a check on a stubbed run. The test kit stubs the model and the
+gate), the note to the rep, the stop forms the gate reads, the record read where there is
+nothing to fork, the seeding of his messages from a stubbed transcript, and a press
+followed by a check on a stubbed run. The test kit stubs the model and the
 band; no test spawns a real check.
 
 Type-checking needs the mods API declarations, which Claude Code writes into a mod's
@@ -257,10 +314,15 @@ of the mod.
 ## What it can reach
 
 Like every Claude Code mod, it runs with the permissions of the person who installs it. Its
-own calls read the prompt box, the session id and working directory, a small per-session
-store, and the model through the session's own credentials. The check step starts a separate
-Claude Code run that may read files, search, run the project's own tests and read agentsview;
-it may not edit, send, or launch helpers. The rep never sends anything to an agent by itself.
+own calls read the prompt box, the session id and working directory, the session's
+messages, a small per-session store, and the model through the session's own credentials,
+take the transcript path Claude Code gives its hooks at the session's start and with each
+prompt, and run `sed`, `ls` and `find` over the session's transcripts under
+`~/.claude/projects/` (or the folder `CLAUDE_CONFIG_DIR` names) to read which messages the
+person typed. The check step
+starts a separate Claude Code run that may read files, search, run the project's own tests
+and read agentsview; it may not edit, send, or launch helpers. The rep never sends anything
+to an agent by itself.
 
 ## Decisions along the way
 

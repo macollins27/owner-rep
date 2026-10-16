@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index ee9db46..3379658 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -768,7 +768,7 @@ export function humanItems(jsonl: string): HumanItem[] {
+       raw = contentText(message.content)
+     } else if (r.type === 'attachment' && typeof r.attachment === 'object' && r.attachment !== null) {
+       const a = r.attachment as { type?: unknown; origin?: unknown; prompt?: unknown; isMeta?: unknown }
+-      if (a.type === 'queued_command' && a.isMeta !== true && kindOf(a.origin) === 'human') {
++      if (a.type === 'queued_command' && a.isMeta !== true) {
+         raw = contentText(a.prompt)
+         queued = true
+       }

@@ -1,12 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
+index fbdfd7b..bc3de4a 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -743,7 +743,7 @@
+@@ -829,7 +829,7 @@ let lastAnswer = ''
  // last answer. His messages and notes are kept to the larger cut, since the
  // writer reads nothing else; a draft of the rep's to the smaller.
- function pushOwner(rec: Rec, kind: OwnerKind, text: string): void {
+ function pushOwner(rec: Rec, kind: OwnerKind, text: string, prior: string = lastAnswer): void {
 -  const cut = kind === 'draft' ? OWNER_CUT : HIS_CUT
 +  const cut = OWNER_CUT
    rec.owner = trimOwner(
-     [...rec.owner, { n: ++rec.counter, kind, text: fit(text, cut), prior: fitTail(lastAnswer, PRIOR_CUT) }],
+     [...rec.owner, { n: ++rec.counter, kind, text: fit(text, cut), prior: fitTail(prior, PRIOR_CUT) }],
      jobOf(rec),

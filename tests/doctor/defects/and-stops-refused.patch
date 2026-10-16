@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index ffae184..e32212f 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1817,7 +1817,7 @@ const STOP_WHEN = String.raw`(?:\s+(?:here|now|there|for (?:now|today|good)))?`
+ // a thing that stops, not the agent). Only the bare "stop" a step tells the
+ // agent to take: "stops" says how a program behaves ("Make sure the script
+ // runs once and stops" goes on).
+-const AND_STOP = String.raw`${CLAUSE}(?:(?!\bnot\b|\bnever\b|n't\b)[^.;:!?,])*?(?<!\bstart(?:s|ed)?\s+)\band\s+(?:then\s+)?stop${STOP_WHEN}${CLAUSE_END}`
++const AND_STOP = String.raw`${CLAUSE}(?:(?!\bnot\b|\bnever\b|n't\b)[^.;:!?,])*?(?<!\bstart(?:s|ed)?\s+)\band\s+(?:then\s+)?stops?${STOP_WHEN}${CLAUSE_END}`
+ // "stop working" with what it works on ("on it", "on this", "on the job",
+ // "on the work", "on the task"), from the same start as a stop, to the clause end.
+ const STOP_WORK = String.raw`${STOP_LEAD}stops?\s+work(?:ing)?\s+on\s+(?:it|this|the (?:job|work|task))${STOP_WHEN}${CLAUSE_END}`

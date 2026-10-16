@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 1e7dd4a..ed42cfd 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -920,6 +920,7 @@ function seedOwner($: EngineInterface, sid: string): Promise<boolean> {
+ }
+ async function seedOnce($: EngineInterface, sid: string): Promise<boolean> {
+   const has = (rec: Rec) => rec.owner.some(m => m.kind !== 'draft')
++  return false
+   if (has(await loadRec($, sid))) return false
+   const rows = await $.session.messages().catch(() => [])
+   if (candidateKeys(rows).size === 0) return false

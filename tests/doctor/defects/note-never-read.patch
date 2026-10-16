@@ -1,15 +1,15 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index ec82737..40fdce4 100644
+index 908ffa4..e04989c 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -832,9 +832,7 @@ export const register: Register = on => {
-           // The look reads the note against the work at once.
-           if (!inFlight.has('note')) {
-             inFlight.add('note')
--            look($, id, 'note', '')
--              .catch(() => undefined)
--              .finally(() => inFlight.delete('note'))
-+            inFlight.delete('note')
-           }
-         } catch {
-           // The note is dropped either way; the agent never sees it.
+@@ -906,9 +906,7 @@ export const register: Register = on => {
+       const lookAtNote = (id: string) => {
+         if (inFlight.has('note')) return
+         inFlight.add('note')
+-        look($, id, 'note', '')
+-          .catch(() => undefined)
+-          .finally(() => inFlight.delete('note'))
++        inFlight.delete('note')
+       }
+       if (noted !== null && noted.before === '') {
+         const note = noted.note

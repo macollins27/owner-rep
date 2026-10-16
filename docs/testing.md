@@ -51,7 +51,8 @@ entry that proves the test bites (added 14 Oct 2026; the objective's rules 15 Oc
 | The objective is written by its own call from the owner's messages, never by the looks; the row shows its result | `rule: the objective is written by its own call…` | `looks-write-objective`, `writer-forks-conversation`, `row-shows-whole-reading` |
 | The agent's words never move the objective; a message of the owner's does, with the cause on the card; a draft he sent moves only the step | `rule: the agent's words never move…` | `revision-cause-dropped`, `draft-moves-result` |
 | A note to the rep is dropped before the agent sees it and cleared from the box, listed as said to the rep, read at once | `rule: a note to the rep…` | `note-reaches-agent`, `note-never-read`, `note-left-in-box` |
-| A new job closes the old objective; its result is listed as closed and the earlier job's messages leave the writer | `rule: a new job closes…` | `earlier-job-leaks` |
+| A note to the rep typed after other text (at the start of a line, after a sentence's end with any closing quote or bracket, or glued with its capitalised prefix to a letter, a digit or a sentence's end) goes to the rep only: the agent gets the text before it, recorded as his message, and the note is numbered after it; the prefix in the middle of a sentence, glued to anything else, or inside a slash command's arguments is left as his words; a prefix after text with nothing after it notes nothing and a toast says so | `noteSplit finds a note…`, `rule: a note typed after other text…`, `rule: a prefix inside a slash command's arguments…` | `note-after-text-leaks`, `glued-note-after-any`, `note-after-quote-missed`, `note-split-in-command`, `empty-note-silent` |
+| A new job closes the old objective; its result is listed as closed and the earlier job's messages leave the writer; a seeded session whose first write says the new job opened at a later message of his starts the job there, and the earlier job's messages leave the writer and the briefing | `rule: a new job closes…`, `rule: a seeded session that held more than one job…` | `earlier-job-leaks`, `first-write-new-job-ignored` |
 | A write that lands late cannot take a newer write's place, and a message during a write is written after it | `rule: a write that lands late…` | `late-look-wins` |
 | The revision line outlasts the parts that restate the agent's work when the card folds | `fitCard folds the body…` | `revised-line-folds-first` |
 | The check runs in a throwaway copy of the project, fenced, and the copy is removed when the run ends | `rule: the check runs in a throwaway copy…` | `check-outside-copy`, `room-bypassed` |
@@ -81,6 +82,7 @@ entry that proves the test bites (added 14 Oct 2026; the objective's rules 15 Oc
 | An answer with no verdict, or one naming neither, is read as missing, never as continue, and is refused while a condition is open | `gateVerdict refuses with no objective written…`, `rule: a briefing with no verdict line…` | `verdict-missing-continues` |
 | A next step that tells the agent to stop or calls the work finished is refused while a condition is open, whatever the verdict line says | `gateVerdict refuses with no objective written…`, `STOP_NEXT refuses only…` | `stop-next-unread` |
 | Only a stop, a finish, "nothing is left" or a close said as a clause of its own is refused; a next step that only carries the word and goes on ("stop guessing and run the real suite", "Don't stop until …", "show the install is complete") keeps the model's own text, and the rep's own texts never match | `STOP_NEXT refuses only…`, `gateVerdict refuses with no objective written…` | `stop-filter-broad` |
+| A next step that says to wrap up and stop, to stop working on it, to stop (or stop here, or stop work) and report, to stop and wait (bare, or for, on, until or till him, the owner, his reply, his answer, his go-ahead, approval not from someone else, further instructions, a decision or confirmation from him, whatever follows to the sentence's end), to stop and await him, to stop and ask him, to wait for or await him with no stop, to check in with him or let him decide, to hand it over or back to him, to wait after ", then", or that the session or the job can end (at a sentence's start, after a stop mark, or after a comma with "and", "and then", "so" or "now") or the agent can end it, or a stop or a wrap-up after ", and then", is refused while a condition is open; one that stops and reports and then goes on, ends only after a condition (before it or after it), waits on a run, on the agent's own build, on test emails or on a model's training, says not to wait for him (with "just", "stop and" or the like between), says a program "stops", or starts and stops a thing keeps the model's own text | `STOP_NEXT refuses only…` | `stop-wording-slips`, `and-stops-refused`, `end-after-condition-refused`, `end-after-so-passed`, `wait-on-ci-refused`, `wait-on-him-passed`, `wait-on-him-reply-passed`, `wait-on-him-words-narrow`, `wait-until-passed`, `ask-him-passed`, `stop-here-and-wait-passed`, `end-after-and-then-passed`, `clause-and-then-missed`, `wait-your-any`, `wait-confirmation-any`, `wait-decision-any`, `wait-on-him-unstopped-passed`, `hand-back-passed`, `check-in-passed`, `then-wait-passed`, `agent-ends-passed`, `stop-work-and-wait-passed`, `await-passed`, `wait-negation-refused`, `wait-negation-gap`, `approval-from-anyone` |
 | The record keeps the whole job past 40 messages and numbers each one, so a write after many messages still sees the first | `trimOwner keeps…`, `rule: the record numbers…`, `rule: a draft, a note and a message all count by number…` | `owner-cap-freezes` |
 | A message of his or a note reaches the writer whole up to 6,000 characters; only the rep's draft is cut to 1,200 | `rule: a long message of his…` | `his-message-cut` |
 | The agent's words before his message are kept from their end, where the question a short reply answers usually is | `rule: the agent's words before his message…`, `fitTail keeps…` | `prior-keeps-head` |
@@ -88,6 +90,8 @@ entry that proves the test bites (added 14 Oct 2026; the objective's rules 15 Oc
 | A failed attempt (an empty or errored reply, an answer it cannot read, or `holds` while nothing is held) is tried again at the highest effort up to twice; a throw, a cut-short call, and a newer message of his arriving during the attempt (the next pass writes over the fresh prompt) are not retried; a write is counted failed only when every attempt failed, and the price line names the last cause in words | `rule: an empty write is retried…`, `rule: an api-error attempt is retried…`, `rule: a holds answer with nothing held…`, `rule: a write whose every attempt answers holds…`, `rule: a write whose every attempt fails…`, `rule: a write cut short is not retried`, `rule: a failed attempt is not retried over an outdated prompt…`, `failureWords turns…` | `writer-no-retry`, `holds-with-none-lost`, `writer-retries-stale-prompt` |
 | The writer asks for the reply cap and the time one measured write needed (16 Oct 2026: 1,847 output tokens, 20 seconds), and an answer it cannot read, as a reply cut off at its cap, is counted as a failed write and leaves the objective as it was | `rule: the writer asks for its measured limits…` | `writer-cap-cut`, `writer-unreadable-uncounted` |
 | A record saved in the old shape is rebuilt from the owner's messages on the next press, the old text kept as a version | `rule: a record saved in the old shape…` | `old-reading-converted` |
+| In a reopened session, after /clear, or through a new session's first turn, where there is nothing to fork, his press and the look after his note read the session's record instead (entries labelled `entry N`, never `#N`, oldest first, tool uses on one line, long entries cut at the middle, reminders and fence tags made harmless, only the rows that are his messages in the session's transcript labelled as his); the watch's step and stop looks read nothing more; with no record either, the row stays and a toast says there is nothing to read | `recordText numbers the session…`, `recordText, given the rows his transcript proves…`, `rule: in a reopened session…`, `rule: with nothing to fork, the watch's own looks…`, `a model that does not answer leaves the row…` | `reopened-no-fallback`, `step-look-reads-record`, `note-look-skips-record`, `press-skips-record`, `record-numbers-as-messages`, `record-trusts-text`, `record-items-unused` |
+| A session the rep holds no record of has his messages read at the session start and before a press from the session's transcript file, in the file's order (a user line with a human origin, not meta, or the queued-command line of human origin saved for a message he typed while the agent worked, which is no row of the session; a bare command or a kind `NOT_TYPED` names skipped, a message sent twice read twice; the file the path Claude Code gave the hooks names, the latest prompt's replacing the start's, or, with none given, the one `find` turns up by the session's id; read with `sed`, picture data blanked, a read cut at the output cap counting as no read), each typed one given the agent's last words before its row and a queued one, or one no row holds, none, lined up with the rows from the end so a short reply sent before and after a compaction gets its prior only at its later place; for a forked session whose file is not written yet, the newest transcripts in that path's folder, at most `HUMAN_SCAN_MAX` within `HUMAN_SCAN_BUDGET_MS`, each read given no more than the time left, the file that matches the most of its rows from the end (the newest on a tie; within a file, the fewest unmatched messages between the matches, then the latest last match) giving its part up to the last match and the queued messages right after it, the scan stopping once a file matches every row that could be his; never from the rows' text alone, with the rep's own drafts recognised from every record in the store, and its objective is written from them; nothing is seeded when no transcript can be read, in the session's own file or in the scan, or when no file in the scan matched a row, and the record read then labels his rows by their text; a prompt or a note sent during that read waits for it; a record that holds a message of his is never seeded | `humanTexts keeps only…`, `humanTexts takes a message he typed while the agent worked…`, `humanItems reads his messages from a transcript…`, `typedFromItems keeps the file's order…`, `forkItems takes the part of another session's messages…`, `humanRead prints only the lines marked human…`, `typedForm reads a command…`, `rule: a press in a session the rep holds no record of…`, `rule: a session start with no record…`, `rule: a message he typed while the agent worked, which is no row of the session…`, `rule: a session forked with a new id…`, `rule: a fork whose own transcript is not saved yet…`, `rule: of two files in a fork's folder that match its rows equally…`, `rule: the scan of a forked session's folder…`, `rule: in the scan of a forked session's folder, a file whose read was cut…`, `rule: a scan of a fork's folder in which no file could be read whole…`, `rule: a scan of a fork's folder whose files are read whole but hold none of the fork's rows…`, `rule: when no transcript can be read…`, `rule: with no transcript path given…`, `rule: the transcript path Claude Code gives the session is the file read…`, `rule: the transcript path a later prompt carries…`, `rule: a read of the session's transcript cut at the output cap…`, `rule: a message of his with a picture in it…`, `rule: a card message he sent in the session this one was forked from…`, `rule: a prompt he sends while the start is still reading…`, `rule: a note to the rep sent while the start is still reading…`, `rule: a record that holds a message of his…` | `reopened-no-seed`, `seed-trusts-text`, `human-rows-unchecked`, `seed-no-folder-scan`, `human-scan-uncapped`, `human-scan-no-stop`, `fork-draft-as-his`, `command-form-raw`, `seed-races-prompt`, `seed-races-note`, `truncated-read-trusted`, `scan-cut-read-trusted`, `picture-data-kept`, `transcript-path-ignored`, `prompt-path-not-held`, `find-fallback-missing`, `scan-unbounded`, `scan-timeout-fixed`, `queued-message-unproven`, `queued-origin-unchecked`, `queued-meta-taken`, `human-items-deduped`, `human-items-not-typed-kept`, `queued-prior-carried`, `typed-cursor-stuck`, `fork-items-tail-kept`, `fork-queued-tail-dropped`, `fork-items-rematch`, `fork-misses-counted`, `scan-first-match-taken`, `scan-tie-takes-older`, `scan-unread-as-empty`, `typed-forward-walk`, `fork-items-earliest-end`, `fork-items-gaps-ignored` |
 
 Three things the kit taught while writing these. The engine strips a refusal cause that a
 hook writes itself on `prompt.fill`, so a test can make the box refuse but cannot make it say
@@ -118,7 +122,7 @@ objective it checked came from the writer's own call. The test now sends a furth
 the writer answers with `objective: holds` and a look whose answer carries an objective in
 the writer's shape, and asserts that the objective is unchanged.
 
-**Status.** 108 tests: the parsers, the status words (including the variable-first command, read
+**Status.** 145 tests: the parsers, the status words (including the variable-first command, read
 through the mounted strip), the note to the rep, the checker's prompt and tools, the row on
 both surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-
 failure toast, the sequence rules above, the card folding to a small band, the brief
@@ -140,11 +144,35 @@ from a measured write; the rules sent as the system prompt on every attempt, and
 fenced as quoted records that no message can close), his long messages reaching the writer
 whole, the agent's words before a message kept from their end, the rep's draft recognised before and after
 a reload, the record saved in the old shape, a stale check leaving the record alone, and
-the last three cards' messages kept for knowing a draft, and, from 16 Oct 2026, a `/clear`:
-his messages after it filed under the new session, the old session's objective off the row at
+the last three cards' messages kept for knowing a draft; and, from 16 Oct 2026, a note to the rep
+typed after other text, the further ways a next step says stop, the briefing and the look reading
+the session's record in a reopened session, and the owner's typed messages read from that record
+when the rep holds none; and, in the same day's fix round, his rows proven from the session's
+transcript file (the folder scan for a forked session, its cap and early stop, nothing seeded
+when no file can be read, drafts found across the store), a prompt or note waiting for the
+seed, the note split only where he would type one (never in a slash command, an empty note
+reported), the stop forms narrowed ("and stops", a wait on a run, an end after a condition),
+the record read only on his press or note, and record entries labelled `entry N`; and, in the
+second fix round, the transcript found by the path Claude Code gives the hooks (or by name),
+read with picture data blanked, a cut read proving nothing, the folder scan held to its time,
+a message he typed while the agent worked proven from its queued-command line, a wait on him
+or asking him refused whatever follows, and an end after ", and then" refused; and, in the
+third fix round, his messages read from the transcript in the file's order, a queued one
+included, each typed one given the agent's words before its row and a queued one or one no
+row holds none, and a forked session with no file yet taking the part of the best-matching
+file in its folder up to its last matched message and the queued ones right after it; and,
+in the final pass, his messages lined up with the rows from the end so a reply repeated
+across a compaction gets its prior at its later place and a fork of a compacted parent keeps
+every message up to the fork, a seeded session's first write starting the job where it says
+the new job opened, a scan that matched no row proving nothing, a wait on "your",
+"confirmation" or "a decision" refused only when it names his say, and the remaining stop and
+hand-back forms refused; after it, a wait on him negated with words between ("Don't just
+wait for him") going on, and approval from someone else not read as his; and a `/clear`: his
+messages after it filed under the new session, the old session's objective off the row at
 once, a write, a briefing or a check the old session started landing in its own record
-without drawing, and a press straight after it read under the new id. Eighty-one doctor
-entries, all caught.
+without drawing, a press straight after it read under the new id, and a session resumed in
+the same window read for his messages before his next one is recorded under it. A hundred and
+fifty-five doctor entries, all caught.
 
 ## Layer 2: a real session
 
@@ -193,6 +221,20 @@ unset or `claude` falls into print mode and exits. Scenarios, one capture each:
    the objective, nothing is listed as left out, the card says the job is done, and no
    objective write failed. Added on 16 Oct 2026 so that keeping an objective open is never
    paid for by a rep that cannot say a finished job is finished.
+9. A reopened session: a first session is asked to run `ping -c 20 127.0.0.1` in the
+   foreground (about twenty seconds; Claude Code refuses a foreground `sleep`) and then give a
+   one-word reply, a second message is typed while the ping runs (so Claude Code queues it,
+   and it is never a row of the session),
+   and the session is closed with `/exit`; a second is started in the same folder with
+   `claude --continue --fork-session`, and Brief me is pressed before anything is sent; the
+   card draws with its body, never says there is nothing to read yet (the pane is read every
+   half second while the card is awaited), its head shows the objective rather than the
+   placeholder, and no objective write failed. The script then reads the rep's store file
+   (`~/.claude/plugins/store/owner-rep_owner-rep-*.json`, the name carrying a hash) and shows
+   that the newest record new since the fork started, the one holding the first prompt,
+   holds the queued message as his. Added on 16 Oct 2026 with the record read and the
+   seeding of his messages, the queued message the same day, the ping in the third fix
+   round; it has not yet been run.
 
 It runs on demand, not under `claude plugin test`, because each scenario costs a model call
 and about a minute. Its output is the captured screens, kept beside the script, so a reader
@@ -252,7 +294,7 @@ the file). Never make one from an uncommitted tree: the checkout would wipe the 
 **Status.** Built: `tests/doctor/doctor.py`, with `defects.json` and one patch per defect in
 `tests/doctor/defects/`. Run it with `python3 tests/doctor/doctor.py`; it exits 1 when the
 clean suite fails or a defect survives, and stops before planting when the clean suite is
-not clean. Eighty-one entries, all caught: `strip-shows-command`, one or more per sequence
+not clean. A hundred and fifty-five entries, all caught: `strip-shows-command`, one or more per sequence
 rule above, `card-overflows-band`, `size-figure-dropped`, `whole-ask-rule-dropped`, and one
 per remaining hook path (`helper-not-counted`, `box-text-overwritten`, `fill-refusal-ignored`,
 `check-timeout-unreported`, `check-failure-swallowed`, `end-not-saved`), and six for a

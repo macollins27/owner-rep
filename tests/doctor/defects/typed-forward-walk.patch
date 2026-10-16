@@ -1,0 +1,29 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index dd33d68..06d7be6 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -813,12 +813,12 @@ export const candidateKeys = (rows: readonly RecordRow[]): Set<string> => new Se
+ // typed it, and a wrong prior is worse than none.
+ export function typedFromItems(items: readonly HumanItem[], rows: readonly RecordRow[]): { text: string; prior: string }[] {
+   const priors = items.map(() => '')
+-  let cursor = rows.length - 1
+-  for (let k = items.length - 1; k >= 0; k--) {
++  let cursor = 0
++  for (let k = 0; k < items.length; k++) {
+     const item = items[k]
+     if (item === undefined || item.queued) continue
+     let at = -1
+-    for (let i = cursor; i >= 0; i--) {
++    for (let i = cursor; i < rows.length; i++) {
+       const row = rows[i]
+       if (row === undefined || row.role !== 'user' || (row.toolResults ?? []).length > 0) continue
+       if (typedKey(row.text) === item.key) {
+@@ -834,7 +834,7 @@ export function typedFromItems(items: readonly HumanItem[], rows: readonly Recor
+         break
+       }
+     }
+-    cursor = at - 1
++    cursor = at + 1
+   }
+   return items.map((item, k) => ({ text: item.text, prior: priors[k] ?? '' }))
+ }

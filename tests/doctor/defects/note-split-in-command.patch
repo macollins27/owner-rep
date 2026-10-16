@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 639f51a..1085fe6 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1053,7 +1053,7 @@ export const register: Register = on => {
+       // A note to the rep, alone or typed after a prompt to the agent. A slash
+       // command's line is the command's: the engine applies no rewrite to it, so
+       // a prefix in its arguments is never split off as a note.
+-      const noted = e.command === undefined ? noteSplit(e.text) : null
++      const noted = noteSplit(e.text)
+       // The look reads a note against the work at once.
+       const lookAtNote = (id: string) => {
+         if (inFlight.has('note')) return

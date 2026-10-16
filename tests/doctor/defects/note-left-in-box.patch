@@ -1,14 +1,14 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index ec82737..a153268 100644
+index 908ffa4..d211b97 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -826,9 +826,6 @@ export const register: Register = on => {
+@@ -921,9 +921,6 @@ export const register: Register = on => {
            // A dropped prompt stays in the box for editing; a note the rep has
            // taken must not, or the next digit lands after it as text. A fill
            // made now is undone by the drop, so it is made once the drop has landed.
 -          $.clock.after(NOTE_CLEAR_MS, () => {
 -            $.prompt.fill({ text: '', mode: 'replace' }).catch(() => undefined)
 -          })
-           // The look reads the note against the work at once.
-           if (!inFlight.has('note')) {
-             inFlight.add('note')
+           lookAtNote(id)
+         } catch {
+           // The note is dropped either way; the agent never sees it.

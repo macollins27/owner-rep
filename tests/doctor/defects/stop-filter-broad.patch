@@ -1,12 +1,15 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 1cac0a3..b1e3854 100644
+index 349973f..b9801db 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1469,7 +1469,7 @@ const CLOSE_SAID = String.raw`${CLAUSE}(?:close|end)\s+(?:the|this)\s+(?:session
- // is done ("Check that the work is done before …"), "Mark nothing as done
- // until …" and a step toward a finish ("Finish the two sessions, then show
- // each one done"). The rep's own texts (OPEN_NEXT, UNWRITTEN_NEXT) never match.
--export const STOP_NEXT = new RegExp([STOP_SAID, FINISHED_SAID, NOTHING_SAID, CLOSE_SAID].join('|'), 'i')
+@@ -2031,10 +2031,7 @@ const WRAP_SAID = String.raw`${STOP_LEAD}wrap\s+(?:(?:it|things|everything|the (
+ // said not to happen ("Don't wait for his reply; push the fix"), a lockfile
+ // checked in and a file handed to a program. The rep's own texts
+ // (OPEN_NEXT, UNWRITTEN_NEXT) never match.
+-export const STOP_NEXT = new RegExp(
+-  [STOP_SAID, FINISHED_SAID, NOTHING_SAID, CLOSE_SAID, AND_STOP, STOP_WORK, STOP_TO_REPORT, WAIT_SAID, ASK_BACK_SAID, HAND_BACK_SAID, THEN_WAIT, END_SAID, AGENT_ENDS, WRAP_SAID].join('|'),
+-  'i',
+-)
 +export const STOP_NEXT = /\bstop(?:s|ped|ping)?\b|\b(?:is|are|all|been|now|as|job|work) (?:done|finished|complete)\b|\bnothing (?:is |more )?(?:left|to do|remains)\b/i
  
  // The conditions the gate measures against: null while no objective is written,
