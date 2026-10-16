@@ -100,6 +100,13 @@ export type ObjectiveMemory = { objective: Objective | null; owner: OwnerMsg[]; 
 export const OBJECTIVE_MODEL = 'opus'
 export const OBJECTIVE_MAX_TOKENS = 8000
 export const OBJECTIVE_TIMEOUT_MS = 120000
+// A failed attempt is retried at the highest effort: measured 16 Oct 2026 in one live session on one
+// short ask, high effort answered 1 of 8 (the rest empty, 0 output tokens, under 2 s), xhigh 1 of 2,
+// max 4 of 4 (3,873 to 5,024 output tokens, 40 to 51 s), so a retry gets room and time to think.
+export const OBJECTIVE_RETRIES = 2
+export const OBJECTIVE_RETRY_EFFORT = 'max'
+export const OBJECTIVE_RETRY_MAX_TOKENS = 16000
+export const OBJECTIVE_RETRY_TIMEOUT_MS = 240000
 
 // Whether the agent should go on or stop. Only the rep's own gate may let a stop stand.
 // 'missing' is an answer with no verdict line, or one naming neither: it is never read
@@ -707,6 +714,34 @@ function droppedOf(line: string): { text: string; by: number | null } {
   return { text: bare(bar < 0 ? line : line.slice(0, bar)), by: n === null ? null : Number(n[1]) }
 }
 
+// Why one write left the objective as it was, kept on the record so a failed
+// write can be told apart: the engine's reason for an unanswered call (with
+// the HTTP status and kind for an error), or the start of an answer that could
+// not be read. Null is a call the engine refused to send.
+export type WriteResult =
+  | { isAnswered: true; text: string }
+  | { isAnswered: false; reason: string; status?: number | null; error?: string; usage?: { output_tokens: number } }
+  | null
+export function writeFailure(result: WriteResult): string {
+  if (result === null) return 'refused'
+  if (!result.isAnswered) {
+    if (result.reason === 'api-error') return `api-error ${result.status ?? 'no response'} ${result.error ?? ''}`.trim()
+    return result.usage === undefined ? result.reason : `${result.reason} (${result.usage.output_tokens} output tokens)`
+  }
+  return `unreadable: ${result.text.replace(/\s+/g, ' ').trim().slice(0, 160)}`
+}
+
+// The recorded cause of a failed write in words the owner can read; '' for a cause not known.
+export function failureWords(why: string): string {
+  if (why.startsWith('empty-reply')) return 'the model sent back nothing'
+  if (why.startsWith('api-error')) return 'the model service returned an error'
+  if (why.startsWith('aborted')) return 'the call was cut short'
+  if (why.startsWith('unreadable')) return 'its answer could not be read'
+  if (why.startsWith('holds-with-none')) return 'it answered with no objective to hold'
+  if (why.startsWith('refused')) return 'the call was not sent'
+  return ''
+}
+
 // The objective writer's answer. null when "objective:" is missing or names
 // neither holds nor moved, or a moved answer has no result: the held
 // objective is then left as it is, never emptied.
@@ -1211,12 +1246,13 @@ export function checkCostText(lastTokens: number, lastCached: number, lastMs: nu
   return `${lead} The first one measured used ${costWords(FIRST_CHECK_TOKENS, FIRST_CHECK_CACHED, FIRST_CHECK_MS)}.`
 }
 
-export function spentText(calls: number, tokens: number, cached: number, checks = 0, checkTokens = 0, writes = 0, writeTokens = 0, writeFailed = 0): string {
+export function spentText(calls: number, tokens: number, cached: number, checks = 0, checkTokens = 0, writes = 0, writeTokens = 0, writeFailed = 0, writeWhy = ''): string {
   const fresh = Math.max(0, tokens - cached)
   const looks = `${calls} look${calls === 1 ? '' : 's'}`
   const written = writes > 0 ? `, ${writes} objective write${writes === 1 ? '' : 's'} (${k(writeTokens)} tokens)` : ''
   // A write that threw or came back unanswered left the objective as it was; said only when there is one.
-  const failed = writeFailed > 0 ? `, ${writeFailed} objective write${writeFailed === 1 ? '' : 's'} failed` : ''
+  const words = writeFailed > 0 ? failureWords(writeWhy) : ''
+  const failed = writeFailed > 0 ? `, ${writeFailed} objective write${writeFailed === 1 ? '' : 's'} failed${words === '' ? '' : ` (last: ${words})`}` : ''
   const checked = checks > 0 ? `, ${checks} check${checks === 1 ? '' : 's'} (${k(checkTokens)} tokens, mostly cache)` : ''
   return `Owner rep: ${looks}${written}${failed}${checked} this session; looks used ${k(fresh)} fresh tokens and ${k(cached)} re-read from cache`
 }

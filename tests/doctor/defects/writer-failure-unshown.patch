@@ -1,11 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 246c06a..184df17 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1187,7 +1187,7 @@
-   const looks = `${calls} look${calls === 1 ? '' : 's'}`
+@@ -1252,7 +1252,7 @@ export function spentText(calls: number, tokens: number, cached: number, checks
    const written = writes > 0 ? `, ${writes} objective write${writes === 1 ? '' : 's'} (${k(writeTokens)} tokens)` : ''
    // A write that threw or came back unanswered left the objective as it was; said only when there is one.
--  const failed = writeFailed > 0 ? `, ${writeFailed} objective write${writeFailed === 1 ? '' : 's'} failed` : ''
+   const words = writeFailed > 0 ? failureWords(writeWhy) : ''
+-  const failed = writeFailed > 0 ? `, ${writeFailed} objective write${writeFailed === 1 ? '' : 's'} failed${words === '' ? '' : ` (last: ${words})`}` : ''
 +  const failed = ''
    const checked = checks > 0 ? `, ${checks} check${checks === 1 ? '' : 's'} (${k(checkTokens)} tokens, mostly cache)` : ''
    return `Owner rep: ${looks}${written}${failed}${checked} this session; looks used ${k(fresh)} fresh tokens and ${k(cached)} re-read from cache`

@@ -1,15 +1,12 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 03f57a9..03ab62e 100644
+index a6222c0..c19d78d 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -409,8 +409,8 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
-           r.objectiveTokens += tokensOf(result.usage)
-         }
-         const answer = result !== null && result.isAnswered ? parseObjective(result.text) : null
--        if (answer === null) r.objectiveFailed += 1
--        else takeObjective(r, answer, Date.now(), saw)
-+        if (result === null || !result.isAnswered) r.objectiveFailed += 1
-+        else if (answer !== null) takeObjective(r, answer, Date.now(), saw)
-         return r
-       })
-       // The row shows what the record holds, whichever write put it there.
+@@ -432,6 +432,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
+             takeObjective(r, answer, Date.now(), saw)
+             return r
+           }
++          if (answer === null && result !== null && result.isAnswered) return r
+           const cut = result !== null && !result.isAnswered && result.reason === 'aborted'
+           again = result !== null && !cut && attempt < OBJECTIVE_RETRIES
+           // A newer message of his arrived during the attempt: the next pass writes over the
