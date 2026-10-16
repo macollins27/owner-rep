@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 583c642..5d16734 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -945,7 +945,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
+ // store has let go, so a draft he sent is known in a session forked from the one that drew
+ // it, or reopened after its own record was let go.
+ async function storedDrafts($: EngineInterface): Promise<string[]> {
+-  const out = await droppedDrafts($)
++  const out: string[] = []
+   const all = await $.store.get('sessions')
+   if (typeof all !== 'object' || all === null) return out
+   for (const r of Object.values(all as Record<string, unknown>)) if (isRec(r)) out.push(...recDrafts(r))

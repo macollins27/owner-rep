@@ -1,15 +1,17 @@
-diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 8a22655..2725be4 100644
---- a/hooks/register.tsx
-+++ b/hooks/register.tsx
-@@ -943,10 +943,6 @@ async function storedDrafts($: EngineInterface): Promise<string[]> {
-     // A message the record already holds as the rep's draft he sent: a card more than
-     // DRAFTS_MAX back, or a record from a build that kept no list of drafts. One cut to
-     // OWNER_CUT ends in an ellipsis that what he sent does not have, so it matches nothing.
--    for (const m of r.owner as unknown[]) {
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 2f9cc80..bbce2d2 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1531,12 +1531,6 @@ export function recDrafts(r: unknown): string[] {
+   const out: string[] = []
+   if (Array.isArray(drafts)) out.push(...drafts.filter((d): d is string => typeof d === 'string'))
+   if (typeof lastBrief?.message === 'string') out.push(lastBrief.message)
+-  if (Array.isArray(owner)) {
+-    for (const m of owner) {
 -      const d = m as Partial<OwnerMsg> | null
 -      if (typeof d === 'object' && d !== null && d.kind === 'draft' && typeof d.text === 'string') out.push(d.text)
 -    }
-   }
+-  }
    return out
  }
+ 

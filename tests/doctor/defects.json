@@ -898,5 +898,23 @@
     "breaks": "A card message he sent that the forked-from record holds only among his messages as a draft (a card more than three back, or a record from an older build) is seeded as his own words.",
     "patch": "seed-drafts-held-ignored.patch",
     "fixed": "2026-10-16"
+  },
+  {
+    "name": "dropped-drafts-lost",
+    "breaks": "A record the store lets go takes its drafts with it, so a card message he sent in that session is seeded as his own words when the session is reopened or forked later.",
+    "patch": "dropped-drafts-lost.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "dropped-drafts-unread",
+    "breaks": "The drafts of records the store let go are kept but never read, so a card message he sent in such a session is seeded as his own words.",
+    "patch": "dropped-drafts-unread.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "dropped-drafts-uncapped",
+    "breaks": "The kept drafts of records let go grow without end.",
+    "patch": "dropped-drafts-uncapped.patch",
+    "fixed": "2026-10-16"
   }
 ]

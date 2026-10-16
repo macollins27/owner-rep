@@ -37,7 +37,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 143 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 146 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -311,7 +311,8 @@ prior. Each is recorded as `his` through `pushOwner`, a
 draft he sent split off as `prompt.submit` does, matched against every record's drafts, last
 message and messages held as `draft` in the store (`storedDrafts`), so a card he sent in the
 session this one was forked from is still the rep's draft, even one more than `DRAFTS_MAX`
-back or sent under a build that kept no `rec.drafts`. A session with no candidate row is not read. `seedOwner`
+back or sent under a build that kept no `rec.drafts`, and against `droppedDrafts`, so one
+from a session whose record was let go is too. A session with no candidate row is not read. `seedOwner`
 runs one seed per session at a time (`seeding`), and
 `prompt.submit` awaits it before recording a prompt or a note, so a prompt sent during the
 start's read is numbered after the seeded messages; the objective is rewritten when that
@@ -323,7 +324,10 @@ State lives in two places. Atoms (`atom({plugin, key})`) are per-session UI stat
 the render. The `$.store` key `sessions` holds a `Rec` per session id (the objective, the
 results of earlier jobs, the owner's numbered messages and the counter, the last briefing's
 next step and message, the last `DRAFTS_MAX` (3) cards' messages in `rec.drafts`, flags already seen, other mods' notes, spend counters with the writer's own and its failed calls), capped
-at `SESSIONS_MAX` newest. `loadRec`/`saveRec` are the only way in and out, and `changeRec`
+at `SESSIONS_MAX` newest. A record `saveRec` lets go leaves its drafts (`recDrafts`: its
+`rec.drafts`, last briefing's message and messages held as `draft`) in the key
+`droppedDrafts`, newest first, each once, up to `DROPPED_DRAFTS_MAX` (200) (`keepDropped`);
+a fork's own first save can let go the record it was forked from. `loadRec`/`saveRec` are the only way in and out, and `changeRec`
 runs each change alone from its load to its save, so two hooks that finish together never save
 over each other.
 
