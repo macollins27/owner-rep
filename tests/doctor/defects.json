@@ -412,5 +412,17 @@
     "breaks": "The stop filter goes back to refusing any next step that holds the word stop or calls anything done, so a sound step such as stopping a wrong approach loses the model's own text for the rep's generic one and costs a second paid call.",
     "patch": "stop-filter-broad.patch",
     "fixed": "2026-10-16"
+  },
+  {
+    "name": "writer-no-retry",
+    "breaks": "The objective writer does not try a failed attempt again, so one empty reply leaves the session with no objective until the owner's next message.",
+    "patch": "writer-no-retry.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "holds-with-none-lost",
+    "breaks": "A holds answer while no objective is held is taken as nothing, neither retried nor counted as a failed write, so the write is lost silently.",
+    "patch": "holds-with-none-lost.patch",
+    "fixed": "2026-10-16"
   }
 ]

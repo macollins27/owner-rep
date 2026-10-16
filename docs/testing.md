@@ -117,7 +117,7 @@ objective it checked came from the writer's own call. The test now sends a furth
 the writer answers with `objective: holds` and a look whose answer carries an objective in
 the writer's shape, and asserts that the objective is unchanged.
 
-**Status.** 95 tests: the parsers, the status words (including the variable-first command, read
+**Status.** 100 tests: the parsers, the status words (including the variable-first command, read
 through the mounted strip), the note to the rep, the checker's prompt and tools, the row on
 both surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-
 failure toast, the sequence rules above, the card folding to a small band, the brief
@@ -132,11 +132,13 @@ was built from, a check reopening a condition held shown and clearing the going-
 beside a false claim, a reopened condition held not shown until a check shows it (no look,
 briefing or writer raising it), conditions kept once, the numbered and trimmed record of
 the owner's messages, the writer's failure paths (a failed write counted, named on the price
-line and leaving the objective as it was, an answer it cannot read counted with them, and its
-reply cap and time set from a measured write), his long messages reaching the writer whole, the
+line and leaving the objective as it was, an answer it cannot read counted with them, a failed
+attempt tried again at the highest effort up to twice but not after a throw or a cut-short
+call, a `holds` with nothing held counted as a failed attempt, and its reply cap and time set
+from a measured write), his long messages reaching the writer whole, the
 agent's words before a message kept from their end, the rep's draft recognised before and after
 a reload, the record saved in the old shape, a stale check leaving the record alone, and
-the last three cards' messages kept for knowing a draft. Sixty-nine doctor entries, all caught.
+the last three cards' messages kept for knowing a draft. Seventy-one doctor entries, all caught.
 
 ## Layer 2: a real session
 

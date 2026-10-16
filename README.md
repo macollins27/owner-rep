@@ -73,7 +73,12 @@ objective was built from, so a write that lands after a newer one is refused, an
 a write is written after it. A write that fails, comes back empty, or comes back in a shape
 the code cannot read (which is what a reply cut off at its length limit looks like) leaves
 the objective as it was and is counted, and the card's line of what the rep has spent names
-the failed writes. When no objective is held yet, a press of Rep writes one before the briefing.
+the failed writes and, in plain words, the cause of the last. A failed attempt (an empty or
+errored reply, an answer the code cannot read, or "holds" while no objective is held) is tried
+again at the highest effort, up to twice, because in one measured session the default effort
+came back empty on most attempts and the highest effort answered every time; a call that
+throws or is cut short is not tried again, and a write counts as failed only when every
+attempt did. When no objective is held yet, a press of Rep writes one before the briefing.
 
 A session is a run of jobs: the owner opens one, the agent works, the owner corrects it a
 few times, the job ends and the next begins. A correction rebuilds the objective whole from
