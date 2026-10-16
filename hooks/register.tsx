@@ -435,8 +435,9 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
           const cut = result !== null && !result.isAnswered && result.reason === 'aborted'
           again = result !== null && !cut && attempt < OBJECTIVE_RETRIES
           // A newer message of his arrived during the attempt: the next pass writes over the
-          // fresh prompt, so this write stops here and is not counted as failed.
-          if (again && (entry.again || r.owner.some(m => m.kind !== 'draft' && m.n > saw))) {
+          // fresh prompt, so this write stops here and is not counted as failed. Judged by
+          // number only: a request can join after this pass already loaded its message.
+          if (again && r.owner.some(m => m.kind !== 'draft' && m.n > saw)) {
             again = false
             stale = true
             return r
