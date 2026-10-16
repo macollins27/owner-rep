@@ -1,14 +1,14 @@
 
- ▐▛███▛█   Claude Code v2.1.301
+ ▐▛███▛█   Claude Code v2.1.302
 ▝▜██████▀  Opus 5.5 with xhigh effort · Claude Max
- ▝▝   ▝▝   /private/var/folders/mf/g9s916lj533085gbqr23mm9m0000gn/T/owner-rep-live.b8Q98tCjKu
+ ▝▝   ▝▝   /private/var/folders/mf/g9s916lj533085gbqr23mm9m0000gn/T/owner-rep-live.jv608IWgxu
 
 
 ❯ Reply with the single word done and nothing else.
 
 ⏺ done
 
-✻ Churned for 1s · done 1:14 AM
+✻ Baked for 1s · done 4:57 PM
 
 ⏺ Prompt dropped by a hook: Owner rep: noted, and reading again. The agent did not see this.
 
@@ -39,6 +39,6 @@
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ❯ 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  [Opus 5.5] │ owner-rep-live.b8Q98tCjKu +owner-rep-live.b8Q98tCj… +maxwellcollins git:(main) │ Done
-  Context ░░░░░░░░░░ 4% │ Usage █░░░░░░░░░ 13% (resets in 1h 46m)
-  ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents
+  [Opus 5.5] │ owner-rep-live.jv608IWgxu +owner-rep-live.jv608IWg… +maxwellcollins git:(main) │ Done
+  Context ░░░░░░░░░░ 4% │ Usage ░░░░░░░░░░ 2% (resets in 1h 23m)
+  ⏵⏵ bypass permissions on (shift+tab to cycle)
