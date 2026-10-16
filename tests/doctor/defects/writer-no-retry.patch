@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 9360e96..ca57b1b 100644
+index a6222c0..768892f 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -431,7 +431,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
+@@ -433,7 +433,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
              return r
            }
            const cut = result !== null && !result.isAnswered && result.reason === 'aborted'
 -          again = result !== null && !cut && attempt < OBJECTIVE_RETRIES
 +          again = false && result !== null && !cut && attempt < OBJECTIVE_RETRIES
-           if (!again) {
-             r.objectiveFailed += 1
-             r.objectiveWhy = none ? 'holds-with-none' : writeFailure(result)
+           // A newer message of his arrived during the attempt: the next pass writes over the
+           // fresh prompt, so this write stops here and is not counted as failed.
+           if (again && (entry.again || r.owner.some(m => m.kind !== 'draft' && m.n > saw))) {
