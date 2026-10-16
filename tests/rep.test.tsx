@@ -2978,3 +2978,62 @@ test('rule: the going-well line does not stand on a checked card beside a false 
   expect(await ui.find({ type: 'Text', text: /Going well/ })).toBeUndefined()
   await ui.unmount()
 })
+
+// Kept last: it leaves the module on another session's id.
+test('rule: after a /clear his messages are kept under the new session, and nothing of the old one stays on screen or draws over it', async ($, on) => {
+  const store: Record<string, unknown> = {}
+  on('store.get', (_$, e) => ({ value: store[e.key] }))
+  on('store.set', (_$, e) => {
+    store[e.key] = e.value
+    return { value: undefined }
+  })
+  const recOf = (id: string) => (store.sessions as Record<string, Stored> | undefined)?.[id]
+  // A /clear goes on in the same process under a new id, and no session.start fires.
+  let id = 'before-clear'
+  on('session.id', () => ({ value: id }))
+  on('prompt.submit', (_$, e) => ({ text: e.text }))
+  on('turn.complete', () => ({ text: '' }))
+  on('session.end', (_$, e) => ({ sessionId: e.sessionId }))
+  on('ui.toast', () => ({ value: undefined }))
+  on('model.fork', () => ({
+    value: { isAnswered: true, text: 'verdict: continue\nstands: s\nmeans: m\nleft:\n- nothing\nnext: n\nmessage:\nBuild the second thing next.\nend\ndoes: d', usage: USAGE },
+  }))
+  const clock = mock.clock(on)
+  // The second write of the old session is still out when the /clear comes.
+  const answers = [
+    { hold: false, text: OBJ('The first job, built.', ['the first thing built | open']) },
+    { hold: true, text: OBJ('The first job, built and polished.', ['the first thing built | open'], '#2 added the polish') },
+    { hold: false, text: OBJ('The second job, built.', ['the second thing built | open']) },
+  ]
+  let writes = 0
+  on('model.complete', async () => {
+    const a = answers[Math.min(writes++, answers.length - 1)]
+    if (a.hold) await clock.sleep(1000)
+    return { value: { isAnswered: true, text: a.text, usage: USAGE } }
+  })
+  quietBand(on)
+  await $.prompt.submit(typed('build the first thing'))
+  expect(await rowSays($, /^Owner rep · The first job, built\.$/)).toBe(true)
+  await $.turn.complete(stop('t1', 'Built the first part. Shall I go on?'))
+  await $.prompt.submit(typed('yes, and polish it'))
+  await $.session.end({ reason: 'clear', sessionId: 'before-clear', resume: { id: 'before-clear' } } as never)
+  id = 'after-clear'
+  // The old session's objective leaves the row at the /clear, before anything is typed.
+  expect(await rowSays($, /first job/)).toBe(false)
+  expect(await rowSays($, /working out the result/)).toBe(true)
+  await $.prompt.submit(typed('build the second thing'))
+  expect(await rowSays($, /^Owner rep · The second job, built\.$/)).toBe(true)
+  expect(recOf('after-clear')?.owner).toEqual([{ n: 1, kind: 'his', text: 'build the second thing', prior: '' }])
+  expect(recOf('before-clear')?.owner.map(m => m.text)).toEqual(['build the first thing', 'yes, and polish it'])
+  expect(recOf('before-clear')?.owner[1]?.prior).toBe('Built the first part. Shall I go on?')
+  // The old write lands in its own record and draws nothing over the new session.
+  await clock.advance(1000)
+  expect(recOf('before-clear')?.objective?.result).toBe('The first job, built and polished.')
+  expect(await rowSays($, /^Owner rep · The second job, built\.$/)).toBe(true)
+  // A press after the /clear is the new session's.
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.unmount()
+  expect(recOf('after-clear')?.lastBrief?.message).toBe('Build the second thing next.')
+  expect(recOf('before-clear')?.lastBrief).toBeUndefined()
+})
