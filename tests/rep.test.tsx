@@ -2452,6 +2452,15 @@ test('STOP_NEXT refuses only a next step that stops the agent or the job, calls 
     'The job can end here.',
     'Stop and wait for him.',
     'The agent should stop and report back to him.',
+    'Commit and stop.',
+    'Run the suite and then stop here.',
+    'stop and wait.',
+    'The agent should stop and wait for your reply.',
+    'Stop and wait for further instructions.',
+    'Fix the parser. The session can end.',
+    'Fix the parser; the job can end here.',
+    'The suite is green, so the session can end now.',
+    'Everything is shown, and the job can end.',
   ]
   const pass = [
     'The agent should stop patching the test and fix the parser itself.',
@@ -2468,6 +2477,16 @@ test('STOP_NEXT refuses only a next step that stops the agent or the job, calls 
     'Wrap the slow tests in one helper.',
     'Stop the timer before you read it.',
     'Make the timer start and stop.',
+    'Make sure the job runs once and stops.',
+    'Show the loop runs three times and then stops.',
+    'Confirm the daemon restarts and stops.',
+    'Verify the container boots and stops.',
+    'Make sure the script runs once and stops.',
+    'Stop and wait for the GitHub run to finish.',
+    'The agent should stop and wait for the CI run.',
+    'Once the run is green, the session can end.',
+    'When the install is shown on his Mac, the job can end.',
+    'If the suite is green, then the job can end.',
   ]
   for (const next of refuse) {
     expect([next, STOP_NEXT.test(next)]).toEqual([next, true])

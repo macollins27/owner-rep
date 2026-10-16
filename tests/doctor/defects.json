@@ -556,5 +556,35 @@
     "breaks": "A prefix with nothing after it, behind a prompt, is taken out of the prompt without a word, so he believes the rep was told something.",
     "patch": "empty-note-silent.patch",
     "fixed": "2026-10-16"
+  },
+  {
+    "name": "and-stops-refused",
+    "breaks": "AND_STOP refuses \"stops\" said of a program, so \"Make sure the job runs once and stops.\" is taken as telling the agent to stop",
+    "patch": "and-stops-refused.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "end-after-condition-refused",
+    "breaks": "END_SAID refuses an end after a condition and a comma, so \"Once the run is green, the session can end.\" is taken as ending the job",
+    "patch": "end-after-condition-refused.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "end-after-so-passed",
+    "breaks": "END_SAID lets an end joined by a comma and \"so\" or \"and\" through, so \"The suite is green, so the session can end now.\" passes while a condition is open",
+    "patch": "end-after-so-passed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "wait-on-ci-refused",
+    "breaks": "STOP_TO_REPORT refuses any \"stop and wait\", so waiting on the GitHub run or the CI run is taken as a stop",
+    "patch": "wait-on-ci-refused.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "wait-on-him-passed",
+    "breaks": "STOP_TO_REPORT no longer refuses a wait on him, so \"Stop and wait for him.\" and a bare \"stop and wait.\" pass while a condition is open",
+    "patch": "wait-on-him-passed.patch",
+    "fixed": "2026-10-16"
   }
 ]

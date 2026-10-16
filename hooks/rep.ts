@@ -1814,20 +1814,34 @@ const STOP_WHEN = String.raw`(?:\s+(?:here|now|there|for (?:now|today|good)))?`
 // "and stop" at the end of a clause, after any step ("Fix the parser and
 // stop."), unless a negation stands earlier in the clause ("Don't fix it and
 // stop" goes on) or it pairs with "start" ("the timer can start and stop" is
-// a thing that stops, not the agent).
-const AND_STOP = String.raw`${CLAUSE}(?:(?!\bnot\b|\bnever\b|n't\b)[^.;:!?,])*?(?<!\bstart(?:s|ed)?\s+)\band\s+(?:then\s+)?stops?${STOP_WHEN}${CLAUSE_END}`
+// a thing that stops, not the agent). Only the bare "stop" a step tells the
+// agent to take: "stops" says how a program behaves ("Make sure the script
+// runs once and stops" goes on).
+const AND_STOP = String.raw`${CLAUSE}(?:(?!\bnot\b|\bnever\b|n't\b)[^.;:!?,])*?(?<!\bstart(?:s|ed)?\s+)\band\s+(?:then\s+)?stop${STOP_WHEN}${CLAUSE_END}`
 // "stop working" with what it works on ("on it", "on this", "on the job",
 // "on the work", "on the task"), from the same start as a stop, to the clause end.
 const STOP_WORK = String.raw`${STOP_LEAD}stops?\s+work(?:ing)?\s+on\s+(?:it|this|the (?:job|work|task))${STOP_WHEN}${CLAUSE_END}`
-// "stop and" a finishing step (report, wait, hand over, summarise, tell him or
-// the owner), only when it runs to the end of the sentence: "Stop and report
-// back to him." ends the work, while "Stop and report what failed, then fix
-// it" goes on past its comma.
-const STOP_TO_REPORT = String.raw`${STOP_LEAD}stops?\s+and\s+(?:then\s+)?(?:report|wait|hand\s+(?:(?:it|everything|the (?:work|job))\s+)?over|summari[sz]e|tell\s+(?:him|the owner))\b[^.!?;,]*(?=\s*(?:[.!?;]|$))`
+// The owner, or his word, as what a stop waits for: "wait for him", "wait
+// for your reply", "wait for further instructions".
+const WAIT_ON_HIM = String.raw`(?:\s+for\s+(?:him|the owner|you|your reply|his reply|(?:further\s+)?instructions))?`
+// "stop and" a finishing step (report, hand over, summarise, tell him or the
+// owner), only when it runs to the end of the sentence: "Stop and report back
+// to him." ends the work, while "Stop and report what failed, then fix it"
+// goes on past its comma. "wait" ends it only bare or waiting on him ("Stop
+// and wait for him."): waiting on a run ("Stop and wait for the GitHub run to
+// finish") keeps the job going.
+const STOP_TO_REPORT = String.raw`${STOP_LEAD}stops?\s+and\s+(?:then\s+)?(?:(?:report|hand\s+(?:(?:it|everything|the (?:work|job))\s+)?over|summari[sz]e|tell\s+(?:him|the owner))\b[^.!?;,]*|wait${WAIT_ON_HIM}${STOP_WHEN})(?=\s*(?:[.!?;]|$))`
+// The start of a clause that a condition before a comma does not open: the
+// start, or a stop mark other than a comma, then a joining word; or a comma
+// with "and", "so" or "now", which join a clause of its own ("The suite is
+// green, so the session can end"), where "then" after a comma closes a
+// condition ("If the suite is green, then the job can end").
+const SENTENCE = String.raw`(?:(?:^|[.;:!?]\s*)(?:(?:and|so|then|now)\s+)?|,\s*(?:and|so|now)\s+)`
 // The session, the job or the work said to end ("can", "should", "may" and the
-// like, with "now", "here"), as a clause of its own: "The session can end only
-// after …" goes on.
-const END_SAID = String.raw`${CLAUSE}(?:the|this)\s+(?:session|job|work)\s+(?:can|could|should|may|will|must)\s+(?:now\s+)?end(?:\s+(?:here|now))?${CLAUSE_END}`
+// like, with "now", "here"), as a clause of its own after a sentence's start
+// or a stop mark: "The session can end only after …" and "Once the run is
+// green, the session can end" both put a condition on the end, and go on.
+const END_SAID = String.raw`${SENTENCE}(?:the|this)\s+(?:session|job|work)\s+(?:can|could|should|may|will|must)\s+(?:now\s+)?end(?:\s+(?:here|now))?${CLAUSE_END}`
 // The work wrapped up, from the same start as a stop, as a clause of its own:
 // "Wrap things up.", "wrap up the job"; "Wrap the slow tests in one helper"
 // wraps something else.
@@ -1844,9 +1858,12 @@ const WRAP_SAID = String.raw`${STOP_LEAD}wrap\s+(?:(?:it|things|everything|the (
 // here.", "Wrap things up." It lets through a step that only carries the word
 // and goes on: "stop" with something after it ("stop guessing and run the real
 // suite", "Fix the stop button", "Stop the timer before you read it", "Have the
-// agent stop and run the suite"), a finishing step that goes on past a comma
-// ("Stop and report what failed, then fix it"), an end with a condition ("The
-// session can end only after the suite is green"), "Don't stop until …", a
+// agent stop and run the suite"), "stops" said of a program ("Make sure the
+// script runs once and stops"), a wait on a run ("Stop and wait for the GitHub
+// run to finish"), a finishing step that goes on past a comma ("Stop and
+// report what failed, then fix it"), an end with a condition ("The session
+// can end only after the suite is green", "Once the run is green, the session
+// can end"), "Don't stop until …", a
 // part called complete ("show the install is complete"), a check that the work
 // is done ("Check that the work is done before …"), "Mark nothing as done
 // until …", a step toward a finish ("Finish the two sessions, then show each

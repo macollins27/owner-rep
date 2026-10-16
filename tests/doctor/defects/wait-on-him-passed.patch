@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index ffae184..32cf0d6 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1830,7 +1830,7 @@ const WAIT_ON_HIM = String.raw`(?:\s+for\s+(?:him|the owner|you|your reply|his r
+ // goes on past its comma. "wait" ends it only bare or waiting on him ("Stop
+ // and wait for him."): waiting on a run ("Stop and wait for the GitHub run to
+ // finish") keeps the job going.
+-const STOP_TO_REPORT = String.raw`${STOP_LEAD}stops?\s+and\s+(?:then\s+)?(?:(?:report|hand\s+(?:(?:it|everything|the (?:work|job))\s+)?over|summari[sz]e|tell\s+(?:him|the owner))\b[^.!?;,]*|wait${WAIT_ON_HIM}${STOP_WHEN})(?=\s*(?:[.!?;]|$))`
++const STOP_TO_REPORT = String.raw`${STOP_LEAD}stops?\s+and\s+(?:then\s+)?(?:(?:report|hand\s+(?:(?:it|everything|the (?:work|job))\s+)?over|summari[sz]e|tell\s+(?:him|the owner))\b[^.!?;,]*|wait\s+for\s+the\s+run)(?=\s*(?:[.!?;]|$))`
+ // The start of a clause that a condition before a comma does not open: the
+ // start, or a stop mark other than a comma, then a joining word; or a comma
+ // with "and", "so" or "now", which join a clause of its own ("The suite is
