@@ -259,8 +259,26 @@
   },
   {
     "name": "stop-while-open",
-    "breaks": "The gate never refuses, so a card can say stop, or that the work is going well, while a condition of the objective is still open.",
+    "breaks": "The gate never refuses, so a card can say stop, or that the work is going well, while a condition of the objective is still open or none is written.",
     "patch": "stop-while-open.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "unwritten-gate-open",
+    "breaks": "With no objective written the gate lets everything through, so a card can tell the agent to stop, or say the work is going well, before anything measures it.",
+    "patch": "unwritten-gate-open.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "verdict-missing-continues",
+    "breaks": "An answer with no verdict line, or one naming neither, is read as continue, so it passes the gate while a condition is open.",
+    "patch": "verdict-missing-continues.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "stop-next-unread",
+    "breaks": "The gate reads only the verdict line, so an answer that says continue while its next step tells the agent to stop, or calls the work finished, passes while a condition is open.",
+    "patch": "stop-next-unread.patch",
     "fixed": "2026-10-15"
   },
   {

@@ -38,6 +38,7 @@ import {
   draftSplitAny,
   keepDraft,
   askAgain,
+  gateOpen,
   gateVerdict,
   mergeConditions,
   OBJECTIVE_MAX_TOKENS,
@@ -464,7 +465,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
         if (!result.isAnswered) return { reason: result.reason }
         const parsed = parseBrief(result.text)
         if (applyMarks(after, parsed.shown, parsed.closed)) await update($, readingA, () => after.objective)
-        const left = openConditions(after.objective)
+        const left = gateOpen(after.objective)
         return { ...gateVerdict(parsed, left), open: left }
       })
     }
@@ -478,12 +479,14 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       )
       return
     }
-    // A stop or a going-well line while a condition is open is refused, and
-    // the brief is asked once more with the open conditions named; that
-    // answer passes the same gate. Two reads at most: when the second does
-    // not answer, the first one's gated answer stands.
+    // A stop, a missing verdict, a next step that says stop or a going-well
+    // line while a condition is open is refused, and the brief is asked once
+    // more with the open conditions named; that answer passes the same gate.
+    // With no objective written there are no conditions to name: the refused
+    // card stands with the rep's texts, and nothing is asked again. Two reads
+    // at most: when the second does not answer, the first one's gated answer stands.
     let taken = first
-    if (first.refused) {
+    if (first.refused && first.open !== null) {
       const again = await ask(askAgain(first.open))
       if (!('reason' in again)) taken = again
     }
@@ -648,7 +651,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
           message: or(c.message, instant.message),
           does: or(c.does, instant.does),
         },
-        openConditions(after.objective),
+        gateOpen(after.objective),
       ).answer
       const patch: Partial<Brief> = {
         checked,

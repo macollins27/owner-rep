@@ -1,9 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 9c55ba2..5ae270d 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -618,7 +618,7 @@ export function parseBrief(text: string): BriefAnswer {
-     verdict: /^stop\b/i.test(clean(p.verdict)) ? 'stop' : 'continue',
+@@ -626,7 +626,7 @@
+     verdict: verdictOf(p.verdict),
      shown: shownOf(p.shown),
      closed: items(p.closed).map(droppedOf).filter(d => d.text !== ''),
 -    well: leftOut.length > 0 ? '' : clean(p.well),

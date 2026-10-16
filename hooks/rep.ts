@@ -89,7 +89,9 @@ export const OBJECTIVE_MODEL = 'opus'
 export const OBJECTIVE_MAX_TOKENS = 1200
 
 // Whether the agent should go on or stop. Only the rep's own gate may let a stop stand.
-export type Verdict = 'continue' | 'stop'
+// 'missing' is an answer with no verdict line, or one naming neither: it is never read
+// as continue, and the gate refuses it while a condition is open.
+export type Verdict = 'continue' | 'stop' | 'missing'
 
 export type WatchAnswer = {
   state: 'working' | 'stopped' | 'asking' | 'plan-waiting' | null
@@ -589,6 +591,12 @@ function parts(text: string): Partial<Record<Label, string>> {
 
 const clean = (s: string | undefined): string => (s ?? '').trim()
 
+// A verdict line read: stop, continue, or missing when there is none or it names neither.
+export const verdictOf = (s: string | undefined): Verdict => {
+  const v = clean(s)
+  return /^stop\b/i.test(v) ? 'stop' : /^continue\b/i.test(v) ? 'continue' : 'missing'
+}
+
 export function parseWatch(text: string): WatchAnswer {
   const p = parts(text)
   const state = clean(p.state).toLowerCase()
@@ -615,7 +623,7 @@ export function parseBrief(text: string): BriefAnswer {
   // A card with anything left out cannot also say the job is going well; the
   // left-out list wins, whatever the model wrote on the "well" line.
   return {
-    verdict: /^stop\b/i.test(clean(p.verdict)) ? 'stop' : 'continue',
+    verdict: verdictOf(p.verdict),
     shown: shownOf(p.shown),
     closed: items(p.closed).map(droppedOf).filter(d => d.text !== ''),
     well: leftOut.length > 0 ? '' : clean(p.well),
@@ -911,7 +919,7 @@ const items = (s: string | undefined): string[] =>
 export function parseCheck(text: string): CheckAnswer {
   const p = parts(text)
   return {
-    verdict: p.verdict === undefined ? null : /^stop\b/i.test(clean(p.verdict)) ? 'stop' : 'continue',
+    verdict: p.verdict === undefined ? null : verdictOf(p.verdict),
     holds: items(p.holds),
     wrong: items(p.false),
     notShown: items(p.notshown),
@@ -1356,23 +1364,52 @@ export const OPEN_MESSAGE = (open: Condition[]): string =>
 // What sending that message makes the agent do.
 export const OPEN_DOES = 'Keeps the agent on the job until it shows each open condition working or says what stands in the way.'
 
-// Added to the brief when its answer said stop, or that the work is going
-// well, while a condition was open: the brief is asked once more, with the
-// open conditions named.
+// What a refused card says when no objective is written yet: nothing measures
+// the work as finished, so the agent stays on the job.
+export const UNWRITTEN_MEANS = 'The objective is not written yet, so nothing shows the work finished.'
+export const UNWRITTEN_NEXT = 'The objective is not written yet, so the agent stays on the job and shows each part working.'
+export const UNWRITTEN_MESSAGE = 'The job is not finished. Stay on it, and show each part working, or say what stands in the way, before anything stops.'
+export const UNWRITTEN_DOES = 'Keeps the agent on the job until it shows each part working or says what stands in the way.'
+
+// A next step that tells the agent to stop or calls the work finished. Read on
+// "next" only, whatever the verdict line says. It errs toward refusing: a step
+// that merely contains the word ("Don't stop until …") is refused too, and the
+// cost of that is the rep's own open texts in place of the model's next step.
+// It does not match a step that goes on toward a finish ("Finish the two
+// sessions, then show each one done").
+export const STOP_NEXT = /\bstop(?:s|ped|ping)?\b|\b(?:is|are|all|been|now|as|job|work) (?:done|finished|complete)\b|\bnothing (?:is |more )?(?:left|to do|remains)\b/i
+
+// The conditions the gate measures against: null while no objective is written,
+// which the gate treats as nothing shown, never as nothing open.
+export const gateOpen = (o: Objective | null): Condition[] | null => (o === null ? null : openConditions(o))
+
+// Added to the brief when its answer said stop, gave no verdict, called the
+// work finished in its next step, or said the work is going well, while a
+// condition was open: the brief is asked once more, with the open conditions named.
 export const askAgain = (open: Condition[]): string => `## Asked once more
 
-The first answer to this request said the agent should stop, or that the work is going well, while these conditions of done are still open:
+The first answer to this request said the agent should stop, gave no verdict, called the work finished in its next step, or said the work is going well, while these conditions of done are still open:
 ${list(open.map(conditionLine), '- none')}
 
-Neither may stand while any of them is open. Look at the conversation again: put under "shown:" each one it now shows, with where it shows it, and under "closed:" each one he closed in a message of his own, with that message's number. Then give the whole briefing again, in the same structure: while any of them stays open the verdict is "continue", "well" is empty, "stands", "means" and "message" do not call the work finished or tell the agent to stop, and "next" says what the agent does to show it or what stands in the way.`
+None of these may stand while any of them is open. Look at the conversation again: put under "shown:" each one it now shows, with where it shows it, and under "closed:" each one he closed in a message of his own, with that message's number. Then give the whole briefing again, in the same structure: while any of them stays open the verdict is "continue", "well" is empty, "stands", "means" and "message" do not call the work finished or tell the agent to stop, and "next" says what the agent does to show it or what stands in the way.`
 
-// The objective is not finished while a condition is open: a stop verdict or a
-// going-well line is refused, the conditions are listed as left out, and the
-// card's meaning, next step, message and what it does are replaced with the
-// rep's own, so nothing on a refused card calls the work finished or offers
-// the agent a stop. What the agent did ("stands") is kept as the model wrote it.
-export function gateVerdict(a: BriefAnswer, open: Condition[]): { answer: BriefAnswer; refused: boolean } {
-  if (open.length === 0 || (a.verdict !== 'stop' && a.well === '')) return { answer: a, refused: false }
+// The objective is not finished while a condition is open: a verdict other
+// than continue (stop, or none given), a going-well line, or a next step that
+// says stop is refused, the conditions are listed as left out, and the card's
+// meaning, next step, message and what it does are replaced with the rep's
+// own, so nothing on a refused card calls the work finished or offers the agent
+// a stop. With no objective written (open is null) the same is refused and the
+// rep's texts say the objective is not written yet. What the agent did
+// ("stands") is kept as the model wrote it.
+export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer: BriefAnswer; refused: boolean } {
+  if (open !== null && open.length === 0) return { answer: a, refused: false }
+  if (a.verdict === 'continue' && a.well === '' && !STOP_NEXT.test(a.next)) return { answer: a, refused: false }
+  if (open === null) {
+    return {
+      answer: { ...a, verdict: 'continue', well: '', means: UNWRITTEN_MEANS, next: UNWRITTEN_NEXT, message: UNWRITTEN_MESSAGE, does: UNWRITTEN_DOES },
+      refused: true,
+    }
+  }
   const leftOut = [...a.leftOut]
   for (const c of open) {
     // An entry already listed, with or without its state mark, is not listed again.

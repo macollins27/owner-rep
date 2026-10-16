@@ -37,7 +37,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 79 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 82 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: six real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -116,11 +116,15 @@ call writes (below):
 2. **Briefing**: `pressBrief()` on the Rep button, another fork, drawn as the card. The
    model's answer is labelled lines (`verdict:`, `shown:`, `closed:`, `well:`, `stands:`,
    `means:`, `left:`, `next:`, `message:` … `end`, `does:`); `parseBrief` splits them,
-   `applyMarks` takes the marks, and `gateVerdict` refuses a `stop` or a `well:` line while a
-   condition is open. A refused answer is asked once more (`askAgain`, naming the open
-   conditions); when that is refused too, or does not answer, the card lists the open
-   conditions as left out and its meaning, next step, message and what it does are the rep's
-   own (`OPEN_MEANS`, `OPEN_NEXT`, `OPEN_MESSAGE`, `OPEN_DOES`), never a stop.
+   `applyMarks` takes the marks, and `gateVerdict` refuses, while a condition is open, a
+   verdict other than `continue` (a `stop`, or none given, which `verdictOf` reads as
+   `missing`, never as continue), a `well:` line, or a `next:` that `STOP_NEXT` reads as
+   telling the agent to stop or calling the work finished. A refused answer is asked once
+   more (`askAgain`, naming the open conditions); when that is refused too, or does not
+   answer, the card lists the open conditions as left out and its meaning, next step,
+   message and what it does are the rep's own (`OPEN_MEANS`, `OPEN_NEXT`, `OPEN_MESSAGE`,
+   `OPEN_DOES`), never a stop. With no objective written (`gateOpen` is null) the same
+   answers are refused, never let through, with `UNWRITTEN_*` texts, and not asked again.
 3. **Check**: `pressCheck()` → `runCheck()` first makes a throwaway copy of the agent's
    folder (`makeCopy`: an APFS clone, `cp -Rc`, into `checkCopyDir` under `~/.cache`), then
    spawns a headless `claude -p` in it with `--permission-mode default`, `CHECK_ALLOWED_TOOLS`
