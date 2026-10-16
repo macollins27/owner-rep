@@ -164,7 +164,10 @@ conversation, so a read costs little and never slows the agent. The rep's indepe
 from its brief, which tells the model to treat everything the agent wrote as a claim, and,
 for the check step, from reading outside the conversation altogether. The objective writer is
 the exception to the fork: a plain completion (`$.model.complete`) shown the agent's words
-only as the line before each of the owner's messages, marked as the agent's. Its brief says
+only as the line before each of the owner's messages, marked as the agent's. Its rules go to it as its system prompt, and the owner's messages reach it
+fenced as quoted records that it is told are no instruction to it, because unfenced, a message
+that read like a command came back empty in all six tries measured on one (16 Oct 2026); a
+failed attempt is still tried again as a net. Its brief says
 that line is there only so a short reply can be understood and never sets the result, and
 the code takes a write only when it saw a message of the owner's past the ones the objective
 was built from, so the agent's words alone never move it.
