@@ -946,10 +946,11 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
 
 // The rep's drafts kept in every session's record (`recDrafts`) and those of records the
 // store has let go, so a draft he sent is known in a session forked from the one that drew
-// it, or reopened after its own record was let go.
+// it, or reopened after its own record was let go. The records are read before the kept
+// list, the reverse of `saveRec`'s order, so a record let go between the two reads is in one.
 async function storedDrafts($: EngineInterface): Promise<string[]> {
-  const out = await droppedDrafts($)
   const all = await $.store.get('sessions')
+  const out = await droppedDrafts($)
   if (typeof all !== 'object' || all === null) return out
   for (const r of Object.values(all as Record<string, unknown>)) if (isRec(r)) out.push(...recDrafts(r))
   return out
