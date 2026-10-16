@@ -9,25 +9,31 @@
     "name": "flag-shown-twice",
     "breaks": "The watch forgets which flags it has shown, so the same note comes back after the owner dismissed it.",
     "patch": "flag-shown-twice.patch",
-    "fixed": "tested 2026-10-14"
+    "fixed": "tested 2026-10-14; remade 2026-10-15"
   },
   {
     "name": "watch-never-backs-off",
     "breaks": "Typing past notes never backs the watch off, so every stop costs a look however often the owner ignores it.",
     "patch": "watch-never-backs-off.patch",
-    "fixed": "tested 2026-10-14"
+    "fixed": "tested 2026-10-14; remade 2026-10-15"
   },
   {
     "name": "stale-check-wins",
     "breaks": "An older check run's answer rewrites the newer card the owner is looking at.",
     "patch": "stale-check-wins.patch",
-    "fixed": "tested 2026-10-14"
+    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-16"
+  },
+  {
+    "name": "stale-check-on-record",
+    "breaks": "A check that lands after a newer press still writes its marks and its message into the record, so the newer card's message he sends is taken for his own words and the stale run moves conditions.",
+    "patch": "stale-check-on-record.patch",
+    "fixed": "2026-10-15; remade 2026-10-16"
   },
   {
     "name": "flag-replaces-card",
     "breaks": "A watch flag replaces the briefing card instead of waiting for the row.",
     "patch": "flag-replaces-card.patch",
-    "fixed": "tested 2026-10-14"
+    "fixed": "tested 2026-10-14; remade 2026-10-15"
   },
   {
     "name": "stop-never-marked",
@@ -39,7 +45,7 @@
     "name": "note-over-other-mod",
     "breaks": "The rep's note draws on top of another mod's note, putting two sets of digit buttons on screen.",
     "patch": "note-over-other-mod.patch",
-    "fixed": "tested 2026-10-14"
+    "fixed": "tested 2026-10-14; remade 2026-10-15"
   },
   {
     "name": "digits-doubled",
@@ -69,7 +75,7 @@
     "name": "whole-ask-rule-dropped",
     "breaks": "The brief loses the rule that the owner's messages add up, so the rep judges the last message alone.",
     "patch": "whole-ask-rule-dropped.patch",
-    "fixed": "2026-10-14"
+    "fixed": "2026-10-14; remade 2026-10-15"
   },
   {
     "name": "helper-not-counted",
@@ -105,31 +111,25 @@
     "name": "end-not-saved",
     "breaks": "The session end does not save the record, so a session that ends without a prompt loses its record's freshness.",
     "patch": "end-not-saved.patch",
-    "fixed": "tested 2026-10-14"
-  },
-  {
-    "name": "reading-rewritten-each-look",
-    "breaks": "A \"holds\" answer is taken as a new reading, so the reading is rewritten on every look instead of kept.",
-    "patch": "reading-rewritten-each-look.patch",
-    "fixed": "tested 2026-10-14"
+    "fixed": "tested 2026-10-14; remade 2026-10-15"
   },
   {
     "name": "row-shows-whole-reading",
-    "breaks": "The row draws the whole reading instead of its first sentence, so a four-sentence reading crowds the strip.",
+    "breaks": "The row draws the whole objective (result, purpose, conditions and step) instead of the result alone, so the strip is crowded and the result is lost in it.",
     "patch": "row-shows-whole-reading.patch",
-    "fixed": "tested 2026-10-14"
+    "fixed": "tested 2026-10-14; remade 2026-10-15"
   },
   {
-    "name": "agent-moves-reading",
-    "breaks": "A revision is taken when no message of the owner's has come since the reading was built, so the agent's words move the reading.",
-    "patch": "agent-moves-reading.patch",
-    "fixed": "tested 2026-10-14"
+    "name": "writer-forks-conversation",
+    "breaks": "The objective writer's call is made as a fork of the agent's whole conversation instead of a plain completion over the owner's messages, so the writer reads everything the agent said, its account of the job included.",
+    "patch": "writer-forks-conversation.patch",
+    "fixed": "tested 2026-10-14 as agent-moves-reading; renamed and remade 2026-10-15; remade 2026-10-16"
   },
   {
     "name": "revision-cause-dropped",
-    "breaks": "A revision keeps no cause, so the card cannot say which message of the owner's moved the reading.",
+    "breaks": "A correction keeps no cause, so the card cannot say which message of the owner's moved the objective.",
     "patch": "revision-cause-dropped.patch",
-    "fixed": "tested 2026-10-14"
+    "fixed": "tested 2026-10-14; remade 2026-10-15"
   },
   {
     "name": "note-reaches-agent",
@@ -139,15 +139,15 @@
   },
   {
     "name": "note-never-read",
-    "breaks": "A note to the rep is recorded but starts no look, so the reading waits for the next stop to take it in.",
+    "breaks": "A note to the rep is recorded but starts no look, so the rep waits for the next stop to judge the work with it in mind.",
     "patch": "note-never-read.patch",
-    "fixed": "tested 2026-10-14"
+    "fixed": "tested 2026-10-14; remade 2026-10-15"
   },
   {
     "name": "earlier-job-leaks",
-    "breaks": "The model is shown the owner's messages from earlier jobs as if they were on this one, so a closed job feeds the current grade.",
+    "breaks": "A new job keeps the old job's first message as its start, so the writer and the briefing are shown a closed job's messages as if they were on this one.",
     "patch": "earlier-job-leaks.patch",
-    "fixed": "tested 2026-10-14"
+    "fixed": "tested 2026-10-14; remade 2026-10-15"
   },
   {
     "name": "tell-prefix-dropped",
@@ -159,7 +159,7 @@
     "name": "reading-state-unmarked",
     "breaks": "A press does not mark the rep as reading, so the row says nothing and a second press starts a second read.",
     "patch": "reading-state-unmarked.patch",
-    "fixed": "tested 2026-10-14"
+    "fixed": "tested 2026-10-14; remade 2026-10-15"
   },
   {
     "name": "checked-lists-never-fold",
@@ -177,13 +177,13 @@
     "name": "note-left-in-box",
     "breaks": "A note to the rep stays in the prompt box after it is taken, so the owner's next digit lands after it as text instead of pressing a button.",
     "patch": "note-left-in-box.patch",
-    "fixed": "2026-10-14"
+    "fixed": "2026-10-14; remade 2026-10-15"
   },
   {
     "name": "late-look-wins",
-    "breaks": "The guard counts the owner's messages that have arrived instead of the ones a look saw, so a stop's look landing late takes a note's place and the note's revision is refused.",
+    "breaks": "The guard measures a write against the job's first message instead of the messages the held objective was built from, so a write that lands late takes a newer write's place.",
     "patch": "late-look-wins.patch",
-    "fixed": "2026-10-14"
+    "fixed": "2026-10-14; remade 2026-10-15"
   },
   {
     "name": "revised-line-folds-first",
@@ -207,37 +207,31 @@
     "name": "well-with-left",
     "breaks": "The parser keeps the going-well line when the left-out list has items, so one card tells the owner every part is done and, three lines down, that something was not.",
     "patch": "well-with-left.patch",
-    "fixed": "2026-10-14"
+    "fixed": "2026-10-14; remade 2026-10-15"
   },
   {
     "name": "chore-to-owner",
     "breaks": "The briefs lose the rule that a chore the agent leaves for the owner is the agent's unfinished work, so the rep relays the agent's to-do list to him as his next step.",
     "patch": "chore-to-owner.patch",
-    "fixed": "2026-10-14"
+    "fixed": "2026-10-14; remade 2026-10-15"
   },
   {
     "name": "draft-as-his-words",
     "breaks": "A message the rep drafted and the owner sent is recorded in his list as his own words, unmarked, so the model grades the agent against a job the rep wrote and takes the rep's \"nothing else\" as the owner narrowing his job.",
     "patch": "draft-as-his-words.patch",
+    "fixed": "2026-10-15; remade 2026-10-15"
+  },
+  {
+    "name": "drafts-forgotten",
+    "breaks": "Only the newest card's message is kept for knowing a draft, so a message he sends from an earlier card is recorded as his own words and can move the objective.",
+    "patch": "drafts-forgotten.patch",
     "fixed": "2026-10-15"
   },
   {
     "name": "draft-weight-dropped",
     "breaks": "The briefs lose the weight for a message marked as the rep's draft, so the model reads one as the owner's words with full authority over what \"done\" means.",
     "patch": "draft-weight-dropped.patch",
-    "fixed": "2026-10-15"
-  },
-  {
-    "name": "correction-shrinks-result",
-    "breaks": "A correction replaces the whole reading with the model's rebuilt text, so a message that bounds the next step shrinks the result to the latest message and the first message's ask is dropped.",
-    "patch": "correction-shrinks-result.patch",
-    "fixed": "2026-10-15"
-  },
-  {
-    "name": "route-as-result",
-    "breaks": "The briefs lose the rule that a document about the result is not the result, so a session opened to get a product finished is called done once a review, route or plan is written.",
-    "patch": "route-as-result.patch",
-    "fixed": "2026-10-15"
+    "fixed": "2026-10-15; remade 2026-10-15"
   },
   {
     "name": "check-outside-copy",
@@ -256,5 +250,167 @@
     "breaks": "The check's run bypasses approvals instead of running in the default mode with its tools allowed, which switches the built-in sandbox off (measured 15 Oct 2026), so the fence around the owner's work and the network is gone.",
     "patch": "room-bypassed.patch",
     "fixed": "2026-10-15"
+  },
+  {
+    "name": "condition-dropped-uncited",
+    "breaks": "A correction keeps only the conditions the writer wrote again, so a message that bounds the next step drops parts of what \"done\" means that the owner never let go.",
+    "patch": "condition-dropped-uncited.patch",
+    "fixed": "2026-10-15; remade 2026-10-16"
+  },
+  {
+    "name": "stop-while-open",
+    "breaks": "The gate never refuses, so a card can say stop, or that the work is going well, while a condition of the objective is still open or none is written.",
+    "patch": "stop-while-open.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "unwritten-gate-open",
+    "breaks": "With no objective written the gate lets everything through, so a card can tell the agent to stop, or say the work is going well, before anything measures it.",
+    "patch": "unwritten-gate-open.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "verdict-missing-continues",
+    "breaks": "An answer with no verdict line, or one naming neither, is read as continue, so it passes the gate while a condition is open.",
+    "patch": "verdict-missing-continues.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "stop-next-unread",
+    "breaks": "The gate reads only the verdict line, so an answer that says continue while its next step tells the agent to stop, or calls the work finished, passes while a condition is open.",
+    "patch": "stop-next-unread.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "draft-moves-result",
+    "breaks": "The rep's own draft, sent by the owner, starts a rewrite and counts as a message of his, so the rep's words can change the result he asked for.",
+    "patch": "draft-moves-result.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "owner-cap-freezes",
+    "breaks": "The record keeps only the newest 40 of the owner's messages, the job's included, so on a long job his first message, which says the most, drops out of what the writer and the briefing read.",
+    "patch": "owner-cap-freezes.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "old-reading-converted",
+    "breaks": "A record saved before the objective keeps its old text as the result, with no conditions and no step, instead of being rebuilt from his messages, so the rep measures against a stale one-line text.",
+    "patch": "old-reading-converted.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "looks-write-objective",
+    "breaks": "The watch takes an objective from its look at the conversation, so the agent's account of the job can rewrite the objective between the owner's message and the writer's answer.",
+    "patch": "looks-write-objective.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "marks-uncited",
+    "breaks": "A look or a briefing can close a condition by citing any message number, a draft's included, so a condition the owner never let go is closed on the rep's or the agent's say.",
+    "patch": "marks-uncited.patch",
+    "fixed": "2026-10-15; remade 2026-10-16"
+  },
+  {
+    "name": "mark-cites-built-message",
+    "breaks": "A look, a briefing or a check can close a condition by citing a message the objective was already built from, one the writer read and kept the condition open after.",
+    "patch": "mark-cites-built-message.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "writer-cites-built-message",
+    "breaks": "A correction can close or drop a condition by citing a message the held objective was already built from, so a later write reverses what the earlier one kept on the same words.",
+    "patch": "writer-cites-built-message.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "reopen-ignored",
+    "breaks": "A check that finds a condition held shown is not so leaves it shown, so a stop passes the gate on a showing the check disproved.",
+    "patch": "reopen-ignored.patch",
+    "fixed": "2026-10-15; remade 2026-10-16"
+  },
+  {
+    "name": "shown-not-sent",
+    "breaks": "The check is never told which conditions the rep holds shown, so it cannot test them again or reopen one.",
+    "patch": "shown-not-sent.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "well-beside-false",
+    "breaks": "The checked card keeps the briefing's going-well line beside a claim the check found false or an item it left out.",
+    "patch": "well-beside-false.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "conditions-pile-up",
+    "breaks": "A condition the writer lists twice, or with a state mark copied into its text, is kept twice, so the list of what done means grows by repeats.",
+    "patch": "conditions-pile-up.patch",
+    "fixed": "2026-10-15; remade 2026-10-16"
+  },
+  {
+    "name": "writer-failure-uncounted",
+    "breaks": "A writer call that throws or comes back unanswered is not counted, so a session whose objective was never written looks on the price line as if nothing went wrong.",
+    "patch": "writer-failure-uncounted.patch",
+    "fixed": "2026-10-15; remade 2026-10-16"
+  },
+  {
+    "name": "writer-failure-erases",
+    "breaks": "A writer call that fails clears the objective already held, so one unreachable call leaves the job with nothing to measure the agent against.",
+    "patch": "writer-failure-erases.patch",
+    "fixed": "2026-10-15; remade 2026-10-16"
+  },
+  {
+    "name": "writer-failure-unshown",
+    "breaks": "The price line never names failed objective writes, whatever the count on record.",
+    "patch": "writer-failure-unshown.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "writer-failure-off-card",
+    "breaks": "The briefing card's price line is built without the count of failed objective writes, so the owner is not told the objective was not written.",
+    "patch": "writer-failure-off-card.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "his-message-cut",
+    "breaks": "The owner's own messages are cut to the drafts' 1,200 characters, so the asks at the end of a long first message never reach the writer.",
+    "patch": "his-message-cut.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "prior-keeps-head",
+    "breaks": "The agent's words before his message are kept from their start, so the question a short reply answers, usually at the end, is cut off.",
+    "patch": "prior-keeps-head.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "writer-cap-cut",
+    "breaks": "The objective writer's reply cap goes back to 1,200 tokens, under the 1,847 one measured write used, so every write is cut off or comes back empty and the objective is never written.",
+    "patch": "writer-cap-cut.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "writer-unreadable-uncounted",
+    "breaks": "A writer reply that arrives but cannot be read, as one cut off at its cap, is not counted as a failed write, so the objective never moves while the price line says nothing went wrong.",
+    "patch": "writer-unreadable-uncounted.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "look-remarks-reopened",
+    "breaks": "A look or a briefing that marks a condition the check reopened as shown moves it shown again, so the next stop passes the gate though the paid check found the claim false.",
+    "patch": "look-remarks-reopened.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "merge-raises-state",
+    "breaks": "The writer's merge takes a proposed state over the held one by rank, so a correction can drop the check's reopened mark and its finding, and the merge alone would raise a condition to shown.",
+    "patch": "merge-raises-state.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "stop-filter-broad",
+    "breaks": "The stop filter goes back to refusing any next step that holds the word stop or calls anything done, so a sound step such as stopping a wrong approach loses the model's own text for the rep's generic one and costs a second paid call.",
+    "patch": "stop-filter-broad.patch",
+    "fixed": "2026-10-16"
   }
 ]

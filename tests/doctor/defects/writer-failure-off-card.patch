@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -520,7 +520,7 @@
+         message: a.message,
+         does: a.does,
+         at: Date.now(),
+-        spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens, after.objectiveCalls, after.objectiveTokens, after.objectiveFailed),
++        spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens, after.objectiveCalls, after.objectiveTokens),
+         size: context === undefined ? '' : `conversation at ${context.percent} percent of its window`,
+         isChecking: false,
+         checked: null,

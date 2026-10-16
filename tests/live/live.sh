@@ -3,7 +3,7 @@
 # Proves the build the owner runs calls the rep's hooks; the test kit cannot. On demand only:
 # each scenario is a real session and a model call, about a minute.
 #
-#     tests/live/live.sh            # all five scenarios
+#     tests/live/live.sh            # all seven scenarios
 #     tests/live/live.sh 2 4        # only these
 #
 # Each scenario's whole screen is saved in tests/live/captures/<n>-<name>.txt, and the strip's
@@ -19,7 +19,7 @@ CAPS=$HERE/captures
 S=owner-rep-live
 STRIP_RE='Owner rep ·|Brief me|Tell the rep|Fine, close|Put message|Check it|Heads up'
 want=("$@")
-[[ ${#want} -eq 0 ]] && want=(1 2 3 4 5 6)
+[[ ${#want} -eq 0 ]] && want=(1 2 3 4 5 6 7)
 fails=0
 bad=0
 
@@ -148,6 +148,38 @@ for n in $want; do
       pane | grep -q 'Put message in prompt' ; verdict 'a message drafted' $?
       pane | grep -qE 'conversation at [0-9]+ percent of its window' ; verdict 'the size given as a figure' $?
       pane | grep -q '4: Tell the rep' ; verdict 'the card offers Tell the rep' $?
+      stop ;;
+    7)
+      echo "7 objective kept whole: a first ask with two conditions, the rep's draft sent through the card, then a message bounding the next step with 'only'; Brief me keeps the whole result, says the objective was revised, lists the open conditions and does not say stop"
+      start || { bad=1; fails=$((fails+1)); stop; continue }
+      send 'This folder will be a small public tool I hand to a colleague, so two things must be true before it is done: a README that explains how to run it, and a test file whose tests pass on GitHub on every push. Never create a repository online; I will add the remote myself. Start with the README only: write a two-line README.md and stop.'
+      wait_for '^\s*stopped, waiting on you|^\s*asking you' 120
+      sleep 20
+      tmux send-keys -t $S 1
+      wait_for 'Put message in prompt' 120
+      head_before=$(strip | grep -E 'Owner rep' | head -1)
+      tmux send-keys -t $S 1
+      sleep 1
+      tmux send-keys -t $S Enter
+      sleep 3
+      wait_for '^\s*stopped, waiting on you|^\s*asking you' 240
+      sleep 2
+      send 'Now only tell me in one line why the README has two lines, nothing else.'
+      sleep 3
+      wait_for '^\s*stopped, waiting on you|^\s*asking you' 120
+      sleep 30
+      tmux send-keys -t $S 1
+      wait_for 'Fine, close' 120
+      save 7-objective-whole
+      head_after=$(strip | grep -E 'Owner rep' | head -1)
+      echo "  head before the draft: $head_before"
+      echo "  head after the correction: $head_after"
+      print -r -- "$head_after" | grep -qiE 'tool|colleague|test|github' ; verdict 'the head still names the whole result, not the one-line answer' $?
+      pane | grep -qE 'Reading revised at' ; verdict 'the card says the objective was revised' $?
+      pane | grep -qE '^\s*Left out:' ; verdict 'left-out list drawn' $?
+      pane | grep -A6 -E '^\s*Left out:' | grep -qiE 'test|github' ; verdict 'the tests or the GitHub run still listed as open' $?
+      pane | grep -E '^\s*Next:' | grep -qiE '\bstop\b' ; [[ $? -ne 0 ]]; verdict 'Next does not say stop' $?
+      pane | grep -q 'Put message in prompt' ; verdict 'a message drafted' $?
       stop ;;
   esac
   [[ $bad -gt 0 ]] && fails=$((fails+1))

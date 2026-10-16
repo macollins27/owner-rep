@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 6c72649..12e8231 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -94,7 +94,7 @@ export type ObjectiveMemory = { objective: Objective | null; owner: OwnerMsg[];
+ // session's record at high effort, took 20.3 s and 1,847 output tokens (1,184
+ // of them thinking), so a cap of 1,200 cut every write off or left it empty.
+ export const OBJECTIVE_MODEL = 'opus'
+-export const OBJECTIVE_MAX_TOKENS = 8000
++export const OBJECTIVE_MAX_TOKENS = 1200
+ export const OBJECTIVE_TIMEOUT_MS = 120000
+ 
+ // Whether the agent should go on or stop. Only the rep's own gate may let a stop stand.

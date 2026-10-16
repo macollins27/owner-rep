@@ -1,0 +1,31 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index ec82737..0ce6521 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -263,7 +263,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number):
+     return true
+   }
+   if (saw <= held.from) return false
+-  const fresh = hisFrom(rec, held.from + 1).filter(n => n <= saw)
++  const fresh = rec.owner.filter(m => m.n > held.from && m.n <= saw).map(m => m.n)
+   if (fresh.length === 0) return false
+   const version = { at: now, cause: a.cause, text: objectiveText(held) }
+   if (a.isNewJob) {
+@@ -363,7 +363,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
+     entry.again = false
+     const rec = await loadRec($, sid)
+     const saw = rec.counter
+-    const due = !(onlyFirst && rec.objective !== null) && hisFrom(rec, Math.max(jobOf(rec), shown + 1)).length > 0
++    const due = !(onlyFirst && rec.objective !== null) && rec.owner.some(m => m.n >= Math.max(jobOf(rec), shown + 1))
+     if (due) {
+       shown = saw
+       const result = await $.model
+@@ -873,7 +873,7 @@ export const register: Register = on => {
+         })
+         if (split !== null) await update($, readingA, () => rec.objective)
+         // A message of his can move the objective: the writer reads it, never the agent's words.
+-        if (isHis) rebuildObjective($, id, 'message').catch(() => undefined)
++        rebuildObjective($, id, 'message').catch(() => undefined)
+       } catch {
+         // Recording is best effort; the prompt goes on.
+       }

@@ -26,7 +26,7 @@ Behind that row are three reads of increasing cost.
 | Read | When | How | Cost |
 |---|---|---|---|
 | **Watch** | Every eighth model request of a turn, and at every stop | A fresh model instance over the agent's cached conversation, no tools | Mostly cache reads; never blocks the agent |
-| **Briefing** | On a press (`1` or click) | Same mechanism, longer brief | One model call |
+| **Briefing** | On a press (`1` or click) | Same mechanism, longer brief | One model call; two when its answer is refused and asked again (below) |
 | **Check** | On a second press, only when chosen | A separate headless `claude -p` run in a throwaway copy of the project, fenced, over the session record and the real files | Measured at about 210k fresh tokens plus 2.2M cache reads, about two minutes |
 
 The **watch** stays silent unless it finds something with a cost to the owner: work dropped
@@ -52,51 +52,79 @@ listed, because the check is paid for to find what does not hold.
 
 ## How it decides
 
-The rep measures against a reading: its own account, in its own words, of what the owner
-wants on the job in hand, up to four sentences, saying the result, what it is for, what
-"done" has to show, and the step the session is on. It is never the owner's text. The owner
-works by intent rather than exact wording, and a rep that only did what the client literally
-said would not be a good one, so the reading includes what a serious owner plainly wants
-without saying it. The owner's messages are weighed by kind when the reading is written:
+The rep measures against an objective: its own account, in its own words, of what the owner
+wants on the job in hand. It is held in four parts: the result, what it is for, what "done"
+has to show (a list of conditions), and the step the session is on now. It is never the
+owner's text. The owner works by intent rather than exact wording, and a rep that only did
+what the client literally said would not be a good one, so the objective includes what a
+serious owner plainly wants without saying it. The owner's messages are weighed by kind:
 reasons and complaints first, instructions next, and a "yes" to an agent's proposal last,
 since that is the agent's idea with the owner's name on it.
 
-The reading is kept, not rewritten. A session is a run of jobs: the owner opens one, the
-agent works, the owner corrects it a few times, the job ends and the next begins. The reading
-lasts for the job. At each look the model says whether it still holds; it moves only when one
-of the owner's own messages makes it stale, and then it is rebuilt from everything the owner
-said on that job and nothing from an earlier one. The agent's words can never move it, and
-the code enforces that: a revision proposed when the owner has said nothing new is refused.
-The card shows when and why the reading last moved, and the row shows its first sentence.
+The objective is written by a call of its own, never by the looks. Each message of the
+owner's, and each note to the rep, starts one plain model call, not a fork of the
+conversation, that is shown only the owner's numbered messages on the job (each kept whole
+up to 6,000 characters, with the end of the agent's last words before it, so a short reply
+can be understood), the objective as held, and the results of earlier jobs. The agent's
+words reach the writer only as that line before each of the owner's messages, so they move
+the objective only through what the owner answers, and the code keeps them from moving it any
+other way: a write is taken only when it saw a message of the owner's past the ones the held
+objective was built from, so a write that lands after a newer one is refused, and a message that arrives during
+a write is written after it. A write that fails, comes back empty, or comes back in a shape
+the code cannot read (which is what a reply cut off at its length limit looks like) leaves
+the objective as it was and is counted, and the card's line of what the rep has spent names
+the failed writes. When no objective is held yet, a press of Rep writes one before the briefing.
 
-A correction keeps the first sentence. The reading opens with the result the owner asked for,
-and a later message on the job adds to what "done" has to show or moves the step; it never
-makes the result smaller. The code holds the model to this: a rebuilt reading whose first
-sentence differs is taken with the old first sentence put back. Only a new job, or the
-owner saying in so many words that the earlier ask no longer stands, changes the result, and
-the model marks the second case `replaced` where the card shows the cause. This came from a
-session on 15 Oct 2026 in which a message that bounded the agent's next step ("only tell me
-why") was read as the owner asking for less, the reading shrank to the latest message, and
-the rep called the session finished with the product it was opened for not on the owner's
-screen.
+A session is a run of jobs: the owner opens one, the agent works, the owner corrects it a
+few times, the job ends and the next begins. A correction rebuilds the objective whole from
+every message on the job, so the job is everything the owner has asked since it began, never
+the latest message alone. A message that bounds the agent's next step cannot shrink the job:
+every condition of "done" already held is kept unless the writer cites the number of a
+message of the owner's that lets it go. A new job closes the old objective; its result is
+listed to the model as closed, and the old job's messages leave what the writer and the
+briefing are shown. The card shows when and why the objective last moved, and the row shows
+the result.
 
-The same session showed two more faults, both fixed. A message the rep had drafted and the
-owner sent through "Put message in prompt" was recorded as the owner's own words, so the rep
-graded the agent against a job the rep had written; such a message is now recorded marked as
-the rep's draft, and the brief weighs it like a "yes" to an agent's proposal: it adds a step
-and never narrows the job or sets what "done" means. And the brief now says that the result
-is the thing, never a document about the thing: when a session is opened to get something
-built, installed or on the owner's screen, a review, route or plan is a step toward it, the
-job stays open until the thing is shown working where the owner uses it, and whether a build
-is installed or a service runs the newest code is "not shown" to the rep unless the
-conversation shows it.
+Each condition is in one of four states: open; not shown, for a thing a conversation cannot
+show by itself, such as whether a build is installed or a service runs the newest code;
+shown; or closed by the owner. Open and not shown both count as open. The writer sees nothing of the conversation but the agent's last words before each of the owner's messages, marked as the agent's, so it can mark nothing shown: the code puts a condition it marks shown back to open unless it was already held so. The watch,
+the briefing and the check mark a condition shown only by naming where the conversation or
+the disk shows it, and closed only by citing a message of the owner's. When the check finds a
+condition held shown is not so, it puts it back to not shown, and it stays not shown until a
+later check shows it: a look or a briefing that marks it shown again moves nothing, the
+writer never raises a condition's state, and the looks, the briefings and the writer are
+shown what the check found beside it. The objective stays open until every condition is
+shown or closed. While a condition is open, the gate refuses a briefing that says the agent
+should stop, that gives no verdict, whose next step tells the agent to stop or calls the work
+finished (a step that only carries the word and goes on, such as stopping a wrong approach,
+is let through), or that says the work is going well. Such a briefing is asked once more with
+the open conditions named, and if it still does any of these the card is refused. While no
+objective is written, any of the same is refused at once, and the card says the objective is
+not written yet. A refused card lists the open conditions as left out, and its meaning, next
+step and message are the rep's own, built from those conditions, so it keeps the agent on the
+job and never offers a stop. The check passes the same gate.
 
-The owner never types the reading. To steer the rep they type a prompt beginning
+These rules came from a session on 15 Oct 2026 in which a message that bounded the agent's
+next step was read as the owner asking for less, the rep's account of the job shrank to the
+latest message, and the rep called the session finished with the product it was opened for
+not on the owner's screen. A first fix that locked the account's opening sentence was
+replaced the same day by the objective in parts, its conditions and the gate, because the
+lock held the result's wording and nothing else: what "done" had to show could still fall
+away with a narrowing message, and nothing stopped a card from calling the job finished
+while part of it was undone.
+
+A message the rep drafted and the owner sent through "Put message in prompt" is recorded as
+the rep's draft, never as the owner's words, and is recognised from the record after a
+reload; whatever the owner typed after the draft is the owner's own message, numbered after
+it. A draft moves only the step it asks for: it starts no write, and it never changes the
+result, narrows the job, sets what "done" means or closes a condition.
+
+The owner never types the objective. To steer the rep they type a prompt beginning
 `Owner rep:`; the rep takes the note, drops the prompt before the agent sees it, lists it to
-the model as said to the rep with the highest weight, and reads again at once. "Tell the rep"
-puts the prefix in the prompt box.
+the model as said to the rep with the highest weight, rewrites the objective with it, and
+reads again at once. "Tell the rep" puts the prefix in the prompt box.
 
-On top of the reading sit five expectations the rep applies without reciting: the whole
+On top of the objective sit five expectations the rep applies without reciting: the whole
 result is delivered; it is shown to work, not said to work; no known problem is left behind;
 nothing was added that the result does not need; and it was done the way that is best for the
 result, not the way that was easiest for the agent. One consequence is spelled out in the
@@ -114,8 +142,11 @@ wrote and the owner pasted is treated as an agent's claim. The full judging brie
 Two modules, split on purpose.
 
 - [`hooks/rep.ts`](hooks/rep.ts) holds everything that can be tested without an engine: the
-  three prompts, the parsers for the model's labelled answers, the check run's argument list
-  and tool allowlist, and the cost arithmetic. It has no engine calls.
+  prompts for the watch, the briefing, the objective writer and the check, the parsers for
+  the model's labelled answers, the objective's rules (how a correction keeps the conditions
+  held, how a stop is refused while one is open, how a draft is told from the owner's own
+  words), the check run's argument list and tool allowlist, and the cost arithmetic. It has
+  no engine calls.
 - [`hooks/register.tsx`](hooks/register.tsx) is the engine side: hook registrations, state
   atoms, the per-session store record, the band render, and the spawn of the check run.
 - [`types/index.d.ts`](types/index.d.ts) declares the mod's state keys and the shapes the
@@ -125,7 +156,12 @@ The watch and the briefing use `$.model.fork`, the same mechanism as Claude Code
 "You should know" note: a fresh instance of the model over the agent's prompt-cached
 conversation, so a read costs little and never slows the agent. The rep's independence comes
 from its brief, which tells the model to treat everything the agent wrote as a claim, and,
-for the check step, from reading outside the conversation altogether.
+for the check step, from reading outside the conversation altogether. The objective writer is
+the exception to the fork: a plain completion (`$.model.complete`) shown the agent's words
+only as the line before each of the owner's messages, marked as the agent's. Its brief says
+that line is there only so a short reply can be understood and never sets the result, and
+the code takes a write only when it saw a message of the owner's past the ones the objective
+was built from, so the agent's words alone never move it.
 
 The check step runs in a room, not under a list of allowed commands. The rep first makes a
 throwaway copy of the project as it stands, uncommitted work included (an APFS clone, made in
@@ -148,10 +184,14 @@ A newer press makes an older run's answer stale, and the card is only rewritten 
 that belongs to it.
 
 State is in two places. Atoms hold the per-session UI state that drives the render. The
-plugin store holds one record per session, capped at the 32 newest: the reading with when
-and why it last moved, the first sentence of each earlier job's reading, the owner's recent
-prompts and notes to the rep, flags already shown, notes other mods have shown, and spend
-counters. Nothing leaves the machine except the model calls the session already makes.
+plugin store holds one record per session, capped at the 32 newest: the objective with its
+earlier versions and when and why it last moved, the results of earlier jobs, the owner's
+messages, notes to the rep and sent drafts, each numbered (the job's kept whole up to 200,
+and the 40 before it), flags already shown, notes other mods have shown, and spend counters
+that count the writer's calls beside the looks. A record saved by a build from before the
+objective is rebuilt from the owner's messages on the next start, press or message, with its
+old text kept as an earlier version. Nothing leaves the machine except the model calls the
+session already makes.
 
 The band above the prompt is a strip shared with other mods. The rep draws first and keeps
 whatever is beneath it. While another mod's note is up, the rep's own note waits and its
@@ -174,9 +214,9 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 51 tests in tests/rep.test.tsx, under a second
+claude plugin test .          # 75 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
-tests/live/live.sh              # on demand: six real sessions in tmux, the strip captured to tests/live/captures
+tests/live/live.sh              # on demand: seven real sessions in tmux, the strip captured to tests/live/captures
 ```
 
 GitHub runs the validation, the tests, the type check and the doctor on every push
@@ -189,8 +229,9 @@ never hide behind a type check against a stale copy.
 tsc -p . --noEmit             # needs .claude-plugin/types/, see below
 ```
 
-The tests cover the parsers, the row on both surfaces, the shared strip, the press, the held
-reading and the note to the rep, and a press followed by a check on a stubbed run. The test kit stubs the model and the
+The tests cover the parsers, the row on both surfaces, the shared strip, the press, the
+objective writer and its rules (the guard, corrections, new jobs, drafts, the marks and the
+gate), the note to the rep, and a press followed by a check on a stubbed run. The test kit stubs the model and the
 band; no test spawns a real check.
 
 Type-checking needs the mods API declarations, which Claude Code writes into a mod's
@@ -219,12 +260,18 @@ it may not edit, send, or launch helpers. The rep never sends anything to an age
   it has to share the strip politely with the mods already using it.
 - **Digits, not letters.** The first version used letter hotkeys; the first live press showed
   that only digits reach a band button from the prompt box.
-- **The reading is the rep's, and the owner talks to the rep through the prompt box.** No
+- **The objective is the rep's, and the owner talks to the rep through the prompt box.** No
   field to click into and no sentence for the owner to compose: a note typed behind a prefix
-  in their own prompt is intercepted by the rep, and the rep rewrites its own reading. A
+  in their own prompt is intercepted by the rep, and the rep rewrites its own objective. A
   first version let the owner pin a sentence word for word; it was removed on 14 Oct 2026,
   because a rep that only holds the builder to the client's literal words is not doing the
   job.
+- **The objective has a writer of its own.** The looks once rewrote the rep's account of the
+  job from the conversation, where the agent's words sit beside the owner's. A separate call
+  shown the owner's messages, and of the agent's words only the last ones before each of
+  them, marked as the agent's and never setting the result, reads the job from the owner
+  rather than from the agent's account of it, and holding the account in parts lets the code
+  keep each condition of "done" until it is shown or the owner lets it go.
 - **The check costs real money, so it runs only when chosen.** The card states the last
   measured cost beside the button.
 - **The check runs outside the session.** A headless, read-only run, so the agent never

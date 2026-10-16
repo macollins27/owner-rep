@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -582,7 +582,7 @@
+       copy,
+       reading: rec.objective === null ? '' : objectiveText(rec.objective),
+       conditions: openConditions(rec.objective),
+-      shown: rec.objective?.done.filter(c => c.state === 'shown') ?? [],
++      shown: [],
+       from: rec.objective?.from ?? 0,
+       owner: jobMsgs(rec),
+       brief: instant,

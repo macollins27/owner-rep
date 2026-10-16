@@ -1,13 +1,12 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 61c3ff0..9805146 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -170,7 +170,7 @@ function takeReading(rec: Rec, a: ReadingAnswer, now: number, saw: number): bool
+@@ -298,7 +298,7 @@
+     done: mergeConditions(held.done, honest(a.parts.done, held.done, fresh), a.dropped, fresh),
+     from: saw,
+     movedAt: now,
+-    cause: a.cause,
++    cause: '',
+     revisions: held.revisions + 1,
+     versions: [...held.versions, version].slice(-VERSIONS_MAX),
    }
-   // A correction keeps the result, the first sentence, unless he replaced it.
-   const text = a.isReplaced ? a.text : keepResult(held.text, a.text)
--  rec.reading = { ...held, text, from: saw, movedAt: now, cause: a.cause, revisions: held.revisions + 1 }
-+  rec.reading = { ...held, text, from: saw, movedAt: now, cause: '', revisions: held.revisions + 1 }
-   return true
- }
- 

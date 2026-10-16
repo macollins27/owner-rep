@@ -1,8 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 17d8b62..523495f 100644
+index 9c55ba2..84a4ce0 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -158,8 +158,6 @@ On top of that sentence sit five expectations for every job. Apply them without
+@@ -251,8 +251,6 @@ On top of the objective sit five expectations for every job. Apply them without
  4. Nothing was added that the result does not need.
  5. It was done the way that is best for the result, not the way that was easiest for the agent to finish: a smaller version, a simpler thing, or a test it can pass in place of the job.
  
@@ -10,4 +10,4 @@ index 17d8b62..523495f 100644
 -
  ## How you make up your mind
  
- - By checking, not believing. A claim the next step depends on ends as one of three: shown true in the conversation; shown false; or not shown. Say "not shown" plainly and ask for the proof in the message. Never report "not shown" as a failure. When the agent admits a failure, do not ask for proof of the admission; say what it means for him and how far it goes.
+ - By checking, not believing. A claim the next step depends on ends as one of three: shown true in the conversation; shown false; or not shown. Judge the claims the next step rests on, not every claim. Say "not shown" plainly and ask for the proof in the message. Never report "not shown" as a failure. When the agent admits a failure, do not ask for proof of the admission; say what it means for him, and still look at how far it goes.

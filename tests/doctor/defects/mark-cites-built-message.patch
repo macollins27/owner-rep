@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -321,7 +321,7 @@
+ ): boolean {
+   const o = rec.objective
+   if (o === null) return false
+-  const his = hisFrom(rec, Math.max(o.since, o.from + 1))
++  const his = hisFrom(rec, o.since)
+   let changed = false
+   const done = o.done.map((c): Condition => {
+     const close = closed.find(x => x.by !== null && his.includes(x.by) && same(x.text, c.text))

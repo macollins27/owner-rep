@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 08b4b6f..8b8969c 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -860,7 +860,7 @@ export const register: Register = on => {
+           // It is matched against the last few cards' messages as stored, so it
+           // survives a reload and a newer card; what he added after the draft is
+           // his own message, numbered after it.
+-          const split = draftSplitAny(e.text, [...rec.drafts, rec.lastBrief?.message ?? ''])
++          const split = draftSplitAny(e.text, [rec.lastBrief?.message ?? ''])
+           const isHis = split === null || split.his !== ''
+           if (split === null) pushOwner(rec, 'his', e.text)
+           else {

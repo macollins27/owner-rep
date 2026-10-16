@@ -1,23 +1,15 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 61c3ff0..3ff5781 100644
+index ec82737..7c39917 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -162,15 +162,15 @@ function takeReading(rec: Rec, a: ReadingAnswer, now: number, saw: number): bool
-     rec.reading = { text: a.text, openedAt: now, since: 0, from: saw, movedAt: null, cause: '', revisions: 0 }
+@@ -262,8 +262,8 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number):
+     delete rec.stale
      return true
    }
 -  if (saw <= held.from) return false
-+  if (rec.owner.length <= held.from) return false
+-  const fresh = hisFrom(rec, held.from + 1).filter(n => n <= saw)
++  if (saw <= held.since) return false
++  const fresh = hisFrom(rec, held.since + 1).filter(n => n <= saw)
+   if (fresh.length === 0) return false
+   const version = { at: now, cause: a.cause, text: objectiveText(held) }
    if (a.isNewJob) {
-     rec.past = [...rec.past, firstSentence(held.text)].slice(-PAST_MAX)
--    rec.reading = { text: a.text, openedAt: now, since: held.from, from: saw, movedAt: now, cause: a.cause, revisions: 0 }
-+    rec.reading = { text: a.text, openedAt: now, since: held.from, from: rec.owner.length, movedAt: now, cause: a.cause, revisions: 0 }
-     return true
-   }
-   // A correction keeps the result, the first sentence, unless he replaced it.
-   const text = a.isReplaced ? a.text : keepResult(held.text, a.text)
--  rec.reading = { ...held, text, from: saw, movedAt: now, cause: a.cause, revisions: held.revisions + 1 }
-+  rec.reading = { ...held, text, from: rec.owner.length, movedAt: now, cause: a.cause, revisions: held.revisions + 1 }
-   return true
- }
- 

@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 0800489..b6275db 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -594,7 +594,7 @@ const clean = (s: string | undefined): string => (s ?? '').trim()
+ // A verdict line read: stop, continue, or missing when there is none or it names neither.
+ export const verdictOf = (s: string | undefined): Verdict => {
+   const v = clean(s)
+-  return /^stop\b/i.test(v) ? 'stop' : /^continue\b/i.test(v) ? 'continue' : 'missing'
++  return /^stop\b/i.test(v) ? 'stop' : /^continue\b/i.test(v) ? 'continue' : 'continue'
+ }
+ 
+ export function parseWatch(text: string): WatchAnswer {

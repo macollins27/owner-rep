@@ -1,9 +1,9 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index c0f1d7d..a23fd0e 100644
+index 08b4b6f..55e71aa 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -340,7 +340,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
-     await finish(patch)
+@@ -670,7 +670,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
+     if (patch !== null) await finish(patch)
    } catch (error) {
      const why = error instanceof Error ? error.message : String(error)
 -    await finish({ checkNote: `The check failed: ${fit(why, 160)}` }).catch(() => undefined)

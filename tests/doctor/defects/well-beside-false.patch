@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -658,7 +658,7 @@
+           verdict: c.verdict ?? instant.verdict,
+           shown: [],
+           closed: [],
+-          well: leftOut.length > 0 || c.wrong.length > 0 ? '' : instant.well,
++          well: instant.well,
+           stands: c.stands === '' ? instant.stands : c.stands,
+           means: or(c.means, instant.means),
+           leftOut,

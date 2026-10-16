@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -295,7 +295,7 @@
+     result: a.parts.result,
+     purpose: a.parts.purpose,
+     step: a.parts.step,
+-    done: mergeConditions(held.done, honest(a.parts.done, held.done, fresh), a.dropped, fresh),
++    done: mergeConditions(held.done, honest(a.parts.done, held.done, hisFrom(rec, held.since)), a.dropped, hisFrom(rec, held.since)),
+     from: saw,
+     movedAt: now,
+     cause: a.cause,

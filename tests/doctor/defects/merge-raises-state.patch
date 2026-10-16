@@ -1,0 +1,19 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index e485b6e..6417b4b 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1401,11 +1401,10 @@ export function mergeConditions(
+ ): Condition[] {
+   const like = (a: string, b: string): boolean => same(bare(a), bare(b))
+   const once = proposed.filter((p, i) => proposed.findIndex(q => like(q.text, p.text)) === i)
+-  const out = once.map((p): Condition => {
++  const rank = (s: ConditionState): number => (s === 'closed' ? 2 : s === 'shown' ? 1 : 0)
++  const out = once.map(p => {
+     const h = held.find(x => like(x.text, p.text))
+-    if (h === undefined) return p.state === 'shown' ? { text: p.text, state: 'open', by: '' } : p
+-    if (p.state === 'closed' && h.state !== 'closed') return { text: p.text, state: 'closed', by: p.by }
+-    return { ...h, text: p.text }
++    return h !== undefined && rank(p.state) < rank(h.state) ? { ...p, state: h.state, by: h.by } : p
+   })
+   for (const h of held) {
+     if (out.some(p => like(p.text, h.text))) continue

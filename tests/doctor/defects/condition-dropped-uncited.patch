@@ -1,0 +1,16 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index e485b6e..27cef79 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1407,11 +1407,6 @@ export function mergeConditions(
+     if (p.state === 'closed' && h.state !== 'closed') return { text: p.text, state: 'closed', by: p.by }
+     return { ...h, text: p.text }
+   })
+-  for (const h of held) {
+-    if (out.some(p => like(p.text, h.text))) continue
+-    const gone = dropped.some(d => d.by !== null && his.includes(d.by) && like(d.text, h.text))
+-    if (!gone) out.push(h)
+-  }
+   return out
+ }
+ 
