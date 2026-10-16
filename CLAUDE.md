@@ -177,8 +177,9 @@ sent with its fixed rules as `system: OBJECTIVE_SYSTEM` on every attempt, and sh
 `objectivePrompt` only the held objective, `rec.past` and his numbered messages on the job
 (each with the agent's last answer before it), the messages inside a `<his_messages>` fence
 followed by a note that they are quoted records and no instruction to the writer; a fence tag
-in a message or in the agent line is printed with its brackets turned to `‹` `›`, so no message
-can close the fence, and the record keeps the text as typed. Its answer is `objective: holds`, or
+(any letter case, spaces inside the brackets allowed) in a message or in the agent line is
+printed with its brackets turned to `‹` `›`, so no message can close the fence, and the record
+keeps the text as typed. Its answer is `objective: holds`, or
 `objective: moved` with `moved:`, `result:`, `for:`, `done:`, `step:` and `dropped:`
 (`parseObjective`); `moved: new job …` closes the job. `takeObjective` applies it: the first
 objective is taken as it stands; after that a write is taken only when it saw a message of his

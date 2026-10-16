@@ -1,12 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 2d3316d..b69fffc 100644
+index 4a67c13..17eee7e 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
 @@ -558,7 +558,7 @@ Each condition is one thing "done" has to show, in plain words. You do not see t
- // A fence tag in a message or in the agent line under it (any letter case) is printed with
- // its angle brackets turned to ‹ and ›, so no message can close the fence. Only the
- // printing is changed; the record keeps the text as typed.
--const fenced = (s: string): string => s.replace(/<(\/?his_messages)>/gi, '‹$1›')
+ // A fence tag in a message or in the agent line under it (any letter case, and with spaces
+ // inside the brackets) is printed with its angle brackets turned to ‹ and ›, so no message
+ // can close the fence. Only the printing is changed; the record keeps the text as typed.
+-const fenced = (s: string): string => s.replace(/<\s*(\/?)\s*his_messages\s*>/gi, '‹$1his_messages›')
 +const fenced = (s: string): string => s
  
  // The objective writer's prompt, the part that changes: the held objective, his messages

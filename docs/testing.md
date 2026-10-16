@@ -137,8 +137,8 @@ line and leaving the objective as it was, an answer it cannot read counted with 
 attempt tried again at the highest effort up to twice but not after a throw or a cut-short
 call, a `holds` with nothing held counted as a failed attempt, and its reply cap and time set
 from a measured write; the rules sent as the system prompt on every attempt, and his messages
-fenced as quoted records that no message can close), his long messages reaching the writer whole, the
-agent's words before a message kept from their end, the rep's draft recognised before and after
+fenced as quoted records that no message can close), his long messages reaching the writer
+whole, the agent's words before a message kept from their end, the rep's draft recognised before and after
 a reload, the record saved in the old shape, a stale check leaving the record alone, and
 the last three cards' messages kept for knowing a draft. Seventy-five doctor entries, all caught.
 
