@@ -151,12 +151,14 @@ const NOTE_PLACES: readonly RegExp[] = [
   /^\s*owner rep(?:\s+[a-z]+)?\s*:/i,
   // At the start of a line, after any spaces or tabs: typed below a prompt.
   /(?<=\n[ \t]*)owner rep(?:\s+[a-z]+)?\s*:/i,
-  // After a sentence's end and a space: typed on after a prompt's last sentence.
-  /(?<=[.!?][ \t]+)owner rep(?:\s+[a-z]+)?\s*:/i,
-  // Glued to the end of other text with no space, and only as the capitalised
-  // prefix: a word running straight into it is two texts run together, which
-  // a lower-case "rep" inside a word never is.
-  /(?<=\S)Owner rep(?:\s+[A-Za-z]+)?\s*:/,
+  // After a sentence's end, any closing quotes or brackets, and a space: typed on
+  // after a prompt's last sentence, as in: He said "go." Owner rep: …
+  /(?<=[.!?]["'”’)\]]*[ \t]+)owner rep(?:\s+[a-z]+)?\s*:/i,
+  // Glued with no space to the end of a word or a sentence, and only as the
+  // capitalised prefix: a word running straight into it is two texts run
+  // together, which a lower-case "rep" inside a word never is. After a quote, a
+  // bracket, a dash or a backtick it is a mention ("x)Owner rep: y", `Owner rep:`).
+  /(?<=[A-Za-z0-9.!?])Owner rep(?:\s+[A-Za-z]+)?\s*:/,
 ]
 // Splits a prompt at a note to the rep: `before` is what the agent gets (empty
 // for a note alone), `note` is what follows the colon. Null when no prefix

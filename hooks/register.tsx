@@ -1050,8 +1050,10 @@ export const register: Register = on => {
     // The engine stamps the origin; the test kit's own submit carries none.
     const kind = e.origin?.kind ?? 'composer'
     if (kind === 'composer' || kind === 'bridge') {
-      // A note to the rep, alone or typed after a prompt to the agent.
-      const noted = noteSplit(e.text)
+      // A note to the rep, alone or typed after a prompt to the agent. A slash
+      // command's line is the command's: the engine applies no rewrite to it, so
+      // a prefix in its arguments is never split off as a note.
+      const noted = e.command === undefined ? noteSplit(e.text) : null
       // The look reads a note against the work at once.
       const lookAtNote = (id: string) => {
         if (inFlight.has('note')) return
@@ -1134,6 +1136,8 @@ export const register: Register = on => {
       } catch {
         // Recording is best effort; the prompt goes on.
       }
+      // A prefix with nothing after it, behind a prompt: nothing is noted, and he is told so.
+      if (noted !== null && note === '') $.ui.toast('Owner rep: nothing after the prefix, so nothing noted. The agent got the rest.')
       // The agent never sees the note, even when recording it failed.
       if (noted !== null) return next({ ...e, text })
     }

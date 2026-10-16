@@ -532,5 +532,29 @@
     "breaks": "A note to the rep sent while the session is still being read for his messages is recorded first, and the read then seeds nothing, so the objective is written from the note alone.",
     "patch": "seed-races-note.patch",
     "fixed": "2026-10-16"
+  },
+  {
+    "name": "glued-note-after-any",
+    "breaks": "A prefix glued after a bracket, a dash, a quote or a backtick, as when he quotes the prefix to the agent, is split off as a note: the agent loses the rest of his prompt and the rep takes a mention for his words.",
+    "patch": "glued-note-after-any.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "note-after-quote-missed",
+    "breaks": "A note typed after a sentence that closes a quote or a bracket is not split off, so the agent reads the note meant for the rep.",
+    "patch": "note-after-quote-missed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "note-split-in-command",
+    "breaks": "A prefix inside a slash command's arguments is split off as a note, though the engine applies no rewrite to a command, so the rep records a note the agent still sees.",
+    "patch": "note-split-in-command.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "empty-note-silent",
+    "breaks": "A prefix with nothing after it, behind a prompt, is taken out of the prompt without a word, so he believes the rep was told something.",
+    "patch": "empty-note-silent.patch",
+    "fixed": "2026-10-16"
   }
 ]

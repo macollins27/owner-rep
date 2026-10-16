@@ -231,6 +231,10 @@ test('noteSplit finds a note at the start of the prompt or of a line, after a se
   expect(noteSplit('Done. Owner rep: check the install yourself')).toEqual({ before: 'Done.', note: 'check the install yourself' })
   expect(noteSplit('Ship it! owner rep: he means the store build')).toEqual({ before: 'Ship it!', note: 'he means the store build' })
   expect(noteSplit('fix itOwner rep: x')).toEqual({ before: 'fix it', note: 'x' })
+  expect(noteSplit('Fix it.Owner rep: x')).toEqual({ before: 'Fix it.', note: 'x' })
+  // A sentence's end may close a quote or a bracket before the space.
+  expect(noteSplit('He said "go." Owner rep: x')).toEqual({ before: 'He said "go."', note: 'x' })
+  expect(noteSplit('Run it (all of it.) owner rep: the run matters')).toEqual({ before: 'Run it (all of it.)', note: 'the run matters' })
   // The first place wins; the rest of the text after it is the note.
   expect(noteSplit('Done. Owner rep: one\nOwner rep: two')).toEqual({ before: 'Done.', note: 'one\nOwner rep: two' })
   expect(noteSplit('Carry on.\nOwner rep:')).toEqual({ before: 'Carry on.', note: '' })
@@ -238,6 +242,13 @@ test('noteSplit finds a note at the start of the prompt or of a line, after a se
   expect(noteSplit('tell the owner rep: fine')).toBe(null)
   expect(noteSplit('As the Owner rep: x')).toBe(null)
   expect(noteSplit('fix itowner rep: x')).toBe(null)
+  // Glued after a bracket, a dash, a quote or a backtick, or inside brackets, it is a mention.
+  expect(noteSplit('x)Owner rep: y')).toBe(null)
+  expect(noteSplit('x-Owner rep: y')).toBe(null)
+  expect(noteSplit('When I type "Owner rep: hello" the row should go quiet.')).toBe(null)
+  expect(noteSplit('Print `Owner rep: noted` in the toast.')).toBe(null)
+  expect(noteSplit('`Owner rep: noted`')).toBe(null)
+  expect(noteSplit('Keep the wording (Owner rep: x) as it is.')).toBe(null)
   expect(noteSplit('fix the tests')).toBe(null)
   // noteTyped is the case with nothing before the prefix.
   expect(noteTyped('Done. Owner rep: x')).toBe(null)
@@ -284,12 +295,45 @@ test('rule: a note typed after other text goes to the rep only: the agent gets t
   expect(looks[0]).toMatch(/- #2 \(to the rep\) he wants the GitHub run green too/)
   expect(writes.at(-1)).toContain('Run the suite.')
   expect(writes.at(-1)).toContain('he wants the GitHub run green too')
-  // An empty note after a later prefix: the agent gets the text before it, and no note is taken.
+  // An empty note after a later prefix: the agent gets the text before it, no note is taken, and a toast says so.
   const empty = await $.prompt.submit(typed('Carry on.\nOwner rep:'))
   expect(empty.text).toBe('Carry on.')
+  const glued = await $.prompt.submit(typed('Fix it. Owner rep:'))
+  expect(glued.text).toBe('Fix it.')
+  expect(agent.slice(1)).toEqual(['Carry on.', 'Fix it.'])
   await settle($)
-  expect(rec().owner.map(m => [m.n, m.kind, m.text]).slice(2)).toEqual([[3, 'his', 'Carry on.']])
+  expect(rec().owner.map(m => [m.n, m.kind, m.text]).slice(2)).toEqual([
+    [3, 'his', 'Carry on.'],
+    [4, 'his', 'Fix it.'],
+  ])
   expect(toasts.filter(t => /went to the rep only/.test(t))).toHaveLength(1)
+  expect(toasts.filter(t => t === 'Owner rep: nothing after the prefix, so nothing noted. The agent got the rest.')).toHaveLength(2)
+})
+
+test('rule: a prefix inside a slash command\'s arguments stays the command\'s: nothing is split off, noted or dropped', async ($, on) => {
+  const store: Record<string, unknown> = {}
+  on('store.get', (_$, e) => ({ value: store[e.key] }))
+  on('store.set', (_$, e) => {
+    store[e.key] = e.value
+    return { value: undefined }
+  })
+  on('session.id', () => ({ value: 'test-session' }))
+  on('prompt.submit', (_$, e) => ({ text: e.text }))
+  const rec = () => (store.sessions as Record<string, Stored> | undefined)?.['test-session']
+  quietBand(on)
+  const toasts: string[] = []
+  on('ui.toast', (_$, e) => {
+    toasts.push(e.text)
+    return { value: undefined }
+  })
+  writer(on, () => OBJ('A review of the diff.', ['the review given | open']))
+  const line = '/review the diff. Owner rep: he wants the tests read too'
+  const result = await $.prompt.submit({ text: line, command: { name: 'review', args: 'the diff. Owner rep: he wants the tests read too' }, wait: false, origin: { kind: 'composer' } })
+  expect(result.drop).toBeUndefined()
+  expect(result.text).toBe(line)
+  await settle($)
+  expect(rec()?.owner.map(m => [m.n, m.kind, m.text])).toEqual([[1, 'his', line]])
+  expect(toasts.some(t => /Owner rep:/.test(t))).toBe(false)
 })
 
 test('the checker: its prompt names the session, its tools are read-only, and its answer parses', async () => {
