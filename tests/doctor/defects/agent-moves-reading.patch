@@ -1,8 +1,7 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index ec82737..0413401 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -367,12 +367,8 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
+@@ -387,12 +387,8 @@
      if (due) {
        shown = saw
        const result = await $.model
@@ -15,4 +14,4 @@ index ec82737..0413401 100644
 -          timeoutMs: 60000,
          })
          .catch(() => null)
-       // A call that threw changed nothing, so nothing is saved.
+       // A call that threw or came back unanswered leaves the objective as it

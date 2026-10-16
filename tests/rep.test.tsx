@@ -1,7 +1,7 @@
 import type { On } from 'claude-code'
 import { expect, mock, test, type Engine } from 'claude-code/testing'
 
-import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, draftSplit, draftSplitAny, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, type Condition } from '../hooks/rep'
+import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, type Condition } from '../hooks/rep'
 
 const om = (text: string, n = 1): OwnerMsg => ({ n, kind: 'his', text, prior: '' })
 
@@ -971,7 +971,7 @@ const HOLDS = 'state: stopped\nflag: none'
 const settle = async ($: Engine) => (await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })).unmount()
 
 // What the store holds for the session, as the tests read it back.
-type Stored = { objective: Objective | null; owner: OwnerMsg[]; past: string[]; jobStart: number; objectiveCalls: number; objectiveTokens: number; calls: number; checks: number; seen: string[]; lastBrief?: { at: number; next: string; message: string }; drafts?: string[] }
+type Stored = { objective: Objective | null; owner: OwnerMsg[]; past: string[]; jobStart: number; objectiveCalls: number; objectiveTokens: number; calls: number; checks: number; seen: string[]; lastBrief?: { at: number; next: string; message: string }; drafts?: string[]; objectiveFailed?: number }
 
 // A session whose store the test reads back: the function returns the record as saved.
 const kept = (on: On, store: Record<string, unknown> = {}) => {
@@ -1419,18 +1419,15 @@ test('rule: with no objective held, a press writes it before the briefing, which
   expect(order).toEqual(['write', 'write', 'brief'])
   expect(looks[0]).toMatch(/A licence file with the full MIT text\. So he can rely on it\. Done when: the file committed\./)
   expect(await ui.find({ type: 'Text', text: /A licence file with the full MIT text\. So he can rely on it\./ })).toBeDefined()
-  // The price line counts the writer's calls beside the looks: two writes, one unanswered.
-  expect(await ui.find({ type: 'Text', text: /^Owner rep: 1 look, 2 objective writes \(2k tokens\) this session;/ })).toBeDefined()
+  // The price line counts the writer's calls beside the looks: two writes, and the
+  // unanswered one also as a failed write.
+  expect(await ui.find({ type: 'Text', text: /^Owner rep: 1 look, 2 objective writes \(2k tokens\), 1 objective write failed this session;/ })).toBeDefined()
   await ui.unmount()
   expect(rec()?.objective?.since).toBe(1)
 })
 
-test('rule: a writer call that throws saves nothing and counts nothing', async ($, on) => {
-  const store: Record<string, unknown> = unwritten()
-  const saved = (store.sessions as Record<string, { at: number }>)['test-session']
-  if (saved === undefined) throw new Error('no record')
-  saved.at = 1
-  const rec = kept(on, store)
+test('rule: a writer call that throws keeps the objective as it was and is counted as a failed write', async ($, on) => {
+  const rec = kept(on, unwritten())
   quietBand(on)
   on('session.start', (_$, e) => ({ cwd: e.cwd }))
   let calls = 0
@@ -1441,8 +1438,62 @@ test('rule: a writer call that throws saves nothing and counts nothing', async (
   await $.session.start({ cwd: '/tmp/x', surface: 'terminal', isInteractive: true })
   await settle($)
   expect(calls).toBe(1)
-  expect((rec() as unknown as { at: number }).at).toBe(1)
   expect(rec()?.objective).toBe(null)
+  expect(rec()?.objectiveCalls).toBe(0)
+  expect(rec()?.objectiveFailed).toBe(1)
+})
+
+test('rule: a held objective stays as it was when the write for his next message fails', async ($, on) => {
+  const rec = kept(on, {
+    sessions: {
+      'test-session': { id: 'test-session', at: Date.now(), objective: OBJECTIVE_FIXTURE, jobStart: 1, owner: [om('build the spec')], counter: 1, past: [], seen: [], others: [] },
+    },
+  })
+  quietBand(on)
+  let calls = 0
+  on('model.complete', () => {
+    calls += 1
+    if (calls === 1) throw new Error('the model is unreachable')
+    return { value: { isAnswered: false, reason: 'empty-reply', usage: USAGE } }
+  })
+  await $.prompt.submit(typed('and add a second page'))
+  await settle($)
+  expect(calls).toBe(1)
+  expect(rec()?.objective).toEqual(OBJECTIVE_FIXTURE)
+  expect(rec()?.objectiveFailed).toBe(1)
+  await $.prompt.submit(typed('with a footer'))
+  await settle($)
+  expect(calls).toBe(2)
+  expect(rec()?.objective).toEqual(OBJECTIVE_FIXTURE)
+  expect(rec()?.objectiveCalls).toBe(1)
+  expect(rec()?.objectiveFailed).toBe(2)
+})
+
+test('rule: a long message of his reaches the writer whole', async ($, on) => {
+  const rec = kept(on)
+  quietBand(on)
+  const writes = writer(on, () => OBJ('A long result.', ['the parts built | open']))
+  const long = Array.from({ length: 120 }, (_, i) => `Part ${i + 1} of the ask goes here.`).join(' ')
+  expect(long.length).toBeGreaterThan(3000)
+  await $.prompt.submit(typed(long))
+  await settle($)
+  expect(writes).toHaveLength(1)
+  expect(writes[0]).toContain(`- #1 ${long}\n`)
+  expect(rec()?.owner[0]?.text).toBe(long)
+})
+
+test('rule: the agent\'s words before his message are kept from their end, where the question is', async ($, on) => {
+  kept(on)
+  quietBand(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: HOLDS, usage: USAGE } }))
+  const writes = writer(on, () => OBJ('A pushed branch.', ['the branch pushed | open']))
+  const answer = `${'Earlier work was done here and checked. '.repeat(20)}Shall I push the branch now?`
+  await $.turn.complete(stop('t1', answer))
+  await settle($)
+  await $.prompt.submit(typed('yes'))
+  await settle($)
+  expect(writes).toHaveLength(1)
+  expect(writes[0]).toMatch(/- #1 yes\n {4}\(the agent, just before: …[^)]*Shall I push the branch now\?\)/)
 })
 
 test('rule: a session that starts with his messages and no objective writes it', async ($, on) => {
@@ -1806,6 +1857,23 @@ test('rule: the check is given the conditions the rep holds open, and its shown 
   ])
   expect(await ui.find({ type: 'Text', text: /Done when: the newest build installed \(shown\); the two sessions finished; the README written \(closed\)\./ })).toBeDefined()
   await ui.unmount()
+})
+
+test('spentText names failed objective writes only when there are some', () => {
+  expect(spentText(1, 0, 0, 0, 0, 2, 2000)).not.toMatch(/failed/)
+  expect(spentText(1, 0, 0, 0, 0, 2, 2000, 1)).toMatch(/^Owner rep: 1 look, 2 objective writes \(2k tokens\), 1 objective write failed this session;/)
+  expect(spentText(1, 0, 0, 0, 0, 0, 0, 2)).toMatch(/^Owner rep: 1 look, 2 objective writes failed this session;/)
+})
+
+test('fitTail keeps the end of a long text and folds its spaces', () => {
+  const answer = `${'Earlier work was done here. '.repeat(30)}Shall I push it now?`
+  const t = fitTail(answer, PRIOR_CUT)
+  expect(t.length).toBe(PRIOR_CUT)
+  expect(t.startsWith('…')).toBe(true)
+  expect(t.endsWith('Shall I push it now?')).toBe(true)
+  expect(fitTail('  a short\n\n answer ', 40)).toBe('a short answer')
+  expect(fitTail('abcdef', 1)).toBe('…')
+  expect(fitTail('abcdef', 0)).toBe('')
 })
 
 test('trimOwner keeps the whole job past OWNER_MAX and migrateOwner reads the old marks', () => {

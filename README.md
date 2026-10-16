@@ -63,13 +63,14 @@ since that is the agent's idea with the owner's name on it.
 
 The objective is written by a call of its own, never by the looks. Each message of the
 owner's, and each note to the rep, starts one plain model call, not a fork of the
-conversation, that is shown only the owner's numbered messages on the job (each with the
-agent's last words before it, so a short reply can be understood), the objective as held,
-and the results of earlier jobs. The code keeps the agent's words from moving it: a write is
+conversation, that is shown only the owner's numbered messages on the job (each kept whole
+up to 6,000 characters, with the end of the agent's last words before it, so a short reply
+can be understood), the objective as held, and the results of earlier jobs. The code keeps the agent's words from moving it: a write is
 taken only when it saw a message of the owner's past the ones the held objective was built
 from, so a write that lands after a newer one is refused, and a message that arrives during
-a write is written after it. When no objective is held yet, a press of Rep writes one before
-the briefing.
+a write is written after it. A write that fails or comes back empty leaves the objective as
+it was and is counted, and the card's line of what the rep has spent names the failed
+writes. When no objective is held yet, a press of Rep writes one before the briefing.
 
 A session is a run of jobs: the owner opens one, the agent works, the owner corrects it a
 few times, the job ends and the next begins. A correction rebuilds the objective whole from

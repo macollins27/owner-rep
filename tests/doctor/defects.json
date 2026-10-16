@@ -346,5 +346,41 @@
     "breaks": "A condition the writer lists twice, or with a state mark copied into its text, is kept twice, so the list of what done means grows by repeats.",
     "patch": "conditions-pile-up.patch",
     "fixed": "2026-10-15"
+  },
+  {
+    "name": "writer-failure-uncounted",
+    "breaks": "A writer call that throws or comes back unanswered is not counted, so a session whose objective was never written looks on the price line as if nothing went wrong.",
+    "patch": "writer-failure-uncounted.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "writer-failure-erases",
+    "breaks": "A writer call that fails clears the objective already held, so one unreachable call leaves the job with nothing to measure the agent against.",
+    "patch": "writer-failure-erases.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "writer-failure-unshown",
+    "breaks": "The price line never names failed objective writes, whatever the count on record.",
+    "patch": "writer-failure-unshown.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "writer-failure-off-card",
+    "breaks": "The briefing card's price line is built without the count of failed objective writes, so the owner is not told the objective was not written.",
+    "patch": "writer-failure-off-card.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "his-message-cut",
+    "breaks": "The owner's own messages are cut to the drafts' 1,200 characters, so the asks at the end of a long first message never reach the writer.",
+    "patch": "his-message-cut.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "prior-keeps-head",
+    "breaks": "The agent's words before his message are kept from their start, so the question a short reply answers, usually at the end, is cut off.",
+    "patch": "prior-keeps-head.patch",
+    "fixed": "2026-10-15"
   }
 ]

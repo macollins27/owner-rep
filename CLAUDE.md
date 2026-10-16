@@ -37,7 +37,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 85 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 90 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: six real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -159,7 +159,9 @@ the write that built it was shown), `movedAt`, `cause`, `revisions` and up to `V
 earlier `versions`. Only `rebuildObjective` writes it: on each message of his and each note,
 never on a draft, and on a session start or a press when none is held. `writeObjective` runs
 one write per session at a time; a request during a write joins it (`again`), and a message
-saved after the write was shown its messages is written next. The writer is a plain
+saved after the write was shown its messages is written next. A write that throws or comes
+back unanswered leaves the objective as it was and adds one to `rec.objectiveFailed`, which
+the card's price line (`spentText`) names only when above zero. The writer is a plain
 `$.model.complete` call (`OBJECTIVE_MODEL`, high effort), never a fork of the conversation,
 shown by `objectivePrompt` only his numbered messages on the job (each with the agent's last
 answer before it), the held objective and `rec.past`. Its answer is `objective: holds`, or
@@ -183,8 +185,11 @@ when it was written), and the check's `reopen:` lines when they say what shows o
 `prompt.submit`. The card shows `revisedLine` under the head and `objectiveText` as its
 reading; the row shows `result`.
 
-Owner messages are `OwnerMsg`s: `n`, `kind` (`his`, `note` or `draft`), `text`, and `prior`,
-the agent's last answer before it. `rec.counter` gives every message its number, drafts
+Owner messages are `OwnerMsg`s: `n`, `kind` (`his`, `note` or `draft`), `text` (cut to
+`HIS_CUT`, 6,000 characters, for his messages and notes, the writer's only input, and to
+`OWNER_CUT`, 1,200, for a draft), and `prior`, the end of the agent's last answer before it
+(`fitTail` to `PRIOR_CUT`, 400, keeping the end, where the question a short reply answers
+usually is). `rec.counter` gives every message its number, drafts
 included, so the guards compare numbers, never list lengths, and `trimOwner` keeps the job's
 messages whole up to `JOB_MAX` (200) and `OWNER_MAX` (40) from before it. `loadRec` migrates
 older records: a list of strings becomes numbered messages (`migrateOwner`, which reads the
@@ -195,7 +200,7 @@ text in `rec.stale` (kept as the first version when the objective is written) an
 State lives in two places. Atoms (`atom({plugin, key})`) are per-session UI state that drives
 the render. The `$.store` key `sessions` holds a `Rec` per session id (the objective, the
 results of earlier jobs, the owner's numbered messages and the counter, the last briefing's
-next step and message, the last `DRAFTS_MAX` (3) cards' messages in `rec.drafts`, flags already seen, other mods' notes, spend counters with the writer's own), capped
+next step and message, the last `DRAFTS_MAX` (3) cards' messages in `rec.drafts`, flags already seen, other mods' notes, spend counters with the writer's own and its failed calls), capped
 at `SESSIONS_MAX` newest. `loadRec`/`saveRec` are the only way in and out, and `changeRec`
 runs each change alone from its load to its save, so two hooks that finish together never save
 over each other.

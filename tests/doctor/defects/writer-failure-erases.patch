@@ -1,0 +1,15 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -403,7 +403,10 @@
+           r.objectiveTokens += tokensOf(result.usage)
+         }
+         if (result !== null && result.isAnswered) takeObjective(r, parseObjective(result.text), Date.now(), saw)
+-        else r.objectiveFailed += 1
++        else {
++          r.objectiveFailed += 1
++          r.objective = null
++        }
+         return r
+       })
+       // The row shows what the record holds, whichever write put it there.

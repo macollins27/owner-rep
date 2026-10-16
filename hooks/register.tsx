@@ -12,6 +12,7 @@ import {
   NOTE_CLEAR_MS,
   NOTE_PREFIX,
   OWNER_CUT,
+  HIS_CUT,
   PRIOR_CUT,
   type OwnerKind,
   type OwnerMsg,
@@ -34,6 +35,7 @@ import {
   firstSentence,
   fitCard,
   fit,
+  fitTail,
   noteTyped,
   draftSplitAny,
   keepDraft,
@@ -114,6 +116,8 @@ type Rec = {
   // The objective writer's own calls and their tokens.
   objectiveCalls: number
   objectiveTokens: number
+  // Writer calls that threw or came back unanswered; each left the objective as it was.
+  objectiveFailed: number
 }
 
 const isRec = (v: unknown): v is Rec =>
@@ -143,6 +147,7 @@ const freshRec = (id: string): Rec => ({
   lastCheckRefused: 0,
   objectiveCalls: 0,
   objectiveTokens: 0,
+  objectiveFailed: 0,
 })
 
 async function loadRec($: EngineInterface, id: string): Promise<Rec> {
@@ -390,17 +395,19 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
           timeoutMs: 60000,
         })
         .catch(() => null)
-      // A call that threw changed nothing, so nothing is saved.
-      if (result !== null) {
-        const after = await changeRec($, sid, r => {
+      // A call that threw or came back unanswered leaves the objective as it
+      // was and is counted as a failed write, which the price line shows.
+      const after = await changeRec($, sid, r => {
+        if (result !== null) {
           r.objectiveCalls += 1
           r.objectiveTokens += tokensOf(result.usage)
-          if (result.isAnswered) takeObjective(r, parseObjective(result.text), Date.now(), saw)
-          return r
-        })
-        // The row shows what the record holds, whichever write put it there.
-        await update($, readingA, () => after.objective)
-      }
+        }
+        if (result !== null && result.isAnswered) takeObjective(r, parseObjective(result.text), Date.now(), saw)
+        else r.objectiveFailed += 1
+        return r
+      })
+      // The row shows what the record holds, whichever write put it there.
+      await update($, readingA, () => after.objective)
     }
     onlyFirst = false
     // A message of his or a note that came in during the write is written now:
@@ -513,7 +520,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
         message: a.message,
         does: a.does,
         at: Date.now(),
-        spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens, after.objectiveCalls, after.objectiveTokens),
+        spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens, after.objectiveCalls, after.objectiveTokens, after.objectiveFailed),
         size: context === undefined ? '' : `conversation at ${context.percent} percent of its window`,
         isChecking: false,
         checked: null,
@@ -678,7 +685,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
         next: card.next,
         message: card.message,
         does: card.does,
-        spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens, after.objectiveCalls, after.objectiveTokens),
+        spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens, after.objectiveCalls, after.objectiveTokens, after.objectiveFailed),
         checkCost: checkCostText(after.lastCheckTokens, after.lastCheckCached, after.lastCheckMs, after.lastCheckRefused),
       }
       after.lastBrief = { at, next: patch.next ?? '', message: patch.message ?? '' }
@@ -732,10 +739,13 @@ async function putMessage($: EngineInterface, text: string): Promise<void> {
 // The agent's last answer, the "prior" of the owner's next message.
 let lastAnswer = ''
 
-// Records one owner message with the next number and the agent's last answer.
+// Records one owner message with the next number and the end of the agent's
+// last answer. His messages and notes are kept to the larger cut, since the
+// writer reads nothing else; a draft of the rep's to the smaller.
 function pushOwner(rec: Rec, kind: OwnerKind, text: string): void {
+  const cut = kind === 'draft' ? OWNER_CUT : HIS_CUT
   rec.owner = trimOwner(
-    [...rec.owner, { n: ++rec.counter, kind, text: fit(text, OWNER_CUT), prior: fit(lastAnswer, PRIOR_CUT) }],
+    [...rec.owner, { n: ++rec.counter, kind, text: fit(text, cut), prior: fitTail(lastAnswer, PRIOR_CUT) }],
     jobOf(rec),
   )
 }

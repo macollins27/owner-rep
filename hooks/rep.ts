@@ -14,9 +14,14 @@ export const SEEN_MAX = 40
 export const OWNER_MAX = 40
 // The job's own messages are kept whole up to this many.
 export const JOB_MAX = 200
-// The agent's last answer before a message, cut to this.
+// The agent's last answer before a message, cut to this from its end, where
+// the question a short reply answers usually is.
 export const PRIOR_CUT = 400
+// A draft of the rep's, sent by him, is cut to this.
 export const OWNER_CUT = 1200
+// A message or note of his is cut to this: it is the writer's only input, and
+// a long first message carries asks to its end.
+export const HIS_CUT = 6000
 export const SESSIONS_MAX = 32
 // Earlier jobs' results kept per session.
 export const PAST_MAX = 8
@@ -1036,6 +1041,16 @@ export function fit(text: string, width: number): string {
   return `${t.slice(0, width - 1).trimEnd()}…`
 }
 
+// Cuts a string to `width` cells from its start, keeping the end, with an
+// ellipsis in front when cut.
+export function fitTail(text: string, width: number): string {
+  const t = text.replace(/\s+/g, ' ').trim()
+  if (width <= 0) return ''
+  if (t.length <= width) return t
+  if (width <= 1) return '…'
+  return `…${t.slice(t.length - (width - 1)).trimStart()}`
+}
+
 const base = (p: unknown): string => {
   if (typeof p !== 'string' || p === '') return ''
   const parts = p.split('/')
@@ -1167,12 +1182,14 @@ export function checkCostText(lastTokens: number, lastCached: number, lastMs: nu
   return `${lead} The first one measured used ${costWords(FIRST_CHECK_TOKENS, FIRST_CHECK_CACHED, FIRST_CHECK_MS)}.`
 }
 
-export function spentText(calls: number, tokens: number, cached: number, checks = 0, checkTokens = 0, writes = 0, writeTokens = 0): string {
+export function spentText(calls: number, tokens: number, cached: number, checks = 0, checkTokens = 0, writes = 0, writeTokens = 0, writeFailed = 0): string {
   const fresh = Math.max(0, tokens - cached)
   const looks = `${calls} look${calls === 1 ? '' : 's'}`
   const written = writes > 0 ? `, ${writes} objective write${writes === 1 ? '' : 's'} (${k(writeTokens)} tokens)` : ''
+  // A write that threw or came back unanswered left the objective as it was; said only when there is one.
+  const failed = writeFailed > 0 ? `, ${writeFailed} objective write${writeFailed === 1 ? '' : 's'} failed` : ''
   const checked = checks > 0 ? `, ${checks} check${checks === 1 ? '' : 's'} (${k(checkTokens)} tokens, mostly cache)` : ''
-  return `Owner rep: ${looks}${written}${checked} this session; looks used ${k(fresh)} fresh tokens and ${k(cached)} re-read from cache`
+  return `Owner rep: ${looks}${written}${failed}${checked} this session; looks used ${k(fresh)} fresh tokens and ${k(cached)} re-read from cache`
 }
 
 // --- Fitting the briefing card into the band's rows. ---
