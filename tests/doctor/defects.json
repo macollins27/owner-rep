@@ -448,5 +448,11 @@
     "breaks": "A fence tag typed in a message, or in the agent's words under it, is printed as it stands, so a message can close the fence and what follows reads as the writer's own instructions.",
     "patch": "writer-fence-closable.patch",
     "fixed": "2026-10-16"
+  },
+  {
+    "name": "note-after-text-leaks",
+    "breaks": "A note to the rep is found only at the start of the prompt, so one typed after other text in the box goes to the agent with the rest.",
+    "patch": "note-after-text-leaks.patch",
+    "fixed": "2026-10-16"
   }
 ]
