@@ -1439,13 +1439,37 @@ export const UNWRITTEN_NEXT = 'The objective is not written yet, so the agent st
 export const UNWRITTEN_MESSAGE = 'The job is not finished. Stay on it, and show each part working, or say what stands in the way, before anything stops.'
 export const UNWRITTEN_DOES = 'Keeps the agent on the job until it shows each part working or says what stands in the way.'
 
-// A next step that tells the agent to stop or calls the work finished. Read on
-// "next" only, whatever the verdict line says. It errs toward refusing: a step
-// that merely contains the word ("Don't stop until …") is refused too, and the
-// cost of that is the rep's own open texts in place of the model's next step.
-// It does not match a step that goes on toward a finish ("Finish the two
-// sessions, then show each one done").
-export const STOP_NEXT = /\bstop(?:s|ped|ping)?\b|\b(?:is|are|all|been|now|as|job|work) (?:done|finished|complete)\b|\bnothing (?:is |more )?(?:left|to do|remains)\b/i
+// The start of a clause in a next step: its start or a stop mark, then a joining word.
+const CLAUSE = String.raw`(?:^|[.;:!?,]\s*)(?:(?:and|so|then|now)\s+)?`
+// The end of a clause, looked at and not taken.
+const CLAUSE_END = String.raw`(?=\s*(?:[.;:!?,]|$))`
+// "stop" said to or of the agent or the job: at a clause's start, after the
+// agent, "it", "you", "we" or the session (with "can", "should" and the like),
+// after "let the agent" or after "to", and not after "not", "never", "n't" or
+// a bare "let" ("Don't let it stop" goes on); then at most an object (the
+// agent, the session, the job, everything) and a word of place or time (here,
+// now, for now), and the clause ends there.
+const STOP_SAID = String.raw`(?:${CLAUSE}|(?<!(?:\bnot|\bnever|n't|\blet)\s+)(?:\b(?:the agent|it|you|we|the session|claude)\s+(?:(?:can|could|should|may|might|must|will|needs to|has to|is to|is free to|is ready to)\s+)?(?:now\s+|just\s+)?|\blet\s+(?:the agent|it|the session)\s+|\bto\s+))stops?(?:\s+(?:the (?:agent|session|job|work)|this (?:session|job)|everything|it all|work(?:ing)?))?(?:\s+(?:here|now|there|completely|for (?:now|today|good)))?${CLAUSE_END}`
+// The work, the job or everything called done, finished, complete or over, as a clause of its own.
+const FINISHED_SAID = String.raw`${CLAUSE}(?:(?:(?:(?:the|this|all the)\s+)?(?:work|job|task|session|objective)|everything|it all|all of it)(?:\s+(?:is|are|was|has been)|'s)\s+(?:now\s+|all\s+|fully\s+)?(?:done|finished|complete|completed|over)|all\s+(?:done|finished|complete)|(?:the agent|it)\s+(?:has|is)\s+(?:now\s+)?(?:finished|done|completed?)(?:\s+(?:the (?:work|job|task)|everything|it all))?)(?:\s+(?:now|here))?${CLAUSE_END}`
+// Nothing left, remaining or to do, as a clause of its own.
+const NOTHING_SAID = String.raw`${CLAUSE}(?:there\s+is\s+)?nothing\s+(?:(?:else|more)\s+)?(?:(?:is|was)\s+)?(?:left|remains|to do)(?:\s+to do)?(?:\s+(?:here|now|for (?:the agent|it)))?${CLAUSE_END}`
+// The session or the job to be closed or ended, as a clause of its own.
+const CLOSE_SAID = String.raw`${CLAUSE}(?:close|end)\s+(?:the|this)\s+(?:session|job)(?:\s+(?:now|here))?${CLAUSE_END}`
+
+// A next step that tells the agent or the job to stop, calls the work, the job
+// or everything finished, says nothing is left, or closes the session. Read on
+// "next" only, whatever the verdict line says. It refuses only a stop or a
+// finish said as a clause of its own: "Stop.", "The agent can stop here.",
+// "Stop the agent now.", "The work is finished.", "Everything is done, close
+// the session.", "Nothing is left to do." It lets through a step that only
+// carries the word and goes on: "stop" with something after it ("stop guessing
+// and run the real suite", "Fix the stop button"), "Don't stop until …", a
+// part called complete ("show the install is complete"), a check that the work
+// is done ("Check that the work is done before …"), "Mark nothing as done
+// until …" and a step toward a finish ("Finish the two sessions, then show
+// each one done"). The rep's own texts (OPEN_NEXT, UNWRITTEN_NEXT) never match.
+export const STOP_NEXT = new RegExp([STOP_SAID, FINISHED_SAID, NOTHING_SAID, CLOSE_SAID].join('|'), 'i')
 
 // The conditions the gate measures against: null while no objective is written,
 // which the gate treats as nothing shown, never as nothing open.

@@ -37,7 +37,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 94 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 95 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: six real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -119,7 +119,10 @@ call writes (below):
    `applyMarks` takes the marks, and `gateVerdict` refuses, while a condition is open, a
    verdict other than `continue` (a `stop`, or none given, which `verdictOf` reads as
    `missing`, never as continue), a `well:` line, or a `next:` that `STOP_NEXT` reads as
-   telling the agent to stop or calling the work finished. A refused answer is asked once
+   telling the agent or the job to stop, calling the work finished, saying nothing is left
+   or closing the session, each said as a clause of its own (a step that only carries the
+   word and goes on, as "stop guessing and run the suite" or "Don't stop until …", keeps the
+   model's own next step). A refused answer is asked once
    more (`askAgain`, naming the open conditions); when that is refused too, or does not
    answer, the card lists the open conditions as left out and its meaning, next step,
    message and what it does are the rep's own (`OPEN_MEANS`, `OPEN_NEXT`, `OPEN_MESSAGE`,

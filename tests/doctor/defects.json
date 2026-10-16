@@ -406,5 +406,11 @@
     "breaks": "The writer's merge takes a proposed state over the held one by rank, so a correction can drop the check's reopened mark and its finding, and the merge alone would raise a condition to shown.",
     "patch": "merge-raises-state.patch",
     "fixed": "2026-10-16"
+  },
+  {
+    "name": "stop-filter-broad",
+    "breaks": "The stop filter goes back to refusing any next step that holds the word stop or calls anything done, so a sound step such as stopping a wrong approach loses the model's own text for the rep's generic one and costs a second paid call.",
+    "patch": "stop-filter-broad.patch",
+    "fixed": "2026-10-16"
   }
 ]

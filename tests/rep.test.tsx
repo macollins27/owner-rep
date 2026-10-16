@@ -2083,15 +2083,58 @@ test('gateVerdict refuses with no objective written, and while a condition is op
   expect(gateVerdict({ ...go, next: 'Stop the agent; the job is finished.' }, open).refused).toBe(true)
   expect(gateVerdict({ ...go, next: 'Nothing is left to do here.' }, open).refused).toBe(true)
   expect(gateVerdict({ ...go, next: 'Let it wrap up: the work is done.' }, open).refused).toBe(true)
-  // A false positive, refused on purpose: the word is there though the step goes on. Its cost is the rep's own open texts.
-  const fp = gateVerdict({ ...go, next: "Don't stop until both sessions are shown." }, open)
-  expect(fp.refused).toBe(true)
-  expect(fp.answer.next).toBe(OPEN_NEXT(open))
+  // A step that carries the word but goes on is not refused: the model's own next step stands.
+  const goesOn = gateVerdict({ ...go, next: "Don't stop until both sessions are shown." }, open)
+  expect(goesOn.refused).toBe(false)
+  expect(goesOn.answer.next).toBe("Don't stop until both sessions are shown.")
   // Steps that go on and carry a nearby word are let through.
   for (const next of ['Finish the two sessions, then show each one done.', 'Complete the install and show the new version running.', 'Show the two sessions finished, one by one.']) {
     expect(STOP_NEXT.test(next)).toBe(false)
     expect(gateVerdict({ ...go, next }, open).refused).toBe(false)
   }
+})
+
+test('STOP_NEXT refuses only a next step that stops the agent or the job, calls the work finished, or says nothing is left, and never the rep\'s own texts', () => {
+  const go = parseBrief('verdict: continue\nstands: s\nmeans: m\nleft:\n- nothing\nnext: n\nmessage:\nShow me.\nend\ndoes: d')
+  const open = [c('two sessions finished', 'open')]
+  const refuse = [
+    'Stop.',
+    'The agent can stop here.',
+    'Stop the agent now.',
+    'Let the agent stop; nothing is left.',
+    'Nothing is left to do.',
+    'The work is finished.',
+    'Everything is done, close the session.',
+    'The job is complete.',
+    'The agent has finished the work; nothing remains.',
+  ]
+  const pass = [
+    'The agent should stop patching the test and fix the parser itself.',
+    'Tell the agent to stop guessing and run the real suite.',
+    'Have the agent show the install is complete on your Mac.',
+    'Mark nothing as done until the live run prints its result.',
+    'Fix the stop button on the player page.',
+    "Don't stop until the GitHub run is green.",
+    'Check that the work is done before you close it.',
+    'Finish the two sessions, then show each one done.',
+  ]
+  for (const next of refuse) {
+    expect([next, STOP_NEXT.test(next)]).toEqual([next, true])
+    expect(gateVerdict({ ...go, next }, open).refused).toBe(true)
+  }
+  for (const next of pass) {
+    expect([next, STOP_NEXT.test(next)]).toEqual([next, false])
+    expect(gateVerdict({ ...go, next }, open)).toEqual({ answer: { ...go, next }, refused: false })
+  }
+  // The rep's own texts, over conditions that carry the words, never match.
+  const lists = [
+    open,
+    [c('the newest build installed', 'not-shown'), c('two sessions finished', 'open')],
+    [c('the stop button fixed on the player page', 'open'), c('the work done and shown on his Mac', 'not-shown')],
+    [c('nothing left for him or a next session', 'open'), c('the install complete on his Mac', 'open'), c('every session stopped cleanly', 'open')],
+  ]
+  for (const l of lists) expect([OPEN_NEXT(l), STOP_NEXT.test(OPEN_NEXT(l))]).toEqual([OPEN_NEXT(l), false])
+  expect(STOP_NEXT.test(UNWRITTEN_NEXT)).toBe(false)
 })
 
 test('rule: a record saved in the old shape is rebuilt on the next press, with the old text kept as a version', async ($, on) => {
