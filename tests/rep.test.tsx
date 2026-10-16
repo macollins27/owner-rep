@@ -3007,7 +3007,7 @@ test('rule: after a /clear his messages are kept under the new session, and noth
   ]
   let writes = 0
   on('model.complete', async () => {
-    const a = answers[Math.min(writes++, answers.length - 1)]
+    const a = answers[Math.min(writes++, answers.length - 1)] ?? { hold: false, text: '' }
     if (a.hold) await clock.sleep(1000)
     return { value: { isAnswered: true, text: a.text, usage: USAGE } }
   })
@@ -3021,6 +3021,13 @@ test('rule: after a /clear his messages are kept under the new session, and noth
   // The old session's objective leaves the row at the /clear, before anything is typed.
   expect(await rowSays($, /first job/)).toBe(false)
   expect(await rowSays($, /working out the result/)).toBe(true)
+  // A press straight after the /clear, before anything is typed, is the new session's.
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'close' })
+  await ui.unmount()
+  expect(recOf('after-clear')?.lastBrief?.message).toBe('Build the second thing next.')
+  expect(recOf('before-clear')?.lastBrief).toBeUndefined()
   await $.prompt.submit(typed('build the second thing'))
   expect(await rowSays($, /^Owner rep · The second job, built\.$/)).toBe(true)
   expect(recOf('after-clear')?.owner).toEqual([{ n: 1, kind: 'his', text: 'build the second thing', prior: '' }])
@@ -3030,10 +3037,4 @@ test('rule: after a /clear his messages are kept under the new session, and noth
   await clock.advance(1000)
   expect(recOf('before-clear')?.objective?.result).toBe('The first job, built and polished.')
   expect(await rowSays($, /^Owner rep · The second job, built\.$/)).toBe(true)
-  // A press after the /clear is the new session's.
-  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
-  await ui.press({ key: 'rep' })
-  await ui.unmount()
-  expect(recOf('after-clear')?.lastBrief?.message).toBe('Build the second thing next.')
-  expect(recOf('before-clear')?.lastBrief).toBeUndefined()
 })

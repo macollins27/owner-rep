@@ -37,7 +37,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 106 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 107 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: eight real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -223,7 +223,13 @@ results of earlier jobs, the owner's numbered messages and the counter, the last
 next step and message, the last `DRAFTS_MAX` (3) cards' messages in `rec.drafts`, flags already seen, other mods' notes, spend counters with the writer's own and its failed calls), capped
 at `SESSIONS_MAX` newest. `loadRec`/`saveRec` are the only way in and out, and `changeRec`
 runs each change alone from its load to its save, so two hooks that finish together never save
-over each other.
+over each other. Atoms and the module's own values outlive a session: a `/clear` or a resume
+goes on in the same process under a new session id, and no `session.start` fires for it. So
+`sessionId` reads the id on every call and takes up a new one as a start would
+(`enterSession`); `session.end` with reason `clear` or `resume` empties the screen and the
+carried values (`leaveSession`); and a write, look, briefing or check the ended session
+started draws nothing (`onScreen`). Reading the id once per load filed every message after a
+`/clear` under the ended session until 16 Oct 2026.
 
 The owner's own messages are the only input that can steer the rep. `prompt.submit` records
 each prompt into `rec.owner` (`pushOwner`); a prompt that begins with the card's own message,
