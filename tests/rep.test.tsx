@@ -99,7 +99,7 @@ test('the briefs say a chore left for the owner is the agent\'s unfinished work,
     expect(p).toMatch(/Never relay such a chore to him as his next step/)
   }
   expect(briefPrompt(m)).toMatch(/next: <one or two sentences: what the agent should do next, or that it should stop;.*never a step for him to do/)
-  expect(checkPrompt({ sessionId: 's', cwd: '/tmp', owner: [om('Build it.')], reading: 'x', brief: parseBrief('stands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm', conditions: [] } as never)).toMatch(/never a step for the owner to do/)
+  expect(checkPrompt({ sessionId: 's', cwd: '/tmp', owner: [om('Build it.')], reading: 'x', brief: parseBrief('stands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm', conditions: [], shown: [], from: 0 } as never)).toMatch(/never a step for the owner to do/)
 })
 
 test('helpers: fit cuts with an ellipsis, same ignores case and a final period, doingFor names the work', async () => {
@@ -227,11 +227,11 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   const brief = parseBrief('reading: holds\nstands: s\nmeans: m\nleft:\n- a\nnext: n\nmessage:\nhello\nend\ndoes: d')
   const copy = checkCopyDir('/Users/o', 'abc-123')
   expect(copy).toBe('/Users/o/.cache/owner-rep/checks/abc-123')
-  const prompt = checkPrompt({ sessionId: 'abc-123', cwd: '/tmp/x', copy, reading: 'the result', owner: [om('first ask')], brief, writtenAt: '2026-10-13T23:05:00.000Z', conditions: [] })
+  const prompt = checkPrompt({ sessionId: 'abc-123', cwd: '/tmp/x', copy, reading: 'the result', owner: [om('first ask')], brief, writtenAt: '2026-10-13T23:05:00.000Z', conditions: [], shown: [], from: 0 })
   expect(prompt).toContain('abc-123')
   expect(prompt).toContain(`Your working directory: ${copy}, a throwaway copy`)
   expect(prompt).toContain("The agent's folder: /tmp/x")
-  const noCopy = checkPrompt({ sessionId: 'abc-123', cwd: '/tmp/x', copy: '/tmp/x', reading: 'the result', owner: [om('first ask')], brief, writtenAt: '2026-10-13T23:05:00.000Z', conditions: [] })
+  const noCopy = checkPrompt({ sessionId: 'abc-123', cwd: '/tmp/x', copy: '/tmp/x', reading: 'the result', owner: [om('first ask')], brief, writtenAt: '2026-10-13T23:05:00.000Z', conditions: [], shown: [], from: 0 })
   expect(noCopy).toContain('the throwaway copy could not be made, so writes there are denied')
   expect(prompt).toContain('2026-10-13T23:05:00.000Z')
   expect(prompt).toContain('changed:')
@@ -950,7 +950,7 @@ test('the briefs are built from the North Star: open until completed with both q
   }
   expect(briefPrompt(m)).toMatch(/verdict: <continue \| stop; stop only when every condition is shown or closed by him>/)
   expect(briefPrompt(m)).toMatch(/say whether the agent did the step that message asked for/)
-  const check = checkPrompt({ sessionId: 's', cwd: '/tmp', copy: '/tmp', owner: [om('Build it.')], reading: 'x', brief: parseBrief('stands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm', conditions: OBJECTIVE_FIXTURE.done })
+  const check = checkPrompt({ sessionId: 's', cwd: '/tmp', copy: '/tmp', owner: [om('Build it.')], reading: 'x', brief: parseBrief('stands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm', conditions: OBJECTIVE_FIXTURE.done, shown: [], from: 0 })
   expect(check).toMatch(/Conditions the rep holds open:[^]*- the newest build installed \(not shown\)/)
   // The checker rewrites the card, so it carries the open-until-completed rule too.
   expect(check).toMatch(/is a step toward the objective, never the objective, unless he opened the session for that document/)
@@ -959,7 +959,7 @@ test('the briefs are built from the North Star: open until completed with both q
   expect(check).toMatch(/left:\n- <[^>]*a condition still open that the agent called done/)
   // Plain words for the card; the shown and closed lines are for the record.
   expect(check).toMatch(/Write every part the card shows \([^)]*\) for the owner/)
-  expect(check).toMatch(/The "shown:" and "closed:" lines are not on the card/)
+  expect(check).toMatch(/The "shown:", "closed:" and "reopen:" lines are not on the card/)
 })
 
 // --- The objective: written by a call of its own from the owner's messages, held in parts, moved only by his words. ---
@@ -1142,7 +1142,7 @@ test('rule: the writer cannot mark a condition shown, and can close one only by 
   let look = HOLDS
   on('model.fork', () => ({ value: { isAnswered: true, text: look, usage: USAGE } }))
   let next = OBJ('A licence file.', ['the file committed | shown: the agent said so', 'the year current | closed: #1', 'the name right | closed: #7'])
-  writer(on, () => next)
+  const writes = writer(on, () => next)
   await $.prompt.submit(typed('add a licence; the year does not matter'))
   await settle($)
   expect(rec()?.objective?.done).toEqual([
@@ -1159,6 +1159,17 @@ test('rule: the writer cannot mark a condition shown, and can close one only by 
   await $.prompt.submit(typed('and use my company name'))
   await settle($)
   expect(rec()?.objective?.done.map(c => c.state)).toEqual(['shown', 'closed', 'open'])
+  // A close cites a message this write is the first to see: #2 was read already, when the name was kept open.
+  next = OBJ('A licence file.', ['the file committed | open', 'the year current | open', 'the name right | closed: #2'], '#3 asked for the full text')
+  await $.prompt.submit(typed('and the full text, not a summary'))
+  await settle($)
+  expect(rec()?.objective?.from).toBe(3)
+  expect(rec()?.objective?.done[2]).toEqual({ text: 'the name right', state: 'open', by: '' })
+  expect(writes.at(-1)).toMatch(/never by a message it was already built from, which had its say then/)
+  next = OBJ('A licence file.', ['the file committed | open', 'the year current | open', 'the name right | closed: #4'], '#4 let the name go')
+  await $.prompt.submit(typed('leave the name as it is'))
+  await settle($)
+  expect(rec()?.objective?.done[2]).toEqual({ text: 'the name right', state: 'closed', by: '#4' })
 })
 
 test('rule: a new job closes the old objective; its result is listed as closed and its messages leave the writer', async ($, on) => {
@@ -1752,8 +1763,8 @@ test('rule: the check is given the conditions the rep holds open, and its shown 
         at: Date.now(),
         objective: { ...OBJECTIVE_FIXTURE, done: [...OBJECTIVE_FIXTURE.done, { text: 'the README written', state: 'open', by: '' }], from: 2 },
         jobStart: 1,
-        owner: [om('finish the spec and put it on my Mac'), om('and the two other sessions', 2), { n: 3, kind: 'draft', text: 'Check the two sessions and report back.', prior: '' }],
-        counter: 3,
+        owner: [om('finish the spec and put it on my Mac'), om('and the two other sessions', 2), { n: 3, kind: 'draft', text: 'Check the two sessions and report back.', prior: '' }, om('the README can wait', 4)],
+        counter: 4,
         past: [],
         seen: [],
         others: [],
@@ -1773,8 +1784,9 @@ test('rule: the check is given the conditions the rep holds open, and its shown 
       stream: 'stdout',
       text: JSON.stringify({
         type: 'result',
-        // A draft's number closes nothing; his own number does; a shown line names where the record shows it.
-        result: 'holds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n- the newest build installed | the install command in the record printed the new version\nclosed:\n- the two sessions finished | #3\n- the README written (open) | #1\nstands: Installed.\nmeans: Half done.\nleft:\n- the two sessions\nnext: Finish them.\nmessage:\nFinish the two sessions.\nend\ndoes: Makes it finish them.\nlooked: Read the record.',
+        // A draft's number closes nothing, nor does a message the objective was built from (#1, #2);
+        // his own number after it does; a shown line names where the record shows it.
+        result: 'holds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n- the newest build installed | the install command in the record printed the new version\nclosed:\n- the two sessions finished | #3\n- the two sessions finished | #1\n- the README written (open) | #4\nstands: Installed.\nmeans: Half done.\nleft:\n- the two sessions\nnext: Finish them.\nmessage:\nFinish the two sessions.\nend\ndoes: Makes it finish them.\nlooked: Read the record.',
         usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
       }),
     }
@@ -1785,10 +1797,12 @@ test('rule: the check is given the conditions the rep holds open, and its shown 
   await ui.press({ key: 'rep' })
   await ui.press({ key: 'check' })
   expect(prompt).toMatch(/Conditions the rep holds open:\n- the newest build installed \(not shown\)\n- the two sessions finished\n/)
+  expect(prompt).toMatch(/Conditions the rep holds shown, each with where it was shown:\n- none\n/)
+  expect(prompt).toMatch(/in a message of his own sent after #2, the last message the objective was built from, citing that message as #n/)
   expect(rec()?.objective?.done).toEqual([
     { text: 'the newest build installed', state: 'shown', by: 'the install command in the record printed the new version' },
     { text: 'the two sessions finished', state: 'open', by: '' },
-    { text: 'the README written', state: 'closed', by: '#1' },
+    { text: 'the README written', state: 'closed', by: '#4' },
   ])
   expect(await ui.find({ type: 'Text', text: /Done when: the newest build installed \(shown\); the two sessions finished; the README written \(closed\)\./ })).toBeDefined()
   await ui.unmount()
@@ -1873,6 +1887,16 @@ test('objectivePrompt shows his messages with their numbers and the agent line b
 })
 
 const c = (text: string, state: Condition['state'], by = ''): Condition => ({ text, state, by })
+
+test('a condition listed twice is kept once, and texts are compared without a state mark', () => {
+  const a = parseObjective(OBJ('A licence file.', ['the tests green | open', 'the tests green. | open', 'the README written (shown) | open', 'the year current (not shown) | not shown']))
+  expect(a?.kind === 'moved' ? a.parts.done : null).toEqual([c('the tests green', 'open'), c('the README written', 'open'), c('the year current', 'not-shown')])
+  const held = [c('the README written', 'shown', 'the file is there'), c('the tests green', 'open')]
+  const proposed = [c('the tests green', 'open'), c('the tests green.', 'open'), c('the README written (shown)', 'open')]
+  const merged = mergeConditions(held, proposed, [{ text: 'the README written (shown)', by: null }], [])
+  expect(merged).toEqual([c('the tests green', 'open'), { text: 'the README written (shown)', state: 'shown', by: 'the file is there' }])
+  expect(mergeConditions(held, [c('the tests green', 'open')], [{ text: 'the README written (shown)', by: 2 }], [2])).toEqual([c('the tests green', 'open')])
+})
 
 test('mergeConditions keeps every held condition the model drops without his cited message', () => {
   const held = [c('install the newest build', 'not-shown'), c('two sessions finished', 'open'), c('roadmap fixed', 'shown', 'diff printed')]
@@ -2001,7 +2025,8 @@ const OPEN_JOB = (): Record<string, unknown> => ({
         purpose: 'So the team can use it.',
         done: OPEN_JOB_OPEN.map(x => ({ ...x })),
         step: 'The agent finishes the sessions.',
-        from: 2,
+        // Built from his first message: the second is his after it, so it may close a condition.
+        from: 1,
       },
       jobStart: 1,
       owner: [om('ship the release and install it here'), om('and finish the two other sessions', 2), { n: 3, kind: 'draft', text: 'Finish the two sessions and report back.', prior: '' }],
@@ -2132,6 +2157,7 @@ test('rule: a briefing that marks a condition shown moves it, and stop is allowe
     { text: 'two sessions finished', state: 'open', by: '' },
   ])
   expect(prompts).toHaveLength(2)
+  expect(prompts[0]).toMatch(/closed only by citing the number of a message of his own that closes it, sent after #1, the last message the objective was built from/)
   expect(again(prompts[1])).toMatch(/still open:\n- two sessions finished\n\n/)
   expect(await ui.find({ type: 'Text', text: /^Next: The job is still open: two sessions finished\./ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /All done/ })).toBeUndefined()
@@ -2376,5 +2402,102 @@ test('rule: a briefing with no verdict line while a condition is open is asked o
   expect(prompts).toHaveLength(2)
   expect(again(prompts[1])).toMatch(/gave no verdict/)
   expect(await ui.find({ type: 'Text', text: /^Next: The job is still open: the newest build installed; two sessions finished\./ })).toBeDefined()
+  await ui.unmount()
+})
+
+// --- The check tests the conditions held shown, and the going-well line goes with a false claim. ---
+
+// A record whose every condition is held shown, so a stop and a going-well line pass the gate until a check says otherwise.
+const ALL_SHOWN = (): Record<string, unknown> => ({
+  sessions: {
+    'test-session': {
+      id: 'test-session',
+      at: Date.now(),
+      objective: {
+        ...OBJ_FIXTURE,
+        result: 'The release built and installed here.',
+        done: [c('the newest build installed', 'shown', 'the install log printed the revision'), c('two sessions finished', 'shown', 'both sessions printed their results')],
+        from: 1,
+      },
+      jobStart: 1,
+      owner: [om('ship the release and install it here')],
+      counter: 1,
+      past: [],
+      seen: [],
+      others: [],
+    },
+  },
+})
+
+// A check's output with the given parts in place of the empty ones.
+const CHECK_OUT = (verdict: string, part: { false?: string; reopen?: string; left?: string }) =>
+  JSON.stringify({
+    type: 'result',
+    result: `verdict: ${verdict}\nholds:\n- nothing\nfalse:\n${part.false ?? '- nothing'}\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n- nothing\nclosed:\n- nothing\nreopen:\n${part.reopen ?? '- nothing'}\nstands: Checked.\nmeans:\nleft:\n${part.left ?? '- nothing'}\nnext:\nmessage:\nend\ndoes:\nlooked: Read the record.`,
+    usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+  })
+
+// The check's room and clock, over the planted record.
+const checkRoom = (on: On) => {
+  room(on)
+  on('session.cwd', () => ({ value: '/tmp/x' }))
+  mock.clock(on)
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+}
+
+test('rule: a check that finds a condition held shown is not so moves it back to not shown, and the stop is then refused', async ($, on) => {
+  const rec = kept(on, ALL_SHOWN())
+  quietBand(on)
+  checkRoom(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: STOP_BRIEF(), usage: USAGE } }))
+  let prompt = ''
+  on('process.spawn', async function* (_$, e) {
+    prompt = e.argv[2] ?? ''
+    yield { stream: 'stdout', text: CHECK_OUT('stop', { reopen: '- the newest build installed | the install command in the record failed' }) }
+    return { value: { code: 0, signal: null } }
+  })
+  await started($)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  // Every condition held shown: the stop stands on the instant card.
+  expect(await ui.find({ type: 'Text', text: /^Next: Stop the agent; the job is finished\.$/ })).toBeDefined()
+  await ui.press({ key: 'check' })
+  expect(prompt).toMatch(/Conditions the rep holds shown, each with where it was shown:\n- the newest build installed \| the install log printed the revision\n- two sessions finished \| both sessions printed their results\n/)
+  expect(rec()?.objective?.done).toEqual([
+    { text: 'the newest build installed', state: 'not-shown', by: 'the install command in the record failed' },
+    { text: 'two sessions finished', state: 'shown', by: 'both sessions printed their results' },
+  ])
+  expect(await ui.find({ type: 'Text', text: /^Next: The job is still open: the newest build installed\./ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Stop the agent|Wrap up and stop here/ })).toBeUndefined()
+  expect(await greens(ui)).toEqual([])
+  await ui.unmount()
+})
+
+test('rule: the going-well line does not stand on a checked card beside a false claim or anything left out', async ($, on) => {
+  kept(on, ALL_SHOWN())
+  quietBand(on)
+  checkRoom(on)
+  on('model.fork', () => ({
+    value: { isAnswered: true, text: 'verdict: continue\nwell: Going well.\nstands: Both parts are shown.\nmeans: m\nleft:\n- nothing\nnext: Carry on with the polish.\nmessage:\nend\ndoes:', usage: USAGE },
+  }))
+  let out = CHECK_OUT('continue', { false: '- the tests pass | the run printed two failures' })
+  on('process.spawn', async function* () {
+    yield { stream: 'stdout', text: out }
+    return { value: { code: 0, signal: null } }
+  })
+  await started($)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  expect(await greens(ui)).toEqual(['Going well.'])
+  await ui.press({ key: 'check' })
+  expect(await ui.find({ type: 'Text', text: /two failures/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Going well/ })).toBeUndefined()
+  await ui.press({ key: 'close' })
+  await ui.press({ key: 'rep' })
+  expect(await greens(ui)).toEqual(['Going well.'])
+  out = CHECK_OUT('continue', { left: '- the docs page' })
+  await ui.press({ key: 'check' })
+  expect(await ui.find({ type: 'Text', text: /^ {2}- the docs page$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Going well/ })).toBeUndefined()
   await ui.unmount()
 })

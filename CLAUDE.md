@@ -37,7 +37,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 82 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 85 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: six real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -139,9 +139,11 @@ call writes (below):
    (`CHECK_TIMEOUT_MS`), 120 turns, JSON output; `permission_denials` in the output is the
    refusal count, shown on the checked card (`refusedLine`) and on the next card's price line
    (`checkCostText`); the right number is zero. Its answer rewrites the card, with each claim
-   marked holds, false, not shown or changed since; it is given the conditions held open,
-   its `shown:` and `closed:` lines move them, and its verdict passes the same gate, so a
-   check never says stop while a condition is open. A newer press (`checkEpoch`) makes an
+   marked holds, false, not shown or changed since; it is given the conditions held open and
+   those held shown with where (`CheckArgs.shown`), its `shown:` and `closed:` lines move
+   them, a `reopen:` line puts one held shown back to not shown, and its verdict passes the
+   same gate, so a check never says stop while a condition is open. The briefing's going-well
+   line does not survive a check that found a claim false or left something out. A newer press (`checkEpoch`) makes an
    older run stale, and `lastInstant` ties "Check it" to the card that is up; a stale run's
    answer, inside the record's lock, counts its spend and nothing else (no marks, no
    `lastBrief`, no draft), so the card on record stays the newer one. The check costs
@@ -168,12 +170,16 @@ or a note past `from` (`hisFrom` never counts a draft), so neither the agent's w
 rep's drafts can move it and a write that lands late cannot take a newer one's place. A
 correction takes the result, purpose and step whole and runs the conditions through
 `mergeConditions`, which keeps every held condition the writer leaves out unless `dropped:`
-cites the number of a message of his; `honest` turns a `shown` the writer adds (it never sees
-the conversation) and a `closed` that cites no message of his back to open. A new job pushes
+cites the number of a message of his new since the held objective was built (past `from`);
+`honest` turns a `shown` the writer adds (it never sees
+the conversation) and a `closed` that cites no such message back to open. A condition
+listed twice, or with a state mark copied into its text, is kept once (`parseObjective`,
+`mergeConditions`). A new job pushes
 the old result onto `rec.past` and starts the job (`since`, `rec.jobStart`) at its first new
 message. The looks, the briefing and the check never write the objective: `applyMarks` takes
-their `shown:` lines when they name where, and their `closed:` lines only when the number is a
-message of his on the job. A draft moves only `step`, set to the draft's `firstSentence` in
+their `shown:` lines when they name where, their `closed:` lines only when the number is a
+message of his on the job sent after `from` (one the objective was built from had its say
+when it was written), and the check's `reopen:` lines when they say what shows otherwise. A draft moves only `step`, set to the draft's `firstSentence` in
 `prompt.submit`. The card shows `revisedLine` under the head and `objectiveText` as its
 reading; the row shows `result`.
 

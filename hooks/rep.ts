@@ -334,7 +334,7 @@ ${reading}
 
 Conditions still open:
 ${o === null ? '- none written yet' : openLines(o, '- none: every condition is shown, or closed by him')}
-A look or a briefing may mark one of these shown only by naming where the conversation itself shows it (a command run and its printed output, a file written, a test's printed result), never on the agent's word; and closed only by citing the number of a message of his own that closes it, never the number of a draft.
+A look or a briefing may mark one of these shown only by naming where the conversation itself shows it (a command run and its printed output, a file written, a test's printed result), never on the agent's word; and closed only by citing the number of a message of his own that closes it${o === null ? '' : `, sent after #${o.from}, the last message the objective was built from (one up to it was read when the objective was written)`}, never the number of a draft.
 
 The conversation's size: ${contextLine(m)}
 
@@ -518,7 +518,7 @@ You are the owner's rep, and your one task here is to write down the objective o
 
 ## The conditions
 
-Each condition is one thing "done" has to show, in plain words. You do not see the conversation, so you may never mark a condition shown. Write every condition you already hold again as it stands, with the state it is held in: a shown one with "shown:" and its where copied as held, a closed one with "closed:" and its number as held. Those marks were made where the conversation showed it or he closed it, and they are kept whatever you write. A new condition is "open", or "not shown" when it is a thing a conversation cannot show by itself, such as whether a build is installed or a service runs the newest code. Mark a condition "closed: #n" only when his own message #n closes that part himself; never by the number of a draft. A held condition you leave out is kept, unless you list it under "dropped" with the number of his own message that says, in so many words, that it no longer stands.
+Each condition is one thing "done" has to show, in plain words. You do not see the conversation, so you may never mark a condition shown. Write every condition you already hold again as it stands, with the state it is held in: a shown one with "shown:" and its where copied as held, a closed one with "closed:" and its number as held. Those marks were made where the conversation showed it or he closed it, and they are kept whatever you write. A new condition is "open", or "not shown" when it is a thing a conversation cannot show by itself, such as whether a build is installed or a service runs the newest code. Mark a condition "closed: #n" only when his own message #n closes that part himself and is new since the objective you hold was built; never by the number of a draft, and never by a message it was already built from, which had its say then. A held condition you leave out is kept, unless you list it under "dropped" with the number of his own message, new since it was built, that says, in so many words, that it no longer stands.
 
 ## What you hold now
 
@@ -550,7 +550,7 @@ dropped:
 - <condition text as held> | #n`
 }
 
-const LABELS = ['moved', 'state', 'flag', 'why', 'well', 'stands', 'means', 'left', 'next', 'message', 'does', 'holds', 'false', 'notshown', 'changed', 'looked', 'objective', 'result', 'for', 'done', 'step', 'dropped', 'verdict', 'shown', 'closed'] as const
+const LABELS = ['moved', 'state', 'flag', 'why', 'well', 'stands', 'means', 'left', 'next', 'message', 'does', 'holds', 'false', 'notshown', 'changed', 'looked', 'objective', 'result', 'for', 'done', 'step', 'dropped', 'verdict', 'shown', 'closed', 'reopen'] as const
 type Label = (typeof LABELS)[number]
 
 // Splits a labelled answer into its parts. `message:` runs until a line `end`.
@@ -643,8 +643,8 @@ const oneLine = (s: string | undefined): string => clean(s).replace(/\s+/g, ' ')
 // so is shown without a where, or closed without the number of his message.
 function conditionOf(line: string): Condition {
   const m = /^(.*?)\s*\|\s*(open|not[\s-]?shown|shown|closed)\b\s*:?\s*(.*)$/i.exec(line)
-  if (m === null) return { text: (line.split('|')[0] ?? '').trim(), state: 'open', by: '' }
-  const text = (m[1] ?? '').trim()
+  if (m === null) return { text: bare(line.split('|')[0] ?? ''), state: 'open', by: '' }
+  const text = bare(m[1] ?? '')
   const word = (m[2] ?? '').toLowerCase()
   const rest = (m[3] ?? '').trim()
   if (word.startsWith('not')) return { text, state: 'not-shown', by: '' }
@@ -689,7 +689,10 @@ export function parseObjective(text: string): ObjectiveAnswer {
     parts: {
       result,
       purpose: oneLine(p.for),
-      done: items(p.done).map(conditionOf).filter(c => c.text !== ''),
+      // A condition listed twice is kept once, the first, so a first write cannot start with repeats.
+      done: items(p.done)
+        .map(conditionOf)
+        .filter((c, i, all) => c.text !== '' && all.findIndex(d => same(d.text, c.text)) === i),
       step: oneLine(p.step),
     },
     cause,
@@ -728,6 +731,8 @@ export type CheckAnswer = {
   // Conditions the record or the disk showed, with where; and those he closed, with his message's number.
   shown: Array<{ text: string; by: string }>
   closed: Array<{ text: string; by: number | null }>
+  // Conditions held shown that the record or the disk shows are not so, with what shows otherwise.
+  reopen: Array<{ text: string; by: string }>
   stands: string
   means: string
   leftOut: string[]
@@ -817,6 +822,10 @@ export type CheckArgs = {
   reading: string
   // The conditions the rep holds open: neither shown nor closed by him.
   conditions: Condition[]
+  // The conditions the rep holds shown, each with where it was shown, for the check to test again.
+  shown: Condition[]
+  // The last of his messages the objective was built from; a close cites a later one. 0 when none is written.
+  from: number
   owner: OwnerMsg[]
   brief: BriefAnswer
   writtenAt: string
@@ -861,6 +870,9 @@ ${a.reading === '' ? '(not written yet)' : a.reading}
 Conditions the rep holds open:
 ${list(a.conditions.map(conditionLine), '- none')}
 
+Conditions the rep holds shown, each with where it was shown:
+${list(a.shown.map(c => `${c.text} | ${c.by}`), '- none')}
+
 His own messages on this job, oldest first (a line marked "(to the rep)" was said to the rep, not the agent; one marked "(your draft, sent by him)" was written by the rep and sent by the owner, so it is the rep's words, not his):
 ${ownerLines(a.owner) || '(none recorded)'}
 
@@ -876,14 +888,14 @@ The briefing above was written at ${a.writtenAt}, from the conversation as it st
 
 1. List the claims the briefing rests on, and the claims the agent's latest messages make that the next step depends on: work done, files saved, tests run and passed, a problem fixed, a helper's result used, something installed or running.
 2. Check each against the record and the disk as of the briefing's time. A claim holds when you saw the proof yourself: the file is there with the content, the test run printed its result, the command ran. A claim is false when the record or the disk shows otherwise at that time. A claim is not shown when nothing proves it either way. Something that became true or false only after the briefing's time is a change, reported under "changed".
-3. Check each condition the rep holds open against the record and the disk. Under "shown:" put each one they show, naming where: the command and what it printed, the file and what is in it. Under "closed:" put each one he closed in a message of his own, citing that message as #n. Never mark one shown on the agent's word, and never close one by the number of a message marked as the rep's draft. Write each condition in its words as listed above, without the mark in brackets.
+3. Check each condition the rep holds open against the record and the disk. Under "shown:" put each one they show, naming where: the command and what it printed, the file and what is in it. Under "closed:" put each one he closed in a message of his own${a.from > 0 ? ` sent after #${a.from}, the last message the objective was built from` : ''}, citing that message as #n. Never mark one shown on the agent's word, and never close one by the number of a message marked as the rep's draft. Write each condition in its words as listed above, without the mark in brackets. Check each condition the rep holds shown the same way: when the record or the disk, as of the briefing's time, shows it is not so (the run named fails, the file is not there, the thing is not running), put it under "reopen:" with what shows otherwise; it goes back to not shown.
 4. Rewrite the whole briefing in the light of your checking: stands, means, left and next, and the message. Drop every "left" item your checking disproved, keep the ones it confirmed, add what it found. The card he reads is your version, so it must not contradict itself. A review, plan, briefing, handoff or list of what remains is a step toward the objective, never the objective, unless he opened the session for that document; and when the objective is to guide him through finishing something, it is complete only when he has been guided to the finish, not when the first guidance was given. While any condition the rep holds open is still open after your checking, no part of the card says the job or the session is finished, however many claims hold.
-5. Write every part the card shows (holds, false, notshown, changed, stands, means, left, next and the message) for the owner: plain words, no file names, line numbers or code names unless he used them, no jargon, no hedging. The "shown:" and "closed:" lines are not on the card; they are kept for the record, so there name the command, the file and what they printed or hold, as step 3 asks. The agent's technical terms are off limits unless they appear in his own messages above; say each thing as what it is and what it does for him. Say "the agent", "you" or "we" as responsibility falls.
+5. Write every part the card shows (holds, false, notshown, changed, stands, means, left, next and the message) for the owner: plain words, no file names, line numbers or code names unless he used them, no jargon, no hedging. The "shown:", "closed:" and "reopen:" lines are not on the card; they are kept for the record, so there name the command, the file and what they printed or hold, as step 3 asks. The agent's technical terms are off limits unless they appear in his own messages above; say each thing as what it is and what it does for him. Say "the agent", "you" or "we" as responsibility falls.
 6. Say in one line what you checked and what you could not look at.
 
 ## Output structure
 
-Exactly these labelled parts, in this order, nothing before or after. One item per line under holds, false, notshown, changed, shown, closed and left, each starting with "- ", in plain words; write "- nothing" under a part with nothing.
+Exactly these labelled parts, in this order, nothing before or after. One item per line under holds, false, notshown, changed, shown, closed, reopen and left, each starting with "- ", in plain words; write "- nothing" under a part with nothing.
 
 verdict: <continue | stop; stop only when every condition is shown or closed by him>
 holds:
@@ -898,6 +910,8 @@ shown:
 - <a condition listed above, in its words as listed | where the record or the disk shows it>
 closed:
 - <a condition listed above, in its words as listed | #n, the message of his that closed it>
+reopen:
+- <a condition listed as held shown, in its words as listed | what the record or the disk shows instead>
 stands: <where the work really stands now, one or two sentences, after your checking>
 means: <what the agent's latest message means for him, one to three sentences, rewritten where your checking changed it>
 left:
@@ -926,6 +940,7 @@ export function parseCheck(text: string): CheckAnswer {
     changed: items(p.changed),
     shown: shownOf(p.shown),
     closed: items(p.closed).map(droppedOf).filter(d => d.text !== ''),
+    reopen: shownOf(p.reopen),
     stands: clean(p.stands),
     means: clean(p.means),
     leftOut: items(p.left),
@@ -1327,7 +1342,9 @@ export function fitCard(card: CardText, maxRows: number, cols: number): CardText
 // The proposed conditions plus every held one the model left out, unless a
 // message of his (one of `his`, never a draft) is cited for dropping it. A
 // held condition listed again takes the proposed text, but a shown or closed
-// state is never moved back to open or not shown.
+// state is never moved back to open or not shown. Texts are compared without
+// a state mark, and a condition the model listed twice is kept once (the
+// first), so the list cannot grow by repeats.
 export function mergeConditions(
   held: Condition[],
   proposed: Condition[],
@@ -1335,13 +1352,15 @@ export function mergeConditions(
   his: readonly number[],
 ): Condition[] {
   const rank = (s: ConditionState): number => (s === 'closed' ? 2 : s === 'shown' ? 1 : 0)
-  const out = proposed.map(p => {
-    const h = held.find(x => same(x.text, p.text))
+  const like = (a: string, b: string): boolean => same(bare(a), bare(b))
+  const once = proposed.filter((p, i) => proposed.findIndex(q => like(q.text, p.text)) === i)
+  const out = once.map(p => {
+    const h = held.find(x => like(x.text, p.text))
     return h !== undefined && rank(p.state) < rank(h.state) ? { ...p, state: h.state, by: h.by } : p
   })
   for (const h of held) {
-    if (out.some(p => same(p.text, h.text))) continue
-    const gone = dropped.some(d => d.by !== null && his.includes(d.by) && same(d.text, h.text))
+    if (out.some(p => like(p.text, h.text))) continue
+    const gone = dropped.some(d => d.by !== null && his.includes(d.by) && like(d.text, h.text))
     if (!gone) out.push(h)
   }
   return out

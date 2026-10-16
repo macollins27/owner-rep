@@ -1,0 +1,21 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -692,7 +692,7 @@
+       // A condition listed twice is kept once, the first, so a first write cannot start with repeats.
+       done: items(p.done)
+         .map(conditionOf)
+-        .filter((c, i, all) => c.text !== '' && all.findIndex(d => same(d.text, c.text)) === i),
++        .filter(c => c.text !== ''),
+       step: oneLine(p.step),
+     },
+     cause,
+@@ -1353,7 +1353,7 @@
+ ): Condition[] {
+   const rank = (s: ConditionState): number => (s === 'closed' ? 2 : s === 'shown' ? 1 : 0)
+   const like = (a: string, b: string): boolean => same(bare(a), bare(b))
+-  const once = proposed.filter((p, i) => proposed.findIndex(q => like(q.text, p.text)) === i)
++  const once = proposed
+   const out = once.map(p => {
+     const h = held.find(x => like(x.text, p.text))
+     return h !== undefined && rank(p.state) < rank(h.state) ? { ...p, state: h.state, by: h.by } : p

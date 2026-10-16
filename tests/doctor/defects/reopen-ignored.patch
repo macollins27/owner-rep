@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -637,7 +637,7 @@
+       const c = parseCheck(got.text)
+       // A condition the check saw shown, or he closed, moves under the same rule as a
+       // look's; one held shown that the check found is not so goes back to not shown.
+-      const marked = applyMarks(after, c.shown, c.closed, c.reopen)
++      const marked = applyMarks(after, c.shown, c.closed)
+       if (marked) await update($, readingA, () => after.objective)
+       const checked: Checked = { holds: c.holds, wrong: c.wrong, notShown: c.notShown, changed: c.changed, looked: c.looked, refused: got.refused }
+       const hasLeft = parts_hasLeft(got.text)

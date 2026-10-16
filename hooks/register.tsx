@@ -277,7 +277,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number): 
     rec.jobStart = since
     rec.objective = {
       ...a.parts,
-      done: honest(a.parts.done, [], hisFrom(rec, since)),
+      done: honest(a.parts.done, [], hisFrom(rec, since).filter(n => n <= saw)),
       openedAt: now,
       since,
       from: saw,
@@ -288,13 +288,14 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number): 
     }
     return true
   }
-  const his = hisFrom(rec, held.since)
+  // A close or a drop cites a message of his this write is the first to see:
+  // one the held objective was built from already had its say.
   rec.objective = {
     ...held,
     result: a.parts.result,
     purpose: a.parts.purpose,
     step: a.parts.step,
-    done: mergeConditions(held.done, honest(a.parts.done, held.done, his), a.dropped, his),
+    done: mergeConditions(held.done, honest(a.parts.done, held.done, fresh), a.dropped, fresh),
     from: saw,
     movedAt: now,
     cause: a.cause,
@@ -304,25 +305,34 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number): 
   return true
 }
 
-// Applies a look's or a briefing's marks to the held conditions: one the
-// conversation showed, with where, becomes shown; one he closed in a message
-// of his own on the job becomes closed with that number. A draft's number
-// closes nothing, and a shown mark without a where is not taken. True when a
-// condition moved.
+// Applies a look's, a briefing's or a check's marks to the held conditions:
+// one he closed in a message of his own on the job, after the one the
+// objective was last built from, becomes closed with that number (a message
+// the writer already read and kept the condition open after closes nothing);
+// one held shown that the check found is not so goes back to not shown; one
+// the conversation showed, with where, becomes shown. A draft's number closes
+// nothing, and a shown or reopen mark without a where is not taken. True when
+// a condition moved.
 function applyMarks(
   rec: Rec,
   shown: Array<{ text: string; by: string }>,
   closed: Array<{ text: string; by: number | null }>,
+  reopen: Array<{ text: string; by: string }> = [],
 ): boolean {
   const o = rec.objective
   if (o === null) return false
-  const his = hisFrom(rec, o.since)
+  const his = hisFrom(rec, Math.max(o.since, o.from + 1))
   let changed = false
   const done = o.done.map((c): Condition => {
     const close = closed.find(x => x.by !== null && his.includes(x.by) && same(x.text, c.text))
     if (close !== undefined && c.state !== 'closed') {
       changed = true
       return { ...c, state: 'closed', by: `#${close.by}` }
+    }
+    const back = reopen.find(x => x.by !== '' && same(x.text, c.text))
+    if (back !== undefined && c.state === 'shown') {
+      changed = true
+      return { ...c, state: 'not-shown', by: back.by }
     }
     const show = shown.find(x => x.by !== '' && same(x.text, c.text))
     if (show !== undefined && (c.state === 'open' || c.state === 'not-shown')) {
@@ -572,6 +582,8 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       copy,
       reading: rec.objective === null ? '' : objectiveText(rec.objective),
       conditions: openConditions(rec.objective),
+      shown: rec.objective?.done.filter(c => c.state === 'shown') ?? [],
+      from: rec.objective?.from ?? 0,
       owner: jobMsgs(rec),
       brief: instant,
       writtenAt: new Date(at).toISOString(),
@@ -623,8 +635,9 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       // sends from that card is still known for the rep's draft.
       if (epoch !== checkEpoch || after.lastBrief?.at !== at) return null
       const c = parseCheck(got.text)
-      // A condition the check saw shown, or he closed, moves under the same rule as a look's.
-      const marked = applyMarks(after, c.shown, c.closed)
+      // A condition the check saw shown, or he closed, moves under the same rule as a
+      // look's; one held shown that the check found is not so goes back to not shown.
+      const marked = applyMarks(after, c.shown, c.closed, c.reopen)
       if (marked) await update($, readingA, () => after.objective)
       const checked: Checked = { holds: c.holds, wrong: c.wrong, notShown: c.notShown, changed: c.changed, looked: c.looked, refused: got.refused }
       const hasLeft = parts_hasLeft(got.text)
@@ -638,15 +651,17 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       // never carried over. A part the checker left empty stays empty, and the
       // gate writes them again for whatever is still open.
       const or = (mine: string, theirs: string): string => (mine !== '' ? mine : refused ? '' : theirs)
+      // The going-well line does not stand beside a claim the check found false or anything left out.
+      const leftOut = hasLeft ? c.leftOut : instant.leftOut
       const card = gateVerdict(
         {
           verdict: c.verdict ?? instant.verdict,
           shown: [],
           closed: [],
-          well: instant.well,
+          well: leftOut.length > 0 || c.wrong.length > 0 ? '' : instant.well,
           stands: c.stands === '' ? instant.stands : c.stands,
           means: or(c.means, instant.means),
-          leftOut: hasLeft ? c.leftOut : instant.leftOut,
+          leftOut,
           next: or(c.next, instant.next),
           message: or(c.message, instant.message),
           does: or(c.does, instant.does),

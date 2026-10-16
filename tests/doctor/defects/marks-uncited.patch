@@ -1,9 +1,8 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index ec82737..713dfcf 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -314,7 +314,7 @@ function applyMarks(
-   const his = hisFrom(rec, o.since)
+@@ -324,7 +324,7 @@
+   const his = hisFrom(rec, Math.max(o.since, o.from + 1))
    let changed = false
    const done = o.done.map((c): Condition => {
 -    const close = closed.find(x => x.by !== null && his.includes(x.by) && same(x.text, c.text))

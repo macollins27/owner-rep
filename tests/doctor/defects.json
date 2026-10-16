@@ -21,7 +21,7 @@
     "name": "stale-check-wins",
     "breaks": "An older check run's answer rewrites the newer card the owner is looking at.",
     "patch": "stale-check-wins.patch",
-    "fixed": "tested 2026-10-14"
+    "fixed": "tested 2026-10-14; remade 2026-10-15"
   },
   {
     "name": "stale-check-on-record",
@@ -309,6 +309,42 @@
     "name": "marks-uncited",
     "breaks": "A look or a briefing can close a condition by citing any message number, a draft's included, so a condition the owner never let go is closed on the rep's or the agent's say.",
     "patch": "marks-uncited.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "mark-cites-built-message",
+    "breaks": "A look, a briefing or a check can close a condition by citing a message the objective was already built from, one the writer read and kept the condition open after.",
+    "patch": "mark-cites-built-message.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "writer-cites-built-message",
+    "breaks": "A correction can close or drop a condition by citing a message the held objective was already built from, so a later write reverses what the earlier one kept on the same words.",
+    "patch": "writer-cites-built-message.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "reopen-ignored",
+    "breaks": "A check that finds a condition held shown is not so leaves it shown, so a stop passes the gate on a showing the check disproved.",
+    "patch": "reopen-ignored.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "shown-not-sent",
+    "breaks": "The check is never told which conditions the rep holds shown, so it cannot test them again or reopen one.",
+    "patch": "shown-not-sent.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "well-beside-false",
+    "breaks": "The checked card keeps the briefing's going-well line beside a claim the check found false or an item it left out.",
+    "patch": "well-beside-false.patch",
+    "fixed": "2026-10-15"
+  },
+  {
+    "name": "conditions-pile-up",
+    "breaks": "A condition the writer lists twice, or with a state mark copied into its text, is kept twice, so the list of what done means grows by repeats.",
+    "patch": "conditions-pile-up.patch",
     "fixed": "2026-10-15"
   }
 ]
