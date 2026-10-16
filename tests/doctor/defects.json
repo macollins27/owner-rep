@@ -123,7 +123,7 @@
     "name": "writer-forks-conversation",
     "breaks": "The objective writer's call is made as a fork of the agent's whole conversation instead of a plain completion over the owner's messages, so the writer reads everything the agent said, its account of the job included.",
     "patch": "writer-forks-conversation.patch",
-    "fixed": "tested 2026-10-14 as agent-moves-reading; renamed and remade 2026-10-15"
+    "fixed": "tested 2026-10-14 as agent-moves-reading; renamed and remade 2026-10-15; remade 2026-10-16"
   },
   {
     "name": "revision-cause-dropped",
@@ -351,13 +351,13 @@
     "name": "writer-failure-uncounted",
     "breaks": "A writer call that throws or comes back unanswered is not counted, so a session whose objective was never written looks on the price line as if nothing went wrong.",
     "patch": "writer-failure-uncounted.patch",
-    "fixed": "2026-10-15"
+    "fixed": "2026-10-15; remade 2026-10-16"
   },
   {
     "name": "writer-failure-erases",
     "breaks": "A writer call that fails clears the objective already held, so one unreachable call leaves the job with nothing to measure the agent against.",
     "patch": "writer-failure-erases.patch",
-    "fixed": "2026-10-15"
+    "fixed": "2026-10-15; remade 2026-10-16"
   },
   {
     "name": "writer-failure-unshown",
@@ -382,5 +382,17 @@
     "breaks": "The agent's words before his message are kept from their start, so the question a short reply answers, usually at the end, is cut off.",
     "patch": "prior-keeps-head.patch",
     "fixed": "2026-10-15"
+  },
+  {
+    "name": "writer-cap-cut",
+    "breaks": "The objective writer's reply cap goes back to 1,200 tokens, under the 1,847 one measured write used, so every write is cut off or comes back empty and the objective is never written.",
+    "patch": "writer-cap-cut.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "writer-unreadable-uncounted",
+    "breaks": "A writer reply that arrives but cannot be read, as one cut off at its cap, is not counted as a failed write, so the objective never moves while the price line says nothing went wrong.",
+    "patch": "writer-unreadable-uncounted.patch",
+    "fixed": "2026-10-16"
   }
 ]

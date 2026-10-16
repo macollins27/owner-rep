@@ -90,8 +90,12 @@ export type ObjectiveAnswer =
 export type ObjectiveMemory = { objective: Objective | null; owner: OwnerMsg[]; past: string[] }
 
 // The objective is written by a plain completion of its own, on this model.
+// Its reply cap and its time: one real write, measured 16 Oct 2026 on a real
+// session's record at high effort, took 20.3 s and 1,847 output tokens (1,184
+// of them thinking), so a cap of 1,200 cut every write off or left it empty.
 export const OBJECTIVE_MODEL = 'opus'
-export const OBJECTIVE_MAX_TOKENS = 1200
+export const OBJECTIVE_MAX_TOKENS = 8000
+export const OBJECTIVE_TIMEOUT_MS = 120000
 
 // Whether the agent should go on or stop. Only the rep's own gate may let a stop stand.
 // 'missing' is an answer with no verdict line, or one naming neither: it is never read

@@ -45,6 +45,7 @@ import {
   mergeConditions,
   OBJECTIVE_MAX_TOKENS,
   OBJECTIVE_MODEL,
+  OBJECTIVE_TIMEOUT_MS,
   objectivePrompt,
   objectiveText,
   openConditions,
@@ -116,7 +117,8 @@ type Rec = {
   // The objective writer's own calls and their tokens.
   objectiveCalls: number
   objectiveTokens: number
-  // Writer calls that threw or came back unanswered; each left the objective as it was.
+  // Writer calls that threw, came back unanswered, or answered with nothing
+  // parseObjective can read; each left the objective as it was.
   objectiveFailed: number
 }
 
@@ -394,18 +396,21 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
           prompt: objectivePrompt({ objective: rec.objective, owner: jobMsgs(rec), past: rec.past }),
           maxTokens: OBJECTIVE_MAX_TOKENS,
           effort: 'high',
-          timeoutMs: 60000,
+          timeoutMs: OBJECTIVE_TIMEOUT_MS,
         })
         .catch(() => null)
       // A call that threw or came back unanswered leaves the objective as it
-      // was and is counted as a failed write, which the price line shows.
+      // was and is counted as a failed write, which the price line shows; so is
+      // an answer that cannot be read (no "objective:" head, or moved with no
+      // result), which is what a reply cut off at its cap looks like.
       const after = await changeRec($, sid, r => {
         if (result !== null) {
           r.objectiveCalls += 1
           r.objectiveTokens += tokensOf(result.usage)
         }
-        if (result !== null && result.isAnswered) takeObjective(r, parseObjective(result.text), Date.now(), saw)
-        else r.objectiveFailed += 1
+        const answer = result !== null && result.isAnswered ? parseObjective(result.text) : null
+        if (answer === null) r.objectiveFailed += 1
+        else takeObjective(r, answer, Date.now(), saw)
         return r
       })
       // The row shows what the record holds, whichever write put it there.

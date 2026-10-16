@@ -1,11 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 03f57a9..98aef2f 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -403,7 +403,6 @@
+@@ -409,7 +409,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
            r.objectiveTokens += tokensOf(result.usage)
          }
-         if (result !== null && result.isAnswered) takeObjective(r, parseObjective(result.text), Date.now(), saw)
--        else r.objectiveFailed += 1
+         const answer = result !== null && result.isAnswered ? parseObjective(result.text) : null
+-        if (answer === null) r.objectiveFailed += 1
++        if (answer === null && result !== null && result.isAnswered) r.objectiveFailed += 1
+         else takeObjective(r, answer, Date.now(), saw)
          return r
        })
-       // The row shows what the record holds, whichever write put it there.

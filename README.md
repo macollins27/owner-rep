@@ -68,9 +68,10 @@ up to 6,000 characters, with the end of the agent's last words before it, so a s
 can be understood), the objective as held, and the results of earlier jobs. The code keeps the agent's words from moving it: a write is
 taken only when it saw a message of the owner's past the ones the held objective was built
 from, so a write that lands after a newer one is refused, and a message that arrives during
-a write is written after it. A write that fails or comes back empty leaves the objective as
-it was and is counted, and the card's line of what the rep has spent names the failed
-writes. When no objective is held yet, a press of Rep writes one before the briefing.
+a write is written after it. A write that fails, comes back empty, or comes back in a shape
+the code cannot read (which is what a reply cut off at its length limit looks like) leaves
+the objective as it was and is counted, and the card's line of what the rep has spent names
+the failed writes. When no objective is held yet, a press of Rep writes one before the briefing.
 
 A session is a run of jobs: the owner opens one, the agent works, the owner corrects it a
 few times, the job ends and the next begins. A correction rebuilds the objective whole from

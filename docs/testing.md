@@ -82,6 +82,7 @@ entry that proves the test bites (added 14 Oct 2026; the objective's rules 15 Oc
 | A message of his or a note reaches the writer whole up to 6,000 characters; only the rep's draft is cut to 1,200 | `rule: a long message of his…` | `his-message-cut` |
 | The agent's words before his message are kept from their end, where the question a short reply answers usually is | `rule: the agent's words before his message…`, `fitTail keeps…` | `prior-keeps-head` |
 | A writer call that throws or comes back unanswered leaves the objective as it was and is counted, and the card's price line names the failed writes | `rule: a writer call that throws…`, `rule: a held objective stays…`, `rule: with no objective held, a press writes it…`, `spentText names failed…` | `writer-failure-uncounted`, `writer-failure-erases`, `writer-failure-unshown`, `writer-failure-off-card` |
+| The writer asks for the reply cap and the time one measured write needed (16 Oct 2026: 1,847 output tokens, 20 seconds), and an answer it cannot read, as a reply cut off at its cap, is counted as a failed write and leaves the objective as it was | `rule: the writer asks for its measured limits…` | `writer-cap-cut`, `writer-unreadable-uncounted` |
 | A record saved in the old shape is rebuilt from the owner's messages on the next press, the old text kept as a version | `rule: a record saved in the old shape…` | `old-reading-converted` |
 
 Three things the kit taught while writing these. The engine strips a refusal cause that a
@@ -113,7 +114,7 @@ objective it checked came from the writer's own call. The test now sends a furth
 the writer answers with `objective: holds` and a look whose answer carries an objective in
 the writer's shape, and asserts that the objective is unchanged.
 
-**Status.** 90 tests: the parsers, the status words (including the variable-first command, read
+**Status.** 91 tests: the parsers, the status words (including the variable-first command, read
 through the mounted strip), the note to the rep, the checker's prompt and tools, the row on
 both surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-
 failure toast, the sequence rules above, the card folding to a small band, the brief
@@ -126,10 +127,11 @@ no verdict, and on a next step that says stop), closes cited past the messages t
 was built from, a check reopening a condition held shown and clearing the going-well line
 beside a false claim, conditions kept once, the numbered and trimmed record of
 the owner's messages, the writer's failure paths (a failed write counted, named on the price
-line and leaving the objective as it was), his long messages reaching the writer whole, the
+line and leaving the objective as it was, an answer it cannot read counted with them, and its
+reply cap and time set from a measured write), his long messages reaching the writer whole, the
 agent's words before a message kept from their end, the rep's draft recognised before and after
 a reload, the record saved in the old shape, a stale check leaving the record alone, and
-the last three cards' messages kept for knowing a draft. Sixty-four doctor entries, all caught.
+the last three cards' messages kept for knowing a draft. Sixty-six doctor entries, all caught.
 
 ## Layer 2: a real session
 
@@ -220,7 +222,7 @@ the file). Never make one from an uncommitted tree: the checkout would wipe the 
 **Status.** Built: `tests/doctor/doctor.py`, with `defects.json` and one patch per defect in
 `tests/doctor/defects/`. Run it with `python3 tests/doctor/doctor.py`; it exits 1 when the
 clean suite fails or a defect survives, and stops before planting when the clean suite is
-not clean. Sixty-four entries, all caught: `strip-shows-command`, one or more per sequence
+not clean. Sixty-six entries, all caught: `strip-shows-command`, one or more per sequence
 rule above, `card-overflows-band`, `size-figure-dropped`, `whole-ask-rule-dropped`, and one
 per remaining hook path (`helper-not-counted`, `box-text-overwritten`, `fill-refusal-ignored`,
 `check-timeout-unreported`, `check-failure-swallowed`, `end-not-saved`). A throwaway entry no test looks at was planted on 14 Oct

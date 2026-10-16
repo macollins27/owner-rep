@@ -37,7 +37,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 90 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 91 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: six real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -160,9 +160,11 @@ earlier `versions`. Only `rebuildObjective` writes it: on each message of his an
 never on a draft, and on a session start or a press when none is held. `writeObjective` runs
 one write per session at a time; a request during a write joins it (`again`), and a message
 saved after the write was shown its messages is written next. A write that throws or comes
-back unanswered leaves the objective as it was and adds one to `rec.objectiveFailed`, which
-the card's price line (`spentText`) names only when above zero. The writer is a plain
-`$.model.complete` call (`OBJECTIVE_MODEL`, high effort), never a fork of the conversation,
+back unanswered, or answers with nothing `parseObjective` can read (a reply cut off at its
+cap looks like that), leaves the objective as it was and adds one to `rec.objectiveFailed`,
+which the card's price line (`spentText`) names only when above zero. The writer is a plain
+`$.model.complete` call (`OBJECTIVE_MODEL`, high effort, `OBJECTIVE_MAX_TOKENS` and
+`OBJECTIVE_TIMEOUT_MS`, set from one measured write), never a fork of the conversation,
 shown by `objectivePrompt` only his numbered messages on the job (each with the agent's last
 answer before it), the held objective and `rec.past`. Its answer is `objective: holds`, or
 `objective: moved` with `moved:`, `result:`, `for:`, `done:`, `step:` and `dropped:`

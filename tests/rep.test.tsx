@@ -1,7 +1,7 @@
 import type { On } from 'claude-code'
 import { expect, mock, test, type Engine } from 'claude-code/testing'
 
-import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, type Condition } from '../hooks/rep'
+import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, type Condition } from '../hooks/rep'
 
 const om = (text: string, n = 1): OwnerMsg => ({ n, kind: 'his', text, prior: '' })
 
@@ -1466,6 +1466,45 @@ test('rule: a held objective stays as it was when the write for his next message
   expect(calls).toBe(2)
   expect(rec()?.objective).toEqual(OBJECTIVE_FIXTURE)
   expect(rec()?.objectiveCalls).toBe(1)
+  expect(rec()?.objectiveFailed).toBe(2)
+})
+
+test('rule: the writer asks for its measured limits, and an answered write it cannot read is counted as failed and changes nothing', async ($, on) => {
+  // One real write, measured 16 Oct 2026, took 20 seconds and 1,847 output tokens, most of them thinking.
+  expect(OBJECTIVE_MAX_TOKENS).toBeGreaterThanOrEqual(4000)
+  expect(OBJECTIVE_TIMEOUT_MS).toBeGreaterThanOrEqual(90000)
+  const rec = kept(on, {
+    sessions: {
+      'test-session': { id: 'test-session', at: Date.now(), objective: OBJECTIVE_FIXTURE, jobStart: 1, owner: [om('build the spec')], counter: 1, past: [], seen: [], others: [] },
+    },
+  })
+  quietBand(on)
+  const asks: Array<{ maxTokens: number | undefined; timeoutMs: number | undefined }> = []
+  // A reply cut off before its head.
+  let answer = 'result: The spec finished and running'
+  on('model.complete', (_$, e) => {
+    asks.push({ maxTokens: e.maxTokens, timeoutMs: e.timeoutMs })
+    return { value: { isAnswered: true, text: answer, usage: USAGE } }
+  })
+  await $.prompt.submit(typed('and add a second page'))
+  await settle($)
+  expect(asks).toEqual([{ maxTokens: OBJECTIVE_MAX_TOKENS, timeoutMs: OBJECTIVE_TIMEOUT_MS }])
+  expect(rec()?.objective).toEqual(OBJECTIVE_FIXTURE)
+  expect(rec()?.objectiveCalls).toBe(1)
+  expect(rec()?.objectiveFailed).toBe(1)
+  // A moved answer cut off before its result is unreadable too.
+  answer = 'objective: moved\nmoved: #3 asked for a footer'
+  await $.prompt.submit(typed('with a footer'))
+  await settle($)
+  expect(rec()?.objective).toEqual(OBJECTIVE_FIXTURE)
+  expect(rec()?.objectiveCalls).toBe(2)
+  expect(rec()?.objectiveFailed).toBe(2)
+  // An answer that says the objective holds is read, and is no failure.
+  answer = 'objective: holds'
+  await $.prompt.submit(typed('thanks'))
+  await settle($)
+  expect(asks).toHaveLength(3)
+  expect(rec()?.objective).toEqual(OBJECTIVE_FIXTURE)
   expect(rec()?.objectiveFailed).toBe(2)
 })
 
