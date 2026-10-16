@@ -424,5 +424,11 @@
     "breaks": "A holds answer while no objective is held is taken as nothing, neither retried nor counted as a failed write, so the write is lost silently.",
     "patch": "holds-with-none-lost.patch",
     "fixed": "2026-10-16"
+  },
+  {
+    "name": "writer-retries-stale-prompt",
+    "breaks": "A failed attempt is retried over the old prompt even after a newer message of the owner's arrived, so the retry spends a max-effort call on outdated messages and the write is counted failed.",
+    "patch": "writer-retries-stale-prompt.patch",
+    "fixed": "2026-10-16"
   }
 ]

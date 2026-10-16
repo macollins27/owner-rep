@@ -75,10 +75,11 @@ the code cannot read (which is what a reply cut off at its length limit looks li
 the objective as it was and is counted, and the card's line of what the rep has spent names
 the failed writes and, in plain words, the cause of the last. A failed attempt (an empty or
 errored reply, an answer the code cannot read, or "holds" while no objective is held) is tried
-again at the highest effort, up to twice, because in one measured session the default effort
+again at the highest effort, up to twice, because in one measured session high effort
 came back empty on most attempts and the highest effort answered every time; a call that
-throws or is cut short is not tried again, and a write counts as failed only when every
-attempt did. When no objective is held yet, a press of Rep writes one before the briefing.
+throws or is cut short is not tried again, nor is one once a newer message of the owner's
+has arrived (the next pass writes over the fresh prompt), and a write counts as failed only
+when every attempt did. When no objective is held yet, a press of Rep writes one before the briefing.
 
 A session is a run of jobs: the owner opens one, the agent works, the owner corrects it a
 few times, the job ends and the next begins. A correction rebuilds the objective whole from
@@ -219,7 +220,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 75 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 103 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: seven real sessions in tmux, the strip captured to tests/live/captures
 ```

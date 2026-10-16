@@ -122,8 +122,9 @@ type Rec = {
   // The objective writer's own calls and their tokens.
   objectiveCalls: number
   objectiveTokens: number
-  // Writer calls that threw, came back unanswered, or answered with nothing
-  // parseObjective can read; each left the objective as it was.
+  // Writes (each up to 1 + OBJECTIVE_RETRIES attempts) whose every attempt threw,
+  // came back unanswered, answered with nothing parseObjective can read, or held
+  // with nothing held; each left the objective as it was.
   objectiveFailed: number
   // Why the last failed write failed: the engine's reason, or that the answer could not be read.
   objectiveWhy: string
@@ -419,6 +420,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
           })
           .catch(() => null)
         let again = false
+        let stale = false
         after = await changeRec($, sid, r => {
           if (result !== null) {
             r.objectiveCalls += 1
@@ -432,13 +434,20 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
           }
           const cut = result !== null && !result.isAnswered && result.reason === 'aborted'
           again = result !== null && !cut && attempt < OBJECTIVE_RETRIES
+          // A newer message of his arrived during the attempt: the next pass writes over the
+          // fresh prompt, so this write stops here and is not counted as failed.
+          if (again && (entry.again || r.owner.some(m => m.kind !== 'draft' && m.n > saw))) {
+            again = false
+            stale = true
+            return r
+          }
           if (!again) {
             r.objectiveFailed += 1
             r.objectiveWhy = none ? 'holds-with-none' : writeFailure(result)
           }
           return r
         })
-        if (!again) break
+        if (!again || stale) break
       }
       // The row shows what the record holds, whichever write put it there.
       await update($, readingA, () => after.objective)

@@ -1532,6 +1532,69 @@ test('rule: a write whose every attempt fails is one failed write, and the price
   await ui.unmount()
 })
 
+test('rule: an api-error attempt is retried at the highest effort and its objective is taken', async ($, on) => {
+  const rec = kept(on, unwritten())
+  quietBand(on)
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  let calls = 0
+  on('model.complete', () => {
+    calls += 1
+    return { value: calls === 1 ? { isAnswered: false, reason: 'api-error', status: 529, error: 'overloaded', usage: USAGE } : { isAnswered: true, text: OBJ('A licence file with the full MIT text.', ['the file committed | open']), usage: USAGE } }
+  })
+  await $.session.start({ cwd: '/tmp/x', surface: 'terminal', isInteractive: true })
+  await settle($)
+  expect(calls).toBe(2)
+  expect(rec()?.objective?.result).toMatch(/licence file/)
+  expect(rec()?.objectiveFailed ?? 0).toBe(0)
+})
+
+test('rule: a write whose every attempt answers holds with nothing held is one failed write recorded as holds-with-none', async ($, on) => {
+  const rec = kept(on, unwritten())
+  quietBand(on)
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  let calls = 0
+  on('model.complete', () => {
+    calls += 1
+    return { value: { isAnswered: true, text: 'objective: holds', usage: USAGE } }
+  })
+  await $.session.start({ cwd: '/tmp/x', surface: 'terminal', isInteractive: true })
+  await settle($)
+  expect(calls).toBe(3)
+  expect(rec()?.objective).toBe(null)
+  expect(rec()?.objectiveFailed).toBe(1)
+  expect(rec()?.objectiveWhy).toBe('holds-with-none')
+})
+
+test('rule: a failed attempt is not retried over an outdated prompt: a newer message of his stops the retries, the write is not counted failed, and the next call is a fresh prompt at high effort', async ($, on) => {
+  const rec = kept(on, unwritten())
+  quietBand(on)
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  const asks: Array<{ effort: unknown; prompt: string }> = []
+  let releaseFirst: () => void = () => undefined
+  let onFirst: () => void = () => undefined
+  on('model.complete', async (_$, e) => {
+    asks.push({ effort: e.effort, prompt: String(e.prompt) })
+    if (asks.length === 1) {
+      onFirst()
+      await new Promise<void>(r => (releaseFirst = r))
+      return { value: { isAnswered: false, reason: 'empty-reply', usage: USAGE } }
+    }
+    return { value: { isAnswered: true, text: OBJ('A licence file, then the tests.', ['the file committed | open']), usage: USAGE } }
+  })
+  const started = new Promise<void>(r => (onFirst = r))
+  await $.session.start({ cwd: '/tmp/x', surface: 'terminal', isInteractive: true })
+  await started
+  await $.prompt.submit(typed('and the tests too'))
+  releaseFirst()
+  await settle($)
+  expect(asks.map(a => [a.effort, /tests too/.test(a.prompt)])).toEqual([['high', false], ['high', true]])
+  expect(asks[1]?.effort).toBe('high')
+  expect(asks[1]?.prompt).toMatch(/and the tests too/)
+  expect(asks[0]?.prompt).not.toMatch(/and the tests too/)
+  expect(rec()?.objective?.result).toMatch(/licence file, then the tests/)
+  expect(rec()?.objectiveFailed ?? 0).toBe(0)
+})
+
 test('rule: a write cut short is not retried', async ($, on) => {
   const rec = kept(on, unwritten())
   quietBand(on)

@@ -84,7 +84,8 @@ entry that proves the test bites (added 14 Oct 2026; the objective's rules 15 Oc
 | The record keeps the whole job past 40 messages and numbers each one, so a write after many messages still sees the first | `trimOwner keeps…`, `rule: the record numbers…`, `rule: a draft, a note and a message all count by number…` | `owner-cap-freezes` |
 | A message of his or a note reaches the writer whole up to 6,000 characters; only the rep's draft is cut to 1,200 | `rule: a long message of his…` | `his-message-cut` |
 | The agent's words before his message are kept from their end, where the question a short reply answers usually is | `rule: the agent's words before his message…`, `fitTail keeps…` | `prior-keeps-head` |
-| A writer call that throws or comes back unanswered leaves the objective as it was and is counted, and the card's price line names the failed writes | `rule: a writer call that throws…`, `rule: a held objective stays…`, `rule: with no objective held, a press writes it…`, `spentText names failed…` | `writer-failure-uncounted`, `writer-failure-erases`, `writer-failure-unshown`, `writer-failure-off-card` |
+| A write whose every attempt throws, comes back unanswered or answers with nothing readable leaves the objective as it was and is counted, and the card's price line names the failed writes | `rule: a writer call that throws…`, `rule: a held objective stays…`, `rule: with no objective held, a press writes it…`, `spentText names failed…` | `writer-failure-uncounted`, `writer-failure-erases`, `writer-failure-unshown`, `writer-failure-off-card` |
+| A failed attempt (an empty or errored reply, an answer it cannot read, or `holds` while nothing is held) is tried again at the highest effort up to twice; a throw, a cut-short call, and a newer message of his arriving during the attempt (the next pass writes over the fresh prompt) are not retried; a write is counted failed only when every attempt failed, and the price line names the last cause in words | `rule: an empty write is retried…`, `rule: an api-error attempt is retried…`, `rule: a holds answer with nothing held…`, `rule: a write whose every attempt answers holds…`, `rule: a write whose every attempt fails…`, `rule: a write cut short is not retried`, `rule: a failed attempt is not retried over an outdated prompt…`, `failureWords turns…` | `writer-no-retry`, `holds-with-none-lost`, `writer-retries-stale-prompt` |
 | The writer asks for the reply cap and the time one measured write needed (16 Oct 2026: 1,847 output tokens, 20 seconds), and an answer it cannot read, as a reply cut off at its cap, is counted as a failed write and leaves the objective as it was | `rule: the writer asks for its measured limits…` | `writer-cap-cut`, `writer-unreadable-uncounted` |
 | A record saved in the old shape is rebuilt from the owner's messages on the next press, the old text kept as a version | `rule: a record saved in the old shape…` | `old-reading-converted` |
 
@@ -117,7 +118,7 @@ objective it checked came from the writer's own call. The test now sends a furth
 the writer answers with `objective: holds` and a look whose answer carries an objective in
 the writer's shape, and asserts that the objective is unchanged.
 
-**Status.** 100 tests: the parsers, the status words (including the variable-first command, read
+**Status.** 103 tests: the parsers, the status words (including the variable-first command, read
 through the mounted strip), the note to the rep, the checker's prompt and tools, the row on
 both surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-
 failure toast, the sequence rules above, the card folding to a small band, the brief
@@ -138,7 +139,7 @@ call, a `holds` with nothing held counted as a failed attempt, and its reply cap
 from a measured write), his long messages reaching the writer whole, the
 agent's words before a message kept from their end, the rep's draft recognised before and after
 a reload, the record saved in the old shape, a stale check leaving the record alone, and
-the last three cards' messages kept for knowing a draft. Seventy-one doctor entries, all caught.
+the last three cards' messages kept for knowing a draft. Seventy-two doctor entries, all caught.
 
 ## Layer 2: a real session
 
