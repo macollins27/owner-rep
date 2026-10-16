@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 2ac8289..8c008a6 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -528,7 +528,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
+         after.cached += cachedOf(usage)
+         if (!result.isAnswered) return { reason: result.reason }
+         const parsed = parseBrief(result.text)
+-        if (applyMarks(after, parsed.shown, parsed.closed) && onScreen(sid)) await update($, readingA, () => after.objective)
++        if (applyMarks(after, parsed.shown, parsed.closed)) await update($, readingA, () => after.objective)
+         const left = gateOpen(after.objective)
+         return { ...gateVerdict(parsed, left), open: left }
+       })

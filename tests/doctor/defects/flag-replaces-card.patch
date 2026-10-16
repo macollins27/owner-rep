@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index ec82737..0c691ff 100644
+index 57aadf7..7b26ca5 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -426,7 +426,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+@@ -495,7 +495,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
      const answer = parseWatch(result.text)
-     if (applyMarks(after, answer.shown, answer.closed)) await update($, readingA, () => after.objective)
+     if (applyMarks(after, answer.shown, answer.closed) && onScreen(sid)) await update($, readingA, () => after.objective)
      const view = await read($, viewA)
--    if (answer.flag !== null && view === 'row' && ![...after.seen].some(s => same(s, answer.flag ?? ''))) {
-+    if (answer.flag !== null && ![...after.seen].some(s => same(s, answer.flag ?? ''))) {
+-    if (answer.flag !== null && view === 'row' && onScreen(sid) && ![...after.seen].some(s => same(s, answer.flag ?? ''))) {
++    if (answer.flag !== null && onScreen(sid) && ![...after.seen].some(s => same(s, answer.flag ?? ''))) {
        after.seen = [...after.seen, answer.flag].slice(-SEEN_MAX)
        const note: Note = { line: answer.flag, why: answer.why, shownAt: Date.now(), turnId }
        await update($, noteA, () => note)

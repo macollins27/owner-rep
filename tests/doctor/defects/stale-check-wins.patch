@@ -1,17 +1,17 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index fa77064..b019041 100644
+index 57aadf7..f8fce05 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -582,7 +582,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
+@@ -621,7 +621,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
    activeCheck = null
    const isStale = async (): Promise<boolean> => {
      const b = await read($, briefA)
--    return epoch !== checkEpoch || b === null || b.at !== at
+-    return epoch !== checkEpoch || b === null || b.at !== at || !onScreen(sid)
 +    return false
    }
    const finish = async (patch: Partial<Brief>): Promise<void> => {
      if (await isStale()) return
-@@ -650,7 +650,6 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
+@@ -689,7 +689,6 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
        // A run a newer press made stale changes nothing more: its marks are not
        // taken and the card on record stays the newer one, so the message he
        // sends from that card is still known for the rep's draft.

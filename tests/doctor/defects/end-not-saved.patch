@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index ec82737..f9afde5 100644
+index 57aadf7..73e5365 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1225,7 +1225,7 @@ export const register: Register = on => {
+@@ -1351,7 +1351,7 @@ export const register: Register = on => {
+ 
    on('session.end', async ($, e, next) => {
      try {
-       const id = await sessionId($)
--      await changeRec($, id, () => undefined)
-+      await loadRec($, id)
+-      await changeRec($, e.sessionId, () => undefined)
++      await loadRec($, e.sessionId)
      } catch {
        // Nothing to save.
      }

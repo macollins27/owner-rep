@@ -122,7 +122,7 @@ objective it checked came from the writer's own call. The test now sends a furth
 the writer answers with `objective: holds` and a look whose answer carries an objective in
 the writer's shape, and asserts that the objective is unchanged.
 
-**Status.** 143 tests: the parsers, the status words (including the variable-first command, read
+**Status.** 146 tests: the parsers, the status words (including the variable-first command, read
 through the mounted strip), the note to the rep, the checker's prompt and tools, the row on
 both surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-
 failure toast, the sequence rules above, the card folding to a small band, the brief
@@ -167,9 +167,13 @@ every message up to the fork, a seeded session's first write starting the job wh
 the new job opened, a scan that matched no row proving nothing, a wait on "your",
 "confirmation" or "a decision" refused only when it names his say, and the remaining stop and
 hand-back forms refused; after it, a wait on him negated with words between ("Don't just
-wait for him") going on, and approval from someone else not read as his; and, after the
-replay of the guidance session, a draft he sent that the forked-from record holds only among
-his messages recognised as the rep's. A hundred and fifty doctor entries, all caught.
+wait for him") going on, and approval from someone else not read as his; after the replay
+of the guidance session, a draft he sent that the forked-from record holds only among his
+messages recognised as the rep's; and a `/clear`: his messages after it filed under the new
+session, the old session's objective off the row at once, a write, a briefing or a check the
+old session started landing in its own record without drawing, a press straight after it read
+under the new id, and a session resumed in the same window read for his messages before his
+next one is recorded under it. A hundred and fifty-six doctor entries, all caught.
 
 ## Layer 2: a real session
 
@@ -291,10 +295,12 @@ the file). Never make one from an uncommitted tree: the checkout would wipe the 
 **Status.** Built: `tests/doctor/doctor.py`, with `defects.json` and one patch per defect in
 `tests/doctor/defects/`. Run it with `python3 tests/doctor/doctor.py`; it exits 1 when the
 clean suite fails or a defect survives, and stops before planting when the clean suite is
-not clean. A hundred and fifty entries, all caught: `strip-shows-command`, one or more per sequence
+not clean. A hundred and fifty-six entries, all caught: `strip-shows-command`, one or more per sequence
 rule above, `card-overflows-band`, `size-figure-dropped`, `whole-ask-rule-dropped`, and one
 per remaining hook path (`helper-not-counted`, `box-text-overwritten`, `fill-refusal-ignored`,
-`check-timeout-unreported`, `check-failure-swallowed`, `end-not-saved`). A throwaway entry no test looks at was planted on 14 Oct
+`check-timeout-unreported`, `check-failure-swallowed`, `end-not-saved`), and six for a
+`/clear` (`clear-id-read-once`, `clear-screen-kept`, `clear-late-write-draws`,
+`clear-press-old-id`, `clear-brief-marks-draw`, `clear-check-marks-draw`). A throwaway entry no test looks at was planted on 14 Oct
 2026 to show the survivor path reports and exits 1; it was not kept. Entries whose rule was
 replaced move to `tests/doctor/defects/archive/` with a note in its `ARCHIVED.md` naming the
 successor; three moved there on 15 Oct 2026, when the objective replaced the reading.

@@ -4243,3 +4243,149 @@ test('rule: a record that holds a message of his is not seeded from the session,
   // Its transcript is never read.
   expect(runs).toEqual([])
 })
+
+// Kept last: they leave the module on another session's id.
+test('rule: after a /clear his messages are kept under the new session, and nothing of the old one stays on screen or draws over it', async ($, on) => {
+  const store: Record<string, unknown> = {}
+  on('store.get', (_$, e) => ({ value: store[e.key] }))
+  on('store.set', (_$, e) => {
+    store[e.key] = e.value
+    return { value: undefined }
+  })
+  const recOf = (id: string) => (store.sessions as Record<string, Stored> | undefined)?.[id]
+  // A /clear goes on in the same process under a new id, and no session.start fires.
+  let id = 'before-clear'
+  on('session.id', () => ({ value: id }))
+  on('prompt.submit', (_$, e) => ({ text: e.text }))
+  on('turn.complete', () => ({ text: '' }))
+  on('session.end', (_$, e) => ({ sessionId: e.sessionId }))
+  on('ui.toast', () => ({ value: undefined }))
+  const clock = mock.clock(on)
+  // A briefing pressed before the /clear is still out when it comes, and marks a condition shown.
+  let holdFork = false
+  on('model.fork', async () => {
+    const held = holdFork
+    if (held) await clock.sleep(2000)
+    const marks = held ? 'shown:\n- the first thing built | the reply printed it\n' : ''
+    return { value: { isAnswered: true, text: `verdict: continue\n${marks}stands: s\nmeans: m\nleft:\n- nothing\nnext: n\nmessage:\nBuild the second thing next.\nend\ndoes: d`, usage: USAGE } }
+  })
+  // The second write of the old session is still out when the /clear comes.
+  const answers = [
+    { hold: false, text: OBJ('The first job, built.', ['the first thing built | open']) },
+    { hold: true, text: OBJ('The first job, built and polished.', ['the first thing built | open'], '#2 added the polish') },
+    { hold: false, text: OBJ('The second job, built.', ['the second thing built | open']) },
+  ]
+  let writes = 0
+  on('model.complete', async () => {
+    const a = answers[Math.min(writes++, answers.length - 1)] ?? { hold: false, text: '' }
+    if (a.hold) await clock.sleep(1000)
+    return { value: { isAnswered: true, text: a.text, usage: USAGE } }
+  })
+  quietBand(on)
+  await $.prompt.submit(typed('build the first thing'))
+  expect(await rowSays($, /^Owner rep · The first job, built\.$/)).toBe(true)
+  await $.turn.complete(stop('t1', 'Built the first part. Shall I go on?'))
+  await $.prompt.submit(typed('yes, and polish it'))
+  holdFork = true
+  const before = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await before.press({ key: 'rep' })
+  await before.unmount()
+  holdFork = false
+  await $.session.end({ reason: 'clear', sessionId: 'before-clear', resume: { id: 'before-clear' } } as never)
+  id = 'after-clear'
+  // The old session's objective leaves the row at the /clear, before anything is typed.
+  expect(await rowSays($, /first job/)).toBe(false)
+  expect(await rowSays($, /working out the result/)).toBe(true)
+  // A press straight after the /clear, before anything is typed, is the new session's.
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'close' })
+  await ui.unmount()
+  expect(recOf('after-clear')?.lastBrief?.message).toBe('Build the second thing next.')
+  expect(recOf('before-clear')?.lastBrief).toBeUndefined()
+  await $.prompt.submit(typed('build the second thing'))
+  expect(await rowSays($, /^Owner rep · The second job, built\.$/)).toBe(true)
+  expect(recOf('after-clear')?.owner).toEqual([{ n: 1, kind: 'his', text: 'build the second thing', prior: '' }])
+  expect(recOf('before-clear')?.owner.map(m => m.text)).toEqual(['build the first thing', 'yes, and polish it'])
+  expect(recOf('before-clear')?.owner[1]?.prior).toBe('Built the first part. Shall I go on?')
+  // The old write and the old briefing land in their own record and draw nothing over the new session.
+  await clock.advance(2000)
+  expect(recOf('before-clear')?.objective?.result).toBe('The first job, built and polished.')
+  expect(recOf('before-clear')?.objective?.done[0]?.state).toBe('shown')
+  expect(await rowSays($, /^Owner rep · The second job, built\.$/)).toBe(true)
+})
+
+test('rule: a check still running at a /clear marks its own record and draws nothing over the new session', async ($, on) => {
+  const planted = ALL_SHOWN().sessions as Record<string, Record<string, unknown>>
+  const store: Record<string, unknown> = { sessions: { 'checked-before': { ...planted['test-session'], id: 'checked-before' } } }
+  on('store.get', (_$, e) => ({ value: store[e.key] }))
+  on('store.set', (_$, e) => {
+    store[e.key] = e.value
+    return { value: undefined }
+  })
+  const recOf = (id: string) => (store.sessions as Record<string, Stored> | undefined)?.[id]
+  let id = 'checked-before'
+  on('session.id', () => ({ value: id }))
+  on('session.end', (_$, e) => ({ sessionId: e.sessionId }))
+  on('ui.toast', () => ({ value: undefined }))
+  quietBand(on)
+  checkRoom(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: STOP_BRIEF(), usage: USAGE } }))
+  let release = () => {}
+  const out = new Promise<void>(resolve => {
+    release = resolve
+  })
+  on('process.spawn', async function* () {
+    await out
+    yield { stream: 'stdout', text: CHECK_OUT('stop', { reopen: '- the newest build installed | the install command in the record failed' }) }
+    return { value: { code: 0, signal: null } }
+  })
+  await started($)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+  await ui.unmount()
+  await $.session.end({ reason: 'clear', sessionId: 'checked-before', resume: { id: 'checked-before' } } as never)
+  id = 'checked-after'
+  expect(await rowSays($, /working out the result/)).toBe(true)
+  release()
+  expect(await rowSays($, /release built/)).toBe(false)
+  expect(await rowSays($, /working out the result/)).toBe(true)
+  expect(recOf('checked-before')?.objective?.done[0]).toEqual({ text: 'the newest build installed', state: 'not-shown', by: 'the install command in the record failed', reopened: true })
+})
+
+test('rule: a session resumed in the same process is read for his messages before his next prompt is recorded under it', async ($, on) => {
+  const store: Record<string, unknown> = {}
+  on('store.get', (_$, e) => ({ value: store[e.key] }))
+  on('store.set', (_$, e) => {
+    store[e.key] = e.value
+    return { value: undefined }
+  })
+  const recOf = (id: string) => (store.sessions as Record<string, Stored> | undefined)?.[id]
+  // A resume goes on in the same process under the resumed session's id, and no session.start fires.
+  let id = 'resumed-from'
+  on('session.id', () => ({ value: id }))
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  on('session.end', (_$, e) => ({ sessionId: e.sessionId }))
+  on('prompt.submit', (_$, e) => ({ text: e.text }))
+  on('turn.complete', () => ({ text: '' }))
+  on('ui.toast', () => ({ value: undefined }))
+  on('session.messages', () => ({ value: id === 'test-session' ? SEEDED_ROWS : [] }))
+  transcript(on, { 'test-session.jsonl': SEEDED_FILE })
+  writer(on, () => OBJ('A licence file with the MIT text and this year, and a readme.', ['the file pushed | open']))
+  quietBand(on)
+  await started($)
+  await settle($)
+  expect(recOf('resumed-from')?.owner ?? []).toEqual([])
+  await $.session.end({ reason: 'resume', sessionId: 'resumed-from', resume: { id: 'resumed-from' } } as never)
+  id = 'test-session'
+  await $.prompt.submit(typed('and add a readme'))
+  await settle($)
+  expect(recOf('test-session')?.owner.map(m => [m.n, m.kind, m.text])).toEqual([
+    [1, 'his', 'Add a licence file with the MIT text.'],
+    [2, 'his', 'Use this year, and push it.'],
+    [3, 'his', 'and add a readme'],
+  ])
+  expect(recOf('resumed-from')?.owner ?? []).toEqual([])
+  expect(await rowSays($, /and a readme/)).toBe(true)
+})
