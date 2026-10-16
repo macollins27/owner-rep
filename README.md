@@ -65,9 +65,11 @@ The objective is written by a call of its own, never by the looks. Each message 
 owner's, and each note to the rep, starts one plain model call, not a fork of the
 conversation, that is shown only the owner's numbered messages on the job (each kept whole
 up to 6,000 characters, with the end of the agent's last words before it, so a short reply
-can be understood), the objective as held, and the results of earlier jobs. The code keeps the agent's words from moving it: a write is
-taken only when it saw a message of the owner's past the ones the held objective was built
-from, so a write that lands after a newer one is refused, and a message that arrives during
+can be understood), the objective as held, and the results of earlier jobs. The agent's
+words reach the writer only as that line before each of the owner's messages, so they move
+the objective only through what the owner answers, and the code keeps them from moving it any
+other way: a write is taken only when it saw a message of the owner's past the ones the held
+objective was built from, so a write that lands after a newer one is refused, and a message that arrives during
 a write is written after it. A write that fails, comes back empty, or comes back in a shape
 the code cannot read (which is what a reply cut off at its length limit looks like) leaves
 the objective as it was and is counted, and the card's line of what the rep has spent names
@@ -87,13 +89,20 @@ Each condition is in one of four states: open; not shown, for a thing a conversa
 show by itself, such as whether a build is installed or a service runs the newest code;
 shown; or closed by the owner. Open and not shown both count as open. The writer sees nothing of the conversation but the agent's last words before each of the owner's messages, marked as the agent's, so it can mark nothing shown: the code puts a condition it marks shown back to open unless it was already held so. The watch,
 the briefing and the check mark a condition shown only by naming where the conversation or
-the disk shows it, and closed only by citing a message of the owner's. The objective stays
-open until every condition is shown or closed: a briefing that says the agent should stop,
-or that the work is going well, while a condition is open is asked once more with the open
-conditions named, and if it still says so the card is refused. A refused card lists the open
-conditions as left out, and its meaning, next step and message are the rep's own, built from
-those conditions, so it keeps the agent on the job and never offers a stop. The check passes
-the same gate.
+the disk shows it, and closed only by citing a message of the owner's. When the check finds a
+condition held shown is not so, it puts it back to not shown, and it stays not shown until a
+later check shows it: a look or a briefing that marks it shown again moves nothing, the
+writer never raises a condition's state, and the looks, the briefings and the writer are
+shown what the check found beside it. The objective stays open until every condition is
+shown or closed. While a condition is open, the gate refuses a briefing that says the agent
+should stop, that gives no verdict, whose next step tells the agent to stop or calls the work
+finished (a step that only carries the word and goes on, such as stopping a wrong approach,
+is let through), or that says the work is going well. Such a briefing is asked once more with
+the open conditions named, and if it still does any of these the card is refused. While no
+objective is written, any of the same is refused at once, and the card says the objective is
+not written yet. A refused card lists the open conditions as left out, and its meaning, next
+step and message are the rep's own, built from those conditions, so it keeps the agent on the
+job and never offers a stop. The check passes the same gate.
 
 These rules came from a session on 15 Oct 2026 in which a message that bounded the agent's
 next step was read as the owner asking for less, the rep's account of the job shrank to the
