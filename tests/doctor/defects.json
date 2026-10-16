@@ -892,5 +892,11 @@
     "breaks": "A wait on approval from someone other than him (\"Wait for approval from the CI gate, then merge.\") is refused as a wait on him.",
     "patch": "approval-from-anyone.patch",
     "fixed": "2026-10-16"
+  },
+  {
+    "name": "seed-drafts-held-ignored",
+    "breaks": "A card message he sent that the forked-from record holds only among his messages as a draft (a card more than three back, or a record from an older build) is seeded as his own words.",
+    "patch": "seed-drafts-held-ignored.patch",
+    "fixed": "2026-10-16"
   }
 ]
