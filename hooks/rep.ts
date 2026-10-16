@@ -555,10 +555,10 @@ Each condition is one thing "done" has to show, in plain words. You do not see t
 
 // His messages are quoted records inside a fence the writer is told about, so a message
 // that reads like a command is read as evidence and never as an instruction to the writer.
-// A fence tag in a message or in the agent line under it (any letter case) is printed with
-// its angle brackets turned to ‹ and ›, so no message can close the fence. Only the
-// printing is changed; the record keeps the text as typed.
-const fenced = (s: string): string => s.replace(/<(\/?his_messages)>/gi, '‹$1›')
+// A fence tag in a message or in the agent line under it (any letter case, and with spaces
+// inside the brackets) is printed with its angle brackets turned to ‹ and ›, so no message
+// can close the fence. Only the printing is changed; the record keeps the text as typed.
+const fenced = (s: string): string => s.replace(/<\s*(\/?)\s*his_messages\s*>/gi, '‹$1his_messages›')
 
 // The objective writer's prompt, the part that changes: the held objective, his messages
 // fenced as quoted records, the earlier jobs and the request. It is a plain completion, not a
