@@ -152,7 +152,7 @@ for n in $want; do
     7)
       echo "7 objective kept whole: a first ask with two conditions, the rep's draft sent through the card, then a message bounding the next step with 'only'; Brief me keeps the whole result, says the objective was revised, lists the open conditions and does not say stop"
       start || { bad=1; fails=$((fails+1)); stop; continue }
-      send 'This folder will be a small public tool I hand to a colleague, so two things must be true before it is done: a README that explains how to run it, and a test file whose tests pass on GitHub on every push. Never create a repository online; I will add the remote myself. Start with the README only: write a two-line README.md and stop.'
+      send 'This folder will be a small public Python tool I hand to a colleague: wc.py prints how many words are in the text file named on its command line. Two things must be true before it is done: a README that explains how to run it, and a test file whose tests pass on GitHub on every push. Never create a repository online; I will add the remote myself. Start with the README only: write a two-line README.md and stop.'
       wait_for '^\s*stopped, waiting on you|^\s*asking you' 120
       sleep 20
       tmux send-keys -t $S 1
