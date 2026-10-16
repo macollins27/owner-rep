@@ -1,12 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index ee9db46..e45a68a 100644
+index dd33d68..e7a7975 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -860,7 +860,6 @@ export function forkItems(items: readonly HumanItem[], rows: readonly RecordRow[
+@@ -906,7 +906,6 @@ export function forkItems(items: readonly HumanItem[], rows: readonly RecordRow[
    }
-   if (last < 0) return { items: [], matched: 0 }
-   let end = last + 1
--  while (end < items.length && items[end]?.queued === true) end += 1
-   return { items: items.slice(0, end), matched }
+   if (best === null) return { items: [], matched: 0 }
+   let stop = best.end + 1
+-  while (stop < items.length && items[stop]?.queued === true) stop += 1
+   return { items: items.slice(0, stop), matched: best.matched }
  }
  

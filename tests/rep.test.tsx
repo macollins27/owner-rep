@@ -3526,7 +3526,7 @@ test('humanItems reads his messages from a transcript in the file\'s order, type
 // One of his messages as a transcript file holds it.
 const ITEM = (text: string, queued = false): HumanItem => ({ key: typedKey(text), text, queued })
 
-test('typedFromItems keeps the file\'s order, gives each typed message the end of the agent\'s last words before its row, and a queued message or one no row holds none', () => {
+test('typedFromItems keeps the file\'s order, gives each typed message the end of the agent\'s last words before its row, matched from the end, and a queued message or one no row holds none', () => {
   const long = `${'An earlier part of the answer. '.repeat(40)}Which year should the licence carry?`
   const rows: RecordRow[] = [
     { role: 'user', text: 'Add a licence\nfile.', toolUses: [] },
@@ -3564,9 +3564,27 @@ test('typedFromItems keeps the file\'s order, gives each typed message the end o
     { text: 'yes', prior: 'Shall I start?' },
     { text: 'yes', prior: 'Run the suite too?' },
   ])
+  // After a compaction the rows are the tail, and the items are lined up with them from the
+  // end: a short message he sent before and after the compaction gets its prior only where
+  // its row is, never the earlier sending.
+  const compacted: RecordRow[] = [
+    { role: 'user', text: 'This session is being continued from a previous conversation that ran out of context.', toolUses: [] },
+    { role: 'assistant', text: 'Shall I push the branch?', toolUses: [] },
+    { role: 'user', text: 'looks good', toolUses: [] },
+    { role: 'assistant', text: 'Pushed. Want me to deploy?', toolUses: [] },
+    { role: 'user', text: 'continue', toolUses: [] },
+    { role: 'assistant', text: 'deployed', toolUses: [] },
+  ]
+  expect(typedFromItems([ITEM('build the thing'), ITEM('continue'), ITEM('fix the login too'), ITEM('looks good'), ITEM('continue')], compacted).map(t => t.prior)).toEqual([
+    '',
+    '',
+    '',
+    'Shall I push the branch?',
+    'Pushed. Want me to deploy?',
+  ])
 })
 
-test('forkItems takes the part of another session\'s messages that a fork\'s rows match: up to the last match and the queued messages right after it, a row that is no message of his skipped', () => {
+test('forkItems takes the part of another session\'s messages that a fork\'s rows match from the end: up to the last match and the queued messages right after it, a row that is no message of his skipped', () => {
   const [A, B, Q, C, R] = [ITEM('Build the report.'), ITEM('Use the real data.'), ITEM('And keep the logs.', true), ITEM('Now publish it.'), ITEM('Not that folder.', true)]
   const parent = [A, B, Q, C, R]
   const his = (text: string): RecordRow => ({ role: 'user', text, toolUses: [] })
@@ -3585,10 +3603,23 @@ test('forkItems takes the part of another session\'s messages that a fork\'s row
   // No row matched: nothing.
   expect(forkItems(parent, [his('Something else.')])).toEqual({ items: [], matched: 0 })
   expect(forkItems(parent, [])).toEqual({ items: [], matched: 0 })
-  // A message sent twice: each row matches the next one.
+  // A message sent twice: the rows are matched from the end, so two rows take both, and one
+  // row, which the keys cannot place, is taken as the later sending, as after a compaction.
   const yes = [ITEM('yes'), ITEM('yes'), ITEM('Wait for the build.', true)]
-  expect(forkItems(yes, [his('yes')])).toEqual({ items: [yes[0]], matched: 1 })
   expect(forkItems(yes, [his('yes'), his('yes')])).toEqual({ items: yes, matched: 2 })
+  expect(forkItems(yes, [his('yes')])).toEqual({ items: yes, matched: 1 })
+  // One message is matched to one row at most: a file that holds it once matches one of two rows.
+  expect(forkItems([ITEM('yes')], [his('yes'), his('yes')])).toEqual({ items: [ITEM('yes')], matched: 1 })
+  // A compacted parent: the fork holds only the tail, and the short replies he sent before
+  // the compaction too are matched where the tail is, so nothing he asked is dropped.
+  const summary = his('This session is being continued from a previous conversation that ran out of context.')
+  const earlier = [ITEM('build the thing'), ITEM('looks good'), ITEM('continue'), ITEM('add the export page'), ITEM('looks good'), ITEM('continue')]
+  expect(forkItems(earlier, [summary, agent('Export page done. Ship it?'), his('looks good'), agent('Shipped. Start the docs?'), his('continue'), agent('docs started')])).toEqual({ items: earlier, matched: 2 })
+  // The parent went on after the fork and sent one of the fork's messages again: the later
+  // sending leaves a message of his inside the span that the fork does not hold, so the
+  // fork point is the earlier one.
+  const [P, K, X] = [ITEM('Set up the project.'), ITEM('continue'), ITEM('Try the other database.')]
+  expect(forkItems([P, K, X, ITEM('continue')], [his(P.text), agent('Set up.'), his('continue'), agent('Going on.')])).toEqual({ items: [P, K], matched: 2 })
 })
 
 // Rows the engine wrote on his side that no prefix on NOT_TYPED names: only the transcript says they are not his.

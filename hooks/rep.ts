@@ -801,67 +801,113 @@ export function forkCandidates(rows: readonly RecordRow[]): string[] {
 export const candidateKeys = (rows: readonly RecordRow[]): Set<string> => new Set(forkCandidates(rows))
 
 // His messages for the seed: the items in the file's order, each with the end of the agent's
-// last words before it, as `prompt.submit` records them. An item he typed at the prompt is
-// matched to the next of his side's rows, past the last one matched, with no tool results
-// and the same key; the agent's last words before that row are its prior. An item he queued
-// while the agent worked is no row, and an item no row holds (one from before a compaction,
-// whose rows are gone) keeps its place with no prior: the rows cannot say what the agent had
-// said when he typed it, and a wrong prior is worse than none.
+// last words before it, as `prompt.submit` records them. The rows are the conversation's tail
+// (after a compaction, only the part since it) and end where the file ends, so the two are
+// lined up from the end: the items are walked from last to first, and an item he typed at the
+// prompt is matched to the nearest of his side's rows at or before the place the last match
+// left, with no tool results and the same key; the agent's last words before that row are its
+// prior. A message he sent more than once ("continue", "looks good") is so matched to its
+// latest rows first, never to a row of a later sending. An item he queued while the agent
+// worked is no row, and an item no row holds (one from before a compaction, whose rows are
+// gone) keeps its place with no prior: the rows cannot say what the agent had said when he
+// typed it, and a wrong prior is worse than none.
 export function typedFromItems(items: readonly HumanItem[], rows: readonly RecordRow[]): { text: string; prior: string }[] {
-  const out: { text: string; prior: string }[] = []
-  let cursor = 0
-  for (const item of items) {
-    let prior = ''
-    if (!item.queued) {
-      let at = -1
-      for (let i = cursor; i < rows.length; i++) {
-        const row = rows[i]
-        if (row === undefined || row.role !== 'user' || (row.toolResults ?? []).length > 0) continue
-        if (typedKey(row.text) === item.key) {
-          at = i
-          break
-        }
-      }
-      if (at >= 0) {
-        for (let i = at - 1; i >= 0; i--) {
-          const row = rows[i]
-          if (row !== undefined && row.role === 'assistant' && row.text.trim() !== '') {
-            prior = fitTail(row.text, PRIOR_CUT)
-            break
-          }
-        }
-        cursor = at + 1
+  const priors = items.map(() => '')
+  let cursor = rows.length - 1
+  for (let k = items.length - 1; k >= 0; k--) {
+    const item = items[k]
+    if (item === undefined || item.queued) continue
+    let at = -1
+    for (let i = cursor; i >= 0; i--) {
+      const row = rows[i]
+      if (row === undefined || row.role !== 'user' || (row.toolResults ?? []).length > 0) continue
+      if (typedKey(row.text) === item.key) {
+        at = i
+        break
       }
     }
-    out.push({ text: item.text, prior })
+    if (at < 0) continue
+    for (let i = at - 1; i >= 0; i--) {
+      const row = rows[i]
+      if (row !== undefined && row.role === 'assistant' && row.text.trim() !== '') {
+        priors[k] = fitTail(row.text, PRIOR_CUT)
+        break
+      }
+    }
+    cursor = at - 1
   }
-  return out
+  return items.map((item, k) => ({ text: item.text, prior: priors[k] ?? '' }))
 }
 
 // The part of another session's items that belongs to a fork with these rows: a fork's
-// rows are its parent's and then its own. Each of the fork's candidate rows, in order, is
-// looked for among the items past the last one matched, his typed ones only; a row found
-// counts and moves the place on, a row not found (one that is not his) leaves it. Kept: the
-// items up to the last one matched, and the queued ones right after it, which he typed while
-// the agent answered his last message before the fork. Nothing when no row matched.
+// rows are its parent's and then its own, and after a compaction only the tail of them. So
+// the fork's candidate rows are lined up with the items from the end. Each typed item whose
+// key is among them is tried as the last of the fork's messages: the candidates are taken
+// from last to first, each looked for among his typed items at or before the place the last
+// match left; a candidate found counts and moves the place to before it, one not found (a row
+// that is not his, or his from the fork's own part) leaves it. Of the tries, the one with the
+// most matched wins; then the one with the fewest gaps, his typed items inside the matched
+// span that the fork does not hold (the true fork point has none); then the one that ends
+// latest, since the rows are the tail of the conversation and a message he sent again since
+// a compaction is the later one. Kept: the items up to that end, and the queued ones right
+// after it, which he typed while the agent answered his last message before the fork.
+// Nothing when no row matched.
 export function forkItems(items: readonly HumanItem[], rows: readonly RecordRow[]): { items: HumanItem[]; matched: number } {
-  let cursor = 0
-  let matched = 0
-  let last = -1
-  for (const key of forkCandidates(rows)) {
-    for (let i = cursor; i < items.length; i++) {
-      const item = items[i]
-      if (item === undefined || item.queued || item.key !== key) continue
+  const cands = forkCandidates(rows)
+  const wanted = new Set(cands)
+  // Where each key's typed items are, in order, and how many typed items lie before each place.
+  const at = new Map<string, number[]>()
+  const typedBefore = [0]
+  items.forEach((item, i) => {
+    const typed = !item.queued
+    typedBefore.push((typedBefore[i] ?? 0) + (typed ? 1 : 0))
+    if (!typed || !wanted.has(item.key)) return
+    const list = at.get(item.key)
+    if (list === undefined) at.set(item.key, [i])
+    else list.push(i)
+  })
+  // The last place of a key at or before the cursor, or -1.
+  const lastAt = (key: string, cursor: number): number => {
+    const list = at.get(key) ?? []
+    let lo = 0
+    let hi = list.length - 1
+    let found = -1
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1
+      const place = list[mid] ?? -1
+      if (place <= cursor) {
+        found = place
+        lo = mid + 1
+      } else hi = mid - 1
+    }
+    return found
+  }
+  let best: { matched: number; gaps: number; end: number } | null = null
+  for (let e = 0; e < items.length; e++) {
+    const top = items[e]
+    if (top === undefined || top.queued || !wanted.has(top.key)) continue
+    let cursor = e
+    let matched = 0
+    let end = -1
+    let start = -1
+    for (let c = cands.length - 1; c >= 0 && cursor >= 0; c--) {
+      const i = lastAt(cands[c] ?? '', cursor)
+      if (i < 0) continue
       matched += 1
-      last = i
-      cursor = i + 1
-      break
+      if (end < 0) end = i
+      start = i
+      cursor = i - 1
+    }
+    if (end < 0) continue
+    const gaps = (typedBefore[end + 1] ?? 0) - (typedBefore[start] ?? 0) - matched
+    if (best === null || matched > best.matched || (matched === best.matched && (gaps < best.gaps || (gaps === best.gaps && end > best.end)))) {
+      best = { matched, gaps, end }
     }
   }
-  if (last < 0) return { items: [], matched: 0 }
-  let end = last + 1
-  while (end < items.length && items[end]?.queued === true) end += 1
-  return { items: items.slice(0, end), matched }
+  if (best === null) return { items: [], matched: 0 }
+  let stop = best.end + 1
+  while (stop < items.length && items[stop]?.queued === true) stop += 1
+  return { items: items.slice(0, stop), matched: best.matched }
 }
 
 // The folder a transcript file is in: the path up to its last '/'.

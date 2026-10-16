@@ -733,7 +733,7 @@
   },
   {
     "name": "fork-items-rematch",
-    "breaks": "Each of a fork's rows is looked for from the start of the other file, so a message he sent twice matches its first copy both times and the fork's part ends too early.",
+    "breaks": "A fork's row is matched to the same message of the other file as the row after it, so a message he sent once matches two rows that say it and the file looks a better match than it is.",
     "patch": "fork-items-rematch.patch",
     "fixed": "2026-10-16"
   },
@@ -751,7 +751,7 @@
   },
   {
     "name": "typed-cursor-stuck",
-    "breaks": "A message sent twice is matched to the same row both times, so the second is given the agent's words from before the first.",
+    "breaks": "A message sent twice is matched to the same row both times, so the earlier sending is given the agent's words from before the later one.",
     "patch": "typed-cursor-stuck.patch",
     "fixed": "2026-10-16"
   },
@@ -789,6 +789,24 @@
     "name": "human-items-not-typed-kept",
     "breaks": "A line marked his whose text NOT_TYPED names (a command's output, an interrupt mark, a compact summary) is read as a message he typed.",
     "patch": "human-items-not-typed-kept.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "typed-forward-walk",
+    "breaks": "His messages are matched to the rows from the start again, so after a compaction a short reply he sent before it takes the prior of its later sending, and the later one gets none.",
+    "patch": "typed-forward-walk.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "fork-items-earliest-end",
+    "breaks": "A fork's part of another session's messages ends at the earliest of equal matches, so a fork of a compacted parent drops every message he sent after the first sending of its short replies.",
+    "patch": "fork-items-earliest-end.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "fork-items-gaps-ignored",
+    "breaks": "A fork's part of another session's messages is chosen without counting his messages inside the matched span that the fork does not hold, so a parent that went on after the fork and repeated a message gives the fork the parent's later messages.",
+    "patch": "fork-items-gaps-ignored.patch",
     "fixed": "2026-10-16"
   }
 ]
