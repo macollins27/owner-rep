@@ -1528,33 +1528,68 @@ export const UNWRITTEN_DOES = 'Keeps the agent on the job until it shows each pa
 const CLAUSE = String.raw`(?:^|[.;:!?,]\s*)(?:(?:and|so|then|now)\s+)?`
 // The end of a clause, looked at and not taken.
 const CLAUSE_END = String.raw`(?=\s*(?:[.;:!?,]|$))`
-// "stop" said to or of the agent or the job: at a clause's start, after the
+// Where a stop said to or of the agent starts: at a clause's start, after the
 // agent, "it", "you", "we" or the session (with "can", "should" and the like),
 // after "let the agent" or after "to", and not after "not", "never", "n't" or
-// a bare "let" ("Don't let it stop" goes on); then at most an object (the
-// agent, the session, the job, everything) and a word of place or time (here,
-// now, for now), and the clause ends there.
-const STOP_SAID = String.raw`(?:${CLAUSE}|(?<!(?:\bnot|\bnever|n't|\blet)\s+)(?:\b(?:the agent|it|you|we|the session|claude)\s+(?:(?:can|could|should|may|might|must|will|needs to|has to|is to|is free to|is ready to)\s+)?(?:now\s+|just\s+)?|\blet\s+(?:the agent|it|the session)\s+|\bto\s+))stops?(?:\s+(?:the (?:agent|session|job|work)|this (?:session|job)|everything|it all|work(?:ing)?))?(?:\s+(?:here|now|there|completely|for (?:now|today|good)))?${CLAUSE_END}`
+// a bare "let" ("Don't let it stop" goes on).
+const STOP_LEAD = String.raw`(?:${CLAUSE}|(?<!(?:\bnot|\bnever|n't|\blet)\s+)(?:\b(?:the agent|it|you|we|the session|claude)\s+(?:(?:can|could|should|may|might|must|will|needs to|has to|is to|is free to|is ready to)\s+)?(?:now\s+|just\s+)?|\blet\s+(?:the agent|it|the session)\s+|\bto\s+))`
+// "stop" said to or of the agent or the job, from that start; then at most an
+// object (the agent, the session, the job, everything) and a word of place or
+// time (here, now, for now), and the clause ends there.
+const STOP_SAID = String.raw`${STOP_LEAD}stops?(?:\s+(?:the (?:agent|session|job|work)|this (?:session|job)|everything|it all|work(?:ing)?))?(?:\s+(?:here|now|there|completely|for (?:now|today|good)))?${CLAUSE_END}`
 // The work, the job or everything called done, finished, complete or over, as a clause of its own.
 const FINISHED_SAID = String.raw`${CLAUSE}(?:(?:(?:(?:the|this|all the)\s+)?(?:work|job|task|session|objective)|everything|it all|all of it)(?:\s+(?:is|are|was|has been)|'s)\s+(?:now\s+|all\s+|fully\s+)?(?:done|finished|complete|completed|over)|all\s+(?:done|finished|complete)|(?:the agent|it)\s+(?:has|is)\s+(?:now\s+)?(?:finished|done|completed?)(?:\s+(?:the (?:work|job|task)|everything|it all))?)(?:\s+(?:now|here))?${CLAUSE_END}`
 // Nothing left, remaining or to do, as a clause of its own.
 const NOTHING_SAID = String.raw`${CLAUSE}(?:there\s+is\s+)?nothing\s+(?:(?:else|more)\s+)?(?:(?:is|was)\s+)?(?:left|remains|to do)(?:\s+to do)?(?:\s+(?:here|now|for (?:the agent|it)))?${CLAUSE_END}`
 // The session or the job to be closed or ended, as a clause of its own.
 const CLOSE_SAID = String.raw`${CLAUSE}(?:close|end)\s+(?:the|this)\s+(?:session|job)(?:\s+(?:now|here))?${CLAUSE_END}`
+// A place or time word that may end a stop: "here", "now", "for now".
+const STOP_WHEN = String.raw`(?:\s+(?:here|now|there|for (?:now|today|good)))?`
+// "and stop" at the end of a clause, after any step ("Fix the parser and
+// stop."), unless a negation stands earlier in the clause ("Don't fix it and
+// stop" goes on) or it pairs with "start" ("the timer can start and stop" is
+// a thing that stops, not the agent).
+const AND_STOP = String.raw`${CLAUSE}(?:(?!\bnot\b|\bnever\b|n't\b)[^.;:!?,])*?(?<!\bstart(?:s|ed)?\s+)\band\s+(?:then\s+)?stops?${STOP_WHEN}${CLAUSE_END}`
+// "stop working" with what it works on ("on it", "on this", "on the job",
+// "on the work", "on the task"), from the same start as a stop, to the clause end.
+const STOP_WORK = String.raw`${STOP_LEAD}stops?\s+work(?:ing)?\s+on\s+(?:it|this|the (?:job|work|task))${STOP_WHEN}${CLAUSE_END}`
+// "stop and" a finishing step (report, wait, hand over, summarise, tell him or
+// the owner), only when it runs to the end of the sentence: "Stop and report
+// back to him." ends the work, while "Stop and report what failed, then fix
+// it" goes on past its comma.
+const STOP_TO_REPORT = String.raw`${STOP_LEAD}stops?\s+and\s+(?:then\s+)?(?:report|wait|hand\s+(?:(?:it|everything|the (?:work|job))\s+)?over|summari[sz]e|tell\s+(?:him|the owner))\b[^.!?;,]*(?=\s*(?:[.!?;]|$))`
+// The session, the job or the work said to end ("can", "should", "may" and the
+// like, with "now", "here"), as a clause of its own: "The session can end only
+// after …" goes on.
+const END_SAID = String.raw`${CLAUSE}(?:the|this)\s+(?:session|job|work)\s+(?:can|could|should|may|will|must)\s+(?:now\s+)?end(?:\s+(?:here|now))?${CLAUSE_END}`
+// The work wrapped up, from the same start as a stop, as a clause of its own:
+// "Wrap things up.", "wrap up the job"; "Wrap the slow tests in one helper"
+// wraps something else.
+const WRAP_SAID = String.raw`${STOP_LEAD}wrap\s+(?:(?:it|things|everything|the (?:work|job|session))\s+up|up(?:\s+(?:the (?:work|job|session)|everything))?)(?:\s+(?:here|now))?${CLAUSE_END}`
 
 // A next step that tells the agent or the job to stop, calls the work, the job
 // or everything finished, says nothing is left, or closes the session. Read on
 // "next" only, whatever the verdict line says. It refuses only a stop or a
 // finish said as a clause of its own: "Stop.", "The agent can stop here.",
 // "Stop the agent now.", "The work is finished.", "Everything is done, close
-// the session.", "Nothing is left to do." It lets through a step that only
-// carries the word and goes on: "stop" with something after it ("stop guessing
-// and run the real suite", "Fix the stop button"), "Don't stop until …", a
+// the session.", "Nothing is left to do.", "Fix the parser and stop.", "Wrap up
+// and stop.", "Stop working on it.", "The agent should stop and report back to
+// him.", "Stop and wait for him.", "The session can end.", "The job can end
+// here.", "Wrap things up." It lets through a step that only carries the word
+// and goes on: "stop" with something after it ("stop guessing and run the real
+// suite", "Fix the stop button", "Stop the timer before you read it", "Have the
+// agent stop and run the suite"), a finishing step that goes on past a comma
+// ("Stop and report what failed, then fix it"), an end with a condition ("The
+// session can end only after the suite is green"), "Don't stop until …", a
 // part called complete ("show the install is complete"), a check that the work
 // is done ("Check that the work is done before …"), "Mark nothing as done
-// until …" and a step toward a finish ("Finish the two sessions, then show
-// each one done"). The rep's own texts (OPEN_NEXT, UNWRITTEN_NEXT) never match.
-export const STOP_NEXT = new RegExp([STOP_SAID, FINISHED_SAID, NOTHING_SAID, CLOSE_SAID].join('|'), 'i')
+// until …", a step toward a finish ("Finish the two sessions, then show each
+// one done") and a wrap of something else ("Wrap the slow tests in one
+// helper"). The rep's own texts (OPEN_NEXT, UNWRITTEN_NEXT) never match.
+export const STOP_NEXT = new RegExp(
+  [STOP_SAID, FINISHED_SAID, NOTHING_SAID, CLOSE_SAID, AND_STOP, STOP_WORK, STOP_TO_REPORT, END_SAID, WRAP_SAID].join('|'),
+  'i',
+)
 
 // The conditions the gate measures against: null while no objective is written,
 // which the gate treats as nothing shown, never as nothing open.
