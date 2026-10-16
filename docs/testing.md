@@ -149,7 +149,10 @@ prove that the build the owner runs calls it, with the fields the code expects.
 
 **Design.** A script under `tests/live/` that starts a fresh `claude` session in tmux in a
 scratch folder, accepts the trust prompt, sends a prompt, captures the screen on a loop and
-asserts on the captured text. The nested-session environment variables (`CLAUDECODE`,
+asserts on the captured text. A long prompt can arrive as a paste, and an Enter just after a
+paste becomes a line break: a run on 16 Oct 2026 sent scenario 6's three prompts as one
+message that way. So the script presses Enter again while the prompt box still opens with the
+text it typed. The nested-session environment variables (`CLAUDECODE`,
 `CLAUDE_CODE_SESSION_ID`, `CLAUDE_CODE_CHILD_SESSION`, the messaging socket and token) must be
 unset or `claude` falls into print mode and exits. Scenarios, one capture each:
 
@@ -166,7 +169,10 @@ unset or `claude` falls into print mode and exits. Scenarios, one capture each:
    counted the messages that had arrived rather than the messages each look saw (each look
    now carries what it saw, and the fold keeps the revision line until the card is nearly
    bare).
-4. The Rep button pressed mid-turn: the briefing card appears with its buttons.
+4. The Rep button pressed mid-turn: the briefing card appears with its buttons, its head
+   shows the objective rather than the placeholder, and no objective write failed. The
+   last two checks were added on 16 Oct 2026, after this scenario's command-like ask was
+   found leaving every write at high effort empty.
 5. The session stopped: the status is "stopped, waiting on you" with the mark.
 6. The whole ask: a first message asking for much, a second asking for a step, then a note to
    the rep that changes what matters most, then Brief me; the card lists the open work
@@ -179,6 +185,10 @@ unset or `claude` falls into print mode and exits. Scenarios, one capture each:
    run as open, drafts a message, and its next step does not say stop. Added on 15 Oct 2026
    with the objective; it runs against the installed mod, so its first run comes after the
    branch is merged.
+8. A finished job: a one-word reply the agent has given, then Brief me; the card's head shows
+   the objective, nothing is listed as left out, the card says the job is done, and no
+   objective write failed. Added on 16 Oct 2026 so that keeping an objective open is never
+   paid for by a rep that cannot say a finished job is finished.
 
 It runs on demand, not under `claude plugin test`, because each scenario costs a model call
 and about a minute. Its output is the captured screens, kept beside the script, so a reader

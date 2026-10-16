@@ -226,7 +226,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 claude plugin validate .      # manifest, hooks, and every engine call and state key
 claude plugin test .          # 103 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
-tests/live/live.sh              # on demand: seven real sessions in tmux, the strip captured to tests/live/captures
+tests/live/live.sh              # on demand: eight real sessions in tmux, the strip captured to tests/live/captures
 ```
 
 GitHub runs the validation, the tests, the type check and the doctor on every push

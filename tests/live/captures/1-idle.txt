@@ -1,7 +1,7 @@
 
- ▐▛███▛█   Claude Code v2.1.300
-▝▜██████▀  Fable 5.1 with high effort · Claude Max
- ▝▝   ▝▝   /private/var/folders/mf/g9s916lj533085gbqr23mm9m0000gn/T/owner-rep-live.arZLD5EjXv
+ ▐▛███▛█   Claude Code v2.1.301
+▝▜██████▀  Opus 5.5 with xhigh effort · Claude Max
+ ▝▝   ▝▝   /private/var/folders/mf/g9s916lj533085gbqr23mm9m0000gn/T/owner-rep-live.e29NMjnYD8
 
 
 
@@ -35,10 +35,10 @@
                                                                                                                                                                       [-]
 ◇ Owner rep · working out the result you want from your messages…
   idle   1: Brief me   2: Tell the rep
-                                                                                                                                                        ● high · /effort
+                                                                                                                                                       ◉ xhigh · /effort
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-❯ Try "create a util logging.py that..."
+❯ Try "write a test for <filepath>"
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  [Fable 5.1] │ owner-rep-live.arZLD5EjXv +owner-rep-live.arZLD5Ej… +maxwellcollins git:(main)
+  [Opus 5.5] │ owner-rep-live.e29NMjnYD8 +owner-rep-live.e29NMjnY… +maxwellcollins git:(main)
   Context ░░░░░░░░░░ 0%
   ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents

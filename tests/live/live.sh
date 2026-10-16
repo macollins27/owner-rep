@@ -3,7 +3,7 @@
 # Proves the build the owner runs calls the rep's hooks; the test kit cannot. On demand only:
 # each scenario is a real session and a model call, about a minute.
 #
-#     tests/live/live.sh            # all seven scenarios
+#     tests/live/live.sh            # all eight scenarios
 #     tests/live/live.sh 2 4        # only these
 #
 # Each scenario's whole screen is saved in tests/live/captures/<n>-<name>.txt, and the strip's
@@ -19,7 +19,7 @@ CAPS=$HERE/captures
 S=owner-rep-live
 STRIP_RE='Owner rep ·|Brief me|Tell the rep|Fine, close|Put message|Check it|Heads up'
 want=("$@")
-[[ ${#want} -eq 0 ]] && want=(1 2 3 4 5 6 7)
+[[ ${#want} -eq 0 ]] && want=(1 2 3 4 5 6 7 8)
 fails=0
 bad=0
 
@@ -34,7 +34,18 @@ wait_for() {
   done
   return 1
 }
-send() { tmux send-keys -t $S -l "$1"; sleep 0.5; tmux send-keys -t $S Enter }
+# send TEXT: types it and presses Enter. A long text can arrive as a paste, and an Enter right
+# after a paste becomes a line break in the box; while the box still opens with the text, Enter
+# is pressed again (the box is the last line that starts with the prompt mark).
+send() {
+  local head=${1[1,20]} i
+  tmux send-keys -t $S -l "$1"; sleep 1; tmux send-keys -t $S Enter
+  for i in 1 2 3; do
+    sleep 1
+    pane | grep -E '^❯' | tail -1 | grep -qF -- "$head" || return 0
+    tmux send-keys -t $S Enter
+  done
+}
 
 start() {
   tmux kill-session -t $S 2>/dev/null
@@ -112,6 +123,9 @@ for n in $want; do
       # them (the engine's rule). A card taller than the band hides its buttons under "↓ N more",
       # and the owner's digit then types into the prompt box instead of pressing anything.
       pane | grep -q 'Fine, close' ; verdict 'card buttons inside the band window' $?
+      # A command-like ask once came back empty from every objective write, leaving no objective.
+      pane | grep -q 'working out the result you want' ; [[ $? -ne 0 ]]; verdict 'the card head shows the objective, not the placeholder' $?
+      pane | grep -qE 'objective writes? failed' ; [[ $? -ne 0 ]]; verdict 'no failed objective write on the price line' $?
       tmux send-keys -t $S 2
       wait_for '1: Brief me' 15
       save 4-briefing-closed
@@ -152,7 +166,7 @@ for n in $want; do
     7)
       echo "7 objective kept whole: a first ask with two conditions, the rep's draft sent through the card, then a message bounding the next step with 'only'; Brief me keeps the whole result, says the objective was revised, lists the open conditions and does not say stop"
       start || { bad=1; fails=$((fails+1)); stop; continue }
-      send 'This folder will be a small public tool I hand to a colleague, so two things must be true before it is done: a README that explains how to run it, and a test file whose tests pass on GitHub on every push. Never create a repository online; I will add the remote myself. Start with the README only: write a two-line README.md and stop.'
+      send 'This folder will be a small public Python tool I hand to a colleague: wc.py prints how many words are in the text file named on its command line. Two things must be true before it is done: a README that explains how to run it, and a test file whose tests pass on GitHub on every push. Never create a repository online; I will add the remote myself. Start with the README only: write a two-line README.md and stop.'
       wait_for '^\s*stopped, waiting on you|^\s*asking you' 120
       sleep 20
       tmux send-keys -t $S 1
@@ -180,6 +194,26 @@ for n in $want; do
       pane | grep -A6 -E '^\s*Left out:' | grep -qiE 'test|github' ; verdict 'the tests or the GitHub run still listed as open' $?
       pane | grep -E '^\s*Next:' | grep -qiE '\bstop\b' ; [[ $? -ne 0 ]]; verdict 'Next does not say stop' $?
       pane | grep -q 'Put message in prompt' ; verdict 'a message drafted' $?
+      stop ;;
+    8)
+      echo "8 finished: a one-word job the agent has done; Brief me says it is done, with nothing left out and no failed write"
+      start || { bad=1; fails=$((fails+1)); stop; continue }
+      send 'Reply with the single word done and nothing else.'
+      wait_for '^\s*stopped, waiting on you' 60
+      # The objective is written after the message; the head leaves the placeholder once it is held.
+      wait_for 'Owner rep · [^w]' 120
+      sleep 2
+      tmux send-keys -t $S 1
+      wait_for 'Fine, close' 120
+      save 8-finished
+      # The head's mark is ◆ or ◇ depending on the state; the card starts at the head either way.
+      card=$(pane | sed -n '/Owner rep ·/,$p')
+      print -r -- "$card" | grep -q 'working out the result you want' ; [[ $? -ne 0 ]]; verdict 'the card head shows the objective, not the placeholder' $?
+      print -r -- "$card" | grep -qE '^\s*Stands:' ; verdict 'card body drawn' $?
+      print -r -- "$card" | grep -qE '^\s*Left out:' ; [[ $? -ne 0 ]]; verdict 'nothing listed as left out' $?
+      # Judged on the card's own lines, not the objective in its head, which names the word done.
+      print -r -- "$card" | grep -E '^\s*(Means|Next):' | grep -qiE 'finished|complete|nothing (is )?(left|waiting)|followed your instruction' ; verdict 'the card says the job is done' $?
+      print -r -- "$card" | grep -qE 'objective writes? failed' ; [[ $? -ne 0 ]]; verdict 'no failed objective write on the price line' $?
       stop ;;
   esac
   [[ $bad -gt 0 ]] && fails=$((fails+1))
