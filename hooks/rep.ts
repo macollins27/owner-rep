@@ -18,8 +18,6 @@ export const JOB_MAX = 200
 export const PRIOR_CUT = 400
 export const OWNER_CUT = 1200
 export const SESSIONS_MAX = 32
-// The reading may run to this many sentences; the row shows its first.
-export const READING_SENTENCES = 4
 // Earlier jobs' results kept per session.
 export const PAST_MAX = 8
 // Earlier versions of the objective kept for the job in hand.
