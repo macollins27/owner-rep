@@ -2476,6 +2476,9 @@ test('STOP_NEXT refuses only a next step that stops the agent or the job, calls 
     'Stop here and wait for him.',
     'Stop and wait on you.',
     'Stop and wait for approval.',
+    'Wait for approval from the owner, then merge.',
+    'Wait for approval before you push.',
+    'Do not push yet. Wait for him.',
     'Stop and wait for a reply.',
     'Stop and wait for an answer.',
     'Stop and wait for a decision.',
@@ -2555,6 +2558,9 @@ test('STOP_NEXT refuses only a next step that stops the agent or the job, calls 
     'There is no need to wait for him; run the suite.',
     'Rather than wait for him, finish the README and push it.',
     'Instead of waiting on his reply, run the doctor and push.',
+    'Do not stop and wait for him; run the suite.',
+    "Don't just wait for him, run the suite.",
+    'Wait for approval from the CI gate, then merge.',
     'Once the suite is green, the agent can end the session.',
   ]
   for (const next of refuse) {

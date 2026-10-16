@@ -1945,11 +1945,11 @@ const AND_STOP = String.raw`${CLAUSE}(?:(?!\bnot\b|\bnever\b|n't\b)[^.;:!?,])*?(
 const STOP_WORK = String.raw`${STOP_LEAD}stops?\s+work(?:ing)?\s+on\s+(?:it|this|the (?:job|work|task))${STOP_WHEN}${CLAUSE_END}`
 // The owner, or his word, as what is waited for: him, he, his, the owner (or the owner's),
 // you; "your" only with a word of his ("your reply", "your go-ahead", "your call"), so "your
-// build" and "your test run" are runs; approval, (further) instructions, a reply, an answer,
-// the go-ahead; "a decision" only at the clause's end or with "from", "by", "on" or "about"
+// build" and "your test run" are runs; approval, unless from or by someone else ("approval
+// from the CI gate" is a run's); (further) instructions, a reply, an answer, the go-ahead; "a decision" only at the clause's end or with "from", "by", "on" or "about"
 // after it ("a decision tree" is a thing that trains); "confirmation" only at the clause's end
 // or from or by him, the owner or you ("confirmation emails" arrive in an inbox).
-const ON_HIM = String.raw`(?:him|he|his|the owner|you|your\s+(?:reply|answer|response|go-ahead|approval|decision|confirmation|instructions|input|say|sign-off|feedback|review|ok|okay|call|word)|approval|(?:further\s+)?instructions|a reply|an answer|a decision(?=\s*(?:[.;:!?,]|$)|\s+(?:from|by|on|about)\b)|confirmation(?=\s*(?:[.;:!?,]|$)|\s+(?:from|by)\s+(?:him|the owner|you)\b)|the go-ahead)\b`
+const ON_HIM = String.raw`(?:him|he|his|the owner|you|your\s+(?:reply|answer|response|go-ahead|approval|decision|confirmation|instructions|input|say|sign-off|feedback|review|ok|okay|call|word)|approval(?!\s+(?:from|by)\s+(?!(?:him|the owner|you)\b))|(?:further\s+)?instructions|a reply|an answer|a decision(?=\s*(?:[.;:!?,]|$)|\s+(?:from|by|on|about)\b)|confirmation(?=\s*(?:[.;:!?,]|$)|\s+(?:from|by)\s+(?:him|the owner|you)\b)|the go-ahead)\b`
 // A wait "for", "on", "until" or "till" whose next words are ON_HIM, whatever follows them to
 // the end of the sentence ("wait for him to reply", "wait until he replies", "wait for his
 // approval", "wait for further instructions from him").
@@ -1964,8 +1964,9 @@ const WAIT_ON_HIM = String.raw`\s+(?:for|on|until|till)\s+${ON_HIM}[^.!?;]*`
 // "await" reads as a wait.
 const STOP_TO_REPORT = String.raw`${STOP_LEAD}stops?(?:\s+work(?:ing)?)?${STOP_WHEN}\s+and\s+(?:then\s+)?(?:(?:report|hand\s+(?:(?:it|everything|the (?:work|job))\s+)?over|summari[sz]e|tell\s+(?:him|the owner))\b[^.!?;,]*|wait${STOP_WHEN}(?:${WAIT_ON_HIM})?|await(?:\s+${ON_HIM}[^.!?;]*)?|ask\s+(?:him|the owner|you)\b[^.!?;]*)(?=\s*(?:[.!?;]|$))`
 // Not said after a negation: "Don't wait for him", "never let him decide", "no need to check
-// in with him", "Rather than wait for him, …" go on.
-const NOT_NEGATED = String.raw`(?<!(?:\bnot|\bnever|n't|\bno need to|\brather than|\binstead of|\bwithout)\s+)`
+// in with him", "Rather than wait for him, …" go on, and so do "Don't just wait for him" and
+// "Do not stop and wait for him", with "just", "simply", "merely", "stop" or "and" between.
+const NOT_NEGATED = String.raw`(?<!(?:\bnot|\bnever|n't|\bno need to|\brather than|\binstead of|\bwithout)(?:\s+(?:just|simply|merely|stop|and))*\s+)`
 // A wait on him as the verb of any clause, with or without a stop: "Wait for his go-ahead.",
 // "Wait for him to reply.", "Report and wait for him.", "Stop and await his reply."
 const WAIT_SAID = String.raw`${NOT_NEGATED}\b(?:waits?${STOP_WHEN}${WAIT_ON_HIM}|awaits?\s+${ON_HIM})`
