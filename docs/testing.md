@@ -168,6 +168,13 @@ unset or `claude` falls into print mode and exits. Scenarios, one capture each:
    the rep that changes what matters most, then Brief me; the card lists the open work
    against the reading, says when and why the reading was revised, drafts a message, and
    gives the conversation's size as a figure on its buttons row.
+7. The objective kept whole: a first message asking for a README and a test run that passes
+   on GitHub, the card's own draft sent through "Put message in prompt", then a message
+   that bounds the next step to a one-line answer, then Brief me; the card's head still names
+   the whole result, the card says the objective was revised, lists the tests or the GitHub
+   run as open, drafts a message, and its next step does not say stop. Added on 15 Oct 2026
+   with the objective; it runs against the installed mod, so its first run comes after the
+   branch is merged.
 
 It runs on demand, not under `claude plugin test`, because each scenario costs a model call
 and about a minute. Its output is the captured screens, kept beside the script, so a reader
@@ -239,7 +246,7 @@ successor; three moved there on 15 Oct 2026, when the objective replaced the rea
 
 1. ~~The doctor, with `strip-shows-command` as its one entry.~~ Done 14 Oct 2026.
 2. ~~The layer 1 sequence-rule tests, with a doctor entry for each.~~ Done 14 Oct 2026.
-3. ~~The layer 2 script with the five scenarios.~~ Done 14 Oct 2026; scenario 4 red.
+3. ~~The layer 2 script with its first five scenarios.~~ Done 14 Oct 2026; scenario 4 red.
 4. ~~Lay the briefing card out to fit the band's `maxRows`.~~ Done 14 Oct 2026; scenario 4
    green, kit test and doctor entry in place.
 5. ~~A run on GitHub of the validation, the tests, the type check and the doctor on every

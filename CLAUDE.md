@@ -39,7 +39,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
 claude plugin test .          # runs every *.test.ts(x); all 95 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
-tests/live/live.sh              # on demand: six real sessions in tmux, the strip captured to tests/live/captures
+tests/live/live.sh              # on demand: seven real sessions in tmux, the strip captured to tests/live/captures
 ```
 
 GitHub runs validate, test, the type check and the doctor on every push
