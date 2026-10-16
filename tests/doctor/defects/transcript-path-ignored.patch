@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index b8829a3..e57f279 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -875,7 +875,7 @@ function holdTranscript(id: unknown, path: unknown): void {
+ // is taken as his.
+ async function humanSet($: EngineInterface, sid: string, rows: readonly RecordRow[]): Promise<Set<string> | null> {
+   try {
+-    let path = transcripts.get(sid) ?? ''
++    let path = ''
+     if (path === '') {
+       const set = await $.env.get('CLAUDE_CONFIG_DIR')
+       const home = await $.env.get('HOME')

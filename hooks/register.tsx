@@ -59,10 +59,11 @@ import {
   typedPrompts,
   humanTexts,
   candidateKeys,
-  projectFolder,
-  HUMAN_MARK,
-  HUMAN_GREP_TIMEOUT_MS,
+  folderOf,
+  humanRead,
+  HUMAN_READ_TIMEOUT_MS,
   HUMAN_SCAN_MAX,
+  HUMAN_SCAN_BUDGET_MS,
   type RecordRow,
   objectiveText,
   openConditions,
@@ -851,27 +852,46 @@ function pushOwner(rec: Rec, kind: OwnerKind, text: string, prior: string = last
   )
 }
 
+// Where Claude Code saves each session's transcript, by session id, as the classic hooks
+// that carry it say (SessionStart, refreshed on UserPromptSubmit). A session forked with a
+// new id is given its path at its start, before the file is written.
+const transcripts = new Map<string, string>()
+function holdTranscript(id: unknown, path: unknown): void {
+  if (typeof id === 'string' && id !== '' && typeof path === 'string' && path !== '') transcripts.set(id, path)
+}
+
 // The keys of the rows he typed, proven from the session's transcript file, which says who
-// wrote each row where `$.session.messages()` does not (humanTexts). The file is
-// <config>/projects/<folder>/<id>.jsonl, the config folder CLAUDE_CONFIG_DIR or ~/.claude;
-// grep keeps only the lines marked human, so a long session's read stays small. A grep that
-// finds none means none of the rows is his. A session forked with a new id has no file of its
-// own until its first message is saved: the folder's newest files are read instead, one grep
-// each so every read stays under the output cap, at most HUMAN_SCAN_MAX, stopping once every
-// row that could be his (candidateKeys) is proven. Null when nothing could be read: then no
-// row is taken as his.
+// wrote each row where `$.session.messages()` does not (humanTexts). The file is the path
+// the classic hooks gave (transcripts); with none held it is found by name under
+// <config>/projects, the config folder CLAUDE_CONFIG_DIR or ~/.claude, and with none found
+// nothing is read. sed keeps only the lines marked human, picture data blanked (humanRead);
+// a read that finds none means none of the rows is his. A read cut at the output cap is not
+// taken: for the session's own file nothing is proven, and the record falls back to its
+// labels. A session forked with a new id has no file of its own until its first message is
+// saved: the newest files in its file's folder are read instead, one at a time, at most
+// HUMAN_SCAN_MAX within HUMAN_SCAN_BUDGET_MS, a cut read skipped, stopping once every row
+// that could be his (candidateKeys) is proven. A line found in another session's file is
+// still a line he typed, as the origin says. Null when nothing could be read: then no row
+// is taken as his.
 async function humanSet($: EngineInterface, sid: string, rows: readonly RecordRow[]): Promise<Set<string> | null> {
   try {
-    const set = await $.env.get('CLAUDE_CONFIG_DIR')
-    const home = await $.env.get('HOME')
-    const config = set !== undefined && set !== '' ? set : home !== undefined && home !== '' ? `${home}/.claude` : null
-    if (config === null) return null
-    const folder = projectFolder(config, await $.session.cwd())
-    const grep = (file: string) => $.process.run(['grep', '-h', '-F', HUMAN_MARK, `${folder}/${file}`], { timeoutMs: HUMAN_GREP_TIMEOUT_MS })
-    const own = await grep(`${sid}.jsonl`)
-    if (own.exitCode === 0) return humanTexts(own.stdout)
-    if (own.exitCode === 1) return new Set()
-    const listed = await $.process.run(['ls', '-t', folder], { timeoutMs: HUMAN_GREP_TIMEOUT_MS })
+    let path = transcripts.get(sid) ?? ''
+    if (path === '') {
+      const set = await $.env.get('CLAUDE_CONFIG_DIR')
+      const home = await $.env.get('HOME')
+      const config = set !== undefined && set !== '' ? set : home !== undefined && home !== '' ? `${home}/.claude` : null
+      if (config === null) return null
+      const found = await $.process.run(['find', `${config}/projects`, '-maxdepth', '2', '-name', `${sid}.jsonl`], { timeoutMs: HUMAN_READ_TIMEOUT_MS })
+      path = found.exitCode === 0 ? (found.stdout.split('\n').find(l => l.trim() !== '')?.trim() ?? '') : ''
+      if (path === '') return null
+    }
+    const read = (file: string, timeoutMs: number) => $.process.run(humanRead(file), { timeoutMs })
+    const own = await read(path, HUMAN_READ_TIMEOUT_MS)
+    if (own.exitCode === 0) return own.isStdoutTruncated ? null : humanTexts(own.stdout)
+    const folder = folderOf(path)
+    const start = await $.clock.now()
+    const left = async () => HUMAN_SCAN_BUDGET_MS - ((await $.clock.now()) - start)
+    const listed = await $.process.run(['ls', '-t', folder], { timeoutMs: HUMAN_READ_TIMEOUT_MS })
     if (listed.exitCode !== 0) return null
     const files = listed.stdout
       .split('\n')
@@ -881,8 +901,10 @@ async function humanSet($: EngineInterface, sid: string, rows: readonly RecordRo
     const want = [...candidateKeys(rows)]
     const human = new Set<string>()
     for (const file of files) {
-      const found = await grep(file)
-      if (found.exitCode === 0) for (const key of humanTexts(found.stdout)) human.add(key)
+      const remaining = await left()
+      if (remaining <= 0) break
+      const found = await read(`${folder}/${file}`, Math.min(HUMAN_READ_TIMEOUT_MS, remaining))
+      if (found.exitCode === 0 && !found.isStdoutTruncated) for (const key of humanTexts(found.stdout)) human.add(key)
       if (want.every(k => human.has(k))) break
     }
     return human
@@ -1048,6 +1070,16 @@ export const register: Register = on => {
     } catch {
       // The row still draws with defaults.
     }
+    return next(e)
+  })
+
+  // Where Claude Code saves the session's transcript, read by humanSet.
+  on('classic.SessionStart', ($, e, next) => {
+    holdTranscript(e.session_id, e.transcript_path)
+    return next(e)
+  })
+  on('classic.UserPromptSubmit', ($, e, next) => {
+    holdTranscript(e.session_id, e.transcript_path)
     return next(e)
   })
 

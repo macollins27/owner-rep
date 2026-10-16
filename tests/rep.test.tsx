@@ -1,7 +1,7 @@
 import type { On, SessionMessage } from 'claude-code'
 import { expect, mock, test, type Engine } from 'claude-code/testing'
 
-import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, typedPrompts, NOT_TYPED, humanTexts, typedForm, typedKey, projectFolder, HUMAN_SCAN_MAX } from '../hooks/rep'
+import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, typedPrompts, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX } from '../hooks/rep'
 
 const om = (text: string, n = 1): OwnerMsg => ({ n, kind: 'his', text, prior: '' })
 
@@ -3156,30 +3156,65 @@ const ENGINE_LINES = [
   LINE('Usage limit reset. Continue where you left off.', { origin: { kind: 'auto-continuation' }, isMeta: true }),
 ]
 
-const CWD = '/Users/o/work/app'
-const FOLDER = '/Users/o/.claude/projects/-Users-o-work-app'
+const PROJECTS = '/Users/o/.claude/projects'
+const FOLDER = `${PROJECTS}/-Users-o-work-app`
 
-// The session's folder of transcript files, named newest first: `ls` lists them, `grep` reads
-// the lines of one as grep would (exit 1 with none, 2 when the file is not there). Every argv kept.
-const transcript = (on: On, files: Record<string, string>): string[][] => {
+// The output cap of `$.process.run`: each stream's first 4 MiB.
+const RUN_CAP = 4 * 1024 * 1024
+
+// A folder of transcript files, named newest first: `find` finds one by name under the
+// projects folder, `ls` lists the folder, and `sed` reads the lines of one as the script it
+// is given would (the lines with its mark, and picture data blanked when it says so; exit 1
+// when the file is not there), cut at the output cap, or, for a file in `cut`, cut after its
+// first line, as a read past the cap keeps the oldest lines and drops the rest.
+// Every argv kept, and each run's time allowed in `timeouts`. The clock reads `now.t`, and
+// each read of a file other than the session's own takes `slow` milliseconds of it.
+const transcript = (on: On, files: Record<string, string>, opts: { folder?: string; cut?: readonly string[]; slow?: number } = {}) => {
+  const folder = opts.folder ?? FOLDER
   const runs: string[][] = []
+  const timeouts: number[] = []
+  const now = { t: 1_000_000 }
   mock.env(on, { HOME: '/Users/o' })
-  on('session.cwd', () => ({ value: CWD }))
+  on('clock.now', () => ({ value: now.t }))
   on('process.run', (_$, e) => {
     runs.push([...e.argv])
-    const out = (exitCode: number, stdout = '') => ({ value: { exitCode, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
-    if (e.argv[0] === 'ls') return e.argv[2] === FOLDER ? out(0, `${Object.keys(files).join('\n')}\n`) : out(1)
-    if (e.argv[0] !== 'grep') return out(127)
+    timeouts.push(e.init?.timeoutMs ?? 0)
+    if (e.argv[0] === 'sed' && !(e.argv[e.argv.length - 1] ?? '').endsWith('/test-session.jsonl')) now.t += opts.slow ?? 0
+    const out = (exitCode: number, stdout = '', isStdoutTruncated = false) => ({ value: { exitCode, stdout, stderr: '', isStdoutTruncated, isStderrTruncated: false } })
+    if (e.argv[0] === 'find') {
+      if (e.argv[1] !== PROJECTS) return out(1)
+      const name = e.argv[e.argv.length - 1] ?? ''
+      return out(0, name in files ? `${folder}/${name}\n` : '')
+    }
+    if (e.argv[0] === 'ls') return e.argv[2] === folder ? out(0, `${Object.keys(files).join('\n')}\n`) : out(1)
+    if (e.argv[0] !== 'sed') return out(127)
     const path = e.argv[e.argv.length - 1] ?? ''
-    const body = path.startsWith(`${FOLDER}/`) ? files[path.slice(FOLDER.length + 1)] : undefined
-    if (body === undefined) return out(2)
-    const lines = body.split('\n').filter(l => l.includes(e.argv[3] ?? '\u0000'))
-    return lines.length > 0 ? out(0, `${lines.join('\n')}\n`) : out(1)
+    const name = path.slice(folder.length + 1)
+    const body = path.startsWith(`${folder}/`) ? files[name] : undefined
+    if (body === undefined) return out(1)
+    const script = e.argv[3] ?? ''
+    const mark = script.match(/^\/([^/]+)\//)?.[1] ?? '\u0000'
+    let lines = body.split('\n').filter(l => l.includes(mark))
+    if (script.includes('s/"data":"[^"]*"/"data":""/g')) lines = lines.map(l => l.replace(/"data":"[^"]*"/g, '"data":""'))
+    if ((opts.cut ?? []).includes(name)) return out(0, `${lines[0] ?? ''}\n`, true)
+    const stdout = lines.length > 0 ? `${lines.join('\n')}\n` : ''
+    return out(0, stdout.slice(0, RUN_CAP), stdout.length > RUN_CAP)
   })
-  return runs
+  return Object.assign(runs, { timeouts, now })
 }
 
-const GREP = (file: string) => `grep -h -F "kind":"human" ${FOLDER}/${file}`
+// The runs `humanSet` makes, as a session would see them.
+const SED = (file: string, folder = FOLDER) => `sed -n -E /"kind":"human"/{s/"data":"[^"]*"/"data":""/g;p;} ${folder}/${file}`
+const FIND = (id = 'test-session') => `find ${PROJECTS} -maxdepth 2 -name ${id}.jsonl`
+
+// The transcript path Claude Code gives a session through its classic hooks.
+const HELD = (file = 'test-session.jsonl', folder = FOLDER) => `${folder}/${file}`
+
+// Claude Code's SessionStart, carrying that path, as a session (or one forked from it) starts.
+const giveTranscript = async ($: Engine, on: On, path = HELD(), source: 'startup' | 'resume' | 'fork' = 'fork') => {
+  on('classic.SessionStart', () => ({}))
+  await $.classic.SessionStart({ source, transcript_path: path, session_id: 'test-session' })
+}
 
 test('humanTexts keeps only the rows he typed, origin human and not meta, a list of blocks as its text joined, a command as he ran it, and skips a cut line', () => {
   for (const line of ENGINE_LINES) expect([...humanTexts(line)]).toEqual([])
@@ -3200,13 +3235,22 @@ test('humanTexts keeps only the rows he typed, origin human and not meta, a list
   expect([...humanTexts(file)]).toEqual(['First.', 'Second.'])
 })
 
-test('typedForm reads a command as prompt.submit sees it and a message without its reminders, typedKey folds whitespace, and the project folder is named after the session folder', () => {
+test('typedForm reads a command as prompt.submit sees it and a message without its reminders, and typedKey folds whitespace', () => {
   expect(typedForm('<command-message>rep</command-message>\n<command-name>/rep</command-name>\n<command-args>some words</command-args>')).toBe('/rep some words')
   expect(typedForm('<command-name>/clear</command-name>\n<command-message>clear</command-message>\n<command-args></command-args>')).toBe('')
   expect(typedForm('<command-message>reload-plugins</command-message>\n<command-name>/reload-plugins</command-name>')).toBe('')
   expect(typedForm('<system-reminder>The date changed.</system-reminder>\n  Use this year.  ')).toBe('Use this year.')
   expect(typedKey('Add  a licence\n\nfile.')).toBe('Add a licence file.')
-  expect(projectFolder('/Users/o/.claude', '/Users/o/work/my_app.v2')).toBe('/Users/o/.claude/projects/-Users-o-work-my-app-v2')
+})
+
+test('humanRead prints only the lines marked human, with picture data blanked, and folderOf is the folder a transcript is in', () => {
+  expect(humanRead('/Users/o/.claude/projects/-x/a.jsonl')).toEqual(['sed', '-n', '-E', '/"kind":"human"/{s/"data":"[^"]*"/"data":""/g;p;}', '/Users/o/.claude/projects/-x/a.jsonl'])
+  expect(folderOf('/Users/o/.claude/projects/-Users-o-work/a.jsonl')).toBe('/Users/o/.claude/projects/-Users-o-work')
+  expect(HUMAN_READ_TIMEOUT_MS).toBe(10_000)
+  expect(HUMAN_SCAN_BUDGET_MS).toBe(30_000)
+  // A line with a picture, its data blanked as the read leaves it, still proves its text.
+  const pictured = LINE([{ type: 'text', text: 'Look at this screen.' }, { type: 'image', source: { type: 'base64', media_type: 'image/png', data: '' } }])
+  expect([...humanTexts(pictured)]).toEqual(['Look at this screen.'])
 })
 
 // --- A reopened session: nothing to fork, so the watch and the briefing read the session's record. ---
@@ -3302,6 +3346,9 @@ test('rule: in a reopened session, where there is nothing to fork, the briefing 
     toasts.push(e.text)
     return { value: undefined }
   })
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  await started($)
+  await settle($)
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   await ui.press({ key: 'rep' })
   expect(await ui.find({ type: 'Text', text: /Installed, as read from the record\./ })).toBeDefined()
@@ -3485,7 +3532,8 @@ test('rule: a press in a session the rep holds no record of records his typed me
   await ui.unmount()
   expect(rec()?.owner).toEqual(SEEDED)
   expect(rec()?.owner.length).toBe(2)
-  expect(runs.map(r => r.join(' '))).toEqual([GREP('test-session.jsonl')])
+  // No path was given by Claude Code here, so the file is found by its name.
+  expect(runs.map(r => r.join(' '))).toEqual([FIND(), SED('test-session.jsonl')])
   expect(prompts.length).toBe(1)
   const fence = (prompts[0] ?? '').match(/<his_messages>\n([\s\S]*?)\n<\/his_messages>/)?.[1] ?? ''
   expect(fence).toMatch(/Add a licence file with the MIT text\./)
@@ -3505,12 +3553,13 @@ test('rule: a session start with no record of the session records his typed mess
   await started($)
   await settle($)
   expect(rec()?.owner).toEqual(SEEDED)
-  expect(runs.map(r => r.join(' '))).toEqual([GREP('test-session.jsonl')])
+  // No path was given by Claude Code here, so the file is found by its name.
+  expect(runs.map(r => r.join(' '))).toEqual([FIND(), SED('test-session.jsonl')])
   expect(prompts.length).toBe(1)
   expect(rec()?.objective?.result).toBe('A licence file with the MIT text and this year.')
 })
 
-test('rule: a session forked with a new id, its own transcript not saved yet, has his rows proven from the folder\'s newest transcripts, one grep each, stopping once every row is proven', async ($, on) => {
+test('rule: a session forked with a new id, its own transcript not saved yet, has his rows proven from the newest transcripts in the folder of the path Claude Code gave it, one read each, stopping once every row is proven', async ($, on) => {
   const rec = kept(on, {})
   on('session.start', (_$, e) => ({ cwd: e.cwd }))
   quietBand(on)
@@ -3518,10 +3567,12 @@ test('rule: a session forked with a new id, its own transcript not saved yet, ha
   on('session.messages', () => ({ value: SEEDED_ROWS.filter(r => r.text !== PEER && r.text !== IDLE) }))
   const runs = transcript(on, { 'newer.jsonl': LINE('Something he typed elsewhere.'), 'notes.txt': '', 'parent.jsonl': SEEDED_FILE, 'older.jsonl': SEEDED_FILE })
   writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  // Claude Code names the fork's file before it is written.
+  await giveTranscript($, on)
   await started($)
   await settle($)
   expect(rec()?.owner).toEqual(SEEDED)
-  expect(runs.map(r => r.join(' '))).toEqual([GREP('test-session.jsonl'), `ls -t ${FOLDER}`, GREP('newer.jsonl'), GREP('parent.jsonl')])
+  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), `ls -t ${FOLDER}`, SED('newer.jsonl'), SED('parent.jsonl')])
 })
 
 test('rule: the scan of a forked session\'s folder reads at most HUMAN_SCAN_MAX files, and a row it never proves is not taken as his', async ($, on) => {
@@ -3533,11 +3584,12 @@ test('rule: the scan of a forked session\'s folder reads at most HUMAN_SCAN_MAX 
   for (let i = 0; i < HUMAN_SCAN_MAX + 5; i++) files[`old-${i}.jsonl`] = LINE(`Old message ${i}.`)
   const runs = transcript(on, files)
   writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await giveTranscript($, on)
   await started($)
   await settle($)
   expect(rec()?.owner).toEqual(SEEDED)
   // The other session's message and the idle notice are never proven, so the scan runs to its cap.
-  expect(runs.filter(r => r[0] === 'grep').length).toBe(1 + HUMAN_SCAN_MAX)
+  expect(runs.filter(r => r[0] === 'sed').length).toBe(1 + HUMAN_SCAN_MAX)
 })
 
 test('rule: when no transcript can be read, nothing is seeded, nothing is written and nothing throws', async ($, on) => {
@@ -3546,18 +3598,34 @@ test('rule: when no transcript can be read, nothing is seeded, nothing is writte
   quietBand(on)
   on('session.messages', () => ({ value: SEEDED_ROWS }))
   mock.env(on, { HOME: '/Users/o' })
-  on('session.cwd', () => ({ value: CWD }))
+  on('clock.now', () => ({ value: 0 }))
   const runs: string[][] = []
   on('process.run', (_$, e) => {
     runs.push([...e.argv])
-    return { value: { exitCode: e.argv[0] === 'ls' ? 1 : 2, stdout: '', stderr: 'No such file or directory', isStdoutTruncated: false, isStderrTruncated: false } }
+    return { value: { exitCode: 1, stdout: '', stderr: 'No such file or directory', isStdoutTruncated: false, isStderrTruncated: false } }
   })
+  const prompts = writer(on, () => OBJ('Anything.', ['anything | open']))
+  await giveTranscript($, on, HELD(), 'resume')
+  await started($)
+  await settle($)
+  expect(rec()?.owner ?? []).toEqual([])
+  expect(prompts.length).toBe(0)
+  expect(runs.map(r => r[0])).toEqual(['sed', 'ls'])
+})
+
+test('rule: with no transcript path given and no file of the session\'s found by name, nothing is read or seeded', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS }))
+  // Only the parent's file is there: a fork whose own file is not written yet, with no path given.
+  const runs = transcript(on, { 'parent.jsonl': SEEDED_FILE })
   const prompts = writer(on, () => OBJ('Anything.', ['anything | open']))
   await started($)
   await settle($)
   expect(rec()?.owner ?? []).toEqual([])
   expect(prompts.length).toBe(0)
-  expect(runs.map(r => r[0])).toEqual(['grep', 'ls'])
+  expect(runs.map(r => r.join(' '))).toEqual([FIND()])
 })
 
 test('rule: a card message he sent in the session this one was forked from is recorded as the rep\'s draft, found in that session\'s record', async ($, on) => {
@@ -3580,6 +3648,7 @@ test('rule: a card message he sent in the session this one was forked from is re
   }))
   transcript(on, { 'parent-session.jsonl': [LINE('Build the report.'), LINE(`${drafted} And keep the logs.`), LINE(CARD_MESSAGE(1))].join('\n') })
   writer(on, () => OBJ('The report run on the real data.', ['the run shown | open']))
+  await giveTranscript($, on)
   await started($)
   await settle($)
   expect(rec()?.owner).toEqual([
@@ -3590,20 +3659,139 @@ test('rule: a card message he sent in the session this one was forked from is re
   ])
 })
 
-// A session the rep holds no record of, whose start's grep of the transcript is held until
-// the test lets it go; `greps` counts the reads.
+test('rule: the transcript path Claude Code gives the session is the file read, wherever the session has moved since, and no search by name is run', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS }))
+  // The folder named after where the session started, not where it runs now.
+  const started_in = `${PROJECTS}/-Users-o-work`
+  const runs = transcript(on, { 'test-session.jsonl': SEEDED_FILE }, { folder: started_in })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await giveTranscript($, on, HELD('test-session.jsonl', started_in), 'startup')
+  await started($)
+  await settle($)
+  expect(rec()?.owner).toEqual(SEEDED)
+  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl', started_in)])
+  expect(runs.timeouts).toEqual([HUMAN_READ_TIMEOUT_MS])
+})
+
+test('rule: the transcript path a later prompt carries replaces the one held from the start', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS }))
+  const runs = transcript(on, { 'test-session.jsonl': SEEDED_FILE })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  on('classic.UserPromptSubmit', () => ({}))
+  await giveTranscript($, on, HELD('test-session.jsonl', `${PROJECTS}/-Users-o-gone`), 'startup')
+  await $.classic.UserPromptSubmit({ prompt: 'Carry on.', transcript_path: HELD(), session_id: 'test-session' })
+  await started($)
+  await settle($)
+  expect(rec()?.owner).toEqual(SEEDED)
+  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl')])
+})
+
+test('rule: a read of the session\'s transcript cut at the output cap proves nothing: nothing is seeded, and the record read labels his newer rows by their text, never as the session\'s', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  const rows: SessionMessage[] = [
+    { role: 'user', text: 'Add a licence file.', toolUses: [] },
+    { role: 'assistant', text: 'Added.', toolUses: [] },
+    { role: 'user', text: 'Now push it.', toolUses: [] },
+  ]
+  on('session.messages', () => ({ value: rows }))
+  // Only his oldest line comes back, and the read says it was cut.
+  const runs = transcript(on, { 'test-session.jsonl': [LINE('Add a licence file.'), LINE('Now push it.')].join('\n') }, { cut: ['test-session.jsonl'] })
+  on('model.fork', () => ({ value: { isAnswered: false, reason: 'nothing-to-fork' } }))
+  const records: string[] = []
+  const writes: string[] = []
+  on('model.complete', (_$, e) => {
+    if (e.system === RECORD_SYSTEM) records.push(String(e.prompt))
+    else writes.push(String(e.prompt))
+    const text = e.system === RECORD_SYSTEM ? BRIEF('Read from the record.') : OBJ('A licence file pushed.', ['the file pushed | open'])
+    return { value: { isAnswered: true, text, usage: USAGE } }
+  })
+  await started($)
+  await settle($)
+  expect(rec()?.owner ?? []).toEqual([])
+  expect(writes).toEqual([])
+  expect(runs.filter(r => r[0] === 'sed').length).toBe(1)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.unmount()
+  expect(rec()?.owner ?? []).toEqual([])
+  expect(records.length).toBe(1)
+  expect(records[0]).toMatch(/^entry 3 the person:\nNow push it\.$/m)
+  expect(records[0]).not.toMatch(/the session \(written by Claude Code/)
+})
+
+test('rule: a message of his with a picture in it is proven from its text, the picture\'s data blanked so the read stays under the output cap', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  const picture = { type: 'image', source: { type: 'base64', media_type: 'image/png', data: 'A'.repeat(RUN_CAP + 1000) } }
+  on('session.messages', () => ({ value: [{ role: 'user', text: 'Look at this screen. And fix the colour.', toolUses: [] }] satisfies SessionMessage[] }))
+  transcript(on, { 'test-session.jsonl': LINE([{ type: 'text', text: 'Look at this screen.' }, picture, { type: 'text', text: 'And fix the colour.' }]) })
+  writer(on, () => OBJ('The screen fixed.', ['the colour fixed | open']))
+  await started($)
+  await settle($)
+  expect(rec()?.owner).toEqual([{ n: 1, kind: 'his', text: 'Look at this screen. And fix the colour.', prior: '' }])
+})
+
+test('rule: in the scan of a forked session\'s folder, a file whose read was cut proves nothing', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  const rows = [...SEEDED_ROWS.filter(r => r.text !== PEER && r.text !== IDLE), { role: 'user', text: 'Only in the cut file.', toolUses: [] } satisfies SessionMessage]
+  on('session.messages', () => ({ value: rows }))
+  const runs = transcript(on, { 'newer.jsonl': [LINE('Only in the cut file.'), LINE('More of it.')].join('\n'), 'parent.jsonl': SEEDED_FILE }, { cut: ['newer.jsonl'] })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await giveTranscript($, on)
+  await started($)
+  await settle($)
+  expect(rec()?.owner).toEqual(SEEDED)
+  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), `ls -t ${FOLDER}`, SED('newer.jsonl'), SED('parent.jsonl')])
+})
+
+test('rule: the scan of a forked session\'s folder ends with what it has once its time is spent, each read given no more than the time left', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS }))
+  // The newest file proves his first message; the parent's, which proves the second, is eleventh.
+  const files: Record<string, string> = { 'newest.jsonl': LINE('Add a licence file with the MIT text.') }
+  for (let i = 0; i < 10; i++) files[`old-${i}.jsonl`] = LINE(`Old message ${i}.`)
+  files['parent.jsonl'] = SEEDED_FILE
+  // Each read of another file takes eight seconds.
+  const runs = transcript(on, files, { slow: 8000 })
+  writer(on, () => OBJ('A licence file with the MIT text.', ['the file written | open'], '#1'))
+  await giveTranscript($, on)
+  await started($)
+  await settle($)
+  const scanned = runs.flatMap((r, i) => (r[0] === 'sed' && r[r.length - 1] !== HELD() ? [runs.timeouts[i]] : []))
+  // 30 seconds: three full reads, a fourth with the six seconds left, and none after.
+  expect(scanned).toEqual([HUMAN_READ_TIMEOUT_MS, HUMAN_READ_TIMEOUT_MS, HUMAN_READ_TIMEOUT_MS, 6000])
+  // The scan ends with what it has: his first message, proven in the newest file. The
+  // parent's file was never reached, so his second is not taken.
+  expect(rec()?.owner).toEqual([SEEDED[0]])
+})
+
+// A session the rep holds no record of, whose start's read of the transcript is held until
+// the test lets it go; `reads` counts them.
 const heldSeed = (on: On) => {
   const rec = kept(on, {})
   on('session.start', (_$, e) => ({ cwd: e.cwd }))
   quietBand(on)
   on('session.messages', () => ({ value: SEEDED_ROWS }))
   mock.env(on, { HOME: '/Users/o' })
-  on('session.cwd', () => ({ value: CWD }))
   let release: () => void = () => undefined
   const gate = new Promise<void>(r => (release = r))
-  const reads = { greps: 0 }
-  on('process.run', async () => {
-    reads.greps += 1
+  const reads = { reads: 0 }
+  on('process.run', async (_$, e) => {
+    if (e.argv[0] === 'find') return { value: { exitCode: 0, stdout: `${HELD()}\n`, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+    reads.reads += 1
     await gate
     const lines = SEEDED_FILE.split('\n').filter(l => l.includes('"kind":"human"'))
     return { value: { exitCode: 0, stdout: `${lines.join('\n')}\n`, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
@@ -3630,7 +3818,7 @@ test('rule: a prompt he sends while the start is still reading the session waits
   await settle($)
   expect(rec()?.owner).toEqual([...SEEDED, { n: 3, kind: 'his', text: 'Also add a changelog.', prior: '' }])
   // The prompt's own seed is the start's read, not a second one.
-  expect(reads.greps).toBe(1)
+  expect(reads.reads).toBe(1)
 })
 
 test('rule: a note to the rep sent while the start is still reading the session waits for that read, and is numbered after his seeded messages', async ($, on) => {
@@ -3642,7 +3830,7 @@ test('rule: a note to the rep sent while the start is still reading the session 
   await sent
   await settle($)
   expect(rec()?.owner).toEqual([...SEEDED, { n: 3, kind: 'note', text: 'the year matters most.', prior: '' }])
-  expect(reads.greps).toBe(1)
+  expect(reads.reads).toBe(1)
 })
 
 test('rule: a record that holds a message of his is not seeded from the session, at a start or a press', async ($, on) => {

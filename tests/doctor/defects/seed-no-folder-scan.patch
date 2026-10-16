@@ -1,13 +1,12 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 8df3376..f5db16f 100644
+index b8829a3..3b7834c 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -865,7 +865,7 @@ async function humanSet($: EngineInterface, sid: string, rows: readonly RecordRo
-     const grep = (file: string) => $.process.run(['grep', '-h', '-F', HUMAN_MARK, `${folder}/${file}`], { timeoutMs: HUMAN_GREP_TIMEOUT_MS })
-     const own = await grep(`${sid}.jsonl`)
-     if (own.exitCode === 0) return humanTexts(own.stdout)
--    if (own.exitCode === 1) return new Set()
+@@ -888,6 +888,7 @@ async function humanSet($: EngineInterface, sid: string, rows: readonly RecordRo
+     const read = (file: string, timeoutMs: number) => $.process.run(humanRead(file), { timeoutMs })
+     const own = await read(path, HUMAN_READ_TIMEOUT_MS)
+     if (own.exitCode === 0) return own.isStdoutTruncated ? null : humanTexts(own.stdout)
 +    if (own.exitCode !== 0) return new Set()
-     const listed = await $.process.run(['ls', '-t', folder], { timeoutMs: HUMAN_GREP_TIMEOUT_MS })
-     if (listed.exitCode !== 0) return null
-     const files = listed.stdout
+     const folder = folderOf(path)
+     const start = await $.clock.now()
+     const left = async () => HUMAN_SCAN_BUDGET_MS - ((await $.clock.now()) - start)

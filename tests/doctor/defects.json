@@ -610,5 +610,53 @@
     "breaks": "The session record labels its entries #N, the form his numbered messages take, so a record entry can be cited, and read by applyMarks, as one of his messages.",
     "patch": "record-numbers-as-messages.patch",
     "fixed": "2026-10-16"
+  },
+  {
+    "name": "truncated-read-trusted",
+    "breaks": "A read of the session's transcript cut at the output cap is taken as whole: his oldest lines are proven, his newest are seeded as no message of his and labelled in the record as written by Claude Code.",
+    "patch": "truncated-read-trusted.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "scan-cut-read-trusted",
+    "breaks": "In the scan of a forked session's folder, a file whose read was cut at the output cap is taken as read whole, so what it proves rests on a part of the file.",
+    "patch": "scan-cut-read-trusted.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "picture-data-kept",
+    "breaks": "The read of a transcript keeps the data of every picture he pasted, so a few pictures push the read past the output cap and his newest messages are lost.",
+    "patch": "picture-data-kept.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "transcript-path-ignored",
+    "breaks": "The transcript path Claude Code gives the session is never used: a forked session finds no file and seeds nothing, and every read starts with a search by name.",
+    "patch": "transcript-path-ignored.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "prompt-path-not-held",
+    "breaks": "The transcript path a prompt carries is not held, so a session that never had a start hook of its own (or whose path changed) reads a file Claude Code no longer writes to.",
+    "patch": "prompt-path-not-held.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "find-fallback-missing",
+    "breaks": "With no transcript path given, the session's file is never searched for by name, so a session reopened in place has none of his messages proven.",
+    "patch": "find-fallback-missing.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "scan-unbounded",
+    "breaks": "The scan of a forked session's folder runs on past its time, and once a read is given no time left the whole scan comes back as nothing read, losing what it had proven.",
+    "patch": "scan-unbounded.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "scan-timeout-fixed",
+    "breaks": "Each read in the scan of a forked session's folder is allowed its full time even when less is left, so a slow disk holds his first prompt well past the scan's limit.",
+    "patch": "scan-timeout-fixed.patch",
+    "fixed": "2026-10-16"
   }
 ]

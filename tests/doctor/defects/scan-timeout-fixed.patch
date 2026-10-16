@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index b8829a3..2a235d8 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -903,7 +903,7 @@ async function humanSet($: EngineInterface, sid: string, rows: readonly RecordRo
+     for (const file of files) {
+       const remaining = await left()
+       if (remaining <= 0) break
+-      const found = await read(`${folder}/${file}`, Math.min(HUMAN_READ_TIMEOUT_MS, remaining))
++      const found = await read(`${folder}/${file}`, HUMAN_READ_TIMEOUT_MS)
+       if (found.exitCode === 0 && !found.isStdoutTruncated) for (const key of humanTexts(found.stdout)) human.add(key)
+       if (want.every(k => human.has(k))) break
+     }

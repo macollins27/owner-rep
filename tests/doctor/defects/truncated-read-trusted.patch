@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index b8829a3..7e79aab 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -887,7 +887,7 @@ async function humanSet($: EngineInterface, sid: string, rows: readonly RecordRo
+     }
+     const read = (file: string, timeoutMs: number) => $.process.run(humanRead(file), { timeoutMs })
+     const own = await read(path, HUMAN_READ_TIMEOUT_MS)
+-    if (own.exitCode === 0) return own.isStdoutTruncated ? null : humanTexts(own.stdout)
++    if (own.exitCode === 0) return humanTexts(own.stdout)
+     const folder = folderOf(path)
+     const start = await $.clock.now()
+     const left = async () => HUMAN_SCAN_BUDGET_MS - ((await $.clock.now()) - start)

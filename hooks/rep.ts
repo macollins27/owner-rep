@@ -770,19 +770,22 @@ export function candidateKeys(rows: readonly RecordRow[]): Set<string> {
   return out
 }
 
-// Where a session's transcript files are: the projects folder under Claude Code's
-// configuration folder, named after the session's folder with every character outside
-// letters and digits turned to '-'.
-export const projectFolder = (config: string, cwd: string): string => `${config}/projects/${cwd.replace(/[^A-Za-z0-9]/g, '-')}`
+// The folder a transcript file is in: the path up to its last '/'.
+export const folderOf = (path: string): string => path.slice(0, Math.max(0, path.lastIndexOf('/')))
 
-// What marks a line of his in a transcript: grep keeps those lines, so a read of a long
-// session is his rows and not the whole file.
-export const HUMAN_MARK = '"kind":"human"'
-// A grep of one transcript file: long enough for the largest session file on disk.
-export const HUMAN_GREP_TIMEOUT_MS = 10_000
+// One read of a transcript file: sed prints only the lines marked human, so a long session's
+// read is his rows and not the whole file, and blanks every picture's data in them, so a
+// line with a pasted image stays small and its text is still read whole.
+export const HUMAN_SED = '/"kind":"human"/{s/"data":"[^"]*"/"data":""/g;p;}'
+export const humanRead = (file: string): string[] => ['sed', '-n', '-E', HUMAN_SED, file]
+// One read of one transcript file, and the search for a session's file by its name: long
+// enough for the largest session file on disk.
+export const HUMAN_READ_TIMEOUT_MS = 10_000
 // A session forked with a new id has no file of its own until its first message is saved;
-// its rows are then proven from the newest files in the folder, at most this many.
+// its rows are then proven from the newest files in the folder, at most this many,
 export const HUMAN_SCAN_MAX = 40
+// within this much time for the whole scan; past it, the scan ends with what it has.
+export const HUMAN_SCAN_BUDGET_MS = 30_000
 
 // Cuts a text to `max` characters, keeping its head and its tail around a marked gap.
 export function headTail(text: string, max: number): string {
