@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 2f9cc80..d2e2195 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1550,7 +1550,7 @@ export const DROPPED_DRAFTS_MAX = 200
+ export function keepDropped(kept: readonly string[], add: readonly string[]): string[] {
+   const out: string[] = []
+   for (const d of [...add, ...kept]) if (d.trim() !== '' && !out.some(o => sameFolded(o, d))) out.push(d)
+-  return out.slice(0, DROPPED_DRAFTS_MAX)
++  return out
+ }
+ 
+ // The kept draft the prompt begins with, and what he added after it; the longest

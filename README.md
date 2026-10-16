@@ -225,7 +225,9 @@ plugin store holds one record per session, capped at the 32 newest: the objectiv
 earlier versions and when and why it last moved, the results of earlier jobs, the owner's
 messages, notes to the rep and sent drafts, each numbered (the job's kept whole up to 200,
 and the 40 before it), flags already shown, notes other mods have shown, and spend counters
-that count the writer's calls beside the looks. A record saved by a build from before the
+that count the writer's calls beside the looks. A record the cap lets go leaves the rep's
+drafts it held in a separate list of the 200 newest, so a message the rep drafted stays its
+own after the session that drew it drops out. A record saved by a build from before the
 objective is rebuilt from the owner's messages on the next start, press or message, with its
 old text kept as an earlier version. A session the rep holds no record of (one whose record
 was dropped from the 32, one forked with a new id, one older than the mod) has the owner's
@@ -254,7 +256,7 @@ taken as his, and when no transcript can be read nothing is seeded.
 A message the rep drafted that he sent in any session the rep holds, the one forked from
 included, is recognised as the rep's draft, and so is one a record holds among his messages
 as a draft, so a card more than three back, or one sent under a build that kept no list of
-drafts, is not taken as his. A prompt or a note he sends while that read is
+drafts, is not taken as his, nor is one from a session whose record the store has let go. A prompt or a note he sends while that read is
 still running waits for it, so his earlier messages are numbered first. A record that
 already holds a message of his is never seeded. When the first objective written for a
 seeded session says a new job opened at a later message of his, the job starts there, so a
@@ -281,7 +283,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 146 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 150 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions in tmux, the strip captured to tests/live/captures
 ```

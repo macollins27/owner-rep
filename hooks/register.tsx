@@ -39,6 +39,8 @@ import {
   noteSplit,
   draftSplitAny,
   keepDraft,
+  keepDropped,
+  recDrafts,
   askAgain,
   gateOpen,
   gateVerdict,
@@ -206,7 +208,16 @@ async function saveRec($: EngineInterface, rec: Rec): Promise<void> {
   const ids = Object.keys(all).sort((a, b) => (all[b]?.at ?? 0) - (all[a]?.at ?? 0))
   const kept: Record<string, Rec> = {}
   for (const k of ids.slice(0, SESSIONS_MAX)) kept[k] = all[k] as Rec
+  // A record let go leaves its drafts behind first, so a draft he sent stays the rep's.
+  const dropped = ids.slice(SESSIONS_MAX).flatMap(k => recDrafts(all[k]))
+  if (dropped.length > 0) await $.store.set('droppedDrafts', keepDropped(await droppedDrafts($), dropped))
   await $.store.set('sessions', kept)
+}
+
+// The drafts of records the store has let go (`saveRec`), newest first.
+async function droppedDrafts($: EngineInterface): Promise<string[]> {
+  const got = await $.store.get('droppedDrafts')
+  return Array.isArray(got) ? got.filter((d): d is string => typeof d === 'string') : []
 }
 
 // Every change to a session's record runs alone, from its load to its save,
@@ -933,24 +944,15 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
   }
 }
 
-// The rep's drafts kept in every session's record, the cards' messages and the last
-// briefing's, so a draft he sent is known in a session forked from the one that drew it.
+// The rep's drafts kept in every session's record (`recDrafts`) and those of records the
+// store has let go, so a draft he sent is known in a session forked from the one that drew
+// it, or reopened after its own record was let go. The records are read before the kept
+// list, the reverse of `saveRec`'s order, so a record let go between the two reads is in one.
 async function storedDrafts($: EngineInterface): Promise<string[]> {
   const all = await $.store.get('sessions')
-  if (typeof all !== 'object' || all === null) return []
-  const out: string[] = []
-  for (const r of Object.values(all as Record<string, unknown>)) {
-    if (!isRec(r)) continue
-    if (Array.isArray(r.drafts)) out.push(...r.drafts.filter((d): d is string => typeof d === 'string'))
-    if (typeof r.lastBrief?.message === 'string') out.push(r.lastBrief.message)
-    // A message the record already holds as the rep's draft he sent: a card more than
-    // DRAFTS_MAX back, or a record from a build that kept no list of drafts. One cut to
-    // OWNER_CUT ends in an ellipsis that what he sent does not have, so it matches nothing.
-    for (const m of r.owner as unknown[]) {
-      const d = m as Partial<OwnerMsg> | null
-      if (typeof d === 'object' && d !== null && d.kind === 'draft' && typeof d.text === 'string') out.push(d.text)
-    }
-  }
+  const out = await droppedDrafts($)
+  if (typeof all !== 'object' || all === null) return out
+  for (const r of Object.values(all as Record<string, unknown>)) if (isRec(r)) out.push(...recDrafts(r))
   return out
 }
 
@@ -961,7 +963,7 @@ async function storedDrafts($: EngineInterface): Promise<string[]> {
 // read nothing is seeded), and recorded in that order as `prompt.submit` records them, each
 // with the agent's last words before it from the session's rows, none when no row holds it
 // (typedFromItems), a draft he sent split off as the rep's, matched against the drafts of every
-// record in the store, those it holds among his messages included. It does nothing when the record holds a message or a note of his, so
+// record in the store, those it holds among his messages included, and those of records let go. It does nothing when the record holds a message or a note of his, so
 // it never adds to a live record. Says whether it recorded any. One read per session at a
 // time: a seed asked for while one runs (the start's, when he sends a prompt at once) is
 // that one, and `prompt.submit` waits for it, so his live prompt is numbered after it.

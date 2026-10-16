@@ -934,5 +934,35 @@
     "breaks": "A card message he sent that the forked-from record holds only among his messages as a draft (a card more than three back, or a record from an older build) is seeded as his own words.",
     "patch": "seed-drafts-held-ignored.patch",
     "fixed": "2026-10-16"
+  },
+  {
+    "name": "dropped-drafts-lost",
+    "breaks": "A record the store lets go takes its drafts with it, so a card message he sent in that session is seeded as his own words when the session is reopened or forked later.",
+    "patch": "dropped-drafts-lost.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "dropped-drafts-unread",
+    "breaks": "The drafts of records the store let go are kept but never read, so a card message he sent in such a session is seeded as his own words.",
+    "patch": "dropped-drafts-unread.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "dropped-drafts-read-order",
+    "breaks": "The drafts reader reads the kept list before the records, the order the store writes them, so a record let go between the two reads is in neither and a card message he sent there is seeded as his own words.",
+    "patch": "dropped-drafts-read-order.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "dropped-drafts-uncapped",
+    "breaks": "The kept drafts of records let go grow without end.",
+    "patch": "dropped-drafts-uncapped.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "dropped-drafts-oldest-first",
+    "breaks": "A record's drafts held among his messages are taken oldest first, so the kept list's cap could keep an older draft over a newer one.",
+    "patch": "dropped-drafts-oldest-first.patch",
+    "fixed": "2026-10-16"
   }
 ]

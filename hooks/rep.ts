@@ -1521,6 +1521,38 @@ export function keepDraft(drafts: readonly string[], message: string): string[] 
   return [message, ...drafts.filter(d => !sameFolded(d, message))].slice(0, DRAFTS_MAX)
 }
 
+// Every draft a stored record holds: its cards' messages, its last briefing's, and the
+// messages it holds as the rep's draft he sent (a card more than DRAFTS_MAX back, or a
+// record from a build that kept no list of drafts), newest first. One cut to OWNER_CUT
+// ends in an ellipsis that what he sent does not have, so it matches nothing.
+export function recDrafts(r: unknown): string[] {
+  if (typeof r !== 'object' || r === null) return []
+  const { drafts, lastBrief, owner } = r as { drafts?: unknown; lastBrief?: { message?: unknown } | null; owner?: unknown }
+  const out: string[] = []
+  if (Array.isArray(drafts)) out.push(...drafts.filter((d): d is string => typeof d === 'string'))
+  if (typeof lastBrief?.message === 'string') out.push(lastBrief.message)
+  if (Array.isArray(owner)) {
+    for (const m of [...owner].reverse()) {
+      const d = m as Partial<OwnerMsg> | null
+      if (typeof d === 'object' && d !== null && d.kind === 'draft' && typeof d.text === 'string') out.push(d.text)
+    }
+  }
+  return out
+}
+
+// The drafts of records the store has let go, newest first, so a draft he sent is still
+// known in a session reopened or forked after its record fell out of the newest
+// SESSIONS_MAX (a fork's own record can push out the one it was forked from).
+export const DROPPED_DRAFTS_MAX = 200
+
+// The kept drafts with `add` put first, each kept once, none empty, the oldest let go
+// past DROPPED_DRAFTS_MAX.
+export function keepDropped(kept: readonly string[], add: readonly string[]): string[] {
+  const out: string[] = []
+  for (const d of [...add, ...kept]) if (d.trim() !== '' && !out.some(o => sameFolded(o, d))) out.push(d)
+  return out.slice(0, DROPPED_DRAFTS_MAX)
+}
+
 // The kept draft the prompt begins with, and what he added after it; the longest
 // match wins, so a draft that begins another is not taken for it. null when none matches.
 export function draftSplitAny(text: string, drafts: readonly string[]): { draft: string; his: string } | null {

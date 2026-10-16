@@ -1,7 +1,7 @@
 import type { On, SessionMessage } from 'claude-code'
 import { expect, mock, test, type Engine } from 'claude-code/testing'
 
-import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX } from '../hooks/rep'
+import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX } from '../hooks/rep'
 
 const om = (text: string, n = 1): OwnerMsg => ({ n, kind: 'his', text, prior: '' })
 
@@ -771,6 +771,55 @@ test('rule: the store keeps only the newest SESSIONS_MAX sessions', async ($, on
   expect(kept['test-session']?.owner).toEqual([{ n: 1, kind: 'his', text: 'a prompt from the newest session', prior: '' }])
   expect(kept.s0).toBeUndefined()
   expect(kept.s1).toBeDefined()
+})
+
+test('recDrafts takes a record\'s cards\' messages, its last briefing\'s and the drafts among its messages; keepDropped puts new ones first, once each, up to DROPPED_DRAFTS_MAX', () => {
+  expect(recDrafts({
+    drafts: ['Card two: show me the log.', 7],
+    lastBrief: { message: 'Card three: run the suite.' },
+    owner: [om('build it'), { n: 2, kind: 'draft', text: 'Card zero: plan it.', prior: '' }, { n: 3, kind: 'draft', text: 'Card one: build it on main.', prior: '' }],
+  })).toEqual(['Card two: show me the log.', 'Card three: run the suite.', 'Card one: build it on main.', 'Card zero: plan it.'])
+  expect(recDrafts(null)).toEqual([])
+  expect(recDrafts({ lastBrief: null, owner: 'none' })).toEqual([])
+  expect(keepDropped(['Older card: ship it.', 'Oldest card: test it.'], ['Newer card: run it.', 'older card:  ship it', ' '])).toEqual([
+    'Newer card: run it.',
+    'older card:  ship it',
+    'Oldest card: test it.',
+  ])
+  const many = Array.from({ length: DROPPED_DRAFTS_MAX + 5 }, (_, i) => `Card message number ${i}.`)
+  const held = keepDropped([], many)
+  expect(held).toHaveLength(DROPPED_DRAFTS_MAX)
+  expect(held[0]).toBe('Card message number 0.')
+  expect(keepDropped(held, ['The newest card message.'])[0]).toBe('The newest card message.')
+  expect(keepDropped(held, ['The newest card message.'])).toHaveLength(DROPPED_DRAFTS_MAX)
+})
+
+test('rule: a record the store lets go leaves its drafts in the kept list, newest first', async ($, on) => {
+  const store: Record<string, unknown> = { sessions: {}, droppedDrafts: ['An earlier dropped card: ship it to the server.'] }
+  const old = store.sessions as Record<string, unknown>
+  for (let i = 0; i < SESSIONS_MAX; i++) old[`s${i}`] = { id: `s${i}`, at: 1000 + i, objective: null, owner: [], past: [], seen: [], others: [] }
+  old.s0 = {
+    ...(old.s0 as object),
+    drafts: ['Card two: show me the whole log.'],
+    lastBrief: { at: 1, next: 'Run it.', message: 'Card three: run the suite and show me.' },
+    owner: [om('build it'), { n: 2, kind: 'draft', text: 'Card one: build it on main and show me.', prior: '' }],
+  }
+  on('store.get', ($, e) => ({ value: store[e.key] }))
+  on('store.set', ($, e) => {
+    store[e.key] = e.value
+    return { value: undefined }
+  })
+  on('session.id', () => ({ value: 'test-session' }))
+  on('prompt.submit', ($, e) => ({ text: e.text }))
+  quietBand(on)
+  await $.prompt.submit(typed('a prompt from the newest session'))
+  expect((store.sessions as Record<string, unknown>).s0).toBeUndefined()
+  expect(store.droppedDrafts).toEqual([
+    'Card two: show me the whole log.',
+    'Card three: run the suite and show me.',
+    'Card one: build it on main and show me.',
+    'An earlier dropped card: ship it to the server.',
+  ])
 })
 
 // --- The card fits the band's rows, so its buttons are always where a digit reaches them. ---
@@ -3925,6 +3974,81 @@ test('rule: a card message he sent that the forked-from record holds only among 
     { n: 1, kind: 'his', text: 'Build the report.', prior: '' },
     { n: 2, kind: 'draft', text: drafted, prior: 'Built.' },
     { n: 3, kind: 'his', text: long, prior: 'Ran it.' },
+  ])
+})
+
+test('rule: a card message he sent in a session whose record the store has let go is still recorded as the rep\'s draft, from the kept list', async ($, on) => {
+  // The record that drew the card is gone (a fork's own record can push it out); only the
+  // drafts it left behind remain.
+  const drafted = 'Run it on the real data and show me the result.'
+  const rec = kept(on, { sessions: {}, droppedDrafts: ['Some other card: ship it.', drafted] })
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({
+    value: [
+      { role: 'user', text: 'Build the report.', toolUses: [] },
+      { role: 'assistant', text: 'Built.', toolUses: [] },
+      { role: 'user', text: `${drafted} And keep the log.`, toolUses: [] },
+    ] satisfies SessionMessage[],
+  }))
+  transcript(on, { 'test-session.jsonl': [LINE('Build the report.'), LINE(`${drafted} And keep the log.`)].join('\n') })
+  writer(on, () => OBJ('The report run on the real data, with the log kept.', ['the run shown | open']))
+  await giveTranscript($, on, HELD('test-session.jsonl'))
+  await started($)
+  await settle($)
+  expect(rec()?.owner).toEqual([
+    { n: 1, kind: 'his', text: 'Build the report.', prior: '' },
+    { n: 2, kind: 'draft', text: drafted, prior: 'Built.' },
+    { n: 3, kind: 'his', text: 'And keep the log.', prior: 'Built.' },
+  ])
+})
+
+test('rule: a record let go while the drafts are being read is still found, its drafts in the records or in the kept list', async ($, on) => {
+  // The store lets the parent go between the reader's two reads: the moment the kept list is
+  // read, its drafts move there and the record leaves. Read records first, then the list.
+  const drafted = 'Run it on the real data and show me the result.'
+  const store: Record<string, unknown> = {
+    sessions: { parent: { id: 'parent', at: 1, owner: [{ n: 1, kind: 'his', text: 'Build the report.', prior: '' }], counter: 1, drafts: [drafted] } },
+    droppedDrafts: [],
+  }
+  let moved = false
+  on('store.get', (_$, e) => {
+    const value = store[e.key]
+    if (e.key === 'droppedDrafts' && !moved) {
+      moved = true
+      store.droppedDrafts = [drafted]
+      const { parent: _gone, ...rest } = store.sessions as Record<string, unknown>
+      store.sessions = rest
+    }
+    return { value }
+  })
+  on('store.set', (_$, e) => {
+    store[e.key] = e.value
+    return { value: undefined }
+  })
+  on('session.id', () => ({ value: 'test-session' }))
+  on('turn.complete', () => ({ text: '' }))
+  on('prompt.submit', (_$, e) => ({ text: e.text }))
+  on('ui.toast', () => ({ value: undefined }))
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({
+    value: [
+      { role: 'user', text: 'Build the report.', toolUses: [] },
+      { role: 'assistant', text: 'Built.', toolUses: [] },
+      { role: 'user', text: `${drafted} And keep the log.`, toolUses: [] },
+    ] satisfies SessionMessage[],
+  }))
+  transcript(on, { 'test-session.jsonl': [LINE('Build the report.'), LINE(`${drafted} And keep the log.`)].join('\n') })
+  writer(on, () => OBJ('The report run on the real data, with the log kept.', ['the run shown | open']))
+  await giveTranscript($, on, HELD('test-session.jsonl'))
+  await started($)
+  await settle($)
+  expect(moved).toBe(true)
+  expect((store.sessions as Record<string, Stored>)['test-session']?.owner).toEqual([
+    { n: 1, kind: 'his', text: 'Build the report.', prior: '' },
+    { n: 2, kind: 'draft', text: drafted, prior: 'Built.' },
+    { n: 3, kind: 'his', text: 'And keep the log.', prior: 'Built.' },
   ])
 })
 
