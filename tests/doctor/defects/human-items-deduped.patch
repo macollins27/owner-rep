@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index ee9db46..a8270a1 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -775,7 +775,7 @@ export function humanItems(jsonl: string): HumanItem[] {
+     }
+     const text = typedForm(raw)
+     const key = typedKey(raw)
+-    if (key === '' || notTyped(text)) continue
++    if (key === '' || notTyped(text) || out.some(i => i.key === key)) continue
+     out.push({ key, text, queued })
+   }
+   return out

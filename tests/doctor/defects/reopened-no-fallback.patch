@@ -1,8 +1,8 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 0afe637..c6af6f4 100644
+index f0e1e30..5bfda5b 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -499,7 +499,7 @@ async function setNow($: EngineInterface, patch: Partial<Now>): Promise<void> {
+@@ -504,7 +504,7 @@ async function setNow($: EngineInterface, patch: Partial<Now>): Promise<void> {
  // counted as a fork's.
  async function readSession($: EngineInterface, sid: string, prompt: string, fallback: boolean): Promise<ModelForkResult> {
    const forked = await $.model.fork({ prompt })
@@ -10,4 +10,4 @@ index 0afe637..c6af6f4 100644
 +  return forked
    const rows = await $.session.messages().catch(() => [])
    if (rows.length === 0) return forked
-   const human = await humanSet($, sid, rows)
+   const items = await heldItems($, sid, rows)

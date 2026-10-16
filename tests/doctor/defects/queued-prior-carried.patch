@@ -1,0 +1,14 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index ee9db46..f9e2806 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -810,8 +810,8 @@ export const candidateKeys = (rows: readonly RecordRow[]): Set<string> => new Se
+ export function typedFromItems(items: readonly HumanItem[], rows: readonly RecordRow[]): { text: string; prior: string }[] {
+   const out: { text: string; prior: string }[] = []
+   let cursor = 0
++  let prior = ''
+   for (const item of items) {
+-    let prior = ''
+     if (!item.queued) {
+       let at = -1
+       for (let i = cursor; i < rows.length; i++) {

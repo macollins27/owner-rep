@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index f0e1e30..e068cac 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -913,7 +913,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
+       if (found.exitCode !== 0 || found.isStdoutTruncated) continue
+       readAny = true
+       const part = forkItems(humanItems(found.stdout), rows)
+-      if (part.matched > best.matched) best = part
++      if (best.matched === 0) best = part
+       if (best.matched === want) break
+     }
+     return readAny ? best.items : null

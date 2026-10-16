@@ -1,7 +1,7 @@
 import type { On, SessionMessage } from 'claude-code'
 import { expect, mock, test, type Engine } from 'claude-code/testing'
 
-import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, typedPrompts, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX } from '../hooks/rep'
+import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX } from '../hooks/rep'
 
 const om = (text: string, n = 1): OwnerMsg => ({ n, kind: 'his', text, prior: '' })
 
@@ -3235,7 +3235,7 @@ const transcript = (on: On, files: Record<string, string>, opts: { folder?: stri
   return Object.assign(runs, { timeouts, now })
 }
 
-// The runs `humanSet` makes, as a session would see them.
+// The runs `heldItems` makes, as a session would see them.
 const SED = (file: string, folder = FOLDER) => `sed -n -E /"kind":"human"/{s/"data":"[^"]*"/"data":""/g;p;} ${folder}/${file}`
 const FIND = (id = 'test-session') => `find ${PROJECTS} -maxdepth 2 -name ${id}.jsonl`
 
@@ -3473,9 +3473,34 @@ test('rule: with nothing to fork, the watch\'s own looks on a step and at a turn
   ])
 })
 
-// --- A session the rep holds no record of: his typed messages are read from the session, each proven his from its transcript. ---
+// --- A session the rep holds no record of: his messages are read from its transcript file, in its order. ---
 
-test('typedPrompts keeps only the rows the transcript proves he typed, each with the end of the agent\'s last words before it, and still drops every kind on NOT_TYPED', () => {
+test('humanItems reads his messages from a transcript in the file\'s order, typed and queued, each as he typed it, and skips the engine\'s lines, a bare command and every kind on NOT_TYPED', () => {
+  const file = [
+    LINE('First  typed\nhere.'),
+    QUEUED('Typed during\nthe turn.'),
+    ...ENGINE_LINES,
+    LINE('Meta, though marked human.', { origin: { kind: 'human' }, isMeta: true }),
+    QUEUED('A helper finished.', {}, { kind: 'task-notification' }),
+    QUEUED('Marked meta.', { isMeta: true }),
+    LINE('<command-message>rep</command-message>\n<command-name>/rep</command-name>\n<command-args>check the docs</command-args>', { origin: { kind: 'human' } }),
+    LINE('<command-message>clear</command-message>\n<command-name>/clear</command-name>\n<command-args></command-args>', { origin: { kind: 'human' } }),
+    LINE('<system-reminder>The date changed.</system-reminder>\nUse this year.'),
+    LINE([{ type: 'text', text: 'Look at this.' }, { type: 'image', source: { type: 'base64', media_type: 'image/png', data: '' } }, { type: 'text', text: 'And fix it.' }]),
+    LINE('First  typed\nhere.'),
+  ].join('\n')
+  expect(humanItems(file)).toEqual([
+    { key: 'First typed here.', text: 'First  typed\nhere.', queued: false },
+    { key: 'Typed during the turn.', text: 'Typed during\nthe turn.', queued: true },
+    { key: '/rep check the docs', text: '/rep check the docs', queued: false },
+    { key: 'Use this year.', text: 'Use this year.', queued: false },
+    { key: 'Look at this. And fix it.', text: 'Look at this.\nAnd fix it.', queued: false },
+    // Sent twice, read twice.
+    { key: 'First typed here.', text: 'First  typed\nhere.', queued: false },
+  ])
+  // The record read's set is the same keys.
+  expect([...humanTexts(file)]).toEqual(['First typed here.', 'Typed during the turn.', '/rep check the docs', 'Use this year.', 'Look at this. And fix it.'])
+  // One line of his, marked human, for each kind on NOT_TYPED: none is read as his.
   const written = [
     '<task-notification>\n<task-id>b1</task-id>\nThe helper finished.\n</task-notification>',
     '<command-name>/model</command-name>',
@@ -3491,42 +3516,79 @@ test('typedPrompts keeps only the rows the transcript proves he typed, each with
     'Base directory for this skill: /Users/x/.claude/skills/y',
     '[Request interrupted by user]',
   ]
-  // One row per kind on the list, each dropped even when the set holds it: the list is a second filter.
   expect(written.length).toBe(NOT_TYPED.length)
-  const every = new Set(written.map(typedKey))
-  for (const text of written) expect(typedPrompts([{ role: 'user', text, toolUses: [] }], every)).toEqual([])
-  // A row the transcript does not prove is dropped whatever its text, though no prefix on the list names it.
-  const peer = 'Another Claude session sent a message:\nThe scan is done.'
-  expect(NOT_TYPED.some(x => peer.startsWith(x))).toBe(false)
-  expect(typedPrompts([{ role: 'user', text: peer, toolUses: [] }], new Set(['Add a licence file.']))).toEqual([])
-  // A row of reminders alone is nothing; a row of tool results is never his, whatever text it carries.
-  expect(typedPrompts([{ role: 'user', text: '<system-reminder>only this</system-reminder>', toolUses: [] }], new Set(['', 'only this']))).toEqual([])
-  expect(typedPrompts([{ role: 'user', text: 'Install it now.', toolUses: [], toolResults: [{ tool_use_id: 'u1', text: 'ok', isError: false }] }], new Set(['Install it now.']))).toEqual([])
+  for (const text of written) {
+    expect(humanItems(LINE(text))).toEqual([])
+    expect(humanItems(QUEUED(text))).toEqual([])
+  }
+})
+
+// One of his messages as a transcript file holds it.
+const ITEM = (text: string, queued = false): HumanItem => ({ key: typedKey(text), text, queued })
+
+test('typedFromItems keeps the file\'s order, gives each typed message the end of the agent\'s last words before its row, and a queued message or one no row holds none', () => {
   const long = `${'An earlier part of the answer. '.repeat(40)}Which year should the licence carry?`
-  const human = humanTexts(
-    [
-      LINE('Add a licence file.'),
-      LINE('2026,  and push it.'),
-      LINE('<command-message>rep</command-message>\n<command-name>/rep</command-name>\n<command-args>check the docs</command-args>', { origin: { kind: 'human' } }),
-    ].join('\n'),
-  )
-  expect(
-    typedPrompts(
-      [
-        { role: 'user', text: 'Add a licence\nfile.', toolUses: [] },
-        { role: 'assistant', text: long, toolUses: [] },
-        { role: 'assistant', text: '', toolUses: [{ tool: 'Read', input: {} }] },
-        { role: 'user', text: peer, toolUses: [] },
-        { role: 'user', text: '<system-reminder>The date changed.</system-reminder>\n2026, and push it.', toolUses: [] },
-        { role: 'user', text: '<command-message>rep</command-message>\n<command-name>/rep</command-name>\n<command-args>check the docs</command-args>', toolUses: [] },
-      ],
-      human,
-    ),
-  ).toEqual([
-    { text: 'Add a licence\nfile.', prior: '' },
+  const rows: RecordRow[] = [
+    { role: 'user', text: 'Add a licence\nfile.', toolUses: [] },
+    { role: 'assistant', text: long, toolUses: [] },
+    { role: 'assistant', text: '', toolUses: [{ tool: 'Read', input: {} }] },
+    { role: 'user', text: 'Another Claude session sent a message:\nThe scan is done.', toolUses: [] },
+    { role: 'user', text: '2026, and push it.', toolUses: [], toolResults: [{ tool_use_id: 'u1', text: 'ok', isError: false }] },
+    { role: 'user', text: '<system-reminder>The date changed.</system-reminder>\n2026,  and push it.', toolUses: [] },
+    { role: 'assistant', text: 'Pushed.', toolUses: [] },
+  ]
+  const queued = ITEM('Not the MIT text, the Apache one.', true)
+  expect(typedFromItems([ITEM('Add a licence file.'), queued, ITEM('2026, and push it.'), ITEM('And tag the release.', true)], rows)).toEqual([
+    { text: 'Add a licence file.', prior: '' },
+    { text: 'Not the MIT text, the Apache one.', prior: '' },
     { text: '2026, and push it.', prior: fitTail(long, PRIOR_CUT) },
-    { text: '/rep check the docs', prior: fitTail(long, PRIOR_CUT) },
+    // Queued after a message that had one: still none of its own.
+    { text: 'And tag the release.', prior: '' },
   ])
+  // A message from before a compaction, whose row is gone, keeps its place with no prior, and
+  // the rows after it are still matched.
+  expect(typedFromItems([ITEM('Start the licence work.'), ITEM('Add a licence file.'), ITEM('Gone with the compaction.'), ITEM('2026, and push it.')], rows)).toEqual([
+    { text: 'Start the licence work.', prior: '' },
+    { text: 'Add a licence file.', prior: '' },
+    { text: 'Gone with the compaction.', prior: '' },
+    { text: '2026, and push it.', prior: fitTail(long, PRIOR_CUT) },
+  ])
+  // The same message sent twice is matched to its two rows in turn.
+  const twice: RecordRow[] = [
+    { role: 'assistant', text: 'Shall I start?', toolUses: [] },
+    { role: 'user', text: 'yes', toolUses: [] },
+    { role: 'assistant', text: 'Run the suite too?', toolUses: [] },
+    { role: 'user', text: 'yes', toolUses: [] },
+  ]
+  expect(typedFromItems([ITEM('yes'), ITEM('yes')], twice)).toEqual([
+    { text: 'yes', prior: 'Shall I start?' },
+    { text: 'yes', prior: 'Run the suite too?' },
+  ])
+})
+
+test('forkItems takes the part of another session\'s messages that a fork\'s rows match: up to the last match and the queued messages right after it, a row that is no message of his skipped', () => {
+  const [A, B, Q, C, R] = [ITEM('Build the report.'), ITEM('Use the real data.'), ITEM('And keep the logs.', true), ITEM('Now publish it.'), ITEM('Not that folder.', true)]
+  const parent = [A, B, Q, C, R]
+  const his = (text: string): RecordRow => ({ role: 'user', text, toolUses: [] })
+  const agent = (text: string): RecordRow => ({ role: 'assistant', text, toolUses: [] })
+  expect(forkItems(parent, [his(A.text), agent('Built.'), his(B.text), agent('Ran it.')])).toEqual({ items: [A, B, Q], matched: 2 })
+  expect(forkItems(parent, [his(A.text), agent('Built.')])).toEqual({ items: [A], matched: 1 })
+  // A task notification is no candidate; another session's message is one that no message
+  // matches, so it leaves the place where it was and does not count.
+  const notice = his('<task-notification>\n<task-id>b1</task-id>\nThe helper finished.\n</task-notification>')
+  const peer = his('Another Claude session sent a message:\nThe scan is done.')
+  expect(forkItems(parent, [his(A.text), notice, peer, his(B.text)])).toEqual({ items: [A, B, Q], matched: 2 })
+  // A row of tool results is no candidate, whatever its text.
+  expect(forkItems(parent, [his(A.text), { role: 'user', text: B.text, toolUses: [], toolResults: [{ tool_use_id: 'u1', text: 'ok', isError: false }] }])).toEqual({ items: [A], matched: 1 })
+  // The whole of it, the queued message at its end included.
+  expect(forkItems(parent, [his(A.text), his(B.text), his(C.text), his('Typed in the fork.')])).toEqual({ items: parent, matched: 3 })
+  // No row matched: nothing.
+  expect(forkItems(parent, [his('Something else.')])).toEqual({ items: [], matched: 0 })
+  expect(forkItems(parent, [])).toEqual({ items: [], matched: 0 })
+  // A message sent twice: each row matches the next one.
+  const yes = [ITEM('yes'), ITEM('yes'), ITEM('Wait for the build.', true)]
+  expect(forkItems(yes, [his('yes')])).toEqual({ items: [yes[0]], matched: 1 })
+  expect(forkItems(yes, [his('yes'), his('yes')])).toEqual({ items: yes, matched: 2 })
 })
 
 // Rows the engine wrote on his side that no prefix on NOT_TYPED names: only the transcript says they are not his.
@@ -3562,7 +3624,7 @@ const SEEDED = [
   { n: 2, kind: 'his', text: 'Use this year, and push it.', prior: 'The file is written with 2025.' },
 ]
 
-test('rule: a press in a session the rep holds no record of records his typed messages from the session, proven from its transcript, and the objective is written from them alone', async ($, on) => {
+test('rule: a press in a session the rep holds no record of records his messages from its transcript, each with the agent\'s last words before its row, and the objective is written from them alone', async ($, on) => {
   const rec = kept(on, {})
   on('session.start', (_$, e) => ({ cwd: e.cwd }))
   quietBand(on)
@@ -3595,7 +3657,7 @@ test('rule: a press in a session the rep holds no record of records his typed me
   expect(rec()?.objective?.result).toBe('A licence file with the MIT text and this year.')
 })
 
-test('rule: a session start with no record of the session records his typed messages from it, proven from its transcript, and writes the objective', async ($, on) => {
+test('rule: a session start with no record of the session records his messages from its transcript and writes the objective', async ($, on) => {
   const rec = kept(on, {})
   on('session.start', (_$, e) => ({ cwd: e.cwd }))
   quietBand(on)
@@ -3611,11 +3673,11 @@ test('rule: a session start with no record of the session records his typed mess
   expect(rec()?.objective?.result).toBe('A licence file with the MIT text and this year.')
 })
 
-test('rule: a session forked with a new id, its own transcript not saved yet, has his rows proven from the newest transcripts in the folder of the path Claude Code gave it, one read each, stopping once every row is proven', async ($, on) => {
+test('rule: a session forked with a new id, its own transcript not saved yet, takes his messages from the newest transcripts in the folder of the path Claude Code gave it, one read each, stopping once every row that could be his is matched', async ($, on) => {
   const rec = kept(on, {})
   on('session.start', (_$, e) => ({ cwd: e.cwd }))
   quietBand(on)
-  // Only kinds NOT_TYPED names besides his rows: each row that could be his is proven in the parent's file.
+  // Only kinds NOT_TYPED names besides his rows: each row that could be his is matched in the parent's file.
   on('session.messages', () => ({ value: SEEDED_ROWS.filter(r => r.text !== PEER && r.text !== IDLE) }))
   const runs = transcript(on, { 'newer.jsonl': LINE('Something he typed elsewhere.'), 'notes.txt': '', 'parent.jsonl': SEEDED_FILE, 'older.jsonl': SEEDED_FILE })
   writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
@@ -3627,7 +3689,7 @@ test('rule: a session forked with a new id, its own transcript not saved yet, ha
   expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), `ls -t ${FOLDER}`, SED('newer.jsonl'), SED('parent.jsonl')])
 })
 
-test('rule: the scan of a forked session\'s folder reads at most HUMAN_SCAN_MAX files, and a row it never proves is not taken as his', async ($, on) => {
+test('rule: the scan of a forked session\'s folder reads at most HUMAN_SCAN_MAX files, and a row no file holds is not taken as his', async ($, on) => {
   const rec = kept(on, {})
   on('session.start', (_$, e) => ({ cwd: e.cwd }))
   quietBand(on)
@@ -3640,7 +3702,7 @@ test('rule: the scan of a forked session\'s folder reads at most HUMAN_SCAN_MAX 
   await started($)
   await settle($)
   expect(rec()?.owner).toEqual(SEEDED)
-  // The other session's message and the idle notice are never proven, so the scan runs to its cap.
+  // The other session's message and the idle notice are in no file, so the scan runs to its cap.
   expect(runs.filter(r => r[0] === 'sed').length).toBe(1 + HUMAN_SCAN_MAX)
 })
 
@@ -3792,7 +3854,7 @@ test('rule: a message of his with a picture in it is proven from its text, the p
   expect(rec()?.owner).toEqual([{ n: 1, kind: 'his', text: 'Look at this screen. And fix the colour.', prior: '' }])
 })
 
-test('rule: in the scan of a forked session\'s folder, a file whose read was cut proves nothing', async ($, on) => {
+test('rule: in the scan of a forked session\'s folder, a file whose read was cut is not taken', async ($, on) => {
   const rec = kept(on, {})
   on('session.start', (_$, e) => ({ cwd: e.cwd }))
   quietBand(on)
@@ -3812,7 +3874,7 @@ test('rule: the scan of a forked session\'s folder ends with what it has once it
   on('session.start', (_$, e) => ({ cwd: e.cwd }))
   quietBand(on)
   on('session.messages', () => ({ value: SEEDED_ROWS }))
-  // The newest file proves his first message; the parent's, which proves the second, is eleventh.
+  // The newest file holds his first message; the parent's, which holds both, is eleventh.
   const files: Record<string, string> = { 'newest.jsonl': LINE('Add a licence file with the MIT text.') }
   for (let i = 0; i < 10; i++) files[`old-${i}.jsonl`] = LINE(`Old message ${i}.`)
   files['parent.jsonl'] = SEEDED_FILE
@@ -3825,9 +3887,126 @@ test('rule: the scan of a forked session\'s folder ends with what it has once it
   const scanned = runs.flatMap((r, i) => (r[0] === 'sed' && r[r.length - 1] !== HELD() ? [runs.timeouts[i]] : []))
   // 30 seconds: three full reads, a fourth with the six seconds left, and none after.
   expect(scanned).toEqual([HUMAN_READ_TIMEOUT_MS, HUMAN_READ_TIMEOUT_MS, HUMAN_READ_TIMEOUT_MS, 6000])
-  // The scan ends with what it has: his first message, proven in the newest file. The
+  // The scan ends with what it has: his first message, matched in the newest file. The
   // parent's file was never reached, so his second is not taken.
   expect(rec()?.owner).toEqual([SEEDED[0]])
+})
+
+test('rule: a message he typed while the agent worked, which is no row of the session, is seeded from the transcript in its place, between the messages around it, with no prior', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  // The rows hold his two typed messages; the one he queued during the first turn is not among them.
+  on('session.messages', () => ({
+    value: [
+      { role: 'user', text: 'Add a licence file.', toolUses: [] },
+      { role: 'assistant', text: 'Which year should it carry?', toolUses: [] },
+      { role: 'user', text: '2026, and push it.', toolUses: [] },
+      { role: 'assistant', text: 'Pushed.', toolUses: [] },
+    ] satisfies SessionMessage[],
+  }))
+  const runs = transcript(on, { 'test-session.jsonl': [LINE('Add a licence file.'), QUEUED('Use the Apache text, not MIT.'), LINE('2026, and push it.')].join('\n') })
+  writer(on, () => OBJ('An Apache licence file with this year, pushed.', ['the file pushed | open'], '#1 to #3'))
+  await giveTranscript($, on, HELD(), 'startup')
+  await started($)
+  await settle($)
+  expect(rec()?.owner).toEqual([
+    { n: 1, kind: 'his', text: 'Add a licence file.', prior: '' },
+    { n: 2, kind: 'his', text: 'Use the Apache text, not MIT.', prior: '' },
+    { n: 3, kind: 'his', text: '2026, and push it.', prior: 'Which year should it carry?' },
+  ])
+  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl')])
+})
+
+test('rule: a fork whose own transcript is not saved yet takes the best-matching file in its folder up to its last matched message and the queued one right after, never the parent\'s later messages', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  // The fork's rows: the parent's up to the fork, the queued message no row of them.
+  on('session.messages', () => ({
+    value: [
+      { role: 'user', text: 'Build the report.', toolUses: [] },
+      { role: 'assistant', text: 'Built.', toolUses: [] },
+      { role: 'user', text: 'Use the real data.', toolUses: [] },
+      { role: 'assistant', text: 'Ran it.', toolUses: [] },
+    ] satisfies SessionMessage[],
+  }))
+  const parent = [LINE('Build the report.'), LINE('Use the real data.'), QUEUED('And keep the logs.'), LINE('Now publish it.'), QUEUED('Not that folder.')].join('\n')
+  const runs = transcript(on, {
+    'other.jsonl': LINE('Something he typed in another session.'),
+    // A session that shares only his first message: it matches less than the parent.
+    'sibling.jsonl': [LINE('Build the report.'), QUEUED('Only in the sibling.'), LINE('Use the test data.')].join('\n'),
+    'parent.jsonl': parent,
+    'older.jsonl': parent,
+  })
+  writer(on, () => OBJ('The report run on the real data, with logs.', ['the run shown | open'], '#1 to #3'))
+  await giveTranscript($, on)
+  await started($)
+  await settle($)
+  expect(rec()?.owner).toEqual([
+    { n: 1, kind: 'his', text: 'Build the report.', prior: '' },
+    { n: 2, kind: 'his', text: 'Use the real data.', prior: 'Built.' },
+    { n: 3, kind: 'his', text: 'And keep the logs.', prior: '' },
+  ])
+  // Every row matched in the parent's file, so the scan stops there.
+  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), `ls -t ${FOLDER}`, SED('other.jsonl'), SED('sibling.jsonl'), SED('parent.jsonl')])
+})
+
+test('rule: of two files in a fork\'s folder that match its rows equally, the newer is taken', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  // His one message and a row no file holds, so neither file matches every row and both are read.
+  on('session.messages', () => ({ value: [{ role: 'user', text: 'Build the report.', toolUses: [] }, { role: 'user', text: PEER, toolUses: [] }] satisfies SessionMessage[] }))
+  const runs = transcript(on, {
+    'newer.jsonl': [LINE('Build the report.'), QUEUED('Queued in the newer.')].join('\n'),
+    'older.jsonl': [LINE('Build the report.'), QUEUED('Queued in the older.')].join('\n'),
+  })
+  writer(on, () => OBJ('The report built.', ['the report shown | open'], '#1'))
+  await giveTranscript($, on)
+  await started($)
+  await settle($)
+  expect(rec()?.owner).toEqual([
+    { n: 1, kind: 'his', text: 'Build the report.', prior: '' },
+    { n: 2, kind: 'his', text: 'Queued in the newer.', prior: '' },
+  ])
+  expect(runs.filter(r => r[0] === 'sed').length).toBe(3)
+})
+
+test('rule: a scan of a fork\'s folder in which no file could be read whole reads nothing: nothing is seeded, and the record read labels his rows by their text, never as the session\'s', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  const rows: SessionMessage[] = [
+    { role: 'user', text: 'Add a licence file.', toolUses: [] },
+    { role: 'assistant', text: 'Added.', toolUses: [] },
+    { role: 'user', text: 'Now push it.', toolUses: [] },
+  ]
+  on('session.messages', () => ({ value: rows }))
+  // The fork's own file is not saved yet, and the only other file's read is cut.
+  const runs = transcript(on, { 'parent.jsonl': [LINE('Add a licence file.'), LINE('Now push it.')].join('\n') }, { cut: ['parent.jsonl'] })
+  on('model.fork', () => ({ value: { isAnswered: false, reason: 'nothing-to-fork' } }))
+  const records: string[] = []
+  const writes: string[] = []
+  on('model.complete', (_$, e) => {
+    if (e.system === RECORD_SYSTEM) records.push(String(e.prompt))
+    else writes.push(String(e.prompt))
+    const text = e.system === RECORD_SYSTEM ? BRIEF('Read from the record.') : OBJ('A licence file pushed.', ['the file pushed | open'])
+    return { value: { isAnswered: true, text, usage: USAGE } }
+  })
+  await giveTranscript($, on)
+  await started($)
+  await settle($)
+  expect(rec()?.owner ?? []).toEqual([])
+  expect(writes).toEqual([])
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.unmount()
+  expect(records.length).toBe(1)
+  expect(records[0]).toMatch(/^entry 1 the person:\nAdd a licence file\.$/m)
+  expect(records[0]).toMatch(/^entry 3 the person:\nNow push it\.$/m)
+  expect(records[0]).not.toMatch(/the session \(written by Claude Code/)
+  expect(runs.filter(r => r[0] === 'sed').length).toBeGreaterThan(1)
 })
 
 // A session the rep holds no record of, whose start's read of the transcript is held until

@@ -56,9 +56,12 @@ import {
   RECORD_SYSTEM,
   RECORD_TIMEOUT_MS,
   recordPrompt,
-  typedPrompts,
-  humanTexts,
+  humanItems,
+  typedFromItems,
+  forkItems,
+  forkCandidates,
   candidateKeys,
+  type HumanItem,
   folderOf,
   humanRead,
   HUMAN_READ_TIMEOUT_MS,
@@ -490,8 +493,9 @@ async function setNow($: EngineInterface, patch: Partial<Now>): Promise<void> {
 // --continue or --resume, after /clear, and through the whole first turn of a new session.
 // Then, only for a read he started (`fallback`: his press, and the look after his note),
 // the session's record is read instead, by one plain completion over the rows
-// `$.session.messages()` returns (recordPrompt), with the same task, his rows proven from
-// the session's transcript (humanSet) and labelled as the session's when they cannot be.
+// `$.session.messages()` returns (recordPrompt), with the same task: a row is labelled his
+// when its key is one of his messages in the session's transcript (heldItems), and the
+// session's when it is not; when no transcript can be read, by NOT_TYPED alone.
 // The watch's own looks, on a step and at a turn's end, skip quietly instead: a record
 // read on each of them would be paid on every look of every new session's first turn.
 // With no rows, or no fallback, the fork's answer stands, so the caller says there is
@@ -503,12 +507,12 @@ async function readSession($: EngineInterface, sid: string, prompt: string, fall
   if (!fallback || forked.isAnswered || forked.reason !== 'nothing-to-fork') return forked
   const rows = await $.session.messages().catch(() => [])
   if (rows.length === 0) return forked
-  const human = await humanSet($, sid, rows)
+  const items = await heldItems($, sid, rows)
   return $.model
     .complete({
       model: OBJECTIVE_MODEL,
       system: RECORD_SYSTEM,
-      prompt: recordPrompt(rows, prompt, human ?? undefined),
+      prompt: recordPrompt(rows, prompt, items === null ? undefined : new Set(items.map(i => i.key))),
       maxTokens: RECORD_MAX_TOKENS,
       effort: 'high',
       timeoutMs: RECORD_TIMEOUT_MS,
@@ -860,20 +864,21 @@ function holdTranscript(id: unknown, path: unknown): void {
   if (typeof id === 'string' && id !== '' && typeof path === 'string' && path !== '') transcripts.set(id, path)
 }
 
-// The keys of the rows he typed, proven from the session's transcript file, which says who
-// wrote each row where `$.session.messages()` does not (humanTexts). The file is the path
-// the classic hooks gave (transcripts); with none held it is found by name under
-// <config>/projects, the config folder CLAUDE_CONFIG_DIR or ~/.claude, and with none found
-// nothing is read. sed keeps only the lines marked human, picture data blanked (humanRead);
-// a read that finds none means none of the rows is his. A read cut at the output cap is not
-// taken: for the session's own file nothing is proven, and the record falls back to its
-// labels. A session forked with a new id has no file of its own until its first message is
-// saved: the newest files in its file's folder are read instead, one at a time, at most
-// HUMAN_SCAN_MAX within HUMAN_SCAN_BUDGET_MS, a cut read skipped, stopping once every row
-// that could be his (candidateKeys) is proven. A line found in another session's file is
-// still a line he typed, as the origin says. Null when nothing could be read: then no row
-// is taken as his.
-async function humanSet($: EngineInterface, sid: string, rows: readonly RecordRow[]): Promise<Set<string> | null> {
+// His messages, read from the session's transcript file in its order (humanItems), which
+// says who wrote each row where `$.session.messages()` does not, and holds the messages he
+// typed while the agent worked, which are no row at all. The file is the path the classic
+// hooks gave (transcripts); with none held it is found by name under <config>/projects, the
+// config folder CLAUDE_CONFIG_DIR or ~/.claude, and with none found nothing is read. sed
+// keeps only the lines marked human, picture data blanked (humanRead); a read that finds
+// none means he typed nothing. A read cut at the output cap is not taken: for the session's
+// own file nothing is read. A session forked with a new id has no file of its own until its
+// first message is saved: the newest files in its file's folder are read instead, one at a
+// time, at most HUMAN_SCAN_MAX within HUMAN_SCAN_BUDGET_MS, a cut read skipped, and the file
+// whose items match the most of the fork's rows (forkItems; the newest on a tie) gives its
+// part up to the last match and the queued messages right after it, the scan stopping once
+// every row that could be his is matched; none when no file matched any. Null when nothing
+// could be read, in the session's own file or in the scan.
+async function heldItems($: EngineInterface, sid: string, rows: readonly RecordRow[]): Promise<HumanItem[] | null> {
   try {
     let path = transcripts.get(sid) ?? ''
     if (path === '') {
@@ -887,7 +892,7 @@ async function humanSet($: EngineInterface, sid: string, rows: readonly RecordRo
     }
     const read = (file: string, timeoutMs: number) => $.process.run(humanRead(file), { timeoutMs })
     const own = await read(path, HUMAN_READ_TIMEOUT_MS)
-    if (own.exitCode === 0) return own.isStdoutTruncated ? null : humanTexts(own.stdout)
+    if (own.exitCode === 0) return own.isStdoutTruncated ? null : humanItems(own.stdout)
     const folder = folderOf(path)
     const start = await $.clock.now()
     const left = async () => HUMAN_SCAN_BUDGET_MS - ((await $.clock.now()) - start)
@@ -898,16 +903,20 @@ async function humanSet($: EngineInterface, sid: string, rows: readonly RecordRo
       .map(f => f.trim())
       .filter(f => f.endsWith('.jsonl'))
       .slice(0, HUMAN_SCAN_MAX)
-    const want = [...candidateKeys(rows)]
-    const human = new Set<string>()
+    const want = forkCandidates(rows).length
+    let readAny = false
+    let best: { items: HumanItem[]; matched: number } = { items: [], matched: 0 }
     for (const file of files) {
       const remaining = await left()
       if (remaining <= 0) break
       const found = await read(`${folder}/${file}`, Math.min(HUMAN_READ_TIMEOUT_MS, remaining))
-      if (found.exitCode === 0 && !found.isStdoutTruncated) for (const key of humanTexts(found.stdout)) human.add(key)
-      if (want.every(k => human.has(k))) break
+      if (found.exitCode !== 0 || found.isStdoutTruncated) continue
+      readAny = true
+      const part = forkItems(humanItems(found.stdout), rows)
+      if (part.matched > best.matched) best = part
+      if (best.matched === want) break
     }
-    return human
+    return readAny ? best.items : null
   } catch {
     return null
   }
@@ -929,10 +938,11 @@ async function storedDrafts($: EngineInterface): Promise<string[]> {
 
 // A session the rep holds no record of has none of his messages: one reopened after its
 // record fell out of the newest SESSIONS_MAX, one forked with a new id, one from before the
-// mod was installed. His typed messages are then read from the session's rows, each proven
-// his from the session's transcript (humanSet; when it cannot be read nothing is seeded),
-// and recorded in order as `prompt.submit` records them, each with the agent's last words
-// before it, a draft he sent split off as the rep's, matched against the drafts of every
+// mod was installed. His messages are then read from the session's transcript file in its
+// order, the ones he typed while the agent worked included (heldItems; when it cannot be
+// read nothing is seeded), and recorded in that order as `prompt.submit` records them, each
+// with the agent's last words before it from the session's rows, none when no row holds it
+// (typedFromItems), a draft he sent split off as the rep's, matched against the drafts of every
 // record in the store. It does nothing when the record holds a message or a note of his, so
 // it never adds to a live record. Says whether it recorded any. One read per session at a
 // time: a seed asked for while one runs (the start's, when he sends a prompt at once) is
@@ -950,9 +960,9 @@ async function seedOnce($: EngineInterface, sid: string): Promise<boolean> {
   if (has(await loadRec($, sid))) return false
   const rows = await $.session.messages().catch(() => [])
   if (candidateKeys(rows).size === 0) return false
-  const human = await humanSet($, sid, rows)
-  if (human === null) return false
-  const typed = typedPrompts(rows, human)
+  const items = await heldItems($, sid, rows)
+  if (items === null) return false
+  const typed = typedFromItems(items, rows)
   if (typed.length === 0) return false
   const others = await storedDrafts($)
   return changeRec($, sid, rec => {
@@ -1073,7 +1083,7 @@ export const register: Register = on => {
     return next(e)
   })
 
-  // Where Claude Code saves the session's transcript, read by humanSet.
+  // Where Claude Code saves the session's transcript, read by heldItems.
   on('classic.SessionStart', ($, e, next) => {
     holdTranscript(e.session_id, e.transcript_path)
     return next(e)

@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index ee9db46..9d0bc13 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -830,7 +830,6 @@ export function typedFromItems(items: readonly HumanItem[], rows: readonly Recor
+             break
+           }
+         }
+-        cursor = at + 1
+       }
+     }
+     out.push({ text: item.text, prior })

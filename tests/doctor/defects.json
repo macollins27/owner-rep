@@ -475,13 +475,13 @@
   },
   {
     "name": "seed-trusts-text",
-    "breaks": "A row the engine wrote on his side that no prefix on NOT_TYPED names (another session's message, an idle notice, a scheduled task) is seeded as a message of his, and the objective is written from words he never typed.",
+    "breaks": "A row the engine wrote on his side that no prefix on NOT_TYPED names (another session's message, an idle notice, a scheduled task), and that the transcript does not hold as his, is seeded as a message of his, and the objective is written from words he never typed.",
     "patch": "seed-trusts-text.patch",
     "fixed": "2026-10-16"
   },
   {
     "name": "human-rows-unchecked",
-    "breaks": "Rows of the session's transcript that the engine wrote, meta rows and rows with another origin or none, are taken as typed by him, so the proof proves nothing.",
+    "breaks": "Lines of the session's transcript that the engine wrote, meta lines and lines with another origin or none, are read as messages he typed, so the seed takes words he never typed and the record read labels them his.",
     "patch": "human-rows-unchecked.patch",
     "fixed": "2026-10-16"
   },
@@ -493,7 +493,7 @@
   },
   {
     "name": "seed-no-folder-scan",
-    "breaks": "A session forked with a new id, whose own transcript is not saved yet, has none of his messages proven, so its objective is not written until he types again.",
+    "breaks": "A session forked with a new id, whose own transcript is not saved yet, has none of his messages read, so its objective is not written until he types again.",
     "patch": "seed-no-folder-scan.patch",
     "fixed": "2026-10-16"
   },
@@ -505,7 +505,7 @@
   },
   {
     "name": "human-scan-no-stop",
-    "breaks": "The scan of a forked session's folder reads on after every row that could be his is proven, paying for reads that change nothing.",
+    "breaks": "The scan of a forked session's folder reads on after a file has matched every row that could be his, paying for reads that change nothing.",
     "patch": "human-scan-no-stop.patch",
     "fixed": "2026-10-16"
   },
@@ -613,13 +613,13 @@
   },
   {
     "name": "truncated-read-trusted",
-    "breaks": "A read of the session's transcript cut at the output cap is taken as whole: his oldest lines are proven, his newest are seeded as no message of his and labelled in the record as written by Claude Code.",
+    "breaks": "A read of the session's transcript cut at the output cap is taken as whole: his oldest messages are seeded alone, and his newest are labelled in the record as written by Claude Code.",
     "patch": "truncated-read-trusted.patch",
     "fixed": "2026-10-16"
   },
   {
     "name": "scan-cut-read-trusted",
-    "breaks": "In the scan of a forked session's folder, a file whose read was cut at the output cap is taken as read whole, so what it proves rests on a part of the file.",
+    "breaks": "In the scan of a forked session's folder, a file whose read was cut at the output cap is taken as read whole, so the part taken from it rests on a part of the file.",
     "patch": "scan-cut-read-trusted.patch",
     "fixed": "2026-10-16"
   },
@@ -649,7 +649,7 @@
   },
   {
     "name": "scan-unbounded",
-    "breaks": "The scan of a forked session's folder runs on past its time, and once a read is given no time left the whole scan comes back as nothing read, losing what it had proven.",
+    "breaks": "The scan of a forked session's folder runs on past its 30 seconds, reading file after file while his first prompt waits.",
     "patch": "scan-unbounded.patch",
     "fixed": "2026-10-16"
   },
@@ -661,19 +661,19 @@
   },
   {
     "name": "queued-message-unproven",
-    "breaks": "a message he typed while the agent worked, saved as a queued command, is never proven his, so a reopened session labels it the session's",
+    "breaks": "A message he typed while the agent worked, saved as a queued command, is never read as his: the seed loses it, and a reopened session's record read labels it the session's.",
     "patch": "queued-message-unproven.patch",
     "fixed": "2026-10-16"
   },
   {
     "name": "queued-origin-unchecked",
-    "breaks": "a queued task notification or another session's queued message is proven his because the queued command's origin is not checked",
+    "breaks": "A queued task notification or another session's queued message is read as his because the queued command's origin is not checked.",
     "patch": "queued-origin-unchecked.patch",
     "fixed": "2026-10-16"
   },
   {
     "name": "queued-meta-taken",
-    "breaks": "a queued command marked meta on its attachment is proven his",
+    "breaks": "A queued command marked meta on its attachment is read as his.",
     "patch": "queued-meta-taken.patch",
     "fixed": "2026-10-16"
   },
@@ -717,6 +717,78 @@
     "name": "clause-and-then-missed",
     "breaks": "A stop or a wrap-up after \", and then\" (\"Fix the bug, and then stop the agent.\", \"Fix the bug, and then wrap things up.\") passes the gate while a condition is open.",
     "patch": "clause-and-then-missed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "fork-items-tail-kept",
+    "breaks": "A fork with no file of its own yet takes every message in the parent's file after its last matched one, so what he sent the parent after the fork is seeded as the fork's.",
+    "patch": "fork-items-tail-kept.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "fork-queued-tail-dropped",
+    "breaks": "A fork with no file of its own yet loses the messages he typed while the agent answered his last message before the fork.",
+    "patch": "fork-queued-tail-dropped.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "fork-items-rematch",
+    "breaks": "Each of a fork's rows is looked for from the start of the other file, so a message he sent twice matches its first copy both times and the fork's part ends too early.",
+    "patch": "fork-items-rematch.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "fork-misses-counted",
+    "breaks": "A fork's row that no message in a file holds counts as matched, so every file that matches anything looks like a full match and the scan can stop before the parent's file.",
+    "patch": "fork-misses-counted.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "queued-prior-carried",
+    "breaks": "A queued message, or one no row holds, is given the prior of the message before it, so the writer is told the agent had just said something it had not said when he typed it.",
+    "patch": "queued-prior-carried.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "typed-cursor-stuck",
+    "breaks": "A message sent twice is matched to the same row both times, so the second is given the agent's words from before the first.",
+    "patch": "typed-cursor-stuck.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "scan-first-match-taken",
+    "breaks": "The scan of a forked session's folder takes the first file that matches any of the fork's rows, such as a sibling session sharing only his first message, instead of the file that matches the most.",
+    "patch": "scan-first-match-taken.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "scan-tie-takes-older",
+    "breaks": "Of two files that match a fork's rows equally, the older is taken instead of the newer.",
+    "patch": "scan-tie-takes-older.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "scan-unread-as-empty",
+    "breaks": "A scan of a fork's folder in which no file could be read whole comes back as a read that found nothing of his, so the record read labels every one of his rows as written by Claude Code.",
+    "patch": "scan-unread-as-empty.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "record-items-unused",
+    "breaks": "The record read ignores the messages read from the transcript and labels rows by NOT_TYPED alone, so another session's message is shown as his words.",
+    "patch": "record-items-unused.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "human-items-deduped",
+    "breaks": "A message he sent twice is read from the transcript once, so the seed records it once.",
+    "patch": "human-items-deduped.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "human-items-not-typed-kept",
+    "breaks": "A line marked his whose text NOT_TYPED names (a command's output, an interrupt mark, a compact summary) is read as a message he typed.",
+    "patch": "human-items-not-typed-kept.patch",
     "fixed": "2026-10-16"
   }
 ]
