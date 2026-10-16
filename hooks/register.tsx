@@ -1,5 +1,5 @@
 import { atom, read, update } from 'claude-code'
-import type { EngineInterface, Register, RenderChildren } from 'claude-code'
+import type { EngineInterface, ModelForkResult, Register, RenderChildren } from 'claude-code'
 
 type RenderNodeList = RenderChildren[]
 
@@ -52,6 +52,10 @@ import {
   OBJECTIVE_RETRY_MAX_TOKENS,
   OBJECTIVE_RETRY_TIMEOUT_MS,
   objectivePrompt,
+  RECORD_MAX_TOKENS,
+  RECORD_SYSTEM,
+  RECORD_TIMEOUT_MS,
+  recordPrompt,
   objectiveText,
   openConditions,
   parseBrief,
@@ -472,6 +476,38 @@ async function setNow($: EngineInterface, patch: Partial<Now>): Promise<void> {
   await update($, nowA, n => ({ ...(n ?? IDLE), ...patch }))
 }
 
+// One read of the conversation for the watch or the briefing: a fork of it. A fork has
+// nothing to fork before the first response of the process (a session reopened with
+// --continue or --resume) and after /clear; then the session's record is read instead, by
+// one plain completion over the rows `$.session.messages()` returns (recordPrompt), with
+// the same task. With no rows the fork's answer stands, so the caller says there is nothing
+// to read yet. A completion that throws reads as an API error, which the callers already
+// show. Either way the result has the fork's shape, so its spend is counted as a fork's.
+async function readSession($: EngineInterface, prompt: string): Promise<ModelForkResult> {
+  const forked = await $.model.fork({ prompt })
+  if (forked.isAnswered || forked.reason !== 'nothing-to-fork') return forked
+  const rows = await $.session.messages().catch(() => [])
+  if (rows.length === 0) return forked
+  return $.model
+    .complete({
+      model: OBJECTIVE_MODEL,
+      system: RECORD_SYSTEM,
+      prompt: recordPrompt(rows, prompt),
+      maxTokens: RECORD_MAX_TOKENS,
+      effort: 'high',
+      timeoutMs: RECORD_TIMEOUT_MS,
+    })
+    .catch(
+      (): ModelForkResult => ({
+        isAnswered: false,
+        reason: 'api-error',
+        status: null,
+        error: 'unknown',
+        usage: { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
+      }),
+    )
+}
+
 // One look by the watch: the same cached copy of the conversation the agent
 // works from, read by a fresh instance with the rep's brief. Never awaited by
 // the hook that starts it, so the agent is never slowed.
@@ -484,7 +520,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
     })
     return
   }
-  const result = await $.model.fork({ prompt: watchPrompt({ ...memoryOf(rec), context: await contextOf($) }, reason) })
+  const result = await readSession($, watchPrompt({ ...memoryOf(rec), context: await contextOf($) }, reason))
   const usage = 'usage' in result ? result.usage : null
   await changeRec($, sid, async after => {
     after.calls += 1
@@ -519,7 +555,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     const ask = async (extra: string) => {
       const rec = await loadRec($, sid)
       const prompt = briefPrompt({ ...memoryOf(rec), context })
-      const result = await $.model.fork({ prompt: extra === '' ? prompt : `${prompt}\n\n${extra}` })
+      const result = await readSession($, extra === '' ? prompt : `${prompt}\n\n${extra}`)
       const usage = 'usage' in result ? result.usage : null
       return changeRec($, sid, async after => {
         after.calls += 1
