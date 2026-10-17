@@ -1030,5 +1030,29 @@
     "breaks": "A fork taken while a tool ran searches its parent for that tool's result, which the parent had not saved, so it finds no parent and holds none of his messages.",
     "patch": "anchor-on-result.patch",
     "fixed": "2026-10-17"
+  },
+  {
+    "name": "blank-records-kept",
+    "breaks": "A record holding nothing, saved for a scripted run or a window opened and closed, takes one of the store's places and pushes out a session that holds his messages.",
+    "patch": "blank-records-kept.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "blank-as-saved",
+    "breaks": "A record saved by an older build with fewer fields is judged as saved rather than as it loads, so a record holding nothing is kept.",
+    "patch": "blank-as-saved.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "blank-ignores-extra",
+    "breaks": "A field the blank record lacks, such as a briefing or an older build's reading, is not looked at, so a record holding it is dropped as blank and that is lost.",
+    "patch": "blank-ignores-extra.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "blank-key-order",
+    "breaks": "A record whose fields were saved in another order is not taken for the blank one, so a record holding nothing is kept.",
+    "patch": "blank-key-order.patch",
+    "fixed": "2026-10-17"
   }
 ]

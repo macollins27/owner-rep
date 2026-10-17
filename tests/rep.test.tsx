@@ -1,7 +1,7 @@
 import type { On, SessionMessage } from 'claude-code'
 import { expect, mock, test, type Engine } from 'claude-code/testing'
 
-import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX } from '../hooks/rep'
+import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, isBlankRec } from '../hooks/rep'
 
 const om = (text: string, n = 1): OwnerMsg => ({ n, kind: 'his', text, prior: '' })
 
@@ -756,7 +756,7 @@ test('rule: the store keeps only the newest SESSIONS_MAX sessions', async ($, on
   // The test's own store, so it can read back what the rep saved.
   const store: Record<string, unknown> = { sessions: {} }
   const old = store.sessions as Record<string, unknown>
-  for (let i = 0; i < SESSIONS_MAX; i++) old[`s${i}`] = { id: `s${i}`, at: 1000 + i, objective: null, owner: [], past: [], seen: [], others: [] }
+  for (let i = 0; i < SESSIONS_MAX; i++) old[`s${i}`] = { id: `s${i}`, at: 1000 + i, objective: null, owner: [om(`a message in s${i}`)], past: [], seen: [], others: [] }
   on('store.get', ($, e) => ({ value: store[e.key] }))
   on('store.set', ($, e) => {
     store[e.key] = e.value
@@ -771,6 +771,66 @@ test('rule: the store keeps only the newest SESSIONS_MAX sessions', async ($, on
   expect(kept['test-session']?.owner).toEqual([{ n: 1, kind: 'his', text: 'a prompt from the newest session', prior: '' }])
   expect(kept.s0).toBeUndefined()
   expect(kept.s1).toBeDefined()
+})
+
+test('isBlankRec: a record that loads as the blank one a session starts with holds nothing; a message, an objective, a draft, a spend or a field the blank lacks holds something', () => {
+  const blank = { id: 'b', at: 1, objective: null, jobStart: 1, owner: [], counter: 0, past: [], seen: [], drafts: [], calls: 0, objectiveWhy: '' }
+  expect(isBlankRec({ ...blank, id: 'b', at: 99 }, blank)).toBe(true)
+  // Saved in another key order, or saved by an older build with fewer fields, it loads the same.
+  expect(isBlankRec({ calls: 0, owner: [], at: 5, id: 'b', seen: [], past: [] }, blank)).toBe(true)
+  // A field that holds an object is compared whole, whatever order its keys were saved in.
+  const nested = { ...blank, limits: { rows: 0, cols: 0 } }
+  expect(isBlankRec({ ...blank, limits: { cols: 0, rows: 0 } }, nested)).toBe(true)
+  expect(isBlankRec({ ...blank, limits: { cols: 0, rows: 1 } }, nested)).toBe(false)
+  expect(isBlankRec({ ...blank, owner: [om('build it')] }, blank)).toBe(false)
+  expect(isBlankRec({ ...blank, objective: { result: 'r' } }, blank)).toBe(false)
+  expect(isBlankRec({ ...blank, drafts: ['Card one: run it.'] }, blank)).toBe(false)
+  expect(isBlankRec({ ...blank, calls: 1 }, blank)).toBe(false)
+  expect(isBlankRec({ ...blank, jobStart: 3 }, blank)).toBe(false)
+  expect(isBlankRec({ ...blank, lastBrief: { at: 1, next: 'Run it.', message: 'Run it.' } }, blank)).toBe(false)
+  expect(isBlankRec({ ...blank, reading: { text: 'an older reading' } }, blank)).toBe(false)
+  expect(isBlankRec({ ...blank, owner: undefined }, blank)).toBe(false)
+})
+
+test('rule: a blank record takes no place in the store, so a run where nothing happened never pushes out a session that holds his messages', async ($, on) => {
+  const store: Record<string, unknown> = { sessions: {} }
+  const old = store.sessions as Record<string, unknown>
+  for (let i = 0; i < SESSIONS_MAX - 1; i++) old[`s${i}`] = { id: `s${i}`, at: 1000 + i, objective: null, owner: [om(`a message in s${i}`)], past: [], seen: [], others: [] }
+  // Ten newer records of runs where nothing happened, as the rep saved them before.
+  for (let i = 0; i < 10; i++) old[`b${i}`] = { id: `b${i}`, at: 5000 + i, objective: null, jobStart: 1, owner: [], counter: 0, past: [], seen: [], others: [], drafts: [], calls: 0, objectiveWhy: '' }
+  on('store.get', ($, e) => ({ value: store[e.key] }))
+  on('store.set', ($, e) => {
+    store[e.key] = e.value
+    return { value: undefined }
+  })
+  on('session.id', () => ({ value: 'test-session' }))
+  on('prompt.submit', ($, e) => ({ text: e.text }))
+  quietBand(on)
+  await $.prompt.submit(typed('a prompt from the newest session'))
+  const kept = store.sessions as Record<string, unknown>
+  expect(Object.keys(kept)).toHaveLength(SESSIONS_MAX)
+  expect(kept.s0).toBeDefined()
+  expect(Object.keys(kept).filter(k => k.startsWith('b'))).toEqual([])
+  expect(kept['test-session']).toBeDefined()
+})
+
+test('rule: a session that starts and ends with nothing of his, as a scripted run does, saves no record of the session', async ($, on) => {
+  const store: Record<string, unknown> = {}
+  const rec = kept(on, store)
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: [] }))
+  mock.env(on, { HOME: '/Users/o' })
+  on('clock.now', () => ({ value: 0 }))
+  on('process.run', () => ({ value: { exitCode: 1, stdout: '', stderr: 'No such file or directory', isStdoutTruncated: false, isStderrTruncated: false } }))
+  on('session.end', ($, e) => ({ sessionId: e.sessionId }))
+  await started($)
+  await settle($)
+  await $.session.end({ reason: 'other', sessionId: 'test-session', resume: { id: 'test-session' } } as never)
+  expect(rec()).toBeUndefined()
+  // The first message he types is saved as any other.
+  await $.prompt.submit(typed('Add a licence file.'))
+  expect(rec()?.owner.map(m => m.text)).toEqual(['Add a licence file.'])
 })
 
 test('recDrafts takes a record\'s cards\' messages, its last briefing\'s and the drafts among its messages; keepDropped puts new ones first, once each, up to DROPPED_DRAFTS_MAX', () => {
@@ -797,7 +857,7 @@ test('recDrafts takes a record\'s cards\' messages, its last briefing\'s and the
 test('rule: a record the store lets go leaves its drafts in the kept list, newest first', async ($, on) => {
   const store: Record<string, unknown> = { sessions: {}, droppedDrafts: ['An earlier dropped card: ship it to the server.'] }
   const old = store.sessions as Record<string, unknown>
-  for (let i = 0; i < SESSIONS_MAX; i++) old[`s${i}`] = { id: `s${i}`, at: 1000 + i, objective: null, owner: [], past: [], seen: [], others: [] }
+  for (let i = 0; i < SESSIONS_MAX; i++) old[`s${i}`] = { id: `s${i}`, at: 1000 + i, objective: null, owner: [om(`a message in s${i}`)], past: [], seen: [], others: [] }
   old.s0 = {
     ...(old.s0 as object),
     drafts: ['Card two: show me the whole log.'],

@@ -48,6 +48,7 @@ entry that proves the test bites (added 14 Oct 2026; the objective's rules 15 Oc
 | The note waits while another mod draws beneath | `rule: the note waits…` | `note-over-other-mod` |
 | The digit hotkeys leave the row while another mod draws, and come back | `rule: the digit hotkeys…` | `digits-doubled` |
 | The store keeps only the newest `SESSIONS_MAX` sessions | `rule: the store keeps…` | `sessions-unbounded` |
+| A record that holds nothing takes no place in the store, and a session that starts and ends with nothing of his, as a scripted run does, saves none; a record is judged as it loads, whatever order its fields were saved in, and one holding a field the blank lacks is kept | `rule: a blank record takes no place…`, `rule: a session that starts and ends with nothing of his…`, `isBlankRec: a record that loads as the blank one…` | `blank-records-kept`, `blank-as-saved`, `blank-ignores-extra`, `blank-key-order` |
 | A record the store lets go leaves its drafts in a kept list of up to `DROPPED_DRAFTS_MAX`, newest first, each once, and a seed reads that list, so a card message he sent in a session whose record was let go is still the rep's draft; the seed reads the records before that list, the reverse of the order they are written, so a record let go between its two reads is found in one | `rule: a record the store lets go leaves its drafts…`, `recDrafts takes a record's cards' messages…`, `rule: a card message he sent in a session whose record the store has let go…`, `rule: a record let go while the drafts are being read…` | `dropped-drafts-lost`, `dropped-drafts-unread`, `dropped-drafts-uncapped`, `dropped-drafts-oldest-first`, `dropped-drafts-read-order` |
 | The objective is written by its own call from the owner's messages, never by the looks; the row shows its result | `rule: the objective is written by its own call…` | `looks-write-objective`, `writer-forks-conversation`, `row-shows-whole-reading` |
 | The agent's words never move the objective; a message of the owner's does, with the cause on the card; a draft he sent moves only the step | `rule: the agent's words never move…` | `revision-cause-dropped`, `draft-moves-result` |
@@ -123,7 +124,7 @@ objective it checked came from the writer's own call. The test now sends a furth
 the writer answers with `objective: holds` and a look whose answer carries an objective in
 the writer's shape, and asserts that the objective is unchanged.
 
-**Status.** 158 tests: the parsers, the status words (including the variable-first command, read
+**Status.** 161 tests: the parsers, the status words (including the variable-first command, read
 through the mounted strip), the note to the rep, the checker's prompt and tools, the row on
 both surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-
 failure toast, the sequence rules above, the card folding to a small band, the brief
@@ -180,7 +181,9 @@ had typed nothing since read for his messages from its own file, and a fork of o
 parent by its last tool result and taking only the messages before it; and later that day, a
 fork whose own file is a copy of its parent's stretch since a summary reading his earlier
 messages from the parent by that summary line, and a fork taken while a tool ran finding its
-parent by the tool's call. A hundred and seventy-two doctor entries, all caught.
+parent by the tool's call; and, the same night, a record that holds nothing kept out of the
+store, so the blank records scripted runs left no longer push out his sessions. A hundred and
+seventy-six doctor entries, all caught.
 
 ## Layer 2: a real session
 
