@@ -1308,17 +1308,23 @@ export const CHECK_DISALLOWED_TOOLS = 'Edit,Write,MultiEdit,NotebookEdit,Agent,T
 // settings make the whole home folder a working directory, so the fence is a deny list.
 // Beside his work and Claude Code's whole configuration it names the main places in the
 // home whose contents run later, outside any fence: the shell's startup files, git's
-// settings, the package managers' settings that can name a program, Python's add-on
-// folders (whose .pth files run at every start, the owner's guard among them), Claude
-// Code's own install, the folder macOS starts programs from at login, and the install of
-// each folder of the command path (`path`, the PATH as Claude Code has it) that sits in
-// the home (`installOf`). Claude Code's own guard on startup files and .gitconfig covers
-// only the run's working directory, here the copy (measured 17 Oct 2026). A list cannot
-// name every such place, so the brief says the main ones and tells the run to write
-// nowhere but the copy. A folder holding the copies is never named, or the copy could
-// not be written: a path folder's install that would hold them gives way to the folder.
-export const checkDenyWrite = (home: string, real: string, path = ''): string[] => {
-  const holdsCopies = (d: string): boolean => `${checkCopiesDir(home)}/`.startsWith(`${d}/`)
+// settings, the package managers' and other tools' settings that can name a program or a
+// command to run, the cloud tools' settings, which can too, Node's fallback module
+// folders in the home, Python's add-on folders (whose .pth files run at every start, the
+// owner's guard among them), npx's installs (a user-scope MCP server started by `npx`
+// runs from there in every session), rustup's toolchains (every program in `~/.cargo/bin`
+// is a link to rustup, which runs one of them), Claude Code's own install, the folder
+// macOS starts programs from at login, and the install of each folder of the command path
+// (`path`, the PATH as Claude Code has it) that sits in the home (`installOf`), with the
+// install of each place in the home a path folder or a link in one leads to (`links`,
+// `pathLinksArgv`). Claude Code's own guard on startup files and .gitconfig covers only the
+// run's working directory, here the copy (measured 17 Oct 2026). A list cannot name every
+// such place, so the brief says the main ones and tells the run to write nowhere but the
+// copy. A folder holding the copies is never named, or the copy could not be written: a
+// path folder's install that would hold them gives way to the folder. The agent's own
+// folder is named whatever it is, and when it holds the copies no copy is made (makeCopy).
+export const checkDenyWrite = (home: string, real: string, path = '', links: string[] = []): string[] => {
+  const holdsCopies = (d: string): boolean => holdsCopiesOf(home, d)
   return [
     ...new Set([
       real,
@@ -1333,15 +1339,27 @@ export const checkDenyWrite = (home: string, real: string, path = ''): string[] 
       ...SHELL_STARTUP.map(f => `${home}/${f}`),
       `${home}/.gitconfig`,
       `${home}/.npmrc`,
+      `${home}/.yarnrc`,
       `${home}/.yarnrc.yml`,
       `${home}/.bunfig.toml`,
+      `${home}/.bash_aliases`,
+      `${home}/.tmux.conf`,
+      `${home}/.vimrc`,
+      `${home}/.vim`,
+      `${home}/.aws`,
+      `${home}/.kube`,
+      `${home}/package.json`,
+      `${home}/node_modules`,
+      `${home}/.node_modules`,
+      `${home}/.node_libraries`,
+      `${home}/.npm/_npx`,
+      `${home}/.rustup/toolchains`,
       `${home}/Library/Python`,
       `${home}/.local/lib`,
       `${home}/.local/bin`,
       `${home}/.local/share/claude`,
       `${home}/Library/LaunchAgents`,
-      ...path
-        .split(':')
+      ...[...path.split(':'), ...links]
         .map(d => d.replace(/\/+$/, ''))
         .filter(d => d.startsWith(`${home}/`))
         .map(d => (holdsCopies(installOf(home, d)) ? d : installOf(home, d)))
@@ -1353,8 +1371,49 @@ export const checkDenyWrite = (home: string, real: string, path = ''): string[] 
 // The files bash, zsh, sh and tcsh run from the home as a shell starts or ends.
 export const SHELL_STARTUP = ['.zshenv', '.zprofile', '.zshrc', '.zlogin', '.zlogout', '.bashrc', '.bash_profile', '.bash_login', '.bash_logout', '.profile', '.tcshrc', '.cshrc', '.login']
 
-// Folders in the home that hold many programs' files, the longest first.
-const SHARED_FOLDERS = ['Library/Application Support', 'Library', '.local/share', '.local']
+// Folders in the home that hold many programs' files, the longest first. fnm's path folder
+// sits in the caches (`~/Library/Caches/fnm_multishells/<id>/bin` on a Mac, under
+// `~/.local/state` on Linux), and guarding all of them would stop Go's, pip's and every
+// other tool's cache inside the check.
+const SHARED_FOLDERS = ['Library/Application Support', 'Library/Caches', 'Library', '.local/share', '.local/state', '.local', '.cache']
+
+// Whether a folder is the copies' folder or holds it.
+export const holdsCopiesOf = (home: string, dir: string): boolean => `${checkCopiesDir(home)}/`.startsWith(`${dir.replace(/\/+$/, '')}/`)
+
+// The programs in the command path's folders are often links into an install somewhere
+// else in the home (uv's tools in `~/.local/share/uv`, a virtual environment, a tool
+// unpacked by hand in `~/.local/opt`), and denying the folder does not deny what its links
+// lead to. So before the run the check asks the host, outside the fence, where each folder
+// of the path and each link or folder in one leads (`~/.local/bin` asked whether or not it
+// is on the path), and checkDenyWrite guards each place in the home as it does a path
+// folder. `-H` follows a path folder that is itself a link; `readlink -f` prints nothing
+// for a link that leads nowhere, and `find` ends 1 when a path folder is missing, having
+// printed the rest, so its exit code is not read.
+export const PATH_LINKS_TIMEOUT_MS = 10000
+export const pathLinksArgv = (home: string, path: string): string[] => [
+  'find',
+  '-H',
+  ...new Set([...path.split(':').filter(d => d.startsWith('/')), `${home}/.local/bin`]),
+  '-maxdepth',
+  '1',
+  '(',
+  '-type',
+  'l',
+  '-o',
+  '-type',
+  'd',
+  ')',
+  '-exec',
+  'readlink',
+  '-f',
+  '{}',
+  '+',
+]
+// The places `pathLinksArgv` printed, one to a line; a last line cut at the output's cap is dropped.
+export const linkTargets = (stdout: string, isCut: boolean): string[] => {
+  const lines = stdout.split('\n')
+  return (isCut ? lines.slice(0, -1) : lines).filter(l => l.startsWith('/'))
+}
 
 // The install a command-path folder in the home belongs to: its first folder below the
 // home that is not one many programs share. mise's `~/.local/share/mise/installs/node/22/bin`
@@ -1444,9 +1503,11 @@ export const isWindowsHost = (host: Host): boolean => host.os === WINDOWS_OS
  * there, and '' when neither answers. The caller chooses what stands in for
  * none: the check's copies go under `/tmp` as before, and the transcript read
  * has no config folder to look in. A home that is `/tmp` is a home like any other.
+ * A separator at its end is dropped, so a path built from it has one between each
+ * part and the fence's comparisons hold; a root (`/`, `C:\`) keeps its own.
  */
 export const homeOf = (home: string | undefined, userProfile: string | undefined): string =>
-  home !== undefined && home !== '' ? home : userProfile !== undefined && userProfile !== '' ? userProfile : ''
+  (home !== undefined && home !== '' ? home : userProfile !== undefined && userProfile !== '' ? userProfile : '').replace(/([^:\\/])[\\/]+$/, '$1')
 
 /**
  * A Windows path a POSIX command will accept. Git's coreutils take forward
@@ -1556,14 +1617,15 @@ export const CHECK_NO_ROOM =
 // empty: this line with what is missing and how to install it, then one naming the setting
 // (measured with 2.1.302 in a Linux container without bubblewrap, 17 Oct 2026). The card
 // says so in place of the last line, and offers no Check it, since a press would make the
-// copy only to be refused again.
+// copy only to be refused again, until Claude Code is restarted (the mod's memory of the
+// refusal lasts as long as the process).
 export const NO_FENCE_ERROR = 'Error: sandbox required but unavailable:'
 const NO_FENCE_LEAD = "The check does not run on this machine: Claude Code's sandbox cannot start here"
 export const noFenceNote = (stderr: string): string | null => {
   const line = stderr.split('\n').find(l => l.includes(NO_FENCE_ERROR))
   if (line === undefined) return null
   const why = line.slice(line.indexOf(NO_FENCE_ERROR) + NO_FENCE_ERROR.length).trim()
-  return `${NO_FENCE_LEAD}, so its run refused to start rather than run unfenced.${why === '' ? '' : ` Claude Code says: ${fit(why, 240)}`}`
+  return `${NO_FENCE_LEAD}, so its run refused to start rather than run unfenced.${why === '' ? '' : ` Claude Code says: ${fit(why, 240)}`} Once what the sandbox needs is installed, restart Claude Code and the check can run.`
 }
 // pnpm keeps its store in its own folder (`~/Library/pnpm/store` on a Mac), which the fence
 // guards when that folder is on the command path. Inside the fence pnpm finds the store
@@ -1572,7 +1634,12 @@ export const noFenceNote = (stderr: string): string | null => {
 // 2026). So the check asks pnpm where its store is before the run, outside the fence, and
 // names it to the run through pnpm's setting in the environment. `pnpm store path` prints
 // the store's versioned folder (`…/store/v10`); the setting takes the folder above it.
+// pnpm is asked in the copy, never the agent's folder, with the project's pnpmfile ignored
+// and pnpm's own version left alone (`PNPM_ASK_ENV`): asked bare, it loads the folder's
+// `.pnpmfile.cjs`, the project's own code, and installs the pnpm a `packageManager` field
+// pins, both outside the fence (measured 17 Oct 2026, and neither with the two settings).
 export const PNPM_STORE_ARGV = ['pnpm', 'store', 'path']
+export const PNPM_ASK_ENV = { npm_config_ignore_pnpmfile: 'true', npm_config_manage_package_manager_versions: 'false' }
 export const PNPM_STORE_ENV = 'npm_config_store_dir'
 export const PNPM_STORE_TIMEOUT_MS = 10000
 export const pnpmStoreDir = (stdout: string): string => {
@@ -1587,13 +1654,13 @@ export const checkBarred = (note: string): boolean => note === CHECK_NO_ROOM || 
 // which Claude Code's own instructions tell the model to use when the fence refuses.
 // Both are read from a --settings file (Claude Code 2.1.302). An `enabledPlatforms`
 // list is not: Claude Code reads it only from managed settings, so the mod sets none.
-export const checkSettings = (home: string, real: string, path = ''): string =>
+export const checkSettings = (home: string, real: string, path = '', links: string[] = []): string =>
   JSON.stringify({
     sandbox: {
       enabled: true,
       failIfUnavailable: true,
       allowUnsandboxedCommands: false,
-      filesystem: { denyWrite: checkDenyWrite(home, real, path) },
+      filesystem: { denyWrite: checkDenyWrite(home, real, path, links) },
       network: { allowedDomains: [], allowLocalBinding: true },
     },
   })

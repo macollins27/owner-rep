@@ -31,9 +31,14 @@ import {
   checkSettings,
   CHECK_NO_ROOM,
   PNPM_STORE_ARGV,
+  PNPM_ASK_ENV,
   PNPM_STORE_ENV,
   PNPM_STORE_TIMEOUT_MS,
   pnpmStoreDir,
+  PATH_LINKS_TIMEOUT_MS,
+  pathLinksArgv,
+  linkTargets,
+  holdsCopiesOf,
   checkBarred,
   noFenceNote,
   copyArgvs,
@@ -755,9 +760,11 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       brief: instant,
       writtenAt: new Date(at).toISOString(),
     })
+    const path = (await $.env.get('PATH')) ?? ''
+    const store = await pnpmStore($, checkHost, copy)
+    const links = await pathLinks($, checkHost, home, path)
     const startedAt = Date.now()
-    const store = await pnpmStore($, checkHost, cwd)
-    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, (await $.env.get('PATH')) ?? ''))), cwd: copy, ...(store === '' ? {} : { env: { [PNPM_STORE_ENV]: store } }) })
+    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, path, links))), cwd: copy, ...(store === '' ? {} : { env: { [PNPM_STORE_ENV]: store } }) })
     let stdout = ''
     let stderr = ''
     let timedOut = false
@@ -944,11 +951,19 @@ async function homeFor($: EngineInterface): Promise<string> {
   return (await $.env.get('OS')) === WINDOWS_OS ? slashed(home) : home
 }
 
-// pnpm's store as pnpm names it in the agent's folder, outside the fence, or '' when
-// there is no pnpm or it does not answer (`pnpmStoreDir`).
-async function pnpmStore($: EngineInterface, on: Host, cwd: string): Promise<string> {
-  const r = await $.process.run(hostArgv(on, PNPM_STORE_ARGV), { cwd, timeoutMs: PNPM_STORE_TIMEOUT_MS }).catch(() => null)
+// pnpm's store as pnpm names it in the copy, outside the fence, its pnpmfile ignored and its
+// version left alone (`PNPM_ASK_ENV`), or '' when there is no pnpm or it does not answer
+// (`pnpmStoreDir`).
+async function pnpmStore($: EngineInterface, on: Host, copy: string): Promise<string> {
+  const r = await $.process.run(hostArgv(on, PNPM_STORE_ARGV), { cwd: copy, env: PNPM_ASK_ENV, timeoutMs: PNPM_STORE_TIMEOUT_MS }).catch(() => null)
   return r === null || r.exitCode !== 0 ? '' : pnpmStoreDir(r.stdout)
+}
+
+// Where the command path's folders and the links in them lead, asked outside the fence
+// (`pathLinksArgv`), or none when the host does not answer.
+async function pathLinks($: EngineInterface, on: Host, home: string, path: string): Promise<string[]> {
+  const r = await $.process.run(hostArgv(on, pathLinksArgv(home, path)), { timeoutMs: PATH_LINKS_TIMEOUT_MS }).catch(() => null)
+  return r === null ? [] : linkTargets(r.stdout, r.isStdoutTruncated)
 }
 
 // The throwaway copy the check runs in: an APFS clone (cp -c) of the agent's folder as it
@@ -960,8 +975,11 @@ async function pnpmStore($: EngineInterface, on: Host, cwd: string): Promise<str
 // part of a copy behind: a plain copy would fail the same way after copying everything in
 // full, and would land nested inside the part-made one (both measured 16 Oct 2026). When
 // no copy is made the check runs in the agent's own folder with writes there denied by the
-// room, the brief says so, and whatever part of a copy was made is removed.
+// room, the brief says so, and whatever part of a copy was made is removed. No copy is
+// tried of a folder that holds the copies' folder (the home, `~/.cache`): it would be
+// copied into itself.
 async function makeCopy($: EngineInterface, home: string, sid: string, cwd: string): Promise<string> {
+  if (holdsCopiesOf(home, cwd)) return cwd
   const copy = checkCopyDir(home, sid)
   const on = await hostOf($)
   try {

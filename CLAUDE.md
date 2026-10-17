@@ -37,7 +37,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 181 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 187 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions of this checkout in tmux, the strip captured to tests/live/captures
 ```
@@ -181,11 +181,20 @@ call writes (below):
    `--settings` from `checkSettings`: the built-in sandbox with writes denied to the owner's
    work, Claude Code's whole configuration (`~/.claude`, `~/.claude.json`) and the main places
    in the home whose contents run later (`checkDenyWrite`: the shell's startup files,
-   `SHELL_STARTUP`; `.gitconfig`; `.npmrc`, `.yarnrc.yml`, `.bunfig.toml`; `~/Library/Python`
-   and `~/.local/lib`; Claude Code's install; `~/Library/LaunchAgents`; and for each folder of
-   `PATH` in the home the install it belongs to, `installOf`, which looks one level past
-   `Library/Application Support`, `Library`, `.local/share` and `.local`, the folder alone
-   when that install would hold the copies, none when the folder would), the brief naming the
+   `SHELL_STARTUP`, and `.bash_aliases`; `.gitconfig`; `.npmrc`, `.yarnrc`, `.yarnrc.yml`,
+   `.bunfig.toml`; `.tmux.conf`, `.vimrc`, `.vim`; `.aws`, `.kube`; Node's fallbacks in the
+   home, `package.json`, `node_modules`, `.node_modules`, `.node_libraries`; `~/.npm/_npx`,
+   where a user-scope MCP server started by `npx` runs from, never the rest of `~/.npm`;
+   `~/.rustup/toolchains`, never the rest of `~/.rustup`; `~/Library/Python` and
+   `~/.local/lib`; Claude Code's install; `~/Library/LaunchAgents`; and for each folder of
+   `PATH` in the home, and each place in the home a `PATH` folder or a link in one (or in
+   `~/.local/bin`) leads to, the install it belongs to, `installOf`, which looks one level
+   past `Library/Application Support`, `Library/Caches`, `Library`, `.local/share`,
+   `.local/state`, `.local` and `.cache`, the folder alone when that install would hold the
+   copies, none when the folder would; the places links lead are asked before the run,
+   outside the fence, by `pathLinks` (`pathLinksArgv`: `find -H` over the folders with
+   `-exec readlink -f`, its exit code not read, a cut last line dropped by `linkTargets`,
+   none on a throw)), the brief naming the
    main ones, saying no list names every one, rather than saying all writes outside the copy
    are denied, and the network closed except
    for this Mac, with `failIfUnavailable` (the run refuses to start where the sandbox cannot)
@@ -195,18 +204,26 @@ call writes (below):
    run does not; the owner's guard hooks fire inside the run; `denyWrite` beats `allowWrite`.
    The copy is removed when the run ends; when it cannot be made the run uses the agent's
    folder with writes there denied, the brief says so and asks it to run only what writes
-   nothing there, and any part of a copy is removed.
+   nothing there, and any part of a copy is removed. A folder that holds the copies' folder
+   (`holdsCopiesOf`: the home, `~/.cache`) is never copied, since the copy would hold
+   itself; the run uses it as it uses a folder that could not be copied. The home is read
+   by `homeOf` with any separator at its end dropped, so every path built from it and the
+   fence's comparisons hold.
    On Windows (`OS` is `Windows_NT`) Claude Code's sandbox is off, so nothing would deny a
    write or close the network: a card drawn there shows `CHECK_NO_ROOM` in place of the
    check's price and no Check it button, and `runCheck` starts no copy and no run there,
    pressed on a card drawn before. Where the sandbox cannot start, Claude Code prints
    `NO_FENCE_ERROR` with what is missing and exits; `noFenceNote` makes that the card's note,
    held for the process in `noFence` so each later card carries it and `runCheck` starts
-   nothing, and `checkBarred` keeps Check it off a card with either note. Before the run,
-   `pnpm store path` is asked in the agent's folder outside the fence (`pnpmStore`) and the
-   answer, its version folder taken off (`pnpmStoreDir`), passed to the run as
-   `npm_config_store_dir`: inside the fence pnpm finds its store unwritable, moves it into
-   a scratch folder, and an offline install there fails (measured 17 Oct 2026, pnpm 10). Fifteen-minute timeout
+   nothing, the note saying a restart of Claude Code clears it once the sandbox's missing
+   piece is installed, and `checkBarred` keeps Check it off a card with either note. Before
+   the run, `pnpm store path` is asked in the copy outside the fence (`pnpmStore`), with
+   `PNPM_ASK_ENV` (the project's `.pnpmfile.cjs` not loaded and no pinned pnpm installed,
+   both of which a bare ask does outside the fence), and the answer, its version folder
+   taken off (`pnpmStoreDir`), passed to the run as `npm_config_store_dir`: inside the fence
+   pnpm finds its store unwritable, moves it into a scratch folder, and an offline install
+   there fails (measured 17 Oct 2026, pnpm 10). Both questions come before the run's clock
+   starts, so the check's measured time is the run's own. Fifteen-minute timeout
    (`CHECK_TIMEOUT_MS`), 120 turns, JSON output; `permission_denials` in the output is the
    count of commands refused approval, shown on the checked card (`refusedLine`, which says
    commands the fence stopped are not counted) and on the next card's price line

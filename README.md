@@ -211,20 +211,25 @@ launch helpers. The fence is Claude Code's built-in sandbox, passed as settings 
 writes are denied to the owner's work (the real project folder, `~/Developer`, `~/Documents`,
 `~/work`), to Claude Code's whole configuration folder, and to the main places in the home
 whose contents run later (the shell's startup files, git's settings, the package managers'
-settings that can name a program, Python's add-on folders, Claude Code's own install, the
-folder macOS starts programs from at login, and the install each folder of the command path
-in the home belongs to), and the network is closed except for this Mac, where agentsview
+and other tools' settings that can name a program or a command to run, the cloud tools'
+settings, Node's fallback module folders in the home, Python's add-on folders, npx's
+installs, rustup's toolchains, Claude Code's own install, the folder macOS starts programs
+from at login, and the install each folder of the command path in the home belongs to,
+with the install each program there links to, asked of the machine before the run), and
+the network is closed except for this Mac, where agentsview
 answers. It is a list of guarded places rather than a wall around the copy, because the
 owner's settings make the whole home a working folder; a list cannot name every such place,
 so the run's brief names the main ones and tells it to write nowhere but the copy. pnpm's
 store, which pnpm would otherwise move into a scratch folder inside the fence and find empty,
-is asked of pnpm before the run and named to it. The settings also make the run refuse to
+is asked of pnpm in the copy before the run, with the project's own pnpm hook file not
+loaded and no pinned pnpm installed, and named to it. The settings also make the run refuse to
 start where the sandbox cannot, rather than run unfenced, and take away the shell's way of
 asking to run one command outside it. Where it refuses (shown in a Linux container without
 bubblewrap), the card says the check does not run on that machine, names what Claude Code
-says is missing, and offers no Check it, and so does every later card while Claude Code runs. The owner's own guard hooks fire inside
+says is missing, and offers no Check it, and so does every later card while Claude Code runs,
+the note saying a restart clears it once the missing piece is installed. The owner's own guard hooks fire inside
 the run as they do for every agent. The copy is removed when the run ends. When no copy can
-be made, the run starts in the project itself with writes there denied, and its brief says
+be made, or the project's folder would hold its own copy (the home itself), the run starts in the project itself with writes there denied, and its brief says
 so and tells it to run only what writes nothing there. On Windows Claude Code's sandbox is switched off, so there is no room to run in: the
 card says so in place of the check's price and offers no Check it button. The run's answer
 carries the count of commands refused approval; the card shows it, and the right number is
@@ -308,7 +313,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 181 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 187 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions in tmux, the strip captured to tests/live/captures
 ```
