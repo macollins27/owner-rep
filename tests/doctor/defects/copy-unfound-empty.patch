@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 4159090..75ece5b 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -967,7 +967,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
+         if (summary === null) return before
+         if (before.length > 0) return [...before, ...copied]
+       }
+-      return summary === null ? null : copied
++      return summary === null ? null : []
+     }
+     let best: { items: HumanItem[]; matched: number } = { items: [], matched: 0 }
+     for (const file of files) {

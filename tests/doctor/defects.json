@@ -994,5 +994,41 @@
     "breaks": "A tool result id with characters no tool id has is used to search the folder's files.",
     "patch": "tool-id-unchecked.patch",
     "fixed": "2026-10-17"
+  },
+  {
+    "name": "copy-read-as-whole",
+    "breaks": "A fork whose own file is a copy of its parent's stretch since a summary has that copy read as the whole of his messages, so everything he typed before the summary is lost and no objective is written.",
+    "patch": "copy-read-as-whole.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "copy-scans-itself",
+    "breaks": "The search of a fork's folder reads the fork's own file too, which holds the same summary line and tool ids as its parent.",
+    "patch": "copy-scans-itself.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "copy-of-copy-taken",
+    "breaks": "A copy of the copy, which holds the same summary line with nothing of his before it, is taken as the parent, so his messages before the summary are lost.",
+    "patch": "copy-of-copy-taken.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "copy-own-dropped",
+    "breaks": "His messages since the summary, which the fork's own copy holds, are left out once the parent is found.",
+    "patch": "copy-own-dropped.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "copy-unfound-empty",
+    "breaks": "A copy whose summary no other file in its folder holds seeds nothing, though it holds his messages since the summary.",
+    "patch": "copy-unfound-empty.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "anchor-on-result",
+    "breaks": "A fork taken while a tool ran searches its parent for that tool's result, which the parent had not saved, so it finds no parent and holds none of his messages.",
+    "patch": "anchor-on-result.patch",
+    "fixed": "2026-10-17"
   }
 ]
