@@ -1423,37 +1423,54 @@ export const linkTargets = (stdout: string, isCut: boolean): string[] => {
 
 // Git keeps a repository's history in a `.git` folder, or in a folder a `.git` file points
 // at (a worktree, a submodule, history kept elsewhere), and finds it in the folder it runs
-// in or the first folder above holding one. A copy keeps the agent's `.git`, so a copy of a
-// worktree, or one whose `.git` is a link, reaches the real history, and a commit made in it
-// moves the real branch and changes its worktrees (shown 17 Oct 2026); git run in a copy
-// with no `.git` of its own finds one above it, a repository at the home among them; and
-// where no copy is made the run works in the agent's own folder, which may be a subfolder
-// of its repository. So before the run the check asks, outside the fence, for the `.git` in
-// the copy, the agent's folder and every folder above either (`gitFindArgv`), with where it
-// leads and the pointer it holds, and checkDenyWrite guards what `gitDirsOf` makes of the
-// answer: the folder holding each `.git` (the repository), where the `.git` leads, the folder
-// its pointer names and, for a worktree, the git folder above `worktrees/<name>`, which holds
-// the branches every worktree shares. Reading through a guarded repository still works
-// (status, log, diff); adding, committing and stashing are refused (measured 17 Oct 2026). A
-// place in the copy is the copy's own, and checkDenyWrite names no folder holding the
-// copies. `find` ends 1 for each folder with no `.git`, so its exit code is not read; the
-// question takes under 20 ms on this Mac and answers the same on Ubuntu 24.04 and Alpine 3.
-export const GIT_FIND_TIMEOUT_MS = 10000
-export const gitFindArgv = (folders: string[]): string[] => [
+// in or the first folder above holding one. A copy keeps every `.git` in the agent's folder,
+// so a copy of a worktree, or one whose `.git` is a link, reaches the real history, and a
+// commit made in it moves the real branch and changes its worktrees (shown 17 Oct 2026); so
+// does git run in a subfolder of the copy whose own `.git` (a worktree or a link kept inside
+// the project) leads out of it. Git run in a copy with no `.git` of its own finds one above
+// it, a repository at the home among them, and where no copy is made the run works in the
+// agent's own folder, which may be a subfolder of its repository. A repository also lists
+// its worktrees, wherever they are, in `<git folder>/worktrees/<name>/gitdir`, and git run
+// in a copy of it can rewrite, move or remove them (`git worktree repair`, `move`, `remove`).
+// So before the run the check asks, outside the fence, for the `.git` in the copy, the
+// agent's folder and every folder above either, and every `.git` inside the copy, with
+// where each leads and the pointer it holds (`gitFindArgv`), then for the worktrees each git
+// folder found lists (`worktreesArgv`), and checkDenyWrite guards what `gitDirsOf` and
+// `worktreeDirsOf` make of the answers: the folder holding each `.git` (the repository),
+// where the `.git` leads, the folder its pointer names and, for a worktree, the git folder
+// above `worktrees/<name>`, which holds the branches every worktree shares, and the folder
+// of each worktree listed. Reading through a guarded repository still works (status, log,
+// diff); adding, committing and stashing are refused (measured 17 Oct 2026). A place in the
+// copy is the copy's own, and checkDenyWrite names no folder holding the copies. Where the
+// agent's folder holds the copies (the home, or a folder above them) it is guarded whole
+// and no copy is made, and nothing inside it is searched, which would walk the whole home.
+// `find` ends 1 for each folder with no `.git`, so its exit code is not read, and a `.git`
+// whose `readlink` fails still has its pointer read. On this Mac the questions take under a
+// second for a project of 54,000 files, and they answer the same on Ubuntu 24.04 and
+// Alpine 3; an answer cut at the output's cap counts as none.
+export const GIT_FIND_TIMEOUT_MS = 30000
+export const gitFindArgv = (copy: string, cwd: string, inside: boolean): string[] => [
   'find',
-  ...new Set(folders.flatMap(foldersUp).map(f => `${f === '/' ? '' : f}/.git`)),
-  '-maxdepth',
-  '0',
+  ...new Set([copy, cwd].flatMap(foldersUp).filter(f => !(inside && f === copy)).map(f => `${f === '/' ? '' : f}/.git`)),
+  ...(inside ? [copy] : []),
+  '-name',
+  '.git',
+  '-prune',
   '-exec',
   'printf',
   'entry %s\\n',
   '{}',
   ';',
+  // -prune is always true, so sed runs when readlink fails.
+  '(',
   '-exec',
   'readlink',
   '-f',
   '{}',
   ';',
+  '-o',
+  '-prune',
+  ')',
   '-exec',
   'sed',
   '-n',
@@ -1466,37 +1483,94 @@ export const foldersUp = (folder: string): string[] => {
   const parts = folder.split('/').filter(p => p !== '')
   return [...parts.map((_, i) => `/${parts.slice(0, parts.length - i).join('/')}`), '/']
 }
-// The places `gitFindArgv`'s answer names, leaving out any in `own` (the copy, whose places
-// are its own, and the agent's folder, which the fence guards whole): for each `.git`
-// found (`entry <path>`), the folder holding it, where it leads (the line after), and the
-// folder its first `gitdir:` line names, read from the folder holding the `.git` as git
-// reads it, with the git folder above `worktrees/<name>` when it is a worktree's.
-export const gitDirsOf = (own: string[], stdout: string): string[] => {
-  const dirs: string[] = []
+// What `gitFindArgv`'s answer names: for each `.git` found (`entry <path>`), the folder
+// holding it, where it leads (the line after, when readlink answered), and the folder its
+// first `gitdir:` line names, read as git reads it from the folder holding the `.git` (and
+// from the folder it leads to, when that differs), with the git folder above
+// `worktrees/<name>` when it is a worktree's. `gits` are the git folders among them.
+const gitAnswer = (stdout: string): { places: string[]; gits: string[] } => {
+  const places: string[] = []
+  const gits: string[] = []
   let folder = ''
-  let led = false
+  let lead = ''
   let pointed = false
   for (const line of stdout.split('\n').map(l => l.replace(/\r$/, ''))) {
     if (line.startsWith('entry /')) {
       folder = line.slice('entry '.length).replace(/\/\.git$/, '') || '/'
-      dirs.push(folder)
-      led = false
+      places.push(folder)
+      lead = ''
       pointed = false
-    } else if (folder !== '' && !led && line.startsWith('/')) {
-      dirs.push(line)
-      led = true
-    } else if (folder !== '' && led && !pointed && line.startsWith('gitdir: ')) {
+    } else if (folder !== '' && lead === '' && !pointed && line.startsWith('/')) {
+      lead = line
+      places.push(line)
+      gits.push(line)
+    } else if (folder !== '' && !pointed && line.startsWith('gitdir: ')) {
       pointed = true
-      const to = line.slice('gitdir: '.length).trim()
+      const to = line.slice('gitdir: '.length)
       if (to === '') continue
-      const dir = resolved(to.startsWith('/') ? to : `${folder}/${to}`)
-      const common = /^(.+)\/worktrees\/[^/]+$/.exec(dir)?.[1]
-      dirs.push(...(common === undefined ? [dir] : [common, dir]))
+      for (const base of new Set([folder, ...(lead === '' ? [] : [parentOf(lead)])])) {
+        const dir = resolved(to.startsWith('/') ? to : `${base}/${to}`)
+        const common = /^(.+)\/worktrees\/[^/]+$/.exec(dir)?.[1]
+        const named = common === undefined ? [dir] : [common, dir]
+        places.push(...named)
+        gits.push(...named)
+      }
     }
   }
+  return { places, gits }
+}
+// The places `gitFindArgv`'s answer names, leaving out any in `own` (the copy, whose places
+// are its own, and the agent's folder, which the fence guards whole).
+export const gitDirsOf = (own: string[], stdout: string): string[] => outside(own, gitAnswer(stdout).places)
+// The git folders `gitFindArgv`'s answer names, the copy's own among them.
+export const gitFoldersOf = (stdout: string): string[] => [...new Set(gitAnswer(stdout).gits)]
+// The worktrees each git folder lists: each `worktrees/<name>/gitdir` printed after its own
+// path, its first line naming the worktree's `.git`, relative to the file's folder where git
+// was told to write relative paths (measured with git 2.50.1, 17 Oct 2026).
+export const worktreesArgv = (gits: string[]): string[] => [
+  'find',
+  ...new Set(gits.map(g => `${g === '/' ? '' : g}/worktrees`)),
+  '-mindepth',
+  '2',
+  '-maxdepth',
+  '2',
+  '-name',
+  'gitdir',
+  '-type',
+  'f',
+  '-exec',
+  'printf',
+  'tree %s\\n',
+  '{}',
+  ';',
+  '-exec',
+  'sed',
+  '-n',
+  '1p',
+  '{}',
+  ';',
+]
+// The folder of each worktree `worktreesArgv`'s answer names, leaving out any in `own`.
+export const worktreeDirsOf = (own: string[], stdout: string): string[] => {
+  const dirs: string[] = []
+  let file = ''
+  for (const line of stdout.split('\n').map(l => l.replace(/\r$/, ''))) {
+    if (line.startsWith('tree /')) file = line.slice('tree '.length)
+    else if (file !== '') {
+      const to = line.trimEnd()
+      if (to !== '') dirs.push(resolved(to.startsWith('/') ? to : `${parentOf(file)}/${to}`).replace(/\/\.git$/, '') || '/')
+      file = ''
+    }
+  }
+  return outside(own, dirs)
+}
+// Places, each once and with no trailing slash, leaving out any in `own`.
+const outside = (own: string[], dirs: string[]): string[] => {
   const mine = (d: string): boolean => own.some(o => `${d}/`.startsWith(`${o.replace(/\/+$/, '')}/`))
   return [...new Set(dirs.map(d => (d === '/' ? d : d.replace(/\/+$/, ''))))].filter(d => !mine(d))
 }
+// The folder holding a place.
+const parentOf = (p: string): string => p.replace(/\/[^/]*$/, '') || '/'
 // An absolute path with its `.` and `..` parts worked out, as a relative pointer is read
 // from the folder that holds it.
 const resolved = (p: string): string => {

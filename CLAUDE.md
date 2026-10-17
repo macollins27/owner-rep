@@ -37,7 +37,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 192 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 196 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions of this checkout in tmux, the strip captured to tests/live/captures
 ```
@@ -196,20 +196,28 @@ call writes (below):
    `<folder>/.`, matching that folder itself and the links in it, never the folders inside
    it, so a home on the path guards its links and not every folder in it, with
    `-exec readlink -f {} ;`, one name to each call as BusyBox's readlink takes, its exit
-   code not read, a cut last line dropped by `linkTargets`, none on a throw or past
+   code not read, a cut last line dropped by `linkTargets`, under
    `PATH_LINKS_TIMEOUT_MS`, 30 seconds; under two on this Mac); and every git repository
    the copy and the agent's folder reach (`gitRepos` asks before the run, outside the
    fence, with `gitFindArgv`: `find` over the `.git` in the copy, the agent's folder and
-   every folder above either, `foldersUp`, printing each one found, where it leads by
-   `readlink -f` and its `gitdir:` line, under `GIT_FIND_TIMEOUT_MS`, its exit code not
-   read; `gitDirsOf` names the folder holding each `.git`, where it leads, the folder its
-   pointer names read from the folder holding the `.git`, and for a worktree the git
-   folder above `worktrees/<name>` too, leaving out any place in the copy or the agent's
-   folder): a copy keeps the agent's `.git`, so a copy of a worktree or of a `.git` link
+   every folder above either, `foldersUp`, and every `.git` inside the copy (`-prune`d, so
+   none inside a `.git`), the inside search left out when the copy is a folder holding the
+   copies (the home), printing each one found, where it leads by `readlink -f` and its
+   `gitdir:` line, read even when readlink fails, under `GIT_FIND_TIMEOUT_MS`, 30 seconds
+   (under one for 54,000 files; all of `~/Developer` took 15), its exit code not read;
+   `gitDirsOf` names the folder holding each `.git`, where it leads, the folder its pointer
+   names read from the folder holding the `.git` and from where it leads, cutting only the
+   line's end as git does, and for a worktree the git folder above `worktrees/<name>` too,
+   leaving out any place in the copy or the agent's folder; then `worktreesArgv` asks each
+   git folder found (`gitFoldersOf`) for the `gitdir` file of each worktree it lists, and
+   `worktreeDirsOf` names each worktree's folder, a relative entry read from the file's
+   folder; the same answers on this Mac, Ubuntu 24.04 and Alpine 3): a copy keeps the
+   agent's `.git`, so a copy of a worktree or of a `.git` link
    reaches the real history, git in a copy with no `.git` of its own finds one above it,
    and with no copy the run works in a folder that may be a subfolder of its repository;
    reading through git still works, adding, committing and stashing are refused; where the
-   host does not answer the link or the git question, `pathLinks` or `gitRepos` gives null
+   host does not answer the link question, or either git question whole (a throw, or an
+   answer cut at the output cap), `pathLinks` or `gitRepos` gives null
    and the brief says the installs the links lead to, or the repository, could not be
    found, `CheckArgs.unanswered`), the
    brief naming the

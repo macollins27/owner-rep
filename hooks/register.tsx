@@ -40,6 +40,9 @@ import {
   GIT_FIND_TIMEOUT_MS,
   gitFindArgv,
   gitDirsOf,
+  gitFoldersOf,
+  worktreesArgv,
+  worktreeDirsOf,
   linkTargets,
   holdsCopiesOf,
   checkBarred,
@@ -754,7 +757,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
     const path = (await $.env.get('PATH')) ?? ''
     const store = await pnpmStore($, checkHost, copy)
     const links = await pathLinks($, checkHost, home, path)
-    const repos = await gitRepos($, checkHost, copy, cwd)
+    const repos = await gitRepos($, checkHost, home, copy, cwd)
     const prompt = checkPrompt({
       sessionId: sid,
       cwd,
@@ -972,11 +975,17 @@ async function pathLinks($: EngineInterface, on: Host, home: string, path: strin
   return r === null ? null : linkTargets(r.stdout, r.isStdoutTruncated)
 }
 
-// The git repositories the copy and the agent's folder reach (`gitFindArgv`, `gitDirsOf`),
-// asked outside the fence, or null when the host does not answer, which the brief then says.
-async function gitRepos($: EngineInterface, on: Host, copy: string, cwd: string): Promise<string[] | null> {
-  const r = await $.process.run(hostArgv(on, gitFindArgv([copy, cwd])), { timeoutMs: GIT_FIND_TIMEOUT_MS }).catch(() => null)
-  return r === null ? null : gitDirsOf([copy, cwd], r.stdout)
+// The git repositories the copy and the agent's folder reach and the worktrees they list
+// (`gitFindArgv`, `gitDirsOf`, `worktreesArgv`, `worktreeDirsOf`), asked outside the fence,
+// or null when the host does not answer either question whole, which the brief then says.
+async function gitRepos($: EngineInterface, on: Host, home: string, copy: string, cwd: string): Promise<string[] | null> {
+  const found = await $.process.run(hostArgv(on, gitFindArgv(copy, cwd, !holdsCopiesOf(home, copy))), { timeoutMs: GIT_FIND_TIMEOUT_MS }).catch(() => null)
+  if (found === null || found.isStdoutTruncated) return null
+  const gits = gitFoldersOf(found.stdout)
+  if (gits.length === 0) return gitDirsOf([copy, cwd], found.stdout)
+  const trees = await $.process.run(hostArgv(on, worktreesArgv(gits)), { timeoutMs: GIT_FIND_TIMEOUT_MS }).catch(() => null)
+  if (trees === null || trees.isStdoutTruncated) return null
+  return [...new Set([...gitDirsOf([copy, cwd], found.stdout), ...worktreeDirsOf([copy, cwd], trees.stdout)])]
 }
 
 // The throwaway copy the check runs in: an APFS clone (cp -c) of the agent's folder as it

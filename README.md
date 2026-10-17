@@ -210,9 +210,10 @@ the only tool-level denials are the ones that edit through a tool, send, fetch t
 launch helpers. The fence is Claude Code's built-in sandbox, passed as settings for that run:
 writes are denied to the owner's work (the real project folder, `~/Developer`, `~/Documents`,
 `~/work`), to every git repository the copy and the project's folder belong to, found before
-the run wherever its history is kept (a copy keeps the project's `.git`, so a commit in a
-copied worktree would otherwise move the real branch, and git in a folder with no `.git` of
-its own uses the first one above it), to
+the run wherever its history is kept (a copy keeps the project's `.git`, and every `.git`
+inside it, so a commit in a copied worktree would otherwise move the real branch, and git in
+a folder with no `.git` of its own uses the first one above it), to every other worktree
+those repositories list, to
 Claude Code's whole configuration folder, and to the main places in the home
 whose contents run later (the shell's startup files, git's settings, the package managers'
 and other tools' settings that can name a program or a command to run, the cloud tools'
@@ -321,7 +322,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 192 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 196 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions in tmux, the strip captured to tests/live/captures
 ```

@@ -1,7 +1,7 @@
 import type { On, SessionMessage } from 'claude-code'
 import { expect, mock, test, type Engine } from 'claude-code/testing'
 
-import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitFindArgv, foldersUp, gitDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates } from '../hooks/rep'
+import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitFindArgv, foldersUp, gitDirsOf, gitFoldersOf, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates } from '../hooks/rep'
 
 const om = (text: string, n = 1): OwnerMsg => ({ n, kind: 'his', text, prior: '' })
 
@@ -2376,6 +2376,71 @@ test('rule: when only the git question goes unanswered the brief says the reposi
   await ui.unmount()
 })
 
+// The check's brief when the git answer comes back cut or the worktrees question fails.
+const briefWhenGit = async ($: Engine, on: On, fault: 'cut' | 'trees'): Promise<string> => {
+  session(on)
+  quietBand(on)
+  on('env.get', () => ({ value: '/Users/o' }))
+  on('process.run', (_$, e) => {
+    if (fault === 'trees' && e.argv.includes('tree %s\\n')) throw new Error('find timed out')
+    const stdout = e.argv.includes('entry %s\\n') ? gitAnswer(e.argv, p => (p === '/tmp/x/.git' ? [p] : undefined)) : ''
+    return { value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: fault === 'cut' && e.argv.includes('entry %s\\n'), isStderrTruncated: false } }
+  })
+  on('session.cwd', () => ({ value: '/tmp/x' }))
+  mock.clock(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  let prompt = ''
+  on('process.spawn', async function* (_$, e) {
+    prompt = e.argv[e.argv.indexOf('-p') + 1] ?? ''
+    yield { stream: 'stdout', text: CHECKED_WITH(0) }
+    return { value: { code: 0, signal: null } }
+  })
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+  await ui.unmount()
+  return prompt
+}
+
+test('rule: when the git answer comes back cut, the brief says the repository could not be found', async ($, on) => {
+  expect(await briefWhenGit($, on, 'cut')).toContain('the git repository it belongs to could not be found this time')
+})
+
+test('rule: when the worktrees question fails, the brief says the repository could not be found', async ($, on) => {
+  expect(await briefWhenGit($, on, 'trees')).toContain('the git repository it belongs to could not be found this time')
+})
+
+test('rule: an agent working in the home, which holds the copies, gets no copy and no search inside it, and the home is guarded whole, its .git with it', async ($, on) => {
+  session(on)
+  quietBand(on)
+  const runs: string[][] = []
+  on('env.get', (_$, e) => ({ value: e.name === 'PATH' ? '/usr/bin' : '/Users/o' }))
+  on('process.run', (_$, e) => {
+    runs.push([...e.argv])
+    const stdout = e.argv.includes('entry %s\\n') ? gitAnswer(e.argv, p => (p === '/Users/o/.git' ? [p] : undefined)) : ''
+    return { value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
+  on('session.cwd', () => ({ value: '/Users/o' }))
+  mock.clock(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  let settings = ''
+  on('process.spawn', async function* (_$, e) {
+    settings = e.argv[e.argv.indexOf('--settings') + 1] ?? ''
+    yield { stream: 'stdout', text: CHECKED_WITH(0) }
+    return { value: { code: 0, signal: null } }
+  })
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+  expect(runs.some(r => r[0] === 'cp')).toBe(false)
+  expect(runs.find(r => r.includes('entry %s\\n'))).toEqual(gitFindArgv('/Users/o', '/Users/o', false))
+  expect(runs.find(r => r.includes('entry %s\\n'))).not.toContain('/Users/o')
+  // With no copy the run is in the agent's folder, which is denied whole, its .git with it.
+  const denied = (JSON.parse(settings) as { sandbox: { filesystem: { denyWrite: string[] } } }).sandbox.filesystem.denyWrite
+  expect(denied).toContain('/Users/o')
+  await ui.unmount()
+})
+
 test('rule: the check asks, outside the fence, where the command path\'s folders and their links lead, and guards each install in the home they lead to', async ($, on) => {
   session(on)
   quietBand(on)
@@ -2426,11 +2491,11 @@ test('pathLinksArgv asks find for each absolute path folder and ~/.local/bin onc
   expect(linkTargets('', false)).toEqual([])
 })
 
-// A host's answer to gitFindArgv for a set of `.git` places: each found one prints its entry,
-// where it leads and its gitdir line, if any, as find, readlink and sed do.
-const gitAnswer = (argv: readonly string[], found: (p: string) => [string, string?] | undefined): string =>
-  argv
-    .filter(a => a.endsWith('/.git'))
+// A host's answer to gitFindArgv for a set of `.git` places, those `inside` the copy among
+// them: each found one prints its entry, where it leads and its gitdir line, if any, as
+// find, readlink and sed do.
+const gitAnswer = (argv: readonly string[], found: (p: string) => [string, string?] | undefined, inside: string[] = []): string =>
+  [...argv.filter(a => a.endsWith('/.git')), ...inside]
     .flatMap(p => {
       const f = found(p)
       return f === undefined ? [] : [`entry ${p}`, f[0], ...(f[1] === undefined ? [] : [`gitdir: ${f[1]}`])]
@@ -2438,20 +2503,26 @@ const gitAnswer = (argv: readonly string[], found: (p: string) => [string, strin
     .map(l => `${l}\n`)
     .join('')
 
-test('rule: the check asks, outside the fence, for the .git in its copy, the agent\'s folder and every folder above, and guards the repository each reaches, so a commit in a copied worktree cannot move the real branch', async ($, on) => {
+test('rule: the check asks, outside the fence, for the .git in its copy, the agent\'s folder and every folder above and every .git inside the copy, then for the worktrees each repository found lists, and guards each, so a commit in a copied worktree cannot move the real branch', async ($, on) => {
   session(on)
   quietBand(on)
   const runs: string[][] = []
-  let waited: number | undefined
+  const waited: (number | undefined)[] = []
   on('env.get', (_$, e) => ({ value: e.name === 'PATH' ? '/usr/bin' : '/Users/o' }))
   on('process.run', (_$, e) => {
     runs.push([...e.argv])
-    if (e.argv.includes('printf')) waited = e.init?.timeoutMs
+    const asked = e.argv.includes('entry %s\\n') || e.argv.includes('tree %s\\n')
+    if (asked) waited.push(e.init?.timeoutMs)
+    // The copy's own .git is a worktree's; a library inside the project keeps its history elsewhere.
+    const copy = e.argv.find(a => /^\/Users\/o\/\.cache\/owner-rep\/checks\/[^/]+$/.test(a) && !a.endsWith('/.git'))
+    const inside = copy === undefined ? [] : [`${copy}/.git`, `${copy}/vendor/lib/.git`]
     // find ends 1 for each folder with no .git; what it printed still counts.
-    const stdout = e.argv.includes('printf')
-      ? gitAnswer(e.argv, p => (p === '/Users/o/code/side/.git' || /^\/Users\/o\/\.cache\/owner-rep\/checks\/[^/]+\/\.git$/.test(p) ? [p, '/Users/o/code/app/.git/worktrees/side'] : undefined))
-      : ''
-    return { value: { exitCode: e.argv.includes('printf') ? 1 : 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+    const stdout = e.argv.includes('entry %s\\n')
+      ? gitAnswer(e.argv, p => (p === '/Users/o/code/side/.git' || /^\/Users\/o\/\.cache\/owner-rep\/checks\/[^/]+\/\.git$/.test(p) ? [p, '/Users/o/code/app/.git/worktrees/side'] : p.endsWith('/vendor/lib/.git') ? [p, '/srv/lib.git'] : undefined), inside)
+      : e.argv.includes('/Users/o/code/app/.git/worktrees')
+        ? 'tree /Users/o/code/app/.git/worktrees/side/gitdir\n/Users/o/code/side/.git\ntree /Users/o/code/app/.git/worktrees/other/gitdir\n/Users/o/elsewhere/other/.git\n'
+        : ''
+    return { value: { exitCode: asked ? 1 : 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
   })
   on('session.cwd', () => ({ value: '/Users/o/code/side' }))
   mock.clock(on)
@@ -2471,14 +2542,19 @@ test('rule: the check asks, outside the fence, for the .git in its copy, the age
   await ui.press({ key: 'check' })
   const copy = runs.find(r => r[0] === 'cp')?.[3] ?? ''
   expect(copy.startsWith('/Users/o/.cache/owner-rep/checks/')).toBe(true)
-  // Asked of the copy and the agent's folder, before the run starts.
-  const read = runs.findIndex(r => r.includes('printf'))
-  expect(runs[read]).toEqual(gitFindArgv([copy, '/Users/o/code/side']))
-  expect(read).toBeLessThan(spawnedAfter)
-  expect(waited).toBe(10000)
+  // Asked of the copy, inside it, and of the agent's folder, then of the git folders found, before the run starts.
+  const read = runs.findIndex(r => r.includes('entry %s\\n'))
+  expect(runs[read]).toEqual(gitFindArgv(copy, '/Users/o/code/side', true))
+  const trees = runs.findIndex(r => r.includes('tree %s\\n'))
+  expect(runs[trees]).toEqual(worktreesArgv(['/Users/o/code/side/.git', '/Users/o/code/app/.git', '/Users/o/code/app/.git/worktrees/side', `${copy}/.git`, `${copy}/vendor/lib/.git`, '/srv/lib.git']))
+  expect(read).toBeLessThan(trees)
+  expect(trees).toBeLessThan(spawnedAfter)
+  expect(waited).toEqual([30000, 30000])
   const denied = (JSON.parse(settings) as { sandbox: { filesystem: { denyWrite: string[] } } }).sandbox.filesystem.denyWrite
   expect(denied).toContain('/Users/o/code/app/.git')
   expect(denied).toContain('/Users/o/code/app/.git/worktrees/side')
+  expect(denied).toContain('/srv/lib.git')
+  expect(denied).toContain('/Users/o/elsewhere/other')
   expect(denied).toContain('/Users/o/code/side')
   expect(denied.some(p => copy.startsWith(p) || p.startsWith(copy))).toBe(false)
   expect(prompt).toContain("denies writes to the agent's folder and the git repository it belongs to,")
@@ -2512,7 +2588,7 @@ test('rule: where no copy is made of a subfolder of a repository, the check guar
   await ui.press({ key: 'rep' })
   await ui.press({ key: 'check' })
   expect(cwd).toBe('/Users/o/code/shop/api')
-  expect(runs.find(r => r.includes('printf'))).toEqual(gitFindArgv(['/Users/o/code/shop/api']))
+  expect(runs.find(r => r.includes('entry %s\\n'))).toEqual(gitFindArgv('/Users/o/code/shop/api', '/Users/o/code/shop/api', true))
   const denied = (JSON.parse(settings) as { sandbox: { filesystem: { denyWrite: string[] } } }).sandbox.filesystem.denyWrite
   expect(denied).toContain('/Users/o/code/shop/api')
   expect(denied).toContain('/Users/o/code/shop')
@@ -2523,13 +2599,18 @@ test('rule: where no copy is made of a subfolder of a repository, the check guar
   await ui.unmount()
 })
 
-test('gitFindArgv asks find for the .git in each folder and every folder above, each once, printing where it leads and its gitdir line, and foldersUp walks to the root', () => {
+test('gitFindArgv asks find for the .git in each folder and every folder above, each once, and every .git inside the copy unless it holds the copies, printing where each leads and its gitdir line even when readlink fails, and foldersUp walks to the root', () => {
   expect(foldersUp('/Users/o/code')).toEqual(['/Users/o/code', '/Users/o', '/Users', '/'])
   expect(foldersUp('/Users/o/code/')).toEqual(['/Users/o/code', '/Users/o', '/Users', '/'])
   expect(foldersUp('/')).toEqual(['/'])
-  expect(gitFindArgv(['/Users/o/.cache/owner-rep/checks/s', '/Users/o/code/app'])).toEqual([
+  const asked = [
+    '-name', '.git', '-prune',
+    '-exec', 'printf', 'entry %s\\n', '{}', ';',
+    '(', '-exec', 'readlink', '-f', '{}', ';', '-o', '-prune', ')',
+    '-exec', 'sed', '-n', '/^gitdir: /p', '{}', ';',
+  ]
+  expect(gitFindArgv('/Users/o/.cache/owner-rep/checks/s', '/Users/o/code/app', true)).toEqual([
     'find',
-    '/Users/o/.cache/owner-rep/checks/s/.git',
     '/Users/o/.cache/owner-rep/checks/.git',
     '/Users/o/.cache/owner-rep/.git',
     '/Users/o/.cache/.git',
@@ -2538,13 +2619,30 @@ test('gitFindArgv asks find for the .git in each folder and every folder above, 
     '/.git',
     '/Users/o/code/app/.git',
     '/Users/o/code/.git',
-    '-maxdepth', '0',
-    '-exec', 'printf', 'entry %s\\n', '{}', ';',
-    '-exec', 'readlink', '-f', '{}', ';',
-    '-exec', 'sed', '-n', '/^gitdir: /p', '{}', ';',
+    '/Users/o/.cache/owner-rep/checks/s',
+    ...asked,
   ])
   // With no copy the two folders are one, asked once.
-  expect(gitFindArgv(['/a/b', '/a/b'])).toEqual(gitFindArgv(['/a/b']))
+  expect(gitFindArgv('/a/b', '/a/b', true)).toEqual(['find', '/a/.git', '/.git', '/a/b', ...asked])
+  // A folder holding the copies (the home) is not searched inside; its own .git is still asked.
+  expect(gitFindArgv('/Users/o', '/Users/o', false)).toEqual(['find', '/Users/o/.git', '/Users/.git', '/.git', ...asked])
+})
+
+test('worktreesArgv asks find for the gitdir file of each worktree each git folder lists, and worktreeDirsOf names the folder of each, read from the file\'s folder when relative, and nothing inside the copy or the agent\'s folder', () => {
+  expect(worktreesArgv(['/srv/app/.git', '/srv/app/.git', '/'])).toEqual([
+    'find', '/srv/app/.git/worktrees', '/worktrees',
+    '-mindepth', '2', '-maxdepth', '2', '-name', 'gitdir', '-type', 'f',
+    '-exec', 'printf', 'tree %s\\n', '{}', ';',
+    '-exec', 'sed', '-n', '1p', '{}', ';',
+  ])
+  const own = ['/c/copy', '/srv/side']
+  expect(worktreeDirsOf(own, 'tree /srv/app/.git/worktrees/a/gitdir\n/srv/a/.git\ntree /srv/app/.git/worktrees/b/gitdir\n../../../../b/.git  \r\n')).toEqual(['/srv/a', '/srv/b'])
+  // The agent's folder and the copy are their own; an empty file names nothing.
+  expect(worktreeDirsOf(own, 'tree /srv/app/.git/worktrees/side/gitdir\n/srv/side/.git\ntree /c/copy/.git/worktrees/x/gitdir\n/c/copy/x/.git\ntree /srv/app/.git/worktrees/e/gitdir\ntree /srv/app/.git/worktrees/f/gitdir\n/srv/f/.git\n')).toEqual(['/srv/f'])
+  expect(worktreeDirsOf(own, 'find: /srv/x/worktrees: No such file or directory\n/srv/stray\n')).toEqual([])
+  // gitFoldersOf: where each .git leads and the git folders its pointer names, the copy's own among them.
+  expect(gitFoldersOf('entry /c/copy/.git\n/c/copy/.git\nentry /c/copy/lib/.git\n/c/copy/lib/.git\ngitdir: /srv/app/.git/worktrees/lib\n')).toEqual(['/c/copy/.git', '/c/copy/lib/.git', '/srv/app/.git', '/srv/app/.git/worktrees/lib'])
+  expect(gitFoldersOf('')).toEqual([])
 })
 
 test('gitDirsOf names each repository found, where its .git leads and the folder its pointer names, for a worktree its shared git folder too, and nothing inside the copy or the agent\'s folder', () => {
@@ -2564,7 +2662,12 @@ test('gitDirsOf names each repository found, where its .git leads and the folder
   // Windows line ends, only the first gitdir line, a gitdir line before a lead, and a stray line.
   expect(gitDirsOf(own, 'entry /srv/app/.git\r\n/srv/app/.git\r\ngitdir: /srv/app.git\r\ngitdir: /elsewhere\r\nfind: /x/.git: Permission denied\r\n')).toEqual(['/srv/app', '/srv/app/.git', '/srv/app.git'])
   expect(gitDirsOf(own, 'gitdir: /srv/x\n/srv/y\n')).toEqual([])
-  expect(gitDirsOf(own, 'entry /srv/app/.git\ngitdir: /srv/x\n')).toEqual(['/srv/app'])
+  // readlink failed: the pointer is still read.
+  expect(gitDirsOf(own, 'entry /srv/app/.git\ngitdir: /srv/x\n')).toEqual(['/srv/app', '/srv/x'])
+  // A .git reached through a link: a relative pointer is read from the folder it was found in and the one it leads to.
+  expect(gitDirsOf(own, 'entry /srv/link/app/.git\n/data/app/.git\ngitdir: ../main/.git/worktrees/app\n')).toEqual(['/srv/link/app', '/data/app/.git', '/srv/link/main/.git', '/srv/link/main/.git/worktrees/app', '/data/main/.git', '/data/main/.git/worktrees/app'])
+  // Git cuts only the line's end from a pointer, so spaces are part of it.
+  expect(gitDirsOf(own, 'entry /srv/app/.git\n/srv/app/.git\ngitdir: /srv/real.git \n')).toEqual(['/srv/app', '/srv/app/.git', '/srv/real.git '])
   expect(gitDirsOf(own, 'entry /srv/app/.git\n/srv/app/.git\ngitdir: \n')).toEqual(['/srv/app', '/srv/app/.git'])
   // A worktree whose shared git folder holds the copies keeps its own git folder, which
   // checkDenyWrite names while it drops the folder holding the copies.
