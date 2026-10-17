@@ -918,6 +918,28 @@ export const folderOf = (path: string): string => path.slice(0, Math.max(0, path
 // line with a pasted image stays small and its text is still read whole.
 export const HUMAN_SED = '/"kind":"human"/{s/"data":"[^"]*"/"data":""/g;p;}'
 export const humanRead = (file: string): string[] => ['sed', '-n', '-E', HUMAN_SED, file]
+// A fork taken after a compaction he has typed nothing since holds no row that could be his,
+// so its place in its parent's file is found by its last tool result instead: that result's
+// id (a tool's own id, letters, digits, '_' and '-'), or null when the rows hold none.
+export function lastToolId(rows: readonly RecordRow[]): string | null {
+  for (let i = rows.length - 1; i >= 0; i--) {
+    const results = rows[i]?.toolResults ?? []
+    for (let j = results.length - 1; j >= 0; j--) {
+      const id = results[j]?.tool_use_id ?? ''
+      if (/^[A-Za-z0-9_-]+$/.test(id)) return id
+    }
+  }
+  return null
+}
+// The first line of a transcript file that holds that result: grep prints only the line's
+// number and the match, so a long result never fills the output.
+export const toolLineFind = (file: string, id: string): string[] => ['grep', '-n', '-o', '-m', '1', '-F', `"tool_use_id":"${id}"`, file]
+export function toolLineOf(stdout: string): number | null {
+  const n = Number(stdout.match(/^(\d+):/)?.[1] ?? NaN)
+  return Number.isInteger(n) && n > 0 ? n : null
+}
+// A read of the lines before that one, as humanRead reads a whole file: sed stops there.
+export const humanReadBefore = (file: string, line: number): string[] => ['sed', '-n', '-E', '-e', `${line}q`, '-e', HUMAN_SED, file]
 // One read of one transcript file, and the search for a session's file by its name: long
 // enough for the largest session file on disk.
 export const HUMAN_READ_TIMEOUT_MS = 10_000
@@ -1330,12 +1352,9 @@ export const WINDOWS_OS = 'Windows_NT'
 /**
  * The commands this mod runs that a Windows host cannot resolve by name.
  *
- * `grep` is listed although nothing on main runs it yet: PR #12
- * (seed-after-compaction) adds `toolLineFind`, which is
- * `grep -n -o -m 1 -F`. Listing it now means that branch landing does not
- * silently reintroduce this bug for one command. Git for Windows ships all
- * seven in the same folder, and an unused entry costs nothing — the list is
- * only a membership test.
+ * `grep` is the seed's `toolLineFind` (`grep -n -o -m 1 -F`), and `sed` both
+ * `humanRead` and `humanReadBefore`. Git for Windows ships all seven in the
+ * same folder.
  *
  * ADDING A COMMAND: anything new that goes through `$.process.run` or
  * `$.process.spawn` belongs here, or it resolves by name and fails on Windows.

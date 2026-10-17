@@ -1090,5 +1090,47 @@
     "breaks": "When no copy could be made and the check runs in the agent's own folder, its brief still tells it to write what it likes there and that the copy is removed after.",
     "patch": "no-copy-brief-says-write.patch",
     "fixed": "2026-10-16"
+  },
+  {
+    "name": "seed-gated-on-typed-rows",
+    "breaks": "A session reopened after a compaction he has typed nothing since, with no record, is not read for his messages, so it holds no objective.",
+    "patch": "seed-gated-on-typed-rows.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "fork-scan-no-anchor",
+    "breaks": "A fork taken after a compaction he has typed nothing since finds no parent, so it holds none of his messages and no objective.",
+    "patch": "fork-scan-no-anchor.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "anchor-reads-whole-file",
+    "breaks": "A fork found by its last tool result takes the parent's messages from after the fork as well as before it.",
+    "patch": "anchor-reads-whole-file.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "anchor-none-still-scans",
+    "breaks": "A fork whose rows hold neither a typed row nor a tool result still lists and reads the folder, for nothing.",
+    "patch": "anchor-none-still-scans.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "tool-id-unchecked",
+    "breaks": "A tool result id with characters no tool id has is used to search the folder's files.",
+    "patch": "tool-id-unchecked.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-tool-line-by-name",
+    "breaks": "On Windows the seed's scan for a fork's parent by its last tool result runs grep by its bare name, which Windows cannot find, so a fork taken after a compaction reads none of his messages.",
+    "patch": "windows-tool-line-by-name.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-read-before-by-name",
+    "breaks": "On Windows the read of a parent's messages before its last tool result runs sed by its bare name, which Windows cannot find, so a fork taken after a compaction reads none of his messages.",
+    "patch": "windows-read-before-by-name.patch",
+    "fixed": "2026-10-16"
   }
 ]

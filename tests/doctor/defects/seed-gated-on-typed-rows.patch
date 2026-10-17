@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 0d59fb2..77176db 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1004,7 +1004,7 @@ async function seedOnce($: EngineInterface, sid: string): Promise<boolean> {
+   const has = (rec: Rec) => rec.owner.some(m => m.kind !== 'draft')
+   if (has(await loadRec($, sid))) return false
+   const rows = await $.session.messages().catch(() => [])
+-  if (rows.length === 0) return false
++  if (forkCandidates(rows).length === 0) return false
+   const items = await heldItems($, sid, rows)
+   if (items === null) return false
+   const typed = typedFromItems(items, rows)

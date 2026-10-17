@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 250328d..f292718 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1051,7 +1051,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
+         if (line === null) continue
+         const time = await left()
+         if (time <= 0) break
+-        const found = await $.process.run(hostArgv(on, humanReadBefore(`${folder}/${file}`, line)), { timeoutMs: Math.min(HUMAN_READ_TIMEOUT_MS, time) })
++        const found = await $.process.run(humanReadBefore(`${folder}/${file}`, line), { timeoutMs: Math.min(HUMAN_READ_TIMEOUT_MS, time) })
+         if (found.exitCode !== 0 || found.isStdoutTruncated) continue
+         return humanItems(found.stdout)
+       }
