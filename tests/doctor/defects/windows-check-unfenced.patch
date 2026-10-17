@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index e25097b..33aca22 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -721,7 +721,6 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
+     const cwd = await $.session.cwd()
+     const home = (await homeFor($)) || '/tmp'
+     const checkHost = await hostOf($)
+-    if (isWindowsHost(checkHost)) return finish({ checkNote: CHECK_NO_ROOM })
+     const copy = await makeCopy($, home, sid, cwd)
+     const prompt = checkPrompt({
+       sessionId: sid,

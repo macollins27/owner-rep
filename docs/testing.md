@@ -58,6 +58,9 @@ entry that proves the test bites (added 14 Oct 2026; the objective's rules 15 Oc
 | The revision line outlasts the parts that restate the agent's work when the card folds | `fitCard folds the body…` | `revised-line-folds-first` |
 | The check runs in a throwaway copy of the project, fenced, and the copy is removed when the run ends | `rule: the check runs in a throwaway copy…` | `check-outside-copy`, `room-bypassed` |
 | When the copy cannot be made the check runs in the agent's folder, with writes there denied, and the brief says so | `rule: when the copy cannot be made…` | (prompt text; covered by the test) |
+| On Windows, where Claude Code's sandbox is off, the check does not start, even when looking for its commands throws, and the card says why | `rule: on Windows the check does not start, since nothing there fences its run…`, `rule: on Windows the check does not start when looking for its commands throws…` | `windows-check-unfenced`, `windows-refusal-rests-on-probe` |
+| The copy is an APFS clone; where `cp` refuses `-c` before making anything, as GNU `cp` on Linux does, the folder's contents are copied plainly into the folder just made; a clone that failed part-way is never copied over, and its part is removed | `the copy tries the APFS clone…`, `rule: where cp refuses -c…`, `rule: where the clone fails part-way…` | `copy-no-fallback`, `plain-copy-nests`, `fallback-over-partial-clone`, `part-copy-left` |
+| Every program is named for the host it runs on: as written on a Mac or Linux, and on Windows Git for Windows' coreutils by their full path and npm's `claude.exe`, each found by running it; the home is `HOME`, else `USERPROFILE`, written with forward slashes on Windows, and a home of `/tmp` is a home; on Windows his messages are read through Git's own `find` and `sed`, a transcript path given with backslashes is read slashed, and a probe that failed is tried again on the next read | `the home is HOME where there is one…`, `a host that resolves by name…`, `a Windows host names every command…`, `the places Git for Windows and npm put their binaries…`, `rule: on Windows his messages are read…`, `rule: on Windows a transcript path given with backslashes…`, `rule: on Windows a probe for Git's commands that failed…`, `rule: a home that is /tmp is a home…` | `home-ignores-userprofile`, `windows-commands-by-name`, `windows-claude-by-name`, `candidates-unslashed`, `windows-find-by-name`, `windows-read-by-name`, `windows-probe-failure-held`, `home-tmp-is-none`, `windows-home-mixed-slashes`, `windows-held-path-backslashed` |
 | The card says how many of the check's commands were refused, and the right number is zero | `rule: the card says how many…` | `refusals-unreported` |
 | Tell the rep puts the prefix in the prompt box | `rule: Tell the rep puts…` | `tell-prefix-dropped` |
 | While the rep reads, the row says so and a second press starts no second read | `rule: while the rep reads…` | `reading-state-unmarked` |
@@ -123,7 +126,7 @@ objective it checked came from the writer's own call. The test now sends a furth
 the writer answers with `objective: holds` and a look whose answer carries an objective in
 the writer's shape, and asserts that the objective is unchanged.
 
-**Status.** 150 tests: the parsers, the status words (including the variable-first command, read
+**Status.** 164 tests: the parsers, the status words (including the variable-first command, read
 through the mounted strip), the note to the rep, the checker's prompt and tools, the row on
 both surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-
 failure toast, the sequence rules above, the card folding to a small band, the brief
@@ -175,7 +178,12 @@ of their own, newest first, and read by the seed after the records, so one let g
 session, the old session's objective off the row at once, a write, a briefing or a check the
 old session started landing in its own record without drawing, a press straight after it read
 under the new id, and a session resumed in the same window read for his messages before his
-next one is recorded under it. A hundred and sixty-one doctor entries, all caught.
+next one is recorded under it; and, with the Windows port (PR #13) and its review, every
+program named for the host it runs on, his messages read on Windows through Git's own
+commands under `USERPROFILE` with paths written one way, a failed probe looked for again,
+a home of `/tmp` kept as a home, the check refused on Windows where nothing fences it, and
+the copy made plainly where `cp` refuses the clone and never over a clone that failed
+part-way. A hundred and seventy-seven doctor entries, all caught.
 
 ## Layer 2: a real session
 
@@ -300,7 +308,7 @@ the file). Never make one from an uncommitted tree: the checkout would wipe the 
 **Status.** Built: `tests/doctor/doctor.py`, with `defects.json` and one patch per defect in
 `tests/doctor/defects/`. Run it with `python3 tests/doctor/doctor.py`; it exits 1 when the
 clean suite fails or a defect survives, and stops before planting when the clean suite is
-not clean. A hundred and sixty-one entries, all caught: `strip-shows-command`, one or more per sequence
+not clean. A hundred and seventy-seven entries, all caught: `strip-shows-command`, one or more per sequence
 rule above, `card-overflows-band`, `size-figure-dropped`, `whole-ask-rule-dropped`, and one
 per remaining hook path (`helper-not-counted`, `box-text-overwritten`, `fill-refusal-ignored`,
 `check-timeout-unreported`, `check-failure-swallowed`, `end-not-saved`), and six for a
@@ -335,4 +343,9 @@ successor; three moved there on 15 Oct 2026, when the objective replaced the rea
    messages, kept open until it is completed, with its conditions, the marks that move
    them, and the gate on a card that says stop.~~ Done 15 Oct 2026 in layer 1, with a test
    and a doctor entry per rule; three entries of the reading's rules archived.
-9. Keep growing the defect list as bugs are fixed.
+9. ~~A step in the GitHub run that fails when a hook runs a program whose name does not go
+   through `hostArgv`, so a new command cannot quietly find nothing on Windows.~~ Done 16 Oct
+   2026: `tests/ci/host-calls.sh`, run after the validation; shown red on a trial merge of
+   PR #12's head, which runs `grep` and `sed` by bare name, and green on its own branch. Like
+   the declarations step it is not planted by the doctor; the red run is its proof.
+10. Keep growing the defect list as bugs are fixed.

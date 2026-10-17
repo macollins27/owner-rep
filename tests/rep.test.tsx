@@ -3293,12 +3293,12 @@ const RUN_CAP = 4 * 1024 * 1024
 // first line, as a read past the cap keeps the oldest lines and drops the rest.
 // Every argv kept, and each run's time allowed in `timeouts`. The clock reads `now.t`, and
 // each read of a file other than the session's own takes `slow` milliseconds of it.
-const transcript = (on: On, files: Record<string, string>, opts: { folder?: string; cut?: readonly string[]; slow?: number } = {}) => {
+const transcript = (on: On, files: Record<string, string>, opts: { folder?: string; cut?: readonly string[]; slow?: number; home?: string } = {}) => {
   const folder = opts.folder ?? FOLDER
   const runs: string[][] = []
   const timeouts: number[] = []
   const now = { t: 1_000_000 }
-  mock.env(on, { HOME: '/Users/o' })
+  mock.env(on, { HOME: opts.home ?? '/Users/o' })
   on('clock.now', () => ({ value: now.t }))
   on('process.run', (_$, e) => {
     runs.push([...e.argv])
@@ -4523,7 +4523,7 @@ test('rule: a session resumed in the same process is read for his messages befor
 
 const WIN_HOST = { os: WINDOWS_OS, posixBin: 'C:\\Git\\usr\\bin', claude: 'C:/npm/claude.exe' }
 
-test('the home is HOME where there is one, USERPROFILE on Windows, and /tmp only when neither answers', async () => {
+test('the home is HOME where there is one, USERPROFILE on Windows, and nothing when neither answers', async () => {
   expect(homeOf('/Users/o', undefined)).toBe('/Users/o')
   // Windows sets USERPROFILE and no HOME. Before this, home fell to '/tmp' and
   // every path built from it was wrong.
@@ -4532,8 +4532,10 @@ test('the home is HOME where there is one, USERPROFILE on Windows, and /tmp only
   expect(homeOf('', 'C:\\Users\\k')).toBe('C:\\Users\\k')
   // HOME wins when both answer, so a Unix host is untouched.
   expect(homeOf('/Users/o', 'C:\\Users\\k')).toBe('/Users/o')
-  expect(homeOf(undefined, undefined)).toBe('/tmp')
-  expect(homeOf('', '')).toBe('/tmp')
+  expect(homeOf(undefined, undefined)).toBe('')
+  expect(homeOf('', '')).toBe('')
+  // A home that is /tmp is a home, not a stand-in for none.
+  expect(homeOf('/tmp', undefined)).toBe('/tmp')
 })
 
 test('a host that resolves by name leaves every argv exactly as it was', async () => {
@@ -4613,7 +4615,7 @@ test('the places Git for Windows and npm put their binaries are tried in order, 
 // The room on a Windows host: `OS` says Windows, the home is USERPROFILE, and a
 // command answers `--version` only at the second coreutils candidate, so the
 // test proves the candidates are tried in order rather than guessed at.
-const winRoom = (on: On): string[][] => {
+const winRoom = (on: On, throwsOn = ''): string[][] => {
   const runs: string[][] = []
   const env: Record<string, string> = {
     OS: WINDOWS_OS,
@@ -4622,7 +4624,10 @@ const winRoom = (on: On): string[][] => {
     LOCALAPPDATA: 'C:\\LAD',
     APPDATA: 'C:\\AD',
   }
-  on('env.get', (_$, e) => ({ value: env[e.name] }))
+  on('env.get', (_$, e) => {
+    if (e.name === throwsOn) throw new Error(`no ${e.name}`)
+    return { value: env[e.name] }
+  })
   on('process.run', (_$, e) => {
     const argv = [...e.argv]
     runs.push(argv)
@@ -4634,18 +4639,16 @@ const winRoom = (on: On): string[][] => {
     if (argv[argv.length - 1] === '--version') {
       return out(cmd === 'C:/LAD/Programs/Git/usr/bin/mkdir.exe' || cmd === 'C:/AD/npm/node_modules/@anthropic-ai/claude-code/bin/claude.exe' ? 0 : 1)
     }
-    // The clone fails the way GNU cp fails it; the plain copy succeeds.
-    if (cmd.endsWith('/cp.exe')) return out(argv.includes('-Rc') ? 1 : 0)
     return out(0)
   })
   return runs
 }
 
-test('rule: on Windows the check does not start, since nothing there fences its run: nothing is copied or spawned, and the card says why', async ($, on) => {
+const refusedOnWindows = async ($: Engine, on: On, throwsOn = '') => {
   mock.clock(on)
   session(on)
   quietBand(on)
-  const runs = winRoom(on)
+  const runs = winRoom(on, throwsOn)
   on('session.cwd', () => ({ value: 'C:\\work\\proj' }))
   on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
   let spawned = 0
@@ -4664,15 +4667,25 @@ test('rule: on Windows the check does not start, since nothing there fences its 
   // The card the check was pressed on stays up.
   expect(await ui.find({ type: 'Text', text: /The card\./ })).toBeDefined()
   await ui.unmount()
+}
+
+test('rule: on Windows the check does not start, since nothing there fences its run: nothing is copied or spawned, and the card says why', async ($, on) => {
+  await refusedOnWindows($, on)
+})
+
+test('rule: on Windows the check does not start when looking for its commands throws either: the refusal rests on the host, never on a probe', async ($, on) => {
+  await refusedOnWindows($, on, 'PROGRAMFILES')
 })
 
 // The transcript on a Windows host: `OS` says Windows, the home is USERPROFILE with no
 // HOME, and the coreutils answer only by their full path in Git's usr/bin, as there.
 const WIN_GIT = 'C:/PF/Git/usr/bin'
-const WIN_PROJECTS = 'C:\\Users\\k/.claude/projects'
-const winTranscript = (on: On, files: Record<string, string>): string[][] => {
+const WIN_PROJECTS = 'C:/Users/k/.claude/projects'
+const WIN_FOLDER = `${WIN_PROJECTS}/-C-work-app`
+const winTranscript = (on: On, files: Record<string, string>, opts: { probeFails?: number } = {}): string[][] => {
   const runs: string[][] = []
-  const folder = `${WIN_PROJECTS}/-C-work-app`
+  const folder = WIN_FOLDER
+  let fails = opts.probeFails ?? 0
   mock.env(on, { OS: WINDOWS_OS, USERPROFILE: 'C:\\Users\\k', PROGRAMFILES: 'C:\\PF' })
   on('clock.now', () => ({ value: 1_000_000 }))
   on('process.run', (_$, e) => {
@@ -4680,7 +4693,12 @@ const winTranscript = (on: On, files: Record<string, string>): string[][] => {
     runs.push(argv)
     const out = (exitCode: number, stdout = '') => ({ value: { exitCode, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
     const cmd = argv[0] ?? ''
-    if (argv[argv.length - 1] === '--version') return out(cmd === `${WIN_GIT}/mkdir.exe` ? 0 : 1)
+    if (argv[argv.length - 1] === '--version') {
+      if (cmd !== `${WIN_GIT}/mkdir.exe`) return out(1)
+      if (fails === 0) return out(0)
+      fails -= 1
+      return out(1)
+    }
     // A name alone resolves to nothing on Windows.
     if (!cmd.startsWith(`${WIN_GIT}/`)) return out(127)
     const name = cmd.slice(WIN_GIT.length + 1).replace(/\.exe$/, '')
@@ -4699,7 +4717,7 @@ const winTranscript = (on: On, files: Record<string, string>): string[][] => {
   return runs
 }
 
-test('rule: on Windows his messages are read from the session\'s file through Git\'s own commands, under the home USERPROFILE names', async ($, on) => {
+test('rule: on Windows his messages are read from the session\'s file through Git\'s own commands, under the home USERPROFILE names, written with forward slashes', async ($, on) => {
   const rec = kept(on, {})
   on('session.start', (_$, e) => ({ cwd: e.cwd }))
   quietBand(on)
@@ -4713,6 +4731,48 @@ test('rule: on Windows his messages are read from the session\'s file through Gi
   const ran = runs.filter(r => r[r.length - 1] !== '--version')
   expect(ran.map(r => r[0])).toEqual([`${WIN_GIT}/find.exe`, `${WIN_GIT}/sed.exe`])
   expect(ran[0]?.[1]).toBe(WIN_PROJECTS)
+})
+
+test('rule: on Windows a transcript path given with backslashes is read written with forward slashes', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS }))
+  const runs = winTranscript(on, { 'test-session.jsonl': SEEDED_FILE })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await giveTranscript($, on, 'C:\\Users\\k\\.claude\\projects\\-C-work-app\\test-session.jsonl')
+  await started($)
+  await settle($)
+  expect(rec()?.owner).toEqual(SEEDED)
+  const ran = runs.filter(r => r[r.length - 1] !== '--version')
+  expect(ran.map(r => [r[0], r[r.length - 1]])).toEqual([[`${WIN_GIT}/sed.exe`, `${WIN_FOLDER}/test-session.jsonl`]])
+})
+
+test('rule: on Windows a probe for Git\'s commands that failed is tried again on the next read, never held for the process', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS }))
+  winTranscript(on, { 'test-session.jsonl': SEEDED_FILE }, { probeFails: 1 })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await started($)
+  await settle($)
+  expect(rec()?.owner ?? []).toEqual([])
+  await started($)
+  await settle($)
+  expect(rec()?.owner).toEqual(SEEDED)
+})
+
+test('rule: a home that is /tmp is a home: the session\'s file is looked for under /tmp/.claude', async ($, on) => {
+  kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS }))
+  const runs = transcript(on, {}, { home: '/tmp' })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await started($)
+  await settle($)
+  expect(runs.map(r => r.join(' '))).toContain('find /tmp/.claude/projects -maxdepth 2 -name test-session.jsonl')
 })
 
 // The copy's commands on a Unix host. With `gnu` the clone is refused before anything is

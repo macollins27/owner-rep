@@ -14,3 +14,13 @@ and nothing said so until this step was added and went red.
 
 When the workflow moves to a newer Claude Code, replace `types/` with that build's
 declarations from a development copy, in the same commit; the step is red until you do.
+
+# The host-calls step
+
+`host-calls.sh` fails the run when a hook runs a program whose argv does not go through
+`hostArgv`, the one place a command is named for the host it runs on: on Windows Git's
+coreutils answer only by their full path, and a bare name finds nothing. The copy's two argvs
+(built by `copyArgvs` through `hostArgv`) and the `--version` probe, which runs a full path it
+was given, are the only calls let through by name. Write a call's argv on the call's own line,
+or the step reports it. It was shown red on 16 Oct 2026 against a trial merge of PR #12,
+whose transcript reads ran `grep` and `sed` by bare name.

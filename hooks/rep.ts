@@ -1365,11 +1365,12 @@ export const isWindowsHost = (host: Host): boolean => host.os === WINDOWS_OS
 
 /**
  * The home folder, which is `HOME` everywhere but Windows and `USERPROFILE`
- * there. `/tmp` stays the last resort it already was, so a host that answers
- * for neither behaves as before rather than throwing.
+ * there, and '' when neither answers. The caller chooses what stands in for
+ * none: the check's copies go under `/tmp` as before, and the transcript read
+ * has no config folder to look in. A home that is `/tmp` is a home like any other.
  */
 export const homeOf = (home: string | undefined, userProfile: string | undefined): string =>
-  home !== undefined && home !== '' ? home : userProfile !== undefined && userProfile !== '' ? userProfile : '/tmp'
+  home !== undefined && home !== '' ? home : userProfile !== undefined && userProfile !== '' ? userProfile : ''
 
 /**
  * A Windows path a POSIX command will accept. Git's coreutils take forward

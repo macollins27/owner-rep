@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index e25097b..0231ec0 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -938,8 +938,6 @@ async function makeCopy($: EngineInterface, home: string, sid: string, cwd: stri
+     if ((await $.process.run(clone, { timeoutMs: 600000 })).exitCode === 0) return copy
+     // mkdir without -p fails on a folder that is there, which tells a cp that refused -c
+     // from a clone that failed part-way.
+-    const free = await $.process.run(hostArgv(on, ['mkdir', copy]), { timeoutMs: 30000 })
+-    if (free.exitCode === 0 && (await $.process.run(plain, { timeoutMs: 600000 })).exitCode === 0) return copy
+   } catch {
+     // fall through: no copy
+   }

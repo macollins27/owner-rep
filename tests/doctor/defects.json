@@ -964,5 +964,101 @@
     "breaks": "A record's drafts held among his messages are taken oldest first, so the kept list's cap could keep an older draft over a newer one.",
     "patch": "dropped-drafts-oldest-first.patch",
     "fixed": "2026-10-16"
+  },
+  {
+    "name": "home-ignores-userprofile",
+    "breaks": "On Windows, where HOME is unset, the home falls back to /tmp, so the transcripts and the check's copies are looked for in the wrong folder.",
+    "patch": "home-ignores-userprofile.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-commands-by-name",
+    "breaks": "On Windows the coreutils are run by name, which finds nothing there, so the transcript reads fail.",
+    "patch": "windows-commands-by-name.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-claude-by-name",
+    "breaks": "On Windows the check would spawn the claude shim by name, which cannot be run without a shell.",
+    "patch": "windows-claude-by-name.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "candidates-unslashed",
+    "breaks": "The folders tried for Git's coreutils keep their backslashes, so the path the probe proves is not the one later run.",
+    "patch": "candidates-unslashed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "plain-copy-nests",
+    "breaks": "The plain copy puts the agent's folder inside the folder just made for it, so the check runs one level above the project.",
+    "patch": "plain-copy-nests.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "copy-no-fallback",
+    "breaks": "Where cp refuses -c, as GNU cp on Linux does, no copy is made and the check runs in the agent's own folder.",
+    "patch": "copy-no-fallback.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "fallback-over-partial-clone",
+    "breaks": "A Darwin clone that failed part-way on the files is copied again in full, into the part-made copy.",
+    "patch": "fallback-over-partial-clone.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "part-copy-left",
+    "breaks": "A copy that failed part-way is left behind in the copies folder when the check falls back to the agent's folder.",
+    "patch": "part-copy-left.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-check-unfenced",
+    "breaks": "On Windows, where Claude Code's sandbox is off, the check's run starts with nothing stopping it writing the owner's files or reaching the internet.",
+    "patch": "windows-check-unfenced.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-find-by-name",
+    "breaks": "On Windows the session's transcript is looked for with find by name, which finds nothing there, so none of his messages is read.",
+    "patch": "windows-find-by-name.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-read-by-name",
+    "breaks": "On Windows the transcript is read with sed by name, which finds nothing there, so none of his messages is read.",
+    "patch": "windows-read-by-name.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-probe-failure-held",
+    "breaks": "On Windows a probe for Git's commands that failed once, as one can the first time a virus scanner meets them, is held for the process, so none of his messages is read from a transcript again until Claude Code restarts.",
+    "patch": "windows-probe-failure-held.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-refusal-rests-on-probe",
+    "breaks": "On Windows a lookup of the commands that throws makes the host look like a Unix one, so the check starts there with nothing fencing it.",
+    "patch": "windows-refusal-rests-on-probe.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "home-tmp-is-none",
+    "breaks": "A home that is /tmp is taken for no home, so the session's transcript is never looked for under /tmp/.claude.",
+    "patch": "home-tmp-is-none.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-home-mixed-slashes",
+    "breaks": "On Windows the home keeps the backslashes USERPROFILE gives it, so every path built from it mixes the two separators.",
+    "patch": "windows-home-mixed-slashes.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-held-path-backslashed",
+    "breaks": "On Windows a transcript path Claude Code gives with backslashes is read as given, so a forked session's folder is never found and none of his messages is read.",
+    "patch": "windows-held-path-backslashed.patch",
+    "fixed": "2026-10-16"
   }
 ]

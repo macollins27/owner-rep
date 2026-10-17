@@ -36,6 +36,7 @@ import {
   hostArgv,
   isWindowsHost,
   PATH_HOST,
+  slashed,
   winClaudeCandidates,
   winPosixBinCandidates,
   WINDOWS_OS,
@@ -718,7 +719,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
   try {
     const rec = await loadRec($, sid)
     const cwd = await $.session.cwd()
-    const home = await homeFor($)
+    const home = (await homeFor($)) || '/tmp'
     const checkHost = await hostOf($)
     if (isWindowsHost(checkHost)) return finish({ checkNote: CHECK_NO_ROOM })
     const copy = await makeCopy($, home, sid, cwd)
@@ -845,17 +846,20 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
 // runs — mkdir, rm, cp, find, ls, sed, claude — resolve to nothing there. Each
 // candidate is PROVEN by running it with `--version` rather than by testing a
 // path, so a machine with Git somewhere unusual, or with none at all, is told
-// apart from one where the folder merely exists. A host that answers for
-// nothing resolves to `PATH_HOST`, which is exactly today's behaviour: the
-// commands are tried by name, the copy fails, and the brief says it could not
-// be made.
+// apart from one where the folder merely exists. A Windows host where nothing
+// answers keeps every name as written, so the commands are tried by name and
+// fail; the check does not start on Windows in any case (`CHECK_NO_ROOM`).
 // KEYED ON `OS`, not held outright: a host is resolved once and reused, and the
 // key makes a stale answer impossible rather than merely unlikely. `OS` never
 // changes under a running session, so production resolves once; a test that
 // says the host is Windows gets a fresh resolution instead of whatever an
 // earlier test left behind, which is what a plain `Host | null` would have
-// handed it.
-let host: { os: string; value: Host } | null = null
+// handed it. The lookup itself is held, so two reads at once share one probe.
+// A Windows host whose coreutils did not answer is not held: a probe can time
+// out the first time a virus scanner meets mkdir.exe, and held, that would leave
+// every transcript read of the process unread. Windows stays Windows when a
+// lookup throws, so the check's refusal there never rests on a probe.
+let host: { os: string; value: Promise<Host> } | null = null
 
 async function answers($: EngineInterface, argv: readonly string[]): Promise<boolean> {
   try {
@@ -875,12 +879,16 @@ async function firstThatAnswers($: EngineInterface, candidates: readonly string[
 
 async function hostOf($: EngineInterface): Promise<Host> {
   const os = (await $.env.get('OS')) ?? ''
-  if (host !== null && host.os === os) return host.value
+  if (host === null || host.os !== os) host = { os, value: lookUpHost($, os) }
+  const held = host
+  const got = await held.value
+  if (isWindowsHost(got) && got.posixBin === '' && host === held) host = null
+  return got
+}
+
+async function lookUpHost($: EngineInterface, os: string): Promise<Host> {
+  if (os !== WINDOWS_OS) return PATH_HOST
   try {
-    if (os !== WINDOWS_OS) {
-      host = { os, value: PATH_HOST }
-      return host.value
-    }
     const bins = winPosixBinCandidates(
       await $.env.get('PROGRAMFILES'),
       await $.env.get('ProgramFiles(x86)'),
@@ -897,15 +905,17 @@ async function hostOf($: EngineInterface): Promise<Host> {
       $,
       winClaudeCandidates(await $.env.get('APPDATA'), await $.env.get('LOCALAPPDATA')),
     )
-    host = { os, value: { os, posixBin, claude } }
+    return { os, posixBin, claude }
   } catch {
-    host = { os, value: PATH_HOST }
+    return { os, posixBin: '', claude: '' }
   }
-  return host.value
 }
 
+// The home, '' when there is none, written on Windows with forward slashes as every path
+// built from it is.
 async function homeFor($: EngineInterface): Promise<string> {
-  return homeOf(await $.env.get('HOME'), await $.env.get('USERPROFILE'))
+  const home = homeOf(await $.env.get('HOME'), await $.env.get('USERPROFILE'))
+  return (await $.env.get('OS')) === WINDOWS_OS ? slashed(home) : home
 }
 
 // The throwaway copy the check runs in: an APFS clone (cp -c) of the agent's folder as it
@@ -996,17 +1006,18 @@ function holdTranscript(id: unknown, path: unknown): void {
 // wrote the rows.
 async function heldItems($: EngineInterface, sid: string, rows: readonly RecordRow[]): Promise<HumanItem[] | null> {
   try {
-    let path = transcripts.get(sid) ?? ''
+    const on = await hostOf($)
+    const local = (p: string): string => (isWindowsHost(on) ? slashed(p) : p)
+    let path = local(transcripts.get(sid) ?? '')
     if (path === '') {
       const set = await $.env.get('CLAUDE_CONFIG_DIR')
       const home = await homeFor($)
-      const config = set !== undefined && set !== '' ? set : home !== '/tmp' ? `${home}/.claude` : null
+      const config = set !== undefined && set !== '' ? local(set) : home !== '' ? `${home}/.claude` : null
       if (config === null) return null
-      const found = await $.process.run(hostArgv(await hostOf($), ['find', `${config}/projects`, '-maxdepth', '2', '-name', `${sid}.jsonl`]), { timeoutMs: HUMAN_READ_TIMEOUT_MS })
-      path = found.exitCode === 0 ? (found.stdout.split('\n').find(l => l.trim() !== '')?.trim() ?? '') : ''
+      const found = await $.process.run(hostArgv(on, ['find', `${config}/projects`, '-maxdepth', '2', '-name', `${sid}.jsonl`]), { timeoutMs: HUMAN_READ_TIMEOUT_MS })
+      path = found.exitCode === 0 ? local(found.stdout.split('\n').find(l => l.trim() !== '')?.trim() ?? '') : ''
       if (path === '') return null
     }
-    const on = await hostOf($)
     const read = (file: string, timeoutMs: number) => $.process.run(hostArgv(on, humanRead(file)), { timeoutMs })
     const own = await read(path, HUMAN_READ_TIMEOUT_MS)
     if (own.exitCode === 0) return own.isStdoutTruncated ? null : humanItems(own.stdout)

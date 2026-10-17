@@ -27,7 +27,7 @@ Behind that row are three reads of increasing cost.
 |---|---|---|---|
 | **Watch** | Every eighth model request of a turn, and at every stop | A fresh model instance over the agent's cached conversation, no tools | Mostly cache reads; never blocks the agent |
 | **Briefing** | On a press (`1` or click) | Same mechanism, longer brief | One model call; two when its answer is refused and asked again (below) |
-| **Check** | On a second press, only when chosen | A separate headless `claude -p` run in a throwaway copy of the project, fenced, over the session record and the real files | Measured at about 210k fresh tokens plus 2.2M cache reads, about two minutes |
+| **Check** | On a second press, only when chosen | A separate headless `claude -p` run in a throwaway copy of the project, fenced, over the session record and the real files; on Windows, where Claude Code's sandbox is off, it does not start | Measured at about 210k fresh tokens plus 2.2M cache reads, about two minutes |
 
 The **watch** stays silent unless it finds something with a cost to the owner: work dropped
 or shrunk, a claim not shown, a test never run, the easy option taken in place of the right
@@ -201,8 +201,9 @@ instead, so a new session's first turn pays for no record read. With no record t
 after `/clear`, the briefing says there is nothing to read yet.
 
 The check step runs in a room, not under a list of allowed commands. The rep first makes a
-throwaway copy of the project as it stands, uncommitted work included (an APFS clone, made in
-a moment and taking no space until written to), and spawns `claude -p` in it with
+throwaway copy of the project as it stands, uncommitted work included (an APFS clone on a
+Mac, made in a moment and taking no space until written to, and a plain copy where `cp`
+cannot clone, as on Linux), and spawns `claude -p` in it with
 `--output-format json`, a turn limit and a fifteen-minute timeout. Inside the copy nothing
 needs approval: the shell, the file tools and the agentsview tools are allowed outright, and
 the only tool-level denials are the ones that edit through a tool, send, fetch the web or
@@ -210,7 +211,10 @@ launch helpers. The fence is Claude Code's built-in sandbox, passed as settings 
 writes are denied to the owner's work (the real project folder, `~/Developer`, `~/Documents`,
 `~/work`) and to the files Claude Code reads its own configuration from, and the network is
 closed except for this Mac, where agentsview answers. The owner's own guard hooks fire inside
-the run as they do for every agent. The copy is removed when the run ends. The run's answer
+the run as they do for every agent. The copy is removed when the run ends. When no copy can
+be made, the run starts in the project itself with writes there denied, and its brief says
+so. On Windows Claude Code's sandbox is switched off, so there is no room to run in: the
+check does not start there, and the card says why. The run's answer
 carries the count of refused commands; the card shows it, and the right number is zero,
 because a refusal in a room where nothing needs approval means the room has a hole. All of
 this was measured on this build before it was built: bypassing approvals switches the
@@ -283,7 +287,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 150 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 164 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -292,7 +296,9 @@ GitHub runs the validation, the tests, the type check and the doctor on every pu
 (`.github/workflows/tests.yml`); the type check there uses a pinned copy of the API
 declarations in `tests/ci/`, and a step before it fails the run when the Claude Code build
 the workflow installed is not the build that wrote that copy, so a change in the API can
-never hide behind a type check against a stale copy.
+never hide behind a type check against a stale copy. One more step fails the run when a hook
+runs a program whose name does not go through `hostArgv`, the one place a command is named for
+the host it runs on.
 
 ```
 tsc -p . --noEmit             # needs .claude-plugin/types/, see below
@@ -323,7 +329,9 @@ messages, a small per-session store, and the model through the session's own cre
 take the transcript path Claude Code gives its hooks at the session's start and with each
 prompt, and run `sed`, `ls` and `find` over the session's transcripts under
 `~/.claude/projects/` (or the folder `CLAUDE_CONFIG_DIR` names) to read which messages the
-person typed. The check step
+person typed. On Windows those commands are Git for Windows' own, named by their full path,
+and the rep finds them, and Claude Code's own `claude.exe`, by running each place they may
+be with `--version`. The check step
 starts a separate Claude Code run that may read files, search, run the project's own tests
 and read agentsview; it may not edit, send, or launch helpers. The rep never sends anything
 to an agent by itself.
