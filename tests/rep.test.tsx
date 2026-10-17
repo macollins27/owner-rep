@@ -1,7 +1,7 @@
 import type { On, SessionMessage } from 'claude-code'
 import { expect, mock, test, type Engine } from 'claude-code/testing'
 
-import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX } from '../hooks/rep'
+import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates } from '../hooks/rep'
 
 const om = (text: string, n = 1): OwnerMsg => ({ n, kind: 'his', text, prior: '' })
 
@@ -4512,4 +4512,208 @@ test('rule: a session resumed in the same process is read for his messages befor
   ])
   expect(recOf('resumed-from')?.owner ?? []).toEqual([])
   expect(await rowSays($, /and a readme/)).toBe(true)
+})
+
+
+// ── THE HOST THE CHECK'S COMMANDS RUN ON ────────────────────────────────────
+// The check's six commands and its `claude` spawn are written for a Unix host.
+// These prove the naming for a Windows one, and prove a Unix host's argv is
+// left exactly as it was, because that is what keeps Darwin and Linux on
+// today's behaviour.
+
+const WIN_HOST = { os: WINDOWS_OS, posixBin: 'C:\\Git\\usr\\bin', claude: 'C:/npm/claude.exe' }
+
+test('the home is HOME where there is one, USERPROFILE on Windows, and /tmp only when neither answers', async () => {
+  expect(homeOf('/Users/o', undefined)).toBe('/Users/o')
+  // Windows sets USERPROFILE and no HOME. Before this, home fell to '/tmp' and
+  // every path built from it was wrong.
+  expect(homeOf(undefined, 'C:\\Users\\k')).toBe('C:\\Users\\k')
+  // An empty variable is as absent as a missing one.
+  expect(homeOf('', 'C:\\Users\\k')).toBe('C:\\Users\\k')
+  // HOME wins when both answer, so a Unix host is untouched.
+  expect(homeOf('/Users/o', 'C:\\Users\\k')).toBe('/Users/o')
+  expect(homeOf(undefined, undefined)).toBe('/tmp')
+  expect(homeOf('', '')).toBe('/tmp')
+})
+
+test('a host that resolves by name leaves every argv exactly as it was', async () => {
+  expect(isWindowsHost(PATH_HOST)).toBe(false)
+  for (const name of POSIX_COMMANDS) {
+    expect(hostArgv(PATH_HOST, [name, '-x', '/tmp/a'])).toEqual([name, '-x', '/tmp/a'])
+  }
+  expect(hostArgv(PATH_HOST, ['claude', '-p', 'hello'])).toEqual(['claude', '-p', 'hello'])
+  // The clone first, then the plain copy; a Unix host keeps the clone it had.
+  expect(copyArgvs(PATH_HOST, '/a', '/b')).toEqual([
+    ['cp', '-Rc', '/a', '/b'],
+    ['cp', '-R', '/a', '/b'],
+  ])
+})
+
+test('a Windows host names every command by its full path, and leaves a command it does not own alone', async () => {
+  expect(isWindowsHost(WIN_HOST)).toBe(true)
+  // Git for Windows ships all six, in a usr/bin its installer leaves off PATH.
+  expect(hostArgv(WIN_HOST, ['mkdir', '-p', 'C:/x'])).toEqual(['C:/Git/usr/bin/mkdir.exe', '-p', 'C:/x'])
+  expect(hostArgv(WIN_HOST, ['rm', '-rf', 'C:/x'])).toEqual(['C:/Git/usr/bin/rm.exe', '-rf', 'C:/x'])
+  expect(hostArgv(WIN_HOST, ['find', 'C:/p', '-name', 'a.jsonl'])).toEqual(['C:/Git/usr/bin/find.exe', 'C:/p', '-name', 'a.jsonl'])
+  expect(hostArgv(WIN_HOST, ['ls', '-t', 'C:/p'])).toEqual(['C:/Git/usr/bin/ls.exe', '-t', 'C:/p'])
+  expect(hostArgv(WIN_HOST, ['sed', '-n', '-E', 'p', 'C:/f'])).toEqual(['C:/Git/usr/bin/sed.exe', '-n', '-E', 'p', 'C:/f'])
+  // Listed ahead of its use: PR #12's `toolLineFind` is `grep -n -o -m 1 -F`.
+  expect(hostArgv(WIN_HOST, ['grep', '-n', '-F', 'x', 'C:/f'])).toEqual(['C:/Git/usr/bin/grep.exe', '-n', '-F', 'x', 'C:/f'])
+  // `claude` on PATH is a shim Node cannot spawn without a shell; the npm
+  // package's own executable is spawned instead, and the prompt stays an argv.
+  expect(hostArgv(WIN_HOST, ['claude', '-p', 'a prompt "with quotes"'])).toEqual([
+    'C:/npm/claude.exe',
+    '-p',
+    'a prompt "with quotes"',
+  ])
+  // Anything the layer does not own is left to resolve as it always did.
+  expect(hostArgv(WIN_HOST, ['git', 'status'])).toEqual(['git', 'status'])
+  expect(hostArgv(WIN_HOST, [])).toEqual([])
+  // A Windows host with no coreutils found behaves as a PATH host: the commands
+  // are tried by name, which fails, and the copy's failure is already handled.
+  expect(hostArgv({ ...WIN_HOST, posixBin: '' }, ['mkdir', '-p', 'C:/x'])).toEqual(['mkdir', '-p', 'C:/x'])
+})
+
+test('the copy tries the APFS clone and then the plain copy, because only Darwin cp takes -c', async () => {
+  // `cp -Rc` answers "cp: unknown option -- c" on GNU cp, so the plain form is
+  // what runs on Windows and on Linux. Measured on Git for Windows, 16 Oct 2026.
+  expect(copyArgvs(WIN_HOST, 'C:/work', 'C:/copy')).toEqual([
+    ['C:/Git/usr/bin/cp.exe', '-Rc', 'C:/work', 'C:/copy'],
+    ['C:/Git/usr/bin/cp.exe', '-R', 'C:/work', 'C:/copy'],
+  ])
+})
+
+test('a path handed to a POSIX command is written one way, because mixing separators is what breaks them', async () => {
+  expect(slashed('C:\\Program Files\\Git\\usr\\bin')).toBe('C:/Program Files/Git/usr/bin')
+  expect(slashed('/already/posix')).toBe('/already/posix')
+  // The space in "Program Files" stays a space: the argv is never a shell string.
+  expect(hostArgv({ ...WIN_HOST, posixBin: 'C:\\Program Files\\Git\\usr\\bin' }, ['ls', '-t', 'C:/p'])).toEqual([
+    'C:/Program Files/Git/usr/bin/ls.exe',
+    '-t',
+    'C:/p',
+  ])
+})
+
+test('the places Git for Windows and npm put their binaries are tried in order, and an unset variable adds no candidate', async () => {
+  // Slashed as they are built, so the path a probe proves is the path later run.
+  expect(winPosixBinCandidates('C:\\PF', 'C:\\PF86', 'C:\\LAD')).toEqual([
+    'C:/PF/Git/usr/bin',
+    'C:/LAD/Programs/Git/usr/bin',
+    'C:/PF86/Git/usr/bin',
+  ])
+  expect(winPosixBinCandidates(undefined, undefined, 'C:\\LAD')).toEqual(['C:/LAD/Programs/Git/usr/bin'])
+  expect(winPosixBinCandidates('', '', '')).toEqual([])
+  expect(winClaudeCandidates('C:\\AD', 'C:\\LAD')).toEqual([
+    'C:/AD/npm/node_modules/@anthropic-ai/claude-code/bin/claude.exe',
+    'C:/LAD/npm/node_modules/@anthropic-ai/claude-code/bin/claude.exe',
+  ])
+  expect(winClaudeCandidates(undefined, undefined)).toEqual([])
+})
+
+// The room on a Windows host: `OS` says Windows, the home is USERPROFILE, and a
+// command answers `--version` only at the second coreutils candidate, so the
+// test proves the candidates are tried in order rather than guessed at.
+const winRoom = (on: On): string[][] => {
+  const runs: string[][] = []
+  const env: Record<string, string> = {
+    OS: WINDOWS_OS,
+    USERPROFILE: 'C:\\Users\\k',
+    PROGRAMFILES: 'C:\\PF',
+    LOCALAPPDATA: 'C:\\LAD',
+    APPDATA: 'C:\\AD',
+  }
+  on('env.get', (_$, e) => ({ value: env[e.name] }))
+  on('process.run', (_$, e) => {
+    const argv = [...e.argv]
+    runs.push(argv)
+    const out = (exitCode: number) => ({
+      value: { exitCode, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false },
+    })
+    const cmd = argv[0] ?? ''
+    // Only the LOCALAPPDATA install answers, and only the npm claude.exe does.
+    if (argv[argv.length - 1] === '--version') {
+      return out(cmd === 'C:/LAD/Programs/Git/usr/bin/mkdir.exe' || cmd === 'C:/AD/npm/node_modules/@anthropic-ai/claude-code/bin/claude.exe' ? 0 : 1)
+    }
+    // The clone fails the way GNU cp fails it; the plain copy succeeds.
+    if (cmd.endsWith('/cp.exe')) return out(argv.includes('-Rc') ? 1 : 0)
+    return out(0)
+  })
+  return runs
+}
+
+test('rule: on Windows the check names every command by its full path, takes its home from USERPROFILE, and falls back from the clone to a plain copy', async ($, on) => {
+  mock.clock(on)
+  session(on)
+  quietBand(on)
+  const runs = winRoom(on)
+  on('session.cwd', () => ({ value: 'C:\\work\\proj' }))
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  let spawned: string[] = []
+  on('process.spawn', (async function* (_$: unknown, e: { argv: string[] }) {
+    spawned = [...e.argv]
+    yield { stream: 'stdout', text: CHECKED_WITH(0) }
+    return { value: { code: 0, signal: null } }
+  }) as never)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+
+  const GIT = 'C:/LAD/Programs/Git/usr/bin'
+  const ran = runs.filter(r => (r[r.length - 1] ?? '') !== '--version')
+  const first = (name: string) => ran.find(r => (r[0] ?? '').endsWith(`/${name}.exe`))
+
+  // Every command is an absolute .exe, because `spawn` without a shell needs one.
+  expect(first('mkdir')?.[0]).toBe(`${GIT}/mkdir.exe`)
+  expect(first('rm')?.[0]).toBe(`${GIT}/rm.exe`)
+  // Not one command was left to resolve by name.
+  expect(ran.filter(r => (POSIX_COMMANDS as readonly string[]).includes(r[0] ?? '')).length).toBe(0)
+
+  // The home came from USERPROFILE: the copy sits under it, not under /tmp.
+  const copies = ran.filter(r => (r[0] ?? '').endsWith('/cp.exe'))
+  expect(copies.length).toBe(2)
+  expect(copies[0]?.[1]).toBe('-Rc')
+  expect(copies[1]?.[1]).toBe('-R')
+  expect(copies[1]?.[3]?.startsWith('C:\\Users\\k/')).toBe(true)
+
+  // The copy was MADE, so the check ran in it and not in the owner's own folder,
+  // which on Windows has nothing denying a write to it.
+  expect(copies[1]?.[3]).toBe(checkCopyDir('C:\\Users\\k', 'test-session'))
+
+  // And `claude` was spawned as the npm executable, with the prompt still an argv.
+  expect(spawned[0]).toBe('C:/AD/npm/node_modules/@anthropic-ai/claude-code/bin/claude.exe')
+  expect(spawned[1]).toBe('-p')
+  await ui.unmount()
+})
+
+test('rule: on a Windows host with no coreutils found, nothing is named, the copy is not made, and the check still runs in the agent folder', async ($, on) => {
+  mock.clock(on)
+  session(on)
+  quietBand(on)
+  const runs: string[][] = []
+  const env: Record<string, string> = { OS: WINDOWS_OS, USERPROFILE: 'C:\\Users\\k' }
+  on('env.get', (_$, e) => ({ value: env[e.name] }))
+  // Nothing answers `--version`, so no candidate resolves.
+  on('process.run', (_$, e) => {
+    runs.push([...e.argv])
+    return { value: { exitCode: 1, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
+  on('session.cwd', () => ({ value: 'C:\\work\\proj' }))
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  let spawnCwd = ''
+  let spawnCmd = ''
+  on('process.spawn', (async function* (_$: unknown, e: { argv: string[]; cwd: string }) {
+    spawnCwd = e.cwd
+    spawnCmd = e.argv[0] ?? ''
+    yield { stream: 'stdout', text: CHECKED_WITH(0) }
+    return { value: { code: 0, signal: null } }
+  }) as never)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+  // It degrades to exactly the behaviour it had before the host layer: the names
+  // are tried as written, the copy is not made, and the run falls to the agent's
+  // own folder. That is the old outcome, kept deliberately, not a new failure.
+  expect(spawnCwd).toBe('C:\\work\\proj')
+  expect(spawnCmd).toBe('claude')
+  await ui.unmount()
 })
