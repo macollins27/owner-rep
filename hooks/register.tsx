@@ -603,6 +603,9 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     // No objective yet: it is written first, so the briefing measures against it.
     if ((await loadRec($, sid)).objective === null) await rebuildObjective($, sid, 'press')
     const context = await contextOf($)
+    // On Windows the check does not start (runCheck), so the card says why in place of
+    // its price and offers no button for it.
+    const noCheck = await hostOf($).then(isWindowsHost, () => false)
     // One read of the conversation: its spend counted, and when it answered,
     // its marks applied and its verdict through the gate, against the
     // conditions still open after them.
@@ -660,7 +663,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
         size: context === undefined ? '' : `conversation at ${context.percent} percent of its window`,
         isChecking: false,
         checked: null,
-        checkNote: '',
+        checkNote: noCheck ? CHECK_NO_ROOM : '',
         checkCost: checkCostText(after.lastCheckTokens, after.lastCheckCached, after.lastCheckMs, after.lastCheckRefused),
       }
       after.lastBrief = { at: brief.at, next: brief.next, message: brief.message }
@@ -1649,7 +1652,7 @@ export const register: Register = on => {
             </Box>
           ) : undefined}
           {choices(
-            shown.checked === null && !shown.isChecking ? (
+            shown.checked === null && !shown.isChecking && shown.checkNote !== CHECK_NO_ROOM ? (
               <Button
                 key="check"
                 plain

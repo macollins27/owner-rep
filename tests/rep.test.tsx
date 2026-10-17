@@ -4612,13 +4612,12 @@ test('the places Git for Windows and npm put their binaries are tried in order, 
   expect(winClaudeCandidates(undefined, undefined)).toEqual([])
 })
 
-// The room on a Windows host: `OS` says Windows, the home is USERPROFILE, and a
-// command answers `--version` only at the second coreutils candidate, so the
-// test proves the candidates are tried in order rather than guessed at.
-const winRoom = (on: On, throwsOn = ''): string[][] => {
+// The room on a Windows host: `OS` says Windows (or what `os` gives), the home is
+// USERPROFILE, and a command answers `--version` only at the second coreutils
+// candidate, so the test proves the candidates are tried in order rather than guessed at.
+const winRoom = (on: On, throwsOn = '', os: () => string = () => WINDOWS_OS): string[][] => {
   const runs: string[][] = []
   const env: Record<string, string> = {
-    OS: WINDOWS_OS,
     USERPROFILE: 'C:\\Users\\k',
     PROGRAMFILES: 'C:\\PF',
     LOCALAPPDATA: 'C:\\LAD',
@@ -4626,7 +4625,7 @@ const winRoom = (on: On, throwsOn = ''): string[][] => {
   }
   on('env.get', (_$, e) => {
     if (e.name === throwsOn) throw new Error(`no ${e.name}`)
-    return { value: env[e.name] }
+    return { value: e.name === 'OS' ? os() || undefined : env[e.name] }
   })
   on('process.run', (_$, e) => {
     const argv = [...e.argv]
@@ -4644,7 +4643,11 @@ const winRoom = (on: On, throwsOn = ''): string[][] => {
   return runs
 }
 
-const refusedOnWindows = async ($: Engine, on: On, throwsOn = '') => {
+// Whether the check's copy was begun: cp, rm or mkdir run other than as a probe.
+const copied = (runs: string[][]): string[][] =>
+  runs.filter(r => /(^|\/)(cp|rm|mkdir)(\.exe)?$/.test(r[0] ?? '') && r[r.length - 1] !== '--version')
+
+const windowsCard = async ($: Engine, on: On, throwsOn = '') => {
   mock.clock(on)
   session(on)
   quietBand(on)
@@ -4659,22 +4662,52 @@ const refusedOnWindows = async ($: Engine, on: On, throwsOn = '') => {
   }) as never)
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   await ui.press({ key: 'rep' })
+  // The card says why in place of the check's price, and offers no button for it.
+  expect(await ui.find({ type: 'Text', text: /The check does not run on Windows yet: Claude Code's sandbox is switched off there/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Check it starts a separate/ })).toBeUndefined()
+  expect(await ui.find({ key: 'check' })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: /The card\./ })).toBeDefined()
+  expect(spawned).toBe(0)
+  expect(copied(runs)).toEqual([])
+  await ui.unmount()
+}
+
+test('rule: on Windows, since nothing there fences the check\'s run, the card says the check does not run there and offers no Check it', async ($, on) => {
+  await windowsCard($, on)
+})
+
+test('rule: on Windows the card offers no Check it when looking for its commands throws either: the refusal rests on the host, never on a probe', async ($, on) => {
+  await windowsCard($, on, 'PROGRAMFILES')
+})
+
+test('rule: on Windows the check itself does not start either, pressed on a card drawn before: nothing is copied or spawned, and the card says why', async ($, on) => {
+  mock.clock(on)
+  session(on)
+  quietBand(on)
+  let os = ''
+  const runs = winRoom(on, '', () => os)
+  on('session.cwd', () => ({ value: 'C:\\work\\proj' }))
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  let spawned = 0
+  on('process.spawn', (async function* () {
+    spawned += 1
+    yield { stream: 'stdout', text: CHECKED_WITH(0) }
+    return { value: { code: 0, signal: null } }
+  }) as never)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  // Drawn while the host read as a Mac, the card offers the check.
+  expect(await ui.find({ key: 'check' })).toBeDefined()
+  os = WINDOWS_OS
   await ui.press({ key: 'check' })
   expect(await ui.find({ type: 'Text', text: /The check does not run on Windows yet: Claude Code's sandbox is switched off there/ })).toBeDefined()
   expect(spawned).toBe(0)
   // Not even the copy is made: the refusal comes before it.
-  expect(runs.filter(r => /\/(cp|rm|mkdir)\.exe$/.test(r[0] ?? '') && r[r.length - 1] !== '--version')).toEqual([])
-  // The card the check was pressed on stays up.
+  expect(copied(runs)).toEqual([])
+  // The card the check was pressed on stays up, with no button for a check that cannot run.
   expect(await ui.find({ type: 'Text', text: /The card\./ })).toBeDefined()
+  expect(await ui.find({ key: 'check' })).toBeUndefined()
   await ui.unmount()
-}
-
-test('rule: on Windows the check does not start, since nothing there fences its run: nothing is copied or spawned, and the card says why', async ($, on) => {
-  await refusedOnWindows($, on)
-})
-
-test('rule: on Windows the check does not start when looking for its commands throws either: the refusal rests on the host, never on a probe', async ($, on) => {
-  await refusedOnWindows($, on, 'PROGRAMFILES')
 })
 
 // The transcript on a Windows host: `OS` says Windows, the home is USERPROFILE with no
