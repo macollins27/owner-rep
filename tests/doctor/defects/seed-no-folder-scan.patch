@@ -1,12 +1,12 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index f0e1e30..563d598 100644
+index 0d59fb2..d3be2a4 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -893,6 +893,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
+@@ -922,6 +922,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
      const read = (file: string, timeoutMs: number) => $.process.run(humanRead(file), { timeoutMs })
      const own = await read(path, HUMAN_READ_TIMEOUT_MS)
      if (own.exitCode === 0) return own.isStdoutTruncated ? null : humanItems(own.stdout)
 +    if (own.exitCode !== 0) return []
      const folder = folderOf(path)
-     const start = await $.clock.now()
-     const left = async () => HUMAN_SCAN_BUDGET_MS - ((await $.clock.now()) - start)
+     const want = forkCandidates(rows).length
+     const anchor = want === 0 ? lastToolId(rows) : null

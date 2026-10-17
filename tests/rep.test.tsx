@@ -1,7 +1,7 @@
 import type { On, SessionMessage } from 'claude-code'
 import { expect, mock, test, type Engine } from 'claude-code/testing'
 
-import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX } from '../hooks/rep'
+import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX } from '../hooks/rep'
 
 const om = (text: string, n = 1): OwnerMsg => ({ n, kind: 'his', text, prior: '' })
 
@@ -3311,14 +3311,22 @@ const transcript = (on: On, files: Record<string, string>, opts: { folder?: stri
       return out(0, name in files ? `${folder}/${name}\n` : '')
     }
     if (e.argv[0] === 'ls') return e.argv[2] === folder ? out(0, `${Object.keys(files).join('\n')}\n`) : out(1)
-    if (e.argv[0] !== 'sed') return out(127)
+    if (e.argv[0] !== 'sed' && e.argv[0] !== 'grep') return out(127)
     const path = e.argv[e.argv.length - 1] ?? ''
     const name = path.slice(folder.length + 1)
     const body = path.startsWith(`${folder}/`) ? files[name] : undefined
-    if (body === undefined) return out(1)
-    const script = e.argv[3] ?? ''
+    if (body === undefined) return out(e.argv[0] === 'grep' ? 2 : 1)
+    // grep -n -o -m 1 -F: the number of the first line holding the text, and the text.
+    if (e.argv[0] === 'grep') {
+      const text = e.argv[6] ?? '\u0000'
+      const at = body.split('\n').findIndex(l => l.includes(text))
+      return at < 0 ? out(1) : out(0, `${at + 1}:${text}\n`)
+    }
+    // sed -n -E -e <n>q -e <script>: the script run on the lines before line n.
+    const before = e.argv[3] === '-e' ? Number((e.argv[4] ?? '').replace(/q$/, '')) : Infinity
+    const script = (e.argv[3] === '-e' ? e.argv[6] : e.argv[3]) ?? ''
     const mark = script.match(/^\/([^/]+)\//)?.[1] ?? '\u0000'
-    let lines = body.split('\n').filter(l => l.includes(mark))
+    let lines = body.split('\n').slice(0, before - 1).filter(l => l.includes(mark))
     if (script.includes('s/"data":"[^"]*"/"data":""/g')) lines = lines.map(l => l.replace(/"data":"[^"]*"/g, '"data":""'))
     if ((opts.cut ?? []).includes(name)) return out(0, `${lines[0] ?? ''}\n`, true)
     const stdout = lines.length > 0 ? `${lines.join('\n')}\n` : ''
@@ -3330,6 +3338,8 @@ const transcript = (on: On, files: Record<string, string>, opts: { folder?: stri
 // The runs `heldItems` makes, as a session would see them.
 const SED = (file: string, folder = FOLDER) => `sed -n -E /"kind":"human"/{s/"data":"[^"]*"/"data":""/g;p;} ${folder}/${file}`
 const FIND = (id = 'test-session') => `find ${PROJECTS} -maxdepth 2 -name ${id}.jsonl`
+const GREP = (file: string, id: string, folder = FOLDER) => `grep -n -o -m 1 -F "tool_use_id":"${id}" ${folder}/${file}`
+const SED_BEFORE = (file: string, line: number, folder = FOLDER) => `sed -n -E -e ${line}q -e /"kind":"human"/{s/"data":"[^"]*"/"data":""/g;p;} ${folder}/${file}`
 
 // The transcript path Claude Code gives a session through its classic hooks.
 const HELD = (file = 'test-session.jsonl', folder = FOLDER) => `${folder}/${file}`
@@ -3853,6 +3863,93 @@ test('rule: a session forked with a new id, its own transcript not saved yet, ta
   await settle($)
   expect(rec()?.owner).toEqual(SEEDED)
   expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), `ls -t ${FOLDER}`, SED('newer.jsonl'), SED('parent.jsonl')])
+})
+
+// A session compacted after his last message: its rows are the summary and the agent's work
+// since, none of them typed by him, while its file still holds what he typed before.
+const SUMMARY = 'This session is being continued from a previous conversation that ran out of context. Summary: the licence work.'
+const COMPACTED_ROWS: SessionMessage[] = [
+  { role: 'user', text: SUMMARY, toolUses: [] },
+  { role: 'user', text: '<task-notification>\n<task-id>b1</task-id>\nThe helper finished the scan.\n</task-notification>', toolUses: [] },
+  { role: 'assistant', text: 'Pushing the licence now.', toolUses: [{ tool_use_id: 'toolu_01Push', tool: 'Bash', input: { command: 'git push' }, text: 'pushed' }] },
+  { role: 'user', text: '', toolUses: [], toolResults: [{ tool_use_id: 'toolu_01Push', text: 'pushed', isError: false }] },
+  { role: 'assistant', text: 'The licence is pushed.', toolUses: [] },
+]
+// A tool's result as a transcript saves it.
+const RESULT_LINE = (id: string) => JSON.stringify({ type: 'user', message: { role: 'user', content: [{ tool_use_id: id, type: 'tool_result', content: 'pushed' }] }, uuid: 't' })
+const COMPACTED_FILE = [LINE('Add a licence file with the MIT text.'), LINE('Use this year, and push it.'), LINE(SUMMARY, {}), RESULT_LINE('toolu_01Push')].join('\n')
+const COMPACTED = [
+  { n: 1, kind: 'his', text: 'Add a licence file with the MIT text.', prior: '' },
+  { n: 2, kind: 'his', text: 'Use this year, and push it.', prior: '' },
+]
+
+test('lastToolId is the id of the rows\' last tool result, a tool\'s own id only; toolLineOf reads the line number grep prints; the read before a line stops sed there', () => {
+  expect(lastToolId(COMPACTED_ROWS)).toBe('toolu_01Push')
+  const later: SessionMessage = { role: 'user', text: '', toolUses: [], toolResults: [{ tool_use_id: 'toolu_02A', text: 'a', isError: false }, { tool_use_id: 'toolu_02B', text: 'b', isError: false }] }
+  expect(lastToolId([...COMPACTED_ROWS, later])).toBe('toolu_02B')
+  // An id with anything but letters, digits, '_' and '-' is not taken; with none left, null.
+  const odd: SessionMessage = { role: 'user', text: '', toolUses: [], toolResults: [{ tool_use_id: 'x"y', text: 'a', isError: false }] }
+  expect(lastToolId([...COMPACTED_ROWS, odd])).toBe('toolu_01Push')
+  expect(lastToolId([odd, { role: 'assistant', text: 'Done.', toolUses: [] }])).toBeNull()
+  expect(lastToolId([])).toBeNull()
+  expect(toolLineFind('/f/a.jsonl', 'toolu_01Push')).toEqual(['grep', '-n', '-o', '-m', '1', '-F', '"tool_use_id":"toolu_01Push"', '/f/a.jsonl'])
+  expect(toolLineOf('412:"tool_use_id":"toolu_01Push"\n')).toBe(412)
+  expect(toolLineOf('')).toBeNull()
+  expect(toolLineOf('0:x')).toBeNull()
+  expect(humanReadBefore('/f/a.jsonl', 412)).toEqual(['sed', '-n', '-E', '-e', '412q', '-e', HUMAN_SED, '/f/a.jsonl'])
+})
+
+test('rule: a session reopened after a compaction he has typed nothing since, the rep holding no record of it, has his messages read from its own transcript all the same, with no prior, and the objective written from them', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: COMPACTED_ROWS }))
+  const runs = transcript(on, { 'test-session.jsonl': COMPACTED_FILE })
+  const prompts = writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await giveTranscript($, on, HELD(), 'resume')
+  await started($)
+  await settle($)
+  expect(rec()?.owner).toEqual(COMPACTED)
+  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl')])
+  expect(prompts.length).toBe(1)
+  expect(rec()?.objective?.result).toBe('A licence file with the MIT text and this year.')
+})
+
+test('rule: a fork taken after a compaction he has typed nothing since, its own transcript not saved yet, takes his messages from the newest file in its folder that holds its last tool result, only those before that result', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: COMPACTED_ROWS }))
+  // The parent went on after the fork: its later message is not the fork's.
+  const parent = `${COMPACTED_FILE}\n${LINE('Now add a readme.')}`
+  const runs = transcript(on, { 'newer.jsonl': LINE('Something he typed elsewhere.'), 'parent.jsonl': parent, 'older.jsonl': parent })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await giveTranscript($, on)
+  await started($)
+  await settle($)
+  expect(rec()?.owner).toEqual(COMPACTED)
+  expect(runs.map(r => r.join(' '))).toEqual([
+    SED('test-session.jsonl'),
+    `ls -t ${FOLDER}`,
+    GREP('newer.jsonl', 'toolu_01Push'),
+    GREP('parent.jsonl', 'toolu_01Push'),
+    SED_BEFORE('parent.jsonl', 4),
+  ])
+})
+
+test('rule: a fork whose rows hold neither a row he could have typed nor a tool result reads nothing past its own transcript, and seeds nothing', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: [COMPACTED_ROWS[0], COMPACTED_ROWS[4]] as SessionMessage[] }))
+  const runs = transcript(on, { 'parent.jsonl': COMPACTED_FILE })
+  const prompts = writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await giveTranscript($, on)
+  await started($)
+  await settle($)
+  expect(rec()?.owner ?? []).toEqual([])
+  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl')])
+  expect(prompts.length).toBe(0)
 })
 
 test('rule: the scan of a forked session\'s folder reads at most HUMAN_SCAN_MAX files, and a row no file holds is not taken as his', async ($, on) => {

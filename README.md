@@ -246,7 +246,11 @@ its first message is saved, so the newest transcripts in that file's folder are 
 most 40 within 30 seconds, and the one whose messages match the most of the fork's rows in
 order (the newest on a tie) gives its part up to the last matched message, with the
 messages queued right after it; the parent's later messages are never taken, and the scan
-stops once a file matches every row that could be his. Within a file the rows are lined up
+stops once a file matches every row that could be his. A session compacted after his last
+message holds no row he typed, only the summary and the agent's work since; its own file is
+read all the same, and a fork of it, with nothing typed to match, takes as its parent the
+newest file in the folder that holds its last tool result, and his messages before that
+result. Within a file the rows are lined up
 from the end, and where they fit more than one place, the place with the fewest of his
 messages left between the matched ones, then the latest, is taken, so a fork of a compacted
 parent keeps every message up to the fork. A scan in which no file matched any row proves
@@ -283,7 +287,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 150 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 154 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions in tmux, the strip captured to tests/live/captures
 ```

@@ -37,9 +37,9 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 150 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 154 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
-tests/live/live.sh              # on demand: nine real sessions in tmux, the strip captured to tests/live/captures
+tests/live/live.sh              # on demand: nine real sessions of this checkout in tmux, the strip captured to tests/live/captures
 ```
 
 GitHub runs validate, test, the type check and the doctor on every push
@@ -312,7 +312,13 @@ draft he sent split off as `prompt.submit` does, matched against every record's 
 message and messages held as `draft` in the store (`storedDrafts`), so a card he sent in the
 session this one was forked from is still the rep's draft, even one more than `DRAFTS_MAX`
 back or sent under a build that kept no `rec.drafts`, and against `droppedDrafts`, so one
-from a session whose record was let go is too. A session with no candidate row is not read. `seedOwner`
+from a session whose record was let go is too. A session with no row is not read. One whose
+rows hold no candidate (reopened or forked after a compaction he has typed nothing since,
+so the summary and the agent's work are all its rows) is read all the same: its own file
+whole, and in the scan, where nothing typed can be matched, the newest file holding its last
+tool result (`lastToolId`, found by `toolLineFind`, `grep -n -o -m 1 -F`, and `toolLineOf`)
+gives the items before that line (`humanReadBefore`, `sed` stopping there), a cut read
+skipped; with no tool result either, nothing past its own file is read. `seedOwner`
 runs one seed per session at a time (`seeding`), and
 `prompt.submit` awaits it before recording a prompt or a note, so a prompt sent during the
 start's read is numbered after the seeded messages; the objective is rewritten when that

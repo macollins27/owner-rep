@@ -8,15 +8,18 @@
 #
 # Each scenario's whole screen is saved in tests/live/captures/<n>-<name>.txt, and the strip's
 # lines are printed in the report. Scenario 9 also reads the rep's store file under
-# ~/.claude/plugins/store/ (owner-rep_owner-rep-*.json) to show what the reopened session
+# ~/.claude/plugins/store/ (owner-rep_inline-*.json) to show what the reopened session
 # recorded. Exit 0 when every scenario run showed what it should.
 #
 # The sessions run in a scratch folder under the system temp directory, in bypass mode, with
 # the nested-session variables unset (set, claude falls into print mode and exits). The mod
-# loads from wherever it is installed at user scope, not from this checkout: run this after
-# the change under test is in that folder.
+# loads from this checkout (--plugin-dir), with the copy installed at user scope switched off
+# for the session, so the build under test is this folder's and the sessions' records go to
+# the store of a mod loaded that way (owner-rep_inline-*.json), never to the installed mod's,
+# which keeps only its newest records and would let the owner's own sessions go for these.
 set -u
 HERE=${0:A:h}
+ROOT=${HERE:h:h}
 CAPS=$HERE/captures
 S=owner-rep-live
 STRIP_RE='Owner rep ·|Brief me|Tell the rep|Fine, close|Put message|Check it|Heads up'
@@ -63,7 +66,7 @@ start() {
   fi
   LIVE_DIR=$dir
   tmux new-session -d -s $S -x 170 -y 44 -c $dir \
-    "env -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT -u CLAUDE_CODE_SESSION_ID -u CLAUDE_CODE_CHILD_SESSION -u CLAUDE_CODE_MESSAGING_SOCKET -u CLAUDE_CODE_MESSAGING_TOKEN -u CLAUDE_CODE_SESSION_ATTENDED claude $* --permission-mode bypassPermissions"
+    "env -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT -u CLAUDE_CODE_SESSION_ID -u CLAUDE_CODE_CHILD_SESSION -u CLAUDE_CODE_MESSAGING_SOCKET -u CLAUDE_CODE_MESSAGING_TOKEN -u CLAUDE_CODE_SESSION_ATTENDED claude --plugin-dir '$ROOT' --settings '{\"enabledPlugins\":{\"owner-rep@owner-rep\":false}}' $* --permission-mode bypassPermissions"
   if wait_for 'Yes, I trust this folder' 20; then tmux send-keys -t $S Down; sleep 0.5; tmux send-keys -t $S Enter; fi
   wait_for 'Brief me' 40 || { echo "  the session did not draw the rep's row in 40s"; return 1; }
   sleep 2
@@ -242,9 +245,11 @@ for n in $want; do
       sleep 2
       send '/exit'
       sleep 3
-      # The rep's store, as the mod's $.store writes it (the file name carries a hash), and the
-      # session ids it holds before the fork, so the fork's record is the new one.
-      store=$(find "${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/store" -maxdepth 1 -name 'owner-rep_owner-rep-*.json' 2>/dev/null | head -1)
+      # The rep's store, as the mod's $.store writes it for a mod loaded with --plugin-dir (the
+      # file name carries a hash; the newest such file is the one the first session just wrote),
+      # and the session ids it holds before the fork, so the fork's record is the new one.
+      stores=("${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/store/owner-rep_inline-*.json(Nom))
+      store=${stores[1]:-}
       ids_before=$(mktemp -t owner-rep-live-ids)
       [[ -n $store ]] && python3 -I -c 'import json, sys; print("\n".join(json.load(open(sys.argv[1])).get("sessions", {}).keys()))' $store > $ids_before
       # The same folder, the same unset variables and flags; --fork-session gives the reopened
