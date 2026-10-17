@@ -192,7 +192,14 @@ paste becomes a line break: a run on 16 Oct 2026 sent scenario 6's three prompts
 message that way. So the script presses Enter again while the prompt box still opens with the
 text it typed. The nested-session environment variables (`CLAUDECODE`,
 `CLAUDE_CODE_SESSION_ID`, `CLAUDE_CODE_CHILD_SESSION`, the messaging socket and token) must be
-unset or `claude` falls into print mode and exits. Scenarios, one capture each:
+unset or `claude` falls into print mode and exits. Each session loads the mod from the
+checkout the script sits in (`--plugin-dir`), with the copy installed at user scope switched
+off for that session (`--settings` with `enabledPlugins` false), so the build under test is
+the checkout's and the sessions' records go to the store of a mod loaded that way
+(`owner-rep_inline-*.json`). Until 17 Oct 2026 the script ran the installed mod, whose store
+keeps only its newest `SESSIONS_MAX` (32) records: two full runs had left fifteen test
+records among the owner's seventeen, and each further run would have let his oldest go.
+Scenarios, one capture each:
 
 1. Idle: the row draws with the placeholder goal and "idle".
 2. A shell command that begins by setting a variable: the status is "running <program>" and
@@ -236,7 +243,8 @@ unset or `claude` falls into print mode and exits. Scenarios, one capture each:
    card draws with its body, never says there is nothing to read yet (the pane is read every
    half second while the card is awaited), its head shows the objective rather than the
    placeholder, and no objective write failed. The script then reads the rep's store file
-   (`~/.claude/plugins/store/owner-rep_owner-rep-*.json`, the name carrying a hash) and shows
+   (`~/.claude/plugins/store/owner-rep_inline-*.json`, the name carrying a hash, the newest
+   such file) and shows
    that the newest record new since the fork started, the one holding the first prompt,
    holds the queued message as his. Added on 16 Oct 2026 with the record read and the
    seeding of his messages, the queued message the same day, the ping in the third fix
@@ -270,7 +278,10 @@ listing the untouched parts of the first message with a message drafted and "con
 5 percent of its window" on its buttons row.
 The whole run of nine was repeated on 16 Oct 2026 on main after the drafts kept for records
 the store lets go were merged, and all nine showed what they should; the captures in
-`tests/live/captures/` are that run's, scenario 9's reopened session among them.
+`tests/live/captures/` are that run's, scenario 9's reopened session among them. On 17 Oct
+2026 the script was moved to load the checkout (above) and scenario 9 was run that way from
+the branch that reads a compacted session's file: shown, its records in the `inline` store
+and none in the installed mod's.
 
 ## The doctor
 
