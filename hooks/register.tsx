@@ -926,7 +926,7 @@ async function homeFor($: EngineInterface): Promise<string> {
 // to (a 6.5 GB project cloned in 14 s on 15 Oct 2026). A cp that does not take -c (GNU's,
 // on Linux) refuses it before making anything, so the copy's folder is still free and a
 // plain copy is made into it. Darwin's cp copies plainly by itself where it cannot clone,
-// so a clone that failed there failed on the files (a socket, an unreadable file) and left
+// so a clone that failed there failed on the files (an unreadable file) and left
 // part of a copy behind: a plain copy would fail the same way after copying everything in
 // full, and would land nested inside the part-made one (both measured 16 Oct 2026). When
 // no copy is made the check runs in the agent's own folder with writes there denied by the

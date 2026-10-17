@@ -180,10 +180,14 @@ call writes (below):
    (anything that edits through a tool, sends, fetches the web or launches helpers) and
    `--settings` from `checkSettings`: the built-in sandbox with writes denied to the owner's
    work and Claude Code's own configuration (`checkDenyWrite`) and the network closed except
-   for this Mac. Measured 15 Oct 2026: bypassing approvals switches the sandbox off, so the
+   for this Mac, with `failIfUnavailable` (the run refuses to start where the sandbox cannot)
+   and `allowUnsandboxedCommands: false` (no command can ask to run outside it); an
+   `enabledPlatforms` list is set nowhere, since Claude Code reads it only from managed
+   settings (2.1.302). Measured 15 Oct 2026: bypassing approvals switches the sandbox off, so the
    run does not; the owner's guard hooks fire inside the run; `denyWrite` beats `allowWrite`.
    The copy is removed when the run ends; when it cannot be made the run uses the agent's
-   folder with writes there denied, the brief says so, and any part of a copy is removed.
+   folder with writes there denied, the brief says so and asks it to run only what writes
+   nothing there, and any part of a copy is removed.
    On Windows (`OS` is `Windows_NT`) Claude Code's sandbox is off, so nothing would deny a
    write or close the network: a card drawn there shows `CHECK_NO_ROOM` in place of the
    check's price and no Check it button, and `runCheck` starts no copy and no run there,

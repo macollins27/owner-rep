@@ -1291,9 +1291,9 @@ export const checkDenyWrite = (home: string, real: string): string[] => [
 
 // ── THE HOST THE CHECK'S COMMANDS RUN ON ────────────────────────────────────
 //
-// The check copies the agent's folder and reads transcripts with six external
-// commands — mkdir, rm, cp, find, ls, sed — and spawns `claude` to do the
-// reading. All seven are written for a Unix host, and on WINDOWS not one of
+// The check copies the agent's folder and reads transcripts with seven external
+// commands — mkdir, rm, cp, find, ls, sed, grep — and spawns `claude` to do the
+// reading. All eight are written for a Unix host, and on WINDOWS not one of
 // them runs. Measured on Windows 11, Claude Code 2.1.302, 16 Oct 2026:
 //
 //   * `HOME` IS NOT GUARANTEED on Windows, so `home` fell back to `/tmp` and
@@ -1302,7 +1302,7 @@ export const checkDenyWrite = (home: string, real: string): string[] => [
 //     in a native Windows process, and set to the profile folder in a process
 //     launched from Git Bash, which inherits it. `USERPROFILE` is always set,
 //     so it is the fallback and `HOME` still wins where it answers.
-//   * None of the six commands is on PATH. Git for Windows ships all six, in a
+//   * None of the seven commands is on PATH. Git for Windows ships all seven, in a
 //     `usr/bin` its installer deliberately leaves off PATH, so each one has to
 //     be named by its full path.
 //   * `cp -Rc` asks for a copy-on-write clone. `-c` is APFS, so only Darwin's
@@ -1317,8 +1317,8 @@ export const checkDenyWrite = (home: string, real: string): string[] => [
 // WHY THIS IS WORTH FIXING AND NOT JUST REPORTING. The transcript reads run
 // through find, ls and sed, so on Windows none of the owner's messages was read
 // from a session's file. And `makeCopy` degrades to the agent's OWN folder when
-// the copy fails, which is safe only because the room denies writes there. This
-// mod does not enable the sandbox on Windows (`enabledPlatforms` below), so with
+// the copy fails, which is safe only because the room denies writes there. The
+// sandbox does not run on Windows (below), so with
 // `claude` on PATH as an executable the degraded path put a 120-turn checker
 // holding Bash in the owner's real repository with nothing denying a write.
 // The check therefore does not start on Windows at all until the room holds
@@ -1447,15 +1447,16 @@ export const copyArgvs = (host: Host, from: string, to: string): [string[], stri
 export const checkCopiesDir = (home: string): string => `${home}/.cache/owner-rep/checks`
 export const checkCopyDir = (home: string, sessionId: string): string => `${checkCopiesDir(home)}/${sessionId === '' ? 'session' : sessionId}`
 
-// WHY `win32` IS NOT IN `enabledPlatforms`, AND MUST NOT BE ADDED ON FAITH.
+// WHY THE CHECK DOES NOT START ON WINDOWS.
 // Claude Code 2.1.302 does ship a Windows sandbox — the binary carries
 // `CreateRestrictedToken`, `sandboxUserSid` and `icacls`, and its own help says
 // sandboxing applies on "macOS, Linux, WSL2, or Windows where enabled". It is
-// behind a feature gate that is OFF, so listing win32 buys nothing and hides
-// the fact that nothing is enforced.
+// behind a feature gate that is OFF.
 //
-// MEASURED 16 Oct 2026, Windows 11, Claude Code 2.1.302, with win32 added to
-// this list and a POSITIVE CONTROL in the same run: a `claude -p` holding Bash
+// MEASURED 16 Oct 2026, Windows 11, Claude Code 2.1.302, with the sandbox enabled
+// (and win32 added to an `enabledPlatforms` list, which changes nothing, since
+// Claude Code reads that list only from managed settings) and a POSITIVE CONTROL in
+// the same run: a `claude -p` holding Bash
 // was told to write one file inside its cwd and one inside a `denyWrite` path.
 // BOTH LANDED ON DISK. The control proves the run was live, so the breach is a
 // real breach and not a broken test. Claude Code said so itself on stderr:
@@ -1469,17 +1470,24 @@ export const checkCopyDir = (home: string, sessionId: string): string => `${chec
 // allowed and was proven unconstrained under `--permission-mode default` in a
 // `-p` run, the network is open, and the brief would tell the run it is fenced.
 // The check is read-only only because the room makes it so, so on Windows it
-// does not start (`CHECK_NO_ROOM`). Re-run that probe before adding win32; add
-// it, and take out the refusal in `runCheck`, only when a denied write is
-// refused with a control that wrote. The commands are already named for the
-// host, so nothing else stands in the way.
+// does not start (`CHECK_NO_ROOM`). Take out the refusal in `runCheck` and the card's
+// only when that probe, re-run, has a denied write refused with a control that wrote.
+// The commands are already named for the host; the copy's paths and the `claude.exe`
+// lookup (npm's place only) have not been run on Windows.
 export const CHECK_NO_ROOM =
   "The check does not run on Windows yet: Claude Code's sandbox is switched off there, so nothing would stop the check's own run from changing your files or reaching the internet."
+// `failIfUnavailable` makes the run refuse to start where the sandbox cannot (a Linux
+// without bubblewrap, WSL1, and by its code Windows), rather than warn and run unfenced, and
+// `allowUnsandboxedCommands: false` takes away the shell's per-command way out of it,
+// which Claude Code's own instructions tell the model to use when the fence refuses.
+// Both are read from a --settings file (Claude Code 2.1.302). An `enabledPlatforms`
+// list is not: Claude Code reads it only from managed settings, so the mod sets none.
 export const checkSettings = (home: string, real: string): string =>
   JSON.stringify({
     sandbox: {
       enabled: true,
-      enabledPlatforms: ['darwin', 'linux'],
+      failIfUnavailable: true,
+      allowUnsandboxedCommands: false,
       filesystem: { denyWrite: checkDenyWrite(home, real) },
       network: { allowedDomains: [], allowLocalBinding: true },
     },
@@ -1547,7 +1555,7 @@ Read any file you need. Run the project's own checks (its tests, its type check,
 
 ## Your room and your time
 
-You run in your working directory, the copy. Run the project's checks and anything else you need there, write what you like there; nothing you do in it reaches the agent's folder, and the copy is removed when you finish. When a claim is about what is on disk now, read the agent's own folder with Read, Glob and Grep, since the copy is of one moment. No command needs approval, so none is refused for its shape. Two things still stop a command: the owner's own guard, which refuses for every agent on this machine the few things it refuses (rewriting shared history, deleting his data, making anything public), and the fence, which denies writes outside the copy and closes the network except for this Mac; a "sandbox violation" means you hit the fence and says nothing about the claim. If a command is refused, say so under "looked" rather than guessing.
+${a.copy === a.cwd ? `You run in the agent's own folder, since no copy of it could be made, and writes there are denied: read it with Read, Glob and Grep, and run only what writes nothing there. A check that would have to write in it is one you name under "looked" as not run.` : `You run in your working directory, the copy. Run the project's checks and anything else you need there, write what you like there; nothing you do in it reaches the agent's folder, and the copy is removed when you finish. When a claim is about what is on disk now, read the agent's own folder with Read, Glob and Grep, since the copy is of one moment.`} No command needs approval, so none is refused for its shape. Two things still stop a command: the owner's own guard, which refuses for every agent on this machine the few things it refuses (rewriting shared history, deleting his data, making anything public), and the fence, which denies writes ${a.copy === a.cwd ? "to the agent's folder and the owner's work" : 'outside the copy'} and closes the network except for this Mac, and which no command can be run outside of; a "sandbox violation" means you hit the fence and says nothing about the claim. If a command is refused, say so under "looked" rather than guessing.
 
 You have ${CHECK_TIMEOUT_WORDS} and ${CHECK_MAX_TURNS} turns in all, and an answer that never arrives is worth nothing to him, so spend them on reading and on the proof that matters most. Run the project's test command and its type check once each, the way the record shows the agent ran them. A slower tool, one that reruns the suite many times (a defect-planting or mutation run) or a full build, is worth its minutes only when a claim turns on it; otherwise say under "looked" that you did not run it and judge that claim from the record.
 

@@ -210,10 +210,12 @@ the only tool-level denials are the ones that edit through a tool, send, fetch t
 launch helpers. The fence is Claude Code's built-in sandbox, passed as settings for that run:
 writes are denied to the owner's work (the real project folder, `~/Developer`, `~/Documents`,
 `~/work`) and to the files Claude Code reads its own configuration from, and the network is
-closed except for this Mac, where agentsview answers. The owner's own guard hooks fire inside
+closed except for this Mac, where agentsview answers. The settings also make the run refuse to
+start where the sandbox cannot, rather than run unfenced, and take away the shell's way of
+asking to run one command outside it. The owner's own guard hooks fire inside
 the run as they do for every agent. The copy is removed when the run ends. When no copy can
 be made, the run starts in the project itself with writes there denied, and its brief says
-so. On Windows Claude Code's sandbox is switched off, so there is no room to run in: the
+so and tells it to run only what writes nothing there. On Windows Claude Code's sandbox is switched off, so there is no room to run in: the
 card says so in place of the check's price and offers no Check it button. The run's answer
 carries the count of refused commands; the card shows it, and the right number is zero,
 because a refusal in a room where nothing needs approval means the room has a hole. All of

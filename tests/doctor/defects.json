@@ -1072,5 +1072,23 @@
     "breaks": "On Windows the card offers Check it beside the note saying the check does not run there, a button that can only refuse.",
     "patch": "windows-check-button-kept.patch",
     "fixed": "2026-10-16"
+  },
+  {
+    "name": "fence-unavailable-runs",
+    "breaks": "Where the sandbox cannot start (a Linux without bubblewrap, WSL1), the check's run warns and goes on with no fence instead of refusing to start.",
+    "patch": "fence-unavailable-runs.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "fence-way-out-kept",
+    "breaks": "The check's shell may ask to run a command outside the sandbox, the way Claude Code's own instructions tell a model to when the fence refuses, so a write the fence denied can be made anyway.",
+    "patch": "fence-way-out-kept.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "no-copy-brief-says-write",
+    "breaks": "When no copy could be made and the check runs in the agent's own folder, its brief still tells it to write what it likes there and that the copy is removed after.",
+    "patch": "no-copy-brief-says-write.patch",
+    "fixed": "2026-10-16"
   }
 ]

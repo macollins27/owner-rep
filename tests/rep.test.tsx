@@ -346,6 +346,10 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   expect(prompt).toContain("The agent's folder: /tmp/x")
   const noCopy = checkPrompt({ sessionId: 'abc-123', cwd: '/tmp/x', copy: '/tmp/x', reading: 'the result', owner: [om('first ask')], brief, writtenAt: '2026-10-13T23:05:00.000Z', conditions: [], shown: [], from: 0 })
   expect(noCopy).toContain('the throwaway copy could not be made, so writes there are denied')
+  expect(noCopy).toContain("You run in the agent's own folder")
+  expect(noCopy).not.toContain('write what you like')
+  expect(noCopy).not.toContain('denies writes outside the copy')
+  expect(prompt).toContain('write what you like there')
   expect(prompt).toContain('2026-10-13T23:05:00.000Z')
   expect(prompt).toContain('changed:')
   expect(prompt).toContain('the result')
@@ -354,8 +358,12 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   expect(prompt).toContain('--direction desc --limit 40')
   expect(prompt).not.toContain('--from -40')
   const settings = checkSettings('/Users/o', '/tmp/x')
-  const room = JSON.parse(settings) as { sandbox: { enabled: boolean; filesystem: { denyWrite: string[]; allowWrite?: string[] }; network: { allowedDomains: string[] } } }
+  const room = JSON.parse(settings) as { sandbox: { enabled: boolean; failIfUnavailable?: boolean; allowUnsandboxedCommands?: boolean; enabledPlatforms?: string[]; filesystem: { denyWrite: string[]; allowWrite?: string[] }; network: { allowedDomains: string[] } } }
   expect(room.sandbox.enabled).toBe(true)
+  // Where the fence cannot start the run refuses, and no command can ask to run outside it.
+  expect(room.sandbox.failIfUnavailable).toBe(true)
+  expect(room.sandbox.allowUnsandboxedCommands).toBe(false)
+  expect(room.sandbox.enabledPlatforms).toBeUndefined()
   expect(room.sandbox.filesystem.denyWrite).toContain('/tmp/x')
   expect(room.sandbox.filesystem.denyWrite).toContain('/Users/o/Developer')
   expect(room.sandbox.filesystem.denyWrite).toContain('/Users/o/.claude/hooks')
@@ -4810,7 +4818,7 @@ test('rule: a home that is /tmp is a home: the session\'s file is looked for und
 
 // The copy's commands on a Unix host. With `gnu` the clone is refused before anything is
 // made, as GNU cp refuses -c on Linux; with `darwin` it fails part-way and leaves the
-// copy's folder behind, as Darwin's cp does on a socket or an unreadable file.
+// copy's folder behind, as Darwin's cp does on an unreadable file.
 const copyRoom = (on: On, cp: 'gnu' | 'darwin'): string[][] => {
   const runs: string[][] = []
   const made = new Set<string>()
@@ -4863,7 +4871,7 @@ test('rule: where cp refuses -c, as GNU cp on Linux does, the check runs in a pl
   ])
 })
 
-test('rule: where the clone fails part-way, as Darwin\'s cp does on a socket, no plain copy is made over it: the check runs in the agent\'s folder and the part-made copy is removed', async ($, on) => {
+test('rule: where the clone fails part-way, as Darwin\'s cp does on an unreadable file, no plain copy is made over it: the check runs in the agent\'s folder and the part-made copy is removed', async ($, on) => {
   const { runs, cwd, copy } = await copyCheck($, on, 'darwin')
   expect(cwd()).toBe('/tmp/x')
   expect(runs.filter(r => r[0] === 'cp')).toEqual([['cp', '-Rc', '/tmp/x', copy]])
