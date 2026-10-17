@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index be78020..072dacd 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1412,7 +1412,7 @@ export const pathLinksArgv = (home: string, path: string): string[] => [
+ // The places `pathLinksArgv` printed, one to a line; a last line cut at the output's cap is dropped.
+ export const linkTargets = (stdout: string, isCut: boolean): string[] => {
+   const lines = stdout.split('\n')
+-  return (isCut ? lines.slice(0, -1) : lines).filter(l => l.startsWith('/'))
++  return lines.filter(l => l.startsWith('/'))
+ }
+ 
+ // The install a command-path folder in the home belongs to: its first folder below the

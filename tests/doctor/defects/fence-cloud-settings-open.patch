@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index be78020..4607ba0 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1346,8 +1346,6 @@ export const checkDenyWrite = (home: string, real: string, path = '', links: str
+       `${home}/.tmux.conf`,
+       `${home}/.vimrc`,
+       `${home}/.vim`,
+-      `${home}/.aws`,
+-      `${home}/.kube`,
+       `${home}/package.json`,
+       `${home}/node_modules`,
+       `${home}/.node_modules`,

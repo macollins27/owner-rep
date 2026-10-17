@@ -1288,5 +1288,113 @@
     "breaks": "The store named to the check's run keeps pnpm's version folder, so pnpm looks for its store one level too deep, finds it empty, and an offline install fails.",
     "patch": "pnpm-store-keeps-version.patch",
     "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-npx-open",
+    "breaks": "npx's installs under ~/.npm/_npx are left writable to the check's run, so a package the run fetches or changes there is what the agent's next npx call runs.",
+    "patch": "fence-npx-open.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-rustup-open",
+    "breaks": "rustup's toolchains are left writable to the check's run, so it can change the compiler and cargo the agent and the owner run next.",
+    "patch": "fence-rustup-open.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-tool-settings-open",
+    "breaks": "The shell's alias file and the settings of tmux and vim are left writable to the check's run, so it can change what runs the next time the owner opens a shell, tmux or vim.",
+    "patch": "fence-tool-settings-open.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-cloud-settings-open",
+    "breaks": "The AWS and Kubernetes settings folders are left writable to the check's run, so it can change which account or cluster the owner's next command reaches.",
+    "patch": "fence-cloud-settings-open.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-node-home-open",
+    "breaks": "A package.json and the module folders node reads from the home are left writable to the check's run, so it can plant code that node loads for any project under the home.",
+    "patch": "fence-node-home-open.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "path-links-ignored",
+    "breaks": "The places the command path's links lead are asked for but left out of the fence, so a tool installed through a link in the path can be changed by the check's run.",
+    "patch": "path-links-ignored.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "path-links-not-asked",
+    "breaks": "The check never passes the links' targets to the fence, so a tool installed through a link in the command path can be changed by the check's run.",
+    "patch": "path-links-not-asked.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "path-links-exit-read",
+    "breaks": "A link question that exits with an error, as find does when one folder in the path is missing, is thrown away whole, so every link it did read is left writable.",
+    "patch": "path-links-exit-read.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "path-links-cut-kept",
+    "breaks": "When the link answer is cut at the output cap, its last, half-written line is kept as a place to deny, naming a folder that is not the one the link leads to.",
+    "patch": "path-links-cut-kept.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "links-throw-fails-check",
+    "breaks": "A machine where find cannot be asked about the command path's links fails the whole check instead of running it with no linked installs named.",
+    "patch": "links-throw-fails-check.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "install-caches-shared",
+    "breaks": "~/Library/Caches, ~/.local/state and ~/.cache are no longer treated as folders many programs share, so a command in one of them closes the whole folder to the check's run, and the caches the check needs to build and test are refused.",
+    "patch": "install-caches-shared.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "home-slash-kept",
+    "breaks": "A home given with a trailing slash keeps it, so every place in the fence is written with a double slash and may not match the place it names.",
+    "patch": "home-slash-kept.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "copy-inside-agent-folder",
+    "breaks": "When the agent works from the home itself, the check still copies the home, into a folder inside the home, so the copy tries to hold itself.",
+    "patch": "copy-inside-agent-folder.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "pnpm-asks-in-agent-folder",
+    "breaks": "pnpm is asked for its store in the agent's own folder instead of the copy, so a pnpm hook file in the agent's project runs outside the fence.",
+    "patch": "pnpm-asks-in-agent-folder.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "pnpm-runs-pnpmfile",
+    "breaks": "pnpm is asked for its store without being told to skip the project's hook file and to leave its own version alone, so the project's code, or a pnpm download, runs outside the fence.",
+    "patch": "pnpm-runs-pnpmfile.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "pnpm-throw-fails-check",
+    "breaks": "A machine where pnpm cannot be asked for its store fails the whole check instead of running it with no store named.",
+    "patch": "pnpm-throw-fails-check.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "no-fence-check-starts",
+    "breaks": "Once the fence has been found missing, a press on a card drawn before that starts the check anyway, unfenced.",
+    "patch": "no-fence-check-starts.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "no-fence-restart-unsaid",
+    "breaks": "The note saying the check cannot run without a sandbox no longer says that Claude Code must be restarted once the sandbox is installed, so the owner installs it and the check keeps refusing.",
+    "patch": "no-fence-restart-unsaid.patch",
+    "fixed": "2026-10-17"
   }
 ]

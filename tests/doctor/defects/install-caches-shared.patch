@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index be78020..c32ebc5 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1375,7 +1375,7 @@ export const SHELL_STARTUP = ['.zshenv', '.zprofile', '.zshrc', '.zlogin', '.zlo
+ // sits in the caches (`~/Library/Caches/fnm_multishells/<id>/bin` on a Mac, under
+ // `~/.local/state` on Linux), and guarding all of them would stop Go's, pip's and every
+ // other tool's cache inside the check.
+-const SHARED_FOLDERS = ['Library/Application Support', 'Library/Caches', 'Library', '.local/share', '.local/state', '.local', '.cache']
++const SHARED_FOLDERS = ['Library/Application Support', 'Library', '.local/share', '.local']
+ 
+ // Whether a folder is the copies' folder or holds it.
+ export const holdsCopiesOf = (home: string, dir: string): boolean => `${checkCopiesDir(home)}/`.startsWith(`${dir.replace(/\/+$/, '')}/`)

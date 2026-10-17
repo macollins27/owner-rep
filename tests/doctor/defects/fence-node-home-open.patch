@@ -1,0 +1,15 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index be78020..26dff91 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1348,10 +1348,6 @@ export const checkDenyWrite = (home: string, real: string, path = '', links: str
+       `${home}/.vim`,
+       `${home}/.aws`,
+       `${home}/.kube`,
+-      `${home}/package.json`,
+-      `${home}/node_modules`,
+-      `${home}/.node_modules`,
+-      `${home}/.node_libraries`,
+       `${home}/.npm/_npx`,
+       `${home}/.rustup/toolchains`,
+       `${home}/Library/Python`,

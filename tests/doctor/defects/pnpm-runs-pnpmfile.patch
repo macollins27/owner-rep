@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index bc6477a..39d154a 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -955,7 +955,7 @@ async function homeFor($: EngineInterface): Promise<string> {
+ // version left alone (`PNPM_ASK_ENV`), or '' when there is no pnpm or it does not answer
+ // (`pnpmStoreDir`).
+ async function pnpmStore($: EngineInterface, on: Host, copy: string): Promise<string> {
+-  const r = await $.process.run(hostArgv(on, PNPM_STORE_ARGV), { cwd: copy, env: PNPM_ASK_ENV, timeoutMs: PNPM_STORE_TIMEOUT_MS }).catch(() => null)
++  const r = await $.process.run(hostArgv(on, PNPM_STORE_ARGV), { cwd: copy, timeoutMs: PNPM_STORE_TIMEOUT_MS }).catch(() => null)
+   return r === null || r.exitCode !== 0 ? '' : pnpmStoreDir(r.stdout)
+ }
+ 

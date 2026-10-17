@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index be78020..6d53181 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1625,7 +1625,7 @@ export const noFenceNote = (stderr: string): string | null => {
+   const line = stderr.split('\n').find(l => l.includes(NO_FENCE_ERROR))
+   if (line === undefined) return null
+   const why = line.slice(line.indexOf(NO_FENCE_ERROR) + NO_FENCE_ERROR.length).trim()
+-  return `${NO_FENCE_LEAD}, so its run refused to start rather than run unfenced.${why === '' ? '' : ` Claude Code says: ${fit(why, 240)}`} Once what the sandbox needs is installed, restart Claude Code and the check can run.`
++  return `${NO_FENCE_LEAD}, so its run refused to start rather than run unfenced.${why === '' ? '' : ` Claude Code says: ${fit(why, 240)}`}`
+ }
+ // pnpm keeps its store in its own folder (`~/Library/pnpm/store` on a Mac), which the fence
+ // guards when that folder is on the command path. Inside the fence pnpm finds the store

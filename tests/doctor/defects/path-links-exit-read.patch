@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index bc6477a..61ce3a8 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -963,7 +963,7 @@ async function pnpmStore($: EngineInterface, on: Host, copy: string): Promise<st
+ // (`pathLinksArgv`), or none when the host does not answer.
+ async function pathLinks($: EngineInterface, on: Host, home: string, path: string): Promise<string[]> {
+   const r = await $.process.run(hostArgv(on, pathLinksArgv(home, path)), { timeoutMs: PATH_LINKS_TIMEOUT_MS }).catch(() => null)
+-  return r === null ? [] : linkTargets(r.stdout, r.isStdoutTruncated)
++  return r === null || r.exitCode !== 0 ? [] : linkTargets(r.stdout, r.isStdoutTruncated)
+ }
+ 
+ // The throwaway copy the check runs in: an APFS clone (cp -c) of the agent's folder as it

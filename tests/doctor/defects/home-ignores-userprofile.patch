@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index cf0a0e0..96c6ebb 100644
+index be78020..c41c5ff 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1370,7 +1370,7 @@ export const isWindowsHost = (host: Host): boolean => host.os === WINDOWS_OS
-  * has no config folder to look in. A home that is `/tmp` is a home like any other.
+@@ -1507,7 +1507,7 @@ export const isWindowsHost = (host: Host): boolean => host.os === WINDOWS_OS
+  * part and the fence's comparisons hold; a root (`/`, `C:\`) keeps its own.
   */
  export const homeOf = (home: string | undefined, userProfile: string | undefined): string =>
--  home !== undefined && home !== '' ? home : userProfile !== undefined && userProfile !== '' ? userProfile : ''
-+  home !== undefined && home !== '' ? home : ''
+-  (home !== undefined && home !== '' ? home : userProfile !== undefined && userProfile !== '' ? userProfile : '').replace(/([^:\\/])[\\/]+$/, '$1')
++  (home !== undefined && home !== '' ? home : '').replace(/([^:\\/])[\\/]+$/, '$1')
  
  /**
   * A Windows path a POSIX command will accept. Git's coreutils take forward

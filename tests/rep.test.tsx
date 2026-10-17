@@ -388,7 +388,7 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   expect(room.sandbox.filesystem.denyWrite).not.toContain('/Users/o/.npm')
   expect(room.sandbox.filesystem.denyWrite).not.toContain('/Users/o/.rustup')
   // Each command-path folder in the home is guarded as the install it belongs to.
-  const pathed = (JSON.parse(checkSettings('/Users/o', '/tmp/x', '/usr/bin:/Users/o/.cargo/bin:/Users/o/Library/pnpm/:/Users/o/.local/bin:/Users/o/.local/share/mise/installs/node/22.22.3/bin:/Users/o/.local/share/mise/shims:/Users/o/.turso:/Users/o/.cache:/Users/o/.cache/tool/bin:/Users/o:relative/bin')) as typeof room).sandbox.filesystem.denyWrite
+  const pathed = (JSON.parse(checkSettings('/Users/o', '/tmp/x', '/usr/bin:/Users/o/.cargo/bin:/Users/o/Library/pnpm/:/Users/o/.local/bin:/Users/o/.local/share/mise/installs/node/22.22.3/bin:/Users/o/.local/share/mise/shims:/Users/o/.turso:/Users/o/.cache:/Users/o/.cache/tool/bin:/Users/o/.cache/owner-rep/bin:/Users/o:relative/bin')) as typeof room).sandbox.filesystem.denyWrite
   expect(pathed).toContain('/Users/o/.cargo')
   expect(pathed).toContain('/Users/o/Library/pnpm')
   expect(pathed).toContain('/Users/o/.local/share/mise')
@@ -400,9 +400,12 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   expect(pathed).not.toContain('/Users/o/Library')
   expect(pathed).not.toContain('/usr/bin')
   expect(pathed).not.toContain('/Users/o')
-  // A path folder that holds the copies is not guarded; one beside them in the cache is guarded as its tool's.
+  // A path folder that holds the copies is not guarded; one beside them in the cache is guarded as its tool's,
+  // and one whose install would hold the copies is guarded as itself.
   expect(pathed).not.toContain('/Users/o/.cache')
   expect(pathed).toContain('/Users/o/.cache/tool')
+  expect(pathed).toContain('/Users/o/.cache/owner-rep/bin')
+  expect(pathed).not.toContain('/Users/o/.cache/owner-rep')
   expect(pathed).not.toContain('relative/bin')
   expect(pathed.some(p => copy.startsWith(p))).toBe(false)
   // Where a path folder or a link in one leads in the home, that install is guarded too.
