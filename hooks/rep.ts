@@ -1431,6 +1431,29 @@ export const copyArgvs = (host: Host, from: string, to: string): string[][] => [
 export const checkCopiesDir = (home: string): string => `${home}/.cache/owner-rep/checks`
 export const checkCopyDir = (home: string, sessionId: string): string => `${checkCopiesDir(home)}/${sessionId === '' ? 'session' : sessionId}`
 
+// WHY `win32` IS NOT IN `enabledPlatforms`, AND MUST NOT BE ADDED ON FAITH.
+// Claude Code 2.1.302 does ship a Windows sandbox — the binary carries
+// `CreateRestrictedToken`, `sandboxUserSid` and `icacls`, and its own help says
+// sandboxing applies on "macOS, Linux, WSL2, or Windows where enabled". It is
+// behind a feature gate that is OFF, so listing win32 buys nothing and hides
+// the fact that nothing is enforced.
+//
+// MEASURED 16 Oct 2026, Windows 11, Claude Code 2.1.302, with win32 added to
+// this list and a POSITIVE CONTROL in the same run: a `claude -p` holding Bash
+// was told to write one file inside its cwd and one inside a `denyWrite` path.
+// BOTH LANDED ON DISK. The control proves the run was live, so the breach is a
+// real breach and not a broken test. Claude Code said so itself on stderr:
+//
+//   Sandbox disabled: sandbox is enabled but the Windows sandbox is not active
+//   on this session (feature gate off). Commands will run WITHOUT sandboxing.
+//   Network and filesystem restrictions will NOT be enforced.
+//
+// SO ON WINDOWS THE ROOM IS NOT A ROOM. What stands between the check and the
+// owner's work there is: the copy (which is why making it work matters — see
+// the host layer above), the tool list, and nothing else. `Bash` is allowed and
+// was proven unconstrained under `--permission-mode default` in a `-p` run.
+// Re-run that probe before adding win32; add it only when a denied write is
+// refused with a control that wrote.
 export const checkSettings = (home: string, real: string): string =>
   JSON.stringify({
     sandbox: {
