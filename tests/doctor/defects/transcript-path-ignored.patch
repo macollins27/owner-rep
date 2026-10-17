@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index e25097b..202e57d 100644
+index 4159090..03bd835 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1008,7 +1008,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
+@@ -917,7 +917,7 @@ function holdTranscript(id: unknown, path: unknown): void {
+ // the rows.
+ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordRow[]): Promise<HumanItem[] | null> {
    try {
-     const on = await hostOf($)
-     const local = (p: string): string => (isWindowsHost(on) ? slashed(p) : p)
--    let path = local(transcripts.get(sid) ?? '')
+-    let path = transcripts.get(sid) ?? ''
 +    let path = ''
      if (path === '') {
        const set = await $.env.get('CLAUDE_CONFIG_DIR')
-       const home = await homeFor($)
+       const home = await $.env.get('HOME')

@@ -77,6 +77,9 @@ import {
   forkCandidates,
   lastToolId,
   toolLineFind,
+  startFind,
+  summaryStart,
+  summaryLineFind,
   toolLineOf,
   humanReadBefore,
   type HumanItem,
@@ -1005,17 +1008,22 @@ function holdTranscript(id: unknown, path: unknown): void {
 // config folder CLAUDE_CONFIG_DIR or ~/.claude, and with none found nothing is read. sed
 // keeps only the lines marked human, picture data blanked (humanRead); a read that finds
 // none means he typed nothing. A read cut at the output cap is not taken: for the session's
-// own file nothing is read. A session forked with a new id has no file of its own until its
-// first message is saved: the newest files in its file's folder are read instead, one at a
-// time, at most HUMAN_SCAN_MAX within HUMAN_SCAN_BUDGET_MS, a cut read skipped, and the file
-// whose items match the most of the fork's rows (forkItems; the newest on a tie) gives its
-// part up to the last match and the queued messages right after it, the scan stopping once
-// every row that could be his is matched. A fork taken after a compaction he has typed nothing
-// since holds no such row: its parent is then the newest file holding its last tool result
-// (lastToolId), and his messages are the ones before that result's line. Null when nothing
-// could be read in the session's own file, and when the scan matched none of the fork's rows,
-// whether no file could be read whole or the files read hold none of them: a file that
-// matches nothing proves nothing about who wrote the rows.
+// own file nothing is read. A session forked after a compaction may have a file of its own
+// that begins at the summary (summaryStart), holding none of what he typed before it: the
+// newest other files in its folder are searched for that summary line, one at a time, at
+// most HUMAN_SCAN_MAX within HUMAN_SCAN_BUDGET_MS, and his messages are those before it in
+// the first file that holds any there (a copy of the copy holds none), then the copy's own;
+// with no such file, the copy's own alone. A session forked with a new id has no file of
+// its own until its first message is saved: the newest other files are read instead, a cut
+// read skipped, and the file whose items match the most of the fork's rows (forkItems; the
+// newest on a tie) gives its part up to the last match and the queued messages right after
+// it, the scan stopping once every row that could be his is matched. A fork taken after a
+// compaction he has typed nothing since holds no such row: its parent is then the newest
+// file holding the call of its last tool result (lastToolId), and his messages are the ones
+// before that call's line. Null when nothing could be read in the session's own file, and
+// when the scan matched none of the fork's rows, whether no file could be read whole or the
+// files read hold none of them: a file that matches nothing proves nothing about who wrote
+// the rows.
 async function heldItems($: EngineInterface, sid: string, rows: readonly RecordRow[]): Promise<HumanItem[] | null> {
   try {
     const on = await hostOf($)
@@ -1032,34 +1040,45 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
     }
     const read = (file: string, timeoutMs: number) => $.process.run(hostArgv(on, humanRead(file)), { timeoutMs })
     const own = await read(path, HUMAN_READ_TIMEOUT_MS)
-    if (own.exitCode === 0) return own.isStdoutTruncated ? null : humanItems(own.stdout)
+    let summary: string | null = null
+    if (own.exitCode === 0) {
+      if (own.isStdoutTruncated) return null
+      const begins = await $.process.run(hostArgv(on, startFind(path)), { timeoutMs: HUMAN_READ_TIMEOUT_MS })
+      summary = begins.exitCode === 0 ? summaryStart(begins.stdout) : null
+      if (summary === null) return humanItems(own.stdout)
+    }
+    const copied = own.exitCode === 0 ? humanItems(own.stdout) : []
     const folder = folderOf(path)
-    const want = forkCandidates(rows).length
-    const anchor = want === 0 ? lastToolId(rows) : null
-    if (want === 0 && anchor === null) return null
+    const name = path.slice(folder.length + 1)
+    const want = summary === null ? forkCandidates(rows).length : 0
+    const anchor = summary === null && want === 0 ? lastToolId(rows) : null
+    if (summary === null && want === 0 && anchor === null) return null
     const start = await $.clock.now()
     const left = async () => HUMAN_SCAN_BUDGET_MS - ((await $.clock.now()) - start)
     const listed = await $.process.run(hostArgv(on, ['ls', '-t', folder]), { timeoutMs: HUMAN_READ_TIMEOUT_MS })
-    if (listed.exitCode !== 0) return null
+    if (listed.exitCode !== 0) return summary === null ? null : copied
     const files = listed.stdout
       .split('\n')
       .map(f => f.trim())
-      .filter(f => f.endsWith('.jsonl'))
+      .filter(f => f.endsWith('.jsonl') && f !== name)
       .slice(0, HUMAN_SCAN_MAX)
-    if (anchor !== null) {
+    if (summary !== null || anchor !== null) {
       for (const file of files) {
         const remaining = await left()
         if (remaining <= 0) break
-        const at = await $.process.run(hostArgv(on, toolLineFind(`${folder}/${file}`, anchor)), { timeoutMs: Math.min(HUMAN_READ_TIMEOUT_MS, remaining) })
+        const find = summary !== null ? summaryLineFind(`${folder}/${file}`, summary) : toolLineFind(`${folder}/${file}`, anchor ?? '')
+        const at = await $.process.run(hostArgv(on, find), { timeoutMs: Math.min(HUMAN_READ_TIMEOUT_MS, remaining) })
         const line = at.exitCode === 0 ? toolLineOf(at.stdout) : null
         if (line === null) continue
         const time = await left()
         if (time <= 0) break
         const found = await $.process.run(hostArgv(on, humanReadBefore(`${folder}/${file}`, line)), { timeoutMs: Math.min(HUMAN_READ_TIMEOUT_MS, time) })
         if (found.exitCode !== 0 || found.isStdoutTruncated) continue
-        return humanItems(found.stdout)
+        const before = humanItems(found.stdout)
+        if (summary === null) return before
+        if (before.length > 0) return [...before, ...copied]
       }
-      return null
+      return summary === null ? null : copied
     }
     let best: { items: HumanItem[]; matched: number } = { items: [], matched: 0 }
     for (const file of files) {

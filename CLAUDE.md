@@ -37,7 +37,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 172 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 177 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions of this checkout in tmux, the strip captured to tests/live/captures
 ```
@@ -314,9 +314,18 @@ user with origin kind `human` and not `isMeta`, and the lines of type attachment
 `typedForm` (a command as `/name args`, reminders removed), its `key` the `typedKey`
 (whitespace folded); one with an empty key or a text `NOT_TYPED` names is skipped, and one
 sent twice is two items. `humanTexts` is the set of their keys, which the record read labels
-by. When the session's own file cannot be read (a session forked with a new id has none
-until its first message is saved; the path held still names the right folder), the newest
-`.jsonl` files in its folder (`folderOf`, `ls -t`) are read one at a time, at most
+by. A session's own file that begins at a summary is a copy: Claude Code 2.1.302 can save a
+fork taken after a compaction as the parent's stretch since the summary, with none of what he
+typed before it. `startFind` (`grep -n -o -m 1 -E`) prints the file's first compaction mark,
+with the mark's line's one `"uuid"`, or line he typed, and `summaryStart` reads the summary's
+id when the mark comes first. The newest other `.jsonl` files in the folder are then searched
+for that line (`summaryLineFind`), within the limits below, and the first one holding any of
+his messages before it gives those (`humanReadBefore`), followed by the copy's own; a copy of
+the copy, which holds the line with nothing before it, is passed over, and with no file
+found the copy's own messages stand alone. When the session's own file cannot be read (a
+session forked with a new id has none until its first message is saved; the path held still
+names the right folder), the newest `.jsonl` files in its folder other than its own
+(`folderOf`, `ls -t`) are read one at a time, at most
 `HUMAN_SCAN_MAX` (40), within `HUMAN_SCAN_BUDGET_MS` (30 seconds) for the whole scan, each
 read given no more than the time left. A fork's rows are its parent's and then its own, so
 `forkItems` matches the fork's candidate rows (`forkCandidates`: user rows with no tool
@@ -348,10 +357,12 @@ back or sent under a build that kept no `rec.drafts`, and against `droppedDrafts
 from a session whose record was let go is too. A session with no row is not read. One whose
 rows hold no candidate (reopened or forked after a compaction he has typed nothing since,
 so the summary and the agent's work are all its rows) is read all the same: its own file
-whole, and in the scan, where nothing typed can be matched, the newest file holding its last
-tool result (`lastToolId`, found by `toolLineFind`, `grep -n -o -m 1 -F`, and `toolLineOf`)
-gives the items before that line (`humanReadBefore`, `sed` stopping there), a cut read
-skipped; with no tool result either, nothing past its own file is read. `seedOwner`
+whole, and in the scan, where nothing typed can be matched, the newest file holding the call
+of its last tool result (`lastToolId`, found by `toolLineFind`, `grep -n -o -m 1 -F` on the
+call's `"id"`, and `toolLineOf`) gives the items before that line (`humanReadBefore`, `sed`
+stopping there), a cut read skipped; the call, not the result, because a fork taken while a
+tool ran holds a result Claude Code marks interrupted, which its parent saves only later.
+With no tool result either, nothing past its own file is read. `seedOwner`
 runs one seed per session at a time (`seeding`), and
 `prompt.submit` awaits it before recording a prompt or a note, so a prompt sent during the
 start's read is numbered after the seeded messages; the objective is rewritten when that

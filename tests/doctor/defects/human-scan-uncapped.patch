@@ -1,12 +1,12 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 0d59fb2..953d638 100644
+index 4159090..d5863c0 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -934,7 +934,6 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
+@@ -950,7 +950,6 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
        .split('\n')
        .map(f => f.trim())
-       .filter(f => f.endsWith('.jsonl'))
+       .filter(f => f.endsWith('.jsonl') && f !== name)
 -      .slice(0, HUMAN_SCAN_MAX)
-     if (anchor !== null) {
+     if (summary !== null || anchor !== null) {
        for (const file of files) {
          const remaining = await left()

@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 686e809..f81b7a7 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -935,7 +935,7 @@ export function lastToolId(rows: readonly RecordRow[]): string | null {
+ // line's number and the match, so a long line never fills the output. The call, not its
+ // result, because a fork taken while the call ran holds a result its parent had not saved
+ // (Claude Code marks it interrupted), and the call is saved before it runs.
+-export const toolLineFind = (file: string, id: string): string[] => ['grep', '-n', '-o', '-m', '1', '-F', `"id":"${id}"`, file]
++export const toolLineFind = (file: string, id: string): string[] => ['grep', '-n', '-o', '-m', '1', '-F', `"tool_use_id":"${id}"`, file]
+ export function toolLineOf(stdout: string): number | null {
+   const n = Number(stdout.match(/^(\d+):/)?.[1] ?? NaN)
+   return Number.isInteger(n) && n > 0 ? n : null
