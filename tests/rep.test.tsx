@@ -1,7 +1,7 @@
 import type { On, SessionMessage } from 'claude-code'
 import { expect, mock, test, type Engine } from 'claude-code/testing'
 
-import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX } from '../hooks/rep'
+import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX } from '../hooks/rep'
 
 const om = (text: string, n = 1): OwnerMsg => ({ n, kind: 'his', text, prior: '' })
 
@@ -3316,11 +3316,13 @@ const transcript = (on: On, files: Record<string, string>, opts: { folder?: stri
     const name = path.slice(folder.length + 1)
     const body = path.startsWith(`${folder}/`) ? files[name] : undefined
     if (body === undefined) return out(e.argv[0] === 'grep' ? 2 : 1)
-    // grep -n -o -m 1 -F: the number of the first line holding the text, and the text.
+    // grep -n -o -m 1 -F (or -E): the number of the first line holding the text (or a match
+    // of the pattern), and the text matched.
     if (e.argv[0] === 'grep') {
       const text = e.argv[6] ?? '\u0000'
-      const at = body.split('\n').findIndex(l => l.includes(text))
-      return at < 0 ? out(1) : out(0, `${at + 1}:${text}\n`)
+      const match = (l: string) => e.argv[5] === '-E' ? l.match(new RegExp(text))?.[0] : l.includes(text) ? text : undefined
+      const at = body.split('\n').findIndex(l => match(l) !== undefined)
+      return at < 0 ? out(1) : out(0, `${at + 1}:${match(body.split('\n')[at] ?? '')}\n`)
     }
     // sed -n -E -e <n>q -e <script>: the script run on the lines before line n.
     const before = e.argv[3] === '-e' ? Number((e.argv[4] ?? '').replace(/q$/, '')) : Infinity
@@ -3338,7 +3340,8 @@ const transcript = (on: On, files: Record<string, string>, opts: { folder?: stri
 // The runs `heldItems` makes, as a session would see them.
 const SED = (file: string, folder = FOLDER) => `sed -n -E /"kind":"human"/{s/"data":"[^"]*"/"data":""/g;p;} ${folder}/${file}`
 const FIND = (id = 'test-session') => `find ${PROJECTS} -maxdepth 2 -name ${id}.jsonl`
-const GREP = (file: string, id: string, folder = FOLDER) => `grep -n -o -m 1 -F "tool_use_id":"${id}" ${folder}/${file}`
+const GREP = (file: string, id: string, folder = FOLDER) => `grep -n -o -m 1 -F "id":"${id}" ${folder}/${file}`
+const START = (file: string, folder = FOLDER) => `grep -n -o -m 1 -E "subtype":"compact_boundary".*"uuid":"[0-9a-f-]+"|"kind":"human" ${folder}/${file}`
 const SED_BEFORE = (file: string, line: number, folder = FOLDER) => `sed -n -E -e ${line}q -e /"kind":"human"/{s/"data":"[^"]*"/"data":""/g;p;} ${folder}/${file}`
 
 // The transcript path Claude Code gives a session through its classic hooks.
@@ -3780,7 +3783,7 @@ test('rule: a press in a session the rep holds no record of records his messages
   expect(rec()?.owner).toEqual(SEEDED)
   expect(rec()?.owner.length).toBe(2)
   // No path was given by Claude Code here, so the file is found by its name.
-  expect(runs.map(r => r.join(' '))).toEqual([FIND(), SED('test-session.jsonl')])
+  expect(runs.map(r => r.join(' '))).toEqual([FIND(), SED('test-session.jsonl'), START('test-session.jsonl')])
   expect(prompts.length).toBe(1)
   const fence = (prompts[0] ?? '').match(/<his_messages>\n([\s\S]*?)\n<\/his_messages>/)?.[1] ?? ''
   expect(fence).toMatch(/Add a licence file with the MIT text\./)
@@ -3801,7 +3804,7 @@ test('rule: a session start with no record of the session records his messages f
   await settle($)
   expect(rec()?.owner).toEqual(SEEDED)
   // No path was given by Claude Code here, so the file is found by its name.
-  expect(runs.map(r => r.join(' '))).toEqual([FIND(), SED('test-session.jsonl')])
+  expect(runs.map(r => r.join(' '))).toEqual([FIND(), SED('test-session.jsonl'), START('test-session.jsonl')])
   expect(prompts.length).toBe(1)
   expect(rec()?.objective?.result).toBe('A licence file with the MIT text and this year.')
 })
@@ -3875,9 +3878,10 @@ const COMPACTED_ROWS: SessionMessage[] = [
   { role: 'user', text: '', toolUses: [], toolResults: [{ tool_use_id: 'toolu_01Push', text: 'pushed', isError: false }] },
   { role: 'assistant', text: 'The licence is pushed.', toolUses: [] },
 ]
-// A tool's result as a transcript saves it.
+// A tool's call and its result as a transcript saves them.
+const USE_LINE = (id: string) => JSON.stringify({ type: 'assistant', message: { id: 'msg_01', role: 'assistant', content: [{ type: 'tool_use', id, name: 'Bash', input: { command: 'git push' } }] }, uuid: 'a' })
 const RESULT_LINE = (id: string) => JSON.stringify({ type: 'user', message: { role: 'user', content: [{ tool_use_id: id, type: 'tool_result', content: 'pushed' }] }, uuid: 't' })
-const COMPACTED_FILE = [LINE('Add a licence file with the MIT text.'), LINE('Use this year, and push it.'), LINE(SUMMARY, {}), RESULT_LINE('toolu_01Push')].join('\n')
+const COMPACTED_FILE = [LINE('Add a licence file with the MIT text.'), LINE('Use this year, and push it.'), LINE(SUMMARY, {}), USE_LINE('toolu_01Push'), RESULT_LINE('toolu_01Push')].join('\n')
 const COMPACTED = [
   { n: 1, kind: 'his', text: 'Add a licence file with the MIT text.', prior: '' },
   { n: 2, kind: 'his', text: 'Use this year, and push it.', prior: '' },
@@ -3892,8 +3896,11 @@ test('lastToolId is the id of the rows\' last tool result, a tool\'s own id only
   expect(lastToolId([...COMPACTED_ROWS, odd])).toBe('toolu_01Push')
   expect(lastToolId([odd, { role: 'assistant', text: 'Done.', toolUses: [] }])).toBeNull()
   expect(lastToolId([])).toBeNull()
-  expect(toolLineFind('/f/a.jsonl', 'toolu_01Push')).toEqual(['grep', '-n', '-o', '-m', '1', '-F', '"tool_use_id":"toolu_01Push"', '/f/a.jsonl'])
-  expect(toolLineOf('412:"tool_use_id":"toolu_01Push"\n')).toBe(412)
+  // The call is searched, not its result: "id" never matches inside "tool_use_id".
+  expect(toolLineFind('/f/a.jsonl', 'toolu_01Push')).toEqual(['grep', '-n', '-o', '-m', '1', '-F', '"id":"toolu_01Push"', '/f/a.jsonl'])
+  expect(USE_LINE('toolu_01Push')).toContain('"id":"toolu_01Push"')
+  expect(RESULT_LINE('toolu_01Push')).not.toContain('"id":"toolu_01Push"')
+  expect(toolLineOf('412:"id":"toolu_01Push"\n')).toBe(412)
   expect(toolLineOf('')).toBeNull()
   expect(toolLineOf('0:x')).toBeNull()
   expect(humanReadBefore('/f/a.jsonl', 412)).toEqual(['sed', '-n', '-E', '-e', '412q', '-e', HUMAN_SED, '/f/a.jsonl'])
@@ -3910,7 +3917,7 @@ test('rule: a session reopened after a compaction he has typed nothing since, th
   await started($)
   await settle($)
   expect(rec()?.owner).toEqual(COMPACTED)
-  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl')])
+  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), START('test-session.jsonl')])
   expect(prompts.length).toBe(1)
   expect(rec()?.objective?.result).toBe('A licence file with the MIT text and this year.')
 })
@@ -3935,6 +3942,104 @@ test('rule: a fork taken after a compaction he has typed nothing since, its own 
     GREP('parent.jsonl', 'toolu_01Push'),
     SED_BEFORE('parent.jsonl', 4),
   ])
+})
+
+// A compaction line as Claude Code saves it, its one "uuid" after its mark, and a line of the
+// session's settings, which a copy begins with.
+const BOUNDARY_ID = '7c538ad4-5d0b-476d-becf-b74fb2383386'
+const BOUNDARY = (id = BOUNDARY_ID) => JSON.stringify({ parentUuid: null, logicalParentUuid: 'f61bb726', isSidechain: false, type: 'system', subtype: 'compact_boundary', content: 'Conversation compacted', compactMetadata: { trigger: 'auto', preservedSegment: { headUuid: '531b7712', anchorUuid: '5a80f8a5' } }, uuid: id, timestamp: '2026-10-16T09:00:00.000Z' })
+const META = JSON.stringify({ type: 'mode', mode: 'normal', sessionId: 'test-session' })
+const SUMMARY_GREP = (file: string, folder = FOLDER) => `grep -n -o -m 1 -F "uuid":"${BOUNDARY_ID}" ${folder}/${file}`
+// A fork's rows after a compaction: one message he typed after the summary in the parent, the
+// call the fork was taken during, and one he typed in the fork.
+const TAIL_ROWS: SessionMessage[] = [
+  { role: 'user', text: SUMMARY, toolUses: [] },
+  { role: 'user', text: 'Keep the year in the header too.', toolUses: [] },
+  { role: 'assistant', text: 'The header has the year.', toolUses: [{ tool_use_id: 'toolu_01Push', tool: 'Bash', input: { command: 'git push' }, text: '' }] },
+  { role: 'user', text: '', toolUses: [], toolResults: [{ tool_use_id: 'toolu_01Push', text: "[Tool call interrupted: the session ended before this call's result was recorded.]", isError: true }] },
+  { role: 'assistant', text: 'Pushed.', toolUses: [] },
+  { role: 'user', text: 'And a changelog.', toolUses: [] },
+]
+// The fork's own file, as saved: its settings, then the parent's stretch since the summary,
+// then what he typed in the fork.
+const TAIL_COPY = [META, META, BOUNDARY(), LINE(SUMMARY, {}), LINE('Keep the year in the header too.'), USE_LINE('toolu_01Push'), RESULT_LINE('toolu_01Push'), LINE('And a changelog.')].join('\n')
+const TAILED = [
+  ...COMPACTED,
+  { n: 3, kind: 'his', text: 'Keep the year in the header too.', prior: '' },
+  { n: 4, kind: 'his', text: 'And a changelog.', prior: 'Pushed.' },
+]
+
+test('startFind finds a file\'s first compaction mark, with its id, or line he typed; summaryStart reads the id only when the mark comes first; summaryLineFind finds that summary line elsewhere', () => {
+  expect(startFind('/f/a.jsonl')).toEqual(['grep', '-n', '-o', '-m', '1', '-E', '"subtype":"compact_boundary".*"uuid":"[0-9a-f-]+"|"kind":"human"', '/f/a.jsonl'])
+  expect(summaryStart(`8:"subtype":"compact_boundary","content":"Conversation compacted","compactMetadata":{"preservedSegment":{"headUuid":"5a80f8a5"}},"uuid":"${BOUNDARY_ID}"\n`)).toBe(BOUNDARY_ID)
+  expect(summaryStart('1:"kind":"human"\n')).toBeNull()
+  expect(summaryStart('')).toBeNull()
+  expect(summaryStart('8:"subtype":"compact_boundary"\n')).toBeNull()
+  expect(summaryLineFind('/f/a.jsonl', BOUNDARY_ID)).toEqual(['grep', '-n', '-o', '-m', '1', '-F', `"uuid":"${BOUNDARY_ID}"`, '/f/a.jsonl'])
+})
+
+test('rule: a fork taken after a compaction, its own transcript saved as a copy of the stretch since the summary, takes his messages before that summary from the file it was forked from and then the copy\'s own, never the parent\'s later ones, passing over a copy of the copy', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: TAIL_ROWS }))
+  // The parent: his two messages, the summary, one he typed after it before the fork, the
+  // tool call the fork was taken during, and a message he sent there after the fork.
+  const parent = [LINE('Add a licence file with the MIT text.'), LINE('Use this year, and push it.'), BOUNDARY(), LINE(SUMMARY, {}), LINE('Keep the year in the header too.'), USE_LINE('toolu_01Push'), LINE('Now add a readme.'), RESULT_LINE('toolu_01Push')].join('\n')
+  // A copy of the copy: the same summary line, with nothing of his before it.
+  const copy = [META, BOUNDARY(), LINE(SUMMARY, {})].join('\n')
+  const runs = transcript(on, { 'test-session.jsonl': TAIL_COPY, 'newer.jsonl': LINE('Something he typed elsewhere.'), 'copy.jsonl': copy, 'parent.jsonl': parent, 'older.jsonl': parent })
+  const prompts = writer(on, () => OBJ('A licence file with the MIT text and this year, and a changelog.', ['the file pushed | open'], '#1 to #4'))
+  await giveTranscript($, on)
+  await started($)
+  await settle($)
+  expect(rec()?.owner).toEqual(TAILED)
+  expect(runs.map(r => r.join(' '))).toEqual([
+    SED('test-session.jsonl'),
+    START('test-session.jsonl'),
+    `ls -t ${FOLDER}`,
+    // The copy itself, which holds the same line, is never searched.
+    SUMMARY_GREP('newer.jsonl'),
+    SUMMARY_GREP('copy.jsonl'),
+    SED_BEFORE('copy.jsonl', 2),
+    SUMMARY_GREP('parent.jsonl'),
+    SED_BEFORE('parent.jsonl', 3),
+  ])
+  expect(prompts.length).toBe(1)
+  expect(prompts[0]).not.toMatch(/Now add a readme/)
+})
+
+test('rule: a copy whose summary no other file in its folder holds gives the messages it holds itself', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: TAIL_ROWS }))
+  const runs = transcript(on, { 'test-session.jsonl': TAIL_COPY, 'newer.jsonl': LINE('Something he typed elsewhere.') })
+  writer(on, () => OBJ('A changelog.', ['the changelog written | open'], '#1 and #2'))
+  await giveTranscript($, on)
+  await started($)
+  await settle($)
+  expect(rec()?.owner).toEqual([
+    { n: 1, kind: 'his', text: 'Keep the year in the header too.', prior: '' },
+    { n: 2, kind: 'his', text: 'And a changelog.', prior: 'Pushed.' },
+  ])
+  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), START('test-session.jsonl'), `ls -t ${FOLDER}`, SUMMARY_GREP('newer.jsonl')])
+})
+
+test('rule: a fork taken while a tool call ran, its result marked interrupted and not yet saved in the parent, finds its place in the parent by that call', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  const interrupted: SessionMessage = { role: 'user', text: '', toolUses: [], toolResults: [{ tool_use_id: 'toolu_01Push', text: "[Tool call interrupted: the session ended before this call's result was recorded.]", isError: true }] }
+  on('session.messages', () => ({ value: [COMPACTED_ROWS[0], COMPACTED_ROWS[1], COMPACTED_ROWS[2], interrupted, { role: 'assistant', text: 'No response requested.', toolUses: [] }] as SessionMessage[] }))
+  // The parent holds the call and not yet its result.
+  const runs = transcript(on, { 'parent.jsonl': [LINE('Add a licence file with the MIT text.'), LINE('Use this year, and push it.'), LINE(SUMMARY, {}), USE_LINE('toolu_01Push')].join('\n') })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await giveTranscript($, on)
+  await started($)
+  await settle($)
+  expect(rec()?.owner).toEqual(COMPACTED)
+  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), `ls -t ${FOLDER}`, GREP('parent.jsonl', 'toolu_01Push'), SED_BEFORE('parent.jsonl', 4)])
 })
 
 test('rule: a fork whose rows hold neither a row he could have typed nor a tool result reads nothing past its own transcript, and seeds nothing', async ($, on) => {
@@ -4162,8 +4267,8 @@ test('rule: the transcript path Claude Code gives the session is the file read, 
   await started($)
   await settle($)
   expect(rec()?.owner).toEqual(SEEDED)
-  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl', started_in)])
-  expect(runs.timeouts).toEqual([HUMAN_READ_TIMEOUT_MS])
+  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl', started_in), START('test-session.jsonl', started_in)])
+  expect(runs.timeouts).toEqual([HUMAN_READ_TIMEOUT_MS, HUMAN_READ_TIMEOUT_MS])
 })
 
 test('rule: the transcript path a later prompt carries replaces the one held from the start', async ($, on) => {
@@ -4179,7 +4284,7 @@ test('rule: the transcript path a later prompt carries replaces the one held fro
   await started($)
   await settle($)
   expect(rec()?.owner).toEqual(SEEDED)
-  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl')])
+  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), START('test-session.jsonl')])
 })
 
 test('rule: a read of the session\'s transcript cut at the output cap proves nothing: nothing is seeded, and the record read labels his newer rows by their text, never as the session\'s', async ($, on) => {
@@ -4291,7 +4396,7 @@ test('rule: a message he typed while the agent worked, which is no row of the se
     { n: 2, kind: 'his', text: 'Use the Apache text, not MIT.', prior: '' },
     { n: 3, kind: 'his', text: '2026, and push it.', prior: 'Which year should it carry?' },
   ])
-  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl')])
+  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), START('test-session.jsonl')])
 })
 
 test('rule: a fork whose own transcript is not saved yet takes the best-matching file in its folder up to its last matched message and the queued one right after, never the parent\'s later messages', async ($, on) => {
@@ -4404,6 +4509,7 @@ const heldSeed = (on: On) => {
   const reads = { reads: 0 }
   on('process.run', async (_$, e) => {
     if (e.argv[0] === 'find') return { value: { exitCode: 0, stdout: `${HELD()}\n`, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+    if (e.argv[0] === 'grep') return { value: { exitCode: 0, stdout: '1:"kind":"human"\n', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
     reads.reads += 1
     await gate
     const lines = SEEDED_FILE.split('\n').filter(l => l.includes('"kind":"human"'))

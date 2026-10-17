@@ -919,8 +919,8 @@ export const folderOf = (path: string): string => path.slice(0, Math.max(0, path
 export const HUMAN_SED = '/"kind":"human"/{s/"data":"[^"]*"/"data":""/g;p;}'
 export const humanRead = (file: string): string[] => ['sed', '-n', '-E', HUMAN_SED, file]
 // A fork taken after a compaction he has typed nothing since holds no row that could be his,
-// so its place in its parent's file is found by its last tool result instead: that result's
-// id (a tool's own id, letters, digits, '_' and '-'), or null when the rows hold none.
+// so its place in its parent's file is found by its last tool result instead: the id of that
+// result's call (a tool's own id, letters, digits, '_' and '-'), or null when the rows hold none.
 export function lastToolId(rows: readonly RecordRow[]): string | null {
   for (let i = rows.length - 1; i >= 0; i--) {
     const results = rows[i]?.toolResults ?? []
@@ -931,15 +931,28 @@ export function lastToolId(rows: readonly RecordRow[]): string | null {
   }
   return null
 }
-// The first line of a transcript file that holds that result: grep prints only the line's
-// number and the match, so a long result never fills the output.
-export const toolLineFind = (file: string, id: string): string[] => ['grep', '-n', '-o', '-m', '1', '-F', `"tool_use_id":"${id}"`, file]
+// The first line of a transcript file that holds that tool's call: grep prints only the
+// line's number and the match, so a long line never fills the output. The call, not its
+// result, because a fork taken while the call ran holds a result its parent had not saved
+// (Claude Code marks it interrupted), and the call is saved before it runs.
+export const toolLineFind = (file: string, id: string): string[] => ['grep', '-n', '-o', '-m', '1', '-F', `"id":"${id}"`, file]
 export function toolLineOf(stdout: string): number | null {
   const n = Number(stdout.match(/^(\d+):/)?.[1] ?? NaN)
   return Number.isInteger(n) && n > 0 ? n : null
 }
 // A read of the lines before that one, as humanRead reads a whole file: sed stops there.
 export const humanReadBefore = (file: string, line: number): string[] => ['sed', '-n', '-E', '-e', `${line}q`, '-e', HUMAN_SED, file]
+// A session's own file that begins at a summary is a copy of another file's tail: Claude Code
+// saves a fork taken after a compaction as the stretch since the summary, so what he typed
+// before it is only in the file it was forked from, which holds the same summary line. grep
+// prints the first line holding a compaction mark or a line he typed, the mark's line with
+// its own id (every compaction line holds one "uuid", after its mark), and summaryStart reads
+// that id when the line is the mark, or null when the file begins with a line he typed or
+// holds neither.
+export const startFind = (file: string): string[] => ['grep', '-n', '-o', '-m', '1', '-E', '"subtype":"compact_boundary".*"uuid":"[0-9a-f-]+"|"kind":"human"', file]
+export const summaryStart = (stdout: string): string | null => stdout.match(/^\d+:"subtype":"compact_boundary".*"uuid":"([0-9a-f-]+)"/)?.[1] ?? null
+// The first line of a transcript file that holds that summary line, as toolLineFind finds a call.
+export const summaryLineFind = (file: string, id: string): string[] => ['grep', '-n', '-o', '-m', '1', '-F', `"uuid":"${id}"`, file]
 // One read of one transcript file, and the search for a session's file by its name: long
 // enough for the largest session file on disk.
 export const HUMAN_READ_TIMEOUT_MS = 10_000
