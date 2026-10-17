@@ -27,7 +27,7 @@ Behind that row are three reads of increasing cost.
 |---|---|---|---|
 | **Watch** | Every eighth model request of a turn, and at every stop | A fresh model instance over the agent's cached conversation, no tools | Mostly cache reads; never blocks the agent |
 | **Briefing** | On a press (`1` or click) | Same mechanism, longer brief | One model call; two when its answer is refused and asked again (below) |
-| **Check** | On a second press, only when chosen | A separate headless `claude -p` run in a throwaway copy of the project, fenced, over the session record and the real files; on Windows, where Claude Code's sandbox is off, it does not start and the card says why | Measured at about 210k fresh tokens plus 2.2M cache reads, about two minutes |
+| **Check** | On a second press, only when chosen | A separate headless `claude -p` run in a throwaway copy of the project, fenced, over the session record and the real files; on Windows, where Claude Code's sandbox is off, it does not start and the card says why | Measured on a Mac at about 210k fresh tokens plus 2.2M cache reads, about two minutes; on Linux the copy is a full one, so a large project adds the time to copy it |
 
 The **watch** stays silent unless it finds something with a cost to the owner: work dropped
 or shrunk, a claim not shown, a test never run, the easy option taken in place of the right
