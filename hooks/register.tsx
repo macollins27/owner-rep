@@ -62,7 +62,10 @@ import {
   typedFromItems,
   forkItems,
   forkCandidates,
-  candidateKeys,
+  lastToolId,
+  toolLineFind,
+  toolLineOf,
+  humanReadBefore,
   type HumanItem,
   folderOf,
   humanRead,
@@ -898,10 +901,12 @@ function holdTranscript(id: unknown, path: unknown): void {
 // time, at most HUMAN_SCAN_MAX within HUMAN_SCAN_BUDGET_MS, a cut read skipped, and the file
 // whose items match the most of the fork's rows (forkItems; the newest on a tie) gives its
 // part up to the last match and the queued messages right after it, the scan stopping once
-// every row that could be his is matched. Null when nothing could be read in the session's own
-// file, and when the scan matched none of the fork's rows, whether no file could be read whole
-// or the files read hold none of them: a file that matches nothing proves nothing about who
-// wrote the rows.
+// every row that could be his is matched. A fork taken after a compaction he has typed nothing
+// since holds no such row: its parent is then the newest file holding its last tool result
+// (lastToolId), and his messages are the ones before that result's line. Null when nothing
+// could be read in the session's own file, and when the scan matched none of the fork's rows,
+// whether no file could be read whole or the files read hold none of them: a file that
+// matches nothing proves nothing about who wrote the rows.
 async function heldItems($: EngineInterface, sid: string, rows: readonly RecordRow[]): Promise<HumanItem[] | null> {
   try {
     let path = transcripts.get(sid) ?? ''
@@ -918,6 +923,9 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
     const own = await read(path, HUMAN_READ_TIMEOUT_MS)
     if (own.exitCode === 0) return own.isStdoutTruncated ? null : humanItems(own.stdout)
     const folder = folderOf(path)
+    const want = forkCandidates(rows).length
+    const anchor = want === 0 ? lastToolId(rows) : null
+    if (want === 0 && anchor === null) return null
     const start = await $.clock.now()
     const left = async () => HUMAN_SCAN_BUDGET_MS - ((await $.clock.now()) - start)
     const listed = await $.process.run(['ls', '-t', folder], { timeoutMs: HUMAN_READ_TIMEOUT_MS })
@@ -927,7 +935,21 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
       .map(f => f.trim())
       .filter(f => f.endsWith('.jsonl'))
       .slice(0, HUMAN_SCAN_MAX)
-    const want = forkCandidates(rows).length
+    if (anchor !== null) {
+      for (const file of files) {
+        const remaining = await left()
+        if (remaining <= 0) break
+        const at = await $.process.run(toolLineFind(`${folder}/${file}`, anchor), { timeoutMs: Math.min(HUMAN_READ_TIMEOUT_MS, remaining) })
+        const line = at.exitCode === 0 ? toolLineOf(at.stdout) : null
+        if (line === null) continue
+        const time = await left()
+        if (time <= 0) break
+        const found = await $.process.run(humanReadBefore(`${folder}/${file}`, line), { timeoutMs: Math.min(HUMAN_READ_TIMEOUT_MS, time) })
+        if (found.exitCode !== 0 || found.isStdoutTruncated) continue
+        return humanItems(found.stdout)
+      }
+      return null
+    }
     let best: { items: HumanItem[]; matched: number } = { items: [], matched: 0 }
     for (const file of files) {
       const remaining = await left()
@@ -963,7 +985,10 @@ async function storedDrafts($: EngineInterface): Promise<string[]> {
 // read nothing is seeded), and recorded in that order as `prompt.submit` records them, each
 // with the agent's last words before it from the session's rows, none when no row holds it
 // (typedFromItems), a draft he sent split off as the rep's, matched against the drafts of every
-// record in the store, those it holds among his messages included, and those of records let go. It does nothing when the record holds a message or a note of his, so
+// record in the store, those it holds among his messages included, and those of records let go.
+// A session with no rows yet (a new one) is not read; one whose rows hold nothing he typed (one
+// reopened after a compaction he has typed nothing since) is read all the same, since the
+// file holds what the rows lost. It does nothing when the record holds a message or a note of his, so
 // it never adds to a live record. Says whether it recorded any. One read per session at a
 // time: a seed asked for while one runs (the start's, when he sends a prompt at once) is
 // that one, and `prompt.submit` waits for it, so his live prompt is numbered after it.
@@ -979,7 +1004,7 @@ async function seedOnce($: EngineInterface, sid: string): Promise<boolean> {
   const has = (rec: Rec) => rec.owner.some(m => m.kind !== 'draft')
   if (has(await loadRec($, sid))) return false
   const rows = await $.session.messages().catch(() => [])
-  if (candidateKeys(rows).size === 0) return false
+  if (rows.length === 0) return false
   const items = await heldItems($, sid, rows)
   if (items === null) return false
   const typed = typedFromItems(items, rows)
