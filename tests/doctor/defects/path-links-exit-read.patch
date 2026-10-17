@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 712d162..499f32c 100644
+index 2b88dea..f8c616f 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -966,7 +966,7 @@ async function pnpmStore($: EngineInterface, on: Host, copy: string): Promise<st
- // (`pathLinksArgv`), or none when the host does not answer.
- async function pathLinks($: EngineInterface, on: Host, home: string, path: string): Promise<string[]> {
+@@ -969,7 +969,7 @@ async function pnpmStore($: EngineInterface, on: Host, copy: string): Promise<st
+ // (`pathLinksArgv`), or null when the host does not answer, which the brief then says.
+ async function pathLinks($: EngineInterface, on: Host, home: string, path: string): Promise<string[] | null> {
    const r = await $.process.run(hostArgv(on, pathLinksArgv(home, path)), { timeoutMs: PATH_LINKS_TIMEOUT_MS }).catch(() => null)
--  return r === null ? [] : linkTargets(r.stdout, r.isStdoutTruncated)
-+  return r === null || r.exitCode !== 0 ? [] : linkTargets(r.stdout, r.isStdoutTruncated)
+-  return r === null ? null : linkTargets(r.stdout, r.isStdoutTruncated)
++  return r === null || r.exitCode !== 0 ? null : linkTargets(r.stdout, r.isStdoutTruncated)
  }
  
- // The repository a `.git` file in the folder the check runs in points at (`gitDirsOf`), read
+ // The git repositories the copy and the agent's folder reach (`gitFindArgv`, `gitDirsOf`),

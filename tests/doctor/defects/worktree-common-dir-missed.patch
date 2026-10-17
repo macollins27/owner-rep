@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index da6558b..043c380 100644
+index 351c987..30e78de 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1436,7 +1436,7 @@ export const gitDirsOf = (folder: string, stdout: string): string[] => {
-   if (line === '') return []
-   const dir = resolved(line.startsWith('/') ? line : `${folder}/${line}`)
-   const common = /^(.+)\/worktrees\/[^/]+$/.exec(dir)
--  return [common?.[1] ?? dir]
-+  return [dir]
- }
- // An absolute path with its `.` and `..` parts worked out, as a relative pointer is read
- // from the folder that holds it.
+@@ -1491,7 +1491,7 @@ export const gitDirsOf = (own: string[], stdout: string): string[] => {
+       if (to === '') continue
+       const dir = resolved(to.startsWith('/') ? to : `${folder}/${to}`)
+       const common = /^(.+)\/worktrees\/[^/]+$/.exec(dir)?.[1]
+-      dirs.push(...(common === undefined ? [dir] : [common, dir]))
++      dirs.push(dir)
+     }
+   }
+   const mine = (d: string): boolean => own.some(o => `${d}/`.startsWith(`${o.replace(/\/+$/, '')}/`))

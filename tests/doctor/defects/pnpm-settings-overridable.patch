@@ -1,26 +1,26 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 712d162..96fb4e7 100644
+index 2b88dea..30765cc 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -958,7 +958,7 @@ async function homeFor($: EngineInterface): Promise<string> {
- // version left alone on its command line (`PNPM_STORE_ARGV`), or '' when there is no pnpm or
- // it does not answer (`pnpmStoreDir`).
+@@ -961,7 +961,7 @@ async function homeFor($: EngineInterface): Promise<string> {
+ // corepack's network off (`COREPACK_ASK_ENV`), or '' when there is no pnpm or it does not
+ // answer (`pnpmStoreDir`).
  async function pnpmStore($: EngineInterface, on: Host, copy: string): Promise<string> {
--  const r = await $.process.run(hostArgv(on, PNPM_STORE_ARGV), { cwd: copy, timeoutMs: PNPM_STORE_TIMEOUT_MS }).catch(() => null)
-+  const r = await $.process.run(hostArgv(on, PNPM_STORE_ARGV), { cwd: copy, env: { npm_config_ignore_pnpmfile: 'true', npm_config_manage_package_manager_versions: 'false' }, timeoutMs: PNPM_STORE_TIMEOUT_MS }).catch(() => null)
+-  const r = await $.process.run(hostArgv(on, PNPM_STORE_ARGV), { cwd: copy, env: COREPACK_ASK_ENV, timeoutMs: PNPM_STORE_TIMEOUT_MS }).catch(() => null)
++  const r = await $.process.run(hostArgv(on, PNPM_STORE_ARGV), { cwd: copy, env: { ...COREPACK_ASK_ENV, npm_config_ignore_pnpmfile: 'true', npm_config_manage_package_manager_versions: 'false', npm_config_offline: 'true' }, timeoutMs: PNPM_STORE_TIMEOUT_MS }).catch(() => null)
    return r === null || r.exitCode !== 0 ? '' : pnpmStoreDir(r.stdout)
  }
  
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index da6558b..42a57f7 100644
+index 351c987..9ddf175 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1674,7 +1674,7 @@ export const noFenceNote = (stderr: string): string | null => {
- // line beats the project's `pnpm-workspace.yaml`, which beats the same settings given in the
- // environment (measured 17 Oct 2026, pnpm 10.26.2), so a project cannot turn either back on.
- // It is asked in the copy, and in the agent's folder where no copy is made.
--export const PNPM_STORE_ARGV = ['pnpm', 'store', 'path', '--config.ignore-pnpmfile=true', '--config.manage-package-manager-versions=false']
+@@ -1739,7 +1739,7 @@ export const noFenceNote = (stderr: string): string | null => {
+ // reads its command line; with its network off (`COREPACK_ASK_ENV`) it runs a pinned pnpm it
+ // already holds and fetches none (measured in node:22-bookworm, corepack 0.36.0). It is
+ // asked in the copy, and in the agent's folder where no copy is made.
+-export const PNPM_STORE_ARGV = ['pnpm', 'store', 'path', '--config.ignore-pnpmfile=true', '--config.manage-package-manager-versions=false', '--config.offline=true']
 +export const PNPM_STORE_ARGV = ['pnpm', 'store', 'path']
+ export const COREPACK_ASK_ENV = { COREPACK_ENABLE_NETWORK: '0' }
  export const PNPM_STORE_ENV = 'npm_config_store_dir'
  export const PNPM_STORE_TIMEOUT_MS = 10000
- export const pnpmStoreDir = (stdout: string): string => {

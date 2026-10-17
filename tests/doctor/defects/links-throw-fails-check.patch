@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index bc6477a..aa7a1a3 100644
+index 2b88dea..1bcc2c2 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -962,7 +962,7 @@ async function pnpmStore($: EngineInterface, on: Host, copy: string): Promise<st
+@@ -968,7 +968,7 @@ async function pnpmStore($: EngineInterface, on: Host, copy: string): Promise<st
  // Where the command path's folders and the links in them lead, asked outside the fence
- // (`pathLinksArgv`), or none when the host does not answer.
- async function pathLinks($: EngineInterface, on: Host, home: string, path: string): Promise<string[]> {
+ // (`pathLinksArgv`), or null when the host does not answer, which the brief then says.
+ async function pathLinks($: EngineInterface, on: Host, home: string, path: string): Promise<string[] | null> {
 -  const r = await $.process.run(hostArgv(on, pathLinksArgv(home, path)), { timeoutMs: PATH_LINKS_TIMEOUT_MS }).catch(() => null)
 +  const r = await $.process.run(hostArgv(on, pathLinksArgv(home, path)), { timeoutMs: PATH_LINKS_TIMEOUT_MS })
-   return r === null ? [] : linkTargets(r.stdout, r.isStdoutTruncated)
+   return r === null ? null : linkTargets(r.stdout, r.isStdoutTruncated)
  }
  

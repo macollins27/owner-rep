@@ -1405,7 +1405,7 @@
   },
   {
     "name": "pnpm-settings-overridable",
-    "breaks": "pnpm's two settings are given in the environment, where a project's pnpm-workspace.yaml overrides them, so a project can turn its hook file back on and have it run outside the fence.",
+    "breaks": "pnpm's settings are given in the environment, where a project's pnpm-workspace.yaml overrides them, so a project can turn its hook file back on and have it run outside the fence.",
     "patch": "pnpm-settings-overridable.patch",
     "fixed": "2026-10-17"
   },
@@ -1435,13 +1435,13 @@
   },
   {
     "name": "repo-git-open",
-    "breaks": "The repository a copied worktree points at is not fenced, so a commit made in the copy moves the real branch and changes the real worktree.",
+    "breaks": "The repositories the git question finds are not fenced, so a commit made in a copied worktree moves the real branch, and one made where the agent works in a subfolder moves the branch of the repository above it.",
     "patch": "repo-git-open.patch",
     "fixed": "2026-10-17"
   },
   {
     "name": "repo-git-not-asked",
-    "breaks": "The repository the copy's .git file names is read but never passed to the fence, so a commit made in a copied worktree moves the real branch.",
+    "breaks": "The repositories the git question finds are never passed to the fence, so a commit made in a copied worktree moves the real branch.",
     "patch": "repo-git-not-asked.patch",
     "fixed": "2026-10-17"
   },
@@ -1453,19 +1453,19 @@
   },
   {
     "name": "repo-pointer-unresolved",
-    "breaks": "A relative .git pointer is fenced as written, a path relative to nowhere, so where no copy is made the repository it names stays open.",
+    "breaks": "A relative .git pointer is handed to the fence as written, a path read from a folder of Claude Code's choosing rather than the folder the .git is in, so the repository is guarded only where the two agree.",
     "patch": "repo-pointer-unresolved.patch",
     "fixed": "2026-10-17"
   },
   {
     "name": "repo-throw-fails-check",
-    "breaks": "A machine where the .git pointer cannot be read fails the whole check instead of running it with no repository named.",
+    "breaks": "A machine where find cannot be asked for the .git places fails the whole check instead of running it with no repository named and the brief saying so.",
     "patch": "repo-throw-fails-check.patch",
     "fixed": "2026-10-17"
   },
   {
     "name": "repo-holds-copies-kept",
-    "breaks": "A pointer to a repository that holds the copies' folder fences the copies too, so the check cannot write in its own copy.",
+    "breaks": "A repository found at the home, or one holding the copies' folder, is fenced whole, copies and all, so the check cannot write in its own copy.",
     "patch": "repo-holds-copies-kept.patch",
     "fixed": "2026-10-17"
   },
@@ -1473,6 +1473,66 @@
     "name": "brief-repo-unsaid",
     "breaks": "The brief does not name the repository among the places the fence guards, so the run is not told why staging or committing in the copy is refused.",
     "patch": "brief-repo-unsaid.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "pnpm-goes-online",
+    "breaks": "pnpm is asked for its store without being told to stay offline, so a project's pnpm-workspace.yaml can have pnpm download the config dependencies it lists, outside the fence, where the network is open.",
+    "patch": "pnpm-goes-online.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "corepack-fetches-pin",
+    "breaks": "pnpm is asked for its store with corepack's network on, so where pnpm comes through corepack a project that pins a pnpm version has it downloaded outside the fence, before pnpm reads the settings that would stop it.",
+    "patch": "corepack-fetches-pin.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-walk-not-upward",
+    "breaks": "Only the .git in the copy and in the agent's folder is asked for, never one above them, so where the agent works in a subfolder of a repository, or the copy has no .git of its own, the repository git finds above is left open to commits.",
+    "patch": "git-walk-not-upward.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-lead-dropped",
+    "breaks": "Where a .git leads is not fenced, so a copy whose .git is a link to history kept elsewhere reaches that history, and a commit there moves the real branch.",
+    "patch": "git-lead-dropped.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-copy-fenced",
+    "breaks": "The places the git question finds inside the copy are fenced too, so the copy itself is fenced whole and the check can write nothing in its own copy.",
+    "patch": "git-copy-fenced.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "unanswered-not-passed",
+    "breaks": "When the link or git question gets no answer the brief still says the fence guards the repository and the installs the links lead to, so the run may commit or change an install trusting a guard that is not there.",
+    "patch": "unanswered-not-passed.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "links-unanswered-as-none",
+    "breaks": "A link question that gets no answer counts as one that found no links, so the brief says the installs the links lead to are guarded when they are not.",
+    "patch": "links-unanswered-as-none.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "repos-unanswered-as-none",
+    "breaks": "A git question that gets no answer counts as one that found no repository, so the brief says the repository is guarded when it is not, and the run may commit in it.",
+    "patch": "repos-unanswered-as-none.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "brief-repo-unanswered-unsaid",
+    "breaks": "When the git question gets no answer the brief still says the repository is guarded, so the run may stage, commit or stash in a repository the fence does not guard.",
+    "patch": "brief-repo-unanswered-unsaid.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "brief-links-unanswered-unsaid",
+    "breaks": "When the link question gets no answer the brief does not say the installs the links lead to are unguarded, so the run may change one believing the fence would stop it.",
+    "patch": "brief-links-unanswered-unsaid.patch",
     "fixed": "2026-10-17"
   }
 ]

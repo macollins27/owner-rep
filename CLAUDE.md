@@ -37,7 +37,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 189 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 192 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions of this checkout in tmux, the strip captured to tests/live/captures
 ```
@@ -197,12 +197,21 @@ call writes (below):
    it, so a home on the path guards its links and not every folder in it, with
    `-exec readlink -f {} ;`, one name to each call as BusyBox's readlink takes, its exit
    code not read, a cut last line dropped by `linkTargets`, none on a throw or past
-   `PATH_LINKS_TIMEOUT_MS`, 30 seconds; under two on this Mac); and the repository a `.git`
-   file in the folder the run uses points at (`gitRepos` reads it with `gitPointerArgv`
-   before the run, outside the fence; `gitDirsOf` names, for a worktree, the whole git
-   folder above `worktrees/<name>`, a relative pointer read from the folder, wherever it
-   is): a copy of a worktree keeps that pointer, so a commit in it would move the real
-   branch; reading through git still works there, adding and committing are refused), the
+   `PATH_LINKS_TIMEOUT_MS`, 30 seconds; under two on this Mac); and every git repository
+   the copy and the agent's folder reach (`gitRepos` asks before the run, outside the
+   fence, with `gitFindArgv`: `find` over the `.git` in the copy, the agent's folder and
+   every folder above either, `foldersUp`, printing each one found, where it leads by
+   `readlink -f` and its `gitdir:` line, under `GIT_FIND_TIMEOUT_MS`, its exit code not
+   read; `gitDirsOf` names the folder holding each `.git`, where it leads, the folder its
+   pointer names read from the folder holding the `.git`, and for a worktree the git
+   folder above `worktrees/<name>` too, leaving out any place in the copy or the agent's
+   folder): a copy keeps the agent's `.git`, so a copy of a worktree or of a `.git` link
+   reaches the real history, git in a copy with no `.git` of its own finds one above it,
+   and with no copy the run works in a folder that may be a subfolder of its repository;
+   reading through git still works, adding, committing and stashing are refused; where the
+   host does not answer the link or the git question, `pathLinks` or `gitRepos` gives null
+   and the brief says the installs the links lead to, or the repository, could not be
+   found, `CheckArgs.unanswered`), the
    brief naming the
    main ones, saying no list names every one, rather than saying all writes outside the copy
    are denied, and the network closed except
@@ -227,12 +236,16 @@ call writes (below):
    nothing, the note saying a restart of Claude Code clears it once the sandbox's missing
    piece is installed, and `checkBarred` keeps Check it off a card with either note. Before
    the run, `pnpm store path` is asked in the copy outside the fence (`pnpmStore`; in the
-   agent's folder where no copy is made), with `--config.ignore-pnpmfile=true` and
-   `--config.manage-package-manager-versions=false` on its command line (`PNPM_STORE_ARGV`:
-   the project's `.pnpmfile.cjs` not loaded and no pinned pnpm installed, both of which a
-   bare ask does outside the fence; the command line beats a project's
-   `pnpm-workspace.yaml`, which beats the environment, so the project cannot turn either
-   back on), and the answer, its version folder
+   agent's folder where no copy is made), with `--config.ignore-pnpmfile=true`,
+   `--config.manage-package-manager-versions=false` and `--config.offline=true` on its
+   command line (`PNPM_STORE_ARGV`: the project's `.pnpmfile.cjs` not loaded, no pinned
+   pnpm installed and no config dependency downloaded, all of which a bare ask does
+   outside the fence; the command line beats a project's `pnpm-workspace.yaml`, which
+   beats the environment, so the project cannot turn any back on) and
+   `COREPACK_ENABLE_NETWORK=0` in its environment (`COREPACK_ASK_ENV`: where pnpm comes
+   through corepack, corepack fetches a pinned pnpm before pnpm reads its command line;
+   with its network off it runs one it already holds and fetches none, measured with
+   corepack 0.36.0), and the answer, its version folder
    taken off (`pnpmStoreDir`), passed to the run as `npm_config_store_dir`: inside the fence
    pnpm finds its store unwritable, moves it into a scratch folder, and an offline install
    there fails (measured 17 Oct 2026, pnpm 10). The three questions come before the run's clock

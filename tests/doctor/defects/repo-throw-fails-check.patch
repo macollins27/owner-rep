@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 712d162..0c7353a 100644
+index 2b88dea..0e81cad 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -972,7 +972,7 @@ async function pathLinks($: EngineInterface, on: Host, home: string, path: strin
- // The repository a `.git` file in the folder the check runs in points at (`gitDirsOf`), read
- // outside the fence, or none when there is no such file or it cannot be read.
- async function gitRepos($: EngineInterface, on: Host, copy: string): Promise<string[]> {
--  const r = await $.process.run(hostArgv(on, gitPointerArgv(copy)), { timeoutMs: GIT_POINTER_TIMEOUT_MS }).catch(() => null)
-+  const r = await $.process.run(hostArgv(on, gitPointerArgv(copy)), { timeoutMs: GIT_POINTER_TIMEOUT_MS })
-   return r === null ? [] : gitDirsOf(copy, r.stdout)
+@@ -975,7 +975,7 @@ async function pathLinks($: EngineInterface, on: Host, home: string, path: strin
+ // The git repositories the copy and the agent's folder reach (`gitFindArgv`, `gitDirsOf`),
+ // asked outside the fence, or null when the host does not answer, which the brief then says.
+ async function gitRepos($: EngineInterface, on: Host, copy: string, cwd: string): Promise<string[] | null> {
+-  const r = await $.process.run(hostArgv(on, gitFindArgv([copy, cwd])), { timeoutMs: GIT_FIND_TIMEOUT_MS }).catch(() => null)
++  const r = await $.process.run(hostArgv(on, gitFindArgv([copy, cwd])), { timeoutMs: GIT_FIND_TIMEOUT_MS })
+   return r === null ? null : gitDirsOf([copy, cwd], r.stdout)
  }
  

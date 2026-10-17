@@ -1,8 +1,8 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index bc6477a..1eaa156 100644
+index 2b88dea..40cac6c 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -948,7 +948,7 @@ async function lookUpHost($: EngineInterface, os: string): Promise<Host> {
+@@ -953,7 +953,7 @@ async function lookUpHost($: EngineInterface, os: string): Promise<Host> {
  // built from it is.
  async function homeFor($: EngineInterface): Promise<string> {
    const home = homeOf(await $.env.get('HOME'), await $.env.get('USERPROFILE'))
@@ -10,4 +10,4 @@ index bc6477a..1eaa156 100644
 +  return home
  }
  
- // pnpm's store as pnpm names it in the copy, outside the fence, its pnpmfile ignored and its
+ // pnpm's store as pnpm names it in the copy, outside the fence, its pnpmfile ignored, its

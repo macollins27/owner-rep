@@ -1,5 +1,5 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index da6558b..9284955 100644
+index 351c987..01fff66 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
 @@ -1418,7 +1418,7 @@ export const pathLinksArgv = (home: string, path: string): string[] => [
@@ -10,4 +10,4 @@ index da6558b..9284955 100644
 +  return lines.filter(l => l.startsWith('/'))
  }
  
- // A copy of a git worktree, or of a repository whose git data is kept elsewhere, keeps the
+ // Git keeps a repository's history in a `.git` folder, or in a folder a `.git` file points

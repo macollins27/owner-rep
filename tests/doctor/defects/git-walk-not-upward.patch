@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 351c987..b580af1 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1441,7 +1441,7 @@ export const linkTargets = (stdout: string, isCut: boolean): string[] => {
+ export const GIT_FIND_TIMEOUT_MS = 10000
+ export const gitFindArgv = (folders: string[]): string[] => [
+   'find',
+-  ...new Set(folders.flatMap(foldersUp).map(f => `${f === '/' ? '' : f}/.git`)),
++  ...new Set(folders.map(f => `${f === '/' ? '' : f}/.git`)),
+   '-maxdepth',
+   '0',
+   '-exec',
