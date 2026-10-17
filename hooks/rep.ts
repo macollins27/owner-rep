@@ -1289,6 +1289,145 @@ export const checkDenyWrite = (home: string, real: string): string[] => [
   `${home}/.claude/keybindings.json`,
 ]
 
+// ── THE HOST THE CHECK'S COMMANDS RUN ON ────────────────────────────────────
+//
+// The check copies the agent's folder and reads transcripts with six external
+// commands — mkdir, rm, cp, find, ls, sed — and spawns `claude` to do the
+// reading. All seven are written for a Unix host, and on WINDOWS not one of
+// them runs. Measured on Windows 11, Claude Code 2.1.302, 16 Oct 2026:
+//
+//   * `HOME` IS NOT GUARANTEED on Windows, so `home` fell back to `/tmp` and
+//     every path built from it — the copies folder, the deny list, the
+//     transcript folder — was wrong. Measured both ways on one machine: empty
+//     in a native Windows process, and set to the profile folder in a process
+//     launched from Git Bash, which inherits it. `USERPROFILE` is always set,
+//     so it is the fallback and `HOME` still wins where it answers.
+//   * None of the six commands is on PATH. Git for Windows ships all six, in a
+//     `usr/bin` its installer deliberately leaves off PATH, so each one has to
+//     be named by its full path.
+//   * `cp -Rc` asks for a copy-on-write clone. `-c` is APFS, so only Darwin's
+//     cp takes it: GNU cp answers `cp: unknown option -- c` and the copy fails.
+//     That is a LINUX bug as much as a Windows one, so the clone is attempted
+//     and the plain copy is its fallback, rather than guessing by platform.
+//   * `claude` on PATH is a shim (`.cmd` / `.ps1` / a bash script). Node cannot
+//     spawn a `.cmd` without a shell, and routing a prompt of this size through
+//     a shell would mean quoting it. The npm package ships `bin/claude.exe`, a
+//     real executable, so that is spawned directly and nothing is quoted.
+//
+// WHY THIS IS WORTH FIXING AND NOT JUST REPORTING. `makeCopy` degrades to the
+// agent's OWN folder when the copy fails, which is safe only because the room
+// denies writes there. This mod does not enable the sandbox on Windows
+// (`enabledPlatforms` below), so the degraded path put a 120-turn checker
+// holding Bash in the owner's real repository with nothing denying a write.
+// Fixing the copy closes that, and the brief's "could not be copied" line
+// stops being the normal case on the platform.
+
+/** `OS` as Windows sets it. The variable is absent on Darwin and on Linux. */
+export const WINDOWS_OS = 'Windows_NT'
+
+/** The commands the check runs that a Windows host cannot resolve by name. */
+export const POSIX_COMMANDS = ['mkdir', 'rm', 'cp', 'find', 'ls', 'sed'] as const
+
+/**
+ * What a command needs to be named for the host it runs on. Read once per check
+ * and passed down, so every function below stays pure and testable.
+ *
+ * `posixBin` and `claude` are '' when the name on PATH is already correct, which
+ * is the Unix case and leaves those hosts' argv untouched.
+ */
+export type Host = {
+  /** `OS` from the environment: `Windows_NT` on Windows, '' anywhere else. */
+  os: string
+  /** Folder holding the POSIX commands, or '' when they are on PATH. */
+  posixBin: string
+  /** The `claude` binary to spawn, or '' to spawn the name on PATH. */
+  claude: string
+}
+
+/** A host that resolves every command by name, which is Darwin and Linux. */
+export const PATH_HOST: Host = { os: '', posixBin: '', claude: '' }
+
+export const isWindowsHost = (host: Host): boolean => host.os === WINDOWS_OS
+
+/**
+ * The home folder, which is `HOME` everywhere but Windows and `USERPROFILE`
+ * there. `/tmp` stays the last resort it already was, so a host that answers
+ * for neither behaves as before rather than throwing.
+ */
+export const homeOf = (home: string | undefined, userProfile: string | undefined): string =>
+  home !== undefined && home !== '' ? home : userProfile !== undefined && userProfile !== '' ? userProfile : '/tmp'
+
+/**
+ * Where Git for Windows keeps the coreutils, in the order they are tried. The
+ * installer's own default is first; the user-scope install and the 32-bit
+ * folder follow, because a machine may have only one of them.
+ */
+/**
+ * A Windows path a POSIX command will accept. Git's coreutils take forward
+ * slashes and a drive letter, and mixing separators in one path is what breaks
+ * them, so the whole path is written one way.
+ *
+ * The candidate lists below are slashed as they are built, so the path a probe
+ * PROVES is the identical string later run. Slashing only at the point of use
+ * meant the probe tested one spelling and the command ran another.
+ */
+export const slashed = (path: string): string => path.replace(/\\/g, '/')
+
+export const winPosixBinCandidates = (
+  programFiles: string | undefined,
+  programFilesX86: string | undefined,
+  localAppData: string | undefined,
+): string[] =>
+  [
+    programFiles === undefined || programFiles === '' ? '' : `${programFiles}/Git/usr/bin`,
+    localAppData === undefined || localAppData === '' ? '' : `${localAppData}/Programs/Git/usr/bin`,
+    programFilesX86 === undefined || programFilesX86 === '' ? '' : `${programFilesX86}/Git/usr/bin`,
+  ]
+    .filter(p => p !== '')
+    .map(slashed)
+
+/**
+ * Where npm puts Claude Code's own executable, in the order they are tried. The
+ * global install under `APPDATA` is first because that is where `npm i -g` puts
+ * it on Windows.
+ */
+export const winClaudeCandidates = (appData: string | undefined, localAppData: string | undefined): string[] =>
+  [
+    appData === undefined || appData === '' ? '' : `${appData}/npm/node_modules/@anthropic-ai/claude-code/bin/claude.exe`,
+    localAppData === undefined || localAppData === ''
+      ? ''
+      : `${localAppData}/npm/node_modules/@anthropic-ai/claude-code/bin/claude.exe`,
+  ]
+    .filter(p => p !== '')
+    .map(slashed)
+
+/**
+ * The argv to actually run, for a command written for a Unix host.
+ *
+ * On a PATH host this returns the argv unchanged, so Darwin and Linux keep
+ * exactly today's behaviour. On Windows the command is named by its full path
+ * and `.exe` is appended, because `spawn` without a shell needs both.
+ */
+export function hostArgv(host: Host, argv: readonly string[]): string[] {
+  const [name, ...rest] = argv
+  if (name === undefined) return []
+  if (name === 'claude') return [host.claude === '' ? 'claude' : host.claude, ...rest]
+  if (!isWindowsHost(host) || host.posixBin === '') return [name, ...rest]
+  if (!(POSIX_COMMANDS as readonly string[]).includes(name)) return [name, ...rest]
+  return [`${slashed(host.posixBin)}/${name}.exe`, ...rest]
+}
+
+/**
+ * The copy, in the two forms it is tried in: the APFS clone first, because on
+ * Darwin it is instant on a project of any size, and the plain recursive copy
+ * second, because every other cp rejects `-c`. The caller runs the first and
+ * falls back to the second, so no platform is guessed at.
+ */
+export const copyArgvs = (host: Host, from: string, to: string): string[][] => [
+  hostArgv(host, ['cp', '-Rc', from, to]),
+  hostArgv(host, ['cp', '-R', from, to]),
+]
+
 export const checkCopiesDir = (home: string): string => `${home}/.cache/owner-rep/checks`
 export const checkCopyDir = (home: string, sessionId: string): string => `${checkCopiesDir(home)}/${sessionId === '' ? 'session' : sessionId}`
 

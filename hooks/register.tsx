@@ -29,6 +29,15 @@ import {
   checkCopiesDir,
   checkCopyDir,
   checkSettings,
+  copyArgvs,
+  type Host,
+  homeOf,
+  hostArgv,
+  isWindowsHost,
+  PATH_HOST,
+  winClaudeCandidates,
+  winPosixBinCandidates,
+  WINDOWS_OS,
   refusedLine,
   checkPrompt,
   doingFor,
@@ -708,7 +717,8 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
   try {
     const rec = await loadRec($, sid)
     const cwd = await $.session.cwd()
-    const home = (await $.env.get('HOME')) ?? '/tmp'
+    const home = await homeFor($)
+    const checkHost = await hostOf($)
     const copy = await makeCopy($, home, sid, cwd)
     const prompt = checkPrompt({
       sessionId: sid,
@@ -723,7 +733,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       writtenAt: new Date(at).toISOString(),
     })
     const startedAt = Date.now()
-    const stream = $.process.spawn({ argv: checkArgv(prompt, checkSettings(home, cwd)), cwd: copy })
+    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd))), cwd: copy })
     let stdout = ''
     let stderr = ''
     let timedOut = false
@@ -749,7 +759,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
     } finally {
       stop.cancel()
       if (activeCheck !== null && epoch === checkEpoch) activeCheck = null
-      if (copy !== cwd) $.process.run(['rm', '-rf', copy], { timeoutMs: 120000 }).catch(() => undefined)
+      if (copy !== cwd) $.process.run(hostArgv(checkHost, ['rm', '-rf', copy]), { timeoutMs: 120000 }).catch(() => undefined)
     }
     if (timedOut) return finish({ checkNote: `The check ran out of time (${CHECK_TIMEOUT_WORDS}) and was stopped.` })
     const got = resultOf(stdout)
@@ -828,17 +838,92 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
 }
 
 // The throwaway copy the check runs in: an APFS clone (cp -c) of the agent's folder as it
+// The host, resolved once per process and then reused.
+//
+// Only Windows needs resolving, and it needs it because the names the check
+// runs — mkdir, rm, cp, find, ls, sed, claude — resolve to nothing there. Each
+// candidate is PROVEN by running it with `--version` rather than by testing a
+// path, so a machine with Git somewhere unusual, or with none at all, is told
+// apart from one where the folder merely exists. A host that answers for
+// nothing resolves to `PATH_HOST`, which is exactly today's behaviour: the
+// commands are tried by name, the copy fails, and the brief says it could not
+// be made.
+// KEYED ON `OS`, not held outright: a host is resolved once and reused, and the
+// key makes a stale answer impossible rather than merely unlikely. `OS` never
+// changes under a running session, so production resolves once; a test that
+// says the host is Windows gets a fresh resolution instead of whatever an
+// earlier test left behind, which is what a plain `Host | null` would have
+// handed it.
+let host: { os: string; value: Host } | null = null
+
+async function answers($: EngineInterface, argv: readonly string[]): Promise<boolean> {
+  try {
+    const got = await $.process.run([...argv, '--version'], { timeoutMs: 10000 })
+    return got.exitCode === 0
+  } catch {
+    return false
+  }
+}
+
+async function firstThatAnswers($: EngineInterface, candidates: readonly string[]): Promise<string> {
+  for (const candidate of candidates) {
+    if (await answers($, [candidate])) return candidate
+  }
+  return ''
+}
+
+async function hostOf($: EngineInterface): Promise<Host> {
+  const os = (await $.env.get('OS')) ?? ''
+  if (host !== null && host.os === os) return host.value
+  try {
+    if (os !== WINDOWS_OS) {
+      host = { os, value: PATH_HOST }
+      return host.value
+    }
+    const bins = winPosixBinCandidates(
+      await $.env.get('PROGRAMFILES'),
+      await $.env.get('ProgramFiles(x86)'),
+      await $.env.get('LOCALAPPDATA'),
+    )
+    let posixBin = ''
+    for (const bin of bins) {
+      if (await answers($, [`${bin}/mkdir.exe`])) {
+        posixBin = bin
+        break
+      }
+    }
+    const claude = await firstThatAnswers(
+      $,
+      winClaudeCandidates(await $.env.get('APPDATA'), await $.env.get('LOCALAPPDATA')),
+    )
+    host = { os, value: { os, posixBin, claude } }
+  } catch {
+    host = { os, value: PATH_HOST }
+  }
+  return host.value
+}
+
+async function homeFor($: EngineInterface): Promise<string> {
+  return homeOf(await $.env.get('HOME'), await $.env.get('USERPROFILE'))
+}
+
 // stands, uncommitted work included, made in a moment and taking no space until written
 // to (a 6.5 GB project cloned in 14 s on 15 Oct 2026). When the clone cannot be made the
 // check runs in the agent's own folder with writes there denied by the room, and the
 // brief says so.
 async function makeCopy($: EngineInterface, home: string, sid: string, cwd: string): Promise<string> {
   const copy = checkCopyDir(home, sid)
+  const on = await hostOf($)
   try {
-    await $.process.run(['rm', '-rf', copy], { timeoutMs: 120000 })
-    await $.process.run(['mkdir', '-p', checkCopiesDir(home)], { timeoutMs: 30000 })
-    const made = await $.process.run(['cp', '-Rc', cwd, copy], { timeoutMs: 600000 })
-    if (made.exitCode === 0) return copy
+    await $.process.run(hostArgv(on, ['rm', '-rf', copy]), { timeoutMs: 120000 })
+    await $.process.run(hostArgv(on, ['mkdir', '-p', checkCopiesDir(home)]), { timeoutMs: 30000 })
+    // The clone first, then the plain copy. `cp -Rc` asks for an APFS clone and
+    // only Darwin's cp takes it, so the second form is what runs on Windows and
+    // on Linux; trying both beats guessing by platform.
+    for (const argv of copyArgvs(on, cwd, copy)) {
+      const made = await $.process.run(argv, { timeoutMs: 600000 })
+      if (made.exitCode === 0) return copy
+    }
   } catch {
     // fall through: no copy
   }
@@ -907,20 +992,21 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
     let path = transcripts.get(sid) ?? ''
     if (path === '') {
       const set = await $.env.get('CLAUDE_CONFIG_DIR')
-      const home = await $.env.get('HOME')
-      const config = set !== undefined && set !== '' ? set : home !== undefined && home !== '' ? `${home}/.claude` : null
+      const home = await homeFor($)
+      const config = set !== undefined && set !== '' ? set : home !== '/tmp' ? `${home}/.claude` : null
       if (config === null) return null
-      const found = await $.process.run(['find', `${config}/projects`, '-maxdepth', '2', '-name', `${sid}.jsonl`], { timeoutMs: HUMAN_READ_TIMEOUT_MS })
+      const found = await $.process.run(hostArgv(await hostOf($), ['find', `${config}/projects`, '-maxdepth', '2', '-name', `${sid}.jsonl`]), { timeoutMs: HUMAN_READ_TIMEOUT_MS })
       path = found.exitCode === 0 ? (found.stdout.split('\n').find(l => l.trim() !== '')?.trim() ?? '') : ''
       if (path === '') return null
     }
-    const read = (file: string, timeoutMs: number) => $.process.run(humanRead(file), { timeoutMs })
+    const on = await hostOf($)
+    const read = (file: string, timeoutMs: number) => $.process.run(hostArgv(on, humanRead(file)), { timeoutMs })
     const own = await read(path, HUMAN_READ_TIMEOUT_MS)
     if (own.exitCode === 0) return own.isStdoutTruncated ? null : humanItems(own.stdout)
     const folder = folderOf(path)
     const start = await $.clock.now()
     const left = async () => HUMAN_SCAN_BUDGET_MS - ((await $.clock.now()) - start)
-    const listed = await $.process.run(['ls', '-t', folder], { timeoutMs: HUMAN_READ_TIMEOUT_MS })
+    const listed = await $.process.run(hostArgv(on, ['ls', '-t', folder]), { timeoutMs: HUMAN_READ_TIMEOUT_MS })
     if (listed.exitCode !== 0) return null
     const files = listed.stdout
       .split('\n')
