@@ -38,9 +38,14 @@ import {
   PATH_LINKS_TIMEOUT_MS,
   pathLinksArgv,
   GIT_FIND_TIMEOUT_MS,
-  gitFindArgv,
+  gitUpArgv,
+  gitInsideArgv,
+  wholeArgv,
+  wholeAnswer,
   gitDirsOf,
   gitFoldersOf,
+  gitLinksOf,
+  passedOver,
   worktreesArgv,
   worktreeDirsOf,
   linkTargets,
@@ -769,10 +774,10 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       owner: jobMsgs(rec),
       brief: instant,
       writtenAt: new Date(at).toISOString(),
-      unanswered: [...(links === null ? ['links' as const] : []), ...(repos === null ? ['repos' as const] : [])],
+      unanswered: [...(links === null ? ['links' as const] : []), ...(repos.whole ? [] : ['repos' as const])],
     })
     const startedAt = Date.now()
-    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, path, links ?? [], repos ?? []))), cwd: copy, ...(store === '' ? {} : { env: { [PNPM_STORE_ENV]: store } }) })
+    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, path, links ?? [], repos.dirs))), cwd: copy, ...(store === '' ? {} : { env: { [PNPM_STORE_ENV]: store } }) })
     let stdout = ''
     let stderr = ''
     let timedOut = false
@@ -975,17 +980,26 @@ async function pathLinks($: EngineInterface, on: Host, home: string, path: strin
   return r === null ? null : linkTargets(r.stdout, r.isStdoutTruncated)
 }
 
-// The git repositories the copy and the agent's folder reach and the worktrees they list
-// (`gitFindArgv`, `gitDirsOf`, `worktreesArgv`, `worktreeDirsOf`), asked outside the fence,
-// or null when the host does not answer either question whole, which the brief then says.
-async function gitRepos($: EngineInterface, on: Host, home: string, copy: string, cwd: string): Promise<string[] | null> {
-  const found = await $.process.run(hostArgv(on, gitFindArgv(copy, cwd, !holdsCopiesOf(home, copy))), { timeoutMs: GIT_FIND_TIMEOUT_MS }).catch(() => null)
-  if (found === null || found.isStdoutTruncated) return null
-  const gits = gitFoldersOf(found.stdout)
-  if (gits.length === 0) return gitDirsOf([copy, cwd], found.stdout)
-  const trees = await $.process.run(hostArgv(on, worktreesArgv(gits)), { timeoutMs: GIT_FIND_TIMEOUT_MS }).catch(() => null)
-  if (trees === null || trees.isStdoutTruncated) return null
-  return [...new Set([...gitDirsOf([copy, cwd], found.stdout), ...worktreeDirsOf([copy, cwd], trees.stdout)])]
+// The git repositories the copy and the agent's folder reach, the places the copy's links
+// lead and the repositories holding them, and the worktrees all of these list (`gitUpArgv`,
+// `gitInsideArgv`, `worktreesArgv`, read by `gitDirsOf`, `gitLinksOf` and `worktreeDirsOf`),
+// asked outside the fence. Each question is asked on its own, so one that fails, runs long or
+// is cut loses only what it alone would name; `whole` is false when any did, or when the
+// search inside passed a name over, which the brief then says.
+async function gitRepos($: EngineInterface, on: Host, home: string, copy: string, cwd: string): Promise<{ dirs: string[]; whole: boolean }> {
+  const own = [copy, cwd]
+  const ask = async (argv: string[]): Promise<string | null> => wholeAnswer(await $.process.run(hostArgv(on, wholeArgv(on, argv)), { timeoutMs: GIT_FIND_TIMEOUT_MS }).catch(() => null))
+  const up = await ask(gitUpArgv(own))
+  const inside = holdsCopiesOf(home, copy) ? '' : await ask(gitInsideArgv(copy))
+  const links = gitLinksOf(own, inside ?? '')
+  const beyond = links.length === 0 ? '' : await ask(gitUpArgv(links))
+  const answers = [up, inside, beyond].map(a => a ?? '')
+  const gits = [...new Set(answers.flatMap(gitFoldersOf))]
+  const trees = gits.length === 0 ? '' : await ask(worktreesArgv(gits))
+  return {
+    dirs: [...new Set([...answers.flatMap(a => gitDirsOf(own, a)), ...links, ...worktreeDirsOf(own, trees ?? '')])],
+    whole: [up, inside, beyond, trees].every(a => a !== null) && !passedOver(inside ?? ''),
+  }
 }
 
 // The throwaway copy the check runs in: an APFS clone (cp -c) of the agent's folder as it

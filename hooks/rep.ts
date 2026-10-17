@@ -1365,10 +1365,13 @@ export const checkDenyWrite = (home: string, real: string, path = '', links: str
         .filter(d => d.startsWith(`${home}/`))
         .map(d => (holdsCopies(installOf(home, d)) ? d : installOf(home, d)))
         .filter(d => !holdsCopies(d)),
-      ...repos.map(d => d.replace(/\/+$/, '')).filter(d => !holdsCopies(d)),
+      ...outermost(repos.map(d => d.replace(/\/+$/, '')).filter(d => !holdsCopies(d))),
     ]),
   ]
 }
+// Places, leaving out each one inside another, which the other's guard covers: a link's
+// place inside a repository found above it, a repository's .git inside the repository.
+const outermost = (places: string[]): string[] => places.filter(d => !places.some(o => o !== d && d.startsWith(`${o}/`)))
 
 // The files bash, zsh, sh and tcsh run from the home as a shell starts or ends.
 export const SHELL_STARTUP = ['.zshenv', '.zprofile', '.zshrc', '.zlogin', '.zlogout', '.bashrc', '.bash_profile', '.bash_login', '.bash_logout', '.profile', '.tcshrc', '.cshrc', '.login']
@@ -1427,38 +1430,50 @@ export const linkTargets = (stdout: string, isCut: boolean): string[] => {
 // so a copy of a worktree, or one whose `.git` is a link, reaches the real history, and a
 // commit made in it moves the real branch and changes its worktrees (shown 17 Oct 2026); so
 // does git run in a subfolder of the copy whose own `.git` (a worktree or a link kept inside
-// the project) leads out of it. Git run in a copy with no `.git` of its own finds one above
-// it, a repository at the home among them, and where no copy is made the run works in the
-// agent's own folder, which may be a subfolder of its repository. A repository also lists
-// its worktrees, wherever they are, in `<git folder>/worktrees/<name>/gitdir`, and git run
-// in a copy of it can rewrite, move or remove them (`git worktree repair`, `move`, `remove`).
-// So before the run the check asks, outside the fence, for the `.git` in the copy, the
-// agent's folder and every folder above either, and every `.git` inside the copy, with
-// where each leads and the pointer it holds (`gitFindArgv`), then for the worktrees each git
-// folder found lists (`worktreesArgv`), and checkDenyWrite guards what `gitDirsOf` and
-// `worktreeDirsOf` make of the answers: the folder holding each `.git` (the repository),
-// where the `.git` leads, the folder its pointer names and, for a worktree, the git folder
-// above `worktrees/<name>`, which holds the branches every worktree shares, and the folder
-// of each worktree listed. Reading through a guarded repository still works (status, log,
-// diff); adding, committing and stashing are refused (measured 17 Oct 2026). A place in the
-// copy is the copy's own, and checkDenyWrite names no folder holding the copies. Where the
-// agent's folder holds the copies (the home, or a folder above them) it is guarded whole
-// and no copy is made, and nothing inside it is searched, which would walk the whole home.
-// `find` ends 1 for each folder with no `.git`, so its exit code is not read, and a `.git`
-// whose `readlink` fails still has its pointer read. On this Mac the questions take under a
-// second for a project of 54,000 files, and they answer the same on Ubuntu 24.04 and
-// Alpine 3; an answer cut at the output's cap counts as none.
+// the project) leads out of it, and git run through a link in the copy that leads to a
+// folder elsewhere (a library linked in), which works on the repository holding that
+// folder; and a write through such a link lands in the folder itself. Git run in a copy with
+// no `.git` of its own finds one above it, a repository at the home among them, and where no
+// copy is made the run works in the agent's own folder, which may be a subfolder of its
+// repository. A repository also lists its worktrees, wherever they are, in
+// `<git folder>/worktrees/<name>/gitdir`, and git run in a copy of it can rewrite, move or
+// remove them (`git worktree repair`, `move`, `remove`). So before the run the check asks,
+// outside the fence, four questions, each on its own (`gitRepos`), so that one which fails
+// or runs long loses only what it alone would name: for the `.git` in the copy, the agent's
+// folder and every folder above either (`gitUpArgv`); for every `.git` inside the copy and
+// where each link in it leads (`gitInsideArgv`); for the `.git` in each place outside the copy
+// and the agent's folder those links lead to and every folder above it (`gitUpArgv` again);
+// and for the worktrees each git folder found lists (`worktreesArgv`). checkDenyWrite guards
+// what `gitDirsOf`, `gitLinksOf` and `worktreeDirsOf` make of the answers: the folder holding
+// each `.git` (the repository), where the `.git` leads, the folder its pointer names and, for
+// a worktree, the git folder above `worktrees/<name>`, which holds the branches every worktree
+// shares, each place a link leads to, and the folder of each worktree listed, leaving out a
+// place inside another (`outermost`). Reading through a guarded repository still works
+// (status, log, diff); adding, committing and stashing are refused (measured 17 Oct 2026). A
+// place in the copy is the copy's own, and checkDenyWrite names no folder holding the copies.
+// Where the agent's folder holds the copies (the home, or a folder above them) it is guarded
+// whole and no copy is made, and nothing inside it is searched, which would walk the whole
+// home. The folders a link leads to are not searched inside, so a worktree kept inside a
+// linked library is not found; nor is a link whose target readlink cannot name (on Linux,
+// one whose folder is missing too). `find` ends 1 for each folder with no `.git`, so its exit
+// code is not read, a `.git` whose `readlink` fails still has its pointer read, and a question
+// counts as answered only when its answer ends with sh's `end` (`wholeArgv`). Each entry is
+// printed after a line break, so a file with no line break at its end cannot run into the
+// next. On this Mac the question inside the copy takes 0.6 to 2 s for a project of 109,000
+// files and for one of 63,000 files and 2,000 links; a test folder of 3,000 links takes
+// 0.2 s here, 1 s on Ubuntu 24.04 and 3 s on Alpine 3, whose readlink takes one name, and
+// the three answer the same (measured 17 Oct 2026). An answer cut at the output's cap (4 MiB,
+// some 35,000 links) counts as none.
 export const GIT_FIND_TIMEOUT_MS = 30000
-export const gitFindArgv = (copy: string, cwd: string, inside: boolean): string[] => [
-  'find',
-  ...new Set([copy, cwd].flatMap(foldersUp).filter(f => !(inside && f === copy)).map(f => `${f === '/' ? '' : f}/.git`)),
-  ...(inside ? [copy] : []),
+// Each `.git` printed after a line break, so a pointer with no line break of its own still
+// ends before the next entry, then where it leads and its `gitdir:` line.
+const GIT_ENTRY = [
   '-name',
   '.git',
   '-prune',
   '-exec',
   'printf',
-  'entry %s\\n',
+  '\\nentry %s\\n',
   '{}',
   ';',
   // -prune is always true, so sed runs when readlink fails.
@@ -1478,28 +1493,93 @@ export const gitFindArgv = (copy: string, cwd: string, inside: boolean): string[
   '{}',
   ';',
 ]
+// The `.git` in each of these places and every folder above them.
+export const gitUpArgv = (places: string[]): string[] => [
+  'find',
+  ...new Set(places.flatMap(foldersUp).map(f => `${f === '/' ? '' : f}/.git`)),
+  ...GIT_ENTRY,
+]
+// Every `.git` inside the copy, and where each link in it leads. A name holding a line
+// break would be read as two lines, so it is passed over and marked (`odd`), and the answer
+// counts as not whole. The links are read in batches, each by one readlink where it takes
+// many names, and one name at a time where it takes one (BusyBox's), which a readlink given
+// two names first shows: a batch's readlink that fails on one broken link has still printed
+// the rest, so its failure says nothing about the names it takes.
+export const gitInsideArgv = (copy: string): string[] => [
+  'find',
+  copy,
+  '(',
+  '-path',
+  '*\n*',
+  '-prune',
+  '-exec',
+  'printf',
+  '\\nodd\\n',
+  ';',
+  ')',
+  '-o',
+  '(',
+  ...GIT_ENTRY,
+  ')',
+  '-o',
+  '!',
+  '-name',
+  '.git',
+  '-type',
+  'l',
+  '-exec',
+  'sh',
+  '-c',
+  'printf "\\nlinks\\n"; if readlink -f / / >/dev/null 2>&1; then readlink -f "$@"; else for l in "$@"; do readlink -f "$l"; done; fi',
+  'sh',
+  '{}',
+  '+',
+]
+// A question to find asked through sh, which prints `end` after it only when find ran to its
+// end: a find stopped by a signal, which the host reports as an exit of 1 like any find that
+// met a missing folder, prints none. find is named for the host as sh's `$0`.
+export const WHOLE_SH = '"$0" "$@"; [ $? -lt 128 ] && printf "\\nend\\n"'
+export const wholeArgv = (on: Host, find: string[]): string[] => ['sh', '-c', WHOLE_SH, ...hostArgv(on, find)]
+// The answer of a question asked through `wholeArgv`, or null when it did not come back,
+// was cut at the output's cap or did not reach its end.
+export const wholeAnswer = (r: { stdout: string; isStdoutTruncated: boolean } | null): string | null =>
+  r === null || r.isStdoutTruncated || !r.stdout.replace(/\r/g, '').endsWith('\nend\n') ? null : r.stdout
 // A folder and each folder above it, up to `/`.
 export const foldersUp = (folder: string): string[] => {
   const parts = folder.split('/').filter(p => p !== '')
   return [...parts.map((_, i) => `/${parts.slice(0, parts.length - i).join('/')}`), '/']
 }
-// What `gitFindArgv`'s answer names: for each `.git` found (`entry <path>`), the folder
-// holding it, where it leads (the line after, when readlink answered), and the folder its
-// first `gitdir:` line names, read as git reads it from the folder holding the `.git` (and
-// from the folder it leads to, when that differs), with the git folder above
-// `worktrees/<name>` when it is a worktree's. `gits` are the git folders among them.
-const gitAnswer = (stdout: string): { places: string[]; gits: string[] } => {
+// What a git question's answer names: for each `.git` found (`entry <path>`), the folder
+// holding it, the `.git` itself, where it leads (the line after, when readlink answered), and
+// the folder its first `gitdir:` line names, read as git reads it from the folder holding the
+// `.git` (and from the folder it leads to, when that differs), with the git folder above
+// `worktrees/<name>` when it is a worktree's; after each `links` line, where each link in a
+// batch leads; and whether a name was passed over (`odd`). `gits` are the git folders among
+// the places, each `.git` among them, so the worktrees are asked of one readlink could not follow.
+const gitAnswer = (stdout: string): { places: string[]; gits: string[]; links: string[]; odd: boolean } => {
   const places: string[] = []
   const gits: string[] = []
+  const links: string[] = []
+  let odd = false
   let folder = ''
   let lead = ''
   let pointed = false
+  let linking = false
   for (const line of stdout.split('\n').map(l => l.replace(/\r$/, ''))) {
-    if (line.startsWith('entry /')) {
-      folder = line.slice('entry '.length).replace(/\/\.git$/, '') || '/'
+    if (line === 'odd' || line === 'links') {
+      odd ||= line === 'odd'
+      linking = line === 'links'
+      folder = ''
+    } else if (line.startsWith('entry /')) {
+      const entry = line.slice('entry '.length)
+      folder = entry.replace(/\/\.git$/, '') || '/'
       places.push(folder)
+      gits.push(entry)
       lead = ''
       pointed = false
+      linking = false
+    } else if (linking && line.startsWith('/')) {
+      links.push(line)
     } else if (folder !== '' && lead === '' && !pointed && line.startsWith('/')) {
       lead = line
       places.push(line)
@@ -1517,15 +1597,20 @@ const gitAnswer = (stdout: string): { places: string[]; gits: string[] } => {
       }
     }
   }
-  return { places, gits }
+  return { places, gits, links, odd }
 }
-// The places `gitFindArgv`'s answer names, leaving out any in `own` (the copy, whose places
+// The places a git question's answer names, leaving out any in `own` (the copy, whose places
 // are its own, and the agent's folder, which the fence guards whole).
 export const gitDirsOf = (own: string[], stdout: string): string[] => outside(own, gitAnswer(stdout).places)
-// The git folders `gitFindArgv`'s answer names, the copy's own among them.
+// The git folders a git question's answer names, the copy's own among them.
 export const gitFoldersOf = (stdout: string): string[] => [...new Set(gitAnswer(stdout).gits)]
+// Where the links `gitInsideArgv` found lead, leaving out any in `own`.
+export const gitLinksOf = (own: string[], stdout: string): string[] => outside(own, gitAnswer(stdout).links)
+// Whether `gitInsideArgv` passed over a name holding a line break.
+export const passedOver = (stdout: string): boolean => gitAnswer(stdout).odd
 // The worktrees each git folder lists: each `worktrees/<name>/gitdir` printed after its own
-// path, its first line naming the worktree's `.git`, relative to the file's folder where git
+// path, on a line of its own after the last file's line, with or without its line break, its
+// first line naming the worktree's `.git`, relative to the file's folder where git
 // was told to write relative paths (measured with git 2.50.1, 17 Oct 2026).
 export const worktreesArgv = (gits: string[]): string[] => [
   'find',
@@ -1540,7 +1625,7 @@ export const worktreesArgv = (gits: string[]): string[] => [
   'f',
   '-exec',
   'printf',
-  'tree %s\\n',
+  '\\ntree %s\\n',
   '{}',
   ';',
   '-exec',
@@ -1599,7 +1684,8 @@ export const installOf = (home: string, dir: string): string => {
 // The check copies the agent's folder and reads transcripts with seven external
 // commands — mkdir, rm, cp, find, ls, sed, grep — and spawns `claude` to do the
 // reading. All eight are written for a Unix host, and on WINDOWS not one of
-// them runs. Measured on Windows 11, Claude Code 2.1.302, 16 Oct 2026:
+// them runs. (The check's git questions later added sh, which runs find and which Git
+// for Windows ships in the same folder as the seven.) Measured on Windows 11, Claude Code 2.1.302, 16 Oct 2026:
 //
 //   * `HOME` IS NOT GUARANTEED on Windows, so `home` fell back to `/tmp` and
 //     every path built from it — the copies folder, the deny list, the
@@ -1635,14 +1721,14 @@ export const WINDOWS_OS = 'Windows_NT'
 /**
  * The commands this mod runs that a Windows host cannot resolve by name.
  *
- * `grep` is the seed's `toolLineFind` (`grep -n -o -m 1 -F`), and `sed` both
- * `humanRead` and `humanReadBefore`. Git for Windows ships all seven in the
- * same folder.
+ * `grep` is the seed's `toolLineFind` (`grep -n -o -m 1 -F`), `sed` both
+ * `humanRead` and `humanReadBefore`, and `sh` the check's `wholeArgv`. Git for
+ * Windows ships all eight in the same folder.
  *
  * ADDING A COMMAND: anything new that goes through `$.process.run` or
  * `$.process.spawn` belongs here, or it resolves by name and fails on Windows.
  */
-export const POSIX_COMMANDS = ['mkdir', 'rm', 'cp', 'find', 'ls', 'sed', 'grep'] as const
+export const POSIX_COMMANDS = ['mkdir', 'rm', 'cp', 'find', 'ls', 'sed', 'grep', 'sh'] as const
 
 /**
  * What a command needs to be named for the host it runs on. Read once per check
@@ -1904,7 +1990,7 @@ Read any file you need. Run the project's own checks (its tests, its type check,
 
 ## Your room and your time
 
-${a.copy === a.cwd ? `You run in the agent's own folder, since no copy of it could be made, and writes there are denied: read it with Read, Glob and Grep, and run only what writes nothing there. A check that would have to write in it is one you name under "looked" as not run.` : `You run in your working directory, the copy. Run the project's checks and anything else you need there, write what you like there and nowhere else; nothing you do in it reaches the agent's folder, and the copy is removed when you finish. When a claim is about what is on disk now, read the agent's own folder with Read, Glob and Grep, since the copy is of one moment.`} No command needs approval, so none is refused for its shape. Two things still stop a command: the owner's own guard, which refuses for every agent on this machine the few things it refuses (rewriting shared history, deleting his data, making anything public), and the fence, which denies writes to ${a.unanswered?.includes('repos') ? `the agent's folder (the git repository it belongs to could not be found this time, so stage, commit and stash nothing)` : `the agent's folder and the git repository it belongs to`}, the owner's work, Claude Code's own settings and the main places in the home whose contents run later (the shell's startup files, git's settings and the folders programs are run from among them, though no list names every one${a.unanswered?.includes('links') ? `, and this time not the installs the links in those folders lead to, which could not be found` : ''}), closes the network except for this Mac, and which no command can be run outside of. Docker cannot be reached from inside the fence, though a port a container publishes on this Mac can. A "sandbox violation" or "Operation not permitted" means you hit the fence and says nothing about the claim. If a command is refused by either, say so under "looked" rather than guessing, and name a check that needs Docker there as not run.
+${a.copy === a.cwd ? `You run in the agent's own folder, since no copy of it could be made, and writes there are denied: read it with Read, Glob and Grep, and run only what writes nothing there. A check that would have to write in it is one you name under "looked" as not run.` : `You run in your working directory, the copy. Run the project's checks and anything else you need there, write what you like there and nowhere else; nothing you do in it reaches the agent's folder, and the copy is removed when you finish. When a claim is about what is on disk now, read the agent's own folder with Read, Glob and Grep, since the copy is of one moment.`} No command needs approval, so none is refused for its shape. Two things still stop a command: the owner's own guard, which refuses for every agent on this machine the few things it refuses (rewriting shared history, deleting his data, making anything public), and the fence, which denies writes to ${a.unanswered?.includes('repos') ? `the agent's folder (not every git repository it and the copy belong to, nor every place a link in the copy leads to, could be found this time, so stage, commit and stash nothing, and write nothing through a link that leads out of the copy)` : `the agent's folder, every git repository it and the copy belong to, every place a link in the copy leads to outside it`}, the owner's work, Claude Code's own settings and the main places in the home whose contents run later (the shell's startup files, git's settings and the folders programs are run from among them, though no list names every one${a.unanswered?.includes('links') ? `, and this time not the installs the links in those folders lead to, which could not be found` : ''}), closes the network except for this Mac, and which no command can be run outside of. Docker cannot be reached from inside the fence, though a port a container publishes on this Mac can. A "sandbox violation" or "Operation not permitted" means you hit the fence and says nothing about the claim. If a command is refused by either, say so under "looked" rather than guessing, and name a check that needs Docker there as not run.
 
 You have ${CHECK_TIMEOUT_WORDS} and ${CHECK_MAX_TURNS} turns in all, and an answer that never arrives is worth nothing to him, so spend them on reading and on the proof that matters most. Run the project's test command and its type check once each, the way the record shows the agent ran them. A slower tool, one that reruns the suite many times (a defect-planting or mutation run) or a full build, is worth its minutes only when a claim turns on it; otherwise say under "looked" that you did not run it and judge that claim from the record.
 
