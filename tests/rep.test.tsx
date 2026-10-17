@@ -778,6 +778,10 @@ test('isBlankRec: a record that loads as the blank one a session starts with hol
   expect(isBlankRec({ ...blank, id: 'b', at: 99 }, blank)).toBe(true)
   // Saved in another key order, or saved by an older build with fewer fields, it loads the same.
   expect(isBlankRec({ calls: 0, owner: [], at: 5, id: 'b', seen: [], past: [] }, blank)).toBe(true)
+  // A field that holds an object is compared whole, whatever order its keys were saved in.
+  const nested = { ...blank, limits: { rows: 0, cols: 0 } }
+  expect(isBlankRec({ ...blank, limits: { cols: 0, rows: 0 } }, nested)).toBe(true)
+  expect(isBlankRec({ ...blank, limits: { cols: 0, rows: 1 } }, nested)).toBe(false)
   expect(isBlankRec({ ...blank, owner: [om('build it')] }, blank)).toBe(false)
   expect(isBlankRec({ ...blank, objective: { result: 'r' } }, blank)).toBe(false)
   expect(isBlankRec({ ...blank, drafts: ['Card one: run it.'] }, blank)).toBe(false)
@@ -819,6 +823,7 @@ test('rule: a session that starts and ends with nothing of his, as a scripted ru
   mock.env(on, { HOME: '/Users/o' })
   on('clock.now', () => ({ value: 0 }))
   on('process.run', () => ({ value: { exitCode: 1, stdout: '', stderr: 'No such file or directory', isStdoutTruncated: false, isStderrTruncated: false } }))
+  on('session.end', ($, e) => ({ sessionId: e.sessionId }))
   await started($)
   await settle($)
   await $.session.end({ reason: 'other', sessionId: 'test-session', resume: { id: 'test-session' } } as never)
