@@ -57,11 +57,13 @@ entry that proves the test bites (added 14 Oct 2026; the objective's rules 15 Oc
 | A write that lands late cannot take a newer write's place, and a message during a write is written after it | `rule: a write that lands late…` | `late-look-wins` |
 | The revision line outlasts the parts that restate the agent's work when the card folds | `fitCard folds the body…` | `revised-line-folds-first` |
 | The check runs in a throwaway copy of the project, fenced, and the copy is removed when the run ends; where the fence cannot start the run refuses to start, and no command can ask to run outside it | `rule: the check runs in a throwaway copy…`, `the checker: its prompt names the session…` | `check-outside-copy`, `room-bypassed`, `fence-unavailable-runs`, `fence-way-out-kept` |
+| The fence guards every place in the home whose contents run later (the command path's folders in the home, never one holding the copies; Claude Code's install; the login programs folder; the folders it reads skills, agents and commands from), and the brief names what it guards rather than saying every write outside the copy is denied | `the checker: its prompt names the session…`, `rule: the check runs in a throwaway copy…` | `fence-runs-later-open`, `fence-path-ignored`, `fence-path-holds-copy`, `brief-overstates-fence` |
+| Where the fence cannot start, the card says the check does not run on that machine, with what Claude Code says is missing, and offers no Check it | `rule: where the fence cannot start…`, `noFenceNote reads only the refusal…` | `no-fence-reason-dropped`, `no-fence-card-offers-check` |
 | When the copy cannot be made the check runs in the agent's folder, with writes there denied, and the brief says so and never tells it to write | `rule: when the copy cannot be made…`, `the checker: its prompt names the session…` | `no-copy-brief-says-write` |
 | On Windows, where Claude Code's sandbox is off, the card says the check does not run there in place of its price and offers no Check it, even when looking for its commands throws; pressed on a card drawn before, the check does not start | `rule: on Windows, since nothing there fences the check's run…`, `rule: on Windows the card offers no Check it when looking for its commands throws…`, `rule: on Windows the check itself does not start either…` | `windows-check-unfenced`, `windows-refusal-rests-on-probe`, `windows-card-offers-check`, `windows-check-button-kept` |
 | The copy is an APFS clone; where `cp` refuses `-c` before making anything, as GNU `cp` on Linux does, the folder's contents are copied plainly into the folder just made; a clone that failed part-way is never copied over, and its part is removed | `the copy tries the APFS clone…`, `rule: where cp refuses -c…`, `rule: where the clone fails part-way…` | `copy-no-fallback`, `plain-copy-nests`, `fallback-over-partial-clone`, `part-copy-left` |
 | Every program is named for the host it runs on: as written on a Mac or Linux, and on Windows Git for Windows' coreutils by their full path and npm's `claude.exe`, each found by running it; the home is `HOME`, else `USERPROFILE`, written with forward slashes on Windows, and a home of `/tmp` is a home; on Windows his messages are read through Git's own `find` and `sed`, and a fork's parent found by its last tool result through Git's `grep` and `sed`, a transcript path given with backslashes is read slashed, and a probe that failed is tried again on the next read | `the home is HOME where there is one…`, `a host that resolves by name…`, `a Windows host names every command…`, `the places Git for Windows and npm put their binaries…`, `rule: on Windows his messages are read…`, `rule: on Windows a transcript path given with backslashes…`, `rule: on Windows a fork taken after a compaction finds its parent…`, `rule: on Windows a probe for Git's commands that failed…`, `rule: a home that is /tmp is a home…` | `home-ignores-userprofile`, `windows-commands-by-name`, `windows-claude-by-name`, `candidates-unslashed`, `windows-find-by-name`, `windows-read-by-name`, `windows-probe-failure-held`, `home-tmp-is-none`, `windows-home-mixed-slashes`, `windows-held-path-backslashed`, `windows-tool-line-by-name`, `windows-read-before-by-name` |
-| The card says how many of the check's commands were refused, and the right number is zero | `rule: the card says how many…` | `refusals-unreported` |
+| The card says how many of the check's commands were refused approval, and the right number is zero, and that commands the fence stopped are not counted | `rule: the card says how many…` | `refusals-unreported`, `refused-count-claims-fence` |
 | Tell the rep puts the prefix in the prompt box | `rule: Tell the rep puts…` | `tell-prefix-dropped` |
 | While the rep reads, the row says so and a second press starts no second read | `rule: while the rep reads…` | `reading-state-unmarked` |
 | The checked card folds its lists to counts on a small band | `rule: the checked card folds…` | `checked-lists-never-fold` |
@@ -126,7 +128,7 @@ objective it checked came from the writer's own call. The test now sends a furth
 the writer answers with `objective: holds` and a look whose answer carries an objective in
 the writer's shape, and asserts that the objective is unchanged.
 
-**Status.** 170 tests: the parsers, the status words (including the variable-first command, read
+**Status.** 172 tests: the parsers, the status words (including the variable-first command, read
 through the mounted strip), the note to the rep, the checker's prompt and tools, the row on
 both surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-
 failure toast, the sequence rules above, the card folding to a small band, the brief
@@ -188,7 +190,10 @@ a home, the check refused on Windows where nothing fences it, with the card sayi
 offering no Check it there, the check's run refusing to start where the sandbox cannot and
 given no way to run a command outside it, its brief in the agent's own folder never telling it
 to write, and the copy made plainly where `cp` refuses the clone and never over a clone that
-failed part-way. A hundred and eighty-nine doctor entries, all caught.
+failed part-way; and, from the second review, the fence guarding every place in the home whose
+contents run later with the brief naming what it guards, the refusal count saying it counts
+approvals only, and the card where the fence cannot start naming what is missing and offering
+no Check it. A hundred and ninety-six doctor entries, all caught.
 
 ## Layer 2: a real session
 
@@ -324,7 +329,7 @@ the file). Never make one from an uncommitted tree: the checkout would wipe the 
 **Status.** Built: `tests/doctor/doctor.py`, with `defects.json` and one patch per defect in
 `tests/doctor/defects/`. Run it with `python3 tests/doctor/doctor.py`; it exits 1 when the
 clean suite fails or a defect survives, and stops before planting when the clean suite is
-not clean. A hundred and eighty-nine entries, all caught: `strip-shows-command`, one or more per sequence
+not clean. A hundred and ninety-six entries, all caught: `strip-shows-command`, one or more per sequence
 rule above, `card-overflows-band`, `size-figure-dropped`, `whole-ask-rule-dropped`, and one
 per remaining hook path (`helper-not-counted`, `box-text-overwritten`, `fill-refusal-ignored`,
 `check-timeout-unreported`, `check-failure-swallowed`, `end-not-saved`), and six for a

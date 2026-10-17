@@ -209,16 +209,24 @@ needs approval: the shell, the file tools and the agentsview tools are allowed o
 the only tool-level denials are the ones that edit through a tool, send, fetch the web or
 launch helpers. The fence is Claude Code's built-in sandbox, passed as settings for that run:
 writes are denied to the owner's work (the real project folder, `~/Developer`, `~/Documents`,
-`~/work`) and to the files Claude Code reads its own configuration from, and the network is
-closed except for this Mac, where agentsview answers. The settings also make the run refuse to
+`~/work`), to the files Claude Code reads its own configuration from, and to every place in
+the home whose contents run later (each folder of the command path that sits in the home,
+Claude Code's own install, the folder macOS starts programs from at login), and the network
+is closed except for this Mac, where agentsview answers. It is a list of guarded places
+rather than a wall around the copy, because the owner's settings make the whole home a
+working folder, and the run's brief names what it guards. The settings also make the run refuse to
 start where the sandbox cannot, rather than run unfenced, and take away the shell's way of
-asking to run one command outside it. The owner's own guard hooks fire inside
+asking to run one command outside it. Where it refuses (shown in a Linux container without
+bubblewrap), the card says the check does not run on that machine, names what Claude Code
+says is missing, and offers no Check it. The owner's own guard hooks fire inside
 the run as they do for every agent. The copy is removed when the run ends. When no copy can
 be made, the run starts in the project itself with writes there denied, and its brief says
 so and tells it to run only what writes nothing there. On Windows Claude Code's sandbox is switched off, so there is no room to run in: the
 card says so in place of the check's price and offers no Check it button. The run's answer
-carries the count of refused commands; the card shows it, and the right number is zero,
-because a refusal in a room where nothing needs approval means the room has a hole. All of
+carries the count of commands refused approval; the card shows it, and the right number is
+zero, because a refusal in a room where nothing needs approval means the room has a hole.
+Commands the fence stops are not in that count, and the card says so; the brief asks the
+run to name them in its own account. All of
 this was measured on this build before it was built: bypassing approvals switches the
 sandbox off, so the run does not bypass them; `denyWrite` beats `allowWrite`; and a
 prefix allowlist, the earlier design, refused every compound command and cost a turn each
@@ -293,7 +301,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 170 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 172 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions in tmux, the strip captured to tests/live/captures
 ```

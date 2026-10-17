@@ -1,0 +1,21 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index d0160b7..ffb368c 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1316,16 +1316,6 @@ export const checkDenyWrite = (home: string, real: string, path = ''): string[]
+     `${home}/.claude/projects`,
+     `${home}/.claude/tools`,
+     `${home}/.claude/keybindings.json`,
+-    `${home}/.claude/skills`,
+-    `${home}/.claude/agents`,
+-    `${home}/.claude/commands`,
+-    `${home}/.local/bin`,
+-    `${home}/.local/share/claude`,
+-    `${home}/Library/LaunchAgents`,
+-    ...path
+-      .split(':')
+-      .map(d => d.replace(/\/+$/, ''))
+-      .filter(d => d.startsWith(`${home}/`) && !`${checkCopiesDir(home)}/`.startsWith(`${d}/`)),
+   ]),
+ ]
+ 

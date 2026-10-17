@@ -37,7 +37,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 170 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 172 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions of this checkout in tmux, the strip captured to tests/live/captures
 ```
@@ -179,7 +179,10 @@ call writes (below):
    allowed outright (the shell, the file tools, the direct agentsview tools), `CHECK_DISALLOWED_TOOLS`
    (anything that edits through a tool, sends, fetches the web or launches helpers) and
    `--settings` from `checkSettings`: the built-in sandbox with writes denied to the owner's
-   work and Claude Code's own configuration (`checkDenyWrite`) and the network closed except
+   work, Claude Code's own configuration and every place in the home whose contents run later
+   (`checkDenyWrite`: the command path's folders in the home, from `PATH`, a folder holding
+   the copies left out; Claude Code's install; `~/Library/LaunchAgents`), the brief naming
+   those rather than saying all writes outside the copy are denied, and the network closed except
    for this Mac, with `failIfUnavailable` (the run refuses to start where the sandbox cannot)
    and `allowUnsandboxedCommands: false` (no command can ask to run outside it); an
    `enabledPlatforms` list is set nowhere, since Claude Code reads it only from managed
@@ -191,9 +194,12 @@ call writes (below):
    On Windows (`OS` is `Windows_NT`) Claude Code's sandbox is off, so nothing would deny a
    write or close the network: a card drawn there shows `CHECK_NO_ROOM` in place of the
    check's price and no Check it button, and `runCheck` starts no copy and no run there,
-   pressed on a card drawn before. Fifteen-minute timeout
+   pressed on a card drawn before. Where the sandbox cannot start, Claude Code prints
+   `NO_FENCE_ERROR` with what is missing and exits; `noFenceNote` makes that the card's note,
+   and `checkBarred` keeps Check it off a card with either note. Fifteen-minute timeout
    (`CHECK_TIMEOUT_MS`), 120 turns, JSON output; `permission_denials` in the output is the
-   refusal count, shown on the checked card (`refusedLine`) and on the next card's price line
+   count of commands refused approval, shown on the checked card (`refusedLine`, which says
+   commands the fence stopped are not counted) and on the next card's price line
    (`checkCostText`); the right number is zero. Its answer rewrites the card, with each claim
    marked holds, false, not shown or changed since; it is given the conditions held open and
    those held shown with where (`CheckArgs.shown`), its `shown:` and `closed:` lines move

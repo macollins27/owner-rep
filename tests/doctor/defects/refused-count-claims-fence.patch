@@ -1,0 +1,18 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index d0160b7..25ea49c 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1948,11 +1948,11 @@ const costWords = (tokens: number, cached: number, ms: number): string =>
+ // A command the fence stops is not in this count (Claude Code counts only approvals), so
+ // the line says so, and the checker names what the fence stopped in its own account.
+ export const refusedWords = (n: number): string =>
+-  n === 0 ? 'no command refused approval' : `${n} command${n === 1 ? '' : 's'} refused approval`
++  n === 0 ? 'no command refused' : `${n} command${n === 1 ? '' : 's'} refused`
+ 
+ // The line under the checker's own account of what it looked at.
+ export const refusedLine = (n: number): string =>
+-  `The check's run had ${refusedWords(n)}; commands the fence stopped are not counted here.`
++  `The check's run had ${refusedWords(n)}.`
+ 
+ export function checkCostText(lastTokens: number, lastCached: number, lastMs: number, lastRefused = 0): string {
+   const lead = 'Check it starts a separate Claude Code run in a throwaway copy of the project, over the session record and the files.'

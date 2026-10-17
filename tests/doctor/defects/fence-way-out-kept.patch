@@ -1,12 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index ca91700..29e51c8 100644
+index d0160b7..44fd399 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1487,7 +1487,6 @@ export const checkSettings = (home: string, real: string): string =>
+@@ -1539,7 +1539,6 @@ export const checkSettings = (home: string, real: string, path = ''): string =>
      sandbox: {
        enabled: true,
        failIfUnavailable: true,
 -      allowUnsandboxedCommands: false,
-       filesystem: { denyWrite: checkDenyWrite(home, real) },
+       filesystem: { denyWrite: checkDenyWrite(home, real, path) },
        network: { allowedDomains: [], allowLocalBinding: true },
      },

@@ -1095,31 +1095,31 @@
     "name": "seed-gated-on-typed-rows",
     "breaks": "A session reopened after a compaction he has typed nothing since, with no record, is not read for his messages, so it holds no objective.",
     "patch": "seed-gated-on-typed-rows.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-17"
   },
   {
     "name": "fork-scan-no-anchor",
     "breaks": "A fork taken after a compaction he has typed nothing since finds no parent, so it holds none of his messages and no objective.",
     "patch": "fork-scan-no-anchor.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-17"
   },
   {
     "name": "anchor-reads-whole-file",
     "breaks": "A fork found by its last tool result takes the parent's messages from after the fork as well as before it.",
     "patch": "anchor-reads-whole-file.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-17"
   },
   {
     "name": "anchor-none-still-scans",
     "breaks": "A fork whose rows hold neither a typed row nor a tool result still lists and reads the folder, for nothing.",
     "patch": "anchor-none-still-scans.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-17"
   },
   {
     "name": "tool-id-unchecked",
     "breaks": "A tool result id with characters no tool id has is used to search the folder's files.",
     "patch": "tool-id-unchecked.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-17"
   },
   {
     "name": "windows-tool-line-by-name",
@@ -1132,5 +1132,47 @@
     "breaks": "On Windows the read of a parent's messages before its last tool result runs sed by its bare name, which Windows cannot find, so a fork taken after a compaction reads none of his messages.",
     "patch": "windows-read-before-by-name.patch",
     "fixed": "2026-10-16"
+  },
+  {
+    "name": "fence-runs-later-open",
+    "breaks": "The check's fence leaves Claude Code's own install, the login programs folder, the folders Claude Code reads skills, agents and commands from, and the command path's folders in the home writable, so a run steered by text in the record could leave behind a program that runs later outside any fence.",
+    "patch": "fence-runs-later-open.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-path-ignored",
+    "breaks": "The check's run is fenced without the command path, so a folder of programs in the home stays writable and a program put there runs the next time anyone types its name.",
+    "patch": "fence-path-ignored.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-path-holds-copy",
+    "breaks": "A command path folder that holds the check's copies, or the home itself on the path, is denied, and since a denied folder beats an allowed one the check can write nothing in its own copy.",
+    "patch": "fence-path-holds-copy.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "brief-overstates-fence",
+    "breaks": "The check's brief says the fence denies every write outside the copy, while on this Mac it is a list of guarded folders, so the run believes a write it should not make would be stopped.",
+    "patch": "brief-overstates-fence.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "refused-count-claims-fence",
+    "breaks": "The card says the check's run had no command refused when the fence stopped several, since the count is of approvals only, so the owner reads that nothing was blocked.",
+    "patch": "refused-count-claims-fence.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "no-fence-reason-dropped",
+    "breaks": "Where the fence cannot start (a Linux without bubblewrap), the card shows only the line naming the setting, not what is missing or how to install it, and goes on offering a check that can only refuse.",
+    "patch": "no-fence-reason-dropped.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "no-fence-card-offers-check",
+    "breaks": "Where the fence cannot start, the card says so and still offers Check it, a button that makes the copy only to be refused again.",
+    "patch": "no-fence-card-offers-check.patch",
+    "fixed": "2026-10-17"
   }
 ]
