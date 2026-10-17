@@ -1369,13 +1369,13 @@
   },
   {
     "name": "pnpm-asks-in-agent-folder",
-    "breaks": "pnpm is asked for its store in the agent's own folder instead of the copy, so a pnpm hook file in the agent's project runs outside the fence.",
+    "breaks": "pnpm is asked for its store in the agent's real folder instead of the copy, so whatever pnpm does while answering, outside the fence, acts on his real project rather than on a throwaway copy.",
     "patch": "pnpm-asks-in-agent-folder.patch",
     "fixed": "2026-10-17"
   },
   {
     "name": "pnpm-runs-pnpmfile",
-    "breaks": "pnpm is asked for its store without being told to skip the project's hook file and to leave its own version alone, so the project's code, or a pnpm download, runs outside the fence.",
+    "breaks": "pnpm is asked for its store without being told to skip the project's hook file, so the project's own code runs outside the fence before the check has looked at anything.",
     "patch": "pnpm-runs-pnpmfile.patch",
     "fixed": "2026-10-17"
   },
@@ -1387,7 +1387,7 @@
   },
   {
     "name": "no-fence-check-starts",
-    "breaks": "Once the fence has been found missing, a press on a card drawn before that starts the check anyway, unfenced.",
+    "breaks": "Once the fence has been found missing, a press on a card drawn before that makes a needless copy of the project and starts the check again, which the sandbox refuses again.",
     "patch": "no-fence-check-starts.patch",
     "fixed": "2026-10-17"
   },
@@ -1395,6 +1395,84 @@
     "name": "no-fence-restart-unsaid",
     "breaks": "The note saying the check cannot run without a sandbox no longer says that Claude Code must be restarted once the sandbox is installed, so the owner installs it and the check keeps refusing.",
     "patch": "no-fence-restart-unsaid.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "pnpm-pin-installed",
+    "breaks": "pnpm is asked for its store without being told to leave its own version alone, so a project that pins a pnpm version has it downloaded and installed outside the fence.",
+    "patch": "pnpm-pin-installed.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "pnpm-settings-overridable",
+    "breaks": "pnpm's two settings are given in the environment, where a project's pnpm-workspace.yaml overrides them, so a project can turn its hook file back on and have it run outside the fence.",
+    "patch": "pnpm-settings-overridable.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "path-links-depth-dirs",
+    "breaks": "The link question lists every folder inside each path folder, so a home on the command path fences nearly the whole home and the check's builds fail on their own caches.",
+    "patch": "path-links-depth-dirs.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "path-links-many-names",
+    "breaks": "readlink is handed many names at once, which BusyBox's readlink (Alpine Linux) refuses, so there the installs the path's links lead to go unguarded and nothing says so.",
+    "patch": "path-links-many-names.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "path-links-folder-unfollowed",
+    "breaks": "Each path folder is given by its bare name, so in a path folder that is itself a link the links inside it are never asked, and the installs they lead to go unguarded.",
+    "patch": "path-links-folder-unfollowed.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "path-links-short-wait",
+    "breaks": "The link question is given a third of the time, so on a slower machine it is cut off and the installs the path's links lead to go unguarded, with nothing said.",
+    "patch": "path-links-short-wait.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "repo-git-open",
+    "breaks": "The repository a copied worktree points at is not fenced, so a commit made in the copy moves the real branch and changes the real worktree.",
+    "patch": "repo-git-open.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "repo-git-not-asked",
+    "breaks": "The repository the copy's .git file names is read but never passed to the fence, so a commit made in a copied worktree moves the real branch.",
+    "patch": "repo-git-not-asked.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "worktree-common-dir-missed",
+    "breaks": "For a worktree only its own corner of the repository is fenced, not the branches every worktree shares, so a branch can still be moved from the copy.",
+    "patch": "worktree-common-dir-missed.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "repo-pointer-unresolved",
+    "breaks": "A relative .git pointer is fenced as written, a path relative to nowhere, so where no copy is made the repository it names stays open.",
+    "patch": "repo-pointer-unresolved.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "repo-throw-fails-check",
+    "breaks": "A machine where the .git pointer cannot be read fails the whole check instead of running it with no repository named.",
+    "patch": "repo-throw-fails-check.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "repo-holds-copies-kept",
+    "breaks": "A pointer to a repository that holds the copies' folder fences the copies too, so the check cannot write in its own copy.",
+    "patch": "repo-holds-copies-kept.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "brief-repo-unsaid",
+    "breaks": "The brief does not name the repository among the places the fence guards, so the run is not told why staging or committing in the copy is refused.",
+    "patch": "brief-repo-unsaid.patch",
     "fixed": "2026-10-17"
   }
 ]

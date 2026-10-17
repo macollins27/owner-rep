@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index da6558b..b98a304 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1434,7 +1434,7 @@ export const gitPointerArgv = (folder: string): string[] => ['sed', '-n', 's/^gi
+ export const gitDirsOf = (folder: string, stdout: string): string[] => {
+   const line = (stdout.split('\n')[0] ?? '').trim()
+   if (line === '') return []
+-  const dir = resolved(line.startsWith('/') ? line : `${folder}/${line}`)
++  const dir = line
+   const common = /^(.+)\/worktrees\/[^/]+$/.exec(dir)
+   return [common?.[1] ?? dir]
+ }

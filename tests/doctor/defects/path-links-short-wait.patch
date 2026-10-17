@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index da6558b..9683a9f 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1396,7 +1396,7 @@ export const holdsCopiesOf = (home: string, dir: string): boolean => `${checkCop
+ // when a path folder is missing, having printed the rest, so its exit code is not read
+ // (measured 17 Oct 2026 on this Mac, Ubuntu 24.04 and Alpine 3). On this Mac the question
+ // takes under two seconds.
+-export const PATH_LINKS_TIMEOUT_MS = 30000
++export const PATH_LINKS_TIMEOUT_MS = 10000
+ export const pathLinksArgv = (home: string, path: string): string[] => [
+   'find',
+   ...new Set([...path.split(':').filter(d => d.startsWith('/')), `${home}/.local/bin`].map(d => `${d.replace(/\/+$/, '')}/.`)),

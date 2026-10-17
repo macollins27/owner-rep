@@ -1,8 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index be78020..072dacd 100644
+index da6558b..9284955 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1412,7 +1412,7 @@ export const pathLinksArgv = (home: string, path: string): string[] => [
+@@ -1418,7 +1418,7 @@ export const pathLinksArgv = (home: string, path: string): string[] => [
  // The places `pathLinksArgv` printed, one to a line; a last line cut at the output's cap is dropped.
  export const linkTargets = (stdout: string, isCut: boolean): string[] => {
    const lines = stdout.split('\n')
@@ -10,4 +10,4 @@ index be78020..072dacd 100644
 +  return lines.filter(l => l.startsWith('/'))
  }
  
- // The install a command-path folder in the home belongs to: its first folder below the
+ // A copy of a git worktree, or of a repository whose git data is kept elsewhere, keeps the

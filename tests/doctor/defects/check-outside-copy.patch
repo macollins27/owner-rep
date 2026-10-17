@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index bc6477a..45a3c47 100644
+index 712d162..b099914 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -764,7 +764,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
-     const store = await pnpmStore($, checkHost, copy)
+@@ -767,7 +767,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
      const links = await pathLinks($, checkHost, home, path)
+     const repos = await gitRepos($, checkHost, copy)
      const startedAt = Date.now()
--    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, path, links))), cwd: copy, ...(store === '' ? {} : { env: { [PNPM_STORE_ENV]: store } }) })
-+    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, path, links))), cwd, ...(store === '' ? {} : { env: { [PNPM_STORE_ENV]: store } }) })
+-    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, path, links, repos))), cwd: copy, ...(store === '' ? {} : { env: { [PNPM_STORE_ENV]: store } }) })
++    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, path, links, repos))), cwd, ...(store === '' ? {} : { env: { [PNPM_STORE_ENV]: store } }) })
      let stdout = ''
      let stderr = ''
      let timedOut = false

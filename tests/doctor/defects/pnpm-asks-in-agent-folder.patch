@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index bc6477a..3515663 100644
+index 712d162..fbc068a 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -761,7 +761,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
+@@ -763,7 +763,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
        writtenAt: new Date(at).toISOString(),
      })
      const path = (await $.env.get('PATH')) ?? ''
 -    const store = await pnpmStore($, checkHost, copy)
 +    const store = await pnpmStore($, checkHost, cwd)
      const links = await pathLinks($, checkHost, home, path)
+     const repos = await gitRepos($, checkHost, copy)
      const startedAt = Date.now()
-     const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, path, links))), cwd: copy, ...(store === '' ? {} : { env: { [PNPM_STORE_ENV]: store } }) })

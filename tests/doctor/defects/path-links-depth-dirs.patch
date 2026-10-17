@@ -1,0 +1,15 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index da6558b..3901fbc 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1406,8 +1406,8 @@ export const pathLinksArgv = (home: string, path: string): string[] => [
+   '-type',
+   'l',
+   '-o',
+-  '-name',
+-  '.',
++  '-type',
++  'd',
+   ')',
+   '-exec',
+   'readlink',

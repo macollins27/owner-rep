@@ -1,8 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index be78020..8d9424e 100644
+index da6558b..8ae7007 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1356,14 +1356,6 @@ export const checkDenyWrite = (home: string, real: string, path = '', links: str
+@@ -1357,14 +1357,6 @@ export const checkDenyWrite = (home: string, real: string, path = '', links: str
        `${home}/.rustup/toolchains`,
        `${home}/Library/Python`,
        `${home}/.local/lib`,
@@ -14,6 +14,6 @@ index be78020..8d9424e 100644
 -        .filter(d => d.startsWith(`${home}/`))
 -        .map(d => (holdsCopies(installOf(home, d)) ? d : installOf(home, d)))
 -        .filter(d => !holdsCopies(d)),
+       ...repos.map(d => d.replace(/\/+$/, '')).filter(d => !holdsCopies(d)),
      ]),
    ]
- }

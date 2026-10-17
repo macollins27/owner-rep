@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index da6558b..d6eb1a5 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1674,7 +1674,7 @@ export const noFenceNote = (stderr: string): string | null => {
+ // line beats the project's `pnpm-workspace.yaml`, which beats the same settings given in the
+ // environment (measured 17 Oct 2026, pnpm 10.26.2), so a project cannot turn either back on.
+ // It is asked in the copy, and in the agent's folder where no copy is made.
+-export const PNPM_STORE_ARGV = ['pnpm', 'store', 'path', '--config.ignore-pnpmfile=true', '--config.manage-package-manager-versions=false']
++export const PNPM_STORE_ARGV = ['pnpm', 'store', 'path', '--config.ignore-pnpmfile=true']
+ export const PNPM_STORE_ENV = 'npm_config_store_dir'
+ export const PNPM_STORE_TIMEOUT_MS = 10000
+ export const pnpmStoreDir = (stdout: string): string => {

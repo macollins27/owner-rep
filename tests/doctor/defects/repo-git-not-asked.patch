@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 712d162..49ad2f0 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -767,7 +767,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
+     const links = await pathLinks($, checkHost, home, path)
+     const repos = await gitRepos($, checkHost, copy)
+     const startedAt = Date.now()
+-    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, path, links, repos))), cwd: copy, ...(store === '' ? {} : { env: { [PNPM_STORE_ENV]: store } }) })
++    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, path, links))), cwd: copy, ...(store === '' ? {} : { env: { [PNPM_STORE_ENV]: store } }) })
+     let stdout = ''
+     let stderr = ''
+     let timedOut = false
