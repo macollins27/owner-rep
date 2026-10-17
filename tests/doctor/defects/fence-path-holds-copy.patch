@@ -1,0 +1,14 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index cd94906..785c657 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1344,8 +1344,7 @@ export const checkDenyWrite = (home: string, real: string, path = ''): string[]
+         .split(':')
+         .map(d => d.replace(/\/+$/, ''))
+         .filter(d => d.startsWith(`${home}/`))
+-        .map(d => (holdsCopies(installOf(home, d)) ? d : installOf(home, d)))
+-        .filter(d => !holdsCopies(d)),
++        .map(d => (holdsCopies(installOf(home, d)) ? d : installOf(home, d))),
+     ]),
+   ]
+ }

@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 38007a6..b75b5cf 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -941,7 +941,7 @@ async function lookUpHost($: EngineInterface, os: string): Promise<Host> {
+ // built from it is.
+ async function homeFor($: EngineInterface): Promise<string> {
+   const home = homeOf(await $.env.get('HOME'), await $.env.get('USERPROFILE'))
+-  return (await $.env.get('OS')) === WINDOWS_OS ? slashed(home) : home
++  return home
+ }
+ 
+ // pnpm's store as pnpm names it in the agent's folder, outside the fence, or '' when

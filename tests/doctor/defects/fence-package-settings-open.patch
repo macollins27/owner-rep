@@ -1,0 +1,14 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index cd94906..dc394d8 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1332,9 +1332,6 @@ export const checkDenyWrite = (home: string, real: string, path = ''): string[]
+       `${home}/.claude.json`,
+       ...SHELL_STARTUP.map(f => `${home}/${f}`),
+       `${home}/.gitconfig`,
+-      `${home}/.npmrc`,
+-      `${home}/.yarnrc.yml`,
+-      `${home}/.bunfig.toml`,
+       `${home}/Library/Python`,
+       `${home}/.local/lib`,
+       `${home}/.local/bin`,

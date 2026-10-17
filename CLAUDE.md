@@ -37,13 +37,15 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 158 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 181 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions of this checkout in tmux, the strip captured to tests/live/captures
 ```
 
 GitHub runs validate, test, the type check and the doctor on every push
-(`.github/workflows/tests.yml`). Its type check uses `tests/ci/types/`, a pinned copy of the
+(`.github/workflows/tests.yml`), and `tests/ci/host-calls.sh`, which fails the run when a
+`$.process.run` or `$.process.spawn` in the hooks names its program other than through
+`hostArgv` (the copy's argvs from `copyArgvs` and the `--version` probe excepted). Its type check uses `tests/ci/types/`, a pinned copy of the
 declarations for the Claude Code build the workflow installs; move both together.
 `tests/ci/declarations.sh` runs first there and fails the run when the installed build is
 not the one stamped on the pinned copy's first line, so the two cannot drift apart unseen.
@@ -169,18 +171,45 @@ call writes (below):
    The step look and the stop look pass no fallback and skip quietly on `nothing-to-fork`:
    a record read on each would be paid on every look of every new session's first turn.
 3. **Check**: `pressCheck()` → `runCheck()` first makes a throwaway copy of the agent's
-   folder (`makeCopy`: an APFS clone, `cp -Rc`, into `checkCopyDir` under `~/.cache`), then
+   folder (`makeCopy`: an APFS clone, `cp -Rc`, into `checkCopyDir` under `~/.cache`; where
+   `cp` refuses `-c` before making anything, as GNU `cp` does, `mkdir` makes the folder and
+   `cp -R` copies the agent's folder's contents into it; a clone that failed part-way, which
+   `mkdir` without `-p` tells apart, is not copied over), then
    spawns a headless `claude -p` in it with `--permission-mode default`, `CHECK_ALLOWED_TOOLS`
    allowed outright (the shell, the file tools, the direct agentsview tools), `CHECK_DISALLOWED_TOOLS`
    (anything that edits through a tool, sends, fetches the web or launches helpers) and
    `--settings` from `checkSettings`: the built-in sandbox with writes denied to the owner's
-   work and Claude Code's own configuration (`checkDenyWrite`) and the network closed except
-   for this Mac. Measured 15 Oct 2026: bypassing approvals switches the sandbox off, so the
+   work, Claude Code's whole configuration (`~/.claude`, `~/.claude.json`) and the main places
+   in the home whose contents run later (`checkDenyWrite`: the shell's startup files,
+   `SHELL_STARTUP`; `.gitconfig`; `.npmrc`, `.yarnrc.yml`, `.bunfig.toml`; `~/Library/Python`
+   and `~/.local/lib`; Claude Code's install; `~/Library/LaunchAgents`; and for each folder of
+   `PATH` in the home the install it belongs to, `installOf`, which looks one level past
+   `Library/Application Support`, `Library`, `.local/share` and `.local`, the folder alone
+   when that install would hold the copies, none when the folder would), the brief naming the
+   main ones, saying no list names every one, rather than saying all writes outside the copy
+   are denied, and the network closed except
+   for this Mac, with `failIfUnavailable` (the run refuses to start where the sandbox cannot)
+   and `allowUnsandboxedCommands: false` (no command can ask to run outside it); an
+   `enabledPlatforms` list is set nowhere, since Claude Code reads it only from managed
+   settings (2.1.302). Measured 15 Oct 2026: bypassing approvals switches the sandbox off, so the
    run does not; the owner's guard hooks fire inside the run; `denyWrite` beats `allowWrite`.
    The copy is removed when the run ends; when it cannot be made the run uses the agent's
-   folder with writes there denied, and the brief says so. Fifteen-minute timeout
+   folder with writes there denied, the brief says so and asks it to run only what writes
+   nothing there, and any part of a copy is removed.
+   On Windows (`OS` is `Windows_NT`) Claude Code's sandbox is off, so nothing would deny a
+   write or close the network: a card drawn there shows `CHECK_NO_ROOM` in place of the
+   check's price and no Check it button, and `runCheck` starts no copy and no run there,
+   pressed on a card drawn before. Where the sandbox cannot start, Claude Code prints
+   `NO_FENCE_ERROR` with what is missing and exits; `noFenceNote` makes that the card's note,
+   held for the process in `noFence` so each later card carries it and `runCheck` starts
+   nothing, and `checkBarred` keeps Check it off a card with either note. Before the run,
+   `pnpm store path` is asked in the agent's folder outside the fence (`pnpmStore`) and the
+   answer, its version folder taken off (`pnpmStoreDir`), passed to the run as
+   `npm_config_store_dir`: inside the fence pnpm finds its store unwritable, moves it into
+   a scratch folder, and an offline install there fails (measured 17 Oct 2026, pnpm 10). Fifteen-minute timeout
    (`CHECK_TIMEOUT_MS`), 120 turns, JSON output; `permission_denials` in the output is the
-   refusal count, shown on the checked card (`refusedLine`) and on the next card's price line
+   count of commands refused approval, shown on the checked card (`refusedLine`, which says
+   commands the fence stopped are not counted) and on the next card's price line
    (`checkCostText`); the right number is zero. Its answer rewrites the card, with each claim
    marked holds, false, not shown or changed since; it is given the conditions held open and
    those held shown with where (`CheckArgs.shown`), its `shown:` and `closed:` lines move
@@ -194,6 +223,19 @@ call writes (below):
    `lastBrief`, no draft), so the card on record stays the newer one. The check costs
    real money and runs only on a press; the card states the measured figure (`FIRST_CHECK_*`,
    then the last run).
+
+**The host.** Every program the hooks run is named through `hostArgv` (`hooks/rep.ts`),
+which leaves an argv as written on a Mac or Linux (`PATH_HOST`) and on Windows names the
+commands in `POSIX_COMMANDS` by their full path in Git for Windows' `usr/bin` and `claude` as
+npm's `claude.exe`. `hostOf` finds both by running each candidate with `--version`
+(`winPosixBinCandidates`, `winClaudeCandidates`, slashed as they are built so the path a probe
+proves is the one run) and holds the lookup for the process, keyed on `OS`, except a Windows
+one whose coreutils did not answer, which is looked up again on the next call; a lookup that
+throws still reads as Windows, so the check's refusal there never rests on a probe. The home
+is `homeFor`: `HOME`, else `USERPROFILE` (`homeOf`), written with forward slashes on Windows,
+'' with neither (the check's copies then go under `/tmp`); `heldItems` slashes the paths it is
+given or finds on Windows. Kyle Cunningham measured the Windows facts on Windows 11 with
+Claude Code 2.1.302 (PR #13); nothing on this Mac can run them.
 
 **The objective** (`Objective` in `hooks/rep.ts`, declared again in `types/index.d.ts`) is the
 rep's own account of what the owner wants on the job in hand, never the owner's text, held in
@@ -269,7 +311,8 @@ Claude Code 2.1.301), so the file is the only place it is found. The classic hoo
 (`transcript_path`); `holdTranscript` keeps it per session id in a module-level map, a
 later prompt's path replacing the start's, and each event is passed on untouched. With no
 path held, `heldItems` looks for `<id>.jsonl` by name, `find <config>/projects -maxdepth 2`
-(the config folder `CLAUDE_CONFIG_DIR`, else `~/.claude`), and with none found it is null.
+(the config folder `CLAUDE_CONFIG_DIR`, else `.claude` in the home, none with no home), and
+with none found it is null.
 The file is read through `$.process.run` with `humanRead` (`sed`, `HUMAN_READ_TIMEOUT_MS`),
 which prints only the lines holding `"kind":"human"`, every picture's `"data"` blanked so a
 message with a picture stays under the output cap. A read cut at that cap

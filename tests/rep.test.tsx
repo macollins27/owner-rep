@@ -1,7 +1,7 @@
 import type { On, SessionMessage } from 'claude-code'
 import { expect, mock, test, type Engine } from 'claude-code/testing'
 
-import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX } from '../hooks/rep'
+import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates } from '../hooks/rep'
 
 const om = (text: string, n = 1): OwnerMsg => ({ n, kind: 'his', text, prior: '' })
 
@@ -346,6 +346,18 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   expect(prompt).toContain("The agent's folder: /tmp/x")
   const noCopy = checkPrompt({ sessionId: 'abc-123', cwd: '/tmp/x', copy: '/tmp/x', reading: 'the result', owner: [om('first ask')], brief, writtenAt: '2026-10-13T23:05:00.000Z', conditions: [], shown: [], from: 0 })
   expect(noCopy).toContain('the throwaway copy could not be made, so writes there are denied')
+  expect(noCopy).toContain("You run in the agent's own folder")
+  expect(noCopy).not.toContain('write what you like')
+  expect(noCopy).not.toContain('denies writes outside the copy')
+  expect(prompt).toContain('write what you like there and nowhere else')
+  // The fence is a deny list, not a wall around the copy: the brief names what it guards.
+  for (const p of [prompt, noCopy]) {
+    expect(p).not.toContain('denies writes outside the copy')
+    expect(p).toContain("denies writes to the agent's folder, the owner's work, Claude Code's own settings and the main places in the home whose contents run later")
+    // A list cannot name every such place, and the brief does not claim it does.
+    expect(p).toContain('though no list names every one')
+    expect(p).toContain('Docker cannot be reached from inside the fence')
+  }
   expect(prompt).toContain('2026-10-13T23:05:00.000Z')
   expect(prompt).toContain('changed:')
   expect(prompt).toContain('the result')
@@ -354,12 +366,40 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   expect(prompt).toContain('--direction desc --limit 40')
   expect(prompt).not.toContain('--from -40')
   const settings = checkSettings('/Users/o', '/tmp/x')
-  const room = JSON.parse(settings) as { sandbox: { enabled: boolean; filesystem: { denyWrite: string[]; allowWrite?: string[] }; network: { allowedDomains: string[] } } }
+  const room = JSON.parse(settings) as { sandbox: { enabled: boolean; failIfUnavailable?: boolean; allowUnsandboxedCommands?: boolean; enabledPlatforms?: string[]; filesystem: { denyWrite: string[]; allowWrite?: string[] }; network: { allowedDomains: string[] } } }
   expect(room.sandbox.enabled).toBe(true)
+  // Where the fence cannot start the run refuses, and no command can ask to run outside it.
+  expect(room.sandbox.failIfUnavailable).toBe(true)
+  expect(room.sandbox.allowUnsandboxedCommands).toBe(false)
+  expect(room.sandbox.enabledPlatforms).toBeUndefined()
   expect(room.sandbox.filesystem.denyWrite).toContain('/tmp/x')
   expect(room.sandbox.filesystem.denyWrite).toContain('/Users/o/Developer')
-  expect(room.sandbox.filesystem.denyWrite).toContain('/Users/o/.claude/hooks')
+  expect(room.sandbox.filesystem.denyWrite).toContain('/Users/o/.claude')
   expect(room.sandbox.filesystem.denyWrite.some(p => copy.startsWith(p))).toBe(false)
+  // The main places in the home whose contents run later, outside any fence, are denied too:
+  // Claude Code's whole configuration and install, the shell's startup files, git's and the
+  // package managers' settings, Python's add-on folders and the login programs folder.
+  for (const p of ['/Users/o/.claude', '/Users/o/.claude.json', '/Users/o/.local/bin', '/Users/o/.local/share/claude', '/Users/o/Library/LaunchAgents', '/Users/o/.zshenv', '/Users/o/.zshrc', '/Users/o/.zprofile', '/Users/o/.bashrc', '/Users/o/.bash_profile', '/Users/o/.profile', '/Users/o/.gitconfig', '/Users/o/.npmrc', '/Users/o/Library/Python', '/Users/o/.local/lib']) {
+    expect(room.sandbox.filesystem.denyWrite).toContain(p)
+  }
+  // Each command-path folder in the home is guarded as the install it belongs to.
+  const pathed = (JSON.parse(checkSettings('/Users/o', '/tmp/x', '/usr/bin:/Users/o/.cargo/bin:/Users/o/Library/pnpm/:/Users/o/.local/bin:/Users/o/.local/share/mise/installs/node/22.22.3/bin:/Users/o/.local/share/mise/shims:/Users/o/.turso:/Users/o/.cache:/Users/o/.cache/tool/bin:/Users/o:relative/bin')) as typeof room).sandbox.filesystem.denyWrite
+  expect(pathed).toContain('/Users/o/.cargo')
+  expect(pathed).toContain('/Users/o/Library/pnpm')
+  expect(pathed).toContain('/Users/o/.local/share/mise')
+  expect(pathed).toContain('/Users/o/.turso')
+  expect(pathed.filter(p => p === '/Users/o/.local/bin').length).toBe(1)
+  expect(pathed.filter(p => p === '/Users/o/.local/share/mise').length).toBe(1)
+  expect(pathed).not.toContain('/Users/o/.local')
+  expect(pathed).not.toContain('/Users/o/.local/share')
+  expect(pathed).not.toContain('/Users/o/Library')
+  expect(pathed).not.toContain('/usr/bin')
+  expect(pathed).not.toContain('/Users/o')
+  // A path folder whose install would hold the copies is guarded as itself; one that holds them is not.
+  expect(pathed).not.toContain('/Users/o/.cache')
+  expect(pathed).toContain('/Users/o/.cache/tool/bin')
+  expect(pathed).not.toContain('relative/bin')
+  expect(pathed.some(p => copy.startsWith(p))).toBe(false)
   expect(room.sandbox.network.allowedDomains).toEqual([])
   const argv = checkArgv(prompt, settings)
   expect(argv[0]).toBe('claude')
@@ -395,9 +435,9 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   expect(resultOf(JSON.stringify({ type: 'result', result: 'holds:\n- x', permission_denials: [{ tool_name: 'Bash' }, { tool_name: 'Bash' }] }))?.refused).toBe(2)
   expect(resultOf('not json')).toBe(null)
   expect(checkCostText(0, 0, 0)).toContain('210k fresh tokens plus 2.3 million re-read from cache, in 2 minutes')
-  expect(checkCostText(850000, 800000, 95000)).toContain('50k fresh tokens plus 800k re-read from cache, in 2 minutes, with no command refused')
-  expect(checkCostText(850000, 800000, 95000, 1)).toContain('with 1 command refused')
-  expect(checkCostText(850000, 800000, 95000, 2)).toContain('with 2 commands refused')
+  expect(checkCostText(850000, 800000, 95000)).toContain('50k fresh tokens plus 800k re-read from cache, in 2 minutes, with no command refused approval')
+  expect(checkCostText(850000, 800000, 95000, 1)).toContain('with 1 command refused approval')
+  expect(checkCostText(850000, 800000, 95000, 2)).toContain('with 2 commands refused approval')
   expect(out?.cached).toBe(1)
 })
 
@@ -1016,9 +1056,11 @@ test('rule: Tell the rep puts the prefix in the prompt box, from the row and fro
 
 // The room's commands (the copy made and removed) answered without running anything;
 // `runs` keeps each argv so a test can read what the rep asked for.
-const room = (on: On): string[][] => {
+// The room the check's commands run in: every variable reads '/Users/o', except PATH
+// when one is given.
+const room = (on: On, path?: string): string[][] => {
   const runs: string[][] = []
-  on('env.get', () => ({ value: '/Users/o' }))
+  on('env.get', (_$, e) => ({ value: path !== undefined && e.name === 'PATH' ? path : '/Users/o' }))
   on('process.run', (_$, e) => {
     runs.push([...e.argv])
     return { value: { exitCode: 0, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
@@ -1050,6 +1092,57 @@ test('rule: a check that prints no result says it could not run, with the exit c
   expect(await ui.find({ key: 'check' })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /The card\./ })).toBeDefined()
   await ui.unmount()
+})
+
+// What Claude Code 2.1.302 printed in a Linux container without bubblewrap, under the
+// check's settings, 17 Oct 2026, its stdout empty and its exit code 1.
+const NO_FENCE_STDERR =
+  '\nError: sandbox required but unavailable: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or see https://code.claude.com/docs/en/sandboxing\n  sandbox.failIfUnavailable is set — refusing to start without a working sandbox.\n\n'
+
+test('rule: where the fence cannot start, the card says the check does not run on this machine, names what is missing, and offers no Check it', async ($, on) => {
+  mock.clock(on)
+  const ui = await checkWith($, on, async function* () {
+    yield { stream: 'stderr', text: NO_FENCE_STDERR }
+    return { value: { code: 1, signal: null } }
+  })
+  await ui.press({ key: 'check' })
+  expect(await ui.find({ type: 'Text', text: /The check does not run on this machine: Claude Code's sandbox cannot start here, so its run refused to start rather than run unfenced\. Claude Code says: sandbox is enabled but dependencies are missing: bubblewrap \(bwrap\) not installed/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /refusing to start without a working sandbox/ })).toBeUndefined()
+  expect(await ui.find({ key: 'check' })).toBeUndefined()
+  expect(await ui.find({ key: 'close' })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /The card\./ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('rule: once the fence has refused to start, each later card says the check does not run on this machine and offers no Check it', async ($, on) => {
+  mock.clock(on)
+  let spawns = 0
+  const ui = await checkWith($, on, async function* () {
+    spawns += 1
+    yield { stream: 'stderr', text: NO_FENCE_STDERR }
+    return { value: { code: 1, signal: null } }
+  })
+  await ui.press({ key: 'check' })
+  await ui.press({ key: 'close' })
+  await ui.press({ key: 'rep' })
+  expect(await ui.find({ type: 'Text', text: /The check does not run on this machine: Claude Code's sandbox cannot start here/ })).toBeDefined()
+  expect(await ui.find({ key: 'check' })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: /The card\./ })).toBeDefined()
+  expect(spawns).toBe(1)
+  await ui.unmount()
+})
+
+test('noFenceNote reads only the refusal Claude Code prints where the fence cannot start, and checkBarred bars the check on that card and on Windows', () => {
+  expect(noFenceNote('claude: not logged in\n')).toBe(null)
+  expect(noFenceNote('')).toBe(null)
+  const note = noFenceNote(NO_FENCE_STDERR) ?? ''
+  expect(note).toContain('bubblewrap (bwrap) not installed, socat not installed')
+  expect(note).not.toContain('Error:')
+  expect(checkBarred(note)).toBe(true)
+  expect(checkBarred(CHECK_NO_ROOM)).toBe(true)
+  expect(checkBarred('The check could not run (exit 2): claude: not logged in.')).toBe(false)
+  expect(checkBarred('The check ran out of time (fifteen minutes) and was stopped.')).toBe(false)
+  expect(checkBarred('')).toBe(false)
 })
 
 test('rule: a check that outlasts its fifteen minutes is stopped and says so', async ($, on) => {
@@ -2099,13 +2192,13 @@ const CHECKED_WITH = (refused: number): string =>
 test('rule: the check runs in a throwaway copy of the project, fenced, and the copy is removed when the run ends', async ($, on) => {
   session(on)
   quietBand(on)
-  const runs = room(on)
+  const runs = room(on, '/usr/bin:/Users/o/.cargo/bin')
   on('session.cwd', () => ({ value: '/tmp/x' }))
   mock.clock(on)
   on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
-  let seen: { cwd?: string; argv?: readonly string[] } = {}
+  let seen: { cwd?: string; argv?: readonly string[]; env?: Record<string, string> } = {}
   on('process.spawn', async function* (_$, e) {
-    seen = { cwd: e.cwd, argv: e.argv }
+    seen = { cwd: e.cwd, argv: e.argv, env: e.env }
     yield { stream: 'stdout', text: CHECKED_WITH(0) }
     return { value: { code: 0, signal: null } }
   })
@@ -2120,11 +2213,61 @@ test('rule: the check runs in a throwaway copy of the project, fenced, and the c
   expect(seen.cwd).toBe(copy)
   const argv = seen.argv ?? []
   expect(argv[argv.indexOf('--permission-mode') + 1]).toBe('default')
-  expect(argv[argv.indexOf('--settings') + 1]).toBe(checkSettings('/Users/o', '/tmp/x'))
+  // The command path's folders in the home are fenced: a program put there would run later.
+  expect(argv[argv.indexOf('--settings') + 1]).toBe(checkSettings('/Users/o', '/tmp/x', '/usr/bin:/Users/o/.cargo/bin'))
+  expect(argv[argv.indexOf('--settings') + 1]).toContain('"/Users/o/.cargo"')
   expect(argv[argv.indexOf('--allowedTools') + 1]?.split(',')).toContain('Bash')
+  // pnpm named no store, so none is named to the run.
+  expect(seen.env).toBeUndefined()
   expect(runs.filter(r => r[0] === 'rm' && r[2] === copy).length).toBeGreaterThanOrEqual(2)
   expect(runs.findIndex(r => r[0] === 'cp')).toBeLessThan(runs.length - 1)
   await ui.unmount()
+})
+
+test('rule: the check names pnpm\'s store to its run, asked of pnpm in the agent\'s folder outside the fence, so an install inside the fence reads the store pnpm uses', async ($, on) => {
+  session(on)
+  quietBand(on)
+  const runs: { argv: string[]; cwd?: string }[] = []
+  on('env.get', () => ({ value: '/Users/o' }))
+  on('process.run', (_$, e) => {
+    runs.push({ argv: [...e.argv], cwd: e.init?.cwd })
+    const stdout = e.argv[0] === 'pnpm' ? ' WARN  Issue while reading "/Users/o/.npmrc".\n/Users/o/Library/pnpm/store/v10\n' : ''
+    return { value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
+  on('session.cwd', () => ({ value: '/tmp/x' }))
+  mock.clock(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  let env: Record<string, string> | undefined
+  on('process.spawn', async function* (_$, e) {
+    env = e.env
+    yield { stream: 'stdout', text: CHECKED_WITH(0) }
+    return { value: { code: 0, signal: null } }
+  })
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+  expect(runs.find(r => r.argv[0] === 'pnpm')).toEqual({ argv: ['pnpm', 'store', 'path'], cwd: '/tmp/x' })
+  expect(env).toEqual({ npm_config_store_dir: '/Users/o/Library/pnpm/store' })
+  await ui.unmount()
+})
+
+test('pnpmStoreDir takes the folder above the versioned store pnpm prints, and nothing when pnpm prints no path', () => {
+  expect(pnpmStoreDir('/Users/o/Library/pnpm/store/v10\n')).toBe('/Users/o/Library/pnpm/store')
+  expect(pnpmStoreDir(' WARN  a warning\n/home/o/.local/share/pnpm/store/v3\n')).toBe('/home/o/.local/share/pnpm/store')
+  expect(pnpmStoreDir('/srv/pnpm-store\n')).toBe('/srv/pnpm-store')
+  expect(pnpmStoreDir('')).toBe('')
+  expect(pnpmStoreDir('ERR_PNPM_SOMETHING failed\n')).toBe('')
+})
+
+test('installOf guards a command-path folder in the home as the install it belongs to, never as a folder many programs share', () => {
+  expect(installOf('/Users/o', '/Users/o/.cargo/bin')).toBe('/Users/o/.cargo')
+  expect(installOf('/Users/o', '/Users/o/.local/share/mise/installs/node/22.22.3/bin')).toBe('/Users/o/.local/share/mise')
+  expect(installOf('/Users/o', '/Users/o/.local/share/mise/shims')).toBe('/Users/o/.local/share/mise')
+  expect(installOf('/Users/o', '/Users/o/.local/bin')).toBe('/Users/o/.local/bin')
+  expect(installOf('/Users/o', '/Users/o/Library/pnpm')).toBe('/Users/o/Library/pnpm')
+  expect(installOf('/Users/o', '/Users/o/Library/Application Support/Code/bin')).toBe('/Users/o/Library/Application Support/Code')
+  expect(installOf('/Users/o', '/Users/o/.turso')).toBe('/Users/o/.turso')
+  expect(installOf('/home/o', '/home/o/.nvm/versions/node/v22.1.0/bin')).toBe('/home/o/.nvm')
 })
 
 test('rule: when the copy cannot be made the check runs in the agent\'s folder, with writes there denied, and the brief says so', async ($, on) => {
@@ -2149,7 +2292,7 @@ test('rule: when the copy cannot be made the check runs in the agent\'s folder, 
   await ui.unmount()
 })
 
-test('rule: the card says how many of the check\'s commands were refused, and the right number is zero', async ($, on) => {
+test('rule: the card says how many of the check\'s commands were refused approval, and the right number is zero, and that what the fence stopped is not counted', async ($, on) => {
   session(on)
   quietBand(on)
   room(on)
@@ -2164,14 +2307,14 @@ test('rule: the card says how many of the check\'s commands were refused, and th
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   await ui.press({ key: 'rep' })
   await ui.press({ key: 'check' })
-  expect(await ui.find({ type: 'Text', text: /The check's run had 2 commands refused\./ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /The check's run had 2 commands refused approval; commands the fence stopped are not counted here\./ })).toBeDefined()
   // The next card's price line carries the last run's count too.
   await ui.press({ key: 'close' })
   await ui.press({ key: 'rep' })
-  expect(await ui.find({ type: 'Text', text: /re-read from cache, in 1 minute, with 2 commands refused/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /re-read from cache, in 1 minute, with 2 commands refused approval/ })).toBeDefined()
   refused = 0
   await ui.press({ key: 'check' })
-  expect(await ui.find({ type: 'Text', text: /The check's run had no command refused\./ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /The check's run had no command refused approval; commands the fence stopped are not counted here\./ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /2 commands refused/ })).toBeUndefined()
   await ui.unmount()
 })
@@ -3293,12 +3436,12 @@ const RUN_CAP = 4 * 1024 * 1024
 // first line, as a read past the cap keeps the oldest lines and drops the rest.
 // Every argv kept, and each run's time allowed in `timeouts`. The clock reads `now.t`, and
 // each read of a file other than the session's own takes `slow` milliseconds of it.
-const transcript = (on: On, files: Record<string, string>, opts: { folder?: string; cut?: readonly string[]; slow?: number } = {}) => {
+const transcript = (on: On, files: Record<string, string>, opts: { folder?: string; cut?: readonly string[]; slow?: number; home?: string } = {}) => {
   const folder = opts.folder ?? FOLDER
   const runs: string[][] = []
   const timeouts: number[] = []
   const now = { t: 1_000_000 }
-  mock.env(on, { HOME: '/Users/o' })
+  mock.env(on, { HOME: opts.home ?? '/Users/o' })
   on('clock.now', () => ({ value: now.t }))
   on('process.run', (_$, e) => {
     runs.push([...e.argv])
@@ -4715,4 +4858,415 @@ test('rule: a session resumed in the same process is read for his messages befor
   ])
   expect(recOf('resumed-from')?.owner ?? []).toEqual([])
   expect(await rowSays($, /and a readme/)).toBe(true)
+})
+
+
+// ── THE HOST THE CHECK'S COMMANDS RUN ON ────────────────────────────────────
+// The check's six commands and its `claude` spawn are written for a Unix host.
+// These prove the naming for a Windows one, and prove a Unix host's argv is
+// left exactly as it was, because that is what keeps Darwin and Linux on
+// today's behaviour.
+
+const WIN_HOST = { os: WINDOWS_OS, posixBin: 'C:\\Git\\usr\\bin', claude: 'C:/npm/claude.exe' }
+
+test('the home is HOME where there is one, USERPROFILE on Windows, and nothing when neither answers', async () => {
+  expect(homeOf('/Users/o', undefined)).toBe('/Users/o')
+  // Windows sets USERPROFILE and no HOME. Before this, home fell to '/tmp' and
+  // every path built from it was wrong.
+  expect(homeOf(undefined, 'C:\\Users\\k')).toBe('C:\\Users\\k')
+  // An empty variable is as absent as a missing one.
+  expect(homeOf('', 'C:\\Users\\k')).toBe('C:\\Users\\k')
+  // HOME wins when both answer, so a Unix host is untouched.
+  expect(homeOf('/Users/o', 'C:\\Users\\k')).toBe('/Users/o')
+  expect(homeOf(undefined, undefined)).toBe('')
+  expect(homeOf('', '')).toBe('')
+  // A home that is /tmp is a home, not a stand-in for none.
+  expect(homeOf('/tmp', undefined)).toBe('/tmp')
+})
+
+test('a host that resolves by name leaves every argv exactly as it was', async () => {
+  expect(isWindowsHost(PATH_HOST)).toBe(false)
+  for (const name of POSIX_COMMANDS) {
+    expect(hostArgv(PATH_HOST, [name, '-x', '/tmp/a'])).toEqual([name, '-x', '/tmp/a'])
+  }
+  expect(hostArgv(PATH_HOST, ['claude', '-p', 'hello'])).toEqual(['claude', '-p', 'hello'])
+  // The clone first, then the plain copy; a Unix host keeps the clone it had.
+  expect(copyArgvs(PATH_HOST, '/a', '/b')).toEqual([
+    ['cp', '-Rc', '/a', '/b'],
+    ['cp', '-R', '/a/.', '/b'],
+  ])
+})
+
+test('a Windows host names every command by its full path, and leaves a command it does not own alone', async () => {
+  expect(isWindowsHost(WIN_HOST)).toBe(true)
+  // Git for Windows ships all six, in a usr/bin its installer leaves off PATH.
+  expect(hostArgv(WIN_HOST, ['mkdir', '-p', 'C:/x'])).toEqual(['C:/Git/usr/bin/mkdir.exe', '-p', 'C:/x'])
+  expect(hostArgv(WIN_HOST, ['rm', '-rf', 'C:/x'])).toEqual(['C:/Git/usr/bin/rm.exe', '-rf', 'C:/x'])
+  expect(hostArgv(WIN_HOST, ['find', 'C:/p', '-name', 'a.jsonl'])).toEqual(['C:/Git/usr/bin/find.exe', 'C:/p', '-name', 'a.jsonl'])
+  expect(hostArgv(WIN_HOST, ['ls', '-t', 'C:/p'])).toEqual(['C:/Git/usr/bin/ls.exe', '-t', 'C:/p'])
+  expect(hostArgv(WIN_HOST, ['sed', '-n', '-E', 'p', 'C:/f'])).toEqual(['C:/Git/usr/bin/sed.exe', '-n', '-E', 'p', 'C:/f'])
+  // The seed's `toolLineFind` is `grep -n -o -m 1 -F`.
+  expect(hostArgv(WIN_HOST, ['grep', '-n', '-F', 'x', 'C:/f'])).toEqual(['C:/Git/usr/bin/grep.exe', '-n', '-F', 'x', 'C:/f'])
+  // `claude` on PATH is a shim Node cannot spawn without a shell; the npm
+  // package's own executable is spawned instead, and the prompt stays an argv.
+  expect(hostArgv(WIN_HOST, ['claude', '-p', 'a prompt "with quotes"'])).toEqual([
+    'C:/npm/claude.exe',
+    '-p',
+    'a prompt "with quotes"',
+  ])
+  // Anything the layer does not own is left to resolve as it always did.
+  expect(hostArgv(WIN_HOST, ['git', 'status'])).toEqual(['git', 'status'])
+  expect(hostArgv(WIN_HOST, [])).toEqual([])
+  // A Windows host with no coreutils found behaves as a PATH host: the commands
+  // are tried by name, which fails, and the copy's failure is already handled.
+  expect(hostArgv({ ...WIN_HOST, posixBin: '' }, ['mkdir', '-p', 'C:/x'])).toEqual(['mkdir', '-p', 'C:/x'])
+})
+
+test('the copy tries the APFS clone and then the plain copy, because only Darwin cp takes -c', async () => {
+  // `cp -Rc` answers "cp: unknown option -- c" on GNU cp, so the plain form is
+  // what runs on Windows and on Linux. Measured on Git for Windows, 16 Oct 2026.
+  expect(copyArgvs(WIN_HOST, 'C:/work', 'C:/copy')).toEqual([
+    ['C:/Git/usr/bin/cp.exe', '-Rc', 'C:/work', 'C:/copy'],
+    ['C:/Git/usr/bin/cp.exe', '-R', 'C:/work/.', 'C:/copy'],
+  ])
+})
+
+test('a path handed to a POSIX command is written one way, because mixing separators is what breaks them', async () => {
+  expect(slashed('C:\\Program Files\\Git\\usr\\bin')).toBe('C:/Program Files/Git/usr/bin')
+  expect(slashed('/already/posix')).toBe('/already/posix')
+  // The space in "Program Files" stays a space: the argv is never a shell string.
+  expect(hostArgv({ ...WIN_HOST, posixBin: 'C:\\Program Files\\Git\\usr\\bin' }, ['ls', '-t', 'C:/p'])).toEqual([
+    'C:/Program Files/Git/usr/bin/ls.exe',
+    '-t',
+    'C:/p',
+  ])
+})
+
+test('the places Git for Windows and npm put their binaries are tried in order, and an unset variable adds no candidate', async () => {
+  // Slashed as they are built, so the path a probe proves is the path later run.
+  expect(winPosixBinCandidates('C:\\PF', 'C:\\PF86', 'C:\\LAD')).toEqual([
+    'C:/PF/Git/usr/bin',
+    'C:/LAD/Programs/Git/usr/bin',
+    'C:/PF86/Git/usr/bin',
+  ])
+  expect(winPosixBinCandidates(undefined, undefined, 'C:\\LAD')).toEqual(['C:/LAD/Programs/Git/usr/bin'])
+  expect(winPosixBinCandidates('', '', '')).toEqual([])
+  expect(winClaudeCandidates('C:\\AD', 'C:\\LAD')).toEqual([
+    'C:/AD/npm/node_modules/@anthropic-ai/claude-code/bin/claude.exe',
+    'C:/LAD/npm/node_modules/@anthropic-ai/claude-code/bin/claude.exe',
+  ])
+  expect(winClaudeCandidates(undefined, undefined)).toEqual([])
+})
+
+// The room on a Windows host: `OS` says Windows (or what `os` gives), the home is
+// USERPROFILE, and a command answers `--version` only at the second coreutils
+// candidate, so the test proves the candidates are tried in order rather than guessed at.
+const winRoom = (on: On, throwsOn = '', os: () => string = () => WINDOWS_OS): string[][] => {
+  const runs: string[][] = []
+  const env: Record<string, string> = {
+    USERPROFILE: 'C:\\Users\\k',
+    PROGRAMFILES: 'C:\\PF',
+    LOCALAPPDATA: 'C:\\LAD',
+    APPDATA: 'C:\\AD',
+  }
+  on('env.get', (_$, e) => {
+    if (e.name === throwsOn) throw new Error(`no ${e.name}`)
+    return { value: e.name === 'OS' ? os() || undefined : env[e.name] }
+  })
+  on('process.run', (_$, e) => {
+    const argv = [...e.argv]
+    runs.push(argv)
+    const out = (exitCode: number) => ({
+      value: { exitCode, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false },
+    })
+    const cmd = argv[0] ?? ''
+    // Only the LOCALAPPDATA install answers, and only the npm claude.exe does.
+    if (argv[argv.length - 1] === '--version') {
+      return out(cmd === 'C:/LAD/Programs/Git/usr/bin/mkdir.exe' || cmd === 'C:/AD/npm/node_modules/@anthropic-ai/claude-code/bin/claude.exe' ? 0 : 1)
+    }
+    return out(0)
+  })
+  return runs
+}
+
+// Whether the check's copy was begun: cp, rm or mkdir run other than as a probe.
+const copied = (runs: string[][]): string[][] =>
+  runs.filter(r => /(^|\/)(cp|rm|mkdir)(\.exe)?$/.test(r[0] ?? '') && r[r.length - 1] !== '--version')
+
+const windowsCard = async ($: Engine, on: On, throwsOn = '') => {
+  mock.clock(on)
+  session(on)
+  quietBand(on)
+  const runs = winRoom(on, throwsOn)
+  on('session.cwd', () => ({ value: 'C:\\work\\proj' }))
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  let spawned = 0
+  on('process.spawn', (async function* () {
+    spawned += 1
+    yield { stream: 'stdout', text: CHECKED_WITH(0) }
+    return { value: { code: 0, signal: null } }
+  }) as never)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  // The card says why in place of the check's price, and offers no button for it.
+  expect(await ui.find({ type: 'Text', text: /The check does not run on Windows yet: Claude Code's sandbox is switched off there/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Check it starts a separate/ })).toBeUndefined()
+  expect(await ui.find({ key: 'check' })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: /The card\./ })).toBeDefined()
+  expect(spawned).toBe(0)
+  expect(copied(runs)).toEqual([])
+  await ui.unmount()
+}
+
+test('rule: on Windows, since nothing there fences the check\'s run, the card says the check does not run there and offers no Check it', async ($, on) => {
+  await windowsCard($, on)
+})
+
+test('rule: on Windows the card offers no Check it when looking for its commands throws either: the refusal rests on the host, never on a probe', async ($, on) => {
+  await windowsCard($, on, 'PROGRAMFILES')
+})
+
+test('rule: on Windows the check itself does not start either, pressed on a card drawn before: nothing is copied or spawned, and the card says why', async ($, on) => {
+  mock.clock(on)
+  session(on)
+  quietBand(on)
+  let os = ''
+  const runs = winRoom(on, '', () => os)
+  on('session.cwd', () => ({ value: 'C:\\work\\proj' }))
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  let spawned = 0
+  on('process.spawn', (async function* () {
+    spawned += 1
+    yield { stream: 'stdout', text: CHECKED_WITH(0) }
+    return { value: { code: 0, signal: null } }
+  }) as never)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  // Drawn while the host read as a Mac, the card offers the check.
+  expect(await ui.find({ key: 'check' })).toBeDefined()
+  os = WINDOWS_OS
+  await ui.press({ key: 'check' })
+  expect(await ui.find({ type: 'Text', text: /The check does not run on Windows yet: Claude Code's sandbox is switched off there/ })).toBeDefined()
+  expect(spawned).toBe(0)
+  // Not even the copy is made: the refusal comes before it.
+  expect(copied(runs)).toEqual([])
+  // The card the check was pressed on stays up, with no button for a check that cannot run.
+  expect(await ui.find({ type: 'Text', text: /The card\./ })).toBeDefined()
+  expect(await ui.find({ key: 'check' })).toBeUndefined()
+  await ui.unmount()
+})
+
+// The transcript on a Windows host: `OS` says Windows, the home is USERPROFILE with no
+// HOME, and the coreutils answer only by their full path in Git's usr/bin, as there.
+const WIN_GIT = 'C:/PF/Git/usr/bin'
+const WIN_PROJECTS = 'C:/Users/k/.claude/projects'
+const WIN_FOLDER = `${WIN_PROJECTS}/-C-work-app`
+const winTranscript = (on: On, files: Record<string, string>, opts: { probeFails?: number } = {}): string[][] => {
+  const runs: string[][] = []
+  const folder = WIN_FOLDER
+  let fails = opts.probeFails ?? 0
+  mock.env(on, { OS: WINDOWS_OS, USERPROFILE: 'C:\\Users\\k', PROGRAMFILES: 'C:\\PF' })
+  on('clock.now', () => ({ value: 1_000_000 }))
+  on('process.run', (_$, e) => {
+    const argv = [...e.argv]
+    runs.push(argv)
+    const out = (exitCode: number, stdout = '') => ({ value: { exitCode, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
+    const cmd = argv[0] ?? ''
+    if (argv[argv.length - 1] === '--version') {
+      if (cmd !== `${WIN_GIT}/mkdir.exe`) return out(1)
+      if (fails === 0) return out(0)
+      fails -= 1
+      return out(1)
+    }
+    // A name alone resolves to nothing on Windows.
+    if (!cmd.startsWith(`${WIN_GIT}/`)) return out(127)
+    const name = cmd.slice(WIN_GIT.length + 1).replace(/\.exe$/, '')
+    if (name === 'find') {
+      if (argv[1] !== WIN_PROJECTS) return out(1)
+      const file = argv[argv.length - 1] ?? ''
+      return out(0, file in files ? `${folder}/${file}\n` : '')
+    }
+    if (name === 'ls') return argv[2] === folder ? out(0, `${Object.keys(files).join('\n')}\n`) : out(1)
+    if (name !== 'sed' && name !== 'grep') return out(1)
+    const path = argv[argv.length - 1] ?? ''
+    const body = path.startsWith(`${folder}/`) ? files[path.slice(folder.length + 1)] : undefined
+    if (body === undefined) return out(name === 'grep' ? 2 : 1)
+    if (name === 'grep') {
+      const text = argv[6] ?? '\u0000'
+      const match = (l: string) => argv[5] === '-E' ? l.match(new RegExp(text))?.[0] : l.includes(text) ? text : undefined
+      const at = body.split('\n').findIndex(l => match(l) !== undefined)
+      return at < 0 ? out(1) : out(0, `${at + 1}:${match(body.split('\n')[at] ?? '')}\n`)
+    }
+    // The read before a line: sed -n -E -e <n>q -e <script>.
+    const before = argv[3] === '-e' ? Number((argv[4] ?? '').replace(/q$/, '')) : Infinity
+    const lines = body.split('\n').slice(0, before - 1).filter(l => l.includes('"kind":"human"'))
+    return out(0, lines.length > 0 ? `${lines.join('\n')}\n` : '')
+  })
+  return runs
+}
+
+test('rule: on Windows his messages are read from the session\'s file through Git\'s own commands, under the home USERPROFILE names, written with forward slashes', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS }))
+  const runs = winTranscript(on, { 'test-session.jsonl': SEEDED_FILE })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await started($)
+  await settle($)
+  expect(rec()?.owner).toEqual(SEEDED)
+  // Every command named by its full path, and the folder found under USERPROFILE.
+  const ran = runs.filter(r => r[r.length - 1] !== '--version')
+  expect(ran.map(r => r[0])).toEqual([`${WIN_GIT}/find.exe`, `${WIN_GIT}/sed.exe`, `${WIN_GIT}/grep.exe`])
+  expect(ran[0]?.[1]).toBe(WIN_PROJECTS)
+})
+
+test('rule: on Windows a transcript path given with backslashes is read written with forward slashes', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS }))
+  const runs = winTranscript(on, { 'test-session.jsonl': SEEDED_FILE })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await giveTranscript($, on, 'C:\\Users\\k\\.claude\\projects\\-C-work-app\\test-session.jsonl')
+  await started($)
+  await settle($)
+  expect(rec()?.owner).toEqual(SEEDED)
+  const ran = runs.filter(r => r[r.length - 1] !== '--version')
+  expect(ran.map(r => [r[0], r[r.length - 1]])).toEqual([[`${WIN_GIT}/sed.exe`, `${WIN_FOLDER}/test-session.jsonl`], [`${WIN_GIT}/grep.exe`, `${WIN_FOLDER}/test-session.jsonl`]])
+})
+
+test('rule: on Windows a probe for Git\'s commands that failed is tried again on the next read, never held for the process', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS }))
+  winTranscript(on, { 'test-session.jsonl': SEEDED_FILE }, { probeFails: 1 })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await started($)
+  await settle($)
+  expect(rec()?.owner ?? []).toEqual([])
+  await started($)
+  await settle($)
+  expect(rec()?.owner).toEqual(SEEDED)
+})
+
+test('rule: on Windows a fork taken after a compaction finds its parent by its last tool result through Git\'s own grep and sed', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: COMPACTED_ROWS }))
+  const parent = `${COMPACTED_FILE}\n${LINE('Now add a readme.')}`
+  const runs = winTranscript(on, { 'newer.jsonl': LINE('Something he typed elsewhere.'), 'parent.jsonl': parent })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await giveTranscript($, on, 'C:\\Users\\k\\.claude\\projects\\-C-work-app\\test-session.jsonl')
+  await started($)
+  await settle($)
+  expect(rec()?.owner).toEqual(COMPACTED)
+  const ran = runs.filter(r => r[r.length - 1] !== '--version')
+  expect(ran.map(r => [r[0], r[r.length - 1]])).toEqual([
+    [`${WIN_GIT}/sed.exe`, `${WIN_FOLDER}/test-session.jsonl`],
+    [`${WIN_GIT}/ls.exe`, WIN_FOLDER],
+    [`${WIN_GIT}/grep.exe`, `${WIN_FOLDER}/newer.jsonl`],
+    [`${WIN_GIT}/grep.exe`, `${WIN_FOLDER}/parent.jsonl`],
+    [`${WIN_GIT}/sed.exe`, `${WIN_FOLDER}/parent.jsonl`],
+  ])
+})
+
+test('rule: on Windows a fork whose own file is a copy of the stretch since a summary finds its parent by that summary line through Git\'s own grep and sed', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: TAIL_ROWS }))
+  const parent = [LINE('Add a licence file with the MIT text.'), LINE('Use this year, and push it.'), BOUNDARY(), LINE(SUMMARY, {}), LINE('Keep the year in the header too.'), USE_LINE('toolu_01Push'), LINE('Now add a readme.'), RESULT_LINE('toolu_01Push')].join('\n')
+  const runs = winTranscript(on, { 'test-session.jsonl': TAIL_COPY, 'newer.jsonl': LINE('Something he typed elsewhere.'), 'parent.jsonl': parent })
+  writer(on, () => OBJ('A licence file with the MIT text and this year, and a changelog.', ['the file pushed | open'], '#1 to #4'))
+  await giveTranscript($, on, 'C:\\Users\\k\\.claude\\projects\\-C-work-app\\test-session.jsonl')
+  await started($)
+  await settle($)
+  expect(rec()?.owner).toEqual(TAILED)
+  const ran = runs.filter(r => r[r.length - 1] !== '--version')
+  expect(ran.map(r => [r[0], r[r.length - 1]])).toEqual([
+    [`${WIN_GIT}/sed.exe`, `${WIN_FOLDER}/test-session.jsonl`],
+    [`${WIN_GIT}/grep.exe`, `${WIN_FOLDER}/test-session.jsonl`],
+    [`${WIN_GIT}/ls.exe`, WIN_FOLDER],
+    [`${WIN_GIT}/grep.exe`, `${WIN_FOLDER}/newer.jsonl`],
+    [`${WIN_GIT}/grep.exe`, `${WIN_FOLDER}/parent.jsonl`],
+    [`${WIN_GIT}/sed.exe`, `${WIN_FOLDER}/parent.jsonl`],
+  ])
+})
+
+test('rule: a home that is /tmp is a home: the session\'s file is looked for under /tmp/.claude', async ($, on) => {
+  kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS }))
+  const runs = transcript(on, {}, { home: '/tmp' })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await started($)
+  await settle($)
+  expect(runs.map(r => r.join(' '))).toContain('find /tmp/.claude/projects -maxdepth 2 -name test-session.jsonl')
+})
+
+// The copy's commands on a Unix host. With `gnu` the clone is refused before anything is
+// made, as GNU cp refuses -c on Linux; with `darwin` it fails part-way and leaves the
+// copy's folder behind, as Darwin's cp does on an unreadable file.
+const copyRoom = (on: On, cp: 'gnu' | 'darwin'): string[][] => {
+  const runs: string[][] = []
+  const made = new Set<string>()
+  on('env.get', (_$, e) => ({ value: e.name === 'HOME' ? '/Users/o' : undefined }))
+  on('process.run', (_$, e) => {
+    const argv = [...e.argv]
+    runs.push(argv)
+    const out = (exitCode: number) => ({ value: { exitCode, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
+    const last = argv[argv.length - 1] ?? ''
+    if (argv[0] === 'rm') made.delete(last)
+    if (argv[0] === 'mkdir' && argv[1] !== '-p') {
+      if (made.has(last)) return out(1)
+      made.add(last)
+    }
+    if (argv[0] === 'cp' && argv[1] === '-Rc') {
+      if (cp === 'darwin') made.add(last)
+      return out(1)
+    }
+    return out(0)
+  })
+  return runs
+}
+
+const copyCheck = async ($: Engine, on: On, cp: 'gnu' | 'darwin') => {
+  mock.clock(on)
+  session(on)
+  quietBand(on)
+  const runs = copyRoom(on, cp)
+  on('session.cwd', () => ({ value: '/tmp/x' }))
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  let cwd = ''
+  on('process.spawn', (async function* (_$: unknown, e: { cwd: string }) {
+    cwd = e.cwd
+    yield { stream: 'stdout', text: CHECKED_WITH(0) }
+    return { value: { code: 0, signal: null } }
+  }) as never)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+  await ui.unmount()
+  return { runs, cwd: () => cwd, copy: checkCopyDir('/Users/o', 'test-session') }
+}
+
+test('rule: where cp refuses -c, as GNU cp on Linux does, the check runs in a plain copy made into the copy\'s own folder', async ($, on) => {
+  const { runs, cwd, copy } = await copyCheck($, on, 'gnu')
+  expect(cwd()).toBe(copy)
+  expect(runs.filter(r => r[0] === 'cp')).toEqual([
+    ['cp', '-Rc', '/tmp/x', copy],
+    ['cp', '-R', '/tmp/x/.', copy],
+  ])
+})
+
+test('rule: where the clone fails part-way, as Darwin\'s cp does on an unreadable file, no plain copy is made over it: the check runs in the agent\'s folder and the part-made copy is removed', async ($, on) => {
+  const { runs, cwd, copy } = await copyCheck($, on, 'darwin')
+  expect(cwd()).toBe('/tmp/x')
+  expect(runs.filter(r => r[0] === 'cp')).toEqual([['cp', '-Rc', '/tmp/x', copy]])
+  const cloned = runs.findIndex(r => r[0] === 'cp')
+  expect(runs.slice(cloned).some(r => r[0] === 'rm' && r[2] === copy)).toBe(true)
 })

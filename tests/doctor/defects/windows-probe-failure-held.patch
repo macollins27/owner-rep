@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index e25097b..2e1371e 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -882,7 +882,6 @@ async function hostOf($: EngineInterface): Promise<Host> {
+   if (host === null || host.os !== os) host = { os, value: lookUpHost($, os) }
+   const held = host
+   const got = await held.value
+-  if (isWindowsHost(got) && got.posixBin === '' && host === held) host = null
+   return got
+ }
+ 

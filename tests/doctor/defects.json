@@ -966,6 +966,132 @@
     "fixed": "2026-10-16"
   },
   {
+    "name": "home-ignores-userprofile",
+    "breaks": "On Windows, where HOME is unset, the home falls back to /tmp, so the transcripts and the check's copies are looked for in the wrong folder.",
+    "patch": "home-ignores-userprofile.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-commands-by-name",
+    "breaks": "On Windows the coreutils are run by name, which finds nothing there, so the transcript reads fail.",
+    "patch": "windows-commands-by-name.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-claude-by-name",
+    "breaks": "On Windows the check would spawn the claude shim by name, which cannot be run without a shell.",
+    "patch": "windows-claude-by-name.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "candidates-unslashed",
+    "breaks": "The folders tried for Git's coreutils keep their backslashes, so the path the probe proves is not the one later run.",
+    "patch": "candidates-unslashed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "plain-copy-nests",
+    "breaks": "The plain copy puts the agent's folder inside the folder just made for it, so the check runs one level above the project.",
+    "patch": "plain-copy-nests.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "copy-no-fallback",
+    "breaks": "Where cp refuses -c, as GNU cp on Linux does, no copy is made and the check runs in the agent's own folder.",
+    "patch": "copy-no-fallback.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "fallback-over-partial-clone",
+    "breaks": "A Darwin clone that failed part-way on the files is copied again in full, into the part-made copy.",
+    "patch": "fallback-over-partial-clone.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "part-copy-left",
+    "breaks": "A copy that failed part-way is left behind in the copies folder when the check falls back to the agent's folder.",
+    "patch": "part-copy-left.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-check-unfenced",
+    "breaks": "On Windows, where Claude Code's sandbox is off, the check's run starts with nothing stopping it writing the owner's files or reaching the internet.",
+    "patch": "windows-check-unfenced.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-find-by-name",
+    "breaks": "On Windows the session's transcript is looked for with find by name, which finds nothing there, so none of his messages is read.",
+    "patch": "windows-find-by-name.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-read-by-name",
+    "breaks": "On Windows the transcript is read with sed by name, which finds nothing there, so none of his messages is read.",
+    "patch": "windows-read-by-name.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-probe-failure-held",
+    "breaks": "On Windows a probe for Git's commands that failed once, as one can the first time a virus scanner meets them, is held for the process, so none of his messages is read from a transcript again until Claude Code restarts.",
+    "patch": "windows-probe-failure-held.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-refusal-rests-on-probe",
+    "breaks": "On Windows a lookup of the commands that throws makes the host look like a Unix one, so the check starts there with nothing fencing it.",
+    "patch": "windows-refusal-rests-on-probe.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "home-tmp-is-none",
+    "breaks": "A home that is /tmp is taken for no home, so the session's transcript is never looked for under /tmp/.claude.",
+    "patch": "home-tmp-is-none.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-home-mixed-slashes",
+    "breaks": "On Windows the home keeps the backslashes USERPROFILE gives it, so every path built from it mixes the two separators.",
+    "patch": "windows-home-mixed-slashes.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-held-path-backslashed",
+    "breaks": "On Windows a transcript path Claude Code gives with backslashes is read as given, so a forked session's folder is never found and none of his messages is read.",
+    "patch": "windows-held-path-backslashed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-card-offers-check",
+    "breaks": "On Windows the card shows the check's price, which says it starts a run in a throwaway copy, though the check does not run there.",
+    "patch": "windows-card-offers-check.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-check-button-kept",
+    "breaks": "On Windows the card offers Check it beside the note saying the check does not run there, a button that can only refuse.",
+    "patch": "windows-check-button-kept.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "fence-unavailable-runs",
+    "breaks": "Where the sandbox cannot start (a Linux without bubblewrap, WSL1), the check's run warns and goes on with no fence instead of refusing to start.",
+    "patch": "fence-unavailable-runs.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "fence-way-out-kept",
+    "breaks": "The check's shell may ask to run a command outside the sandbox, the way Claude Code's own instructions tell a model to when the fence refuses, so a write the fence denied can be made anyway.",
+    "patch": "fence-way-out-kept.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "no-copy-brief-says-write",
+    "breaks": "When no copy could be made and the check runs in the agent's own folder, its brief still tells it to write what it likes there and that the copy is removed after.",
+    "patch": "no-copy-brief-says-write.patch",
+    "fixed": "2026-10-16"
+  },
+  {
     "name": "seed-gated-on-typed-rows",
     "breaks": "A session reopened after a compaction he has typed nothing since, with no record, is not read for his messages, so it holds no objective.",
     "patch": "seed-gated-on-typed-rows.patch",
@@ -1029,6 +1155,138 @@
     "name": "anchor-on-result",
     "breaks": "A fork taken while a tool ran searches its parent for that tool's result, which the parent had not saved, so it finds no parent and holds none of his messages.",
     "patch": "anchor-on-result.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "windows-tool-line-by-name",
+    "breaks": "On Windows the seed's search for a fork's parent, by its last tool result or by a copy's summary line, runs grep by its bare name, which Windows cannot find, so a fork taken after a compaction reads none of his messages from before it.",
+    "patch": "windows-tool-line-by-name.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-read-before-by-name",
+    "breaks": "On Windows the read of a parent's messages before its last tool result runs sed by its bare name, which Windows cannot find, so a fork taken after a compaction reads none of his messages.",
+    "patch": "windows-read-before-by-name.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "fence-runs-later-open",
+    "breaks": "The check's fence leaves Claude Code's own install, the login programs folder and the installs of the command path's folders in the home writable, so a run steered by text in the record could leave behind a program that runs later outside any fence.",
+    "patch": "fence-runs-later-open.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-path-ignored",
+    "breaks": "The check's run is fenced without the command path, so a folder of programs in the home stays writable and a program put there runs the next time anyone types its name.",
+    "patch": "fence-path-ignored.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-path-holds-copy",
+    "breaks": "A command path folder that holds the check's copies is denied, and since a denied folder beats an allowed one the check can write nothing in its own copy.",
+    "patch": "fence-path-holds-copy.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "brief-overstates-fence",
+    "breaks": "The check's brief says the fence denies every write outside the copy, while on this Mac it is a list of guarded folders, so the run believes a write it should not make would be stopped.",
+    "patch": "brief-overstates-fence.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "refused-count-claims-fence",
+    "breaks": "The card says the check's run had no command refused when the fence stopped several, since the count is of approvals only, so the owner reads that nothing was blocked.",
+    "patch": "refused-count-claims-fence.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "no-fence-reason-dropped",
+    "breaks": "Where the fence cannot start (a Linux without bubblewrap), the card shows only the line naming the setting, not what is missing or how to install it, and goes on offering a check that can only refuse.",
+    "patch": "no-fence-reason-dropped.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "no-fence-card-offers-check",
+    "breaks": "Where the fence cannot start, the card says so and still offers Check it, a button that makes the copy only to be refused again.",
+    "patch": "no-fence-card-offers-check.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "windows-start-by-name",
+    "breaks": "On Windows the look at how the session's own file begins runs grep by its bare name, which Windows cannot find, so a fork whose file is a copy since a summary is taken as the whole of his messages and everything he typed before the summary is lost.",
+    "patch": "windows-start-by-name.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-startup-files-open",
+    "breaks": "The check's fence leaves the shell's startup files writable, so a run steered by text in the record could add a line that every later terminal and agent shell runs outside any fence.",
+    "patch": "fence-startup-files-open.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-gitconfig-open",
+    "breaks": "The check's fence leaves git's own settings writable, so a run could name a program git then runs in every later commit or fetch, outside any fence.",
+    "patch": "fence-gitconfig-open.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-package-settings-open",
+    "breaks": "The check's fence leaves the package managers' settings (npm, yarn, bun) writable, so a run could name a program they then run on a later install, outside any fence.",
+    "patch": "fence-package-settings-open.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-claude-config-open",
+    "breaks": "The check's fence leaves Claude Code's own configuration writable, its settings, hooks, skills and history among it, so a run could change what every later session does.",
+    "patch": "fence-claude-config-open.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-python-open",
+    "breaks": "The check's fence leaves Python's add-on folders writable, whose .pth files run at every Python start, the owner's guard among them, so a run could plant code that runs later outside any fence.",
+    "patch": "fence-python-open.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-path-folder-only",
+    "breaks": "The check's fence guards a command path folder only as itself, so mise's npm or cargo's env file, beside the folder in the same install, stay writable and run later outside any fence.",
+    "patch": "fence-path-folder-only.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "install-shared-folder-guarded",
+    "breaks": "A command path folder under a folder many programs share (~/Library, ~/.local/share) is guarded as that whole shared folder, so the run can write nothing there, caches and Python's folders included.",
+    "patch": "install-shared-folder-guarded.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "install-holds-copies-kept",
+    "breaks": "A command path folder whose install would hold the check's copies loses its guard altogether, rather than being guarded as itself, so a program on the path there stays writable.",
+    "patch": "install-holds-copies-kept.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "brief-says-every-place",
+    "breaks": "The check's brief says the fence guards every place in the home whose contents run later, while it guards a list of the main ones, so the run believes a write it should not make would be stopped.",
+    "patch": "brief-says-every-place.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "no-fence-forgotten",
+    "breaks": "Where the fence refused to start, the next card goes back to offering Check it, and each press copies the project only to be refused again.",
+    "patch": "no-fence-forgotten.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "pnpm-store-not-passed",
+    "breaks": "The check's run is not told where pnpm's store is, so pnpm inside the fence moves its store into an empty scratch folder and an offline install there fails, and the check names the project's tests as not run.",
+    "patch": "pnpm-store-not-passed.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "pnpm-store-keeps-version",
+    "breaks": "The store named to the check's run keeps pnpm's version folder, so pnpm looks for its store one level too deep, finds it empty, and an offline install fails.",
+    "patch": "pnpm-store-keeps-version.patch",
     "fixed": "2026-10-17"
   }
 ]

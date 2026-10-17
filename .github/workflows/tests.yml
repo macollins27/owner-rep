@@ -18,6 +18,8 @@ jobs:
         run: tests/ci/declarations.sh
       - name: Validate the manifest and the hooks module
         run: claude plugin validate .
+      - name: Fail when a hook runs a program not named for the host it runs on
+        run: tests/ci/host-calls.sh
       - name: Run the tests
         run: claude plugin test .
       - name: Type-check the hooks and the tests

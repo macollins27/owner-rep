@@ -1306,33 +1306,294 @@ export const CHECK_DISALLOWED_TOOLS = 'Edit,Write,MultiEdit,NotebookEdit,Agent,T
 // owner's own guard hooks fire inside the run as they do for every agent; `denyWrite`
 // beats `allowWrite`, so the copy cannot sit under a denied folder; and the owner's
 // settings make the whole home folder a working directory, so the fence is a deny list.
-export const checkDenyWrite = (home: string, real: string): string[] => [
-  real,
-  `${home}/Developer`,
-  `${home}/Documents`,
-  `${home}/Desktop`,
-  `${home}/work`,
-  `${home}/.ssh`,
-  `${home}/.config`,
-  `${home}/.claude/settings.json`,
-  `${home}/.claude/settings.local.json`,
-  `${home}/.claude/CLAUDE.md`,
-  `${home}/.claude/hooks`,
-  `${home}/.claude/plugins`,
-  `${home}/.claude/projects`,
-  `${home}/.claude/tools`,
-  `${home}/.claude/keybindings.json`,
+// Beside his work and Claude Code's whole configuration it names the main places in the
+// home whose contents run later, outside any fence: the shell's startup files, git's
+// settings, the package managers' settings that can name a program, Python's add-on
+// folders (whose .pth files run at every start, the owner's guard among them), Claude
+// Code's own install, the folder macOS starts programs from at login, and the install of
+// each folder of the command path (`path`, the PATH as Claude Code has it) that sits in
+// the home (`installOf`). Claude Code's own guard on startup files and .gitconfig covers
+// only the run's working directory, here the copy (measured 17 Oct 2026). A list cannot
+// name every such place, so the brief says the main ones and tells the run to write
+// nowhere but the copy. A folder holding the copies is never named, or the copy could
+// not be written: a path folder's install that would hold them gives way to the folder.
+export const checkDenyWrite = (home: string, real: string, path = ''): string[] => {
+  const holdsCopies = (d: string): boolean => `${checkCopiesDir(home)}/`.startsWith(`${d}/`)
+  return [
+    ...new Set([
+      real,
+      `${home}/Developer`,
+      `${home}/Documents`,
+      `${home}/Desktop`,
+      `${home}/work`,
+      `${home}/.ssh`,
+      `${home}/.config`,
+      `${home}/.claude`,
+      `${home}/.claude.json`,
+      ...SHELL_STARTUP.map(f => `${home}/${f}`),
+      `${home}/.gitconfig`,
+      `${home}/.npmrc`,
+      `${home}/.yarnrc.yml`,
+      `${home}/.bunfig.toml`,
+      `${home}/Library/Python`,
+      `${home}/.local/lib`,
+      `${home}/.local/bin`,
+      `${home}/.local/share/claude`,
+      `${home}/Library/LaunchAgents`,
+      ...path
+        .split(':')
+        .map(d => d.replace(/\/+$/, ''))
+        .filter(d => d.startsWith(`${home}/`))
+        .map(d => (holdsCopies(installOf(home, d)) ? d : installOf(home, d)))
+        .filter(d => !holdsCopies(d)),
+    ]),
+  ]
+}
+
+// The files bash, zsh, sh and tcsh run from the home as a shell starts or ends.
+export const SHELL_STARTUP = ['.zshenv', '.zprofile', '.zshrc', '.zlogin', '.zlogout', '.bashrc', '.bash_profile', '.bash_login', '.bash_logout', '.profile', '.tcshrc', '.cshrc', '.login']
+
+// Folders in the home that hold many programs' files, the longest first.
+const SHARED_FOLDERS = ['Library/Application Support', 'Library', '.local/share', '.local']
+
+// The install a command-path folder in the home belongs to: its first folder below the
+// home that is not one many programs share. mise's `~/.local/share/mise/installs/node/22/bin`
+// is guarded as `~/.local/share/mise`, where the npm its node runs lives and the shims
+// pick any installed version from, and `~/.cargo/bin` as `~/.cargo`, whose `env` file
+// the shell's startup runs; `~/.local/bin` and `~/Library/pnpm` stay themselves.
+export const installOf = (home: string, dir: string): string => {
+  const rel = dir.slice(home.length + 1)
+  const shared = SHARED_FOLDERS.find(s => rel.startsWith(`${s}/`))
+  const below = shared === undefined ? rel : rel.slice(shared.length + 1)
+  return `${home}/${shared === undefined ? '' : `${shared}/`}${below.split('/')[0]}`
+}
+
+// ── THE HOST THE CHECK'S COMMANDS RUN ON ────────────────────────────────────
+//
+// The check copies the agent's folder and reads transcripts with seven external
+// commands — mkdir, rm, cp, find, ls, sed, grep — and spawns `claude` to do the
+// reading. All eight are written for a Unix host, and on WINDOWS not one of
+// them runs. Measured on Windows 11, Claude Code 2.1.302, 16 Oct 2026:
+//
+//   * `HOME` IS NOT GUARANTEED on Windows, so `home` fell back to `/tmp` and
+//     every path built from it — the copies folder, the deny list, the
+//     transcript folder — was wrong. Measured both ways on one machine: empty
+//     in a native Windows process, and set to the profile folder in a process
+//     launched from Git Bash, which inherits it. `USERPROFILE` is always set,
+//     so it is the fallback and `HOME` still wins where it answers.
+//   * None of the seven commands is on PATH. Git for Windows ships all seven, in a
+//     `usr/bin` its installer deliberately leaves off PATH, so each one has to
+//     be named by its full path.
+//   * `cp -Rc` asks for a copy-on-write clone. `-c` is APFS, so only Darwin's
+//     cp takes it: GNU cp answers `cp: unknown option -- c` and the copy fails.
+//     That is a LINUX bug as much as a Windows one, so the clone is attempted
+//     and the plain copy is its fallback, rather than guessing by platform.
+//   * `claude` on PATH is a shim (`.cmd` / `.ps1` / a bash script). Node cannot
+//     spawn a `.cmd` without a shell, and routing a prompt of this size through
+//     a shell would mean quoting it. The npm package ships `bin/claude.exe`, a
+//     real executable, so that is spawned directly and nothing is quoted.
+//
+// WHY THIS IS WORTH FIXING AND NOT JUST REPORTING. The transcript reads run
+// through find, ls and sed, so on Windows none of the owner's messages was read
+// from a session's file. And `makeCopy` degrades to the agent's OWN folder when
+// the copy fails, which is safe only because the room denies writes there. The
+// sandbox does not run on Windows (below), so with
+// `claude` on PATH as an executable the degraded path put a 120-turn checker
+// holding Bash in the owner's real repository with nothing denying a write.
+// The check therefore does not start on Windows at all until the room holds
+// there (`CHECK_NO_ROOM`); its commands are named for the host all the same.
+
+/** `OS` as Windows sets it. The variable is absent on Darwin and on Linux. */
+export const WINDOWS_OS = 'Windows_NT'
+
+/**
+ * The commands this mod runs that a Windows host cannot resolve by name.
+ *
+ * `grep` is the seed's `toolLineFind` (`grep -n -o -m 1 -F`), and `sed` both
+ * `humanRead` and `humanReadBefore`. Git for Windows ships all seven in the
+ * same folder.
+ *
+ * ADDING A COMMAND: anything new that goes through `$.process.run` or
+ * `$.process.spawn` belongs here, or it resolves by name and fails on Windows.
+ */
+export const POSIX_COMMANDS = ['mkdir', 'rm', 'cp', 'find', 'ls', 'sed', 'grep'] as const
+
+/**
+ * What a command needs to be named for the host it runs on. Read once per check
+ * and passed down, so every function below stays pure and testable.
+ *
+ * `posixBin` and `claude` are '' when the name on PATH is already correct, which
+ * is the Unix case and leaves those hosts' argv untouched.
+ */
+export type Host = {
+  /** `OS` from the environment: `Windows_NT` on Windows, '' anywhere else. */
+  os: string
+  /** Folder holding the POSIX commands, or '' when they are on PATH. */
+  posixBin: string
+  /** The `claude` binary to spawn, or '' to spawn the name on PATH. */
+  claude: string
+}
+
+/** A host that resolves every command by name, which is Darwin and Linux. */
+export const PATH_HOST: Host = { os: '', posixBin: '', claude: '' }
+
+export const isWindowsHost = (host: Host): boolean => host.os === WINDOWS_OS
+
+/**
+ * The home folder, which is `HOME` everywhere but Windows and `USERPROFILE`
+ * there, and '' when neither answers. The caller chooses what stands in for
+ * none: the check's copies go under `/tmp` as before, and the transcript read
+ * has no config folder to look in. A home that is `/tmp` is a home like any other.
+ */
+export const homeOf = (home: string | undefined, userProfile: string | undefined): string =>
+  home !== undefined && home !== '' ? home : userProfile !== undefined && userProfile !== '' ? userProfile : ''
+
+/**
+ * A Windows path a POSIX command will accept. Git's coreutils take forward
+ * slashes and a drive letter, and mixing separators in one path is what breaks
+ * them, so the whole path is written one way.
+ *
+ * The candidate lists below are slashed as they are built, so the path a probe
+ * PROVES is the identical string later run. Slashing only at the point of use
+ * meant the probe tested one spelling and the command ran another.
+ */
+export const slashed = (path: string): string => path.replace(/\\/g, '/')
+
+/**
+ * Where Git for Windows keeps the coreutils, in the order they are tried. The
+ * installer's own default is first; the user-scope install and the 32-bit
+ * folder follow, because a machine may have only one of them.
+ */
+export const winPosixBinCandidates = (
+  programFiles: string | undefined,
+  programFilesX86: string | undefined,
+  localAppData: string | undefined,
+): string[] =>
+  [
+    programFiles === undefined || programFiles === '' ? '' : `${programFiles}/Git/usr/bin`,
+    localAppData === undefined || localAppData === '' ? '' : `${localAppData}/Programs/Git/usr/bin`,
+    programFilesX86 === undefined || programFilesX86 === '' ? '' : `${programFilesX86}/Git/usr/bin`,
+  ]
+    .filter(p => p !== '')
+    .map(slashed)
+
+/**
+ * Where npm puts Claude Code's own executable, in the order they are tried. The
+ * global install under `APPDATA` is first because that is where `npm i -g` puts
+ * it on Windows.
+ */
+export const winClaudeCandidates = (appData: string | undefined, localAppData: string | undefined): string[] =>
+  [
+    appData === undefined || appData === '' ? '' : `${appData}/npm/node_modules/@anthropic-ai/claude-code/bin/claude.exe`,
+    localAppData === undefined || localAppData === ''
+      ? ''
+      : `${localAppData}/npm/node_modules/@anthropic-ai/claude-code/bin/claude.exe`,
+  ]
+    .filter(p => p !== '')
+    .map(slashed)
+
+/**
+ * The argv to actually run, for a command written for a Unix host.
+ *
+ * On a PATH host this returns the argv unchanged, so Darwin and Linux keep
+ * exactly today's behaviour. On Windows the command is named by its full path
+ * and `.exe` is appended, because `spawn` without a shell needs both.
+ */
+export function hostArgv(host: Host, argv: readonly string[]): string[] {
+  const [name, ...rest] = argv
+  if (name === undefined) return []
+  if (name === 'claude') return [host.claude === '' ? 'claude' : host.claude, ...rest]
+  if (!isWindowsHost(host) || host.posixBin === '') return [name, ...rest]
+  if (!(POSIX_COMMANDS as readonly string[]).includes(name)) return [name, ...rest]
+  return [`${slashed(host.posixBin)}/${name}.exe`, ...rest]
+}
+
+/**
+ * The copy, in the two forms it is tried in: the APFS clone first, because on
+ * Darwin it is instant on a project of any size, and the plain recursive copy
+ * second, because every other cp rejects `-c`. The caller runs the second only
+ * when the first made nothing, into a folder it has just made, so the plain form
+ * copies the folder's contents (`from/.`) rather than the folder itself.
+ */
+export const copyArgvs = (host: Host, from: string, to: string): [string[], string[]] => [
+  hostArgv(host, ['cp', '-Rc', from, to]),
+  hostArgv(host, ['cp', '-R', `${from}/.`, to]),
 ]
 
 export const checkCopiesDir = (home: string): string => `${home}/.cache/owner-rep/checks`
 export const checkCopyDir = (home: string, sessionId: string): string => `${checkCopiesDir(home)}/${sessionId === '' ? 'session' : sessionId}`
 
-export const checkSettings = (home: string, real: string): string =>
+// WHY THE CHECK DOES NOT START ON WINDOWS.
+// Claude Code 2.1.302 does ship a Windows sandbox — the binary carries
+// `CreateRestrictedToken`, `sandboxUserSid` and `icacls`, and its own help says
+// sandboxing applies on "macOS, Linux, WSL2, or Windows where enabled". It is
+// behind a feature gate that is OFF.
+//
+// MEASURED 16 Oct 2026, Windows 11, Claude Code 2.1.302, with the sandbox enabled
+// (and win32 added to an `enabledPlatforms` list, which changes nothing, since
+// Claude Code reads that list only from managed settings) and a POSITIVE CONTROL in
+// the same run: a `claude -p` holding Bash
+// was told to write one file inside its cwd and one inside a `denyWrite` path.
+// BOTH LANDED ON DISK. The control proves the run was live, so the breach is a
+// real breach and not a broken test. Claude Code said so itself on stderr:
+//
+//   Sandbox disabled: sandbox is enabled but the Windows sandbox is not active
+//   on this session (feature gate off). Commands will run WITHOUT sandboxing.
+//   Network and filesystem restrictions will NOT be enforced.
+//
+// SO ON WINDOWS THE ROOM IS NOT A ROOM. What would stand between the check and
+// the owner's work there is the copy, the tool list, and nothing else: `Bash` is
+// allowed and was proven unconstrained under `--permission-mode default` in a
+// `-p` run, the network is open, and the brief would tell the run it is fenced.
+// The check is read-only only because the room makes it so, so on Windows it
+// does not start (`CHECK_NO_ROOM`). Take out the refusal in `runCheck` and the card's
+// only when that probe, re-run, has a denied write refused with a control that wrote.
+// The commands are already named for the host; the copy's paths and the `claude.exe`
+// lookup (npm's place only) have not been run on Windows.
+export const CHECK_NO_ROOM =
+  "The check does not run on Windows yet: Claude Code's sandbox is switched off there, so nothing would stop the check's own run from changing your files or reaching the internet."
+// What Claude Code prints before exiting when `failIfUnavailable` stops the run, its stdout
+// empty: this line with what is missing and how to install it, then one naming the setting
+// (measured with 2.1.302 in a Linux container without bubblewrap, 17 Oct 2026). The card
+// says so in place of the last line, and offers no Check it, since a press would make the
+// copy only to be refused again.
+export const NO_FENCE_ERROR = 'Error: sandbox required but unavailable:'
+const NO_FENCE_LEAD = "The check does not run on this machine: Claude Code's sandbox cannot start here"
+export const noFenceNote = (stderr: string): string | null => {
+  const line = stderr.split('\n').find(l => l.includes(NO_FENCE_ERROR))
+  if (line === undefined) return null
+  const why = line.slice(line.indexOf(NO_FENCE_ERROR) + NO_FENCE_ERROR.length).trim()
+  return `${NO_FENCE_LEAD}, so its run refused to start rather than run unfenced.${why === '' ? '' : ` Claude Code says: ${fit(why, 240)}`}`
+}
+// pnpm keeps its store in its own folder (`~/Library/pnpm/store` on a Mac), which the fence
+// guards when that folder is on the command path. Inside the fence pnpm finds the store
+// unwritable, starts an empty one in the temporary folder and, the network closed, fails
+// to install; told where the store is, it installs from it by reading (both measured 17 Oct
+// 2026). So the check asks pnpm where its store is before the run, outside the fence, and
+// names it to the run through pnpm's setting in the environment. `pnpm store path` prints
+// the store's versioned folder (`…/store/v10`); the setting takes the folder above it.
+export const PNPM_STORE_ARGV = ['pnpm', 'store', 'path']
+export const PNPM_STORE_ENV = 'npm_config_store_dir'
+export const PNPM_STORE_TIMEOUT_MS = 10000
+export const pnpmStoreDir = (stdout: string): string => {
+  const line = stdout.trim().split('\n').pop()?.trim() ?? ''
+  return line.startsWith('/') ? line.replace(/\/v\d+$/, '') : ''
+}
+// A card whose check cannot run where it is drawn offers no Check it.
+export const checkBarred = (note: string): boolean => note === CHECK_NO_ROOM || note.startsWith(NO_FENCE_LEAD)
+// `failIfUnavailable` makes the run refuse to start where the sandbox cannot (a Linux
+// without bubblewrap, WSL1, and by its code Windows), rather than warn and run unfenced, and
+// `allowUnsandboxedCommands: false` takes away the shell's per-command way out of it,
+// which Claude Code's own instructions tell the model to use when the fence refuses.
+// Both are read from a --settings file (Claude Code 2.1.302). An `enabledPlatforms`
+// list is not: Claude Code reads it only from managed settings, so the mod sets none.
+export const checkSettings = (home: string, real: string, path = ''): string =>
   JSON.stringify({
     sandbox: {
       enabled: true,
-      enabledPlatforms: ['darwin', 'linux'],
-      filesystem: { denyWrite: checkDenyWrite(home, real) },
+      failIfUnavailable: true,
+      allowUnsandboxedCommands: false,
+      filesystem: { denyWrite: checkDenyWrite(home, real, path) },
       network: { allowedDomains: [], allowLocalBinding: true },
     },
   })
@@ -1399,7 +1660,7 @@ Read any file you need. Run the project's own checks (its tests, its type check,
 
 ## Your room and your time
 
-You run in your working directory, the copy. Run the project's checks and anything else you need there, write what you like there; nothing you do in it reaches the agent's folder, and the copy is removed when you finish. When a claim is about what is on disk now, read the agent's own folder with Read, Glob and Grep, since the copy is of one moment. No command needs approval, so none is refused for its shape. Two things still stop a command: the owner's own guard, which refuses for every agent on this machine the few things it refuses (rewriting shared history, deleting his data, making anything public), and the fence, which denies writes outside the copy and closes the network except for this Mac; a "sandbox violation" means you hit the fence and says nothing about the claim. If a command is refused, say so under "looked" rather than guessing.
+${a.copy === a.cwd ? `You run in the agent's own folder, since no copy of it could be made, and writes there are denied: read it with Read, Glob and Grep, and run only what writes nothing there. A check that would have to write in it is one you name under "looked" as not run.` : `You run in your working directory, the copy. Run the project's checks and anything else you need there, write what you like there and nowhere else; nothing you do in it reaches the agent's folder, and the copy is removed when you finish. When a claim is about what is on disk now, read the agent's own folder with Read, Glob and Grep, since the copy is of one moment.`} No command needs approval, so none is refused for its shape. Two things still stop a command: the owner's own guard, which refuses for every agent on this machine the few things it refuses (rewriting shared history, deleting his data, making anything public), and the fence, which denies writes to the agent's folder, the owner's work, Claude Code's own settings and the main places in the home whose contents run later (the shell's startup files, git's settings and the folders programs are run from among them, though no list names every one), closes the network except for this Mac, and which no command can be run outside of. Docker cannot be reached from inside the fence, though a port a container publishes on this Mac can. A "sandbox violation" or "Operation not permitted" means you hit the fence and says nothing about the claim. If a command is refused by either, say so under "looked" rather than guessing, and name a check that needs Docker there as not run.
 
 You have ${CHECK_TIMEOUT_WORDS} and ${CHECK_MAX_TURNS} turns in all, and an answer that never arrives is worth nothing to him, so spend them on reading and on the proof that matters most. Run the project's test command and its type check once each, the way the record shows the agent ran them. A slower tool, one that reruns the suite many times (a defect-planting or mutation run) or a full build, is worth its minutes only when a claim turns on it; otherwise say under "looked" that you did not run it and judge that claim from the record.
 
@@ -1735,13 +1996,16 @@ const millions = (n: number): string =>
 const costWords = (tokens: number, cached: number, ms: number): string =>
   `${millions(Math.max(0, tokens - cached))} fresh tokens plus ${millions(cached)} re-read from cache, in ${minutes(ms)}`
 
-// How many of the check's commands were refused. The right number is zero: the check runs
-// in a room where nothing needs approval, so a refusal means the room has a hole.
+// How many of the check's commands were refused approval. The right number is zero: the
+// check runs in a room where nothing needs approval, so a refusal means the room has a hole.
+// A command the fence stops is not in this count (Claude Code counts only approvals), so
+// the line says so, and the checker names what the fence stopped in its own account.
 export const refusedWords = (n: number): string =>
-  n === 0 ? 'no command refused' : `${n} command${n === 1 ? '' : 's'} refused`
+  n === 0 ? 'no command refused approval' : `${n} command${n === 1 ? '' : 's'} refused approval`
 
 // The line under the checker's own account of what it looked at.
-export const refusedLine = (n: number): string => `The check's run had ${refusedWords(n)}.`
+export const refusedLine = (n: number): string =>
+  `The check's run had ${refusedWords(n)}; commands the fence stopped are not counted here.`
 
 export function checkCostText(lastTokens: number, lastCached: number, lastMs: number, lastRefused = 0): string {
   const lead = 'Check it starts a separate Claude Code run in a throwaway copy of the project, over the session record and the files.'

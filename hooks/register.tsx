@@ -29,6 +29,23 @@ import {
   checkCopiesDir,
   checkCopyDir,
   checkSettings,
+  CHECK_NO_ROOM,
+  PNPM_STORE_ARGV,
+  PNPM_STORE_ENV,
+  PNPM_STORE_TIMEOUT_MS,
+  pnpmStoreDir,
+  checkBarred,
+  noFenceNote,
+  copyArgvs,
+  type Host,
+  homeOf,
+  hostArgv,
+  isWindowsHost,
+  PATH_HOST,
+  slashed,
+  winClaudeCandidates,
+  winPosixBinCandidates,
+  WINDOWS_OS,
   refusedLine,
   checkPrompt,
   doingFor,
@@ -598,6 +615,9 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     // No objective yet: it is written first, so the briefing measures against it.
     if ((await loadRec($, sid)).objective === null) await rebuildObjective($, sid, 'press')
     const context = await contextOf($)
+    // On Windows the check does not start (runCheck), nor where its fence once refused
+    // to start, so the card says why in place of its price and offers no button for it.
+    const noCheck = await hostOf($).then(isWindowsHost, () => false)
     // One read of the conversation: its spend counted, and when it answered,
     // its marks applied and its verdict through the gate, against the
     // conditions still open after them.
@@ -655,7 +675,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
         size: context === undefined ? '' : `conversation at ${context.percent} percent of its window`,
         isChecking: false,
         checked: null,
-        checkNote: '',
+        checkNote: noCheck ? CHECK_NO_ROOM : noFence,
         checkCost: checkCostText(after.lastCheckTokens, after.lastCheckCached, after.lastCheckMs, after.lastCheckRefused),
       }
       after.lastBrief = { at: brief.at, next: brief.next, message: brief.message }
@@ -687,6 +707,10 @@ let activeCheck: { stop: () => void } | null = null
 // The instant read the card was drawn from, kept for "Check it", and whether
 // the gate refused it (its meaning, next, message and does are then the rep's).
 let lastInstant: { at: number; answer: BriefAnswer; refused: boolean } | null = null
+// What the card said when the check's fence refused to start on this machine (a Linux
+// without bubblewrap), kept for the process, so each later card says it too and offers
+// no Check it rather than a press that copies the project only to be refused.
+let noFence = ''
 
 // "Check it": the owner chose to pay for the check on the card that is up.
 async function pressCheck($: EngineInterface, sid: string): Promise<void> {
@@ -714,7 +738,10 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
   try {
     const rec = await loadRec($, sid)
     const cwd = await $.session.cwd()
-    const home = (await $.env.get('HOME')) ?? '/tmp'
+    const home = (await homeFor($)) || '/tmp'
+    const checkHost = await hostOf($)
+    if (isWindowsHost(checkHost)) return finish({ checkNote: CHECK_NO_ROOM })
+    if (noFence !== '') return finish({ checkNote: noFence })
     const copy = await makeCopy($, home, sid, cwd)
     const prompt = checkPrompt({
       sessionId: sid,
@@ -729,7 +756,8 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       writtenAt: new Date(at).toISOString(),
     })
     const startedAt = Date.now()
-    const stream = $.process.spawn({ argv: checkArgv(prompt, checkSettings(home, cwd)), cwd: copy })
+    const store = await pnpmStore($, checkHost, cwd)
+    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, (await $.env.get('PATH')) ?? ''))), cwd: copy, ...(store === '' ? {} : { env: { [PNPM_STORE_ENV]: store } }) })
     let stdout = ''
     let stderr = ''
     let timedOut = false
@@ -755,11 +783,16 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
     } finally {
       stop.cancel()
       if (activeCheck !== null && epoch === checkEpoch) activeCheck = null
-      if (copy !== cwd) $.process.run(['rm', '-rf', copy], { timeoutMs: 120000 }).catch(() => undefined)
+      if (copy !== cwd) $.process.run(hostArgv(checkHost, ['rm', '-rf', copy]), { timeoutMs: 120000 }).catch(() => undefined)
     }
     if (timedOut) return finish({ checkNote: `The check ran out of time (${CHECK_TIMEOUT_WORDS}) and was stopped.` })
     const got = resultOf(stdout)
     if (got === null) {
+      const barred = noFenceNote(stderr)
+      if (barred !== null) {
+        noFence = barred
+        return finish({ checkNote: barred })
+      }
       const why = stderr.trim().split('\n').pop() ?? ''
       return finish({ checkNote: `The check could not run${end.code === null ? '' : ` (exit ${end.code})`}${why === '' ? '' : `: ${fit(why, 160)}`}.` })
     }
@@ -833,21 +866,117 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
   }
 }
 
+// The host, resolved once per process and then reused.
+//
+// Only Windows needs resolving, and it needs it because the names the check
+// runs — mkdir, rm, cp, find, ls, sed, claude — resolve to nothing there. Each
+// candidate is PROVEN by running it with `--version` rather than by testing a
+// path, so a machine with Git somewhere unusual, or with none at all, is told
+// apart from one where the folder merely exists. A Windows host where nothing
+// answers keeps every name as written, so the commands are tried by name and
+// fail; the check does not start on Windows in any case (`CHECK_NO_ROOM`).
+// KEYED ON `OS`, not held outright: a host is resolved once and reused, and the
+// key makes a stale answer impossible rather than merely unlikely. `OS` never
+// changes under a running session, so production resolves once; a test that
+// says the host is Windows gets a fresh resolution instead of whatever an
+// earlier test left behind, which is what a plain `Host | null` would have
+// handed it. The lookup itself is held, so two reads at once share one probe.
+// A Windows host whose coreutils did not answer is not held: a probe can time
+// out the first time a virus scanner meets mkdir.exe, and held, that would leave
+// every transcript read of the process unread. Windows stays Windows when a
+// lookup throws, so the check's refusal there never rests on a probe.
+let host: { os: string; value: Promise<Host> } | null = null
+
+async function answers($: EngineInterface, argv: readonly string[]): Promise<boolean> {
+  try {
+    const got = await $.process.run([...argv, '--version'], { timeoutMs: 10000 })
+    return got.exitCode === 0
+  } catch {
+    return false
+  }
+}
+
+async function firstThatAnswers($: EngineInterface, candidates: readonly string[]): Promise<string> {
+  for (const candidate of candidates) {
+    if (await answers($, [candidate])) return candidate
+  }
+  return ''
+}
+
+async function hostOf($: EngineInterface): Promise<Host> {
+  const os = (await $.env.get('OS')) ?? ''
+  if (host === null || host.os !== os) host = { os, value: lookUpHost($, os) }
+  const held = host
+  const got = await held.value
+  if (isWindowsHost(got) && got.posixBin === '' && host === held) host = null
+  return got
+}
+
+async function lookUpHost($: EngineInterface, os: string): Promise<Host> {
+  if (os !== WINDOWS_OS) return PATH_HOST
+  try {
+    const bins = winPosixBinCandidates(
+      await $.env.get('PROGRAMFILES'),
+      await $.env.get('ProgramFiles(x86)'),
+      await $.env.get('LOCALAPPDATA'),
+    )
+    let posixBin = ''
+    for (const bin of bins) {
+      if (await answers($, [`${bin}/mkdir.exe`])) {
+        posixBin = bin
+        break
+      }
+    }
+    const claude = await firstThatAnswers(
+      $,
+      winClaudeCandidates(await $.env.get('APPDATA'), await $.env.get('LOCALAPPDATA')),
+    )
+    return { os, posixBin, claude }
+  } catch {
+    return { os, posixBin: '', claude: '' }
+  }
+}
+
+// The home, '' when there is none, written on Windows with forward slashes as every path
+// built from it is.
+async function homeFor($: EngineInterface): Promise<string> {
+  const home = homeOf(await $.env.get('HOME'), await $.env.get('USERPROFILE'))
+  return (await $.env.get('OS')) === WINDOWS_OS ? slashed(home) : home
+}
+
+// pnpm's store as pnpm names it in the agent's folder, outside the fence, or '' when
+// there is no pnpm or it does not answer (`pnpmStoreDir`).
+async function pnpmStore($: EngineInterface, on: Host, cwd: string): Promise<string> {
+  const r = await $.process.run(hostArgv(on, PNPM_STORE_ARGV), { cwd, timeoutMs: PNPM_STORE_TIMEOUT_MS }).catch(() => null)
+  return r === null || r.exitCode !== 0 ? '' : pnpmStoreDir(r.stdout)
+}
+
 // The throwaway copy the check runs in: an APFS clone (cp -c) of the agent's folder as it
 // stands, uncommitted work included, made in a moment and taking no space until written
-// to (a 6.5 GB project cloned in 14 s on 15 Oct 2026). When the clone cannot be made the
-// check runs in the agent's own folder with writes there denied by the room, and the
-// brief says so.
+// to (a 6.5 GB project cloned in 14 s on 15 Oct 2026). A cp that does not take -c (GNU's,
+// on Linux) refuses it before making anything, so the copy's folder is still free and a
+// plain copy is made into it. Darwin's cp copies plainly by itself where it cannot clone,
+// so a clone that failed there failed on the files (an unreadable file) and left
+// part of a copy behind: a plain copy would fail the same way after copying everything in
+// full, and would land nested inside the part-made one (both measured 16 Oct 2026). When
+// no copy is made the check runs in the agent's own folder with writes there denied by the
+// room, the brief says so, and whatever part of a copy was made is removed.
 async function makeCopy($: EngineInterface, home: string, sid: string, cwd: string): Promise<string> {
   const copy = checkCopyDir(home, sid)
+  const on = await hostOf($)
   try {
-    await $.process.run(['rm', '-rf', copy], { timeoutMs: 120000 })
-    await $.process.run(['mkdir', '-p', checkCopiesDir(home)], { timeoutMs: 30000 })
-    const made = await $.process.run(['cp', '-Rc', cwd, copy], { timeoutMs: 600000 })
-    if (made.exitCode === 0) return copy
+    await $.process.run(hostArgv(on, ['rm', '-rf', copy]), { timeoutMs: 120000 })
+    await $.process.run(hostArgv(on, ['mkdir', '-p', checkCopiesDir(home)]), { timeoutMs: 30000 })
+    const [clone, plain] = copyArgvs(on, cwd, copy)
+    if ((await $.process.run(clone, { timeoutMs: 600000 })).exitCode === 0) return copy
+    // mkdir without -p fails on a folder that is there, which tells a cp that refused -c
+    // from a clone that failed part-way.
+    const free = await $.process.run(hostArgv(on, ['mkdir', copy]), { timeoutMs: 30000 })
+    if (free.exitCode === 0 && (await $.process.run(plain, { timeoutMs: 600000 })).exitCode === 0) return copy
   } catch {
     // fall through: no copy
   }
+  $.process.run(hostArgv(on, ['rm', '-rf', copy]), { timeoutMs: 120000 }).catch(() => undefined)
   return cwd
 }
 
@@ -917,22 +1046,24 @@ function holdTranscript(id: unknown, path: unknown): void {
 // the rows.
 async function heldItems($: EngineInterface, sid: string, rows: readonly RecordRow[]): Promise<HumanItem[] | null> {
   try {
-    let path = transcripts.get(sid) ?? ''
+    const on = await hostOf($)
+    const local = (p: string): string => (isWindowsHost(on) ? slashed(p) : p)
+    let path = local(transcripts.get(sid) ?? '')
     if (path === '') {
       const set = await $.env.get('CLAUDE_CONFIG_DIR')
-      const home = await $.env.get('HOME')
-      const config = set !== undefined && set !== '' ? set : home !== undefined && home !== '' ? `${home}/.claude` : null
+      const home = await homeFor($)
+      const config = set !== undefined && set !== '' ? local(set) : home !== '' ? `${home}/.claude` : null
       if (config === null) return null
-      const found = await $.process.run(['find', `${config}/projects`, '-maxdepth', '2', '-name', `${sid}.jsonl`], { timeoutMs: HUMAN_READ_TIMEOUT_MS })
-      path = found.exitCode === 0 ? (found.stdout.split('\n').find(l => l.trim() !== '')?.trim() ?? '') : ''
+      const found = await $.process.run(hostArgv(on, ['find', `${config}/projects`, '-maxdepth', '2', '-name', `${sid}.jsonl`]), { timeoutMs: HUMAN_READ_TIMEOUT_MS })
+      path = found.exitCode === 0 ? local(found.stdout.split('\n').find(l => l.trim() !== '')?.trim() ?? '') : ''
       if (path === '') return null
     }
-    const read = (file: string, timeoutMs: number) => $.process.run(humanRead(file), { timeoutMs })
+    const read = (file: string, timeoutMs: number) => $.process.run(hostArgv(on, humanRead(file)), { timeoutMs })
     const own = await read(path, HUMAN_READ_TIMEOUT_MS)
     let summary: string | null = null
     if (own.exitCode === 0) {
       if (own.isStdoutTruncated) return null
-      const begins = await $.process.run(startFind(path), { timeoutMs: HUMAN_READ_TIMEOUT_MS })
+      const begins = await $.process.run(hostArgv(on, startFind(path)), { timeoutMs: HUMAN_READ_TIMEOUT_MS })
       summary = begins.exitCode === 0 ? summaryStart(begins.stdout) : null
       if (summary === null) return humanItems(own.stdout)
     }
@@ -944,7 +1075,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
     if (summary === null && want === 0 && anchor === null) return null
     const start = await $.clock.now()
     const left = async () => HUMAN_SCAN_BUDGET_MS - ((await $.clock.now()) - start)
-    const listed = await $.process.run(['ls', '-t', folder], { timeoutMs: HUMAN_READ_TIMEOUT_MS })
+    const listed = await $.process.run(hostArgv(on, ['ls', '-t', folder]), { timeoutMs: HUMAN_READ_TIMEOUT_MS })
     if (listed.exitCode !== 0) return summary === null ? null : copied
     const files = listed.stdout
       .split('\n')
@@ -956,12 +1087,12 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
         const remaining = await left()
         if (remaining <= 0) break
         const find = summary !== null ? summaryLineFind(`${folder}/${file}`, summary) : toolLineFind(`${folder}/${file}`, anchor ?? '')
-        const at = await $.process.run(find, { timeoutMs: Math.min(HUMAN_READ_TIMEOUT_MS, remaining) })
+        const at = await $.process.run(hostArgv(on, find), { timeoutMs: Math.min(HUMAN_READ_TIMEOUT_MS, remaining) })
         const line = at.exitCode === 0 ? toolLineOf(at.stdout) : null
         if (line === null) continue
         const time = await left()
         if (time <= 0) break
-        const found = await $.process.run(humanReadBefore(`${folder}/${file}`, line), { timeoutMs: Math.min(HUMAN_READ_TIMEOUT_MS, time) })
+        const found = await $.process.run(hostArgv(on, humanReadBefore(`${folder}/${file}`, line)), { timeoutMs: Math.min(HUMAN_READ_TIMEOUT_MS, time) })
         if (found.exitCode !== 0 || found.isStdoutTruncated) continue
         const before = humanItems(found.stdout)
         if (summary === null) return before
@@ -1589,7 +1720,7 @@ export const register: Register = on => {
             </Box>
           ) : undefined}
           {choices(
-            shown.checked === null && !shown.isChecking ? (
+            shown.checked === null && !shown.isChecking && !checkBarred(shown.checkNote) ? (
               <Button
                 key="check"
                 plain

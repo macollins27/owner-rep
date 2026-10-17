@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index cd94906..06f1205 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1577,7 +1577,7 @@ export const PNPM_STORE_ENV = 'npm_config_store_dir'
+ export const PNPM_STORE_TIMEOUT_MS = 10000
+ export const pnpmStoreDir = (stdout: string): string => {
+   const line = stdout.trim().split('\n').pop()?.trim() ?? ''
+-  return line.startsWith('/') ? line.replace(/\/v\d+$/, '') : ''
++  return line.startsWith('/') ? line : ''
+ }
+ // A card whose check cannot run where it is drawn offers no Check it.
+ export const checkBarred = (note: string): boolean => note === CHECK_NO_ROOM || note.startsWith(NO_FENCE_LEAD)

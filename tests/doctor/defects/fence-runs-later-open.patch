@@ -1,0 +1,20 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index cd94906..ff49be2 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1337,15 +1337,6 @@ export const checkDenyWrite = (home: string, real: string, path = ''): string[]
+       `${home}/.bunfig.toml`,
+       `${home}/Library/Python`,
+       `${home}/.local/lib`,
+-      `${home}/.local/bin`,
+-      `${home}/.local/share/claude`,
+-      `${home}/Library/LaunchAgents`,
+-      ...path
+-        .split(':')
+-        .map(d => d.replace(/\/+$/, ''))
+-        .filter(d => d.startsWith(`${home}/`))
+-        .map(d => (holdsCopies(installOf(home, d)) ? d : installOf(home, d)))
+-        .filter(d => !holdsCopies(d)),
+     ]),
+   ]
+ }
