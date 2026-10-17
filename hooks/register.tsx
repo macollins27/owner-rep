@@ -30,6 +30,8 @@ import {
   checkCopyDir,
   checkSettings,
   CHECK_NO_ROOM,
+  checkBarred,
+  noFenceNote,
   copyArgvs,
   type Host,
   homeOf,
@@ -742,7 +744,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       writtenAt: new Date(at).toISOString(),
     })
     const startedAt = Date.now()
-    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd))), cwd: copy })
+    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, (await $.env.get('PATH')) ?? ''))), cwd: copy })
     let stdout = ''
     let stderr = ''
     let timedOut = false
@@ -773,6 +775,8 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
     if (timedOut) return finish({ checkNote: `The check ran out of time (${CHECK_TIMEOUT_WORDS}) and was stopped.` })
     const got = resultOf(stdout)
     if (got === null) {
+      const barred = noFenceNote(stderr)
+      if (barred !== null) return finish({ checkNote: barred })
       const why = stderr.trim().split('\n').pop() ?? ''
       return finish({ checkNote: `The check could not run${end.code === null ? '' : ` (exit ${end.code})`}${why === '' ? '' : `: ${fit(why, 160)}`}.` })
     }
@@ -1677,7 +1681,7 @@ export const register: Register = on => {
             </Box>
           ) : undefined}
           {choices(
-            shown.checked === null && !shown.isChecking && shown.checkNote !== CHECK_NO_ROOM ? (
+            shown.checked === null && !shown.isChecking && !checkBarred(shown.checkNote) ? (
               <Button
                 key="check"
                 plain

@@ -1293,22 +1293,40 @@ export const CHECK_DISALLOWED_TOOLS = 'Edit,Write,MultiEdit,NotebookEdit,Agent,T
 // owner's own guard hooks fire inside the run as they do for every agent; `denyWrite`
 // beats `allowWrite`, so the copy cannot sit under a denied folder; and the owner's
 // settings make the whole home folder a working directory, so the fence is a deny list.
-export const checkDenyWrite = (home: string, real: string): string[] => [
-  real,
-  `${home}/Developer`,
-  `${home}/Documents`,
-  `${home}/Desktop`,
-  `${home}/work`,
-  `${home}/.ssh`,
-  `${home}/.config`,
-  `${home}/.claude/settings.json`,
-  `${home}/.claude/settings.local.json`,
-  `${home}/.claude/CLAUDE.md`,
-  `${home}/.claude/hooks`,
-  `${home}/.claude/plugins`,
-  `${home}/.claude/projects`,
-  `${home}/.claude/tools`,
-  `${home}/.claude/keybindings.json`,
+// Beside his work and Claude Code's configuration it names every place in the home whose
+// contents run later, outside any fence: each folder of the command path (`path`, the
+// PATH as Claude Code has it) that sits in the home, Claude Code's own install, and the
+// folder macOS starts programs from at login. Shell startup files and .gitconfig Claude
+// Code guards by itself. A path folder holding the copies is left out, or the copy could
+// not be written.
+export const checkDenyWrite = (home: string, real: string, path = ''): string[] => [
+  ...new Set([
+    real,
+    `${home}/Developer`,
+    `${home}/Documents`,
+    `${home}/Desktop`,
+    `${home}/work`,
+    `${home}/.ssh`,
+    `${home}/.config`,
+    `${home}/.claude/settings.json`,
+    `${home}/.claude/settings.local.json`,
+    `${home}/.claude/CLAUDE.md`,
+    `${home}/.claude/hooks`,
+    `${home}/.claude/plugins`,
+    `${home}/.claude/projects`,
+    `${home}/.claude/tools`,
+    `${home}/.claude/keybindings.json`,
+    `${home}/.claude/skills`,
+    `${home}/.claude/agents`,
+    `${home}/.claude/commands`,
+    `${home}/.local/bin`,
+    `${home}/.local/share/claude`,
+    `${home}/Library/LaunchAgents`,
+    ...path
+      .split(':')
+      .map(d => d.replace(/\/+$/, ''))
+      .filter(d => d.startsWith(`${home}/`) && !`${checkCopiesDir(home)}/`.startsWith(`${d}/`)),
+  ]),
 ]
 
 // ── THE HOST THE CHECK'S COMMANDS RUN ON ────────────────────────────────────
@@ -1495,19 +1513,34 @@ export const checkCopyDir = (home: string, sessionId: string): string => `${chec
 // lookup (npm's place only) have not been run on Windows.
 export const CHECK_NO_ROOM =
   "The check does not run on Windows yet: Claude Code's sandbox is switched off there, so nothing would stop the check's own run from changing your files or reaching the internet."
+// What Claude Code prints before exiting when `failIfUnavailable` stops the run, its stdout
+// empty: this line with what is missing and how to install it, then one naming the setting
+// (measured with 2.1.302 in a Linux container without bubblewrap, 17 Oct 2026). The card
+// says so in place of the last line, and offers no Check it, since a press would make the
+// copy only to be refused again.
+export const NO_FENCE_ERROR = 'Error: sandbox required but unavailable:'
+const NO_FENCE_LEAD = "The check does not run on this machine: Claude Code's sandbox cannot start here"
+export const noFenceNote = (stderr: string): string | null => {
+  const line = stderr.split('\n').find(l => l.includes(NO_FENCE_ERROR))
+  if (line === undefined) return null
+  const why = line.slice(line.indexOf(NO_FENCE_ERROR) + NO_FENCE_ERROR.length).trim()
+  return `${NO_FENCE_LEAD}, so its run refused to start rather than run unfenced.${why === '' ? '' : ` Claude Code says: ${fit(why, 240)}`}`
+}
+// A card whose check cannot run where it is drawn offers no Check it.
+export const checkBarred = (note: string): boolean => note === CHECK_NO_ROOM || note.startsWith(NO_FENCE_LEAD)
 // `failIfUnavailable` makes the run refuse to start where the sandbox cannot (a Linux
 // without bubblewrap, WSL1, and by its code Windows), rather than warn and run unfenced, and
 // `allowUnsandboxedCommands: false` takes away the shell's per-command way out of it,
 // which Claude Code's own instructions tell the model to use when the fence refuses.
 // Both are read from a --settings file (Claude Code 2.1.302). An `enabledPlatforms`
 // list is not: Claude Code reads it only from managed settings, so the mod sets none.
-export const checkSettings = (home: string, real: string): string =>
+export const checkSettings = (home: string, real: string, path = ''): string =>
   JSON.stringify({
     sandbox: {
       enabled: true,
       failIfUnavailable: true,
       allowUnsandboxedCommands: false,
-      filesystem: { denyWrite: checkDenyWrite(home, real) },
+      filesystem: { denyWrite: checkDenyWrite(home, real, path) },
       network: { allowedDomains: [], allowLocalBinding: true },
     },
   })
@@ -1574,7 +1607,7 @@ Read any file you need. Run the project's own checks (its tests, its type check,
 
 ## Your room and your time
 
-${a.copy === a.cwd ? `You run in the agent's own folder, since no copy of it could be made, and writes there are denied: read it with Read, Glob and Grep, and run only what writes nothing there. A check that would have to write in it is one you name under "looked" as not run.` : `You run in your working directory, the copy. Run the project's checks and anything else you need there, write what you like there; nothing you do in it reaches the agent's folder, and the copy is removed when you finish. When a claim is about what is on disk now, read the agent's own folder with Read, Glob and Grep, since the copy is of one moment.`} No command needs approval, so none is refused for its shape. Two things still stop a command: the owner's own guard, which refuses for every agent on this machine the few things it refuses (rewriting shared history, deleting his data, making anything public), and the fence, which denies writes ${a.copy === a.cwd ? "to the agent's folder and the owner's work" : 'outside the copy'} and closes the network except for this Mac, and which no command can be run outside of; a "sandbox violation" means you hit the fence and says nothing about the claim. If a command is refused, say so under "looked" rather than guessing.
+${a.copy === a.cwd ? `You run in the agent's own folder, since no copy of it could be made, and writes there are denied: read it with Read, Glob and Grep, and run only what writes nothing there. A check that would have to write in it is one you name under "looked" as not run.` : `You run in your working directory, the copy. Run the project's checks and anything else you need there, write what you like there and nowhere else; nothing you do in it reaches the agent's folder, and the copy is removed when you finish. When a claim is about what is on disk now, read the agent's own folder with Read, Glob and Grep, since the copy is of one moment.`} No command needs approval, so none is refused for its shape. Two things still stop a command: the owner's own guard, which refuses for every agent on this machine the few things it refuses (rewriting shared history, deleting his data, making anything public), and the fence, which denies writes to the agent's folder, the owner's work, Claude Code's own settings and the places whose contents run later (the folders programs are run from among them), closes the network except for this Mac, and which no command can be run outside of. Docker cannot be reached from inside the fence, though a port a container publishes on this Mac can. A "sandbox violation" or "Operation not permitted" means you hit the fence and says nothing about the claim. If a command is refused by either, say so under "looked" rather than guessing, and name a check that needs Docker there as not run.
 
 You have ${CHECK_TIMEOUT_WORDS} and ${CHECK_MAX_TURNS} turns in all, and an answer that never arrives is worth nothing to him, so spend them on reading and on the proof that matters most. Run the project's test command and its type check once each, the way the record shows the agent ran them. A slower tool, one that reruns the suite many times (a defect-planting or mutation run) or a full build, is worth its minutes only when a claim turns on it; otherwise say under "looked" that you did not run it and judge that claim from the record.
 
@@ -1910,13 +1943,16 @@ const millions = (n: number): string =>
 const costWords = (tokens: number, cached: number, ms: number): string =>
   `${millions(Math.max(0, tokens - cached))} fresh tokens plus ${millions(cached)} re-read from cache, in ${minutes(ms)}`
 
-// How many of the check's commands were refused. The right number is zero: the check runs
-// in a room where nothing needs approval, so a refusal means the room has a hole.
+// How many of the check's commands were refused approval. The right number is zero: the
+// check runs in a room where nothing needs approval, so a refusal means the room has a hole.
+// A command the fence stops is not in this count (Claude Code counts only approvals), so
+// the line says so, and the checker names what the fence stopped in its own account.
 export const refusedWords = (n: number): string =>
-  n === 0 ? 'no command refused' : `${n} command${n === 1 ? '' : 's'} refused`
+  n === 0 ? 'no command refused approval' : `${n} command${n === 1 ? '' : 's'} refused approval`
 
 // The line under the checker's own account of what it looked at.
-export const refusedLine = (n: number): string => `The check's run had ${refusedWords(n)}.`
+export const refusedLine = (n: number): string =>
+  `The check's run had ${refusedWords(n)}; commands the fence stopped are not counted here.`
 
 export function checkCostText(lastTokens: number, lastCached: number, lastMs: number, lastRefused = 0): string {
   const lead = 'Check it starts a separate Claude Code run in a throwaway copy of the project, over the session record and the files.'

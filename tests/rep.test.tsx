@@ -1,7 +1,7 @@
 import type { On, SessionMessage } from 'claude-code'
 import { expect, mock, test, type Engine } from 'claude-code/testing'
 
-import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates } from '../hooks/rep'
+import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates } from '../hooks/rep'
 
 const om = (text: string, n = 1): OwnerMsg => ({ n, kind: 'his', text, prior: '' })
 
@@ -349,7 +349,13 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   expect(noCopy).toContain("You run in the agent's own folder")
   expect(noCopy).not.toContain('write what you like')
   expect(noCopy).not.toContain('denies writes outside the copy')
-  expect(prompt).toContain('write what you like there')
+  expect(prompt).toContain('write what you like there and nowhere else')
+  // The fence is a deny list, not a wall around the copy: the brief names what it guards.
+  for (const p of [prompt, noCopy]) {
+    expect(p).not.toContain('denies writes outside the copy')
+    expect(p).toContain("denies writes to the agent's folder, the owner's work, Claude Code's own settings and the places whose contents run later")
+    expect(p).toContain('Docker cannot be reached from inside the fence')
+  }
   expect(prompt).toContain('2026-10-13T23:05:00.000Z')
   expect(prompt).toContain('changed:')
   expect(prompt).toContain('the result')
@@ -368,6 +374,19 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   expect(room.sandbox.filesystem.denyWrite).toContain('/Users/o/Developer')
   expect(room.sandbox.filesystem.denyWrite).toContain('/Users/o/.claude/hooks')
   expect(room.sandbox.filesystem.denyWrite.some(p => copy.startsWith(p))).toBe(false)
+  // Every place in the home whose contents run later, outside any fence, is denied too.
+  for (const p of ['/Users/o/.local/bin', '/Users/o/.local/share/claude', '/Users/o/Library/LaunchAgents', '/Users/o/.claude/skills', '/Users/o/.claude/agents', '/Users/o/.claude/commands']) {
+    expect(room.sandbox.filesystem.denyWrite).toContain(p)
+  }
+  const pathed = (JSON.parse(checkSettings('/Users/o', '/tmp/x', '/usr/bin:/Users/o/.cargo/bin:/Users/o/Library/pnpm/:/Users/o/.local/bin:/Users/o/.cache:/Users/o:relative/bin')) as typeof room).sandbox.filesystem.denyWrite
+  expect(pathed).toContain('/Users/o/.cargo/bin')
+  expect(pathed).toContain('/Users/o/Library/pnpm')
+  expect(pathed.filter(p => p === '/Users/o/.local/bin').length).toBe(1)
+  expect(pathed).not.toContain('/usr/bin')
+  expect(pathed).not.toContain('/Users/o')
+  expect(pathed).not.toContain('/Users/o/.cache')
+  expect(pathed).not.toContain('relative/bin')
+  expect(pathed.some(p => copy.startsWith(p))).toBe(false)
   expect(room.sandbox.network.allowedDomains).toEqual([])
   const argv = checkArgv(prompt, settings)
   expect(argv[0]).toBe('claude')
@@ -403,9 +422,9 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   expect(resultOf(JSON.stringify({ type: 'result', result: 'holds:\n- x', permission_denials: [{ tool_name: 'Bash' }, { tool_name: 'Bash' }] }))?.refused).toBe(2)
   expect(resultOf('not json')).toBe(null)
   expect(checkCostText(0, 0, 0)).toContain('210k fresh tokens plus 2.3 million re-read from cache, in 2 minutes')
-  expect(checkCostText(850000, 800000, 95000)).toContain('50k fresh tokens plus 800k re-read from cache, in 2 minutes, with no command refused')
-  expect(checkCostText(850000, 800000, 95000, 1)).toContain('with 1 command refused')
-  expect(checkCostText(850000, 800000, 95000, 2)).toContain('with 2 commands refused')
+  expect(checkCostText(850000, 800000, 95000)).toContain('50k fresh tokens plus 800k re-read from cache, in 2 minutes, with no command refused approval')
+  expect(checkCostText(850000, 800000, 95000, 1)).toContain('with 1 command refused approval')
+  expect(checkCostText(850000, 800000, 95000, 2)).toContain('with 2 commands refused approval')
   expect(out?.cached).toBe(1)
 })
 
@@ -1024,9 +1043,11 @@ test('rule: Tell the rep puts the prefix in the prompt box, from the row and fro
 
 // The room's commands (the copy made and removed) answered without running anything;
 // `runs` keeps each argv so a test can read what the rep asked for.
-const room = (on: On): string[][] => {
+// The room the check's commands run in: every variable reads '/Users/o', except PATH
+// when one is given.
+const room = (on: On, path?: string): string[][] => {
   const runs: string[][] = []
-  on('env.get', () => ({ value: '/Users/o' }))
+  on('env.get', (_$, e) => ({ value: path !== undefined && e.name === 'PATH' ? path : '/Users/o' }))
   on('process.run', (_$, e) => {
     runs.push([...e.argv])
     return { value: { exitCode: 0, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
@@ -1058,6 +1079,39 @@ test('rule: a check that prints no result says it could not run, with the exit c
   expect(await ui.find({ key: 'check' })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /The card\./ })).toBeDefined()
   await ui.unmount()
+})
+
+// What Claude Code 2.1.302 printed in a Linux container without bubblewrap, under the
+// check's settings, 17 Oct 2026, its stdout empty and its exit code 1.
+const NO_FENCE_STDERR =
+  '\nError: sandbox required but unavailable: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or see https://code.claude.com/docs/en/sandboxing\n  sandbox.failIfUnavailable is set — refusing to start without a working sandbox.\n\n'
+
+test('rule: where the fence cannot start, the card says the check does not run on this machine, names what is missing, and offers no Check it', async ($, on) => {
+  mock.clock(on)
+  const ui = await checkWith($, on, async function* () {
+    yield { stream: 'stderr', text: NO_FENCE_STDERR }
+    return { value: { code: 1, signal: null } }
+  })
+  await ui.press({ key: 'check' })
+  expect(await ui.find({ type: 'Text', text: /The check does not run on this machine: Claude Code's sandbox cannot start here, so its run refused to start rather than run unfenced\. Claude Code says: sandbox is enabled but dependencies are missing: bubblewrap \(bwrap\) not installed/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /refusing to start without a working sandbox/ })).toBeUndefined()
+  expect(await ui.find({ key: 'check' })).toBeUndefined()
+  expect(await ui.find({ key: 'close' })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /The card\./ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('noFenceNote reads only the refusal Claude Code prints where the fence cannot start, and checkBarred bars the check on that card and on Windows', () => {
+  expect(noFenceNote('claude: not logged in\n')).toBe(null)
+  expect(noFenceNote('')).toBe(null)
+  const note = noFenceNote(NO_FENCE_STDERR) ?? ''
+  expect(note).toContain('bubblewrap (bwrap) not installed, socat not installed')
+  expect(note).not.toContain('Error:')
+  expect(checkBarred(note)).toBe(true)
+  expect(checkBarred(CHECK_NO_ROOM)).toBe(true)
+  expect(checkBarred('The check could not run (exit 2): claude: not logged in.')).toBe(false)
+  expect(checkBarred('The check ran out of time (fifteen minutes) and was stopped.')).toBe(false)
+  expect(checkBarred('')).toBe(false)
 })
 
 test('rule: a check that outlasts its fifteen minutes is stopped and says so', async ($, on) => {
@@ -2107,7 +2161,7 @@ const CHECKED_WITH = (refused: number): string =>
 test('rule: the check runs in a throwaway copy of the project, fenced, and the copy is removed when the run ends', async ($, on) => {
   session(on)
   quietBand(on)
-  const runs = room(on)
+  const runs = room(on, '/usr/bin:/Users/o/.cargo/bin')
   on('session.cwd', () => ({ value: '/tmp/x' }))
   mock.clock(on)
   on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
@@ -2128,7 +2182,9 @@ test('rule: the check runs in a throwaway copy of the project, fenced, and the c
   expect(seen.cwd).toBe(copy)
   const argv = seen.argv ?? []
   expect(argv[argv.indexOf('--permission-mode') + 1]).toBe('default')
-  expect(argv[argv.indexOf('--settings') + 1]).toBe(checkSettings('/Users/o', '/tmp/x'))
+  // The command path's folders in the home are fenced: a program put there would run later.
+  expect(argv[argv.indexOf('--settings') + 1]).toBe(checkSettings('/Users/o', '/tmp/x', '/usr/bin:/Users/o/.cargo/bin'))
+  expect(argv[argv.indexOf('--settings') + 1]).toContain('"/Users/o/.cargo/bin"')
   expect(argv[argv.indexOf('--allowedTools') + 1]?.split(',')).toContain('Bash')
   expect(runs.filter(r => r[0] === 'rm' && r[2] === copy).length).toBeGreaterThanOrEqual(2)
   expect(runs.findIndex(r => r[0] === 'cp')).toBeLessThan(runs.length - 1)
@@ -2157,7 +2213,7 @@ test('rule: when the copy cannot be made the check runs in the agent\'s folder, 
   await ui.unmount()
 })
 
-test('rule: the card says how many of the check\'s commands were refused, and the right number is zero', async ($, on) => {
+test('rule: the card says how many of the check\'s commands were refused approval, and the right number is zero, and that what the fence stopped is not counted', async ($, on) => {
   session(on)
   quietBand(on)
   room(on)
@@ -2172,14 +2228,14 @@ test('rule: the card says how many of the check\'s commands were refused, and th
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   await ui.press({ key: 'rep' })
   await ui.press({ key: 'check' })
-  expect(await ui.find({ type: 'Text', text: /The check's run had 2 commands refused\./ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /The check's run had 2 commands refused approval; commands the fence stopped are not counted here\./ })).toBeDefined()
   // The next card's price line carries the last run's count too.
   await ui.press({ key: 'close' })
   await ui.press({ key: 'rep' })
-  expect(await ui.find({ type: 'Text', text: /re-read from cache, in 1 minute, with 2 commands refused/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /re-read from cache, in 1 minute, with 2 commands refused approval/ })).toBeDefined()
   refused = 0
   await ui.press({ key: 'check' })
-  expect(await ui.find({ type: 'Text', text: /The check's run had no command refused\./ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /The check's run had no command refused approval; commands the fence stopped are not counted here\./ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /2 commands refused/ })).toBeUndefined()
   await ui.unmount()
 })
