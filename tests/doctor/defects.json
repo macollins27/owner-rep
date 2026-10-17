@@ -1159,7 +1159,7 @@
   },
   {
     "name": "windows-tool-line-by-name",
-    "breaks": "On Windows the seed's scan for a fork's parent by its last tool result runs grep by its bare name, which Windows cannot find, so a fork taken after a compaction reads none of his messages.",
+    "breaks": "On Windows the seed's search for a fork's parent, by its last tool result or by a copy's summary line, runs grep by its bare name, which Windows cannot find, so a fork taken after a compaction reads none of his messages from before it.",
     "patch": "windows-tool-line-by-name.patch",
     "fixed": "2026-10-16"
   },
@@ -1209,6 +1209,12 @@
     "name": "no-fence-card-offers-check",
     "breaks": "Where the fence cannot start, the card says so and still offers Check it, a button that makes the copy only to be refused again.",
     "patch": "no-fence-card-offers-check.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "windows-start-by-name",
+    "breaks": "On Windows the look at how the session's own file begins runs grep by its bare name, which Windows cannot find, so a fork whose file is a copy since a summary is taken as the whole of his messages and everything he typed before the summary is lost.",
+    "patch": "windows-start-by-name.patch",
     "fixed": "2026-10-17"
   }
 ]
