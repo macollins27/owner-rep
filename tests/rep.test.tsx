@@ -4557,6 +4557,8 @@ test('a Windows host names every command by its full path, and leaves a command 
   expect(hostArgv(WIN_HOST, ['find', 'C:/p', '-name', 'a.jsonl'])).toEqual(['C:/Git/usr/bin/find.exe', 'C:/p', '-name', 'a.jsonl'])
   expect(hostArgv(WIN_HOST, ['ls', '-t', 'C:/p'])).toEqual(['C:/Git/usr/bin/ls.exe', '-t', 'C:/p'])
   expect(hostArgv(WIN_HOST, ['sed', '-n', '-E', 'p', 'C:/f'])).toEqual(['C:/Git/usr/bin/sed.exe', '-n', '-E', 'p', 'C:/f'])
+  // Listed ahead of its use: PR #12's `toolLineFind` is `grep -n -o -m 1 -F`.
+  expect(hostArgv(WIN_HOST, ['grep', '-n', '-F', 'x', 'C:/f'])).toEqual(['C:/Git/usr/bin/grep.exe', '-n', '-F', 'x', 'C:/f'])
   // `claude` on PATH is a shim Node cannot spawn without a shell; the npm
   // package's own executable is spawned instead, and the prompt stays an argv.
   expect(hostArgv(WIN_HOST, ['claude', '-p', 'a prompt "with quotes"'])).toEqual([

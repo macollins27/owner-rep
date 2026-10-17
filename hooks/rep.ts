@@ -1325,8 +1325,20 @@ export const checkDenyWrite = (home: string, real: string): string[] => [
 /** `OS` as Windows sets it. The variable is absent on Darwin and on Linux. */
 export const WINDOWS_OS = 'Windows_NT'
 
-/** The commands the check runs that a Windows host cannot resolve by name. */
-export const POSIX_COMMANDS = ['mkdir', 'rm', 'cp', 'find', 'ls', 'sed'] as const
+/**
+ * The commands this mod runs that a Windows host cannot resolve by name.
+ *
+ * `grep` is listed although nothing on main runs it yet: PR #12
+ * (seed-after-compaction) adds `toolLineFind`, which is
+ * `grep -n -o -m 1 -F`. Listing it now means that branch landing does not
+ * silently reintroduce this bug for one command. Git for Windows ships all
+ * seven in the same folder, and an unused entry costs nothing — the list is
+ * only a membership test.
+ *
+ * ADDING A COMMAND: anything new that goes through `$.process.run` or
+ * `$.process.spawn` belongs here, or it resolves by name and fails on Windows.
+ */
+export const POSIX_COMMANDS = ['mkdir', 'rm', 'cp', 'find', 'ls', 'sed', 'grep'] as const
 
 /**
  * What a command needs to be named for the host it runs on. Read once per check
