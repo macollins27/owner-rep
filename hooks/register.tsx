@@ -30,6 +30,10 @@ import {
   checkCopyDir,
   checkSettings,
   CHECK_NO_ROOM,
+  PNPM_STORE_ARGV,
+  PNPM_STORE_ENV,
+  PNPM_STORE_TIMEOUT_MS,
+  pnpmStoreDir,
   checkBarred,
   noFenceNote,
   copyArgvs,
@@ -611,8 +615,8 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     // No objective yet: it is written first, so the briefing measures against it.
     if ((await loadRec($, sid)).objective === null) await rebuildObjective($, sid, 'press')
     const context = await contextOf($)
-    // On Windows the check does not start (runCheck), so the card says why in place of
-    // its price and offers no button for it.
+    // On Windows the check does not start (runCheck), nor where its fence once refused
+    // to start, so the card says why in place of its price and offers no button for it.
     const noCheck = await hostOf($).then(isWindowsHost, () => false)
     // One read of the conversation: its spend counted, and when it answered,
     // its marks applied and its verdict through the gate, against the
@@ -671,7 +675,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
         size: context === undefined ? '' : `conversation at ${context.percent} percent of its window`,
         isChecking: false,
         checked: null,
-        checkNote: noCheck ? CHECK_NO_ROOM : '',
+        checkNote: noCheck ? CHECK_NO_ROOM : noFence,
         checkCost: checkCostText(after.lastCheckTokens, after.lastCheckCached, after.lastCheckMs, after.lastCheckRefused),
       }
       after.lastBrief = { at: brief.at, next: brief.next, message: brief.message }
@@ -703,6 +707,10 @@ let activeCheck: { stop: () => void } | null = null
 // The instant read the card was drawn from, kept for "Check it", and whether
 // the gate refused it (its meaning, next, message and does are then the rep's).
 let lastInstant: { at: number; answer: BriefAnswer; refused: boolean } | null = null
+// What the card said when the check's fence refused to start on this machine (a Linux
+// without bubblewrap), kept for the process, so each later card says it too and offers
+// no Check it rather than a press that copies the project only to be refused.
+let noFence = ''
 
 // "Check it": the owner chose to pay for the check on the card that is up.
 async function pressCheck($: EngineInterface, sid: string): Promise<void> {
@@ -733,6 +741,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
     const home = (await homeFor($)) || '/tmp'
     const checkHost = await hostOf($)
     if (isWindowsHost(checkHost)) return finish({ checkNote: CHECK_NO_ROOM })
+    if (noFence !== '') return finish({ checkNote: noFence })
     const copy = await makeCopy($, home, sid, cwd)
     const prompt = checkPrompt({
       sessionId: sid,
@@ -747,7 +756,8 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       writtenAt: new Date(at).toISOString(),
     })
     const startedAt = Date.now()
-    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, (await $.env.get('PATH')) ?? ''))), cwd: copy })
+    const store = await pnpmStore($, checkHost, cwd)
+    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, (await $.env.get('PATH')) ?? ''))), cwd: copy, ...(store === '' ? {} : { env: { [PNPM_STORE_ENV]: store } }) })
     let stdout = ''
     let stderr = ''
     let timedOut = false
@@ -779,7 +789,10 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
     const got = resultOf(stdout)
     if (got === null) {
       const barred = noFenceNote(stderr)
-      if (barred !== null) return finish({ checkNote: barred })
+      if (barred !== null) {
+        noFence = barred
+        return finish({ checkNote: barred })
+      }
       const why = stderr.trim().split('\n').pop() ?? ''
       return finish({ checkNote: `The check could not run${end.code === null ? '' : ` (exit ${end.code})`}${why === '' ? '' : `: ${fit(why, 160)}`}.` })
     }
@@ -929,6 +942,13 @@ async function lookUpHost($: EngineInterface, os: string): Promise<Host> {
 async function homeFor($: EngineInterface): Promise<string> {
   const home = homeOf(await $.env.get('HOME'), await $.env.get('USERPROFILE'))
   return (await $.env.get('OS')) === WINDOWS_OS ? slashed(home) : home
+}
+
+// pnpm's store as pnpm names it in the agent's folder, outside the fence, or '' when
+// there is no pnpm or it does not answer (`pnpmStoreDir`).
+async function pnpmStore($: EngineInterface, on: Host, cwd: string): Promise<string> {
+  const r = await $.process.run(hostArgv(on, PNPM_STORE_ARGV), { cwd, timeoutMs: PNPM_STORE_TIMEOUT_MS }).catch(() => null)
+  return r === null || r.exitCode !== 0 ? '' : pnpmStoreDir(r.stdout)
 }
 
 // The throwaway copy the check runs in: an APFS clone (cp -c) of the agent's folder as it

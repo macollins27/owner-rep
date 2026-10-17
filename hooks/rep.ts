@@ -1306,41 +1306,67 @@ export const CHECK_DISALLOWED_TOOLS = 'Edit,Write,MultiEdit,NotebookEdit,Agent,T
 // owner's own guard hooks fire inside the run as they do for every agent; `denyWrite`
 // beats `allowWrite`, so the copy cannot sit under a denied folder; and the owner's
 // settings make the whole home folder a working directory, so the fence is a deny list.
-// Beside his work and Claude Code's configuration it names every place in the home whose
-// contents run later, outside any fence: each folder of the command path (`path`, the
-// PATH as Claude Code has it) that sits in the home, Claude Code's own install, and the
-// folder macOS starts programs from at login. Shell startup files and .gitconfig Claude
-// Code guards by itself. A path folder holding the copies is left out, or the copy could
-// not be written.
-export const checkDenyWrite = (home: string, real: string, path = ''): string[] => [
-  ...new Set([
-    real,
-    `${home}/Developer`,
-    `${home}/Documents`,
-    `${home}/Desktop`,
-    `${home}/work`,
-    `${home}/.ssh`,
-    `${home}/.config`,
-    `${home}/.claude/settings.json`,
-    `${home}/.claude/settings.local.json`,
-    `${home}/.claude/CLAUDE.md`,
-    `${home}/.claude/hooks`,
-    `${home}/.claude/plugins`,
-    `${home}/.claude/projects`,
-    `${home}/.claude/tools`,
-    `${home}/.claude/keybindings.json`,
-    `${home}/.claude/skills`,
-    `${home}/.claude/agents`,
-    `${home}/.claude/commands`,
-    `${home}/.local/bin`,
-    `${home}/.local/share/claude`,
-    `${home}/Library/LaunchAgents`,
-    ...path
-      .split(':')
-      .map(d => d.replace(/\/+$/, ''))
-      .filter(d => d.startsWith(`${home}/`) && !`${checkCopiesDir(home)}/`.startsWith(`${d}/`)),
-  ]),
-]
+// Beside his work and Claude Code's whole configuration it names the main places in the
+// home whose contents run later, outside any fence: the shell's startup files, git's
+// settings, the package managers' settings that can name a program, Python's add-on
+// folders (whose .pth files run at every start, the owner's guard among them), Claude
+// Code's own install, the folder macOS starts programs from at login, and the install of
+// each folder of the command path (`path`, the PATH as Claude Code has it) that sits in
+// the home (`installOf`). Claude Code's own guard on startup files and .gitconfig covers
+// only the run's working directory, here the copy (measured 17 Oct 2026). A list cannot
+// name every such place, so the brief says the main ones and tells the run to write
+// nowhere but the copy. A folder holding the copies is never named, or the copy could
+// not be written: a path folder's install that would hold them gives way to the folder.
+export const checkDenyWrite = (home: string, real: string, path = ''): string[] => {
+  const holdsCopies = (d: string): boolean => `${checkCopiesDir(home)}/`.startsWith(`${d}/`)
+  return [
+    ...new Set([
+      real,
+      `${home}/Developer`,
+      `${home}/Documents`,
+      `${home}/Desktop`,
+      `${home}/work`,
+      `${home}/.ssh`,
+      `${home}/.config`,
+      `${home}/.claude`,
+      `${home}/.claude.json`,
+      ...SHELL_STARTUP.map(f => `${home}/${f}`),
+      `${home}/.gitconfig`,
+      `${home}/.npmrc`,
+      `${home}/.yarnrc.yml`,
+      `${home}/.bunfig.toml`,
+      `${home}/Library/Python`,
+      `${home}/.local/lib`,
+      `${home}/.local/bin`,
+      `${home}/.local/share/claude`,
+      `${home}/Library/LaunchAgents`,
+      ...path
+        .split(':')
+        .map(d => d.replace(/\/+$/, ''))
+        .filter(d => d.startsWith(`${home}/`))
+        .map(d => (holdsCopies(installOf(home, d)) ? d : installOf(home, d)))
+        .filter(d => !holdsCopies(d)),
+    ]),
+  ]
+}
+
+// The files bash, zsh, sh and tcsh run from the home as a shell starts or ends.
+export const SHELL_STARTUP = ['.zshenv', '.zprofile', '.zshrc', '.zlogin', '.zlogout', '.bashrc', '.bash_profile', '.bash_login', '.bash_logout', '.profile', '.tcshrc', '.cshrc', '.login']
+
+// Folders in the home that hold many programs' files, the longest first.
+const SHARED_FOLDERS = ['Library/Application Support', 'Library', '.local/share', '.local']
+
+// The install a command-path folder in the home belongs to: its first folder below the
+// home that is not one many programs share. mise's `~/.local/share/mise/installs/node/22/bin`
+// is guarded as `~/.local/share/mise`, where the npm its node runs lives and the shims
+// pick any installed version from, and `~/.cargo/bin` as `~/.cargo`, whose `env` file
+// the shell's startup runs; `~/.local/bin` and `~/Library/pnpm` stay themselves.
+export const installOf = (home: string, dir: string): string => {
+  const rel = dir.slice(home.length + 1)
+  const shared = SHARED_FOLDERS.find(s => rel.startsWith(`${s}/`))
+  const below = shared === undefined ? rel : rel.slice(shared.length + 1)
+  return `${home}/${shared === undefined ? '' : `${shared}/`}${below.split('/')[0]}`
+}
 
 // ── THE HOST THE CHECK'S COMMANDS RUN ON ────────────────────────────────────
 //
@@ -1539,6 +1565,20 @@ export const noFenceNote = (stderr: string): string | null => {
   const why = line.slice(line.indexOf(NO_FENCE_ERROR) + NO_FENCE_ERROR.length).trim()
   return `${NO_FENCE_LEAD}, so its run refused to start rather than run unfenced.${why === '' ? '' : ` Claude Code says: ${fit(why, 240)}`}`
 }
+// pnpm keeps its store in its own folder (`~/Library/pnpm/store` on a Mac), which the fence
+// guards when that folder is on the command path. Inside the fence pnpm finds the store
+// unwritable, starts an empty one in the temporary folder and, the network closed, fails
+// to install; told where the store is, it installs from it by reading (both measured 17 Oct
+// 2026). So the check asks pnpm where its store is before the run, outside the fence, and
+// names it to the run through pnpm's setting in the environment. `pnpm store path` prints
+// the store's versioned folder (`…/store/v10`); the setting takes the folder above it.
+export const PNPM_STORE_ARGV = ['pnpm', 'store', 'path']
+export const PNPM_STORE_ENV = 'npm_config_store_dir'
+export const PNPM_STORE_TIMEOUT_MS = 10000
+export const pnpmStoreDir = (stdout: string): string => {
+  const line = stdout.trim().split('\n').pop()?.trim() ?? ''
+  return line.startsWith('/') ? line.replace(/\/v\d+$/, '') : ''
+}
 // A card whose check cannot run where it is drawn offers no Check it.
 export const checkBarred = (note: string): boolean => note === CHECK_NO_ROOM || note.startsWith(NO_FENCE_LEAD)
 // `failIfUnavailable` makes the run refuse to start where the sandbox cannot (a Linux
@@ -1620,7 +1660,7 @@ Read any file you need. Run the project's own checks (its tests, its type check,
 
 ## Your room and your time
 
-${a.copy === a.cwd ? `You run in the agent's own folder, since no copy of it could be made, and writes there are denied: read it with Read, Glob and Grep, and run only what writes nothing there. A check that would have to write in it is one you name under "looked" as not run.` : `You run in your working directory, the copy. Run the project's checks and anything else you need there, write what you like there and nowhere else; nothing you do in it reaches the agent's folder, and the copy is removed when you finish. When a claim is about what is on disk now, read the agent's own folder with Read, Glob and Grep, since the copy is of one moment.`} No command needs approval, so none is refused for its shape. Two things still stop a command: the owner's own guard, which refuses for every agent on this machine the few things it refuses (rewriting shared history, deleting his data, making anything public), and the fence, which denies writes to the agent's folder, the owner's work, Claude Code's own settings and the places whose contents run later (the folders programs are run from among them), closes the network except for this Mac, and which no command can be run outside of. Docker cannot be reached from inside the fence, though a port a container publishes on this Mac can. A "sandbox violation" or "Operation not permitted" means you hit the fence and says nothing about the claim. If a command is refused by either, say so under "looked" rather than guessing, and name a check that needs Docker there as not run.
+${a.copy === a.cwd ? `You run in the agent's own folder, since no copy of it could be made, and writes there are denied: read it with Read, Glob and Grep, and run only what writes nothing there. A check that would have to write in it is one you name under "looked" as not run.` : `You run in your working directory, the copy. Run the project's checks and anything else you need there, write what you like there and nowhere else; nothing you do in it reaches the agent's folder, and the copy is removed when you finish. When a claim is about what is on disk now, read the agent's own folder with Read, Glob and Grep, since the copy is of one moment.`} No command needs approval, so none is refused for its shape. Two things still stop a command: the owner's own guard, which refuses for every agent on this machine the few things it refuses (rewriting shared history, deleting his data, making anything public), and the fence, which denies writes to the agent's folder, the owner's work, Claude Code's own settings and the main places in the home whose contents run later (the shell's startup files, git's settings and the folders programs are run from among them, though no list names every one), closes the network except for this Mac, and which no command can be run outside of. Docker cannot be reached from inside the fence, though a port a container publishes on this Mac can. A "sandbox violation" or "Operation not permitted" means you hit the fence and says nothing about the claim. If a command is refused by either, say so under "looked" rather than guessing, and name a check that needs Docker there as not run.
 
 You have ${CHECK_TIMEOUT_WORDS} and ${CHECK_MAX_TURNS} turns in all, and an answer that never arrives is worth nothing to him, so spend them on reading and on the proof that matters most. Run the project's test command and its type check once each, the way the record shows the agent ran them. A slower tool, one that reruns the suite many times (a defect-planting or mutation run) or a full build, is worth its minutes only when a claim turns on it; otherwise say under "looked" that you did not run it and judge that claim from the record.
 

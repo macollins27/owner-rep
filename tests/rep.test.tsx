@@ -1,7 +1,7 @@
 import type { On, SessionMessage } from 'claude-code'
 import { expect, mock, test, type Engine } from 'claude-code/testing'
 
-import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates } from '../hooks/rep'
+import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates } from '../hooks/rep'
 
 const om = (text: string, n = 1): OwnerMsg => ({ n, kind: 'his', text, prior: '' })
 
@@ -353,7 +353,9 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   // The fence is a deny list, not a wall around the copy: the brief names what it guards.
   for (const p of [prompt, noCopy]) {
     expect(p).not.toContain('denies writes outside the copy')
-    expect(p).toContain("denies writes to the agent's folder, the owner's work, Claude Code's own settings and the places whose contents run later")
+    expect(p).toContain("denies writes to the agent's folder, the owner's work, Claude Code's own settings and the main places in the home whose contents run later")
+    // A list cannot name every such place, and the brief does not claim it does.
+    expect(p).toContain('though no list names every one')
     expect(p).toContain('Docker cannot be reached from inside the fence')
   }
   expect(prompt).toContain('2026-10-13T23:05:00.000Z')
@@ -372,19 +374,30 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   expect(room.sandbox.enabledPlatforms).toBeUndefined()
   expect(room.sandbox.filesystem.denyWrite).toContain('/tmp/x')
   expect(room.sandbox.filesystem.denyWrite).toContain('/Users/o/Developer')
-  expect(room.sandbox.filesystem.denyWrite).toContain('/Users/o/.claude/hooks')
+  expect(room.sandbox.filesystem.denyWrite).toContain('/Users/o/.claude')
   expect(room.sandbox.filesystem.denyWrite.some(p => copy.startsWith(p))).toBe(false)
-  // Every place in the home whose contents run later, outside any fence, is denied too.
-  for (const p of ['/Users/o/.local/bin', '/Users/o/.local/share/claude', '/Users/o/Library/LaunchAgents', '/Users/o/.claude/skills', '/Users/o/.claude/agents', '/Users/o/.claude/commands']) {
+  // The main places in the home whose contents run later, outside any fence, are denied too:
+  // Claude Code's whole configuration and install, the shell's startup files, git's and the
+  // package managers' settings, Python's add-on folders and the login programs folder.
+  for (const p of ['/Users/o/.claude', '/Users/o/.claude.json', '/Users/o/.local/bin', '/Users/o/.local/share/claude', '/Users/o/Library/LaunchAgents', '/Users/o/.zshenv', '/Users/o/.zshrc', '/Users/o/.zprofile', '/Users/o/.bashrc', '/Users/o/.bash_profile', '/Users/o/.profile', '/Users/o/.gitconfig', '/Users/o/.npmrc', '/Users/o/Library/Python', '/Users/o/.local/lib']) {
     expect(room.sandbox.filesystem.denyWrite).toContain(p)
   }
-  const pathed = (JSON.parse(checkSettings('/Users/o', '/tmp/x', '/usr/bin:/Users/o/.cargo/bin:/Users/o/Library/pnpm/:/Users/o/.local/bin:/Users/o/.cache:/Users/o:relative/bin')) as typeof room).sandbox.filesystem.denyWrite
-  expect(pathed).toContain('/Users/o/.cargo/bin')
+  // Each command-path folder in the home is guarded as the install it belongs to.
+  const pathed = (JSON.parse(checkSettings('/Users/o', '/tmp/x', '/usr/bin:/Users/o/.cargo/bin:/Users/o/Library/pnpm/:/Users/o/.local/bin:/Users/o/.local/share/mise/installs/node/22.22.3/bin:/Users/o/.local/share/mise/shims:/Users/o/.turso:/Users/o/.cache:/Users/o/.cache/tool/bin:/Users/o:relative/bin')) as typeof room).sandbox.filesystem.denyWrite
+  expect(pathed).toContain('/Users/o/.cargo')
   expect(pathed).toContain('/Users/o/Library/pnpm')
+  expect(pathed).toContain('/Users/o/.local/share/mise')
+  expect(pathed).toContain('/Users/o/.turso')
   expect(pathed.filter(p => p === '/Users/o/.local/bin').length).toBe(1)
+  expect(pathed.filter(p => p === '/Users/o/.local/share/mise').length).toBe(1)
+  expect(pathed).not.toContain('/Users/o/.local')
+  expect(pathed).not.toContain('/Users/o/.local/share')
+  expect(pathed).not.toContain('/Users/o/Library')
   expect(pathed).not.toContain('/usr/bin')
   expect(pathed).not.toContain('/Users/o')
+  // A path folder whose install would hold the copies is guarded as itself; one that holds them is not.
   expect(pathed).not.toContain('/Users/o/.cache')
+  expect(pathed).toContain('/Users/o/.cache/tool/bin')
   expect(pathed).not.toContain('relative/bin')
   expect(pathed.some(p => copy.startsWith(p))).toBe(false)
   expect(room.sandbox.network.allowedDomains).toEqual([])
@@ -1098,6 +1111,24 @@ test('rule: where the fence cannot start, the card says the check does not run o
   expect(await ui.find({ key: 'check' })).toBeUndefined()
   expect(await ui.find({ key: 'close' })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /The card\./ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('rule: once the fence has refused to start, each later card says the check does not run on this machine and offers no Check it', async ($, on) => {
+  mock.clock(on)
+  let spawns = 0
+  const ui = await checkWith($, on, async function* () {
+    spawns += 1
+    yield { stream: 'stderr', text: NO_FENCE_STDERR }
+    return { value: { code: 1, signal: null } }
+  })
+  await ui.press({ key: 'check' })
+  await ui.press({ key: 'close' })
+  await ui.press({ key: 'rep' })
+  expect(await ui.find({ type: 'Text', text: /The check does not run on this machine: Claude Code's sandbox cannot start here/ })).toBeDefined()
+  expect(await ui.find({ key: 'check' })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: /The card\./ })).toBeDefined()
+  expect(spawns).toBe(1)
   await ui.unmount()
 })
 
@@ -2165,9 +2196,9 @@ test('rule: the check runs in a throwaway copy of the project, fenced, and the c
   on('session.cwd', () => ({ value: '/tmp/x' }))
   mock.clock(on)
   on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
-  let seen: { cwd?: string; argv?: readonly string[] } = {}
+  let seen: { cwd?: string; argv?: readonly string[]; env?: Record<string, string> } = {}
   on('process.spawn', async function* (_$, e) {
-    seen = { cwd: e.cwd, argv: e.argv }
+    seen = { cwd: e.cwd, argv: e.argv, env: e.env }
     yield { stream: 'stdout', text: CHECKED_WITH(0) }
     return { value: { code: 0, signal: null } }
   })
@@ -2184,11 +2215,59 @@ test('rule: the check runs in a throwaway copy of the project, fenced, and the c
   expect(argv[argv.indexOf('--permission-mode') + 1]).toBe('default')
   // The command path's folders in the home are fenced: a program put there would run later.
   expect(argv[argv.indexOf('--settings') + 1]).toBe(checkSettings('/Users/o', '/tmp/x', '/usr/bin:/Users/o/.cargo/bin'))
-  expect(argv[argv.indexOf('--settings') + 1]).toContain('"/Users/o/.cargo/bin"')
+  expect(argv[argv.indexOf('--settings') + 1]).toContain('"/Users/o/.cargo"')
   expect(argv[argv.indexOf('--allowedTools') + 1]?.split(',')).toContain('Bash')
+  // pnpm named no store, so none is named to the run.
+  expect(seen.env).toBeUndefined()
   expect(runs.filter(r => r[0] === 'rm' && r[2] === copy).length).toBeGreaterThanOrEqual(2)
   expect(runs.findIndex(r => r[0] === 'cp')).toBeLessThan(runs.length - 1)
   await ui.unmount()
+})
+
+test('rule: the check names pnpm\'s store to its run, asked of pnpm in the agent\'s folder outside the fence, so an install inside the fence reads the store pnpm uses', async ($, on) => {
+  session(on)
+  quietBand(on)
+  const runs: { argv: string[]; cwd?: string }[] = []
+  on('env.get', () => ({ value: '/Users/o' }))
+  on('process.run', (_$, e) => {
+    runs.push({ argv: [...e.argv], cwd: e.init?.cwd })
+    const stdout = e.argv[0] === 'pnpm' ? ' WARN  Issue while reading "/Users/o/.npmrc".\n/Users/o/Library/pnpm/store/v10\n' : ''
+    return { value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
+  on('session.cwd', () => ({ value: '/tmp/x' }))
+  mock.clock(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  let env: Record<string, string> | undefined
+  on('process.spawn', async function* (_$, e) {
+    env = e.env
+    yield { stream: 'stdout', text: CHECKED_WITH(0) }
+    return { value: { code: 0, signal: null } }
+  })
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+  expect(runs.find(r => r.argv[0] === 'pnpm')).toEqual({ argv: ['pnpm', 'store', 'path'], cwd: '/tmp/x' })
+  expect(env).toEqual({ npm_config_store_dir: '/Users/o/Library/pnpm/store' })
+  await ui.unmount()
+})
+
+test('pnpmStoreDir takes the folder above the versioned store pnpm prints, and nothing when pnpm prints no path', () => {
+  expect(pnpmStoreDir('/Users/o/Library/pnpm/store/v10\n')).toBe('/Users/o/Library/pnpm/store')
+  expect(pnpmStoreDir(' WARN  a warning\n/home/o/.local/share/pnpm/store/v3\n')).toBe('/home/o/.local/share/pnpm/store')
+  expect(pnpmStoreDir('/srv/pnpm-store\n')).toBe('/srv/pnpm-store')
+  expect(pnpmStoreDir('')).toBe('')
+  expect(pnpmStoreDir('ERR_PNPM_SOMETHING failed\n')).toBe('')
+})
+
+test('installOf guards a command-path folder in the home as the install it belongs to, never as a folder many programs share', () => {
+  expect(installOf('/Users/o', '/Users/o/.cargo/bin')).toBe('/Users/o/.cargo')
+  expect(installOf('/Users/o', '/Users/o/.local/share/mise/installs/node/22.22.3/bin')).toBe('/Users/o/.local/share/mise')
+  expect(installOf('/Users/o', '/Users/o/.local/share/mise/shims')).toBe('/Users/o/.local/share/mise')
+  expect(installOf('/Users/o', '/Users/o/.local/bin')).toBe('/Users/o/.local/bin')
+  expect(installOf('/Users/o', '/Users/o/Library/pnpm')).toBe('/Users/o/Library/pnpm')
+  expect(installOf('/Users/o', '/Users/o/Library/Application Support/Code/bin')).toBe('/Users/o/Library/Application Support/Code')
+  expect(installOf('/Users/o', '/Users/o/.turso')).toBe('/Users/o/.turso')
+  expect(installOf('/home/o', '/home/o/.nvm/versions/node/v22.1.0/bin')).toBe('/home/o/.nvm')
 })
 
 test('rule: when the copy cannot be made the check runs in the agent\'s folder, with writes there denied, and the brief says so', async ($, on) => {

@@ -37,7 +37,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 177 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 181 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions of this checkout in tmux, the strip captured to tests/live/captures
 ```
@@ -179,10 +179,15 @@ call writes (below):
    allowed outright (the shell, the file tools, the direct agentsview tools), `CHECK_DISALLOWED_TOOLS`
    (anything that edits through a tool, sends, fetches the web or launches helpers) and
    `--settings` from `checkSettings`: the built-in sandbox with writes denied to the owner's
-   work, Claude Code's own configuration and every place in the home whose contents run later
-   (`checkDenyWrite`: the command path's folders in the home, from `PATH`, a folder holding
-   the copies left out; Claude Code's install; `~/Library/LaunchAgents`), the brief naming
-   those rather than saying all writes outside the copy are denied, and the network closed except
+   work, Claude Code's whole configuration (`~/.claude`, `~/.claude.json`) and the main places
+   in the home whose contents run later (`checkDenyWrite`: the shell's startup files,
+   `SHELL_STARTUP`; `.gitconfig`; `.npmrc`, `.yarnrc.yml`, `.bunfig.toml`; `~/Library/Python`
+   and `~/.local/lib`; Claude Code's install; `~/Library/LaunchAgents`; and for each folder of
+   `PATH` in the home the install it belongs to, `installOf`, which looks one level past
+   `Library/Application Support`, `Library`, `.local/share` and `.local`, the folder alone
+   when that install would hold the copies, none when the folder would), the brief naming the
+   main ones, saying no list names every one, rather than saying all writes outside the copy
+   are denied, and the network closed except
    for this Mac, with `failIfUnavailable` (the run refuses to start where the sandbox cannot)
    and `allowUnsandboxedCommands: false` (no command can ask to run outside it); an
    `enabledPlatforms` list is set nowhere, since Claude Code reads it only from managed
@@ -196,7 +201,12 @@ call writes (below):
    check's price and no Check it button, and `runCheck` starts no copy and no run there,
    pressed on a card drawn before. Where the sandbox cannot start, Claude Code prints
    `NO_FENCE_ERROR` with what is missing and exits; `noFenceNote` makes that the card's note,
-   and `checkBarred` keeps Check it off a card with either note. Fifteen-minute timeout
+   held for the process in `noFence` so each later card carries it and `runCheck` starts
+   nothing, and `checkBarred` keeps Check it off a card with either note. Before the run,
+   `pnpm store path` is asked in the agent's folder outside the fence (`pnpmStore`) and the
+   answer, its version folder taken off (`pnpmStoreDir`), passed to the run as
+   `npm_config_store_dir`: inside the fence pnpm finds its store unwritable, moves it into
+   a scratch folder, and an offline install there fails (measured 17 Oct 2026, pnpm 10). Fifteen-minute timeout
    (`CHECK_TIMEOUT_MS`), 120 turns, JSON output; `permission_denials` in the output is the
    count of commands refused approval, shown on the checked card (`refusedLine`, which says
    commands the fence stopped are not counted) and on the next card's price line
