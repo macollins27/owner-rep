@@ -1,13 +1,16 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 72ff8b7..fb4d534 100644
+index 38007a6..15fb8ea 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -775,8 +775,6 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
+@@ -788,11 +788,6 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
      if (timedOut) return finish({ checkNote: `The check ran out of time (${CHECK_TIMEOUT_WORDS}) and was stopped.` })
      const got = resultOf(stdout)
      if (got === null) {
 -      const barred = noFenceNote(stderr)
--      if (barred !== null) return finish({ checkNote: barred })
+-      if (barred !== null) {
+-        noFence = barred
+-        return finish({ checkNote: barred })
+-      }
        const why = stderr.trim().split('\n').pop() ?? ''
        return finish({ checkNote: `The check could not run${end.code === null ? '' : ` (exit ${end.code})`}${why === '' ? '' : `: ${fit(why, 160)}`}.` })
      }

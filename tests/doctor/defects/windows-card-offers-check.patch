@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index e6cfcc7..e592707 100644
+index 38007a6..7990075 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -663,7 +663,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
+@@ -675,7 +675,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
          size: context === undefined ? '' : `conversation at ${context.percent} percent of its window`,
          isChecking: false,
          checked: null,
--        checkNote: noCheck ? CHECK_NO_ROOM : '',
-+        checkNote: '',
+-        checkNote: noCheck ? CHECK_NO_ROOM : noFence,
++        checkNote: noFence,
          checkCost: checkCostText(after.lastCheckTokens, after.lastCheckCached, after.lastCheckMs, after.lastCheckRefused),
        }
        after.lastBrief = { at: brief.at, next: brief.next, message: brief.message }

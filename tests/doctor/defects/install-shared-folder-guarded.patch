@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index cd94906..1368b4b 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1354,7 +1354,7 @@ export const checkDenyWrite = (home: string, real: string, path = ''): string[]
+ export const SHELL_STARTUP = ['.zshenv', '.zprofile', '.zshrc', '.zlogin', '.zlogout', '.bashrc', '.bash_profile', '.bash_login', '.bash_logout', '.profile', '.tcshrc', '.cshrc', '.login']
+ 
+ // Folders in the home that hold many programs' files, the longest first.
+-const SHARED_FOLDERS = ['Library/Application Support', 'Library', '.local/share', '.local']
++const SHARED_FOLDERS: string[] = []
+ 
+ // The install a command-path folder in the home belongs to: its first folder below the
+ // home that is not one many programs share. mise's `~/.local/share/mise/installs/node/22/bin`

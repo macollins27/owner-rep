@@ -1171,7 +1171,7 @@
   },
   {
     "name": "fence-runs-later-open",
-    "breaks": "The check's fence leaves Claude Code's own install, the login programs folder, the folders Claude Code reads skills, agents and commands from, and the command path's folders in the home writable, so a run steered by text in the record could leave behind a program that runs later outside any fence.",
+    "breaks": "The check's fence leaves Claude Code's own install, the login programs folder and the installs of the command path's folders in the home writable, so a run steered by text in the record could leave behind a program that runs later outside any fence.",
     "patch": "fence-runs-later-open.patch",
     "fixed": "2026-10-17"
   },
@@ -1183,7 +1183,7 @@
   },
   {
     "name": "fence-path-holds-copy",
-    "breaks": "A command path folder that holds the check's copies, or the home itself on the path, is denied, and since a denied folder beats an allowed one the check can write nothing in its own copy.",
+    "breaks": "A command path folder that holds the check's copies is denied, and since a denied folder beats an allowed one the check can write nothing in its own copy.",
     "patch": "fence-path-holds-copy.patch",
     "fixed": "2026-10-17"
   },
@@ -1215,6 +1215,78 @@
     "name": "windows-start-by-name",
     "breaks": "On Windows the look at how the session's own file begins runs grep by its bare name, which Windows cannot find, so a fork whose file is a copy since a summary is taken as the whole of his messages and everything he typed before the summary is lost.",
     "patch": "windows-start-by-name.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-startup-files-open",
+    "breaks": "The check's fence leaves the shell's startup files writable, so a run steered by text in the record could add a line that every later terminal and agent shell runs outside any fence.",
+    "patch": "fence-startup-files-open.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-gitconfig-open",
+    "breaks": "The check's fence leaves git's own settings writable, so a run could name a program git then runs in every later commit or fetch, outside any fence.",
+    "patch": "fence-gitconfig-open.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-package-settings-open",
+    "breaks": "The check's fence leaves the package managers' settings (npm, yarn, bun) writable, so a run could name a program they then run on a later install, outside any fence.",
+    "patch": "fence-package-settings-open.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-claude-config-open",
+    "breaks": "The check's fence leaves Claude Code's own configuration writable, its settings, hooks, skills and history among it, so a run could change what every later session does.",
+    "patch": "fence-claude-config-open.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-python-open",
+    "breaks": "The check's fence leaves Python's add-on folders writable, whose .pth files run at every Python start, the owner's guard among them, so a run could plant code that runs later outside any fence.",
+    "patch": "fence-python-open.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-path-folder-only",
+    "breaks": "The check's fence guards a command path folder only as itself, so mise's npm or cargo's env file, beside the folder in the same install, stay writable and run later outside any fence.",
+    "patch": "fence-path-folder-only.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "install-shared-folder-guarded",
+    "breaks": "A command path folder under a folder many programs share (~/Library, ~/.local/share) is guarded as that whole shared folder, so the run can write nothing there, caches and Python's folders included.",
+    "patch": "install-shared-folder-guarded.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "install-holds-copies-kept",
+    "breaks": "A command path folder whose install would hold the check's copies loses its guard altogether, rather than being guarded as itself, so a program on the path there stays writable.",
+    "patch": "install-holds-copies-kept.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "brief-says-every-place",
+    "breaks": "The check's brief says the fence guards every place in the home whose contents run later, while it guards a list of the main ones, so the run believes a write it should not make would be stopped.",
+    "patch": "brief-says-every-place.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "no-fence-forgotten",
+    "breaks": "Where the fence refused to start, the next card goes back to offering Check it, and each press copies the project only to be refused again.",
+    "patch": "no-fence-forgotten.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "pnpm-store-not-passed",
+    "breaks": "The check's run is not told where pnpm's store is, so pnpm inside the fence moves its store into an empty scratch folder and an offline install there fails, and the check names the project's tests as not run.",
+    "patch": "pnpm-store-not-passed.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "pnpm-store-keeps-version",
+    "breaks": "The store named to the check's run keeps pnpm's version folder, so pnpm looks for its store one level too deep, finds it empty, and an offline install fails.",
+    "patch": "pnpm-store-keeps-version.patch",
     "fixed": "2026-10-17"
   }
 ]

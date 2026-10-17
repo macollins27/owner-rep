@@ -1,9 +1,9 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index d0160b7..6360b23 100644
+index cd94906..9510ab7 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1527,7 +1527,7 @@ export const noFenceNote = (stderr: string): string | null => {
-   return `${NO_FENCE_LEAD}, so its run refused to start rather than run unfenced.${why === '' ? '' : ` Claude Code says: ${fit(why, 240)}`}`
+@@ -1580,7 +1580,7 @@ export const pnpmStoreDir = (stdout: string): string => {
+   return line.startsWith('/') ? line.replace(/\/v\d+$/, '') : ''
  }
  // A card whose check cannot run where it is drawn offers no Check it.
 -export const checkBarred = (note: string): boolean => note === CHECK_NO_ROOM || note.startsWith(NO_FENCE_LEAD)

@@ -1,8 +1,8 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index e25097b..6ecd289 100644
+index 38007a6..b75b5cf 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -915,7 +915,7 @@ async function lookUpHost($: EngineInterface, os: string): Promise<Host> {
+@@ -941,7 +941,7 @@ async function lookUpHost($: EngineInterface, os: string): Promise<Host> {
  // built from it is.
  async function homeFor($: EngineInterface): Promise<string> {
    const home = homeOf(await $.env.get('HOME'), await $.env.get('USERPROFILE'))
@@ -10,4 +10,4 @@ index e25097b..6ecd289 100644
 +  return home
  }
  
- // The throwaway copy the check runs in: an APFS clone (cp -c) of the agent's folder as it
+ // pnpm's store as pnpm names it in the agent's folder, outside the fence, or '' when
