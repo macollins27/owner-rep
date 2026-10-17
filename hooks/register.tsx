@@ -31,13 +31,14 @@ import {
   checkSettings,
   CHECK_NO_ROOM,
   PNPM_STORE_ARGV,
+  COREPACK_ASK_ENV,
   PNPM_STORE_ENV,
   PNPM_STORE_TIMEOUT_MS,
   pnpmStoreDir,
   PATH_LINKS_TIMEOUT_MS,
   pathLinksArgv,
-  GIT_POINTER_TIMEOUT_MS,
-  gitPointerArgv,
+  GIT_FIND_TIMEOUT_MS,
+  gitFindArgv,
   gitDirsOf,
   linkTargets,
   holdsCopiesOf,
@@ -750,6 +751,10 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
     if (isWindowsHost(checkHost)) return finish({ checkNote: CHECK_NO_ROOM })
     if (noFence !== '') return finish({ checkNote: noFence })
     const copy = await makeCopy($, home, sid, cwd)
+    const path = (await $.env.get('PATH')) ?? ''
+    const store = await pnpmStore($, checkHost, copy)
+    const links = await pathLinks($, checkHost, home, path)
+    const repos = await gitRepos($, checkHost, copy, cwd)
     const prompt = checkPrompt({
       sessionId: sid,
       cwd,
@@ -761,13 +766,10 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       owner: jobMsgs(rec),
       brief: instant,
       writtenAt: new Date(at).toISOString(),
+      unanswered: [...(links === null ? ['links' as const] : []), ...(repos === null ? ['repos' as const] : [])],
     })
-    const path = (await $.env.get('PATH')) ?? ''
-    const store = await pnpmStore($, checkHost, copy)
-    const links = await pathLinks($, checkHost, home, path)
-    const repos = await gitRepos($, checkHost, copy)
     const startedAt = Date.now()
-    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, path, links, repos))), cwd: copy, ...(store === '' ? {} : { env: { [PNPM_STORE_ENV]: store } }) })
+    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, path, links ?? [], repos ?? []))), cwd: copy, ...(store === '' ? {} : { env: { [PNPM_STORE_ENV]: store } }) })
     let stdout = ''
     let stderr = ''
     let timedOut = false
@@ -954,26 +956,27 @@ async function homeFor($: EngineInterface): Promise<string> {
   return (await $.env.get('OS')) === WINDOWS_OS ? slashed(home) : home
 }
 
-// pnpm's store as pnpm names it in the copy, outside the fence, its pnpmfile ignored and its
-// version left alone on its command line (`PNPM_STORE_ARGV`), or '' when there is no pnpm or
-// it does not answer (`pnpmStoreDir`).
+// pnpm's store as pnpm names it in the copy, outside the fence, its pnpmfile ignored, its
+// version left alone and nothing fetched, by its command line (`PNPM_STORE_ARGV`) and
+// corepack's network off (`COREPACK_ASK_ENV`), or '' when there is no pnpm or it does not
+// answer (`pnpmStoreDir`).
 async function pnpmStore($: EngineInterface, on: Host, copy: string): Promise<string> {
-  const r = await $.process.run(hostArgv(on, PNPM_STORE_ARGV), { cwd: copy, timeoutMs: PNPM_STORE_TIMEOUT_MS }).catch(() => null)
+  const r = await $.process.run(hostArgv(on, PNPM_STORE_ARGV), { cwd: copy, env: COREPACK_ASK_ENV, timeoutMs: PNPM_STORE_TIMEOUT_MS }).catch(() => null)
   return r === null || r.exitCode !== 0 ? '' : pnpmStoreDir(r.stdout)
 }
 
 // Where the command path's folders and the links in them lead, asked outside the fence
-// (`pathLinksArgv`), or none when the host does not answer.
-async function pathLinks($: EngineInterface, on: Host, home: string, path: string): Promise<string[]> {
+// (`pathLinksArgv`), or null when the host does not answer, which the brief then says.
+async function pathLinks($: EngineInterface, on: Host, home: string, path: string): Promise<string[] | null> {
   const r = await $.process.run(hostArgv(on, pathLinksArgv(home, path)), { timeoutMs: PATH_LINKS_TIMEOUT_MS }).catch(() => null)
-  return r === null ? [] : linkTargets(r.stdout, r.isStdoutTruncated)
+  return r === null ? null : linkTargets(r.stdout, r.isStdoutTruncated)
 }
 
-// The repository a `.git` file in the folder the check runs in points at (`gitDirsOf`), read
-// outside the fence, or none when there is no such file or it cannot be read.
-async function gitRepos($: EngineInterface, on: Host, copy: string): Promise<string[]> {
-  const r = await $.process.run(hostArgv(on, gitPointerArgv(copy)), { timeoutMs: GIT_POINTER_TIMEOUT_MS }).catch(() => null)
-  return r === null ? [] : gitDirsOf(copy, r.stdout)
+// The git repositories the copy and the agent's folder reach (`gitFindArgv`, `gitDirsOf`),
+// asked outside the fence, or null when the host does not answer, which the brief then says.
+async function gitRepos($: EngineInterface, on: Host, copy: string, cwd: string): Promise<string[] | null> {
+  const r = await $.process.run(hostArgv(on, gitFindArgv([copy, cwd])), { timeoutMs: GIT_FIND_TIMEOUT_MS }).catch(() => null)
+  return r === null ? null : gitDirsOf([copy, cwd], r.stdout)
 }
 
 // The throwaway copy the check runs in: an APFS clone (cp -c) of the agent's folder as it
