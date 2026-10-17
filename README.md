@@ -27,7 +27,7 @@ Behind that row are three reads of increasing cost.
 |---|---|---|---|
 | **Watch** | Every eighth model request of a turn, and at every stop | A fresh model instance over the agent's cached conversation, no tools | Mostly cache reads; never blocks the agent |
 | **Briefing** | On a press (`1` or click) | Same mechanism, longer brief | One model call; two when its answer is refused and asked again (below) |
-| **Check** | On a second press, only when chosen | A separate headless `claude -p` run in a throwaway copy of the project, fenced, over the session record and the real files; on Windows, where Claude Code's sandbox is off, it does not start | Measured at about 210k fresh tokens plus 2.2M cache reads, about two minutes |
+| **Check** | On a second press, only when chosen | A separate headless `claude -p` run in a throwaway copy of the project, fenced, over the session record and the real files; on Windows, where Claude Code's sandbox is off, it does not start and the card says why | Measured at about 210k fresh tokens plus 2.2M cache reads, about two minutes |
 
 The **watch** stays silent unless it finds something with a cost to the owner: work dropped
 or shrunk, a claim not shown, a test never run, the easy option taken in place of the right
@@ -214,7 +214,7 @@ closed except for this Mac, where agentsview answers. The owner's own guard hook
 the run as they do for every agent. The copy is removed when the run ends. When no copy can
 be made, the run starts in the project itself with writes there denied, and its brief says
 so. On Windows Claude Code's sandbox is switched off, so there is no room to run in: the
-check does not start there, and the card says why. The run's answer
+card says so in place of the check's price and offers no Check it button. The run's answer
 carries the count of refused commands; the card shows it, and the right number is zero,
 because a refusal in a room where nothing needs approval means the room has a hole. All of
 this was measured on this build before it was built: bypassing approvals switches the
@@ -287,7 +287,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 164 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 165 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions in tmux, the strip captured to tests/live/captures
 ```

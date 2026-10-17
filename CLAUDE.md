@@ -37,7 +37,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 164 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 165 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -185,8 +185,9 @@ call writes (below):
    The copy is removed when the run ends; when it cannot be made the run uses the agent's
    folder with writes there denied, the brief says so, and any part of a copy is removed.
    On Windows (`OS` is `Windows_NT`) Claude Code's sandbox is off, so nothing would deny a
-   write or close the network: `runCheck` starts no copy and no run there, and the card's
-   check note is `CHECK_NO_ROOM`. Fifteen-minute timeout
+   write or close the network: a card drawn there shows `CHECK_NO_ROOM` in place of the
+   check's price and no Check it button, and `runCheck` starts no copy and no run there,
+   pressed on a card drawn before. Fifteen-minute timeout
    (`CHECK_TIMEOUT_MS`), 120 turns, JSON output; `permission_denials` in the output is the
    refusal count, shown on the checked card (`refusedLine`) and on the next card's price line
    (`checkCostText`); the right number is zero. Its answer rewrites the card, with each claim

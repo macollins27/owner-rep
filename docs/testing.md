@@ -58,7 +58,7 @@ entry that proves the test bites (added 14 Oct 2026; the objective's rules 15 Oc
 | The revision line outlasts the parts that restate the agent's work when the card folds | `fitCard folds the body…` | `revised-line-folds-first` |
 | The check runs in a throwaway copy of the project, fenced, and the copy is removed when the run ends | `rule: the check runs in a throwaway copy…` | `check-outside-copy`, `room-bypassed` |
 | When the copy cannot be made the check runs in the agent's folder, with writes there denied, and the brief says so | `rule: when the copy cannot be made…` | (prompt text; covered by the test) |
-| On Windows, where Claude Code's sandbox is off, the check does not start, even when looking for its commands throws, and the card says why | `rule: on Windows the check does not start, since nothing there fences its run…`, `rule: on Windows the check does not start when looking for its commands throws…` | `windows-check-unfenced`, `windows-refusal-rests-on-probe` |
+| On Windows, where Claude Code's sandbox is off, the card says the check does not run there in place of its price and offers no Check it, even when looking for its commands throws; pressed on a card drawn before, the check does not start | `rule: on Windows, since nothing there fences the check's run…`, `rule: on Windows the card offers no Check it when looking for its commands throws…`, `rule: on Windows the check itself does not start either…` | `windows-check-unfenced`, `windows-refusal-rests-on-probe`, `windows-card-offers-check`, `windows-check-button-kept` |
 | The copy is an APFS clone; where `cp` refuses `-c` before making anything, as GNU `cp` on Linux does, the folder's contents are copied plainly into the folder just made; a clone that failed part-way is never copied over, and its part is removed | `the copy tries the APFS clone…`, `rule: where cp refuses -c…`, `rule: where the clone fails part-way…` | `copy-no-fallback`, `plain-copy-nests`, `fallback-over-partial-clone`, `part-copy-left` |
 | Every program is named for the host it runs on: as written on a Mac or Linux, and on Windows Git for Windows' coreutils by their full path and npm's `claude.exe`, each found by running it; the home is `HOME`, else `USERPROFILE`, written with forward slashes on Windows, and a home of `/tmp` is a home; on Windows his messages are read through Git's own `find` and `sed`, a transcript path given with backslashes is read slashed, and a probe that failed is tried again on the next read | `the home is HOME where there is one…`, `a host that resolves by name…`, `a Windows host names every command…`, `the places Git for Windows and npm put their binaries…`, `rule: on Windows his messages are read…`, `rule: on Windows a transcript path given with backslashes…`, `rule: on Windows a probe for Git's commands that failed…`, `rule: a home that is /tmp is a home…` | `home-ignores-userprofile`, `windows-commands-by-name`, `windows-claude-by-name`, `candidates-unslashed`, `windows-find-by-name`, `windows-read-by-name`, `windows-probe-failure-held`, `home-tmp-is-none`, `windows-home-mixed-slashes`, `windows-held-path-backslashed` |
 | The card says how many of the check's commands were refused, and the right number is zero | `rule: the card says how many…` | `refusals-unreported` |
@@ -126,7 +126,7 @@ objective it checked came from the writer's own call. The test now sends a furth
 the writer answers with `objective: holds` and a look whose answer carries an objective in
 the writer's shape, and asserts that the objective is unchanged.
 
-**Status.** 164 tests: the parsers, the status words (including the variable-first command, read
+**Status.** 165 tests: the parsers, the status words (including the variable-first command, read
 through the mounted strip), the note to the rep, the checker's prompt and tools, the row on
 both surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-
 failure toast, the sequence rules above, the card folding to a small band, the brief
@@ -181,9 +181,10 @@ under the new id, and a session resumed in the same window read for his messages
 next one is recorded under it; and, with the Windows port (PR #13) and its review, every
 program named for the host it runs on, his messages read on Windows through Git's own
 commands under `USERPROFILE` with paths written one way, a failed probe looked for again,
-a home of `/tmp` kept as a home, the check refused on Windows where nothing fences it, and
+a home of `/tmp` kept as a home, the check refused on Windows where nothing fences it, with the card saying so and offering
+no Check it there, and
 the copy made plainly where `cp` refuses the clone and never over a clone that failed
-part-way. A hundred and seventy-seven doctor entries, all caught.
+part-way. A hundred and seventy-nine doctor entries, all caught.
 
 ## Layer 2: a real session
 
@@ -308,7 +309,7 @@ the file). Never make one from an uncommitted tree: the checkout would wipe the 
 **Status.** Built: `tests/doctor/doctor.py`, with `defects.json` and one patch per defect in
 `tests/doctor/defects/`. Run it with `python3 tests/doctor/doctor.py`; it exits 1 when the
 clean suite fails or a defect survives, and stops before planting when the clean suite is
-not clean. A hundred and seventy-seven entries, all caught: `strip-shows-command`, one or more per sequence
+not clean. A hundred and seventy-nine entries, all caught: `strip-shows-command`, one or more per sequence
 rule above, `card-overflows-band`, `size-figure-dropped`, `whole-ask-rule-dropped`, and one
 per remaining hook path (`helper-not-counted`, `box-text-overwritten`, `fill-refusal-ignored`,
 `check-timeout-unreported`, `check-failure-swallowed`, `end-not-saved`), and six for a

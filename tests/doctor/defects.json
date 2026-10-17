@@ -1060,5 +1060,17 @@
     "breaks": "On Windows a transcript path Claude Code gives with backslashes is read as given, so a forked session's folder is never found and none of his messages is read.",
     "patch": "windows-held-path-backslashed.patch",
     "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-card-offers-check",
+    "breaks": "On Windows the card shows the check's price, which says it starts a run in a throwaway copy, though the check does not run there.",
+    "patch": "windows-card-offers-check.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-check-button-kept",
+    "breaks": "On Windows the card offers Check it beside the note saying the check does not run there, a button that can only refuse.",
+    "patch": "windows-check-button-kept.patch",
+    "fixed": "2026-10-16"
   }
 ]
