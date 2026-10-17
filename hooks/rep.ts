@@ -1314,13 +1314,15 @@ export const checkDenyWrite = (home: string, real: string): string[] => [
 //     a shell would mean quoting it. The npm package ships `bin/claude.exe`, a
 //     real executable, so that is spawned directly and nothing is quoted.
 //
-// WHY THIS IS WORTH FIXING AND NOT JUST REPORTING. `makeCopy` degrades to the
-// agent's OWN folder when the copy fails, which is safe only because the room
-// denies writes there. This mod does not enable the sandbox on Windows
-// (`enabledPlatforms` below), so the degraded path put a 120-turn checker
+// WHY THIS IS WORTH FIXING AND NOT JUST REPORTING. The transcript reads run
+// through find, ls and sed, so on Windows none of the owner's messages was read
+// from a session's file. And `makeCopy` degrades to the agent's OWN folder when
+// the copy fails, which is safe only because the room denies writes there. This
+// mod does not enable the sandbox on Windows (`enabledPlatforms` below), so with
+// `claude` on PATH as an executable the degraded path put a 120-turn checker
 // holding Bash in the owner's real repository with nothing denying a write.
-// Fixing the copy closes that, and the brief's "could not be copied" line
-// stops being the normal case on the platform.
+// The check therefore does not start on Windows at all until the room holds
+// there (`CHECK_NO_ROOM`); its commands are named for the host all the same.
 
 /** `OS` as Windows sets it. The variable is absent on Darwin and on Linux. */
 export const WINDOWS_OS = 'Windows_NT'
@@ -1370,11 +1372,6 @@ export const homeOf = (home: string | undefined, userProfile: string | undefined
   home !== undefined && home !== '' ? home : userProfile !== undefined && userProfile !== '' ? userProfile : '/tmp'
 
 /**
- * Where Git for Windows keeps the coreutils, in the order they are tried. The
- * installer's own default is first; the user-scope install and the 32-bit
- * folder follow, because a machine may have only one of them.
- */
-/**
  * A Windows path a POSIX command will accept. Git's coreutils take forward
  * slashes and a drive letter, and mixing separators in one path is what breaks
  * them, so the whole path is written one way.
@@ -1385,6 +1382,11 @@ export const homeOf = (home: string | undefined, userProfile: string | undefined
  */
 export const slashed = (path: string): string => path.replace(/\\/g, '/')
 
+/**
+ * Where Git for Windows keeps the coreutils, in the order they are tried. The
+ * installer's own default is first; the user-scope install and the 32-bit
+ * folder follow, because a machine may have only one of them.
+ */
 export const winPosixBinCandidates = (
   programFiles: string | undefined,
   programFilesX86: string | undefined,
@@ -1432,12 +1434,13 @@ export function hostArgv(host: Host, argv: readonly string[]): string[] {
 /**
  * The copy, in the two forms it is tried in: the APFS clone first, because on
  * Darwin it is instant on a project of any size, and the plain recursive copy
- * second, because every other cp rejects `-c`. The caller runs the first and
- * falls back to the second, so no platform is guessed at.
+ * second, because every other cp rejects `-c`. The caller runs the second only
+ * when the first made nothing, into a folder it has just made, so the plain form
+ * copies the folder's contents (`from/.`) rather than the folder itself.
  */
-export const copyArgvs = (host: Host, from: string, to: string): string[][] => [
+export const copyArgvs = (host: Host, from: string, to: string): [string[], string[]] => [
   hostArgv(host, ['cp', '-Rc', from, to]),
-  hostArgv(host, ['cp', '-R', from, to]),
+  hostArgv(host, ['cp', '-R', `${from}/.`, to]),
 ]
 
 export const checkCopiesDir = (home: string): string => `${home}/.cache/owner-rep/checks`
@@ -1460,12 +1463,17 @@ export const checkCopyDir = (home: string, sessionId: string): string => `${chec
 //   on this session (feature gate off). Commands will run WITHOUT sandboxing.
 //   Network and filesystem restrictions will NOT be enforced.
 //
-// SO ON WINDOWS THE ROOM IS NOT A ROOM. What stands between the check and the
-// owner's work there is: the copy (which is why making it work matters — see
-// the host layer above), the tool list, and nothing else. `Bash` is allowed and
-// was proven unconstrained under `--permission-mode default` in a `-p` run.
-// Re-run that probe before adding win32; add it only when a denied write is
-// refused with a control that wrote.
+// SO ON WINDOWS THE ROOM IS NOT A ROOM. What would stand between the check and
+// the owner's work there is the copy, the tool list, and nothing else: `Bash` is
+// allowed and was proven unconstrained under `--permission-mode default` in a
+// `-p` run, the network is open, and the brief would tell the run it is fenced.
+// The check is read-only only because the room makes it so, so on Windows it
+// does not start (`CHECK_NO_ROOM`). Re-run that probe before adding win32; add
+// it, and take out the refusal in `runCheck`, only when a denied write is
+// refused with a control that wrote. The commands are already named for the
+// host, so nothing else stands in the way.
+export const CHECK_NO_ROOM =
+  "The check does not run on Windows yet: Claude Code's sandbox is switched off there, so nothing would stop the check's own run from changing your files or reaching the internet."
 export const checkSettings = (home: string, real: string): string =>
   JSON.stringify({
     sandbox: {

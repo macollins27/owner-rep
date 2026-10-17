@@ -4545,7 +4545,7 @@ test('a host that resolves by name leaves every argv exactly as it was', async (
   // The clone first, then the plain copy; a Unix host keeps the clone it had.
   expect(copyArgvs(PATH_HOST, '/a', '/b')).toEqual([
     ['cp', '-Rc', '/a', '/b'],
-    ['cp', '-R', '/a', '/b'],
+    ['cp', '-R', '/a/.', '/b'],
   ])
 })
 
@@ -4579,7 +4579,7 @@ test('the copy tries the APFS clone and then the plain copy, because only Darwin
   // what runs on Windows and on Linux. Measured on Git for Windows, 16 Oct 2026.
   expect(copyArgvs(WIN_HOST, 'C:/work', 'C:/copy')).toEqual([
     ['C:/Git/usr/bin/cp.exe', '-Rc', 'C:/work', 'C:/copy'],
-    ['C:/Git/usr/bin/cp.exe', '-R', 'C:/work', 'C:/copy'],
+    ['C:/Git/usr/bin/cp.exe', '-R', 'C:/work/.', 'C:/copy'],
   ])
 })
 
@@ -4641,79 +4641,139 @@ const winRoom = (on: On): string[][] => {
   return runs
 }
 
-test('rule: on Windows the check names every command by its full path, takes its home from USERPROFILE, and falls back from the clone to a plain copy', async ($, on) => {
+test('rule: on Windows the check does not start, since nothing there fences its run: nothing is copied or spawned, and the card says why', async ($, on) => {
   mock.clock(on)
   session(on)
   quietBand(on)
   const runs = winRoom(on)
   on('session.cwd', () => ({ value: 'C:\\work\\proj' }))
   on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
-  let spawned: string[] = []
-  on('process.spawn', (async function* (_$: unknown, e: { argv: string[] }) {
-    spawned = [...e.argv]
+  let spawned = 0
+  on('process.spawn', (async function* () {
+    spawned += 1
     yield { stream: 'stdout', text: CHECKED_WITH(0) }
     return { value: { code: 0, signal: null } }
   }) as never)
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   await ui.press({ key: 'rep' })
   await ui.press({ key: 'check' })
-
-  const GIT = 'C:/LAD/Programs/Git/usr/bin'
-  const ran = runs.filter(r => (r[r.length - 1] ?? '') !== '--version')
-  const first = (name: string) => ran.find(r => (r[0] ?? '').endsWith(`/${name}.exe`))
-
-  // Every command is an absolute .exe, because `spawn` without a shell needs one.
-  expect(first('mkdir')?.[0]).toBe(`${GIT}/mkdir.exe`)
-  expect(first('rm')?.[0]).toBe(`${GIT}/rm.exe`)
-  // Not one command was left to resolve by name.
-  expect(ran.filter(r => (POSIX_COMMANDS as readonly string[]).includes(r[0] ?? '')).length).toBe(0)
-
-  // The home came from USERPROFILE: the copy sits under it, not under /tmp.
-  const copies = ran.filter(r => (r[0] ?? '').endsWith('/cp.exe'))
-  expect(copies.length).toBe(2)
-  expect(copies[0]?.[1]).toBe('-Rc')
-  expect(copies[1]?.[1]).toBe('-R')
-  expect(copies[1]?.[3]?.startsWith('C:\\Users\\k/')).toBe(true)
-
-  // The copy was MADE, so the check ran in it and not in the owner's own folder,
-  // which on Windows has nothing denying a write to it.
-  expect(copies[1]?.[3]).toBe(checkCopyDir('C:\\Users\\k', 'test-session'))
-
-  // And `claude` was spawned as the npm executable, with the prompt still an argv.
-  expect(spawned[0]).toBe('C:/AD/npm/node_modules/@anthropic-ai/claude-code/bin/claude.exe')
-  expect(spawned[1]).toBe('-p')
+  expect(await ui.find({ type: 'Text', text: /The check does not run on Windows yet: Claude Code's sandbox is switched off there/ })).toBeDefined()
+  expect(spawned).toBe(0)
+  // Not even the copy is made: the refusal comes before it.
+  expect(runs.filter(r => /\/(cp|rm|mkdir)\.exe$/.test(r[0] ?? '') && r[r.length - 1] !== '--version')).toEqual([])
+  // The card the check was pressed on stays up.
+  expect(await ui.find({ type: 'Text', text: /The card\./ })).toBeDefined()
   await ui.unmount()
 })
 
-test('rule: on a Windows host with no coreutils found, nothing is named, the copy is not made, and the check still runs in the agent folder', async ($, on) => {
+// The transcript on a Windows host: `OS` says Windows, the home is USERPROFILE with no
+// HOME, and the coreutils answer only by their full path in Git's usr/bin, as there.
+const WIN_GIT = 'C:/PF/Git/usr/bin'
+const WIN_PROJECTS = 'C:\\Users\\k/.claude/projects'
+const winTranscript = (on: On, files: Record<string, string>): string[][] => {
+  const runs: string[][] = []
+  const folder = `${WIN_PROJECTS}/-C-work-app`
+  mock.env(on, { OS: WINDOWS_OS, USERPROFILE: 'C:\\Users\\k', PROGRAMFILES: 'C:\\PF' })
+  on('clock.now', () => ({ value: 1_000_000 }))
+  on('process.run', (_$, e) => {
+    const argv = [...e.argv]
+    runs.push(argv)
+    const out = (exitCode: number, stdout = '') => ({ value: { exitCode, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
+    const cmd = argv[0] ?? ''
+    if (argv[argv.length - 1] === '--version') return out(cmd === `${WIN_GIT}/mkdir.exe` ? 0 : 1)
+    // A name alone resolves to nothing on Windows.
+    if (!cmd.startsWith(`${WIN_GIT}/`)) return out(127)
+    const name = cmd.slice(WIN_GIT.length + 1).replace(/\.exe$/, '')
+    if (name === 'find') {
+      if (argv[1] !== WIN_PROJECTS) return out(1)
+      const file = argv[argv.length - 1] ?? ''
+      return out(0, file in files ? `${folder}/${file}\n` : '')
+    }
+    if (name !== 'sed') return out(1)
+    const path = argv[argv.length - 1] ?? ''
+    const body = path.startsWith(`${folder}/`) ? files[path.slice(folder.length + 1)] : undefined
+    if (body === undefined) return out(1)
+    const lines = body.split('\n').filter(l => l.includes('"kind":"human"'))
+    return out(0, lines.length > 0 ? `${lines.join('\n')}\n` : '')
+  })
+  return runs
+}
+
+test('rule: on Windows his messages are read from the session\'s file through Git\'s own commands, under the home USERPROFILE names', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS }))
+  const runs = winTranscript(on, { 'test-session.jsonl': SEEDED_FILE })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await started($)
+  await settle($)
+  expect(rec()?.owner).toEqual(SEEDED)
+  // Every command named by its full path, and the folder found under USERPROFILE.
+  const ran = runs.filter(r => r[r.length - 1] !== '--version')
+  expect(ran.map(r => r[0])).toEqual([`${WIN_GIT}/find.exe`, `${WIN_GIT}/sed.exe`])
+  expect(ran[0]?.[1]).toBe(WIN_PROJECTS)
+})
+
+// The copy's commands on a Unix host. With `gnu` the clone is refused before anything is
+// made, as GNU cp refuses -c on Linux; with `darwin` it fails part-way and leaves the
+// copy's folder behind, as Darwin's cp does on a socket or an unreadable file.
+const copyRoom = (on: On, cp: 'gnu' | 'darwin'): string[][] => {
+  const runs: string[][] = []
+  const made = new Set<string>()
+  on('env.get', (_$, e) => ({ value: e.name === 'HOME' ? '/Users/o' : undefined }))
+  on('process.run', (_$, e) => {
+    const argv = [...e.argv]
+    runs.push(argv)
+    const out = (exitCode: number) => ({ value: { exitCode, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
+    const last = argv[argv.length - 1] ?? ''
+    if (argv[0] === 'rm') made.delete(last)
+    if (argv[0] === 'mkdir' && argv[1] !== '-p') {
+      if (made.has(last)) return out(1)
+      made.add(last)
+    }
+    if (argv[0] === 'cp' && argv[1] === '-Rc') {
+      if (cp === 'darwin') made.add(last)
+      return out(1)
+    }
+    return out(0)
+  })
+  return runs
+}
+
+const copyCheck = async ($: Engine, on: On, cp: 'gnu' | 'darwin') => {
   mock.clock(on)
   session(on)
   quietBand(on)
-  const runs: string[][] = []
-  const env: Record<string, string> = { OS: WINDOWS_OS, USERPROFILE: 'C:\\Users\\k' }
-  on('env.get', (_$, e) => ({ value: env[e.name] }))
-  // Nothing answers `--version`, so no candidate resolves.
-  on('process.run', (_$, e) => {
-    runs.push([...e.argv])
-    return { value: { exitCode: 1, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
-  })
-  on('session.cwd', () => ({ value: 'C:\\work\\proj' }))
+  const runs = copyRoom(on, cp)
+  on('session.cwd', () => ({ value: '/tmp/x' }))
   on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
-  let spawnCwd = ''
-  let spawnCmd = ''
-  on('process.spawn', (async function* (_$: unknown, e: { argv: string[]; cwd: string }) {
-    spawnCwd = e.cwd
-    spawnCmd = e.argv[0] ?? ''
+  let cwd = ''
+  on('process.spawn', (async function* (_$: unknown, e: { cwd: string }) {
+    cwd = e.cwd
     yield { stream: 'stdout', text: CHECKED_WITH(0) }
     return { value: { code: 0, signal: null } }
   }) as never)
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   await ui.press({ key: 'rep' })
   await ui.press({ key: 'check' })
-  // It degrades to exactly the behaviour it had before the host layer: the names
-  // are tried as written, the copy is not made, and the run falls to the agent's
-  // own folder. That is the old outcome, kept deliberately, not a new failure.
-  expect(spawnCwd).toBe('C:\\work\\proj')
-  expect(spawnCmd).toBe('claude')
   await ui.unmount()
+  return { runs, cwd: () => cwd, copy: checkCopyDir('/Users/o', 'test-session') }
+}
+
+test('rule: where cp refuses -c, as GNU cp on Linux does, the check runs in a plain copy made into the copy\'s own folder', async ($, on) => {
+  const { runs, cwd, copy } = await copyCheck($, on, 'gnu')
+  expect(cwd()).toBe(copy)
+  expect(runs.filter(r => r[0] === 'cp')).toEqual([
+    ['cp', '-Rc', '/tmp/x', copy],
+    ['cp', '-R', '/tmp/x/.', copy],
+  ])
+})
+
+test('rule: where the clone fails part-way, as Darwin\'s cp does on a socket, no plain copy is made over it: the check runs in the agent\'s folder and the part-made copy is removed', async ($, on) => {
+  const { runs, cwd, copy } = await copyCheck($, on, 'darwin')
+  expect(cwd()).toBe('/tmp/x')
+  expect(runs.filter(r => r[0] === 'cp')).toEqual([['cp', '-Rc', '/tmp/x', copy]])
+  const cloned = runs.findIndex(r => r[0] === 'cp')
+  expect(runs.slice(cloned).some(r => r[0] === 'rm' && r[2] === copy)).toBe(true)
 })

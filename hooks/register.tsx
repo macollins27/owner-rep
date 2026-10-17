@@ -29,6 +29,7 @@ import {
   checkCopiesDir,
   checkCopyDir,
   checkSettings,
+  CHECK_NO_ROOM,
   copyArgvs,
   type Host,
   homeOf,
@@ -719,6 +720,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
     const cwd = await $.session.cwd()
     const home = await homeFor($)
     const checkHost = await hostOf($)
+    if (isWindowsHost(checkHost)) return finish({ checkNote: CHECK_NO_ROOM })
     const copy = await makeCopy($, home, sid, cwd)
     const prompt = checkPrompt({
       sessionId: sid,
@@ -837,7 +839,6 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
   }
 }
 
-// The throwaway copy the check runs in: an APFS clone (cp -c) of the agent's folder as it
 // The host, resolved once per process and then reused.
 //
 // Only Windows needs resolving, and it needs it because the names the check
@@ -907,26 +908,32 @@ async function homeFor($: EngineInterface): Promise<string> {
   return homeOf(await $.env.get('HOME'), await $.env.get('USERPROFILE'))
 }
 
+// The throwaway copy the check runs in: an APFS clone (cp -c) of the agent's folder as it
 // stands, uncommitted work included, made in a moment and taking no space until written
-// to (a 6.5 GB project cloned in 14 s on 15 Oct 2026). When the clone cannot be made the
-// check runs in the agent's own folder with writes there denied by the room, and the
-// brief says so.
+// to (a 6.5 GB project cloned in 14 s on 15 Oct 2026). A cp that does not take -c (GNU's,
+// on Linux) refuses it before making anything, so the copy's folder is still free and a
+// plain copy is made into it. Darwin's cp copies plainly by itself where it cannot clone,
+// so a clone that failed there failed on the files (a socket, an unreadable file) and left
+// part of a copy behind: a plain copy would fail the same way after copying everything in
+// full, and would land nested inside the part-made one (both measured 16 Oct 2026). When
+// no copy is made the check runs in the agent's own folder with writes there denied by the
+// room, the brief says so, and whatever part of a copy was made is removed.
 async function makeCopy($: EngineInterface, home: string, sid: string, cwd: string): Promise<string> {
   const copy = checkCopyDir(home, sid)
   const on = await hostOf($)
   try {
     await $.process.run(hostArgv(on, ['rm', '-rf', copy]), { timeoutMs: 120000 })
     await $.process.run(hostArgv(on, ['mkdir', '-p', checkCopiesDir(home)]), { timeoutMs: 30000 })
-    // The clone first, then the plain copy. `cp -Rc` asks for an APFS clone and
-    // only Darwin's cp takes it, so the second form is what runs on Windows and
-    // on Linux; trying both beats guessing by platform.
-    for (const argv of copyArgvs(on, cwd, copy)) {
-      const made = await $.process.run(argv, { timeoutMs: 600000 })
-      if (made.exitCode === 0) return copy
-    }
+    const [clone, plain] = copyArgvs(on, cwd, copy)
+    if ((await $.process.run(clone, { timeoutMs: 600000 })).exitCode === 0) return copy
+    // mkdir without -p fails on a folder that is there, which tells a cp that refused -c
+    // from a clone that failed part-way.
+    const free = await $.process.run(hostArgv(on, ['mkdir', copy]), { timeoutMs: 30000 })
+    if (free.exitCode === 0 && (await $.process.run(plain, { timeoutMs: 600000 })).exitCode === 0) return copy
   } catch {
     // fall through: no copy
   }
+  $.process.run(hostArgv(on, ['rm', '-rf', copy]), { timeoutMs: 120000 }).catch(() => undefined)
   return cwd
 }
 
