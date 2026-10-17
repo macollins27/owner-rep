@@ -37,7 +37,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 187 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 189 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions of this checkout in tmux, the strip captured to tests/live/captures
 ```
@@ -192,9 +192,18 @@ call writes (below):
    past `Library/Application Support`, `Library/Caches`, `Library`, `.local/share`,
    `.local/state`, `.local` and `.cache`, the folder alone when that install would hold the
    copies, none when the folder would; the places links lead are asked before the run,
-   outside the fence, by `pathLinks` (`pathLinksArgv`: `find -H` over the folders with
-   `-exec readlink -f`, its exit code not read, a cut last line dropped by `linkTargets`,
-   none on a throw)), the brief naming the
+   outside the fence, by `pathLinks` (`pathLinksArgv`: `find` over each folder given as
+   `<folder>/.`, matching that folder itself and the links in it, never the folders inside
+   it, so a home on the path guards its links and not every folder in it, with
+   `-exec readlink -f {} ;`, one name to each call as BusyBox's readlink takes, its exit
+   code not read, a cut last line dropped by `linkTargets`, none on a throw or past
+   `PATH_LINKS_TIMEOUT_MS`, 30 seconds; under two on this Mac); and the repository a `.git`
+   file in the folder the run uses points at (`gitRepos` reads it with `gitPointerArgv`
+   before the run, outside the fence; `gitDirsOf` names, for a worktree, the whole git
+   folder above `worktrees/<name>`, a relative pointer read from the folder, wherever it
+   is): a copy of a worktree keeps that pointer, so a commit in it would move the real
+   branch; reading through git still works there, adding and committing are refused), the
+   brief naming the
    main ones, saying no list names every one, rather than saying all writes outside the copy
    are denied, and the network closed except
    for this Mac, with `failIfUnavailable` (the run refuses to start where the sandbox cannot)
@@ -217,12 +226,16 @@ call writes (below):
    held for the process in `noFence` so each later card carries it and `runCheck` starts
    nothing, the note saying a restart of Claude Code clears it once the sandbox's missing
    piece is installed, and `checkBarred` keeps Check it off a card with either note. Before
-   the run, `pnpm store path` is asked in the copy outside the fence (`pnpmStore`), with
-   `PNPM_ASK_ENV` (the project's `.pnpmfile.cjs` not loaded and no pinned pnpm installed,
-   both of which a bare ask does outside the fence), and the answer, its version folder
+   the run, `pnpm store path` is asked in the copy outside the fence (`pnpmStore`; in the
+   agent's folder where no copy is made), with `--config.ignore-pnpmfile=true` and
+   `--config.manage-package-manager-versions=false` on its command line (`PNPM_STORE_ARGV`:
+   the project's `.pnpmfile.cjs` not loaded and no pinned pnpm installed, both of which a
+   bare ask does outside the fence; the command line beats a project's
+   `pnpm-workspace.yaml`, which beats the environment, so the project cannot turn either
+   back on), and the answer, its version folder
    taken off (`pnpmStoreDir`), passed to the run as `npm_config_store_dir`: inside the fence
    pnpm finds its store unwritable, moves it into a scratch folder, and an offline install
-   there fails (measured 17 Oct 2026, pnpm 10). Both questions come before the run's clock
+   there fails (measured 17 Oct 2026, pnpm 10). The three questions come before the run's clock
    starts, so the check's measured time is the run's own. Fifteen-minute timeout
    (`CHECK_TIMEOUT_MS`), 120 turns, JSON output; `permission_denials` in the output is the
    count of commands refused approval, shown on the checked card (`refusedLine`, which says

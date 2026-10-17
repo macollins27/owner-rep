@@ -1320,10 +1320,11 @@ export const CHECK_DISALLOWED_TOOLS = 'Edit,Write,MultiEdit,NotebookEdit,Agent,T
 // `pathLinksArgv`). Claude Code's own guard on startup files and .gitconfig covers only the
 // run's working directory, here the copy (measured 17 Oct 2026). A list cannot name every
 // such place, so the brief says the main ones and tells the run to write nowhere but the
-// copy. A folder holding the copies is never named, or the copy could not be written: a
-// path folder's install that would hold them gives way to the folder. The agent's own
+// copy. It also names the repository a `.git` file in the copy points at (`repos`,
+// `gitDirsOf`), wherever it is. A folder holding the copies is never named, or the copy
+// could not be written: a path folder's install that would hold them gives way to the folder. The agent's own
 // folder is named whatever it is, and when it holds the copies no copy is made (makeCopy).
-export const checkDenyWrite = (home: string, real: string, path = '', links: string[] = []): string[] => {
+export const checkDenyWrite = (home: string, real: string, path = '', links: string[] = [], repos: string[] = []): string[] => {
   const holdsCopies = (d: string): boolean => holdsCopiesOf(home, d)
   return [
     ...new Set([
@@ -1364,6 +1365,7 @@ export const checkDenyWrite = (home: string, real: string, path = '', links: str
         .filter(d => d.startsWith(`${home}/`))
         .map(d => (holdsCopies(installOf(home, d)) ? d : installOf(home, d)))
         .filter(d => !holdsCopies(d)),
+      ...repos.map(d => d.replace(/\/+$/, '')).filter(d => !holdsCopies(d)),
     ]),
   ]
 }
@@ -1384,35 +1386,67 @@ export const holdsCopiesOf = (home: string, dir: string): boolean => `${checkCop
 // else in the home (uv's tools in `~/.local/share/uv`, a virtual environment, a tool
 // unpacked by hand in `~/.local/opt`), and denying the folder does not deny what its links
 // lead to. So before the run the check asks the host, outside the fence, where each folder
-// of the path and each link or folder in one leads (`~/.local/bin` asked whether or not it
-// is on the path), and checkDenyWrite guards each place in the home as it does a path
-// folder. `-H` follows a path folder that is itself a link; `readlink -f` prints nothing
-// for a link that leads nowhere, and `find` ends 1 when a path folder is missing, having
-// printed the rest, so its exit code is not read.
-export const PATH_LINKS_TIMEOUT_MS = 10000
+// of the path and each link in one leads (`~/.local/bin` asked whether or not it is on the
+// path), and checkDenyWrite guards each place in the home as it does a path folder. Each
+// folder is given as `<folder>/.`, which the folder's own name `.` matches and which leads
+// through a folder that is itself a link, and the folders inside it are not asked, so a
+// home on the path guards its links and not every folder in it. `readlink` is given one
+// name at a time, the only form BusyBox's takes; `readlink -f` prints a link's target even
+// when only its last part is missing, which still names the install; and `find` ends 1
+// when a path folder is missing, having printed the rest, so its exit code is not read
+// (measured 17 Oct 2026 on this Mac, Ubuntu 24.04 and Alpine 3). On this Mac the question
+// takes under two seconds.
+export const PATH_LINKS_TIMEOUT_MS = 30000
 export const pathLinksArgv = (home: string, path: string): string[] => [
   'find',
-  '-H',
-  ...new Set([...path.split(':').filter(d => d.startsWith('/')), `${home}/.local/bin`]),
+  ...new Set([...path.split(':').filter(d => d.startsWith('/')), `${home}/.local/bin`].map(d => `${d.replace(/\/+$/, '')}/.`)),
   '-maxdepth',
   '1',
   '(',
   '-type',
   'l',
   '-o',
-  '-type',
-  'd',
+  '-name',
+  '.',
   ')',
   '-exec',
   'readlink',
   '-f',
   '{}',
-  '+',
+  ';',
 ]
 // The places `pathLinksArgv` printed, one to a line; a last line cut at the output's cap is dropped.
 export const linkTargets = (stdout: string, isCut: boolean): string[] => {
   const lines = stdout.split('\n')
   return (isCut ? lines.slice(0, -1) : lines).filter(l => l.startsWith('/'))
+}
+
+// A copy of a git worktree, or of a repository whose git data is kept elsewhere, keeps the
+// `.git` file that points at that data, so a commit made in the copy would move the real
+// repository's branch and change its worktrees (shown 17 Oct 2026). So before the run the
+// check reads the pointer in the folder it runs in (`gitPointerArgv`) and checkDenyWrite
+// guards the repository it names (`gitDirsOf`): for a worktree, the whole git folder above
+// `worktrees/<name>`, which holds the branches every worktree shares. Reading through it
+// still works there (status, log, diff); adding and committing are refused (measured 17 Oct
+// 2026). A `.git` folder in a copy is the copy's own, and sed prints nothing for a folder.
+export const GIT_POINTER_TIMEOUT_MS = 10000
+export const gitPointerArgv = (folder: string): string[] => ['sed', '-n', 's/^gitdir: //p', `${folder}/.git`]
+export const gitDirsOf = (folder: string, stdout: string): string[] => {
+  const line = (stdout.split('\n')[0] ?? '').trim()
+  if (line === '') return []
+  const dir = resolved(line.startsWith('/') ? line : `${folder}/${line}`)
+  const common = /^(.+)\/worktrees\/[^/]+$/.exec(dir)
+  return [common?.[1] ?? dir]
+}
+// An absolute path with its `.` and `..` parts worked out, as a relative pointer is read
+// from the folder that holds it.
+const resolved = (p: string): string => {
+  const parts: string[] = []
+  for (const part of p.split('/')) {
+    if (part === '..') parts.pop()
+    else if (part !== '' && part !== '.') parts.push(part)
+  }
+  return `/${parts.join('/')}`
 }
 
 // The install a command-path folder in the home belongs to: its first folder below the
@@ -1634,12 +1668,13 @@ export const noFenceNote = (stderr: string): string | null => {
 // 2026). So the check asks pnpm where its store is before the run, outside the fence, and
 // names it to the run through pnpm's setting in the environment. `pnpm store path` prints
 // the store's versioned folder (`…/store/v10`); the setting takes the folder above it.
-// pnpm is asked in the copy, never the agent's folder, with the project's pnpmfile ignored
-// and pnpm's own version left alone (`PNPM_ASK_ENV`): asked bare, it loads the folder's
-// `.pnpmfile.cjs`, the project's own code, and installs the pnpm a `packageManager` field
-// pins, both outside the fence (measured 17 Oct 2026, and neither with the two settings).
-export const PNPM_STORE_ARGV = ['pnpm', 'store', 'path']
-export const PNPM_ASK_ENV = { npm_config_ignore_pnpmfile: 'true', npm_config_manage_package_manager_versions: 'false' }
+// pnpm is told on its command line to ignore the project's pnpmfile and leave its own
+// version alone: asked bare, it loads the folder's `.pnpmfile.cjs`, the project's own code,
+// and installs the pnpm a `packageManager` field pins, both outside the fence. The command
+// line beats the project's `pnpm-workspace.yaml`, which beats the same settings given in the
+// environment (measured 17 Oct 2026, pnpm 10.26.2), so a project cannot turn either back on.
+// It is asked in the copy, and in the agent's folder where no copy is made.
+export const PNPM_STORE_ARGV = ['pnpm', 'store', 'path', '--config.ignore-pnpmfile=true', '--config.manage-package-manager-versions=false']
 export const PNPM_STORE_ENV = 'npm_config_store_dir'
 export const PNPM_STORE_TIMEOUT_MS = 10000
 export const pnpmStoreDir = (stdout: string): string => {
@@ -1654,13 +1689,13 @@ export const checkBarred = (note: string): boolean => note === CHECK_NO_ROOM || 
 // which Claude Code's own instructions tell the model to use when the fence refuses.
 // Both are read from a --settings file (Claude Code 2.1.302). An `enabledPlatforms`
 // list is not: Claude Code reads it only from managed settings, so the mod sets none.
-export const checkSettings = (home: string, real: string, path = '', links: string[] = []): string =>
+export const checkSettings = (home: string, real: string, path = '', links: string[] = [], repos: string[] = []): string =>
   JSON.stringify({
     sandbox: {
       enabled: true,
       failIfUnavailable: true,
       allowUnsandboxedCommands: false,
-      filesystem: { denyWrite: checkDenyWrite(home, real, path, links) },
+      filesystem: { denyWrite: checkDenyWrite(home, real, path, links, repos) },
       network: { allowedDomains: [], allowLocalBinding: true },
     },
   })
@@ -1727,7 +1762,7 @@ Read any file you need. Run the project's own checks (its tests, its type check,
 
 ## Your room and your time
 
-${a.copy === a.cwd ? `You run in the agent's own folder, since no copy of it could be made, and writes there are denied: read it with Read, Glob and Grep, and run only what writes nothing there. A check that would have to write in it is one you name under "looked" as not run.` : `You run in your working directory, the copy. Run the project's checks and anything else you need there, write what you like there and nowhere else; nothing you do in it reaches the agent's folder, and the copy is removed when you finish. When a claim is about what is on disk now, read the agent's own folder with Read, Glob and Grep, since the copy is of one moment.`} No command needs approval, so none is refused for its shape. Two things still stop a command: the owner's own guard, which refuses for every agent on this machine the few things it refuses (rewriting shared history, deleting his data, making anything public), and the fence, which denies writes to the agent's folder, the owner's work, Claude Code's own settings and the main places in the home whose contents run later (the shell's startup files, git's settings and the folders programs are run from among them, though no list names every one), closes the network except for this Mac, and which no command can be run outside of. Docker cannot be reached from inside the fence, though a port a container publishes on this Mac can. A "sandbox violation" or "Operation not permitted" means you hit the fence and says nothing about the claim. If a command is refused by either, say so under "looked" rather than guessing, and name a check that needs Docker there as not run.
+${a.copy === a.cwd ? `You run in the agent's own folder, since no copy of it could be made, and writes there are denied: read it with Read, Glob and Grep, and run only what writes nothing there. A check that would have to write in it is one you name under "looked" as not run.` : `You run in your working directory, the copy. Run the project's checks and anything else you need there, write what you like there and nowhere else; nothing you do in it reaches the agent's folder, and the copy is removed when you finish. When a claim is about what is on disk now, read the agent's own folder with Read, Glob and Grep, since the copy is of one moment.`} No command needs approval, so none is refused for its shape. Two things still stop a command: the owner's own guard, which refuses for every agent on this machine the few things it refuses (rewriting shared history, deleting his data, making anything public), and the fence, which denies writes to the agent's folder and the git repository it belongs to, the owner's work, Claude Code's own settings and the main places in the home whose contents run later (the shell's startup files, git's settings and the folders programs are run from among them, though no list names every one), closes the network except for this Mac, and which no command can be run outside of. Docker cannot be reached from inside the fence, though a port a container publishes on this Mac can. A "sandbox violation" or "Operation not permitted" means you hit the fence and says nothing about the claim. If a command is refused by either, say so under "looked" rather than guessing, and name a check that needs Docker there as not run.
 
 You have ${CHECK_TIMEOUT_WORDS} and ${CHECK_MAX_TURNS} turns in all, and an answer that never arrives is worth nothing to him, so spend them on reading and on the proof that matters most. Run the project's test command and its type check once each, the way the record shows the agent ran them. A slower tool, one that reruns the suite many times (a defect-planting or mutation run) or a full build, is worth its minutes only when a claim turns on it; otherwise say under "looked" that you did not run it and judge that claim from the record.
 

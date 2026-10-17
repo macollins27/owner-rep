@@ -1,7 +1,7 @@
 import type { On, SessionMessage } from 'claude-code'
 import { expect, mock, test, type Engine } from 'claude-code/testing'
 
-import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, PNPM_ASK_ENV, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates } from '../hooks/rep'
+import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitPointerArgv, gitDirsOf, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates } from '../hooks/rep'
 
 const om = (text: string, n = 1): OwnerMsg => ({ n, kind: 'his', text, prior: '' })
 
@@ -353,7 +353,7 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   // The fence is a deny list, not a wall around the copy: the brief names what it guards.
   for (const p of [prompt, noCopy]) {
     expect(p).not.toContain('denies writes outside the copy')
-    expect(p).toContain("denies writes to the agent's folder, the owner's work, Claude Code's own settings and the main places in the home whose contents run later")
+    expect(p).toContain("denies writes to the agent's folder and the git repository it belongs to, the owner's work, Claude Code's own settings and the main places in the home whose contents run later")
     // A list cannot name every such place, and the brief does not claim it does.
     expect(p).toContain('though no list names every one')
     expect(p).toContain('Docker cannot be reached from inside the fence')
@@ -418,6 +418,12 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   expect(linked).not.toContain('/Users/o/.local/share')
   expect(linked).not.toContain('/Users/o')
   expect(linked.some(p => copy.startsWith(p))).toBe(false)
+  // The repository a copied worktree's .git file points at is guarded wherever it is, unless it holds the copies.
+  const repoed = (JSON.parse(checkSettings('/Users/o', '/tmp/x', '', [], ['/srv/code/repo/.git', '/Users/o/code/app.git/', '/Users/o/.cache'])) as typeof room).sandbox.filesystem.denyWrite
+  expect(repoed).toContain('/srv/code/repo/.git')
+  expect(repoed).toContain('/Users/o/code/app.git')
+  expect(repoed).not.toContain('/Users/o/.cache')
+  expect(repoed.some(p => copy.startsWith(p))).toBe(false)
   expect(room.sandbox.network.allowedDomains).toEqual([])
   const argv = checkArgv(prompt, settings)
   expect(argv[0]).toBe('claude')
@@ -2273,7 +2279,7 @@ test('rule: the check runs in a throwaway copy of the project, fenced, and the c
   await ui.unmount()
 })
 
-test('rule: the check names pnpm\'s store to its run, asked of pnpm in the copy outside the fence with the project\'s pnpmfile ignored and pnpm\'s version left alone, so an install inside the fence reads the store pnpm uses', async ($, on) => {
+test('rule: the check names pnpm\'s store to its run, asked of pnpm in the copy outside the fence with the project\'s pnpmfile ignored and pnpm\'s version left alone on its command line, which a project\'s workspace file cannot turn back on, so an install inside the fence reads the store pnpm uses', async ($, on) => {
   session(on)
   quietBand(on)
   const runs: { argv: string[]; cwd?: string; env?: Record<string, string> }[] = []
@@ -2297,35 +2303,36 @@ test('rule: the check names pnpm\'s store to its run, asked of pnpm in the copy 
   await ui.press({ key: 'check' })
   const copy = runs.find(r => r.argv[0] === 'cp')?.argv[3] ?? ''
   expect(copy.startsWith('/Users/o/.cache/owner-rep/checks/')).toBe(true)
-  // Asked in the copy, never the agent's folder: a pnpmfile there would run outside the fence.
-  expect(runs.find(r => r.argv[0] === 'pnpm')).toEqual({ argv: ['pnpm', 'store', 'path'], cwd: copy, env: { npm_config_ignore_pnpmfile: 'true', npm_config_manage_package_manager_versions: 'false' } })
-  expect(PNPM_ASK_ENV).toEqual({ npm_config_ignore_pnpmfile: 'true', npm_config_manage_package_manager_versions: 'false' })
+  // Asked in the copy, with both settings on the command line: in the environment a project's
+  // pnpm-workspace.yaml overrides them, and its pnpmfile would run outside the fence.
+  expect(runs.find(r => r.argv[0] === 'pnpm')).toEqual({ argv: ['pnpm', 'store', 'path', '--config.ignore-pnpmfile=true', '--config.manage-package-manager-versions=false'], cwd: copy, env: undefined })
   expect(env).toEqual({ npm_config_store_dir: '/Users/o/Library/pnpm/store' })
   await ui.unmount()
 })
 
-test('rule: a machine where pnpm or find cannot be asked still runs the check, naming no store and no linked install', async ($, on) => {
+test('rule: a machine where pnpm, find or sed cannot be asked still runs the check, naming no store, no linked install and no repository', async ($, on) => {
   session(on)
   quietBand(on)
   on('env.get', () => ({ value: '/Users/o' }))
   on('process.run', (_$, e) => {
     if (e.argv[0] === 'pnpm') throw new Error('pnpm: command not found')
     if (e.argv[0] === 'find') throw new Error('find timed out')
+    if (e.argv[0] === 'sed') throw new Error('sed timed out')
     return { value: { exitCode: 0, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
   })
   on('session.cwd', () => ({ value: '/tmp/x' }))
   mock.clock(on)
   on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
-  let spawned: { env?: Record<string, string> } | null = null
+  let spawned: { env?: Record<string, string>; settings?: string } | null = null
   on('process.spawn', async function* (_$, e) {
-    spawned = { env: e.env }
+    spawned = { env: e.env, settings: e.argv[e.argv.indexOf('--settings') + 1] }
     yield { stream: 'stdout', text: CHECKED_WITH(0) }
     return { value: { code: 0, signal: null } }
   })
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   await ui.press({ key: 'rep' })
   await ui.press({ key: 'check' })
-  expect(spawned).toEqual({ env: undefined })
+  expect(spawned).toEqual({ env: undefined, settings: checkSettings('/Users/o', '/tmp/x', '/Users/o') })
   expect(await ui.find({ type: 'Text', text: /could not run/ })).toBeUndefined()
   await ui.unmount()
 })
@@ -2334,9 +2341,11 @@ test('rule: the check asks, outside the fence, where the command path\'s folders
   session(on)
   quietBand(on)
   const runs: string[][] = []
+  let waited: number | undefined
   on('env.get', (_$, e) => ({ value: e.name === 'PATH' ? '/usr/bin:/Users/o/.cargo/bin' : '/Users/o' }))
   on('process.run', (_$, e) => {
     runs.push([...e.argv])
+    if (e.argv[0] === 'find') waited = e.init?.timeoutMs
     // find ends 1 when a path folder is missing; what it printed still counts.
     return e.argv[0] === 'find'
       ? { value: { exitCode: 1, stdout: '/usr/bin\n/Users/o/.cargo/bin\n/Users/o/.local/share/uv/tools/mempalace/bin/mempalace\n/Users/o/.local/opt/powershell-7.6.3/pwsh\n', stderr: 'find: /Users/o/.local/bin: No such file or directory\n', isStdoutTruncated: false, isStderrTruncated: false } }
@@ -2355,6 +2364,8 @@ test('rule: the check asks, outside the fence, where the command path\'s folders
   await ui.press({ key: 'rep' })
   await ui.press({ key: 'check' })
   expect(runs.find(r => r[0] === 'find')).toEqual(pathLinksArgv('/Users/o', '/usr/bin:/Users/o/.cargo/bin'))
+  // Thirty seconds: under two on this Mac, and a slower machine's answer is not cut off.
+  expect(waited).toBe(30000)
   const denied = (JSON.parse(settings) as { sandbox: { filesystem: { denyWrite: string[] } } }).sandbox.filesystem.denyWrite
   expect(denied).toContain('/Users/o/.local/share/uv')
   expect(denied).toContain('/Users/o/.local/opt')
@@ -2363,13 +2374,63 @@ test('rule: the check asks, outside the fence, where the command path\'s folders
   await ui.unmount()
 })
 
-test('pathLinksArgv asks find for each absolute path folder and ~/.local/bin once, and linkTargets keeps the absolute places, dropping a last line cut short', () => {
-  expect(pathLinksArgv('/Users/o', '/usr/bin:relative/bin:/Users/o/.local/bin:/usr/bin:')).toEqual(['find', '-H', '/usr/bin', '/Users/o/.local/bin', '-maxdepth', '1', '(', '-type', 'l', '-o', '-type', 'd', ')', '-exec', 'readlink', '-f', '{}', '+'])
-  expect(pathLinksArgv('/Users/o', '')).toEqual(['find', '-H', '/Users/o/.local/bin', '-maxdepth', '1', '(', '-type', 'l', '-o', '-type', 'd', ')', '-exec', 'readlink', '-f', '{}', '+'])
+test('pathLinksArgv asks find for each absolute path folder and ~/.local/bin once, each folder itself and the links in it and never the folders inside it, one name to each readlink, and linkTargets keeps the absolute places, dropping a last line cut short', () => {
+  const asked = ['-maxdepth', '1', '(', '-type', 'l', '-o', '-name', '.', ')', '-exec', 'readlink', '-f', '{}', ';']
+  expect(pathLinksArgv('/Users/o', '/usr/bin:relative/bin:/Users/o/.local/bin:/usr/bin/:')).toEqual(['find', '/usr/bin/.', '/Users/o/.local/bin/.', ...asked])
+  expect(pathLinksArgv('/Users/o', '')).toEqual(['find', '/Users/o/.local/bin/.', ...asked])
+  // A home or the root on the path is asked as itself: its links, never every folder in it.
+  expect(pathLinksArgv('/Users/o', '/Users/o:/')).toEqual(['find', '/Users/o/.', '/.', '/Users/o/.local/bin/.', ...asked])
   expect(linkTargets('/a/b\n/c/d\n', false)).toEqual(['/a/b', '/c/d'])
   expect(linkTargets('/a/b\nfind: x: Permission denied\n\n', false)).toEqual(['/a/b'])
   expect(linkTargets('/a/b\n/c/d\n/Users/o/.local/sh', true)).toEqual(['/a/b', '/c/d'])
   expect(linkTargets('', false)).toEqual([])
+})
+
+test('rule: the check reads, outside the fence, where a .git file in its copy points, and guards that repository, so a commit in a copied worktree cannot move the real branch', async ($, on) => {
+  session(on)
+  quietBand(on)
+  const runs: string[][] = []
+  on('env.get', (_$, e) => ({ value: e.name === 'PATH' ? '/usr/bin' : '/Users/o' }))
+  on('process.run', (_$, e) => {
+    runs.push([...e.argv])
+    const stdout = e.argv[0] === 'sed' ? '/Users/o/code/app/.git/worktrees/side\n' : ''
+    return { value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
+  on('session.cwd', () => ({ value: '/Users/o/code/side' }))
+  mock.clock(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  let settings = ''
+  let spawnedAfter = 0
+  on('process.spawn', async function* (_$, e) {
+    settings = e.argv[e.argv.indexOf('--settings') + 1] ?? ''
+    spawnedAfter = runs.length
+    yield { stream: 'stdout', text: CHECKED_WITH(0) }
+    return { value: { code: 0, signal: null } }
+  })
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+  const copy = runs.find(r => r[0] === 'cp')?.[3] ?? ''
+  expect(copy.startsWith('/Users/o/.cache/owner-rep/checks/')).toBe(true)
+  // The copy's pointer is read, before the run starts.
+  const read = runs.findIndex(r => r[0] === 'sed')
+  expect(runs[read]).toEqual(gitPointerArgv(copy))
+  expect(read).toBeLessThan(spawnedAfter)
+  const denied = (JSON.parse(settings) as { sandbox: { filesystem: { denyWrite: string[] } } }).sandbox.filesystem.denyWrite
+  expect(denied).toContain('/Users/o/code/app/.git')
+  expect(denied).toContain('/Users/o/code/side')
+  expect(denied.some(p => copy.startsWith(p))).toBe(false)
+  await ui.unmount()
+})
+
+test('gitDirsOf names the repository a .git file points at: for a worktree its whole git folder, a relative pointer read from the folder, and nothing for no pointer', () => {
+  expect(gitPointerArgv('/c/copy')).toEqual(['sed', '-n', 's/^gitdir: //p', '/c/copy/.git'])
+  expect(gitDirsOf('/c/copy', '/Users/o/code/app/.git/worktrees/side\n')).toEqual(['/Users/o/code/app/.git'])
+  expect(gitDirsOf('/c/copy', '/srv/app.git\n')).toEqual(['/srv/app.git'])
+  expect(gitDirsOf('/Users/o/code/side', '../app/.git/worktrees/side\n')).toEqual(['/Users/o/code/app/.git'])
+  expect(gitDirsOf('/Users/o/code/app/lib', '../.git/modules/lib\n')).toEqual(['/Users/o/code/app/.git/modules/lib'])
+  expect(gitDirsOf('/c/copy', '')).toEqual([])
+  expect(gitDirsOf('/c/copy', '\n')).toEqual([])
 })
 
 test('pnpmStoreDir takes the folder above the versioned store pnpm prints, and nothing when pnpm prints no path', () => {

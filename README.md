@@ -209,7 +209,9 @@ needs approval: the shell, the file tools and the agentsview tools are allowed o
 the only tool-level denials are the ones that edit through a tool, send, fetch the web or
 launch helpers. The fence is Claude Code's built-in sandbox, passed as settings for that run:
 writes are denied to the owner's work (the real project folder, `~/Developer`, `~/Documents`,
-`~/work`), to Claude Code's whole configuration folder, and to the main places in the home
+`~/work`), to the git repository a copied worktree's `.git` file points at, wherever it is
+(the copy keeps that pointer, so a commit in it would otherwise move the real branch), to
+Claude Code's whole configuration folder, and to the main places in the home
 whose contents run later (the shell's startup files, git's settings, the package managers'
 and other tools' settings that can name a program or a command to run, the cloud tools'
 settings, Node's fallback module folders in the home, Python's add-on folders, npx's
@@ -222,7 +224,8 @@ owner's settings make the whole home a working folder; a list cannot name every 
 so the run's brief names the main ones and tells it to write nowhere but the copy. pnpm's
 store, which pnpm would otherwise move into a scratch folder inside the fence and find empty,
 is asked of pnpm in the copy before the run, with the project's own pnpm hook file not
-loaded and no pinned pnpm installed, and named to it. The settings also make the run refuse to
+loaded and no pinned pnpm installed, both said on pnpm's command line, which the project's
+own pnpm settings cannot override, and named to it. The settings also make the run refuse to
 start where the sandbox cannot, rather than run unfenced, and take away the shell's way of
 asking to run one command outside it. Where it refuses (shown in a Linux container without
 bubblewrap), the card says the check does not run on that machine, names what Claude Code
@@ -313,7 +316,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 187 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 189 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions in tmux, the strip captured to tests/live/captures
 ```
