@@ -964,5 +964,35 @@
     "breaks": "A record's drafts held among his messages are taken oldest first, so the kept list's cap could keep an older draft over a newer one.",
     "patch": "dropped-drafts-oldest-first.patch",
     "fixed": "2026-10-16"
+  },
+  {
+    "name": "seed-gated-on-typed-rows",
+    "breaks": "A session reopened after a compaction he has typed nothing since, with no record, is not read for his messages, so it holds no objective.",
+    "patch": "seed-gated-on-typed-rows.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fork-scan-no-anchor",
+    "breaks": "A fork taken after a compaction he has typed nothing since finds no parent, so it holds none of his messages and no objective.",
+    "patch": "fork-scan-no-anchor.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "anchor-reads-whole-file",
+    "breaks": "A fork found by its last tool result takes the parent's messages from after the fork as well as before it.",
+    "patch": "anchor-reads-whole-file.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "anchor-none-still-scans",
+    "breaks": "A fork whose rows hold neither a typed row nor a tool result still lists and reads the folder, for nothing.",
+    "patch": "anchor-none-still-scans.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "tool-id-unchecked",
+    "breaks": "A tool result id with characters no tool id has is used to search the folder's files.",
+    "patch": "tool-id-unchecked.patch",
+    "fixed": "2026-10-17"
   }
 ]

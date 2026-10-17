@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index ccdc2c6..c23f1e2 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -926,7 +926,7 @@ export function lastToolId(rows: readonly RecordRow[]): string | null {
+     const results = rows[i]?.toolResults ?? []
+     for (let j = results.length - 1; j >= 0; j--) {
+       const id = results[j]?.tool_use_id ?? ''
+-      if (/^[A-Za-z0-9_-]+$/.test(id)) return id
++      if (id !== '') return id
+     }
+   }
+   return null
