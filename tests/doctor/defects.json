@@ -1534,5 +1534,89 @@
     "breaks": "When the link question gets no answer the brief does not say the installs the links lead to are unguarded, so the run may change one believing the fence would stop it.",
     "patch": "brief-links-unanswered-unsaid.patch",
     "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-inside-not-searched",
+    "breaks": "Only the .git at the copy's top and above it is asked for, never one inside the copy, so a worktree or a library kept inside the project whose .git leads out of it is left open, and a commit there moves the real branch.",
+    "patch": "git-inside-not-searched.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-search-enters-git",
+    "breaks": "The search inside the copy walks into every .git folder it finds, reading the repository's own files as if they were projects.",
+    "patch": "git-search-enters-git.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-pointer-needs-readlink",
+    "breaks": "A .git whose readlink fails has its pointer skipped, so where readlink cannot answer, the repository a worktree's .git file names is left open.",
+    "patch": "git-pointer-needs-readlink.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-pointer-needs-lead",
+    "breaks": "A .git pointer is read only when readlink said where the .git leads, so where readlink fails the repository it names is left open.",
+    "patch": "git-pointer-needs-lead.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-pointer-trimmed",
+    "breaks": "A .git pointer has its spaces cut, where git cuts only the line's end, so a repository whose folder name ends in a space is guarded under a name that is not its own.",
+    "patch": "git-pointer-trimmed.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-pointer-lead-base-dropped",
+    "breaks": "A relative pointer in a .git reached through a link is read only from the folder it was found in, never from where the link leads, so the repository it names there is left open.",
+    "patch": "git-pointer-lead-base-dropped.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "home-searched-inside",
+    "breaks": "The search for .git inside the agent's folder runs even when that folder is the home, walking every folder in it before the check can start.",
+    "patch": "home-searched-inside.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "worktrees-not-asked",
+    "breaks": "The worktrees a repository lists are never asked for, so git run in the copy can rewrite, move or remove the real worktrees kept elsewhere.",
+    "patch": "worktrees-not-asked.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "worktree-entry-unresolved",
+    "breaks": "A worktree listed with a relative path is read from the root rather than from its file's folder, so the real worktree is left open.",
+    "patch": "worktree-entry-unresolved.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "worktree-own-fenced",
+    "breaks": "A worktree inside the copy or the agent's folder is fenced as if it were someone else's, so the check cannot write in its own copy.",
+    "patch": "worktree-own-fenced.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "worktrees-throw-fails-check",
+    "breaks": "A worktrees question that throws stops the check from running at all.",
+    "patch": "worktrees-throw-fails-check.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "worktrees-unanswered-as-none",
+    "breaks": "A worktrees question that gets no answer counts as one that found none, so the brief says the repository is guarded when its worktrees are not.",
+    "patch": "worktrees-unanswered-as-none.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-cut-taken",
+    "breaks": "A git answer cut at the output's cap is taken as whole, so the repositories past the cut are left open while the brief says they are guarded.",
+    "patch": "git-cut-taken.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "worktrees-cut-taken",
+    "breaks": "A worktrees answer cut at the output's cap is taken as whole, so the worktrees past the cut are left open while the brief says they are guarded.",
+    "patch": "worktrees-cut-taken.patch",
+    "fixed": "2026-10-17"
   }
 ]

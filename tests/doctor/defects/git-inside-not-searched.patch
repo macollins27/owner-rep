@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 243c769..d634cd7 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1452,7 +1452,6 @@ export const GIT_FIND_TIMEOUT_MS = 30000
+ export const gitFindArgv = (copy: string, cwd: string, inside: boolean): string[] => [
+   'find',
+   ...new Set([copy, cwd].flatMap(foldersUp).filter(f => !(inside && f === copy)).map(f => `${f === '/' ? '' : f}/.git`)),
+-  ...(inside ? [copy] : []),
+   '-name',
+   '.git',
+   '-prune',

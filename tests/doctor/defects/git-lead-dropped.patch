@@ -1,12 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 351c987..756ca60 100644
+index 243c769..7b03c88 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1483,7 +1483,6 @@ export const gitDirsOf = (own: string[], stdout: string): string[] => {
-       led = false
+@@ -1502,7 +1502,6 @@ const gitAnswer = (stdout: string): { places: string[]; gits: string[] } => {
        pointed = false
-     } else if (folder !== '' && !led && line.startsWith('/')) {
--      dirs.push(line)
-       led = true
-     } else if (folder !== '' && led && !pointed && line.startsWith('gitdir: ')) {
+     } else if (folder !== '' && lead === '' && !pointed && line.startsWith('/')) {
+       lead = line
+-      places.push(line)
+       gits.push(line)
+     } else if (folder !== '' && !pointed && line.startsWith('gitdir: ')) {
        pointed = true

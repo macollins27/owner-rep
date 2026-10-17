@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 243c769..cb41460 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1504,7 +1504,7 @@ const gitAnswer = (stdout: string): { places: string[]; gits: string[] } => {
+       lead = line
+       places.push(line)
+       gits.push(line)
+-    } else if (folder !== '' && !pointed && line.startsWith('gitdir: ')) {
++    } else if (folder !== '' && lead !== '' && !pointed && line.startsWith('gitdir: ')) {
+       pointed = true
+       const to = line.slice('gitdir: '.length)
+       if (to === '') continue

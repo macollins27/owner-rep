@@ -2376,15 +2376,16 @@ test('rule: when only the git question goes unanswered the brief says the reposi
   await ui.unmount()
 })
 
-// The check's brief when the git answer comes back cut or the worktrees question fails.
-const briefWhenGit = async ($: Engine, on: On, fault: 'cut' | 'trees'): Promise<string> => {
+// The check's brief when the git answer or the worktrees answer comes back cut, or the worktrees question fails.
+const briefWhenGit = async ($: Engine, on: On, fault: 'cut' | 'trees' | 'trees-cut'): Promise<string> => {
   session(on)
   quietBand(on)
   on('env.get', () => ({ value: '/Users/o' }))
   on('process.run', (_$, e) => {
     if (fault === 'trees' && e.argv.includes('tree %s\\n')) throw new Error('find timed out')
-    const stdout = e.argv.includes('entry %s\\n') ? gitAnswer(e.argv, p => (p === '/tmp/x/.git' ? [p] : undefined)) : ''
-    return { value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: fault === 'cut' && e.argv.includes('entry %s\\n'), isStderrTruncated: false } }
+    const stdout = e.argv.includes('entry %s\\n') ? gitAnswer(e.argv, p => (p === '/tmp/x/.git' ? [p] : undefined)) : e.argv.includes('tree %s\\n') ? 'tree /tmp/x/.git/worktrees/a/gitdir\n/tmp/a/.git\n' : ''
+    const cut = (fault === 'cut' && e.argv.includes('entry %s\\n')) || (fault === 'trees-cut' && e.argv.includes('tree %s\\n'))
+    return { value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: cut, isStderrTruncated: false } }
   })
   on('session.cwd', () => ({ value: '/tmp/x' }))
   mock.clock(on)
@@ -2408,6 +2409,10 @@ test('rule: when the git answer comes back cut, the brief says the repository co
 
 test('rule: when the worktrees question fails, the brief says the repository could not be found', async ($, on) => {
   expect(await briefWhenGit($, on, 'trees')).toContain('the git repository it belongs to could not be found this time')
+})
+
+test('rule: when the worktrees answer comes back cut, the brief says the repository could not be found', async ($, on) => {
+  expect(await briefWhenGit($, on, 'trees-cut')).toContain('the git repository it belongs to could not be found this time')
 })
 
 test('rule: an agent working in the home, which holds the copies, gets no copy and no search inside it, and the home is guarded whole, its .git with it', async ($, on) => {

@@ -1,0 +1,20 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 243c769..ee78efc 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1462,15 +1462,11 @@ export const gitFindArgv = (copy: string, cwd: string, inside: boolean): string[
+   '{}',
+   ';',
+   // -prune is always true, so sed runs when readlink fails.
+-  '(',
+   '-exec',
+   'readlink',
+   '-f',
+   '{}',
+   ';',
+-  '-o',
+-  '-prune',
+-  ')',
+   '-exec',
+   'sed',
+   '-n',

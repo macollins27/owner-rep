@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 2c31921..bbd9e6b 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -979,7 +979,7 @@ async function pathLinks($: EngineInterface, on: Host, home: string, path: strin
+ // (`gitFindArgv`, `gitDirsOf`, `worktreesArgv`, `worktreeDirsOf`), asked outside the fence,
+ // or null when the host does not answer either question whole, which the brief then says.
+ async function gitRepos($: EngineInterface, on: Host, home: string, copy: string, cwd: string): Promise<string[] | null> {
+-  const found = await $.process.run(hostArgv(on, gitFindArgv(copy, cwd, !holdsCopiesOf(home, copy))), { timeoutMs: GIT_FIND_TIMEOUT_MS }).catch(() => null)
++  const found = await $.process.run(hostArgv(on, gitFindArgv(copy, cwd, true)), { timeoutMs: GIT_FIND_TIMEOUT_MS }).catch(() => null)
+   if (found === null || found.isStdoutTruncated) return null
+   const gits = gitFoldersOf(found.stdout)
+   if (gits.length === 0) return gitDirsOf([copy, cwd], found.stdout)

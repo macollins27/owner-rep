@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 243c769..f0e6faf 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1455,7 +1455,6 @@ export const gitFindArgv = (copy: string, cwd: string, inside: boolean): string[
+   ...(inside ? [copy] : []),
+   '-name',
+   '.git',
+-  '-prune',
+   '-exec',
+   'printf',
+   'entry %s\\n',

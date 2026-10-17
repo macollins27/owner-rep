@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 351c987..b580af1 100644
+index 243c769..a2793e6 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1441,7 +1441,7 @@ export const linkTargets = (stdout: string, isCut: boolean): string[] => {
- export const GIT_FIND_TIMEOUT_MS = 10000
- export const gitFindArgv = (folders: string[]): string[] => [
+@@ -1451,7 +1451,7 @@ export const linkTargets = (stdout: string, isCut: boolean): string[] => {
+ export const GIT_FIND_TIMEOUT_MS = 30000
+ export const gitFindArgv = (copy: string, cwd: string, inside: boolean): string[] => [
    'find',
--  ...new Set(folders.flatMap(foldersUp).map(f => `${f === '/' ? '' : f}/.git`)),
-+  ...new Set(folders.map(f => `${f === '/' ? '' : f}/.git`)),
-   '-maxdepth',
-   '0',
-   '-exec',
+-  ...new Set([copy, cwd].flatMap(foldersUp).filter(f => !(inside && f === copy)).map(f => `${f === '/' ? '' : f}/.git`)),
++  ...new Set([copy, cwd].filter(f => !(inside && f === copy)).map(f => `${f === '/' ? '' : f}/.git`)),
+   ...(inside ? [copy] : []),
+   '-name',
+   '.git',
