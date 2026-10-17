@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index a298c46..dd96e62 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -213,7 +213,6 @@ async function saveRec($: EngineInterface, rec: Rec): Promise<void> {
+   }
+   all[rec.id] = { ...rec, at: Date.now() }
+   // A blank record loads back the same when missing, so none takes a place (`isBlankRec`).
+-  for (const k of Object.keys(all)) if (isBlankRec(all[k] as Rec, freshRec(k))) delete all[k]
+   const ids = Object.keys(all).sort((a, b) => (all[b]?.at ?? 0) - (all[a]?.at ?? 0))
+   const kept: Record<string, Rec> = {}
+   for (const k of ids.slice(0, SESSIONS_MAX)) kept[k] = all[k] as Rec
