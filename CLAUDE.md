@@ -42,10 +42,16 @@ python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; 
 tests/live/live.sh              # on demand: nine real sessions of this checkout in tmux, the strip captured to tests/live/captures
 ```
 
-GitHub runs validate, test, the type check and the doctor on every push
-(`.github/workflows/tests.yml`), and `tests/ci/host-calls.sh`, which fails the run when a
+GitHub runs validate, `tests/ci/host-calls.sh`, `tests/ci/host-commands.mjs`, test and the
+type check on Ubuntu, macOS and Windows on every push, and the doctor on Ubuntu
+(`.github/workflows/tests.yml`). `host-calls.sh` fails the run when a
 `$.process.run` or `$.process.spawn` in the hooks names its program other than through
-`hostArgv` (the copy's argvs from `copyArgvs` and the `--version` probe excepted). Its type check uses `tests/ci/types/`, a pinned copy of the
+`hostArgv` (the copy's argvs from `copyArgvs` and the `--version` probe excepted).
+`node --experimental-strip-types tests/ci/host-commands.mjs` runs the transcript reads and the
+check's commands as the mod builds them, through `hostArgv` (on Windows Git's coreutils, found
+as `lookUpHost` finds them), against `tests/ci/fixtures/` and a scratch folder, and reads the
+answers with the mod's own parsers; on Windows a check command that fails is printed as
+skipped, since the check does not start there (`tests/ci/README.md`). The run's type check uses `tests/ci/types/`, a pinned copy of the
 declarations for the Claude Code build the workflow installs; move both together.
 `tests/ci/declarations.sh` runs first there and fails the run when the installed build is
 not the one stamped on the pinned copy's first line, so the two cannot drift apart unseen.

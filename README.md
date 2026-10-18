@@ -331,13 +331,17 @@ python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; 
 tests/live/live.sh              # on demand: nine real sessions in tmux, the strip captured to tests/live/captures
 ```
 
-GitHub runs the validation, the tests, the type check and the doctor on every push
+GitHub runs the validation, the host-calls step, the host-commands script, the tests and the
+type check on Ubuntu, macOS and Windows on every push, and the doctor on Ubuntu
 (`.github/workflows/tests.yml`); the type check there uses a pinned copy of the API
 declarations in `tests/ci/`, and a step before it fails the run when the Claude Code build
 the workflow installed is not the build that wrote that copy, so a change in the API can
-never hide behind a type check against a stale copy. One more step fails the run when a hook
-runs a program whose name does not go through `hostArgv`, the one place a command is named for
-the host it runs on.
+never hide behind a type check against a stale copy. The host-calls step fails the run when a
+hook runs a program whose name does not go through `hostArgv`, the one place a command is
+named for the host it runs on. The host-commands script (`tests/ci/host-commands.mjs`) runs
+the commands the mod builds, through `hostArgv`, on each of the three systems (on Windows
+Git for Windows' own) against fixture transcripts and a scratch folder, and reads their
+answers with the mod's own parsers.
 
 ```
 tsc -p . --noEmit             # needs .claude-plugin/types/, see below

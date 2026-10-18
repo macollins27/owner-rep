@@ -402,3 +402,11 @@ successor; three moved there on 15 Oct 2026, when the objective replaced the rea
    PR #12's head, which runs `grep` and `sed` by bare name, and green on its own branch. Like
    the declarations step it is not planted by the doctor; the red run is its proof.
 10. Keep growing the defect list as bugs are fixed.
+11. The GitHub run on Ubuntu, macOS and Windows: the validation, the host-calls step, the
+    host-commands script, the tests and the type check on all three, the doctor on Ubuntu
+    alone (it takes about 45 minutes and plants into a copy, so one system is its proof).
+12. A step in the GitHub run that runs the mod's own commands on each system
+    (`tests/ci/host-commands.mjs`): the transcript reads and the check's commands, built by
+    the mod's builders and named through `hostArgv`, run against `tests/ci/fixtures/` and read
+    by the mod's own parsers. Like the declarations step it is not planted by the doctor; a
+    red run against a broken fixture is its proof.
