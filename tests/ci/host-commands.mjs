@@ -32,6 +32,7 @@ const {
   PATH_HOST,
   WINDOWS_OS,
   hostArgv,
+  homeOf,
   slashed,
   winPosixBinCandidates,
   windowsOs,
@@ -259,10 +260,14 @@ function main() {
       sign('Windows: SystemRoot alone reads as Windows', windowsOs('', env.SystemRoot ?? '', '', '') === WINDOWS_OS)
       sign('Windows: windir alone reads as Windows', windowsOs('', '', env.windir ?? '', '') === WINDOWS_OS)
       sign('Windows: the working folder alone reads as Windows', windowsOs('', '', '', process.cwd()) === WINDOWS_OS)
-      sign('Windows: the home slashed has no backslash', (env.USERPROFILE ?? '') !== '' && !slashed(env.USERPROFILE).includes('\\'))
+      // The home the mod takes here (homeFor in hooks/register.tsx): the profile folder, where
+      // Claude Code keeps its own, whatever HOME says, written with forward slashes.
+      const home = slashed(homeOf(true, env.HOME, env.USERPROFILE))
+      sign('Windows: the home the mod takes is the profile folder, written with forward slashes', (env.USERPROFILE ?? '') !== '' && home === slashed(env.USERPROFILE) && !home.includes('\\'))
     } else {
       sign(`${process.platform}: OS is not set`, env.OS === undefined)
       sign(`${process.platform}: the four signs read as no Windows`, windowsOs(env.OS ?? '', env.SystemRoot ?? '', env.windir ?? '', process.cwd()) === '')
+      sign(`${process.platform}: the home the mod takes is HOME`, (env.HOME ?? '') !== '' && homeOf(false, env.HOME, env.USERPROFILE) === env.HOME)
     }
   } finally {
     fs.rmSync(scratch, { recursive: true, force: true })

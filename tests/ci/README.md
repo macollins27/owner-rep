@@ -47,7 +47,9 @@ requiring `linkTargets` to name the program. Then it runs the copy's commands: `
 copy (`copyArgvs`: the clone, and when it is refused the plain copy into a folder just made) and
 `rm -rf`. Then it checks the signs `windowsOs` reads Windows by: on Windows that `OS`,
 `SystemRoot`, `windir` and the working folder each say Windows, on the other two that none
-does. Each check prints `ok <name>`; a failure prints the argv, its exit code, stdout and
+does. And it checks the home the mod takes (`homeOf`, as `homeFor` calls it): on Windows the
+profile folder, `USERPROFILE` written with forward slashes, whatever `HOME` says; on the other
+two `HOME`. Each check prints `ok <name>`; a failure prints the argv, its exit code, stdout and
 stderr, and the step ends 1. The last line says how many answered as the mod expects, how
 many did not, and how many of the check's questions were skipped.
 
