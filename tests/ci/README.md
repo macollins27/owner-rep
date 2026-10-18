@@ -43,13 +43,21 @@ layout in the same folder it runs the check's questions (`gitUpArgv`, `gitInside
 its `rm -rf`. Then it checks the signs `windowsOs` reads Windows by: on Windows that `OS`,
 `SystemRoot`, `windir` and the working folder each say Windows, on the other two that none
 does. Each check prints `ok <name>`; a failure prints the argv, its exit code, stdout and
-stderr, and the step ends 1. The last line says how many answered as the mod expects.
+stderr, and the step ends 1. The last line says how many answered as the mod expects, how
+many did not, and how many of the check's commands were skipped.
 
 On Windows the commands are Git for Windows' coreutils, found as `lookUpHost` finds them:
 the first of `winPosixBinCandidates` whose `mkdir.exe --version` exits 0. The transcript
 reads must answer there as on the other two systems. A command of the check that does not is
 printed as skipped, with its output, and does not fail the step, because the check does not
-start on Windows (`CHECK_NO_ROOM`); on macOS and Linux every command must answer. The
+start on Windows (`CHECK_NO_ROOM`); on macOS and Linux every command must answer. On the
+first Windows run (18 Oct 2026) three were skipped, and each is a fault the check would
+have there: `gitUpArgv` asks for the folders above a drive path as `/C:/…`, since
+`foldersUp` starts every folder with `/`, and Git's `find` finds none of them;
+`gitInsideArgv`'s `*\n*` pattern reaches `find` split and matched against the working
+folder's files by Git's runtime, so `find` refuses its arguments; and `worktreesArgv`'s
+`find` answers right, but `worktreeDirsOf` (like `gitAnswer`, with `entry`) reads only
+`tree` lines whose path begins with `/`, so it finds no worktree. The
 fixtures' line ends are read as `\n` whatever the checkout gave, as Claude Code writes its
 transcripts, and the repository's `.gitattributes` keeps every file's `\n` ends on a Windows
 checkout, where Git would otherwise write `\r\n` and Git Bash would read the carriage return
