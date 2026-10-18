@@ -250,13 +250,10 @@ function main() {
   }
   const answeredCount = total - skipped
   const where = `${process.platform} (${label})`
-  if (failed > 0) {
-    console.log(`host commands: ${passed} of ${answeredCount} answered as the mod expects on ${where}; ${failed} did not`)
-    return 1
-  }
   const skips = skipped === 0 ? '' : `; ${skipped} of the check's commands skipped: the check is refused on Windows`
-  console.log(`host commands: ${passed} of ${answeredCount} answered as the mod expects on ${where}${skips}`)
-  return 0
+  const fails = failed === 0 ? '' : `; ${failed} did not`
+  console.log(`host commands: ${passed} of ${answeredCount} answered as the mod expects on ${where}${fails}${skips}`)
+  return failed === 0 ? 0 : 1
 }
 
 process.exitCode = main()
