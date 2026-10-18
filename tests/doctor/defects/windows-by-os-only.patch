@@ -1,0 +1,18 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index e42bd44..97fb07a 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -938,12 +938,7 @@ async function osOf($: EngineInterface): Promise<string> {
+   } catch {
+     cwd = ''
+   }
+-  return windowsOs(
+-    (await $.env.get('OS')) ?? '',
+-    (await $.env.get('SystemRoot')) ?? '',
+-    (await $.env.get('windir')) ?? '',
+-    cwd,
+-  )
++  return windowsOs((await $.env.get('OS')) ?? '', '', '', '')
+ }
+ 
+ async function hostOf($: EngineInterface): Promise<Host> {

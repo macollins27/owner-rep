@@ -1,12 +1,12 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 2b88dea..40cac6c 100644
+index e42bd44..01b34e8 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -953,7 +953,7 @@ async function lookUpHost($: EngineInterface, os: string): Promise<Host> {
- // built from it is.
+@@ -984,7 +984,7 @@ async function lookUpHost($: EngineInterface, os: string): Promise<Host> {
+ // forward slashes as every path built from it is.
  async function homeFor($: EngineInterface): Promise<string> {
    const home = homeOf(await $.env.get('HOME'), await $.env.get('USERPROFILE'))
--  return (await $.env.get('OS')) === WINDOWS_OS ? slashed(home) : home
+-  return (await osOf($)) === WINDOWS_OS ? slashed(home) : home
 +  return home
  }
  

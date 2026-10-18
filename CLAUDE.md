@@ -37,7 +37,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 208 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 214 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions of this checkout in tmux, the strip captured to tests/live/captures
 ```
@@ -249,7 +249,7 @@ call writes (below):
    itself; the run uses it as it uses a folder that could not be copied. The home is read
    by `homeOf` with any separator at its end dropped, so every path built from it and the
    fence's comparisons hold.
-   On Windows (`OS` is `Windows_NT`) Claude Code's sandbox is off, so nothing would deny a
+   On Windows (`windowsOs` says `Windows_NT`: `OS` is, or `SystemRoot` or `windir` holds a drive path, or the session's working folder is on a drive) Claude Code's sandbox is off, so nothing would deny a
    write or close the network: a card drawn there shows `CHECK_NO_ROOM` in place of the
    check's price and no Check it button, and `runCheck` starts no copy and no run there,
    pressed on a card drawn before. Where the sandbox cannot start, Claude Code prints
@@ -294,7 +294,7 @@ which leaves an argv as written on a Mac or Linux (`PATH_HOST`) and on Windows n
 commands in `POSIX_COMMANDS` by their full path in Git for Windows' `usr/bin` and `claude` as
 npm's `claude.exe`. `hostOf` finds both by running each candidate with `--version`
 (`winPosixBinCandidates`, `winClaudeCandidates`, slashed as they are built so the path a probe
-proves is the one run) and holds the lookup for the process, keyed on `OS`, except a Windows
+proves is the one run) and holds the lookup for the process, keyed on what `windowsOs` makes of `OS`, `SystemRoot`, `windir` and the working folder (Windows passes the first three to programs by default, but a launcher can drop them, so a drive path in any of the four counts and the working folder is the sign none can drop), except a Windows
 one whose coreutils did not answer, which is looked up again on the next call; a lookup that
 throws still reads as Windows, so the check's refusal there never rests on a probe. The home
 is `homeFor`: `HOME`, else `USERPROFILE` (`homeOf`), written with forward slashes on Windows,

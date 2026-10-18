@@ -1738,5 +1738,29 @@
     "breaks": "A record whose fields were saved in another order is not taken for the blank one, so a record holding nothing is kept.",
     "patch": "blank-key-order.patch",
     "fixed": "2026-10-17"
+  },
+  {
+    "name": "windows-by-os-only",
+    "breaks": "On a Windows machine where OS does not reach the mod, the check is not refused and runs with nothing to fence it.",
+    "patch": "windows-by-os-only.patch",
+    "fixed": "2026-10-18"
+  },
+  {
+    "name": "windows-windir-dropped",
+    "breaks": "On a Windows machine where only windir says Windows, the check is not refused and runs with nothing to fence it.",
+    "patch": "windows-windir-dropped.patch",
+    "fixed": "2026-10-18"
+  },
+  {
+    "name": "windows-cwd-dropped",
+    "breaks": "On a Windows machine where only the working folder on a drive says Windows, the check is not refused and runs with nothing to fence it.",
+    "patch": "windows-cwd-dropped.patch",
+    "fixed": "2026-10-18"
+  },
+  {
+    "name": "home-slashes-by-os-only",
+    "breaks": "On a Windows machine where OS does not reach the mod, the search for his session's file is given a home with backslashes.",
+    "patch": "home-slashes-by-os-only.patch",
+    "fixed": "2026-10-18"
   }
 ]

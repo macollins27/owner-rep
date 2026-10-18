@@ -242,7 +242,7 @@ says is missing, and offers no Check it, and so does every later card while Clau
 the note saying a restart clears it once the missing piece is installed. The owner's own guard hooks fire inside
 the run as they do for every agent. The copy is removed when the run ends. When no copy can
 be made, or the project's folder would hold its own copy (the home itself), the run starts in the project itself with writes there denied, and its brief says
-so and tells it to run only what writes nothing there. On Windows Claude Code's sandbox is switched off, so there is no room to run in: the
+so and tells it to run only what writes nothing there. On Windows (recognised by `OS`, by `SystemRoot` or `windir` holding a drive path, or by a working folder on a drive) Claude Code's sandbox is switched off, so there is no room to run in: the
 card says so in place of the check's price and offers no Check it button. The run's answer
 carries the count of commands refused approval; the card shows it, and the right number is
 zero, because a refusal in a room where nothing needs approval means the room has a hole.
@@ -326,7 +326,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 208 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 214 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions in tmux, the strip captured to tests/live/captures
 ```

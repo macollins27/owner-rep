@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index e42bd44..b85a504 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -984,7 +984,7 @@ async function lookUpHost($: EngineInterface, os: string): Promise<Host> {
+ // forward slashes as every path built from it is.
+ async function homeFor($: EngineInterface): Promise<string> {
+   const home = homeOf(await $.env.get('HOME'), await $.env.get('USERPROFILE'))
+-  return (await osOf($)) === WINDOWS_OS ? slashed(home) : home
++  return (await $.env.get('OS')) === WINDOWS_OS ? slashed(home) : home
+ }
+ 
+ // pnpm's store as pnpm names it in the copy, outside the fence, its pnpmfile ignored, its

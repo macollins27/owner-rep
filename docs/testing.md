@@ -132,7 +132,7 @@ objective it checked came from the writer's own call. The test now sends a furth
 the writer answers with `objective: holds` and a look whose answer carries an objective in
 the writer's shape, and asserts that the objective is unchanged.
 
-**Status.** 208 tests: the parsers, the status words (including the variable-first command, read
+**Status.** 214 tests: the parsers, the status words (including the variable-first command, read
 through the mounted strip), the note to the rep, the checker's prompt and tools, the row on
 both surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-
 failure toast, the sequence rules above, the card folding to a small band, the brief
@@ -225,7 +225,7 @@ counted only when `find` printed its end mark and was not cut, the places links 
 the repository above each fenced, a name holding a line break passed over and said so in the
 brief, and the outermost of nested places kept;
 and, the same night, a record that holds nothing kept out of the
-store, so the blank records scripted runs left no longer push out his sessions. Two hundred and ninety doctor entries, all caught.
+store, so the blank records scripted runs left no longer push out his sessions. Windows is then recognised by `OS`, by `SystemRoot` or `windir` holding a drive path, or by a working folder on a drive, so a launcher that drops `OS` does not leave the check unfenced. Two hundred and ninety-four doctor entries, all caught.
 
 ## Layer 2: a real session
 
@@ -361,7 +361,7 @@ the file). Never make one from an uncommitted tree: the checkout would wipe the 
 **Status.** Built: `tests/doctor/doctor.py`, with `defects.json` and one patch per defect in
 `tests/doctor/defects/`. Run it with `python3 tests/doctor/doctor.py`; it exits 1 when the
 clean suite fails or a defect survives, and stops before planting when the clean suite is
-not clean. Two hundred and ninety entries, all caught: `strip-shows-command`, one or more per sequence
+not clean. Two hundred and ninety-four entries, all caught: `strip-shows-command`, one or more per sequence
 rule above, `card-overflows-band`, `size-figure-dropped`, `whole-ask-rule-dropped`, and one
 per remaining hook path (`helper-not-counted`, `box-text-overwritten`, `fill-refusal-ignored`,
 `check-timeout-unreported`, `check-failure-swallowed`, `end-not-saved`), and six for a
