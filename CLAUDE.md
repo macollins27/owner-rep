@@ -238,11 +238,13 @@ call writes (below):
    reaches the real history, git in a copy with no `.git` of its own finds one above it,
    and with no copy the run works in a folder that may be a subfolder of its repository;
    reading through git still works, adding, committing and stashing are refused; where the
-   host does not answer the link question, or any git question whole (a throw, a timeout,
-   an answer cut at the output cap or without its end mark, or a name holding a line break), `pathLinks` or `gitRepos` gives null
-   and the brief says the installs the links lead to, or the repository, could not be
-   found, `CheckArgs.unanswered`), the
-   brief naming the
+   host does not answer the link question, `pathLinks` gives null and the brief says the
+   installs the links in the command folders lead to could not be found; where it does not
+   answer a git question whole (a throw, a timeout, an answer cut at the output cap or
+   without its end mark, or a name holding a line break), `gitRepos` marks its answer not
+   whole (`whole: false`) and keeps what the other questions found, and the brief says not
+   every repository, nor every place a link in the copy leads to, could be found, and to
+   stage, commit and stash nothing; `CheckArgs.unanswered`), the brief naming the
    main ones, saying no list names every one, rather than saying all writes outside the copy
    are denied, and the network closed except
    for this Mac, with `failIfUnavailable` (the run refuses to start where the sandbox cannot)

@@ -232,9 +232,12 @@ is asked of pnpm in the copy before the run and named to it. pnpm is told on its
 line, which the project's own pnpm settings cannot override, to load none of the project's
 hook file, install no pinned pnpm and download nothing, and corepack, which can fetch a
 pinned pnpm before pnpm starts, is told to fetch nothing. When the machine does not answer
-the question about the links or the repositories, or when a git question fails, times out,
-is cut at the output's cap or meets a name holding a line break, the run's brief says that
-part of the fence is missing and that the repository could not be found. The settings also make the run refuse to
+the question about where the links in the command folders lead, the run's brief says the
+installs those links lead to could not be found. When a git question fails, times out, is
+cut at the output's cap or meets a name holding a line break, the brief says not every git
+repository the copy and the agent's folder belong to, nor every place a link in the copy
+leads to, could be found, and tells the run to stage, commit and stash nothing and to write
+nothing through a link that leads out of the copy. The settings also make the run refuse to
 start where the sandbox cannot, rather than run unfenced, and take away the shell's way of
 asking to run one command outside it. Where it refuses (shown in a Linux container without
 bubblewrap), the card says the check does not run on that machine, names what Claude Code
