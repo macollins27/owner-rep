@@ -11,35 +11,30 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
       - name: Install Claude Code, the build the type declarations are pinned to
-        shell: bash
         run: npm install -g @anthropic-ai/claude-code@2.1.300
       - name: Fail when the installed build is not the one the pinned declarations came from
-        shell: bash
         run: tests/ci/declarations.sh
       - name: Validate the manifest and the hooks module
-        shell: bash
         run: claude plugin validate .
       - name: Fail when a hook runs a program not named for the host it runs on
-        shell: bash
         run: tests/ci/host-calls.sh
       - name: Run the mod's own commands on this system and read their answers as the mod does
-        shell: bash
         run: node --experimental-strip-types tests/ci/host-commands.mjs
       - name: Run the tests
-        shell: bash
         run: claude plugin test .
       - name: Type-check the hooks and the tests
-        shell: bash
         run: |
           npm install -g typescript@5.9.3
           tsc -p tests/ci/tsconfig.json --noEmit
       - name: Plant each known defect and expect the suite to fail
         if: matrix.os == 'ubuntu-latest'
-        shell: bash
         run: python3 tests/doctor/doctor.py
