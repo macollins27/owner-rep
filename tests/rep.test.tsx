@@ -4098,12 +4098,12 @@ const RUN_CAP = 4 * 1024 * 1024
 // first line, as a read past the cap keeps the oldest lines and drops the rest.
 // Every argv kept, and each run's time allowed in `timeouts`. The clock reads `now.t`, and
 // each read of a file other than the session's own takes `slow` milliseconds of it.
-const transcript = (on: On, files: Record<string, string>, opts: { folder?: string; cut?: readonly string[]; slow?: number; home?: string } = {}) => {
+const transcript = (on: On, files: Record<string, string>, opts: { folder?: string; cut?: readonly string[]; slow?: number; home?: string; profile?: string } = {}) => {
   const folder = opts.folder ?? FOLDER
   const runs: string[][] = []
   const timeouts: number[] = []
   const now = { t: 1_000_000 }
-  mock.env(on, { HOME: opts.home ?? '/Users/o' })
+  mock.env(on, { HOME: opts.home ?? '/Users/o', ...(opts.profile ? { USERPROFILE: opts.profile } : {}) })
   on('clock.now', () => ({ value: now.t }))
   on('process.run', (_$, e) => {
     runs.push([...e.argv])
@@ -5531,25 +5531,35 @@ test('rule: a session resumed in the same process is read for his messages befor
 
 const WIN_HOST = { os: WINDOWS_OS, posixBin: 'C:\\Git\\usr\\bin', claude: 'C:/npm/claude.exe' }
 
-test('the home is HOME where there is one, USERPROFILE on Windows, and nothing when neither answers', async () => {
-  expect(homeOf('/Users/o', undefined)).toBe('/Users/o')
+test('the home is HOME on a Mac or Linux and USERPROFILE on Windows, each falling back to the other, and nothing when neither answers', async () => {
+  expect(homeOf(false, '/Users/o', undefined)).toBe('/Users/o')
   // Windows sets USERPROFILE and no HOME. Before this, home fell to '/tmp' and
   // every path built from it was wrong.
-  expect(homeOf(undefined, 'C:\\Users\\k')).toBe('C:\\Users\\k')
+  expect(homeOf(true, undefined, 'C:\\Users\\k')).toBe('C:\\Users\\k')
   // An empty variable is as absent as a missing one.
-  expect(homeOf('', 'C:\\Users\\k')).toBe('C:\\Users\\k')
-  // HOME wins when both answer, so a Unix host is untouched.
-  expect(homeOf('/Users/o', 'C:\\Users\\k')).toBe('/Users/o')
-  expect(homeOf(undefined, undefined)).toBe('')
-  expect(homeOf('', '')).toBe('')
+  expect(homeOf(true, '', 'C:\\Users\\k')).toBe('C:\\Users\\k')
+  expect(homeOf(false, '', 'C:\\Users\\k')).toBe('C:\\Users\\k')
+  // HOME wins when both answer on a Mac or Linux, so a Unix host is untouched.
+  expect(homeOf(false, '/Users/o', 'C:\\Users\\k')).toBe('/Users/o')
+  expect(homeOf(false, undefined, undefined)).toBe('')
+  expect(homeOf(true, '', '')).toBe('')
   // A home that is /tmp is a home, not a stand-in for none.
-  expect(homeOf('/tmp', undefined)).toBe('/tmp')
+  expect(homeOf(false, '/tmp', undefined)).toBe('/tmp')
   // A separator at the end is dropped, so every path built from the home has one between its parts; a root keeps its own.
-  expect(homeOf('/Users/o/', undefined)).toBe('/Users/o')
-  expect(homeOf('/Users/o//', undefined)).toBe('/Users/o')
-  expect(homeOf(undefined, 'C:\\Users\\k\\')).toBe('C:\\Users\\k')
-  expect(homeOf('/', undefined)).toBe('/')
-  expect(homeOf(undefined, 'C:\\')).toBe('C:\\')
+  expect(homeOf(false, '/Users/o/', undefined)).toBe('/Users/o')
+  expect(homeOf(false, '/Users/o//', undefined)).toBe('/Users/o')
+  expect(homeOf(true, undefined, 'C:\\Users\\k\\')).toBe('C:\\Users\\k')
+  expect(homeOf(false, '/', undefined)).toBe('/')
+  expect(homeOf(true, undefined, 'C:\\')).toBe('C:\\')
+})
+
+test('homeOf takes USERPROFILE before HOME on Windows and HOME before USERPROFILE elsewhere, the order Claude Code finds its own folder by', async () => {
+  // Claude Code keeps its folder under the home Node gives it, which on Windows is USERPROFILE
+  // whatever HOME says.
+  expect(homeOf(true, 'D:\\h', 'C:\\Users\\k')).toBe('C:\\Users\\k')
+  expect(homeOf(true, 'D:\\h', undefined)).toBe('D:\\h')
+  expect(homeOf(false, '/Users/o', 'C:\\Users\\k')).toBe('/Users/o')
+  expect(homeOf(false, '', undefined)).toBe('')
 })
 
 test('a host that resolves by name leaves every argv exactly as it was', async () => {
@@ -5781,11 +5791,11 @@ test('rule: with OS missing, the check pressed on a card drawn before SystemRoot
 const WIN_GIT = 'C:/PF/Git/usr/bin'
 const WIN_PROJECTS = 'C:/Users/k/.claude/projects'
 const WIN_FOLDER = `${WIN_PROJECTS}/-C-work-app`
-const winTranscript = (on: On, files: Record<string, string>, opts: { probeFails?: number; os?: string; systemRoot?: string } = {}): string[][] => {
+const winTranscript = (on: On, files: Record<string, string>, opts: { probeFails?: number; os?: string; systemRoot?: string; home?: string } = {}): string[][] => {
   const runs: string[][] = []
   const folder = WIN_FOLDER
   let fails = opts.probeFails ?? 0
-  mock.env(on, { OS: opts.os ?? WINDOWS_OS, ...(opts.systemRoot ? { SystemRoot: opts.systemRoot } : {}), USERPROFILE: 'C:\\Users\\k', PROGRAMFILES: 'C:\\PF' })
+  mock.env(on, { OS: opts.os ?? WINDOWS_OS, ...(opts.systemRoot ? { SystemRoot: opts.systemRoot } : {}), ...(opts.home ? { HOME: opts.home } : {}), USERPROFILE: 'C:\\Users\\k', PROGRAMFILES: 'C:\\PF' })
   on('clock.now', () => ({ value: 1_000_000 }))
   on('process.run', (_$, e) => {
     const argv = [...e.argv]
@@ -5854,6 +5864,33 @@ test('rule: on Windows with OS missing, his messages are read under the home USE
   const ran = runs.filter(r => r[r.length - 1] !== '--version')
   expect(ran.map(r => r[0])).toEqual([`${WIN_GIT}/find.exe`, `${WIN_GIT}/sed.exe`, `${WIN_GIT}/grep.exe`])
   expect(ran[0]?.[1]).toBe(WIN_PROJECTS)
+})
+
+test('rule: on Windows with HOME set to another folder, his session\'s file is looked for under the profile folder, where Claude Code keeps it', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS }))
+  const runs = winTranscript(on, { 'test-session.jsonl': SEEDED_FILE }, { home: 'D:\\h' })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await started($)
+  await settle($)
+  const ran = runs.filter(r => r[r.length - 1] !== '--version')
+  expect(ran[0]).toEqual([`${WIN_GIT}/find.exe`, 'C:/Users/k/.claude/projects', '-maxdepth', '2', '-name', 'test-session.jsonl'])
+  expect(rec()?.owner).toEqual(SEEDED)
+})
+
+test('rule: on a Mac with USERPROFILE set as well, his session\'s file is looked for under HOME', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS }))
+  const runs = transcript(on, { 'test-session.jsonl': SEEDED_FILE }, { profile: '/Users/k' })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await started($)
+  await settle($)
+  expect(runs[0]).toEqual(['find', '/Users/o/.claude/projects', '-maxdepth', '2', '-name', 'test-session.jsonl'])
+  expect(rec()?.owner).toEqual(SEEDED)
 })
 
 test('rule: on Windows a transcript path given with backslashes is read written with forward slashes', async ($, on) => {

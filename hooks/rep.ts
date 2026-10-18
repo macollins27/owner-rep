@@ -1692,7 +1692,9 @@ export const installOf = (home: string, dir: string): string => {
 //     transcript folder — was wrong. Measured both ways on one machine: empty
 //     in a native Windows process, and set to the profile folder in a process
 //     launched from Git Bash, which inherits it. `USERPROFILE` is always set,
-//     so it is the fallback and `HOME` still wins where it answers.
+//     and Claude Code keeps its folder under it (Node's `os.homedir()` reads
+//     `USERPROFILE` on Windows and ignores `HOME`), so there it comes first and
+//     `HOME` is the fallback.
 //   * None of the seven commands is on PATH. Git for Windows ships all seven, in a
 //     `usr/bin` its installer deliberately leaves off PATH, so each one has to
 //     be named by its full path.
@@ -1766,15 +1768,17 @@ export function windowsOs(os: string, systemRoot: string, windir: string, cwd: s
 export const isWindowsHost = (host: Host): boolean => host.os === WINDOWS_OS
 
 /**
- * The home folder, which is `HOME` everywhere but Windows and `USERPROFILE`
- * there, and '' when neither answers. The caller chooses what stands in for
- * none: the check's copies go under `/tmp` as before, and the transcript read
- * has no config folder to look in. A home that is `/tmp` is a home like any other.
- * A separator at its end is dropped, so a path built from it has one between each
- * part and the fence's comparisons hold; a root (`/`, `C:\`) keeps its own.
+ * The home folder: on Windows `USERPROFILE`, else `HOME`; on a Mac or Linux `HOME`, else
+ * `USERPROFILE`; '' when neither is set to anything. Windows takes `USERPROFILE` first
+ * because Claude Code keeps its folder under the home Node gives it (`os.homedir()`), which
+ * on Windows reads `USERPROFILE` and ignores `HOME`. The caller chooses what stands in for
+ * none: the check's copies go under `/tmp` as before, and the transcript read has no
+ * config folder to look in. A home that is `/tmp` is a home like any other. A separator at
+ * its end is dropped, so a path built from it has one between each part and the fence's
+ * comparisons hold; a root (`/`, `C:\`) keeps its own.
  */
-export const homeOf = (home: string | undefined, userProfile: string | undefined): string =>
-  (home !== undefined && home !== '' ? home : userProfile !== undefined && userProfile !== '' ? userProfile : '').replace(/([^:\\/])[\\/]+$/, '$1')
+export const homeOf = (windows: boolean, home: string | undefined, userProfile: string | undefined): string =>
+  ((windows ? [userProfile, home] : [home, userProfile]).find(v => v !== undefined && v !== '') ?? '').replace(/([^:\\/])[\\/]+$/, '$1')
 
 /**
  * A Windows path a POSIX command will accept. Git's coreutils take forward

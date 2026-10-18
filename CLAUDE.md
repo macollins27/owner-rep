@@ -37,7 +37,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 214 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 217 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions of this checkout in tmux, the strip captured to tests/live/captures
 ```
@@ -305,9 +305,11 @@ npm's `claude.exe`. `hostOf` finds both by running each candidate with `--versio
 proves is the one run) and holds the lookup for the process, keyed on what `windowsOs` makes of `OS`, `SystemRoot`, `windir` and the working folder (Windows passes the first three to programs by default, but a launcher can drop them, so `OS` being `Windows_NT`, or a drive path in any of the last three, counts, and the working folder is the sign none can drop), except a Windows
 one whose coreutils did not answer, which is looked up again on the next call; a lookup that
 throws still reads as Windows, so the check's refusal there never rests on a probe. The home
-is `homeFor`: `HOME`, else `USERPROFILE` (`homeOf`), written with forward slashes on Windows,
-'' with neither (the check's copies then go under `/tmp`); `heldItems` slashes the paths it is
-given or finds on Windows. Kyle Cunningham measured the Windows facts on Windows 11 with
+is `homeFor` (`homeOf`): on Windows, by the same reading of the four signs, `USERPROFILE`,
+else `HOME`, since Claude Code keeps its folder under the home Node gives it, which there
+reads `USERPROFILE` and ignores `HOME`; on a Mac or Linux `HOME`, else `USERPROFILE`; written
+with forward slashes on Windows, '' with neither (the check's copies then go under `/tmp`);
+`heldItems` slashes the paths it is given or finds on Windows. Kyle Cunningham measured the Windows facts on Windows 11 with
 Claude Code 2.1.302 (PR #13); nothing on this Mac can run them.
 
 **The objective** (`Objective` in `hooks/rep.ts`, declared again in `types/index.d.ts`) is the

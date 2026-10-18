@@ -981,11 +981,13 @@ async function lookUpHost($: EngineInterface, os: string): Promise<Host> {
   }
 }
 
-// The home, '' when there is none, written on Windows (by the four signs of `windowsOs`) with
-// forward slashes as every path built from it is.
+// The home, '' when there is none. On Windows (by the four signs of `windowsOs`, the reading
+// the check is refused by) it is `USERPROFILE` before `HOME`, as Claude Code finds its own
+// folder there, written with forward slashes as every path built from it is.
 async function homeFor($: EngineInterface): Promise<string> {
-  const home = homeOf(await $.env.get('HOME'), await $.env.get('USERPROFILE'))
-  return (await osOf($)) === WINDOWS_OS ? slashed(home) : home
+  const windows = (await osOf($)) === WINDOWS_OS
+  const home = homeOf(windows, await $.env.get('HOME'), await $.env.get('USERPROFILE'))
+  return windows ? slashed(home) : home
 }
 
 // pnpm's store as pnpm names it in the copy, outside the fence, its pnpmfile ignored, its
