@@ -1,9 +1,9 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 243c769..7b03c88 100644
+index 49856d6..2d260c7 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1502,7 +1502,6 @@ const gitAnswer = (stdout: string): { places: string[]; gits: string[] } => {
-       pointed = false
+@@ -1582,7 +1582,6 @@ const gitAnswer = (stdout: string): { places: string[]; gits: string[]; links: s
+       links.push(line)
      } else if (folder !== '' && lead === '' && !pointed && line.startsWith('/')) {
        lead = line
 -      places.push(line)

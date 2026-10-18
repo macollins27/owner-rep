@@ -1,13 +1,13 @@
-diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 2c31921..3a7f775 100644
---- a/hooks/register.tsx
-+++ b/hooks/register.tsx
-@@ -980,7 +980,7 @@ async function pathLinks($: EngineInterface, on: Host, home: string, path: strin
- // or null when the host does not answer either question whole, which the brief then says.
- async function gitRepos($: EngineInterface, on: Host, home: string, copy: string, cwd: string): Promise<string[] | null> {
-   const found = await $.process.run(hostArgv(on, gitFindArgv(copy, cwd, !holdsCopiesOf(home, copy))), { timeoutMs: GIT_FIND_TIMEOUT_MS }).catch(() => null)
--  if (found === null || found.isStdoutTruncated) return null
-+  if (found === null) return null
-   const gits = gitFoldersOf(found.stdout)
-   if (gits.length === 0) return gitDirsOf([copy, cwd], found.stdout)
-   const trees = await $.process.run(hostArgv(on, worktreesArgv(gits)), { timeoutMs: GIT_FIND_TIMEOUT_MS }).catch(() => null)
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 49856d6..417b8b1 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1543,7 +1543,7 @@ export const wholeArgv = (on: Host, find: string[]): string[] => ['sh', '-c', WH
+ // The answer of a question asked through `wholeArgv`, or null when it did not come back,
+ // was cut at the output's cap or did not reach its end.
+ export const wholeAnswer = (r: { stdout: string; isStdoutTruncated: boolean } | null): string | null =>
+-  r === null || r.isStdoutTruncated || !r.stdout.replace(/\r/g, '').endsWith('\nend\n') ? null : r.stdout
++  r === null || !r.stdout.replace(/\r/g, '').endsWith('\nend\n') ? null : r.stdout
+ // A folder and each folder above it, up to `/`.
+ export const foldersUp = (folder: string): string[] => {
+   const parts = folder.split('/').filter(p => p !== '')

@@ -1,12 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 243c769..f0e6faf 100644
+index 49856d6..0eebdd3 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1455,7 +1455,6 @@ export const gitFindArgv = (copy: string, cwd: string, inside: boolean): string[
-   ...(inside ? [copy] : []),
+@@ -1470,7 +1470,6 @@ export const GIT_FIND_TIMEOUT_MS = 30000
+ const GIT_ENTRY = [
    '-name',
    '.git',
 -  '-prune',
    '-exec',
    'printf',
-   'entry %s\\n',
+   '\\nentry %s\\n',

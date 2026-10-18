@@ -1471,7 +1471,7 @@
   },
   {
     "name": "brief-repo-unsaid",
-    "breaks": "The brief does not name the repository among the places the fence guards, so the run is not told why staging or committing in the copy is refused.",
+    "breaks": "The brief drops the repository from the places the fence guards while still naming the links, so the run is not told why staging or committing in the copy is refused.",
     "patch": "brief-repo-unsaid.patch",
     "fixed": "2026-10-17"
   },
@@ -1519,7 +1519,7 @@
   },
   {
     "name": "repos-unanswered-as-none",
-    "breaks": "A git question that gets no answer counts as one that found no repository, so the brief says the repository is guarded when it is not, and the run may commit in it.",
+    "breaks": "The whole-answer flag ignores a git question that got no answer, so the brief says the repository is guarded when it is not, and the run may commit in it.",
     "patch": "repos-unanswered-as-none.patch",
     "fixed": "2026-10-17"
   },
@@ -1537,7 +1537,7 @@
   },
   {
     "name": "git-inside-not-searched",
-    "breaks": "Only the .git at the copy's top and above it is asked for, never one inside the copy, so a worktree or a library kept inside the project whose .git leads out of it is left open, and a commit there moves the real branch.",
+    "breaks": "The question about repositories inside the copy is never asked, so a worktree or a library kept inside the project whose .git leads out of it is left open, and a commit there moves the real branch.",
     "patch": "git-inside-not-searched.patch",
     "fixed": "2026-10-17"
   },
@@ -1597,7 +1597,7 @@
   },
   {
     "name": "worktrees-throw-fails-check",
-    "breaks": "A worktrees question that throws stops the check from running at all.",
+    "breaks": "A worktrees question that throws is not caught, so it stops the check from running at all.",
     "patch": "worktrees-throw-fails-check.patch",
     "fixed": "2026-10-17"
   },
@@ -1609,14 +1609,110 @@
   },
   {
     "name": "git-cut-taken",
-    "breaks": "A git answer cut at the output's cap is taken as whole, so the repositories past the cut are left open while the brief says they are guarded.",
+    "breaks": "The git search's whole-answer check ignores a cut at the output's cap, so the repositories past the cut are left open while the brief says they are guarded.",
     "patch": "git-cut-taken.patch",
     "fixed": "2026-10-17"
   },
   {
     "name": "worktrees-cut-taken",
-    "breaks": "A worktrees answer cut at the output's cap is taken as whole, so the worktrees past the cut are left open while the brief says they are guarded.",
+    "breaks": "The worktrees answer is read raw, with no check that it ran to its end or was not cut, so the worktrees past the cut are left open while the brief says they are guarded.",
     "patch": "worktrees-cut-taken.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-links-dropped",
+    "breaks": "The links found in the copy are thrown away after the first question, so the places they lead to and the repositories above those places are never asked about or fenced.",
+    "patch": "git-links-dropped.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-links-not-fenced",
+    "breaks": "The places a link in the copy leads to are asked about but left out of the fence, so a run can write through a link that leads out of the copy.",
+    "patch": "git-links-not-fenced.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-beyond-not-asked",
+    "breaks": "The repository above the place a link leads to is never asked for, so a commit through a link that leads out of the copy moves a branch the brief says is guarded.",
+    "patch": "git-beyond-not-asked.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-odd-ignored",
+    "breaks": "A name holding a line break inside the copy is no longer counted as an answer the check could not read, so the brief says every repository was found when one was passed over.",
+    "patch": "git-odd-ignored.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-odd-not-passed-over",
+    "breaks": "The search no longer reports a name holding a line break inside the copy, so a repository under such a name is left open without the brief saying so.",
+    "patch": "git-odd-not-passed-over.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-entry-no-leading-break",
+    "breaks": "The git search prints each repository entry without a line break before it, so a name ending in a line break can forge another entry and a false repository is fenced or a real one missed.",
+    "patch": "git-entry-no-leading-break.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "worktree-entry-no-leading-break",
+    "breaks": "The worktrees search prints each tree entry without a line break before it, so a name ending in a line break can forge another entry and a false worktree is fenced or a real one missed.",
+    "patch": "worktree-entry-no-leading-break.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-entry-not-git-folder",
+    "breaks": "A repository the search finds is fenced as a place but not kept as a git folder, so the worktrees it lists are never asked for and stay open to writes.",
+    "patch": "git-entry-not-git-folder.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-end-not-required",
+    "breaks": "A git answer that stops without its end mark is taken as whole, so a search killed partway counts as finished and the repositories it never reached are left open while the brief says they are guarded.",
+    "patch": "git-end-not-required.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-end-signal-printed",
+    "breaks": "The end mark is printed even when the search was killed by a signal, so a search that never finished counts as whole and the repositories it never reached are left open.",
+    "patch": "git-end-signal-printed.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-inside-fails-drops-up",
+    "breaks": "When the question about repositories inside the copy fails, the answers to the questions above it are thrown away too, so the repositories the check did find are left open to writes.",
+    "patch": "git-inside-fails-drops-up.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "repo-outermost-dropped",
+    "breaks": "Places inside another guarded place are listed as well as the one holding them, so the fence names the same ground twice and its settings grow with every nested repository and link.",
+    "patch": "repo-outermost-dropped.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "readlink-probe-dropped",
+    "breaks": "Links are resolved with a flag that some machines lack and no fallback, so on those machines no link is resolved and the places they lead to are left open.",
+    "patch": "readlink-probe-dropped.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "sh-not-host-named",
+    "breaks": "The shell is left out of the commands the Windows host must name, so the search's end mark cannot run there and every git answer counts as cut.",
+    "patch": "sh-not-host-named.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "brief-links-fence-unsaid",
+    "breaks": "The brief does not name the places links in the copy lead to among those the fence guards, so the run is not told why writing through a link that leads out is refused.",
+    "patch": "brief-links-fence-unsaid.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "brief-links-unfound-unsaid",
+    "breaks": "The brief does not tell the run to write nothing through a link that leads out of the copy when those links could not be found, so it may write through one.",
+    "patch": "brief-links-unfound-unsaid.patch",
     "fixed": "2026-10-17"
   }
 ]

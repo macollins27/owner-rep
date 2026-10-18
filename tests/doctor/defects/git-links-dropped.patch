@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 49856d6..1bf9caf 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1605,7 +1605,7 @@ export const gitDirsOf = (own: string[], stdout: string): string[] => outside(ow
+ // The git folders a git question's answer names, the copy's own among them.
+ export const gitFoldersOf = (stdout: string): string[] => [...new Set(gitAnswer(stdout).gits)]
+ // Where the links `gitInsideArgv` found lead, leaving out any in `own`.
+-export const gitLinksOf = (own: string[], stdout: string): string[] => outside(own, gitAnswer(stdout).links)
++export const gitLinksOf = (own: string[], stdout: string): string[] => outside(own, [])
+ // Whether `gitInsideArgv` passed over a name holding a line break.
+ export const passedOver = (stdout: string): boolean => gitAnswer(stdout).odd
+ // The worktrees each git folder lists: each `worktrees/<name>/gitdir` printed after its own

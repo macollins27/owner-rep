@@ -213,7 +213,9 @@ writes are denied to the owner's work (the real project folder, `~/Developer`, `
 the run wherever its history is kept (a copy keeps the project's `.git`, and every `.git`
 inside it, so a commit in a copied worktree would otherwise move the real branch, and git in
 a folder with no `.git` of its own uses the first one above it), to every other worktree
-those repositories list, to
+those repositories list, to the place each link inside the copy that leads out of it
+points at and the repository above that place (the folders reached through a link are not
+searched inside), to
 Claude Code's whole configuration folder, and to the main places in the home
 whose contents run later (the shell's startup files, git's settings, the package managers'
 and other tools' settings that can name a program or a command to run, the cloud tools'
@@ -230,8 +232,9 @@ is asked of pnpm in the copy before the run and named to it. pnpm is told on its
 line, which the project's own pnpm settings cannot override, to load none of the project's
 hook file, install no pinned pnpm and download nothing, and corepack, which can fetch a
 pinned pnpm before pnpm starts, is told to fetch nothing. When the machine does not answer
-the question about the links or the repositories, the run's brief says that part of the
-fence is missing. The settings also make the run refuse to
+the question about the links or the repositories, or when a git question fails, times out,
+is cut at the output's cap or meets a name holding a line break, the run's brief says that
+part of the fence is missing and that the repository could not be found. The settings also make the run refuse to
 start where the sandbox cannot, rather than run unfenced, and take away the shell's way of
 asking to run one command outside it. Where it refuses (shown in a Linux container without
 bubblewrap), the card says the check does not run on that machine, names what Claude Code
@@ -322,7 +325,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 197 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 205 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions in tmux, the strip captured to tests/live/captures
 ```

@@ -1,12 +1,13 @@
-diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 243c769..d634cd7 100644
---- a/hooks/rep.ts
-+++ b/hooks/rep.ts
-@@ -1452,7 +1452,6 @@ export const GIT_FIND_TIMEOUT_MS = 30000
- export const gitFindArgv = (copy: string, cwd: string, inside: boolean): string[] => [
-   'find',
-   ...new Set([copy, cwd].flatMap(foldersUp).filter(f => !(inside && f === copy)).map(f => `${f === '/' ? '' : f}/.git`)),
--  ...(inside ? [copy] : []),
-   '-name',
-   '.git',
-   '-prune',
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index b09a4fa..5582434 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -990,7 +990,7 @@ async function gitRepos($: EngineInterface, on: Host, home: string, copy: string
+   const own = [copy, cwd]
+   const ask = async (argv: string[]): Promise<string | null> => wholeAnswer(await $.process.run(hostArgv(on, wholeArgv(on, argv)), { timeoutMs: GIT_FIND_TIMEOUT_MS }).catch(() => null))
+   const up = await ask(gitUpArgv(own))
+-  const inside = holdsCopiesOf(home, copy) ? '' : await ask(gitInsideArgv(copy))
++  const inside = ''
+   const links = gitLinksOf(own, inside ?? '')
+   const beyond = links.length === 0 ? '' : await ask(gitUpArgv(links))
+   const answers = [up, inside, beyond].map(a => a ?? '')

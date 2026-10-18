@@ -39,8 +39,12 @@ def copy_mod(into: Path) -> None:
 
 
 def run_suite(folder: Path) -> tuple[int, int, list[str], str]:
-    r = subprocess.run(['claude', 'plugin', 'test', str(folder)], capture_output=True, text=True)
-    out = r.stdout + r.stderr
+    # Through a file, not a pipe: a test that fails on a long brief prints more than the 128 KiB
+    # a pipe keeps, which cut the summary off and made a caught defect read as one that survived.
+    with tempfile.TemporaryFile('w+', errors='replace') as sink:
+        subprocess.run(['claude', 'plugin', 'test', str(folder)], stdout=sink, stderr=subprocess.STDOUT, text=True)
+        sink.seek(0)
+        out = sink.read()
     passed = int(m.group(1)) if (m := re.search(r'^\s*(\d+) pass$', out, re.M)) else -1
     failed = int(m.group(1)) if (m := re.search(r'^\s*(\d+) fail$', out, re.M)) else -1
     failing = re.findall(r'^\(fail\) (.+?) \[', out, re.M)

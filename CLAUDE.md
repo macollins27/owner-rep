@@ -37,7 +37,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 197 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 205 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions of this checkout in tmux, the strip captured to tests/live/captures
 ```
@@ -198,17 +198,31 @@ call writes (below):
    `-exec readlink -f {} ;`, one name to each call as BusyBox's readlink takes, its exit
    code not read, a cut last line dropped by `linkTargets`, under
    `PATH_LINKS_TIMEOUT_MS`, 30 seconds; under two on this Mac); and every git repository
-   the copy and the agent's folder reach (`gitRepos` asks before the run, outside the
-   fence, with `gitFindArgv`: `find` over the `.git` in the copy, the agent's folder and
-   every folder above either, `foldersUp`, and every `.git` inside the copy (`-prune`d, so
-   none inside a `.git`), the inside search left out when the copy is a folder holding the
-   copies (the home), printing each one found, where it leads by `readlink -f` and its
-   `gitdir:` line, read even when readlink fails, under `GIT_FIND_TIMEOUT_MS`, 30 seconds
-   (under one for 54,000 files; all of `~/Developer` took 15), its exit code not read;
+   the copy and the agent's folder reach (`gitRepos` asks four questions before the run,
+   outside the fence, each on its own so that one which fails loses only what it alone
+   would name: `gitUpArgv([copy, cwd])`, the `.git` in the copy, the agent's folder and
+   every folder above either, `foldersUp`; `gitInsideArgv(copy)`, every `.git` inside the
+   copy (`-prune`d, so none inside a `.git`) and where each link in it leads, unless
+   `holdsCopiesOf(home, copy)`, when the copy is a folder holding the copies (the home);
+   `gitUpArgv(links)`, the `.git` in each place those links lead to outside the copy and
+   every folder above it, only when links are found; and `worktreesArgv(gits)`. Each goes
+   through `wholeArgv` and `wholeAnswer`: an answer counts only when `find` printed its end
+   mark (the exit below 128) and was not cut at the output's cap (4 MiB, about 35,000
+   links), else it is null. Each prints the `.git` found, where it leads by `readlink -f`
+   and its `gitdir:` line, read even when readlink fails, after a line break so a file with
+   no break at its end cannot run into the next, under `GIT_FIND_TIMEOUT_MS`, 30 seconds
+   per question, its exit code not read. The folders a link leads to are not searched
+   inside, and a name holding a line break inside the copy is reported (`passedOver`) and
+   makes the check say the repository could not be found. Timings of 17 Oct 2026: the
+   question inside the copy takes 0.6 to 2 s for a project of 109,000 files and for one of
+   63,000 files and 2,000 links, and a test folder of 3,000 links takes 0.2 s here, 1 s on
+   Ubuntu 24.04 and 3 s on Alpine 3, the three answering the same.
    `gitDirsOf` names the folder holding each `.git`, where it leads, the folder its pointer
    names read from the folder holding the `.git` and from where it leads, cutting only the
    line's end as git does, and for a worktree the git folder above `worktrees/<name>` too,
-   leaving out any place in the copy or the agent's folder; then `worktreesArgv` asks each
+   leaving out any place in the copy or the agent's folder; `gitLinksOf` names each place
+   a link leads to; `outermost` leaves out any place inside another, which the other's
+   guard covers; then `worktreesArgv` asks each
    git folder found (`gitFoldersOf`) for the `gitdir` file of each worktree it lists, and
    `worktreeDirsOf` names each worktree's folder, a relative entry read from the file's
    folder; the same answers on this Mac, Ubuntu 24.04 and Alpine 3): a copy keeps the
@@ -216,8 +230,8 @@ call writes (below):
    reaches the real history, git in a copy with no `.git` of its own finds one above it,
    and with no copy the run works in a folder that may be a subfolder of its repository;
    reading through git still works, adding, committing and stashing are refused; where the
-   host does not answer the link question, or either git question whole (a throw, or an
-   answer cut at the output cap), `pathLinks` or `gitRepos` gives null
+   host does not answer the link question, or any git question whole (a throw, a timeout,
+   an answer cut at the output cap or without its end mark, or a name holding a line break), `pathLinks` or `gitRepos` gives null
    and the brief says the installs the links lead to, or the repository, could not be
    found, `CheckArgs.unanswered`), the
    brief naming the

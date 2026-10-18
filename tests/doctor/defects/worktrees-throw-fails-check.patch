@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 2c31921..a11ecf5 100644
+index b09a4fa..34c370f 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -983,7 +983,7 @@ async function gitRepos($: EngineInterface, on: Host, home: string, copy: string
-   if (found === null || found.isStdoutTruncated) return null
-   const gits = gitFoldersOf(found.stdout)
-   if (gits.length === 0) return gitDirsOf([copy, cwd], found.stdout)
--  const trees = await $.process.run(hostArgv(on, worktreesArgv(gits)), { timeoutMs: GIT_FIND_TIMEOUT_MS }).catch(() => null)
-+  const trees = await $.process.run(hostArgv(on, worktreesArgv(gits)), { timeoutMs: GIT_FIND_TIMEOUT_MS })
-   if (trees === null || trees.isStdoutTruncated) return null
-   return [...new Set([...gitDirsOf([copy, cwd], found.stdout), ...worktreeDirsOf([copy, cwd], trees.stdout)])]
- }
+@@ -995,7 +995,7 @@ async function gitRepos($: EngineInterface, on: Host, home: string, copy: string
+   const beyond = links.length === 0 ? '' : await ask(gitUpArgv(links))
+   const answers = [up, inside, beyond].map(a => a ?? '')
+   const gits = [...new Set(answers.flatMap(gitFoldersOf))]
+-  const trees = gits.length === 0 ? '' : await ask(worktreesArgv(gits))
++  const trees = gits.length === 0 ? '' : wholeAnswer(await $.process.run(hostArgv(on, wholeArgv(on, worktreesArgv(gits))), { timeoutMs: GIT_FIND_TIMEOUT_MS }))
+   return {
+     dirs: [...new Set([...answers.flatMap(a => gitDirsOf(own, a)), ...links, ...worktreeDirsOf(own, trees ?? '')])],
+     whole: [up, inside, beyond, trees].every(a => a !== null) && !passedOver(inside ?? ''),

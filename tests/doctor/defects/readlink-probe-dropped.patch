@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 49856d6..31f1d68 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1530,7 +1530,7 @@ export const gitInsideArgv = (copy: string): string[] => [
+   '-exec',
+   'sh',
+   '-c',
+-  'printf "\\nlinks\\n"; if readlink -f / / >/dev/null 2>&1; then readlink -f "$@"; else for l in "$@"; do readlink -f "$l"; done; fi',
++  'printf "\\nlinks\\n"; readlink -f "$@"',
+   'sh',
+   '{}',
+   '+',

@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 2c31921..3cd77ef 100644
+index b09a4fa..23b2c60 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -980,7 +980,7 @@ async function pathLinks($: EngineInterface, on: Host, home: string, path: strin
- // or null when the host does not answer either question whole, which the brief then says.
- async function gitRepos($: EngineInterface, on: Host, home: string, copy: string, cwd: string): Promise<string[] | null> {
-   const found = await $.process.run(hostArgv(on, gitFindArgv(copy, cwd, !holdsCopiesOf(home, copy))), { timeoutMs: GIT_FIND_TIMEOUT_MS }).catch(() => null)
--  if (found === null || found.isStdoutTruncated) return null
-+  if (found === null || found.isStdoutTruncated) return []
-   const gits = gitFoldersOf(found.stdout)
-   if (gits.length === 0) return gitDirsOf([copy, cwd], found.stdout)
-   const trees = await $.process.run(hostArgv(on, worktreesArgv(gits)), { timeoutMs: GIT_FIND_TIMEOUT_MS }).catch(() => null)
+@@ -998,7 +998,7 @@ async function gitRepos($: EngineInterface, on: Host, home: string, copy: string
+   const trees = gits.length === 0 ? '' : await ask(worktreesArgv(gits))
+   return {
+     dirs: [...new Set([...answers.flatMap(a => gitDirsOf(own, a)), ...links, ...worktreeDirsOf(own, trees ?? '')])],
+-    whole: [up, inside, beyond, trees].every(a => a !== null) && !passedOver(inside ?? ''),
++    whole: !passedOver(inside ?? ''),
+   }
+ }
+ 

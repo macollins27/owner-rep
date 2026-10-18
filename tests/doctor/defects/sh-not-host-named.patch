@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 49856d6..e34d111 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1728,7 +1728,7 @@ export const WINDOWS_OS = 'Windows_NT'
+  * ADDING A COMMAND: anything new that goes through `$.process.run` or
+  * `$.process.spawn` belongs here, or it resolves by name and fails on Windows.
+  */
+-export const POSIX_COMMANDS = ['mkdir', 'rm', 'cp', 'find', 'ls', 'sed', 'grep', 'sh'] as const
++export const POSIX_COMMANDS = ['mkdir', 'rm', 'cp', 'find', 'ls', 'sed', 'grep'] as const
+ 
+ /**
+  * What a command needs to be named for the host it runs on. Read once per check
