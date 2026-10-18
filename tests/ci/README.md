@@ -64,6 +64,12 @@ files by Git's runtime, so `find` refuses its arguments. And `gitAnswer`, which 
 questions' answers, takes only `entry` lines whose path begins with `/`, so a right answer
 would still name no `.git` on a drive. `worktreesArgv`'s `find` answers right, but
 `worktreeDirsOf` reads only `tree` lines whose path begins with `/`, so it finds no worktree.
+Once the path-links question was asked bare, as the mod asks it (run 39157022148, the same
+day), it was skipped too: `pathLinksArgv` splits the command path on `:`, which cuts the
+drive off `C:/…/path/bin`, so Git's `find` is asked for `/Users/…/path/bin`, finds nothing
+and prints nothing; `linkTargets` also keeps only lines that begin with `/`, and a Windows
+command path separates its folders with `;`. The copy's `mkdir -p`, plain copy and `rm -rf`
+pass there (the clone, `cp -Rc`, is refused, as on Linux).
 
 The fixtures' line ends are read as `\n` whatever the checkout gave, as Claude Code writes its
 transcripts. The repository's `.gitattributes` keeps every file's `\n` ends on a Windows

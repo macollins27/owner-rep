@@ -415,5 +415,8 @@ successor; three moved there on 15 Oct 2026, when the objective replaced the rea
     planted by the doctor; the red run is its proof: with the fixture's tool call renamed,
     [run 39148144424](https://github.com/macollins27/owner-rep/actions/runs/39148144424)
     failed at this step on Ubuntu, macOS and Windows, and the next commit put the fixture
-    back. On Windows the check's own commands are reported as skipped, since the check is
-    refused there; three of them answer wrongly on Windows (`tests/ci/README.md`).
+    back. On Windows the check's own questions are reported as skipped, since the check is
+    refused there: all four answer wrongly on Windows, the three git questions and the
+    path-links question, while the copy's commands pass
+    ([run 39157022148](https://github.com/macollins27/owner-rep/actions/runs/39157022148),
+    `tests/ci/README.md`).
