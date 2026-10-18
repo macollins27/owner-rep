@@ -8,7 +8,8 @@
 //
 // On Windows the commands are Git for Windows' coreutils, found as the mod finds them
 // (lookUpHost in hooks/register.tsx: the first candidate whose `mkdir.exe --version` exits 0).
-// The transcript reads must pass on every system. The check's commands must pass on macOS and
+// The transcript reads, the copy's commands and the Windows signs must pass on every system.
+// The check's questions (the git, worktree and path-links questions) must pass on macOS and
 // Linux; on Windows one that does not is reported as skipped, with what it printed, because
 // the check never starts there (CHECK_NO_ROOM in hooks/rep.ts).
 import fs from 'node:fs'
@@ -50,6 +51,7 @@ const {
   gitFoldersOf,
   worktreeDirsOf,
   pathLinksArgv,
+  linkTargets,
   copyArgvs,
 } = await import(new URL('../../hooks/rep.ts', import.meta.url).href)
 
@@ -81,7 +83,7 @@ function report(r) {
 }
 
 // One answer judged: `ok <name>`, or the failure with the argv, its exit code, stdout and
-// stderr. `mayFailOnWindows` marks a command of the check, which on Windows is skipped
+// stderr. `mayFailOnWindows` marks one of the check's questions, which on Windows is skipped
 // rather than failed.
 function judge(name, r, ok, mayFailOnWindows = false) {
   total += 1
@@ -99,7 +101,7 @@ function judge(name, r, ok, mayFailOnWindows = false) {
   }
   if (mayFailOnWindows && onWindows) {
     skipped += 1
-    console.log(`skipped on Windows: the check is refused there: ${name}`)
+    console.log(`skipped on Windows: the check is refused there: ${name}${threw === '' ? '' : `: ${threw}`}`)
     report(r)
     return false
   }
@@ -161,7 +163,9 @@ function main() {
     fs.utimesSync(copyOfParent, now - 10, now - 10)
     fs.writeFileSync(file, fixture('session.jsonl'))
     fs.utimesSync(file, now, now)
-    // A git-like layout for the check's questions, and a command folder with one program.
+    // A git-like layout for the check's questions, and a command folder holding one program
+    // and one link to a program installed elsewhere, as a path folder's links lead into an
+    // install (uv's tools, a virtual environment).
     for (const f of [`${scratch}/copy/.git/HEAD`, `${scratch}/copy/sub/.git/HEAD`]) {
       fs.mkdirSync(path.dirname(f), { recursive: true })
       fs.writeFileSync(f, 'ref: refs/heads/main\n')
@@ -170,6 +174,15 @@ function main() {
     fs.writeFileSync(`${scratch}/copy/.git/worktrees/w1/gitdir`, `${scratch}/w1/.git\n`)
     fs.mkdirSync(`${scratch}/path/bin`, { recursive: true })
     fs.writeFileSync(`${scratch}/path/bin/tool`, 'a regular file\n')
+    const installed = `${scratch}/install/linked-tool`
+    fs.mkdirSync(path.dirname(installed), { recursive: true })
+    fs.writeFileSync(installed, 'the program a link leads to\n')
+    let linkRefused = ''
+    try {
+      fs.symlinkSync(installed, `${scratch}/path/bin/linked-tool`, 'file')
+    } catch (e) {
+      linkRefused = String(e)
+    }
 
     // The transcript reads: what heldItems in hooks/register.tsx runs. Each must pass here.
     check('humanRead: his four messages in order, the queued one marked, the picture data blanked', hostArgv(host, humanRead(file)), r =>
@@ -195,8 +208,8 @@ function main() {
     check('ls -t: the session file listed first', hostArgv(host, ['ls', '-t', folder]), r =>
       r.status === 0 && lines(r.stdout)[0]?.trim() === 'aaaa-bbbb.jsonl')
 
-    // The check's commands: what gitRepos, pathLinks and makeCopy run. On Windows the check
-    // is refused, so one that fails there is skipped with what it printed.
+    // The check's questions: what gitRepos and pathLinks in hooks/register.tsx ask. On Windows
+    // the check is refused, so one that fails there is skipped with what it printed.
     const whole = argv => hostArgv(host, wholeArgv(host, argv))
     const answered = r => wholeAnswer({ stdout: r.stdout, isStdoutTruncated: false })
     const holds = (list, wanted) => wanted.every(w => list.includes(w))
@@ -212,22 +225,28 @@ function main() {
       const a = answered(r)
       return a !== null && same(worktreeDirsOf([], a), [`${scratch}/w1`])
     }, true)
-    check('pathLinksArgv: the command folders asked to their end', whole(pathLinksArgv(`${scratch}/home`, `${scratch}/path/bin`)), r =>
-      answered(r) !== null, true)
+    // pathLinks asks this bare, not through wholeArgv, and reads it with linkTargets; `find`
+    // ends 1 for the home's missing `.local/bin`, so, as there, the exit code is not read.
+    check('pathLinksArgv: the link in the command folder read as leading to its install', hostArgv(host, pathLinksArgv(`${scratch}/home`, `${scratch}/path/bin`)), r => {
+      if (linkRefused !== '') throw new Error(`the fixture's link was not made: ${linkRefused}`)
+      return linkTargets(r.stdout, false).includes(local(fs.realpathSync(installed)))
+    }, true)
+
+    // The copy's commands: what makeCopy runs. These must pass on every system.
     check('mkdir -p: the copies folder made', hostArgv(host, ['mkdir', '-p', `${scratch}/made/deep`]), r =>
-      r.status === 0 && fs.statSync(`${scratch}/made/deep`).isDirectory(), true)
+      r.status === 0 && fs.statSync(`${scratch}/made/deep`).isDirectory())
     const target = `${scratch}/made/deep/c`
     const copied = () => fs.existsSync(`${target}/sub/.git/HEAD`)
     const [clone, plainCopy] = copyArgvs(host, `${scratch}/copy`, target)
     const cloned = run(clone)
     if (cloned.status === 0) {
-      judge('copyArgvs: the clone made the copy', cloned, copied, true)
+      judge('copyArgvs: the clone made the copy', cloned, copied)
     } else {
-      check(`copyArgvs: the clone refused (exit ${cloned.status}), the copy's folder made`, hostArgv(host, ['mkdir', target]), r => r.status === 0, true)
-      check('copyArgvs: the plain copy made the copy', plainCopy, r => r.status === 0 && copied(), true)
+      check(`copyArgvs: the clone refused (exit ${cloned.status}), the copy's folder made`, hostArgv(host, ['mkdir', target]), r => r.status === 0)
+      check('copyArgvs: the plain copy made the copy', plainCopy, r => r.status === 0 && copied())
     }
     check('rm -rf: the copies folder removed', hostArgv(host, ['rm', '-rf', `${scratch}/made`]), r =>
-      r.status === 0 && !fs.existsSync(`${scratch}/made`), true)
+      r.status === 0 && !fs.existsSync(`${scratch}/made`))
 
     // The signs the mod reads Windows by (windowsOs), on the system that has them and on the
     // two that do not.
@@ -250,7 +269,7 @@ function main() {
   }
   const answeredCount = total - skipped
   const where = `${process.platform} (${label})`
-  const skips = skipped === 0 ? '' : `; ${skipped} of the check's commands skipped: the check is refused on Windows`
+  const skips = skipped === 0 ? '' : `; ${skipped} of the check's questions skipped: the check is refused on Windows`
   const fails = failed === 0 ? '' : `; ${failed} did not`
   console.log(`host commands: ${passed} of ${answeredCount} answered as the mod expects on ${where}${fails}${skips}`)
   return failed === 0 ? 0 : 1
