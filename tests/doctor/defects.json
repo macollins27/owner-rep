@@ -1762,5 +1762,11 @@
     "breaks": "On a Windows machine where OS does not reach the mod, the search for his session's file is given a home with backslashes.",
     "patch": "home-slashes-by-os-only.patch",
     "fixed": "2026-10-18"
+  },
+  {
+    "name": "windows-home-before-profile",
+    "breaks": "On a Windows machine with HOME set to a folder other than the profile folder, the search for his session's file looks in the wrong folder and his messages are not read from it.",
+    "patch": "windows-home-before-profile.patch",
+    "fixed": "2026-10-18"
   }
 ]

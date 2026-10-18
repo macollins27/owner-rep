@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 4c4a77d..24b12c5 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -986,7 +986,7 @@ async function lookUpHost($: EngineInterface, os: string): Promise<Host> {
+ // folder there, written with forward slashes as every path built from it is.
+ async function homeFor($: EngineInterface): Promise<string> {
+   const windows = (await osOf($)) === WINDOWS_OS
+-  const home = homeOf(windows, await $.env.get('HOME'), await $.env.get('USERPROFILE'))
++  const home = homeOf(false, await $.env.get('HOME'), await $.env.get('USERPROFILE'))
+   return windows ? slashed(home) : home
+ }
+ 

@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index be78020..a5f5a37 100644
+index 278afa7..e369187 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1507,7 +1507,7 @@ export const isWindowsHost = (host: Host): boolean => host.os === WINDOWS_OS
-  * part and the fence's comparisons hold; a root (`/`, `C:\`) keeps its own.
+@@ -1778,7 +1778,7 @@ export const isWindowsHost = (host: Host): boolean => host.os === WINDOWS_OS
+  * comparisons hold; a root (`/`, `C:\`) keeps its own.
   */
- export const homeOf = (home: string | undefined, userProfile: string | undefined): string =>
--  (home !== undefined && home !== '' ? home : userProfile !== undefined && userProfile !== '' ? userProfile : '').replace(/([^:\\/])[\\/]+$/, '$1')
-+  (home !== undefined && home !== '' ? home : userProfile !== undefined && userProfile !== '' ? userProfile : '')
+ export const homeOf = (windows: boolean, home: string | undefined, userProfile: string | undefined): string =>
+-  ((windows ? [userProfile, home] : [home, userProfile]).find(v => v !== undefined && v !== '') ?? '').replace(/([^:\\/])[\\/]+$/, '$1')
++  ((windows ? [userProfile, home] : [home, userProfile]).find(v => v !== undefined && v !== '') ?? '')
  
  /**
   * A Windows path a POSIX command will accept. Git's coreutils take forward
