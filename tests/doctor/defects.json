@@ -1621,7 +1621,7 @@
   },
   {
     "name": "git-links-dropped",
-    "breaks": "The links found in the copy are thrown away after the first question, so the places they lead to and the repositories above those places are never asked about or fenced.",
+    "breaks": "The links found in the copy are thrown away after the question inside the copy, so the places they lead to and the repositories above those places are never asked about or fenced.",
     "patch": "git-links-dropped.patch",
     "fixed": "2026-10-17"
   },
@@ -1693,13 +1693,13 @@
   },
   {
     "name": "readlink-probe-dropped",
-    "breaks": "Links are resolved with a flag that some machines lack and no fallback, so on those machines no link is resolved and the places they lead to are left open.",
+    "breaks": "Links are handed to readlink several names at a time with no one-name fallback, so on a machine whose readlink takes one name no link is resolved and the places they lead to are left open.",
     "patch": "readlink-probe-dropped.patch",
     "fixed": "2026-10-17"
   },
   {
     "name": "sh-not-host-named",
-    "breaks": "The shell is left out of the commands the Windows host must name, so the search's end mark cannot run there and every git answer counts as cut.",
+    "breaks": "The shell is left out of the commands the Windows host must name, so the search cannot start there and every git answer counts as unanswered.",
     "patch": "sh-not-host-named.patch",
     "fixed": "2026-10-17"
   },
