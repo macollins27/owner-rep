@@ -30,38 +30,47 @@ whose transcript reads ran `grep` and `sed` by bare name.
 The kit stubs `$.process.run`, so no test runs a command the mod builds. `host-commands.mjs`
 does, on each system the workflow runs on (Ubuntu, macOS and Windows), with
 `node --experimental-strip-types tests/ci/host-commands.mjs`. It imports the mod's own
-builders and parsers from `hooks/rep.ts` and passes every argv through `hostArgv`, so the argv
-it runs is the argv the mod runs, and it reads each answer as the mod reads it. Against the
+builders and parsers from `hooks/rep.ts` and wraps each built argv as the mod does, through
+`hostArgv` and, for the git questions alone, `wholeArgv`, so the argv it runs is the argv the
+mod runs, and it reads each answer with the parser the mod reads it with. The `find`, `ls -t`,
+`mkdir -p` and `rm -rf` argvs the mod writes inline are written out the same way. Against the
 two transcripts in `fixtures/` (a session's own file with his typed, pictured, queued, meta
 and engine lines and a compaction mark, and a parent holding the same mark), copied into a
 scratch folder laid out as `<config>/projects/p1/`, it runs the reads `heldItems` makes:
 `humanRead`, `startFind`, `toolLineFind`, `humanReadBefore`, `summaryLineFind`, and the `find`
 and `ls -t` that look for a session's file and its folder's newest files. Against a git-like
-layout in the same folder it runs the check's questions (`gitUpArgv`, `gitInsideArgv`,
-`worktreesArgv` and `pathLinksArgv`, each through `wholeArgv`), its `mkdir -p`, the copy
-(`copyArgvs`: the clone, and when it is refused the plain copy into a folder just made) and
-its `rm -rf`. Then it checks the signs `windowsOs` reads Windows by: on Windows that `OS`,
+layout in the same folder it runs the check's git questions (`gitUpArgv`, `gitInsideArgv` and
+`worktreesArgv`, each through `wholeArgv`, as `gitRepos` asks them, read by `gitFoldersOf` and
+`worktreeDirsOf`), and its path-links question (`pathLinksArgv`, bare, as `pathLinks` asks it)
+against a command folder holding a link to a program installed elsewhere in the scratch folder,
+requiring `linkTargets` to name the program. Then it runs the copy's commands: `mkdir -p`, the
+copy (`copyArgvs`: the clone, and when it is refused the plain copy into a folder just made) and
+`rm -rf`. Then it checks the signs `windowsOs` reads Windows by: on Windows that `OS`,
 `SystemRoot`, `windir` and the working folder each say Windows, on the other two that none
 does. Each check prints `ok <name>`; a failure prints the argv, its exit code, stdout and
 stderr, and the step ends 1. The last line says how many answered as the mod expects, how
-many did not, and how many of the check's commands were skipped.
+many did not, and how many of the check's questions were skipped.
 
 On Windows the commands are Git for Windows' coreutils, found as `lookUpHost` finds them:
 the first of `winPosixBinCandidates` whose `mkdir.exe --version` exits 0. The transcript
-reads must answer there as on the other two systems. A command of the check that does not is
-printed as skipped, with its output, and does not fail the step, because the check does not
-start on Windows (`CHECK_NO_ROOM`); on macOS and Linux every command must answer. On the
-first Windows run (18 Oct 2026) three were skipped, and each is a fault the check would
-have there: `gitUpArgv` asks for the folders above a drive path as `/C:/…`, since
-`foldersUp` starts every folder with `/`, and Git's `find` finds none of them;
-`gitInsideArgv`'s `*\n*` pattern reaches `find` split and matched against the working
-folder's files by Git's runtime, so `find` refuses its arguments; and `worktreesArgv`'s
-`find` answers right, but `worktreeDirsOf` (like `gitAnswer`, with `entry`) reads only
-`tree` lines whose path begins with `/`, so it finds no worktree. The
-fixtures' line ends are read as `\n` whatever the checkout gave, as Claude Code writes its
-transcripts, and the repository's `.gitattributes` keeps every file's `\n` ends on a Windows
-checkout, where Git would otherwise write `\r\n` and Git Bash would read the carriage return
-as part of each command of the shell scripts the run starts.
+reads and the copy's commands must answer there as on the other two systems. One of the
+check's questions that does not is printed as skipped, with its output, and does not fail the
+step, because the check does not start on Windows (`CHECK_NO_ROOM`); on macOS and Linux every
+question must answer. On the first Windows run (18 Oct 2026) three were skipped, and each is
+a fault the check would have there. `gitUpArgv` asks for the folders above a drive path as
+`/C:/…`, since `foldersUp` starts every folder with `/`, and Git's `find` finds none of them.
+`gitInsideArgv`'s `*\n*` pattern reaches `find` split and matched against the working folder's
+files by Git's runtime, so `find` refuses its arguments. And `gitAnswer`, which reads both git
+questions' answers, takes only `entry` lines whose path begins with `/`, so a right answer
+would still name no `.git` on a drive. `worktreesArgv`'s `find` answers right, but
+`worktreeDirsOf` reads only `tree` lines whose path begins with `/`, so it finds no worktree.
+
+The fixtures' line ends are read as `\n` whatever the checkout gave, as Claude Code writes its
+transcripts. The repository's `.gitattributes` keeps every file's `\n` ends on a Windows
+checkout too. That is a precaution, taken from Git for Windows' documented default (its
+installer sets `core.autocrlf` to `true`, which writes `\r\n` on checkout) and from Git
+Bash reading a carriage return as part of a command; no run of this project has shown it,
+since the file was in place from the first Windows run.
 
 What stays unshown on a real Windows machine: the mod inside a live interactive Claude Code
 there, so the card as drawn, and `$.env.get` reaching the process environment (the script

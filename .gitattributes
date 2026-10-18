@@ -1,4 +1,5 @@
 # Every text file is checked out with the line ends it was committed with, '\n', on Windows
-# too, where Git would otherwise write '\r\n': Git Bash reads a carriage return as part of a
-# command, so the shell scripts the GitHub run starts there would not run.
+# too. A precaution taken from Git for Windows' documented default, not from a run of this
+# project: its installer sets core.autocrlf to true, which writes '\r\n' on checkout, and Git
+# Bash reads a carriage return as part of a command, so a shell script with those ends fails.
 * text=auto eol=lf

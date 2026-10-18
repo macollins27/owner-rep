@@ -339,9 +339,10 @@ the workflow installed is not the build that wrote that copy, so a change in the
 never hide behind a type check against a stale copy. The host-calls step fails the run when a
 hook runs a program whose name does not go through `hostArgv`, the one place a command is
 named for the host it runs on. The host-commands script (`tests/ci/host-commands.mjs`) runs
-the commands the mod builds, through `hostArgv`, on each of the three systems (on Windows
-Git for Windows' own) against fixture transcripts and a scratch folder, and reads their
-answers with the mod's own parsers.
+the commands the mod builds, wrapped as the mod wraps them, on each of the three systems (on
+Windows Git for Windows' own) against fixture transcripts and a scratch folder, and reads
+their answers with the mod's own parsers; on Windows the check's own questions are reported
+as skipped when they answer wrongly, since the check does not start there.
 
 ```
 tsc -p . --noEmit             # needs .claude-plugin/types/, see below
