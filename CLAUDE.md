@@ -294,7 +294,7 @@ which leaves an argv as written on a Mac or Linux (`PATH_HOST`) and on Windows n
 commands in `POSIX_COMMANDS` by their full path in Git for Windows' `usr/bin` and `claude` as
 npm's `claude.exe`. `hostOf` finds both by running each candidate with `--version`
 (`winPosixBinCandidates`, `winClaudeCandidates`, slashed as they are built so the path a probe
-proves is the one run) and holds the lookup for the process, keyed on what `windowsOs` makes of `OS`, `SystemRoot`, `windir` and the working folder (Windows passes the first three to programs by default, but a launcher can drop them, so a drive path in any of the four counts and the working folder is the sign none can drop), except a Windows
+proves is the one run) and holds the lookup for the process, keyed on what `windowsOs` makes of `OS`, `SystemRoot`, `windir` and the working folder (Windows passes the first three to programs by default, but a launcher can drop them, so `OS` being `Windows_NT`, or a drive path in any of the last three, counts, and the working folder is the sign none can drop), except a Windows
 one whose coreutils did not answer, which is looked up again on the next call; a lookup that
 throws still reads as Windows, so the check's refusal there never rests on a probe. The home
 is `homeFor`: `HOME`, else `USERPROFILE` (`homeOf`), written with forward slashes on Windows,

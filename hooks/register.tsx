@@ -902,8 +902,8 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
 // KEYED ON WHAT `windowsOs` MAKES OF `OS`, `SystemRoot`, `windir` and the session's working
 // folder (Windows is recognised by any of the four, so a launcher that drops `OS` does not
 // hide it), not held outright: a host is resolved once and reused, and the
-// key makes a stale answer impossible rather than merely unlikely. `OS` never
-// changes under a running session, so production resolves once; a test that
+// key makes a stale answer impossible rather than merely unlikely. The four signs
+// agree on any one machine and do not change under a running session, so production resolves once; a test that
 // says the host is Windows gets a fresh resolution instead of whatever an
 // earlier test left behind, which is what a plain `Host | null` would have
 // handed it. The lookup itself is held, so two reads at once share one probe.
@@ -930,20 +930,21 @@ async function firstThatAnswers($: EngineInterface, candidates: readonly string[
 }
 
 // `OS`, `SystemRoot`, `windir` and the working folder, read as `windowsOs` takes them; the
-// working folder's throw counts as none. Each name is written out, as the mods API reads only those.
+// throw of any read after `OS` counts as none. Each name is written out, as the mods API reads only those.
 async function osOf($: EngineInterface): Promise<string> {
+  const os = (await $.env.get('OS')) ?? ''
+  if (os === WINDOWS_OS) return WINDOWS_OS
+  let systemRoot = ''
+  let windir = ''
   let cwd = ''
   try {
+    systemRoot = (await $.env.get('SystemRoot')) ?? ''
+    windir = (await $.env.get('windir')) ?? ''
     cwd = (await $.session.cwd()) ?? ''
   } catch {
-    cwd = ''
+    // A read that throws counts as none; the signs read before it stand.
   }
-  return windowsOs(
-    (await $.env.get('OS')) ?? '',
-    (await $.env.get('SystemRoot')) ?? '',
-    (await $.env.get('windir')) ?? '',
-    cwd,
-  )
+  return windowsOs(os, systemRoot, windir, cwd)
 }
 
 async function hostOf($: EngineInterface): Promise<Host> {
