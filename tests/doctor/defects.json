@@ -1741,7 +1741,7 @@
   },
   {
     "name": "windows-by-os-only",
-    "breaks": "On a Windows machine where OS does not reach the mod, the check is not refused and runs with nothing to fence it.",
+    "breaks": "On a Windows machine where OS does not reach the mod, the check is not refused and runs with nothing to fence it, and unless Git's commands are on the command path his messages are not read from his session's file, since its commands are run by their bare names.",
     "patch": "windows-by-os-only.patch",
     "fixed": "2026-10-18"
   },

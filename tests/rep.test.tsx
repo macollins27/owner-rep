@@ -5,9 +5,9 @@ import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote
 
 // Every test starts with the session's working folder a Unix path, so what the suite reads does not
 // depend on the folder the kit gives it: on a Windows machine that folder is a drive path, which
-// `windowsOs` reads as Windows. A test that answers `session.cwd` itself replaces this answer (the
-// engine keeps the first handler registered, so the replacement is held here and the one handler
-// asked for it).
+// `windowsOs` reads as Windows. A test that answers `session.cwd` itself replaces this answer: the
+// kit's declarations say a plugin's registrations nest in order, first outermost, and that a repeat
+// throws, so the replacement is held here and the one handler registered asks it.
 const test = (name: string, ...rest: [TestBody] | [TestOptions, TestBody]): void => {
   const body = rest[rest.length - 1] as TestBody
   const wrapped: TestBody = ($, on) => {
@@ -22,7 +22,6 @@ const test = (name: string, ...rest: [TestBody] | [TestOptions, TestBody]): void
   }
   ;(kitTest as unknown as (n: string, ...r: unknown[]) => void)(name, ...rest.slice(0, -1), wrapped)
 }
-
 
 const om = (text: string, n = 1): OwnerMsg => ({ n, kind: 'his', text, prior: '' })
 
@@ -5638,9 +5637,10 @@ test('the places Git for Windows and npm put their binaries are tried in order, 
   expect(winClaudeCandidates(undefined, undefined)).toEqual([])
 })
 
-// The room on a Windows host: `OS` says Windows (or what `os` gives), the home is
-// USERPROFILE, and a command answers `--version` only at the second coreutils
-// candidate, so the test proves the candidates are tried in order rather than guessed at.
+// The room on a Windows host: `OS` says Windows (or what `os` gives), `more` adds or
+// replaces variables, the home is USERPROFILE, and a command answers `--version` only at the
+// second coreutils candidate, so the test proves the candidates are tried in order rather
+// than guessed at.
 const winRoom = (on: On, throwsOn = '', os: () => string = () => WINDOWS_OS, more: () => Record<string, string> = () => ({})): string[][] => {
   const runs: string[][] = []
   const env: Record<string, string> = {
@@ -5786,8 +5786,9 @@ test('rule: with OS missing, the check pressed on a card drawn before SystemRoot
   await ui.unmount()
 })
 
-// The transcript on a Windows host: `OS` says Windows, the home is USERPROFILE with no
-// HOME, and the coreutils answer only by their full path in Git's usr/bin, as there.
+// The transcript on a Windows host: `OS` says Windows (or what `os` gives, with `systemRoot`
+// set when given), the home is USERPROFILE, with HOME set only when `home` names another
+// folder, and the coreutils answer only by their full path in Git's usr/bin, as there.
 const WIN_GIT = 'C:/PF/Git/usr/bin'
 const WIN_PROJECTS = 'C:/Users/k/.claude/projects'
 const WIN_FOLDER = `${WIN_PROJECTS}/-C-work-app`
