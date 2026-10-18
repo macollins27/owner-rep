@@ -62,6 +62,7 @@ import {
   winClaudeCandidates,
   winPosixBinCandidates,
   WINDOWS_OS,
+  windowsOs,
   refusedLine,
   checkPrompt,
   doingFor,
@@ -898,7 +899,9 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
 // apart from one where the folder merely exists. A Windows host where nothing
 // answers keeps every name as written, so the commands are tried by name and
 // fail; the check does not start on Windows in any case (`CHECK_NO_ROOM`).
-// KEYED ON `OS`, not held outright: a host is resolved once and reused, and the
+// KEYED ON WHAT `windowsOs` MAKES OF `OS`, `SystemRoot`, `windir` and the session's working
+// folder (Windows is recognised by any of the four, so a launcher that drops `OS` does not
+// hide it), not held outright: a host is resolved once and reused, and the
 // key makes a stale answer impossible rather than merely unlikely. `OS` never
 // changes under a running session, so production resolves once; a test that
 // says the host is Windows gets a fresh resolution instead of whatever an
@@ -926,8 +929,25 @@ async function firstThatAnswers($: EngineInterface, candidates: readonly string[
   return ''
 }
 
+// `OS`, `SystemRoot`, `windir` and the working folder, read as `windowsOs` takes them; the
+// working folder's throw counts as none. Each name is written out, as the mods API reads only those.
+async function osOf($: EngineInterface): Promise<string> {
+  let cwd = ''
+  try {
+    cwd = (await $.session.cwd()) ?? ''
+  } catch {
+    cwd = ''
+  }
+  return windowsOs(
+    (await $.env.get('OS')) ?? '',
+    (await $.env.get('SystemRoot')) ?? '',
+    (await $.env.get('windir')) ?? '',
+    cwd,
+  )
+}
+
 async function hostOf($: EngineInterface): Promise<Host> {
-  const os = (await $.env.get('OS')) ?? ''
+  const os = await osOf($)
   if (host === null || host.os !== os) host = { os, value: lookUpHost($, os) }
   const held = host
   const got = await held.value
@@ -960,11 +980,11 @@ async function lookUpHost($: EngineInterface, os: string): Promise<Host> {
   }
 }
 
-// The home, '' when there is none, written on Windows with forward slashes as every path
-// built from it is.
+// The home, '' when there is none, written on Windows (by the four signs of `windowsOs`) with
+// forward slashes as every path built from it is.
 async function homeFor($: EngineInterface): Promise<string> {
   const home = homeOf(await $.env.get('HOME'), await $.env.get('USERPROFILE'))
-  return (await $.env.get('OS')) === WINDOWS_OS ? slashed(home) : home
+  return (await osOf($)) === WINDOWS_OS ? slashed(home) : home
 }
 
 // pnpm's store as pnpm names it in the copy, outside the fence, its pnpmfile ignored, its

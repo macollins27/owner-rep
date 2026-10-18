@@ -1,7 +1,7 @@
 import type { On, SessionMessage } from 'claude-code'
 import { expect, mock, test, type Engine } from 'claude-code/testing'
 
-import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, isBlankRec } from '../hooks/rep'
+import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec } from '../hooks/rep'
 
 const om = (text: string, n = 1): OwnerMsg => ({ n, kind: 'his', text, prior: '' })
 
@@ -5610,7 +5610,7 @@ test('the places Git for Windows and npm put their binaries are tried in order, 
 // The room on a Windows host: `OS` says Windows (or what `os` gives), the home is
 // USERPROFILE, and a command answers `--version` only at the second coreutils
 // candidate, so the test proves the candidates are tried in order rather than guessed at.
-const winRoom = (on: On, throwsOn = '', os: () => string = () => WINDOWS_OS): string[][] => {
+const winRoom = (on: On, throwsOn = '', os: () => string = () => WINDOWS_OS, more: () => Record<string, string> = () => ({})): string[][] => {
   const runs: string[][] = []
   const env: Record<string, string> = {
     USERPROFILE: 'C:\\Users\\k',
@@ -5620,7 +5620,7 @@ const winRoom = (on: On, throwsOn = '', os: () => string = () => WINDOWS_OS): st
   }
   on('env.get', (_$, e) => {
     if (e.name === throwsOn) throw new Error(`no ${e.name}`)
-    return { value: e.name === 'OS' ? os() || undefined : env[e.name] }
+    return { value: e.name === 'OS' ? os() || undefined : { ...env, ...more() }[e.name] }
   })
   on('process.run', (_$, e) => {
     const argv = [...e.argv]
@@ -5642,12 +5642,12 @@ const winRoom = (on: On, throwsOn = '', os: () => string = () => WINDOWS_OS): st
 const copied = (runs: string[][]): string[][] =>
   runs.filter(r => /(^|\/)(cp|rm|mkdir)(\.exe)?$/.test(r[0] ?? '') && r[r.length - 1] !== '--version')
 
-const windowsCard = async ($: Engine, on: On, throwsOn = '') => {
+const windowsCard = async ($: Engine, on: On, throwsOn = '', how: { os?: string; more?: Record<string, string>; cwd?: string } = {}) => {
   mock.clock(on)
   session(on)
   quietBand(on)
-  const runs = winRoom(on, throwsOn)
-  on('session.cwd', () => ({ value: 'C:\\work\\proj' }))
+  const runs = winRoom(on, throwsOn, () => how.os ?? WINDOWS_OS, () => how.more ?? {})
+  on('session.cwd', () => ({ value: how.cwd ?? 'C:\\work\\proj' }))
   on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
   let spawned = 0
   on('process.spawn', (async function* () {
@@ -5681,7 +5681,8 @@ test('rule: on Windows the check itself does not start either, pressed on a card
   quietBand(on)
   let os = ''
   const runs = winRoom(on, '', () => os)
-  on('session.cwd', () => ({ value: 'C:\\work\\proj' }))
+  // A folder on a drive would itself say Windows; this test changes `OS` alone.
+  on('session.cwd', () => ({ value: '/tmp/x' }))
   on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
   let spawned = 0
   on('process.spawn', (async function* () {
@@ -5705,16 +5706,65 @@ test('rule: on Windows the check itself does not start either, pressed on a card
   await ui.unmount()
 })
 
+test('windowsOs: Windows_NT, or a SystemRoot, windir or working folder that is a drive path, is Windows; a Unix value or none is not', () => {
+  expect(windowsOs('Windows_NT', '', '', '')).toBe('Windows_NT')
+  expect(windowsOs('', 'C:\\Windows', '', '')).toBe('Windows_NT')
+  expect(windowsOs('', '', 'c:/windows', '')).toBe('Windows_NT')
+  expect(windowsOs('', '', '', 'C:\\work\\proj')).toBe('Windows_NT')
+  expect(windowsOs('', '/Users/o', '/Users/o', '/Users/o')).toBe('')
+  expect(windowsOs('', '', '', '/mnt/c/work')).toBe('')
+  expect(windowsOs('', '', '', '')).toBe('')
+})
+
+test('rule: on Windows with OS missing, SystemRoot alone says Windows: the card says the check does not run there and offers no Check it', async ($, on) => {
+  await windowsCard($, on, '', { os: '', more: { SystemRoot: 'C:\\Windows' }, cwd: '/tmp/x' })
+})
+
+test('rule: on Windows with OS missing, windir alone says Windows: the card says the check does not run there and offers no Check it', async ($, on) => {
+  await windowsCard($, on, '', { os: '', more: { windir: 'C:\\Windows' }, cwd: '/tmp/x' })
+})
+
+test('rule: on Windows with OS, SystemRoot and windir all missing, a working folder on a drive says Windows: the card says the check does not run there and offers no Check it', async ($, on) => {
+  await windowsCard($, on, '', { os: '', cwd: 'C:\\work\\proj' })
+})
+
+test('rule: with OS missing, the check pressed on a card drawn before SystemRoot appeared does not start: nothing is copied or spawned, and the card says why', async ($, on) => {
+  mock.clock(on)
+  session(on)
+  quietBand(on)
+  let root = ''
+  const runs = winRoom(on, '', () => '', () => ({ SystemRoot: root }))
+  on('session.cwd', () => ({ value: '/tmp/x' }))
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  let spawned = 0
+  on('process.spawn', (async function* () {
+    spawned += 1
+    yield { stream: 'stdout', text: CHECKED_WITH(0) }
+    return { value: { code: 0, signal: null } }
+  }) as never)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  expect(await ui.find({ key: 'check' })).toBeDefined()
+  root = 'C:\\Windows'
+  await ui.press({ key: 'check' })
+  expect(await ui.find({ type: 'Text', text: /The check does not run on Windows yet: Claude Code's sandbox is switched off there/ })).toBeDefined()
+  expect(spawned).toBe(0)
+  expect(copied(runs)).toEqual([])
+  expect(await ui.find({ type: 'Text', text: /The card\./ })).toBeDefined()
+  expect(await ui.find({ key: 'check' })).toBeUndefined()
+  await ui.unmount()
+})
+
 // The transcript on a Windows host: `OS` says Windows, the home is USERPROFILE with no
 // HOME, and the coreutils answer only by their full path in Git's usr/bin, as there.
 const WIN_GIT = 'C:/PF/Git/usr/bin'
 const WIN_PROJECTS = 'C:/Users/k/.claude/projects'
 const WIN_FOLDER = `${WIN_PROJECTS}/-C-work-app`
-const winTranscript = (on: On, files: Record<string, string>, opts: { probeFails?: number } = {}): string[][] => {
+const winTranscript = (on: On, files: Record<string, string>, opts: { probeFails?: number; os?: string; systemRoot?: string } = {}): string[][] => {
   const runs: string[][] = []
   const folder = WIN_FOLDER
   let fails = opts.probeFails ?? 0
-  mock.env(on, { OS: WINDOWS_OS, USERPROFILE: 'C:\\Users\\k', PROGRAMFILES: 'C:\\PF' })
+  mock.env(on, { OS: opts.os ?? WINDOWS_OS, ...(opts.systemRoot ? { SystemRoot: opts.systemRoot } : {}), USERPROFILE: 'C:\\Users\\k', PROGRAMFILES: 'C:\\PF' })
   on('clock.now', () => ({ value: 1_000_000 }))
   on('process.run', (_$, e) => {
     const argv = [...e.argv]
@@ -5765,6 +5815,21 @@ test('rule: on Windows his messages are read from the session\'s file through Gi
   await settle($)
   expect(rec()?.owner).toEqual(SEEDED)
   // Every command named by its full path, and the folder found under USERPROFILE.
+  const ran = runs.filter(r => r[r.length - 1] !== '--version')
+  expect(ran.map(r => r[0])).toEqual([`${WIN_GIT}/find.exe`, `${WIN_GIT}/sed.exe`, `${WIN_GIT}/grep.exe`])
+  expect(ran[0]?.[1]).toBe(WIN_PROJECTS)
+})
+
+test('rule: on Windows with OS missing, his messages are read under the home USERPROFILE names, written with forward slashes', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS }))
+  const runs = winTranscript(on, { 'test-session.jsonl': SEEDED_FILE }, { os: '', systemRoot: 'C:\\Windows' })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await started($)
+  await settle($)
+  expect(rec()?.owner).toEqual(SEEDED)
   const ran = runs.filter(r => r[r.length - 1] !== '--version')
   expect(ran.map(r => r[0])).toEqual([`${WIN_GIT}/find.exe`, `${WIN_GIT}/sed.exe`, `${WIN_GIT}/grep.exe`])
   expect(ran[0]?.[1]).toBe(WIN_PROJECTS)

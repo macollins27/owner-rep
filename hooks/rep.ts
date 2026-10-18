@@ -1738,7 +1738,7 @@ export const POSIX_COMMANDS = ['mkdir', 'rm', 'cp', 'find', 'ls', 'sed', 'grep',
  * is the Unix case and leaves those hosts' argv untouched.
  */
 export type Host = {
-  /** `OS` from the environment: `Windows_NT` on Windows, '' anywhere else. */
+  /** `Windows_NT` on Windows, '' anywhere else: `OS`, read with the other signs by `windowsOs`. */
   os: string
   /** Folder holding the POSIX commands, or '' when they are on PATH. */
   posixBin: string
@@ -1748,6 +1748,20 @@ export type Host = {
 
 /** A host that resolves every command by name, which is Darwin and Linux. */
 export const PATH_HOST: Host = { os: '', posixBin: '', claude: '' }
+
+/**
+ * What this machine's `OS` reads as, once the other signs of Windows are counted: Windows_NT
+ * when `OS` says so, or when `SystemRoot`, `windir` or the session's working folder is a path on
+ * a drive (`C:\\`, `c:/`), and `os` as it was otherwise. Windows passes `SystemRoot` and `windir`
+ * to every program by default, but a launcher can start one with a cut-down set; the working
+ * folder is the sign none can drop, since on Windows it begins with a drive letter, on a Mac or
+ * Linux with `/` and under WSL with `/mnt/c/`. A drive path is asked for, not a value being set,
+ * because a hand-set value on a Mac is possible and a drive path matches none.
+ */
+export function windowsOs(os: string, systemRoot: string, windir: string, cwd: string): string {
+  if (os === WINDOWS_OS) return WINDOWS_OS
+  return [systemRoot, windir, cwd].some(v => /^[A-Za-z]:[\\/]/.test(v)) ? WINDOWS_OS : os
+}
 
 export const isWindowsHost = (host: Host): boolean => host.os === WINDOWS_OS
 
