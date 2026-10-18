@@ -37,7 +37,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 205 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 208 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions of this checkout in tmux, the strip captured to tests/live/captures
 ```
@@ -449,7 +449,10 @@ State lives in two places. Atoms (`atom({plugin, key})`) are per-session UI stat
 the render. The `$.store` key `sessions` holds a `Rec` per session id (the objective, the
 results of earlier jobs, the owner's numbered messages and the counter, the last briefing's
 next step and message, the last `DRAFTS_MAX` (3) cards' messages in `rec.drafts`, flags already seen, other mods' notes, spend counters with the writer's own and its failed calls), capped
-at `SESSIONS_MAX` newest. A record `saveRec` lets go leaves its drafts (`recDrafts`: its
+at `SESSIONS_MAX` newest. A record that still loads as the blank one a session starts with
+(`isBlankRec`: no message, objective, draft or spend) is never kept, since a missing record
+loads the same: `session.end` saves every session's record, so before 17 Oct 2026 each
+scripted `claude -p` run on the Mac left a blank one that took a place from his sessions. A record `saveRec` lets go leaves its drafts (`recDrafts`: its
 `rec.drafts`, last briefing's message and messages held as `draft`) in the key
 `droppedDrafts`, newest first, each once, up to `DROPPED_DRAFTS_MAX` (200) (`keepDropped`);
 a fork's own first save can let go the record it was forked from. `storedDrafts` reads

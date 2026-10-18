@@ -2166,6 +2166,28 @@ export function recDrafts(r: unknown): string[] {
   return out
 }
 
+// Whether a stored record loads as `blank`, the record a session starts with: no message or
+// note of his, no objective, no draft, no spend, nothing held but its id and its time. The
+// store keeps none (`saveRec`), since a missing record loads as that same blank, so a session
+// where nothing happened (a scripted `claude -p` run, a window opened and closed) never takes
+// one of the SESSIONS_MAX places from a session that holds his messages. Fields are compared
+// whole, whatever their key order; one the blank lacks (a briefing, an older build's reading)
+// makes the record hold something.
+export function isBlankRec(rec: object, blank: object): boolean {
+  const canon = (v: unknown): string =>
+    JSON.stringify(v, (_k, x: unknown) =>
+      typeof x === 'object' && x !== null && !Array.isArray(x)
+        ? Object.fromEntries(Object.entries(x).sort(([p], [q]) => (p < q ? -1 : p > q ? 1 : 0)))
+        : x,
+    ) ?? 'undefined'
+  const loaded: Record<string, unknown> = { ...blank, ...rec }
+  const base = blank as Record<string, unknown>
+  for (const k of new Set([...Object.keys(loaded), ...Object.keys(base)])) {
+    if (k !== 'id' && k !== 'at' && canon(loaded[k]) !== canon(base[k])) return false
+  }
+  return true
+}
+
 // The drafts of records the store has let go, newest first, so a draft he sent is still
 // known in a session reopened or forked after its record fell out of the newest
 // SESSIONS_MAX (a fork's own record can push out the one it was forked from).

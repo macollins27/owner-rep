@@ -73,6 +73,7 @@ import {
   draftSplitAny,
   keepDraft,
   keepDropped,
+  isBlankRec,
   recDrafts,
   askAgain,
   gateOpen,
@@ -244,6 +245,8 @@ async function saveRec($: EngineInterface, rec: Rec): Promise<void> {
     for (const [k, v] of Object.entries(got as Record<string, unknown>)) if (isRec(v)) all[k] = v
   }
   all[rec.id] = { ...rec, at: Date.now() }
+  // A blank record loads back the same when missing, so none takes a place (`isBlankRec`).
+  for (const k of Object.keys(all)) if (isBlankRec(all[k] as Rec, freshRec(k))) delete all[k]
   const ids = Object.keys(all).sort((a, b) => (all[b]?.at ?? 0) - (all[a]?.at ?? 0))
   const kept: Record<string, Rec> = {}
   for (const k of ids.slice(0, SESSIONS_MAX)) kept[k] = all[k] as Rec

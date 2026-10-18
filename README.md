@@ -256,7 +256,8 @@ A newer press makes an older run's answer stale, and the card is only rewritten 
 that belongs to it.
 
 State is in two places. Atoms hold the per-session UI state that drives the render. The
-plugin store holds one record per session, capped at the 32 newest: the objective with its
+plugin store holds one record per session that holds anything, capped at the 32 newest (a
+session where nothing happened, such as a scripted `claude -p` run, keeps none): the objective with its
 earlier versions and when and why it last moved, the results of earlier jobs, the owner's
 messages, notes to the rep and sent drafts, each numbered (the job's kept whole up to 200,
 and the 40 before it), flags already shown, notes other mods have shown, and spend counters
@@ -325,7 +326,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 205 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 208 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions in tmux, the strip captured to tests/live/captures
 ```

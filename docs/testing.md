@@ -48,6 +48,7 @@ entry that proves the test bites (added 14 Oct 2026; the objective's rules 15 Oc
 | The note waits while another mod draws beneath | `rule: the note waits…` | `note-over-other-mod` |
 | The digit hotkeys leave the row while another mod draws, and come back | `rule: the digit hotkeys…` | `digits-doubled` |
 | The store keeps only the newest `SESSIONS_MAX` sessions | `rule: the store keeps…` | `sessions-unbounded` |
+| A record that holds nothing takes no place in the store, and a session that starts and ends with nothing of his, as a scripted run does, saves none; a record is judged as it loads, whatever order its fields were saved in, and one holding a field the blank lacks is kept | `rule: a blank record takes no place…`, `rule: a session that starts and ends with nothing of his…`, `isBlankRec: a record that loads as the blank one…` | `blank-records-kept`, `blank-as-saved`, `blank-ignores-extra`, `blank-key-order` |
 | A record the store lets go leaves its drafts in a kept list of up to `DROPPED_DRAFTS_MAX`, newest first, each once, and a seed reads that list, so a card message he sent in a session whose record was let go is still the rep's draft; the seed reads the records before that list, the reverse of the order they are written, so a record let go between its two reads is found in one | `rule: a record the store lets go leaves its drafts…`, `recDrafts takes a record's cards' messages…`, `rule: a card message he sent in a session whose record the store has let go…`, `rule: a record let go while the drafts are being read…` | `dropped-drafts-lost`, `dropped-drafts-unread`, `dropped-drafts-uncapped`, `dropped-drafts-oldest-first`, `dropped-drafts-read-order` |
 | The objective is written by its own call from the owner's messages, never by the looks; the row shows its result | `rule: the objective is written by its own call…` | `looks-write-objective`, `writer-forks-conversation`, `row-shows-whole-reading` |
 | The agent's words never move the objective; a message of the owner's does, with the cause on the card; a draft he sent moves only the step | `rule: the agent's words never move…` | `revision-cause-dropped`, `draft-moves-result` |
@@ -131,7 +132,7 @@ objective it checked came from the writer's own call. The test now sends a furth
 the writer answers with `objective: holds` and a look whose answer carries an objective in
 the writer's shape, and asserts that the objective is unchanged.
 
-**Status.** 205 tests: the parsers, the status words (including the variable-first command, read
+**Status.** 208 tests: the parsers, the status words (including the variable-first command, read
 through the mounted strip), the note to the rep, the checker's prompt and tools, the row on
 both surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-
 failure toast, the sequence rules above, the card folding to a small band, the brief
@@ -222,8 +223,9 @@ readlink fails, a cut answer counted as none, and the home never searched inside
 and, from the eighth, the git search asked as four questions each on its own, an answer
 counted only when `find` printed its end mark and was not cut, the places links lead to and
 the repository above each fenced, a name holding a line break passed over and said so in the
-brief, and the outermost of nested places kept.
-Two hundred and eighty-six doctor entries, all caught.
+brief, and the outermost of nested places kept;
+and, the same night, a record that holds nothing kept out of the
+store, so the blank records scripted runs left no longer push out his sessions. Two hundred and ninety doctor entries, all caught.
 
 ## Layer 2: a real session
 
@@ -359,7 +361,7 @@ the file). Never make one from an uncommitted tree: the checkout would wipe the 
 **Status.** Built: `tests/doctor/doctor.py`, with `defects.json` and one patch per defect in
 `tests/doctor/defects/`. Run it with `python3 tests/doctor/doctor.py`; it exits 1 when the
 clean suite fails or a defect survives, and stops before planting when the clean suite is
-not clean. Two hundred and eighty-six entries, all caught: `strip-shows-command`, one or more per sequence
+not clean. Two hundred and ninety entries, all caught: `strip-shows-command`, one or more per sequence
 rule above, `card-overflows-band`, `size-figure-dropped`, `whole-ask-rule-dropped`, and one
 per remaining hook path (`helper-not-counted`, `box-text-overwritten`, `fill-refusal-ignored`,
 `check-timeout-unreported`, `check-failure-swallowed`, `end-not-saved`), and six for a
