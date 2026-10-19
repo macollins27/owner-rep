@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index cd94906..9510ab7 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1580,7 +1580,7 @@ export const pnpmStoreDir = (stdout: string): string => {
+   return line.startsWith('/') ? line.replace(/\/v\d+$/, '') : ''
+ }
+ // A card whose check cannot run where it is drawn offers no Check it.
+-export const checkBarred = (note: string): boolean => note === CHECK_NO_ROOM || note.startsWith(NO_FENCE_LEAD)
++export const checkBarred = (note: string): boolean => note === CHECK_NO_ROOM
+ // `failIfUnavailable` makes the run refuse to start where the sandbox cannot (a Linux
+ // without bubblewrap, WSL1, and by its code Windows), rather than warn and run unfenced, and
+ // `allowUnsandboxedCommands: false` takes away the shell's per-command way out of it,

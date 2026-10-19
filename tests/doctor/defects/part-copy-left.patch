@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index e25097b..fa3a130 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -943,7 +943,6 @@ async function makeCopy($: EngineInterface, home: string, sid: string, cwd: stri
+   } catch {
+     // fall through: no copy
+   }
+-  $.process.run(hostArgv(on, ['rm', '-rf', copy]), { timeoutMs: 120000 }).catch(() => undefined)
+   return cwd
+ }
+ 

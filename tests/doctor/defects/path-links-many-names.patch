@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index da6558b..9101bc3 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1413,7 +1413,7 @@ export const pathLinksArgv = (home: string, path: string): string[] => [
+   'readlink',
+   '-f',
+   '{}',
+-  ';',
++  '+',
+ ]
+ // The places `pathLinksArgv` printed, one to a line; a last line cut at the output's cap is dropped.
+ export const linkTargets = (stdout: string, isCut: boolean): string[] => {

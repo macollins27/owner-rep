@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 49856d6..4da43ea 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1574,7 +1574,6 @@ const gitAnswer = (stdout: string): { places: string[]; gits: string[]; links: s
+       const entry = line.slice('entry '.length)
+       folder = entry.replace(/\/\.git$/, '') || '/'
+       places.push(folder)
+-      gits.push(entry)
+       lead = ''
+       pointed = false
+       linking = false

@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 243c769..f8a10fc 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1558,7 +1558,7 @@ export const worktreeDirsOf = (own: string[], stdout: string): string[] => {
+     if (line.startsWith('tree /')) file = line.slice('tree '.length)
+     else if (file !== '') {
+       const to = line.trimEnd()
+-      if (to !== '') dirs.push(resolved(to.startsWith('/') ? to : `${parentOf(file)}/${to}`).replace(/\/\.git$/, '') || '/')
++      if (to !== '') dirs.push(resolved(to).replace(/\/\.git$/, '') || '/')
+       file = ''
+     }
+   }

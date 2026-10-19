@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 49856d6..417b8b1 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1543,7 +1543,7 @@ export const wholeArgv = (on: Host, find: string[]): string[] => ['sh', '-c', WH
+ // The answer of a question asked through `wholeArgv`, or null when it did not come back,
+ // was cut at the output's cap or did not reach its end.
+ export const wholeAnswer = (r: { stdout: string; isStdoutTruncated: boolean } | null): string | null =>
+-  r === null || r.isStdoutTruncated || !r.stdout.replace(/\r/g, '').endsWith('\nend\n') ? null : r.stdout
++  r === null || !r.stdout.replace(/\r/g, '').endsWith('\nend\n') ? null : r.stdout
+ // A folder and each folder above it, up to `/`.
+ export const foldersUp = (folder: string): string[] => {
+   const parts = folder.split('/').filter(p => p !== '')

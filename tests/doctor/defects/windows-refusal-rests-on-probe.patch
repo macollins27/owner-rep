@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index e25097b..ef627f4 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -907,7 +907,7 @@ async function lookUpHost($: EngineInterface, os: string): Promise<Host> {
+     )
+     return { os, posixBin, claude }
+   } catch {
+-    return { os, posixBin: '', claude: '' }
++    return PATH_HOST
+   }
+ }
+ 

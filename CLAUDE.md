@@ -37,13 +37,23 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 161 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 217 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: nine real sessions of this checkout in tmux, the strip captured to tests/live/captures
 ```
 
-GitHub runs validate, test, the type check and the doctor on every push
-(`.github/workflows/tests.yml`). Its type check uses `tests/ci/types/`, a pinned copy of the
+GitHub runs validate, `tests/ci/host-calls.sh`, `tests/ci/host-commands.mjs`, test and the
+type check on Ubuntu, macOS and Windows on every push, and the doctor on Ubuntu
+(`.github/workflows/tests.yml`). `host-calls.sh` fails the run when a
+`$.process.run` or `$.process.spawn` in the hooks names its program other than through
+`hostArgv` (the copy's argvs from `copyArgvs` and the `--version` probe excepted).
+`node --experimental-strip-types tests/ci/host-commands.mjs` runs the transcript reads, the
+check's questions and the copy's commands as the mod builds and wraps them (`hostArgv`, and
+`wholeArgv` for the git questions alone; on Windows Git's coreutils, found as `lookUpHost`
+finds them), against `tests/ci/fixtures/` and a scratch folder whose command folder holds a
+link, and reads the answers with the mod's own parsers (`linkTargets` for the path links); on
+Windows one of the check's questions that fails is printed as skipped, since the check does
+not start there, and the copy's commands must still pass (`tests/ci/README.md`). The run's type check uses `tests/ci/types/`, a pinned copy of the
 declarations for the Claude Code build the workflow installs; move both together.
 `tests/ci/declarations.sh` runs first there and fails the run when the installed build is
 not the one stamped on the pinned copy's first line, so the two cannot drift apart unseen.
@@ -169,18 +179,112 @@ call writes (below):
    The step look and the stop look pass no fallback and skip quietly on `nothing-to-fork`:
    a record read on each would be paid on every look of every new session's first turn.
 3. **Check**: `pressCheck()` → `runCheck()` first makes a throwaway copy of the agent's
-   folder (`makeCopy`: an APFS clone, `cp -Rc`, into `checkCopyDir` under `~/.cache`), then
+   folder (`makeCopy`: an APFS clone, `cp -Rc`, into `checkCopyDir` under `~/.cache`; where
+   `cp` refuses `-c` before making anything, as GNU `cp` does, `mkdir` makes the folder and
+   `cp -R` copies the agent's folder's contents into it; a clone that failed part-way, which
+   `mkdir` without `-p` tells apart, is not copied over), then
    spawns a headless `claude -p` in it with `--permission-mode default`, `CHECK_ALLOWED_TOOLS`
    allowed outright (the shell, the file tools, the direct agentsview tools), `CHECK_DISALLOWED_TOOLS`
    (anything that edits through a tool, sends, fetches the web or launches helpers) and
    `--settings` from `checkSettings`: the built-in sandbox with writes denied to the owner's
-   work and Claude Code's own configuration (`checkDenyWrite`) and the network closed except
-   for this Mac. Measured 15 Oct 2026: bypassing approvals switches the sandbox off, so the
+   work, Claude Code's whole configuration (`~/.claude`, `~/.claude.json`) and the main places
+   in the home whose contents run later (`checkDenyWrite`: the shell's startup files,
+   `SHELL_STARTUP`, and `.bash_aliases`; `.gitconfig`; `.npmrc`, `.yarnrc`, `.yarnrc.yml`,
+   `.bunfig.toml`; `.tmux.conf`, `.vimrc`, `.vim`; `.aws`, `.kube`; Node's fallbacks in the
+   home, `package.json`, `node_modules`, `.node_modules`, `.node_libraries`; `~/.npm/_npx`,
+   where a user-scope MCP server started by `npx` runs from, never the rest of `~/.npm`;
+   `~/.rustup/toolchains`, never the rest of `~/.rustup`; `~/Library/Python` and
+   `~/.local/lib`; Claude Code's install; `~/Library/LaunchAgents`; and for each folder of
+   `PATH` in the home, and each place in the home a `PATH` folder or a link in one (or in
+   `~/.local/bin`) leads to, the install it belongs to, `installOf`, which looks one level
+   past `Library/Application Support`, `Library/Caches`, `Library`, `.local/share`,
+   `.local/state`, `.local` and `.cache`, the folder alone when that install would hold the
+   copies, none when the folder would; the places links lead are asked before the run,
+   outside the fence, by `pathLinks` (`pathLinksArgv`: `find` over each folder given as
+   `<folder>/.`, matching that folder itself and the links in it, never the folders inside
+   it, so a home on the path guards its links and not every folder in it, with
+   `-exec readlink -f {} ;`, one name to each call as BusyBox's readlink takes, its exit
+   code not read, a cut last line dropped by `linkTargets`, under
+   `PATH_LINKS_TIMEOUT_MS`, 30 seconds; under two on this Mac); and every git repository
+   the copy and the agent's folder reach (`gitRepos` asks four questions before the run,
+   outside the fence, each on its own so that one which fails loses only what it alone
+   would name: `gitUpArgv([copy, cwd])`, the `.git` in the copy, the agent's folder and
+   every folder above either, `foldersUp`; `gitInsideArgv(copy)`, every `.git` inside the
+   copy (`-prune`d, so none inside a `.git`) and where each link in it leads, unless
+   `holdsCopiesOf(home, copy)`, when the copy is a folder holding the copies (the home);
+   `gitUpArgv(links)`, the `.git` in each place those links lead to outside the copy and
+   every folder above it, only when links are found; and `worktreesArgv(gits)`. Each goes
+   through `wholeArgv` and `wholeAnswer`: an answer counts only when `find` printed its end
+   mark (the exit below 128) and was not cut at the output's cap (4 MiB, about 35,000
+   links), else it is null. Each prints the `.git` found, where it leads by `readlink -f`
+   and its `gitdir:` line, read even when readlink fails, after a line break so a file with
+   no break at its end cannot run into the next, under `GIT_FIND_TIMEOUT_MS`, 30 seconds
+   per question, its exit code not read. The folders a link leads to are not searched
+   inside, and a name holding a line break inside the copy is reported (`passedOver`) and
+   makes the check say the repository could not be found. Timings of 17 Oct 2026: the
+   question inside the copy takes 0.6 to 2 s for a project of 109,000 files and for one of
+   63,000 files and 2,000 links, and a test folder of 3,000 links takes 0.2 s here, 1 s on
+   Ubuntu 24.04 and 3 s on Alpine 3, the three answering the same.
+   `gitDirsOf` names the folder holding each `.git`, where it leads, the folder its pointer
+   names read from the folder holding the `.git` and from where it leads, cutting only the
+   line's end as git does, and for a worktree the git folder above `worktrees/<name>` too,
+   leaving out any place in the copy or the agent's folder; `gitLinksOf` names each place
+   a link leads to; `outermost` leaves out any place inside another, which the other's
+   guard covers; then `worktreesArgv` asks each
+   git folder found (`gitFoldersOf`) for the `gitdir` file of each worktree it lists, and
+   `worktreeDirsOf` names each worktree's folder, a relative entry read from the file's
+   folder; the same answers on this Mac, Ubuntu 24.04 and Alpine 3): a copy keeps the
+   agent's `.git`, so a copy of a worktree or of a `.git` link
+   reaches the real history, git in a copy with no `.git` of its own finds one above it,
+   and with no copy the run works in a folder that may be a subfolder of its repository;
+   reading through git still works, adding, committing and stashing are refused; where the
+   host does not answer the link question, `pathLinks` gives null and the brief says the
+   installs the links in the command folders lead to could not be found; where it does not
+   answer a git question whole (a throw, a timeout, an answer cut at the output cap or
+   without its end mark, or a name holding a line break), `gitRepos` marks its answer not
+   whole (`whole: false`) and keeps what the other questions found, and the brief says not
+   every repository, nor every place a link in the copy leads to, could be found, and to
+   stage, commit and stash nothing; `CheckArgs.unanswered`), the brief naming the
+   main ones, saying no list names every one, rather than saying all writes outside the copy
+   are denied, and the network closed except
+   for this Mac, with `failIfUnavailable` (the run refuses to start where the sandbox cannot)
+   and `allowUnsandboxedCommands: false` (no command can ask to run outside it); an
+   `enabledPlatforms` list is set nowhere, since Claude Code reads it only from managed
+   settings (2.1.302). Measured 15 Oct 2026: bypassing approvals switches the sandbox off, so the
    run does not; the owner's guard hooks fire inside the run; `denyWrite` beats `allowWrite`.
    The copy is removed when the run ends; when it cannot be made the run uses the agent's
-   folder with writes there denied, and the brief says so. Fifteen-minute timeout
+   folder with writes there denied, the brief says so and asks it to run only what writes
+   nothing there, and any part of a copy is removed. A folder that holds the copies' folder
+   (`holdsCopiesOf`: the home, `~/.cache`) is never copied, since the copy would hold
+   itself; the run uses it as it uses a folder that could not be copied. The home is read
+   by `homeOf` with any separator at its end dropped, so every path built from it and the
+   fence's comparisons hold.
+   On Windows (`windowsOs` says `Windows_NT`: `OS` is, or `SystemRoot` or `windir` holds a drive path, or the session's working folder is on a drive) Claude Code's sandbox is off, so nothing would deny a
+   write or close the network: a card drawn there shows `CHECK_NO_ROOM` in place of the
+   check's price and no Check it button, and `runCheck` starts no copy and no run there,
+   pressed on a card drawn before. Where the sandbox cannot start, Claude Code prints
+   `NO_FENCE_ERROR` with what is missing and exits; `noFenceNote` makes that the card's note,
+   held for the process in `noFence` so each later card carries it and `runCheck` starts
+   nothing, the note saying a restart of Claude Code clears it once the sandbox's missing
+   piece is installed, and `checkBarred` keeps Check it off a card with either note. Before
+   the run, `pnpm store path` is asked in the copy outside the fence (`pnpmStore`; in the
+   agent's folder where no copy is made), with `--config.ignore-pnpmfile=true`,
+   `--config.manage-package-manager-versions=false` and `--config.offline=true` on its
+   command line (`PNPM_STORE_ARGV`: the project's `.pnpmfile.cjs` not loaded, no pinned
+   pnpm installed and no config dependency downloaded, all of which a bare ask does
+   outside the fence; the command line beats a project's `pnpm-workspace.yaml`, which
+   beats the environment, so the project cannot turn any back on) and
+   `COREPACK_ENABLE_NETWORK=0` in its environment (`COREPACK_ASK_ENV`: where pnpm comes
+   through corepack, corepack fetches a pinned pnpm before pnpm reads its command line;
+   with its network off it runs one it already holds and fetches none, measured with
+   corepack 0.36.0), and the answer, its version folder
+   taken off (`pnpmStoreDir`), passed to the run as `npm_config_store_dir`: inside the fence
+   pnpm finds its store unwritable, moves it into a scratch folder, and an offline install
+   there fails (measured 17 Oct 2026, pnpm 10). The three questions come before the run's clock
+   starts, so the check's measured time is the run's own. Fifteen-minute timeout
    (`CHECK_TIMEOUT_MS`), 120 turns, JSON output; `permission_denials` in the output is the
-   refusal count, shown on the checked card (`refusedLine`) and on the next card's price line
+   count of commands refused approval, shown on the checked card (`refusedLine`, which says
+   commands the fence stopped are not counted) and on the next card's price line
    (`checkCostText`); the right number is zero. Its answer rewrites the card, with each claim
    marked holds, false, not shown or changed since; it is given the conditions held open and
    those held shown with where (`CheckArgs.shown`), its `shown:` and `closed:` lines move
@@ -194,6 +298,21 @@ call writes (below):
    `lastBrief`, no draft), so the card on record stays the newer one. The check costs
    real money and runs only on a press; the card states the measured figure (`FIRST_CHECK_*`,
    then the last run).
+
+**The host.** Every program the hooks run is named through `hostArgv` (`hooks/rep.ts`),
+which leaves an argv as written on a Mac or Linux (`PATH_HOST`) and on Windows names the
+commands in `POSIX_COMMANDS` by their full path in Git for Windows' `usr/bin` and `claude` as
+npm's `claude.exe`. `hostOf` finds both by running each candidate with `--version`
+(`winPosixBinCandidates`, `winClaudeCandidates`, slashed as they are built so the path a probe
+proves is the one run) and holds the lookup for the process, keyed on what `windowsOs` makes of `OS`, `SystemRoot`, `windir` and the working folder (Windows passes the first three to programs by default, but a launcher can drop them, so `OS` being `Windows_NT`, or a drive path in any of the last three, counts, and the working folder is the sign none can drop), except a Windows
+one whose coreutils did not answer, which is looked up again on the next call; a lookup that
+throws still reads as Windows, so the check's refusal there never rests on a probe. The home
+is `homeFor` (`homeOf`): on Windows, by the same reading of the four signs, `USERPROFILE`,
+else `HOME`, since Claude Code keeps its folder under the home Node gives it, which there
+reads `USERPROFILE` and ignores `HOME`; on a Mac or Linux `HOME`, else `USERPROFILE`; written
+with forward slashes on Windows, '' with neither (the check's copies then go under `/tmp`);
+`heldItems` slashes the paths it is given or finds on Windows. Kyle Cunningham measured the Windows facts on Windows 11 with
+Claude Code 2.1.302 (PR #13); nothing on this Mac can run them.
 
 **The objective** (`Objective` in `hooks/rep.ts`, declared again in `types/index.d.ts`) is the
 rep's own account of what the owner wants on the job in hand, never the owner's text, held in
@@ -269,7 +388,8 @@ Claude Code 2.1.301), so the file is the only place it is found. The classic hoo
 (`transcript_path`); `holdTranscript` keeps it per session id in a module-level map, a
 later prompt's path replacing the start's, and each event is passed on untouched. With no
 path held, `heldItems` looks for `<id>.jsonl` by name, `find <config>/projects -maxdepth 2`
-(the config folder `CLAUDE_CONFIG_DIR`, else `~/.claude`), and with none found it is null.
+(the config folder `CLAUDE_CONFIG_DIR`, else `.claude` in the home, none with no home), and
+with none found it is null.
 The file is read through `$.process.run` with `humanRead` (`sed`, `HUMAN_READ_TIMEOUT_MS`),
 which prints only the lines holding `"kind":"human"`, every picture's `"data"` blanked so a
 message with a picture stays under the output cap. A read cut at that cap

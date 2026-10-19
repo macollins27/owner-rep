@@ -1306,33 +1306,640 @@ export const CHECK_DISALLOWED_TOOLS = 'Edit,Write,MultiEdit,NotebookEdit,Agent,T
 // owner's own guard hooks fire inside the run as they do for every agent; `denyWrite`
 // beats `allowWrite`, so the copy cannot sit under a denied folder; and the owner's
 // settings make the whole home folder a working directory, so the fence is a deny list.
-export const checkDenyWrite = (home: string, real: string): string[] => [
-  real,
-  `${home}/Developer`,
-  `${home}/Documents`,
-  `${home}/Desktop`,
-  `${home}/work`,
-  `${home}/.ssh`,
-  `${home}/.config`,
-  `${home}/.claude/settings.json`,
-  `${home}/.claude/settings.local.json`,
-  `${home}/.claude/CLAUDE.md`,
-  `${home}/.claude/hooks`,
-  `${home}/.claude/plugins`,
-  `${home}/.claude/projects`,
-  `${home}/.claude/tools`,
-  `${home}/.claude/keybindings.json`,
+// Beside his work and Claude Code's whole configuration it names the main places in the
+// home whose contents run later, outside any fence: the shell's startup files, git's
+// settings, the package managers' and other tools' settings that can name a program or a
+// command to run, the cloud tools' settings, which can too, Node's fallback module
+// folders in the home, Python's add-on folders (whose .pth files run at every start, the
+// owner's guard among them), npx's installs (a user-scope MCP server started by `npx`
+// runs from there in every session), rustup's toolchains (every program in `~/.cargo/bin`
+// is a link to rustup, which runs one of them), Claude Code's own install, the folder
+// macOS starts programs from at login, and the install of each folder of the command path
+// (`path`, the PATH as Claude Code has it) that sits in the home (`installOf`), with the
+// install of each place in the home a path folder or a link in one leads to (`links`,
+// `pathLinksArgv`). Claude Code's own guard on startup files and .gitconfig covers only the
+// run's working directory, here the copy (measured 17 Oct 2026). A list cannot name every
+// such place, so the brief says the main ones and tells the run to write nowhere but the
+// copy. It also names the git repositories the copy and the agent's folder reach (`repos`,
+// `gitDirsOf`), wherever they are. A folder holding the copies is never named, or the copy
+// could not be written: a path folder's install that would hold them gives way to the folder. The agent's own
+// folder is named whatever it is, and when it holds the copies no copy is made (makeCopy).
+export const checkDenyWrite = (home: string, real: string, path = '', links: string[] = [], repos: string[] = []): string[] => {
+  const holdsCopies = (d: string): boolean => holdsCopiesOf(home, d)
+  return [
+    ...new Set([
+      real,
+      `${home}/Developer`,
+      `${home}/Documents`,
+      `${home}/Desktop`,
+      `${home}/work`,
+      `${home}/.ssh`,
+      `${home}/.config`,
+      `${home}/.claude`,
+      `${home}/.claude.json`,
+      ...SHELL_STARTUP.map(f => `${home}/${f}`),
+      `${home}/.gitconfig`,
+      `${home}/.npmrc`,
+      `${home}/.yarnrc`,
+      `${home}/.yarnrc.yml`,
+      `${home}/.bunfig.toml`,
+      `${home}/.bash_aliases`,
+      `${home}/.tmux.conf`,
+      `${home}/.vimrc`,
+      `${home}/.vim`,
+      `${home}/.aws`,
+      `${home}/.kube`,
+      `${home}/package.json`,
+      `${home}/node_modules`,
+      `${home}/.node_modules`,
+      `${home}/.node_libraries`,
+      `${home}/.npm/_npx`,
+      `${home}/.rustup/toolchains`,
+      `${home}/Library/Python`,
+      `${home}/.local/lib`,
+      `${home}/.local/bin`,
+      `${home}/.local/share/claude`,
+      `${home}/Library/LaunchAgents`,
+      ...[...path.split(':'), ...links]
+        .map(d => d.replace(/\/+$/, ''))
+        .filter(d => d.startsWith(`${home}/`))
+        .map(d => (holdsCopies(installOf(home, d)) ? d : installOf(home, d)))
+        .filter(d => !holdsCopies(d)),
+      ...outermost(repos.map(d => d.replace(/\/+$/, '')).filter(d => !holdsCopies(d))),
+    ]),
+  ]
+}
+// Places, leaving out each one inside another, which the other's guard covers: a link's
+// place inside a repository found above it, a repository's .git inside the repository.
+const outermost = (places: string[]): string[] => places.filter(d => !places.some(o => o !== d && d.startsWith(`${o}/`)))
+
+// The files bash, zsh, sh and tcsh run from the home as a shell starts or ends.
+export const SHELL_STARTUP = ['.zshenv', '.zprofile', '.zshrc', '.zlogin', '.zlogout', '.bashrc', '.bash_profile', '.bash_login', '.bash_logout', '.profile', '.tcshrc', '.cshrc', '.login']
+
+// Folders in the home that hold many programs' files, the longest first. fnm's path folder
+// sits in the caches (`~/Library/Caches/fnm_multishells/<id>/bin` on a Mac, under
+// `~/.local/state` on Linux), and guarding all of them would stop Go's, pip's and every
+// other tool's cache inside the check.
+const SHARED_FOLDERS = ['Library/Application Support', 'Library/Caches', 'Library', '.local/share', '.local/state', '.local', '.cache']
+
+// Whether a folder is the copies' folder or holds it.
+export const holdsCopiesOf = (home: string, dir: string): boolean => `${checkCopiesDir(home)}/`.startsWith(`${dir.replace(/\/+$/, '')}/`)
+
+// The programs in the command path's folders are often links into an install somewhere
+// else in the home (uv's tools in `~/.local/share/uv`, a virtual environment, a tool
+// unpacked by hand in `~/.local/opt`), and denying the folder does not deny what its links
+// lead to. So before the run the check asks the host, outside the fence, where each folder
+// of the path and each link in one leads (`~/.local/bin` asked whether or not it is on the
+// path), and checkDenyWrite guards each place in the home as it does a path folder. Each
+// folder is given as `<folder>/.`, which the folder's own name `.` matches and which leads
+// through a folder that is itself a link, and the folders inside it are not asked, so a
+// home on the path guards its links and not every folder in it. `readlink` is given one
+// name at a time, the only form BusyBox's takes; `readlink -f` prints a link's target even
+// when only its last part is missing, which still names the install; and `find` ends 1
+// when a path folder is missing, having printed the rest, so its exit code is not read
+// (measured 17 Oct 2026 on this Mac, Ubuntu 24.04 and Alpine 3). On this Mac the question
+// takes under two seconds.
+export const PATH_LINKS_TIMEOUT_MS = 30000
+export const pathLinksArgv = (home: string, path: string): string[] => [
+  'find',
+  ...new Set([...path.split(':').filter(d => d.startsWith('/')), `${home}/.local/bin`].map(d => `${d.replace(/\/+$/, '')}/.`)),
+  '-maxdepth',
+  '1',
+  '(',
+  '-type',
+  'l',
+  '-o',
+  '-name',
+  '.',
+  ')',
+  '-exec',
+  'readlink',
+  '-f',
+  '{}',
+  ';',
+]
+// The places `pathLinksArgv` printed, one to a line; a last line cut at the output's cap is dropped.
+export const linkTargets = (stdout: string, isCut: boolean): string[] => {
+  const lines = stdout.split('\n')
+  return (isCut ? lines.slice(0, -1) : lines).filter(l => l.startsWith('/'))
+}
+
+// Git keeps a repository's history in a `.git` folder, or in a folder a `.git` file points
+// at (a worktree, a submodule, history kept elsewhere), and finds it in the folder it runs
+// in or the first folder above holding one. A copy keeps every `.git` in the agent's folder,
+// so a copy of a worktree, or one whose `.git` is a link, reaches the real history, and a
+// commit made in it moves the real branch and changes its worktrees (shown 17 Oct 2026); so
+// does git run in a subfolder of the copy whose own `.git` (a worktree or a link kept inside
+// the project) leads out of it, and git run through a link in the copy that leads to a
+// folder elsewhere (a library linked in), which works on the repository holding that
+// folder; and a write through such a link lands in the folder itself. Git run in a copy with
+// no `.git` of its own finds one above it, a repository at the home among them, and where no
+// copy is made the run works in the agent's own folder, which may be a subfolder of its
+// repository. A repository also lists its worktrees, wherever they are, in
+// `<git folder>/worktrees/<name>/gitdir`, and git run in a copy of it can rewrite, move or
+// remove them (`git worktree repair`, `move`, `remove`). So before the run the check asks,
+// outside the fence, four questions, each on its own (`gitRepos`), so that one which fails
+// or runs long loses only what it alone would name: for the `.git` in the copy, the agent's
+// folder and every folder above either (`gitUpArgv`); for every `.git` inside the copy and
+// where each link in it leads (`gitInsideArgv`); for the `.git` in each place outside the copy
+// and the agent's folder those links lead to and every folder above it (`gitUpArgv` again);
+// and for the worktrees each git folder found lists (`worktreesArgv`). checkDenyWrite guards
+// what `gitDirsOf`, `gitLinksOf` and `worktreeDirsOf` make of the answers: the folder holding
+// each `.git` (the repository), where the `.git` leads, the folder its pointer names and, for
+// a worktree, the git folder above `worktrees/<name>`, which holds the branches every worktree
+// shares, each place a link leads to, and the folder of each worktree listed, leaving out a
+// place inside another (`outermost`). Reading through a guarded repository still works
+// (status, log, diff); adding, committing and stashing are refused (measured 17 Oct 2026). A
+// place in the copy is the copy's own, and checkDenyWrite names no folder holding the copies.
+// Where the agent's folder holds the copies (the home, or a folder above them) it is guarded
+// whole and no copy is made, and nothing inside it is searched, which would walk the whole
+// home. The folders a link leads to are not searched inside, so a worktree kept inside a
+// linked library is not found; nor is a link whose target readlink cannot name (on Linux,
+// one whose folder is missing too). `find` ends 1 for each folder with no `.git`, so its exit
+// code is not read, a `.git` whose `readlink` fails still has its pointer read, and a question
+// counts as answered only when its answer ends with sh's `end` (`wholeArgv`). Each entry is
+// printed after a line break, so a file with no line break at its end cannot run into the
+// next. On this Mac the question inside the copy takes 0.6 to 2 s for a project of 109,000
+// files and for one of 63,000 files and 2,000 links; a test folder of 3,000 links takes
+// 0.2 s here, 1 s on Ubuntu 24.04 and 3 s on Alpine 3, whose readlink takes one name, and
+// the three answer the same (measured 17 Oct 2026). An answer cut at the output's cap (4 MiB,
+// some 35,000 links) counts as none.
+export const GIT_FIND_TIMEOUT_MS = 30000
+// Each `.git` printed after a line break, so a pointer with no line break of its own still
+// ends before the next entry, then where it leads and its `gitdir:` line.
+const GIT_ENTRY = [
+  '-name',
+  '.git',
+  '-prune',
+  '-exec',
+  'printf',
+  '\\nentry %s\\n',
+  '{}',
+  ';',
+  // -prune is always true, so sed runs when readlink fails.
+  '(',
+  '-exec',
+  'readlink',
+  '-f',
+  '{}',
+  ';',
+  '-o',
+  '-prune',
+  ')',
+  '-exec',
+  'sed',
+  '-n',
+  '/^gitdir: /p',
+  '{}',
+  ';',
+]
+// The `.git` in each of these places and every folder above them.
+export const gitUpArgv = (places: string[]): string[] => [
+  'find',
+  ...new Set(places.flatMap(foldersUp).map(f => `${f === '/' ? '' : f}/.git`)),
+  ...GIT_ENTRY,
+]
+// Every `.git` inside the copy, and where each link in it leads. A name holding a line
+// break would be read as two lines, so it is passed over and marked (`odd`), and the answer
+// counts as not whole. The links are read in batches, each by one readlink where it takes
+// many names, and one name at a time where it takes one (BusyBox's), which a readlink given
+// two names first shows: a batch's readlink that fails on one broken link has still printed
+// the rest, so its failure says nothing about the names it takes.
+export const gitInsideArgv = (copy: string): string[] => [
+  'find',
+  copy,
+  '(',
+  '-path',
+  '*\n*',
+  '-prune',
+  '-exec',
+  'printf',
+  '\\nodd\\n',
+  ';',
+  ')',
+  '-o',
+  '(',
+  ...GIT_ENTRY,
+  ')',
+  '-o',
+  '!',
+  '-name',
+  '.git',
+  '-type',
+  'l',
+  '-exec',
+  'sh',
+  '-c',
+  'printf "\\nlinks\\n"; if readlink -f / / >/dev/null 2>&1; then readlink -f "$@"; else for l in "$@"; do readlink -f "$l"; done; fi',
+  'sh',
+  '{}',
+  '+',
+]
+// A question to find asked through sh, which prints `end` after it only when find ran to its
+// end: a find stopped by a signal, which the host reports as an exit of 1 like any find that
+// met a missing folder, prints none. find is named for the host as sh's `$0`.
+export const WHOLE_SH = '"$0" "$@"; [ $? -lt 128 ] && printf "\\nend\\n"'
+export const wholeArgv = (on: Host, find: string[]): string[] => ['sh', '-c', WHOLE_SH, ...hostArgv(on, find)]
+// The answer of a question asked through `wholeArgv`, or null when it did not come back,
+// was cut at the output's cap or did not reach its end.
+export const wholeAnswer = (r: { stdout: string; isStdoutTruncated: boolean } | null): string | null =>
+  r === null || r.isStdoutTruncated || !r.stdout.replace(/\r/g, '').endsWith('\nend\n') ? null : r.stdout
+// A folder and each folder above it, up to `/`.
+export const foldersUp = (folder: string): string[] => {
+  const parts = folder.split('/').filter(p => p !== '')
+  return [...parts.map((_, i) => `/${parts.slice(0, parts.length - i).join('/')}`), '/']
+}
+// What a git question's answer names: for each `.git` found (`entry <path>`), the folder
+// holding it, the `.git` itself, where it leads (the line after, when readlink answered), and
+// the folder its first `gitdir:` line names, read as git reads it from the folder holding the
+// `.git` (and from the folder it leads to, when that differs), with the git folder above
+// `worktrees/<name>` when it is a worktree's; after each `links` line, where each link in a
+// batch leads; and whether a name was passed over (`odd`). `gits` are the git folders among
+// the places, each `.git` among them, so the worktrees are asked of one readlink could not follow.
+const gitAnswer = (stdout: string): { places: string[]; gits: string[]; links: string[]; odd: boolean } => {
+  const places: string[] = []
+  const gits: string[] = []
+  const links: string[] = []
+  let odd = false
+  let folder = ''
+  let lead = ''
+  let pointed = false
+  let linking = false
+  for (const line of stdout.split('\n').map(l => l.replace(/\r$/, ''))) {
+    if (line === 'odd' || line === 'links') {
+      odd ||= line === 'odd'
+      linking = line === 'links'
+      folder = ''
+    } else if (line.startsWith('entry /')) {
+      const entry = line.slice('entry '.length)
+      folder = entry.replace(/\/\.git$/, '') || '/'
+      places.push(folder)
+      gits.push(entry)
+      lead = ''
+      pointed = false
+      linking = false
+    } else if (linking && line.startsWith('/')) {
+      links.push(line)
+    } else if (folder !== '' && lead === '' && !pointed && line.startsWith('/')) {
+      lead = line
+      places.push(line)
+      gits.push(line)
+    } else if (folder !== '' && !pointed && line.startsWith('gitdir: ')) {
+      pointed = true
+      const to = line.slice('gitdir: '.length)
+      if (to === '') continue
+      for (const base of new Set([folder, ...(lead === '' ? [] : [parentOf(lead)])])) {
+        const dir = resolved(to.startsWith('/') ? to : `${base}/${to}`)
+        const common = /^(.+)\/worktrees\/[^/]+$/.exec(dir)?.[1]
+        const named = common === undefined ? [dir] : [common, dir]
+        places.push(...named)
+        gits.push(...named)
+      }
+    }
+  }
+  return { places, gits, links, odd }
+}
+// The places a git question's answer names, leaving out any in `own` (the copy, whose places
+// are its own, and the agent's folder, which the fence guards whole).
+export const gitDirsOf = (own: string[], stdout: string): string[] => outside(own, gitAnswer(stdout).places)
+// The git folders a git question's answer names, the copy's own among them.
+export const gitFoldersOf = (stdout: string): string[] => [...new Set(gitAnswer(stdout).gits)]
+// Where the links `gitInsideArgv` found lead, leaving out any in `own`.
+export const gitLinksOf = (own: string[], stdout: string): string[] => outside(own, gitAnswer(stdout).links)
+// Whether `gitInsideArgv` passed over a name holding a line break.
+export const passedOver = (stdout: string): boolean => gitAnswer(stdout).odd
+// The worktrees each git folder lists: each `worktrees/<name>/gitdir` printed after its own
+// path, on a line of its own after the last file's line, with or without its line break, its
+// first line naming the worktree's `.git`, relative to the file's folder where git
+// was told to write relative paths (measured with git 2.50.1, 17 Oct 2026).
+export const worktreesArgv = (gits: string[]): string[] => [
+  'find',
+  ...new Set(gits.map(g => `${g === '/' ? '' : g}/worktrees`)),
+  '-mindepth',
+  '2',
+  '-maxdepth',
+  '2',
+  '-name',
+  'gitdir',
+  '-type',
+  'f',
+  '-exec',
+  'printf',
+  '\\ntree %s\\n',
+  '{}',
+  ';',
+  '-exec',
+  'sed',
+  '-n',
+  '1p',
+  '{}',
+  ';',
+]
+// The folder of each worktree `worktreesArgv`'s answer names, leaving out any in `own`.
+export const worktreeDirsOf = (own: string[], stdout: string): string[] => {
+  const dirs: string[] = []
+  let file = ''
+  for (const line of stdout.split('\n').map(l => l.replace(/\r$/, ''))) {
+    if (line.startsWith('tree /')) file = line.slice('tree '.length)
+    else if (file !== '') {
+      const to = line.trimEnd()
+      if (to !== '') dirs.push(resolved(to.startsWith('/') ? to : `${parentOf(file)}/${to}`).replace(/\/\.git$/, '') || '/')
+      file = ''
+    }
+  }
+  return outside(own, dirs)
+}
+// Places, each once and with no trailing slash, leaving out any in `own`.
+const outside = (own: string[], dirs: string[]): string[] => {
+  const mine = (d: string): boolean => own.some(o => `${d}/`.startsWith(`${o.replace(/\/+$/, '')}/`))
+  return [...new Set(dirs.map(d => (d === '/' ? d : d.replace(/\/+$/, ''))))].filter(d => !mine(d))
+}
+// The folder holding a place.
+const parentOf = (p: string): string => p.replace(/\/[^/]*$/, '') || '/'
+// An absolute path with its `.` and `..` parts worked out, as a relative pointer is read
+// from the folder that holds it.
+const resolved = (p: string): string => {
+  const parts: string[] = []
+  for (const part of p.split('/')) {
+    if (part === '..') parts.pop()
+    else if (part !== '' && part !== '.') parts.push(part)
+  }
+  return `/${parts.join('/')}`
+}
+
+// The install a command-path folder in the home belongs to: its first folder below the
+// home that is not one many programs share. mise's `~/.local/share/mise/installs/node/22/bin`
+// is guarded as `~/.local/share/mise`, where the npm its node runs lives and the shims
+// pick any installed version from, and `~/.cargo/bin` as `~/.cargo`, whose `env` file
+// the shell's startup runs; `~/.local/bin` and `~/Library/pnpm` stay themselves.
+export const installOf = (home: string, dir: string): string => {
+  const rel = dir.slice(home.length + 1)
+  const shared = SHARED_FOLDERS.find(s => rel.startsWith(`${s}/`))
+  const below = shared === undefined ? rel : rel.slice(shared.length + 1)
+  return `${home}/${shared === undefined ? '' : `${shared}/`}${below.split('/')[0]}`
+}
+
+// ── THE HOST THE CHECK'S COMMANDS RUN ON ────────────────────────────────────
+//
+// The check copies the agent's folder and reads transcripts with seven external
+// commands — mkdir, rm, cp, find, ls, sed, grep — and spawns `claude` to do the
+// reading. All eight are written for a Unix host, and on WINDOWS not one of
+// them runs. (The check's git questions later added sh, which runs find and which Git
+// for Windows ships in the same folder as the seven.) Measured on Windows 11, Claude Code 2.1.302, 16 Oct 2026:
+//
+//   * `HOME` IS NOT GUARANTEED on Windows, so `home` fell back to `/tmp` and
+//     every path built from it — the copies folder, the deny list, the
+//     transcript folder — was wrong. Measured both ways on one machine: empty
+//     in a native Windows process, and set to the profile folder in a process
+//     launched from Git Bash, which inherits it. `USERPROFILE` is always set,
+//     and Claude Code keeps its folder under it (Node's `os.homedir()` reads
+//     `USERPROFILE` on Windows and ignores `HOME`), so there it comes first and
+//     `HOME` is the fallback.
+//   * None of the seven commands is on PATH. Git for Windows ships all seven, in a
+//     `usr/bin` its installer deliberately leaves off PATH, so each one has to
+//     be named by its full path.
+//   * `cp -Rc` asks for a copy-on-write clone. `-c` is APFS, so only Darwin's
+//     cp takes it: GNU cp answers `cp: unknown option -- c` and the copy fails.
+//     That is a LINUX bug as much as a Windows one, so the clone is attempted
+//     and the plain copy is its fallback, rather than guessing by platform.
+//   * `claude` on PATH is a shim (`.cmd` / `.ps1` / a bash script). Node cannot
+//     spawn a `.cmd` without a shell, and routing a prompt of this size through
+//     a shell would mean quoting it. The npm package ships `bin/claude.exe`, a
+//     real executable, so that is spawned directly and nothing is quoted.
+//
+// WHY THIS IS WORTH FIXING AND NOT JUST REPORTING. The transcript reads run
+// through find, ls and sed, so on Windows none of the owner's messages was read
+// from a session's file. And `makeCopy` degrades to the agent's OWN folder when
+// the copy fails, which is safe only because the room denies writes there. The
+// sandbox does not run on Windows (below), so with
+// `claude` on PATH as an executable the degraded path put a 120-turn checker
+// holding Bash in the owner's real repository with nothing denying a write.
+// The check therefore does not start on Windows at all until the room holds
+// there (`CHECK_NO_ROOM`); its commands are named for the host all the same.
+
+/** `OS` as Windows sets it. The variable is absent on Darwin and on Linux. */
+export const WINDOWS_OS = 'Windows_NT'
+
+/**
+ * The commands this mod runs that a Windows host cannot resolve by name.
+ *
+ * `grep` is the seed's `toolLineFind` (`grep -n -o -m 1 -F`), `sed` both
+ * `humanRead` and `humanReadBefore`, and `sh` the check's `wholeArgv`. Git for
+ * Windows ships all eight in the same folder.
+ *
+ * ADDING A COMMAND: anything new that goes through `$.process.run` or
+ * `$.process.spawn` belongs here, or it resolves by name and fails on Windows.
+ */
+export const POSIX_COMMANDS = ['mkdir', 'rm', 'cp', 'find', 'ls', 'sed', 'grep', 'sh'] as const
+
+/**
+ * What a command needs to be named for the host it runs on. Read once per check
+ * and passed down, so every function below stays pure and testable.
+ *
+ * `posixBin` and `claude` are '' when the name on PATH is already correct, which
+ * is the Unix case and leaves those hosts' argv untouched.
+ */
+export type Host = {
+  /** `Windows_NT` on Windows, '' anywhere else: `OS`, read with the other signs by `windowsOs`. */
+  os: string
+  /** Folder holding the POSIX commands, or '' when they are on PATH. */
+  posixBin: string
+  /** The `claude` binary to spawn, or '' to spawn the name on PATH. */
+  claude: string
+}
+
+/** A host that resolves every command by name, which is Darwin and Linux. */
+export const PATH_HOST: Host = { os: '', posixBin: '', claude: '' }
+
+/**
+ * What this machine's `OS` reads as, once the other signs of Windows are counted: Windows_NT
+ * when `OS` says so, or when `SystemRoot`, `windir` or the session's working folder is a path on
+ * a drive (`C:\\`, `c:/`), and `os` as it was otherwise. Windows passes `SystemRoot` and `windir`
+ * to every program by default, but a launcher can start one with a cut-down set; the working
+ * folder is the sign none can drop, since on Windows it begins with a drive letter, on a Mac or
+ * Linux with `/` and under WSL with `/mnt/c/`. A drive path is asked for, not a value being set,
+ * because a hand-set value on a Mac is possible and a drive path matches none.
+ */
+export function windowsOs(os: string, systemRoot: string, windir: string, cwd: string): string {
+  if (os === WINDOWS_OS) return WINDOWS_OS
+  return [systemRoot, windir, cwd].some(v => /^[A-Za-z]:[\\/]/.test(v)) ? WINDOWS_OS : os
+}
+
+export const isWindowsHost = (host: Host): boolean => host.os === WINDOWS_OS
+
+/**
+ * The home folder: on Windows `USERPROFILE`, else `HOME`; on a Mac or Linux `HOME`, else
+ * `USERPROFILE`; '' when neither is set to anything. Windows takes `USERPROFILE` first
+ * because Claude Code keeps its folder under the home Node gives it (`os.homedir()`), which
+ * on Windows reads `USERPROFILE` and ignores `HOME`. The caller chooses what stands in for
+ * none: the check's copies go under `/tmp` as before, and the transcript read has no
+ * config folder to look in. A home that is `/tmp` is a home like any other. A separator at
+ * its end is dropped, so a path built from it has one between each part and the fence's
+ * comparisons hold; a root (`/`, `C:\`) keeps its own.
+ */
+export const homeOf = (windows: boolean, home: string | undefined, userProfile: string | undefined): string =>
+  ((windows ? [userProfile, home] : [home, userProfile]).find(v => v !== undefined && v !== '') ?? '').replace(/([^:\\/])[\\/]+$/, '$1')
+
+/**
+ * A Windows path a POSIX command will accept. Git's coreutils take forward
+ * slashes and a drive letter, and mixing separators in one path is what breaks
+ * them, so the whole path is written one way.
+ *
+ * The candidate lists below are slashed as they are built, so the path a probe
+ * PROVES is the identical string later run. Slashing only at the point of use
+ * meant the probe tested one spelling and the command ran another.
+ */
+export const slashed = (path: string): string => path.replace(/\\/g, '/')
+
+/**
+ * Where Git for Windows keeps the coreutils, in the order they are tried. The
+ * installer's own default is first; the user-scope install and the 32-bit
+ * folder follow, because a machine may have only one of them.
+ */
+export const winPosixBinCandidates = (
+  programFiles: string | undefined,
+  programFilesX86: string | undefined,
+  localAppData: string | undefined,
+): string[] =>
+  [
+    programFiles === undefined || programFiles === '' ? '' : `${programFiles}/Git/usr/bin`,
+    localAppData === undefined || localAppData === '' ? '' : `${localAppData}/Programs/Git/usr/bin`,
+    programFilesX86 === undefined || programFilesX86 === '' ? '' : `${programFilesX86}/Git/usr/bin`,
+  ]
+    .filter(p => p !== '')
+    .map(slashed)
+
+/**
+ * Where npm puts Claude Code's own executable, in the order they are tried. The
+ * global install under `APPDATA` is first because that is where `npm i -g` puts
+ * it on Windows.
+ */
+export const winClaudeCandidates = (appData: string | undefined, localAppData: string | undefined): string[] =>
+  [
+    appData === undefined || appData === '' ? '' : `${appData}/npm/node_modules/@anthropic-ai/claude-code/bin/claude.exe`,
+    localAppData === undefined || localAppData === ''
+      ? ''
+      : `${localAppData}/npm/node_modules/@anthropic-ai/claude-code/bin/claude.exe`,
+  ]
+    .filter(p => p !== '')
+    .map(slashed)
+
+/**
+ * The argv to actually run, for a command written for a Unix host.
+ *
+ * On a PATH host this returns the argv unchanged, so Darwin and Linux keep
+ * exactly today's behaviour. On Windows the command is named by its full path
+ * and `.exe` is appended, because `spawn` without a shell needs both.
+ */
+export function hostArgv(host: Host, argv: readonly string[]): string[] {
+  const [name, ...rest] = argv
+  if (name === undefined) return []
+  if (name === 'claude') return [host.claude === '' ? 'claude' : host.claude, ...rest]
+  if (!isWindowsHost(host) || host.posixBin === '') return [name, ...rest]
+  if (!(POSIX_COMMANDS as readonly string[]).includes(name)) return [name, ...rest]
+  return [`${slashed(host.posixBin)}/${name}.exe`, ...rest]
+}
+
+/**
+ * The copy, in the two forms it is tried in: the APFS clone first, because on
+ * Darwin it is instant on a project of any size, and the plain recursive copy
+ * second, because every other cp rejects `-c`. The caller runs the second only
+ * when the first made nothing, into a folder it has just made, so the plain form
+ * copies the folder's contents (`from/.`) rather than the folder itself.
+ */
+export const copyArgvs = (host: Host, from: string, to: string): [string[], string[]] => [
+  hostArgv(host, ['cp', '-Rc', from, to]),
+  hostArgv(host, ['cp', '-R', `${from}/.`, to]),
 ]
 
 export const checkCopiesDir = (home: string): string => `${home}/.cache/owner-rep/checks`
 export const checkCopyDir = (home: string, sessionId: string): string => `${checkCopiesDir(home)}/${sessionId === '' ? 'session' : sessionId}`
 
-export const checkSettings = (home: string, real: string): string =>
+// WHY THE CHECK DOES NOT START ON WINDOWS.
+// Claude Code 2.1.302 does ship a Windows sandbox — the binary carries
+// `CreateRestrictedToken`, `sandboxUserSid` and `icacls`, and its own help says
+// sandboxing applies on "macOS, Linux, WSL2, or Windows where enabled". It is
+// behind a feature gate that is OFF.
+//
+// MEASURED 16 Oct 2026, Windows 11, Claude Code 2.1.302, with the sandbox enabled
+// (and win32 added to an `enabledPlatforms` list, which changes nothing, since
+// Claude Code reads that list only from managed settings) and a POSITIVE CONTROL in
+// the same run: a `claude -p` holding Bash
+// was told to write one file inside its cwd and one inside a `denyWrite` path.
+// BOTH LANDED ON DISK. The control proves the run was live, so the breach is a
+// real breach and not a broken test. Claude Code said so itself on stderr:
+//
+//   Sandbox disabled: sandbox is enabled but the Windows sandbox is not active
+//   on this session (feature gate off). Commands will run WITHOUT sandboxing.
+//   Network and filesystem restrictions will NOT be enforced.
+//
+// SO ON WINDOWS THE ROOM IS NOT A ROOM. What would stand between the check and
+// the owner's work there is the copy, the tool list, and nothing else: `Bash` is
+// allowed and was proven unconstrained under `--permission-mode default` in a
+// `-p` run, the network is open, and the brief would tell the run it is fenced.
+// The check is read-only only because the room makes it so, so on Windows it
+// does not start (`CHECK_NO_ROOM`). Take out the refusal in `runCheck` and the card's
+// only when that probe, re-run, has a denied write refused with a control that wrote.
+// The commands are already named for the host; the copy's paths and the `claude.exe`
+// lookup (npm's place only) have not been run on Windows.
+export const CHECK_NO_ROOM =
+  "The check does not run on Windows yet: Claude Code's sandbox is switched off there, so nothing would stop the check's own run from changing your files or reaching the internet."
+// What Claude Code prints before exiting when `failIfUnavailable` stops the run, its stdout
+// empty: this line with what is missing and how to install it, then one naming the setting
+// (measured with 2.1.302 in a Linux container without bubblewrap, 17 Oct 2026). The card
+// says so in place of the last line, and offers no Check it, since a press would make the
+// copy only to be refused again, until Claude Code is restarted (the mod's memory of the
+// refusal lasts as long as the process).
+export const NO_FENCE_ERROR = 'Error: sandbox required but unavailable:'
+const NO_FENCE_LEAD = "The check does not run on this machine: Claude Code's sandbox cannot start here"
+export const noFenceNote = (stderr: string): string | null => {
+  const line = stderr.split('\n').find(l => l.includes(NO_FENCE_ERROR))
+  if (line === undefined) return null
+  const why = line.slice(line.indexOf(NO_FENCE_ERROR) + NO_FENCE_ERROR.length).trim()
+  return `${NO_FENCE_LEAD}, so its run refused to start rather than run unfenced.${why === '' ? '' : ` Claude Code says: ${fit(why, 240)}`} Once what the sandbox needs is installed, restart Claude Code and the check can run.`
+}
+// pnpm keeps its store in its own folder (`~/Library/pnpm/store` on a Mac), which the fence
+// guards when that folder is on the command path. Inside the fence pnpm finds the store
+// unwritable, starts an empty one in the temporary folder and, the network closed, fails
+// to install; told where the store is, it installs from it by reading (both measured 17 Oct
+// 2026). So the check asks pnpm where its store is before the run, outside the fence, and
+// names it to the run through pnpm's setting in the environment. `pnpm store path` prints
+// the store's versioned folder (`…/store/v10`); the setting takes the folder above it.
+// pnpm is told on its command line to ignore the project's pnpmfile, leave its own version
+// alone and stay offline: asked bare, it loads the folder's `.pnpmfile.cjs`, the project's
+// own code, installs the pnpm a `packageManager` field pins, and downloads the config
+// dependencies its `pnpm-workspace.yaml` lists, all outside the fence. The command line
+// beats the workspace file, which beats the same settings given in the environment
+// (measured 17 Oct 2026, pnpm 10.26.2), so a project cannot turn any back on. Offline, a
+// project whose config dependencies are not in the store gets no answer, and the run's
+// pnpm, behind the closed network, could not fetch them either. Where pnpm comes through
+// corepack, Node's launcher for it, corepack fetches the pnpm a project pins before pnpm
+// reads its command line; with its network off (`COREPACK_ASK_ENV`) it runs a pinned pnpm it
+// already holds and fetches none (measured in node:22-bookworm, corepack 0.36.0). It is
+// asked in the copy, and in the agent's folder where no copy is made.
+export const PNPM_STORE_ARGV = ['pnpm', 'store', 'path', '--config.ignore-pnpmfile=true', '--config.manage-package-manager-versions=false', '--config.offline=true']
+export const COREPACK_ASK_ENV = { COREPACK_ENABLE_NETWORK: '0' }
+export const PNPM_STORE_ENV = 'npm_config_store_dir'
+export const PNPM_STORE_TIMEOUT_MS = 10000
+export const pnpmStoreDir = (stdout: string): string => {
+  const line = stdout.trim().split('\n').pop()?.trim() ?? ''
+  return line.startsWith('/') ? line.replace(/\/v\d+$/, '') : ''
+}
+// A card whose check cannot run where it is drawn offers no Check it.
+export const checkBarred = (note: string): boolean => note === CHECK_NO_ROOM || note.startsWith(NO_FENCE_LEAD)
+// `failIfUnavailable` makes the run refuse to start where the sandbox cannot (a Linux
+// without bubblewrap, WSL1, and by its code Windows), rather than warn and run unfenced, and
+// `allowUnsandboxedCommands: false` takes away the shell's per-command way out of it,
+// which Claude Code's own instructions tell the model to use when the fence refuses.
+// Both are read from a --settings file (Claude Code 2.1.302). An `enabledPlatforms`
+// list is not: Claude Code reads it only from managed settings, so the mod sets none.
+export const checkSettings = (home: string, real: string, path = '', links: string[] = [], repos: string[] = []): string =>
   JSON.stringify({
     sandbox: {
       enabled: true,
-      enabledPlatforms: ['darwin', 'linux'],
-      filesystem: { denyWrite: checkDenyWrite(home, real) },
+      failIfUnavailable: true,
+      allowUnsandboxedCommands: false,
+      filesystem: { denyWrite: checkDenyWrite(home, real, path, links, repos) },
       network: { allowedDomains: [], allowLocalBinding: true },
     },
   })
@@ -1369,6 +1976,8 @@ export type CheckArgs = {
   owner: OwnerMsg[]
   brief: BriefAnswer
   writtenAt: string
+  // The questions asked before the run that got no answer, so the fence lacks what they name.
+  unanswered?: ('links' | 'repos')[]
 }
 
 const briefText = (b: BriefAnswer): string =>
@@ -1399,7 +2008,7 @@ Read any file you need. Run the project's own checks (its tests, its type check,
 
 ## Your room and your time
 
-You run in your working directory, the copy. Run the project's checks and anything else you need there, write what you like there; nothing you do in it reaches the agent's folder, and the copy is removed when you finish. When a claim is about what is on disk now, read the agent's own folder with Read, Glob and Grep, since the copy is of one moment. No command needs approval, so none is refused for its shape. Two things still stop a command: the owner's own guard, which refuses for every agent on this machine the few things it refuses (rewriting shared history, deleting his data, making anything public), and the fence, which denies writes outside the copy and closes the network except for this Mac; a "sandbox violation" means you hit the fence and says nothing about the claim. If a command is refused, say so under "looked" rather than guessing.
+${a.copy === a.cwd ? `You run in the agent's own folder, since no copy of it could be made, and writes there are denied: read it with Read, Glob and Grep, and run only what writes nothing there. A check that would have to write in it is one you name under "looked" as not run.` : `You run in your working directory, the copy. Run the project's checks and anything else you need there, write what you like there and nowhere else; nothing you do in it reaches the agent's folder, and the copy is removed when you finish. When a claim is about what is on disk now, read the agent's own folder with Read, Glob and Grep, since the copy is of one moment.`} No command needs approval, so none is refused for its shape. Two things still stop a command: the owner's own guard, which refuses for every agent on this machine the few things it refuses (rewriting shared history, deleting his data, making anything public), and the fence, which denies writes to ${a.unanswered?.includes('repos') ? `the agent's folder (not every git repository it and the copy belong to, nor every place a link in the copy leads to, could be found this time, so stage, commit and stash nothing, and write nothing through a link that leads out of the copy)` : `the agent's folder, every git repository it and the copy belong to, every place a link in the copy leads to outside it`}, the owner's work, Claude Code's own settings and the main places in the home whose contents run later (the shell's startup files, git's settings and the folders programs are run from among them, though no list names every one${a.unanswered?.includes('links') ? `, and this time not the installs the links in those folders lead to, which could not be found` : ''}), closes the network except for this Mac, and which no command can be run outside of. Docker cannot be reached from inside the fence, though a port a container publishes on this Mac can. A "sandbox violation" or "Operation not permitted" means you hit the fence and says nothing about the claim. If a command is refused by either, say so under "looked" rather than guessing, and name a check that needs Docker there as not run.
 
 You have ${CHECK_TIMEOUT_WORDS} and ${CHECK_MAX_TURNS} turns in all, and an answer that never arrives is worth nothing to him, so spend them on reading and on the proof that matters most. Run the project's test command and its type check once each, the way the record shows the agent ran them. A slower tool, one that reruns the suite many times (a defect-planting or mutation run) or a full build, is worth its minutes only when a claim turns on it; otherwise say under "looked" that you did not run it and judge that claim from the record.
 
@@ -1757,13 +2366,16 @@ const millions = (n: number): string =>
 const costWords = (tokens: number, cached: number, ms: number): string =>
   `${millions(Math.max(0, tokens - cached))} fresh tokens plus ${millions(cached)} re-read from cache, in ${minutes(ms)}`
 
-// How many of the check's commands were refused. The right number is zero: the check runs
-// in a room where nothing needs approval, so a refusal means the room has a hole.
+// How many of the check's commands were refused approval. The right number is zero: the
+// check runs in a room where nothing needs approval, so a refusal means the room has a hole.
+// A command the fence stops is not in this count (Claude Code counts only approvals), so
+// the line says so, and the checker names what the fence stopped in its own account.
 export const refusedWords = (n: number): string =>
-  n === 0 ? 'no command refused' : `${n} command${n === 1 ? '' : 's'} refused`
+  n === 0 ? 'no command refused approval' : `${n} command${n === 1 ? '' : 's'} refused approval`
 
 // The line under the checker's own account of what it looked at.
-export const refusedLine = (n: number): string => `The check's run had ${refusedWords(n)}.`
+export const refusedLine = (n: number): string =>
+  `The check's run had ${refusedWords(n)}; commands the fence stopped are not counted here.`
 
 export function checkCostText(lastTokens: number, lastCached: number, lastMs: number, lastRefused = 0): string {
   const lead = 'Check it starts a separate Claude Code run in a throwaway copy of the project, over the session record and the files.'

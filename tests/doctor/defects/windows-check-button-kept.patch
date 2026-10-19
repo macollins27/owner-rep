@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 72ff8b7..6b55ad5 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1681,7 +1681,7 @@ export const register: Register = on => {
+             </Box>
+           ) : undefined}
+           {choices(
+-            shown.checked === null && !shown.isChecking && !checkBarred(shown.checkNote) ? (
++            shown.checked === null && !shown.isChecking && !shown.checkNote.startsWith("The check does not run on this machine") ? (
+               <Button
+                 key="check"
+                 plain

@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index b8829a3..bd43812 100644
+index e25097b..cb88d7c 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -880,7 +880,7 @@ async function humanSet($: EngineInterface, sid: string, rows: readonly RecordRo
+@@ -1013,7 +1013,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
        const set = await $.env.get('CLAUDE_CONFIG_DIR')
-       const home = await $.env.get('HOME')
-       const config = set !== undefined && set !== '' ? set : home !== undefined && home !== '' ? `${home}/.claude` : null
+       const home = await homeFor($)
+       const config = set !== undefined && set !== '' ? local(set) : home !== '' ? `${home}/.claude` : null
 -      if (config === null) return null
 +      if (config !== null) return null
-       const found = await $.process.run(['find', `${config}/projects`, '-maxdepth', '2', '-name', `${sid}.jsonl`], { timeoutMs: HUMAN_READ_TIMEOUT_MS })
-       path = found.exitCode === 0 ? (found.stdout.split('\n').find(l => l.trim() !== '')?.trim() ?? '') : ''
+       const found = await $.process.run(hostArgv(on, ['find', `${config}/projects`, '-maxdepth', '2', '-name', `${sid}.jsonl`]), { timeoutMs: HUMAN_READ_TIMEOUT_MS })
+       path = found.exitCode === 0 ? local(found.stdout.split('\n').find(l => l.trim() !== '')?.trim() ?? '') : ''
        if (path === '') return null

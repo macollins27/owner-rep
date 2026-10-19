@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index cf0a0e0..469162b 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1441,7 +1441,7 @@ export function hostArgv(host: Host, argv: readonly string[]): string[] {
+  */
+ export const copyArgvs = (host: Host, from: string, to: string): [string[], string[]] => [
+   hostArgv(host, ['cp', '-Rc', from, to]),
+-  hostArgv(host, ['cp', '-R', `${from}/.`, to]),
++  hostArgv(host, ['cp', '-R', from, to]),
+ ]
+ 
+ export const checkCopiesDir = (home: string): string => `${home}/.cache/owner-rep/checks`

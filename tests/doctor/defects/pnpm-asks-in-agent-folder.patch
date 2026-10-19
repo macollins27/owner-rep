@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 2c31921..2de0c5d 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -755,7 +755,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
+     if (noFence !== '') return finish({ checkNote: noFence })
+     const copy = await makeCopy($, home, sid, cwd)
+     const path = (await $.env.get('PATH')) ?? ''
+-    const store = await pnpmStore($, checkHost, copy)
++    const store = await pnpmStore($, checkHost, cwd)
+     const links = await pathLinks($, checkHost, home, path)
+     const repos = await gitRepos($, checkHost, home, copy, cwd)
+     const prompt = checkPrompt({

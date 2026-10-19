@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 243c769..3b62550 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1509,7 +1509,7 @@ const gitAnswer = (stdout: string): { places: string[]; gits: string[] } => {
+       const to = line.slice('gitdir: '.length)
+       if (to === '') continue
+       for (const base of new Set([folder, ...(lead === '' ? [] : [parentOf(lead)])])) {
+-        const dir = resolved(to.startsWith('/') ? to : `${base}/${to}`)
++        const dir = to
+         const common = /^(.+)\/worktrees\/[^/]+$/.exec(dir)?.[1]
+         const named = common === undefined ? [dir] : [common, dir]
+         places.push(...named)

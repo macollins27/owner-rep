@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index ebbf20e..1c1f9ba 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -939,7 +939,7 @@ async function osOf($: EngineInterface): Promise<string> {
+   let cwd = ''
+   try {
+     systemRoot = (await $.env.get('SystemRoot')) ?? ''
+-    windir = (await $.env.get('windir')) ?? ''
++    windir = ''
+     cwd = (await $.session.cwd()) ?? ''
+   } catch {
+     // A read that throws counts as none; the signs read before it stand.

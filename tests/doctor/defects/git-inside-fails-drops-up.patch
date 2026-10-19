@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index b09a4fa..10a8c2c 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -991,6 +991,7 @@ async function gitRepos($: EngineInterface, on: Host, home: string, copy: string
+   const ask = async (argv: string[]): Promise<string | null> => wholeAnswer(await $.process.run(hostArgv(on, wholeArgv(on, argv)), { timeoutMs: GIT_FIND_TIMEOUT_MS }).catch(() => null))
+   const up = await ask(gitUpArgv(own))
+   const inside = holdsCopiesOf(home, copy) ? '' : await ask(gitInsideArgv(copy))
++  if (inside === null) return { dirs: [], whole: false }
+   const links = gitLinksOf(own, inside ?? '')
+   const beyond = links.length === 0 ? '' : await ask(gitUpArgv(links))
+   const answers = [up, inside, beyond].map(a => a ?? '')

@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index ebbf20e..8517e26 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -944,7 +944,7 @@ async function osOf($: EngineInterface): Promise<string> {
+   } catch {
+     // A read that throws counts as none; the signs read before it stand.
+   }
+-  return windowsOs(os, systemRoot, windir, cwd)
++  return windowsOs(os, '', '', '')
+ }
+ 
+ async function hostOf($: EngineInterface): Promise<Host> {

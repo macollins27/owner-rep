@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 49856d6..d79cd0b 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1625,7 +1625,7 @@ export const worktreesArgv = (gits: string[]): string[] => [
+   'f',
+   '-exec',
+   'printf',
+-  '\\ntree %s\\n',
++  'tree %s\\n',
+   '{}',
+   ';',
+   '-exec',

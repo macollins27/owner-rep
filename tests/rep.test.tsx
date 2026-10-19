@@ -1,7 +1,27 @@
 import type { On, SessionMessage } from 'claude-code'
-import { expect, mock, test, type Engine } from 'claude-code/testing'
+import { expect, mock, test as kitTest, type Engine, type TestBody, type TestOptions } from 'claude-code/testing'
 
-import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, isBlankRec } from '../hooks/rep'
+import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec } from '../hooks/rep'
+
+// Every test starts with the session's working folder a Unix path, so what the suite reads does not
+// depend on the folder the kit gives it: on a Windows machine that folder is a drive path, which
+// `windowsOs` reads as Windows. A test that answers `session.cwd` itself replaces this answer: the
+// kit's declarations say a plugin's registrations nest in order, first outermost, and that a repeat
+// throws, so the replacement is held here and the one handler registered asks it.
+const test = (name: string, ...rest: [TestBody] | [TestOptions, TestBody]): void => {
+  const body = rest[rest.length - 1] as TestBody
+  const wrapped: TestBody = ($, on) => {
+    let answer: (...args: never[]) => unknown = () => ({ value: '/tmp/x' })
+    const own = ((...args: unknown[]) => {
+      if (args[0] !== 'session.cwd') return (on as (...a: unknown[]) => unknown)(...args)
+      answer = args[args.length - 1] as typeof answer
+      return undefined
+    }) as unknown as On
+    ;(on as (...a: unknown[]) => unknown)('session.cwd', ((...args: never[]) => answer(...args)) as never)
+    return body($, own)
+  }
+  ;(kitTest as unknown as (n: string, ...r: unknown[]) => void)(name, ...rest.slice(0, -1), wrapped)
+}
 
 const om = (text: string, n = 1): OwnerMsg => ({ n, kind: 'his', text, prior: '' })
 
@@ -346,6 +366,27 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   expect(prompt).toContain("The agent's folder: /tmp/x")
   const noCopy = checkPrompt({ sessionId: 'abc-123', cwd: '/tmp/x', copy: '/tmp/x', reading: 'the result', owner: [om('first ask')], brief, writtenAt: '2026-10-13T23:05:00.000Z', conditions: [], shown: [], from: 0 })
   expect(noCopy).toContain('the throwaway copy could not be made, so writes there are denied')
+  expect(noCopy).toContain("You run in the agent's own folder")
+  expect(noCopy).not.toContain('write what you like')
+  expect(noCopy).not.toContain('denies writes outside the copy')
+  expect(prompt).toContain('write what you like there and nowhere else')
+  // The fence is a deny list, not a wall around the copy: the brief names what it guards.
+  for (const p of [prompt, noCopy]) {
+    expect(p).not.toContain('denies writes outside the copy')
+    expect(p).toContain("denies writes to the agent's folder, every git repository it and the copy belong to, every place a link in the copy leads to outside it, the owner's work, Claude Code's own settings and the main places in the home whose contents run later")
+    // A list cannot name every such place, and the brief does not claim it does.
+    expect(p).toContain('though no list names every one')
+    expect(p).toContain('Docker cannot be reached from inside the fence')
+    expect(p).not.toContain('could not be found')
+  }
+  // A question asked before the run that got no answer is said, so the run leans on no guard it lacks.
+  const unasked = (unanswered: ('links' | 'repos')[]): string => checkPrompt({ sessionId: 'abc-123', cwd: '/tmp/x', copy, reading: 'the result', owner: [om('first ask')], brief, writtenAt: '2026-10-13T23:05:00.000Z', conditions: [], shown: [], from: 0, unanswered })
+  expect(unasked(['repos'])).toContain("denies writes to the agent's folder (not every git repository it and the copy belong to, nor every place a link in the copy leads to, could be found this time, so stage, commit and stash nothing, and write nothing through a link that leads out of the copy), the owner's work")
+  expect(unasked(['repos'])).not.toContain('the links in those folders lead to')
+  expect(unasked(['links'])).toContain("denies writes to the agent's folder, every git repository it and the copy belong to, every place a link in the copy leads to outside it, the owner's work")
+  expect(unasked(['links'])).toContain('though no list names every one, and this time not the installs the links in those folders lead to, which could not be found), closes the network')
+  expect(unasked(['links', 'repos'])).toContain('stage, commit and stash nothing')
+  expect(unasked(['links', 'repos'])).toContain('which could not be found), closes the network')
   expect(prompt).toContain('2026-10-13T23:05:00.000Z')
   expect(prompt).toContain('changed:')
   expect(prompt).toContain('the result')
@@ -354,12 +395,64 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   expect(prompt).toContain('--direction desc --limit 40')
   expect(prompt).not.toContain('--from -40')
   const settings = checkSettings('/Users/o', '/tmp/x')
-  const room = JSON.parse(settings) as { sandbox: { enabled: boolean; filesystem: { denyWrite: string[]; allowWrite?: string[] }; network: { allowedDomains: string[] } } }
+  const room = JSON.parse(settings) as { sandbox: { enabled: boolean; failIfUnavailable?: boolean; allowUnsandboxedCommands?: boolean; enabledPlatforms?: string[]; filesystem: { denyWrite: string[]; allowWrite?: string[] }; network: { allowedDomains: string[] } } }
   expect(room.sandbox.enabled).toBe(true)
+  // Where the fence cannot start the run refuses, and no command can ask to run outside it.
+  expect(room.sandbox.failIfUnavailable).toBe(true)
+  expect(room.sandbox.allowUnsandboxedCommands).toBe(false)
+  expect(room.sandbox.enabledPlatforms).toBeUndefined()
   expect(room.sandbox.filesystem.denyWrite).toContain('/tmp/x')
   expect(room.sandbox.filesystem.denyWrite).toContain('/Users/o/Developer')
-  expect(room.sandbox.filesystem.denyWrite).toContain('/Users/o/.claude/hooks')
+  expect(room.sandbox.filesystem.denyWrite).toContain('/Users/o/.claude')
   expect(room.sandbox.filesystem.denyWrite.some(p => copy.startsWith(p))).toBe(false)
+  // The main places in the home whose contents run later, outside any fence, are denied too:
+  // Claude Code's whole configuration and install, the shell's startup files, git's and the
+  // package managers' and other tools' settings that can name a program or a command, the
+  // cloud tools' settings, Node's fallback module folders, Python's add-on folders, npx's
+  // installs, rustup's toolchains and the login programs folder.
+  for (const p of ['/Users/o/.claude', '/Users/o/.claude.json', '/Users/o/.local/bin', '/Users/o/.local/share/claude', '/Users/o/Library/LaunchAgents', '/Users/o/.zshenv', '/Users/o/.zshrc', '/Users/o/.zprofile', '/Users/o/.bashrc', '/Users/o/.bash_profile', '/Users/o/.profile', '/Users/o/.bash_aliases', '/Users/o/.gitconfig', '/Users/o/.npmrc', '/Users/o/.yarnrc', '/Users/o/.tmux.conf', '/Users/o/.vimrc', '/Users/o/.vim', '/Users/o/.aws', '/Users/o/.kube', '/Users/o/package.json', '/Users/o/node_modules', '/Users/o/.node_modules', '/Users/o/.node_libraries', '/Users/o/.npm/_npx', '/Users/o/.rustup/toolchains', '/Users/o/Library/Python', '/Users/o/.local/lib']) {
+    expect(room.sandbox.filesystem.denyWrite).toContain(p)
+  }
+  // npm's download cache and rustup's own working files stay writable: an offline install reads and writes them.
+  expect(room.sandbox.filesystem.denyWrite).not.toContain('/Users/o/.npm')
+  expect(room.sandbox.filesystem.denyWrite).not.toContain('/Users/o/.rustup')
+  // Each command-path folder in the home is guarded as the install it belongs to.
+  const pathed = (JSON.parse(checkSettings('/Users/o', '/tmp/x', '/usr/bin:/Users/o/.cargo/bin:/Users/o/Library/pnpm/:/Users/o/.local/bin:/Users/o/.local/share/mise/installs/node/22.22.3/bin:/Users/o/.local/share/mise/shims:/Users/o/.turso:/Users/o/.cache:/Users/o/.cache/tool/bin:/Users/o/.cache/owner-rep/bin:/Users/o:relative/bin')) as typeof room).sandbox.filesystem.denyWrite
+  expect(pathed).toContain('/Users/o/.cargo')
+  expect(pathed).toContain('/Users/o/Library/pnpm')
+  expect(pathed).toContain('/Users/o/.local/share/mise')
+  expect(pathed).toContain('/Users/o/.turso')
+  expect(pathed.filter(p => p === '/Users/o/.local/bin').length).toBe(1)
+  expect(pathed.filter(p => p === '/Users/o/.local/share/mise').length).toBe(1)
+  expect(pathed).not.toContain('/Users/o/.local')
+  expect(pathed).not.toContain('/Users/o/.local/share')
+  expect(pathed).not.toContain('/Users/o/Library')
+  expect(pathed).not.toContain('/usr/bin')
+  expect(pathed).not.toContain('/Users/o')
+  // A path folder that holds the copies is not guarded; one beside them in the cache is guarded as its tool's,
+  // and one whose install would hold the copies is guarded as itself.
+  expect(pathed).not.toContain('/Users/o/.cache')
+  expect(pathed).toContain('/Users/o/.cache/tool')
+  expect(pathed).toContain('/Users/o/.cache/owner-rep/bin')
+  expect(pathed).not.toContain('/Users/o/.cache/owner-rep')
+  expect(pathed).not.toContain('relative/bin')
+  expect(pathed.some(p => copy.startsWith(p))).toBe(false)
+  // Where a path folder or a link in one leads in the home, that install is guarded too.
+  const linked = (JSON.parse(checkSettings('/Users/o', '/tmp/x', '/usr/bin:/Users/o/.local/bin', ['/Users/o/.local/share/uv/tools/mempalace/bin/mempalace', '/Users/o/.local/opt/powershell-7.6.3/pwsh', '/Users/o/Library/Application Support/fnm/node-versions/v22.1.0/installation/bin', '/opt/homebrew/Cellar/jq/1.7/bin/jq', '/Users/o/.cache/owner-rep/checks', '/Users/o'])) as typeof room).sandbox.filesystem.denyWrite
+  expect(linked).toContain('/Users/o/.local/share/uv')
+  expect(linked).toContain('/Users/o/.local/opt')
+  expect(linked).toContain('/Users/o/Library/Application Support/fnm')
+  expect(linked).not.toContain('/opt/homebrew/Cellar')
+  expect(linked).not.toContain('/opt/homebrew/Cellar/jq/1.7/bin/jq')
+  expect(linked).not.toContain('/Users/o/.local/share')
+  expect(linked).not.toContain('/Users/o')
+  expect(linked.some(p => copy.startsWith(p))).toBe(false)
+  // The repository a copied worktree's .git file points at is guarded wherever it is, unless it holds the copies.
+  const repoed = (JSON.parse(checkSettings('/Users/o', '/tmp/x', '', [], ['/srv/code/repo/.git', '/Users/o/code/app.git/', '/Users/o/.cache'])) as typeof room).sandbox.filesystem.denyWrite
+  expect(repoed).toContain('/srv/code/repo/.git')
+  expect(repoed).toContain('/Users/o/code/app.git')
+  expect(repoed).not.toContain('/Users/o/.cache')
+  expect(repoed.some(p => copy.startsWith(p))).toBe(false)
   expect(room.sandbox.network.allowedDomains).toEqual([])
   const argv = checkArgv(prompt, settings)
   expect(argv[0]).toBe('claude')
@@ -395,9 +488,9 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   expect(resultOf(JSON.stringify({ type: 'result', result: 'holds:\n- x', permission_denials: [{ tool_name: 'Bash' }, { tool_name: 'Bash' }] }))?.refused).toBe(2)
   expect(resultOf('not json')).toBe(null)
   expect(checkCostText(0, 0, 0)).toContain('210k fresh tokens plus 2.3 million re-read from cache, in 2 minutes')
-  expect(checkCostText(850000, 800000, 95000)).toContain('50k fresh tokens plus 800k re-read from cache, in 2 minutes, with no command refused')
-  expect(checkCostText(850000, 800000, 95000, 1)).toContain('with 1 command refused')
-  expect(checkCostText(850000, 800000, 95000, 2)).toContain('with 2 commands refused')
+  expect(checkCostText(850000, 800000, 95000)).toContain('50k fresh tokens plus 800k re-read from cache, in 2 minutes, with no command refused approval')
+  expect(checkCostText(850000, 800000, 95000, 1)).toContain('with 1 command refused approval')
+  expect(checkCostText(850000, 800000, 95000, 2)).toContain('with 2 commands refused approval')
   expect(out?.cached).toBe(1)
 })
 
@@ -1076,9 +1169,11 @@ test('rule: Tell the rep puts the prefix in the prompt box, from the row and fro
 
 // The room's commands (the copy made and removed) answered without running anything;
 // `runs` keeps each argv so a test can read what the rep asked for.
-const room = (on: On): string[][] => {
+// The room the check's commands run in: every variable reads '/Users/o', except PATH
+// when one is given.
+const room = (on: On, path?: string): string[][] => {
   const runs: string[][] = []
-  on('env.get', () => ({ value: '/Users/o' }))
+  on('env.get', (_$, e) => ({ value: path !== undefined && e.name === 'PATH' ? path : '/Users/o' }))
   on('process.run', (_$, e) => {
     runs.push([...e.argv])
     return { value: { exitCode: 0, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
@@ -1110,6 +1205,88 @@ test('rule: a check that prints no result says it could not run, with the exit c
   expect(await ui.find({ key: 'check' })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /The card\./ })).toBeDefined()
   await ui.unmount()
+})
+
+// What Claude Code 2.1.302 printed in a Linux container without bubblewrap, under the
+// check's settings, 17 Oct 2026, its stdout empty and its exit code 1.
+const NO_FENCE_STDERR =
+  '\nError: sandbox required but unavailable: sandbox is enabled but dependencies are missing: bubblewrap (bwrap) not installed, socat not installed · install missing tools (e.g. apt install bubblewrap socat) or see https://code.claude.com/docs/en/sandboxing\n  sandbox.failIfUnavailable is set — refusing to start without a working sandbox.\n\n'
+
+test('rule: where the fence cannot start, the card says the check does not run on this machine, names what is missing, and offers no Check it', async ($, on) => {
+  mock.clock(on)
+  const ui = await checkWith($, on, async function* () {
+    yield { stream: 'stderr', text: NO_FENCE_STDERR }
+    return { value: { code: 1, signal: null } }
+  })
+  await ui.press({ key: 'check' })
+  expect(await ui.find({ type: 'Text', text: /The check does not run on this machine: Claude Code's sandbox cannot start here, so its run refused to start rather than run unfenced\. Claude Code says: sandbox is enabled but dependencies are missing: bubblewrap \(bwrap\) not installed/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /refusing to start without a working sandbox/ })).toBeUndefined()
+  expect(await ui.find({ key: 'check' })).toBeUndefined()
+  expect(await ui.find({ key: 'close' })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /The card\./ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('rule: once the fence has refused to start, each later card says the check does not run on this machine and offers no Check it', async ($, on) => {
+  mock.clock(on)
+  let spawns = 0
+  const ui = await checkWith($, on, async function* () {
+    spawns += 1
+    yield { stream: 'stderr', text: NO_FENCE_STDERR }
+    return { value: { code: 1, signal: null } }
+  })
+  await ui.press({ key: 'check' })
+  await ui.press({ key: 'close' })
+  await ui.press({ key: 'rep' })
+  expect(await ui.find({ type: 'Text', text: /The check does not run on this machine: Claude Code's sandbox cannot start here/ })).toBeDefined()
+  expect(await ui.find({ key: 'check' })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: /The card\./ })).toBeDefined()
+  expect(spawns).toBe(1)
+  await ui.unmount()
+})
+
+test('rule: once the fence has refused to start, a press on a card drawn before the refusal starts nothing and the card says why', async ($, on) => {
+  const clock = mock.clock(on)
+  let spawns = 0
+  let release: () => void = () => undefined
+  const ui = await checkWith($, on, async function* () {
+    spawns += 1
+    await new Promise<void>(r => (release = r))
+    yield { stream: 'stderr', text: NO_FENCE_STDERR }
+    return { value: { code: 1, signal: null } }
+  })
+  // The first card's check is under way when a second card is drawn, which still offers it.
+  const first = ui.press({ key: 'check' })
+  await ui.press({ key: 'close' })
+  await clock.advance(1000)
+  await ui.press({ key: 'rep' })
+  expect(await ui.find({ key: 'check' })).toBeDefined()
+  // The first run is refused by the fence; its answer is for a card no longer up.
+  release()
+  await first
+  expect(spawns).toBe(1)
+  expect(await ui.find({ key: 'check' })).toBeDefined()
+  await ui.press({ key: 'check' })
+  expect(spawns).toBe(1)
+  expect(await ui.find({ type: 'Text', text: /The check does not run on this machine: Claude Code's sandbox cannot start here/ })).toBeDefined()
+  expect(await ui.find({ key: 'check' })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('noFenceNote reads only the refusal Claude Code prints where the fence cannot start, and checkBarred bars the check on that card and on Windows', () => {
+  expect(noFenceNote('claude: not logged in\n')).toBe(null)
+  expect(noFenceNote('')).toBe(null)
+  const note = noFenceNote(NO_FENCE_STDERR) ?? ''
+  expect(note).toContain('bubblewrap (bwrap) not installed, socat not installed')
+  expect(note).not.toContain('Error:')
+  // The note outlives its cause until Claude Code restarts, and says so.
+  expect(note.endsWith('Once what the sandbox needs is installed, restart Claude Code and the check can run.')).toBe(true)
+  expect(noFenceNote('Error: sandbox required but unavailable:\n')).toBe("The check does not run on this machine: Claude Code's sandbox cannot start here, so its run refused to start rather than run unfenced. Once what the sandbox needs is installed, restart Claude Code and the check can run.")
+  expect(checkBarred(note)).toBe(true)
+  expect(checkBarred(CHECK_NO_ROOM)).toBe(true)
+  expect(checkBarred('The check could not run (exit 2): claude: not logged in.')).toBe(false)
+  expect(checkBarred('The check ran out of time (fifteen minutes) and was stopped.')).toBe(false)
+  expect(checkBarred('')).toBe(false)
 })
 
 test('rule: a check that outlasts its fifteen minutes is stopped and says so', async ($, on) => {
@@ -2159,13 +2336,13 @@ const CHECKED_WITH = (refused: number): string =>
 test('rule: the check runs in a throwaway copy of the project, fenced, and the copy is removed when the run ends', async ($, on) => {
   session(on)
   quietBand(on)
-  const runs = room(on)
+  const runs = room(on, '/usr/bin:/Users/o/.cargo/bin')
   on('session.cwd', () => ({ value: '/tmp/x' }))
   mock.clock(on)
   on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
-  let seen: { cwd?: string; argv?: readonly string[] } = {}
+  let seen: { cwd?: string; argv?: readonly string[]; env?: Record<string, string> } = {}
   on('process.spawn', async function* (_$, e) {
-    seen = { cwd: e.cwd, argv: e.argv }
+    seen = { cwd: e.cwd, argv: e.argv, env: e.env }
     yield { stream: 'stdout', text: CHECKED_WITH(0) }
     return { value: { code: 0, signal: null } }
   })
@@ -2180,10 +2357,577 @@ test('rule: the check runs in a throwaway copy of the project, fenced, and the c
   expect(seen.cwd).toBe(copy)
   const argv = seen.argv ?? []
   expect(argv[argv.indexOf('--permission-mode') + 1]).toBe('default')
-  expect(argv[argv.indexOf('--settings') + 1]).toBe(checkSettings('/Users/o', '/tmp/x'))
+  // The command path's folders in the home are fenced: a program put there would run later.
+  expect(argv[argv.indexOf('--settings') + 1]).toBe(checkSettings('/Users/o', '/tmp/x', '/usr/bin:/Users/o/.cargo/bin'))
+  expect(argv[argv.indexOf('--settings') + 1]).toContain('"/Users/o/.cargo"')
   expect(argv[argv.indexOf('--allowedTools') + 1]?.split(',')).toContain('Bash')
+  // pnpm named no store, so none is named to the run.
+  expect(seen.env).toBeUndefined()
   expect(runs.filter(r => r[0] === 'rm' && r[2] === copy).length).toBeGreaterThanOrEqual(2)
   expect(runs.findIndex(r => r[0] === 'cp')).toBeLessThan(runs.length - 1)
+  await ui.unmount()
+})
+
+test('rule: the check names pnpm\'s store to its run, asked of pnpm in the copy outside the fence with the project\'s pnpmfile ignored, pnpm\'s version left alone and nothing fetched on its command line, which a project\'s workspace file cannot turn back on, and corepack\'s network off, so an install inside the fence reads the store pnpm uses', async ($, on) => {
+  session(on)
+  quietBand(on)
+  const runs: { argv: string[]; cwd?: string; env?: Record<string, string> }[] = []
+  on('env.get', () => ({ value: '/Users/o' }))
+  on('process.run', (_$, e) => {
+    runs.push({ argv: [...e.argv], cwd: e.init?.cwd, env: e.init?.env })
+    const stdout = e.argv[0] === 'pnpm' ? ' WARN  Issue while reading "/Users/o/.npmrc".\n/Users/o/Library/pnpm/store/v10\n' : ''
+    return { value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
+  on('session.cwd', () => ({ value: '/tmp/x' }))
+  mock.clock(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  let env: Record<string, string> | undefined
+  on('process.spawn', async function* (_$, e) {
+    env = e.env
+    yield { stream: 'stdout', text: CHECKED_WITH(0) }
+    return { value: { code: 0, signal: null } }
+  })
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+  const copy = runs.find(r => r.argv[0] === 'cp')?.argv[3] ?? ''
+  expect(copy.startsWith('/Users/o/.cache/owner-rep/checks/')).toBe(true)
+  // Asked in the copy, with the settings on the command line: in the environment a project's
+  // pnpm-workspace.yaml overrides them, and its pnpmfile, a pinned pnpm or its config
+  // dependencies would run or be fetched outside the fence. Corepack, which fetches a pinned
+  // pnpm before pnpm reads its command line, is told by the environment to fetch nothing.
+  expect(runs.find(r => r.argv[0] === 'pnpm')).toEqual({ argv: ['pnpm', 'store', 'path', '--config.ignore-pnpmfile=true', '--config.manage-package-manager-versions=false', '--config.offline=true'], cwd: copy, env: { COREPACK_ENABLE_NETWORK: '0' } })
+  expect(env).toEqual({ npm_config_store_dir: '/Users/o/Library/pnpm/store' })
+  await ui.unmount()
+})
+
+test('rule: a machine where pnpm or find cannot be asked still runs the check, naming no store, no linked install and no repository, and its brief says the links and the repository could not be found', async ($, on) => {
+  session(on)
+  quietBand(on)
+  on('env.get', () => ({ value: '/Users/o' }))
+  on('process.run', (_$, e) => {
+    if (e.argv[0] === 'pnpm') throw new Error('pnpm: command not found')
+    if (e.argv[0] === 'find' || e.argv[0] === 'sh') throw new Error('find timed out')
+    return { value: { exitCode: 0, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
+  on('session.cwd', () => ({ value: '/tmp/x' }))
+  mock.clock(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  let spawned: { env?: Record<string, string>; settings?: string } | null = null
+  let prompt = ''
+  on('process.spawn', async function* (_$, e) {
+    spawned = { env: e.env, settings: e.argv[e.argv.indexOf('--settings') + 1] }
+    prompt = e.argv[e.argv.indexOf('-p') + 1] ?? ''
+    yield { stream: 'stdout', text: CHECKED_WITH(0) }
+    return { value: { code: 0, signal: null } }
+  })
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+  expect(spawned).toEqual({ env: undefined, settings: checkSettings('/Users/o', '/tmp/x', '/Users/o') })
+  expect(prompt).toContain('could be found this time, so stage, commit and stash nothing, and write nothing through a link that leads out of the copy')
+  expect(prompt).toContain('this time not the installs the links in those folders lead to, which could not be found')
+  expect(await ui.find({ type: 'Text', text: /could not run/ })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('rule: when only the git question goes unanswered the brief says the repository could not be found, and nothing of the links', async ($, on) => {
+  session(on)
+  quietBand(on)
+  on('env.get', () => ({ value: '/Users/o' }))
+  on('process.run', (_$, e) => {
+    if (e.argv[0] === 'sh') throw new Error('find timed out')
+    return { value: { exitCode: 0, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
+  on('session.cwd', () => ({ value: '/tmp/x' }))
+  mock.clock(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  let prompt = ''
+  on('process.spawn', async function* (_$, e) {
+    prompt = e.argv[e.argv.indexOf('-p') + 1] ?? ''
+    yield { stream: 'stdout', text: CHECKED_WITH(0) }
+    return { value: { code: 0, signal: null } }
+  })
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+  expect(prompt).toContain('could be found this time, so stage, commit and stash nothing')
+  expect(prompt).not.toContain('the links in those folders lead to')
+  await ui.unmount()
+})
+
+// The check's brief and fence when one git question fails, comes back cut or short of its
+// end, or passes over a name. The agent's folder is a worktree of /srv/main; a link in the
+// copy leads into /srv/ext, a repository; /srv/main lists a worktree at /srv/a.
+type GitFault = 'none' | 'up' | 'inside' | 'inside-cut' | 'inside-short' | 'odd' | 'beyond' | 'trees' | 'trees-cut'
+const briefWhenGit = async ($: Engine, on: On, fault: GitFault): Promise<{ prompt: string; denied: string[]; asked: string[] }> => {
+  session(on)
+  quietBand(on)
+  const asked: string[] = []
+  on('env.get', () => ({ value: '/Users/o' }))
+  on('process.run', (_$, e) => {
+    const q = e.argv[0] !== 'sh' ? '' : e.argv.includes('\\ntree %s\\n') ? 'trees' : e.argv.includes('*\n*') ? 'inside' : e.argv.includes('/srv/ext/src/.git') ? 'beyond' : 'up'
+    if (q !== '') asked.push(q)
+    if (q !== '' && fault === q) throw new Error('find timed out')
+    const stdout =
+      q === 'up'
+        ? gitAnswer(e.argv, p => (p === '/tmp/x/.git' ? [p, '/srv/main/.git/worktrees/x'] : undefined))
+        : q === 'inside'
+          ? gitAnswer(e.argv, () => undefined, [], `${fault === 'odd' ? '\nodd\n' : ''}\nlinks\n/srv/ext/src\n`)
+          : q === 'beyond'
+            ? gitAnswer(e.argv, p => (p === '/srv/ext/.git' ? [p] : undefined))
+            : q === 'trees' && e.argv.includes('/srv/main/.git/worktrees')
+              ? '\ntree /srv/main/.git/worktrees/a/gitdir\n/srv/a/.git\n\nend\n'
+              : q === 'trees'
+                ? '\nend\n'
+                : ''
+    return { value: { exitCode: 0, stdout: fault === `${q}-short` ? stdout.replace(/\nend\n$/, '') : stdout, stderr: '', isStdoutTruncated: fault === `${q}-cut`, isStderrTruncated: false } }
+  })
+  on('session.cwd', () => ({ value: '/tmp/x' }))
+  mock.clock(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  let prompt = ''
+  let settings = ''
+  on('process.spawn', async function* (_$, e) {
+    prompt = e.argv[e.argv.indexOf('-p') + 1] ?? ''
+    settings = e.argv[e.argv.indexOf('--settings') + 1] ?? ''
+    yield { stream: 'stdout', text: CHECKED_WITH(0) }
+    return { value: { code: 0, signal: null } }
+  })
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+  await ui.unmount()
+  const denied = settings === '' ? [] : (JSON.parse(settings) as { sandbox: { filesystem: { denyWrite: string[] } } }).sandbox.filesystem.denyWrite
+  return { prompt, denied, asked }
+}
+
+test('rule: when every git question answers whole, the brief says every repository and every place a link leads are guarded, and they are: the worktree\'s shared git folder, the worktree it lists, the repository a link leads into, each once by its outermost folder', async ($, on) => {
+  const { prompt, denied, asked } = await briefWhenGit($, on, 'none')
+  expect(asked).toEqual(['up', 'inside', 'beyond', 'trees'])
+  expect(prompt).toContain("denies writes to the agent's folder, every git repository it and the copy belong to, every place a link in the copy leads to outside it, the owner's work")
+  expect(prompt).not.toContain('could be found this time')
+  expect(denied).toContain('/srv/main/.git')
+  expect(denied).toContain('/srv/a')
+  expect(denied).toContain('/srv/ext')
+  // Inside a place already guarded: named by it.
+  expect(denied).not.toContain('/srv/main/.git/worktrees/x')
+  expect(denied).not.toContain('/srv/ext/src')
+  expect(denied).not.toContain('/srv/ext/.git')
+})
+
+test('rule: when the question above the folders fails, the brief says not every repository could be found, and what the other questions found is still guarded', async ($, on) => {
+  const { prompt, denied } = await briefWhenGit($, on, 'up')
+  expect(prompt).toContain('could be found this time, so stage, commit and stash nothing, and write nothing through a link that leads out of the copy')
+  expect(denied).not.toContain('/srv/main/.git')
+  expect(denied).toContain('/srv/ext')
+})
+
+for (const [fault, how] of [['inside', 'fails'], ['inside-cut', 'comes back cut'], ['inside-short', 'stops short of its end']] as const) {
+  test(`rule: when the question inside the copy ${how}, the brief says not every repository could be found, and the repository the folders above lead to is still guarded`, async ($, on) => {
+    const { prompt, denied, asked } = await briefWhenGit($, on, fault)
+    expect(prompt).toContain('could be found this time, so stage, commit and stash nothing, and write nothing through a link that leads out of the copy')
+    expect(denied).toContain('/srv/main/.git')
+    expect(denied).toContain('/srv/a')
+    // No link was read, so none is followed.
+    expect(asked).not.toContain('beyond')
+    expect(denied).not.toContain('/srv/ext')
+  })
+}
+
+test('rule: when the question inside the copy passes over a name holding a line break, the brief says not every repository could be found, and the links it read are still guarded', async ($, on) => {
+  const { prompt, denied } = await briefWhenGit($, on, 'odd')
+  expect(prompt).toContain('could be found this time, so stage, commit and stash nothing, and write nothing through a link that leads out of the copy')
+  expect(denied).toContain('/srv/ext')
+  expect(denied).toContain('/srv/main/.git')
+})
+
+test('rule: when the question about where the links lead fails, the brief says not every repository could be found, and each place a link leads is still guarded', async ($, on) => {
+  const { prompt, denied } = await briefWhenGit($, on, 'beyond')
+  expect(prompt).toContain('could be found this time, so stage, commit and stash nothing, and write nothing through a link that leads out of the copy')
+  expect(denied).toContain('/srv/ext/src')
+  expect(denied).toContain('/srv/main/.git')
+})
+
+for (const [fault, how] of [['trees', 'fails'], ['trees-cut', 'comes back cut']] as const) {
+  test(`rule: when the worktrees question ${how}, the brief says not every repository could be found, and the repositories are still guarded`, async ($, on) => {
+    const { prompt, denied } = await briefWhenGit($, on, fault)
+    expect(prompt).toContain('could be found this time, so stage, commit and stash nothing, and write nothing through a link that leads out of the copy')
+    expect(denied).toContain('/srv/main/.git')
+    expect(denied).toContain('/srv/ext')
+    expect(denied).not.toContain('/srv/a')
+  })
+}
+
+test('rule: an agent working in the home, which holds the copies, gets no copy and no search inside it, and the home is guarded whole, its .git with it', async ($, on) => {
+  session(on)
+  quietBand(on)
+  const runs: string[][] = []
+  on('env.get', (_$, e) => ({ value: e.name === 'PATH' ? '/usr/bin' : '/Users/o' }))
+  on('process.run', (_$, e) => {
+    runs.push([...e.argv])
+    const stdout = e.argv[0] === 'sh' ? gitAnswer(e.argv, p => (p === '/Users/o/.git' ? [p] : undefined)) : ''
+    return { value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
+  on('session.cwd', () => ({ value: '/Users/o' }))
+  mock.clock(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  let settings = ''
+  on('process.spawn', async function* (_$, e) {
+    settings = e.argv[e.argv.indexOf('--settings') + 1] ?? ''
+    yield { stream: 'stdout', text: CHECKED_WITH(0) }
+    return { value: { code: 0, signal: null } }
+  })
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+  expect(runs.some(r => r[0] === 'cp')).toBe(false)
+  expect(runs.filter(r => r[0] === 'sh')).toEqual([wholeArgv(PATH_HOST, gitUpArgv(['/Users/o', '/Users/o'])), wholeArgv(PATH_HOST, worktreesArgv(['/Users/o/.git']))])
+  // Nothing inside the home is searched.
+  expect(runs.some(r => r[0] === 'sh' && (r.includes('/Users/o') || r.includes('*\n*')))).toBe(false)
+  // With no copy the run is in the agent's folder, which is denied whole, its .git with it.
+  const denied = (JSON.parse(settings) as { sandbox: { filesystem: { denyWrite: string[] } } }).sandbox.filesystem.denyWrite
+  expect(denied).toContain('/Users/o')
+  await ui.unmount()
+})
+
+test('rule: the check asks, outside the fence, where the command path\'s folders and their links lead, and guards each install in the home they lead to', async ($, on) => {
+  session(on)
+  quietBand(on)
+  const runs: string[][] = []
+  let waited: number | undefined
+  on('env.get', (_$, e) => ({ value: e.name === 'PATH' ? '/usr/bin:/Users/o/.cargo/bin' : '/Users/o' }))
+  on('process.run', (_$, e) => {
+    runs.push([...e.argv])
+    const links = e.argv[0] === 'find' && !e.argv.includes('printf')
+    if (links) waited = e.init?.timeoutMs
+    // find ends 1 when a path folder is missing; what it printed still counts.
+    return links
+      ? { value: { exitCode: 1, stdout: '/usr/bin\n/Users/o/.cargo/bin\n/Users/o/.local/share/uv/tools/mempalace/bin/mempalace\n/Users/o/.local/opt/powershell-7.6.3/pwsh\n', stderr: 'find: /Users/o/.local/bin: No such file or directory\n', isStdoutTruncated: false, isStderrTruncated: false } }
+      : { value: { exitCode: 0, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
+  on('session.cwd', () => ({ value: '/tmp/x' }))
+  mock.clock(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  let settings = ''
+  on('process.spawn', async function* (_$, e) {
+    settings = e.argv[e.argv.indexOf('--settings') + 1] ?? ''
+    yield { stream: 'stdout', text: CHECKED_WITH(0) }
+    return { value: { code: 0, signal: null } }
+  })
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+  expect(runs.find(r => r[0] === 'find' && !r.includes('printf'))).toEqual(pathLinksArgv('/Users/o', '/usr/bin:/Users/o/.cargo/bin'))
+  // Thirty seconds: under two on this Mac, and a slower machine's answer is not cut off.
+  expect(waited).toBe(30000)
+  const denied = (JSON.parse(settings) as { sandbox: { filesystem: { denyWrite: string[] } } }).sandbox.filesystem.denyWrite
+  expect(denied).toContain('/Users/o/.local/share/uv')
+  expect(denied).toContain('/Users/o/.local/opt')
+  expect(denied).toContain('/Users/o/.cargo')
+  expect(denied).not.toContain('/usr/bin')
+  await ui.unmount()
+})
+
+test('pathLinksArgv asks find for each absolute path folder and ~/.local/bin once, each folder itself and the links in it and never the folders inside it, one name to each readlink, and linkTargets keeps the absolute places, dropping a last line cut short', () => {
+  const asked = ['-maxdepth', '1', '(', '-type', 'l', '-o', '-name', '.', ')', '-exec', 'readlink', '-f', '{}', ';']
+  expect(pathLinksArgv('/Users/o', '/usr/bin:relative/bin:/Users/o/.local/bin:/usr/bin/:')).toEqual(['find', '/usr/bin/.', '/Users/o/.local/bin/.', ...asked])
+  expect(pathLinksArgv('/Users/o', '')).toEqual(['find', '/Users/o/.local/bin/.', ...asked])
+  // A home or the root on the path is asked as itself: its links, never every folder in it.
+  expect(pathLinksArgv('/Users/o', '/Users/o:/')).toEqual(['find', '/Users/o/.', '/.', '/Users/o/.local/bin/.', ...asked])
+  expect(linkTargets('/a/b\n/c/d\n', false)).toEqual(['/a/b', '/c/d'])
+  expect(linkTargets('/a/b\nfind: x: Permission denied\n\n', false)).toEqual(['/a/b'])
+  expect(linkTargets('/a/b\n/c/d\n/Users/o/.local/sh', true)).toEqual(['/a/b', '/c/d'])
+  expect(linkTargets('', false)).toEqual([])
+})
+
+// A host's answer to a git question asked through `wholeArgv`, for a set of `.git` places,
+// those `inside` the copy among them: each found one prints its entry after a line break,
+// where it leads and its gitdir line, if any, as find, readlink and sed do; then `rest`
+// (links read, a name passed over), then sh's end.
+const gitAnswer = (argv: readonly string[], found: (p: string) => [string, string?] | undefined, inside: string[] = [], rest = ''): string =>
+  [...argv.filter(a => a.endsWith('/.git')), ...inside]
+    .flatMap(p => {
+      const f = found(p)
+      return f === undefined ? [] : ['', `entry ${p}`, f[0], ...(f[1] === undefined ? [] : [`gitdir: ${f[1]}`])]
+    })
+    .map(l => `${l}\n`)
+    .join('') + `${rest}\nend\n`
+
+test('rule: the check asks, outside the fence and each on its own, for the .git in its copy, the agent\'s folder and every folder above, for every .git and link inside the copy, for the .git where each link leads and above it, then for the worktrees each repository found lists, and guards each, so a commit in a copied worktree or through a linked library cannot move the real branch', async ($, on) => {
+  session(on)
+  quietBand(on)
+  const runs: string[][] = []
+  const waited: (number | undefined)[] = []
+  on('env.get', (_$, e) => ({ value: e.name === 'PATH' ? '/usr/bin' : '/Users/o' }))
+  on('process.run', (_$, e) => {
+    runs.push([...e.argv])
+    const asked = e.argv[0] === 'sh'
+    if (asked) waited.push(e.init?.timeoutMs)
+    // The copy's own .git is a worktree's; a library inside the project keeps its history
+    // elsewhere; a link in the copy leads into another repository, one inside it does not.
+    const copy = e.argv.includes('*\n*') ? e.argv[4] : undefined
+    const inside = copy === undefined ? [] : [`${copy}/.git`, `${copy}/vendor/lib/.git`]
+    const links = copy === undefined ? '' : `\nlinks\n/Users/o/libs/ext/src\n${copy}/docs/shared\n`
+    // find ends 1 for each folder with no .git; what it printed still counts.
+    const stdout = !asked
+      ? ''
+      : e.argv.includes('/Users/o/code/app/.git/worktrees')
+        ? '\ntree /Users/o/code/app/.git/worktrees/side/gitdir\n/Users/o/code/side/.git\ntree /Users/o/code/app/.git/worktrees/other/gitdir\n/Users/o/elsewhere/other/.git\n\nend\n'
+        : gitAnswer(e.argv, p => (p === '/Users/o/code/side/.git' || /^\/Users\/o\/\.cache\/owner-rep\/checks\/[^/]+\/\.git$/.test(p) ? [p, '/Users/o/code/app/.git/worktrees/side'] : p.endsWith('/vendor/lib/.git') ? [p, '/srv/lib.git'] : p === '/Users/o/libs/ext/.git' ? [p] : undefined), inside, links)
+    return { value: { exitCode: asked ? 1 : 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
+  on('session.cwd', () => ({ value: '/Users/o/code/side' }))
+  mock.clock(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  let settings = ''
+  let prompt = ''
+  let spawnedAfter = 0
+  on('process.spawn', async function* (_$, e) {
+    settings = e.argv[e.argv.indexOf('--settings') + 1] ?? ''
+    prompt = e.argv[e.argv.indexOf('-p') + 1] ?? ''
+    spawnedAfter = runs.length
+    yield { stream: 'stdout', text: CHECKED_WITH(0) }
+    return { value: { code: 0, signal: null } }
+  })
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+  const copy = runs.find(r => r[0] === 'cp')?.[3] ?? ''
+  expect(copy.startsWith('/Users/o/.cache/owner-rep/checks/')).toBe(true)
+  // Asked of the copy and the agent's folder, inside the copy, where its links lead, then of the git folders found, before the run starts.
+  const questions = runs.flatMap((r, i) => (r[0] === 'sh' ? [i] : []))
+  expect(questions.map(i => runs[i])).toEqual([
+    wholeArgv(PATH_HOST, gitUpArgv([copy, '/Users/o/code/side'])),
+    wholeArgv(PATH_HOST, gitInsideArgv(copy)),
+    wholeArgv(PATH_HOST, gitUpArgv(['/Users/o/libs/ext/src'])),
+    wholeArgv(PATH_HOST, worktreesArgv([`${copy}/.git`, '/Users/o/code/app/.git', '/Users/o/code/app/.git/worktrees/side', '/Users/o/code/side/.git', `${copy}/vendor/lib/.git`, '/srv/lib.git', '/Users/o/libs/ext/.git'])),
+  ])
+  expect(Math.max(...questions)).toBeLessThan(spawnedAfter)
+  expect(waited).toEqual([30000, 30000, 30000, 30000])
+  const denied = (JSON.parse(settings) as { sandbox: { filesystem: { denyWrite: string[] } } }).sandbox.filesystem.denyWrite
+  expect(denied).toContain('/Users/o/code/app/.git')
+  expect(denied).toContain('/srv/lib.git')
+  expect(denied).toContain('/Users/o/elsewhere/other')
+  expect(denied).toContain('/Users/o/code/side')
+  expect(denied).toContain('/Users/o/libs/ext')
+  // Each place inside another guarded one is named by it.
+  expect(denied).not.toContain('/Users/o/code/app/.git/worktrees/side')
+  expect(denied).not.toContain('/Users/o/libs/ext/src')
+  expect(denied.some(p => copy.startsWith(p) || p.startsWith(copy))).toBe(false)
+  expect(prompt).toContain("denies writes to the agent's folder, every git repository it and the copy belong to, every place a link in the copy leads to outside it,")
+  expect(prompt).not.toContain('could be found this time')
+  await ui.unmount()
+})
+
+test('rule: where no copy is made of a subfolder of a repository, the check asks about it and inside it, and guards the repository above it, its .git with it, and a repository at the home only by its .git', async ($, on) => {
+  session(on)
+  quietBand(on)
+  const runs: string[][] = []
+  on('env.get', (_$, e) => ({ value: e.name === 'PATH' ? '/usr/bin' : '/Users/o' }))
+  on('process.run', (_$, e) => {
+    runs.push([...e.argv])
+    if (e.argv[0] === 'cp') throw new Error('cp: no room')
+    const stdout = e.argv[0] === 'sh' ? gitAnswer(e.argv, p => (p === '/Users/o/code/shop/.git' || p === '/Users/o/.git' ? [p] : undefined)) : ''
+    return { value: { exitCode: e.argv[0] === 'sh' ? 1 : 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
+  on('session.cwd', () => ({ value: '/Users/o/code/shop/api' }))
+  mock.clock(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  let settings = ''
+  let cwd: string | undefined
+  on('process.spawn', async function* (_$, e) {
+    settings = e.argv[e.argv.indexOf('--settings') + 1] ?? ''
+    cwd = e.cwd
+    yield { stream: 'stdout', text: CHECKED_WITH(0) }
+    return { value: { code: 0, signal: null } }
+  })
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+  expect(cwd).toBe('/Users/o/code/shop/api')
+  expect(runs.filter(r => r[0] === 'sh').slice(0, 2)).toEqual([wholeArgv(PATH_HOST, gitUpArgv(['/Users/o/code/shop/api', '/Users/o/code/shop/api'])), wholeArgv(PATH_HOST, gitInsideArgv('/Users/o/code/shop/api'))])
+  const denied = (JSON.parse(settings) as { sandbox: { filesystem: { denyWrite: string[] } } }).sandbox.filesystem.denyWrite
+  expect(denied).toContain('/Users/o/code/shop/api')
+  expect(denied).toContain('/Users/o/code/shop')
+  expect(denied).not.toContain('/Users/o/code/shop/.git')
+  expect(denied).toContain('/Users/o/.git')
+  // The home holds the copies, so it is never named whole.
+  expect(denied).not.toContain('/Users/o')
+  await ui.unmount()
+})
+
+test('gitUpArgv asks find for the .git in each place and every folder above, each once; gitInsideArgv for every .git inside the copy, passing over a name holding a line break, and where each link in it leads, one readlink to a batch where it takes many names and one to a name where it takes one; each prints a .git after a line break, where it leads and its gitdir line even when readlink fails; foldersUp walks to the root', () => {
+  expect(foldersUp('/Users/o/code')).toEqual(['/Users/o/code', '/Users/o', '/Users', '/'])
+  expect(foldersUp('/Users/o/code/')).toEqual(['/Users/o/code', '/Users/o', '/Users', '/'])
+  expect(foldersUp('/')).toEqual(['/'])
+  const entry = [
+    '-name', '.git', '-prune',
+    '-exec', 'printf', '\\nentry %s\\n', '{}', ';',
+    '(', '-exec', 'readlink', '-f', '{}', ';', '-o', '-prune', ')',
+    '-exec', 'sed', '-n', '/^gitdir: /p', '{}', ';',
+  ]
+  expect(gitUpArgv(['/Users/o/.cache/owner-rep/checks/s', '/Users/o/code/app'])).toEqual([
+    'find',
+    '/Users/o/.cache/owner-rep/checks/s/.git',
+    '/Users/o/.cache/owner-rep/checks/.git',
+    '/Users/o/.cache/owner-rep/.git',
+    '/Users/o/.cache/.git',
+    '/Users/o/.git',
+    '/Users/.git',
+    '/.git',
+    '/Users/o/code/app/.git',
+    '/Users/o/code/.git',
+    ...entry,
+  ])
+  // With no copy the two folders are one, asked once.
+  expect(gitUpArgv(['/a/b', '/a/b'])).toEqual(['find', '/a/b/.git', '/a/.git', '/.git', ...entry])
+  expect(gitUpArgv(['/'])).toEqual(['find', '/.git', ...entry])
+  expect(gitInsideArgv('/c/copy')).toEqual([
+    'find', '/c/copy',
+    '(', '-path', '*\n*', '-prune', '-exec', 'printf', '\\nodd\\n', ';', ')',
+    '-o', '(', ...entry, ')',
+    '-o', '!', '-name', '.git', '-type', 'l',
+    '-exec', 'sh', '-c', 'printf "\\nlinks\\n"; if readlink -f / / >/dev/null 2>&1; then readlink -f "$@"; else for l in "$@"; do readlink -f "$l"; done; fi', 'sh', '{}', '+',
+  ])
+})
+
+test('wholeArgv asks find through sh, which prints end only when find was not stopped by a signal, naming both for the host, and wholeAnswer takes an answer only when it came back whole, uncut and ending in end', () => {
+  // A find stopped by a signal leaves sh's $? at 128 or more, and the host reports both as an exit of 1 (measured 17 Oct 2026).
+  expect(WHOLE_SH).toBe('"$0" "$@"; [ $? -lt 128 ] && printf "\\nend\\n"')
+  expect(wholeArgv(PATH_HOST, ['find', '/a'])).toEqual(['sh', '-c', WHOLE_SH, 'find', '/a'])
+  expect(hostArgv(WIN_HOST, wholeArgv(WIN_HOST, ['find', 'C:/a']))).toEqual(['C:/Git/usr/bin/sh.exe', '-c', WHOLE_SH, 'C:/Git/usr/bin/find.exe', 'C:/a'])
+  const answer = '\nentry /a/.git\n/a/.git\n\nend\n'
+  expect(wholeAnswer({ stdout: answer, isStdoutTruncated: false })).toBe(answer)
+  expect(wholeAnswer({ stdout: '\r\nend\r\n', isStdoutTruncated: false })).toBe('\r\nend\r\n')
+  expect(wholeAnswer({ stdout: '\nentry /a/.git\n/a/.git\n', isStdoutTruncated: false })).toBeNull()
+  expect(wholeAnswer({ stdout: '\nentry /x/end\n', isStdoutTruncated: false })).toBeNull()
+  expect(wholeAnswer({ stdout: answer, isStdoutTruncated: true })).toBeNull()
+  expect(wholeAnswer({ stdout: '', isStdoutTruncated: false })).toBeNull()
+  expect(wholeAnswer(null)).toBeNull()
+})
+
+test('worktreesArgv asks find for the gitdir file of each worktree each git folder lists, and worktreeDirsOf names the folder of each, read from the file\'s folder when relative, and nothing inside the copy or the agent\'s folder', () => {
+  expect(worktreesArgv(['/srv/app/.git', '/srv/app/.git', '/'])).toEqual([
+    'find', '/srv/app/.git/worktrees', '/worktrees',
+    '-mindepth', '2', '-maxdepth', '2', '-name', 'gitdir', '-type', 'f',
+    '-exec', 'printf', '\\ntree %s\\n', '{}', ';',
+    '-exec', 'sed', '-n', '1p', '{}', ';',
+  ])
+  const own = ['/c/copy', '/srv/side']
+  expect(worktreeDirsOf(own, 'tree /srv/app/.git/worktrees/a/gitdir\n/srv/a/.git\ntree /srv/app/.git/worktrees/b/gitdir\n../../../../b/.git  \r\n')).toEqual(['/srv/a', '/srv/b'])
+  // The agent's folder and the copy are their own; an empty file names nothing.
+  expect(worktreeDirsOf(own, 'tree /srv/app/.git/worktrees/side/gitdir\n/srv/side/.git\ntree /c/copy/.git/worktrees/x/gitdir\n/c/copy/x/.git\ntree /srv/app/.git/worktrees/e/gitdir\ntree /srv/app/.git/worktrees/f/gitdir\n/srv/f/.git\n')).toEqual(['/srv/f'])
+  expect(worktreeDirsOf(own, 'find: /srv/x/worktrees: No such file or directory\n/srv/stray\n')).toEqual([])
+  // A gitdir file with no line break at its end still ends before the next.
+  expect(worktreeDirsOf(own, '\ntree /srv/app/.git/worktrees/a/gitdir\n/srv/a/.git\ntree /srv/app/.git/worktrees/b/gitdir\n/srv/b/.git\n\nend\n')).toEqual(['/srv/a', '/srv/b'])
+  // gitFoldersOf: where each .git leads and the git folders its pointer names, the copy's own among them.
+  expect(gitFoldersOf('entry /c/copy/.git\n/c/copy/.git\nentry /c/copy/lib/.git\n/c/copy/lib/.git\ngitdir: /srv/app/.git/worktrees/lib\n')).toEqual(['/c/copy/.git', '/c/copy/lib/.git', '/srv/app/.git', '/srv/app/.git/worktrees/lib'])
+  expect(gitFoldersOf('')).toEqual([])
+  // Where readlink fails, the .git itself is still a git folder whose worktrees are asked.
+  expect(gitFoldersOf('\nentry /p/.git\n')).toEqual(['/p/.git'])
+})
+
+test('gitDirsOf names each repository found, where its .git leads and the folder its pointer names, for a worktree its shared git folder too, and nothing inside the copy or the agent\'s folder', () => {
+  const own = ['/c/copy', '/Users/o/code/side']
+  // A worktree: the copy's own .git file is the copy's, its pointer is not.
+  expect(gitDirsOf(own, 'entry /c/copy/.git\n/c/copy/.git\ngitdir: /Users/o/code/app/.git/worktrees/side\n')).toEqual(['/Users/o/code/app/.git', '/Users/o/code/app/.git/worktrees/side'])
+  // A relative pointer is read from the folder holding the .git, as git reads it.
+  expect(gitDirsOf(['/c/copy', '/Users/o/code/app/lib'], 'entry /Users/o/code/app/lib/.git\n/Users/o/code/app/lib/.git\ngitdir: ../.git/modules/lib\nentry /Users/o/code/app/.git\n/Users/o/code/app/.git\n')).toEqual(['/Users/o/code/app/.git/modules/lib', '/Users/o/code/app', '/Users/o/code/app/.git'])
+  // A .git that is a link leads to the real history.
+  expect(gitDirsOf(own, 'entry /c/copy/.git\n/Users/o/repos/proj.git\n')).toEqual(['/Users/o/repos/proj.git'])
+  // A pointer to the .git folder itself (gitdir: .) stays in the copy.
+  expect(gitDirsOf(own, 'entry /c/copy/.git\n/c/copy/.git\ngitdir: .\n')).toEqual([])
+  // A repository above: its folder and its .git.
+  expect(gitDirsOf(own, 'entry /Users/o/.git\n/Users/o/.git\n')).toEqual(['/Users/o', '/Users/o/.git'])
+  // A .git at the root is the root's.
+  expect(gitDirsOf(own, 'entry /.git\n/.git\n')).toEqual(['/', '/.git'])
+  // Windows line ends, only the first gitdir line, a gitdir line before a lead, and a stray line.
+  expect(gitDirsOf(own, 'entry /srv/app/.git\r\n/srv/app/.git\r\ngitdir: /srv/app.git\r\ngitdir: /elsewhere\r\nfind: /x/.git: Permission denied\r\n')).toEqual(['/srv/app', '/srv/app/.git', '/srv/app.git'])
+  expect(gitDirsOf(own, 'gitdir: /srv/x\n/srv/y\n')).toEqual([])
+  // readlink failed: the pointer is still read.
+  expect(gitDirsOf(own, 'entry /srv/app/.git\ngitdir: /srv/x\n')).toEqual(['/srv/app', '/srv/x'])
+  // A .git reached through a link: a relative pointer is read from the folder it was found in and the one it leads to.
+  expect(gitDirsOf(own, 'entry /srv/link/app/.git\n/data/app/.git\ngitdir: ../main/.git/worktrees/app\n')).toEqual(['/srv/link/app', '/data/app/.git', '/srv/link/main/.git', '/srv/link/main/.git/worktrees/app', '/data/main/.git', '/data/main/.git/worktrees/app'])
+  // Git cuts only the line's end from a pointer, so spaces are part of it.
+  expect(gitDirsOf(own, 'entry /srv/app/.git\n/srv/app/.git\ngitdir: /srv/real.git \n')).toEqual(['/srv/app', '/srv/app/.git', '/srv/real.git '])
+  expect(gitDirsOf(own, 'entry /srv/app/.git\n/srv/app/.git\ngitdir: \n')).toEqual(['/srv/app', '/srv/app/.git'])
+  // A worktree whose shared git folder holds the copies keeps its own git folder, which
+  // checkDenyWrite names while it drops the folder holding the copies.
+  const held = gitDirsOf(own, 'entry /c/copy/.git\n/c/copy/.git\ngitdir: /Users/o/worktrees/side\n')
+  expect(held).toEqual(['/Users/o', '/Users/o/worktrees/side'])
+  expect(checkDenyWrite('/Users/o', '/x', '', [], held)).toContain('/Users/o/worktrees/side')
+  expect(checkDenyWrite('/Users/o', '/x', '', [], held)).not.toContain('/Users/o')
+  expect(gitDirsOf(own, '')).toEqual([])
+  // A pointer with no line break at its end ends before the next entry, printed after a line break.
+  expect(gitDirsOf(own, '\nentry /srv/wt/.git\n/srv/wt/.git\ngitdir: /srv/main/.git/worktrees/wt\nentry /srv/x/.git\n/srv/x/.git\n\nend\n')).toEqual(['/srv/wt', '/srv/wt/.git', '/srv/main/.git', '/srv/main/.git/worktrees/wt', '/srv/x', '/srv/x/.git'])
+  // After a links line or a name passed over, a line is no entry's.
+  expect(gitDirsOf(own, '\nentry /srv/a/.git\n\nlinks\n/srv/b\n\nentry /srv/c/.git\n\nodd\ngitdir: /nowhere\n')).toEqual(['/srv/a', '/srv/c'])
+})
+
+test('gitLinksOf names where the links in the copy lead, leaving out the copy and the agent\'s folder, and no .git\'s lead; passedOver says whether a name holding a line break was passed over; checkDenyWrite names each repository place once, by the outermost', () => {
+  const own = ['/c/copy', '/srv/side']
+  const answer = '\nlinks\n/srv/ext/src\n/c/copy/docs\n/srv/side/x\n\nentry /c/copy/lib/.git\n/srv/lib.git\n\nlinks\n/srv/other\n\nend\n'
+  expect(gitLinksOf(own, answer)).toEqual(['/srv/ext/src', '/srv/other'])
+  expect(gitLinksOf(own, '')).toEqual([])
+  expect(passedOver(answer)).toBe(false)
+  expect(passedOver(`\nodd\n${answer}`)).toBe(true)
+  expect(passedOver('\nentry /srv/odd/.git\n/srv/odd/.git\n')).toBe(false)
+  const denied = checkDenyWrite('/Users/o', '/x', '', [], ['/srv/app', '/srv/app/.git', '/srv/app/.git/worktrees/a', '/srv/apple', '/srv/lib/src', '/srv/lib', '/srv/lib/'])
+  expect(denied.filter(d => d.startsWith('/srv/'))).toEqual(['/srv/app', '/srv/apple', '/srv/lib'])
+})
+
+test('pnpmStoreDir takes the folder above the versioned store pnpm prints, and nothing when pnpm prints no path', () => {
+  expect(pnpmStoreDir('/Users/o/Library/pnpm/store/v10\n')).toBe('/Users/o/Library/pnpm/store')
+  expect(pnpmStoreDir(' WARN  a warning\n/home/o/.local/share/pnpm/store/v3\n')).toBe('/home/o/.local/share/pnpm/store')
+  expect(pnpmStoreDir('/srv/pnpm-store\n')).toBe('/srv/pnpm-store')
+  expect(pnpmStoreDir('')).toBe('')
+  expect(pnpmStoreDir('ERR_PNPM_SOMETHING failed\n')).toBe('')
+})
+
+test('installOf guards a command-path folder in the home as the install it belongs to, never as a folder many programs share', () => {
+  expect(installOf('/Users/o', '/Users/o/.cargo/bin')).toBe('/Users/o/.cargo')
+  expect(installOf('/Users/o', '/Users/o/.local/share/mise/installs/node/22.22.3/bin')).toBe('/Users/o/.local/share/mise')
+  expect(installOf('/Users/o', '/Users/o/.local/share/mise/shims')).toBe('/Users/o/.local/share/mise')
+  expect(installOf('/Users/o', '/Users/o/.local/bin')).toBe('/Users/o/.local/bin')
+  expect(installOf('/Users/o', '/Users/o/Library/pnpm')).toBe('/Users/o/Library/pnpm')
+  expect(installOf('/Users/o', '/Users/o/Library/Application Support/Code/bin')).toBe('/Users/o/Library/Application Support/Code')
+  expect(installOf('/Users/o', '/Users/o/.turso')).toBe('/Users/o/.turso')
+  expect(installOf('/home/o', '/home/o/.nvm/versions/node/v22.1.0/bin')).toBe('/home/o/.nvm')
+  // fnm's path folder sits in the caches, which many tools share, and a tool unpacked in ~/.local/opt is guarded as it.
+  expect(installOf('/Users/o', '/Users/o/Library/Caches/fnm_multishells/123_456/bin')).toBe('/Users/o/Library/Caches/fnm_multishells')
+  expect(installOf('/home/o', '/home/o/.local/state/fnm_multishells/123_456/bin')).toBe('/home/o/.local/state/fnm_multishells')
+  expect(installOf('/home/o', '/home/o/.cache/tool/bin')).toBe('/home/o/.cache/tool')
+  expect(installOf('/Users/o', '/Users/o/.local/opt/powershell-7.6.3/pwsh')).toBe('/Users/o/.local/opt')
+  expect(installOf('/Users/o', '/Users/o/.local/share/uv/tools/mempalace/bin/mempalace')).toBe('/Users/o/.local/share/uv')
+})
+
+test('holdsCopiesOf names the folders that are or hold the copies\' folder', () => {
+  for (const d of ['/', '/Users', '/Users/o', '/Users/o/', '/Users/o/.cache', '/Users/o/.cache/owner-rep', '/Users/o/.cache/owner-rep/checks']) expect(holdsCopiesOf('/Users/o', d)).toBe(true)
+  for (const d of ['/tmp/x', '/Users/o/Developer/p', '/Users/o/.cache/owner-rep/checks/s', '/Users/o/.cach', '/Users/other']) expect(holdsCopiesOf('/Users/o', d)).toBe(false)
+})
+
+test('rule: when the agent\'s folder holds the copies\' folder, as the home does, no copy is tried: the check runs in the agent\'s folder with writes there denied', async ($, on) => {
+  const cwd = '/Users/o'
+  session(on)
+  quietBand(on)
+  const runs = room(on)
+  on('session.cwd', () => ({ value: cwd }))
+  mock.clock(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  let seen: { cwd?: string; argv?: readonly string[] } = {}
+  on('process.spawn', async function* (_$, e) {
+    seen = { cwd: e.cwd, argv: e.argv }
+    yield { stream: 'stdout', text: CHECKED_WITH(0) }
+    return { value: { code: 0, signal: null } }
+  })
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+  expect(runs.filter(r => r[0] === 'cp' || r[0] === 'mkdir')).toEqual([])
+  expect(seen.cwd).toBe(cwd)
+  expect(seen.argv?.[2]).toContain('the throwaway copy could not be made, so writes there are denied')
+  expect((JSON.parse(seen.argv?.[(seen.argv?.indexOf('--settings') ?? 0) + 1] ?? '{}') as { sandbox: { filesystem: { denyWrite: string[] } } }).sandbox.filesystem.denyWrite).toContain(cwd)
   await ui.unmount()
 })
 
@@ -2209,7 +2953,7 @@ test('rule: when the copy cannot be made the check runs in the agent\'s folder, 
   await ui.unmount()
 })
 
-test('rule: the card says how many of the check\'s commands were refused, and the right number is zero', async ($, on) => {
+test('rule: the card says how many of the check\'s commands were refused approval, and the right number is zero, and that what the fence stopped is not counted', async ($, on) => {
   session(on)
   quietBand(on)
   room(on)
@@ -2224,14 +2968,14 @@ test('rule: the card says how many of the check\'s commands were refused, and th
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   await ui.press({ key: 'rep' })
   await ui.press({ key: 'check' })
-  expect(await ui.find({ type: 'Text', text: /The check's run had 2 commands refused\./ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /The check's run had 2 commands refused approval; commands the fence stopped are not counted here\./ })).toBeDefined()
   // The next card's price line carries the last run's count too.
   await ui.press({ key: 'close' })
   await ui.press({ key: 'rep' })
-  expect(await ui.find({ type: 'Text', text: /re-read from cache, in 1 minute, with 2 commands refused/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /re-read from cache, in 1 minute, with 2 commands refused approval/ })).toBeDefined()
   refused = 0
   await ui.press({ key: 'check' })
-  expect(await ui.find({ type: 'Text', text: /The check's run had no command refused\./ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /The check's run had no command refused approval; commands the fence stopped are not counted here\./ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /2 commands refused/ })).toBeUndefined()
   await ui.unmount()
 })
@@ -3353,12 +4097,12 @@ const RUN_CAP = 4 * 1024 * 1024
 // first line, as a read past the cap keeps the oldest lines and drops the rest.
 // Every argv kept, and each run's time allowed in `timeouts`. The clock reads `now.t`, and
 // each read of a file other than the session's own takes `slow` milliseconds of it.
-const transcript = (on: On, files: Record<string, string>, opts: { folder?: string; cut?: readonly string[]; slow?: number } = {}) => {
+const transcript = (on: On, files: Record<string, string>, opts: { folder?: string; cut?: readonly string[]; slow?: number; home?: string; profile?: string } = {}) => {
   const folder = opts.folder ?? FOLDER
   const runs: string[][] = []
   const timeouts: number[] = []
   const now = { t: 1_000_000 }
-  mock.env(on, { HOME: '/Users/o' })
+  mock.env(on, { HOME: opts.home ?? '/Users/o', ...(opts.profile ? { USERPROFILE: opts.profile } : {}) })
   on('clock.now', () => ({ value: now.t }))
   on('process.run', (_$, e) => {
     runs.push([...e.argv])
@@ -4775,4 +5519,527 @@ test('rule: a session resumed in the same process is read for his messages befor
   ])
   expect(recOf('resumed-from')?.owner ?? []).toEqual([])
   expect(await rowSays($, /and a readme/)).toBe(true)
+})
+
+
+// ── THE HOST THE CHECK'S COMMANDS RUN ON ────────────────────────────────────
+// The check's six commands and its `claude` spawn are written for a Unix host.
+// These prove the naming for a Windows one, and prove a Unix host's argv is
+// left exactly as it was, because that is what keeps Darwin and Linux on
+// today's behaviour.
+
+const WIN_HOST = { os: WINDOWS_OS, posixBin: 'C:\\Git\\usr\\bin', claude: 'C:/npm/claude.exe' }
+
+test('the home is HOME on a Mac or Linux and USERPROFILE on Windows, each falling back to the other, and nothing when neither answers', async () => {
+  expect(homeOf(false, '/Users/o', undefined)).toBe('/Users/o')
+  // Windows sets USERPROFILE and no HOME. Before this, home fell to '/tmp' and
+  // every path built from it was wrong.
+  expect(homeOf(true, undefined, 'C:\\Users\\k')).toBe('C:\\Users\\k')
+  // An empty variable is as absent as a missing one.
+  expect(homeOf(true, '', 'C:\\Users\\k')).toBe('C:\\Users\\k')
+  expect(homeOf(false, '', 'C:\\Users\\k')).toBe('C:\\Users\\k')
+  // HOME wins when both answer on a Mac or Linux, so a Unix host is untouched.
+  expect(homeOf(false, '/Users/o', 'C:\\Users\\k')).toBe('/Users/o')
+  expect(homeOf(false, undefined, undefined)).toBe('')
+  expect(homeOf(true, '', '')).toBe('')
+  // A home that is /tmp is a home, not a stand-in for none.
+  expect(homeOf(false, '/tmp', undefined)).toBe('/tmp')
+  // A separator at the end is dropped, so every path built from the home has one between its parts; a root keeps its own.
+  expect(homeOf(false, '/Users/o/', undefined)).toBe('/Users/o')
+  expect(homeOf(false, '/Users/o//', undefined)).toBe('/Users/o')
+  expect(homeOf(true, undefined, 'C:\\Users\\k\\')).toBe('C:\\Users\\k')
+  expect(homeOf(false, '/', undefined)).toBe('/')
+  expect(homeOf(true, undefined, 'C:\\')).toBe('C:\\')
+})
+
+test('homeOf takes USERPROFILE before HOME on Windows and HOME before USERPROFILE elsewhere, the order Claude Code finds its own folder by', async () => {
+  // Claude Code keeps its folder under the home Node gives it, which on Windows is USERPROFILE
+  // whatever HOME says.
+  expect(homeOf(true, 'D:\\h', 'C:\\Users\\k')).toBe('C:\\Users\\k')
+  expect(homeOf(true, 'D:\\h', undefined)).toBe('D:\\h')
+  expect(homeOf(false, '/Users/o', 'C:\\Users\\k')).toBe('/Users/o')
+  expect(homeOf(false, '', undefined)).toBe('')
+})
+
+test('a host that resolves by name leaves every argv exactly as it was', async () => {
+  expect(isWindowsHost(PATH_HOST)).toBe(false)
+  for (const name of POSIX_COMMANDS) {
+    expect(hostArgv(PATH_HOST, [name, '-x', '/tmp/a'])).toEqual([name, '-x', '/tmp/a'])
+  }
+  expect(hostArgv(PATH_HOST, ['claude', '-p', 'hello'])).toEqual(['claude', '-p', 'hello'])
+  // The clone first, then the plain copy; a Unix host keeps the clone it had.
+  expect(copyArgvs(PATH_HOST, '/a', '/b')).toEqual([
+    ['cp', '-Rc', '/a', '/b'],
+    ['cp', '-R', '/a/.', '/b'],
+  ])
+})
+
+test('a Windows host names every command by its full path, and leaves a command it does not own alone', async () => {
+  expect(isWindowsHost(WIN_HOST)).toBe(true)
+  // Git for Windows ships every one, in a usr/bin its installer leaves off PATH.
+  expect(hostArgv(WIN_HOST, ['mkdir', '-p', 'C:/x'])).toEqual(['C:/Git/usr/bin/mkdir.exe', '-p', 'C:/x'])
+  expect(hostArgv(WIN_HOST, ['rm', '-rf', 'C:/x'])).toEqual(['C:/Git/usr/bin/rm.exe', '-rf', 'C:/x'])
+  expect(hostArgv(WIN_HOST, ['find', 'C:/p', '-name', 'a.jsonl'])).toEqual(['C:/Git/usr/bin/find.exe', 'C:/p', '-name', 'a.jsonl'])
+  expect(hostArgv(WIN_HOST, ['ls', '-t', 'C:/p'])).toEqual(['C:/Git/usr/bin/ls.exe', '-t', 'C:/p'])
+  expect(hostArgv(WIN_HOST, ['sed', '-n', '-E', 'p', 'C:/f'])).toEqual(['C:/Git/usr/bin/sed.exe', '-n', '-E', 'p', 'C:/f'])
+  // The seed's `toolLineFind` is `grep -n -o -m 1 -F`.
+  expect(hostArgv(WIN_HOST, ['grep', '-n', '-F', 'x', 'C:/f'])).toEqual(['C:/Git/usr/bin/grep.exe', '-n', '-F', 'x', 'C:/f'])
+  // The git questions run find through sh, for its end mark (`wholeArgv`).
+  expect(hostArgv(WIN_HOST, ['sh', '-c', 'x'])).toEqual(['C:/Git/usr/bin/sh.exe', '-c', 'x'])
+  // `claude` on PATH is a shim Node cannot spawn without a shell; the npm
+  // package's own executable is spawned instead, and the prompt stays an argv.
+  expect(hostArgv(WIN_HOST, ['claude', '-p', 'a prompt "with quotes"'])).toEqual([
+    'C:/npm/claude.exe',
+    '-p',
+    'a prompt "with quotes"',
+  ])
+  // Anything the layer does not own is left to resolve as it always did.
+  expect(hostArgv(WIN_HOST, ['git', 'status'])).toEqual(['git', 'status'])
+  expect(hostArgv(WIN_HOST, [])).toEqual([])
+  // A Windows host with no coreutils found behaves as a PATH host: the commands
+  // are tried by name, which fails, and the copy's failure is already handled.
+  expect(hostArgv({ ...WIN_HOST, posixBin: '' }, ['mkdir', '-p', 'C:/x'])).toEqual(['mkdir', '-p', 'C:/x'])
+})
+
+test('the copy tries the APFS clone and then the plain copy, because only Darwin cp takes -c', async () => {
+  // `cp -Rc` answers "cp: unknown option -- c" on GNU cp, so the plain form is
+  // what runs on Windows and on Linux. Measured on Git for Windows, 16 Oct 2026.
+  expect(copyArgvs(WIN_HOST, 'C:/work', 'C:/copy')).toEqual([
+    ['C:/Git/usr/bin/cp.exe', '-Rc', 'C:/work', 'C:/copy'],
+    ['C:/Git/usr/bin/cp.exe', '-R', 'C:/work/.', 'C:/copy'],
+  ])
+})
+
+test('a path handed to a POSIX command is written one way, because mixing separators is what breaks them', async () => {
+  expect(slashed('C:\\Program Files\\Git\\usr\\bin')).toBe('C:/Program Files/Git/usr/bin')
+  expect(slashed('/already/posix')).toBe('/already/posix')
+  // The space in "Program Files" stays a space: the argv is never a shell string.
+  expect(hostArgv({ ...WIN_HOST, posixBin: 'C:\\Program Files\\Git\\usr\\bin' }, ['ls', '-t', 'C:/p'])).toEqual([
+    'C:/Program Files/Git/usr/bin/ls.exe',
+    '-t',
+    'C:/p',
+  ])
+})
+
+test('the places Git for Windows and npm put their binaries are tried in order, and an unset variable adds no candidate', async () => {
+  // Slashed as they are built, so the path a probe proves is the path later run.
+  expect(winPosixBinCandidates('C:\\PF', 'C:\\PF86', 'C:\\LAD')).toEqual([
+    'C:/PF/Git/usr/bin',
+    'C:/LAD/Programs/Git/usr/bin',
+    'C:/PF86/Git/usr/bin',
+  ])
+  expect(winPosixBinCandidates(undefined, undefined, 'C:\\LAD')).toEqual(['C:/LAD/Programs/Git/usr/bin'])
+  expect(winPosixBinCandidates('', '', '')).toEqual([])
+  expect(winClaudeCandidates('C:\\AD', 'C:\\LAD')).toEqual([
+    'C:/AD/npm/node_modules/@anthropic-ai/claude-code/bin/claude.exe',
+    'C:/LAD/npm/node_modules/@anthropic-ai/claude-code/bin/claude.exe',
+  ])
+  expect(winClaudeCandidates(undefined, undefined)).toEqual([])
+})
+
+// The room on a Windows host: `OS` says Windows (or what `os` gives), `more` adds or
+// replaces variables, the home is USERPROFILE, and a command answers `--version` only at the
+// second coreutils candidate, so the test proves the candidates are tried in order rather
+// than guessed at.
+const winRoom = (on: On, throwsOn = '', os: () => string = () => WINDOWS_OS, more: () => Record<string, string> = () => ({})): string[][] => {
+  const runs: string[][] = []
+  const env: Record<string, string> = {
+    USERPROFILE: 'C:\\Users\\k',
+    PROGRAMFILES: 'C:\\PF',
+    LOCALAPPDATA: 'C:\\LAD',
+    APPDATA: 'C:\\AD',
+  }
+  on('env.get', (_$, e) => {
+    if (e.name === throwsOn) throw new Error(`no ${e.name}`)
+    return { value: e.name === 'OS' ? os() || undefined : { ...env, ...more() }[e.name] }
+  })
+  on('process.run', (_$, e) => {
+    const argv = [...e.argv]
+    runs.push(argv)
+    const out = (exitCode: number) => ({
+      value: { exitCode, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false },
+    })
+    const cmd = argv[0] ?? ''
+    // Only the LOCALAPPDATA install answers, and only the npm claude.exe does.
+    if (argv[argv.length - 1] === '--version') {
+      return out(cmd === 'C:/LAD/Programs/Git/usr/bin/mkdir.exe' || cmd === 'C:/AD/npm/node_modules/@anthropic-ai/claude-code/bin/claude.exe' ? 0 : 1)
+    }
+    return out(0)
+  })
+  return runs
+}
+
+// Whether the check's copy was begun: cp, rm or mkdir run other than as a probe.
+const copied = (runs: string[][]): string[][] =>
+  runs.filter(r => /(^|\/)(cp|rm|mkdir)(\.exe)?$/.test(r[0] ?? '') && r[r.length - 1] !== '--version')
+
+const windowsCard = async ($: Engine, on: On, throwsOn = '', how: { os?: string; more?: Record<string, string>; cwd?: string } = {}) => {
+  mock.clock(on)
+  session(on)
+  quietBand(on)
+  const runs = winRoom(on, throwsOn, () => how.os ?? WINDOWS_OS, () => how.more ?? {})
+  on('session.cwd', () => ({ value: how.cwd ?? 'C:\\work\\proj' }))
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  let spawned = 0
+  on('process.spawn', (async function* () {
+    spawned += 1
+    yield { stream: 'stdout', text: CHECKED_WITH(0) }
+    return { value: { code: 0, signal: null } }
+  }) as never)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  // The card says why in place of the check's price, and offers no button for it.
+  expect(await ui.find({ type: 'Text', text: /The check does not run on Windows yet: Claude Code's sandbox is switched off there/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Check it starts a separate/ })).toBeUndefined()
+  expect(await ui.find({ key: 'check' })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: /The card\./ })).toBeDefined()
+  expect(spawned).toBe(0)
+  expect(copied(runs)).toEqual([])
+  await ui.unmount()
+}
+
+test('rule: on Windows, since nothing there fences the check\'s run, the card says the check does not run there and offers no Check it', async ($, on) => {
+  await windowsCard($, on)
+})
+
+test('rule: on Windows the card offers no Check it when looking for its commands throws either: the refusal rests on the host, never on a probe', async ($, on) => {
+  await windowsCard($, on, 'PROGRAMFILES')
+})
+
+test('rule: on Windows the check itself does not start either, pressed on a card drawn before: nothing is copied or spawned, and the card says why', async ($, on) => {
+  mock.clock(on)
+  session(on)
+  quietBand(on)
+  let os = ''
+  const runs = winRoom(on, '', () => os)
+  // A folder on a drive would itself say Windows; this test changes `OS` alone.
+  on('session.cwd', () => ({ value: '/tmp/x' }))
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  let spawned = 0
+  on('process.spawn', (async function* () {
+    spawned += 1
+    yield { stream: 'stdout', text: CHECKED_WITH(0) }
+    return { value: { code: 0, signal: null } }
+  }) as never)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  // Drawn while the host read as a Mac, the card offers the check.
+  expect(await ui.find({ key: 'check' })).toBeDefined()
+  os = WINDOWS_OS
+  await ui.press({ key: 'check' })
+  expect(await ui.find({ type: 'Text', text: /The check does not run on Windows yet: Claude Code's sandbox is switched off there/ })).toBeDefined()
+  expect(spawned).toBe(0)
+  // Not even the copy is made: the refusal comes before it.
+  expect(copied(runs)).toEqual([])
+  // The card the check was pressed on stays up, with no button for a check that cannot run.
+  expect(await ui.find({ type: 'Text', text: /The card\./ })).toBeDefined()
+  expect(await ui.find({ key: 'check' })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('windowsOs: Windows_NT, or a SystemRoot, windir or working folder that is a drive path, is Windows; a Unix value or none is not', () => {
+  expect(windowsOs('Windows_NT', '', '', '')).toBe('Windows_NT')
+  expect(windowsOs('', 'C:\\Windows', '', '')).toBe('Windows_NT')
+  expect(windowsOs('', '', 'c:/windows', '')).toBe('Windows_NT')
+  expect(windowsOs('', '', '', 'C:\\work\\proj')).toBe('Windows_NT')
+  expect(windowsOs('', '/Users/o', '/Users/o', '/Users/o')).toBe('')
+  expect(windowsOs('', '', '', '/mnt/c/work')).toBe('')
+  expect(windowsOs('', '', '', '')).toBe('')
+})
+
+test('rule: on Windows with OS missing, SystemRoot alone says Windows: the card says the check does not run there and offers no Check it', async ($, on) => {
+  await windowsCard($, on, '', { os: '', more: { SystemRoot: 'C:\\Windows' }, cwd: '/tmp/x' })
+})
+
+test('rule: on Windows with OS missing, windir alone says Windows: the card says the check does not run there and offers no Check it', async ($, on) => {
+  await windowsCard($, on, '', { os: '', more: { windir: 'C:\\Windows' }, cwd: '/tmp/x' })
+})
+
+test('rule: on Windows with OS, SystemRoot and windir all missing, a working folder on a drive says Windows: the card says the check does not run there and offers no Check it', async ($, on) => {
+  await windowsCard($, on, '', { os: '', cwd: 'C:\\work\\proj' })
+})
+
+test('rule: with OS missing, the check pressed on a card drawn before SystemRoot appeared does not start: nothing is copied or spawned, and the card says why', async ($, on) => {
+  mock.clock(on)
+  session(on)
+  quietBand(on)
+  let root = ''
+  const runs = winRoom(on, '', () => '', () => ({ SystemRoot: root }))
+  on('session.cwd', () => ({ value: '/tmp/x' }))
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  let spawned = 0
+  on('process.spawn', (async function* () {
+    spawned += 1
+    yield { stream: 'stdout', text: CHECKED_WITH(0) }
+    return { value: { code: 0, signal: null } }
+  }) as never)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  expect(await ui.find({ key: 'check' })).toBeDefined()
+  root = 'C:\\Windows'
+  await ui.press({ key: 'check' })
+  expect(await ui.find({ type: 'Text', text: /The check does not run on Windows yet: Claude Code's sandbox is switched off there/ })).toBeDefined()
+  expect(spawned).toBe(0)
+  expect(copied(runs)).toEqual([])
+  expect(await ui.find({ type: 'Text', text: /The card\./ })).toBeDefined()
+  expect(await ui.find({ key: 'check' })).toBeUndefined()
+  await ui.unmount()
+})
+
+// The transcript on a Windows host: `OS` says Windows (or what `os` gives, with `systemRoot`
+// set when given), the home is USERPROFILE, with HOME set only when `home` names another
+// folder, and the coreutils answer only by their full path in Git's usr/bin, as there.
+const WIN_GIT = 'C:/PF/Git/usr/bin'
+const WIN_PROJECTS = 'C:/Users/k/.claude/projects'
+const WIN_FOLDER = `${WIN_PROJECTS}/-C-work-app`
+const winTranscript = (on: On, files: Record<string, string>, opts: { probeFails?: number; os?: string; systemRoot?: string; home?: string } = {}): string[][] => {
+  const runs: string[][] = []
+  const folder = WIN_FOLDER
+  let fails = opts.probeFails ?? 0
+  mock.env(on, { OS: opts.os ?? WINDOWS_OS, ...(opts.systemRoot ? { SystemRoot: opts.systemRoot } : {}), ...(opts.home ? { HOME: opts.home } : {}), USERPROFILE: 'C:\\Users\\k', PROGRAMFILES: 'C:\\PF' })
+  on('clock.now', () => ({ value: 1_000_000 }))
+  on('process.run', (_$, e) => {
+    const argv = [...e.argv]
+    runs.push(argv)
+    const out = (exitCode: number, stdout = '') => ({ value: { exitCode, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
+    const cmd = argv[0] ?? ''
+    if (argv[argv.length - 1] === '--version') {
+      if (cmd !== `${WIN_GIT}/mkdir.exe`) return out(1)
+      if (fails === 0) return out(0)
+      fails -= 1
+      return out(1)
+    }
+    // A name alone resolves to nothing on Windows.
+    if (!cmd.startsWith(`${WIN_GIT}/`)) return out(127)
+    const name = cmd.slice(WIN_GIT.length + 1).replace(/\.exe$/, '')
+    if (name === 'find') {
+      if (argv[1] !== WIN_PROJECTS) return out(1)
+      const file = argv[argv.length - 1] ?? ''
+      return out(0, file in files ? `${folder}/${file}\n` : '')
+    }
+    if (name === 'ls') return argv[2] === folder ? out(0, `${Object.keys(files).join('\n')}\n`) : out(1)
+    if (name !== 'sed' && name !== 'grep') return out(1)
+    const path = argv[argv.length - 1] ?? ''
+    const body = path.startsWith(`${folder}/`) ? files[path.slice(folder.length + 1)] : undefined
+    if (body === undefined) return out(name === 'grep' ? 2 : 1)
+    if (name === 'grep') {
+      const text = argv[6] ?? '\u0000'
+      const match = (l: string) => argv[5] === '-E' ? l.match(new RegExp(text))?.[0] : l.includes(text) ? text : undefined
+      const at = body.split('\n').findIndex(l => match(l) !== undefined)
+      return at < 0 ? out(1) : out(0, `${at + 1}:${match(body.split('\n')[at] ?? '')}\n`)
+    }
+    // The read before a line: sed -n -E -e <n>q -e <script>.
+    const before = argv[3] === '-e' ? Number((argv[4] ?? '').replace(/q$/, '')) : Infinity
+    const lines = body.split('\n').slice(0, before - 1).filter(l => l.includes('"kind":"human"'))
+    return out(0, lines.length > 0 ? `${lines.join('\n')}\n` : '')
+  })
+  return runs
+}
+
+test('rule: on Windows his messages are read from the session\'s file through Git\'s own commands, under the home USERPROFILE names, written with forward slashes', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS }))
+  const runs = winTranscript(on, { 'test-session.jsonl': SEEDED_FILE })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await started($)
+  await settle($)
+  expect(rec()?.owner).toEqual(SEEDED)
+  // Every command named by its full path, and the folder found under USERPROFILE.
+  const ran = runs.filter(r => r[r.length - 1] !== '--version')
+  expect(ran.map(r => r[0])).toEqual([`${WIN_GIT}/find.exe`, `${WIN_GIT}/sed.exe`, `${WIN_GIT}/grep.exe`])
+  expect(ran[0]?.[1]).toBe(WIN_PROJECTS)
+})
+
+test('rule: on Windows with OS missing, his messages are read under the home USERPROFILE names, written with forward slashes', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS }))
+  const runs = winTranscript(on, { 'test-session.jsonl': SEEDED_FILE }, { os: '', systemRoot: 'C:\\Windows' })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await started($)
+  await settle($)
+  expect(rec()?.owner).toEqual(SEEDED)
+  const ran = runs.filter(r => r[r.length - 1] !== '--version')
+  expect(ran.map(r => r[0])).toEqual([`${WIN_GIT}/find.exe`, `${WIN_GIT}/sed.exe`, `${WIN_GIT}/grep.exe`])
+  expect(ran[0]?.[1]).toBe(WIN_PROJECTS)
+})
+
+test('rule: on Windows with HOME set to another folder, his session\'s file is looked for under the profile folder, where Claude Code keeps it', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS }))
+  const runs = winTranscript(on, { 'test-session.jsonl': SEEDED_FILE }, { home: 'D:\\h' })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await started($)
+  await settle($)
+  const ran = runs.filter(r => r[r.length - 1] !== '--version')
+  expect(ran[0]).toEqual([`${WIN_GIT}/find.exe`, 'C:/Users/k/.claude/projects', '-maxdepth', '2', '-name', 'test-session.jsonl'])
+  expect(rec()?.owner).toEqual(SEEDED)
+})
+
+test('rule: on a Mac with USERPROFILE set as well, his session\'s file is looked for under HOME', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS }))
+  const runs = transcript(on, { 'test-session.jsonl': SEEDED_FILE }, { profile: '/Users/k' })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await started($)
+  await settle($)
+  expect(runs[0]).toEqual(['find', '/Users/o/.claude/projects', '-maxdepth', '2', '-name', 'test-session.jsonl'])
+  expect(rec()?.owner).toEqual(SEEDED)
+})
+
+test('rule: on Windows a transcript path given with backslashes is read written with forward slashes', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS }))
+  const runs = winTranscript(on, { 'test-session.jsonl': SEEDED_FILE })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await giveTranscript($, on, 'C:\\Users\\k\\.claude\\projects\\-C-work-app\\test-session.jsonl')
+  await started($)
+  await settle($)
+  expect(rec()?.owner).toEqual(SEEDED)
+  const ran = runs.filter(r => r[r.length - 1] !== '--version')
+  expect(ran.map(r => [r[0], r[r.length - 1]])).toEqual([[`${WIN_GIT}/sed.exe`, `${WIN_FOLDER}/test-session.jsonl`], [`${WIN_GIT}/grep.exe`, `${WIN_FOLDER}/test-session.jsonl`]])
+})
+
+test('rule: on Windows a probe for Git\'s commands that failed is tried again on the next read, never held for the process', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS }))
+  winTranscript(on, { 'test-session.jsonl': SEEDED_FILE }, { probeFails: 1 })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await started($)
+  await settle($)
+  expect(rec()?.owner ?? []).toEqual([])
+  await started($)
+  await settle($)
+  expect(rec()?.owner).toEqual(SEEDED)
+})
+
+test('rule: on Windows a fork taken after a compaction finds its parent by its last tool result through Git\'s own grep and sed', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: COMPACTED_ROWS }))
+  const parent = `${COMPACTED_FILE}\n${LINE('Now add a readme.')}`
+  const runs = winTranscript(on, { 'newer.jsonl': LINE('Something he typed elsewhere.'), 'parent.jsonl': parent })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await giveTranscript($, on, 'C:\\Users\\k\\.claude\\projects\\-C-work-app\\test-session.jsonl')
+  await started($)
+  await settle($)
+  expect(rec()?.owner).toEqual(COMPACTED)
+  const ran = runs.filter(r => r[r.length - 1] !== '--version')
+  expect(ran.map(r => [r[0], r[r.length - 1]])).toEqual([
+    [`${WIN_GIT}/sed.exe`, `${WIN_FOLDER}/test-session.jsonl`],
+    [`${WIN_GIT}/ls.exe`, WIN_FOLDER],
+    [`${WIN_GIT}/grep.exe`, `${WIN_FOLDER}/newer.jsonl`],
+    [`${WIN_GIT}/grep.exe`, `${WIN_FOLDER}/parent.jsonl`],
+    [`${WIN_GIT}/sed.exe`, `${WIN_FOLDER}/parent.jsonl`],
+  ])
+})
+
+test('rule: on Windows a fork whose own file is a copy of the stretch since a summary finds its parent by that summary line through Git\'s own grep and sed', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: TAIL_ROWS }))
+  const parent = [LINE('Add a licence file with the MIT text.'), LINE('Use this year, and push it.'), BOUNDARY(), LINE(SUMMARY, {}), LINE('Keep the year in the header too.'), USE_LINE('toolu_01Push'), LINE('Now add a readme.'), RESULT_LINE('toolu_01Push')].join('\n')
+  const runs = winTranscript(on, { 'test-session.jsonl': TAIL_COPY, 'newer.jsonl': LINE('Something he typed elsewhere.'), 'parent.jsonl': parent })
+  writer(on, () => OBJ('A licence file with the MIT text and this year, and a changelog.', ['the file pushed | open'], '#1 to #4'))
+  await giveTranscript($, on, 'C:\\Users\\k\\.claude\\projects\\-C-work-app\\test-session.jsonl')
+  await started($)
+  await settle($)
+  expect(rec()?.owner).toEqual(TAILED)
+  const ran = runs.filter(r => r[r.length - 1] !== '--version')
+  expect(ran.map(r => [r[0], r[r.length - 1]])).toEqual([
+    [`${WIN_GIT}/sed.exe`, `${WIN_FOLDER}/test-session.jsonl`],
+    [`${WIN_GIT}/grep.exe`, `${WIN_FOLDER}/test-session.jsonl`],
+    [`${WIN_GIT}/ls.exe`, WIN_FOLDER],
+    [`${WIN_GIT}/grep.exe`, `${WIN_FOLDER}/newer.jsonl`],
+    [`${WIN_GIT}/grep.exe`, `${WIN_FOLDER}/parent.jsonl`],
+    [`${WIN_GIT}/sed.exe`, `${WIN_FOLDER}/parent.jsonl`],
+  ])
+})
+
+test('rule: a home that is /tmp is a home: the session\'s file is looked for under /tmp/.claude', async ($, on) => {
+  kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS }))
+  const runs = transcript(on, {}, { home: '/tmp' })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await started($)
+  await settle($)
+  expect(runs.map(r => r.join(' '))).toContain('find /tmp/.claude/projects -maxdepth 2 -name test-session.jsonl')
+})
+
+// The copy's commands on a Unix host. With `gnu` the clone is refused before anything is
+// made, as GNU cp refuses -c on Linux; with `darwin` it fails part-way and leaves the
+// copy's folder behind, as Darwin's cp does on an unreadable file.
+const copyRoom = (on: On, cp: 'gnu' | 'darwin'): string[][] => {
+  const runs: string[][] = []
+  const made = new Set<string>()
+  on('env.get', (_$, e) => ({ value: e.name === 'HOME' ? '/Users/o' : undefined }))
+  on('process.run', (_$, e) => {
+    const argv = [...e.argv]
+    runs.push(argv)
+    const out = (exitCode: number) => ({ value: { exitCode, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
+    const last = argv[argv.length - 1] ?? ''
+    if (argv[0] === 'rm') made.delete(last)
+    if (argv[0] === 'mkdir' && argv[1] !== '-p') {
+      if (made.has(last)) return out(1)
+      made.add(last)
+    }
+    if (argv[0] === 'cp' && argv[1] === '-Rc') {
+      if (cp === 'darwin') made.add(last)
+      return out(1)
+    }
+    return out(0)
+  })
+  return runs
+}
+
+const copyCheck = async ($: Engine, on: On, cp: 'gnu' | 'darwin') => {
+  mock.clock(on)
+  session(on)
+  quietBand(on)
+  const runs = copyRoom(on, cp)
+  on('session.cwd', () => ({ value: '/tmp/x' }))
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  let cwd = ''
+  on('process.spawn', (async function* (_$: unknown, e: { cwd: string }) {
+    cwd = e.cwd
+    yield { stream: 'stdout', text: CHECKED_WITH(0) }
+    return { value: { code: 0, signal: null } }
+  }) as never)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+  await ui.unmount()
+  return { runs, cwd: () => cwd, copy: checkCopyDir('/Users/o', 'test-session') }
+}
+
+test('rule: where cp refuses -c, as GNU cp on Linux does, the check runs in a plain copy made into the copy\'s own folder', async ($, on) => {
+  const { runs, cwd, copy } = await copyCheck($, on, 'gnu')
+  expect(cwd()).toBe(copy)
+  expect(runs.filter(r => r[0] === 'cp')).toEqual([
+    ['cp', '-Rc', '/tmp/x', copy],
+    ['cp', '-R', '/tmp/x/.', copy],
+  ])
+})
+
+test('rule: where the clone fails part-way, as Darwin\'s cp does on an unreadable file, no plain copy is made over it: the check runs in the agent\'s folder and the part-made copy is removed', async ($, on) => {
+  const { runs, cwd, copy } = await copyCheck($, on, 'darwin')
+  expect(cwd()).toBe('/tmp/x')
+  expect(runs.filter(r => r[0] === 'cp')).toEqual([['cp', '-Rc', '/tmp/x', copy]])
+  const cloned = runs.findIndex(r => r[0] === 'cp')
+  expect(runs.slice(cloned).some(r => r[0] === 'rm' && r[2] === copy)).toBe(true)
 })

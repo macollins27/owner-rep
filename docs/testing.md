@@ -57,9 +57,17 @@ entry that proves the test bites (added 14 Oct 2026; the objective's rules 15 Oc
 | A new job closes the old objective; its result is listed as closed and the earlier job's messages leave the writer; a seeded session whose first write says the new job opened at a later message of his starts the job there, and the earlier job's messages leave the writer and the briefing | `rule: a new job closes…`, `rule: a seeded session that held more than one job…` | `earlier-job-leaks`, `first-write-new-job-ignored` |
 | A write that lands late cannot take a newer write's place, and a message during a write is written after it | `rule: a write that lands late…` | `late-look-wins` |
 | The revision line outlasts the parts that restate the agent's work when the card folds | `fitCard folds the body…` | `revised-line-folds-first` |
-| The check runs in a throwaway copy of the project, fenced, and the copy is removed when the run ends | `rule: the check runs in a throwaway copy…` | `check-outside-copy`, `room-bypassed` |
-| When the copy cannot be made the check runs in the agent's folder, with writes there denied, and the brief says so | `rule: when the copy cannot be made…` | (prompt text; covered by the test) |
-| The card says how many of the check's commands were refused, and the right number is zero | `rule: the card says how many…` | `refusals-unreported` |
+| The check runs in a throwaway copy of the project, fenced, and the copy is removed when the run ends; where the fence cannot start the run refuses to start, and no command can ask to run outside it | `rule: the check runs in a throwaway copy…`, `the checker: its prompt names the session…` | `check-outside-copy`, `room-bypassed`, `fence-unavailable-runs`, `fence-way-out-kept` |
+| The fence guards the main places in the home whose contents run later (the shell's startup files, git's settings, the package managers' and other tools' settings, the cloud tools' settings, Node's fallback module folders, Python's add-on folders, npx's installs, rustup's toolchains, the whole of Claude Code's configuration, its install, the login programs folder, and for each command-path folder in the home, and each place in the home a path folder or a link in one leads to, the install it belongs to, the question asking each folder and its links, never the folders inside it, one name to each readlink, with thirty seconds to answer, the caches and other shared folders never guarded whole, the folder alone when that install would hold the copies and never one holding them), and the brief names the main ones and says no list names every one rather than saying every write outside the copy is denied | `the checker: its prompt names the session…`, `rule: the check runs in a throwaway copy…`, `installOf guards a command-path folder…`, `rule: the check asks, outside the fence, where the command path's folders…`, `pathLinksArgv asks find…`, `holdsCopiesOf names the folders…` | `fence-runs-later-open`, `fence-path-ignored`, `fence-path-holds-copy`, `brief-overstates-fence`, `fence-startup-files-open`, `fence-gitconfig-open`, `fence-package-settings-open`, `fence-claude-config-open`, `fence-python-open`, `fence-path-folder-only`, `install-shared-folder-guarded`, `install-holds-copies-kept`, `brief-says-every-place`, `fence-npx-open`, `fence-rustup-open`, `fence-tool-settings-open`, `fence-node-home-open`, `fence-cloud-settings-open`, `path-links-ignored`, `path-links-not-asked`, `path-links-exit-read`, `path-links-cut-kept`, `links-throw-fails-check`, `install-caches-shared`, `path-links-depth-dirs`, `path-links-many-names`, `path-links-folder-unfollowed`, `path-links-short-wait` |
+| The home is read with any separator at its end dropped, so the fence's comparisons hold | `the home is HOME on a Mac or Linux and USERPROFILE on Windows…` | `home-slash-kept` |
+| Where the fence cannot start, the card says the check does not run on that machine, with what Claude Code says is missing and that a restart clears it once that is installed, and offers no Check it, and so does every later card while Claude Code runs, and a press on a card drawn before the refusal starts nothing | `rule: where the fence cannot start…`, `noFenceNote reads only the refusal…`, `rule: once the fence has refused to start, each later card…`, `rule: once the fence has refused to start, a press on a card drawn before…` | `no-fence-reason-dropped`, `no-fence-card-offers-check`, `no-fence-forgotten`, `no-fence-check-starts`, `no-fence-restart-unsaid` |
+| pnpm's store is asked of pnpm in the copy outside the fence, with the project's pnpmfile not loaded, no pinned pnpm installed and nothing downloaded, all said on pnpm's command line, where a project's workspace file cannot turn them back on, and corepack's network off, and named to the run, so an install inside the fence finds the owner's store; a pnpm that cannot be asked leaves the check running | `rule: the check names pnpm's store to its run…`, `pnpmStoreDir takes the folder above…`, `rule: a machine where pnpm or find cannot be asked…` | `pnpm-store-not-passed`, `pnpm-store-keeps-version`, `pnpm-asks-in-agent-folder`, `pnpm-runs-pnpmfile`, `pnpm-throw-fails-check`, `pnpm-pin-installed`, `pnpm-settings-overridable`, `pnpm-goes-online`, `corepack-fetches-pin` |
+| Every git repository the copy and the agent's folder reach is found before the run, outside the fence, by asking for the `.git` in the copy, the agent's folder and every folder above either, and every `.git` inside the copy unless it is the home, the pointer read even when readlink fails, then asking each git folder found for the worktrees it lists, and fenced wherever it is: the folder holding each `.git`, where a `.git` link leads, the folder a pointer names read from the folder holding the `.git` and from where it leads, for a worktree the git folder its branches live in, each other worktree listed, a relative entry read from its file's folder, never a place in the copy or one holding the copies; the brief names it; where the git or link question gets no answer the check still runs and the brief says the repository, or the installs the links lead to, could not be found | `rule: the check asks, outside the fence and each on its own, for the .git…`, `rule: where no copy is made of a subfolder of a repository…`, `gitDirsOf names each repository found…`, `worktreesArgv asks find for the gitdir file…`, `rule: an agent working in the home…`, `the checker: its prompt names the session…`, `rule: a machine where pnpm or find cannot be asked…`, `rule: when only the git question goes unanswered…`, `rule: when the question inside the copy comes back cut…`, `rule: when the worktrees question fails…`, `rule: when the worktrees question comes back cut…`, `rule: when every git question answers whole…`, `rule: when the question inside the copy passes over a name holding a line break…`, `rule: when the question about where the links lead fails…`, `gitUpArgv asks find…`, `wholeArgv asks find through sh…`, `gitLinksOf names where the links in the copy lead…` | `repo-git-open`, `repo-git-not-asked`, `worktree-common-dir-missed`, `repo-pointer-unresolved`, `repo-throw-fails-check`, `repo-holds-copies-kept`, `brief-repo-unsaid`, `git-walk-not-upward`, `git-lead-dropped`, `git-copy-fenced`, `unanswered-not-passed`, `links-unanswered-as-none`, `repos-unanswered-as-none`, `brief-repo-unanswered-unsaid`, `brief-links-unanswered-unsaid`, `git-inside-not-searched`, `git-search-enters-git`, `git-pointer-needs-readlink`, `git-pointer-needs-lead`, `git-pointer-trimmed`, `git-pointer-lead-base-dropped`, `home-searched-inside`, `worktrees-not-asked`, `worktree-entry-unresolved`, `worktree-own-fenced`, `worktrees-throw-fails-check`, `worktrees-unanswered-as-none`, `git-cut-taken`, `worktrees-cut-taken`, `git-links-dropped`, `git-links-not-fenced`, `git-beyond-not-asked`, `git-odd-ignored`, `git-odd-not-passed-over`, `git-entry-no-leading-break`, `worktree-entry-no-leading-break`, `git-entry-not-git-folder`, `git-end-not-required`, `git-end-signal-printed`, `git-inside-fails-drops-up`, `repo-outermost-dropped`, `readlink-probe-dropped`, `sh-not-host-named`, `brief-links-fence-unsaid`, `brief-links-unfound-unsaid` |
+| When the copy cannot be made, or the agent's folder holds the copies' folder, the check runs in the agent's folder, with writes there denied, and the brief says so and never tells it to write | `rule: when the copy cannot be made…`, `rule: when the agent's folder holds the copies' folder…`, `the checker: its prompt names the session…` | `no-copy-brief-says-write`, `copy-inside-agent-folder` |
+| On Windows, where Claude Code's sandbox is off, the card says the check does not run there in place of its price and offers no Check it, even when looking for its commands throws; pressed on a card drawn before, the check does not start | `rule: on Windows, since nothing there fences the check's run…`, `rule: on Windows the card offers no Check it when looking for its commands throws…`, `rule: on Windows the check itself does not start either…` | `windows-check-unfenced`, `windows-refusal-rests-on-probe`, `windows-card-offers-check`, `windows-check-button-kept` |
+| The copy is an APFS clone; where `cp` refuses `-c` before making anything, as GNU `cp` on Linux does, the folder's contents are copied plainly into the folder just made; a clone that failed part-way is never copied over, and its part is removed | `the copy tries the APFS clone…`, `rule: where cp refuses -c…`, `rule: where the clone fails part-way…` | `copy-no-fallback`, `plain-copy-nests`, `fallback-over-partial-clone`, `part-copy-left` |
+| Every program is named for the host it runs on: as written on a Mac or Linux, and on Windows Git for Windows' coreutils by their full path and npm's `claude.exe`, each found by running it; the home is `HOME`, else `USERPROFILE`, on a Mac or Linux, and on Windows `USERPROFILE`, else `HOME`, where Claude Code keeps its folder, written with forward slashes, and a home of `/tmp` is a home; on Windows his messages are read through Git's own `find` and `sed`, a fork's parent found by its last tool result, and a copy's parent by its summary line, through Git's `grep` and `sed`, a transcript path given with backslashes is read slashed, and a probe that failed is tried again on the next read | `the home is HOME on a Mac or Linux and USERPROFILE on Windows…`, `homeOf takes USERPROFILE before HOME on Windows…`, `rule: on Windows with HOME set to another folder…`, `rule: on a Mac with USERPROFILE set as well…`, `a host that resolves by name…`, `a Windows host names every command…`, `the places Git for Windows and npm put their binaries…`, `rule: on Windows his messages are read…`, `rule: on Windows a transcript path given with backslashes…`, `rule: on Windows a fork taken after a compaction finds its parent…`, `rule: on Windows a fork whose own file is a copy…`, `rule: on Windows a probe for Git's commands that failed…`, `rule: a home that is /tmp is a home…` | `home-ignores-userprofile`, `windows-commands-by-name`, `windows-claude-by-name`, `candidates-unslashed`, `windows-find-by-name`, `windows-read-by-name`, `windows-probe-failure-held`, `home-tmp-is-none`, `windows-home-mixed-slashes`, `windows-home-before-profile`, `windows-held-path-backslashed`, `windows-tool-line-by-name`, `windows-read-before-by-name`, `windows-start-by-name` |
+| The card says how many of the check's commands were refused approval, and the right number is zero, and that commands the fence stopped are not counted | `rule: the card says how many…` | `refusals-unreported`, `refused-count-claims-fence` |
 | Tell the rep puts the prefix in the prompt box | `rule: Tell the rep puts…` | `tell-prefix-dropped` |
 | While the rep reads, the row says so and a second press starts no second read | `rule: while the rep reads…` | `reading-state-unmarked` |
 | The checked card folds its lists to counts on a small band | `rule: the checked card folds…` | `checked-lists-never-fold` |
@@ -124,7 +132,7 @@ objective it checked came from the writer's own call. The test now sends a furth
 the writer answers with `objective: holds` and a look whose answer carries an objective in
 the writer's shape, and asserts that the objective is unchanged.
 
-**Status.** 161 tests: the parsers, the status words (including the variable-first command, read
+**Status.** 217 tests: the parsers, the status words (including the variable-first command, read
 through the mounted strip), the note to the rep, the checker's prompt and tools, the row on
 both surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-
 failure toast, the sequence rules above, the card folding to a small band, the brief
@@ -176,14 +184,48 @@ of their own, newest first, and read by the seed after the records, so one let g
 session, the old session's objective off the row at once, a write, a briefing or a check the
 old session started landing in its own record without drawing, a press straight after it read
 under the new id, and a session resumed in the same window read for his messages before his
-next one is recorded under it; and, on 17 Oct 2026, a session reopened after a compaction he
+next one is recorded under it; on 17 Oct 2026, a session reopened after a compaction he
 had typed nothing since read for his messages from its own file, and a fork of one finding its
-parent by its last tool result and taking only the messages before it; and later that day, a
+parent by its last tool result and taking only the messages before it; later that day, a
 fork whose own file is a copy of its parent's stretch since a summary reading his earlier
 messages from the parent by that summary line, and a fork taken while a tool ran finding its
-parent by the tool's call; and, the same night, a record that holds nothing kept out of the
-store, so the blank records scripted runs left no longer push out his sessions. A hundred and
-seventy-six doctor entries, all caught.
+parent by the tool's call; and, with the Windows port (PR #13) and its review, every program
+named for the host it runs on, his messages read on Windows through Git's own commands under
+`USERPROFILE` with paths written one way, the scan by last tool result and the search by
+summary line among them, a failed probe looked for again, a home of `/tmp` kept as a home, the
+check refused on Windows where nothing fences it, with the card saying so and offering no
+Check it there, the check's run refusing to start where the sandbox cannot and given no way to
+run a command outside it, its brief in the agent's own folder never telling it to write, and
+the copy made plainly where `cp` refuses the clone and never over a clone that failed
+part-way; from the second review, the fence guarding the places in the home whose contents
+run later with the brief naming what it guards, the refusal count saying it counts approvals
+only, and the card where the fence cannot start naming what is missing and offering no Check
+it; and, from the third, the fence widened to the shell's startup files, git's and the package
+managers' settings, Python's add-on folders, the whole of Claude Code's configuration and each
+command-path folder's install, the brief saying no list names every such place, pnpm's store
+named to the run, and a fence that refused to start remembered for the process; and, from
+the fourth, the fence following the command path's links to their installs and guarding
+npx's installs, rustup's toolchains, more tools' settings, the cloud tools' settings and
+Node's fallbacks in the home, the caches never guarded whole, pnpm asked in the copy with
+the project's own hook file not loaded, a pnpm or find that cannot be asked leaving the
+check running, a press after the fence's refusal starting nothing, the note saying a
+restart clears it, no copy tried of a folder holding the copies, and a home's trailing
+separator dropped; and, from the fifth, pnpm told its two settings on its command line,
+where a project's workspace file cannot turn them back on, the link question asking each
+path folder and its links but never the folders inside it, one name to each readlink, with
+thirty seconds to answer, and the repository a copied worktree's `.git` file points at
+fenced; and, from the sixth, every repository the copy and the agent's folder reach found
+by walking up from both and following a `.git` link, pnpm asked offline with corepack's
+network off, and the brief saying when the links or the repository could not be found;
+and, from the seventh, every `.git` inside the copy found, each worktree a repository
+lists fenced, a relative worktree entry read from its file's folder, the pointer read when
+readlink fails, a cut answer counted as none, and the home never searched inside;
+and, from the eighth, the git search asked as four questions each on its own, an answer
+counted only when `find` printed its end mark and was not cut, the places links lead to and
+the repository above each fenced, a name holding a line break passed over and said so in the
+brief, and the outermost of nested places kept;
+and, the same night, a record that holds nothing kept out of the
+store, so the blank records scripted runs left no longer push out his sessions. Windows is then recognised by `OS`, by `SystemRoot` or `windir` holding a drive path, or by a working folder on a drive, so a launcher that drops `OS` does not leave the check unfenced. From the ninth review, the home on Windows is `USERPROFILE` before `HOME`, where Claude Code keeps its folder, so his session's file is looked for there when `HOME` names another folder. Two hundred and ninety-five doctor entries, all caught.
 
 ## Layer 2: a real session
 
@@ -319,7 +361,7 @@ the file). Never make one from an uncommitted tree: the checkout would wipe the 
 **Status.** Built: `tests/doctor/doctor.py`, with `defects.json` and one patch per defect in
 `tests/doctor/defects/`. Run it with `python3 tests/doctor/doctor.py`; it exits 1 when the
 clean suite fails or a defect survives, and stops before planting when the clean suite is
-not clean. A hundred and sixty-six entries, all caught: `strip-shows-command`, one or more per sequence
+not clean. Two hundred and ninety-five entries, all caught: `strip-shows-command`, one or more per sequence
 rule above, `card-overflows-band`, `size-figure-dropped`, `whole-ask-rule-dropped`, and one
 per remaining hook path (`helper-not-counted`, `box-text-overwritten`, `fill-refusal-ignored`,
 `check-timeout-unreported`, `check-failure-swallowed`, `end-not-saved`), and six for a
@@ -354,4 +396,27 @@ successor; three moved there on 15 Oct 2026, when the objective replaced the rea
    messages, kept open until it is completed, with its conditions, the marks that move
    them, and the gate on a card that says stop.~~ Done 15 Oct 2026 in layer 1, with a test
    and a doctor entry per rule; three entries of the reading's rules archived.
-9. Keep growing the defect list as bugs are fixed.
+9. ~~A step in the GitHub run that fails when a hook runs a program whose name does not go
+   through `hostArgv`, so a new command cannot quietly find nothing on Windows.~~ Done 16 Oct
+   2026: `tests/ci/host-calls.sh`, run after the validation; shown red on a trial merge of
+   PR #12's head, which runs `grep` and `sed` by bare name, and green on its own branch. Like
+   the declarations step it is not planted by the doctor; the red run is its proof.
+10. Keep growing the defect list as bugs are fixed.
+11. ~~The GitHub run on Ubuntu, macOS and Windows: the validation, the host-calls step, the
+    host-commands script, the tests and the type check on all three, the doctor on Ubuntu
+    alone (it plants into a copy, so one system is its proof).~~ Done 18 Oct 2026: all
+    three green on the first push,
+    [run 39139938793](https://github.com/macollins27/owner-rep/actions/runs/39139938793).
+    With 294 entries the doctor took 1 hour 46 minutes there.
+12. ~~A step in the GitHub run that runs the mod's own commands on each system
+    (`tests/ci/host-commands.mjs`): the transcript reads and the check's commands, built by
+    the mod's builders and named through `hostArgv`, run against `tests/ci/fixtures/` and read
+    by the mod's own parsers.~~ Done 18 Oct 2026. Like the declarations step it is not
+    planted by the doctor; the red run is its proof: with the fixture's tool call renamed,
+    [run 39148144424](https://github.com/macollins27/owner-rep/actions/runs/39148144424)
+    failed at this step on Ubuntu, macOS and Windows, and the next commit put the fixture
+    back. On Windows the check's own questions are reported as skipped, since the check is
+    refused there: all four answer wrongly on Windows, the three git questions and the
+    path-links question, while the copy's commands pass (the Windows job of
+    [run 39157223612](https://github.com/macollins27/owner-rep/actions/runs/39157223612/job/117762818504), on c5a7f33,
+    `tests/ci/README.md`).

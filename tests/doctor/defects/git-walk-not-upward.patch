@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 49856d6..bb2e630 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1496,7 +1496,7 @@ const GIT_ENTRY = [
+ // The `.git` in each of these places and every folder above them.
+ export const gitUpArgv = (places: string[]): string[] => [
+   'find',
+-  ...new Set(places.flatMap(foldersUp).map(f => `${f === '/' ? '' : f}/.git`)),
++  ...new Set(places.map(f => `${f === '/' ? '' : f}/.git`)),
+   ...GIT_ENTRY,
+ ]
+ // Every `.git` inside the copy, and where each link in it leads. A name holding a line

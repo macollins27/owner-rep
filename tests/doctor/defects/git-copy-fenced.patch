@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 243c769..d278200 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1567,7 +1567,7 @@ export const worktreeDirsOf = (own: string[], stdout: string): string[] => {
+ // Places, each once and with no trailing slash, leaving out any in `own`.
+ const outside = (own: string[], dirs: string[]): string[] => {
+   const mine = (d: string): boolean => own.some(o => `${d}/`.startsWith(`${o.replace(/\/+$/, '')}/`))
+-  return [...new Set(dirs.map(d => (d === '/' ? d : d.replace(/\/+$/, ''))))].filter(d => !mine(d))
++  return [...new Set(dirs.map(d => (d === '/' ? d : d.replace(/\/+$/, ''))))]
+ }
+ // The folder holding a place.
+ const parentOf = (p: string): string => p.replace(/\/[^/]*$/, '') || '/'

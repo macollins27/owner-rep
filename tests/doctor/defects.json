@@ -966,6 +966,132 @@
     "fixed": "2026-10-16"
   },
   {
+    "name": "home-ignores-userprofile",
+    "breaks": "On Windows, where HOME is unset, the home falls back to /tmp, so the transcripts and the check's copies are looked for in the wrong folder.",
+    "patch": "home-ignores-userprofile.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-commands-by-name",
+    "breaks": "On Windows the coreutils are run by name, which finds nothing there, so the transcript reads fail.",
+    "patch": "windows-commands-by-name.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-claude-by-name",
+    "breaks": "On Windows the check would spawn the claude shim by name, which cannot be run without a shell.",
+    "patch": "windows-claude-by-name.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "candidates-unslashed",
+    "breaks": "The folders tried for Git's coreutils keep their backslashes, so the path the probe proves is not the one later run.",
+    "patch": "candidates-unslashed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "plain-copy-nests",
+    "breaks": "The plain copy puts the agent's folder inside the folder just made for it, so the check runs one level above the project.",
+    "patch": "plain-copy-nests.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "copy-no-fallback",
+    "breaks": "Where cp refuses -c, as GNU cp on Linux does, no copy is made and the check runs in the agent's own folder.",
+    "patch": "copy-no-fallback.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "fallback-over-partial-clone",
+    "breaks": "A Darwin clone that failed part-way on the files is copied again in full, into the part-made copy.",
+    "patch": "fallback-over-partial-clone.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "part-copy-left",
+    "breaks": "A copy that failed part-way is left behind in the copies folder when the check falls back to the agent's folder.",
+    "patch": "part-copy-left.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-check-unfenced",
+    "breaks": "On Windows, where Claude Code's sandbox is off, the check's run starts with nothing stopping it writing the owner's files or reaching the internet.",
+    "patch": "windows-check-unfenced.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-find-by-name",
+    "breaks": "On Windows the session's transcript is looked for with find by name, which finds nothing there, so none of his messages is read.",
+    "patch": "windows-find-by-name.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-read-by-name",
+    "breaks": "On Windows the transcript is read with sed by name, which finds nothing there, so none of his messages is read.",
+    "patch": "windows-read-by-name.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-probe-failure-held",
+    "breaks": "On Windows a probe for Git's commands that failed once, as one can the first time a virus scanner meets them, is held for the process, so none of his messages is read from a transcript again until Claude Code restarts.",
+    "patch": "windows-probe-failure-held.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-refusal-rests-on-probe",
+    "breaks": "On Windows a lookup of the commands that throws makes the host look like a Unix one, so the check starts there with nothing fencing it.",
+    "patch": "windows-refusal-rests-on-probe.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "home-tmp-is-none",
+    "breaks": "A home that is /tmp is taken for no home, so the session's transcript is never looked for under /tmp/.claude.",
+    "patch": "home-tmp-is-none.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-home-mixed-slashes",
+    "breaks": "On Windows the home keeps the backslashes USERPROFILE gives it, so every path built from it mixes the two separators.",
+    "patch": "windows-home-mixed-slashes.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-held-path-backslashed",
+    "breaks": "On Windows a transcript path Claude Code gives with backslashes is read as given, so a forked session's folder is never found and none of his messages is read.",
+    "patch": "windows-held-path-backslashed.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-card-offers-check",
+    "breaks": "On Windows the card shows the check's price, which says it starts a run in a throwaway copy, though the check does not run there.",
+    "patch": "windows-card-offers-check.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-check-button-kept",
+    "breaks": "On Windows the card offers Check it beside the note saying the check does not run there, a button that can only refuse.",
+    "patch": "windows-check-button-kept.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "fence-unavailable-runs",
+    "breaks": "Where the sandbox cannot start (a Linux without bubblewrap, WSL1), the check's run warns and goes on with no fence instead of refusing to start.",
+    "patch": "fence-unavailable-runs.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "fence-way-out-kept",
+    "breaks": "The check's shell may ask to run a command outside the sandbox, the way Claude Code's own instructions tell a model to when the fence refuses, so a write the fence denied can be made anyway.",
+    "patch": "fence-way-out-kept.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "no-copy-brief-says-write",
+    "breaks": "When no copy could be made and the check runs in the agent's own folder, its brief still tells it to write what it likes there and that the copy is removed after.",
+    "patch": "no-copy-brief-says-write.patch",
+    "fixed": "2026-10-16"
+  },
+  {
     "name": "seed-gated-on-typed-rows",
     "breaks": "A session reopened after a compaction he has typed nothing since, with no record, is not read for his messages, so it holds no objective.",
     "patch": "seed-gated-on-typed-rows.patch",
@@ -1032,6 +1158,564 @@
     "fixed": "2026-10-17"
   },
   {
+    "name": "windows-tool-line-by-name",
+    "breaks": "On Windows the seed's search for a fork's parent, by its last tool result or by a copy's summary line, runs grep by its bare name, which Windows cannot find, so a fork taken after a compaction reads none of his messages from before it.",
+    "patch": "windows-tool-line-by-name.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "windows-read-before-by-name",
+    "breaks": "On Windows the read of a parent's messages before its last tool result runs sed by its bare name, which Windows cannot find, so a fork taken after a compaction reads none of his messages.",
+    "patch": "windows-read-before-by-name.patch",
+    "fixed": "2026-10-16"
+  },
+  {
+    "name": "fence-runs-later-open",
+    "breaks": "The check's fence leaves Claude Code's own install, the login programs folder and the installs of the command path's folders in the home writable, so a run steered by text in the record could leave behind a program that runs later outside any fence.",
+    "patch": "fence-runs-later-open.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-path-ignored",
+    "breaks": "The check's run is fenced without the command path, so a folder of programs in the home stays writable and a program put there runs the next time anyone types its name.",
+    "patch": "fence-path-ignored.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-path-holds-copy",
+    "breaks": "A command path folder that holds the check's copies is denied, and since a denied folder beats an allowed one the check can write nothing in its own copy.",
+    "patch": "fence-path-holds-copy.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "brief-overstates-fence",
+    "breaks": "The check's brief says the fence denies every write outside the copy, while on this Mac it is a list of guarded folders, so the run believes a write it should not make would be stopped.",
+    "patch": "brief-overstates-fence.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "refused-count-claims-fence",
+    "breaks": "The card says the check's run had no command refused when the fence stopped several, since the count is of approvals only, so the owner reads that nothing was blocked.",
+    "patch": "refused-count-claims-fence.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "no-fence-reason-dropped",
+    "breaks": "Where the fence cannot start (a Linux without bubblewrap), the card shows only the line naming the setting, not what is missing or how to install it, and goes on offering a check that can only refuse.",
+    "patch": "no-fence-reason-dropped.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "no-fence-card-offers-check",
+    "breaks": "Where the fence cannot start, the card says so and still offers Check it, a button that makes the copy only to be refused again.",
+    "patch": "no-fence-card-offers-check.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "windows-start-by-name",
+    "breaks": "On Windows the look at how the session's own file begins runs grep by its bare name, which Windows cannot find, so a fork whose file is a copy since a summary is taken as the whole of his messages and everything he typed before the summary is lost.",
+    "patch": "windows-start-by-name.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-startup-files-open",
+    "breaks": "The check's fence leaves the shell's startup files writable, so a run steered by text in the record could add a line that every later terminal and agent shell runs outside any fence.",
+    "patch": "fence-startup-files-open.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-gitconfig-open",
+    "breaks": "The check's fence leaves git's own settings writable, so a run could name a program git then runs in every later commit or fetch, outside any fence.",
+    "patch": "fence-gitconfig-open.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-package-settings-open",
+    "breaks": "The check's fence leaves the package managers' settings (npm, yarn, bun) writable, so a run could name a program they then run on a later install, outside any fence.",
+    "patch": "fence-package-settings-open.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-claude-config-open",
+    "breaks": "The check's fence leaves Claude Code's own configuration writable, its settings, hooks, skills and history among it, so a run could change what every later session does.",
+    "patch": "fence-claude-config-open.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-python-open",
+    "breaks": "The check's fence leaves Python's add-on folders writable, whose .pth files run at every Python start, the owner's guard among them, so a run could plant code that runs later outside any fence.",
+    "patch": "fence-python-open.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-path-folder-only",
+    "breaks": "The check's fence guards a command path folder only as itself, so mise's npm or cargo's env file, beside the folder in the same install, stay writable and run later outside any fence.",
+    "patch": "fence-path-folder-only.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "install-shared-folder-guarded",
+    "breaks": "A command path folder under a folder many programs share (~/Library, ~/.local/share) is guarded as that whole shared folder, so the run can write nothing there, caches and Python's folders included.",
+    "patch": "install-shared-folder-guarded.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "install-holds-copies-kept",
+    "breaks": "A command path folder whose install would hold the check's copies loses its guard altogether, rather than being guarded as itself, so a program on the path there stays writable.",
+    "patch": "install-holds-copies-kept.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "brief-says-every-place",
+    "breaks": "The check's brief says the fence guards every place in the home whose contents run later, while it guards a list of the main ones, so the run believes a write it should not make would be stopped.",
+    "patch": "brief-says-every-place.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "no-fence-forgotten",
+    "breaks": "Where the fence refused to start, the next card goes back to offering Check it, and each press copies the project only to be refused again.",
+    "patch": "no-fence-forgotten.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "pnpm-store-not-passed",
+    "breaks": "The check's run is not told where pnpm's store is, so pnpm inside the fence moves its store into an empty scratch folder and an offline install there fails, and the check names the project's tests as not run.",
+    "patch": "pnpm-store-not-passed.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "pnpm-store-keeps-version",
+    "breaks": "The store named to the check's run keeps pnpm's version folder, so pnpm looks for its store one level too deep, finds it empty, and an offline install fails.",
+    "patch": "pnpm-store-keeps-version.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-npx-open",
+    "breaks": "npx's installs under ~/.npm/_npx are left writable to the check's run, so a package the run fetches or changes there is what the agent's next npx call runs.",
+    "patch": "fence-npx-open.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-rustup-open",
+    "breaks": "rustup's toolchains are left writable to the check's run, so it can change the compiler and cargo the agent and the owner run next.",
+    "patch": "fence-rustup-open.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-tool-settings-open",
+    "breaks": "The shell's alias file and the settings of tmux and vim are left writable to the check's run, so it can change what runs the next time the owner opens a shell, tmux or vim.",
+    "patch": "fence-tool-settings-open.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-cloud-settings-open",
+    "breaks": "The AWS and Kubernetes settings folders are left writable to the check's run, so it can change which account or cluster the owner's next command reaches.",
+    "patch": "fence-cloud-settings-open.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "fence-node-home-open",
+    "breaks": "A package.json and the module folders node reads from the home are left writable to the check's run, so it can plant code that node loads for any project under the home.",
+    "patch": "fence-node-home-open.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "path-links-ignored",
+    "breaks": "The places the command path's links lead are asked for but left out of the fence, so a tool installed through a link in the path can be changed by the check's run.",
+    "patch": "path-links-ignored.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "path-links-not-asked",
+    "breaks": "The check never passes the links' targets to the fence, so a tool installed through a link in the command path can be changed by the check's run.",
+    "patch": "path-links-not-asked.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "path-links-exit-read",
+    "breaks": "A link question that exits with an error, as find does when one folder in the path is missing, is thrown away whole, so every link it did read is left writable.",
+    "patch": "path-links-exit-read.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "path-links-cut-kept",
+    "breaks": "When the link answer is cut at the output cap, its last, half-written line is kept as a place to deny, naming a folder that is not the one the link leads to.",
+    "patch": "path-links-cut-kept.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "links-throw-fails-check",
+    "breaks": "A machine where find cannot be asked about the command path's links fails the whole check instead of running it with no linked installs named.",
+    "patch": "links-throw-fails-check.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "install-caches-shared",
+    "breaks": "~/Library/Caches, ~/.local/state and ~/.cache are no longer treated as folders many programs share, so a command in one of them closes the whole folder to the check's run, and the caches the check needs to build and test are refused.",
+    "patch": "install-caches-shared.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "home-slash-kept",
+    "breaks": "A home given with a trailing slash keeps it, so every place in the fence is written with a double slash and may not match the place it names.",
+    "patch": "home-slash-kept.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "copy-inside-agent-folder",
+    "breaks": "When the agent works from the home itself, the check still copies the home, into a folder inside the home, so the copy tries to hold itself.",
+    "patch": "copy-inside-agent-folder.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "pnpm-asks-in-agent-folder",
+    "breaks": "pnpm is asked for its store in the agent's real folder instead of the copy, so whatever pnpm does while answering, outside the fence, acts on his real project rather than on a throwaway copy.",
+    "patch": "pnpm-asks-in-agent-folder.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "pnpm-runs-pnpmfile",
+    "breaks": "pnpm is asked for its store without being told to skip the project's hook file, so the project's own code runs outside the fence before the check has looked at anything.",
+    "patch": "pnpm-runs-pnpmfile.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "pnpm-throw-fails-check",
+    "breaks": "A machine where pnpm cannot be asked for its store fails the whole check instead of running it with no store named.",
+    "patch": "pnpm-throw-fails-check.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "no-fence-check-starts",
+    "breaks": "Once the fence has been found missing, a press on a card drawn before that makes a needless copy of the project and starts the check again, which the sandbox refuses again.",
+    "patch": "no-fence-check-starts.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "no-fence-restart-unsaid",
+    "breaks": "The note saying the check cannot run without a sandbox no longer says that Claude Code must be restarted once the sandbox is installed, so the owner installs it and the check keeps refusing.",
+    "patch": "no-fence-restart-unsaid.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "pnpm-pin-installed",
+    "breaks": "pnpm is asked for its store without being told to leave its own version alone, so a project that pins a pnpm version has it downloaded and installed outside the fence.",
+    "patch": "pnpm-pin-installed.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "pnpm-settings-overridable",
+    "breaks": "pnpm's settings are given in the environment, where a project's pnpm-workspace.yaml overrides them, so a project can turn its hook file back on and have it run outside the fence.",
+    "patch": "pnpm-settings-overridable.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "path-links-depth-dirs",
+    "breaks": "The link question lists every folder inside each path folder, so a home on the command path fences nearly the whole home and the check's builds fail on their own caches.",
+    "patch": "path-links-depth-dirs.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "path-links-many-names",
+    "breaks": "readlink is handed many names at once, which BusyBox's readlink (Alpine Linux) refuses, so there the installs the path's links lead to go unguarded and nothing says so.",
+    "patch": "path-links-many-names.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "path-links-folder-unfollowed",
+    "breaks": "Each path folder is given by its bare name, so in a path folder that is itself a link the links inside it are never asked, and the installs they lead to go unguarded.",
+    "patch": "path-links-folder-unfollowed.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "path-links-short-wait",
+    "breaks": "The link question is given a third of the time, so on a slower machine it is cut off and the installs the path's links lead to go unguarded, with nothing said.",
+    "patch": "path-links-short-wait.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "repo-git-open",
+    "breaks": "The repositories the git question finds are not fenced, so a commit made in a copied worktree moves the real branch, and one made where the agent works in a subfolder moves the branch of the repository above it.",
+    "patch": "repo-git-open.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "repo-git-not-asked",
+    "breaks": "The repositories the git question finds are never passed to the fence, so a commit made in a copied worktree moves the real branch.",
+    "patch": "repo-git-not-asked.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "worktree-common-dir-missed",
+    "breaks": "For a worktree only its own corner of the repository is fenced, not the branches every worktree shares, so a branch can still be moved from the copy.",
+    "patch": "worktree-common-dir-missed.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "repo-pointer-unresolved",
+    "breaks": "A relative .git pointer is handed to the fence as written, a path read from a folder of Claude Code's choosing rather than the folder the .git is in, so the repository is guarded only where the two agree.",
+    "patch": "repo-pointer-unresolved.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "repo-throw-fails-check",
+    "breaks": "A machine where find cannot be asked for the .git places fails the whole check instead of running it with no repository named and the brief saying so.",
+    "patch": "repo-throw-fails-check.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "repo-holds-copies-kept",
+    "breaks": "A repository found at the home, or one holding the copies' folder, is fenced whole, copies and all, so the check cannot write in its own copy.",
+    "patch": "repo-holds-copies-kept.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "brief-repo-unsaid",
+    "breaks": "The brief drops the repository from the places the fence guards while still naming the links, so the run is not told why staging or committing in the copy is refused.",
+    "patch": "brief-repo-unsaid.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "pnpm-goes-online",
+    "breaks": "pnpm is asked for its store without being told to stay offline, so a project's pnpm-workspace.yaml can have pnpm download the config dependencies it lists, outside the fence, where the network is open.",
+    "patch": "pnpm-goes-online.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "corepack-fetches-pin",
+    "breaks": "pnpm is asked for its store with corepack's network on, so where pnpm comes through corepack a project that pins a pnpm version has it downloaded outside the fence, before pnpm reads the settings that would stop it.",
+    "patch": "corepack-fetches-pin.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-walk-not-upward",
+    "breaks": "Only the .git in the copy and in the agent's folder is asked for, never one above them, so where the agent works in a subfolder of a repository, or the copy has no .git of its own, the repository git finds above is left open to commits.",
+    "patch": "git-walk-not-upward.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-lead-dropped",
+    "breaks": "Where a .git leads is not fenced, so a copy whose .git is a link to history kept elsewhere reaches that history, and a commit there moves the real branch.",
+    "patch": "git-lead-dropped.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-copy-fenced",
+    "breaks": "The places the git question finds inside the copy are fenced too, so the copy itself is fenced whole and the check can write nothing in its own copy.",
+    "patch": "git-copy-fenced.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "unanswered-not-passed",
+    "breaks": "When the link or git question gets no answer the brief still says the fence guards the repository and the installs the links lead to, so the run may commit or change an install trusting a guard that is not there.",
+    "patch": "unanswered-not-passed.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "links-unanswered-as-none",
+    "breaks": "A link question that gets no answer counts as one that found no links, so the brief says the installs the links lead to are guarded when they are not.",
+    "patch": "links-unanswered-as-none.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "repos-unanswered-as-none",
+    "breaks": "The whole-answer flag ignores a git question that got no answer, so the brief says the repository is guarded when it is not, and the run may commit in it.",
+    "patch": "repos-unanswered-as-none.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "brief-repo-unanswered-unsaid",
+    "breaks": "When the git question gets no answer the brief still says the repository is guarded, so the run may stage, commit or stash in a repository the fence does not guard.",
+    "patch": "brief-repo-unanswered-unsaid.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "brief-links-unanswered-unsaid",
+    "breaks": "When the link question gets no answer the brief does not say the installs the links lead to are unguarded, so the run may change one believing the fence would stop it.",
+    "patch": "brief-links-unanswered-unsaid.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-inside-not-searched",
+    "breaks": "The question about repositories inside the copy is never asked, so a worktree or a library kept inside the project whose .git leads out of it is left open, and a commit there moves the real branch.",
+    "patch": "git-inside-not-searched.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-search-enters-git",
+    "breaks": "The search inside the copy walks into every .git folder it finds, reading the repository's own files as if they were projects.",
+    "patch": "git-search-enters-git.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-pointer-needs-readlink",
+    "breaks": "A .git whose readlink fails has its pointer skipped, so where readlink cannot answer, the repository a worktree's .git file names is left open.",
+    "patch": "git-pointer-needs-readlink.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-pointer-needs-lead",
+    "breaks": "A .git pointer is read only when readlink said where the .git leads, so where readlink fails the repository it names is left open.",
+    "patch": "git-pointer-needs-lead.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-pointer-trimmed",
+    "breaks": "A .git pointer has its spaces cut, where git cuts only the line's end, so a repository whose folder name ends in a space is guarded under a name that is not its own.",
+    "patch": "git-pointer-trimmed.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-pointer-lead-base-dropped",
+    "breaks": "A relative pointer in a .git reached through a link is read only from the folder it was found in, never from where the link leads, so the repository it names there is left open.",
+    "patch": "git-pointer-lead-base-dropped.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "home-searched-inside",
+    "breaks": "The search for .git inside the agent's folder runs even when that folder is the home, walking every folder in it before the check can start.",
+    "patch": "home-searched-inside.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "worktrees-not-asked",
+    "breaks": "The worktrees a repository lists are never asked for, so git run in the copy can rewrite, move or remove the real worktrees kept elsewhere.",
+    "patch": "worktrees-not-asked.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "worktree-entry-unresolved",
+    "breaks": "A worktree listed with a relative path is read from the root rather than from its file's folder, so the real worktree is left open.",
+    "patch": "worktree-entry-unresolved.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "worktree-own-fenced",
+    "breaks": "A worktree inside the copy or the agent's folder is fenced as if it were someone else's, so the check cannot write in its own copy.",
+    "patch": "worktree-own-fenced.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "worktrees-throw-fails-check",
+    "breaks": "A worktrees question that throws is not caught, so it stops the check from running at all.",
+    "patch": "worktrees-throw-fails-check.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "worktrees-unanswered-as-none",
+    "breaks": "A worktrees question that gets no answer counts as one that found none, so the brief says the repository is guarded when its worktrees are not.",
+    "patch": "worktrees-unanswered-as-none.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-cut-taken",
+    "breaks": "The git search's whole-answer check ignores a cut at the output's cap, so the repositories past the cut are left open while the brief says they are guarded.",
+    "patch": "git-cut-taken.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "worktrees-cut-taken",
+    "breaks": "The worktrees answer is read raw, with no check that it ran to its end or was not cut, so the worktrees past the cut are left open while the brief says they are guarded.",
+    "patch": "worktrees-cut-taken.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-links-dropped",
+    "breaks": "The links found in the copy are thrown away after the question inside the copy, so the places they lead to and the repositories above those places are never asked about or fenced.",
+    "patch": "git-links-dropped.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-links-not-fenced",
+    "breaks": "The places a link in the copy leads to are asked about but left out of the fence, so a run can write through a link that leads out of the copy.",
+    "patch": "git-links-not-fenced.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-beyond-not-asked",
+    "breaks": "The repository above the place a link leads to is never asked for, so a commit through a link that leads out of the copy moves a branch the brief says is guarded.",
+    "patch": "git-beyond-not-asked.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-odd-ignored",
+    "breaks": "A name holding a line break inside the copy is no longer counted as an answer the check could not read, so the brief says every repository was found when one was passed over.",
+    "patch": "git-odd-ignored.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-odd-not-passed-over",
+    "breaks": "The search no longer reports a name holding a line break inside the copy, so a repository under such a name is left open without the brief saying so.",
+    "patch": "git-odd-not-passed-over.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-entry-no-leading-break",
+    "breaks": "The git search prints each repository entry without a line break before it, so a name ending in a line break can forge another entry and a false repository is fenced or a real one missed.",
+    "patch": "git-entry-no-leading-break.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "worktree-entry-no-leading-break",
+    "breaks": "The worktrees search prints each tree entry without a line break before it, so a name ending in a line break can forge another entry and a false worktree is fenced or a real one missed.",
+    "patch": "worktree-entry-no-leading-break.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-entry-not-git-folder",
+    "breaks": "A repository the search finds is fenced as a place but not kept as a git folder, so the worktrees it lists are never asked for and stay open to writes.",
+    "patch": "git-entry-not-git-folder.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-end-not-required",
+    "breaks": "A git answer that stops without its end mark is taken as whole, so a search killed partway counts as finished and the repositories it never reached are left open while the brief says they are guarded.",
+    "patch": "git-end-not-required.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-end-signal-printed",
+    "breaks": "The end mark is printed even when the search was killed by a signal, so a search that never finished counts as whole and the repositories it never reached are left open.",
+    "patch": "git-end-signal-printed.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "git-inside-fails-drops-up",
+    "breaks": "When the question about repositories inside the copy fails, the answers to the questions above it are thrown away too, so the repositories the check did find are left open to writes.",
+    "patch": "git-inside-fails-drops-up.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "repo-outermost-dropped",
+    "breaks": "Places inside another guarded place are listed as well as the one holding them, so the fence names the same ground twice and its settings grow with every nested repository and link.",
+    "patch": "repo-outermost-dropped.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "readlink-probe-dropped",
+    "breaks": "Links are handed to readlink several names at a time with no one-name fallback, so on a machine whose readlink takes one name no link is resolved and the places they lead to are left open.",
+    "patch": "readlink-probe-dropped.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "sh-not-host-named",
+    "breaks": "The shell is left out of the commands the Windows host must name, so the search cannot start there and every git answer counts as unanswered.",
+    "patch": "sh-not-host-named.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "brief-links-fence-unsaid",
+    "breaks": "The brief does not name the places links in the copy lead to among those the fence guards, so the run is not told why writing through a link that leads out is refused.",
+    "patch": "brief-links-fence-unsaid.patch",
+    "fixed": "2026-10-17"
+  },
+  {
+    "name": "brief-links-unfound-unsaid",
+    "breaks": "The brief does not tell the run to write nothing through a link that leads out of the copy when those links could not be found, so it may write through one.",
+    "patch": "brief-links-unfound-unsaid.patch",
+    "fixed": "2026-10-17"
+  },
+  {
     "name": "blank-records-kept",
     "breaks": "A record holding nothing, saved for a scripted run or a window opened and closed, takes one of the store's places and pushes out a session that holds his messages.",
     "patch": "blank-records-kept.patch",
@@ -1054,5 +1738,35 @@
     "breaks": "A record whose fields were saved in another order is not taken for the blank one, so a record holding nothing is kept.",
     "patch": "blank-key-order.patch",
     "fixed": "2026-10-17"
+  },
+  {
+    "name": "windows-by-os-only",
+    "breaks": "On a Windows machine where OS does not reach the mod, the check is not refused and runs with nothing to fence it, and unless Git's commands are on the command path his messages are not read from his session's file, since its commands are run by their bare names.",
+    "patch": "windows-by-os-only.patch",
+    "fixed": "2026-10-18"
+  },
+  {
+    "name": "windows-windir-dropped",
+    "breaks": "On a Windows machine where only windir says Windows, the check is not refused and runs with nothing to fence it.",
+    "patch": "windows-windir-dropped.patch",
+    "fixed": "2026-10-18"
+  },
+  {
+    "name": "windows-cwd-dropped",
+    "breaks": "On a Windows machine where only the working folder on a drive says Windows, the check is not refused and runs with nothing to fence it.",
+    "patch": "windows-cwd-dropped.patch",
+    "fixed": "2026-10-18"
+  },
+  {
+    "name": "home-slashes-by-os-only",
+    "breaks": "On a Windows machine where OS does not reach the mod, the search for his session's file is given a home with backslashes.",
+    "patch": "home-slashes-by-os-only.patch",
+    "fixed": "2026-10-18"
+  },
+  {
+    "name": "windows-home-before-profile",
+    "breaks": "On a Windows machine with HOME set to a folder other than the profile folder, the search for his session's file looks in the wrong folder and his messages are not read from it.",
+    "patch": "windows-home-before-profile.patch",
+    "fixed": "2026-10-18"
   }
 ]

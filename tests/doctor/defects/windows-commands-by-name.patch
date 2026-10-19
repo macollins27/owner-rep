@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index cf0a0e0..6808f3b 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1429,7 +1429,7 @@ export function hostArgv(host: Host, argv: readonly string[]): string[] {
+   if (name === 'claude') return [host.claude === '' ? 'claude' : host.claude, ...rest]
+   if (!isWindowsHost(host) || host.posixBin === '') return [name, ...rest]
+   if (!(POSIX_COMMANDS as readonly string[]).includes(name)) return [name, ...rest]
+-  return [`${slashed(host.posixBin)}/${name}.exe`, ...rest]
++  return [name, ...rest]
+ }
+ 
+ /**

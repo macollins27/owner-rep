@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 49856d6..3b899ee 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1473,7 +1473,7 @@ const GIT_ENTRY = [
+   '-prune',
+   '-exec',
+   'printf',
+-  '\\nentry %s\\n',
++  'entry %s\\n',
+   '{}',
+   ';',
+   // -prune is always true, so sed runs when readlink fails.

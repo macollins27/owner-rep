@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index da6558b..b447f71 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1399,7 +1399,7 @@ export const holdsCopiesOf = (home: string, dir: string): boolean => `${checkCop
+ export const PATH_LINKS_TIMEOUT_MS = 30000
+ export const pathLinksArgv = (home: string, path: string): string[] => [
+   'find',
+-  ...new Set([...path.split(':').filter(d => d.startsWith('/')), `${home}/.local/bin`].map(d => `${d.replace(/\/+$/, '')}/.`)),
++  ...new Set([...path.split(':').filter(d => d.startsWith('/')), `${home}/.local/bin`].map(d => d.replace(/\/+$/, ''))),
+   '-maxdepth',
+   '1',
+   '(',

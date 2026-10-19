@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 49856d6..ef10eab 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1538,7 +1538,7 @@ export const gitInsideArgv = (copy: string): string[] => [
+ // A question to find asked through sh, which prints `end` after it only when find ran to its
+ // end: a find stopped by a signal, which the host reports as an exit of 1 like any find that
+ // met a missing folder, prints none. find is named for the host as sh's `$0`.
+-export const WHOLE_SH = '"$0" "$@"; [ $? -lt 128 ] && printf "\\nend\\n"'
++export const WHOLE_SH = '"$0" "$@"; printf "\\nend\\n"'
+ export const wholeArgv = (on: Host, find: string[]): string[] => ['sh', '-c', WHOLE_SH, ...hostArgv(on, find)]
+ // The answer of a question asked through `wholeArgv`, or null when it did not come back,
+ // was cut at the output's cap or did not reach its end.

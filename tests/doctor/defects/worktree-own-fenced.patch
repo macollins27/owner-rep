@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 243c769..eeaa1e6 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1562,7 +1562,7 @@ export const worktreeDirsOf = (own: string[], stdout: string): string[] => {
+       file = ''
+     }
+   }
+-  return outside(own, dirs)
++  return outside([], dirs)
+ }
+ // Places, each once and with no trailing slash, leaving out any in `own`.
+ const outside = (own: string[], dirs: string[]): string[] => {

@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index b09a4fa..51e0b48 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -997,7 +997,7 @@ async function gitRepos($: EngineInterface, on: Host, home: string, copy: string
+   const gits = [...new Set(answers.flatMap(gitFoldersOf))]
+   const trees = gits.length === 0 ? '' : await ask(worktreesArgv(gits))
+   return {
+-    dirs: [...new Set([...answers.flatMap(a => gitDirsOf(own, a)), ...links, ...worktreeDirsOf(own, trees ?? '')])],
++    dirs: [...new Set([...answers.flatMap(a => gitDirsOf(own, a)), ...worktreeDirsOf(own, trees ?? '')])],
+     whole: [up, inside, beyond, trees].every(a => a !== null) && !passedOver(inside ?? ''),
+   }
+ }

@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index cf0a0e0..44d2a4a 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1399,7 +1399,6 @@ export const winPosixBinCandidates = (
+     programFilesX86 === undefined || programFilesX86 === '' ? '' : `${programFilesX86}/Git/usr/bin`,
+   ]
+     .filter(p => p !== '')
+-    .map(slashed)
+ 
+ /**
+  * Where npm puts Claude Code's own executable, in the order they are tried. The

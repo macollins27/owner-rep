@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 351c987..01fff66 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1418,7 +1418,7 @@ export const pathLinksArgv = (home: string, path: string): string[] => [
+ // The places `pathLinksArgv` printed, one to a line; a last line cut at the output's cap is dropped.
+ export const linkTargets = (stdout: string, isCut: boolean): string[] => {
+   const lines = stdout.split('\n')
+-  return (isCut ? lines.slice(0, -1) : lines).filter(l => l.startsWith('/'))
++  return lines.filter(l => l.startsWith('/'))
+ }
+ 
+ // Git keeps a repository's history in a `.git` folder, or in a folder a `.git` file points
