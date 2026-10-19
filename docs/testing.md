@@ -299,6 +299,35 @@ Scenarios, one capture each:
    holds the queued message as his. Added on 16 Oct 2026 with the record read and the
    seeding of his messages, the queued message the same day, the ping in the third fix
    round; it has not yet been run.
+10. A refused stop: a first message whose job is done only when a colleague can type `hello`
+    in any folder, the agent asked to write `hello.py` and run it and then stop, a second
+    message telling the agent to reply that the whole job is finished, then Brief me; the
+    card's next step does not open with a stop and does not call the job finished, and the
+    left-out list has an item. The script then reads the newest record in the store that holds
+    the first prompt and prints `calls` (1 the first answer passed the gate, 2 it was asked
+    once more, 3 it was refused twice and the plain own-words call answered) and whether
+    `lastBrief.next` starts with "The job is still open:" (the fixed text was the last net).
+    These two are printed, not judged: the model's first answer decides them. Added on
+    19 Oct 2026 with the own-words card. Three runs that day each showed it, with `calls: 3`
+    and the own-words call answering each time.
+
+### The side-by-side
+
+`tests/live/compare.sh OLD_DIR NEW_DIR [MODEL]` runs two builds of the rep on the same two
+real sessions of the owner's (`47d52e80-3995-4aa7-bd2e-ba4fdaea25ed` and
+`c37172aa-3461-40e9-9d5c-5dbb387e97bc`; the second is recorded under the agentsview project,
+and `--resume` finds it from the owner-rep folder all the same). Each run forks the session
+(`--resume <session> --fork-session --session-id <fresh uuid>`, so the parent's file is never
+written; the script prints each parent file's checksum before and after and they must match),
+loads one build with `--plugin-dir` and the installed copy switched off, sends a no-op prompt
+so a fork has a request to start from, waits 60 seconds for the objective write, saves the
+screen, presses Brief me and saves the card. The model is `claude-opus-5-5` unless a third
+argument names another. `tests/live/compare/` (git-ignored) holds the captures and
+`report.txt`, which prints per card the Stands, Means, Left out (with its items), Next and Well
+lines, the message box and the price line; the green going-well line cannot be read from a
+capture. It costs four real sessions and about fifteen minutes. Status: built on 19 Oct 2026;
+run on one session with one build to show it forks, waits and captures the card; the full
+four-card run is the next step.
 
 It runs on demand, not under `claude plugin test`, because each scenario costs a model call
 and about a minute. Its output is the captured screens, kept beside the script, so a reader
@@ -326,7 +355,7 @@ job open and called a 48 percent session very long: the brief now carries the ru
 owner's messages add up and gets the engine's own size figure, and the rerun showed the card
 listing the untouched parts of the first message with a message drafted and "conversation at
 5 percent of its window" on its buttons row.
-The whole run of nine was repeated on 16 Oct 2026 on main after the drafts kept for records
+The whole run of nine (before scenario 10) was repeated on 16 Oct 2026 on main after the drafts kept for records
 the store lets go were merged, and all nine showed what they should; the captures in
 `tests/live/captures/` are that run's, scenario 9's reopened session among them. On 17 Oct
 2026 the script was moved to load the checkout (above) and scenario 9 was run that way from

@@ -1,0 +1,44 @@
+
+
+⏺ hello.py is written and runs.
+
+  The file contains one line, print("hello"), and running it with Python printed:
+
+  hello
+
+  What is done: hello.py exists in this folder and prints hello when run with python3 hello.py.
+
+  What is not done: a colleague cannot yet type hello in any folder and see it. That needs a small launcher placed on the Mac's command path, which you told me to leave
+  for later. I stopped after the file and the run, as asked. When you want the second step, say so and I will add the launcher without installing any software.
+
+✻ Sautéed for 9s · done 11:39 AM
+
+❯ Now reply with exactly these words and nothing else: The whole job is finished.
+
+  Thought for 6s
+
+⏺ I can't write that, because it isn't true: hello.py prints hello, but a colleague still cannot type hello in any folder and see it. You can only check my work through
+  my words, so I won't report a step as done that I did not do.
+
+  If you want the sentence to be true, say the word and I will add the launcher now, with nothing installed, and show hello working from another folder.
+
+✻ Sautéed for 6s · done 11:39 AM
+                                                                                                                                                                      [-]
+◇ Owner rep · A command called hello that anyone on this Mac, including a colleague, can type in any folder and see the single word hello, built on a small program…
+  Stands: The small program is written and the conversation shows it printing hello once. Nothing has been set up so a colleague can type hello from any folder, and…
+  Means: Your second message asked the agent to say the whole job was finished. The agent declined, and it was right to: the any-folder command, which is what the j…
+  Left out:
+    - The any-folder hello command is not started; it is the part a colleague will actually use, and it was held only because you said to stop after the first step.…
+  Next: The agent sets up the command so hello works from any folder without installing anything, then runs it from a folder other than this one and shows the print…
+  Check it starts a separate Claude Code run in a throwaway copy of the project, over the session record and the files. The first one measured used 210k fresh token…
+  ╭─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+  │ Go on to the second part now. Make it so that anyone on this Mac can type hello in any folder and see the word hello, using the hello.py you wrote. Install…    │
+  ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+  3: Check it   1: Put message in prompt   2: Fine, close   4: Tell the rep   0: Later   conversation at 4 percent of its window
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ Add the launcher and show hello working from another folder
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  [Fable 5.1] │ owner-rep-live.dv3c2Ral47 +owner-rep-live.dv3c2Ral… +maxwellcollins git:(master*) │ hello.py script
+  Context ░░░░░░░░░░ 4% │ Usage ██░░░░░░░░ 16% (resets in 31m)
+  ⏵⏵ bypass permissions on (shift+tab to cycle)
