@@ -1,8 +1,8 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index e7289e3..ed91aef 100644
+index d148959..bcb3603 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -683,34 +683,6 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
+@@ -686,35 +686,6 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
        const again = await ask(askAgain(first.open))
        if (!('reason' in again)) taken = again
      }
@@ -13,6 +13,7 @@ index e7289e3..ed91aef 100644
 -    // fixed text, and the press goes on. It writes card parts only, never the
 -    // objective. With no objective written there is no such call.
 -    if (taken.refused && taken.replaced.length > 0 && first.open !== null && taken.open !== null) {
+-      reads += 1
 -      const rec = await loadRec($, sid)
 -      const result = await $.model
 -        .complete({
