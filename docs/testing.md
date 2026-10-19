@@ -299,17 +299,23 @@ Scenarios, one capture each:
    holds the queued message as his. Added on 16 Oct 2026 with the record read and the
    seeding of his messages, the queued message the same day, the ping in the third fix
    round; it has not yet been run.
-10. A refused stop: a first message whose job is done only when a colleague can type `hello`
-    in any folder, the agent asked to write `hello.py` and run it and then stop, a second
-    message telling the agent to reply that the whole job is finished, then Brief me; the
-    card's next step does not open with a stop and does not call the job finished, and the
-    left-out list has an item. The script then reads the newest record in the store that holds
-    the first prompt and prints `calls` (1 the first answer passed the gate, 2 it was asked
-    once more, 3 it was refused twice and the plain own-words call answered) and whether
+10. A refused stop: a first message asking for a one-word reply and adding a condition for
+    later (the work must end up installed on the owner's laptop too, to be told when), the
+    agent having answered, then Brief me; the card's next step does not open with a stop and
+    does not call the job finished, and the left-out list has an item. The script then reads
+    the newest record in the store that holds the first prompt and prints `reads` from its
+    `lastBrief` (1 the first answer passed the gate, 2 it was asked once more, 3 it was
+    refused twice and the plain own-words call wrote the card's parts) and whether
     `lastBrief.next` starts with "The job is still open:" (the fixed text was the last net).
-    These two are printed, not judged: the model's first answer decides them. Added on
-    19 Oct 2026 with the own-words card. Three runs that day each showed it, with `calls: 3`
-    and the own-words call answering each time.
+    These two are printed, not judged: the model's answer decides them, and a refusal cannot
+    be forced. Added on 19 Oct 2026 with the own-words card. The record's `calls` is not used:
+    it also counts every watch look. On 19 Oct 2026 a first shape (a job to write and run
+    `hello.py`, then a message telling the agent to say the whole job was finished) was run
+    five times and passed the gate first time every time (`calls: 3` in the first three runs
+    was two looks and one ask); this shape was run twice, once with `reads` 1 and once with
+    `reads` 3, the refusal twice and the own-words call answering. The refusal is shown in
+    the kit tests on the real engine; the live scenario shows it only when the model's first
+    answer says stop.
 
 ### The side-by-side
 
@@ -319,14 +325,15 @@ real sessions of the owner's (`47d52e80-3995-4aa7-bd2e-ba4fdaea25ed` and
 and `--resume` finds it from the owner-rep folder all the same). Each run forks the session
 (`--resume <session> --fork-session --session-id <fresh uuid>`, so the parent's file is never
 written; the script prints each parent file's checksum before and after and they must match),
-loads one build with `--plugin-dir` and the installed copy switched off, sends a no-op prompt
-so a fork has a request to start from, waits 60 seconds for the objective write, saves the
-screen, presses Brief me and saves the card. The model is `claude-opus-5-5` unless a third
+loads one build with `--plugin-dir` and the installed copy switched off, sends nothing (a press with
+nothing to fork reads the session's own record, so the card judges the parent's job), waits up
+to 180 seconds for the row's head to leave the placeholder, which means the objective is
+written (the wait is printed), saves the screen, presses Brief me and saves the card. The model is `claude-opus-5-5` unless a third
 argument names another. `tests/live/compare/` (git-ignored) holds the captures and
 `report.txt`, which prints per card the Stands, Means, Left out (with its items), Next and Well
 lines, the message box and the price line; the green going-well line cannot be read from a
 capture. It costs four real sessions and about fifteen minutes. Status: built on 19 Oct 2026;
-run on one session with one build to show it forks, waits and captures the card; the full
+run on one session with one build to show it forks, waits and captures the card of the parent's job (an earlier version sent a no-op prompt, and the card judged that instead); the full
 four-card run is the next step.
 
 It runs on demand, not under `claude plugin test`, because each scenario costs a model call
@@ -355,7 +362,7 @@ job open and called a 48 percent session very long: the brief now carries the ru
 owner's messages add up and gets the engine's own size figure, and the rerun showed the card
 listing the untouched parts of the first message with a message drafted and "conversation at
 5 percent of its window" on its buttons row.
-The whole run of nine (before scenario 10) was repeated on 16 Oct 2026 on main after the drafts kept for records
+The first nine scenarios were run in full again on 16 Oct 2026 on main after the drafts kept for records
 the store lets go were merged, and all nine showed what they should; the captures in
 `tests/live/captures/` are that run's, scenario 9's reopened session among them. On 17 Oct
 2026 the script was moved to load the checkout (above) and scenario 9 was run that way from

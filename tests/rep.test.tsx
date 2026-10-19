@@ -1444,7 +1444,7 @@ const HOLDS = 'state: stopped\nflag: none'
 const settle = async ($: Engine) => (await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })).unmount()
 
 // What the store holds for the session, as the tests read it back.
-type Stored = { objective: Objective | null; owner: OwnerMsg[]; past: string[]; jobStart: number; objectiveCalls: number; objectiveTokens: number; calls: number; checks: number; seen: string[]; lastBrief?: { at: number; next: string; message: string }; drafts?: string[]; objectiveFailed?: number; objectiveWhy?: string }
+type Stored = { objective: Objective | null; owner: OwnerMsg[]; past: string[]; jobStart: number; objectiveCalls: number; objectiveTokens: number; calls: number; checks: number; seen: string[]; lastBrief?: { at: number; next: string; message: string; reads?: number }; drafts?: string[]; objectiveFailed?: number; objectiveWhy?: string }
 
 // A session whose store the test reads back: the function returns the record as saved.
 const kept = (on: On, store: Record<string, unknown> = {}) => {
@@ -3781,6 +3781,7 @@ test('rule: a briefing that says stop while a condition is open is asked once mo
   await ui.unmount()
   expect(rec()?.calls).toBe(3)
   expect(rec()?.objective?.done.map(x => x.state)).toEqual(['not-shown', 'open'])
+  expect(rec()?.lastBrief?.reads).toBe(3)
   expect(rec()?.lastBrief?.next).toBe('Show the install log, then each session finishing.')
   // The card's message, so when he sends it the record keeps it as the rep's draft, not his words.
   const sent = 'Show me the install log and each of the two sessions finishing before anything stops.'
@@ -3858,6 +3859,7 @@ test('rule: a briefing refused twice for its verdict alone keeps the model\'s ow
   expect(await greens(ui)).toEqual([])
   await ui.unmount()
   expect(rec()?.calls).toBe(3)
+  expect(rec()?.lastBrief?.reads).toBe(3)
   expect(rec()?.lastBrief).toMatchObject({ next: 'Finish the two sessions, then show each one done.', message: 'Finish the two sessions and show me each one done.' })
 })
 
@@ -3887,6 +3889,7 @@ test('rule: a briefing asked once more that answers continue is the card shown, 
   expect(await greens(ui)).toEqual([])
   await ui.unmount()
   expect(rec()?.calls).toBe(2)
+  expect(rec()?.lastBrief?.reads).toBe(2)
   expect(rec()?.lastBrief).toMatchObject({ next: 'Finish the two sessions, then show each one done.', message: 'Finish the two sessions and show me each one done.' })
 })
 
@@ -3918,6 +3921,7 @@ test('rule: a briefing that marks a condition shown moves it, and stop is allowe
   answer = STOP_BRIEF('closed:\n- two sessions finished | #2\n')
   await ui.press({ key: 'rep' })
   expect(prompts).toHaveLength(3)
+  expect(rec()?.lastBrief?.reads).toBe(1)
   expect(rec()?.objective?.done).toEqual([
     { text: 'the newest build installed', state: 'shown', by: 'the install log printed the revision' },
     { text: 'two sessions finished', state: 'closed', by: '#2' },

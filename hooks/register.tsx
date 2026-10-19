@@ -169,7 +169,7 @@ type Rec = {
   past: string[]
   seen: string[]
   others: string[]
-  lastBrief?: { at: number; next: string; message: string }
+  lastBrief?: { at: number; next: string; message: string; reads?: number }
   // The last DRAFTS_MAX cards' messages, newest first, for knowing a draft he sends.
   drafts: string[]
   lastSent?: { text: string; at: number }
@@ -679,7 +679,10 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     // card stands with the rep's texts, and nothing is asked again. Two reads
     // at most: when the second does not answer, the first one's gated answer stands.
     let taken = first
+    // The card's own reads: the first ask, a second ask, the own-words call.
+    let reads = 1
     if (first.refused && first.open !== null) {
+      reads += 1
       const again = await ask(askAgain(first.open))
       if (!('reason' in again)) taken = again
     }
@@ -690,6 +693,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     // fixed text, and the press goes on. It writes card parts only, never the
     // objective. With no objective written there is no such call.
     if (taken.refused && taken.replaced.length > 0 && first.open !== null && taken.open !== null) {
+      reads += 1
       const rec = await loadRec($, sid)
       const result = await $.model
         .complete({
@@ -731,7 +735,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
         checkNote: noCheck ? CHECK_NO_ROOM : noFence,
         checkCost: checkCostText(after.lastCheckTokens, after.lastCheckCached, after.lastCheckMs, after.lastCheckRefused),
       }
-      after.lastBrief = { at: brief.at, next: brief.next, message: brief.message }
+      after.lastBrief = { at: brief.at, next: brief.next, message: brief.message, reads }
       after.drafts = keepDraft(after.drafts, brief.message)
       return brief
     })

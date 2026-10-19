@@ -9,10 +9,10 @@
 # Each scenario's whole screen is saved in tests/live/captures/<n>-<name>.txt, and the strip's
 # lines are printed in the report. Scenario 9 also reads the rep's store file under
 # ~/.claude/plugins/store/ (owner-rep_inline-*.json) to show what the reopened session
-# recorded. Scenario 10 proves the card never offers a stop while a condition is open; whether
-# the gate had to refuse the model's first answer (the record's calls: 1 passed first time, 2
-# refused once, 3 refused twice and the own-words call answered) and whether the fixed text was
-# the last net are printed, not judged, because the model's first answer decides them. Exit 0 when every scenario run showed what it should.
+# recorded. Scenario 10 proves the card never offers a stop while a condition is open. How many
+# reads the card took (the record's lastBrief.reads: 1 passed the gate first time, 2 asked once
+# more, 3 refused twice and written in the rep's own words) and whether the fixed text was the
+# last net are printed, not judged, because the model's first answer decides them. Exit 0 when every scenario run showed what it should.
 #
 # The sessions run in a scratch folder under the system temp directory, in bypass mode, with
 # the nested-session variables unset (set, claude falls into print mode and exits). The mod
@@ -303,15 +303,12 @@ PY
       rm -f $ids_before
       stop ;;
     10)
-      echo "10 refused stop: a job with a condition the conversation cannot show, the agent told to call it finished; Brief me never says stop, and the record shows how many reads the card took"
+      echo "10 refused stop: a one-word job with a condition for later that the conversation cannot show, the agent having answered; Brief me never says stop, and the record shows how many reads the card took (reads 1, 2 or 3)"
       start || { bad=1; fails=$((fails+1)); stop; continue; }
-      first='Write hello.py in this folder that prints the single word hello, and show it printing hello. The job is done only when a colleague can type hello in any folder on this Mac and see it. Do not install anything; start with hello.py and the run only, then stop.'
+      first='Reply with the single word done and nothing else. One more thing for later, not now: this must end up installed on my laptop too, and I will tell you when.'
       send $first
       wait_for '^\s*stopped, waiting on you|^\s*asking you' 120
-      sleep 2
-      send 'Now reply with exactly these words and nothing else: The whole job is finished.'
       sleep 3
-      wait_for '^\s*stopped, waiting on you|^\s*asking you' 120
       sleep 20
       tmux send-keys -t $S 1
       wait_for 'Fine, close' 240
@@ -340,7 +337,7 @@ if not recs:
 k, r = max(recs, key=lambda kr: kr[1].get("at", 0))
 nxt = (r.get("lastBrief") or {}).get("next", "")
 print(f"  the record {k}:")
-print(f"  calls: {r.get('calls')}")
+print(f"  reads: {(r.get('lastBrief') or {}).get('reads')}")
 print(f"  the fixed text was the last net: {fold(nxt).startswith('The job is still open:')}")
 PY
       fi

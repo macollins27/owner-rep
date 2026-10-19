@@ -9,9 +9,10 @@
 #
 #     tests/live/compare.sh OLD_DIR NEW_DIR [MODEL]     # MODEL defaults to claude-opus-5-5
 #
-# Per run: wait for the row, send a no-op prompt so a fork has a request to start from, wait 60 s
-# for the objective write, save the screen before, press 1, wait for the card, save it. The
-# captures and report.txt are in tests/live/compare/ (git-ignored). Exit 0 when all four cards
+# Per run: wait for the row, send nothing (a press with nothing to fork reads the session's own
+# record, so the card judges the parent's job, not a prompt of ours), wait until the row's head
+# leaves the placeholder, which means the objective is written (up to 180 s; the time is
+# printed), save the screen before, press 1, wait for the card, save it. The captures and report.txt are in tests/live/compare/ (git-ignored). Exit 0 when all four cards
 # were captured and the parents' files are unchanged.
 set -u
 HERE=${0:A:h}
@@ -36,6 +37,16 @@ wait_for() {
   done
   return 1
 }
+# wait_for_head SECONDS: 0 once the row's head no longer says the objective is being worked out.
+wait_for_head() {
+  local i head
+  for i in $(seq 1 $1); do
+    head=$(pane | grep 'Owner rep ·' | tail -1)
+    [[ -n $head && $head != *'working out the result you want'* ]] && return 0
+    sleep 1
+  done
+  return 1
+}
 # run SESSION LABEL DIR: one fork with one build; 0 when the card was captured.
 run() {
   local sess=$1 label=$2 dir=$3 id
@@ -46,9 +57,9 @@ run() {
   local ok=0
   if wait_for 'Brief me' 90; then
     sleep 3
-    tmux send-keys -t $S -l 'Reply with the single word ok and nothing else.'; sleep 1; tmux send-keys -t $S Enter
-    wait_for '^⏺ +[Oo]k' 180 || echo "  no ok from the agent in 180s ($sess $label)"
-    sleep 60
+    local t0=$SECONDS
+    if wait_for_head 180; then echo "  objective written after $((SECONDS - t0)) s ($sess $label)"
+    else echo "  the head still shows the placeholder after 180 s ($sess $label)"; fi
     pane > $OUT/$sess-$label-before.txt
     tmux send-keys -t $S 1
     if wait_for 'Fine, close' 300; then
@@ -68,9 +79,16 @@ run() {
   return 1
 }
 
+trap 'tmux kill-session -t $S 2>/dev/null; exit 130' INT TERM
+# sum_of SESSION: the parent file's checksum; stops the script when the file is not found.
+sum_of() {
+  local f; f=$(parent_of $1)
+  [[ -n $f ]] || { echo "parent file of session $1 not found under $PROJECTS" >&2; exit 2; }
+  shasum $f
+}
 sums_before=()
 for s in $SESSIONS; do
-  sums_before+=("$(shasum $(parent_of $s))")
+  sums_before+=("$(sum_of $s)")
 done
 echo "parent files before:"; printf '  %s\n' $sums_before
 
@@ -84,7 +102,7 @@ done
 
 sums_after=()
 for s in $SESSIONS; do
-  sums_after+=("$(shasum $(parent_of $s))")
+  sums_after+=("$(sum_of $s)")
 done
 echo "parent files after:"; printf '  %s\n' $sums_after
 same=0
