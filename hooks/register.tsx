@@ -89,6 +89,11 @@ import {
   OBJECTIVE_RETRY_MAX_TOKENS,
   OBJECTIVE_RETRY_TIMEOUT_MS,
   objectivePrompt,
+  OWN_WORDS_MAX_TOKENS,
+  OWN_WORDS_SYSTEM,
+  OWN_WORDS_TIMEOUT_MS,
+  ownWordsPrompt,
+  takeOwnWords,
   RECORD_MAX_TOKENS,
   RECORD_SYSTEM,
   RECORD_TIMEOUT_MS,
@@ -667,8 +672,8 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       )
       return
     }
-    // A stop, a missing verdict, a next step that says stop or a going-well
-    // line while a condition is open is refused, and the brief is asked once
+    // A stop, a missing verdict, a next step or a message that says stop, or a
+    // going-well line while a condition is open is refused, and the brief is asked once
     // more with the open conditions named; that answer passes the same gate.
     // With no objective written there are no conditions to name: the refused
     // card stands with the rep's texts, and nothing is asked again. Two reads
@@ -677,6 +682,34 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     if (first.refused && first.open !== null) {
       const again = await ask(askAgain(first.open))
       if (!('reason' in again)) taken = again
+    }
+    // Refused twice (or refused once, the second ask unanswered): the parts the gate
+    // replaced are written in the rep's own words by one plain call (no fork) over the
+    // objective, the open conditions, his messages and what the briefing itself found.
+    // A part it writes that still says stop, or a call that fails, leaves the rep's
+    // fixed text, and the press goes on. It writes card parts only, never the
+    // objective. With no objective written there is no such call.
+    if (taken.refused && taken.replaced.length > 0 && first.open !== null && taken.open !== null) {
+      const rec = await loadRec($, sid)
+      const result = await $.model
+        .complete({
+          model: OBJECTIVE_MODEL,
+          system: OWN_WORDS_SYSTEM,
+          prompt: ownWordsPrompt({ ...memoryOf(rec), context }, taken.open, taken.answer),
+          maxTokens: OWN_WORDS_MAX_TOKENS,
+          effort: 'high',
+          timeoutMs: OWN_WORDS_TIMEOUT_MS,
+        })
+        .catch(() => null)
+      const own = await changeRec($, sid, after => {
+        if (result !== null) {
+          after.calls += 1
+          after.tokens += tokensOf(result.usage)
+          after.cached += cachedOf(result.usage)
+        }
+        return result !== null && result.isAnswered ? parseBrief(result.text) : null
+      })
+      taken = { ...taken, answer: takeOwnWords(taken.answer, taken.replaced, own) }
     }
     const a = taken.answer
     const brief = await changeRec($, sid, after => {
@@ -725,7 +758,8 @@ const parts_hasLeft = (text: string): boolean => /^\s*left:/im.test(text)
 let checkEpoch = 0
 let activeCheck: { stop: () => void } | null = null
 // The instant read the card was drawn from, kept for "Check it", and whether
-// the gate refused it (its meaning, next, message and does are then the rep's).
+// the gate refused it (its meaning, and any next step or message that said
+// stop, are then the rep's).
 let lastInstant: { at: number; answer: BriefAnswer; refused: boolean } | null = null
 // What the card said when the check's fence refused to start on this machine (a Linux
 // without bubblewrap), kept for the process, so each later card says it too and offers
@@ -843,11 +877,15 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       // and the instant read's where it did not, verdict and going-well line
       // included, goes through the same gate as the briefing: a stop or a
       // going-well line while a condition is still open after the check's
-      // marks is refused. The check is not asked again. When the briefing was
-      // refused, its meaning, next, message and does are the rep's texts for the
-      // conditions open then, which the check may have shown since: they are
-      // never carried over. A part the checker left empty stays empty, and the
-      // gate writes them again for whatever is still open.
+      // marks is refused, part by part, as the briefing's is; the check is not
+      // asked again, and no own-words call rewrites its card. When the briefing
+      // was refused, its meaning, next, message and does were written against
+      // the conditions open then (the rep's fixed texts, the rep's own words for
+      // them, or the model's own next step and message the gate let stand),
+      // which the check may have shown since: they are never carried over. A
+      // part the checker left empty stays empty, and on a refusal the gate
+      // writes the meaning, and an empty next step or message, again for
+      // whatever is still open.
       const or = (mine: string, theirs: string): string => (mine !== '' ? mine : refused ? '' : theirs)
       // The going-well line does not stand beside a claim the check found false or anything left out.
       const leftOut = hasLeft ? c.leftOut : instant.leftOut

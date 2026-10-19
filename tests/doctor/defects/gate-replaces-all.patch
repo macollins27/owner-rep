@@ -1,0 +1,15 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 11d5da0..f2c9760 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2784,8 +2784,8 @@ export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer:
+     // An entry already listed, with or without its state mark, is not listed again.
+     if (!leftOut.some(l => same(bare(l), c.text))) leftOut.push(c.state === 'not-shown' ? `${c.text} (not shown)` : c.text)
+   }
+-  const next = a.next === '' || saysStop(a.next)
+-  const message = a.message === '' || saysStop(a.message)
++  const next = true
++  const message = true
+   return {
+     answer: {
+       ...a,
