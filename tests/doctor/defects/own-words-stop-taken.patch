@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 11d5da0..d7e812f 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2860,7 +2860,7 @@ export function takeOwnWords(gated: BriefAnswer, replaced: Replaced[], own: Brie
+   const out = { ...gated }
+   const taken = new Set<Replaced>()
+   for (const part of replaced) {
+-    if (own[part] === '' || saysStop(own[part])) continue
++    if (own[part] === '') continue
+     out[part] = own[part]
+     taken.add(part)
+   }

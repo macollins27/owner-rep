@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 0800489..2984233 100644
+index 11d5da0..a8b5340 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1402,7 +1402,7 @@ None of these may stand while any of them is open. Look at the conversation agai
- // rep's texts say the objective is not written yet. What the agent did
+@@ -2770,7 +2770,7 @@ export const saysStop = (part: string): boolean => STOP_NEXT.test(part)
+ // rep's text saying the objective is not written yet. What the agent did
  // ("stands") is kept as the model wrote it.
- export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer: BriefAnswer; refused: boolean } {
--  if (open !== null && open.length === 0) return { answer: a, refused: false }
-+  if (open === null || open.length === 0) return { answer: a, refused: false }
-   if (a.verdict === 'continue' && a.well === '' && !STOP_NEXT.test(a.next)) return { answer: a, refused: false }
+ export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer: BriefAnswer; refused: boolean; replaced: Replaced[] } {
+-  if (open !== null && open.length === 0) return { answer: a, refused: false, replaced: [] }
++  if (open === null || open.length === 0) return { answer: a, refused: false, replaced: [] }
+   if (a.verdict === 'continue' && a.well === '' && !saysStop(a.next) && !saysStop(a.message)) return { answer: a, refused: false, replaced: [] }
    if (open === null) {
      return {
