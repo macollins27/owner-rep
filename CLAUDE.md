@@ -37,7 +37,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 217 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 225 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: ten real sessions of this checkout in tmux, the strip captured to tests/live/captures
 ```
@@ -102,10 +102,11 @@ never by spawning a real run.
 Two modules, deliberately split:
 
 - `hooks/rep.ts` is pure functions and constants, no `$`. It holds the rep's prompts (the
-  watch brief, the briefing brief, the objective writer's prompt, the checker brief), the
-  parsers for the model's labelled answers (`parseWatch`, `parseBrief`, `parseObjective`,
-  `parseCheck`), the objective's rules that need no engine (`trimOwner`, `draftSplit`, `keepDraft`,
-  `mergeConditions`, `gateVerdict`, `objectiveText`), the check run's argv and read-only tool
+  watch brief, the briefing brief, the objective writer's prompt, the own-words prompt, the
+  checker brief), the parsers for the model's labelled answers (`parseWatch`, `parseBrief`,
+  `parseObjective`, `parseCheck`), the objective's rules that need no engine (`trimOwner`,
+  `draftSplit`, `keepDraft`, `mergeConditions`, `gateVerdict`, `takeOwnWords`,
+  `objectiveText`), the check run's argv and read-only tool
   allowlist, and the cost arithmetic. Anything that can be unit-tested lives here.
 - `hooks/register.tsx` is the engine side: hooks, state atoms, the store record, the band
   render, and the spawn of the check run. `hooks/hooks.json` names it as the only module.
@@ -128,7 +129,11 @@ call writes (below):
    `means:`, `left:`, `next:`, `message:` … `end`, `does:`); `parseBrief` splits them,
    `applyMarks` takes the marks, and `gateVerdict` refuses, while a condition is open, a
    verdict other than `continue` (a `stop`, or none given, which `verdictOf` reads as
-   `missing`, never as continue), a `well:` line, or a `next:` that `STOP_NEXT` reads as
+   `missing`, never as continue), a `well:` line, or a `next:` (`saysStop`) or a `message:`
+   (`messageSaysStop`: the message read on a copy `toAgentVoice` turns to the third person,
+   me, my and the capital I to him, his and he, you and your to the agent and the agent's,
+   so a wait on his sign-off is caught and a wait until the agent has a log is not) that
+   `STOP_NEXT` reads as
    telling the agent or the job to stop, calling the work finished, saying nothing is left,
    closing the session, wrapping up, stopping work on it, stopping (or stopping here, or
    stopping work) to report, to wait bare or on him, to await him or to ask him
@@ -149,12 +154,30 @@ call writes (below):
    word and goes on, as "stop guessing and run the suite" or "Don't stop until …", keeps the
    model's own next step; so do a pair such as "make the timer start and stop", the bare
    "and stop" only being read, never "and stops" said of a program, a wait on a CI run or
-   on "your build", and "Once the run is green, the session can end"). A refused answer is asked once
-   more (`askAgain`, naming the open conditions); when that is refused too, or does not
-   answer, the card lists the open conditions as left out and its meaning, next step,
-   message and what it does are the rep's own (`OPEN_MEANS`, `OPEN_NEXT`, `OPEN_MESSAGE`,
-   `OPEN_DOES`), never a stop. With no objective written (`gateOpen` is null) the same
-   answers are refused, never let through, with `UNWRITTEN_*` texts, and not asked again.
+   on "your build", and "Once the run is green, the session can end"). The gate refuses part
+   by part: the verdict becomes continue, the `well:` line goes, the open conditions are
+   listed as left out, the meaning is always `OPEN_MEANS`, and the next step (`OPEN_NEXT`)
+   and the message with what it does (`OPEN_MESSAGE`, `OPEN_DOES`) are the rep's only where
+   they say stop or are empty, so the model's own sound next step and message stand; beside
+   a kept message a `does:` line `messageSaysStop` catches is `OPEN_DOES` alone. `replaced`
+   names the parts given the rep's text, in the order `means`, `next`, `message`. A refused
+   answer is asked once more (`askAgain`, naming the open conditions), and that answer
+   passes the same gate. When it is refused too, or does not answer, one plain
+   `$.model.complete` (`OBJECTIVE_MODEL`, high effort, `OWN_WORDS_SYSTEM`: the ROLE's "Who
+   you are" and "How you write to him" sections cut by `sectionOf`, which throws on a missing
+   heading; `OWN_WORDS_MAX_TOKENS` 4,000, `OWN_WORDS_TIMEOUT_MS` two minutes) over
+   `ownWordsPrompt` (the memory, the open conditions, what stands and what is left out)
+   writes the replaced parts in the rep's own words, and `takeOwnWords` takes each one that
+   is not empty and does not say stop (the message and its `does:` line read by
+   `messageSaysStop`, the does line taken only with the message); the fixed texts stand
+   otherwise, and a call that throws or does not answer leaves them, never a stop. A reply
+   cut short is not caught: its parts are taken as far as they go when they do not say stop
+   (seen live on 19 Oct 2026, `docs/testing.md` scenario 10). Its spend
+   counts with the looks, and it writes card parts only, never the objective.
+   `lastBrief.reads` records the card's reads: 1, 2 with the second ask, 3 with the
+   own-words call. With no objective written (`gateOpen` is null) the same answers are
+   refused, never let through, every part given its `UNWRITTEN_*` text, not asked again and
+   given no own-words call.
 
    The watch and the briefing (and its second ask) read through one helper, `readSession`.
    A fork answers `nothing-to-fork` before the first response of the process (a session
@@ -291,7 +314,7 @@ call writes (below):
    them, a `reopen:` line puts one held shown back to not shown and marks it `reopened`
    (after that only a check's own `shown:` line moves it shown again, and the looks, the
    briefings, the writer and the next check are shown what the check found beside it), and
-   its verdict passes the same gate, so a check never says stop while a condition is open. The briefing's going-well
+   its verdict passes the same gate part by part, with no own-words call, so a check never says stop while a condition is open. The briefing's going-well
    line does not survive a check that found a claim false or left something out. A newer press (`checkEpoch`) makes an
    older run stale, and `lastInstant` ties "Check it" to the card that is up; a stale run's
    answer, inside the record's lock, counts its spend and nothing else (no marks, no

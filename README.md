@@ -102,19 +102,39 @@ later check shows it: a look or a briefing that marks it shown again moves nothi
 writer never raises a condition's state, and the looks, the briefings and the writer are
 shown what the check found beside it. The objective stays open until every condition is
 shown or closed. While a condition is open, the gate refuses a briefing that says the agent
-should stop, that gives no verdict, whose next step tells the agent to stop, to wrap up, to
-stop and report, to wait for or await the owner or his word (with a stop or without), to stop
-and ask him, to check in with him or let him decide, to hand the work back to him, or to wait
-after a ", then", or calls the work finished or says the session or the agent can end it (a
-step that only carries the word and goes on, such as stopping a wrong approach, waiting on a
-CI run or on the agent's own build, a program that "runs once and stops", a step that says
-not to wait for him, or an end put after a condition, is let through), or that says the work
-is going well. Such a briefing is asked once more with
-the open conditions named, and if it still does any of these the card is refused. While no
-objective is written, any of the same is refused at once, and the card says the objective is
-not written yet. A refused card lists the open conditions as left out, and its meaning, next
-step and message are the rep's own, built from those conditions, so it keeps the agent on the
-job and never offers a stop. The check passes the same gate.
+should stop, that gives no verdict, whose next step or message tells the agent to stop, to
+wrap up, to stop and report, to wait for or await the owner or his word (with a stop or
+without), to stop and ask him, to check in with him or let him decide, to hand the work back
+to him, or to wait after a ", then", or calls the work finished or says the session or the
+agent can end it (a step that only carries the word and goes on, such as stopping a wrong
+approach, waiting on a CI run or on the agent's own build, a program that "runs once and
+stops", a step that says not to wait for him, or an end put after a condition, is let
+through), or that says the work is going well. The message is written in the owner's voice
+to the agent, so the gate reads it on a copy turned to the third person ("me", "my" and "I"
+the owner's, "you" and "your" the agent's): a wait for the owner's sign-off is refused, a
+wait until the agent has a log is not. Such a briefing is asked once more with the open
+conditions named, and that answer passes the same gate.
+
+The gate refuses part by part. On a refused card the verdict is continue, the line saying
+the work is going well is dropped, the open conditions are listed as left out, and the
+meaning is the rep's own; the next step, and the message with its line saying what it does,
+are the rep's only where they themselves say stop or are empty, so the model's own sound next
+step and message stand (beside a kept message, a line saying what it does that says stop is
+the rep's). When the second answer is refused too, or does not come back, the parts the gate
+replaced are written once more in the rep's own words by one plain model call, not a fork of
+the conversation: its standing instructions are the brief's own sections on who the rep is
+and how it writes to the owner, and it is shown the objective, the owner's messages on the
+job, the open conditions, and what stands and what is left out as the briefing found them. A
+part it writes that is empty or still says stop, or a call that fails, keeps the rep's fixed
+text built from the open conditions, so the card keeps the agent on the job and never offers
+a stop. A reply that comes back cut short is not caught: a part that does not say stop is
+taken as far as it goes, so a card can carry a sentence that ends mid-way, and the live runs
+of 19 Oct 2026 showed such replies (`docs/testing.md`, scenario 10). The call writes the
+card's parts only, never the objective, and the record keeps how many reads the card took:
+one, two with the second ask, three with the call. While no
+objective is written, any of the same is refused at once, every part is the rep's fixed text
+saying the objective is not written yet, and nothing is asked again. The check's card passes
+the same gate part by part, with no such call.
 
 These rules came from a session on 15 Oct 2026 in which a message that bounded the agent's
 next step was read as the owner asking for less, the rep's account of the job shrank to the
@@ -123,7 +143,11 @@ not on the owner's screen. A first fix that locked the account's opening sentenc
 replaced the same day by the objective in parts, its conditions and the gate, because the
 lock held the result's wording and nothing else: what "done" had to show could still fall
 away with a narrowing message, and nothing stopped a card from calling the job finished
-while part of it was undone.
+while part of it was undone. Until 19 Oct 2026 a card refused twice had its meaning, next step
+and message all replaced by the fixed texts, which named the open conditions and nothing the
+agent had done wrong; the gate now replaces the meaning and, of the next step and the
+message, only a part that says stop or is empty, and the call above writes those in the rep's
+own words.
 
 A message the rep drafted and the owner sent through "Put message in prompt" is recorded as
 the rep's draft, never as the owner's words, and is recognised from the record after a
@@ -329,7 +353,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 217 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 225 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: ten real sessions in tmux, the strip captured to tests/live/captures
 ```
