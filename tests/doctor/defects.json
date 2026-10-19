@@ -75,7 +75,7 @@
     "name": "whole-ask-rule-dropped",
     "breaks": "The brief loses the rule that the owner's messages add up, so the rep judges the last message alone.",
     "patch": "whole-ask-rule-dropped.patch",
-    "fixed": "2026-10-14; remade 2026-10-15"
+    "fixed": "2026-10-14; remade 2026-10-15; remade 2026-10-19"
   },
   {
     "name": "helper-not-counted",
@@ -231,7 +231,7 @@
     "name": "draft-weight-dropped",
     "breaks": "The briefs lose the weight for a message marked as the rep's draft, so the model reads one as the owner's words with full authority over what \"done\" means.",
     "patch": "draft-weight-dropped.patch",
-    "fixed": "2026-10-15; remade 2026-10-15"
+    "fixed": "2026-10-15; remade 2026-10-15; remade 2026-10-19"
   },
   {
     "name": "check-outside-copy",
@@ -261,13 +261,13 @@
     "name": "stop-while-open",
     "breaks": "The gate never refuses, so a card can say stop, or that the work is going well, while a condition of the objective is still open or none is written.",
     "patch": "stop-while-open.patch",
-    "fixed": "2026-10-15"
+    "fixed": "2026-10-15; remade 2026-10-19"
   },
   {
     "name": "unwritten-gate-open",
     "breaks": "With no objective written the gate lets everything through, so a card can tell the agent to stop, or say the work is going well, before anything measures it.",
     "patch": "unwritten-gate-open.patch",
-    "fixed": "2026-10-15"
+    "fixed": "2026-10-15; remade 2026-10-19"
   },
   {
     "name": "verdict-missing-continues",
@@ -279,7 +279,7 @@
     "name": "stop-next-unread",
     "breaks": "The gate reads only the verdict line, so an answer that says continue while its next step tells the agent to stop, or calls the work finished, passes while a condition is open.",
     "patch": "stop-next-unread.patch",
-    "fixed": "2026-10-15"
+    "fixed": "2026-10-15; remade 2026-10-19"
   },
   {
     "name": "draft-moves-result",
@@ -1773,6 +1773,30 @@
     "name": "judgment-line-dropped",
     "breaks": "The brief loses a judgment line, \"Never change his goal quietly, and never obey quietly.\", so the rep stops questioning the route.",
     "patch": "judgment-line-dropped.patch",
+    "fixed": "2026-10-19"
+  },
+  {
+    "name": "gate-replaces-all",
+    "breaks": "A refused card loses the model's own sound next step and message too, so a card refused only for its verdict or its going-well line drops what the agent should do now for the rep's fixed text.",
+    "patch": "gate-replaces-all.patch",
+    "fixed": "2026-10-19"
+  },
+  {
+    "name": "message-not-gated",
+    "breaks": "The gate reads the next step but not the message, so a card whose message tells the agent to stop passes while a condition is open, and he can send that stop himself.",
+    "patch": "message-not-gated.patch",
+    "fixed": "2026-10-19"
+  },
+  {
+    "name": "own-words-not-asked",
+    "breaks": "A briefing refused twice is never written in the rep's own words, so the card always shows the fixed texts in place of what the rep found.",
+    "patch": "own-words-not-asked.patch",
+    "fixed": "2026-10-19"
+  },
+  {
+    "name": "own-words-stop-taken",
+    "breaks": "A part the own-words call writes is taken even when it says stop, so a card refused for saying stop can say stop again while a condition is open.",
+    "patch": "own-words-stop-taken.patch",
     "fixed": "2026-10-19"
   }
 ]

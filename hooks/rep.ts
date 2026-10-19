@@ -2739,8 +2739,8 @@ export const STOP_NEXT = new RegExp(
 export const gateOpen = (o: Objective | null): Condition[] | null => (o === null ? null : openConditions(o))
 
 // Added to the brief when its answer said stop, gave no verdict, called the
-// work finished in its next step, or said the work is going well, while a
-// condition was open: the brief is asked once more, with the open conditions named.
+// work finished, or said the work is going well, while a condition was open:
+// the brief is asked once more, with the open conditions named.
 export const askAgain = (open: Condition[]): string => `## Asked once more
 
 Your first answer said the agent should stop, gave no verdict, called the work finished, or said the work is going well, while these conditions of done are still open:
@@ -2748,21 +2748,35 @@ ${list(open.map(promptLine), '- none')}
 
 None of these may stand while any of them is open. Look at the conversation again: put under "shown:" each one it now shows, with where, and under "closed:" each one he closed in a message of his own, with its number. Then give the whole briefing again in the same structure. While any of them stays open the verdict is "continue", "well" is empty, and "next" and "message" say what the agent does now to show it, or what stands in the way.`
 
-// The objective is not finished while a condition is open: a verdict other
-// than continue (stop, or none given), a going-well line, or a next step that
-// says stop is refused, the conditions are listed as left out, and the card's
-// meaning, next step, message and what it does are replaced with the rep's
-// own, so nothing on a refused card calls the work finished or offers the agent
-// a stop. With no objective written (open is null) the same is refused and the
-// rep's texts say the objective is not written yet. What the agent did
+// A part of a refused card the gate wrote in the rep's fixed text, in place of the model's.
+export type Replaced = 'means' | 'next' | 'message'
+
+// Whether a part of a card (a next step, a message) tells the agent or the job to
+// stop, calls the work finished, or hands it back to him, by the stop patterns above.
+export const saysStop = (part: string): boolean => STOP_NEXT.test(part)
+
+// The objective is not finished while a condition is open, and the gate works
+// part by part. A verdict other than continue (stop, or none given), a
+// going-well line, or a next step or a message that says stop is refused: the
+// verdict becomes continue, the going-well line goes, and the conditions are
+// listed as left out. On a refusal the meaning is always the rep's own (it
+// stood on a verdict the gate rejected, and is not read for a stop, since "The
+// agent has finished the work, but …" says something true), and the next step,
+// and the message with what it does, are the rep's own only where they
+// themselves say stop or are empty; the model's own sound next step and message
+// stand. `replaced` lists the parts written in the rep's text, in the order
+// means, next, message, so a refused card always lists the meaning. With no
+// objective written (open is null) the same is refused and every part is the
+// rep's text saying the objective is not written yet. What the agent did
 // ("stands") is kept as the model wrote it.
-export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer: BriefAnswer; refused: boolean } {
-  if (open !== null && open.length === 0) return { answer: a, refused: false }
-  if (a.verdict === 'continue' && a.well === '' && !STOP_NEXT.test(a.next)) return { answer: a, refused: false }
+export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer: BriefAnswer; refused: boolean; replaced: Replaced[] } {
+  if (open !== null && open.length === 0) return { answer: a, refused: false, replaced: [] }
+  if (a.verdict === 'continue' && a.well === '' && !saysStop(a.next) && !saysStop(a.message)) return { answer: a, refused: false, replaced: [] }
   if (open === null) {
     return {
       answer: { ...a, verdict: 'continue', well: '', means: UNWRITTEN_MEANS, next: UNWRITTEN_NEXT, message: UNWRITTEN_MESSAGE, does: UNWRITTEN_DOES },
       refused: true,
+      replaced: ['means', 'next', 'message'],
     }
   }
   const leftOut = [...a.leftOut]
@@ -2770,17 +2784,86 @@ export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer:
     // An entry already listed, with or without its state mark, is not listed again.
     if (!leftOut.some(l => same(bare(l), c.text))) leftOut.push(c.state === 'not-shown' ? `${c.text} (not shown)` : c.text)
   }
+  const next = a.next === '' || saysStop(a.next)
+  const message = a.message === '' || saysStop(a.message)
   return {
     answer: {
       ...a,
       verdict: 'continue',
       well: '',
       means: OPEN_MEANS(open),
-      next: OPEN_NEXT(open),
-      message: OPEN_MESSAGE(open),
-      does: OPEN_DOES,
+      next: next ? OPEN_NEXT(open) : a.next,
+      message: message ? OPEN_MESSAGE(open) : a.message,
+      does: message ? OPEN_DOES : a.does,
       leftOut,
     },
     refused: true,
+    replaced: ['means', ...(next ? ['next' as const] : []), ...(message ? ['message' as const] : [])],
   }
+}
+
+// One "## " section of a fixed text: from its heading to the next heading, or to the end.
+const sectionOf = (text: string, heading: string): string => {
+  const at = text.indexOf(`${heading}\n`)
+  const end = text.indexOf('\n\n## ', at + heading.length)
+  return text.slice(at, end < 0 ? undefined : end)
+}
+
+// The system prompt of the call that writes a card refused twice in the rep's
+// own words: who the rep is and how it writes to him, the brief's own
+// sections, so the parts it writes read as the rep's. Fixed text only: nothing
+// of his goes into it.
+export const OWN_WORDS_SYSTEM = `${sectionOf(ROLE, '## Who you are')}\n\n${sectionOf(ROLE, '## How you write to him')}`
+
+// Its cap and time: four short parts, written at high effort.
+export const OWN_WORDS_MAX_TOKENS = 4000
+export const OWN_WORDS_TIMEOUT_MS = 120000
+
+// The request for those parts: what the rep knows (the objective, the open
+// conditions, his messages on the job), then what the briefing itself found
+// (what stands and what is left out), and only the four parts to write, under
+// the labels parseBrief reads.
+export function ownWordsPrompt(m: Memory, open: Condition[], a: BriefAnswer): string {
+  return `${memoryText(m)}
+
+## This request
+
+The briefing was asked twice, and both of its answers said the agent should stop, gave no verdict, called the work finished, or said the work is going well, while these conditions of done are still open:
+${list(open.map(promptLine), '- none')}
+So the card the rep shows him keeps the agent on the job. Here is what the rep itself found in the conversation:
+
+stands: ${a.stands}
+left:
+${list(a.leftOut, '- nothing')}
+
+Write, in the rep's own plain words to him and to the agent, only the four parts below. The objective is not shown complete while any of these conditions is open: nothing you write tells the agent or the job to stop, calls the work finished, or leaves a step for him.
+
+## Output structure
+
+Exactly these labelled parts, in this order, English labels, nothing before or after:
+
+means: <one or two sentences: what the agent's latest message means for him, measured against the whole result, with the objective not shown complete>
+next: <one or two sentences: what the agent does now to show the first of the open conditions, or what stands in the way; never a stop, never a step for him>
+message:
+<the message for him to send to the agent, written to the agent, specific and professional, several lines if needed: it asks for the proof of each open condition>
+end
+does: <one line: what this message will make the agent do>`
+}
+
+// The own-words answer taken into a card the gate refused: each part the gate
+// replaced is the answer's where the answer gave it and it does not say stop,
+// and stays the rep's fixed text otherwise; what the message does goes with the
+// message. Nothing else moves: the verdict stays continue, the going-well line
+// empty, and what stands, what is left out and the marks stay the gated card's.
+export function takeOwnWords(gated: BriefAnswer, replaced: Replaced[], own: BriefAnswer | null): BriefAnswer {
+  if (own === null || replaced.length === 0) return gated
+  const out = { ...gated }
+  const taken = new Set<Replaced>()
+  for (const part of replaced) {
+    if (own[part] === '' || saysStop(own[part])) continue
+    out[part] = own[part]
+    taken.add(part)
+  }
+  if (taken.has('message') && own.does !== '') out.does = own.does
+  return out
 }
