@@ -1,7 +1,7 @@
 import type { On, SessionMessage } from 'claude-code'
 import { expect, mock, test as kitTest, type Engine, type TestBody, type TestOptions } from 'claude-code/testing'
 
-import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, toAgentVoice, sectionOf, takeOwnWords, ownWordsPrompt, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec } from '../hooks/rep'
+import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fillCard, countLine, refusedLine, type CardText, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, toAgentVoice, sectionOf, takeOwnWords, ownWordsPrompt, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec } from '../hooks/rep'
 
 // Every test starts with the session's working folder a Unix path, so what the suite reads does not
 // depend on the folder the kit gives it: on a Windows machine that folder is a drive path, which
@@ -1045,43 +1045,125 @@ test('rule: a record the store lets go leaves its drafts in the kept list, newes
 
 const LONG = (word: string) => Array.from({ length: 30 }, (_, i) => `${word} sentence number ${i + 1} of the model's text.`).join(' ')
 
-test('fitCard folds the body in order, never the buttons, until the card fits the rows', async () => {
-  const card = {
-    reading: LONG('Goal'),
-    revised: 'Reading revised at 3:12 pm: he asked for the tests as well as the README.',
-    well: '',
-    stands: LONG('Stands'),
-    means: LONG('Means'),
-    leftOut: ['one thing left out', 'another thing left out', 'a third'],
-    next: LONG('Next'),
-    checked: null,
-    isChecking: false,
-    checkNote: '',
-    checkCost: 'Check it starts a separate read-only run. The first one measured used 210k fresh tokens plus 2.3 million re-read from cache, in 2 minutes.',
-    message: LONG('Message'),
-    does: 'Makes the agent prove it.',
-    spent: '3 looks',
-  }
-  expect(cardRows(card, 96)).toBeGreaterThan(40)
-  for (const rows of [40, 20, 12, 8, 6]) {
-    const c = fitCard(card, rows, 96)
-    expect(cardRows(c, 96)).toBeLessThanOrEqual(rows)
-    expect(c.message).not.toBe('')
-  }
-  // At twelve rows the spend line and the "does" line go first, the lists fold, the message keeps a row.
-  const twelve = fitCard(card, 12, 96)
-  expect(twelve.spent).toBe('')
-  expect(twelve.does).toBe('')
-  // The revision line outlasts the parts that restate the agent's work.
-  expect(twelve.revised).toMatch(/^Reading revised at 3:12 pm/)
-  expect(fitCard(card, 6, 96).revised).toBe('')
-  expect(twelve.leftOut).toHaveLength(1)
-  expect(twelve.leftOut[0]).toMatch(/one thing left out; another/)
-  expect(twelve.stands).toMatch(/…$/)
-  expect(twelve.message).toMatch(/^Message sentence number 1/)
-  // A card that fits is left alone.
-  const small = { ...card, reading: 'Short.', stands: 'Short.', means: 'Short.', next: 'Short.', message: 'Short.', leftOut: [] }
-  expect(fitCard(small, 40, 96)).toEqual(small)
+// A card whose whole does not fit a small band: the result and count line at its head, short
+// judgment parts, and the check's price long enough that it is the extra left out first.
+const CARD_TEXT: CardText = {
+  result: 'A public repository that reads as serious engineering.',
+  count: 'Done means 3 things: 1 shown, 2 open',
+  reading: 'A public repository that reads as serious engineering. It is for employers. Done when: a README (shown); a test suite; a GitHub run. Right now: the README.',
+  revised: 'Reading revised at 3:12 pm: #2 added the tests.',
+  well: '',
+  stands: 'The README is written and the suite is not.',
+  means: 'Half of what done means is shown.',
+  leftOut: ['the GitHub run'],
+  next: 'Write the test suite.',
+  checked: null,
+  isChecking: false,
+  checkNote: '',
+  checkCost: LONG('Cost'),
+  message: 'Write the test suite next, and run it on GitHub.',
+  does: 'Makes the agent write the suite.',
+  spent: 'Owner rep: 3 looks this session; looks used 12k fresh tokens and 1.2M re-read from cache',
+}
+
+test('fillCard returns a card that fits as it is', () => {
+  const small = { ...CARD_TEXT, stands: 'Short.', means: 'Short.', next: 'Short.', message: 'Short message.', leftOut: ['one'] }
+  expect(fillCard(small, 40, 96)).toEqual(small)
+})
+
+test('fillCard gives the message the rows that remain and adds the extras in order while they fit', () => {
+  // The four parts are some sixteen rows each at 96 columns, so they are whole with room left
+  // for five rows of the message at 60 rows, and none for anything after it.
+  const c = fillCard({ ...CARD_TEXT, stands: LONG('Stands'), means: LONG('Means'), next: LONG('Next'), message: LONG('Message') }, 60, 96)
+  // The four parts whole, the message cut to every row left, no extras.
+  expect(c.stands).toBe(LONG('Stands'))
+  expect(c.means).toBe(LONG('Means'))
+  expect(c.next).toBe(LONG('Next'))
+  expect(c.message.endsWith('…')).toBe(true)
+  expect(c.message.length).toBeLessThan(LONG('Message').length)
+  expect(rowsOf(c.message, 90)).toBe(60 - cardRows({ ...c, message: '' }, 96) - 2)
+  expect(rowsOf(c.message, 90)).toBeGreaterThan(1)
+  expect([c.revised, c.does, c.checkCost, c.spent, c.reading]).toEqual(['', '', '', '', ''])
+  expect(cardRows(c, 96)).toBeLessThanOrEqual(60)
+  // With more rows the message grows first, then the extras come back in order; the check's
+  // price, fifteen rows, does not fit and is passed over for the ones after it.
+  const two = { ...CARD_TEXT, message: 'Two lines of message.\nThe second line.' }
+  expect(cardRows(two, 96)).toBeGreaterThan(20)
+  const d = fillCard(two, 20, 96)
+  expect(d.message).toBe('Two lines of message.\nThe second line.')
+  expect(d.revised).toBe(CARD_TEXT.revised)
+  expect(d.does).toBe(CARD_TEXT.does)
+  expect(d.spent).toBe(CARD_TEXT.spent)
+  expect(d.reading).toBe(CARD_TEXT.reading)
+  expect(d.checkCost).toBe('')
+  expect(cardRows(d, 96)).toBeLessThanOrEqual(20)
+  // Fewer rows: the revision line comes back before the does line, the spend line and the objective.
+  const e = fillCard(two, 14, 96)
+  expect(e.message).toBe(two.message)
+  expect([e.revised, e.does, e.checkCost, e.spent, e.reading]).toEqual([CARD_TEXT.revised, '', '', '', ''])
+  // A one-row spend line fits where the two rows of the objective do not.
+  const f = fillCard(two, 17, 96)
+  expect([f.revised, f.does, f.checkCost, f.spent, f.reading]).toEqual([CARD_TEXT.revised, CARD_TEXT.does, '', CARD_TEXT.spent, ''])
+})
+
+test('fillCard shortens the judgment to one row each before the count line goes, keeps stands last, and never the buttons out of reach', () => {
+  const long = { ...CARD_TEXT, stands: LONG('Stands'), means: LONG('Means'), next: LONG('Next'), message: LONG('Message'), leftOut: ['one', 'two', 'three'] }
+  // Twelve rows: the head, the count line, one row of each part, the left-out list on one line, one row of the message.
+  const c = fillCard(long, 12, 96)
+  expect(cardRows(c, 96)).toBeLessThanOrEqual(12)
+  expect(c.result).toBe(CARD_TEXT.result)
+  expect(c.count).toBe(CARD_TEXT.count)
+  expect(rowsOf(`Stands: ${c.stands}`, 94)).toBe(1)
+  expect(rowsOf(`Means: ${c.means}`, 94)).toBe(1)
+  expect(rowsOf(`Next: ${c.next}`, 94)).toBe(1)
+  expect(c.stands).toMatch(/^Stands sentence number 1 .*…$/)
+  expect(c.leftOut).toEqual(['one; two; three'])
+  expect(rowsOf(c.message, 90)).toBe(1)
+  // Eight rows hold no more than the head, two parts and one row of the message: the least
+  // telling went first, stands last.
+  const eight = fillCard(long, 8, 96)
+  expect(cardRows(eight, 96)).toBeLessThanOrEqual(8)
+  expect(eight.result).toBe(CARD_TEXT.result)
+  expect(eight.message).not.toBe('')
+  expect(rowsOf(eight.message, 90)).toBe(1)
+  expect(eight.stands).not.toBe('')
+  expect([eight.count, eight.means, eight.leftOut]).toEqual(['', '', []])
+})
+
+test('fillCard keeps the checked lists with the judgment and folds them only when the base does not fit', () => {
+  const checked = { holds: ['a', 'b', 'c'], wrong: ['x'], notShown: ['y'], changed: [], looked: 'Looked at the record.', refused: 0 }
+  const whole = fillCard({ ...CARD_TEXT, checked, message: LONG('Message') }, 30, 96)
+  expect(whole.checked).toEqual(checked)
+  expect(cardRows(whole, 96)).toBeLessThanOrEqual(30)
+  const long = { ...CARD_TEXT, checked, stands: LONG('Stands'), means: LONG('Means'), next: LONG('Next'), message: LONG('Message') }
+  const tight = fillCard(long, 14, 96)
+  expect(cardRows(tight, 96)).toBeLessThanOrEqual(14)
+  expect(tight.checked?.holds).toEqual([])
+  expect(tight.checked?.wrong).toEqual(['x'])
+  expect(tight.checked?.notShown).toEqual(['y'])
+  expect(tight.checked?.looked).toBe('Checked: 3 hold.')
+  // Two rows fewer: the lists go to the count line only, and stands outlasts them.
+  const counted = fillCard(long, 12, 96)
+  expect(cardRows(counted, 96)).toBeLessThanOrEqual(12)
+  expect(counted.checked).toEqual({ holds: [], wrong: [], notShown: [], changed: [], looked: 'Checked: 3 hold, 1 false, 1 not shown.', refused: 0 })
+  expect(counted.stands).not.toBe('')
+})
+
+test('cardRows counts the refusal line under the checked lists and the spend line as it wraps', () => {
+  const checked = { holds: [], wrong: [], notShown: [], changed: [], looked: '', refused: 0 }
+  const bare = { ...CARD_TEXT, revised: '', checkCost: '', does: '', reading: '', spent: '' }
+  expect(cardRows({ ...bare, checked }, 96) - cardRows(bare, 96)).toBe(1 + rowsOf(refusedLine(0), 94))
+  expect(rowsOf(refusedLine(0), 94)).toBe(2)
+  const spent = 'Owner rep: 12 looks, 3 objective writes (40k tokens), 1 objective write failed (last: the call timed out), 2 checks (900k tokens, mostly cache) this session; looks used 120k fresh tokens and 1.2M re-read from cache'
+  expect(cardRows({ ...bare, spent }, 96) - cardRows(bare, 96)).toBe(rowsOf(spent, 94))
+  expect(rowsOf(spent, 94)).toBe(3)
+})
+
+test('countLine says how many things done means and how many are shown, open and closed by him', () => {
+  expect(countLine(null)).toBe('')
+  expect(countLine({ ...OBJ_FIXTURE, done: [] })).toBe('')
+  expect(countLine({ ...OBJ_FIXTURE, done: [c('a', 'shown'), c('b', 'open'), c('c', 'not-shown'), c('d', 'closed')] })).toBe('Done means 4 things: 1 shown, 2 open, 1 closed by you')
+  expect(countLine({ ...OBJ_FIXTURE, done: [c('a', 'open')] })).toBe('Done means 1 thing: 0 shown, 1 open')
 })
 
 test('rule: with few rows in the band the card still draws its buttons and folds the body', async ($, on) => {
@@ -1107,6 +1189,71 @@ test('rule: with few rows in the band the card still draws its buttons and folds
   // The digit closes the card: the row is back.
   await ui.press({ key: 'close' })
   expect((await ui.find({ key: 'rep' }))?.props.hotkey).toBe('1')
+  await ui.unmount()
+})
+
+// A briefing with short judgment parts, one thing left out, and the message given.
+const PARTS = (message: string) =>
+  `verdict: continue\nwell:\nstands: The README is written and the suite is not.\nmeans: Half of what done means is shown.\nleft:\n- the GitHub run\nnext: Write the test suite.\nmessage:\n${message}\nend\ndoes: Makes the agent write the suite.`
+
+test('rule: the card heads with the result and a count line, fills the band in order of importance, and keeps its buttons at every height', async ($, on) => {
+  kept(on)
+  quietBand(on)
+  writer(on, () => OBJ('A public repository that reads as serious engineering.', ['a README | open', 'a test suite | open', 'a GitHub run | open']))
+  let answer = PARTS('Write the test suite next.')
+  on('model.fork', () => ({ value: { isAnswered: true, text: answer, usage: USAGE } }))
+  let filled = ''
+  on('prompt.read', () => ({ value: { text: '', cursor: 0 } }))
+  on('prompt.fill', (_$, e) => {
+    filled = e.text
+    return { isFilled: true }
+  })
+  await $.prompt.submit(typed('a public repository, please'))
+  await settle($)
+  // Forty rows and a short card: everything shows, the objective whole under the does line, nothing cut.
+  let ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  expect(await ui.find({ type: 'Text', text: /^Owner rep · A public repository that reads as serious engineering\.$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^Done means 3 things: 0 shown, 3 open$/ })).toBeDefined()
+  let texts = (await ui.findAll({ type: 'Text' })).map(t => t.text ?? '')
+  const does = texts.findIndex(t => t === 'Makes the agent write the suite.')
+  const whole = texts.findIndex(t => /^A public repository that reads as serious engineering\. So he can rely on it\. Done when: a README; a test suite; a GitHub run\. Right now: The first step\.$/.test(t))
+  expect(does).toBeGreaterThan(-1)
+  expect(whole).toBeGreaterThan(does)
+  expect(texts.filter(t => t.endsWith('…'))).toEqual([])
+  await ui.press({ key: 'close' })
+  await ui.unmount()
+  // Fourteen rows and a long message: the head, the count line and the four parts whole, the message cut to the rows left.
+  answer = PARTS(LONG('Message'))
+  const band = (rows: number) => ({ ...BAND, props: { ...BAND.props, maxRows: rows, scroll: { offset: 0, bodyRows: rows - 1 } } })
+  ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...band(14) })
+  await ui.press({ key: 'rep' })
+  expect(await ui.find({ type: 'Text', text: /^Owner rep · A public repository that reads as serious engineering\.$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^Done means 3 things: 0 shown, 3 open$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^Stands: The README is written and the suite is not\.$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^Means: Half of what done means is shown\.$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^ {2}- the GitHub run$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^Next: Write the test suite\.$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^Message sentence number 1 .*…$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Message sentence number 30/ })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: /Done when:/ })).toBeUndefined()
+  expect((await ui.find({ key: 'put' }))?.props.hotkey).toBe('1')
+  expect((await ui.find({ key: 'close' }))?.props.hotkey).toBe('2')
+  await ui.unmount()
+  // Eight rows, the same card: the head, the parts that fit at one row, one row of the message, the buttons.
+  ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...band(8) })
+  expect(await ui.find({ type: 'Text', text: /^Owner rep · A public repository that reads as serious engineering\.$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^Stands: The README is written and the suite is not\.$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^Left out:$/ })).toBeUndefined()
+  texts = (await ui.findAll({ type: 'Text' })).map(t => t.text ?? '')
+  const message = texts.find(t => t.startsWith('Message sentence number 1 ')) ?? ''
+  expect(rowsOf(message, 90)).toBe(1)
+  expect((await ui.find({ key: 'put' }))?.props.hotkey).toBe('1')
+  expect((await ui.find({ key: 'close' }))?.props.hotkey).toBe('2')
+  expect((await ui.find({ key: 'later' }))?.props.hotkey).toBe('0')
+  // Put message in prompt still carries the whole message.
+  await ui.press({ key: 'put' })
+  expect(filled).toBe(LONG('Message'))
   await ui.unmount()
 })
 
@@ -3096,6 +3243,8 @@ test('rule: the check is given the conditions the rep holds open, and its shown 
     { text: 'the README written', state: 'closed', by: '#4' },
   ])
   expect(await ui.find({ type: 'Text', text: /Done when: the newest build installed \(shown\); the two sessions finished; the README written \(closed\)\./ })).toBeDefined()
+  // The count line under the head moves with the marks the check made.
+  expect(await ui.find({ type: 'Text', text: /^Done means 3 things: 1 shown, 1 open, 1 closed by you$/ })).toBeDefined()
   await ui.unmount()
 })
 

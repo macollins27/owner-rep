@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2591,7 +2591,7 @@
+     x => ({ ...x, stands: grow(x, x.stands, card.stands, 'Stands: ') }),
+     x => ({ ...x, means: grow(x, x.means, card.means, 'Means: ') }),
+     // The message with the rows that remain, less its box's two border rows.
+-    x => ({ ...x, message: toRows(card.message, '', Math.max(1, maxRows - cardRows({ ...x, message: '' }, cols) - 2), mw) }),
++    x => ({ ...x, message: toRows(card.message, '', 1, mw) }),
+     // The extras, each while it fits.
+     x => ({ ...x, revised: card.revised }),
+     x => ({ ...x, does: card.does }),

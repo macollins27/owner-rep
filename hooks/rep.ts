@@ -2390,14 +2390,23 @@ export function spentText(calls: number, tokens: number, cached: number, checks 
   return `Owner rep: ${looks}${written}${failed}${checked} this session; looks used ${k(fresh)} fresh tokens and ${k(cached)} re-read from cache`
 }
 
-// --- Fitting the briefing card into the band's rows. ---
+// --- Filling the briefing card into the band's rows. ---
 //
 // The band shows at most `maxRows` rows and scrolls a taller tree, and a bare
 // digit presses only a button wholly inside the visible window. So the card's
-// buttons must sit within `maxRows`, whatever the model wrote: the body is
-// folded first, in a fixed order, and the buttons never.
+// buttons must sit within `maxRows`, whatever the model wrote. The card is
+// filled in order of importance rather than cut: the head (the result and the
+// count line), the judgment (what is going well, what stands, what it means,
+// what was left out, the next step, what the check found), the message with
+// the rows that remain, then the extras while they fit. Nothing is cut while
+// rows sit empty, and the buttons never go.
 
 export type CardText = {
+  // The result's first sentence, drawn as the head.
+  result: string
+  // The line under the head: how many things done means and how they stand; '' with none held.
+  count: string
+  // The objective whole, drawn after the does line when the rows allow; '' when not shown.
   reading: string
   // The line under the head when the reading has moved; '' when it has not.
   revised: string
@@ -2413,6 +2422,18 @@ export type CardText = {
   message: string
   does: string
   spent: string
+}
+
+// The line under the card's head: how many things done means, and how many of
+// them are shown, still open, and closed by him. '' when no objective, or none
+// of its conditions, is held.
+export const countLine = (o: Objective | null): string => {
+  if (o === null || o.done.length === 0) return ''
+  const n = o.done.length
+  const shown = o.done.filter(c => c.state === 'shown').length
+  const open = o.done.filter(c => c.state === 'open' || c.state === 'not-shown').length
+  const closed = o.done.filter(c => c.state === 'closed').length
+  return `Done means ${n} thing${n === 1 ? '' : 's'}: ${shown} shown, ${open} open${closed > 0 ? `, ${closed} closed by you` : ''}`
 }
 
 // Rows a wrapped text takes in `width` cells, one per paragraph at least. The band
@@ -2442,114 +2463,145 @@ export const rowsOf = (text: string, width: number): number => {
   }, 0)
 }
 
-// The card's rows as the band draws it: a top margin, the head, each part in
-// `cols`, the message in its bordered box, the buttons, the spend line.
+// The card's rows as the band draws it: a top margin, the head beside its glyph,
+// the count line, each part in `cols` less its indent, the checked lists with the
+// refusal line under them, the message in its bordered box, the objective whole,
+// the buttons, the spend line.
 export function cardRows(c: CardText, cols: number): number {
   const w = Math.max(1, cols - 2)
-  let rows = 1 + rowsOf(`Owner rep · ${c.reading}`, cols) + rowsOf(c.revised, w)
   const part = (label: string, text: string): number => (text === '' ? 0 : rowsOf(`${label} ${text}`, w))
+  let rows = 1 + rowsOf(`Owner rep · ${c.result}`, w) + rowsOf(c.count, w) + rowsOf(c.revised, w)
   rows += rowsOf(c.well, w) + part('Stands:', c.stands) + part('Means:', c.means)
   if (c.leftOut.length > 0) rows += 1 + c.leftOut.reduce((n, item) => n + rowsOf(`  - ${item}`, w), 0)
   rows += part('Next:', c.next)
   if (c.checked !== null) {
-    const items = [...c.checked.holds, ...c.checked.wrong, ...c.checked.notShown, ...c.checked.changed]
-    rows += 1 + items.reduce((n, item) => n + rowsOf(`  not shown  ${item}`, w), 0) + rowsOf(c.checked.looked, w)
+    const k = c.checked
+    const list = (word: string, items: string[]): number => items.reduce((n, item) => n + rowsOf(`  ${word}  ${item}`, w), 0)
+    rows += 1 + list('holds', k.holds) + list('false', k.wrong) + list('not shown', k.notShown) + list('since then', k.changed)
+    rows += rowsOf(k.looked, w) + rowsOf(refusedLine(k.refused), w)
   }
   if (c.isChecking) rows += 1
   if (c.checked === null && !c.isChecking && c.checkNote === '') rows += rowsOf(c.checkCost, w)
   rows += rowsOf(c.checkNote, w)
   if (c.message !== '') rows += 2 + rowsOf(c.message, Math.max(1, cols - 6))
   if (c.does !== '' && c.message !== '') rows += rowsOf(c.does, w)
+  rows += rowsOf(c.reading, w)
   rows += cols >= 70 ? 1 : 2
-  rows += c.spent === '' ? 0 : 1
+  rows += rowsOf(c.spent, w)
   return rows
 }
 
-// Folds the card until it fits `maxRows`, least important part first: the
-// spend line, the agent's "does" line, the check's cost text, then means,
-// stands, next and the going-well line to one row each, the left-out list to
-// one line after them (what was left out is worth more than a restatement of
-// what was done), the checked lists to counts, the reading to one row, and then whole
-// parts dropped, least telling first. The revision line, one row saying that
-// and why the reading moved, goes late: after the parts that restate the
-// agent's work and before what stands. After each fold the message is cut to
-// the room left. It is never dropped: the owner can still put it in the
-// prompt, whole, and one row of it says what it is.
-export function fitCard(card: CardText, maxRows: number, cols: number): CardText {
-  const w = Math.max(1, cols - 2)
-  let c: CardText = { ...card }
-  const over = (): boolean => cardRows(c, cols) > maxRows
-  const oneRow = (text: string, prefix: string): string =>
-    rowsOf(`${prefix}${text}`, w) <= 1 ? text : fit(text, Math.max(8, w - prefix.length))
-  if (!over()) return c
-  const folds: Array<() => void> = [
-    () => (c = { ...c, spent: '' }),
-    () => (c = { ...c, does: '' }),
-    () => (c = { ...c, checkCost: oneRow(c.checkCost, '') }),
-    () => (c = { ...c, means: oneRow(c.means, 'Means: ') }),
-    () => (c = { ...c, stands: oneRow(c.stands, 'Stands: ') }),
-    () => (c = { ...c, next: oneRow(c.next, 'Next: ') }),
-    () => (c = { ...c, well: oneRow(c.well, '') }),
-    () => (c = { ...c, leftOut: c.leftOut.length > 1 ? [fit(c.leftOut.join('; '), Math.max(8, w - 4))] : c.leftOut.map(i => oneRow(i, '  - ')) }),
-    // The claims that hold become a count and the ones that failed stay, one row
-    // each: a check is paid for to find what does not hold, so those go last.
-    () => {
-      if (c.checked === null) return
-      const k = c.checked
-      const held = k.holds.length === 0 ? '' : `Checked: ${k.holds.length} hold.`
-      c = {
-        ...c,
-        checked: {
-          holds: [],
-          wrong: k.wrong.map(i => oneRow(i, '  false  ')),
-          notShown: k.notShown.map(i => oneRow(i, '  not shown  ')),
-          changed: k.changed.map(i => oneRow(i, '  since then  ')),
-          looked: held,
-          refused: k.refused,
-        },
-      }
-    },
-    () => (c = { ...c, reading: oneRow(c.reading, 'Owner rep · ') }),
-    () => {
-      if (c.checked === null || card.checked === null) return
-      const k = card.checked
-      const parts = [
-        [k.holds.length, 'hold'],
-        [k.wrong.length, 'false'],
-        [k.notShown.length, 'not shown'],
-        [k.changed.length, 'changed since'],
-      ] as const
-      const line = parts.filter(([n]) => n > 0).map(([n, word]) => `${n} ${word}`).join(', ')
-      c = { ...c, checked: { holds: [], wrong: [], notShown: [], changed: [], looked: line === '' ? '' : `Checked: ${line}.`, refused: c.checked.refused } }
-    },
-    // Whole parts go when one row each is still too much, the least telling first.
-    () => (c = { ...c, checkCost: '' }),
-    () => (c = { ...c, leftOut: [] }),
-    () => (c = { ...c, means: '' }),
-    () => (c = { ...c, next: '' }),
-    () => (c = { ...c, well: '' }),
-    () => (c = { ...c, checked: c.checked === null ? null : { ...c.checked, looked: '' } }),
-    () => (c = { ...c, revised: '' }),
-    () => (c = { ...c, stands: '' }),
-  ]
-  const messageToRoom = (): void => {
-    if (c.message === '') return
-    const room = maxRows - (cardRows({ ...c, message: '' }, cols) + 2)
-    const mw = Math.max(1, cols - 6)
-    const rows = Math.max(1, room)
-    // Cut to the cells the rows hold, then shorter while the words still wrap past them.
-    let limit = rows * mw - 2
-    let message = c.message
-    while (rowsOf(message, mw) > rows && limit > 8) {
-      message = fit(c.message, Math.max(8, limit))
-      limit -= 8
-    }
-    if (message !== c.message) c = { ...c, message }
+// A text cut to `rows` rows of `width` cells, its label counted with it: whole
+// when it fits, else cut to the cells the rows hold and shorter while the words
+// still wrap past them, with an ellipsis.
+const toRows = (text: string, label: string, rows: number, width: number): string => {
+  if (text === '' || rowsOf(`${label}${text}`, width) <= rows) return text
+  let limit = Math.max(8, rows * width - label.length - 2)
+  let cut = fit(text, limit)
+  while (rowsOf(`${label}${cut}`, width) > rows && limit > 8) {
+    limit = Math.max(8, limit - 8)
+    cut = fit(text, limit)
   }
-  for (const fold of folds) {
-    fold()
-    messageToRoom()
-    if (!over()) break
+  return cut
+}
+
+// Fills the band's rows in order of importance. A card that fits is returned as
+// it is. Otherwise the card starts from what must show, the head's result and
+// one row of the message with the buttons under it, and what the check found as
+// one count line, and each step below is taken when the card still fits with it
+// and passed over when it does not, so a later, smaller step can still use the
+// rows: the judgment one row each, most telling first (stands, the check's
+// failed claims with the holding ones counted, going well, next, means, the
+// left-out list on one line), then the count line, then the judgment whole (the
+// checked lists, the left-out list, going well, next, stands, means), each part
+// that cannot be whole given the rows that are left; then the message, whole or
+// cut to the rows that remain; then the extras in order: the revision line, the
+// does line, the check's price, the spend line, the objective whole. When the
+// judgment fits whole this gives it whole with the message after it; when it
+// does not, the least telling parts are the ones shortened and dropped. The
+// message is never dropped: one row of it says what it is, and Put message in
+// prompt carries it whole.
+export function fillCard(card: CardText, maxRows: number, cols: number): CardText {
+  if (cardRows(card, cols) <= maxRows) return card
+  const w = Math.max(1, cols - 2)
+  const mw = Math.max(1, cols - 6)
+  const k = card.checked
+  const left = (x: CardText): number => maxRows - cardRows(x, cols)
+  // The checked lists as one count line, and folded: the holding claims counted,
+  // the failed ones one row each, since a check is paid for to find what does not hold.
+  const counted = (): CardText['checked'] => {
+    if (k === null) return null
+    const parts = [
+      [k.holds.length, 'hold'],
+      [k.wrong.length, 'false'],
+      [k.notShown.length, 'not shown'],
+      [k.changed.length, 'changed since'],
+    ] as const
+    const line = parts.filter(([n]) => n > 0).map(([n, word]) => `${n} ${word}`).join(', ')
+    return { holds: [], wrong: [], notShown: [], changed: [], looked: line === '' ? '' : `Checked: ${line}.`, refused: k.refused }
+  }
+  const folded = (): CardText['checked'] =>
+    k === null
+      ? null
+      : {
+          holds: [],
+          wrong: k.wrong.map(i => toRows(i, '  false  ', 1, w)),
+          notShown: k.notShown.map(i => toRows(i, '  not shown  ', 1, w)),
+          changed: k.changed.map(i => toRows(i, '  since then  ', 1, w)),
+          looked: k.holds.length === 0 ? '' : `Checked: ${k.holds.length} hold.`,
+          refused: k.refused,
+        }
+  const oneLine = (items: string[]): string[] =>
+    items.length === 0 ? [] : [toRows(items.length > 1 ? items.join('; ') : (items[0] ?? ''), '  - ', 1, w)]
+  // A part at one row grown to its rows and the rows left: whole when that fits.
+  const grow = (x: CardText, now: string, whole: string, label: string): string =>
+    now === '' ? now : toRows(whole, label, rowsOf(`${label}${now}`, w) + left(x), w)
+  let c: CardText = {
+    ...card,
+    result: toRows(card.result, 'Owner rep · ', 1, w),
+    count: '',
+    revised: '',
+    well: '',
+    stands: '',
+    means: '',
+    leftOut: [],
+    next: '',
+    checked: counted(),
+    checkCost: '',
+    message: toRows(card.message, '', 1, mw),
+    does: '',
+    spent: '',
+    reading: '',
+  }
+  const steps: Array<(x: CardText) => CardText> = [
+    x => ({ ...x, result: card.result }),
+    // The judgment, one row each, the most telling first.
+    x => ({ ...x, stands: toRows(card.stands, 'Stands: ', 1, w) }),
+    x => ({ ...x, checked: folded() }),
+    x => ({ ...x, well: toRows(card.well, '', 1, w) }),
+    x => ({ ...x, next: toRows(card.next, 'Next: ', 1, w) }),
+    x => ({ ...x, means: toRows(card.means, 'Means: ', 1, w) }),
+    x => ({ ...x, leftOut: oneLine(card.leftOut) }),
+    x => ({ ...x, count: card.count }),
+    // The judgment whole, or with the rows that are left.
+    x => ({ ...x, checked: k }),
+    x => ({ ...x, leftOut: card.leftOut }),
+    x => ({ ...x, well: grow(x, x.well, card.well, '') }),
+    x => ({ ...x, next: grow(x, x.next, card.next, 'Next: ') }),
+    x => ({ ...x, stands: grow(x, x.stands, card.stands, 'Stands: ') }),
+    x => ({ ...x, means: grow(x, x.means, card.means, 'Means: ') }),
+    // The message with the rows that remain, less its box's two border rows.
+    x => ({ ...x, message: toRows(card.message, '', Math.max(1, maxRows - cardRows({ ...x, message: '' }, cols) - 2), mw) }),
+    // The extras, each while it fits.
+    x => ({ ...x, revised: card.revised }),
+    x => ({ ...x, does: card.does }),
+    x => ({ ...x, checkCost: card.checkCost }),
+    x => ({ ...x, spent: card.spent }),
+    x => ({ ...x, reading: card.reading }),
+  ]
+  for (const step of steps) {
+    const next = step(c)
+    if (cardRows(next, cols) <= maxRows) c = next
   }
   return c
 }

@@ -1,12 +1,16 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 17d8b62..acc9887 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -884,6 +884,7 @@ export function fitCard(card: CardText, maxRows: number, cols: number): CardText
-   const folds: Array<() => void> = [
-     () => (c = { ...c, spent: '' }),
-     () => (c = { ...c, does: '' }),
-+    () => (c = { ...c, revised: '' }),
-     () => (c = { ...c, checkCost: oneRow(c.checkCost, '') }),
-     () => (c = { ...c, means: oneRow(c.means, 'Means: ') }),
-     () => (c = { ...c, stands: oneRow(c.stands, 'Stands: ') }),
+@@ -2593,11 +2593,11 @@
+     // The message with the rows that remain, less its box's two border rows.
+     x => ({ ...x, message: toRows(card.message, '', Math.max(1, maxRows - cardRows({ ...x, message: '' }, cols) - 2), mw) }),
+     // The extras, each while it fits.
+-    x => ({ ...x, revised: card.revised }),
+     x => ({ ...x, does: card.does }),
+     x => ({ ...x, checkCost: card.checkCost }),
+     x => ({ ...x, spent: card.spent }),
+     x => ({ ...x, reading: card.reading }),
++    x => ({ ...x, revised: card.revised }),
+   ]
+   for (const step of steps) {
+     const next = step(c)

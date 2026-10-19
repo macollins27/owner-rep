@@ -1,13 +1,21 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 4a9d594..a9d71f8 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -904,7 +904,7 @@ export function fitCard(card: CardText, maxRows: number, cols: number): CardText
-     },
-     () => (c = { ...c, reading: oneRow(c.reading, 'Owner rep · ') }),
-     () => {
--      if (c.checked === null || card.checked === null) return
-+      return
-       const k = card.checked
-       const parts = [
-         [k.holds.length, 'hold'],
+@@ -2566,7 +2566,7 @@
+     means: '',
+     leftOut: [],
+     next: '',
+-    checked: counted(),
++    checked: k,
+     checkCost: '',
+     message: toRows(card.message, '', 1, mw),
+     does: '',
+@@ -2577,7 +2577,7 @@
+     x => ({ ...x, result: card.result }),
+     // The judgment, one row each, the most telling first.
+     x => ({ ...x, stands: toRows(card.stands, 'Stands: ', 1, w) }),
+-    x => ({ ...x, checked: folded() }),
++    x => ({ ...x, checked: k }),
+     x => ({ ...x, well: toRows(card.well, '', 1, w) }),
+     x => ({ ...x, next: toRows(card.next, 'Next: ', 1, w) }),
+     x => ({ ...x, means: toRows(card.means, 'Means: ', 1, w) }),
