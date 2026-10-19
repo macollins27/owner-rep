@@ -2755,23 +2755,45 @@ export type Replaced = 'means' | 'next' | 'message'
 // stop, calls the work finished, or hands it back to him, by the stop patterns above.
 export const saysStop = (part: string): boolean => STOP_NEXT.test(part)
 
+// A message on the card is written in his voice to the agent ("show me", "wait for
+// my reply", "you can stop"), while the stop patterns read the next step's third
+// person ("him", "his", "the agent"). This turns his voice into theirs, whole words
+// only: me to him, my to his, the capital pronoun I to he, you to the agent, your
+// to the agent's (the patterns ignore case, so the shift does too). A wait on "you"
+// in a message is then a wait on the agent, which the patterns let through, and a
+// wait on "me" is a wait on him.
+const VOICE: Array<[RegExp, string]> = [
+  [/\bme\b/gi, 'him'],
+  [/\bmy\b/gi, 'his'],
+  [/\bI\b/g, 'he'],
+  [/\byour\b/gi, "the agent's"],
+  [/\byou\b/gi, 'the agent'],
+]
+export const toAgentVoice = (text: string): string => VOICE.reduce((out, [word, theirs]) => out.replace(word, theirs), text)
+
+// Whether a message, or what it does, tells the agent or the job to stop, calls the
+// work finished, or hands it back to him, read in the third person.
+export const messageSaysStop = (text: string): boolean => STOP_NEXT.test(toAgentVoice(text))
+
 // The objective is not finished while a condition is open, and the gate works
 // part by part. A verdict other than continue (stop, or none given), a
-// going-well line, or a next step or a message that says stop is refused: the
+// going-well line, or a next step or a message that says stop (the message read
+// in the third person, `messageSaysStop`) is refused: the
 // verdict becomes continue, the going-well line goes, and the conditions are
 // listed as left out. On a refusal the meaning is always the rep's own (it
 // stood on a verdict the gate rejected, and is not read for a stop, since "The
 // agent has finished the work, but …" says something true), and the next step,
 // and the message with what it does, are the rep's own only where they
 // themselves say stop or are empty; the model's own sound next step and message
-// stand. `replaced` lists the parts written in the rep's text, in the order
+// stand, and beside a kept message only a does line that says stop is the rep's
+// (it is not listed in `replaced`, which the own-words call reads). `replaced` lists the parts written in the rep's text, in the order
 // means, next, message, so a refused card always lists the meaning. With no
 // objective written (open is null) the same is refused and every part is the
 // rep's text saying the objective is not written yet. What the agent did
 // ("stands") is kept as the model wrote it.
 export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer: BriefAnswer; refused: boolean; replaced: Replaced[] } {
   if (open !== null && open.length === 0) return { answer: a, refused: false, replaced: [] }
-  if (a.verdict === 'continue' && a.well === '' && !saysStop(a.next) && !saysStop(a.message)) return { answer: a, refused: false, replaced: [] }
+  if (a.verdict === 'continue' && a.well === '' && !saysStop(a.next) && !messageSaysStop(a.message)) return { answer: a, refused: false, replaced: [] }
   if (open === null) {
     return {
       answer: { ...a, verdict: 'continue', well: '', means: UNWRITTEN_MEANS, next: UNWRITTEN_NEXT, message: UNWRITTEN_MESSAGE, does: UNWRITTEN_DOES },
@@ -2785,7 +2807,7 @@ export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer:
     if (!leftOut.some(l => same(bare(l), c.text))) leftOut.push(c.state === 'not-shown' ? `${c.text} (not shown)` : c.text)
   }
   const next = a.next === '' || saysStop(a.next)
-  const message = a.message === '' || saysStop(a.message)
+  const message = a.message === '' || messageSaysStop(a.message)
   return {
     answer: {
       ...a,
@@ -2794,7 +2816,7 @@ export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer:
       means: OPEN_MEANS(open),
       next: next ? OPEN_NEXT(open) : a.next,
       message: message ? OPEN_MESSAGE(open) : a.message,
-      does: message ? OPEN_DOES : a.does,
+      does: message || messageSaysStop(a.does) ? OPEN_DOES : a.does,
       leftOut,
     },
     refused: true,
@@ -2803,8 +2825,9 @@ export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer:
 }
 
 // One "## " section of a fixed text: from its heading to the next heading, or to the end.
-const sectionOf = (text: string, heading: string): string => {
+export const sectionOf = (text: string, heading: string): string => {
   const at = text.indexOf(`${heading}\n`)
+  if (at < 0) throw new Error(`sectionOf: no "${heading}" section in the text`)
   const end = text.indexOf('\n\n## ', at + heading.length)
   return text.slice(at, end < 0 ? undefined : end)
 }
@@ -2828,7 +2851,7 @@ export function ownWordsPrompt(m: Memory, open: Condition[], a: BriefAnswer): st
 
 ## This request
 
-The briefing was asked twice, and both of its answers said the agent should stop, gave no verdict, called the work finished, or said the work is going well, while these conditions of done are still open:
+The briefing's answer said the agent should stop, gave no verdict, called the work finished, or said the work is going well, and asking it once more did not change that, while these conditions of done are still open:
 ${list(open.map(promptLine), '- none')}
 So the card the rep shows him keeps the agent on the job. Here is what the rep itself found in the conversation:
 
@@ -2860,10 +2883,10 @@ export function takeOwnWords(gated: BriefAnswer, replaced: Replaced[], own: Brie
   const out = { ...gated }
   const taken = new Set<Replaced>()
   for (const part of replaced) {
-    if (own[part] === '' || saysStop(own[part])) continue
+    if (own[part] === '' || (part === 'message' ? messageSaysStop(own[part]) : saysStop(own[part]))) continue
     out[part] = own[part]
     taken.add(part)
   }
-  if (taken.has('message') && own.does !== '') out.does = own.does
+  if (taken.has('message') && own.does !== '' && !messageSaysStop(own.does)) out.does = own.does
   return out
 }

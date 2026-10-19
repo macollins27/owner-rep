@@ -1,7 +1,7 @@
 import type { On, SessionMessage } from 'claude-code'
 import { expect, mock, test as kitTest, type Engine, type TestBody, type TestOptions } from 'claude-code/testing'
 
-import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, takeOwnWords, ownWordsPrompt, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec } from '../hooks/rep'
+import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, toAgentVoice, sectionOf, takeOwnWords, ownWordsPrompt, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec } from '../hooks/rep'
 
 // Every test starts with the session's working folder a Unix path, so what the suite reads does not
 // depend on the folder the kit gives it: on a Windows machine that folder is a drive path, which
@@ -3394,6 +3394,62 @@ test('takeOwnWords takes a rewritten part only where the gate replaced one and t
   expect(takeOwnWords(gated.answer, [], own)).toEqual(gated.answer)
 })
 
+test('messageSaysStop reads a message in his voice to the agent: shifted to the third person, a wait on him, a hand-back to him or a stop is caught on the gated card and from the own-words reply, and a wait on the agent is not', () => {
+  // The shift: me, my and the capital I are his; you and your are the agent's. Whole words only, in any case but I's.
+  expect(toAgentVoice('Show me my log. I said you and your build. Me, My, You, Your; meme, mystery, young, yours, i.'))
+    .toBe('Show him his log. he said the agent and the agent\'s build. him, his, the agent, the agent\'s; meme, mystery, young, yours, i.')
+  const caught = [
+    'Summarise what you did and wait for my sign-off.',
+    'Report what is done, then hand it back to me.',
+    'Write up what you have and wait for my go-ahead before doing anything else.',
+    'Great work. You can stop now.',
+    'Show me the log, then wait for my reply.',
+  ]
+  const kept = [
+    'Don\'t merge yet; wait until you have the install log, then show me.',
+    'Don\'t stop until the suite is green.',
+    'Stop guessing and run the tests, then show me the output.',
+    'Show me each session finishing.',
+  ]
+  for (const m of caught) expect([m, messageSaysStop(m)]).toEqual([m, true])
+  for (const m of kept) expect([m, messageSaysStop(m)]).toEqual([m, false])
+  // The rep's own texts are never caught.
+  for (const t of [OPEN_MESSAGE(OPEN_JOB_OPEN), OPEN_DOES, UNWRITTEN_MESSAGE, UNWRITTEN_DOES]) expect(messageSaysStop(t)).toBe(false)
+  const card = (message: string, does = 'Makes the agent show its work.') =>
+    parseBrief(`verdict: stop\nwell:\nstands: The build is made.\nmeans: Nothing is waiting.\nleft:\n- nothing\nnext: Run the two sessions and show each one finishing.\nmessage:\n${message}\nend\ndoes: ${does}`)
+  // On the gated card: each caught message is the rep's, with what it does; each kept one stands.
+  for (const m of caught) {
+    const g = gateVerdict(card(m), OPEN_JOB_OPEN)
+    expect([m, g.replaced, g.answer.message, g.answer.does]).toEqual([m, ['means', 'message'], OPEN_MESSAGE(OPEN_JOB_OPEN), OPEN_DOES])
+  }
+  for (const m of kept) {
+    const g = gateVerdict(card(m), OPEN_JOB_OPEN)
+    expect([m, g.replaced, g.answer.message, g.answer.does]).toEqual([m, ['means'], m, 'Makes the agent show its work.'])
+  }
+  // A message in his voice that the next-step patterns alone would catch ("wait until you") now passes the gate.
+  expect(saysStop(kept[0] ?? '')).toBe(true)
+  const go = card(kept[0] ?? '')
+  expect(gateVerdict({ ...go, verdict: 'continue', means: 'm' }, OPEN_JOB_OPEN)).toMatchObject({ refused: false, replaced: [] })
+  // A message that passes beside a does line that says stop: only the does line is the rep's.
+  const does = gateVerdict(card('Show me each session finishing.', 'Makes the agent stop and wait for my approval.'), OPEN_JOB_OPEN)
+  expect(does.replaced).toEqual(['means'])
+  expect(does.answer).toMatchObject({ message: 'Show me each session finishing.', does: OPEN_DOES })
+  // From the own-words reply: a message in his voice that says stop is not taken, nor is a does line that says stop.
+  const gated = gateVerdict(card('Wrap up and stop here.'), OPEN_JOB_OPEN)
+  expect(gated.replaced).toEqual(['means', 'message'])
+  const own = (message: string, d = 'Makes the agent show the sessions.') =>
+    parseBrief(`means: The build is made; the sessions are not shown.\nnext: Run the sessions.\nmessage:\n${message}\nend\ndoes: ${d}`)
+  for (const m of caught) expect(takeOwnWords(gated.answer, gated.replaced, own(m))).toMatchObject({ message: OPEN_MESSAGE(OPEN_JOB_OPEN), does: OPEN_DOES })
+  expect(takeOwnWords(gated.answer, gated.replaced, own(kept[3] ?? ''))).toMatchObject({ message: 'Show me each session finishing.', does: 'Makes the agent show the sessions.' })
+  expect(takeOwnWords(gated.answer, gated.replaced, own(kept[3] ?? '', 'Makes the agent hand it back to me.'))).toMatchObject({ message: 'Show me each session finishing.', does: OPEN_DOES })
+})
+
+test('sectionOf takes one "## " section of a fixed text and throws, naming the heading, when the heading is missing', () => {
+  expect(sectionOf('## A\n\none\n\n## B\n\ntwo', '## A')).toBe('## A\n\none')
+  expect(sectionOf('## A\n\none\n\n## B\n\ntwo', '## B')).toBe('## B\n\ntwo')
+  expect(() => sectionOf('## A\n\none', '## Who you are')).toThrow(/## Who you are/)
+})
+
 test('rule: OWN_WORDS_SYSTEM is the brief\'s who-you-are and how-you-write sections, fixed text; ownWordsPrompt carries what the rep found, the open conditions and the four labels', () => {
   expect(OWN_WORDS_SYSTEM).not.toContain('${')
   expect(OWN_WORDS_SYSTEM).toMatch(/^## Who you are\n\nYou are the owner's rep\./)
@@ -3406,6 +3462,9 @@ test('rule: OWN_WORDS_SYSTEM is the brief\'s who-you-are and how-you-write secti
   expect(p).toContain('## What you already know')
   expect(p).toContain('- #1 ship the release and install it here')
   expect(p).toMatch(/## This request\n/)
+  // True whether the second ask was refused too or did not answer.
+  expect(p).toContain('and asking it once more did not change that, while these conditions of done are still open:')
+  expect(p).not.toMatch(/asked twice|both of its answers/)
   expect(p).toContain('\nstands: Both parts are finished.\n')
   expect(p).toMatch(/\nleft:\n- the notes not updated\n- the newest build installed \(not shown\)\n- two sessions finished\n/)
   expect(p).toMatch(/still open:\n- the newest build installed \(not shown\)\n- two sessions finished\n/)

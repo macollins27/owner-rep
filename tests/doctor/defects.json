@@ -1798,5 +1798,11 @@
     "breaks": "A part the own-words call writes is taken even when it says stop, so a card refused for saying stop can say stop again while a condition is open.",
     "patch": "own-words-stop-taken.patch",
     "fixed": "2026-10-19"
+  },
+  {
+    "name": "message-voice-unshifted",
+    "breaks": "The gate reads the card's message as if it were a next step, so a message written in his voice that has the agent wait for his sign-off or hand the work back to him stays on a refused card, and a message that has him wait until the agent has a log is refused.",
+    "patch": "message-voice-unshifted.patch",
+    "fixed": "2026-10-19"
   }
 ]
