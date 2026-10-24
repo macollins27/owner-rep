@@ -135,9 +135,15 @@ call writes (below):
    `missing`, never as continue), a `well:` line, or a `next:` (`saysStop`) or a `message:`
    (`messageSaysStop`: the message read on a copy `toAgentVoice` turns to the third person,
    me, my and the capital I to him, his and he, you and your to the agent and the agent's,
-   so a wait on his sign-off is caught and a wait until the agent has a log is not) that
+   the contractions and two-word forms shifted whole before them, with a straight or curly
+   apostrophe: you're and you are to the agent is, you've and you have to the agent has,
+   I'm and I am to he is, I'll to he will, I've to he has; so a wait on his sign-off and
+   "You're done." are caught and a wait until the agent has a log is not, and a few
+   messages a reader would let through, such as a check-in with him before a step, are
+   caught in the safe direction and rewritten by the own-words call) that
    `STOP_NEXT` reads as
-   telling the agent or the job to stop, calling the work finished, saying nothing is left,
+   telling the agent or the job to stop (with "please" before the stop or not, `STOP_LEAD`),
+   calling the work finished, saying nothing is left or no further work is needed,
    closing the session, wrapping up, stopping work on it, stopping (or stopping here, or
    stopping work) to report, to wait bare or on him, to await him or to ask him
    (`STOP_TO_REPORT`), a wait for or an await of him with no stop at all (`WAIT_SAID`;
@@ -146,15 +152,18 @@ call writes (below):
    word naming his say such as reply, approval, go-ahead or decision, "a decision" only at
    the clause's end or before from, by, on or about, "confirmation" only at the clause's end
    or from him, the owner or you, whatever follows to the sentence's end), a check-in with
-   him or letting him decide, choose or pick (`ASK_BACK_SAID`), handing it, the work or the
-   job over or back to him (`HAND_BACK_SAID`), these three let through after "not",
+   him or letting him decide, choose or pick (`ASK_BACK_SAID`), handing anything over or
+   back to him (whatever stands between "hand" and "over" or "back" within the clause),
+   him taking it from here, or leaving it or the rest to him (`HAND_BACK_SAID`), these
+   three let through after "not",
    "never", "n't" or "no need to" (`NOT_NEGATED`), a bare wait after ", then"
    (`THEN_WAIT`), the agent ending the session (`AGENT_ENDS`), or saying the session can
    end at a sentence's start or after a stop mark other than
    a comma (`SENTENCE`; a comma with "and", "and then", "so" or "now" counts, a bare "then"
    after a comma closes a condition; `CLAUSE` takes "and then" as a clause's start too),
    each said as a clause of its own (a step that only carries the
-   word and goes on, as "stop guessing and run the suite" or "Don't stop until …", keeps the
+   word and goes on, as "stop guessing and run the suite", "Please stop guessing and run the
+   suite" or "Don't stop until …", keeps the
    model's own next step; so do a pair such as "make the timer start and stop", the bare
    "and stop" only being read, never "and stops" said of a program, a wait on a CI run or
    on "your build", and "Once the run is green, the session can end"). The gate refuses part
@@ -168,13 +177,16 @@ call writes (below):
    passes the same gate. When it is refused too, or does not answer, one plain
    `$.model.complete` (`OBJECTIVE_MODEL`, high effort, `OWN_WORDS_SYSTEM`: the ROLE's "Who
    you are" and "How you write to him" sections cut by `sectionOf`, which throws on a missing
-   heading; `OWN_WORDS_MAX_TOKENS` 4,000, `OWN_WORDS_TIMEOUT_MS` two minutes) over
+   heading, and one line against reproducing a secret, a key, a password or personal data
+   it is shown; `OWN_WORDS_MAX_TOKENS` 4,000, `OWN_WORDS_TIMEOUT_MS` two minutes) over
    `ownWordsPrompt` (the memory, the open conditions, what stands and what is left out)
    writes the replaced parts in the rep's own words. Its reply is read by `parseOwnWords`,
    which answers null unless the reply came back whole: `means:`, `next:`, `message:` and
-   `does:` each once and in that order, the message closed by its `end` line before `does:`,
-   and means, next, the message's last line and does each ending at a sentence mark (`.`,
-   `!` or `?`, closing quotes or brackets allowed after it). `takeOwnWords` takes from a
+   `does:` each once and in that order, the message closed by its `end` line before `does:`
+   and not empty, and means, next and does each ending at a sentence mark (`.`, `!` or `?`,
+   closing quotes or brackets allowed after it); the message's last line is not held to a
+   sentence mark, since its `end` line and a whole `does:` line show it was not cut, and a
+   whole message may end in a list item. `takeOwnWords` takes from a
    whole reply each part that is not empty and does not say stop (the message and its
    `does:` line read by `messageSaysStop`, the does line taken only with the message); the
    fixed texts stand otherwise, and a reply not whole, or a call that throws or does not
@@ -185,7 +197,8 @@ call writes (below):
    objective. `lastBrief.reads` records the card's reads: 1, 2 with the second ask, 3 with
    the own-words call; `lastBrief.own` what came of that call (`whole`; `cut`, answered but
    not whole; `none`, not answered or thrown; `skipped`, no call made) and
-   `lastBrief.ownChars` its reply's length (0 with none). With no objective written (`gateOpen` is null) the same answers are
+   `lastBrief.ownChars` its reply's length (0 with none); a check's card keeps all three
+   from the briefing it was pressed on. With no objective written (`gateOpen` is null) the same answers are
    refused, never let through, every part given its `UNWRITTEN_*` text, not asked again and
    given no own-words call.
 

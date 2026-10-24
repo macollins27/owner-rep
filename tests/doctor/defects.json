@@ -1810,5 +1810,17 @@
     "breaks": "The own-words reply is read however it came back, so a reply cut short puts its half sentence on the card in place of the rep's fixed text.",
     "patch": "own-words-cut-taken.patch",
     "fixed": "2026-10-24"
+  },
+  {
+    "name": "voice-contractions-unshifted",
+    "breaks": "The message's contractions and two-word forms are not shifted before the bare words, so a message telling the agent \"you're done\" or \"you are done\" reads as \"the agent're done\" and stays on a refused card.",
+    "patch": "voice-contractions-unshifted.patch",
+    "fixed": "2026-10-24"
+  },
+  {
+    "name": "own-words-list-cut",
+    "breaks": "The own-words message's last line is held to a sentence mark again, so a whole own-words reply whose message ends in a list item is thrown away for the rep's fixed text and recorded as cut.",
+    "patch": "own-words-list-cut.patch",
+    "fixed": "2026-10-24"
   }
 ]

@@ -1,0 +1,11 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 64678b3..39b7a2e 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2973,5 +2973,5 @@ export function parseOwnWords(text: string): BriefAnswer | null {
+   }
+   if (seen.join(' ') !== 'means next message end does') return null
+   const a = parseBrief(text)
+-  return a.message !== '' && [a.means, a.next, a.does].every(endsSentence) ? a : null
++  return a.message !== '' && [a.means, a.next, a.message.split('\n').at(-1) ?? '', a.does].every(endsSentence) ? a : null
+ }
