@@ -1624,9 +1624,11 @@ export const register: Register = on => {
     const marked = now.mark !== ''
     const lead = (glyph: string, color: string, tag: string, text: string) => (
       // The glyph and the text share one line: the row never wraps, and where the
-      // text has no width it stretches beside the glyph and shrinks to fit.
+      // text has no width it stretches beside the glyph and shrinks to fit. The space
+      // after the glyph is a no-break one there, since the editor drops a plain space at
+      // the end of a span.
       <Box flexDirection="row" flexWrap="nowrap">
-        <Text color={color}>{glyph} </Text>
+        <Text color={color}>{glyph}{inColumns ? ' ' : '\u00A0'}</Text>
         <Box flexDirection="column" width={w(cols - 2)} flexGrow={inColumns ? undefined : 1} flexShrink={inColumns ? undefined : 1}>
           <Text wrap="wrap">
             <Text dimColor>{tag} · </Text>
@@ -1668,10 +1670,10 @@ export const register: Register = on => {
       const clear = () => {
         clearNote($).catch(() => undefined)
       }
-      // The heads-up draws above the row, never in its place: the row's head and status
-      // stay on screen beneath it, with Tell the rep for the mouse alone, since the note's
-      // own buttons carry the digits (restored 23 Oct 2026; the row had been hidden under
-      // a note since 13 Oct, a choice no one asked for).
+      // The heads-up draws above the row, never in its place: the row stays on screen
+      // beneath it as approved, its buttons for the mouse alone since the note's own carry
+      // the digits (restored 23 Oct 2026; the row had been hidden under a note since
+      // 13 Oct, a choice no one asked for).
       return (
         <Box flexDirection="column" marginTop={gap}>
           {lead('◆', 'warning', 'Heads up', note.line)}
@@ -1688,7 +1690,7 @@ export const register: Register = on => {
             <Button key="later" plain hotkey="0" label="Later" onPress={clear} />,
           )}
           {head}
-          {choices(statusText, <Button key="tell" plain label="Tell the rep" onPress={tell} />)}
+          {choices(statusText, <Button key="rep" plain label="Brief me" onPress={onPress} />, <Button key="tell" plain label="Tell the rep" onPress={tell} />)}
           {beneath}
         </Box>
       )

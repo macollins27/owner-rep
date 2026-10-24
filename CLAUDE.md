@@ -122,8 +122,8 @@ call writes (below):
    awaited by the hook that starts it. Its answer is `state:`, `flag:`, `why:`, `shown:` and
    `closed:`; it marks conditions and never writes the objective. A flag becomes a "Heads up"
    note only when the view is `row` and the flag was not already shown. The note draws above
-   the row, which stays beneath it with its head, its status and Tell the rep for the mouse
-   (the note's buttons carry the digits); from 13 to 23 Oct 2026 it took the row's place,
+   the row, which stays beneath it with its head, its status and both its buttons for the
+   mouse (the note's buttons carry the digits); from 13 to 23 Oct 2026 it took the row's place,
    a choice made with the you-should-know shape that no one asked for. Typing past notes
    backs the watch off (`skipAfter`).
 2. **Briefing**: `pressBrief()` on the Rep button, another fork, drawn as the card. The

@@ -300,7 +300,7 @@ PY
       rm -f $ids_before
       stop ;;
     10)
-      echo "10 heads-up: a claim the agent never showed draws the Heads up above the row, which stays with its status and Tell the rep"
+      echo "10 heads-up: a claim the agent never showed draws the Heads up above the row, which stays with its status and both buttons"
       start || { bad=1; fails=$((fails+1)); stop; continue; }
       send 'Do not run any command or open any file. Reply with exactly this sentence and nothing else: I ran the whole test suite and every test passes, so the work is finished.'
       wait_for '^\s*stopped, waiting on you' 90
@@ -314,7 +314,7 @@ PY
       strip | grep -q 'Heads up ·' ; verdict 'the Heads up line drawn' $?
       [[ $(strip | grep -n 'Heads up ·' | head -1 | cut -d: -f1) -lt $(strip | grep -n 'Owner rep ·' | head -1 | cut -d: -f1) ]] ; verdict 'the row drawn beneath the note' $?
       strip | grep -qE '1: Brief me\s+2: Fine\s+0: Later' ; verdict 'the note buttons with digits' $?
-      strip | grep -qE 'stopped, waiting on you\s+Tell the rep' ; verdict 'the row status with Tell the rep for the mouse' $?
+      strip | grep -qE 'stopped, waiting on you\s+Brief me\s+Tell the rep' ; verdict 'the row status with both buttons for the mouse' $?
       stop ;;
   esac
   [[ $bad -gt 0 ]] && fails=$((fails+1))

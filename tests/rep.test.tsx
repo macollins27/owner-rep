@@ -660,7 +660,7 @@ const session = (on: On, store: Record<string, unknown> = {}) => {
   on('ui.toast', () => ({ value: undefined }))
 }
 
-test('rule: a heads-up draws above the row, which stays on screen beneath it with its status and Tell the rep for the mouse', async ($, on) => {
+test('rule: a heads-up draws above the row, which stays on screen beneath it with its status and both its buttons for the mouse', async ($, on) => {
   session(on)
   quietBand(on)
   on('model.fork', () => ({ value: { isAnswered: true, text: watchAnswer('The agent says the tests pass, but never ran them.'), usage: USAGE } }))
@@ -676,10 +676,16 @@ test('rule: a heads-up draws above the row, which stays on screen beneath it wit
     expect((await ui.find({ key: 'brief' }))?.props.hotkey).toBe('1')
     expect((await ui.find({ key: 'fine' }))?.props.hotkey).toBe('2')
     expect((await ui.find({ key: 'later' }))?.props.hotkey).toBe('0')
-    expect(await ui.find({ key: 'rep' })).toBeUndefined()
+    // The row keeps both its buttons under the note, for the mouse alone.
+    const rep = await ui.find({ key: 'rep' })
+    expect(rep).toBeDefined()
+    expect(rep?.props.hotkey).toBeUndefined()
     const tell = await ui.find({ key: 'tell' })
     expect(tell).toBeDefined()
     expect(tell?.props.hotkey).toBeUndefined()
+    const glyphs = (await ui.findAll({ type: 'Text' })).map(t => t.text ?? '').filter(t => /^[◆◇]/.test(t))
+    expect(glyphs.length).toBeGreaterThan(0)
+    for (const g of glyphs) expect(g.slice(1)).toBe(surface === 'vscode' ? '\u00A0' : ' ')
     await ui.unmount()
   }
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
