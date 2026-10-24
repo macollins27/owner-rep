@@ -135,10 +135,10 @@ objective it checked came from the writer's own call. The test now sends a furth
 the writer answers with `objective: holds` and a look whose answer carries an objective in
 the writer's shape, and asserts that the objective is unchanged.
 
-**Status.** 225 tests: the parsers, the status words (including the variable-first command, read
-through the mounted strip), the note to the rep, the checker's prompt and tools, the row on
-both surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-
-failure toast, the sequence rules above, the card folding to a small band, the brief
+**Status.** 227 tests: the parsers, the status words (including the variable-first command, read
+through the mounted strip), the note to the rep, the heads-up drawn above the row on the terminal and VS Code surfaces, the checker's prompt and tools, the row on
+the terminal, desktop and VS Code surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-
+failure toast, the sequence rules above, the card folding to a small band and drawn whole with no line given a width on the VS Code surface, whose band scrolls, the brief
 carrying the whole-ask rule and the session's size as a figure, the helper count, the prompt
 box's refusals, the check's three failure paths, the word-wrapped row count, the checked card
 keeping its failed claims as it folds, the session end saving the record, and, from 15 Oct
@@ -387,7 +387,7 @@ and none in the installed mod's. On 19 Oct 2026 all ten were run from the branch
 shorter brief and the own-words card, the sessions on Claude Code's default model, Fable 5.1:
 nine shown in full, and scenario 7 without its drafted message (above). That run's captures
 were not committed: `tests/live/captures/` holds the 16 Oct run's for scenarios 1 to 9 and
-an earlier 19 Oct run's for scenario 10.
+an earlier 19 Oct run's for scenario 11.
 
 ## The doctor
 

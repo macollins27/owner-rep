@@ -39,7 +39,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
 claude plugin test .          # runs every *.test.ts(x); all 225 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
-tests/live/live.sh              # on demand: ten real sessions of this checkout in tmux, the strip captured to tests/live/captures
+tests/live/live.sh              # on demand: eleven real sessions of this checkout in tmux, the strip captured to tests/live/captures
 ```
 
 GitHub runs validate, `tests/ci/host-calls.sh`, `tests/ci/host-commands.mjs`, test and the
@@ -73,7 +73,7 @@ If `.claude-plugin/types/` is missing here, copy it from there:
 cp -R ~/.claude/dev-mods/02eea29b-b8e0-44e5-b4b8-b6903870fe8a/owner-rep/.claude-plugin/types .claude-plugin/types
 ```
 
-Those declarations are from Claude Code 2.1.300 (14 Oct 2026); the mods API is early access
+Those declarations are from Claude Code 2.1.310 (24 Oct 2026; the live layer's `--plugin-dir` sessions rewrite them on the build they run); the mods API is early access
 and changes between releases, so a newer build's declarations win when they exist. With the
 copied folder, the two hook files and the test file type-check clean. A tool the typings do
 not list (an MCP tool, `Grep`) is called from a test with `as never`. Do not commit anything tsc
@@ -122,7 +122,10 @@ call writes (below):
    `turn.complete`, via `$.model.fork` over the agent's cached conversation. It is never
    awaited by the hook that starts it. Its answer is `state:`, `flag:`, `why:`, `shown:` and
    `closed:`; it marks conditions and never writes the objective. A flag becomes a "Heads up"
-   note only when the view is `row` and the flag was not already shown. Typing past notes
+   note only when the view is `row` and the flag was not already shown. The note draws above
+   the row, which stays beneath it with its head, its status and both its buttons for the
+   mouse (the note's buttons carry the digits); from 13 to 23 Oct 2026 it took the row's place,
+   a choice made with the you-should-know shape that no one asked for. Typing past notes
    backs the watch off (`skipAfter`).
 2. **Briefing**: `pressBrief()` on the Rep button, another fork, drawn as the card. The
    model's answer is labelled lines (`verdict:`, `shown:`, `closed:`, `well:`, `stands:`,
@@ -172,7 +175,7 @@ call writes (below):
    `messageSaysStop`, the does line taken only with the message); the fixed texts stand
    otherwise, and a call that throws or does not answer leaves them, never a stop. A reply
    cut short is not caught: its parts are taken as far as they go when they do not say stop
-   (seen live on 19 Oct 2026, `docs/testing.md` scenario 10). Its spend
+   (seen live on 19 Oct 2026, `docs/testing.md` scenario 11). Its spend
    counts with the looks, and it writes card parts only, never the objective.
    `lastBrief.reads` records the card's reads: 1, 2 with the second ask, 3 with the
    own-words call. With no objective written (`gateOpen` is null) the same answers are
@@ -527,7 +530,7 @@ The `AbovePrompt` band is a strip shared with other mods ("You should know" amon
 this mod draws first. Rules the render enforces: whatever is beneath is kept under the row;
 while another mod draws something (`drawsSomething`), the rep's own note waits and the row's
 buttons lose their digits, so only one set of digit hotkeys is ever on screen; the briefing
-takes the strip alone. Buttons use bare digits for hotkeys because from the prompt box only a
+takes the strip alone; on the terminal each line has its width in columns and the card is folded to the band's rows (`fitCard`), and on a surface whose band is a scrolling box in a proportional font (`sizesInColumns` false: Claude Code for VS Code, whose extension counts columns by a wide glyph and draws widths in `ch`) no line is given a width, so each fills the box, and the card is drawn whole. Buttons use bare digits for hotkeys because from the prompt box only a
 digit presses a band button. A keyboard chord for the Rep button once rode on an unrelated
 engine action; it could not be proven and was removed on 14 Oct 2026. Do not bring it back
 without a binding that is shown working.

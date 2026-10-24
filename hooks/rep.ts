@@ -2475,6 +2475,22 @@ export function cardRows(c: CardText, cols: number): number {
 // agent's work and before what stands. After each fold the message is cut to
 // the room left. It is never dropped: the owner can still put it in the
 // prompt, whole, and one row of it says what it is.
+// Where the band is sized in columns. The terminal's band is a grid of cells the
+// person cannot scroll from the prompt box, so each line is given its width in columns
+// and the card is folded until it fits the band's rows, its buttons where a digit
+// reaches them. Claude Code for VS Code's band is a box of twelve lines that scrolls
+// under the pointer (`max-height: 12lh; overflow: auto`, its stylesheet at 2.1.310),
+// drawn in the editor's proportional font. The extension counts its columns by the
+// wider of "0" and "─" (its cell probe) and draws a Box's width in `ch`, the width of
+// "0" alone, so a line given the band's width in columns ends well short of the box's
+// edge, and a card folded to its rows cut every sentence to one line (23 Oct 2026).
+// There no line is given a width, so each fills the box and wraps at its edge, and the
+// card is drawn whole and the box scrolls.
+export const SCROLLING_SURFACES: ReadonlySet<string> = new Set(['vscode'])
+export function sizesInColumns(surface: string): boolean {
+  return !SCROLLING_SURFACES.has(surface)
+}
+
 export function fitCard(card: CardText, maxRows: number, cols: number): CardText {
   const w = Math.max(1, cols - 2)
   let c: CardText = { ...card }

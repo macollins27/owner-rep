@@ -1,7 +1,7 @@
 import type { On, SessionMessage } from 'claude-code'
 import { expect, mock, test as kitTest, type Engine, type TestBody, type TestOptions } from 'claude-code/testing'
 
-import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, toAgentVoice, sectionOf, takeOwnWords, ownWordsPrompt, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec } from '../hooks/rep'
+import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, toAgentVoice, sectionOf, takeOwnWords, ownWordsPrompt, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
 
 // Every test starts with the session's working folder a Unix path, so what the suite reads does not
 // depend on the folder the kit gives it: on a Windows machine that folder is a drive path, which
@@ -560,11 +560,11 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   expect(out?.cached).toBe(1)
 })
 
-test('the row draws on both surfaces with the Rep button and a placeholder goal', async ($, on) => {
+test('the row draws on the terminal, desktop and VS Code surfaces with the Rep button and a placeholder goal', async ($, on) => {
   mock.store(on, {})
   quietBand(on)
   on('session.id', () => ({ value: 'test-session' }))
-  for (const surface of ['terminal', 'desktop'] as const) {
+  for (const surface of ['terminal', 'desktop', 'vscode'] as const) {
     const ui = await $.ui.mount({ plugin: 'owner-rep', surface, ...BAND })
     const button = await ui.find({ key: 'rep' })
     expect(button).toBeDefined()
@@ -725,6 +725,42 @@ const session = (on: On, store: Record<string, unknown> = {}) => {
   on('prompt.submit', ($, e) => ({ text: e.text }))
   on('ui.toast', () => ({ value: undefined }))
 }
+
+test('rule: a heads-up draws above the row, which stays on screen beneath it with its status and both its buttons for the mouse', async ($, on) => {
+  session(on)
+  quietBand(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: watchAnswer('The agent says the tests pass, but never ran them.'), usage: USAGE } }))
+  await $.turn.complete(stop('t1'))
+  for (const surface of ['terminal', 'vscode'] as const) {
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface, ...BAND })
+    const texts = (await ui.findAll({ type: 'Text' })).map(t => t.text ?? '')
+    const noteAt = texts.findIndex(t => /never ran them/.test(t))
+    const rowAt = texts.findIndex(t => /working out the result you want/.test(t))
+    expect(noteAt).toBeGreaterThanOrEqual(0)
+    expect(rowAt).toBeGreaterThan(noteAt)
+    expect(texts.some(t => /stopped, waiting on you/.test(t))).toBe(true)
+    expect((await ui.find({ key: 'brief' }))?.props.hotkey).toBe('1')
+    expect((await ui.find({ key: 'fine' }))?.props.hotkey).toBe('2')
+    expect((await ui.find({ key: 'later' }))?.props.hotkey).toBe('0')
+    // The row keeps both its buttons under the note, for the mouse alone.
+    const rep = await ui.find({ key: 'rep' })
+    expect(rep).toBeDefined()
+    expect(rep?.props.hotkey).toBeUndefined()
+    const tell = await ui.find({ key: 'tell' })
+    expect(tell).toBeDefined()
+    expect(tell?.props.hotkey).toBeUndefined()
+    const glyphs = (await ui.findAll({ type: 'Text' })).map(t => t.text ?? '').filter(t => /^[◆◇]/.test(t))
+    expect(glyphs.length).toBeGreaterThan(0)
+    for (const g of glyphs) expect(g.slice(1)).toBe(surface === 'vscode' ? '\u00A0' : ' ')
+    await ui.unmount()
+  }
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'fine' })
+  expect(await ui.find({ type: 'Text', text: /never ran them/ })).toBeUndefined()
+  expect((await ui.find({ key: 'rep' }))?.props.hotkey).toBe('1')
+  expect((await ui.find({ key: 'tell' }))?.props.hotkey).toBe('2')
+  await ui.unmount()
+})
 
 test('rule: a flag already shown is not shown again as a note', async ($, on) => {
   session(on)
@@ -1108,6 +1144,63 @@ test('rule: with few rows in the band the card still draws its buttons and folds
   await ui.press({ key: 'close' })
   expect((await ui.find({ key: 'rep' }))?.props.hotkey).toBe('1')
   await ui.unmount()
+})
+
+test('rule: on the VS Code surface, whose band scrolls, no line is given a width, so each fills the box, and the card is drawn whole with every sentence and its buttons', async ($, on) => {
+  expect(sizesInColumns('terminal')).toBe(true)
+  expect(sizesInColumns('desktop')).toBe(true)
+  expect(sizesInColumns('vscode')).toBe(false)
+  expect([...SCROLLING_SURFACES]).toEqual(['vscode'])
+  session(on)
+  quietBand(on)
+  on('model.fork', () => ({
+    value: {
+      isAnswered: true,
+      text: `verdict: continue\nwell:\nstands: ${LONG('Stands')}\nmeans: ${LONG('Means')}\nleft:\n- one thing\n- another\nnext: ${LONG('Next')}\nmessage:\n${LONG('Message')}\nend\ndoes: Makes the agent prove it.`,
+      usage: USAGE,
+    },
+  }))
+  // The editor's band: twelve rows, about sixty columns at the prompt box's width.
+  const editor = { ...BAND, props: { ...BAND.props, maxRows: 12, bodyColumns: 60, scroll: { offset: 0, bodyRows: 12 } } }
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'vscode', ...editor })
+  await ui.press({ key: 'rep' })
+  expect(await ui.find({ type: 'Text', text: /Means sentence number 30/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Stands sentence number 30/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Next sentence number 30/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Message sentence number 30/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /another/ })).toBeDefined()
+  expect((await ui.find({ key: 'close' }))?.props.hotkey).toBe('2')
+  expect((await ui.find({ key: 'put' }))?.props.hotkey).toBe('1')
+  // No Box of the card carries a width: each fills the editor's box and wraps at its edge.
+  const boxes = await ui.findAll({ type: 'Box' })
+  const widths = boxes.map(b => b.props.width).filter(x => x !== undefined)
+  expect(widths).toEqual([])
+  // No empty line above the card; the glyph's row never wraps, and the text beside it
+  // stretches and shrinks, so the two share one line.
+  expect(boxes.map(b => b.props.marginTop).filter(x => x !== undefined && x !== 0)).toEqual([])
+  const head = boxes.find(b => b.props.flexDirection === 'row' && b.props.flexWrap === 'nowrap')
+  expect(head).toBeDefined()
+  const textBox = boxes.find(b => b.props.flexGrow === 1 && b.props.flexShrink === 1)
+  expect(textBox).toBeDefined()
+  await ui.press({ key: 'close' })
+  const rowBoxes = await ui.findAll({ type: 'Box' })
+  expect(rowBoxes.map(b => b.props.width).filter(x => x !== undefined)).toEqual([])
+  expect(rowBoxes.map(b => b.props.marginTop).filter(x => x !== undefined && x !== 0)).toEqual([])
+  expect(rowBoxes.find(b => b.props.flexWrap === 'nowrap')).toBeDefined()
+  expect(rowBoxes.find(b => b.props.flexGrow === 1 && b.props.flexShrink === 1)).toBeDefined()
+  await ui.unmount()
+  // The same band on the terminal still sizes its lines in columns and folds.
+  const term = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...editor })
+  await term.press({ key: 'rep' })
+  expect(await term.find({ type: 'Text', text: /Means sentence number 30/ })).toBeUndefined()
+  expect((await term.find({ key: 'close' }))?.props.hotkey).toBe('2')
+  const termWidths = (await term.findAll({ type: 'Box' })).map(b => b.props.width).filter(x => x !== undefined)
+  expect(termWidths).toContain(60)
+  expect(termWidths).toContain(58)
+  const termBoxes = await term.findAll({ type: 'Box' })
+  expect(termBoxes.some(b => b.props.marginTop === 1)).toBe(true)
+  expect(termBoxes.some(b => b.props.flexGrow === 1)).toBe(false)
+  await term.unmount()
 })
 
 // --- The brief judges against the sum of the owner's messages, and calls a session long only by a figure. ---

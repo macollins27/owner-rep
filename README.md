@@ -31,7 +31,8 @@ Behind that row are three reads of increasing cost.
 
 The **watch** stays silent unless it finds something with a cost to the owner: work dropped
 or shrunk, a claim not shown, a test never run, the easy option taken in place of the right
-one. Then one "Heads up" line appears, with the reason beneath it.
+one. Then one "Heads up" line appears above the row, with the reason beneath it and the row
+still on screen under it.
 
 The **briefing** is a card: where the work really stands, what the agent's last message means,
 what was left out, what should happen next, and a message to the agent, written and ready. One
@@ -129,7 +130,7 @@ part it writes that is empty or still says stop, or a call that fails, keeps the
 text built from the open conditions, so the card keeps the agent on the job and never offers
 a stop. A reply that comes back cut short is not caught: a part that does not say stop is
 taken as far as it goes, so a card can carry a sentence that ends mid-way, and the live runs
-of 19 Oct 2026 showed such replies (`docs/testing.md`, scenario 10). The call writes the
+of 19 Oct 2026 showed such replies (`docs/testing.md`, scenario 11). The call writes the
 card's parts only, never the objective, and the record keeps how many reads the card took:
 one, two with the second ask, three with the call. While no
 objective is written, any of the same is refused at once, every part is the rep's fixed text
@@ -349,13 +350,24 @@ folder, the mod runs from that folder: an edit reaches a session after `/reload-
 restart. The check step reads the session record through `agentsview` when it is on the path, and
 from the session's transcript file under `~/.claude/projects/` when it is not.
 
+The rep draws in the terminal, in the desktop app and in Claude Code for VS Code's chat
+window, which draws mods from extension 2.1.310 (23 Oct 2026; an older extension runs the
+hooks and draws nothing). The editor's band is a box as wide as the prompt box, twelve lines
+tall, that scrolls, drawn in the editor's proportional font; the extension counts its
+columns by the wider of "0" and "─" and draws a Box's width in `ch`, the width of "0", so
+a line given the band's width in columns ends short of the box's edge. There the rep gives
+no line a width, so each fills the box and wraps at its edge, and the card is drawn whole
+and scrolls; on the terminal each line has its width in columns and the card is folded to
+the band's rows (`sizesInColumns`). The box's own width is the extension's layout: the
+strip is a child of the prompt box's column, beside the permission cards.
+
 ## Develop
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
 claude plugin test .          # 225 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
-tests/live/live.sh              # on demand: ten real sessions in tmux, the strip captured to tests/live/captures
+tests/live/live.sh              # on demand: eleven real sessions in tmux, the strip captured to tests/live/captures
 ```
 
 GitHub runs the validation, the host-calls step, the host-commands script, the tests and the
@@ -375,7 +387,7 @@ as skipped when they answer wrongly, since the check does not start there.
 tsc -p . --noEmit             # needs .claude-plugin/types/, see below
 ```
 
-The tests cover the parsers, the row on both surfaces, the shared strip, the press, the
+The tests cover the parsers, the row on the terminal, desktop and VS Code surfaces, the shared strip, the press, the
 objective writer and its rules (the guard, corrections, new jobs, drafts, the marks and the
 gate), the note to the rep, the stop forms the gate reads, the record read where there is
 nothing to fork, the seeding of his messages from a stubbed transcript, and a press
