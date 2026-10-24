@@ -73,7 +73,7 @@ If `.claude-plugin/types/` is missing here, copy it from there:
 cp -R ~/.claude/dev-mods/02eea29b-b8e0-44e5-b4b8-b6903870fe8a/owner-rep/.claude-plugin/types .claude-plugin/types
 ```
 
-Those declarations are from Claude Code 2.1.300 (14 Oct 2026); the mods API is early access
+Those declarations are from Claude Code 2.1.310 (24 Oct 2026; the live layer's `--plugin-dir` sessions rewrite them on the build they run); the mods API is early access
 and changes between releases, so a newer build's declarations win when they exist. With the
 copied folder, the two hook files and the test file type-check clean. A tool the typings do
 not list (an MCP tool, `Grep`) is called from a test with `as never`. Do not commit anything tsc
