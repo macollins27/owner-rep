@@ -134,7 +134,7 @@ the writer's shape, and asserts that the objective is unchanged.
 
 **Status.** 217 tests: the parsers, the status words (including the variable-first command, read
 through the mounted strip), the note to the rep, the checker's prompt and tools, the row on
-both surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-
+the terminal, desktop and VS Code surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-
 failure toast, the sequence rules above, the card folding to a small band, the brief
 carrying the whole-ask rule and the session's size as a figure, the helper count, the prompt
 box's refusals, the check's three failure paths, the word-wrapped row count, the checked card

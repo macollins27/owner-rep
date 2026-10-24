@@ -1579,7 +1579,7 @@ export const register: Register = on => {
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
     if (e.props.hasSurvey) return next(e)
-    if (e.surface !== 'terminal' && e.surface !== 'desktop') return next(e)
+    if (e.surface !== 'terminal' && e.surface !== 'desktop' && e.surface !== 'vscode') return next(e)
     const { Box, Text, Button } = $.ui.resolve(e)
     const cols = Math.max(20, e.props.bodyColumns)
     const view = (await read($, viewA)) ?? 'row'
