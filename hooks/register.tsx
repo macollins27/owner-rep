@@ -1587,6 +1587,9 @@ export const register: Register = on => {
     // scrolling box in a proportional font (`sizesInColumns`), where a line fills the box.
     const inColumns = sizesInColumns(e.surface)
     const w = (n: number): number | undefined => (inColumns ? n : undefined)
+    // The empty line above the rep parts it from the agent's text on the terminal; the
+    // editor's box has its own title and padding, so there it is dropped.
+    const gap = inColumns ? 1 : 0
     const view = (await read($, viewA)) ?? 'row'
     const reading = await read($, readingA)
     const now = (await read($, nowA)) ?? IDLE
@@ -1620,9 +1623,11 @@ export const register: Register = on => {
     const isReading = view === 'reading'
     const marked = now.mark !== ''
     const lead = (glyph: string, color: string, tag: string, text: string) => (
-      <Box flexDirection="row">
+      // The glyph and the text share one line: the row never wraps, and where the
+      // text has no width it stretches beside the glyph and shrinks to fit.
+      <Box flexDirection="row" flexWrap="nowrap">
         <Text color={color}>{glyph} </Text>
-        <Box flexDirection="column" width={w(cols - 2)}>
+        <Box flexDirection="column" width={w(cols - 2)} flexGrow={inColumns ? undefined : 1} flexShrink={inColumns ? undefined : 1}>
           <Text wrap="wrap">
             <Text dimColor>{tag} · </Text>
             {text}
@@ -1664,7 +1669,7 @@ export const register: Register = on => {
         clearNote($).catch(() => undefined)
       }
       return (
-        <Box flexDirection="column" marginTop={1}>
+        <Box flexDirection="column" marginTop={gap}>
           {lead('◆', 'warning', 'Heads up', note.line)}
           {note.why !== '' ? (
             <Box paddingLeft={2} width={w(cols)}>
@@ -1700,7 +1705,7 @@ export const register: Register = on => {
           </Box>
         )
       return (
-        <Box flexDirection="column" marginTop={1}>
+        <Box flexDirection="column" marginTop={gap}>
           {cardHead}
           {shown.revised !== '' ? (
             <Box paddingLeft={2} width={w(cols)}>
@@ -1844,7 +1849,7 @@ export const register: Register = on => {
     }
 
     return (
-      <Box flexDirection="column" marginTop={1}>
+      <Box flexDirection="column" marginTop={gap}>
         {head}
         {choices(statusText, repButton, tellButton)}
         {beneath}

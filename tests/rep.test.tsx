@@ -1070,11 +1070,22 @@ test('rule: on the VS Code surface, whose band scrolls, no line is given a width
   expect((await ui.find({ key: 'close' }))?.props.hotkey).toBe('2')
   expect((await ui.find({ key: 'put' }))?.props.hotkey).toBe('1')
   // No Box of the card carries a width: each fills the editor's box and wraps at its edge.
-  const widths = (await ui.findAll({ type: 'Box' })).map(b => b.props.width).filter(x => x !== undefined)
+  const boxes = await ui.findAll({ type: 'Box' })
+  const widths = boxes.map(b => b.props.width).filter(x => x !== undefined)
   expect(widths).toEqual([])
+  // No empty line above the card; the glyph's row never wraps, and the text beside it
+  // stretches and shrinks, so the two share one line.
+  expect(boxes.map(b => b.props.marginTop).filter(x => x !== undefined && x !== 0)).toEqual([])
+  const head = boxes.find(b => b.props.flexDirection === 'row' && b.props.flexWrap === 'nowrap')
+  expect(head).toBeDefined()
+  const textBox = boxes.find(b => b.props.flexGrow === 1 && b.props.flexShrink === 1)
+  expect(textBox).toBeDefined()
   await ui.press({ key: 'close' })
-  const rowWidths = (await ui.findAll({ type: 'Box' })).map(b => b.props.width).filter(x => x !== undefined)
-  expect(rowWidths).toEqual([])
+  const rowBoxes = await ui.findAll({ type: 'Box' })
+  expect(rowBoxes.map(b => b.props.width).filter(x => x !== undefined)).toEqual([])
+  expect(rowBoxes.map(b => b.props.marginTop).filter(x => x !== undefined && x !== 0)).toEqual([])
+  expect(rowBoxes.find(b => b.props.flexWrap === 'nowrap')).toBeDefined()
+  expect(rowBoxes.find(b => b.props.flexGrow === 1 && b.props.flexShrink === 1)).toBeDefined()
   await ui.unmount()
   // The same band on the terminal still sizes its lines in columns and folds.
   const term = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...editor })
@@ -1084,6 +1095,9 @@ test('rule: on the VS Code surface, whose band scrolls, no line is given a width
   const termWidths = (await term.findAll({ type: 'Box' })).map(b => b.props.width).filter(x => x !== undefined)
   expect(termWidths).toContain(60)
   expect(termWidths).toContain(58)
+  const termBoxes = await term.findAll({ type: 'Box' })
+  expect(termBoxes.some(b => b.props.marginTop === 1)).toBe(true)
+  expect(termBoxes.some(b => b.props.flexGrow === 1)).toBe(false)
   await term.unmount()
 })
 
