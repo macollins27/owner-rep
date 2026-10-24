@@ -3,8 +3,11 @@
 `tsc` needs the declarations of the mods API, which Claude Code writes into a mod's
 development copy when a session loads it and never into a checkout (see the root
 `CLAUDE.md`). GitHub has no session, so `types/` here is a pinned copy of those
-declarations as Claude Code 2.1.300 wrote them on 14 Oct 2026, the same build the workflow
-installs. `tsconfig.json` beside it is the engine's own, pointed at that copy.
+declarations as Claude Code 2.1.310 wrote them on 24 Oct 2026, the same build the workflow
+installs. The engine writes them beside the mod when a session loads it with `--plugin-dir`,
+which the live layer does, so `tests/live/live.sh 1` on the build to pin refreshes the copy
+in `.claude-plugin/types/` (the MCP folder is written only when the session has MCP tools
+connected; the pinned one is from 15 Oct 2026 and the mod does not use it). `tsconfig.json` beside it is the engine's own, pointed at that copy.
 
 The engine stamps its build on the first line of `types/claude-code/index.d.ts` when it
 writes the three folders together. `declarations.sh` reads that stamp and `claude --version`
