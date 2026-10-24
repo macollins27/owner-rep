@@ -1804,5 +1804,11 @@
     "breaks": "The gate reads the card's message as if it were a next step, so a message written in his voice that has the agent wait for his sign-off or hand the work back to him stays on a refused card, and a message that has him wait until the agent has a log is refused.",
     "patch": "message-voice-unshifted.patch",
     "fixed": "2026-10-19"
+  },
+  {
+    "name": "own-words-cut-taken",
+    "breaks": "The own-words reply is read however it came back, so a reply cut short puts its half sentence on the card in place of the rep's fixed text.",
+    "patch": "own-words-cut-taken.patch",
+    "fixed": "2026-10-24"
   }
 ]
