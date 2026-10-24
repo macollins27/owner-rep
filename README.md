@@ -31,7 +31,8 @@ Behind that row are three reads of increasing cost.
 
 The **watch** stays silent unless it finds something with a cost to the owner: work dropped
 or shrunk, a claim not shown, a test never run, the easy option taken in place of the right
-one. Then one "Heads up" line appears, with the reason beneath it.
+one. Then one "Heads up" line appears above the row, with the reason beneath it and the row
+still on screen under it.
 
 The **briefing** is a card: where the work really stands, what the agent's last message means,
 what was left out, what should happen next, and a message to the agent, written and ready. One
@@ -342,7 +343,7 @@ strip is a child of the prompt box's column, beside the permission cards.
 claude plugin validate .      # manifest, hooks, and every engine call and state key
 claude plugin test .          # 217 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
-tests/live/live.sh              # on demand: nine real sessions in tmux, the strip captured to tests/live/captures
+tests/live/live.sh              # on demand: ten real sessions in tmux, the strip captured to tests/live/captures
 ```
 
 GitHub runs the validation, the host-calls step, the host-commands script, the tests and the

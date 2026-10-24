@@ -660,6 +660,36 @@ const session = (on: On, store: Record<string, unknown> = {}) => {
   on('ui.toast', () => ({ value: undefined }))
 }
 
+test('rule: a heads-up draws above the row, which stays on screen beneath it with its status and Tell the rep for the mouse', async ($, on) => {
+  session(on)
+  quietBand(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: watchAnswer('The agent says the tests pass, but never ran them.'), usage: USAGE } }))
+  await $.turn.complete(stop('t1'))
+  for (const surface of ['terminal', 'vscode'] as const) {
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface, ...BAND })
+    const texts = (await ui.findAll({ type: 'Text' })).map(t => t.text ?? '')
+    const noteAt = texts.findIndex(t => /never ran them/.test(t))
+    const rowAt = texts.findIndex(t => /working out the result you want/.test(t))
+    expect(noteAt).toBeGreaterThanOrEqual(0)
+    expect(rowAt).toBeGreaterThan(noteAt)
+    expect(texts.some(t => /stopped, waiting on you/.test(t))).toBe(true)
+    expect((await ui.find({ key: 'brief' }))?.props.hotkey).toBe('1')
+    expect((await ui.find({ key: 'fine' }))?.props.hotkey).toBe('2')
+    expect((await ui.find({ key: 'later' }))?.props.hotkey).toBe('0')
+    expect(await ui.find({ key: 'rep' })).toBeUndefined()
+    const tell = await ui.find({ key: 'tell' })
+    expect(tell).toBeDefined()
+    expect(tell?.props.hotkey).toBeUndefined()
+    await ui.unmount()
+  }
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'fine' })
+  expect(await ui.find({ type: 'Text', text: /never ran them/ })).toBeUndefined()
+  expect((await ui.find({ key: 'rep' }))?.props.hotkey).toBe('1')
+  expect((await ui.find({ key: 'tell' }))?.props.hotkey).toBe('2')
+  await ui.unmount()
+})
+
 test('rule: a flag already shown is not shown again as a note', async ($, on) => {
   session(on)
   quietBand(on)

@@ -132,8 +132,8 @@ objective it checked came from the writer's own call. The test now sends a furth
 the writer answers with `objective: holds` and a look whose answer carries an objective in
 the writer's shape, and asserts that the objective is unchanged.
 
-**Status.** 218 tests: the parsers, the status words (including the variable-first command, read
-through the mounted strip), the note to the rep, the checker's prompt and tools, the row on
+**Status.** 219 tests: the parsers, the status words (including the variable-first command, read
+through the mounted strip), the note to the rep, the heads-up drawn above the row on the terminal and VS Code surfaces, the checker's prompt and tools, the row on
 the terminal, desktop and VS Code surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-
 failure toast, the sequence rules above, the card folding to a small band and drawn whole with no line given a width on the VS Code surface, whose band scrolls, the brief
 carrying the whole-ask rule and the session's size as a figure, the helper count, the prompt

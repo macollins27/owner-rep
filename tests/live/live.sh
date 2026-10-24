@@ -3,7 +3,7 @@
 # Proves the build the owner runs calls the rep's hooks; the test kit cannot. On demand only:
 # each scenario is a real session and a model call, about a minute.
 #
-#     tests/live/live.sh            # all nine scenarios
+#     tests/live/live.sh            # all ten scenarios
 #     tests/live/live.sh 2 4        # only these
 #
 # Each scenario's whole screen is saved in tests/live/captures/<n>-<name>.txt, and the strip's
@@ -24,7 +24,7 @@ CAPS=$HERE/captures
 S=owner-rep-live
 STRIP_RE='Owner rep ·|Brief me|Tell the rep|Fine, close|Put message|Check it|Heads up'
 want=("$@")
-[[ ${#want} -eq 0 ]] && want=(1 2 3 4 5 6 7 8 9)
+[[ ${#want} -eq 0 ]] && want=(1 2 3 4 5 6 7 8 9 10)
 fails=0
 bad=0
 # The folder the last session was started in, so a scenario can reopen a session there.
@@ -298,6 +298,23 @@ PY
       fi
       verdict "the queued message recorded as his in the fork's record" $?
       rm -f $ids_before
+      stop ;;
+    10)
+      echo "10 heads-up: a claim the agent never showed draws the Heads up above the row, which stays with its status and Tell the rep"
+      start || { bad=1; fails=$((fails+1)); stop; continue; }
+      send 'Do not run any command or open any file. Reply with exactly this sentence and nothing else: I ran the whole test suite and every test passes, so the work is finished.'
+      wait_for '^\s*stopped, waiting on you' 90
+      sleep 2
+      # A note to the rep rewrites the objective and starts a look at once; the look then sees
+      # a claim of tests passed that nothing in the session shows.
+      send 'Owner rep: what I care about is that the tests really ran and passed, shown in the session, not the agent saying so.'
+      wait_for 'Heads up ·' 180
+      sleep 2
+      save 10-heads-up
+      strip | grep -q 'Heads up ·' ; verdict 'the Heads up line drawn' $?
+      [[ $(strip | grep -n 'Heads up ·' | head -1 | cut -d: -f1) -lt $(strip | grep -n 'Owner rep ·' | head -1 | cut -d: -f1) ]] ; verdict 'the row drawn beneath the note' $?
+      strip | grep -qE '1: Brief me\s+2: Fine\s+0: Later' ; verdict 'the note buttons with digits' $?
+      strip | grep -qE 'stopped, waiting on you\s+Tell the rep' ; verdict 'the row status with Tell the rep for the mouse' $?
       stop ;;
   esac
   [[ $bad -gt 0 ]] && fails=$((fails+1))
