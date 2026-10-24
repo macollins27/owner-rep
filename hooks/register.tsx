@@ -68,7 +68,7 @@ import {
   doingFor,
   firstSentence,
   fitCard,
-  foldsCard,
+  sizesInColumns,
   fit,
   fitTail,
   noteSplit,
@@ -1583,6 +1583,10 @@ export const register: Register = on => {
     if (e.surface !== 'terminal' && e.surface !== 'desktop' && e.surface !== 'vscode') return next(e)
     const { Box, Text, Button } = $.ui.resolve(e)
     const cols = Math.max(20, e.props.bodyColumns)
+    // Each line's width in columns on the terminal; none on a surface whose band is a
+    // scrolling box in a proportional font (`sizesInColumns`), where a line fills the box.
+    const inColumns = sizesInColumns(e.surface)
+    const w = (n: number): number | undefined => (inColumns ? n : undefined)
     const view = (await read($, viewA)) ?? 'row'
     const reading = await read($, readingA)
     const now = (await read($, nowA)) ?? IDLE
@@ -1618,7 +1622,7 @@ export const register: Register = on => {
     const lead = (glyph: string, color: string, tag: string, text: string) => (
       <Box flexDirection="row">
         <Text color={color}>{glyph} </Text>
-        <Box flexDirection="column" width={cols - 2}>
+        <Box flexDirection="column" width={w(cols - 2)}>
           <Text wrap="wrap">
             <Text dimColor>{tag} · </Text>
             {text}
@@ -1663,7 +1667,7 @@ export const register: Register = on => {
         <Box flexDirection="column" marginTop={1}>
           {lead('◆', 'warning', 'Heads up', note.line)}
           {note.why !== '' ? (
-            <Box paddingLeft={2} width={cols}>
+            <Box paddingLeft={2} width={w(cols)}>
               <Text dimColor wrap="wrap">
                 {note.why}
               </Text>
@@ -1682,13 +1686,13 @@ export const register: Register = on => {
     if (view === 'brief' && brief !== null) {
       // The card folded to the band's rows, so its buttons stay where a digit
       // reaches them; the Put button still carries the whole message. On a surface
-      // whose band scrolls (`foldsCard`) the card is drawn whole instead.
+      // whose band scrolls (`sizesInColumns` false) the card is drawn whole instead.
       const whole = { ...brief, reading: brief.reading === '' ? readingText : brief.reading }
-      const shown = foldsCard(e.surface) ? fitCard(whole, e.props.maxRows, cols) : whole
+      const shown = inColumns ? fitCard(whole, e.props.maxRows, cols) : whole
       const cardHead = lead(headGlyph, headColor, 'Owner rep', shown.reading)
       const section = (label: string, text: string) =>
         text === '' ? undefined : (
-          <Box paddingLeft={2} width={cols}>
+          <Box paddingLeft={2} width={w(cols)}>
             <Text wrap="wrap">
               <Text bold>{label} </Text>
               {text}
@@ -1699,14 +1703,14 @@ export const register: Register = on => {
         <Box flexDirection="column" marginTop={1}>
           {cardHead}
           {shown.revised !== '' ? (
-            <Box paddingLeft={2} width={cols}>
+            <Box paddingLeft={2} width={w(cols)}>
               <Text dimColor wrap="wrap">
                 {shown.revised}
               </Text>
             </Box>
           ) : undefined}
           {shown.well !== '' ? (
-            <Box paddingLeft={2} width={cols}>
+            <Box paddingLeft={2} width={w(cols)}>
               <Text color="success" wrap="wrap">
                 {shown.well}
               </Text>
@@ -1715,7 +1719,7 @@ export const register: Register = on => {
           {section('Stands:', shown.stands)}
           {section('Means:', shown.means)}
           {shown.leftOut.length > 0 ? (
-            <Box flexDirection="column" paddingLeft={2} width={cols}>
+            <Box flexDirection="column" paddingLeft={2} width={w(cols)}>
               <Text bold>Left out:</Text>
               {shown.leftOut.map((item, i) => (
                 <Text key={`left-${i}`} wrap="wrap">
@@ -1727,7 +1731,7 @@ export const register: Register = on => {
           ) : undefined}
           {section('Next:', shown.next)}
           {shown.checked !== null ? (
-            <Box flexDirection="column" paddingLeft={2} width={cols}>
+            <Box flexDirection="column" paddingLeft={2} width={w(cols)}>
               <Text bold>Checked against the record and the files:</Text>
               {shown.checked.holds.map((item, i) => (
                 <Text key={`holds-${i}`} wrap="wrap">
@@ -1777,26 +1781,26 @@ export const register: Register = on => {
             </Box>
           ) : undefined}
           {shown.checked === null && !shown.isChecking && shown.checkNote === '' ? (
-            <Box paddingLeft={2} width={cols}>
+            <Box paddingLeft={2} width={w(cols)}>
               <Text dimColor wrap="wrap">
                 {shown.checkCost}
               </Text>
             </Box>
           ) : undefined}
           {shown.checkNote !== '' ? (
-            <Box paddingLeft={2} width={cols}>
+            <Box paddingLeft={2} width={w(cols)}>
               <Text dimColor wrap="wrap">
                 {shown.checkNote}
               </Text>
             </Box>
           ) : undefined}
           {shown.message !== '' ? (
-            <Box marginLeft={2} width={cols - 2} flexDirection="column" borderStyle="round" borderDimColor paddingX={1}>
+            <Box marginLeft={2} width={w(cols - 2)} flexDirection="column" borderStyle="round" borderDimColor paddingX={1}>
               <Text wrap="wrap">{shown.message}</Text>
             </Box>
           ) : undefined}
           {shown.does !== '' && shown.message !== '' ? (
-            <Box paddingLeft={2} width={cols}>
+            <Box paddingLeft={2} width={w(cols)}>
               <Text dimColor wrap="wrap">
                 {shown.does}
               </Text>

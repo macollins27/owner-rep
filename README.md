@@ -327,9 +327,14 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 The rep draws in the terminal, in the desktop app and in Claude Code for VS Code's chat
 window, which draws mods from extension 2.1.310 (23 Oct 2026; an older extension runs the
-hooks and draws nothing). The editor's band is a box of twelve lines that scrolls, about
-sixty columns wide at the prompt box, so the card is drawn whole there and scrolls, where
-the terminal's is folded to the band's rows (`foldsCard`).
+hooks and draws nothing). The editor's band is a box as wide as the prompt box, twelve lines
+tall, that scrolls, drawn in the editor's proportional font; the extension counts its
+columns by the wider of "0" and "─" and draws a Box's width in `ch`, the width of "0", so
+a line given the band's width in columns ends short of the box's edge. There the rep gives
+no line a width, so each fills the box and wraps at its edge, and the card is drawn whole
+and scrolls; on the terminal each line has its width in columns and the card is folded to
+the band's rows (`sizesInColumns`). The box's own width is the extension's layout: the
+strip is a child of the prompt box's column, beside the permission cards.
 
 ## Develop
 
