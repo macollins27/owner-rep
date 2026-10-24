@@ -325,6 +325,12 @@ folder, the mod runs from that folder: an edit reaches a session after `/reload-
 restart. The check step reads the session record through `agentsview` when it is on the path, and
 from the session's transcript file under `~/.claude/projects/` when it is not.
 
+The rep draws in the terminal and in the desktop app, and answers the VS Code surface the
+mods API declares with the same row. Claude Code for VS Code draws no mod yet (its release
+notes for 2.1.310 name it, with `claude -p`, as a session where no surface draws one), so in
+the editor the hooks run, notes to the rep are taken and the objective is kept, but nothing
+appears until the extension attaches that surface.
+
 ## Develop
 
 ```
@@ -351,7 +357,7 @@ as skipped when they answer wrongly, since the check does not start there.
 tsc -p . --noEmit             # needs .claude-plugin/types/, see below
 ```
 
-The tests cover the parsers, the row on both surfaces, the shared strip, the press, the
+The tests cover the parsers, the row on the terminal, desktop and VS Code surfaces, the shared strip, the press, the
 objective writer and its rules (the guard, corrections, new jobs, drafts, the marks and the
 gate), the note to the rep, the stop forms the gate reads, the record read where there is
 nothing to fork, the seeding of his messages from a stubbed transcript, and a press

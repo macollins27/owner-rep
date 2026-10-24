@@ -494,11 +494,11 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   expect(out?.cached).toBe(1)
 })
 
-test('the row draws on both surfaces with the Rep button and a placeholder goal', async ($, on) => {
+test('the row draws on the terminal, desktop and VS Code surfaces with the Rep button and a placeholder goal', async ($, on) => {
   mock.store(on, {})
   quietBand(on)
   on('session.id', () => ({ value: 'test-session' }))
-  for (const surface of ['terminal', 'desktop'] as const) {
+  for (const surface of ['terminal', 'desktop', 'vscode'] as const) {
     const ui = await $.ui.mount({ plugin: 'owner-rep', surface, ...BAND })
     const button = await ui.find({ key: 'rep' })
     expect(button).toBeDefined()
