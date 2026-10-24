@@ -325,11 +325,11 @@ folder, the mod runs from that folder: an edit reaches a session after `/reload-
 restart. The check step reads the session record through `agentsview` when it is on the path, and
 from the session's transcript file under `~/.claude/projects/` when it is not.
 
-The rep draws in the terminal and in the desktop app, and answers the VS Code surface the
-mods API declares with the same row. Claude Code for VS Code draws no mod yet (its release
-notes for 2.1.310 name it, with `claude -p`, as a session where no surface draws one), so in
-the editor the hooks run, notes to the rep are taken and the objective is kept, but nothing
-appears until the extension attaches that surface.
+The rep draws in the terminal, in the desktop app and in Claude Code for VS Code's chat
+window, which draws mods from extension 2.1.310 (23 Oct 2026; an older extension runs the
+hooks and draws nothing). The editor's band is a box of twelve lines that scrolls, about
+sixty columns wide at the prompt box, so the card is drawn whole there and scrolls, where
+the terminal's is folded to the band's rows (`foldsCard`).
 
 ## Develop
 

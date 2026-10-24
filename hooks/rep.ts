@@ -2479,6 +2479,19 @@ export function cardRows(c: CardText, cols: number): number {
 // agent's work and before what stands. After each fold the message is cut to
 // the room left. It is never dropped: the owner can still put it in the
 // prompt, whole, and one row of it says what it is.
+// Where the card folds. The terminal's band is a window of `maxRows` rows the person
+// cannot scroll from the prompt box, so the card is folded until it fits and its
+// buttons stay where a digit reaches them. Claude Code for VS Code's band is a box of
+// twelve lines that scrolls under the pointer (`max-height: 12lh; overflow: auto`,
+// read from the extension's stylesheet at 2.1.310), about sixty columns wide at the
+// prompt box's width, in a proportional font the rows are only estimated for; a card
+// folded to that cut every sentence to one line (23 Oct 2026). There it is drawn whole
+// and the box scrolls.
+export const SCROLLING_SURFACES: ReadonlySet<string> = new Set(['vscode'])
+export function foldsCard(surface: string): boolean {
+  return !SCROLLING_SURFACES.has(surface)
+}
+
 export function fitCard(card: CardText, maxRows: number, cols: number): CardText {
   const w = Math.max(1, cols - 2)
   let c: CardText = { ...card }

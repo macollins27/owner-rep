@@ -68,6 +68,7 @@ import {
   doingFor,
   firstSentence,
   fitCard,
+  foldsCard,
   fit,
   fitTail,
   noteSplit,
@@ -1680,8 +1681,10 @@ export const register: Register = on => {
 
     if (view === 'brief' && brief !== null) {
       // The card folded to the band's rows, so its buttons stay where a digit
-      // reaches them; the Put button still carries the whole message.
-      const shown = fitCard({ ...brief, reading: brief.reading === '' ? readingText : brief.reading }, e.props.maxRows, cols)
+      // reaches them; the Put button still carries the whole message. On a surface
+      // whose band scrolls (`foldsCard`) the card is drawn whole instead.
+      const whole = { ...brief, reading: brief.reading === '' ? readingText : brief.reading }
+      const shown = foldsCard(e.surface) ? fitCard(whole, e.props.maxRows, cols) : whole
       const cardHead = lead(headGlyph, headColor, 'Owner rep', shown.reading)
       const section = (label: string, text: string) =>
         text === '' ? undefined : (
