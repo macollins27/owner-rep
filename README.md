@@ -103,17 +103,23 @@ later check shows it: a look or a briefing that marks it shown again moves nothi
 writer never raises a condition's state, and the looks, the briefings and the writer are
 shown what the check found beside it. The objective stays open until every condition is
 shown or closed. While a condition is open, the gate refuses a briefing that says the agent
-should stop, that gives no verdict, whose next step or message tells the agent to stop, to
-wrap up, to stop and report, to wait for or await the owner or his word (with a stop or
-without), to stop and ask him, to check in with him or let him decide, to hand the work back
-to him, or to wait after a ", then", or calls the work finished or says the session or the
-agent can end it (a step that only carries the word and goes on, such as stopping a wrong
+should stop, that gives no verdict, whose next step or message tells the agent to stop
+(with "please" or without), to wrap up, to stop and report, to wait for or await the owner or
+his word (with a stop or without), to stop and ask him, to check in with him or let him
+decide, to hand the work or any part of it over or back to him, to leave the rest to him, or
+to wait after a ", then", or says he will take it from here, calls the work finished, says no
+further work is needed, or says the session or the agent can end it (a step that only
+carries the word and goes on, such as stopping a wrong
 approach, waiting on a CI run or on the agent's own build, a program that "runs once and
 stops", a step that says not to wait for him, or an end put after a condition, is let
 through), or that says the work is going well. The message is written in the owner's voice
 to the agent, so the gate reads it on a copy turned to the third person ("me", "my" and "I"
-the owner's, "you" and "your" the agent's): a wait for the owner's sign-off is refused, a
-wait until the agent has a log is not. Such a briefing is asked once more with the open
+the owner's, "you" and "your" the agent's, with "you're", "you are", "you've", "you have",
+"I'm", "I am", "I'll" and "I've" turned whole first so the verb agrees): a wait for the
+owner's sign-off and a message telling the agent it is done are refused, a wait until the
+agent has a log is not. The shift errs toward refusing: a few messages a reader would let
+through, such as one asking the agent to check in with the owner before a step, are refused
+as a stop is. Such a briefing is asked once more with the open
 conditions named, and that answer passes the same gate.
 
 The gate refuses part by part. On a refused card the verdict is continue, the line saying
@@ -124,13 +130,16 @@ step and message stand (beside a kept message, a line saying what it does that s
 the rep's). When the second answer is refused too, or does not come back, the parts the gate
 replaced are written once more in the rep's own words by one plain model call, not a fork of
 the conversation: its standing instructions are the brief's own sections on who the rep is
-and how it writes to the owner, and it is shown the objective, the owner's messages on the
+and how it writes to the owner, with one line against reproducing a secret, a key, a password
+or personal data it is shown, and it is shown the objective, the owner's messages on the
 job, the open conditions, and what stands and what is left out as the briefing found them. A
 part it writes that is empty or still says stop, or a call that fails, keeps the rep's fixed
 text built from the open conditions, so the card keeps the agent on the job and never offers
 a stop. The reply is taken only when it came back whole: its four parts each given once in
-the order asked, the message closed by its end line, and the meaning, the next step, the
-message's last line and the line saying what it does each ending at a sentence mark. A reply
+the order asked, the message closed by its end line and not empty, and the meaning, the next
+step and the line saying what it does each ending at a sentence mark. The message's last line
+is not held to a sentence mark, since its end line and a whole line after it show the message
+was not cut, and a whole message may end in a list item. A reply
 not whole leaves every part the gate replaced the rep's fixed text, so no half sentence
 reaches the card; the live runs of 19 Oct 2026 had two replies come back answered and cut
 mid-sentence, for a cause not yet known (`docs/testing.md`, scenario 11). The call writes the
@@ -140,7 +149,8 @@ card's parts only, never the objective, and the record keeps how many reads the 
 not answered or failed; `skipped`, no call made) and the length of its reply. While no
 objective is written, any of the same is refused at once, every part is the rep's fixed text
 saying the objective is not written yet, and nothing is asked again. The check's card passes
-the same gate part by part, with no such call.
+the same gate part by part, with no such call, and the record keeps the briefing's count of
+reads and what came of its call.
 
 These rules came from a session on 15 Oct 2026 in which a message that bounded the agent's
 next step was read as the owner asking for less, the rep's account of the job shrank to the

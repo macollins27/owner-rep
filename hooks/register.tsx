@@ -937,7 +937,9 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
         spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens, after.objectiveCalls, after.objectiveTokens, after.objectiveFailed, after.objectiveWhy),
         checkCost: checkCostText(after.lastCheckTokens, after.lastCheckCached, after.lastCheckMs, after.lastCheckRefused),
       }
-      after.lastBrief = { at, next: patch.next ?? '', message: patch.message ?? '' }
+      // The card's reads and what came of its own-words call stay the briefing's: the check
+      // makes no such call.
+      after.lastBrief = { ...after.lastBrief, at, next: patch.next ?? '', message: patch.message ?? '' }
       after.drafts = keepDraft(after.drafts, patch.message ?? '')
       return patch
     })
