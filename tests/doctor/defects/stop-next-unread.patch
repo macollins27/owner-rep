@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 0800489..0e8c087 100644
+index 19d12ba..1b687d7 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1403,7 +1403,7 @@ None of these may stand while any of them is open. Look at the conversation agai
+@@ -2793,7 +2793,7 @@ export const messageSaysStop = (text: string): boolean => STOP_NEXT.test(toAgent
  // ("stands") is kept as the model wrote it.
- export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer: BriefAnswer; refused: boolean } {
-   if (open !== null && open.length === 0) return { answer: a, refused: false }
--  if (a.verdict === 'continue' && a.well === '' && !STOP_NEXT.test(a.next)) return { answer: a, refused: false }
-+  if (a.verdict === 'continue' && a.well === '') return { answer: a, refused: false }
+ export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer: BriefAnswer; refused: boolean; replaced: Replaced[] } {
+   if (open !== null && open.length === 0) return { answer: a, refused: false, replaced: [] }
+-  if (a.verdict === 'continue' && a.well === '' && !saysStop(a.next) && !messageSaysStop(a.message)) return { answer: a, refused: false, replaced: [] }
++  if (a.verdict === 'continue' && a.well === '') return { answer: a, refused: false, replaced: [] }
    if (open === null) {
      return {
        answer: { ...a, verdict: 'continue', well: '', means: UNWRITTEN_MEANS, next: UNWRITTEN_NEXT, message: UNWRITTEN_MESSAGE, does: UNWRITTEN_DOES },
