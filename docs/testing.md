@@ -135,7 +135,7 @@ the writer's shape, and asserts that the objective is unchanged.
 **Status.** 218 tests: the parsers, the status words (including the variable-first command, read
 through the mounted strip), the note to the rep, the checker's prompt and tools, the row on
 the terminal, desktop and VS Code surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-
-failure toast, the sequence rules above, the card folding to a small band and drawn whole on the VS Code surface, whose band scrolls, the brief
+failure toast, the sequence rules above, the card folding to a small band and drawn whole with no line given a width on the VS Code surface, whose band scrolls, the brief
 carrying the whole-ask rule and the session's size as a figure, the helper count, the prompt
 box's refusals, the check's three failure paths, the word-wrapped row count, the checked card
 keeping its failed claims as it folds, the session end saving the record, and, from 15 Oct

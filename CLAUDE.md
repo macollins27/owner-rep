@@ -504,7 +504,7 @@ The `AbovePrompt` band is a strip shared with other mods ("You should know" amon
 this mod draws first. Rules the render enforces: whatever is beneath is kept under the row;
 while another mod draws something (`drawsSomething`), the rep's own note waits and the row's
 buttons lose their digits, so only one set of digit hotkeys is ever on screen; the briefing
-takes the strip alone; it is folded to the band's rows (`fitCard`) except on a surface whose band scrolls (`foldsCard`: Claude Code for VS Code, whose band is a twelve-line box about sixty columns wide), where it is drawn whole. Buttons use bare digits for hotkeys because from the prompt box only a
+takes the strip alone; on the terminal each line has its width in columns and the card is folded to the band's rows (`fitCard`), and on a surface whose band is a scrolling box in a proportional font (`sizesInColumns` false: Claude Code for VS Code, whose extension counts columns by a wide glyph and draws widths in `ch`) no line is given a width, so each fills the box, and the card is drawn whole. Buttons use bare digits for hotkeys because from the prompt box only a
 digit presses a band button. A keyboard chord for the Rep button once rode on an unrelated
 engine action; it could not be proven and was removed on 14 Oct 2026. Do not bring it back
 without a binding that is shown working.
