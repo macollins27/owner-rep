@@ -1668,6 +1668,10 @@ export const register: Register = on => {
       const clear = () => {
         clearNote($).catch(() => undefined)
       }
+      // The heads-up draws above the row, never in its place: the row's head and status
+      // stay on screen beneath it, with Tell the rep for the mouse alone, since the note's
+      // own buttons carry the digits (restored 23 Oct 2026; the row had been hidden under
+      // a note since 13 Oct, a choice no one asked for).
       return (
         <Box flexDirection="column" marginTop={gap}>
           {lead('◆', 'warning', 'Heads up', note.line)}
@@ -1682,8 +1686,10 @@ export const register: Register = on => {
             <Button key="brief" plain hotkey="1" label="Brief me" onPress={onPress} />,
             <Button key="fine" plain hotkey="2" label="Fine" onPress={clear} />,
             <Button key="later" plain hotkey="0" label="Later" onPress={clear} />,
-            statusText,
           )}
+          {head}
+          {choices(statusText, <Button key="tell" plain label="Tell the rep" onPress={tell} />)}
+          {beneath}
         </Box>
       )
     }

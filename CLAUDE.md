@@ -39,7 +39,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
 claude plugin test .          # runs every *.test.ts(x); all 217 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
-tests/live/live.sh              # on demand: nine real sessions of this checkout in tmux, the strip captured to tests/live/captures
+tests/live/live.sh              # on demand: ten real sessions of this checkout in tmux, the strip captured to tests/live/captures
 ```
 
 GitHub runs validate, `tests/ci/host-calls.sh`, `tests/ci/host-commands.mjs`, test and the
@@ -121,7 +121,10 @@ call writes (below):
    `turn.complete`, via `$.model.fork` over the agent's cached conversation. It is never
    awaited by the hook that starts it. Its answer is `state:`, `flag:`, `why:`, `shown:` and
    `closed:`; it marks conditions and never writes the objective. A flag becomes a "Heads up"
-   note only when the view is `row` and the flag was not already shown. Typing past notes
+   note only when the view is `row` and the flag was not already shown. The note draws above
+   the row, which stays beneath it with its head, its status and Tell the rep for the mouse
+   (the note's buttons carry the digits); from 13 to 23 Oct 2026 it took the row's place,
+   a choice made with the you-should-know shape that no one asked for. Typing past notes
    backs the watch off (`skipAfter`).
 2. **Briefing**: `pressBrief()` on the Rep button, another fork, drawn as the card. The
    model's answer is labelled lines (`verdict:`, `shown:`, `closed:`, `well:`, `stands:`,
