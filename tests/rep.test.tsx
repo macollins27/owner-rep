@@ -1,7 +1,7 @@
 import type { On, SessionMessage } from 'claude-code'
 import { expect, mock, test as kitTest, type Engine, type TestBody, type TestOptions } from 'claude-code/testing'
 
-import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, toAgentVoice, sectionOf, takeOwnWords, ownWordsPrompt, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
+import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, toAgentVoice, sectionOf, takeOwnWords, parseOwnWords, ownWordsPrompt, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
 
 // Every test starts with the session's working folder a Unix path, so what the suite reads does not
 // depend on the folder the kit gives it: on a Windows machine that folder is a drive path, which
@@ -3487,6 +3487,80 @@ test('takeOwnWords takes a rewritten part only where the gate replaced one and t
   expect(takeOwnWords(gated.answer, [], own)).toEqual(gated.answer)
 })
 
+// Two own-words replies as they came back whole on 19 Oct 2026, the live call's prompt sent
+// through `claude -p` (job2/diag/own-1.txt and own-2.txt of the shorter-brief work), copied
+// here as they were saved.
+const OWN_REPLY_1 = `means: The agent did what you asked: it answered "done" and nothing more. Nothing is on your laptop yet, and that is correct because you haven't said when. But nothing in the conversation shows what the work is or how it will get to your laptop.
+
+next: The agent should get the laptop install ready now without doing it. That means working out exactly what goes on the laptop, how it will get there and how it will prove it runs. Then it can install the newest version and show it working as soon as you give the word.
+
+message:
+Don't install anything on my laptop until I say it's time. Use the time until then to get the install ready, and tell me in a few plain sentences:
+- What exactly will be installed on my laptop, and what I will be able to do with it there.
+- Where the newest version is right now, and confirm it is saved and backed up to GitHub.
+- How you will get it onto my laptop and reach the laptop to check it. If something stands in the way, deal with it yourself. If the safety guard refuses a step, tell me exactly what it refused.
+When I say it's time, install the newest version on my laptop and run it there. Then show me proof from the laptop itself: what you ran and what it printed, showing it working, and that the version on the laptop is the newest one. Leave nothing for me to finish.
+end
+
+does: The agent will get the laptop install ready and tell you plainly what will go on your laptop and how, without installing anything until you say when.
+`
+const OWN_REPLY_2 = `means: The agent answered "done" and nothing more, as you asked. Getting this onto your laptop hasn't started, which is right because you haven't said when. But nothing so far shows what is being built, or that the agent can reach your laptop at all.
+
+next: The agent gets everything ready without installing anything. It works out what goes on the laptop, checks it can reach the laptop, and plans how it will prove the work runs there. That way the install happens the moment you say so, with no surprises.
+
+message:
+Don't install anything on my laptop yet. I'll tell you when. Before then, get ready so the install goes through in one go when I do:
+
+1. In one plain sentence, tell me what will go onto the laptop. Confirm it is the newest version, saved and backed up.
+2. Check that you can reach my laptop from here, and what it needs before this will run there. Only look; change nothing on the laptop. If you can't reach it, say exactly what is stopping you.
+3. Tell me how you'll show it working on the laptop once it's in: what you'll run there, and what result proves it works.
+
+When I say go: install the newest version on the laptop and show that it matches the newest one. Run it there and show me the real result. If anything breaks, fix it and keep going until it works, so nothing is left for me to finish.
+end
+does: The agent gets ready for the laptop install now, without putting anything on the laptop, so the install and the proof it works can happen as soon as you say go.
+`
+
+test('parseOwnWords takes an own-words reply only when it came back whole: the two recorded whole replies parse, and the recorded cut ones, a message without its end line, a missing does line and a part not ending at a sentence mark answer null', () => {
+  expect(parseOwnWords(OWN_REPLY_1)).toEqual(parseBrief(OWN_REPLY_1))
+  expect(parseOwnWords(OWN_REPLY_1)).toMatchObject({
+    next: 'The agent should get the laptop install ready now without doing it. That means working out exactly what goes on the laptop, how it will get there and how it will prove it runs. Then it can install the newest version and show it working as soon as you give the word.',
+    does: 'The agent will get the laptop install ready and tell you plainly what will go on your laptop and how, without installing anything until you say when.',
+  })
+  expect(parseOwnWords(OWN_REPLY_1)?.message).toMatch(/^Don't install anything on my laptop until I say it's time\..*Leave nothing for me to finish\.$/s)
+  expect(parseOwnWords(OWN_REPLY_2)).toEqual(parseBrief(OWN_REPLY_2))
+  expect(parseOwnWords(OWN_REPLY_2)?.message).toMatch(/so nothing is left for me to finish\.$/)
+  expect(parseOwnWords(OWN_REPLY_2)?.does).toMatch(/^The agent gets ready for the laptop install now,.*as soon as you say go\.$/)
+  // The two replies that came back cut on 19 Oct 2026, cut inside the next step with no
+  // message, no end and no does line. The card took each next step as it stood
+  // (records 510a41e8 and 9f153a63); parseBrief alone still reads it so.
+  const getsEver = OWN_REPLY_2.slice(0, OWN_REPLY_2.indexOf('The agent gets ever') + 'The agent gets ever'.length)
+  expect(parseBrief(getsEver).next).toBe('The agent gets ever')
+  expect(parseOwnWords(getsEver)).toBeNull()
+  const whichVersion = `${OWN_REPLY_1.slice(0, OWN_REPLY_1.indexOf('next:'))}next: The agent now writes down, without installing anything, exactly what will go on your laptop, which version is`
+  expect(parseBrief(whichVersion).next).toMatch(/which version is$/)
+  expect(parseOwnWords(whichVersion)).toBeNull()
+  // Cut at a sentence's end is not whole either: the parts after it are missing.
+  expect(parseOwnWords(OWN_REPLY_1.slice(0, OWN_REPLY_1.indexOf('without doing it.') + 'without doing it.'.length))).toBeNull()
+  // A message without its end line runs to the reply's end, does line and all.
+  expect(parseOwnWords(OWN_REPLY_1.replace('\nend\n', '\n'))).toBeNull()
+  expect(parseOwnWords(OWN_REPLY_2.replace('\nend\n', '\n'))).toBeNull()
+  // No does line, or one cut short.
+  expect(parseOwnWords(OWN_REPLY_1.slice(0, OWN_REPLY_1.indexOf('does:')))).toBeNull()
+  expect(parseOwnWords(OWN_REPLY_2.slice(0, OWN_REPLY_2.indexOf('does:')))).toBeNull()
+  expect(parseOwnWords(OWN_REPLY_2.slice(0, OWN_REPLY_2.lastIndexOf('so the install')))).toBeNull()
+  // A message whose last line does not end a sentence, or a meaning with none.
+  expect(parseOwnWords(OWN_REPLY_1.replace('Leave nothing for me to finish.', 'Leave nothing for me to'))).toBeNull()
+  expect(parseOwnWords(OWN_REPLY_1.replace(/^means: .*$/m, 'means:'))).toBeNull()
+  // The four labels each once, in the order asked.
+  const whole = 'means: The install is not shown.\nnext: Show the install log.\nmessage:\nShow me the install log.\nend\ndoes: Makes the agent show the install.'
+  expect(parseOwnWords(whole)).toMatchObject({ means: 'The install is not shown.', next: 'Show the install log.', message: 'Show me the install log.', does: 'Makes the agent show the install.' })
+  expect(parseOwnWords('next: Show the install log.\nmeans: The install is not shown.\nmessage:\nShow me the install log.\nend\ndoes: Makes the agent show the install.')).toBeNull()
+  expect(parseOwnWords(`${whole}\nnext: Show the`)).toBeNull()
+  expect(parseOwnWords('means: The install is not shown.\nnext: Show the install log.\ndoes: Makes the agent show the install.')).toBeNull()
+  // A closing quote or bracket after the mark still ends the sentence; a line inside the message that looks like a label is the message's.
+  expect(parseOwnWords('means: The agent said "done."\nnext: The agent shows the log (all of it.)\nmessage:\nnext: show me the log.\nend\ndoes: Makes the agent show the log.')).toMatchObject({ means: 'The agent said "done."', next: 'The agent shows the log (all of it.)', message: 'next: show me the log.' })
+})
+
 test('messageSaysStop reads a message in his voice to the agent: shifted to the third person, a wait on him, a hand-back to him or a stop is caught on the gated card and from the own-words reply, and a wait on the agent is not', () => {
   // The shift: me, my and the capital I are his; you and your are the agent's. Whole words only, in any case but I's.
   expect(toAgentVoice('Show me my log. I said you and your build. Me, My, You, Your; meme, mystery, young, yours, i.'))
@@ -3875,6 +3949,7 @@ test('rule: a briefing that says stop while a condition is open is asked once mo
   expect(rec()?.calls).toBe(3)
   expect(rec()?.objective?.done.map(x => x.state)).toEqual(['not-shown', 'open'])
   expect(rec()?.lastBrief?.reads).toBe(3)
+  expect(rec()?.lastBrief).toMatchObject({ own: 'whole', ownChars: OWN_WORDS().length })
   expect(rec()?.lastBrief?.next).toBe('Show the install log, then each session finishing.')
   // The card's message, so when he sends it the record keeps it as the rep's draft, not his words.
   const sent = 'Show me the install log and each of the two sessions finishing before anything stops.'
@@ -3925,6 +4000,34 @@ test('rule: a briefing refused twice whose own-words call fails keeps the rep\'s
   // No answer came back, so only the two forks are counted.
   expect(rec()?.calls).toBe(2)
   expect(rec()?.lastBrief?.message).toBe(OPEN_MESSAGE(OPEN_JOB_OPEN))
+  expect(rec()?.lastBrief).toMatchObject({ own: 'none', ownChars: 0 })
+})
+
+test('rule: a briefing refused twice whose own-words reply comes back cut short keeps the rep\'s fixed texts, and the record says the reply was cut and how long it was', async ($, on) => {
+  const rec = openJob(on)
+  quietBand(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: STOP_BRIEF(), usage: USAGE } }))
+  // Answered, its meaning whole, and cut inside its next step: no message, no end, no does line.
+  const cut = `${OWN_WORDS().slice(0, OWN_WORDS().indexOf('next:'))}next: The agent gets ever`
+  const asks = ownWords(on, () => cut)
+  await started($)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  expect(asks).toHaveLength(1)
+  // No half sentence on the card, and not the reply's whole meaning either: every replaced part is the rep's fixed text.
+  expect(await ui.find({ type: 'Text', text: /The agent gets ever/ })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: /The agent calls the job finished/ })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: `Means: ${OPEN_MEANS(OPEN_JOB_OPEN)}` })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: `Next: ${OPEN_NEXT(OPEN_JOB_OPEN)}` })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: OPEN_MESSAGE(OPEN_JOB_OPEN) })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: OPEN_DOES })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^ {2}- the newest build installed \(not shown\)$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Stop the agent|Wrap up and stop here|Makes the agent stop|Nothing is waiting/ })).toBeUndefined()
+  expect(await greens(ui)).toEqual([])
+  await ui.unmount()
+  // The reply was answered, so its spend is counted with the two forks.
+  expect(rec()?.calls).toBe(3)
+  expect(rec()?.lastBrief).toMatchObject({ reads: 3, own: 'cut', ownChars: cut.length, next: OPEN_NEXT(OPEN_JOB_OPEN), message: OPEN_MESSAGE(OPEN_JOB_OPEN) })
 })
 
 test('rule: a briefing refused twice for its verdict alone keeps the model\'s own next step and message and takes only the meaning from the own-words call', async ($, on) => {
@@ -3984,6 +4087,8 @@ test('rule: a briefing asked once more that answers continue is the card shown, 
   expect(rec()?.calls).toBe(2)
   expect(rec()?.lastBrief?.reads).toBe(2)
   expect(rec()?.lastBrief).toMatchObject({ next: 'Finish the two sessions, then show each one done.', message: 'Finish the two sessions and show me each one done.' })
+  // The second answer passed, so no own-words call was made.
+  expect(rec()?.lastBrief).toMatchObject({ own: 'skipped', ownChars: 0 })
 })
 
 test('rule: a briefing that marks a condition shown moves it, and stop is allowed once every condition is shown or closed', async ($, on) => {

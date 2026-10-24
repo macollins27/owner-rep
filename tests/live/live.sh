@@ -9,10 +9,12 @@
 # Each scenario's whole screen is saved in tests/live/captures/<n>-<name>.txt, and the strip's
 # lines are printed in the report. Scenario 9 also reads the rep's store file under
 # ~/.claude/plugins/store/ (owner-rep_inline-*.json) to show what the reopened session
-# recorded. Scenario 10 proves the card never offers a stop while a condition is open. How many
+# recorded. Scenario 11 proves the card never offers a stop while a condition is open. How many
 # reads the card took (the record's lastBrief.reads: 1 passed the gate first time, 2 asked once
-# more, 3 refused twice and written in the rep's own words) and whether the fixed text was the
-# last net are printed, not judged, because the model's first answer decides them. Exit 0 when every scenario run showed what it should.
+# more, 3 refused twice and written in the rep's own words), what came of the own-words call
+# (lastBrief.own: whole, cut when it answered but not whole, none when it did not answer,
+# skipped when no call was made) with its reply's length (ownChars), and whether the fixed text
+# was the last net are printed, not judged, because the model's first answer decides them. Exit 0 when every scenario run showed what it should.
 #
 # The sessions run in a scratch folder under the system temp directory, in bypass mode, with
 # the nested-session variables unset (set, claude falls into print mode and exits). The mod
@@ -354,7 +356,8 @@ if not recs:
 k, r = max(recs, key=lambda kr: kr[1].get("at", 0))
 nxt = (r.get("lastBrief") or {}).get("next", "")
 print(f"  the record {k}:")
-print(f"  reads: {(r.get('lastBrief') or {}).get('reads')}")
+lb = r.get('lastBrief') or {}
+print(f"  reads: {lb.get('reads')}  own: {lb.get('own')}  ownChars: {lb.get('ownChars')}")
 print(f"  the fixed text was the last net: {fold(nxt).startswith('The job is still open:')}")
 PY
       fi

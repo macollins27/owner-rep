@@ -37,7 +37,7 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 225 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 229 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: eleven real sessions of this checkout in tmux, the strip captured to tests/live/captures
 ```
@@ -104,7 +104,7 @@ Two modules, deliberately split:
 - `hooks/rep.ts` is pure functions and constants, no `$`. It holds the rep's prompts (the
   watch brief, the briefing brief, the objective writer's prompt, the own-words prompt, the
   checker brief), the parsers for the model's labelled answers (`parseWatch`, `parseBrief`,
-  `parseObjective`, `parseCheck`), the objective's rules that need no engine (`trimOwner`,
+  `parseOwnWords`, `parseObjective`, `parseCheck`), the objective's rules that need no engine (`trimOwner`,
   `draftSplit`, `keepDraft`, `mergeConditions`, `gateVerdict`, `takeOwnWords`,
   `objectiveText`), the check run's argv and read-only tool
   allowlist, and the cost arithmetic. Anything that can be unit-tested lives here.
@@ -170,15 +170,22 @@ call writes (below):
    you are" and "How you write to him" sections cut by `sectionOf`, which throws on a missing
    heading; `OWN_WORDS_MAX_TOKENS` 4,000, `OWN_WORDS_TIMEOUT_MS` two minutes) over
    `ownWordsPrompt` (the memory, the open conditions, what stands and what is left out)
-   writes the replaced parts in the rep's own words, and `takeOwnWords` takes each one that
-   is not empty and does not say stop (the message and its `does:` line read by
-   `messageSaysStop`, the does line taken only with the message); the fixed texts stand
-   otherwise, and a call that throws or does not answer leaves them, never a stop. A reply
-   cut short is not caught: its parts are taken as far as they go when they do not say stop
-   (seen live on 19 Oct 2026, `docs/testing.md` scenario 11). Its spend
-   counts with the looks, and it writes card parts only, never the objective.
-   `lastBrief.reads` records the card's reads: 1, 2 with the second ask, 3 with the
-   own-words call. With no objective written (`gateOpen` is null) the same answers are
+   writes the replaced parts in the rep's own words. Its reply is read by `parseOwnWords`,
+   which answers null unless the reply came back whole: `means:`, `next:`, `message:` and
+   `does:` each once and in that order, the message closed by its `end` line before `does:`,
+   and means, next, the message's last line and does each ending at a sentence mark (`.`,
+   `!` or `?`, closing quotes or brackets allowed after it). `takeOwnWords` takes from a
+   whole reply each part that is not empty and does not say stop (the message and its
+   `does:` line read by `messageSaysStop`, the does line taken only with the message); the
+   fixed texts stand otherwise, and a reply not whole, or a call that throws or does not
+   answer, leaves them all, never a stop. Two replies came back answered and cut
+   mid-sentence live on 19 Oct 2026, with the cap at 4,000 tokens and at 16,000, for a cause
+   not known (`docs/testing.md` scenario 11); the wholeness test keeps their half sentences
+   off the card. Its spend counts with the looks, and it writes card parts only, never the
+   objective. `lastBrief.reads` records the card's reads: 1, 2 with the second ask, 3 with
+   the own-words call; `lastBrief.own` what came of that call (`whole`; `cut`, answered but
+   not whole; `none`, not answered or thrown; `skipped`, no call made) and
+   `lastBrief.ownChars` its reply's length (0 with none). With no objective written (`gateOpen` is null) the same answers are
    refused, never let through, every part given its `UNWRITTEN_*` text, not asked again and
    given no own-words call.
 

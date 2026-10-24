@@ -128,11 +128,16 @@ and how it writes to the owner, and it is shown the objective, the owner's messa
 job, the open conditions, and what stands and what is left out as the briefing found them. A
 part it writes that is empty or still says stop, or a call that fails, keeps the rep's fixed
 text built from the open conditions, so the card keeps the agent on the job and never offers
-a stop. A reply that comes back cut short is not caught: a part that does not say stop is
-taken as far as it goes, so a card can carry a sentence that ends mid-way, and the live runs
-of 19 Oct 2026 showed such replies (`docs/testing.md`, scenario 11). The call writes the
-card's parts only, never the objective, and the record keeps how many reads the card took:
-one, two with the second ask, three with the call. While no
+a stop. The reply is taken only when it came back whole: its four parts each given once in
+the order asked, the message closed by its end line, and the meaning, the next step, the
+message's last line and the line saying what it does each ending at a sentence mark. A reply
+not whole leaves every part the gate replaced the rep's fixed text, so no half sentence
+reaches the card; the live runs of 19 Oct 2026 had two replies come back answered and cut
+mid-sentence, for a cause not yet known (`docs/testing.md`, scenario 11). The call writes the
+card's parts only, never the objective, and the record keeps how many reads the card took
+(one, two with the second ask, three with the call) and, in `lastBrief.own` and
+`lastBrief.ownChars`, what came of the call (`whole`; `cut`, answered but not whole; `none`,
+not answered or failed; `skipped`, no call made) and the length of its reply. While no
 objective is written, any of the same is refused at once, every part is the rep's fixed text
 saying the objective is not written yet, and nothing is asked again. The check's card passes
 the same gate part by part, with no such call.
@@ -365,7 +370,7 @@ strip is a child of the prompt box's column, beside the permission cards.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 225 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 229 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: eleven real sessions in tmux, the strip captured to tests/live/captures
 ```

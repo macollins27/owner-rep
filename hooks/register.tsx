@@ -94,6 +94,7 @@ import {
   OWN_WORDS_SYSTEM,
   OWN_WORDS_TIMEOUT_MS,
   ownWordsPrompt,
+  parseOwnWords,
   takeOwnWords,
   RECORD_MAX_TOKENS,
   RECORD_SYSTEM,
@@ -154,6 +155,10 @@ const briefA = atom({ plugin: 'owner-rep', key: 'brief' } as const, null)
 const viewA = atom({ plugin: 'owner-rep', key: 'view' } as const, 'row')
 const helpersA = atom({ plugin: 'owner-rep', key: 'helperIds' } as const, [])
 
+// What came of a card's own-words call: its reply parsed whole, answered but not whole
+// (cut short, or missing a part), not answered or thrown, or no call made.
+type OwnRead = 'whole' | 'cut' | 'none' | 'skipped'
+
 // What the rep remembers about a session between reloads and sessions ($.store).
 type Rec = {
   id: string
@@ -170,7 +175,10 @@ type Rec = {
   past: string[]
   seen: string[]
   others: string[]
-  lastBrief?: { at: number; next: string; message: string; reads?: number }
+  // The last card's next step and message; on a briefing's card also its reads (1, 2 with
+  // the second ask, 3 with the own-words call), what came of that call (`own`) and the
+  // length of its reply (`ownChars`, 0 with none). Older records have neither of the last two.
+  lastBrief?: { at: number; next: string; message: string; reads?: number; own?: OwnRead; ownChars?: number }
   // The last DRAFTS_MAX cards' messages, newest first, for knowing a draft he sends.
   drafts: string[]
   lastSent?: { text: string; at: number }
@@ -682,6 +690,9 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     let taken = first
     // The card's own reads: the first ask, a second ask, the own-words call.
     let reads = 1
+    // What came of the own-words call, and its reply's length, for the record.
+    let ownRead: OwnRead = 'skipped'
+    let ownChars = 0
     if (first.refused && first.open !== null) {
       reads += 1
       const again = await ask(askAgain(first.open))
@@ -690,9 +701,10 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     // Refused twice (or refused once, the second ask unanswered): the parts the gate
     // replaced are written in the rep's own words by one plain call (no fork) over the
     // objective, the open conditions, his messages and what the briefing itself found.
-    // A part it writes that still says stop, or a call that fails, leaves the rep's
-    // fixed text, and the press goes on. It writes card parts only, never the
-    // objective. With no objective written there is no such call.
+    // A part it writes that still says stop, a reply that did not come back whole
+    // (parseOwnWords), or a call that fails, leaves the rep's fixed text, and the press
+    // goes on. It writes card parts only, never the objective. With no objective
+    // written there is no such call.
     if (taken.refused && taken.replaced.length > 0 && first.open !== null && taken.open !== null) {
       reads += 1
       const rec = await loadRec($, sid)
@@ -712,8 +724,11 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
           after.tokens += tokensOf(result.usage)
           after.cached += cachedOf(result.usage)
         }
-        return result !== null && result.isAnswered ? parseBrief(result.text) : null
+        return result !== null && result.isAnswered ? parseOwnWords(result.text) : null
       })
+      const answered = result !== null && result.isAnswered
+      ownChars = answered ? result.text.length : 0
+      ownRead = !answered ? 'none' : own === null ? 'cut' : 'whole'
       taken = { ...taken, answer: takeOwnWords(taken.answer, taken.replaced, own) }
     }
     const a = taken.answer
@@ -736,7 +751,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
         checkNote: noCheck ? CHECK_NO_ROOM : noFence,
         checkCost: checkCostText(after.lastCheckTokens, after.lastCheckCached, after.lastCheckMs, after.lastCheckRefused),
       }
-      after.lastBrief = { at: brief.at, next: brief.next, message: brief.message, reads }
+      after.lastBrief = { at: brief.at, next: brief.next, message: brief.message, reads, own: ownRead, ownChars }
       after.drafts = keepDraft(after.drafts, brief.message)
       return brief
     })

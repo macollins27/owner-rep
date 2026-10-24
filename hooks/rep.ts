@@ -2861,7 +2861,7 @@ export const OWN_WORDS_TIMEOUT_MS = 120000
 // The request for those parts: what the rep knows (the objective, the open
 // conditions, his messages on the job), then what the briefing itself found
 // (what stands and what is left out), and only the four parts to write, under
-// the labels parseBrief reads.
+// the labels parseBrief reads, in the order parseOwnWords holds them to.
 export function ownWordsPrompt(m: Memory, open: Condition[], a: BriefAnswer): string {
   return `${memoryText(m)}
 
@@ -2894,6 +2894,8 @@ does: <one line: what this message will make the agent do>`
 // and stays the rep's fixed text otherwise; what the message does goes with the
 // message. Nothing else moves: the verdict stays continue, the going-well line
 // empty, and what stands, what is left out and the marks stay the gated card's.
+// The engine passes parseOwnWords's answer, so a reply that did not come back
+// whole is null here and every replaced part stays the rep's fixed text.
 export function takeOwnWords(gated: BriefAnswer, replaced: Replaced[], own: BriefAnswer | null): BriefAnswer {
   if (own === null || replaced.length === 0) return gated
   const out = { ...gated }
@@ -2905,4 +2907,40 @@ export function takeOwnWords(gated: BriefAnswer, replaced: Replaced[], own: Brie
   }
   if (taken.has('message') && own.does !== '' && !messageSaysStop(own.does)) out.does = own.does
   return out
+}
+
+// Whether a part ends at a sentence mark: a full stop, an exclamation mark or a
+// question mark, with any closing quotes or brackets after it.
+const endsSentence = (s: string): boolean => /[.!?]["'”’)\]]*$/.test(s.trim())
+
+// The own-words reply read only when it came back whole: its labels means,
+// next, message and does each given once and in that order (the message's lines
+// are not read for labels), the message closed by its line `end` before does,
+// and each of means, next, the message's last line and does not empty and
+// ending at a sentence mark. Anything less is null, so takeOwnWords leaves every
+// part the gate replaced the rep's fixed text. A reply can come back answered
+// and cut short mid-sentence (two of five recorded runs on 19 Oct 2026, with
+// the cap at 4,000 tokens and at 16,000; the cause is not known), and parseBrief
+// alone would put its half sentence on the card. A whole reply is parseBrief's
+// answer, and the parts are taken from it as before.
+export function parseOwnWords(text: string): BriefAnswer | null {
+  const seen: string[] = []
+  let inMessage = false
+  for (const raw of text.replace(/\r/g, '').split('\n')) {
+    const line = raw.trim()
+    if (inMessage) {
+      if (line.toLowerCase() === 'end') {
+        inMessage = false
+        seen.push('end')
+      }
+      continue
+    }
+    const label = /^([a-z]+):/i.exec(line)?.[1]?.toLowerCase()
+    if (label === undefined || !(LABELS as readonly string[]).includes(label)) continue
+    if (label === 'message') inMessage = true
+    if (label === 'means' || label === 'next' || label === 'message' || label === 'does') seen.push(label)
+  }
+  if (seen.join(' ') !== 'means next message end does') return null
+  const a = parseBrief(text)
+  return [a.means, a.next, a.message.split('\n').at(-1) ?? '', a.does].every(endsSentence) ? a : null
 }
