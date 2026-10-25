@@ -6,9 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A Claude Code mod (plugin) called the owner rep. It oversees a coding agent on behalf of the
 person who owns the work and does not read code, drawing one row above the prompt, speaking up
-when the agent cuts a corner, and briefing the owner on a press. The README explains the
-problem, the design decisions and the judging method; read it first when changing the rep's
-behaviour rather than its plumbing.
+when the agent cuts a corner, and briefing the owner on a press. `docs/how-it-works.md`
+explains the problem, the design decisions and the judging method in full; read it first when
+changing the rep's behaviour rather than its plumbing. The README is the short version.
 
 `NORTH_STAR.md` at the root says what the rep is for: it builds a true picture of the
 session's objective from the owner's words, keeps that objective open until it is completed,
@@ -28,9 +28,14 @@ read them from the folder, never expect them on GitHub.
 
 The mod is installed at user scope straight from this folder (see `~/.claude/settings.json`),
 so an edit here reaches a live session after `/reload-plugins` or a restart, with no version
-bump. Several agents may be working in this folder at once. The README is written for an
-engineer reading the public repository; keep every claim in it something the code shows.
-Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` then
+bump. Several agents may be working in this folder at once. The README is written for the
+owner who will install the mod (and is the listing text in Anthropic's plugin directory);
+`docs/how-it-works.md` is written for an engineer. Keep every claim in both something the code
+shows. A change to what the rep reads, runs, keeps or sends changes the README's "What it can
+reach" and `PRIVACY.md` too, since the directory's security scan reads the README for that.
+`CHANGELOG.md` gets a line for each release. Installing elsewhere is
+`/plugin install owner-rep --marketplace macollins27/owner-rep`, or
+`claude plugin marketplace add macollins27/owner-rep` then
 `claude plugin install owner-rep@owner-rep`.
 
 ## Commands
@@ -59,9 +64,10 @@ declarations for the Claude Code build the workflow installs; move both together
 not the one stamped on the pinned copy's first line, so the two cannot drift apart unseen.
 
 `claude plugin test` has no filter flag. Run the whole file; it takes a few seconds.
-`claude plugin validate` reports two expected warnings: that a root `CLAUDE.md` is not shipped
-as plugin context (intended: this file is for work on the repository), and, since Claude Code
-2.1.310's validator, that the mod has no listing icon (`ICON_MISSING`; none has been made).
+`claude plugin validate` reports one expected warning: that a root `CLAUDE.md` is not shipped
+as plugin context (intended: this file is for work on the repository). The listing icon is
+`.claude-plugin/icon.png`, named by `icon` in `plugin.json`; its source is
+`docs/brand/sign.svg`. The directory takes the icon only at the first submission.
 
 Type-check with `~/Library/pnpm/tsc -p . --noEmit`. `tsconfig.json` extends
 `.claude-plugin/types/tsconfig.json`, a folder of declaration files for the mods API that

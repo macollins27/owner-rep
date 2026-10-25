@@ -1,7 +1,16 @@
 {
   "name": "owner-rep",
+  "displayName": "Owner Rep",
   "version": "0.3.0",
-  "description": "Your owner's rep: watches the agent for you, keeps one row above the prompt, and briefs you on a press.",
-  "author": { "name": "Maxwell Collins" },
+  "description": "Watches your coding agent for you and reports in plain English: what is really done, what was left out, and the message to send it next. For people who direct agents but don't read code.",
+  "author": { "name": "Maxwell Collins", "url": "https://github.com/macollins27" },
+  "homepage": "https://github.com/macollins27/owner-rep#readme",
+  "repository": "https://github.com/macollins27/owner-rep",
+  "license": "MIT",
+  "keywords": ["agent-oversight", "code-review", "verification", "plain-english", "vibe-coding", "non-technical", "founders", "mod"],
+  "icon": "./.claude-plugin/icon.png",
+  "documentationUrl": "https://github.com/macollins27/owner-rep/blob/main/docs/how-it-works.md",
+  "supportUrl": "https://github.com/macollins27/owner-rep/issues",
+  "privacyPolicyUrl": "https://github.com/macollins27/owner-rep/blob/main/PRIVACY.md",
   "types": "./types/index.d.ts"
 }
