@@ -415,9 +415,9 @@ Copy that `.claude-plugin/types/` folder here (it is git-ignored) and `tsc` runs
 declarations are the authority on the API, which is early access and changes between
 releases.
 
-Validation reports one expected warning: a `CLAUDE.md` at the plugin root is not shipped as
-plugin context. It is there for people and agents working on this repository, not for users
-of the mod.
+Validation reports two expected warnings: a `CLAUDE.md` at the plugin root is not shipped as
+plugin context (it is there for people and agents working on this repository, not for users
+of the mod), and the mod has no listing icon, which Claude Code 2.1.310's validator asks for.
 
 ## What it can reach
 

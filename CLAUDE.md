@@ -59,8 +59,9 @@ declarations for the Claude Code build the workflow installs; move both together
 not the one stamped on the pinned copy's first line, so the two cannot drift apart unseen.
 
 `claude plugin test` has no filter flag. Run the whole file; it takes a few seconds.
-`claude plugin validate` reports one expected warning, that a root `CLAUDE.md` is not shipped
-as plugin context. That is intended: this file is for work on the repository.
+`claude plugin validate` reports two expected warnings: that a root `CLAUDE.md` is not shipped
+as plugin context (intended: this file is for work on the repository), and, since Claude Code
+2.1.310's validator, that the mod has no listing icon (`ICON_MISSING`; none has been made).
 
 Type-check with `~/Library/pnpm/tsc -p . --noEmit`. `tsconfig.json` extends
 `.claude-plugin/types/tsconfig.json`, a folder of declaration files for the mods API that
