@@ -29,8 +29,8 @@ Press `y` to add the marketplace, pick a scope, and the rep appears above your p
   and Windows; the independent check doesn't run on Windows.
 - **What it costs:** it uses your own Claude Code account. The light reads run on their own;
   the heavy check runs only when you press for it.
-- **What it sends:** nothing beyond the model calls your Claude Code session already makes.
-  No servers, no telemetry, no dependencies. MIT licence.
+- **What it sends:** only its own model calls, made with your Claude Code session's
+  credentials. No servers, no telemetry, no dependencies. MIT licence.
 
 ## Why you'd want one
 
@@ -67,7 +67,7 @@ box. Nothing is sent until you press Enter.
 **An independent check when you press `3`.** A separate Claude Code run works in a throwaway
 copy of your project. It reads the session's full record, opens the real files and runs your
 project's own tests. Then it marks each of the agent's claims **holds**, **false**, **not
-shown**, or **changed since** the briefing.
+shown**, or **since then** (changed since the briefing).
 
 ## What it looks like
 
@@ -82,7 +82,7 @@ After **Check it**, a separate run went through the agent's claims against the s
 and the files. Nine held. One could not be shown from where the check could reach, and the
 card says why.
 
-![The same card after the check, each claim marked holds, not shown, or changed since](docs/checked.png)
+![The same card after the check: one claim not shown, one marked since then, and the nine that held counted](docs/checked.png)
 
 ## Install
 
@@ -115,12 +115,14 @@ To remove it, run `claude plugin uninstall owner-rep@owner-rep`.
 **Where it draws.** The rep draws in the terminal, in the Claude desktop app, and in Claude
 Code for VS Code's chat window from extension 2.1.310.
 
-**On Windows**, the row, the watch and the briefing all work. **Check it** does not run,
+**On Windows**, the row, the watch and the briefing all work, with Git for Windows
+installed: the rep reads your messages through its commands. **Check it** does not run,
 because Claude Code's sandbox is off on Windows and the rep will not run the check without
 it. The card says so in place of the button.
 
 **On Linux**, the check needs Claude Code's sandbox. Where the sandbox can't start (for
-example, without bubblewrap), the card names what is missing and offers no **Check it**.
+example, without bubblewrap), the first press of **Check it** is refused and the card names
+what is missing. The button then stays off until you restart Claude Code.
 
 **Optional:** with [agentsview](https://github.com/wesm/agentsview) on your path, the check
 reads the session's record through it. Without agentsview, the check reads the session's
@@ -135,10 +137,12 @@ prompt box, or click.
 |---|---|---|
 | The row | `1` Brief me | The briefing card opens |
 | The row | `2` Tell the rep | `Owner rep:` goes into your prompt box, ready for a note |
-| A Heads up | `1` Brief me, `2` Fine, `0` Later | Open the briefing, dismiss the note, or leave it for now |
+| A Heads up | `1` Brief me | The briefing card opens |
+| A Heads up | `2` Fine or `0` Later | The note is dismissed |
 | The briefing card | `1` Put message in prompt | The rep's message to the agent goes into your prompt box. Press Enter to send it |
 | The briefing card | `3` Check it | The independent check runs. It costs more, so it runs only when you ask |
-| The briefing card | `2` Fine, close, `4` Tell the rep, `0` Later | Close the card, write a note to the rep, or leave it for now |
+| The briefing card | `4` Tell the rep | `Owner rep:` goes into your prompt box, ready for a note |
+| The briefing card | `2` Fine, close or `0` Later | The card closes |
 
 **Talking to the rep.** Start a prompt with `Owner rep:` to talk to the rep instead of the
 agent, for example `Owner rep: the tests matter more than the README`. The rep takes the
@@ -156,9 +160,9 @@ result, what it is for, what "done" has to show, and the step the session is on 
 works this out from all your messages on the job, not just the latest one, so a message that
 narrows the agent's next step can't shrink the whole job.
 
-It weighs your messages by kind. Your reasons and complaints count most, then your
-instructions. A "yes" to the agent's own idea counts least, because that is the agent's idea
-with your name on it.
+It weighs your messages by kind. A note you send to the rep counts most of all. Then come
+your reasons and complaints, then your instructions. A "yes" to the agent's own idea counts
+least, because that is the agent's idea with your name on it.
 
 On top of that it holds five expectations for every job:
 
@@ -180,29 +184,33 @@ The full method, with every rule and the reason for it, is in
 
 ## What it costs
 
-The rep runs on the same Claude account as your session.
+The rep's model calls are its own, on top of your agent's, and they run on the same Claude
+account as your session.
 
 | Part | When it runs | What it costs |
 |---|---|---|
-| The rep's account of your job | Each message you send | One model call over your messages, not the whole conversation |
-| The watch | Every eighth model request, and at every stop | A fresh look over the agent's cached conversation. Mostly cache reads, and it never slows the agent |
+| The rep's account of your job | Each message you send, and each note to the rep | One call to Opus at high effort, over your messages only, not the whole conversation. A failed write is tried up to twice more |
+| The watch | Every eighth model request of a turn, and at every stop | A fresh look over the agent's cached conversation. Mostly cache reads, and it never slows the agent |
 | The briefing | When you press for it | One model call, sometimes two or three when the rep has to rewrite an answer |
-| The check | Only when you press **Check it** | Measured at about 210k fresh tokens plus 2.2M re-read from cache, in about two minutes |
+| The check | Only when you press **Check it** | Measured at about 210k fresh tokens plus 2.25 million re-read from cache, in about two minutes |
 
-The briefing card shows what the rep has spent so far in the session, and the price of the
-last check beside the button.
+The briefing card shows what the rep has spent so far in the session. Beside **Check it** it
+shows what a check costs: the first one measured, then your own last one.
 
 ## What it can reach
 
 The rep never sends anything to your agent by itself. You press Enter.
 
 It never edits your project. The check works in a throwaway copy inside Claude Code's own
-sandbox. Writes to your real project, your git repositories, Claude Code's settings and the
-main places in your home folder that run code are denied. The network is closed except for
-your own machine, where agentsview answers. The copy is deleted when the check ends.
+sandbox. Writes are denied to your real project, the git repositories it belongs to or links
+into, Claude Code's settings, and the main places in your home folder that run code. The
+sandbox closes the network to the check's commands, except for your own machine, where
+agentsview answers. Reads are not fenced: like any agent, the check can read any file you can
+read, and what it reads goes to the model. The copy is deleted when the check ends.
 
-Nothing leaves your machine except the model calls your Claude Code session already makes.
-The mod has no servers, no telemetry and no dependencies. Its source is two TypeScript files,
+Nothing leaves your machine except the rep's own model calls, made with your Claude Code
+session's credentials and sent where your agent's calls go. The mod has no servers, no
+telemetry and no dependencies. Its source is two TypeScript files,
 [`hooks/register.tsx`](hooks/register.tsx) and [`hooks/rep.ts`](hooks/rep.ts), with no build
 step, so you can read exactly what runs.
 
@@ -210,22 +218,32 @@ Like every Claude Code mod, it runs with the permissions of the person who insta
 full, this is everything it reads and runs:
 
 - **Through Claude Code:** the prompt box, the session id and working directory, the
-  session's messages, a small per-session store, and the model through the session's own
-  credentials. It takes the transcript path Claude Code gives its hooks at the session's
-  start and with each prompt.
-- **Your transcripts:** it runs `sed`, `grep`, `ls` and `find` over the session's transcripts
+  session's messages, and the agent's tool calls and helper launches as they happen. The row
+  names a file or a program, never a command's text. It also reads the agent's last answer at
+  the end of each turn, the context window's size, what other mods draw in the strip above
+  the prompt, and a small per-session store. It calls the model with the session's own
+  credentials, and takes the transcript path Claude Code gives its hooks.
+- **Environment variables:** `PATH`, `HOME`, `USERPROFILE`, `CLAUDE_CONFIG_DIR`, `OS`,
+  `SystemRoot`, `windir`, `PROGRAMFILES`, `ProgramFiles(x86)`, `LOCALAPPDATA` and `APPDATA`.
+  It reads them to find your home, Claude Code's folder and the programs it runs, and to tell
+  whether it is on Windows.
+- **Your transcripts:** it runs `sed`, `grep`, `ls` and `find` over the session's transcript
   under `~/.claude/projects/` (or the folder `CLAUDE_CONFIG_DIR` names) to read which
-  messages you typed.
+  messages you typed. For a session it holds no record of, such as a fork, it may read up to
+  40 of the newest other transcripts in the same project folder to find your earlier
+  messages.
 - **On Windows:** those commands are Git for Windows' own, named by their full path. The rep
   finds them, and Claude Code's own `claude.exe`, by running each place they may be with
   `--version`.
-- **Only when you press Check it:** it runs `sh`, `find`, `readlink`, `sed` and
-  `pnpm store path` to find your git repositories, the folders links lead to and pnpm's
-  store, so it can fence them. It runs `mkdir`, `cp` and `rm` to make the throwaway copy
-  and delete it afterwards.
+- **Only when you press Check it:** it runs `sh`, `find`, `printf`, `readlink` and `sed` to
+  find the git repositories your project belongs to or links into and where links lead, so
+  it can fence them. It runs `pnpm store path` to find pnpm's store, which the check is given
+  to install from. It runs `mkdir`, `cp` and `rm` to make the throwaway copy and delete it
+  afterwards.
 - **The check itself:** a separate `claude -p` run that may read files, search, run the
   project's own tests and read agentsview. It may not edit through a tool, send, fetch the
-  web, or launch helpers.
+  web, or launch helpers. It runs with your own Claude Code settings, so your hooks fire
+  inside it as they do for any agent.
 - **What it keeps:** one record per session, for the 32 newest sessions that hold anything.
   [PRIVACY.md](PRIVACY.md) lists what a record holds.
 
@@ -252,7 +270,9 @@ the agent for you.
 
 **Will it slow my agent down?**
 No. The watch reads a cached copy of the conversation beside the agent and is never waited
-on.
+on. There is one short wait. In a session the rep holds no record of, such as one started
+before you installed it, your first prompt waits while the rep reads your earlier messages
+from the transcripts.
 
 **Can the agent talk the rep out of it?**
 Only your own messages can steer the rep. The agent's words, including its summaries of its

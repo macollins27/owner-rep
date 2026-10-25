@@ -7,15 +7,15 @@ What changed in each release of Owner Rep, newest first. The full record is the
 
 - **The briefing's gate works part by part.** While part of "done" is still open, a card is
   never allowed to tell the agent to stop. Before, a refused card lost its meaning, next step
-  and message to fixed text. Now only the parts that say stop are replaced, and the model's
-  own sound next step and message stand.
+  and message to fixed text. Now the meaning is still the rep's, but the model's own next
+  step and message stand unless they say stop or are empty.
 - **A card refused twice is written in the rep's own words.** One plain model call rewrites
   the replaced parts, so the card names what the agent actually got wrong, not just the
   open conditions. A reply that comes back cut off mid-sentence is never shown. The fixed
   text stays as the last net.
 - The gate reads the natural ways a message says stop, and a whole message may end in a list
   item.
-- The card records how many reads it took and what came of the rewrite.
+- The session record keeps how many reads each card took and what came of the rewrite.
 - Tests and the GitHub run are on Claude Code 2.1.310.
 
 ## 0.2.0 (23 October 2026)
@@ -25,7 +25,7 @@ The first tagged release. It covers everything since the first version was built
 
 - **The row, the watch, the briefing and the check**: one row above the prompt, a "Heads up"
   when something costs you, a briefing card with a message ready to send, and an independent
-  check that marks each claim holds, false, not shown or changed since.
+  check that marks each claim holds, false, not shown or since then.
 - **The rep's own account of the job.** It is written by a call of its own from your messages
   alone, held in parts (the result, what it is for, what "done" has to show, the step now),
   and kept until every part of "done" is shown or you let it go.

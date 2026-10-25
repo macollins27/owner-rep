@@ -29,16 +29,17 @@ Edits reach the session after `/reload-plugins`.
 
 ```
 claude plugin validate .         # manifest, hooks, and every engine call and state key
-claude plugin test .             # the whole suite, a few seconds
+claude plugin test .             # the whole suite, under a minute
 python3 tests/doctor/doctor.py   # plants each known defect; the suite must fail on every one
 ```
 
 Validation reports one expected warning: a `CLAUDE.md` at the plugin root is not shipped as
 plugin context. It is there for people and agents working on this repository.
 
-Type-checking needs the mods API declarations, which Claude Code writes into a mod's
-development copy, not into this repository. [How the owner rep works](docs/how-it-works.md#develop)
-says where to find them.
+To type-check, run `tsc -p tests/ci/tsconfig.json --noEmit`. It uses the pinned copy of the
+mods API declarations in `tests/ci/types/`, for Claude Code 2.1.310.
+[How the owner rep works](docs/how-it-works.md#develop) says how to type-check against your
+own build's declarations instead.
 
 ## What a pull request needs
 

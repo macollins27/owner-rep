@@ -23,7 +23,8 @@ Anything that breaks a promise the README makes, for example:
   agent to stop while part of "done" is open.
 - **The rep sends something on its own**: a message reaches the agent without you pressing
   Enter.
-- **Data leaves your machine** other than through the model calls your session already makes.
+- **Data leaves your machine** other than through the rep's own model calls, made with your
+  session's credentials.
 
 ## Supported versions
 
