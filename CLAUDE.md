@@ -37,9 +37,9 @@ Installing elsewhere is `claude plugin marketplace add macollins27/owner-rep` th
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 217 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 229 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
-tests/live/live.sh              # on demand: ten real sessions of this checkout in tmux, the strip captured to tests/live/captures
+tests/live/live.sh              # on demand: eleven real sessions of this checkout in tmux, the strip captured to tests/live/captures
 ```
 
 GitHub runs validate, `tests/ci/host-calls.sh`, `tests/ci/host-commands.mjs`, test and the
@@ -59,8 +59,9 @@ declarations for the Claude Code build the workflow installs; move both together
 not the one stamped on the pinned copy's first line, so the two cannot drift apart unseen.
 
 `claude plugin test` has no filter flag. Run the whole file; it takes a few seconds.
-`claude plugin validate` reports one expected warning, that a root `CLAUDE.md` is not shipped
-as plugin context. That is intended: this file is for work on the repository.
+`claude plugin validate` reports two expected warnings: that a root `CLAUDE.md` is not shipped
+as plugin context (intended: this file is for work on the repository), and, since Claude Code
+2.1.310's validator, that the mod has no listing icon (`ICON_MISSING`; none has been made).
 
 Type-check with `~/Library/pnpm/tsc -p . --noEmit`. `tsconfig.json` extends
 `.claude-plugin/types/tsconfig.json`, a folder of declaration files for the mods API that
@@ -102,10 +103,11 @@ never by spawning a real run.
 Two modules, deliberately split:
 
 - `hooks/rep.ts` is pure functions and constants, no `$`. It holds the rep's prompts (the
-  watch brief, the briefing brief, the objective writer's prompt, the checker brief), the
-  parsers for the model's labelled answers (`parseWatch`, `parseBrief`, `parseObjective`,
-  `parseCheck`), the objective's rules that need no engine (`trimOwner`, `draftSplit`, `keepDraft`,
-  `mergeConditions`, `gateVerdict`, `objectiveText`), the check run's argv and read-only tool
+  watch brief, the briefing brief, the objective writer's prompt, the own-words prompt, the
+  checker brief), the parsers for the model's labelled answers (`parseWatch`, `parseBrief`,
+  `parseOwnWords`, `parseObjective`, `parseCheck`), the objective's rules that need no engine (`trimOwner`,
+  `draftSplit`, `keepDraft`, `mergeConditions`, `gateVerdict`, `takeOwnWords`,
+  `objectiveText`), the check run's argv and read-only tool
   allowlist, and the cost arithmetic. Anything that can be unit-tested lives here.
 - `hooks/register.tsx` is the engine side: hooks, state atoms, the store record, the band
   render, and the spawn of the check run. `hooks/hooks.json` names it as the only module.
@@ -131,8 +133,18 @@ call writes (below):
    `means:`, `left:`, `next:`, `message:` … `end`, `does:`); `parseBrief` splits them,
    `applyMarks` takes the marks, and `gateVerdict` refuses, while a condition is open, a
    verdict other than `continue` (a `stop`, or none given, which `verdictOf` reads as
-   `missing`, never as continue), a `well:` line, or a `next:` that `STOP_NEXT` reads as
-   telling the agent or the job to stop, calling the work finished, saying nothing is left,
+   `missing`, never as continue), a `well:` line, or a `next:` (`saysStop`) or a `message:`
+   (`messageSaysStop`: the message read on a copy `toAgentVoice` turns to the third person,
+   me, my and the capital I to him, his and he, you and your to the agent and the agent's,
+   the contractions and two-word forms shifted whole before them, with a straight or curly
+   apostrophe: you're and you are to the agent is, you've and you have to the agent has,
+   I'm and I am to he is, I'll to he will, I've to he has; so a wait on his sign-off and
+   "You're done." are caught and a wait until the agent has a log is not, and a few
+   messages a reader would let through, such as a check-in with him before a step, are
+   caught in the safe direction and rewritten by the own-words call) that
+   `STOP_NEXT` reads as
+   telling the agent or the job to stop (with "please" before the stop or not, `STOP_LEAD`),
+   calling the work finished, saying nothing is left or no further work is needed,
    closing the session, wrapping up, stopping work on it, stopping (or stopping here, or
    stopping work) to report, to wait bare or on him, to await him or to ask him
    (`STOP_TO_REPORT`), a wait for or an await of him with no stop at all (`WAIT_SAID`;
@@ -141,23 +153,55 @@ call writes (below):
    word naming his say such as reply, approval, go-ahead or decision, "a decision" only at
    the clause's end or before from, by, on or about, "confirmation" only at the clause's end
    or from him, the owner or you, whatever follows to the sentence's end), a check-in with
-   him or letting him decide, choose or pick (`ASK_BACK_SAID`), handing it, the work or the
-   job over or back to him (`HAND_BACK_SAID`), these three let through after "not",
+   him or letting him decide, choose or pick (`ASK_BACK_SAID`), handing anything over or
+   back to him (whatever stands between "hand" and "over" or "back" within the clause),
+   him taking it from here, or leaving it or the rest to him (`HAND_BACK_SAID`), these
+   three let through after "not",
    "never", "n't" or "no need to" (`NOT_NEGATED`), a bare wait after ", then"
    (`THEN_WAIT`), the agent ending the session (`AGENT_ENDS`), or saying the session can
    end at a sentence's start or after a stop mark other than
    a comma (`SENTENCE`; a comma with "and", "and then", "so" or "now" counts, a bare "then"
    after a comma closes a condition; `CLAUSE` takes "and then" as a clause's start too),
    each said as a clause of its own (a step that only carries the
-   word and goes on, as "stop guessing and run the suite" or "Don't stop until …", keeps the
+   word and goes on, as "stop guessing and run the suite", "Please stop guessing and run the
+   suite" or "Don't stop until …", keeps the
    model's own next step; so do a pair such as "make the timer start and stop", the bare
    "and stop" only being read, never "and stops" said of a program, a wait on a CI run or
-   on "your build", and "Once the run is green, the session can end"). A refused answer is asked once
-   more (`askAgain`, naming the open conditions); when that is refused too, or does not
-   answer, the card lists the open conditions as left out and its meaning, next step,
-   message and what it does are the rep's own (`OPEN_MEANS`, `OPEN_NEXT`, `OPEN_MESSAGE`,
-   `OPEN_DOES`), never a stop. With no objective written (`gateOpen` is null) the same
-   answers are refused, never let through, with `UNWRITTEN_*` texts, and not asked again.
+   on "your build", and "Once the run is green, the session can end"). The gate refuses part
+   by part: the verdict becomes continue, the `well:` line goes, the open conditions are
+   listed as left out, the meaning is always `OPEN_MEANS`, and the next step (`OPEN_NEXT`)
+   and the message with what it does (`OPEN_MESSAGE`, `OPEN_DOES`) are the rep's only where
+   they say stop or are empty, so the model's own sound next step and message stand; beside
+   a kept message a `does:` line `messageSaysStop` catches is `OPEN_DOES` alone. `replaced`
+   names the parts given the rep's text, in the order `means`, `next`, `message`. A refused
+   answer is asked once more (`askAgain`, naming the open conditions), and that answer
+   passes the same gate. When it is refused too, or does not answer, one plain
+   `$.model.complete` (`OBJECTIVE_MODEL`, high effort, `OWN_WORDS_SYSTEM`: the ROLE's "Who
+   you are" and "How you write to him" sections cut by `sectionOf`, which throws on a missing
+   heading, and one line against reproducing a secret, a key, a password or personal data
+   it is shown; `OWN_WORDS_MAX_TOKENS` 4,000, `OWN_WORDS_TIMEOUT_MS` two minutes) over
+   `ownWordsPrompt` (the memory, the open conditions, what stands and what is left out)
+   writes the replaced parts in the rep's own words. Its reply is read by `parseOwnWords`,
+   which answers null unless the reply came back whole: `means:`, `next:`, `message:` and
+   `does:` each once and in that order, the message closed by its `end` line before `does:`
+   and not empty, and means, next and does each ending at a sentence mark (`.`, `!` or `?`,
+   closing quotes or brackets allowed after it); the message's last line is not held to a
+   sentence mark, since its `end` line and a whole `does:` line show it was not cut, and a
+   whole message may end in a list item. `takeOwnWords` takes from a
+   whole reply each part that is not empty and does not say stop (the message and its
+   `does:` line read by `messageSaysStop`, the does line taken only with the message); the
+   fixed texts stand otherwise, and a reply not whole, or a call that throws or does not
+   answer, leaves them all, never a stop. Two replies came back answered and cut
+   mid-sentence live on 19 Oct 2026, with the cap at 4,000 tokens and at 16,000, for a cause
+   not known (`docs/testing.md` scenario 11); the wholeness test keeps their half sentences
+   off the card. Its spend counts with the looks, and it writes card parts only, never the
+   objective. `lastBrief.reads` records the card's reads: 1, 2 with the second ask, 3 with
+   the own-words call; `lastBrief.own` what came of that call (`whole`; `cut`, answered but
+   not whole; `none`, not answered or thrown; `skipped`, no call made) and
+   `lastBrief.ownChars` its reply's length (0 with none); a check's card keeps all three
+   from the briefing it was pressed on. With no objective written (`gateOpen` is null) the same answers are
+   refused, never let through, every part given its `UNWRITTEN_*` text, not asked again and
+   given no own-words call.
 
    The watch and the briefing (and its second ask) read through one helper, `readSession`.
    A fork answers `nothing-to-fork` before the first response of the process (a session
@@ -294,7 +338,7 @@ call writes (below):
    them, a `reopen:` line puts one held shown back to not shown and marks it `reopened`
    (after that only a check's own `shown:` line moves it shown again, and the looks, the
    briefings, the writer and the next check are shown what the check found beside it), and
-   its verdict passes the same gate, so a check never says stop while a condition is open. The briefing's going-well
+   its verdict passes the same gate part by part, with no own-words call, so a check never says stop while a condition is open. The briefing's going-well
    line does not survive a check that found a claim false or left something out. A newer press (`checkEpoch`) makes an
    older run stale, and `lastInstant` ties "Check it" to the card that is up; a stale run's
    answer, inside the record's lock, counts its spend and nothing else (no marks, no

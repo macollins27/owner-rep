@@ -3,13 +3,18 @@
 # Proves the build the owner runs calls the rep's hooks; the test kit cannot. On demand only:
 # each scenario is a real session and a model call, about a minute.
 #
-#     tests/live/live.sh            # all ten scenarios
+#     tests/live/live.sh            # all eleven scenarios
 #     tests/live/live.sh 2 4        # only these
 #
 # Each scenario's whole screen is saved in tests/live/captures/<n>-<name>.txt, and the strip's
 # lines are printed in the report. Scenario 9 also reads the rep's store file under
 # ~/.claude/plugins/store/ (owner-rep_inline-*.json) to show what the reopened session
-# recorded. Exit 0 when every scenario run showed what it should.
+# recorded. Scenario 11 proves the card never offers a stop while a condition is open. How many
+# reads the card took (the record's lastBrief.reads: 1 passed the gate first time, 2 asked once
+# more, 3 refused twice and written in the rep's own words), what came of the own-words call
+# (lastBrief.own: whole, cut when it answered but not whole, none when it did not answer,
+# skipped when no call was made) with its reply's length (ownChars), and whether the fixed text
+# was the last net are printed, not judged, because the model's first answer decides them. Exit 0 when every scenario run showed what it should.
 #
 # The sessions run in a scratch folder under the system temp directory, in bypass mode, with
 # the nested-session variables unset (set, claude falls into print mode and exits). The mod
@@ -24,7 +29,7 @@ CAPS=$HERE/captures
 S=owner-rep-live
 STRIP_RE='Owner rep ·|Brief me|Tell the rep|Fine, close|Put message|Check it|Heads up'
 want=("$@")
-[[ ${#want} -eq 0 ]] && want=(1 2 3 4 5 6 7 8 9 10)
+[[ ${#want} -eq 0 ]] && want=(1 2 3 4 5 6 7 8 9 10 11)
 fails=0
 bad=0
 # The folder the last session was started in, so a scenario can reopen a session there.
@@ -315,6 +320,48 @@ PY
       [[ $(strip | grep -n 'Heads up ·' | head -1 | cut -d: -f1) -lt $(strip | grep -n 'Owner rep ·' | head -1 | cut -d: -f1) ]] ; verdict 'the row drawn beneath the note' $?
       strip | grep -qE '1: Brief me\s+2: Fine\s+0: Later' ; verdict 'the note buttons with digits' $?
       strip | grep -qE 'stopped, waiting on you\s+Brief me\s+Tell the rep' ; verdict 'the row status with both buttons for the mouse' $?
+      stop ;;
+    11)
+      echo "11 refused stop: a one-word job with a condition for later that the conversation cannot show, the agent having answered; Brief me never says stop, and the record shows how many reads the card took (reads 1, 2 or 3)"
+      start || { bad=1; fails=$((fails+1)); stop; continue; }
+      first='Reply with the single word done and nothing else. One more thing for later, not now: this must end up installed on my laptop too, and I will tell you when.'
+      send $first
+      wait_for '^\s*stopped, waiting on you|^\s*asking you' 120
+      sleep 3
+      sleep 20
+      tmux send-keys -t $S 1
+      wait_for 'Fine, close' 240
+      save 11-refused-stop
+      card=$(pane | sed -n '/Owner rep ·/,$p')
+      print -r -- "$card" | grep -E '^\s*Next:' | sed 's/^\s*/  /'
+      print -r -- "$card" | grep -E '^\s*Next:' | grep -qE '^\s*Next: (Stop|The agent (can|should) stop|Nothing (is|more) (left|for the agent))' ; [[ $? -ne 0 ]]; verdict 'Next does not open with a stop' $?
+      print -r -- "$card" | grep -E '^\s*Next:' | grep -qi 'job is finished' ; [[ $? -ne 0 ]]; verdict 'Next does not call the job finished' $?
+      print -r -- "$card" | grep -A4 -E '^\s*Left out:' | grep -qE '^\s*- ' ; verdict 'left-out list present with an item' $?
+      # The record: the newest record in the newest store holding the first prompt.
+      sleep 2
+      stores=("${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/store/owner-rep_inline-*.json(Nom))
+      store=${stores[1]:-}
+      if [[ -z $store ]]; then
+        echo "  no owner-rep store file under ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/store"
+        false
+      else
+        python3 -I - $store $first <<'PY'
+import json, sys
+store, first = sys.argv[1:3]
+fold = lambda t: " ".join(str(t).split())
+recs = [(k, r) for k, r in json.load(open(store)).get("sessions", {}).items() if any(isinstance(m, dict) and fold(m.get("text", "")) == fold(first) for m in r.get("owner", []))]
+if not recs:
+    print("  no record holding the first prompt")
+    sys.exit(1)
+k, r = max(recs, key=lambda kr: kr[1].get("at", 0))
+nxt = (r.get("lastBrief") or {}).get("next", "")
+print(f"  the record {k}:")
+lb = r.get('lastBrief') or {}
+print(f"  reads: {lb.get('reads')}  own: {lb.get('own')}  ownChars: {lb.get('ownChars')}")
+print(f"  the fixed text was the last net: {fold(nxt).startswith('The job is still open:')}")
+PY
+      fi
+      verdict 'the record read' $?
       stop ;;
   esac
   [[ $bad -gt 0 ]] && fails=$((fails+1))

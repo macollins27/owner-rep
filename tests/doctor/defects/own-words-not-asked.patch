@@ -1,0 +1,44 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 8ce7570..2be0c76 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -698,39 +698,6 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
+       const again = await ask(askAgain(first.open))
+       if (!('reason' in again)) taken = again
+     }
+-    // Refused twice (or refused once, the second ask unanswered): the parts the gate
+-    // replaced are written in the rep's own words by one plain call (no fork) over the
+-    // objective, the open conditions, his messages and what the briefing itself found.
+-    // A part it writes that still says stop, a reply that did not come back whole
+-    // (parseOwnWords), or a call that fails, leaves the rep's fixed text, and the press
+-    // goes on. It writes card parts only, never the objective. With no objective
+-    // written there is no such call.
+-    if (taken.refused && taken.replaced.length > 0 && first.open !== null && taken.open !== null) {
+-      reads += 1
+-      const rec = await loadRec($, sid)
+-      const result = await $.model
+-        .complete({
+-          model: OBJECTIVE_MODEL,
+-          system: OWN_WORDS_SYSTEM,
+-          prompt: ownWordsPrompt({ ...memoryOf(rec), context }, taken.open, taken.answer),
+-          maxTokens: OWN_WORDS_MAX_TOKENS,
+-          effort: 'high',
+-          timeoutMs: OWN_WORDS_TIMEOUT_MS,
+-        })
+-        .catch(() => null)
+-      const own = await changeRec($, sid, after => {
+-        if (result !== null) {
+-          after.calls += 1
+-          after.tokens += tokensOf(result.usage)
+-          after.cached += cachedOf(result.usage)
+-        }
+-        return result !== null && result.isAnswered ? parseOwnWords(result.text) : null
+-      })
+-      const answered = result !== null && result.isAnswered
+-      ownChars = answered ? result.text.length : 0
+-      ownRead = !answered ? 'none' : own === null ? 'cut' : 'whole'
+-      taken = { ...taken, answer: takeOwnWords(taken.answer, taken.replaced, own) }
+-    }
+     const a = taken.answer
+     const brief = await changeRec($, sid, after => {
+       const brief: Brief = {

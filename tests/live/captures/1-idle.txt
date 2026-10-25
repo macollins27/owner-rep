@@ -1,7 +1,7 @@
 
  ▐▛███▛█   Claude Code v2.1.310
 ▝▜██████▀  Fable 5.1 with medium effort · Claude Max
- ▝▝   ▝▝   /private/var/folders/mf/g9s916lj533085gbqr23mm9m0000gn/T/owner-rep-live.MbuYXQqjZY
+ ▝▝   ▝▝   /private/var/folders/mf/g9s916lj533085gbqr23mm9m0000gn/T/owner-rep-live.PInjISd62B
 
 
 
@@ -39,6 +39,6 @@
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ❯ Try "edit <filepath> to..."
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  [Fable 5.1] │ owner-rep-live.MbuYXQqjZY +owner-rep-live.MbuYXQqj… +maxwellcollins git:(main)
+  [Fable 5.1] │ owner-rep-live.PInjISd62B +owner-rep-live.PInjISd6… +maxwellcollins git:(main)
   Context ░░░░░░░░░░ 0%
   ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents

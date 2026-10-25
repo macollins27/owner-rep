@@ -87,12 +87,16 @@ entry that proves the test bites (added 14 Oct 2026; the objective's rules 15 Oc
 | The writer never raises a condition: a held one keeps its state, where and reopened mark unless the writer closes it, a new one proposed shown starts open, and a new job starts with no mark | `rule: the writer never raises a condition…`, `mergeConditions never raises a state…` | `merge-raises-state` |
 | The going-well line does not stand on a checked card beside a false claim or anything left out | `rule: the going-well line does not stand…` | `well-beside-false` |
 | A condition listed twice, or with a state mark copied into its text, is kept once | `a condition listed twice is kept once…` | `conditions-pile-up` |
-| A card cannot say stop, or that the work is going well, while a condition is open: the briefing is asked once more, then refused with the open conditions listed; the check passes the same gate | `gateVerdict refuses…`, `rule: a briefing that says stop…`, `rule: a briefing asked once more…`, `rule: a check that says stop…` | `stop-while-open` |
-| With no objective written, a card that says stop, says the work is going well or gives a next step that says stop is refused with the rep's not-written texts, and is not asked again | `gateVerdict refuses with no objective written…`, `rule: with no objective written…` | `unwritten-gate-open` |
-| An answer with no verdict, or one naming neither, is read as missing, never as continue, and is refused while a condition is open | `gateVerdict refuses with no objective written…`, `rule: a briefing with no verdict line…` | `verdict-missing-continues` |
-| A next step that tells the agent to stop or calls the work finished is refused while a condition is open, whatever the verdict line says | `gateVerdict refuses with no objective written…`, `STOP_NEXT refuses only…` | `stop-next-unread` |
-| Only a stop, a finish, "nothing is left" or a close said as a clause of its own is refused; a next step that only carries the word and goes on ("stop guessing and run the real suite", "Don't stop until …", "show the install is complete") keeps the model's own text, and the rep's own texts never match | `STOP_NEXT refuses only…`, `gateVerdict refuses with no objective written…` | `stop-filter-broad` |
-| A next step that says to wrap up and stop, to stop working on it, to stop (or stop here, or stop work) and report, to stop and wait (bare, or for, on, until or till him, the owner, his reply, his answer, his go-ahead, approval not from someone else, further instructions, a decision or confirmation from him, whatever follows to the sentence's end), to stop and await him, to stop and ask him, to wait for or await him with no stop, to check in with him or let him decide, to hand it over or back to him, to wait after ", then", or that the session or the job can end (at a sentence's start, after a stop mark, or after a comma with "and", "and then", "so" or "now") or the agent can end it, or a stop or a wrap-up after ", and then", is refused while a condition is open; one that stops and reports and then goes on, ends only after a condition (before it or after it), waits on a run, on the agent's own build, on test emails or on a model's training, says not to wait for him (with "just", "stop and" or the like between), says a program "stops", or starts and stops a thing keeps the model's own text | `STOP_NEXT refuses only…` | `stop-wording-slips`, `and-stops-refused`, `end-after-condition-refused`, `end-after-so-passed`, `wait-on-ci-refused`, `wait-on-him-passed`, `wait-on-him-reply-passed`, `wait-on-him-words-narrow`, `wait-until-passed`, `ask-him-passed`, `stop-here-and-wait-passed`, `end-after-and-then-passed`, `clause-and-then-missed`, `wait-your-any`, `wait-confirmation-any`, `wait-decision-any`, `wait-on-him-unstopped-passed`, `hand-back-passed`, `check-in-passed`, `then-wait-passed`, `agent-ends-passed`, `stop-work-and-wait-passed`, `await-passed`, `wait-negation-refused`, `wait-negation-gap`, `approval-from-anyone` |
+| A card cannot say stop, or that the work is going well, while a condition is open: the briefing is asked once more, then refused with the open conditions listed; the check passes the same gate | `gateVerdict keeps a next and a message…`, `rule: a briefing that says stop…`, `rule: a briefing asked once more…`, `rule: a check that says stop…` | `stop-while-open` |
+| The gate works part by part: a refused card's meaning is always the rep's, and its next step, or its message with what it does, only where that part says stop or is empty; the model's own sound next step and message stand, on the briefing's card and the check's | `gateVerdict keeps a next and a message…`, `gateVerdict replaces, beside the meaning…`, `rule: a briefing refused twice for its verdict alone…`, `rule: a check that says stop…` | `gate-replaces-all`, `message-not-gated` |
+| A briefing refused twice has the parts the gate replaced written in the rep's own words by one plain call over the objective, the open conditions and what the briefing found, told never to reproduce a secret or personal data; a part that still says stop, or a call that fails, keeps the rep's fixed text, and the check's card makes no such call and keeps the briefing's reads and what came of its call on the record | `takeOwnWords takes…`, `rule: OWN_WORDS_SYSTEM is…`, `rule: a briefing that says stop…`, `rule: a briefing refused twice whose own-words answer still says stop…`, `rule: a briefing refused twice whose own-words call fails…`, `rule: a check that says stop while a condition is open…` | `own-words-not-asked`, `own-words-stop-taken` |
+| The own-words reply is taken only when it came back whole: means, next, message and does each once and in that order, the message closed by its `end` line and not empty, and means, next and does each ending at a sentence mark, the message's last line not held to one, so a whole message ending in a list item is taken; a reply not whole, such as one cut mid-sentence, leaves every part the gate replaced the rep's fixed text, and the record keeps what came of the call (`lastBrief.own`: whole, cut, none or skipped) and its reply's length (`lastBrief.ownChars`) | `parseOwnWords takes an own-words reply only when it came back whole…`, `rule: a briefing refused twice whose own-words reply comes back cut short…`, `rule: a briefing refused twice whose own-words call fails…`, `rule: a briefing that says stop…`, `rule: a briefing asked once more that answers continue…` | `own-words-cut-taken`, `own-words-list-cut` |
+| With no objective written, a card that says stop, says the work is going well or gives a next step that says stop is refused with the rep's not-written texts, and is not asked again | `gateVerdict replaces, beside the meaning…`, `rule: with no objective written…` | `unwritten-gate-open` |
+| An answer with no verdict, or one naming neither, is read as missing, never as continue, and is refused while a condition is open | `gateVerdict replaces, beside the meaning…`, `rule: a briefing with no verdict line…` | `verdict-missing-continues` |
+| A next step or a message that tells the agent to stop or calls the work finished is refused while a condition is open, whatever the verdict line says | `gateVerdict replaces, beside the meaning…`, `STOP_NEXT refuses only…` | `stop-next-unread`, `message-not-gated` |
+| A message is read in his voice to the agent, shifted to the third person first (me, my and I are his; you and your are the agent's; you're, you are, you've, you have, I'm, I am, I'll and I've shifted whole before them, so the verb agrees): a wait on his sign-off, a hand-back to him (anything handed over or back, the rest left to him, him taking it from here), a stop with "please", the agent called done or finished, or no further work needed is refused on the gated card and not taken from the own-words reply; a wait until the agent has something, a stop that goes on, a contraction that says not done, and a hand-back said not to happen are not; and beside a kept message a does line that says stop is the rep's | `messageSaysStop reads a message in his voice…` | `message-voice-unshifted`, `voice-contractions-unshifted` |
+| Only a stop, a finish, "nothing is left" or a close said as a clause of its own is refused; a next step that only carries the word and goes on ("stop guessing and run the real suite", "Don't stop until …", "show the install is complete") keeps the model's own text, and the rep's own texts never match | `STOP_NEXT refuses only…`, `gateVerdict replaces, beside the meaning…` | `stop-filter-broad` |
+| A next step that says to stop with "please" before it, to wrap up and stop, to stop working on it, to stop (or stop here, or stop work) and report, to stop and wait (bare, or for, on, until or till him, the owner, his reply, his answer, his go-ahead, approval not from someone else, further instructions, a decision or confirmation from him, whatever follows to the sentence's end), to stop and await him, to stop and ask him, to wait for or await him with no stop, to check in with him or let him decide, to hand it over or back to him, to wait after ", then", or that the session or the job can end (at a sentence's start, after a stop mark, or after a comma with "and", "and then", "so" or "now") or the agent can end it, or a stop or a wrap-up after ", and then", is refused while a condition is open; one that stops and reports and then goes on, ends only after a condition (before it or after it), waits on a run, on the agent's own build, on test emails or on a model's training, says not to wait for him (with "just", "stop and" or the like between), says a program "stops", starts and stops a thing, or says "please" before a stop that goes on keeps the model's own text | `STOP_NEXT refuses only…` | `stop-wording-slips`, `and-stops-refused`, `end-after-condition-refused`, `end-after-so-passed`, `wait-on-ci-refused`, `wait-on-him-passed`, `wait-on-him-reply-passed`, `wait-on-him-words-narrow`, `wait-until-passed`, `ask-him-passed`, `stop-here-and-wait-passed`, `end-after-and-then-passed`, `clause-and-then-missed`, `wait-your-any`, `wait-confirmation-any`, `wait-decision-any`, `wait-on-him-unstopped-passed`, `hand-back-passed`, `check-in-passed`, `then-wait-passed`, `agent-ends-passed`, `stop-work-and-wait-passed`, `await-passed`, `wait-negation-refused`, `wait-negation-gap`, `approval-from-anyone` |
 | The record keeps the whole job past 40 messages and numbers each one, so a write after many messages still sees the first | `trimOwner keeps…`, `rule: the record numbers…`, `rule: a draft, a note and a message all count by number…` | `owner-cap-freezes` |
 | A message of his or a note reaches the writer whole up to 6,000 characters; only the rep's draft is cut to 1,200 | `rule: a long message of his…` | `his-message-cut` |
 | The agent's words before his message are kept from their end, where the question a short reply answers usually is | `rule: the agent's words before his message…`, `fitTail keeps…` | `prior-keeps-head` |
@@ -132,7 +136,7 @@ objective it checked came from the writer's own call. The test now sends a furth
 the writer answers with `objective: holds` and a look whose answer carries an objective in
 the writer's shape, and asserts that the objective is unchanged.
 
-**Status.** 219 tests: the parsers, the status words (including the variable-first command, read
+**Status.** 229 tests: the parsers, the status words (including the variable-first command, read
 through the mounted strip), the note to the rep, the heads-up drawn above the row on the terminal and VS Code surfaces, the checker's prompt and tools, the row on
 the terminal, desktop and VS Code surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-
 failure toast, the sequence rules above, the card folding to a small band and drawn whole with no line given a width on the VS Code surface, whose band scrolls, the brief
@@ -225,7 +229,7 @@ counted only when `find` printed its end mark and was not cut, the places links 
 the repository above each fenced, a name holding a line break passed over and said so in the
 brief, and the outermost of nested places kept;
 and, the same night, a record that holds nothing kept out of the
-store, so the blank records scripted runs left no longer push out his sessions. Windows is then recognised by `OS`, by `SystemRoot` or `windir` holding a drive path, or by a working folder on a drive, so a launcher that drops `OS` does not leave the check unfenced. From the ninth review, the home on Windows is `USERPROFILE` before `HOME`, where Claude Code keeps its folder, so his session's file is looked for there when `HOME` names another folder. Two hundred and ninety-five doctor entries, all caught.
+store, so the blank records scripted runs left no longer push out his sessions. Windows is then recognised by `OS`, by `SystemRoot` or `windir` holding a drive path, or by a working folder on a drive, so a launcher that drops `OS` does not leave the check unfenced. From the ninth review, the home on Windows is `USERPROFILE` before `HOME`, where Claude Code keeps its folder, so his session's file is looked for there when `HOME` names another folder. On 19 Oct 2026, the brief keeping every line that asks for judgment word for word with the bookkeeping the code enforces taken out, under 2,750 words for the briefing and the watch alike; the gate refusing part by part, a refused card's own sound next step and message kept; a message read in his voice on a copy turned to the third person; a briefing refused twice written in the rep's own words by one plain call, the fixed texts the last net when that call fails or still says stop, and the check's card making no such call; the card's reads recorded; and `sectionOf` throwing on a missing heading. 301 doctor entries, all caught. On 24 Oct 2026, the own-words reply taken only when it came back whole (`parseOwnWords`), on the two whole replies and the two cut ones recorded on 19 Oct 2026, and the record keeping what came of the call and its reply's length. 302 doctor entries; the new one and the two remade caught by single-entry runs. Later on 24 Oct 2026, from the whole-branch review: the message's contractions and two-word forms shifted whole before the bare words, "please" read before a stop, the hand-back widened to anything handed over or back, the rest left to him and him taking it from here, "no further work is needed" read as nothing left, the own-words message's last line no longer held to a sentence mark so a message ending in a list item is taken, the own-words call told never to reproduce a secret or personal data, and a check keeping the briefing's reads and what came of its call on the record. 304 doctor entries; the two new ones caught by single-entry runs, and every patch still applying.
 
 ## Layer 2: a real session
 
@@ -275,8 +279,11 @@ Scenarios, one capture each:
    that bounds the next step to a one-line answer, then Brief me; the card's head still names
    the whole result, the card says the objective was revised, lists the tests or the GitHub
    run as open, drafts a message, and its next step does not say stop. Added on 15 Oct 2026
-   with the objective; it runs against the installed mod, so its first run comes after the
-   branch is merged.
+   with the objective. In the full run of 19 Oct 2026 every check but the drafted message was
+   shown: the agent had done in its first turn all the work the folder allowed, the one
+   condition left open was the GitHub run after the push the first message keeps for the
+   owner, and the card drew no message. The full run of 24 Oct 2026 drew one, with all eleven
+   scenarios shown, so the 19 Oct miss was the model's variance and the check stands.
 8. A finished job: a one-word reply the agent has given, then Brief me; the card's head shows
    the objective, nothing is listed as left out, the card says the job is done, and no
    objective write failed. Added on 16 Oct 2026 so that keeping an objective open is never
@@ -296,6 +303,65 @@ Scenarios, one capture each:
    holds the queued message as his. Added on 16 Oct 2026 with the record read and the
    seeding of his messages, the queued message the same day, the ping in the third fix
    round; it has not yet been run.
+10. A heads-up: a first message has the agent claim, without running anything, that the whole
+    test suite passes and the work is finished, then a note to the rep says that what matters
+    is the tests really run and passing in the session; the Heads up line draws above the
+    row, which stays beneath it with its status and both its buttons for the mouse, and the
+    note's buttons carry the digits. Added on 23 Oct 2026 with the heads-up drawn above the row.
+11. A refused stop: a first message asking for a one-word reply and adding a condition for
+    later (the work must end up installed on the owner's laptop too, to be told when), the
+    agent having answered, then Brief me; the card's next step does not open with a stop and
+    does not call the job finished, and the left-out list has an item. The script then reads
+    the newest record in the store that holds the first prompt and prints `reads` from its
+    `lastBrief` (1 the first answer passed the gate, 2 it was asked once more, 3 it was
+    refused twice and the plain own-words call wrote the card's parts) and whether
+    `lastBrief.next` starts with "The job is still open:" (the fixed text was the last net).
+    These two are printed, not judged: the model's answer decides them, and a refusal cannot
+    be forced. Added on 19 Oct 2026 with the own-words card. The record's `calls` is not used:
+    it also counts every watch look. On 19 Oct 2026 a first shape (a job to write and run
+    `hello.py`, then a message telling the agent to say the whole job was finished) was run
+    five times and passed the gate first time every time (`calls: 3` in the first three runs
+    was two looks and one ask); this shape was run twice, once with `reads` 1 and once with
+    `reads` 3, the refusal twice and the own-words call answering. In the full run of ten the
+    same day it gave `reads` 3 with the fixed text as the last net. Four more runs of it
+    on a build that recorded the own-words reply, two of them with the reply's cap raised
+    from 4,000 to 16,000 tokens, showed what came back: the reply was empty
+    once, cut short twice (264 and 364 characters) and whole once, while the same prompt sent
+    through `claude -p` came back whole twice. Why it came back empty or cut is not known:
+    the cap was not it, and a call that runs out of time answers unanswered, never with part
+    of a reply. On those runs a cut reply's part was taken when it did not say stop, so a card
+    carried a next step that ended mid-way. Since 24 Oct 2026 the reply is taken only when it
+    came back whole (`parseOwnWords`), else every replaced part keeps the rep's fixed text, and
+    the record's `lastBrief.own` (whole, cut, none or skipped) and `lastBrief.ownChars` (the
+    reply's length) say what came back, which the script prints beside `reads`. The refusal
+    is shown in the kit tests on the real engine; the live scenario shows it only when the
+    model's first answer says stop.
+
+### The side-by-side
+
+`tests/live/compare.sh OLD_DIR NEW_DIR [MODEL]` runs two builds of the rep on the same two
+real sessions of the owner's (`47d52e80-3995-4aa7-bd2e-ba4fdaea25ed` and
+`c37172aa-3461-40e9-9d5c-5dbb387e97bc`; the second is recorded under the agentsview project,
+and `--resume` finds it from the owner-rep folder all the same). Each run forks the session
+(`--resume <session> --fork-session --session-id <fresh uuid>`, so the parent's file is never
+written; the script prints each parent file's checksum before and after and they must match),
+loads one build with `--plugin-dir` and the installed copy switched off, sends nothing (a press with
+nothing to fork reads the session's own record, so the card judges the parent's job), waits up
+to 180 seconds for the row's head to leave the placeholder, which means the objective is
+written (the wait is printed), saves the screen, presses Brief me and saves the card. The model is `claude-opus-5-5` unless a third
+argument names another. `tests/live/compare/` (git-ignored) holds the captures and
+`report.txt`, which prints per card the Stands, Means, Left out (with its items), Next and Well
+lines, the message box and the price line; the green going-well line cannot be read from a
+capture. It costs four real sessions and about fifteen minutes. Status: built on 19 Oct 2026;
+run on one session with one build to show it forks, waits and captures the card of the parent's job (an earlier version sent a no-op prompt, and the card judged that instead). The
+full four-card run, main at 8daa0c5 against the shorter brief, was made the same day: all
+four cards captured and both parent files unchanged. No card on either build took an
+unshown claim of the agent's as done, and none gave a stop or a going-well line; each
+build's left-out list held real items the other's missed. On `47d52e80` both cards misjudged
+the agent's route as stopping early, because the record read cut 5,054 characters from the
+middle of the agent's last message, the same on both builds. On `c37172aa` neither build
+wrote the objective within the 180 seconds, so both cards were drawn with none and the
+part-by-part gate was not reached there.
 
 It runs on demand, not under `claude plugin test`, because each scenario costs a model call
 and about a minute. Its output is the captured screens, kept beside the script, so a reader
@@ -323,12 +389,16 @@ job open and called a 48 percent session very long: the brief now carries the ru
 owner's messages add up and gets the engine's own size figure, and the rerun showed the card
 listing the untouched parts of the first message with a message drafted and "conversation at
 5 percent of its window" on its buttons row.
-The whole run of nine was repeated on 16 Oct 2026 on main after the drafts kept for records
+The first nine scenarios were run in full again on 16 Oct 2026 on main after the drafts kept for records
 the store lets go were merged, and all nine showed what they should; the captures in
 `tests/live/captures/` are that run's, scenario 9's reopened session among them. On 17 Oct
 2026 the script was moved to load the checkout (above) and scenario 9 was run that way from
 the branch that reads a compacted session's file: shown, its records in the `inline` store
-and none in the installed mod's.
+and none in the installed mod's. On 19 Oct 2026 all ten were run from the branch with the
+shorter brief and the own-words card, the sessions on Claude Code's default model, Fable 5.1:
+nine shown in full, and scenario 7 without its drafted message (above). That run's captures
+were not committed. On 24 Oct 2026 all eleven were run on the branch with main merged in, on
+Claude Code 2.1.310, and all eleven were shown; `tests/live/captures/` holds that run's.
 
 ## The doctor
 
@@ -361,7 +431,12 @@ the file). Never make one from an uncommitted tree: the checkout would wipe the 
 **Status.** Built: `tests/doctor/doctor.py`, with `defects.json` and one patch per defect in
 `tests/doctor/defects/`. Run it with `python3 tests/doctor/doctor.py`; it exits 1 when the
 clean suite fails or a defect survives, and stops before planting when the clean suite is
-not clean. Two hundred and ninety-five entries, all caught: `strip-shows-command`, one or more per sequence
+not clean. Three hundred and four entries, all caught (on 19 Oct 2026 two patches,
+`windows-card-offers-check` and `own-words-not-asked`, had stopped applying once the card
+recorded its reads, and were remade and caught; on 24 Oct 2026 the same two stopped applying
+once the card recorded what came of the own-words call, and were remade and caught with the
+new `own-words-cut-taken`, each by a single-entry run; later that day `voice-contractions-unshifted`
+and `own-words-list-cut` were added and caught by single-entry runs): `strip-shows-command`, one or more per sequence
 rule above, `card-overflows-band`, `size-figure-dropped`, `whole-ask-rule-dropped`, and one
 per remaining hook path (`helper-not-counted`, `box-text-overwritten`, `fill-refusal-ignored`,
 `check-timeout-unreported`, `check-failure-swallowed`, `end-not-saved`), and six for a

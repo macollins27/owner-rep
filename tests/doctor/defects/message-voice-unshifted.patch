@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 19d12ba..87320e6 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2773,7 +2773,7 @@ export const toAgentVoice = (text: string): string => VOICE.reduce((out, [word,
+ 
+ // Whether a message, or what it does, tells the agent or the job to stop, calls the
+ // work finished, or hands it back to him, read in the third person.
+-export const messageSaysStop = (text: string): boolean => STOP_NEXT.test(toAgentVoice(text))
++export const messageSaysStop = (text: string): boolean => STOP_NEXT.test(text)
+ 
+ // The objective is not finished while a condition is open, and the gate works
+ // part by part. A verdict other than continue (stop, or none given), a

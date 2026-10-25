@@ -1,6 +1,6 @@
 {
   "name": "owner-rep",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Your owner's rep: watches the agent for you, keeps one row above the prompt, and briefs you on a press.",
   "author": { "name": "Maxwell Collins" },
   "types": "./types/index.d.ts"
