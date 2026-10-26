@@ -973,19 +973,16 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
 // lookup throws, so the check's refusal there never rests on a probe.
 let host: { os: string; value: Promise<Host> } | null = null
 
-async function answers($: EngineInterface, program: string): Promise<boolean> {
-  try {
-    const got = await $.process.run([program, '--version'], { timeoutMs: 10000 })
-    return got.exitCode === 0
-  } catch {
-    return false
-  }
-}
-
+// The first candidate that answers `--version` with exit code 0, '' when none does. A probe
+// that throws (no such file, a timeout) counts as no answer and the next is tried.
 async function firstThatAnswers($: EngineInterface, candidates: readonly string[]): Promise<string> {
   for (const candidate of candidates) {
-    const found = await answers($, candidate)
-    if (found) return candidate
+    try {
+      const got = await $.process.run([candidate, '--version'], { timeoutMs: 10000 })
+      if (got.exitCode === 0) return candidate
+    } catch {
+      // No answer: the next candidate is tried.
+    }
   }
   return ''
 }
@@ -1025,15 +1022,11 @@ async function lookUpHost($: EngineInterface, os: string): Promise<Host> {
       await $.env.get('ProgramFiles(x86)'),
       await $.env.get('LOCALAPPDATA'),
     )
-    let posixBin = ''
-    for (const bin of bins) {
-      const mkdir = `${bin}/mkdir.exe`
-      const found = await answers($, mkdir)
-      if (found) {
-        posixBin = bin
-        break
-      }
-    }
+    const mkdir = await firstThatAnswers(
+      $,
+      bins.map(bin => `${bin}/mkdir.exe`),
+    )
+    const posixBin = mkdir === '' ? '' : mkdir.slice(0, -'/mkdir.exe'.length)
     const claude = await firstThatAnswers(
       $,
       winClaudeCandidates(await $.env.get('APPDATA'), await $.env.get('LOCALAPPDATA')),
