@@ -186,7 +186,7 @@ function main() {
     }
 
     // The transcript reads: what heldItems in hooks/register.tsx runs. Each must pass here.
-    check('humanRead: the owner's four messages in order, the queued one marked, the picture data blanked', hostArgv(host, humanRead(file)), r =>
+    check('humanRead: the four messages the owner typed in order, the queued one marked, the picture data blanked', hostArgv(host, humanRead(file)), r =>
       r.status === 0 &&
       same(keysOf(r.stdout), [FIRST, 'Here is the picture.', 'Also add a README.', 'Reply with the single word done.']) &&
       same(humanItems(r.stdout).map(i => i.queued), [false, false, true, false]) &&
@@ -198,7 +198,7 @@ function main() {
       r.status === 0 && summaryStart(r.stdout) === SUMMARY_ID)
     check('toolLineFind: the tool call is on line 2', hostArgv(host, toolLineFind(file, TOOL_ID)), r =>
       r.status === 0 && toolLineOf(r.stdout) === 2)
-    check('humanReadBefore: the lines before line 5 hold the owner's first two messages', hostArgv(host, humanReadBefore(file, 5)), r =>
+    check('humanReadBefore: the lines before line 5 hold the first two messages the owner typed', hostArgv(host, humanReadBefore(file, 5)), r =>
       r.status === 0 && same(keysOf(r.stdout), [FIRST, 'Here is the picture.']))
     check('summaryLineFind: the parent holds the summary line on line 2', hostArgv(host, summaryLineFind(parent, SUMMARY_ID)), r =>
       r.status === 0 && toolLineOf(r.stdout) === 2)
