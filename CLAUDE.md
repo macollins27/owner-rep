@@ -42,7 +42,7 @@ reach" and `PRIVACY.md` too, since the directory's security scan reads the READM
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 229 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 230 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: eleven real sessions of this checkout in tmux, the strip captured to tests/live/captures
 ```

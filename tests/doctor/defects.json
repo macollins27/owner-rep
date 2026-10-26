@@ -1822,5 +1822,17 @@
     "breaks": "The own-words message's last line is held to a sentence mark again, so a whole own-words reply whose message ends in a list item is thrown away for the rep's fixed text and recorded as cut.",
     "patch": "own-words-list-cut.patch",
     "fixed": "2026-10-24"
+  },
+  {
+    "name": "owner-called-he",
+    "breaks": "The role brief calls the owner \"he\" again, so a stranger's row and card read \"He wants…\".",
+    "patch": "owner-called-he.patch",
+    "fixed": "2026-10-26"
+  },
+  {
+    "name": "voice-to-him",
+    "breaks": "The voice shift turns \"me\" to \"him\" instead of \"the owner\", so a message that hands the work back to the owner is read as a hand-back to someone the patterns alone still name; the mark and the owner wording drift apart.",
+    "patch": "voice-to-him.patch",
+    "fixed": "2026-10-26"
   }
 ]

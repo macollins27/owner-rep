@@ -373,7 +373,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 229 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 230 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: eleven real sessions in tmux, the strip captured to tests/live/captures
 ```
