@@ -3,10 +3,9 @@ name: tests
 # A push or pull request that changes only prose and pictures (the README and the other
 # Markdown files, docs/, llms.txt, the licence, the issue forms and the live captures) gets
 # no run: nothing the mod loads or the tests read is in those files, and the run takes
-# over an hour. Everything else, the workflow itself included, still runs. A push runs only
-# on main: a branch with a pull request open gets one run through the pull request, not a
-# second for the push. A push to main that merges a pull request gets no run either: the
-# pull request's run tested the same files.
+# over an hour of machine time. Everything else, the workflow itself included, still runs.
+# A push runs only on main: a branch with a pull request open gets one run through the pull
+# request, not a second for the push.
 on:
   push:
     branches: [main]
@@ -26,13 +25,63 @@ on:
       - '.github/ISSUE_TEMPLATE/**'
       - 'tests/live/captures/**'
 
+permissions:
+  contents: read
+  actions: read
+
 jobs:
+  # A push to main that merges a pull request is not tested a second time when the pull
+  # request's own run passed and the merge holds exactly the files that run tested (the
+  # branch already held main, so the merge changed nothing). The run then passes on this job
+  # alone. Otherwise, a merge of a branch behind main or a push straight to main, the tests
+  # and the doctor run in full.
+  merged:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    outputs:
+      tested: ${{ steps.find.outputs.tested }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 2
+      - id: find
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tested=false
+          if branch=$(git rev-parse -q --verify 'HEAD^2'); then
+            if git diff --quiet "$branch" HEAD; then
+              passed=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/tests.yml/runs?head_sha=$branch&event=pull_request&status=success" --jq '.total_count')
+              if [ "$passed" -gt 0 ]; then
+                tested=true
+                echo "The pull request's run on $branch passed and the merge holds the same files: not run again."
+              else
+                echo "No passing pull request run on $branch: the tests run in full."
+              fi
+            else
+              echo "The merge holds files the branch did not: the tests run in full."
+            fi
+          else
+            echo "Not a merge: the tests run in full."
+          fi
+          echo "tested=$tested" >> "$GITHUB_OUTPUT"
+
+  # The suite runs on three systems with the build the pinned declarations came from, and on
+  # Ubuntu with 2.1.286, the first build with mods on by default, and with the newest
+  # release, so a release that breaks the mod shows here.
   tests:
-    if: github.event_name != 'push' || !startsWith(github.event.head_commit.message, 'Merge pull request ')
+    needs: merged
+    if: ${{ !cancelled() && needs.merged.outputs.tested != 'true' }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+        claude: ['2.1.310']
+        include:
+          - os: ubuntu-latest
+            claude: '2.1.286'
+          - os: ubuntu-latest
+            claude: latest
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -42,9 +91,12 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: 22
-      - name: Install Claude Code, the build the type declarations are pinned to
-        run: npm install -g @anthropic-ai/claude-code@2.1.310
+      - name: Install Claude Code ${{ matrix.claude }}
+        run: |
+          npm install -g @anthropic-ai/claude-code@${{ matrix.claude }}
+          claude --version
       - name: Fail when the installed build is not the one the pinned declarations came from
+        if: matrix.claude == '2.1.310'
         run: tests/ci/declarations.sh
       - name: Validate the manifest and the hooks module
         run: claude plugin validate .
@@ -55,6 +107,7 @@ jobs:
       - name: Run the tests
         run: claude plugin test .
       - name: Type-check the hooks and the tests
+        if: matrix.claude == '2.1.310'
         run: |
           npm install -g typescript@5.9.3
           tsc -p tests/ci/tsconfig.json --noEmit
@@ -62,7 +115,8 @@ jobs:
   # The doctor plants each known defect and runs the suite after each, about fifteen seconds a
   # time; one machine took over an hour. Eight machines each take every eighth defect.
   doctor:
-    if: github.event_name != 'push' || !startsWith(github.event.head_commit.message, 'Merge pull request ')
+    needs: merged
+    if: ${{ !cancelled() && needs.merged.outputs.tested != 'true' }}
     strategy:
       fail-fast: false
       matrix:

@@ -35,8 +35,8 @@ npx -y -p typescript@5.9.3 tsc -p tests/ci/tsconfig.json --noEmit   # type check
 `claude plugin validate` reports one expected warning, that a root `CLAUDE.md` is not shipped
 as plugin context: this file is for work on the repository.
 
-The type check reads `tests/ci/types/`, a pinned copy of the mods API's declarations for the
-Claude Code build CI installs; move the two together. `tests/ci/declarations.sh` fails the run
+The type check reads `tests/ci/types/`, a pinned copy of the mods API's declarations for
+Claude Code 2.1.310, the build CI type-checks against; move the two together. `tests/ci/declarations.sh` fails the run
 when they differ. What CI runs on each push is in `docs/reference.md` under "Tests on GitHub".
 
 ## Conventions

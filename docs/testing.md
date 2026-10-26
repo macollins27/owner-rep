@@ -496,5 +496,9 @@ successor; three moved there on 15 Oct 2026, when the objective replaced the rea
     [run 39157223612](https://github.com/macollins27/owner-rep/actions/runs/39157223612/job/117762818504), on c5a7f33,
     `tests/ci/README.md`).
     Since 26 Oct 2026 the doctor runs as eight Ubuntu jobs at once (`--shard K/8`), each
-    planting every eighth defect, and a push to main that merges a pull request gets no run:
-    the whole run takes about a quarter of an hour where one machine took over one.
+    planting every eighth defect: the whole run takes about a quarter of an hour where one
+    machine took over one. Since 26 Oct 2026 too, the tests run on Ubuntu with Claude Code
+    2.1.286, the first build with mods on by default (2.1.281 to 2.1.285 pass only with the
+    early-access switch on, and 2.1.280 fails 161 of 230), and with the newest release,
+    beside 2.1.310; and a merge to main whose pull request's run passed on the same files
+    passes on a light first job instead of running everything again or showing as skipped.

@@ -9,10 +9,11 @@ true when you do. Every name here is in [`hooks/rep.ts`](../hooks/rep.ts),
 ## Tests on GitHub
 
 GitHub runs validate, `tests/ci/host-calls.sh`, `tests/ci/host-commands.mjs`, test and the
-type check on Ubuntu, macOS and Windows on every push that touches more than prose and
-pictures (`paths-ignore` in the workflow: the Markdown files, `docs/`, `llms.txt`, the
-licence, the issue forms and the live captures get no run; nor does a push to main that
-merges a pull request, whose run tested the same files), and the doctor as eight Ubuntu
+type check on Ubuntu, macOS and Windows with Claude Code 2.1.310, and validate, the two
+host steps and the tests on Ubuntu with 2.1.286 (the first build with mods on by default) and the
+newest release, on every push that touches more than prose and pictures (`paths-ignore` in
+the workflow: the Markdown files, `docs/`, `llms.txt`, the licence, the issue forms and the
+live captures get no run), and the doctor as eight Ubuntu
 jobs at once, each planting every eighth defect (`doctor.py --shard K/8`), so the whole run
 takes about a quarter of an hour where one machine took over one (`.github/workflows/tests.yml`). `host-calls.sh` fails the run when a
 `$.process.run` or `$.process.spawn` in the hooks names its program other than through
@@ -24,7 +25,11 @@ finds them), against `tests/ci/fixtures/` and a scratch folder whose command fol
 link, and reads the answers with the mod's own parsers (`linkTargets` for the path links); on
 Windows one of the check's questions that fails is printed as skipped, since the check does
 not start there, and the copy's commands must still pass (`tests/ci/README.md`). The run's type check uses `tests/ci/types/`, a pinned copy of the
-declarations for the Claude Code build the workflow installs; move both together.
+declarations for Claude Code 2.1.310, the build the declarations step and the type check
+run on; move both together. On a push to main the `merged` job runs first: when the push is
+a merge whose second parent holds the same files and has a passing `pull_request` run of the
+workflow, it sets `tested` and the tests and the doctor are skipped, so the run passes on
+that job alone; otherwise they run in full.
 `tests/ci/declarations.sh` runs first there and fails the run when the installed build is
 not the one stamped on the pinned copy's first line, so the two cannot drift apart unseen.
 
