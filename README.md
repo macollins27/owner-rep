@@ -2,6 +2,8 @@
 
 **Your coding agent says it's done. Owner Rep checks.**
 
+![A real session: the agent builds a small tool and says it is done, the rep's row and briefing follow, and Check it marks one claim false](docs/demo.gif)
+
 [![tests](https://github.com/macollins27/owner-rep/actions/workflows/tests.yml/badge.svg)](https://github.com/macollins27/owner-rep/actions/workflows/tests.yml)
 [![release](https://img.shields.io/github/v/release/macollins27/owner-rep?label=release&color=F3C22F)](https://github.com/macollins27/owner-rep/releases)
 [![licence: MIT](https://img.shields.io/badge/licence-MIT-black)](LICENSE)
