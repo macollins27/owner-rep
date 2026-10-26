@@ -48,7 +48,9 @@ tests/live/live.sh              # on demand: eleven real sessions of this checko
 ```
 
 GitHub runs validate, `tests/ci/host-calls.sh`, `tests/ci/host-commands.mjs`, test and the
-type check on Ubuntu, macOS and Windows on every push, and the doctor on Ubuntu
+type check on Ubuntu, macOS and Windows on every push that touches more than prose and
+pictures (`paths-ignore` in the workflow: the Markdown files, `docs/`, `llms.txt`, the
+licence, the issue forms and the live captures get no run), and the doctor on Ubuntu
 (`.github/workflows/tests.yml`). `host-calls.sh` fails the run when a
 `$.process.run` or `$.process.spawn` in the hooks names its program other than through
 `hostArgv` (the copy's argvs from `copyArgvs` and the `--version` probe excepted).
