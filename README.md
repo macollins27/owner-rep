@@ -33,6 +33,7 @@ Press `y` to add the marketplace, pick a scope, and the rep appears above your p
   the heavy check runs only when you press for it.
 - **What it sends:** only its own model calls, made with your Claude Code session's
   credentials. No servers, no telemetry, no dependencies. MIT licence.
+- **For engineers:** [the design in short](#for-engineers).
 
 ## Why you'd want one
 
@@ -252,6 +253,38 @@ full, this is everything it reads and runs:
 Mods are code that runs inside Claude Code with the access Claude Code has, so read the
 source before installing any mod, this one included.
 
+## For engineers
+
+- **Shape.** A Claude Code mod: one hooks module that subscribes to the session's events
+  (prompt submit, each model step, turn end, tool calls) and draws in the band above the
+  prompt. No dependencies, no build step.
+- **Pure core, thin adapter.** [`hooks/rep.ts`](hooks/rep.ts) holds the prompts, the parsers
+  for the model's labelled answers and the decision rules, as pure functions with no engine
+  access. [`hooks/register.tsx`](hooks/register.tsx) holds the hooks, the state, the
+  rendering and the subprocess.
+- **A supervisor with a held objective.** A separate model call keeps a structured objective
+  (result, purpose, conditions for done with their states, current step) written from the
+  owner's messages alone, so nothing the agent says can move it. Three reads of rising cost
+  are judged against it: a poll that forks the agent's cached conversation every eighth
+  model request and at each stop, a briefing on demand, and a verifier on a second press.
+- **An output gate.** The briefing is parsed from labelled lines and refused part by part
+  when it tells the agent to stop while a condition is open. A refused answer is asked
+  once more, then the refused parts are rewritten by a separate call.
+- **A sandboxed verifier.** The check is a headless `claude -p` in a copy-on-write clone of
+  the project, under Claude Code's sandbox with a computed write-deny list (the git
+  repositories reached by walking up and through symlinks, shell startup files,
+  package-manager config, installs on `PATH`), the network closed, a read-only tool
+  allowlist, and a refusal to start where the sandbox can't.
+- **Prompt-injection handling.** Only the owner's own messages steer the rep. Quoted text is
+  fenced, and fence tags inside it are escaped so it can't close the fence.
+- **State.** One record per session, every change serialised through one lock, older record
+  shapes migrated on load.
+- **Testing.** Unit and engine tests through Claude Code's own plugin test kit, mutation
+  testing with planted defects, CI on three operating systems, and scripted live sessions.
+  The figures are below.
+
+The full design is in [How the owner rep works](docs/how-it-works.md).
+
 ## Built to be trusted
 
 - **230 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
@@ -300,10 +333,11 @@ The mods API is early access and can change between releases. Update the mod wit
 
 ## How it was built
 
-Owner Rep was built the way its users work: by directing Claude Code agents from a written
-objective, with every part proven on screen before the next was started. The first version
-was installed and working on 13 October 2026, the day it was started. It is installed in the
-sessions that work on it, so it watches its own development.
+Owner Rep was built the way its users work. Maxwell Collins wrote down what the rep is for
+and the standard it holds an agent to, directed Claude Code agents to build it, and accepted
+each part only once it was shown working on screen. The agents wrote the code. The first
+version was installed and working on 13 October 2026, the day it was started. It is
+installed in the sessions that work on it, so it watches its own development.
 
 ## Contributing
 
