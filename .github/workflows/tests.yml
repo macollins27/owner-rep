@@ -3,9 +3,12 @@ name: tests
 # A push or pull request that changes only prose and pictures (the README and the other
 # Markdown files, docs/, llms.txt, the licence, the issue forms and the live captures) gets
 # no run: nothing the mod loads or the tests read is in those files, and the run takes
-# over an hour. Everything else, the workflow itself included, still runs.
+# over an hour. Everything else, the workflow itself included, still runs. A push runs only
+# on main: a branch with a pull request open gets one run through the pull request, not a
+# second for the push.
 on:
   push:
+    branches: [main]
     paths-ignore:
       - '**.md'
       - 'docs/**'
