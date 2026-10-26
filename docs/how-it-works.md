@@ -407,10 +407,10 @@ followed by a check on a stubbed run. The test kit stubs the model and the
 band; no test spawns a real check.
 
 Type-checking needs the mods API declarations, which Claude Code writes into a mod's
-development copy under `~/.claude/dev-mods/` when it sets one up, not into this repository.
-Copy that `.claude-plugin/types/` folder here (it is git-ignored) and `tsc` runs clean. The
-declarations are the authority on the API, which is early access and changes between
-releases.
+development copy, not into this repository. `tests/ci/types/` holds a pinned copy for the
+build CI installs, so `npx -y -p typescript@5.9.3 tsc -p tests/ci/tsconfig.json --noEmit`
+runs the same check anywhere. The declarations are the authority on the API, which is early
+access and changes between releases.
 
 Validation reports one expected warning: a `CLAUDE.md` at the plugin root is not shipped as
 plugin context (it is there for people and agents working on this repository, not for users

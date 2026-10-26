@@ -1,8 +1,7 @@
 # The type check on GitHub
 
 `tsc` needs the declarations of the mods API, which Claude Code writes into a mod's
-development copy when a session loads it and never into a checkout (see the root
-`CLAUDE.md`). GitHub has no session, so `types/` here is a pinned copy of those
+development copy when a session loads it and never into a checkout. GitHub has no session, so `types/` here is a pinned copy of those
 declarations as Claude Code 2.1.310 wrote them on 24 Oct 2026, the same build the workflow
 installs. The engine writes them beside the mod when a session loads it with `--plugin-dir`,
 which the live layer does, so `tests/live/live.sh 1` on the build to pin refreshes the copy
