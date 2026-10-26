@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 686e809..e9eff33 100644
+index c95e00f..c3a94e3 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -916,7 +916,7 @@ export const folderOf = (path: string): string => path.slice(0, Math.max(0, path
+@@ -927,7 +927,7 @@ export const folderOf = (path: string): string => path.slice(0, Math.max(0, path
  // One read of a transcript file: sed prints only the lines marked human, so a long session's
- // read is his rows and not the whole file, and blanks every picture's data in them, so a
- // line with a pasted image stays small and its text is still read whole.
+ // read is the owner's rows and not the whole file, and blanks every picture's data in them,
+ // so a line with a pasted image stays small and its text is still read whole.
 -export const HUMAN_SED = '/"kind":"human"/{s/"data":"[^"]*"/"data":""/g;p;}'
 +export const HUMAN_SED = '/"kind":"human"/p'
  export const humanRead = (file: string): string[] => ['sed', '-n', '-E', HUMAN_SED, file]
- // A fork taken after a compaction he has typed nothing since holds no row that could be his,
- // so its place in its parent's file is found by its last tool result instead: the id of that
+ // A fork taken after a compaction the owner has typed nothing since holds no row that could be
+ // the owner's, so its place in its parent's file is found by its last tool result instead: the id

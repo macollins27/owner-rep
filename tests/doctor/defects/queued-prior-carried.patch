@@ -1,8 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index dd33d68..00690bf 100644
+index c95e00f..c2422d4 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -836,7 +836,8 @@ export function typedFromItems(items: readonly HumanItem[], rows: readonly Recor
+@@ -847,7 +847,8 @@ export function typedFromItems(items: readonly HumanItem[], rows: readonly Recor
      }
      cursor = at - 1
    }
@@ -11,4 +11,4 @@ index dd33d68..00690bf 100644
 +  return items.map((item, k) => ({ text: item.text, prior: (carried = priors[k] || carried) }))
  }
  
- // The part of another session's items that belongs to a fork with these rows: a fork's
+ // The part of another session's items that belongs to a fork with these rows: a fork's rows

@@ -1,10 +1,10 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 1e7b043..5ce6620 100644
+index c95e00f..f0d8fcb 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2804,14 +2804,6 @@ export const saysStop = (part: string): boolean => STOP_NEXT.test(part)
- // carry on." is a check-in with him to ASK_BACK_SAID, and the own-words call
- // rewrites the message.
+@@ -2823,14 +2823,6 @@ export const saysStop = (part: string): boolean => STOP_NEXT.test(part)
+ // before deleting anything, then carry on." is a check-in with the owner to
+ // ASK_BACK_SAID, and the own-words call rewrites the message.
  const VOICE: Array<[RegExp, string]> = [
 -  [/\byou['’]re\b/gi, 'the agent is'],
 -  [/\byou\s+are\b/gi, 'the agent is'],

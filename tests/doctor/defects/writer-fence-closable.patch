@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 070bccd..d0be5b3 100644
+index c95e00f..424a558 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -591,7 +591,7 @@ Each condition is one thing "done" has to show, in plain words. You do not see t
- // can close the fence. Only the printing is changed; the record keeps the text as typed.
- // `fenceTag` does the same for any fence; the session record below uses it too.
+@@ -599,7 +599,7 @@ Each condition is one thing "done" has to show, in plain words. You do not see t
+ // text as typed. `fenceTag` does the same for any fence; the session record below uses it
+ // too.
  const fenceTag = (s: string, tag: string): string => s.replace(new RegExp(`<\\s*(\\/?)\\s*${tag}\\s*>`, 'gi'), `‹$1${tag}›`)
 -const fenced = (s: string): string => fenceTag(s, 'his_messages')
 +const fenced = (s: string): string => s
  
- // The objective writer's prompt, the part that changes: the held objective, his messages
- // fenced as quoted records, the earlier jobs and the request. It is a plain completion, not a
+ // The objective writer's prompt, the part that changes: the held objective, the owner's
+ // messages fenced as quoted records, the earlier jobs and the request. It is a plain

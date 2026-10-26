@@ -1,9 +1,9 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 25db406..c4755d2 100644
+index 264fffa..c413600 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -949,8 +949,8 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
- // it, or reopened after its own record was let go. The records are read before the kept
+@@ -1260,8 +1260,8 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
+ // drew it, or reopened after its own record was let go. The records are read before the kept
  // list, the reverse of `saveRec`'s order, so a record let go between the two reads is in one.
  async function storedDrafts($: EngineInterface): Promise<string[]> {
 -  const all = await $.store.get('sessions')

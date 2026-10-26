@@ -236,7 +236,7 @@ for n in $want; do
       print -r -- "$card" | grep -qE 'objective writes? failed' ; [[ $? -ne 0 ]]; verdict 'no failed objective write on the price line' $?
       stop ;;
     9)
-      echo "9 reopened: a session reopened with --continue and pressed before anything is sent in it; Brief me reads the session and draws the card with the objective, and a message typed while the first turn ran a twenty-second ping is recorded as his"
+      echo "9 reopened: a session reopened with --continue and pressed before anything is sent in it; Brief me reads the session and draws the card with the objective, and a message typed while the first turn ran a twenty-second ping is recorded as the owner's"
       start || { bad=1; fails=$((fails+1)); stop; continue; }
       # Claude Code refuses a foreground sleep, so the first turn runs a ping of twenty packets
       # instead, about twenty seconds in the foreground.
@@ -277,7 +277,7 @@ for n in $want; do
       print -r -- "$card" | grep -q 'working out the result you want' ; [[ $? -ne 0 ]]; verdict 'the card head shows the objective, not the placeholder' $?
       print -r -- "$card" | grep -qE 'objective writes? failed' ; [[ $? -ne 0 ]]; verdict 'no failed objective write on the price line' $?
       # The fork's record: the newest record under a session id new since the fork started that
-      # holds the first prompt. It must hold the queued message as his (kind his), which only the
+      # holds the first prompt. It must hold the queued message as the owner's (kind his), which only the
       # queued command's line in the transcript holds.
       sleep 2
       if [[ -z $store ]]; then
@@ -302,7 +302,7 @@ for m in r.get("owner", []):
 sys.exit(0 if any(isinstance(m, dict) and m.get("kind") == "his" and fold(queued) in fold(m.get("text", "")) for m in r.get("owner", [])) else 1)
 PY
       fi
-      verdict "the queued message recorded as his in the fork's record" $?
+      verdict "the queued message recorded as the owner's in the fork's record" $?
       rm -f $ids_before
       stop ;;
     10)

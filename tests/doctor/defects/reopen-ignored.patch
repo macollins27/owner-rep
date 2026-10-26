@@ -1,11 +1,11 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 2ac8289..b7b0c43 100644
+index 264fffa..8eec58e 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -694,7 +694,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
-       // A condition the check saw shown, or he closed, moves under the same rule as a
-       // look's, and a reopened one moves shown only here; one held shown that the
-       // check found is not so goes back to not shown, marked reopened.
+@@ -892,7 +892,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
+       // A condition the check saw shown, or the owner closed, moves under the same
+       // rule as a look's, and a reopened one moves shown only here; one held shown
+       // that the check found is not so goes back to not shown, marked reopened.
 -      const marked = applyMarks(after, c.shown, c.closed, { reopen: c.reopen })
 +      const marked = applyMarks(after, c.shown, c.closed)
        if (marked && onScreen(sid)) await update($, readingA, () => after.objective)
