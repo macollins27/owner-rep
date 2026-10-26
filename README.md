@@ -252,7 +252,8 @@ source before installing any mod, this one included.
 
 ## Built to be trusted
 
-- **229 tests**, run on Ubuntu, macOS and Windows on every push.
+- **229 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
+  the tests.
 - **A doctor that plants bugs.** It plants 304 known defects in a throwaway copy, one at a
   time, and fails the build if the tests miss any of them.
 - **Real sessions.** Eleven scenarios run in real Claude Code sessions, with the screen
