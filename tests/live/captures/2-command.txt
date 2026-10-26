@@ -39,6 +39,6 @@
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ❯ 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  [Fable 5.1] │ owner-rep-live.6XqpdOscH2 +owner-rep-live.6XqpdOsc… +maxwellcollins git:(main) │ Agentsview sync run
+  [Fable 5.1] │ owner-rep-live.6XqpdOscH2 +owner-rep-live.6XqpdOsc… +user git:(main) │ Agentsview sync run
   Context █░░░░░░░░░ 5% │ Usage █░░░░░░░░░ 11% (resets in 4h 23m)
   ⏵⏵ bypass permissions on (shift+tab to cycle)

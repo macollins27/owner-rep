@@ -39,6 +39,6 @@
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ❯ Try "edit <filepath> to..."
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  [Fable 5.1] │ owner-rep-live.PInjISd62B +owner-rep-live.PInjISd6… +maxwellcollins git:(main)
+  [Fable 5.1] │ owner-rep-live.PInjISd62B +owner-rep-live.PInjISd6… +user git:(main)
   Context ░░░░░░░░░░ 0%
   ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents

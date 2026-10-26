@@ -39,6 +39,6 @@
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ❯ 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  [Fable 5.1] │ owner-rep-live.2Td7VAgVpN +owner-rep-live.2Td7VAgV… +maxwellcollins git:(main) │ Single-word done reply
+  [Fable 5.1] │ owner-rep-live.2Td7VAgVpN +owner-rep-live.2Td7VAgV… +user git:(main) │ Single-word done reply
   Context █░░░░░░░░░ 5% │ Usage █░░░░░░░░░ 14% (resets in 4h 15m)
   ⏵⏵ bypass permissions on (shift+tab to cycle)

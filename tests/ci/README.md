@@ -36,7 +36,7 @@ builders and parsers from `hooks/rep.ts` and wraps each built argv as the mod do
 `hostArgv` and, for the git questions alone, `wholeArgv`, so the argv it runs is the argv the
 mod runs, and it reads each answer with the parser the mod reads it with. The `find`, `ls -t`,
 `mkdir -p` and `rm -rf` argvs the mod writes inline are written out the same way. Against the
-two transcripts in `fixtures/` (a session's own file with his typed, pictured, queued, meta
+two transcripts in `fixtures/` (a session's own file with the owner's typed, pictured, queued, meta
 and engine lines and a compaction mark, and a parent holding the same mark), copied into a
 scratch folder laid out as `<config>/projects/p1/`, it runs the reads `heldItems` makes:
 `humanRead`, `startFind`, `toolLineFind`, `humanReadBefore`, `summaryLineFind`, and the `find`
