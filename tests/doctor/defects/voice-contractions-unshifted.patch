@@ -1,8 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 64678b3..8f1f5c8 100644
+index 1e7b043..5ce6620 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2798,14 +2798,6 @@ export const saysStop = (part: string): boolean => STOP_NEXT.test(part)
+@@ -2804,14 +2804,6 @@ export const saysStop = (part: string): boolean => STOP_NEXT.test(part)
  // carry on." is a check-in with him to ASK_BACK_SAID, and the own-words call
  // rewrites the message.
  const VOICE: Array<[RegExp, string]> = [
@@ -10,10 +10,10 @@ index 64678b3..8f1f5c8 100644
 -  [/\byou\s+are\b/gi, 'the agent is'],
 -  [/\byou['’]ve\b/gi, 'the agent has'],
 -  [/\byou\s+have\b/gi, 'the agent has'],
--  [/\bI['’]m\b/g, 'he is'],
--  [/\bI\s+am\b/g, 'he is'],
--  [/\bI['’]ll\b/g, 'he will'],
--  [/\bI['’]ve\b/g, 'he has'],
-   [/\bme\b/gi, 'him'],
-   [/\bmy\b/gi, 'his'],
-   [/\bI\b/g, 'he'],
+-  [/\bI['’]m\b/g, 'the owner is'],
+-  [/\bI\s+am\b/g, 'the owner is'],
+-  [/\bI['’]ll\b/g, 'the owner will'],
+-  [/\bI['’]ve\b/g, 'the owner has'],
+   [/\bme\b/gi, 'the owner'],
+   [/\bmy\b/gi, "the owner's"],
+   [/\bI\b/g, 'the owner'],

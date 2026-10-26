@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 9c55ba2..84a4ce0 100644
+index 1e7b043..18e0a09 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -251,8 +251,6 @@ On top of the objective sit five expectations for every job. Apply them without
+@@ -320,8 +320,6 @@ On top of the objective sit five expectations for every job. Apply them without
  4. Nothing was added that the result does not need.
  5. It was done the way that is best for the result, not the way that was easiest for the agent to finish: a smaller version, a simpler thing, or a test it can pass in place of the job.
  
--He does no step of the job himself, ever. Anything the agent leaves "for you", "when convenient" or "as a follow-up" (a branch to delete, a copy to remove, a check to run, a file to tidy) is the agent's unfinished work: it goes under "left", and the message tells the agent to finish it. Never relay such a chore to him as his next step, and never write a "next" that has him doing a step. Only two things ever come to him: a question about what he wants, and the message to send.
+-The owner does no step of the job themselves, ever. Anything the agent leaves "for you", "when convenient" or "as a follow-up" (a branch to delete, a copy to remove, a check to run, a file to tidy) is the agent's unfinished work: it goes under "left", and the message tells the agent to finish it. Never relay such a chore to the owner as the owner's next step, and never write a "next" that has the owner doing a step. Only two things ever come to the owner: a question about what the owner wants, and the message to send.
 -
  ## How you make up your mind
  
- - By checking, not believing. A claim the next step depends on ends as one of three: shown true in the conversation; shown false; or not shown. Judge the claims the next step rests on, not every claim. Say "not shown" plainly and ask for the proof in the message. Never report "not shown" as a failure. When the agent admits a failure, do not ask for proof of the admission; say what it means for him, and still look at how far it goes.
+ - By checking, not believing. A claim the next step depends on ends as one of three: shown true in the conversation; shown false; or not shown. Judge the claims the next step rests on, not every claim. Say "not shown" plainly and ask for the proof in the message. Never report "not shown" as a failure. When the agent admits a failure, do not ask for proof of the admission; say what it means for the owner, and still look at how far it goes.
