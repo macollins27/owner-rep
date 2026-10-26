@@ -1,10 +1,10 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index b09a4fa..5582434 100644
+index 5c6f2ce..8781afd 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -990,7 +990,7 @@ async function gitRepos($: EngineInterface, on: Host, home: string, copy: string
+@@ -1076,7 +1076,7 @@ async function gitRepos($: EngineInterface, host: Host, home: string, copy: stri
    const own = [copy, cwd]
-   const ask = async (argv: string[]): Promise<string | null> => wholeAnswer(await $.process.run(hostArgv(on, wholeArgv(on, argv)), { timeoutMs: GIT_FIND_TIMEOUT_MS }).catch(() => null))
+   const ask = async (argv: string[]): Promise<string | null> => wholeAnswer(await $.process.run(hostArgv(host, wholeArgv(host, argv)), { timeoutMs: GIT_FIND_TIMEOUT_MS }).catch(() => null))
    const up = await ask(gitUpArgv(own))
 -  const inside = holdsCopiesOf(home, copy) ? '' : await ask(gitInsideArgv(copy))
 +  const inside = ''

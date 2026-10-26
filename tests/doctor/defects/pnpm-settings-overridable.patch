@@ -1,21 +1,21 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 2b88dea..30765cc 100644
+index 5c6f2ce..5a8f72f 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -961,7 +961,7 @@ async function homeFor($: EngineInterface): Promise<string> {
+@@ -1055,7 +1055,7 @@ async function homeFor($: EngineInterface): Promise<string> {
  // corepack's network off (`COREPACK_ASK_ENV`), or '' when there is no pnpm or it does not
  // answer (`pnpmStoreDir`).
- async function pnpmStore($: EngineInterface, on: Host, copy: string): Promise<string> {
--  const r = await $.process.run(hostArgv(on, PNPM_STORE_ARGV), { cwd: copy, env: COREPACK_ASK_ENV, timeoutMs: PNPM_STORE_TIMEOUT_MS }).catch(() => null)
-+  const r = await $.process.run(hostArgv(on, PNPM_STORE_ARGV), { cwd: copy, env: { ...COREPACK_ASK_ENV, npm_config_ignore_pnpmfile: 'true', npm_config_manage_package_manager_versions: 'false', npm_config_offline: 'true' }, timeoutMs: PNPM_STORE_TIMEOUT_MS }).catch(() => null)
+ async function pnpmStore($: EngineInterface, host: Host, copy: string): Promise<string> {
+-  const r = await $.process.run(hostArgv(host, PNPM_STORE_ARGV), { cwd: copy, env: COREPACK_ASK_ENV, timeoutMs: PNPM_STORE_TIMEOUT_MS }).catch(() => null)
++  const r = await $.process.run(hostArgv(host, PNPM_STORE_ARGV), { cwd: copy, env: { ...COREPACK_ASK_ENV, npm_config_ignore_pnpmfile: 'true', npm_config_manage_package_manager_versions: 'false', npm_config_offline: 'true' }, timeoutMs: PNPM_STORE_TIMEOUT_MS }).catch(() => null)
    return r === null || r.exitCode !== 0 ? '' : pnpmStoreDir(r.stdout)
  }
  
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 351c987..9ddf175 100644
+index 16ed109..de84255 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1739,7 +1739,7 @@ export const noFenceNote = (stderr: string): string | null => {
+@@ -1919,7 +1919,7 @@ export const noFenceNote = (stderr: string): string | null => {
  // reads its command line; with its network off (`COREPACK_ASK_ENV`) it runs a pinned pnpm it
  // already holds and fetches none (measured in node:22-bookworm, corepack 0.36.0). It is
  // asked in the copy, and in the agent's folder where no copy is made.

@@ -1,11 +1,11 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index e25097b..c643664 100644
+index 5c6f2ce..d2d8b05 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1008,7 +1008,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
+@@ -1188,7 +1188,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
    try {
-     const on = await hostOf($)
-     const local = (p: string): string => (isWindowsHost(on) ? slashed(p) : p)
+     const host = await hostOf($)
+     const local = (p: string): string => (isWindowsHost(host) ? slashed(p) : p)
 -    let path = local(transcripts.get(sid) ?? '')
 +    let path = transcripts.get(sid) ?? ''
      if (path === '') {
