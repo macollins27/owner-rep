@@ -5,7 +5,8 @@ name: tests
 # no run: nothing the mod loads or the tests read is in those files, and the run takes
 # over an hour. Everything else, the workflow itself included, still runs. A push runs only
 # on main: a branch with a pull request open gets one run through the pull request, not a
-# second for the push.
+# second for the push. A push to main that merges a pull request gets no run either: the
+# pull request's run tested the same files.
 on:
   push:
     branches: [main]
@@ -27,6 +28,7 @@ on:
 
 jobs:
   tests:
+    if: github.event_name != 'push' || !startsWith(github.event.head_commit.message, 'Merge pull request ')
     strategy:
       fail-fast: false
       matrix:
@@ -56,6 +58,22 @@ jobs:
         run: |
           npm install -g typescript@5.9.3
           tsc -p tests/ci/tsconfig.json --noEmit
-      - name: Plant each known defect and expect the suite to fail
-        if: matrix.os == 'ubuntu-latest'
-        run: python3 tests/doctor/doctor.py
+
+  # The doctor plants each known defect and runs the suite after each, about fifteen seconds a
+  # time; one machine took over an hour. Eight machines each take every eighth defect.
+  doctor:
+    if: github.event_name != 'push' || !startsWith(github.event.head_commit.message, 'Merge pull request ')
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+      - name: Install Claude Code, the build the type declarations are pinned to
+        run: npm install -g @anthropic-ai/claude-code@2.1.310
+      - name: Plant every eighth known defect and expect the suite to fail each time
+        run: python3 tests/doctor/doctor.py --shard ${{ matrix.shard }}/8

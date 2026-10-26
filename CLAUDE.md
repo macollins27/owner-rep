@@ -50,8 +50,10 @@ tests/live/live.sh              # on demand: eleven real sessions of this checko
 GitHub runs validate, `tests/ci/host-calls.sh`, `tests/ci/host-commands.mjs`, test and the
 type check on Ubuntu, macOS and Windows on every push that touches more than prose and
 pictures (`paths-ignore` in the workflow: the Markdown files, `docs/`, `llms.txt`, the
-licence, the issue forms and the live captures get no run), and the doctor on Ubuntu
-(`.github/workflows/tests.yml`). `host-calls.sh` fails the run when a
+licence, the issue forms and the live captures get no run; nor does a push to main that
+merges a pull request, whose run tested the same files), and the doctor as eight Ubuntu
+jobs at once, each planting every eighth defect (`doctor.py --shard K/8`), so the whole run
+takes about a quarter of an hour where one machine took over one (`.github/workflows/tests.yml`). `host-calls.sh` fails the run when a
 `$.process.run` or `$.process.spawn` in the hooks names its program other than through
 `hostArgv` (the copy's argvs from `copyArgvs` and the `--version` probe excepted).
 `node --experimental-strip-types tests/ci/host-commands.mjs` runs the transcript reads, the
