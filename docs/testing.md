@@ -495,3 +495,6 @@ successor; three moved there on 15 Oct 2026, when the objective replaced the rea
     path-links question, while the copy's commands pass (the Windows job of
     [run 39157223612](https://github.com/macollins27/owner-rep/actions/runs/39157223612/job/117762818504), on c5a7f33,
     `tests/ci/README.md`).
+    Since 26 Oct 2026 the doctor runs as eight Ubuntu jobs at once (`--shard K/8`), each
+    planting every eighth defect, and a push to main that merges a pull request gets no run:
+    the whole run takes about a quarter of an hour where one machine took over one.
