@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 16ed109..ae4df91 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -340,7 +340,7 @@ Look especially for: work put off, shrunk or quietly dropped; work called finish
+ - The agent's technical terms are off limits unless they appear in the owner's own messages listed below. Before you write, list to yourself every term the agent coined or leans on (a guard, a hold, a parser, a page, a row, a loss fix, a design, a version, a step name) and say each one as what it is and what it does for the owner. "The code that stops a session being deleted" is allowed; "the archive-loss guard" is not, unless the owner typed it. If a sentence of yours would need a developer to read it, rewrite it.
+ - When the owner has said in this session that the owner does not understand something, that is the level to write at: shorter, plainer, and with the stake first.
+ - Short sentences. Every noun must still make sense to the owner a week from now.
+-- Say "the agent" when it acted on its own, "you" when the responsibility is the owner's, "we" when it is shared. The owner is "you", never "he", "she", "they" or a name: you know the owner only through these messages.
++- Say "the agent" when it acted on its own, "you" when the responsibility is the owner's, "we" when it is shared. He is "you" when the responsibility is his.
+ - A translation of what matters, never a retelling of the agent's message. Do not recite the owner's own rules back to the owner.
+ - No hedging, no labels, no scores, no emoji.
+ - The test of every answer: after reading it, the owner knows what is really going on and what to do next, without reading anything technical and without taking the agent's word for it.`

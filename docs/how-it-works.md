@@ -100,13 +100,14 @@ shown what the check found beside it. The objective stays open until every condi
 shown or closed. While a condition is open, the gate refuses a briefing that says the agent
 should stop, that gives no verdict, whose next step or message tells the agent to stop
 (with "please" or without), to wrap up, to stop and report, to wait for or await the owner or
-his word (with a stop or without), to stop and ask him, to check in with him or let him
-decide, to hand the work or any part of it over or back to him, to leave the rest to him, or
-to wait after a ", then", or says he will take it from here, calls the work finished, says no
+the owner's word (with a stop or without), to stop and ask the owner, to check in with the
+owner or let the owner decide, to hand the work or any part of it over or back to the owner,
+to leave the rest to the owner, or to wait after a ", then", or says the owner will take it
+from here (said as him, her, them or the owner), calls the work finished, says no
 further work is needed, or says the session or the agent can end it (a step that only
 carries the word and goes on, such as stopping a wrong
 approach, waiting on a CI run or on the agent's own build, a program that "runs once and
-stops", a step that says not to wait for him, or an end put after a condition, is let
+stops", a step that says not to wait for the owner, or an end put after a condition, is let
 through), or that says the work is going well. The message is written in the owner's voice
 to the agent, so the gate reads it on a copy turned to the third person ("me", "my" and "I"
 the owner's, "you" and "your" the agent's, with "you're", "you are", "you've", "you have",
@@ -372,7 +373,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 229 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 230 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: eleven real sessions in tmux, the strip captured to tests/live/captures
 ```

@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 16ed109..551df41 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2812,7 +2812,7 @@ const VOICE: Array<[RegExp, string]> = [
+   [/\bI\s+am\b/g, 'the owner is'],
+   [/\bI['’]ll\b/g, 'the owner will'],
+   [/\bI['’]ve\b/g, 'the owner has'],
+-  [/\bme\b/gi, 'the owner'],
++  [/\bme\b/gi, 'him'],
+   [/\bmy\b/gi, "the owner's"],
+   [/\bI\b/g, 'the owner'],
+   [/\byour\b/gi, "the agent's"],

@@ -3,6 +3,20 @@
 What changed in each release of Owner Rep, newest first. The full record is the
 [commit history](https://github.com/macollins27/owner-rep/commits/main).
 
+## 0.4.0 (26 October 2026)
+
+- **The rep speaks of the owner, never of "him".** The row and the card used to read "He
+  wants…" and "His note…", because the rep was written around one owner. Every brief now
+  calls the owner "the owner" and writes to the owner as "you", with no guess at who the
+  owner is. The rep's account of the job is written as the thing the owner will have ("A
+  to-do command with tests, a README and a passing GitHub run"), never as a sentence about
+  the owner. The gate that keeps a card from telling the agent to stop reads a message in
+  the owner's voice ("wait for my reply") as the owner's, and the neutral forms ("the
+  owner's reply", "let them decide", "ask her") too. Records written by earlier versions still
+  read.
+- **A push that changes only prose gets no GitHub run**, and a branch gets one run through
+  its pull request instead of two.
+
 ## 0.3.0 (25 October 2026)
 
 - **The briefing's gate works part by part.** While part of "done" is still open, a card is
