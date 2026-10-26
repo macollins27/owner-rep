@@ -1,7 +1,7 @@
 {
   "name": "owner-rep",
   "displayName": "Owner Rep",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Watches your coding agent for you and reports in plain English: what is really done, what was left out, and the message to send it next. For people who direct agents but don't read code.",
   "author": { "name": "Maxwell Collins", "url": "https://github.com/macollins27" },
   "homepage": "https://github.com/macollins27/owner-rep#readme",

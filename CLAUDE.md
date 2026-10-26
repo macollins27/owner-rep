@@ -42,7 +42,7 @@ reach" and `PRIVACY.md` too, since the directory's security scan reads the READM
 
 ```
 claude plugin validate .      # manifest, hooks, and a report of every $ call and state key
-claude plugin test .          # runs every *.test.ts(x); all 229 tests are in tests/rep.test.tsx
+claude plugin test .          # runs every *.test.ts(x); all 230 tests are in tests/rep.test.tsx
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: eleven real sessions of this checkout in tmux, the strip captured to tests/live/captures
 ```
@@ -143,12 +143,12 @@ call writes (below):
    verdict other than `continue` (a `stop`, or none given, which `verdictOf` reads as
    `missing`, never as continue), a `well:` line, or a `next:` (`saysStop`) or a `message:`
    (`messageSaysStop`: the message read on a copy `toAgentVoice` turns to the third person,
-   me, my and the capital I to him, his and he, you and your to the agent and the agent's,
+   me, my and the capital I to the owner, the owner's and the owner, you and your to the agent and the agent's,
    the contractions and two-word forms shifted whole before them, with a straight or curly
    apostrophe: you're and you are to the agent is, you've and you have to the agent has,
-   I'm and I am to he is, I'll to he will, I've to he has; so a wait on his sign-off and
+   I'm and I am to the owner is, I'll to the owner will, I've to the owner has; so a wait on the owner's sign-off and
    "You're done." are caught and a wait until the agent has a log is not, and a few
-   messages a reader would let through, such as a check-in with him before a step, are
+   messages a reader would let through, such as a check-in with the owner before a step, are
    caught in the safe direction and rewritten by the own-words call) that
    `STOP_NEXT` reads as
    telling the agent or the job to stop (with "please" before the stop or not, `STOP_LEAD`),
