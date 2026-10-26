@@ -1,8 +1,8 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index fbdfd7b..6a7b284 100644
+index 264fffa..760cb20 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -543,8 +543,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+@@ -643,8 +643,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
  // The press: an instant read over the same copy, drawn in the band.
  async function pressBrief($: EngineInterface, sid: string): Promise<void> {
    const view = await read($, viewA)
@@ -11,4 +11,4 @@ index fbdfd7b..6a7b284 100644
 +  await update($, viewA, () => 'row')
    await setNow($, { mark: '' }).catch(() => undefined)
    try {
-     // A session the rep holds no record of has his messages read from the session first.
+     // A session the rep holds no record of has the owner's messages read from the session first.

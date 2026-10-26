@@ -1,11 +1,11 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 583c642..2e22af5 100644
+index 264fffa..5275c6a 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -209,8 +209,6 @@ async function saveRec($: EngineInterface, rec: Rec): Promise<void> {
+@@ -266,8 +266,6 @@ async function saveRec($: EngineInterface, rec: Rec): Promise<void> {
    const kept: Record<string, Rec> = {}
    for (const k of ids.slice(0, SESSIONS_MAX)) kept[k] = all[k] as Rec
-   // A record let go leaves its drafts behind first, so a draft he sent stays the rep's.
+   // A record let go leaves its drafts behind first, so a draft the owner sent stays the rep's.
 -  const dropped = ids.slice(SESSIONS_MAX).flatMap(k => recDrafts(all[k]))
 -  if (dropped.length > 0) await $.store.set('droppedDrafts', keepDropped(await droppedDrafts($), dropped))
    await $.store.set('sessions', kept)

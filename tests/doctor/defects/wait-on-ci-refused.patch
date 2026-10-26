@@ -1,11 +1,11 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 1e7b043..8fc5b1f 100644
+index c95e00f..46147c8 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2686,7 +2686,7 @@ const WAIT_ON_HIM = String.raw`\s+(?:for|on|until|till)\s+${ON_HIM}[^.!?;]*`
- // "Stop here and wait for him.", "Stop work and wait.", "Stop and ask him what he wants."):
- // waiting on a run ("Stop and wait for the GitHub run to finish") keeps the job going.
- // "await" reads as a wait.
+@@ -2702,7 +2702,7 @@ const WAIT_ON_HIM = String.raw`\s+(?:for|on|until|till)\s+${ON_HIM}[^.!?;]*`
+ // the sentence ("Stop and wait for him to reply.", "Stop here and wait for him.", "Stop work and wait.",
+ // "Stop and ask him what he wants."): waiting on a run ("Stop and wait for the GitHub run to finish") keeps
+ // the job going. "await" reads as a wait.
 -const STOP_TO_REPORT = String.raw`${STOP_LEAD}stops?(?:\s+work(?:ing)?)?${STOP_WHEN}\s+and\s+(?:then\s+)?(?:(?:report|hand\s+(?:(?:it|everything|the (?:work|job))\s+)?over|summari[sz]e|tell\s+(?:him|her|them|the owner))\b[^.!?;,]*|wait${STOP_WHEN}(?:${WAIT_ON_HIM})?|await(?:\s+${ON_HIM}[^.!?;]*)?|ask\s+(?:him|her|them|the owner|you)\b[^.!?;]*)(?=\s*(?:[.!?;]|$))`
 +const STOP_TO_REPORT = String.raw`${STOP_LEAD}stops?(?:\s+work(?:ing)?)?${STOP_WHEN}\s+and\s+(?:then\s+)?(?:(?:report|hand\s+(?:(?:it|everything|the (?:work|job))\s+)?over|summari[sz]e|tell\s+(?:him|her|them|the owner))\b[^.!?;,]*|wait\b[^.!?;,]*|await(?:\s+${ON_HIM}[^.!?;]*)?|ask\s+(?:him|her|them|the owner|you)\b[^.!?;]*)(?=\s*(?:[.!?;]|$))`
  // Not said after a negation: "Don't wait for him", "never let him decide", "no need to check

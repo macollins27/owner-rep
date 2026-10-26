@@ -1,10 +1,10 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index ba9c1ed..0ad9422 100644
+index c95e00f..91dd6a1 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1583,12 +1583,7 @@ export function recDrafts(r: unknown): string[] {
- // whole, whatever their key order; one the blank lacks (a briefing, an older build's reading)
- // makes the record hold something.
+@@ -2210,12 +2210,7 @@ export function recDrafts(r: unknown): string[] {
+ // Fields are compared whole, whatever their key order; one the blank lacks (a briefing, an
+ // older build's reading) makes the record hold something.
  export function isBlankRec(rec: object, blank: object): boolean {
 -  const canon = (v: unknown): string =>
 -    JSON.stringify(v, (_k, x: unknown) =>

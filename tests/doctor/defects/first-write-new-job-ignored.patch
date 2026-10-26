@@ -1,11 +1,11 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 4b1d556..336f267 100644
+index 264fffa..49cd73a 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -291,7 +291,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number):
-     // A session seeded from its transcript can hold more than one job, all recorded as one:
-     // when the first write says a new job opened at a message of his after the first, the job
-     // starts there, and the earlier messages are no longer his messages on this job.
+@@ -361,7 +361,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number):
+     // when the first write says a new job opened at a message of the owner's after the first,
+     // the job starts there, and the earlier messages are no longer their messages on this
+     // job.
 -    const opened = a.isNewJob ? Number(a.cause.match(/#(\d+)/)?.[1] ?? Number.NaN) : Number.NaN
 +    const opened = Number.NaN
      if (his.includes(opened) && opened > Math.min(...his)) {

@@ -186,19 +186,19 @@ function main() {
     }
 
     // The transcript reads: what heldItems in hooks/register.tsx runs. Each must pass here.
-    check('humanRead: his four messages in order, the queued one marked, the picture data blanked', hostArgv(host, humanRead(file)), r =>
+    check('humanRead: the owner's four messages in order, the queued one marked, the picture data blanked', hostArgv(host, humanRead(file)), r =>
       r.status === 0 &&
       same(keysOf(r.stdout), [FIRST, 'Here is the picture.', 'Also add a README.', 'Reply with the single word done.']) &&
       same(humanItems(r.stdout).map(i => i.queued), [false, false, true, false]) &&
       plain(r.stdout).includes('"data":""') &&
       !r.stdout.includes('AAAAAAAA'))
-    check('startFind: a file that begins with a line he typed has no summary, line 1', hostArgv(host, startFind(file)), r =>
+    check('startFind: a file that begins with a line the owner typed has no summary, line 1', hostArgv(host, startFind(file)), r =>
       r.status === 0 && summaryStart(r.stdout) === null && toolLineOf(r.stdout) === 1)
     check('startFind: a copy that begins at a summary names the summary line', hostArgv(host, startFind(copyOfParent)), r =>
       r.status === 0 && summaryStart(r.stdout) === SUMMARY_ID)
     check('toolLineFind: the tool call is on line 2', hostArgv(host, toolLineFind(file, TOOL_ID)), r =>
       r.status === 0 && toolLineOf(r.stdout) === 2)
-    check('humanReadBefore: the lines before line 5 hold his first two messages', hostArgv(host, humanReadBefore(file, 5)), r =>
+    check('humanReadBefore: the lines before line 5 hold the owner's first two messages', hostArgv(host, humanReadBefore(file, 5)), r =>
       r.status === 0 && same(keysOf(r.stdout), [FIRST, 'Here is the picture.']))
     check('summaryLineFind: the parent holds the summary line on line 2', hostArgv(host, summaryLineFind(parent, SUMMARY_ID)), r =>
       r.status === 0 && toolLineOf(r.stdout) === 2)

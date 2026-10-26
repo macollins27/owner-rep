@@ -179,7 +179,7 @@ type Rec = {
   // the second ask, 3 with the own-words call), what came of that call (`own`) and the
   // length of its reply (`ownChars`, 0 with none). Older records have neither of the last two.
   lastBrief?: { at: number; next: string; message: string; reads?: number; own?: OwnRead; ownChars?: number }
-  // The last DRAFTS_MAX cards' messages, newest first, for knowing a draft he sends.
+  // The last DRAFTS_MAX cards' messages, newest first, for knowing a draft the owner sends.
   drafts: string[]
   lastSent?: { text: string; at: number }
   typedPast: number
@@ -265,7 +265,7 @@ async function saveRec($: EngineInterface, rec: Rec): Promise<void> {
   const ids = Object.keys(all).sort((a, b) => (all[b]?.at ?? 0) - (all[a]?.at ?? 0))
   const kept: Record<string, Rec> = {}
   for (const k of ids.slice(0, SESSIONS_MAX)) kept[k] = all[k] as Rec
-  // A record let go leaves its drafts behind first, so a draft he sent stays the rep's.
+  // A record let go leaves its drafts behind first, so a draft the owner sent stays the rep's.
   const dropped = ids.slice(SESSIONS_MAX).flatMap(k => recDrafts(all[k]))
   if (dropped.length > 0) await $.store.set('droppedDrafts', keepDropped(await droppedDrafts($), dropped))
   await $.store.set('sessions', kept)
@@ -302,7 +302,7 @@ async function changeRec<T>($: EngineInterface, id: string, change: (rec: Rec) =
 // The number of the job's first message, and the job's messages.
 const jobOf = (rec: Rec): number => rec.objective?.since ?? rec.jobStart
 const jobMsgs = (rec: Rec): OwnerMsg[] => rec.owner.filter(m => m.n >= jobOf(rec))
-// The numbers of his own messages and notes from `from` on: never a draft's.
+// The numbers of the owner's own messages and notes from `from` on: never a draft's.
 const hisFrom = (rec: Rec, from: number): number[] => rec.owner.filter(m => m.kind !== 'draft' && m.n >= from).map(m => m.n)
 
 const memoryOf = (rec: Rec): Memory => ({
@@ -330,10 +330,10 @@ async function contextOf($: EngineInterface): Promise<Memory['context']> {
 }
 
 // The writer sees the conversation only as the agent's last words before each
-// of his messages, so a condition it marks shown is taken only as already held
-// shown, and one it marks closed only when the number cited is one of the
-// messages of his it is given (on a correction, those sent after the held
-// objective was built); otherwise it is open.
+// of the owner's messages, so a condition it marks shown is taken only as
+// already held shown, and one it marks closed only when the number cited is
+// one of the messages of theirs it is given (on a correction, those sent after
+// the held objective was built); otherwise it is open.
 function honest(proposed: Condition[], held: Condition[], his: readonly number[]): Condition[] {
   return proposed.map(c => {
     const was = held.find(x => same(x.text, c.text))
@@ -344,21 +344,23 @@ function honest(proposed: Condition[], held: Condition[], his: readonly number[]
 }
 
 // Applies the objective writer's answer to the record. `saw` is the number of
-// the last of his messages the writer was shown. The objective moves only on
-// his own words: an answer from a writer that saw no message of his or note
-// beyond what the held objective was built from is refused, so a draft never
-// moves it, and a write that lands after a newer one cannot take its place. A
-// correction rebuilds the result, the purpose and the step whole and keeps
-// every held condition the writer let go without a message of his that says
-// so; a new job closes the old objective into `past`. True when it changed.
+// the last of the owner's messages the writer was shown. The objective moves
+// only on the owner's own words: an answer from a writer that saw no message
+// of theirs or note beyond what the held objective was built from is refused,
+// so a draft never moves it, and a write that lands after a newer one cannot
+// take its place. A correction rebuilds the result, the purpose and the step
+// whole and keeps every held condition the writer let go without a message of
+// the owner's that says so; a new job closes the old objective into `past`.
+// True when it changed.
 function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number): boolean {
   if (a === null || a.kind === 'holds') return false
   const held = rec.objective
   if (held === null) {
     let his = hisFrom(rec, rec.jobStart).filter(n => n <= saw)
     // A session seeded from its transcript can hold more than one job, all recorded as one:
-    // when the first write says a new job opened at a message of his after the first, the job
-    // starts there, and the earlier messages are no longer his messages on this job.
+    // when the first write says a new job opened at a message of the owner's after the first,
+    // the job starts there, and the earlier messages are no longer their messages on this
+    // job.
     const opened = a.isNewJob ? Number(a.cause.match(/#(\d+)/)?.[1] ?? Number.NaN) : Number.NaN
     if (his.includes(opened) && opened > Math.min(...his)) {
       rec.jobStart = opened
@@ -399,8 +401,8 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number): 
     }
     return true
   }
-  // A close or a drop cites a message of his this write is the first to see:
-  // one the held objective was built from already had its say.
+  // A close or a drop cites a message of the owner's this write is the first
+  // to see: one the held objective was built from already had its say.
   rec.objective = {
     ...held,
     result: a.parts.result,
@@ -417,7 +419,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number): 
 }
 
 // Applies a look's, a briefing's or a check's marks to the held conditions:
-// one he closed in a message of his own on the job, after the one the
+// one the owner closed in a message of their own on the job, after the one the
 // objective was last built from, becomes closed with that number (a message
 // the writer already read and kept the condition open after closes nothing);
 // one held shown that the check found is not so goes back to not shown and is
@@ -460,16 +462,16 @@ function applyMarks(
 }
 
 // The objective writer running for a session, one at a time per session, and
-// whether a message of his or a note asked for a write while it ran.
+// whether a message of the owner's or a note asked for a write while it ran.
 type Writing = { run: Promise<void>; again: boolean }
 const writing = new Map<string, Writing>()
 
-// The objective writer: a plain completion of its own over his messages on the
-// job, never the conversation, so nothing the agent says can move what it
-// writes. A request while one runs joins it, and a message or note that joins
-// is written after the write in hand. A load or a press asks only for the
-// first objective, and a message or a note for a rebuild. Never awaited by the
-// prompt hook that starts it, so the agent is never slowed.
+// The objective writer: a plain completion of its own over the owner's
+// messages on the job, never the conversation, so nothing the agent says can
+// move what it writes. A request while one runs joins it, and a message or
+// note that joins is written after the write in hand. A load or a press asks
+// only for the first objective, and a message or a note for a rebuild. Never
+// awaited by the prompt hook that starts it, so the agent is never slowed.
 async function rebuildObjective($: EngineInterface, sid: string, cause: 'message' | 'note' | 'load' | 'press'): Promise<void> {
   const running = writing.get(sid)
   if (running !== undefined) {
@@ -486,7 +488,7 @@ async function rebuildObjective($: EngineInterface, sid: string, cause: 'message
 
 async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolean, entry: Writing): Promise<void> {
   // The last message number a write in this run was shown; a rerun with
-  // nothing of his past it makes no call.
+  // nothing of the owner's past it makes no call.
   let shown = -1
   for (;;) {
     entry.again = false
@@ -528,9 +530,10 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
           }
           const cut = result !== null && !result.isAnswered && result.reason === 'aborted'
           again = result !== null && !cut && attempt < OBJECTIVE_RETRIES
-          // A newer message of his arrived during the attempt: the next pass writes over the
-          // fresh prompt, so this write stops here and is not counted as failed. Judged by
-          // number only: a request can join after this pass already loaded its message.
+          // A newer message of the owner's arrived during the attempt: the next pass writes
+          // over the fresh prompt, so this write stops here and is not counted as failed.
+          // Judged by number only: a request can join after this pass already loaded its
+          // message.
           if (again && r.owner.some(m => m.kind !== 'draft' && m.n > saw)) {
             again = false
             stale = true
@@ -549,10 +552,10 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
       if (onScreen(sid)) await update($, readingA, () => after.objective)
     }
     onlyFirst = false
-    // A message of his or a note that came in during the write is written now:
-    // one whose request joined this run, or one saved after the write was shown
-    // the messages. The check and the release are one step, so a request that
-    // comes after it starts a run of its own.
+    // A message of the owner's or a note that came in during the write is
+    // written now: one whose request joined this run, or one saved after the
+    // write was shown the messages. The check and the release are one step, so
+    // a request that comes after it starts a run of its own.
     const now = await loadRec($, sid)
     if (!entry.again && !now.owner.some(m => m.kind !== 'draft' && m.n > saw)) {
       if (writing.get(sid) === entry) writing.delete(sid)
@@ -568,10 +571,10 @@ async function setNow($: EngineInterface, patch: Partial<Now>): Promise<void> {
 // One read of the conversation for the watch or the briefing: a fork of it. A fork has
 // nothing to fork before the first response of the process: in a session reopened with
 // --continue or --resume, after /clear, and through the whole first turn of a new session.
-// Then, only for a read he started (`fallback`: his press, and the look after his note),
+// Then, only for a read the owner started (`fallback`: their press, and the look after their note),
 // the session's record is read instead, by one plain completion over the rows
-// `$.session.messages()` returns (recordPrompt), with the same task: a row is labelled his
-// when its key is one of his messages in the session's transcript (heldItems), and the
+// `$.session.messages()` returns (recordPrompt), with the same task: a row is labelled the owner's
+// when its key is one of their messages in the session's transcript (heldItems), and the
 // session's when it is not; when no transcript can be read, by NOT_TYPED alone.
 // The watch's own looks, on a step and at a turn's end, skip quietly instead: a record
 // read on each of them would be paid on every look of every new session's first turn.
@@ -617,7 +620,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
     })
     return
   }
-  // Only the look after his note falls back to the record when there is nothing to fork.
+  // Only the look after the owner's note falls back to the record when there is nothing to fork.
   const result = await readSession($, sid, watchPrompt({ ...memoryOf(rec), context: await contextOf($) }, reason), reason === 'note')
   const usage = 'usage' in result ? result.usage : null
   await changeRec($, sid, async after => {
@@ -644,7 +647,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
   await update($, viewA, () => 'reading')
   await setNow($, { mark: '' }).catch(() => undefined)
   try {
-    // A session the rep holds no record of has his messages read from the session first.
+    // A session the rep holds no record of has the owner's messages read from the session first.
     await seedOwner($, sid)
     // No objective yet: it is written first, so the briefing measures against it.
     if ((await loadRec($, sid)).objective === null) await rebuildObjective($, sid, 'press')
@@ -700,10 +703,10 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     }
     // Refused twice (or refused once, the second ask unanswered): the parts the gate
     // replaced are written in the rep's own words by one plain call (no fork) over the
-    // objective, the open conditions, his messages and what the briefing itself found.
-    // A part it writes that still says stop, a reply that did not come back whole
-    // (parseOwnWords), or a call that fails, leaves the rep's fixed text, and the press
-    // goes on. It writes card parts only, never the objective. With no objective
+    // objective, the open conditions, the owner's messages and what the briefing itself
+    // found. A part it writes that still says stop, a reply that did not come back
+    // whole (parseOwnWords), or a call that fails, leaves the rep's fixed text, and the
+    // press goes on. It writes card parts only, never the objective. With no objective
     // written there is no such call.
     if (taken.refused && taken.replaced.length > 0 && first.open !== null && taken.open !== null) {
       reads += 1
@@ -882,13 +885,13 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       after.lastCheckMs = Date.now() - startedAt
       after.lastCheckRefused = got.refused
       // A run a newer press made stale changes nothing more: its marks are not
-      // taken and the card on record stays the newer one, so the message he
-      // sends from that card is still known for the rep's draft.
+      // taken and the card on record stays the newer one, so the message the
+      // owner sends from that card is still known for the rep's draft.
       if (epoch !== checkEpoch || after.lastBrief?.at !== at) return null
       const c = parseCheck(got.text)
-      // A condition the check saw shown, or he closed, moves under the same rule as a
-      // look's, and a reopened one moves shown only here; one held shown that the
-      // check found is not so goes back to not shown, marked reopened.
+      // A condition the check saw shown, or the owner closed, moves under the same
+      // rule as a look's, and a reopened one moves shown only here; one held shown
+      // that the check found is not so goes back to not shown, marked reopened.
       const marked = applyMarks(after, c.shown, c.closed, { reopen: c.reopen })
       if (marked && onScreen(sid)) await update($, readingA, () => after.objective)
       const checked: Checked = { holds: c.holds, wrong: c.wrong, notShown: c.notShown, changed: c.changed, looked: c.looked, refused: got.refused }
@@ -1139,8 +1142,8 @@ async function putMessage($: EngineInterface, text: string): Promise<void> {
 let lastAnswer = ''
 
 // Records one owner message with the next number and the end of the agent's
-// last answer. His messages and notes are kept to the larger cut, since the
-// writer reads nothing else; a draft of the rep's to the smaller.
+// last answer. The owner's messages and notes are kept to the larger cut,
+// since the writer reads nothing else; a draft of the rep's to the smaller.
 function pushOwner(rec: Rec, kind: OwnerKind, text: string, prior: string = lastAnswer): void {
   const cut = kind === 'draft' ? OWNER_CUT : HIS_CUT
   rec.owner = trimOwner(
@@ -1157,29 +1160,29 @@ function holdTranscript(id: unknown, path: unknown): void {
   if (typeof id === 'string' && id !== '' && typeof path === 'string' && path !== '') transcripts.set(id, path)
 }
 
-// His messages, read from the session's transcript file in its order (humanItems), which
-// says who wrote each row where `$.session.messages()` does not, and holds the messages he
-// typed while the agent worked, which are no row at all. The file is the path the classic
-// hooks gave (transcripts); with none held it is found by name under <config>/projects, the
-// config folder CLAUDE_CONFIG_DIR or ~/.claude, and with none found nothing is read. sed
-// keeps only the lines marked human, picture data blanked (humanRead); a read that finds
-// none means he typed nothing. A read cut at the output cap is not taken: for the session's
-// own file nothing is read. A session forked after a compaction may have a file of its own
-// that begins at the summary (summaryStart), holding none of what he typed before it: the
-// newest other files in its folder are searched for that summary line, one at a time, at
-// most HUMAN_SCAN_MAX within HUMAN_SCAN_BUDGET_MS, and his messages are those before it in
-// the first file that holds any there (a copy of the copy holds none), then the copy's own;
-// with no such file, the copy's own alone. A session forked with a new id has no file of
-// its own until its first message is saved: the newest other files are read instead, a cut
-// read skipped, and the file whose items match the most of the fork's rows (forkItems; the
-// newest on a tie) gives its part up to the last match and the queued messages right after
-// it, the scan stopping once every row that could be his is matched. A fork taken after a
-// compaction he has typed nothing since holds no such row: its parent is then the newest
-// file holding the call of its last tool result (lastToolId), and his messages are the ones
-// before that call's line. Null when nothing could be read in the session's own file, and
-// when the scan matched none of the fork's rows, whether no file could be read whole or the
-// files read hold none of them: a file that matches nothing proves nothing about who wrote
-// the rows.
+// The owner's messages, read from the session's transcript file in its order (humanItems),
+// which says who wrote each row where `$.session.messages()` does not, and holds the
+// messages the owner typed while the agent worked, which are no row at all. The file is the
+// path the classic hooks gave (transcripts); with none held it is found by name under
+// <config>/projects, the config folder CLAUDE_CONFIG_DIR or ~/.claude, and with none found
+// nothing is read. sed keeps only the lines marked human, picture data blanked (humanRead);
+// a read that finds none means the owner typed nothing. A read cut at the output cap is not
+// taken: for the session's own file nothing is read. A session forked after a compaction
+// may have a file of its own that begins at the summary (summaryStart), holding none of
+// what the owner typed before it: the newest other files in its folder are searched for
+// that summary line, one at a time, at most HUMAN_SCAN_MAX within HUMAN_SCAN_BUDGET_MS, and
+// their messages are those before it in the first file that holds any there (a copy of the
+// copy holds none), then the copy's own; with no such file, the copy's own alone. A session
+// forked with a new id has no file of its own until its first message is saved: the newest
+// other files are read instead, a cut read skipped, and the file whose items match the most
+// of the fork's rows (forkItems; the newest on a tie) gives its part up to the last match
+// and the queued messages right after it, the scan stopping once every row that could be
+// the owner's is matched. A fork taken after a compaction the owner has typed nothing since
+// holds no such row: its parent is then the newest file holding the call of its last tool
+// result (lastToolId), and their messages are the ones before that call's line. Null when
+// nothing could be read in the session's own file, and when the scan matched none of the
+// fork's rows, whether no file could be read whole or the files read hold none of them: a
+// file that matches nothing proves nothing about who wrote the rows.
 async function heldItems($: EngineInterface, sid: string, rows: readonly RecordRow[]): Promise<HumanItem[] | null> {
   try {
     const host = await hostOf($)
@@ -1253,8 +1256,8 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
 }
 
 // The rep's drafts kept in every session's record (`recDrafts`) and those of records the
-// store has let go, so a draft he sent is known in a session forked from the one that drew
-// it, or reopened after its own record was let go. The records are read before the kept
+// store has let go, so a draft the owner sent is known in a session forked from the one that
+// drew it, or reopened after its own record was let go. The records are read before the kept
 // list, the reverse of `saveRec`'s order, so a record let go between the two reads is in one.
 async function storedDrafts($: EngineInterface): Promise<string[]> {
   const all = await $.store.get('sessions')
@@ -1264,20 +1267,20 @@ async function storedDrafts($: EngineInterface): Promise<string[]> {
   return out
 }
 
-// A session the rep holds no record of has none of his messages: one reopened after its
-// record fell out of the newest SESSIONS_MAX, one forked with a new id, one from before the
-// mod was installed. His messages are then read from the session's transcript file in its
-// order, the ones he typed while the agent worked included (heldItems; when it cannot be
-// read nothing is seeded), and recorded in that order as `prompt.submit` records them, each
-// with the agent's last words before it from the session's rows, none when no row holds it
-// (typedFromItems), a draft he sent split off as the rep's, matched against the drafts of every
-// record in the store, those it holds among his messages included, and those of records let go.
-// A session with no rows yet (a new one) is not read; one whose rows hold nothing he typed (one
-// reopened after a compaction he has typed nothing since) is read all the same, since the
-// file holds what the rows lost. It does nothing when the record holds a message or a note of his, so
-// it never adds to a live record. Says whether it recorded any. One read per session at a
-// time: a seed asked for while one runs (the start's, when he sends a prompt at once) is
-// that one, and `prompt.submit` waits for it, so his live prompt is numbered after it.
+// A session the rep holds no record of has none of the owner's messages: one reopened after its
+// record fell out of the newest SESSIONS_MAX, one forked with a new id, one from before the mod was
+// installed. The owner's messages are then read from the session's transcript file in its order, the
+// ones the owner typed while the agent worked included (heldItems; when it cannot be read nothing is
+// seeded), and recorded in that order as `prompt.submit` records them, each with the agent's last
+// words before it from the session's rows, none when no row holds it (typedFromItems), a draft the
+// owner sent split off as the rep's, matched against the drafts of every record in the store, those
+// it holds among their messages included, and those of records let go. A session with no rows yet (a
+// new one) is not read; one whose rows hold nothing the owner typed (one reopened after a compaction
+// the owner has typed nothing since) is read all the same, since the file holds what the rows lost.
+// It does nothing when the record holds a message or a note of the owner's, so it never adds to a
+// live record. Says whether it recorded any. One read per session at a time: a seed asked for while
+// one runs (the start's, when the owner sends a prompt at once) is that one, and `prompt.submit`
+// waits for it, so their live prompt is numbered after it.
 const seeding = new Map<string, Promise<boolean>>()
 function seedOwner($: EngineInterface, sid: string): Promise<boolean> {
   const running = seeding.get(sid)
@@ -1310,15 +1313,15 @@ async function seedOnce($: EngineInterface, sid: string): Promise<boolean> {
   })
 }
 
-// A note to the rep, typed behind the prefix: recorded as his, marked as said
-// to the rep, and read at once. The agent never sees it.
+// A note to the rep, typed behind the prefix: recorded as the owner's, marked
+// as said to the rep, and read at once. The agent never sees it.
 async function takeNote($: EngineInterface, sid: string, note: string): Promise<void> {
   await changeRec($, sid, rec => pushOwner(rec, 'note', note))
 }
 
-// "Tell the rep": the prefix goes into the owner's own prompt box, he types
-// after it and presses Enter; the prompt.submit hook takes the note and drops
-// it, so the agent never sees it.
+// "Tell the rep": the prefix goes into the owner's own prompt box, the owner
+// types after it and presses Enter; the prompt.submit hook takes the note and
+// drops it, so the agent never sees it.
 async function tellRep($: EngineInterface): Promise<void> {
   const box = await $.prompt.read()
   if (box.text.trim() !== '') {
@@ -1400,10 +1403,10 @@ async function sessionId($: EngineInterface): Promise<string> {
 const onScreen = (id: string): boolean => !ended && id === currentId
 
 // A session taken up: its objective on the row; when the rep holds no record of
-// it, his typed messages read from the session and the objective written from
-// them when any were found; and, when it has messages of his and no objective
-// yet (a write that never landed, or one saved by an older build), a write
-// started now.
+// it, the owner's typed messages read from the session and the objective
+// written from them when any were found; and, when it has messages of theirs
+// and no objective yet (a write that never landed, or one saved by an older
+// build), a write started now.
 async function enterSession($: EngineInterface, id: string): Promise<void> {
   const rec = await loadRec($, id)
   if (onScreen(id)) await update($, readingA, () => rec.objective)
@@ -1479,10 +1482,10 @@ export const register: Register = on => {
         if (note === '') return { drop: 'Owner rep: nothing after the prefix, so nothing noted.' }
         try {
           const id = await sessionId($)
-          // His messages read from the session first, so the note is numbered after them.
+          // The owner's messages read from the session first, so the note is numbered after them.
           await seedOwner($, id).catch(() => false)
           await takeNote($, id, note)
-          // The note is his and can move the objective: the writer reads it first.
+          // The note is the owner's and can move the objective: the writer reads it first.
           rebuildObjective($, id, 'note').catch(() => undefined)
           // A dropped prompt stays in the box for editing; a note the rep has
           // taken must not, or the next digit lands after it as text. A fill
@@ -1504,16 +1507,17 @@ export const register: Register = on => {
       const note = noted === null ? '' : noted.note
       try {
         const id = await sessionId($)
-        // A session the rep holds no record of has his messages read from the session
-        // first (or the start's read finished), so this prompt is numbered after them.
+        // A session the rep holds no record of has the owner's messages read from the
+        // session first (or the start's read finished), so this prompt is numbered
+        // after them.
         const seeded = await seedOwner($, id).catch(() => false)
         const view = await read($, viewA)
         const { rec, split, isHis } = await changeRec($, id, async rec => {
-          // A message the rep drafted and he sent is recorded as the rep's words,
-          // marked, never as his: the model must not grade against a job the rep wrote.
-          // It is matched against the last few cards' messages as stored, so it
-          // survives a reload and a newer card; what he added after the draft is
-          // his own message, numbered after it.
+          // A message the rep drafted and the owner sent is recorded as the rep's
+          // words, marked, never as the owner's: the model must not grade against a job
+          // the rep wrote. It is matched against the last few cards' messages as
+          // stored, so it survives a reload and a newer card; what the owner added
+          // after the draft is their own message, numbered after it.
           const split = draftSplitAny(text, [...rec.drafts, rec.lastBrief?.message ?? ''])
           const isHis = split === null || split.his !== ''
           if (split === null) pushOwner(rec, 'his', text)
@@ -1539,7 +1543,7 @@ export const register: Register = on => {
         if (split !== null && onScreen(id)) await update($, readingA, () => rec.objective)
         // The note is numbered after the prompt it was typed behind.
         if (note !== '') await takeNote($, id, note)
-        // A message of his can move the objective: the writer reads it, never the agent's words.
+        // A message of the owner's can move the objective: the writer reads it, never the agent's words.
         if (isHis || note !== '' || seeded) rebuildObjective($, id, note !== '' ? 'note' : 'message').catch(() => undefined)
         if (note !== '') {
           lookAtNote(id)
@@ -1548,7 +1552,7 @@ export const register: Register = on => {
       } catch {
         // Recording is best effort; the prompt goes on.
       }
-      // A prefix with nothing after it, behind a prompt: nothing is noted, and he is told so.
+      // A prefix with nothing after it, behind a prompt: nothing is noted, and the owner is told so.
       if (noted !== null && note === '') $.ui.toast('Owner rep: nothing after the prefix, so nothing noted. The agent got the rest.')
       // The agent never sees the note, even when recording it failed.
       if (noted !== null) return next({ ...e, text })

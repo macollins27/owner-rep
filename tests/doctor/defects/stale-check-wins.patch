@@ -1,8 +1,8 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 57aadf7..f8fce05 100644
+index 264fffa..97da5d8 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -621,7 +621,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
+@@ -806,7 +806,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
    activeCheck = null
    const isStale = async (): Promise<boolean> => {
      const b = await read($, briefA)
@@ -11,11 +11,11 @@ index 57aadf7..f8fce05 100644
    }
    const finish = async (patch: Partial<Brief>): Promise<void> => {
      if (await isStale()) return
-@@ -689,7 +689,6 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
+@@ -887,7 +887,6 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
        // A run a newer press made stale changes nothing more: its marks are not
-       // taken and the card on record stays the newer one, so the message he
-       // sends from that card is still known for the rep's draft.
+       // taken and the card on record stays the newer one, so the message the
+       // owner sends from that card is still known for the rep's draft.
 -      if (epoch !== checkEpoch || after.lastBrief?.at !== at) return null
        const c = parseCheck(got.text)
-       // A condition the check saw shown, or he closed, moves under the same rule as a
-       // look's, and a reopened one moves shown only here; one held shown that the
+       // A condition the check saw shown, or the owner closed, moves under the same
+       // rule as a look's, and a reopened one moves shown only here; one held shown

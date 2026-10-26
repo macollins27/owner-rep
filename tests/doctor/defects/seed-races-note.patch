@@ -1,12 +1,12 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 1e7dd4a..280a1d2 100644
+index 264fffa..077c8f0 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1066,7 +1066,6 @@ export const register: Register = on => {
+@@ -1483,7 +1483,6 @@ export const register: Register = on => {
          try {
            const id = await sessionId($)
-           // His messages read from the session first, so the note is numbered after them.
+           // The owner's messages read from the session first, so the note is numbered after them.
 -          await seedOwner($, id).catch(() => false)
            await takeNote($, id, note)
-           // The note is his and can move the objective: the writer reads it first.
+           // The note is the owner's and can move the objective: the writer reads it first.
            rebuildObjective($, id, 'note').catch(() => undefined)

@@ -1,8 +1,8 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 1e7dd4a..abe1aee 100644
+index 264fffa..95407dd 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -299,7 +299,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number):
+@@ -381,7 +381,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number):
      return true
    }
    if (saw <= held.from) return false
@@ -11,7 +11,7 @@ index 1e7dd4a..abe1aee 100644
    if (fresh.length === 0) return false
    const version = { at: now, cause: a.cause, text: objectiveText(held) }
    if (a.isNewJob) {
-@@ -412,7 +412,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
+@@ -494,7 +494,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
      entry.again = false
      const rec = await loadRec($, sid)
      const saw = rec.counter
@@ -20,10 +20,10 @@ index 1e7dd4a..abe1aee 100644
      if (due) {
        shown = saw
        // Up to 1 + OBJECTIVE_RETRIES attempts over the same prompt: an empty or errored
-@@ -1126,7 +1126,7 @@ export const register: Register = on => {
+@@ -1544,7 +1544,7 @@ export const register: Register = on => {
          // The note is numbered after the prompt it was typed behind.
          if (note !== '') await takeNote($, id, note)
-         // A message of his can move the objective: the writer reads it, never the agent's words.
+         // A message of the owner's can move the objective: the writer reads it, never the agent's words.
 -        if (isHis || note !== '' || seeded) rebuildObjective($, id, note !== '' ? 'note' : 'message').catch(() => undefined)
 +        rebuildObjective($, id, note !== '' ? 'note' : 'message').catch(() => undefined)
          if (note !== '') {
