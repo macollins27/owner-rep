@@ -39,6 +39,6 @@
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ❯ use run_in_background then
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  [Fable 5.1] │ owner-rep-live.cofmQeNSRJ +owner-rep-live.cofmQeNS… +maxwellcollins git:(master) │ Sleep 90 command
+  [Fable 5.1] │ owner-rep-live.cofmQeNSRJ +owner-rep-live.cofmQeNS… +user git:(master) │ Sleep 90 command
   Context ░░░░░░░░░░ 4% │ Usage ████░░░░░░ 42% (resets in 1h 11m)
   ⏵⏵ bypass permissions on (shift+tab to cycle)

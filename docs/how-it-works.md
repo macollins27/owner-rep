@@ -5,6 +5,25 @@ is built and fenced, and how it is tested. The [README](../README.md) is the sho
 the person who owns the work. Every claim here is one the code in [`hooks/`](../hooks) shows;
 where the two ever differ, the code wins and this page is the one to fix.
 
+**Words used here.** The project names its parts in the owner's plain words; in standard terms:
+
+| Here | In standard terms |
+|---|---|
+| **owner** | the user the rep works for: the person who owns the work and does not read code |
+| **agent** | the Claude Code session doing the work |
+| **rep** | a supervisor model that watches the agent's session and judges it |
+| **mod** | a Claude Code plugin with a hooks module (Claude Code's early-access mods API) |
+| **objective**, **conditions** | the rep's held spec of the task, as a list of acceptance criteria, each with a state |
+| **watch** (or look) | a periodic background evaluation of the agent's conversation |
+| **fork** | a model call over a copy of the agent's cached conversation, sharing its prompt cache |
+| **briefing**, **card** | an on-demand report to the owner, drawn above the prompt |
+| **gate** | an output filter that rewrites the model's answer when it breaks a rule |
+| **check** | a sandboxed verifier run, a separate headless `claude -p`, that re-runs and inspects the agent's claims |
+| **room**, **fence** | the check's sandbox settings: denied writes and a closed network |
+| **band**, **strip**, **row** | the UI region above the prompt that mods draw into, and the rep's one line in it |
+| **doctor** | mutation testing: each known defect is planted in a copy of the code, and the suite must fail on it |
+| **kit** | Claude Code's test harness for mods, which drives the real hooks with the model stubbed |
+
 ![The briefing card, on a real session](briefing.png)
 
 ## What it does
@@ -103,7 +122,7 @@ should stop, that gives no verdict, whose next step or message tells the agent t
 the owner's word (with a stop or without), to stop and ask the owner, to check in with the
 owner or let the owner decide, to hand the work or any part of it over or back to the owner,
 to leave the rest to the owner, or to wait after a ", then", or says the owner will take it
-from here (said as him, her, them or the owner), calls the work finished, says no
+from here (said as `him`, `her`, `them` or the owner), calls the work finished, says no
 further work is needed, or says the session or the agent can end it (a step that only
 carries the word and goes on, such as stopping a wrong
 approach, waiting on a CI run or on the agent's own build, a program that "runs once and
@@ -226,12 +245,12 @@ with `--continue` or `--resume`, after `/clear`, and through the whole first tur
 session. A read the owner started, a press of the Rep button or the look after a note, then
 reads the session's own record (`$.session.messages()`) instead: one plain completion, given
 the record as entries labelled `entry 1`, `entry 2` and so on (never `#1`, the form the
-owner's numbered messages take, so no entry can be cited as one of his) fenced as data
+owner's numbered messages take, so no entry can be cited as one of the owner's) fenced as data
 (each message cut to 3,000 characters, each tool's input and result to 600, the oldest
 entries left out past 200,000 characters, with a line saying how many), a system prompt
 saying the task means that record wherever it speaks of the conversation, and then the same
-task the fork would have had. Only the rows that are one of his messages in the session's
-transcript file are labelled as the person's; when no transcript can be read, every row on his side that is not
+task the fork would have had. Only the rows that are one of the owner's messages in the session's
+transcript file are labelled as the person's; when no transcript can be read, every row on their side that is not
 a kind Claude Code is known to write there. The watch's own looks, on a step and at a turn's end, skip quietly
 instead, so a new session's first turn pays for no record read. With no record to read, as
 after `/clear`, the briefing says there is nothing to read yet.
@@ -259,7 +278,7 @@ settings, Node's fallback module folders in the home, Python's add-on folders, n
 installs, rustup's toolchains, Claude Code's own install, the folder macOS starts programs
 from at login, and the install each folder of the command path in the home belongs to,
 with the install each program there links to, asked of the machine before the run), and
-the network is closed except for this Mac, where agentsview
+the network is closed except for the local machine, where agentsview
 answers. It is a list of guarded places rather than a wall around the copy, because the
 owner's settings make the whole home a working folder; a list cannot name every such place,
 so the run's brief names the main ones and tells it to write nowhere but the copy. pnpm's
@@ -312,8 +331,8 @@ marked meta counts (a user line, or the queued-command line Claude Code saves fo
 typed while the agent works, which is never one of the session's rows at all). Each message
 gets the end of the agent's words before it from the session's rows; a queued message, or
 one whose row is gone (from before a compaction), gets none. After a compaction the rows hold
-only the conversation's tail, so his messages are lined up with them from the end: a short
-reply he sent both before and after it gets its prior only at its later place. The file is the one Claude Code
+only the conversation's tail, so the owner's messages are lined up with them from the end: a short
+reply the owner sent both before and after it gets its prior only at its later place. The file is the one Claude Code
 names to the mod's hooks, or, when none was named, the one found by the session's id; it is
 read with `sed`, picture data blanked so the read stays under the output cap, and a read cut
 at that cap counts as no read. A session forked with a new id has no file of its own until
@@ -321,27 +340,27 @@ its first message is saved, so the newest transcripts in that file's folder are 
 most 40 within 30 seconds, and the one whose messages match the most of the fork's rows in
 order (the newest on a tie) gives its part up to the last matched message, with the
 messages queued right after it; the parent's later messages are never taken, and the scan
-stops once a file matches every row that could be his. A session compacted after his last
-message holds no row he typed, only the summary and the agent's work since; its own file is
+stops once a file matches every row that could be the owner's. A session compacted after the owner's last
+message holds no row the owner typed, only the summary and the agent's work since; its own file is
 read all the same, and a fork of it, with nothing typed to match, takes as its parent the
-newest file in the folder that holds the call of its last tool result, and his messages
+newest file in the folder that holds the call of its last tool result, and their messages
 before that call. A fork taken after a compaction can also be saved at once as a file of its
 own that begins at the summary, a copy of the parent's stretch since it; that file is
-recognised by the summary coming first, and his messages are the ones before the same
+recognised by the summary coming first, and the owner's messages are the ones before the same
 summary line in the newest other file that holds any there, followed by the copy's own. Within a file the rows are lined up
-from the end, and where they fit more than one place, the place with the fewest of his
+from the end, and where they fit more than one place, the place with the fewest of the owner's
 messages left between the matched ones, then the latest, is taken, so a fork of a compacted
 parent keeps every message up to the fork. A scan in which no file matched any row proves
-nothing, and nothing is seeded from it. A row the transcript does not hold as his (task
+nothing, and nothing is seeded from it. A row the transcript does not hold as the owner's (task
 notifications, another session's message, the summary of a compacted conversation) is never
-taken as his, and when no transcript can be read nothing is seeded.
-A message the rep drafted that he sent in any session the rep holds, the one forked from
-included, is recognised as the rep's draft, and so is one a record holds among his messages
+taken as the owner's, and when no transcript can be read nothing is seeded.
+A message the rep drafted that the owner sent in any session the rep holds, the one forked from
+included, is recognised as the rep's draft, and so is one a record holds among their messages
 as a draft, so a card more than three back, or one sent under a build that kept no list of
-drafts, is not taken as his, nor is one from a session whose record the store has let go. A prompt or a note he sends while that read is
-still running waits for it, so his earlier messages are numbered first. A record that
-already holds a message of his is never seeded. When the first objective written for a
-seeded session says a new job opened at a later message of his, the job starts there, so a
+drafts, is not taken as the owner's, nor is one from a session whose record the store has let go. A prompt or a note the owner sends while that read is
+still running waits for it, so their earlier messages are numbered first. A record that
+already holds a message of the owner's is never seeded. When the first objective written for a
+seeded session says a new job opened at a later message of the owner's, the job starts there, so a
 fork of a session that had finished one job is not judged against that job's messages. Nothing leaves the machine except the model calls the session already makes.
 
 The band above the prompt is a strip shared with other mods. The rep draws first and keeps
@@ -402,7 +421,7 @@ tsc -p . --noEmit             # needs .claude-plugin/types/, see below
 The tests cover the parsers, the row on the terminal, desktop and VS Code surfaces, the shared strip, the press, the
 objective writer and its rules (the guard, corrections, new jobs, drafts, the marks and the
 gate), the note to the rep, the stop forms the gate reads, the record read where there is
-nothing to fork, the seeding of his messages from a stubbed transcript, and a press
+nothing to fork, the seeding of the owner's messages from a stubbed transcript, and a press
 followed by a check on a stubbed run. The test kit stubs the model and the
 band; no test spawns a real check.
 

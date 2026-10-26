@@ -39,6 +39,6 @@
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ❯ 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  [Fable 5.1] │ owner-rep-live.jW381wNU36 +owner-rep-live.jW381wNU… +maxwellcollins git:(main) │ Test suite completion status
+  [Fable 5.1] │ owner-rep-live.jW381wNU36 +owner-rep-live.jW381wNU… +user git:(main) │ Test suite completion status
   Context █░░░░░░░░░ 5% │ Usage █░░░░░░░░░ 14% (resets in 4h 13m)
   ⏵⏵ bypass permissions on (shift+tab to cycle)

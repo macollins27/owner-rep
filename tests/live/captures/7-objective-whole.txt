@@ -39,6 +39,6 @@
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ❯ Rename the branch to main before I add the remote.
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  [Fable 5.1] │ owner-rep-live.C3mpqioISi +owner-rep-live.C3mpqioI… +maxwellcollins git:(master) │ wc.py word counter README
+  [Fable 5.1] │ owner-rep-live.C3mpqioISi +owner-rep-live.C3mpqioI… +user git:(master) │ wc.py word counter README
   Context █░░░░░░░░░ 5% │ Usage ████░░░░░░ 43% (resets in 1h 9m)
   ⏵⏵ bypass permissions on (shift+tab to cycle)

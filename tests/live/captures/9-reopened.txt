@@ -39,6 +39,6 @@
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ❯ 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  [Fable 5.1] │ owner-rep-live.fSHsTdyrcS +owner-rep-live.fSHsTdyr… +maxwellcollins git:(main) │ Ping 127.0.0.1 foreground test
+  [Fable 5.1] │ owner-rep-live.fSHsTdyrcS +owner-rep-live.fSHsTdyr… +user git:(main) │ Ping 127.0.0.1 foreground test
   Context █░░░░░░░░░ 5%
   ⏵⏵ bypass permissions on (shift+tab to cycle)

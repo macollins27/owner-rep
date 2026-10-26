@@ -39,6 +39,6 @@
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ❯ 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  [Fable 5.1] │ owner-rep-live.34Ke8FswyS +owner-rep-live.34Ke8Fsw… +maxwellcollins git:(master) │ Laptop installation deferred
+  [Fable 5.1] │ owner-rep-live.34Ke8FswyS +owner-rep-live.34Ke8Fsw… +user git:(master) │ Laptop installation deferred
   Context ░░░░░░░░░░ 4% │ Usage ████░░░░░░ 44% (resets in 1h 8m)
   ⏵⏵ bypass permissions on (shift+tab to cycle)

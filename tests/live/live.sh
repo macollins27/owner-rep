@@ -86,7 +86,8 @@ verdict() {
   local name=$1 ok=$2
   if [[ $ok -eq 0 ]]; then echo "  $name: shown"; else echo "  $name: NOT SHOWN"; bad=$((bad+1)); fi
 }
-save() { pane > $CAPS/$1.txt; echo "  saved captures/$1.txt"; strip | sed 's/^/  | /'; }
+# The status line can show the home folder's name; a saved capture shows `user` in its place.
+save() { pane | sed "s/${USER:-user}/user/g" > $CAPS/$1.txt; echo "  saved captures/$1.txt"; strip | sed 's/^/  | /'; }
 
 echo "owner rep live · $(date '+%Y-%m-%d %H:%M')"
 for n in $want; do
