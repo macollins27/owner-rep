@@ -334,11 +334,14 @@ The mods API is early access and can change between releases. Update the mod wit
 
 ## How it was built
 
-Owner Rep was built the way its users work. Maxwell Collins wrote down what the rep is for
-and the standard it holds an agent to, directed Claude Code agents to build it, and accepted
-each part only once it was shown working on screen. The agents wrote the code. The first
-version was installed and working on 13 October 2026, the day it was started. It is
-installed in the sessions that work on it, so it watches its own development.
+Owner Rep was built the way its users work. Maxwell Collins designed it and directed Claude
+Code agents to build it. Maxwell wrote down what the rep is for and the standard it holds an
+agent to, and designed the testing method: a doctor that plants known bugs to prove the tests
+catch them, and proof in a real session before anything counts as done. Maxwell set the proof
+the independent check had to pass, and accepted each part only once it was shown working on
+screen. The agents wrote the code. The first version was installed and working on 13 October
+2026, the day it was started. It is installed in the sessions that work on it, so it watches
+its own development.
 
 ## Contributing
 
