@@ -336,9 +336,9 @@ async function contextOf($: EngineInterface): Promise<Memory['context']> {
 // objective was built); otherwise it is open.
 function honest(proposed: Condition[], held: Condition[], his: readonly number[]): Condition[] {
   return proposed.map(c => {
-    const h = held.find(x => same(x.text, c.text))
-    if (c.state === 'shown' && h?.state !== 'shown' && h?.state !== 'closed') return { ...c, state: 'open', by: '' }
-    if (c.state === 'closed' && !his.includes(Number(c.by.slice(1))) && h?.state !== 'closed') return { ...c, state: 'open', by: '' }
+    const was = held.find(x => same(x.text, c.text))
+    if (c.state === 'shown' && was?.state !== 'shown' && was?.state !== 'closed') return { ...c, state: 'open', by: '' }
+    if (c.state === 'closed' && !his.includes(Number(c.by.slice(1))) && was?.state !== 'closed') return { ...c, state: 'open', by: '' }
     return c
   })
 }
