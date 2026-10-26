@@ -10,7 +10,7 @@ true when you do. Every name here is in [`hooks/rep.ts`](../hooks/rep.ts),
 
 GitHub runs validate, `tests/ci/host-calls.sh`, `tests/ci/host-commands.mjs`, test and the
 type check on Ubuntu, macOS and Windows with Claude Code 2.1.310, and validate, the two
-host steps and the tests on Ubuntu with 2.1.281 (the oldest build the tests pass on) and the
+host steps and the tests on Ubuntu with 2.1.286 (the first build with mods on by default) and the
 newest release, on every push that touches more than prose and pictures (`paths-ignore` in
 the workflow: the Markdown files, `docs/`, `llms.txt`, the licence, the issue forms and the
 live captures get no run), and the doctor as eight Ubuntu

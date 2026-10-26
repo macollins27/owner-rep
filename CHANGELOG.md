@@ -6,8 +6,8 @@ What changed in each release of Owner Rep, newest first. The full record is the
 ## 0.4.1 (26 October 2026)
 
 - **Tested on more than one Claude Code build.** Every change now runs the tests on Claude
-  Code 2.1.281, the oldest build they pass on, on 2.1.310, and on the newest release. The
-  mod needs 2.1.281 or later.
+  Code 2.1.286, the first build with mods on by default, on 2.1.310, and on the newest
+  release. The mod needs 2.1.286 or later.
 - **Main's GitHub run shows passing after a merge.** A merge whose pull request already
   passed, with the same files, passes without running the hour of tests again, where
   before it showed as skipped.

@@ -15,7 +15,7 @@ can be weighed against the rules already there.
 
 ## Run it from a clone
 
-You need Claude Code 2.1.281 or later. GitHub runs the tests on 2.1.281, 2.1.310 and
+You need Claude Code 2.1.286 or later. GitHub runs the tests on 2.1.286, 2.1.310 and
 the newest release.
 
 ```

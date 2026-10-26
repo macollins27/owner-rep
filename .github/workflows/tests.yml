@@ -67,8 +67,8 @@ jobs:
           echo "tested=$tested" >> "$GITHUB_OUTPUT"
 
   # The suite runs on three systems with the build the pinned declarations came from, and on
-  # Ubuntu with the oldest build it passes on and with the newest release, so a release that
-  # breaks the mod shows here.
+  # Ubuntu with 2.1.286, the first build with mods on by default, and with the newest
+  # release, so a release that breaks the mod shows here.
   tests:
     needs: merged
     if: ${{ !cancelled() && needs.merged.outputs.tested != 'true' }}
@@ -79,7 +79,7 @@ jobs:
         claude: ['2.1.310']
         include:
           - os: ubuntu-latest
-            claude: '2.1.281'
+            claude: '2.1.286'
           - os: ubuntu-latest
             claude: latest
     runs-on: ${{ matrix.os }}

@@ -27,7 +27,7 @@ Press `y` to add the marketplace, pick a scope, and the rep appears above your p
 
 - **What it is:** a Claude Code mod (a plugin with a hooks module) that supervises your
   coding agent and reports in plain English.
-- **What it needs:** Claude Code 2.1.281 or later. Every change is tested on 2.1.281,
+- **What it needs:** Claude Code 2.1.286 or later. Every change is tested on 2.1.286,
   2.1.310 and the newest release. It runs on macOS, Linux and Windows; the independent
   check doesn't run on Windows.
 - **What it costs:** it uses your own Claude Code account. The light reads run on their own;
@@ -90,7 +90,7 @@ card says why.
 
 ## Install
 
-You need Claude Code 2.1.281 or later with mods turned on, which is the default. Run
+You need Claude Code 2.1.286 or later with mods turned on, which is the default. Run
 `claude --version` to see yours, and update if it's older.
 
 At the Claude Code prompt:
