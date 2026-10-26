@@ -973,9 +973,9 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
 // lookup throws, so the check's refusal there never rests on a probe.
 let host: { os: string; value: Promise<Host> } | null = null
 
-async function answers($: EngineInterface, argv: readonly string[]): Promise<boolean> {
+async function answers($: EngineInterface, program: string): Promise<boolean> {
   try {
-    const got = await $.process.run([...argv, '--version'], { timeoutMs: 10000 })
+    const got = await $.process.run([program, '--version'], { timeoutMs: 10000 })
     return got.exitCode === 0
   } catch {
     return false
@@ -984,7 +984,7 @@ async function answers($: EngineInterface, argv: readonly string[]): Promise<boo
 
 async function firstThatAnswers($: EngineInterface, candidates: readonly string[]): Promise<string> {
   for (const candidate of candidates) {
-    if (await answers($, [candidate])) return candidate
+    if (await answers($, candidate)) return candidate
   }
   return ''
 }
@@ -1026,7 +1026,7 @@ async function lookUpHost($: EngineInterface, os: string): Promise<Host> {
     )
     let posixBin = ''
     for (const bin of bins) {
-      if (await answers($, [`${bin}/mkdir.exe`])) {
+      if (await answers($, `${bin}/mkdir.exe`)) {
         posixBin = bin
         break
       }
@@ -1054,15 +1054,15 @@ async function homeFor($: EngineInterface): Promise<string> {
 // version left alone and nothing fetched, by its command line (`PNPM_STORE_ARGV`) and
 // corepack's network off (`COREPACK_ASK_ENV`), or '' when there is no pnpm or it does not
 // answer (`pnpmStoreDir`).
-async function pnpmStore($: EngineInterface, on: Host, copy: string): Promise<string> {
-  const r = await $.process.run(hostArgv(on, PNPM_STORE_ARGV), { cwd: copy, env: COREPACK_ASK_ENV, timeoutMs: PNPM_STORE_TIMEOUT_MS }).catch(() => null)
+async function pnpmStore($: EngineInterface, host: Host, copy: string): Promise<string> {
+  const r = await $.process.run(hostArgv(host, PNPM_STORE_ARGV), { cwd: copy, env: COREPACK_ASK_ENV, timeoutMs: PNPM_STORE_TIMEOUT_MS }).catch(() => null)
   return r === null || r.exitCode !== 0 ? '' : pnpmStoreDir(r.stdout)
 }
 
 // Where the command path's folders and the links in them lead, asked outside the fence
 // (`pathLinksArgv`), or null when the host does not answer, which the brief then says.
-async function pathLinks($: EngineInterface, on: Host, home: string, path: string): Promise<string[] | null> {
-  const r = await $.process.run(hostArgv(on, pathLinksArgv(home, path)), { timeoutMs: PATH_LINKS_TIMEOUT_MS }).catch(() => null)
+async function pathLinks($: EngineInterface, host: Host, home: string, path: string): Promise<string[] | null> {
+  const r = await $.process.run(hostArgv(host, pathLinksArgv(home, path)), { timeoutMs: PATH_LINKS_TIMEOUT_MS }).catch(() => null)
   return r === null ? null : linkTargets(r.stdout, r.isStdoutTruncated)
 }
 
@@ -1072,9 +1072,9 @@ async function pathLinks($: EngineInterface, on: Host, home: string, path: strin
 // asked outside the fence. Each question is asked on its own, so one that fails, runs long or
 // is cut loses only what it alone would name; `whole` is false when any did, or when the
 // search inside passed a name over, which the brief then says.
-async function gitRepos($: EngineInterface, on: Host, home: string, copy: string, cwd: string): Promise<{ dirs: string[]; whole: boolean }> {
+async function gitRepos($: EngineInterface, host: Host, home: string, copy: string, cwd: string): Promise<{ dirs: string[]; whole: boolean }> {
   const own = [copy, cwd]
-  const ask = async (argv: string[]): Promise<string | null> => wholeAnswer(await $.process.run(hostArgv(on, wholeArgv(on, argv)), { timeoutMs: GIT_FIND_TIMEOUT_MS }).catch(() => null))
+  const ask = async (argv: string[]): Promise<string | null> => wholeAnswer(await $.process.run(hostArgv(host, wholeArgv(host, argv)), { timeoutMs: GIT_FIND_TIMEOUT_MS }).catch(() => null))
   const up = await ask(gitUpArgv(own))
   const inside = holdsCopiesOf(home, copy) ? '' : await ask(gitInsideArgv(copy))
   const links = gitLinksOf(own, inside ?? '')
@@ -1103,20 +1103,20 @@ async function gitRepos($: EngineInterface, on: Host, home: string, copy: string
 async function makeCopy($: EngineInterface, home: string, sid: string, cwd: string): Promise<string> {
   if (holdsCopiesOf(home, cwd)) return cwd
   const copy = checkCopyDir(home, sid)
-  const on = await hostOf($)
+  const host = await hostOf($)
   try {
-    await $.process.run(hostArgv(on, ['rm', '-rf', copy]), { timeoutMs: 120000 })
-    await $.process.run(hostArgv(on, ['mkdir', '-p', checkCopiesDir(home)]), { timeoutMs: 30000 })
-    const [clone, plain] = copyArgvs(on, cwd, copy)
+    await $.process.run(hostArgv(host, ['rm', '-rf', copy]), { timeoutMs: 120000 })
+    await $.process.run(hostArgv(host, ['mkdir', '-p', checkCopiesDir(home)]), { timeoutMs: 30000 })
+    const [clone, plain] = copyArgvs(host, cwd, copy)
     if ((await $.process.run(clone, { timeoutMs: 600000 })).exitCode === 0) return copy
     // mkdir without -p fails on a folder that is there, which tells a cp that refused -c
     // from a clone that failed part-way.
-    const free = await $.process.run(hostArgv(on, ['mkdir', copy]), { timeoutMs: 30000 })
+    const free = await $.process.run(hostArgv(host, ['mkdir', copy]), { timeoutMs: 30000 })
     if (free.exitCode === 0 && (await $.process.run(plain, { timeoutMs: 600000 })).exitCode === 0) return copy
   } catch {
     // fall through: no copy
   }
-  $.process.run(hostArgv(on, ['rm', '-rf', copy]), { timeoutMs: 120000 }).catch(() => undefined)
+  $.process.run(hostArgv(host, ['rm', '-rf', copy]), { timeoutMs: 120000 }).catch(() => undefined)
   return cwd
 }
 
@@ -1186,24 +1186,24 @@ function holdTranscript(id: unknown, path: unknown): void {
 // the rows.
 async function heldItems($: EngineInterface, sid: string, rows: readonly RecordRow[]): Promise<HumanItem[] | null> {
   try {
-    const on = await hostOf($)
-    const local = (p: string): string => (isWindowsHost(on) ? slashed(p) : p)
+    const host = await hostOf($)
+    const local = (p: string): string => (isWindowsHost(host) ? slashed(p) : p)
     let path = local(transcripts.get(sid) ?? '')
     if (path === '') {
       const set = await $.env.get('CLAUDE_CONFIG_DIR')
       const home = await homeFor($)
       const config = set !== undefined && set !== '' ? local(set) : home !== '' ? `${home}/.claude` : null
       if (config === null) return null
-      const found = await $.process.run(hostArgv(on, ['find', `${config}/projects`, '-maxdepth', '2', '-name', `${sid}.jsonl`]), { timeoutMs: HUMAN_READ_TIMEOUT_MS })
+      const found = await $.process.run(hostArgv(host, ['find', `${config}/projects`, '-maxdepth', '2', '-name', `${sid}.jsonl`]), { timeoutMs: HUMAN_READ_TIMEOUT_MS })
       path = found.exitCode === 0 ? local(found.stdout.split('\n').find(l => l.trim() !== '')?.trim() ?? '') : ''
       if (path === '') return null
     }
-    const read = (file: string, timeoutMs: number) => $.process.run(hostArgv(on, humanRead(file)), { timeoutMs })
+    const read = (file: string, timeoutMs: number) => $.process.run(hostArgv(host, humanRead(file)), { timeoutMs })
     const own = await read(path, HUMAN_READ_TIMEOUT_MS)
     let summary: string | null = null
     if (own.exitCode === 0) {
       if (own.isStdoutTruncated) return null
-      const begins = await $.process.run(hostArgv(on, startFind(path)), { timeoutMs: HUMAN_READ_TIMEOUT_MS })
+      const begins = await $.process.run(hostArgv(host, startFind(path)), { timeoutMs: HUMAN_READ_TIMEOUT_MS })
       summary = begins.exitCode === 0 ? summaryStart(begins.stdout) : null
       if (summary === null) return humanItems(own.stdout)
     }
@@ -1215,7 +1215,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
     if (summary === null && want === 0 && anchor === null) return null
     const start = await $.clock.now()
     const left = async () => HUMAN_SCAN_BUDGET_MS - ((await $.clock.now()) - start)
-    const listed = await $.process.run(hostArgv(on, ['ls', '-t', folder]), { timeoutMs: HUMAN_READ_TIMEOUT_MS })
+    const listed = await $.process.run(hostArgv(host, ['ls', '-t', folder]), { timeoutMs: HUMAN_READ_TIMEOUT_MS })
     if (listed.exitCode !== 0) return summary === null ? null : copied
     const files = listed.stdout
       .split('\n')
@@ -1227,12 +1227,12 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
         const remaining = await left()
         if (remaining <= 0) break
         const find = summary !== null ? summaryLineFind(`${folder}/${file}`, summary) : toolLineFind(`${folder}/${file}`, anchor ?? '')
-        const at = await $.process.run(hostArgv(on, find), { timeoutMs: Math.min(HUMAN_READ_TIMEOUT_MS, remaining) })
+        const at = await $.process.run(hostArgv(host, find), { timeoutMs: Math.min(HUMAN_READ_TIMEOUT_MS, remaining) })
         const line = at.exitCode === 0 ? toolLineOf(at.stdout) : null
         if (line === null) continue
         const time = await left()
         if (time <= 0) break
-        const found = await $.process.run(hostArgv(on, humanReadBefore(`${folder}/${file}`, line)), { timeoutMs: Math.min(HUMAN_READ_TIMEOUT_MS, time) })
+        const found = await $.process.run(hostArgv(host, humanReadBefore(`${folder}/${file}`, line)), { timeoutMs: Math.min(HUMAN_READ_TIMEOUT_MS, time) })
         if (found.exitCode !== 0 || found.isStdoutTruncated) continue
         const before = humanItems(found.stdout)
         if (summary === null) return before
