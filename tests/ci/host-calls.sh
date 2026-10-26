@@ -8,7 +8,7 @@
 set -eu
 root=$(cd "$(dirname "$0")/../.." && pwd)
 bad=$(grep -nE '\$\.process\.(run|spawn)\(' "$root"/hooks/*.ts "$root"/hooks/*.tsx |
-  grep -vE '\$\.process\.run\(hostArgv\(|\$\.process\.spawn\(\{ argv: hostArgv\(|\$\.process\.run\((clone|plain), |\$\.process\.run\(\[\.\.\.argv, '"'"'--version'"'"'\]' || true)
+  grep -vE '\$\.process\.run\(hostArgv\(|\$\.process\.spawn\(\{ argv: hostArgv\(|\$\.process\.run\((clone|plain), |\$\.process\.run\(\[program, '"'"'--version'"'"'\]' || true)
 if [ -n "$bad" ]; then
   echo "host calls: a hook runs a program by a name that does not go through hostArgv, so on Windows it finds nothing:"
   echo "$bad"
