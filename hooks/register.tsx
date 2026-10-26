@@ -984,7 +984,8 @@ async function answers($: EngineInterface, program: string): Promise<boolean> {
 
 async function firstThatAnswers($: EngineInterface, candidates: readonly string[]): Promise<string> {
   for (const candidate of candidates) {
-    if (await answers($, candidate)) return candidate
+    const found = await answers($, candidate)
+    if (found) return candidate
   }
   return ''
 }
@@ -1026,7 +1027,9 @@ async function lookUpHost($: EngineInterface, os: string): Promise<Host> {
     )
     let posixBin = ''
     for (const bin of bins) {
-      if (await answers($, `${bin}/mkdir.exe`)) {
+      const mkdir = `${bin}/mkdir.exe`
+      const found = await answers($, mkdir)
+      if (found) {
         posixBin = bin
         break
       }
