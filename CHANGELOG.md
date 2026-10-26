@@ -3,6 +3,18 @@
 What changed in each release of Owner Rep, newest first. The full record is the
 [commit history](https://github.com/macollins27/owner-rep/commits/main).
 
+## 0.4.1 (26 October 2026)
+
+- **Tested on more than one Claude Code build.** Every change now runs the tests on Claude
+  Code 2.1.281, the oldest build they pass on, on 2.1.310, and on the newest release. The
+  mod needs 2.1.281 or later.
+- **Main's GitHub run shows passing after a merge.** A merge whose pull request already
+  passed, with the same files, passes without running the hour of tests again, where
+  before it showed as skipped.
+- The independent check's instructions say "this machine" where they said "this Mac",
+  which was wrong on Linux. The code comments name no machine and call the owner "the
+  owner".
+
 ## 0.4.0 (26 October 2026)
 
 - **The rep speaks of the owner, never of "him".** The row and the card used to read "He
