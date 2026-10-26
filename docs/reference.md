@@ -1,0 +1,487 @@
+# Code reference
+
+The rules of the code, named by the functions and constants that hold them. This is the
+detailed companion to [How the owner rep works](how-it-works.md), written for whoever changes
+the code, human or agent: read the part you are changing before you change it, and keep it
+true when you do. Every name here is in [`hooks/rep.ts`](../hooks/rep.ts),
+[`hooks/register.tsx`](../hooks/register.tsx) or [`types/index.d.ts`](../types/index.d.ts).
+
+## Tests on GitHub
+
+GitHub runs validate, `tests/ci/host-calls.sh`, `tests/ci/host-commands.mjs`, test and the
+type check on Ubuntu, macOS and Windows on every push that touches more than prose and
+pictures (`paths-ignore` in the workflow: the Markdown files, `docs/`, `llms.txt`, the
+licence, the issue forms and the live captures get no run; nor does a push to main that
+merges a pull request, whose run tested the same files), and the doctor as eight Ubuntu
+jobs at once, each planting every eighth defect (`doctor.py --shard K/8`), so the whole run
+takes about a quarter of an hour where one machine took over one (`.github/workflows/tests.yml`). `host-calls.sh` fails the run when a
+`$.process.run` or `$.process.spawn` in the hooks names its program other than through
+`hostArgv` (the copy's argvs from `copyArgvs` and the `--version` probe excepted).
+`node --experimental-strip-types tests/ci/host-commands.mjs` runs the transcript reads, the
+check's questions and the copy's commands as the mod builds and wraps them (`hostArgv`, and
+`wholeArgv` for the git questions alone; on Windows Git's coreutils, found as `lookUpHost`
+finds them), against `tests/ci/fixtures/` and a scratch folder whose command folder holds a
+link, and reads the answers with the mod's own parsers (`linkTargets` for the path links); on
+Windows one of the check's questions that fails is printed as skipped, since the check does
+not start there, and the copy's commands must still pass (`tests/ci/README.md`). The run's type check uses `tests/ci/types/`, a pinned copy of the
+declarations for the Claude Code build the workflow installs; move both together.
+`tests/ci/declarations.sh` runs first there and fails the run when the installed build is
+not the one stamped on the pinned copy's first line, so the two cannot drift apart unseen.
+
+## Architecture
+
+Two modules, deliberately split:
+
+- `hooks/rep.ts` is pure functions and constants, no `$`. It holds the rep's prompts (the
+  watch brief, the briefing brief, the objective writer's prompt, the own-words prompt, the
+  checker brief), the parsers for the model's labelled answers (`parseWatch`, `parseBrief`,
+  `parseOwnWords`, `parseObjective`, `parseCheck`), the objective's rules that need no engine (`trimOwner`,
+  `draftSplit`, `keepDraft`, `mergeConditions`, `gateVerdict`, `takeOwnWords`,
+  `objectiveText`), the check run's argv and read-only tool
+  allowlist, and the cost arithmetic. Anything that can be unit-tested lives here.
+- `hooks/register.tsx` is the engine side: hooks, state atoms, the store record, the band
+  render, and the spawn of the check run. `hooks/hooks.json` names it as the only module.
+- `types/index.d.ts` declares the mod's `PluginState` keys (`reading`, `now`, `note`, `brief`,
+  `view`, `helperIds`) and the `Objective`/`Condition`/`Brief`/`Checked`/`Now`/`Note` shapes
+  the render reads. The `reading` key holds the objective under a shape tag (`objective-1`),
+  so what an older build wrote there reads as absent.
+
+Three reads of increasing cost, all measured against the held objective, which a fourth
+call writes (below):
+
+1. **Watch**: `look()` runs on `turn.step` every `CHECK_EVERY` (8) model requests and on every
+   `turn.complete`, via `$.model.fork` over the agent's cached conversation. It is never
+   awaited by the hook that starts it. Its answer is `state:`, `flag:`, `why:`, `shown:` and
+   `closed:`; it marks conditions and never writes the objective. A flag becomes a "Heads up"
+   note only when the view is `row` and the flag was not already shown. The note draws above
+   the row, which stays beneath it with its head, its status and both its buttons for the
+   mouse (the note's buttons carry the digits); from 13 to 23 Oct 2026 it took the row's place,
+   a choice made with the you-should-know shape that no one asked for. Typing past notes
+   backs the watch off (`skipAfter`).
+2. **Briefing**: `pressBrief()` on the Rep button, another fork, drawn as the card. The
+   model's answer is labelled lines (`verdict:`, `shown:`, `closed:`, `well:`, `stands:`,
+   `means:`, `left:`, `next:`, `message:` … `end`, `does:`); `parseBrief` splits them,
+   `applyMarks` takes the marks, and `gateVerdict` refuses, while a condition is open, a
+   verdict other than `continue` (a `stop`, or none given, which `verdictOf` reads as
+   `missing`, never as continue), a `well:` line, or a `next:` (`saysStop`) or a `message:`
+   (`messageSaysStop`: the message read on a copy `toAgentVoice` turns to the third person,
+   me, my and the capital I to the owner, the owner's and the owner, you and your to the agent and the agent's,
+   the contractions and two-word forms shifted whole before them, with a straight or curly
+   apostrophe: you're and you are to the agent is, you've and you have to the agent has,
+   I'm and I am to the owner is, I'll to the owner will, I've to the owner has; so a wait on the owner's sign-off and
+   "You're done." are caught and a wait until the agent has a log is not, and a few
+   messages a reader would let through, such as a check-in with the owner before a step, are
+   caught in the safe direction and rewritten by the own-words call) that
+   `STOP_NEXT` reads as
+   telling the agent or the job to stop (with "please" before the stop or not, `STOP_LEAD`),
+   calling the work finished, saying nothing is left or no further work is needed,
+   closing the session, wrapping up, stopping work on it, stopping (or stopping here, or
+   stopping work) to report, to wait bare or on the owner, to await them or to ask them
+   (`STOP_TO_REPORT`), a wait for or an await of them with no stop at all (`WAIT_SAID`;
+   `WAIT_ON_HIM` over `ON_HIM`: a wait for, on, until or till `him`, `he`, `his`, the owner, you,
+   approval, further instructions, a reply, an answer or the go-ahead, "your" only before a
+   word naming their say such as reply, approval, go-ahead or decision, "a decision" only at
+   the clause's end or before from, by, on or about, "confirmation" only at the clause's end
+   or from them, the owner or you, whatever follows to the sentence's end), a check-in with
+   them or letting them decide, choose or pick (`ASK_BACK_SAID`), handing anything over or
+   back to them (whatever stands between "hand" and "over" or "back" within the clause),
+   them taking it from here, or leaving it or the rest to them (`HAND_BACK_SAID`), these
+   three let through after "not",
+   "never", "n't" or "no need to" (`NOT_NEGATED`), a bare wait after ", then"
+   (`THEN_WAIT`), the agent ending the session (`AGENT_ENDS`), or saying the session can
+   end at a sentence's start or after a stop mark other than
+   a comma (`SENTENCE`; a comma with "and", "and then", "so" or "now" counts, a bare "then"
+   after a comma closes a condition; `CLAUSE` takes "and then" as a clause's start too),
+   each said as a clause of its own (a step that only carries the
+   word and goes on, as "stop guessing and run the suite", "Please stop guessing and run the
+   suite" or "Don't stop until …", keeps the
+   model's own next step; so do a pair such as "make the timer start and stop", the bare
+   "and stop" only being read, never "and stops" said of a program, a wait on a CI run or
+   on "your build", and "Once the run is green, the session can end"). The gate refuses part
+   by part: the verdict becomes continue, the `well:` line goes, the open conditions are
+   listed as left out, the meaning is always `OPEN_MEANS`, and the next step (`OPEN_NEXT`)
+   and the message with what it does (`OPEN_MESSAGE`, `OPEN_DOES`) are the rep's only where
+   they say stop or are empty, so the model's own sound next step and message stand; beside
+   a kept message a `does:` line `messageSaysStop` catches is `OPEN_DOES` alone. `replaced`
+   names the parts given the rep's text, in the order `means`, `next`, `message`. A refused
+   answer is asked once more (`askAgain`, naming the open conditions), and that answer
+   passes the same gate. When it is refused too, or does not answer, one plain
+   `$.model.complete` (`OBJECTIVE_MODEL`, high effort, `OWN_WORDS_SYSTEM`: the ROLE's "Who
+   you are" and "How you write to the owner" sections cut by `sectionOf`, which throws on a missing
+   heading, and one line against reproducing a secret, a key, a password or personal data
+   it is shown; `OWN_WORDS_MAX_TOKENS` 4,000, `OWN_WORDS_TIMEOUT_MS` two minutes) over
+   `ownWordsPrompt` (the memory, the open conditions, what stands and what is left out)
+   writes the replaced parts in the rep's own words. Its reply is read by `parseOwnWords`,
+   which answers null unless the reply came back whole: `means:`, `next:`, `message:` and
+   `does:` each once and in that order, the message closed by its `end` line before `does:`
+   and not empty, and means, next and does each ending at a sentence mark (`.`, `!` or `?`,
+   closing quotes or brackets allowed after it); the message's last line is not held to a
+   sentence mark, since its `end` line and a whole `does:` line show it was not cut, and a
+   whole message may end in a list item. `takeOwnWords` takes from a
+   whole reply each part that is not empty and does not say stop (the message and its
+   `does:` line read by `messageSaysStop`, the does line taken only with the message); the
+   fixed texts stand otherwise, and a reply not whole, or a call that throws or does not
+   answer, leaves them all, never a stop. Two replies came back answered and cut
+   mid-sentence live on 19 Oct 2026, with the cap at 4,000 tokens and at 16,000, for a cause
+   not known (`docs/testing.md` scenario 11); the wholeness test keeps their half sentences
+   off the card. Its spend counts with the looks, and it writes card parts only, never the
+   objective. `lastBrief.reads` records the card's reads: 1, 2 with the second ask, 3 with
+   the own-words call; `lastBrief.own` what came of that call (`whole`; `cut`, answered but
+   not whole; `none`, not answered or thrown; `skipped`, no call made) and
+   `lastBrief.ownChars` its reply's length (0 with none); a check's card keeps all three
+   from the briefing it was pressed on. With no objective written (`gateOpen` is null) the same answers are
+   refused, never let through, every part given its `UNWRITTEN_*` text, not asked again and
+   given no own-words call.
+
+   The watch and the briefing (and its second ask) read through one helper, `readSession`.
+   A fork answers `nothing-to-fork` before the first response of the process (a session
+   reopened with `--continue` or `--resume`), after `/clear`, and through the whole first
+   turn of a new session. Only for a read the owner started (`fallback`: the press's `ask`, its
+   second ask included, and `look` with reason `note`) the helper then reads
+   `$.session.messages()` and, when there are rows, makes one `$.model.complete`
+   (`OBJECTIVE_MODEL`, high effort, `RECORD_SYSTEM`, `RECORD_MAX_TOKENS` 16,000,
+   `RECORD_TIMEOUT_MS` four minutes) over `recordPrompt`: the rows printed by `recordText`
+   as entries labelled `entry N`, never `#N` (the owner's rows as the person only where their key is
+   one of the owner's messages that `heldItems` read from the transcript, `NOT_TYPED` applied after
+   as a second filter, and with no transcript read, `NOT_TYPED` alone; every other row on
+   the owner's side as the session's),
+   each tool use on one line with its result, a row of tool
+   results shown only for results not already printed), each message cut to
+   `RECORD_ENTRY_CUT` (3,000) and each tool input or result to `RECORD_TOOL_CUT` (600),
+   head and tail kept around a marked gap, the oldest entries left out past `RECORD_BUDGET`
+   (200,000 characters) with a line saying how many, fenced in `<session_record>` with any
+   fence tag inside printed with `‹ ›`, then the same task the fork would have had. Its
+   result has the fork's shape, so its spend is counted the same; a throw reads as an API
+   error. With no rows the fork's answer stands and the toast says there is nothing to read.
+   The step look and the stop look pass no fallback and skip quietly on `nothing-to-fork`:
+   a record read on each would be paid on every look of every new session's first turn.
+3. **Check**: `pressCheck()` → `runCheck()` first makes a throwaway copy of the agent's
+   folder (`makeCopy`: an APFS clone, `cp -Rc`, into `checkCopyDir` under `~/.cache`; where
+   `cp` refuses `-c` before making anything, as GNU `cp` does, `mkdir` makes the folder and
+   `cp -R` copies the agent's folder's contents into it; a clone that failed part-way, which
+   `mkdir` without `-p` tells apart, is not copied over), then
+   spawns a headless `claude -p` in it with `--permission-mode default`, `CHECK_ALLOWED_TOOLS`
+   allowed outright (the shell, the file tools, the direct agentsview tools), `CHECK_DISALLOWED_TOOLS`
+   (anything that edits through a tool, sends, fetches the web or launches helpers) and
+   `--settings` from `checkSettings`: the built-in sandbox with writes denied to the owner's
+   work, Claude Code's whole configuration (`~/.claude`, `~/.claude.json`) and the main places
+   in the home whose contents run later (`checkDenyWrite`: the shell's startup files,
+   `SHELL_STARTUP`, and `.bash_aliases`; `.gitconfig`; `.npmrc`, `.yarnrc`, `.yarnrc.yml`,
+   `.bunfig.toml`; `.tmux.conf`, `.vimrc`, `.vim`; `.aws`, `.kube`; Node's fallbacks in the
+   home, `package.json`, `node_modules`, `.node_modules`, `.node_libraries`; `~/.npm/_npx`,
+   where a user-scope MCP server started by `npx` runs from, never the rest of `~/.npm`;
+   `~/.rustup/toolchains`, never the rest of `~/.rustup`; `~/Library/Python` and
+   `~/.local/lib`; Claude Code's install; `~/Library/LaunchAgents`; and for each folder of
+   `PATH` in the home, and each place in the home a `PATH` folder or a link in one (or in
+   `~/.local/bin`) leads to, the install it belongs to, `installOf`, which looks one level
+   past `Library/Application Support`, `Library/Caches`, `Library`, `.local/share`,
+   `.local/state`, `.local` and `.cache`, the folder alone when that install would hold the
+   copies, none when the folder would; the places links lead are asked before the run,
+   outside the fence, by `pathLinks` (`pathLinksArgv`: `find` over each folder given as
+   `<folder>/.`, matching that folder itself and the links in it, never the folders inside
+   it, so a home on the path guards its links and not every folder in it, with
+   `-exec readlink -f {} ;`, one name to each call as BusyBox's readlink takes, its exit
+   code not read, a cut last line dropped by `linkTargets`, under
+   `PATH_LINKS_TIMEOUT_MS`, 30 seconds; under two on a Mac); and every git repository
+   the copy and the agent's folder reach (`gitRepos` asks four questions before the run,
+   outside the fence, each on its own so that one which fails loses only what it alone
+   would name: `gitUpArgv([copy, cwd])`, the `.git` in the copy, the agent's folder and
+   every folder above either, `foldersUp`; `gitInsideArgv(copy)`, every `.git` inside the
+   copy (`-prune`d, so none inside a `.git`) and where each link in it leads, unless
+   `holdsCopiesOf(home, copy)`, when the copy is a folder holding the copies (the home);
+   `gitUpArgv(links)`, the `.git` in each place those links lead to outside the copy and
+   every folder above it, only when links are found; and `worktreesArgv(gits)`. Each goes
+   through `wholeArgv` and `wholeAnswer`: an answer counts only when `find` printed its end
+   mark (the exit below 128) and was not cut at the output's cap (4 MiB, about 35,000
+   links), else it is null. Each prints the `.git` found, where it leads by `readlink -f`
+   and its `gitdir:` line, read even when readlink fails, after a line break so a file with
+   no break at its end cannot run into the next, under `GIT_FIND_TIMEOUT_MS`, 30 seconds
+   per question, its exit code not read. The folders a link leads to are not searched
+   inside, and a name holding a line break inside the copy is reported (`passedOver`) and
+   makes the check say the repository could not be found. Timings of 17 Oct 2026: the
+   question inside the copy takes 0.6 to 2 s for a project of 109,000 files and for one of
+   63,000 files and 2,000 links, and a test folder of 3,000 links takes 0.2 s here, 1 s on
+   Ubuntu 24.04 and 3 s on Alpine 3, the three answering the same.
+   `gitDirsOf` names the folder holding each `.git`, where it leads, the folder its pointer
+   names read from the folder holding the `.git` and from where it leads, cutting only the
+   line's end as git does, and for a worktree the git folder above `worktrees/<name>` too,
+   leaving out any place in the copy or the agent's folder; `gitLinksOf` names each place
+   a link leads to; `outermost` leaves out any place inside another, which the other's
+   guard covers; then `worktreesArgv` asks each
+   git folder found (`gitFoldersOf`) for the `gitdir` file of each worktree it lists, and
+   `worktreeDirsOf` names each worktree's folder, a relative entry read from the file's
+   folder; the same answers on macOS, Ubuntu 24.04 and Alpine 3): a copy keeps the
+   agent's `.git`, so a copy of a worktree or of a `.git` link
+   reaches the real history, git in a copy with no `.git` of its own finds one above it,
+   and with no copy the run works in a folder that may be a subfolder of its repository;
+   reading through git still works, adding, committing and stashing are refused; where the
+   host does not answer the link question, `pathLinks` gives null and the brief says the
+   installs the links in the command folders lead to could not be found; where it does not
+   answer a git question whole (a throw, a timeout, an answer cut at the output cap or
+   without its end mark, or a name holding a line break), `gitRepos` marks its answer not
+   whole (`whole: false`) and keeps what the other questions found, and the brief says not
+   every repository, nor every place a link in the copy leads to, could be found, and to
+   stage, commit and stash nothing; `CheckArgs.unanswered`), the brief naming the
+   main ones, saying no list names every one, rather than saying all writes outside the copy
+   are denied, and the network closed except
+   for the local machine, with `failIfUnavailable` (the run refuses to start where the sandbox cannot)
+   and `allowUnsandboxedCommands: false` (no command can ask to run outside it); an
+   `enabledPlatforms` list is set nowhere, since Claude Code reads it only from managed
+   settings (2.1.302). Measured 15 Oct 2026: bypassing approvals switches the sandbox off, so the
+   run does not; the owner's guard hooks fire inside the run; `denyWrite` beats `allowWrite`.
+   The copy is removed when the run ends; when it cannot be made the run uses the agent's
+   folder with writes there denied, the brief says so and asks it to run only what writes
+   nothing there, and any part of a copy is removed. A folder that holds the copies' folder
+   (`holdsCopiesOf`: the home, `~/.cache`) is never copied, since the copy would hold
+   itself; the run uses it as it uses a folder that could not be copied. The home is read
+   by `homeOf` with any separator at its end dropped, so every path built from it and the
+   fence's comparisons hold.
+   On Windows (`windowsOs` says `Windows_NT`: `OS` is, or `SystemRoot` or `windir` holds a drive path, or the session's working folder is on a drive) Claude Code's sandbox is off, so nothing would deny a
+   write or close the network: a card drawn there shows `CHECK_NO_ROOM` in place of the
+   check's price and no Check it button, and `runCheck` starts no copy and no run there,
+   pressed on a card drawn before. Where the sandbox cannot start, Claude Code prints
+   `NO_FENCE_ERROR` with what is missing and exits; `noFenceNote` makes that the card's note,
+   held for the process in `noFence` so each later card carries it and `runCheck` starts
+   nothing, the note saying a restart of Claude Code clears it once the sandbox's missing
+   piece is installed, and `checkBarred` keeps Check it off a card with either note. Before
+   the run, `pnpm store path` is asked in the copy outside the fence (`pnpmStore`; in the
+   agent's folder where no copy is made), with `--config.ignore-pnpmfile=true`,
+   `--config.manage-package-manager-versions=false` and `--config.offline=true` on its
+   command line (`PNPM_STORE_ARGV`: the project's `.pnpmfile.cjs` not loaded, no pinned
+   pnpm installed and no config dependency downloaded, all of which a bare ask does
+   outside the fence; the command line beats a project's `pnpm-workspace.yaml`, which
+   beats the environment, so the project cannot turn any back on) and
+   `COREPACK_ENABLE_NETWORK=0` in its environment (`COREPACK_ASK_ENV`: where pnpm comes
+   through corepack, corepack fetches a pinned pnpm before pnpm reads its command line;
+   with its network off it runs one it already holds and fetches none, measured with
+   corepack 0.36.0), and the answer, its version folder
+   taken off (`pnpmStoreDir`), passed to the run as `npm_config_store_dir`: inside the fence
+   pnpm finds its store unwritable, moves it into a scratch folder, and an offline install
+   there fails (measured 17 Oct 2026, pnpm 10). The three questions come before the run's clock
+   starts, so the check's measured time is the run's own. Fifteen-minute timeout
+   (`CHECK_TIMEOUT_MS`), 120 turns, JSON output; `permission_denials` in the output is the
+   count of commands refused approval, shown on the checked card (`refusedLine`, which says
+   commands the fence stopped are not counted) and on the next card's price line
+   (`checkCostText`); the right number is zero. Its answer rewrites the card, with each claim
+   marked holds, false, not shown or changed since; it is given the conditions held open and
+   those held shown with where (`CheckArgs.shown`), its `shown:` and `closed:` lines move
+   them, a `reopen:` line puts one held shown back to not shown and marks it `reopened`
+   (after that only a check's own `shown:` line moves it shown again, and the looks, the
+   briefings, the writer and the next check are shown what the check found beside it), and
+   its verdict passes the same gate part by part, with no own-words call, so a check never says stop while a condition is open. The briefing's going-well
+   line does not survive a check that found a claim false or left something out. A newer press (`checkEpoch`) makes an
+   older run stale, and `lastInstant` ties "Check it" to the card that is up; a stale run's
+   answer, inside the record's lock, counts its spend and nothing else (no marks, no
+   `lastBrief`, no draft), so the card on record stays the newer one. The check costs
+   real money and runs only on a press; the card states the measured figure (`FIRST_CHECK_*`,
+   then the last run).
+
+**The host.** Every program the hooks run is named through `hostArgv` (`hooks/rep.ts`),
+which leaves an argv as written on a Mac or Linux (`PATH_HOST`) and on Windows names the
+commands in `POSIX_COMMANDS` by their full path in Git for Windows' `usr/bin` and `claude` as
+npm's `claude.exe`. `hostOf` finds both by running each candidate with `--version`
+(`winPosixBinCandidates`, `winClaudeCandidates`, slashed as they are built so the path a probe
+proves is the one run) and holds the lookup for the process, keyed on what `windowsOs` makes of `OS`, `SystemRoot`, `windir` and the working folder (Windows passes the first three to programs by default, but a launcher can drop them, so `OS` being `Windows_NT`, or a drive path in any of the last three, counts, and the working folder is the sign none can drop), except a Windows
+one whose coreutils did not answer, which is looked up again on the next call; a lookup that
+throws still reads as Windows, so the check's refusal there never rests on a probe. The home
+is `homeFor` (`homeOf`): on Windows, by the same reading of the four signs, `USERPROFILE`,
+else `HOME`, since Claude Code keeps its folder under the home Node gives it, which there
+reads `USERPROFILE` and ignores `HOME`; on a Mac or Linux `HOME`, else `USERPROFILE`; written
+with forward slashes on Windows, '' with neither (the check's copies then go under `/tmp`);
+`heldItems` slashes the paths it is given or finds on Windows. Kyle Cunningham measured the Windows facts on Windows 11 with
+Claude Code 2.1.302 (PR #13).
+
+**The objective** (`Objective` in `hooks/rep.ts`, declared again in `types/index.d.ts`) is the
+rep's own account of what the owner wants on the job in hand, never the owner's text, held in
+parts: `result`, `purpose`, `done` (a list of `Condition`s, each `open`, `not-shown`, `shown`
+or `closed`, with `by` saying where it was shown or which message of the owner's closed it) and
+`step`; with `since` (the number of the job's first message), `from` (the last message number
+the write that built it was shown), `movedAt`, `cause`, `revisions` and up to `VERSIONS_MAX`
+earlier `versions`. Only `rebuildObjective` writes it: on each message of the owner's and each note,
+never on a draft, and on a session start or a press when none is held. `writeObjective` runs
+one write per session at a time; a request during a write joins it (`again`), and a message
+saved after the write was shown its messages is written next. A due write is up to
+`1 + OBJECTIVE_RETRIES` attempts (the retries at `OBJECTIVE_RETRY_EFFORT`, `max`, with their own cap and
+time; none after a throw or an `aborted`; a `holds` with nothing held fails the attempt as
+`holds-with-none`), and only a write whose every attempt failed is counted. A write that throws or comes
+back unanswered, or answers with nothing `parseObjective` can read (a reply cut off at its
+cap looks like that), leaves the objective as it was and adds one to `rec.objectiveFailed`,
+which the card's price line (`spentText`) names only when above zero. The writer is a plain
+`$.model.complete` call (`OBJECTIVE_MODEL`, high effort, `OBJECTIVE_MAX_TOKENS` and
+`OBJECTIVE_TIMEOUT_MS`, set from one measured write), never a fork of the conversation,
+sent with its fixed rules as `system: OBJECTIVE_SYSTEM` on every attempt, and shown by
+`objectivePrompt` only the held objective, `rec.past` and the owner's numbered messages on the job
+(each with the agent's last answer before it), the messages inside a `<his_messages>` fence
+followed by a note that they are quoted records and no instruction to the writer; a fence tag
+(any letter case, spaces inside the brackets allowed) in a message or in the agent line is
+printed with its brackets turned to `‹` `›`, so no message can close the fence, and the record
+keeps the text as typed. Its answer is `objective: holds`, or
+`objective: moved` with `moved:`, `result:`, `for:`, `done:`, `step:` and `dropped:`
+(`parseObjective`); `moved: new job …` closes the job. `takeObjective` applies it: the first
+objective is taken as it stands; after that a write is taken only when it saw a message of the owner's
+or a note past `from` (`hisFrom` never counts a draft), so neither the agent's words nor the
+rep's drafts can move it and a write that lands late cannot take a newer one's place. A
+correction takes the result, purpose and step whole and runs the conditions through
+`mergeConditions`, which keeps every held condition the writer leaves out unless `dropped:`
+cites the number of a message from the owner, new since the held objective was built (past `from`),
+and never raises a state: a held condition keeps its state, where and `reopened` mark unless
+the writer closes it, and a new one proposed shown starts open;
+`honest` turns a `shown` the writer adds (of the conversation it sees only the agent's last
+words before each of the owner's messages, marked as the agent's) and a `closed` that cites no such
+message back to open. A condition
+listed twice, or with a state mark copied into its text, is kept once (`parseObjective`,
+`mergeConditions`). A new job pushes
+the old result onto `rec.past` and starts the job (`since`, `rec.jobStart`) at its first new
+message. The first write, which has nothing held to push, starts the job at the message its
+`moved: new job #n` cites when n is one of the owner's messages after the first, so a seeded session
+whose transcript held an earlier job does not show that job's messages as this one's. The looks, the briefing and the check never write the objective: `applyMarks` takes
+their `shown:` lines when they name where, their `closed:` lines only when the number is a
+message of the owner's on the job sent after `from` (one the objective was built from had its say
+when it was written), and the check's `reopen:` lines when they say what shows otherwise; a look's or a briefing's
+`shown:` line does not move a condition marked `reopened` (only the check's does, the fourth
+argument). A new job's conditions start with no mark. A draft moves only `step`, set to the draft's `firstSentence` in
+`prompt.submit`. The card shows `revisedLine` under the head and `objectiveText` as its
+reading; the row shows `result`.
+
+Owner messages are `OwnerMsg`s: `n`, `kind` (`his`, `note` or `draft`), `text` (cut to
+`HIS_CUT`, 6,000 characters, for the owner's messages and notes, the writer's only input, and to
+`OWNER_CUT`, 1,200, for a draft), and `prior`, the end of the agent's last answer before it
+(`fitTail` to `PRIOR_CUT`, 400, keeping the end, where the question a short reply answers
+usually is). `rec.counter` gives every message its number, drafts
+included, so the guards compare numbers, never list lengths, and `trimOwner` keeps the job's
+messages whole up to `JOB_MAX` (200) and `OWNER_MAX` (40) from before it. `loadRec` migrates
+older records: a list of strings becomes numbered messages (`migrateOwner`, which reads the
+old marks), and a record with a `reading` and no `objective` gets `objective: null`, its old
+text in `rec.stale` (kept as the first version when the objective is written) and
+`rec.jobStart` at the old job's first message; the next start, press or message writes it.
+
+A session the rep holds no record of (its record fell out of the newest `SESSIONS_MAX`, it
+was forked with a new id, or it is older than the mod) has none of the owner's messages. `seedOwner`
+fills such a record, one with no message or note of the owner's, from the session's transcript file,
+in the file's order, never from the rows' text: a message the owner typed while the agent worked
+is saved only as an attachment line, never as a row of `$.session.messages()` (measured on
+Claude Code 2.1.301), so the file is the only place it is found. The classic hooks
+`classic.SessionStart` and `classic.UserPromptSubmit` carry the file's path
+(`transcript_path`); `holdTranscript` keeps it per session id in a module-level map, a
+later prompt's path replacing the start's, and each event is passed on untouched. With no
+path held, `heldItems` looks for `<id>.jsonl` by name, `find <config>/projects -maxdepth 2`
+(the config folder `CLAUDE_CONFIG_DIR`, else `.claude` in the home, none with no home), and
+with none found it is null.
+The file is read through `$.process.run` with `humanRead` (`sed`, `HUMAN_READ_TIMEOUT_MS`),
+which prints only the lines holding `"kind":"human"`, every picture's `"data"` blanked so a
+message with a picture stays under the output cap. A read cut at that cap
+(`isStdoutTruncated`) counts as no read: the session's own file cut makes `heldItems` null,
+and a cut file in the scan is skipped. `humanItems` reads, in file order, the lines of type
+user with origin kind `human` and not `isMeta`, and the lines of type attachment holding a
+`queued_command` of origin kind `human` (a message the owner typed while the agent worked,
+`queued`), meta on neither the line nor the attachment, each as a `HumanItem`: its `text` in
+`typedForm` (a command as `/name args`, reminders removed), its `key` the `typedKey`
+(whitespace folded); one with an empty key or a text `NOT_TYPED` names is skipped, and one
+sent twice is two items. `humanTexts` is the set of their keys, which the record read labels
+by. A session's own file that begins at a summary is a copy: Claude Code 2.1.302 can save a
+fork taken after a compaction as the parent's stretch since the summary, with none of what the owner
+typed before it. `startFind` (`grep -n -o -m 1 -E`) prints the file's first compaction mark,
+with the mark's line's one `"uuid"`, or line the owner typed, and `summaryStart` reads the summary's
+id when the mark comes first. The newest other `.jsonl` files in the folder are then searched
+for that line (`summaryLineFind`), within the limits below, and the first one holding any of
+the owner's messages before it gives those (`humanReadBefore`), followed by the copy's own; a copy of
+the copy, which holds the line with nothing before it, is passed over, and with no file
+found the copy's own messages stand alone. When the session's own file cannot be read (a
+session forked with a new id has none until its first message is saved; the path held still
+names the right folder), the newest `.jsonl` files in its folder other than its own
+(`folderOf`, `ls -t`) are read one at a time, at most
+`HUMAN_SCAN_MAX` (40), within `HUMAN_SCAN_BUDGET_MS` (30 seconds) for the whole scan, each
+read given no more than the time left. A fork's rows are its parent's and then its own, so
+`forkItems` matches the fork's candidate rows (`forkCandidates`: user rows with no tool
+results, a key, and nothing `NOT_TYPED` names, in order) to a file's typed items from the
+end, since after a compaction the rows are only the conversation's tail: each typed item
+whose key is a candidate is tried as the last match, and the candidates are taken from last
+to first, each matched to the latest typed item with its key before the one matched after
+it, a row with no match leaving the place where it was. Of those tries it takes the most
+matched, then the fewest typed items left unmatched between the first and last match, then
+the latest last match, and keeps the items up to that match and the queued ones right after
+it (what the owner typed while the agent answered their last message before the fork), never the
+parent's later messages. The file with the most matches
+is taken, the newest on a tie, and the scan stops once a file matches every candidate;
+`heldItems` is null when the best file matched none, whether or not any file was read
+whole, so the record read labels the owner's rows by their text rather than calling them all the
+session's. A
+scan repeated at each start and press costs milliseconds, so nothing caches it.
+`typedFromItems` gives each item the end of the agent's last text before the row it matches
+as its `prior`, lining them up from the end because after a compaction the rows hold only
+the tail: walking the items from last to first, each typed one takes the latest of the owner's
+side's rows with no tool results and the same key before the row matched after it, so a
+short reply the owner sent before and after a compaction gets its prior only at its later place; a
+queued item, or one no row holds (from before a compaction), keeps its place with no
+prior. Each is recorded as `his` through `pushOwner`, a
+draft the owner sent split off as `prompt.submit` does, matched against every record's drafts, last
+message and messages held as `draft` in the store (`storedDrafts`), so a card the owner sent in the
+session this one was forked from is still the rep's draft, even one more than `DRAFTS_MAX`
+back or sent under a build that kept no `rec.drafts`, and against `droppedDrafts`, so one
+from a session whose record was let go is too. A session with no row is not read. One whose
+rows hold no candidate (reopened or forked after a compaction the owner has typed nothing since,
+so the summary and the agent's work are all its rows) is read all the same: its own file
+whole, and in the scan, where nothing typed can be matched, the newest file holding the call
+of its last tool result (`lastToolId`, found by `toolLineFind`, `grep -n -o -m 1 -F` on the
+call's `"id"`, and `toolLineOf`) gives the items before that line (`humanReadBefore`, `sed`
+stopping there), a cut read skipped; the call, not the result, because a fork taken while a
+tool ran holds a result Claude Code marks interrupted, which its parent saves only later.
+With no tool result either, nothing past its own file is read. `seedOwner`
+runs one seed per session at a time (`seeding`), and
+`prompt.submit` awaits it before recording a prompt or a note, so a prompt sent during the
+start's read is numbered after the seeded messages; the objective is rewritten when that
+seed recorded any. `enterSession` (a start, or a new id taken up after a `/clear` or a
+resume) runs it without waiting and writes the objective when it recorded any; `pressBrief` awaits it before its objective-null write. A record that holds a
+message or note of the owner's is never seeded.
+
+State lives in two places. Atoms (`atom({plugin, key})`) are per-session UI state that drives
+the render. The `$.store` key `sessions` holds a `Rec` per session id (the objective, the
+results of earlier jobs, the owner's numbered messages and the counter, the last briefing's
+next step and message, the last `DRAFTS_MAX` (3) cards' messages in `rec.drafts`, flags already seen, other mods' notes, spend counters with the writer's own and its failed calls), capped
+at `SESSIONS_MAX` newest. A record that still loads as the blank one a session starts with
+(`isBlankRec`: no message, objective, draft or spend) is never kept, since a missing record
+loads the same: `session.end` saves every session's record, so before 17 Oct 2026 each
+scripted `claude -p` run left a blank one that took a place from the owner's sessions. A record `saveRec` lets go leaves its drafts (`recDrafts`: its
+`rec.drafts`, last briefing's message and messages held as `draft`) in the key
+`droppedDrafts`, newest first, each once, up to `DROPPED_DRAFTS_MAX` (200) (`keepDropped`);
+a fork's own first save can let go the record it was forked from. `storedDrafts` reads
+`sessions` before `droppedDrafts`, the reverse of `saveRec`'s order, so a record let go
+between its two reads is in one of them. `loadRec`/`saveRec` are the only way in and out, and `changeRec`
+runs each change alone from its load to its save, so two hooks that finish together never save
+over each other. Atoms and the module's own values outlive a session: a `/clear` or a resume
+goes on in the same process under a new session id, and no `session.start` fires for it. So
+`sessionId` reads the id on every call and takes up a new one as a start would
+(`enterSession`); `session.end` with reason `clear` or `resume` empties the screen and the
+carried values (`leaveSession`); and a write, look, briefing or check the ended session
+started draws nothing (`onScreen`). Reading the id once per load filed every message after a
+`/clear` under the ended session until 16 Oct 2026.
+
+The owner's own messages are the only input that can steer the rep. `prompt.submit` records
+each prompt into `rec.owner` (`pushOwner`); a prompt that begins with the card's own message,
+sent through "Put message in prompt", is split by `draftSplitAny` against the last three
+cards' messages (`rec.drafts`, fed by `keepDraft` wherever a card's message is set), so it is
+recognised after a reload and from an earlier card: the draft is recorded as a
+`draft`, listed to the model with `SENT_MARK` so it is weighed as the rep's draft and never as
+the owner's words, and whatever the owner typed after it is their own message, numbered after it. A
+prompt beginning `Owner rep` and a colon (`noteTyped`) is a note to the rep: it is recorded as
+a `note`, listed with `NOTE_MARK` (`(to the rep)`), the objective is rewritten and a look
+starts at once, and the prompt is dropped so the agent never sees it. `noteSplit` also finds
+the prefix typed after other text (`NOTE_PLACES`): at the start of a line, after a sentence's
+end (a closing quote or bracket allowed) and a space, or in its capitalised form glued to a
+letter, a digit or a sentence's end, never inside a sentence, and never in a slash command's
+line (`e.command` set), whose arguments stay the command's. The text before it is then a
+prompt to the agent, handled as any prompt (recorded as the owner's message, a draft split off) and
+sent on without the note; the note is recorded after it, the objective is rewritten, a look
+starts, and a toast says the agent got the rest. A prefix after text with nothing after it
+notes nothing; the agent gets the text and a toast says nothing was noted. "Tell the rep" fills the
+prompt box with the prefix. The rep never sends anything itself: "Put message in prompt" fills
+the prompt box and the owner presses Enter.
+
+The `AbovePrompt` band is a strip shared with other mods ("You should know" among them) and
+this mod draws first. Rules the render enforces: whatever is beneath is kept under the row;
+while another mod draws something (`drawsSomething`), the rep's own note waits and the row's
+buttons lose their digits, so only one set of digit hotkeys is ever on screen; the briefing
+takes the strip alone; on the terminal each line has its width in columns and the card is folded to the band's rows (`fitCard`), and on a surface whose band is a scrolling box in a proportional font (`sizesInColumns` false: Claude Code for VS Code, whose extension counts columns by a wide glyph and draws widths in `ch`) no line is given a width, so each fills the box, and the card is drawn whole. Buttons use bare digits for hotkeys because from the prompt box only a
+digit presses a band button. A keyboard chord for the Rep button once rode on an unrelated
+engine action; it could not be proven and was removed on 14 Oct 2026. Do not bring it back
+without a binding that is shown working.
