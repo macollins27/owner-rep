@@ -1,7 +1,7 @@
 import type { On, SessionMessage } from 'claude-code'
 import { expect, mock, test as kitTest, type Engine, type TestBody, type TestOptions } from 'claude-code/testing'
 
-import { CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, toAgentVoice, sectionOf, takeOwnWords, parseOwnWords, ownWordsPrompt, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
+import { type Memory, CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fitCard, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, OLD_SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, toAgentVoice, sectionOf, takeOwnWords, parseOwnWords, ownWordsPrompt, askAgain, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
 
 // Every test starts with the session's working folder a Unix path, so what the suite reads does not
 // depend on the folder the kit gives it: on a Windows machine that folder is a drive path, which
@@ -3224,6 +3224,9 @@ test('trimOwner keeps the whole job past OWNER_MAX and migrateOwner reads the ol
     { n: 3, kind: 'draft', text: 'Show me the run.', prior: '' },
     { n: 4, kind: 'draft', text: 'Finish the slice.', prior: '' },
   ])
+  // A record written before 0.4.0 marked a sent draft "sent by him"; it still reads as a draft.
+  expect(migrateOwner([`${OLD_SENT_MARK}Show me the run.`])).toEqual([{ n: 1, kind: 'draft', text: 'Show me the run.', prior: '' }])
+  expect(SENT_MARK).toBe('(your draft, sent by the owner) ')
   expect(ownerLines([{ n: 2, kind: 'note', text: 'x', prior: '' }])).toBe('- #2 (to the rep) x')
   // The old record flattened line breaks to single spaces; the draft kept them.
   const flat = 'First, run the suite.\n\nSecond, show the output.'
@@ -3575,8 +3578,14 @@ test('messageSaysStop reads a message in his voice to the agent: shifted to the 
   // The contractions and two-word forms go whole, before the bare words, so the verb agrees; a curly apostrophe too.
   expect(toAgentVoice("You're done; YOU ARE close. You've run it; you have it. You’re set. I'm here, I am sure, I'll look, I've seen it, I’m in; i'm not."))
     .toBe('the agent is done; the agent is close. the agent has run it; the agent has it. the agent is set. the owner is here, the owner is sure, the owner will look, the owner has seen it, the owner is in; i\'m not.')
+  // The owner named without a pronoun: the shift reads me as the owner, and a message that already says so is caught too.
+  expect(toAgentVoice('Hand it back to me when my reply comes.')).toBe("Hand it back to the owner when the owner's reply comes.")
   const caught = [
     'Summarise what you did and wait for my sign-off.',
+    "Report back and wait for the owner's reply.",
+    'Finish the README, then let them decide.',
+    'Stop here and ask her what she wants.',
+    'They will take it from here.',
     'Report what is done, then hand it back to me.',
     'Write up what you have and wait for my go-ahead before doing anything else.',
     'Great work. You can stop now.',
@@ -3605,6 +3614,8 @@ test('messageSaysStop reads a message in his voice to the agent: shifted to the 
     'You have the log open; run the suite next.',
     'Don\'t hand the laptop install over to me; finish it yourself.',
     'Don\'t leave the rest to me.',
+    // A bare "them" is a thing, not the owner: a wait on the tests goes on.
+    'Run the tests and wait for them to finish, then show me the output.',
   ]
   for (const m of caught) expect([m, messageSaysStop(m)]).toEqual([m, true])
   for (const m of kept) expect([m, messageSaysStop(m)]).toEqual([m, false])
@@ -3667,6 +3678,24 @@ test('rule: OWN_WORDS_SYSTEM is the brief\'s who-you-are and how-you-write secti
   for (const label of ['means: <', 'next: <', 'message:\n<', '\nend\n', 'does: <']) expect(p).toContain(label)
   // What it writes is read by the briefing's own parser.
   expect(parseBrief('means: M.\nnext: N.\nmessage:\nM1\nM2\nend\ndoes: D.')).toMatchObject({ means: 'M.', next: 'N.', message: 'M1\nM2', does: 'D.' })
+})
+
+test('rule: the rep speaks of the owner, never of him: no brief, writer prompt, check brief or own-words prompt calls the owner he, him or his, the writer is told to write the result as the thing, and the card is told to write to the owner as you', () => {
+  const o = { ...OBJ_FIXTURE }
+  const m: Memory = { objective: o, owner: [{ n: 1, kind: 'his', text: 'make it serious', prior: '' }, { n: 2, kind: 'draft', text: 'Show me the run.', prior: '' }], past: ['An earlier job.'], seen: [], others: [], lastBrief: { at: 1, next: 'The agent runs the suite.', message: 'Run the suite and show the output.' }, lastSent: { at: 1, text: 'Run the suite and show the output.' } }
+  const a = { verdict: 'stop', shown: [], closed: [], well: '', stands: 'The README is written.', means: 'The agent says it is done.', leftOut: ['the tests never ran'], next: 'Stop.', message: 'You can stop.', does: 'Stops the agent.' }
+  const texts = [briefPrompt(m), watchPrompt(m, 'stop'), watchPrompt(m, 'note'), watchPrompt(m, 'step'), askAgain(o.done), ownWordsPrompt(m, o.done, a as never), OBJECTIVE_SYSTEM, objectivePrompt({ objective: o, owner: m.owner, past: m.past }), RECORD_SYSTEM, OWN_WORDS_SYSTEM, checkPrompt({ sessionId: 's', cwd: '/w', copy: '/c', reading: objectiveText(o), conditions: o.done, shown: [], owner: m.owner, brief: a as never, writtenAt: '10:00', from: 1, unanswered: [], guarded: [] } as never)]
+  for (const t of texts) {
+    // The one place a pronoun may appear is inside quotes: the word the brief forbids, or the example it forbids.
+    const hit = t.replace(/"[^"\n]*"/g, '').match(/\b(he|him|his|himself|she|her|herself)\b/i)
+    expect(hit === null ? '' : `${hit[0]} in: ${t.slice(Math.max(0, (hit.index ?? 0) - 60), (hit.index ?? 0) + 40)}`).toBe('')
+  }
+  // The brief writes to the owner as "you" and never guesses who the owner is; the writer writes the result as the thing.
+  expect(briefPrompt(m)).toContain('The owner is "you", never "he", "she", "they" or a name: you know the owner only through these messages.')
+  expect(OBJECTIVE_SYSTEM).toContain('The result is the thing the owner will have, said as the thing: "A to-do command with tests, a README and a passing GitHub run, installed where it is used", never "He wants a to-do command" and never "You want a to-do command".')
+  expect(SENT_MARK).not.toMatch(/\bhim\b/)
+  // The owner's own messages are still listed under their numbers, and the draft under the new mark.
+  expect(briefPrompt(m)).toMatch(/The owner's own messages on this job[^]*\n- #1 make it serious\n- #2 \(your draft, sent by the owner\) Show me the run\.\n/)
 })
 
 test('STOP_NEXT refuses only a next step that stops the agent or the job, calls the work finished, or says nothing is left, and never the rep\'s own texts', () => {
