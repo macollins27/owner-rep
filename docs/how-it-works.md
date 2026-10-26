@@ -379,7 +379,9 @@ tests/live/live.sh              # on demand: eleven real sessions in tmux, the s
 ```
 
 GitHub runs the validation, the host-calls step, the host-commands script, the tests and the
-type check on Ubuntu, macOS and Windows on every push, and the doctor on Ubuntu
+type check on Ubuntu, macOS and Windows on every push that touches more than prose and
+pictures (`paths-ignore` in the workflow: the Markdown files, `docs/`, `llms.txt`, the
+licence, the issue forms and the live captures get no run), and the doctor on Ubuntu
 (`.github/workflows/tests.yml`); the type check there uses a pinned copy of the API
 declarations in `tests/ci/`, and a step before it fails the run when the Claude Code build
 the workflow installed is not the build that wrote that copy, so a change in the API can

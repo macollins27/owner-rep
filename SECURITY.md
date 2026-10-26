@@ -8,8 +8,8 @@ it matters. Please report one privately.
 Use GitHub's private reporting: open the repository's **Security** tab and choose
 **Report a vulnerability**. Don't open a public issue for a security problem.
 
-You'll get a reply within seven days. A fix ships as a new release, and the report is credited
-unless you'd rather it wasn't.
+You'll get a reply as soon as it can be read, normally within seven days. A fix ships as a new
+release, and the report is credited unless you'd rather it wasn't.
 
 ## What counts
 
