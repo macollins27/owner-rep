@@ -1,13 +1,12 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index ec82737..e04c0a5 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1031,7 +1031,7 @@ export const register: Register = on => {
-     // The row shows the result; the card shows the objective whole.
+@@ -1726,7 +1726,7 @@
+     // The row shows the result; so does the card's head, with the count line under it
+     // and the objective whole at the card's end when the rows allow.
      const placeholder = 'working out the result you want from your messages…'
-     const readingText = reading === null ? placeholder : objectiveText(reading)
 -    const head = lead(headGlyph, headColor, 'Owner rep', reading?.result ?? placeholder)
-+    const head = lead(headGlyph, headColor, 'Owner rep', readingText)
++    const head = lead(headGlyph, headColor, 'Owner rep', reading === null ? placeholder : objectiveText(reading))
  
      if (view === 'note' && note !== null && !hasBeneath) {
        const clear = () => {

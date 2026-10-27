@@ -1,9 +1,9 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2522,7 +2522,7 @@
- // message is never dropped: one row of it says what it is, and Put message in
- // prompt carries it whole.
+@@ -2563,7 +2563,7 @@
+ // buttons stay where a digit presses them, and Put message in prompt carries the
+ // message whole on both.
  export function fillCard(card: CardText, maxRows: number, cols: number): CardText {
 -  if (cardRows(card, cols) <= maxRows) return card
 +  return card

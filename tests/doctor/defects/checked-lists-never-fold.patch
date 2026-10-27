@@ -1,7 +1,7 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2566,7 +2566,7 @@
+@@ -2607,7 +2607,7 @@
      means: '',
      leftOut: [],
      next: '',
@@ -10,10 +10,10 @@ diff --git a/hooks/rep.ts b/hooks/rep.ts
      checkCost: '',
      message: toRows(card.message, '', 1, mw),
      does: '',
-@@ -2577,7 +2577,7 @@
-     x => ({ ...x, result: card.result }),
-     // The judgment, one row each, the most telling first.
+@@ -2621,7 +2621,7 @@
      x => ({ ...x, stands: toRows(card.stands, 'Stands: ', 1, w) }),
+     // That the reading moved, and why, is the next thing the owner must not miss.
+     x => ({ ...x, revised: toRows(card.revised, '', 1, w) }),
 -    x => ({ ...x, checked: folded() }),
 +    x => ({ ...x, checked: k }),
      x => ({ ...x, well: toRows(card.well, '', 1, w) }),

@@ -1819,7 +1819,7 @@
   },
   {
     "name": "extras-before-message",
-    "breaks": "The extras (the revision line, the does line, the spend line, the objective) are added before the message takes the rows that remain, so the message is cut to one row while the band shows lines that matter less.",
+    "breaks": "The extras (the does line, the check's price, the spend line, the objective) are added before the message takes the rows that remain, so the message is cut to one row while the band shows lines that matter less.",
     "patch": "extras-before-message.patch",
     "fixed": "2026-10-19"
   },
