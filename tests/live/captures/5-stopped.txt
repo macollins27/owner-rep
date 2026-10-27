@@ -1,14 +1,14 @@
 
- ▐▛███▛█   Claude Code v2.1.302
-▝▜██████▀  Opus 5.5 with xhigh effort · Claude Max
- ▝▝   ▝▝   /private/var/folders/mf/g9s916lj533085gbqr23mm9m0000gn/T/owner-rep-live.lOfLZAvTM8
+ ▐▛███▛█   Claude Code v2.1.310
+▝▜██████▀  Fable 5.1 with medium effort · Claude Max
+ ▝▝   ▝▝   /private/var/folders/mf/g9s916lj533085gbqr23mm9m0000gn/T/owner-rep-live.0TwShIg0Tm
 
 
 ❯ Reply with the single word done and nothing else.
 
 ⏺ done
 
-✻ Sautéed for 1s · done 4:58 PM
+✻ Cogitated for 2s · done 12:48 AM
 
 
 
@@ -35,10 +35,10 @@
                                                                                                                                                                       [-]
 ◆ Owner rep · working out the result you want from your messages…
   stopped, waiting on you   1: Brief me   2: Tell the rep
-                                                                                                                                                       ◉ xhigh · /effort
+                                                                                                                                                      ◐ medium · /effort
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ❯ 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  [Opus 5.5] │ owner-rep-live.lOfLZAvTM8 +owner-rep-live.lOfLZAvT… +maxwellcollins git:(main) │ Single-word reply test
-  Context ░░░░░░░░░░ 4% │ Usage ░░░░░░░░░░ 2% (resets in 1h 22m)
+  [Fable 5.1] │ owner-rep-live.0TwShIg0Tm +owner-rep-live.0TwShIg0… +user git:(main) │ Done
+  Context █░░░░░░░░░ 5% │ Usage █░░░░░░░░░ 11% (resets in 4h 22m)
   ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents

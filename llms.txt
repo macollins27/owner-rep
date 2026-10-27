@@ -1,0 +1,27 @@
+# Owner Rep
+
+> A Claude Code mod (a plugin with a hooks module) that watches a coding agent on behalf of the person who owns the work and reports in plain English: what is really done, what was left out, and the message to send the agent next. For people who direct coding agents but don't read code. MIT licence, no dependencies, no telemetry; its only outbound traffic is its own model calls, made with the Claude Code session's credentials.
+
+Install at the Claude Code prompt: `/plugin install owner-rep --marketplace macollins27/owner-rep`
+Or from a shell: `claude plugin marketplace add macollins27/owner-rep` then `claude plugin install owner-rep@owner-rep`
+
+Requirements: Claude Code 2.1.286 or later (tested on 2.1.286, 2.1.310 and the newest release). Draws in the terminal, the Claude desktop app, and Claude Code for VS Code (extension 2.1.310+). macOS, Linux and Windows; the independent check ("Check it") does not run on Windows, where Claude Code's sandbox is off.
+
+What it does:
+- A row above the prompt: the result the owner wants, in the rep's words, and what the agent is doing now.
+- A "Heads up" when the agent drops work, claims something not shown, skips a test, or takes the easy option.
+- A briefing card on a keypress: where the work stands, what was left out, and a message for the agent that the owner sends with Enter.
+- An optional independent check: a separate sandboxed `claude -p` run in a throwaway copy of the project that marks each of the agent's claims holds, false, not shown or since then.
+
+## Docs
+
+- [README](https://github.com/macollins27/owner-rep/blob/main/README.md): what it does, install, costs, what it can reach
+- [How it works](https://github.com/macollins27/owner-rep/blob/main/docs/how-it-works.md): the full method and design, for engineers
+- [Testing](https://github.com/macollins27/owner-rep/blob/main/docs/testing.md): the test kit, the defect-planting doctor and the live scenarios
+- [Privacy](https://github.com/macollins27/owner-rep/blob/main/PRIVACY.md): what it keeps and what leaves the machine
+- [Changelog](https://github.com/macollins27/owner-rep/blob/main/CHANGELOG.md)
+
+## Source
+
+- [hooks/register.tsx](https://github.com/macollins27/owner-rep/blob/main/hooks/register.tsx): hooks, state, rendering, the check run
+- [hooks/rep.ts](https://github.com/macollins27/owner-rep/blob/main/hooks/rep.ts): prompts, parsers and rules, no engine calls

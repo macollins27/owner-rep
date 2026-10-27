@@ -45,7 +45,7 @@ export type Checked = {
 export type Brief = {
   // The result's first sentence, the card's head; '' when no objective was held.
   result: string
-  // How many things done means and how many are shown, open and closed by him; '' with none held.
+  // How many things done means and how many are shown, open and closed by the owner; '' with none held.
   count: string
   // The objective as prose, whole, drawn at the card's end when the rows allow.
   reading: string

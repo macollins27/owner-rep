@@ -39,6 +39,6 @@
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ❯ Owner rep goal: the strip reads plainly in every state
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  [Fable 5.1] │ owner-rep-live.64fwxeeq7I +owner-rep-live.64fwxeeq… +maxwellcollins git:(main)
+  [Fable 5.1] │ owner-rep-live.64fwxeeq7I +owner-rep-live.64fwxeeq… +user git:(main)
   Context ░░░░░░░░░░ 0%
   ⏵⏵ bypass permissions on (shift+tab to cycle)

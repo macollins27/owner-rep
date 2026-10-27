@@ -1,10 +1,12 @@
 # The type check on GitHub
 
 `tsc` needs the declarations of the mods API, which Claude Code writes into a mod's
-development copy when a session loads it and never into a checkout (see the root
-`CLAUDE.md`). GitHub has no session, so `types/` here is a pinned copy of those
-declarations as Claude Code 2.1.300 wrote them on 14 Oct 2026, the same build the workflow
-installs. `tsconfig.json` beside it is the engine's own, pointed at that copy.
+development copy when a session loads it and never into a checkout. GitHub has no session, so `types/` here is a pinned copy of those
+declarations as Claude Code 2.1.310 wrote them on 24 Oct 2026, the build the workflow
+type-checks against (its tests also run on 2.1.286 and the newest release). The engine writes them beside the mod when a session loads it with `--plugin-dir`,
+which the live layer does, so `tests/live/live.sh 1` on the build to pin refreshes the copy
+in `.claude-plugin/types/` (the MCP folder is written only when the session has MCP tools
+connected; the pinned one is from 15 Oct 2026 and the mod does not use it). `tsconfig.json` beside it is the engine's own, pointed at that copy.
 
 The engine stamps its build on the first line of `types/claude-code/index.d.ts` when it
 writes the three folders together. `declarations.sh` reads that stamp and `claude --version`
@@ -34,7 +36,7 @@ builders and parsers from `hooks/rep.ts` and wraps each built argv as the mod do
 `hostArgv` and, for the git questions alone, `wholeArgv`, so the argv it runs is the argv the
 mod runs, and it reads each answer with the parser the mod reads it with. The `find`, `ls -t`,
 `mkdir -p` and `rm -rf` argvs the mod writes inline are written out the same way. Against the
-two transcripts in `fixtures/` (a session's own file with his typed, pictured, queued, meta
+two transcripts in `fixtures/` (a session's own file with the owner's typed, pictured, queued, meta
 and engine lines and a compaction mark, and a parent holding the same mark), copied into a
 scratch folder laid out as `<config>/projects/p1/`, it runs the reads `heldItems` makes:
 `humanRead`, `startFind`, `toolLineFind`, `humanReadBefore`, `summaryLineFind`, and the `find`

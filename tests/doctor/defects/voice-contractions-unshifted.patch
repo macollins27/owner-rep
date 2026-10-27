@@ -1,0 +1,19 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index c95e00f..f0d8fcb 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2823,14 +2823,6 @@ export const saysStop = (part: string): boolean => STOP_NEXT.test(part)
+ // before deleting anything, then carry on." is a check-in with the owner to
+ // ASK_BACK_SAID, and the own-words call rewrites the message.
+ const VOICE: Array<[RegExp, string]> = [
+-  [/\byou['’]re\b/gi, 'the agent is'],
+-  [/\byou\s+are\b/gi, 'the agent is'],
+-  [/\byou['’]ve\b/gi, 'the agent has'],
+-  [/\byou\s+have\b/gi, 'the agent has'],
+-  [/\bI['’]m\b/g, 'the owner is'],
+-  [/\bI\s+am\b/g, 'the owner is'],
+-  [/\bI['’]ll\b/g, 'the owner will'],
+-  [/\bI['’]ve\b/g, 'the owner has'],
+   [/\bme\b/gi, 'the owner'],
+   [/\bmy\b/gi, "the owner's"],
+   [/\bI\b/g, 'the owner'],

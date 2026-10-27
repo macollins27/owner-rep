@@ -55,14 +55,7 @@ declare module 'claude-code' {
         /** Servable media type; inferred from the extension for common types (css/js/json/png/…) — pass explicitly otherwise. */
         contentType?: string
       }> | {}
-      /** publish: small changes Claude makes to the file at `file_path` in this same call, instead of editing the file with Edit and publishing after. Use it on a page (add `url` to update an artifact from another conversation) or on one data file of an artifact made from a type (its `url`, with that file as `file_path`). Not allowed with `type_url`, `files` or `root`. Each old_str is text copied exactly from the file as it now stands and must occur in it exactly once; new_str takes its place (empty deletes it). The edits apply in order, all or none: the file is published with them and then saved with them on disk, so it stays the source for later changes; on a miss nothing is changed or published, and the result says which edit failed and why. */
-      edits?: Array<{
-        /** Text copied exactly from the file; must occur once. */
-        old_str: string
-        /** Its replacement; empty deletes old_str. */
-        new_str: string
-      }>
-      /** The base directory that relative `files` sources resolve against, like a bundler root. It never changes published paths. It is relative to the working directory, or absolute within it or within Claude's scratchpad directory. It requires `files`, except on an Artifact made from a type, where a data `file_path` under it is served at its path relative to it. */
+      /** The base directory that relative `files` sources resolve against, like a bundler root. It never changes the published path of a `files` entry. It is relative to the working directory, or absolute within it or within Claude's scratchpad directory. It requires `files`, except on an Artifact made from a type, where a data `file_path` is served at its path relative to `root`, unless a `files` map entry states its served path. Claude sends it with every such publish, set to the folder that holds the Artifact's files at their served paths. */
       root?: string
       /** publish only: true also pins the published artifact to the person's claude.ai sidebar once it is published. Claude passes it only when the person asked for that. A failed pin never fails the publish, and the result says so. */
       pin?: boolean
@@ -74,7 +67,7 @@ declare module 'claude-code' {
       type_query?: string
       /** list only: the name of a published Artifact type, as a 'types' listing shows it (case does not matter). The listing then shows the Artifacts made from that type instead of the person's gallery. Claude passes this or `type_url`, not both. */
       type?: string
-      /** quickstart only (required): what is being made — 'document' (text to read or edit together), 'slides' (a deck or one slide), 'design' (a visual design or prototype on a canvas), 'other' (anything else, or unsure). */
+      /** quickstart only (required): what is being made — 'document' (text to read or edit together), 'slides' (a deck or one slide), 'design' (a visual design or prototype on a canvas), 'other' (a dashboard that shows data, anything else, or unsure). */
       intent?: "document" | "slides" | "design" | "other"
       /** quickstart only: false when a design system's link is already in hand (it is then read with its own call) or one was declined. Omitted or true, the result lists the design systems (not for a document) and, for slides or a design, attaches the default one's README. */
       design_systems?: boolean
@@ -721,46 +714,11 @@ declare module 'claude-code' {
       /** How this suggestion started: 'user_asked' or 'proactive'. */
       trigger?: "user_asked" | "proactive"
     }
-    TaskCreate: {
-      /** A brief title for the task */
-      subject: string
-      /** What needs to be done */
-      description: string
-      /** Present continuous form shown in spinner when in_progress (e.g., "Running tests") */
-      activeForm?: string
-      /** Arbitrary metadata to attach to the task */
-      metadata?: {}
-    }
-    TaskGet: {
-      /** The ID of the task to retrieve */
-      taskId: string
-    }
-    TaskList: {}
     TaskStop: {
       /** The ID of the background task to stop. Agent-team teammates and named background agents are also accepted by agent ID or name. */
       task_id?: string
       /** Deprecated: use task_id instead */
       shell_id?: string
-    }
-    TaskUpdate: {
-      /** The ID of the task to update */
-      taskId: string
-      /** New subject for the task */
-      subject?: string
-      /** New description for the task */
-      description?: string
-      /** Present continuous form shown in spinner when in_progress (e.g., "Running tests") */
-      activeForm?: string
-      /** New status for the task */
-      status?: "pending" | "in_progress" | "completed" | "deleted"
-      /** Task IDs that this task blocks */
-      addBlocks?: string[]
-      /** Task IDs that block this task */
-      addBlockedBy?: string[]
-      /** New owner for the task */
-      owner?: string
-      /** Metadata keys to merge into the task. Set a key to null to delete it. */
-      metadata?: {}
     }
     TodoWrite: {
       /** The updated todo list */
@@ -964,6 +922,8 @@ declare module 'claude-code' {
       }
       own_files: string[]
       type_files: string[]
+      served_at?: string
+      served_root?: string
       files_written?: {
         path: string
         sha256: string
@@ -1107,6 +1067,10 @@ declare module 'claude-code' {
       }
       own_files?: string[]
       type_files?: string[]
+      served_at?: string
+      served_root?: string
+      new_files?: string[]
+      unchanged_files?: string[]
     } | {
       artifacts: Array<{
         title: string
@@ -1215,6 +1179,7 @@ declare module 'claude-code' {
           tier?: string
         }
         match_of?: number
+        ask_first?: boolean
         types?: {
           title: string
           type_url: string
@@ -1826,6 +1791,8 @@ declare module 'claude-code' {
       }
       own_files: string[]
       type_files: string[]
+      served_at?: string
+      served_root?: string
       files_written?: {
         path: string
         sha256: string
@@ -1969,6 +1936,10 @@ declare module 'claude-code' {
       }
       own_files?: string[]
       type_files?: string[]
+      served_at?: string
+      served_root?: string
+      new_files?: string[]
+      unchanged_files?: string[]
     } | {
       artifacts: Array<{
         title: string
@@ -2077,6 +2048,7 @@ declare module 'claude-code' {
           tier?: string
         }
         match_of?: number
+        ask_first?: boolean
         types?: {
           title: string
           type_url: string
@@ -2688,6 +2660,8 @@ declare module 'claude-code' {
       }
       own_files: string[]
       type_files: string[]
+      served_at?: string
+      served_root?: string
       files_written?: {
         path: string
         sha256: string
@@ -2831,6 +2805,10 @@ declare module 'claude-code' {
       }
       own_files?: string[]
       type_files?: string[]
+      served_at?: string
+      served_root?: string
+      new_files?: string[]
+      unchanged_files?: string[]
     } | {
       artifacts: Array<{
         title: string
@@ -2939,6 +2917,7 @@ declare module 'claude-code' {
           tier?: string
         }
         match_of?: number
+        ask_first?: boolean
         types?: {
           title: string
           type_url: string
@@ -3550,6 +3529,8 @@ declare module 'claude-code' {
       }
       own_files: string[]
       type_files: string[]
+      served_at?: string
+      served_root?: string
       files_written?: {
         path: string
         sha256: string
@@ -3693,6 +3674,10 @@ declare module 'claude-code' {
       }
       own_files?: string[]
       type_files?: string[]
+      served_at?: string
+      served_root?: string
+      new_files?: string[]
+      unchanged_files?: string[]
     } | {
       artifacts: Array<{
         title: string
@@ -3801,6 +3786,7 @@ declare module 'claude-code' {
           tier?: string
         }
         match_of?: number
+        ask_first?: boolean
         types?: {
           title: string
           type_url: string
@@ -4457,6 +4443,8 @@ declare module 'claude-code' {
       isImage?: boolean
       /** ID of the background task if command is running in background */
       backgroundTaskId?: string
+      /** @internal Path of the background task's output file on the machine that keeps the command, when that is not this process */
+      backgroundOutputPath?: string
       /** True if the user manually backgrounded the command with Ctrl+B */
       backgroundedByUser?: boolean
       /** @internal True if a plugin's turn abort moved the running command to the background */
@@ -5381,31 +5369,6 @@ declare module 'claude-code' {
       }>
       trigger?: "user_asked" | "proactive"
     }
-    TaskCreate: {
-      task: {
-        id: string
-        subject: string
-      }
-    }
-    TaskGet: {
-      task: {
-        id: string
-        subject: string
-        description: string
-        status: "pending" | "in_progress" | "completed"
-        blocks: string[]
-        blockedBy: string[]
-      } | null
-    }
-    TaskList: {
-      tasks: Array<{
-        id: string
-        subject: string
-        status: "pending" | "in_progress" | "completed"
-        owner?: string
-        blockedBy: string[]
-      }>
-    }
     TaskStop: {
       /** Status message about the operation */
       message: string
@@ -5415,16 +5378,6 @@ declare module 'claude-code' {
       task_type: string
       /** The command or description of the stopped task */
       command?: string
-    }
-    TaskUpdate: {
-      success: boolean
-      taskId: string
-      updatedFields: string[]
-      error?: string
-      statusChange?: {
-        from: string
-        to: string
-      }
     }
     TodoWrite: {
       /** The todo list before the update */

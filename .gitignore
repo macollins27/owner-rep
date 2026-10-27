@@ -1,8 +1,4 @@
 .claude-plugin/types/
 node_modules/
 *.js
-plans/
-NORTH_STAR.md
-archive/
-docs/north-star-history.md
 tests/live/compare/

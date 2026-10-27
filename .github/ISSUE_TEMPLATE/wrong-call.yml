@@ -1,0 +1,42 @@
+name: The rep got it wrong
+description: The rep missed something the agent skipped, flagged something that was fine, or gave a message that would send the work the wrong way.
+labels: ["judgment"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        These reports are the most useful thing you can send. Leave out anything private: secrets, keys, client names.
+  - type: textarea
+    id: wanted
+    attributes:
+      label: What you asked the agent for
+      description: The job in your own words, as you gave it to the agent.
+    validations:
+      required: true
+  - type: textarea
+    id: agent
+    attributes:
+      label: What the agent had really done
+      description: What was true at the time, as far as you know it.
+    validations:
+      required: true
+  - type: textarea
+    id: rep
+    attributes:
+      label: What the rep said
+      description: Paste the row, the Heads up or the card. A screenshot works too.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: should
+    attributes:
+      label: What it should have said
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Claude Code version
+      description: The output of `claude --version`.
+      placeholder: 2.1.310 (Claude Code)

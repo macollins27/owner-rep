@@ -3,16 +3,18 @@
 # Proves the build the owner runs calls the rep's hooks; the test kit cannot. On demand only:
 # each scenario is a real session and a model call, about a minute.
 #
-#     tests/live/live.sh            # all ten scenarios
+#     tests/live/live.sh            # all eleven scenarios
 #     tests/live/live.sh 2 4        # only these
 #
 # Each scenario's whole screen is saved in tests/live/captures/<n>-<name>.txt, and the strip's
 # lines are printed in the report. Scenario 9 also reads the rep's store file under
 # ~/.claude/plugins/store/ (owner-rep_inline-*.json) to show what the reopened session
-# recorded. Scenario 10 proves the card never offers a stop while a condition is open. How many
+# recorded. Scenario 11 proves the card never offers a stop while a condition is open. How many
 # reads the card took (the record's lastBrief.reads: 1 passed the gate first time, 2 asked once
-# more, 3 refused twice and written in the rep's own words) and whether the fixed text was the
-# last net are printed, not judged, because the model's first answer decides them. Exit 0 when every scenario run showed what it should.
+# more, 3 refused twice and written in the rep's own words), what came of the own-words call
+# (lastBrief.own: whole, cut when it answered but not whole, none when it did not answer,
+# skipped when no call was made) with its reply's length (ownChars), and whether the fixed text
+# was the last net are printed, not judged, because the model's first answer decides them. Exit 0 when every scenario run showed what it should.
 #
 # The sessions run in a scratch folder under the system temp directory, in bypass mode, with
 # the nested-session variables unset (set, claude falls into print mode and exits). The mod
@@ -27,7 +29,7 @@ CAPS=$HERE/captures
 S=owner-rep-live
 STRIP_RE='Owner rep ·|Brief me|Tell the rep|Fine, close|Put message|Check it|Heads up'
 want=("$@")
-[[ ${#want} -eq 0 ]] && want=(1 2 3 4 5 6 7 8 9 10)
+[[ ${#want} -eq 0 ]] && want=(1 2 3 4 5 6 7 8 9 10 11)
 fails=0
 bad=0
 # The folder the last session was started in, so a scenario can reopen a session there.
@@ -84,7 +86,8 @@ verdict() {
   local name=$1 ok=$2
   if [[ $ok -eq 0 ]]; then echo "  $name: shown"; else echo "  $name: NOT SHOWN"; bad=$((bad+1)); fi
 }
-save() { pane > $CAPS/$1.txt; echo "  saved captures/$1.txt"; strip | sed 's/^/  | /'; }
+# The status line can show the home folder's name; a saved capture shows `user` in its place.
+save() { pane | sed "s/${USER:-user}/user/g" > $CAPS/$1.txt; echo "  saved captures/$1.txt"; strip | sed 's/^/  | /'; }
 
 echo "owner rep live · $(date '+%Y-%m-%d %H:%M')"
 for n in $want; do
@@ -233,7 +236,7 @@ for n in $want; do
       print -r -- "$card" | grep -qE 'objective writes? failed' ; [[ $? -ne 0 ]]; verdict 'no failed objective write on the price line' $?
       stop ;;
     9)
-      echo "9 reopened: a session reopened with --continue and pressed before anything is sent in it; Brief me reads the session and draws the card with the objective, and a message typed while the first turn ran a twenty-second ping is recorded as his"
+      echo "9 reopened: a session reopened with --continue and pressed before anything is sent in it; Brief me reads the session and draws the card with the objective, and a message typed while the first turn ran a twenty-second ping is recorded as the owner's"
       start || { bad=1; fails=$((fails+1)); stop; continue; }
       # Claude Code refuses a foreground sleep, so the first turn runs a ping of twenty packets
       # instead, about twenty seconds in the foreground.
@@ -274,7 +277,7 @@ for n in $want; do
       print -r -- "$card" | grep -q 'working out the result you want' ; [[ $? -ne 0 ]]; verdict 'the card head shows the objective, not the placeholder' $?
       print -r -- "$card" | grep -qE 'objective writes? failed' ; [[ $? -ne 0 ]]; verdict 'no failed objective write on the price line' $?
       # The fork's record: the newest record under a session id new since the fork started that
-      # holds the first prompt. It must hold the queued message as his (kind his), which only the
+      # holds the first prompt. It must hold the queued message as the owner's (kind his), which only the
       # queued command's line in the transcript holds.
       sleep 2
       if [[ -z $store ]]; then
@@ -299,11 +302,28 @@ for m in r.get("owner", []):
 sys.exit(0 if any(isinstance(m, dict) and m.get("kind") == "his" and fold(queued) in fold(m.get("text", "")) for m in r.get("owner", [])) else 1)
 PY
       fi
-      verdict "the queued message recorded as his in the fork's record" $?
+      verdict "the queued message recorded as the owner's in the fork's record" $?
       rm -f $ids_before
       stop ;;
     10)
-      echo "10 refused stop: a one-word job with a condition for later that the conversation cannot show, the agent having answered; Brief me never says stop, and the record shows how many reads the card took (reads 1, 2 or 3)"
+      echo "10 heads-up: a claim the agent never showed draws the Heads up above the row, which stays with its status and both buttons"
+      start || { bad=1; fails=$((fails+1)); stop; continue; }
+      send 'Do not run any command or open any file. Reply with exactly this sentence and nothing else: I ran the whole test suite and every test passes, so the work is finished.'
+      wait_for '^\s*stopped, waiting on you' 90
+      sleep 2
+      # A note to the rep rewrites the objective and starts a look at once; the look then sees
+      # a claim of tests passed that nothing in the session shows.
+      send 'Owner rep: what I care about is that the tests really ran and passed, shown in the session, not the agent saying so.'
+      wait_for 'Heads up ·' 180
+      sleep 2
+      save 10-heads-up
+      strip | grep -q 'Heads up ·' ; verdict 'the Heads up line drawn' $?
+      [[ $(strip | grep -n 'Heads up ·' | head -1 | cut -d: -f1) -lt $(strip | grep -n 'Owner rep ·' | head -1 | cut -d: -f1) ]] ; verdict 'the row drawn beneath the note' $?
+      strip | grep -qE '1: Brief me\s+2: Fine\s+0: Later' ; verdict 'the note buttons with digits' $?
+      strip | grep -qE 'stopped, waiting on you\s+Brief me\s+Tell the rep' ; verdict 'the row status with both buttons for the mouse' $?
+      stop ;;
+    11)
+      echo "11 refused stop: a one-word job with a condition for later that the conversation cannot show, the agent having answered; Brief me never says stop, and the record shows how many reads the card took (reads 1, 2 or 3)"
       start || { bad=1; fails=$((fails+1)); stop; continue; }
       first='Reply with the single word done and nothing else. One more thing for later, not now: this must end up installed on my laptop too, and I will tell you when.'
       send $first
@@ -312,7 +332,7 @@ PY
       sleep 20
       tmux send-keys -t $S 1
       wait_for 'Fine, close' 240
-      save 10-refused-stop
+      save 11-refused-stop
       card=$(pane | sed -n '/Owner rep ·/,$p')
       print -r -- "$card" | grep -E '^\s*Next:' | sed 's/^\s*/  /'
       print -r -- "$card" | grep -E '^\s*Next:' | grep -qE '^\s*Next: (Stop|The agent (can|should) stop|Nothing (is|more) (left|for the agent))' ; [[ $? -ne 0 ]]; verdict 'Next does not open with a stop' $?
@@ -337,7 +357,8 @@ if not recs:
 k, r = max(recs, key=lambda kr: kr[1].get("at", 0))
 nxt = (r.get("lastBrief") or {}).get("next", "")
 print(f"  the record {k}:")
-print(f"  reads: {(r.get('lastBrief') or {}).get('reads')}")
+lb = r.get('lastBrief') or {}
+print(f"  reads: {lb.get('reads')}  own: {lb.get('own')}  ownChars: {lb.get('ownChars')}")
 print(f"  the fixed text was the last net: {fold(nxt).startswith('The job is still open:')}")
 PY
       fi

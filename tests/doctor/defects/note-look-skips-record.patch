@@ -1,11 +1,11 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 0afe637..ee37579 100644
+index 264fffa..bd3db1e 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -536,7 +536,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+@@ -621,7 +621,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
      return
    }
-   // Only the look after his note falls back to the record when there is nothing to fork.
+   // Only the look after the owner's note falls back to the record when there is nothing to fork.
 -  const result = await readSession($, sid, watchPrompt({ ...memoryOf(rec), context: await contextOf($) }, reason), reason === 'note')
 +  const result = await readSession($, sid, watchPrompt({ ...memoryOf(rec), context: await contextOf($) }, reason), false)
    const usage = 'usage' in result ? result.usage : null

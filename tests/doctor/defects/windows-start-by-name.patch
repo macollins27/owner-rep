@@ -1,12 +1,12 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index e0b3d06..aad22da 100644
+index 5c6f2ce..e91a226 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1043,7 +1043,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
+@@ -1203,7 +1203,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
      let summary: string | null = null
      if (own.exitCode === 0) {
        if (own.isStdoutTruncated) return null
--      const begins = await $.process.run(hostArgv(on, startFind(path)), { timeoutMs: HUMAN_READ_TIMEOUT_MS })
+-      const begins = await $.process.run(hostArgv(host, startFind(path)), { timeoutMs: HUMAN_READ_TIMEOUT_MS })
 +      const begins = await $.process.run(startFind(path), { timeoutMs: HUMAN_READ_TIMEOUT_MS })
        summary = begins.exitCode === 0 ? summaryStart(begins.stdout) : null
        if (summary === null) return humanItems(own.stdout)

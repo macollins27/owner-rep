@@ -63,6 +63,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument('names', nargs='*', help='defects to plant; default all')
     ap.add_argument('--keep', action='store_true', help='leave the throwaway copies behind')
+    ap.add_argument('--shard', metavar='K/N', help='plant only every Nth defect, starting at the Kth (1-based), so N machines can share the list')
     a = ap.parse_args()
 
     defects = json.loads((HERE / 'defects.json').read_text())
@@ -72,6 +73,13 @@ def main() -> int:
             print(f'no such defect: {", ".join(sorted(unknown))}', file=sys.stderr)
             return 2
         defects = [d for d in defects if d['name'] in a.names]
+    if a.shard:
+        k, n = (int(x) for x in a.shard.split('/'))
+        if not 1 <= k <= n:
+            print(f'bad shard {a.shard}: K must be between 1 and N', file=sys.stderr)
+            return 2
+        defects = defects[k - 1::n]
+        print(f'shard {k} of {n}: {len(defects)} defects')
 
     work = Path(tempfile.mkdtemp(prefix='owner-rep-doctor-'))
     stamp = dt.datetime.now().strftime('%Y-%m-%d %H:%M')

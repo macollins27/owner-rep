@@ -1,0 +1,46 @@
+name: Something is broken
+description: The rep doesn't draw, a button doesn't work, the check fails, or something errors.
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you saw, and what you expected to see.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Claude Code version
+      description: The output of `claude --version`.
+      placeholder: 2.1.310 (Claude Code)
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Where you run Claude Code
+      options:
+        - Terminal
+        - Claude desktop app
+        - Claude Code for VS Code
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - macOS
+        - Linux
+        - Windows
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Errors or output
+      description: Anything in the /plugin Errors tab, or a dim line in the transcript naming owner-rep.
+      render: text

@@ -1,31 +1,33 @@
 #!/bin/zsh
-# The side-by-side: two builds of the rep run on the same two real sessions, the card of each
+# The side-by-side: two builds of the rep run on the same real sessions, the card of each
 # captured, so a change to the brief or the gate is judged on what the owner would see.
 # Each run forks a real session (--resume <session> --fork-session, a fresh session id), so the
 # parent's transcript is never written; the script prints each parent file's checksum before and
 # after and they must match. The fork's records go to the store of a mod loaded with --plugin-dir
-# (owner-rep_inline-*.json), never the installed mod's. Four real sessions, each with several
-# model calls and the 300 s wait for the card: it costs real money and about fifteen minutes.
+# (owner-rep_inline-*.json), never the installed mod's. Two real sessions per session named,
+# each with several model calls and the 300 s wait for the card: with two sessions named it
+# costs real money and about fifteen minutes.
 #
-#     tests/live/compare.sh OLD_DIR NEW_DIR [MODEL]     # MODEL defaults to claude-opus-5-5
+#     MODEL=<model> tests/live/compare.sh OLD_DIR NEW_DIR SESSION_ID [SESSION_ID ...]
 #
+# Run it from the folder the sessions were recorded in, so --resume finds them. MODEL
+# defaults to claude-opus-5-5.
 # Per run: wait for the row, send nothing (a press with nothing to fork reads the session's own
 # record, so the card judges the parent's job, not a prompt of ours), wait until the row's head
 # leaves the placeholder, which means the objective is written (up to 180 s; the time is
-# printed), save the screen before, press 1, wait for the card, save it. The captures and report.txt are in tests/live/compare/ (git-ignored). Exit 0 when all four cards
+# printed), save the screen before, press 1, wait for the card, save it. The captures and report.txt are in tests/live/compare/ (git-ignored). Exit 0 when every card
 # were captured and the parents' files are unchanged.
 set -u
 HERE=${0:A:h}
 OUT=$HERE/compare
 S=owner-rep-cmp
-SESSIONS=(47d52e80-3995-4aa7-bd2e-ba4fdaea25ed c37172aa-3461-40e9-9d5c-5dbb387e97bc)
-PROJ=/Users/maxwellcollins/Developer/owner-rep
+PROJ=$PWD
 PROJECTS=${CLAUDE_CONFIG_DIR:-$HOME/.claude}/projects
-# The parent's transcript file, wherever its project folder is (the second session was
-# recorded under the agentsview project, not this one).
+# The parent's transcript file, wherever its project folder is (a session can be recorded
+# under another project and still be found by --resume).
 parent_of() { local f; f=("$PROJECTS"/*/$1.jsonl(N)); print -r -- ${f[1]:-}; }
-if (( $# < 2 )); then echo "usage: compare.sh OLD_DIR NEW_DIR [MODEL]"; exit 2; fi
-OLD=${1:A}; NEW=${2:A}; MODEL=${3:-claude-opus-5-5}
+if (( $# < 3 )); then echo "usage: MODEL=<model> compare.sh OLD_DIR NEW_DIR SESSION_ID [SESSION_ID ...]"; exit 2; fi
+OLD=${1:A}; NEW=${2:A}; SESSIONS=(${@:3}); MODEL=${MODEL:-claude-opus-5-5}
 mkdir -p $OUT
 
 pane() { tmux capture-pane -p -t $S 2>/dev/null; }

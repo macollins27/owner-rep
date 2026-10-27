@@ -1,8 +1,8 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 57aadf7..c1fa26f 100644
+index 264fffa..2c707c7 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -454,7 +454,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
+@@ -549,7 +549,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
        }
        // The row shows what the record holds, whichever write put it there,
        // while its session is the one on screen.
@@ -10,4 +10,4 @@ index 57aadf7..c1fa26f 100644
 +      await update($, readingA, () => after.objective)
      }
      onlyFirst = false
-     // A message of his or a note that came in during the write is written now:
+     // A message of the owner's or a note that came in during the write is

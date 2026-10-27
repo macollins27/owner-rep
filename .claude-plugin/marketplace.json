@@ -1,6 +1,14 @@
 {
   "name": "owner-rep",
-  "owner": { "name": "Maxwell Collins" },
-  "description": "The owner rep: a Claude Code mod that watches the agent on behalf of the person who owns the work.",
-  "plugins": [{ "name": "owner-rep", "source": "./" }]
+  "owner": { "name": "Maxwell Collins", "url": "https://github.com/macollins27" },
+  "description": "Owner Rep: a Claude Code mod that watches your coding agent for you and reports in plain English.",
+  "plugins": [
+    {
+      "name": "owner-rep",
+      "source": "./",
+      "description": "Watches your coding agent for you and reports in plain English: what is really done, what was left out, and the message to send it next. For people who direct agents but don't read code.",
+      "homepage": "https://github.com/macollins27/owner-rep#readme",
+      "keywords": ["agent-oversight", "code-review", "verification", "plain-english", "vibe-coding", "non-technical", "founders", "mod"]
+    }
+  ]
 }

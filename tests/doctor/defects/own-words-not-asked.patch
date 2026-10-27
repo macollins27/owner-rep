@@ -1,18 +1,20 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index e7289e3..ed91aef 100644
+index 264fffa..c25d8ce 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -683,34 +683,6 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
+@@ -701,39 +701,6 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
        const again = await ask(askAgain(first.open))
        if (!('reason' in again)) taken = again
      }
 -    // Refused twice (or refused once, the second ask unanswered): the parts the gate
 -    // replaced are written in the rep's own words by one plain call (no fork) over the
--    // objective, the open conditions, his messages and what the briefing itself found.
--    // A part it writes that still says stop, or a call that fails, leaves the rep's
--    // fixed text, and the press goes on. It writes card parts only, never the
--    // objective. With no objective written there is no such call.
+-    // objective, the open conditions, the owner's messages and what the briefing itself
+-    // found. A part it writes that still says stop, a reply that did not come back
+-    // whole (parseOwnWords), or a call that fails, leaves the rep's fixed text, and the
+-    // press goes on. It writes card parts only, never the objective. With no objective
+-    // written there is no such call.
 -    if (taken.refused && taken.replaced.length > 0 && first.open !== null && taken.open !== null) {
+-      reads += 1
 -      const rec = await loadRec($, sid)
 -      const result = await $.model
 -        .complete({
@@ -30,8 +32,11 @@ index e7289e3..ed91aef 100644
 -          after.tokens += tokensOf(result.usage)
 -          after.cached += cachedOf(result.usage)
 -        }
--        return result !== null && result.isAnswered ? parseBrief(result.text) : null
+-        return result !== null && result.isAnswered ? parseOwnWords(result.text) : null
 -      })
+-      const answered = result !== null && result.isAnswered
+-      ownChars = answered ? result.text.length : 0
+-      ownRead = !answered ? 'none' : own === null ? 'cut' : 'whole'
 -      taken = { ...taken, answer: takeOwnWords(taken.answer, taken.replaced, own) }
 -    }
      const a = taken.answer
