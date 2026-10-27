@@ -56,10 +56,11 @@ entry that proves the test bites (added 14 Oct 2026; the objective's rules 15 Oc
 | A note to the rep typed after other text (at the start of a line, after a sentence's end with any closing quote or bracket, or glued with its capitalised prefix to a letter, a digit or a sentence's end) goes to the rep only: the agent gets the text before it, recorded as the owner's message, and the note is numbered after it; the prefix in the middle of a sentence, glued to anything else, or inside a slash command's arguments is left as their words; a prefix after text with nothing after it notes nothing and a toast says so | `noteSplit finds a note…`, `rule: a note typed after other text…`, `rule: a prefix inside a slash command's arguments…` | `note-after-text-leaks`, `glued-note-after-any`, `note-after-quote-missed`, `note-split-in-command`, `empty-note-silent` |
 | A new job closes the old objective; its result is listed as closed and the earlier job's messages leave the writer; a seeded session whose first write says the new job opened at a later message of the owner's starts the job there, and the earlier job's messages leave the writer and the briefing | `rule: a new job closes…`, `rule: a seeded session that held more than one job…` | `earlier-job-leaks`, `first-write-new-job-ignored` |
 | A write that lands late cannot take a newer write's place, and a message during a write is written after it | `rule: a write that lands late…` | `late-look-wins` |
-| The revision line comes back before the parts that restate the agent's work when the card fills the band | `fillCard gives the message the rows that remain…` | `revised-line-folds-first` |
+| The revision line is part of the judgment, one row from the start, so a message that takes every row left never crowds it out | `fillCard gives the message the rows that remain…` | `revised-line-folds-first` |
 | The message box takes the rows the judgment leaves, never one row when more remain | `fillCard gives the message the rows that remain…` | `card-cut-with-rows-empty` |
 | The extras (revision, does, check price, spend, the objective whole) come back only after the message has its rows | `fillCard gives the message the rows that remain…` | `extras-before-message` |
 | The count line under the head outlasts the judgment's later rows when the card is short of rows | `fillCard shortens the judgment to one row each…` | `count-line-dropped-first` |
+| On a band too short for the message's box between the head and the buttons (a 24-row terminal), the box goes, the buttons stay, and Put message in prompt still carries the message whole | `fillCard shortens the judgment to one row each…`, `rule: the card heads with the result and a count line…` | `message-box-hides-buttons` |
 | The check runs in a throwaway copy of the project, fenced, and the copy is removed when the run ends; where the fence cannot start the run refuses to start, and no command can ask to run outside it | `rule: the check runs in a throwaway copy…`, `the checker: its prompt names the session…` | `check-outside-copy`, `room-bypassed`, `fence-unavailable-runs`, `fence-way-out-kept` |
 | The fence guards the main places in the home whose contents run later (the shell's startup files, git's settings, the package managers' and other tools' settings, the cloud tools' settings, Node's fallback module folders, Python's add-on folders, npx's installs, rustup's toolchains, the whole of Claude Code's configuration, its install, the login programs folder, and for each command-path folder in the home, and each place in the home a path folder or a link in one leads to, the install it belongs to, the question asking each folder and its links, never the folders inside it, one name to each readlink, with thirty seconds to answer, the caches and other shared folders never guarded whole, the folder alone when that install would hold the copies and never one holding them), and the brief names the main ones and says no list names every one rather than saying every write outside the copy is denied | `the checker: its prompt names the session…`, `rule: the check runs in a throwaway copy…`, `installOf guards a command-path folder…`, `rule: the check asks, outside the fence, where the command path's folders…`, `pathLinksArgv asks find…`, `holdsCopiesOf names the folders…` | `fence-runs-later-open`, `fence-path-ignored`, `fence-path-holds-copy`, `brief-overstates-fence`, `fence-startup-files-open`, `fence-gitconfig-open`, `fence-package-settings-open`, `fence-claude-config-open`, `fence-python-open`, `fence-path-folder-only`, `install-shared-folder-guarded`, `install-holds-copies-kept`, `brief-says-every-place`, `fence-npx-open`, `fence-rustup-open`, `fence-tool-settings-open`, `fence-node-home-open`, `fence-cloud-settings-open`, `path-links-ignored`, `path-links-not-asked`, `path-links-exit-read`, `path-links-cut-kept`, `links-throw-fails-check`, `install-caches-shared`, `path-links-depth-dirs`, `path-links-many-names`, `path-links-folder-unfollowed`, `path-links-short-wait` |
 | The home is read with any separator at its end dropped, so the fence's comparisons hold | `the home is HOME on a Mac or Linux and USERPROFILE on Windows…` | `home-slash-kept` |
@@ -139,10 +140,10 @@ objective it checked came from the writer's own call. The test now sends a furth
 the writer answers with `objective: holds` and a look whose answer carries an objective in
 the writer's shape, and asserts that the objective is unchanged.
 
-**Status.** 230 tests: the parsers, the status words (including the variable-first command, read
+**Status.** 236 tests: the parsers, the status words (including the variable-first command, read
 through the mounted strip), the note to the rep, the heads-up drawn above the row on the terminal and VS Code surfaces, the checker's prompt and tools, the row on
 the terminal, desktop and VS Code surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-
-failure toast, the sequence rules above, the card folding to a small band and drawn whole with no line given a width on the VS Code surface, whose band scrolls, the brief
+failure toast, the sequence rules above, the card filling the band in order of importance with the result and a count line at its head, its message box giving way on a band too short for it and its buttons kept at every height, and drawn whole with no line given a width on the VS Code surface, whose band scrolls, the brief
 carrying the whole-ask rule and the session's size as a figure, the helper count, the prompt
 box's refusals, the check's three failure paths, the word-wrapped row count, the checked card
 keeping its failed claims as it folds, the session end saving the record, and, from 15 Oct
@@ -339,6 +340,19 @@ Scenarios, one capture each:
     reply's length) say what came back, which the script prints beside `reads`. The refusal
     is shown in the kit tests on the real engine; the live scenario shows it only when the
     model's first answer says stop.
+12. Three heights: a first message that asks for a public repository with a README, a test
+    suite and a GitHub run and says to write the README and stop, a second that asks for a
+    licence file, then Brief me; the window is resized to 44, 24 and 80 rows with the card
+    open and the screen saved at each. The band has at most half the window, the prompt's
+    rows included: about 14 rows at 44, 5 at 24 and 32 at 80. At every height the buttons are
+    on screen and nothing has scrolled out of the band; from 44 the count line and Stands,
+    Means and Next are drawn; at 80 no line of the card ends cut, and the last ten words of the
+    next step and of the message the rep wrote (read from the record's `lastBrief`) are on
+    the card. Added on 26 Oct 2026 with the card that fills the band. Its first run found that
+    at 24 rows the card's least form, the head, one row of the message in its box and the
+    buttons, was taller than the band's five rows, so the buttons sat under the engine's
+    "↓ 2 more" row; the box now goes on such a band (`message-box-hides-buttons`), and the
+    rerun showed the head, Stands and the buttons at 24.
 
 ### The side-by-side
 
@@ -401,7 +415,17 @@ and none in the installed mod's. On 19 Oct 2026 all ten were run from the branch
 shorter brief and the own-words card, the sessions on Claude Code's default model, Fable 5.1:
 nine shown in full, and scenario 7 without its drafted message (above). That run's captures
 were not committed. On 24 Oct 2026 all eleven were run on the branch with main merged in, on
-Claude Code 2.1.310, and all eleven were shown; `tests/live/captures/` holds that run's.
+Claude Code 2.1.310, and all eleven were shown; `tests/live/captures/` holds that run's. On 26 Oct
+2026 all twelve were run on the `card-fills` branch with main merged in, on Claude Code
+2.1.311: nine shown. Scenario 6 had no revision line, because the filling card had put it
+among the extras after the message, which takes every row left; that was the fault main
+fixed on 14 Oct, and the line is now part of the judgment (`revised-line-folds-first`
+remade). Scenario 7 drew no message, as on 19 Oct. Scenario 8's card held a one-word reply
+not yet shown and listed it as left out. Scenarios 6 and 7 were run again after the fix and
+both were shown. Scenario 8, run again, left nothing out and said "nothing more is waiting
+on this job", wording the check did not accept; the check now takes "nothing more … to do"
+or "waiting", and a third run was shown. `tests/live/captures/` holds the last capture of
+each scenario.
 
 ## The doctor
 
@@ -434,12 +458,12 @@ the file). Never make one from an uncommitted tree: the checkout would wipe the 
 **Status.** Built: `tests/doctor/doctor.py`, with `defects.json` and one patch per defect in
 `tests/doctor/defects/`. Run it with `python3 tests/doctor/doctor.py`; it exits 1 when the
 clean suite fails or a defect survives, and stops before planting when the clean suite is
-not clean. Three hundred and four entries, all caught (on 19 Oct 2026 two patches,
+not clean. Three hundred and ten entries, all caught (on 19 Oct 2026 two patches,
 `windows-card-offers-check` and `own-words-not-asked`, had stopped applying once the card
 recorded its reads, and were remade and caught; on 24 Oct 2026 the same two stopped applying
 once the card recorded what came of the own-words call, and were remade and caught with the
 new `own-words-cut-taken`, each by a single-entry run; later that day `voice-contractions-unshifted`
-and `own-words-list-cut` were added and caught by single-entry runs): `strip-shows-command`, one or more per sequence
+and `own-words-list-cut` were added and caught by single-entry runs; on 26 Oct 2026 the card that fills the band, merged with main, brought `card-cut-with-rows-empty`, `count-line-dropped-first`, `extras-before-message` and `message-box-hides-buttons`, with the five fold entries remade against `fillCard`, all nine caught by single-entry runs and then by the full run): `strip-shows-command`, one or more per sequence
 rule above, `card-overflows-band`, `size-figure-dropped`, `whole-ask-rule-dropped`, and one
 per remaining hook path (`helper-not-counted`, `box-text-overwritten`, `fill-refusal-ignored`,
 `check-timeout-unreported`, `check-failure-swallowed`, `end-not-saved`), and six for a

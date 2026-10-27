@@ -1,14 +1,14 @@
 
- ▐▛███▛█   Claude Code v2.1.310
-▝▜██████▀  Fable 5.1 with medium effort · Claude Max
- ▝▝   ▝▝   /private/var/folders/mf/g9s916lj533085gbqr23mm9m0000gn/T/owner-rep-live.9SHh5j0x7J
+ ▐▛███▛█   Claude Code v2.1.311
+▝▜██████▀  Opus 5.5 with high effort · Claude Max
+ ▝▝   ▝▝   /private/var/folders/mf/g9s916lj533085gbqr23mm9m0000gn/T/owner-rep-live.HJDRHwku25
 
 
 ❯ Reply with the single word done and nothing else.
 
 ⏺ done
 
-✻ Worked for 3s · done 12:47 AM
+✻ Cogitated for 2s · done 8:56 PM
 
 ⏺ Prompt dropped by a hook: Owner rep: noted, and reading again. The agent did not see this.
 
@@ -33,12 +33,12 @@
 
 
                                                                                                                                                                       [-]
-◆ Owner rep · The agent answers with the single word "done" and nothing else.
+◆ Owner rep · A reply from the agent made of the single word "done" and nothing else.
   stopped, waiting on you   1: Brief me   2: Tell the rep
                                                                                                     Advisor Tool (experimental) is on and may use more tokens · /advisor
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ❯ 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  [Fable 5.1] │ owner-rep-live.9SHh5j0x7J +owner-rep-live.9SHh5j0x… +user git:(main) │ Single-word done reply
-  Context █░░░░░░░░░ 5% │ Usage █░░░░░░░░░ 11% (resets in 4h 23m)
+  [Opus 5.5] │ owner-rep-live.HJDRHwku25 +owner-rep-live.HJDRHwku… +user git:(master) │ Done
+  Context ░░░░░░░░░░ 4% │ Usage ██░░░░░░░░ 17% (resets in 3h 4m)
   ⏵⏵ bypass permissions on (shift+tab to cycle)

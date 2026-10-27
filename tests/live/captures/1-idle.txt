@@ -1,7 +1,7 @@
 
- ▐▛███▛█   Claude Code v2.1.310
-▝▜██████▀  Fable 5.1 with medium effort · Claude Max
- ▝▝   ▝▝   /private/var/folders/mf/g9s916lj533085gbqr23mm9m0000gn/T/owner-rep-live.PInjISd62B
+ ▐▛███▛█   Claude Code v2.1.311
+▝▜██████▀  Opus 5.5 with high effort · Claude Max
+ ▝▝   ▝▝   /private/var/folders/mf/g9s916lj533085gbqr23mm9m0000gn/T/owner-rep-live.tHBooL8Cgr
 
 
 
@@ -35,10 +35,10 @@
                                                                                                                                                                       [-]
 ◇ Owner rep · working out the result you want from your messages…
   idle   1: Brief me   2: Tell the rep
-                                                                                                                                                      ◐ medium · /effort
+                                                                                                                                                        ● high · /effort
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-❯ Try "edit <filepath> to..."
+❯ Try "how does <filepath> work?"
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  [Fable 5.1] │ owner-rep-live.PInjISd62B +owner-rep-live.PInjISd6… +user git:(main)
+  [Opus 5.5] │ owner-rep-live.tHBooL8Cgr +owner-rep-live.tHBooL8C… +user git:(master)
   Context ░░░░░░░░░░ 0%
   ⏵⏵ bypass permissions on (shift+tab to cycle) · ← for agents

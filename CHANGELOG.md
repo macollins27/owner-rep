@@ -3,6 +3,22 @@
 What changed in each release of Owner Rep, newest first. The full record is the
 [commit history](https://github.com/macollins27/owner-rep/commits/main).
 
+## 0.5.0 (26 October 2026)
+
+- **The card fills the space it has, most important first.** It opens with the result you
+  want and a count line under it ("Done means 6 things: 1 shown, 5 open"). Then come where
+  the work stands, what the agent's last message means, what was left out and what should
+  happen next, whole while there is room and shortened a row at a time when there is not.
+  The line saying the rep revised its reading of what you want stays with them. The message
+  to the agent takes every row that remains, and the smaller extras come last.
+  A taller window shows more of the card; in an 80-row terminal an ordinary card shows
+  whole. Before, the card was cut from the body up, so the message often showed one line
+  while rows sat empty.
+- **The buttons stay on screen in a short window.** In a terminal of about 24 rows the card
+  had no room for the message's box and its buttons, and the buttons slid out of reach. Now
+  the box gives way there, and Put message in prompt still carries the whole message.
+- In VS Code, whose card scrolls, the card is drawn whole in the new order, nothing cut.
+
 ## 0.4.1 (26 October 2026)
 
 - **Tested on more than one Claude Code build.** Every change now runs the tests on Claude

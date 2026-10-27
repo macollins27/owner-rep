@@ -51,10 +51,19 @@ still on screen under it.
 The **briefing** is a card: where the work really stands, what the agent's last message means,
 what was left out, what should happen next, and a message to the agent, written and ready. One
 press puts that message in the prompt box. Nothing is sent until the owner presses Enter. The
-card is folded to fit the rows the band has, body first and buttons never, so the digit that
-closes it or puts its message in the prompt always reaches a button on screen. Rows are
-counted as the band wraps them, at words, because a count by cells says one row too few for
-a long paragraph and the card then scrolls with its buttons out of reach.
+card heads with the result the owner wants and a count line under it ("Done means 6 things:
+1 shown, 5 open"), then fills the rows the band has in order of importance: the judgment
+whole while the rows allow it, each part shortened to a row when they do not, the most
+telling kept longest, and the line saying the rep revised its reading of the objective, and
+why, among them; then the message with every row that remains; then the extras (what the
+message does, the check's price, the spend line, the objective whole) while they fit. The band has at most half the window, the prompt's rows included:
+about 14 rows in a 44-row terminal and 32 in an 80-row one, where a card of ordinary length
+shows whole. The buttons are never the part that gives way, so the digit that closes the card
+or puts its message in the prompt always reaches a button on screen; on a band too short for
+the message's box between the head and the buttons, as in a 24-row terminal, the box goes and
+Put message in prompt still carries the message whole. Rows are counted as the band wraps
+them, at words, because a count by cells says one row too few for a long paragraph and the
+card then scrolls with its buttons out of reach.
 
 The **check** reads outside the conversation. It opens the session's full record through
 agentsview, a local tool that indexes every coding-agent session on the machine, opens the files the agent claims to
@@ -377,8 +386,8 @@ tall, that scrolls, drawn in the editor's proportional font; the extension count
 columns by the wider of "0" and "─" and draws a Box's width in `ch`, the width of "0", so
 a line given the band's width in columns ends short of the box's edge. There the rep gives
 no line a width, so each fills the box and wraps at its edge, and the card is drawn whole
-and scrolls; on the terminal each line has its width in columns and the card is folded to
-the band's rows (`sizesInColumns`). The box's own width is the extension's layout: the
+and scrolls; on the terminal each line has its width in columns and the card fills the
+band's rows in order of importance (`sizesInColumns`). The box's own width is the extension's layout: the
 strip is a child of the prompt box's column, beside the permission cards.
 
 ## Installing from a clone
@@ -392,9 +401,9 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 230 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 236 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
-tests/live/live.sh              # on demand: eleven real sessions in tmux, the strip captured to tests/live/captures
+tests/live/live.sh              # on demand: twelve real sessions in tmux, the strip captured to tests/live/captures
 ```
 
 GitHub runs the validation, the host-calls step, the host-commands script, the tests and the

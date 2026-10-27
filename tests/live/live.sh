@@ -283,7 +283,7 @@ for n in $want; do
       print -r -- "$card" | grep -qE '^\s*Stands:' ; verdict 'card body drawn' $?
       print -r -- "$card" | grep -qE '^\s*Left out:' ; [[ $? -ne 0 ]]; verdict 'nothing listed as left out' $?
       # Judged on the card's own lines, not the objective in its head, which names the word done.
-      print -r -- "$card" | grep -E '^\s*(Means|Next):' | grep -qiE 'finished|complete|nothing (is )?(left|waiting)|followed your instruction' ; verdict 'the card says the job is done' $?
+      print -r -- "$card" | grep -E '^\s*(Means|Next):' | grep -qiE 'finished|complete|nothing( more)? (is )?(left|waiting|to do)|followed your instruction' ; verdict 'the card says the job is done' $?
       print -r -- "$card" | grep -qE 'objective writes? failed' ; [[ $? -ne 0 ]]; verdict 'no failed objective write on the price line' $?
       stop ;;
     9)
