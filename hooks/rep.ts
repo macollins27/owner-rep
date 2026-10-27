@@ -2619,6 +2619,8 @@ export function fillCard(card: CardText, maxRows: number, cols: number): CardTex
     x => ({ ...x, result: card.result }),
     // The judgment, one row each, the most telling first.
     x => ({ ...x, stands: toRows(card.stands, 'Stands: ', 1, w) }),
+    // That the reading moved, and why, is the next thing the owner must not miss.
+    x => ({ ...x, revised: toRows(card.revised, '', 1, w) }),
     x => ({ ...x, checked: folded() }),
     x => ({ ...x, well: toRows(card.well, '', 1, w) }),
     x => ({ ...x, next: toRows(card.next, 'Next: ', 1, w) }),
@@ -2628,6 +2630,7 @@ export function fillCard(card: CardText, maxRows: number, cols: number): CardTex
     // The judgment whole, or with the rows that are left.
     x => ({ ...x, checked: k }),
     x => ({ ...x, leftOut: card.leftOut }),
+    x => ({ ...x, revised: grow(x, x.revised, card.revised, '') }),
     x => ({ ...x, well: grow(x, x.well, card.well, '') }),
     x => ({ ...x, next: grow(x, x.next, card.next, 'Next: ') }),
     x => ({ ...x, stands: grow(x, x.stands, card.stands, 'Stands: ') }),
@@ -2635,7 +2638,6 @@ export function fillCard(card: CardText, maxRows: number, cols: number): CardTex
     // The message with the rows that remain, less its box's two border rows.
     x => ({ ...x, message: toRows(card.message, '', Math.max(1, maxRows - cardRows({ ...x, message: '' }, cols) - 2), mw) }),
     // The extras, each while it fits.
-    x => ({ ...x, revised: card.revised }),
     x => ({ ...x, does: card.does }),
     x => ({ ...x, checkCost: card.checkCost }),
     x => ({ ...x, spent: card.spent }),

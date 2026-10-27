@@ -1615,7 +1615,8 @@ test('fillCard gives the message the rows that remain and adds the extras in ord
   expect(c.message.length).toBeLessThan(LONG('Message').length)
   expect(rowsOf(c.message, 90)).toBe(60 - cardRows({ ...c, message: '' }, 96) - 2)
   expect(rowsOf(c.message, 90)).toBeGreaterThan(1)
-  expect([c.revised, c.does, c.checkCost, c.spent, c.reading]).toEqual(['', '', '', '', ''])
+  // The revision line is part of the judgment, so it stays when the message takes the rest.
+  expect([c.revised, c.does, c.checkCost, c.spent, c.reading]).toEqual([CARD_TEXT.revised, '', '', '', ''])
   expect(cardRows(c, 96)).toBeLessThanOrEqual(60)
   // With more rows the message grows first, then the extras come back in order; the check's
   // price, fifteen rows, does not fit and is passed over for the ones after it.
@@ -1640,11 +1641,13 @@ test('fillCard gives the message the rows that remain and adds the extras in ord
 
 test('fillCard shortens the judgment to one row each before the count line goes, keeps stands last, and never the buttons out of reach', () => {
   const long = { ...CARD_TEXT, stands: LONG('Stands'), means: LONG('Means'), next: LONG('Next'), message: LONG('Message'), leftOut: ['one', 'two', 'three'] }
-  // Twelve rows: the head, the count line, one row of each part, the left-out list on one line, one row of the message.
-  const c = fillCard(long, 12, 96)
-  expect(cardRows(c, 96)).toBeLessThanOrEqual(12)
+  // Thirteen rows: the head, the count line, one row of each part, the revision line, the
+  // left-out list on one line, one row of the message.
+  const c = fillCard(long, 13, 96)
+  expect(cardRows(c, 96)).toBeLessThanOrEqual(13)
   expect(c.result).toBe(CARD_TEXT.result)
   expect(c.count).toBe(CARD_TEXT.count)
+  expect(c.revised).toBe(CARD_TEXT.revised)
   expect(rowsOf(`Stands: ${c.stands}`, 94)).toBe(1)
   expect(rowsOf(`Means: ${c.means}`, 94)).toBe(1)
   expect(rowsOf(`Next: ${c.next}`, 94)).toBe(1)
