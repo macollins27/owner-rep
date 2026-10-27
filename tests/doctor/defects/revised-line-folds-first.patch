@@ -1,12 +1,27 @@
-diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 17d8b62..acc9887 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -884,6 +884,7 @@ export function fitCard(card: CardText, maxRows: number, cols: number): CardText
-   const folds: Array<() => void> = [
-     () => (c = { ...c, spent: '' }),
-     () => (c = { ...c, does: '' }),
-+    () => (c = { ...c, revised: '' }),
-     () => (c = { ...c, checkCost: oneRow(c.checkCost, '') }),
-     () => (c = { ...c, means: oneRow(c.means, 'Means: ') }),
-     () => (c = { ...c, stands: oneRow(c.stands, 'Stands: ') }),
+@@ -2619,8 +2619,6 @@
+     x => ({ ...x, result: card.result }),
+     // The judgment, one row each, the most telling first.
+     x => ({ ...x, stands: toRows(card.stands, 'Stands: ', 1, w) }),
+-    // That the reading moved, and why, is the next thing the owner must not miss.
+-    x => ({ ...x, revised: toRows(card.revised, '', 1, w) }),
+     x => ({ ...x, checked: folded() }),
+     x => ({ ...x, well: toRows(card.well, '', 1, w) }),
+     x => ({ ...x, next: toRows(card.next, 'Next: ', 1, w) }),
+@@ -2630,7 +2628,6 @@
+     // The judgment whole, or with the rows that are left.
+     x => ({ ...x, checked: k }),
+     x => ({ ...x, leftOut: card.leftOut }),
+-    x => ({ ...x, revised: grow(x, x.revised, card.revised, '') }),
+     x => ({ ...x, well: grow(x, x.well, card.well, '') }),
+     x => ({ ...x, next: grow(x, x.next, card.next, 'Next: ') }),
+     x => ({ ...x, stands: grow(x, x.stands, card.stands, 'Stands: ') }),
+@@ -2638,6 +2635,7 @@
+     // The message with the rows that remain, less its box's two border rows.
+     x => ({ ...x, message: toRows(card.message, '', Math.max(1, maxRows - cardRows({ ...x, message: '' }, cols) - 2), mw) }),
+     // The extras, each while it fits.
++    x => ({ ...x, revised: card.revised }),
+     x => ({ ...x, does: card.does }),
+     x => ({ ...x, checkCost: card.checkCost }),
+     x => ({ ...x, spent: card.spent }),

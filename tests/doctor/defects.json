@@ -61,7 +61,7 @@
   },
   {
     "name": "card-overflows-band",
-    "breaks": "The briefing card is never folded to the band's rows, so a long card pushes its buttons out of the window where a digit cannot press them.",
+    "breaks": "The briefing card is never fitted to the band's rows, so a long card pushes its buttons out of the window where a digit cannot press them.",
     "patch": "card-overflows-band.patch",
     "fixed": "2026-10-14"
   },
@@ -163,7 +163,7 @@
   },
   {
     "name": "checked-lists-never-fold",
-    "breaks": "The checked lists are never folded to counts, so a small band loses whole parts of the card before the counts line it could have kept.",
+    "breaks": "The checked lists are never folded, so on a small band they push the judgment's parts off the card where a count line and the failed claims would have left room for them.",
     "patch": "checked-lists-never-fold.patch",
     "fixed": "tested 2026-10-14"
   },
@@ -187,7 +187,7 @@
   },
   {
     "name": "revised-line-folds-first",
-    "breaks": "The card folds the revision line away first, so on a band of ordinary height the owner never sees that the reading moved.",
+    "breaks": "The revision line waits among the extras after the message, so whenever the message is long enough to take the rows that are left the owner never sees that the reading moved.",
     "patch": "revised-line-folds-first.patch",
     "fixed": "2026-10-14"
   },
@@ -199,7 +199,7 @@
   },
   {
     "name": "holds-outlive-failures",
-    "breaks": "The checked card's first fold drops the failed claims with the holding ones, so on an ordinary band the owner sees a count and never which claim was false.",
+    "breaks": "The checked card's fold drops the failed claims with the holding ones, so on an ordinary band the owner sees a count and never which claim was false.",
     "patch": "holds-outlive-failures.patch",
     "fixed": "2026-10-14"
   },
@@ -1804,6 +1804,30 @@
     "breaks": "The gate reads the card's message as if it were a next step, so a message written in the owner's voice that has the agent wait for their sign-off or hand the work back to them stays on a refused card, and a message that has them wait until the agent has a log is refused.",
     "patch": "message-voice-unshifted.patch",
     "fixed": "2026-10-19"
+  },
+  {
+    "name": "card-cut-with-rows-empty",
+    "breaks": "The message is always cut to one row when the whole card does not fit, so it is cut while the rows it could fill sit empty or go to lines that matter less.",
+    "patch": "card-cut-with-rows-empty.patch",
+    "fixed": "2026-10-19"
+  },
+  {
+    "name": "count-line-dropped-first",
+    "breaks": "The count line comes back only after the judgment's parts have taken the rows, so on a small band the owner loses how many things done means while restatements of the agent's work keep a second row.",
+    "patch": "count-line-dropped-first.patch",
+    "fixed": "tested 2026-10-19"
+  },
+  {
+    "name": "extras-before-message",
+    "breaks": "The extras (the does line, the check's price, the spend line, the objective) are added before the message takes the rows that remain, so the message is cut to one row while the band shows lines that matter less.",
+    "patch": "extras-before-message.patch",
+    "fixed": "2026-10-19"
+  },
+  {
+    "name": "message-box-hides-buttons",
+    "breaks": "On a band too short for the message's box between the head and the buttons, as in a terminal of about 24 rows, the box stays and pushes the buttons out of the window where a digit cannot press them.",
+    "patch": "message-box-hides-buttons.patch",
+    "fixed": "2026-10-26"
   },
   {
     "name": "own-words-cut-taken",

@@ -3,7 +3,7 @@
 # Proves the build the owner runs calls the rep's hooks; the test kit cannot. On demand only:
 # each scenario is a real session and a model call, about a minute.
 #
-#     tests/live/live.sh            # all eleven scenarios
+#     tests/live/live.sh            # all twelve scenarios
 #     tests/live/live.sh 2 4        # only these
 #
 # Each scenario's whole screen is saved in tests/live/captures/<n>-<name>.txt, and the strip's
@@ -14,7 +14,10 @@
 # more, 3 refused twice and written in the rep's own words), what came of the own-words call
 # (lastBrief.own: whole, cut when it answered but not whole, none when it did not answer,
 # skipped when no call was made) with its reply's length (ownChars), and whether the fixed text
-# was the last net are printed, not judged, because the model's first answer decides them. Exit 0 when every scenario run showed what it should.
+# was the last net are printed, not judged, because the model's first answer decides them.
+# Scenario 12 resizes one session's window to 44, 24 and 80 rows with the card open: the buttons
+# stay on screen at each, the judgment's parts are drawn from 44, and nothing is cut at 80. Exit
+# 0 when every scenario run showed what it should.
 #
 # The sessions run in a scratch folder under the system temp directory, in bypass mode, with
 # the nested-session variables unset (set, claude falls into print mode and exits). The mod
@@ -29,7 +32,7 @@ CAPS=$HERE/captures
 S=owner-rep-live
 STRIP_RE='Owner rep ·|Brief me|Tell the rep|Fine, close|Put message|Check it|Heads up'
 want=("$@")
-[[ ${#want} -eq 0 ]] && want=(1 2 3 4 5 6 7 8 9 10 11)
+[[ ${#want} -eq 0 ]] && want=(1 2 3 4 5 6 7 8 9 10 11 12)
 fails=0
 bad=0
 # The folder the last session was started in, so a scenario can reopen a session there.
@@ -88,6 +91,54 @@ verdict() {
 }
 # The status line can show the home folder's name; a saved capture shows `user` in its place.
 save() { pane | sed "s/${USER:-user}/user/g" > $CAPS/$1.txt; echo "  saved captures/$1.txt"; strip | sed 's/^/  | /'; }
+
+# heights_record FIELD: 0 when the last ten words of lastBrief.FIELD, in the newest record that
+# holds scenario 12's first prompt, are in $card, read with the box's borders taken off and its
+# rows joined.
+heights_record() {
+  local stores store
+  stores=("${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/store/owner-rep_inline-*.json(Nom))
+  store=${stores[1]:-}
+  CARD=$card python3 -I - "$store" "$HEIGHTS_FIRST" "$1" <<'PY2'
+import json, os, sys
+store, first, field = sys.argv[1:4]
+fold = lambda t: " ".join(str(t).replace("│", " ").split())
+card = fold(os.environ.get("CARD", ""))
+try:
+    recs = [r for r in json.load(open(store)).get("sessions", {}).values() if any(isinstance(m, dict) and fold(m.get("text", "")) == fold(first) for m in r.get("owner", []))]
+except OSError:
+    recs = []
+if not recs:
+    print("  no record holding the first prompt")
+    sys.exit(1)
+text = fold((max(recs, key=lambda r: r.get("at", 0)).get("lastBrief") or {}).get(field, ""))
+tail = " ".join(text.split()[-10:])
+print(f"  the {field} ends: {tail}")
+sys.exit(0 if tail and tail in card else 1)
+PY2
+}
+# heights_card ROWS: the checks of scenario 12 on the card drawn in a window of ROWS rows, from
+# its head to its buttons. The band has at most half the window, the prompt's rows included, so
+# about 5 rows at 24, 14 at 44 and 32 at 80. At every height the buttons are on screen and
+# nothing scrolls; from 44 the count line and the three judgment parts are drawn; at 80 the
+# card is whole, nothing in it cut and the message whole in its box.
+heights_card() {
+  local rows=$1
+  card=$(pane | sed -n '/Owner rep ·/,/Fine, close/p' | sed 's/[│[:space:]]*$//')
+  echo "  at $rows rows the card takes $(print -r -- "$card" | wc -l | tr -d ' ') rows:"
+  print -r -- "$card" | grep -q 'Fine, close' ; verdict "$rows rows: the buttons on screen" $?
+  pane | grep -qE '↓ [0-9]+ more' ; [[ $? -ne 0 ]]; verdict "$rows rows: nothing scrolled out of the band" $?
+  print -r -- "$card" | grep -q 'Owner rep ·' ; verdict "$rows rows: the head drawn" $?
+  (( rows < 44 )) && return
+  print -r -- "$card" | grep -qE '^\s*Done means [0-9]+ thing' ; verdict "$rows rows: the count line drawn" $?
+  print -r -- "$card" | grep -qE '^\s*Stands:' ; verdict "$rows rows: Stands drawn" $?
+  print -r -- "$card" | grep -qE '^\s*Means:' ; verdict "$rows rows: Means drawn" $?
+  print -r -- "$card" | grep -qE '^\s*Next:' ; verdict "$rows rows: Next drawn" $?
+  (( rows < 80 )) && return
+  print -r -- "$card" | grep -q '…$' ; [[ $? -ne 0 ]]; verdict "$rows rows: no line of the card cut" $?
+  heights_record next ; verdict "$rows rows: Next whole, as the rep wrote it" $?
+  heights_record message ; verdict "$rows rows: the whole message in the box" $?
+}
 
 echo "owner rep live · $(date '+%Y-%m-%d %H:%M')"
 for n in $want; do
@@ -232,7 +283,7 @@ for n in $want; do
       print -r -- "$card" | grep -qE '^\s*Stands:' ; verdict 'card body drawn' $?
       print -r -- "$card" | grep -qE '^\s*Left out:' ; [[ $? -ne 0 ]]; verdict 'nothing listed as left out' $?
       # Judged on the card's own lines, not the objective in its head, which names the word done.
-      print -r -- "$card" | grep -E '^\s*(Means|Next):' | grep -qiE 'finished|complete|nothing (is )?(left|waiting)|followed your instruction' ; verdict 'the card says the job is done' $?
+      print -r -- "$card" | grep -E '^\s*(Means|Next):' | grep -qiE 'finished|complete|nothing( more)? (is )?(left|waiting|to do)|followed your instruction' ; verdict 'the card says the job is done' $?
       print -r -- "$card" | grep -qE 'objective writes? failed' ; [[ $? -ne 0 ]]; verdict 'no failed objective write on the price line' $?
       stop ;;
     9)
@@ -363,6 +414,27 @@ print(f"  the fixed text was the last net: {fold(nxt).startswith('The job is sti
 PY
       fi
       verdict 'the record read' $?
+      stop ;;
+    12)
+      echo "12 three heights: Brief me on a session with an objective, the card captured in a window of 44, 24 and 80 rows; the buttons stay on screen at every height, the count line and the judgment's parts are drawn from 44, and nothing is cut at 80"
+      start || { bad=1; fails=$((fails+1)); stop; continue; }
+      HEIGHTS_FIRST='This folder will be a public repository I show to employers, so it must read as serious engineering: a README, a test suite with as many tests as possible, and a run of those tests on GitHub on every push. Start with the README only: write a two-line README.md and stop.'
+      send $HEIGHTS_FIRST
+      wait_for '^\s*stopped, waiting on you|^\s*asking you' 120
+      send 'Now add a LICENSE file with the single line MIT and stop.'
+      sleep 3
+      wait_for '^\s*stopped, waiting on you|^\s*asking you' 120
+      sleep 20
+      tmux send-keys -t $S 1
+      wait_for 'Fine, close' 240
+      save 12-height-44
+      heights_card 44
+      tmux resize-window -t $S -y 24; sleep 3
+      save 12-height-24
+      heights_card 24
+      tmux resize-window -t $S -y 80; sleep 3
+      save 12-height-80
+      heights_card 80
       stop ;;
   esac
   [[ $bad -gt 0 ]] && fails=$((fails+1))

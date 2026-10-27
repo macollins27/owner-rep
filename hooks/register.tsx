@@ -26,6 +26,7 @@ import {
   cachedOf,
   checkArgv,
   checkCostText,
+  countLine,
   checkCopiesDir,
   checkCopyDir,
   checkSettings,
@@ -67,7 +68,7 @@ import {
   checkPrompt,
   doingFor,
   firstSentence,
-  fitCard,
+  fillCard,
   sizesInColumns,
   fit,
   fitTail,
@@ -737,6 +738,8 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     const a = taken.answer
     const brief = await changeRec($, sid, after => {
       const brief: Brief = {
+        result: after.objective === null ? '' : firstSentence(objectiveText(after.objective)),
+        count: countLine(after.objective),
         reading: after.objective === null ? '' : objectiveText(after.objective),
         revised: revisedLine(after.objective),
         well: a.well,
@@ -929,7 +932,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       ).answer
       const patch: Partial<Brief> = {
         checked,
-        ...(marked && after.objective !== null ? { reading: objectiveText(after.objective) } : {}),
+        ...(marked && after.objective !== null ? { reading: objectiveText(after.objective), count: countLine(after.objective) } : {}),
         well: card.well,
         stands: card.stands,
         means: card.means,
@@ -1720,9 +1723,9 @@ export const register: Register = on => {
     const tellButton4 = <Button key="tell" plain hotkey="4" label="Tell the rep" onPress={tell} />
     const headGlyph = marked ? '◆' : '◇'
     const headColor = marked ? 'warning' : 'suggestion'
-    // The row shows the result; the card shows the objective whole.
+    // The row shows the result; so does the card's head, with the count line under it
+    // and the objective whole at the card's end when the rows allow.
     const placeholder = 'working out the result you want from your messages…'
-    const readingText = reading === null ? placeholder : objectiveText(reading)
     const head = lead(headGlyph, headColor, 'Owner rep', reading?.result ?? placeholder)
 
     if (view === 'note' && note !== null && !hasBeneath) {
@@ -1756,12 +1759,23 @@ export const register: Register = on => {
     }
 
     if (view === 'brief' && brief !== null) {
-      // The card folded to the band's rows, so its buttons stay where a digit
-      // reaches them; the Put button still carries the whole message. On a surface
-      // whose band scrolls (`sizesInColumns` false) the card is drawn whole instead.
-      const whole = { ...brief, reading: brief.reading === '' ? readingText : brief.reading }
-      const shown = inColumns ? fitCard(whole, e.props.maxRows, cols) : whole
-      const cardHead = lead(headGlyph, headColor, 'Owner rep', shown.reading)
+      // The card filled to the band's rows in order of importance, so its buttons
+      // stay where a digit reaches them; the Put button still carries the whole
+      // message. On a surface whose band scrolls (`sizesInColumns` false) the card is
+      // drawn whole instead, nothing cut. A card pressed before an objective was held
+      // takes the one held now.
+      const held = brief.reading !== ''
+      const result = held ? (brief.result ?? firstSentence(brief.reading)) : reading === null ? placeholder : firstSentence(objectiveText(reading))
+      const objective = held ? brief.reading : reading === null ? '' : objectiveText(reading)
+      const whole = {
+        ...brief,
+        result,
+        count: held ? (brief.count ?? '') : countLine(reading),
+        // The objective whole is drawn only when it says more than the head.
+        reading: objective === result ? '' : objective,
+      }
+      const shown = inColumns ? fillCard(whole, e.props.maxRows, cols) : whole
+      const cardHead = lead(headGlyph, headColor, 'Owner rep', shown.result)
       const section = (label: string, text: string) =>
         text === '' ? undefined : (
           <Box paddingLeft={2} width={w(cols)}>
@@ -1774,6 +1788,13 @@ export const register: Register = on => {
       return (
         <Box flexDirection="column" marginTop={gap}>
           {cardHead}
+          {shown.count !== '' ? (
+            <Box paddingLeft={2} width={w(cols)}>
+              <Text dimColor wrap="wrap">
+                {shown.count}
+              </Text>
+            </Box>
+          ) : undefined}
           {shown.revised !== '' ? (
             <Box paddingLeft={2} width={w(cols)}>
               <Text dimColor wrap="wrap">
@@ -1878,6 +1899,13 @@ export const register: Register = on => {
               </Text>
             </Box>
           ) : undefined}
+          {shown.reading !== '' ? (
+            <Box paddingLeft={2} width={w(cols)}>
+              <Text dimColor wrap="wrap">
+                {shown.reading}
+              </Text>
+            </Box>
+          ) : undefined}
           {choices(
             shown.checked === null && !shown.isChecking && !checkBarred(shown.checkNote) ? (
               <Button
@@ -1892,7 +1920,7 @@ export const register: Register = on => {
                 }}
               />
             ) : undefined,
-            shown.message !== '' ? (
+            brief.message !== '' ? (
               <Button
                 key="put"
                 plain
@@ -1908,9 +1936,13 @@ export const register: Register = on => {
             <Button key="later" plain hotkey="0" label="Later" onPress={close} />,
             brief.size !== '' ? <Text dimColor>{brief.size}</Text> : undefined,
           )}
-          <Box paddingLeft={2}>
-            <Text dimColor>{shown.spent}</Text>
-          </Box>
+          {shown.spent !== '' ? (
+            <Box paddingLeft={2} width={w(cols)}>
+              <Text dimColor wrap="wrap">
+                {shown.spent}
+              </Text>
+            </Box>
+          ) : undefined}
         </Box>
       )
     }

@@ -1,0 +1,11 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2614,7 +2614,6 @@
+     spent: '',
+     reading: '',
+   }
+-  if (cardRows(c, cols) > maxRows) c = { ...c, message: '' }
+   const steps: Array<(x: CardText) => CardText> = [
+     x => ({ ...x, result: card.result }),
+     // The judgment, one row each, the most telling first.

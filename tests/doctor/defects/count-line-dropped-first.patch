@@ -1,0 +1,19 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2582,7 +2582,6 @@
+     x => ({ ...x, next: toRows(card.next, 'Next: ', 1, w) }),
+     x => ({ ...x, means: toRows(card.means, 'Means: ', 1, w) }),
+     x => ({ ...x, leftOut: oneLine(card.leftOut) }),
+-    x => ({ ...x, count: card.count }),
+     // The judgment whole, or with the rows that are left.
+     x => ({ ...x, checked: k }),
+     x => ({ ...x, leftOut: card.leftOut }),
+@@ -2590,6 +2589,7 @@
+     x => ({ ...x, next: grow(x, x.next, card.next, 'Next: ') }),
+     x => ({ ...x, stands: grow(x, x.stands, card.stands, 'Stands: ') }),
+     x => ({ ...x, means: grow(x, x.means, card.means, 'Means: ') }),
++    x => ({ ...x, count: card.count }),
+     // The message with the rows that remain, less its box's two border rows.
+     x => ({ ...x, message: toRows(card.message, '', Math.max(1, maxRows - cardRows({ ...x, message: '' }, cols) - 2), mw) }),
+     // The extras, each while it fits.

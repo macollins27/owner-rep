@@ -1,15 +1,14 @@
 
- ▐▛███▛█   Claude Code v2.1.310
-▝▜██████▀  Fable 5.1 with medium effort · Claude Max
- ▝▝   ▝▝   /private/var/folders/mf/g9s916lj533085gbqr23mm9m0000gn/T/owner-rep-live.2Td7VAgVpN
+ ▐▛███▛█   Claude Code v2.1.311
+▝▜██████▀  Opus 5.5 with high effort · Claude Max
+ ▝▝   ▝▝   /private/var/folders/mf/g9s916lj533085gbqr23mm9m0000gn/T/owner-rep-live.he8xfwzXpK
 
 
 ❯ Reply with the single word done and nothing else.
 
 ⏺ done
 
-✻ Cooked for 7s · done 12:55 AM
-
+✻ Cooked for 1s · done 9:16 PM
 
 
 
@@ -23,22 +22,23 @@
 
 
                                                                                                                                                                       [-]
-◇ Owner rep · The agent answers his message with the single word "done" and nothing more. He wants a short, exact reply. Most likely he is checking that the agent
-  responds and follows a plain instruction to the letter, so exactness is the standard. Done when: The agent's reply is the single word "done" (shown); The reply has
-  no other words, explanation, greeting, punctuation or formatting (shown); The agent does no other work and changes nothing in his projects while answering
-  (shown). Right now: The agent sends its reply, which is the single word "done" alone.
-  The agent replied with exactly the one word you asked for and did nothing else.
-  Stands: The job is complete. You asked for a one-word reply and got exactly that, with no extra work, no files changed, and no helpers started.
-  Means: You have the result you asked for. Nothing is waiting on the agent and nothing was left half-done.
-  Next: Nothing. The job is finished and the agent has no further step to take.
+◇ Owner rep · A reply from the agent that is the single word "done" and nothing else.
+  Done means 1 thing: 1 shown, 0 open
+  The agent did exactly what you asked: it answered with the one word "done" and did nothing else.
+  Stands: You asked for a one-word reply. The agent's whole answer is that one word, with nothing added.
+  Means: You have the proof you were after. The agent followed a plain instruction exactly and added nothing, and nothing is waiting on it.
+  Next: The agent stops. Nothing is left for it to do on this job.
   Check it starts a separate Claude Code run in a throwaway copy of the project, over the session record and the files. The first one measured used 210k fresh tokens
   plus 2.3 million re-read from cache, in 2 minutes.
-  3: Check it   2: Fine, close   4: Tell the rep   0: Later   conversation at 5 percent of its window
-  Owner rep: 2 looks, 1 objective write (3k tokens) this session; looks used 19k fresh tokens and 82k re-read from cache
-
+  A reply from the agent that is the single word "done" and nothing else. So that it is confirmed the agent follows a plain instruction exactly, adding nothing
+  beyond what was asked. Done when: The agent's reply is the one word "done", with no other words, explanation, formatting or added action (shown). Right now: The
+  agent replies with the single word "done".
+  3: Check it   2: Fine, close   4: Tell the rep   0: Later   conversation at 4 percent of its window
+  Owner rep: 3 looks, 1 objective write (3k tokens) this session; looks used 24k fresh tokens and 121k re-read from cache
+                                                                                                    Advisor Tool (experimental) is on and may use more tokens · /advisor
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ❯ 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-  [Fable 5.1] │ owner-rep-live.2Td7VAgVpN +owner-rep-live.2Td7VAgV… +user git:(main) │ Single-word done reply
-  Context █░░░░░░░░░ 5% │ Usage █░░░░░░░░░ 14% (resets in 4h 15m)
+  [Opus 5.5] │ owner-rep-live.he8xfwzXpK +owner-rep-live.he8xfwzX… +user git:(master) │ Done
+  Context ░░░░░░░░░░ 4% │ Usage ██░░░░░░░░ 21% (resets in 2h 44m)
   ⏵⏵ bypass permissions on (shift+tab to cycle)

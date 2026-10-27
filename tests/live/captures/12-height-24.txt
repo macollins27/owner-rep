@@ -1,0 +1,24 @@
+     7ca4bd5 Add README
+  ⎿  Created LICENSE (+1 -0)
+      1 +MIT
+
+⏺ I've added the LICENSE file and stopped. It holds the single line MIT and is saved as the second commit in the folder's history. Like the README, it isn't on GitHub yet
+  because this folder has no GitHub copy.
+
+  One thing to know before employers see it: GitHub won't recognise the word "MIT" by itself as a licence, so the repository page won't show the "MIT License" label.
+  Legally, the one word also doesn't clearly give anyone permission to use the code. The standard MIT licence is a short paragraph with your name and the year. Swapping
+  that in would fix both, and I can do it whenever you want.
+
+✻ Cooked for 9s · done 9:07 PM
+                                                                                                                                                                      [-]
+◇ Owner rep · A public repository fit to show employers as serious engineering, with a README, an MIT license file, a test suite holding as many tests as the code
+  allows, and an automatic run of those tests on GitHub at every push.
+  Stands: The folder holds only two files, the README and the licence, both saved in the folder's history. There is no code yet, so there is nothing to test. Noth…
+  3: Check it   1: Put message in prompt   2: Fine, close   4: Tell the rep   0: Later   conversation at 5 percent of its window
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ Now add the test suite and stop.
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  [Opus 5.5] │ owner-rep-live.YSJaFR21Qp +owner-rep-live.YSJaFR21… +user git:(master) │ README and CI setup
+  Context █░░░░░░░░░ 5% │ Usage ██░░░░░░░░ 20% (resets in 2h 53m)
+  ⏵⏵ bypass permissions on (shift+tab to cycle)

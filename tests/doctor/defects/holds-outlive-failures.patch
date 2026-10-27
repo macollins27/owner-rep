@@ -1,24 +1,19 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index cd8e6e0..13c6f75 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -942,18 +942,7 @@ export function fitCard(card: CardText, maxRows: number, cols: number): CardText
-     () => {
-       if (c.checked === null) return
-       const k = c.checked
--      const held = k.holds.length === 0 ? '' : `Checked: ${k.holds.length} hold.`
--      c = {
--        ...c,
--        checked: {
+@@ -2543,14 +2543,7 @@
+   const folded = (): CardText['checked'] =>
+     k === null
+       ? null
+-      : {
 -          holds: [],
--          wrong: k.wrong.map(i => oneRow(i, '  false  ')),
--          notShown: k.notShown.map(i => oneRow(i, '  not shown  ')),
--          changed: k.changed.map(i => oneRow(i, '  since then  ')),
--          looked: held,
+-          wrong: k.wrong.map(i => toRows(i, '  false  ', 1, w)),
+-          notShown: k.notShown.map(i => toRows(i, '  not shown  ', 1, w)),
+-          changed: k.changed.map(i => toRows(i, '  since then  ', 1, w)),
+-          looked: k.holds.length === 0 ? '' : `Checked: ${k.holds.length} hold.`,
 -          refused: k.refused,
--        },
--      }
-+      c = { ...c, checked: { holds: [], wrong: [], notShown: [], changed: [], looked: `Checked: ${k.holds.length} hold.`, refused: k.refused } }
-     },
-     () => (c = { ...c, reading: oneRow(c.reading, 'Owner rep · ') }),
-     () => {
+-        }
++      : { holds: [], wrong: [], notShown: [], changed: [], looked: `Checked: ${k.holds.length} hold.`, refused: k.refused }
+   const oneLine = (items: string[]): string[] =>
+     items.length === 0 ? [] : [toRows(items.length > 1 ? items.join('; ') : (items[0] ?? ''), '  - ', 1, w)]
+   // A part at one row grown to its rows and the rows left: whole when that fits.

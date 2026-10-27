@@ -63,10 +63,13 @@ every eighth model request and at every stop. It stays silent unless it finds so
 a cost to you: work dropped or shrunk, a claim not shown, a test never run, or the easy
 option taken in place of the right one. Then one "Heads up" line appears above the row.
 
-**A briefing when you press `1`.** The card says where the work really stands, what the
-agent's last message means, what was left out, and what should happen next. It also gives you
-the message to send the agent, written and ready. One press puts that message in your prompt
-box. Nothing is sent until you press Enter.
+**A briefing when you press `1`.** The card opens with the result you want and a count of
+how many things it takes to be done, how many are shown and how many are still open. Then it
+says where the work really stands, what the agent's last message means, what was left out,
+and what should happen next. It also gives you the message to send the agent, written and
+ready. The card fills the space it has, most important first, so a taller window shows more
+of it, and its buttons always stay on screen. One press puts that message in your prompt box,
+whole even when the card had room for only part of it. Nothing is sent until you press Enter.
 
 **An independent check when you press `3`.** A separate Claude Code run works in a throwaway
 copy of your project. It reads the session's full record, opens the real files and runs your
@@ -75,16 +78,20 @@ shown**, or **since then** (changed since the briefing).
 
 ## What it looks like
 
-These are from a real session. The agent had written a README and stopped, as it was told
-to. The briefing found what was still missing. The automatic test run on GitHub had never
-been started, a table in the README would render broken, nothing had been pushed, and the
-README promised "Python 3.9 or newer" when only 3.9 had been tested.
+These are from real sessions. In the first, the owner asked for a small word-counting tool
+that people install with pip, with a README, tests and a test run on GitHub, and told the
+agent to start with the README and stop. The agent did, carefully. The card heads with the
+result the owner wants and a count: six things make it done, one is shown, five are open. It
+then lists what the README alone leaves undone: no way to install the tool, a run command many
+Macs lack, a blank where the web address goes, no licence, no tests, no copy on GitHub. Its
+message asks for the rest of the job, each part shown working.
 
-![The briefing card on a real session: where the work stands, what it means, what was left out, and a message for the agent](docs/briefing.png)
+![The briefing card on a real session: the result wanted and a count of what done means, where the work stands, what it means, what was left out, and a message for the agent](docs/briefing.png)
 
-After **Check it**, a separate run went through the agent's claims against the session record
-and the files. Nine held. One could not be shown from where the check could reach, and the
-card says why.
+In the second, a different session, the agent had written a README and stopped. After **Check
+it**, a separate run went through the agent's claims against the session record and the
+files. Nine held. One could not be shown from where the check could reach, and the card says
+why.
 
 ![The same card after the check: one claim not shown, one marked since then, and the nine that held counted](docs/checked.png)
 
@@ -288,11 +295,11 @@ The full design is in [How the owner rep works](docs/how-it-works.md).
 
 ## Built to be trusted
 
-- **230 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
+- **236 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
   the tests.
-- **A doctor that plants bugs.** It plants 306 known defects in a throwaway copy, one at a
+- **A doctor that plants bugs.** It plants 310 known defects in a throwaway copy, one at a
   time, and fails the build if the tests miss any of them.
-- **Real sessions.** Eleven scenarios run in real Claude Code sessions, with the screen
+- **Real sessions.** Twelve scenarios run in real Claude Code sessions, with the screen
   captured in [`tests/live/captures`](tests/live/captures).
 - **Proven by hand.** Each part was pressed live by its owner before the next was built.
 - **Readable.** No dependencies, no build step, no minified code.
