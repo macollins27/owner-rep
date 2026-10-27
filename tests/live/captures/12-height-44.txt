@@ -1,0 +1,44 @@
+
+
+✻ Worked for 29s · done 8:54 PM
+
+❯ Now add a LICENSE file with the single line MIT and stop.
+
+  Thought for 5s, ran 1 shell command
+
+⏺ Bash(printf 'MIT\n' > LICENSE && cat LICENSE && git add LICENSE && git commit -q -m "Add LICENSE…)
+  ⎿  MIT
+     9fe4cdd Add LICENSE
+     b10260b Add README
+  ⎿  Created LICENSE (+1 -0)
+      1 +MIT
+
+⏺ I added the LICENSE file. It holds the single line "MIT", and I saved it as the project's second commit, on this Mac only like the first.
+
+  Before this goes public, the file needs to change. A lone "MIT" isn't a working license. The MIT license (a standard permission notice saying anyone may reuse the code)
+  only takes effect as its full short text with your name and the year. GitHub won't recognise the one-line version and won't show "MIT" on the repository page. An
+  employer looking at the repository would notice that. When the repository is getting ready to go public, the fix is to replace the line with the standard MIT text.
+
+✻ Crunched for 10s · done 8:54 PM
+                                                                                                                                                                      [-]
+◇ Owner rep · A public repository on GitHub that shows serious engineering to employers, with a README, an MIT license file, a test suite as large as can reasonably
+  be written, and those tests run automatically on GitHub on every push.
+  Done means 6 things: 0 shown, 6 open
+  Stands: Two files exist, and both are saved only in a scratch folder on your Mac, a kind the Mac clears out on its own. The README is a title and one sentence. The
+  title was guessed from that scratch folder's name, and the sentence describes tests that don't exist yet. The license file holds the word "MIT" and nothing mor…
+  Means: The agent did exactly the two small steps you asked for, and nothing more. The license file as you specified it won't count as an MIT license: GitHub won…
+  Left out:
+    - The work exists only in a folder the Mac may wipe, with no GitHub copy, so it could vanish.; The license file has one word, not the standard MIT wording wit…
+  Next: The agent moves the project to your normal projects folder and backs it up to a private GitHub copy. Then it replaces the license file with the full MIT
+  wording, and holds the README until you say what the project is.
+  ╭─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+  │ Before going further, protect the work and fix the license. 1. This project lives in a scratch folder the Mac can clear on its own. Move it into the normal…    │
+  ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+  3: Check it   1: Put message in prompt   2: Fine, close   4: Tell the rep   0: Later   conversation at 5 percent of its window
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ Now add the test suite and stop.
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  [Opus 5.5] │ owner-rep-live.m8MDWYnQQO +owner-rep-live.m8MDWYnQ… +user git:(main) │ README and CI setup for public repository
+  Context █░░░░░░░░░ 5% │ Usage ██░░░░░░░░ 17% (resets in 3h 6m)
+  ⏵⏵ bypass permissions on (shift+tab to cycle)

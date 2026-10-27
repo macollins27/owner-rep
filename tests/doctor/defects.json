@@ -1824,6 +1824,12 @@
     "fixed": "2026-10-19"
   },
   {
+    "name": "message-box-hides-buttons",
+    "breaks": "On a band too short for the message's box between the head and the buttons, as in a terminal of about 24 rows, the box stays and pushes the buttons out of the window where a digit cannot press them.",
+    "patch": "message-box-hides-buttons.patch",
+    "fixed": "2026-10-26"
+  },
+  {
     "name": "own-words-cut-taken",
     "breaks": "The own-words reply is read however it came back, so a reply cut short puts its half sentence on the card in place of the rep's fixed text.",
     "patch": "own-words-cut-taken.patch",

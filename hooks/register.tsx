@@ -1920,7 +1920,7 @@ export const register: Register = on => {
                 }}
               />
             ) : undefined,
-            shown.message !== '' ? (
+            brief.message !== '' ? (
               <Button
                 key="put"
                 plain

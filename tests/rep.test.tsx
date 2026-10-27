@@ -1660,6 +1660,12 @@ test('fillCard shortens the judgment to one row each before the count line goes,
   expect(rowsOf(eight.message, 90)).toBe(1)
   expect(eight.stands).not.toBe('')
   expect([eight.count, eight.means, eight.leftOut]).toEqual(['', '', []])
+  // Five rows, a 24-row terminal's band, cannot hold the message's box between the head and
+  // the buttons: the box goes and the buttons stay.
+  const five = fillCard(long, 5, 96)
+  expect(cardRows(five, 96)).toBeLessThanOrEqual(5)
+  expect(five.result).toBe(CARD_TEXT.result)
+  expect(five.message).toBe('')
 })
 
 test('fillCard keeps the checked lists with the judgment and folds them only when the base does not fit', () => {
@@ -1784,6 +1790,19 @@ test('rule: the card heads with the result and a count line, fills the band in o
   expect((await ui.find({ key: 'close' }))?.props.hotkey).toBe('2')
   expect((await ui.find({ key: 'later' }))?.props.hotkey).toBe('0')
   // Put message in prompt still carries the whole message.
+  await ui.press({ key: 'put' })
+  expect(filled).toBe(LONG('Message'))
+  await ui.unmount()
+  // Five rows, a 24-row terminal's band: no room for the message's box, so it goes and every
+  // button stays, Put message in prompt carrying the message whole.
+  filled = ''
+  ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...band(5) })
+  await ui.press({ key: 'rep' })
+  expect(await ui.find({ type: 'Text', text: /^Owner rep · / })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^Message sentence number 1 / })).toBeUndefined()
+  expect((await ui.find({ key: 'put' }))?.props.hotkey).toBe('1')
+  expect((await ui.find({ key: 'close' }))?.props.hotkey).toBe('2')
+  expect((await ui.find({ key: 'later' }))?.props.hotkey).toBe('0')
   await ui.press({ key: 'put' })
   expect(filled).toBe(LONG('Message'))
   await ui.unmount()

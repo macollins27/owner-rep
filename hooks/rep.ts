@@ -2557,8 +2557,11 @@ const toRows = (text: string, label: string, rows: number, width: number): strin
 // does line, the check's price, the spend line, the objective whole. When the
 // judgment fits whole this gives it whole with the message after it; when it
 // does not, the least telling parts are the ones shortened and dropped. The
-// message is never dropped: one row of it says what it is, and Put message in
-// prompt carries it whole.
+// message keeps one row, which says what it is, on every band that holds its box
+// between the head and the buttons; on a shorter one (a terminal of about 24
+// rows, whose band has half the screen less the prompt) the box goes, so the
+// buttons stay where a digit presses them, and Put message in prompt carries the
+// message whole on both.
 export function fillCard(card: CardText, maxRows: number, cols: number): CardText {
   if (cardRows(card, cols) <= maxRows) return card
   const w = Math.max(1, cols - 2)
@@ -2611,6 +2614,7 @@ export function fillCard(card: CardText, maxRows: number, cols: number): CardTex
     spent: '',
     reading: '',
   }
+  if (cardRows(c, cols) > maxRows) c = { ...c, message: '' }
   const steps: Array<(x: CardText) => CardText> = [
     x => ({ ...x, result: card.result }),
     // The judgment, one row each, the most telling first.

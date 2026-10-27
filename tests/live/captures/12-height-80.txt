@@ -1,0 +1,80 @@
+  ⎿  Created README.md (+2 -0)
+      1 +# owner-rep
+      2 +A small, carefully engineered project: every change is checked by an automated test suite that runs on GitHub on every push.
+  ⎿  (files that changed while this command ran, by the command or by another process; a convenience view, not a review or audit of the command)
+
+  Thought for 5s
+
+⏺ I wrote README.md with two lines and stopped there, as you asked.
+
+  # owner-rep
+  A small, carefully engineered project: every change is checked by an automated test suite that runs on GitHub on every push.
+
+  Things you should know:
+
+  - The description is generic. The folder was empty, with no code to describe, so I took the title from the folder's name. Once there's real code, the second line should
+    say what the project does.
+  - The second line describes work that isn't done yet. There are no tests and no automatic test run on GitHub so far. Those are your next steps, and the line becomes
+    true once they're built. Until then, don't make the repository public.
+  - It's saved on this Mac only. I saved it as the project's first commit (a saved snapshot in git, the version history tool). There's no copy on GitHub yet. I didn't
+    create one because you said to stop after the README. I also named the main line of history "main" instead of "master" because that's GitHub's standard name.
+
+✻ Worked for 29s · done 8:54 PM
+
+❯ Now add a LICENSE file with the single line MIT and stop.
+
+  Thought for 5s, ran 1 shell command
+
+⏺ Bash(printf 'MIT\n' > LICENSE && cat LICENSE && git add LICENSE && git commit -q -m "Add LICENSE…)
+  ⎿  MIT
+     9fe4cdd Add LICENSE
+     b10260b Add README
+  ⎿  Created LICENSE (+1 -0)
+      1 +MIT
+
+⏺ I added the LICENSE file. It holds the single line "MIT", and I saved it as the project's second commit, on this Mac only like the first.
+
+  Before this goes public, the file needs to change. A lone "MIT" isn't a working license. The MIT license (a standard permission notice saying anyone may reuse the code)
+  only takes effect as its full short text with your name and the year. GitHub won't recognise the one-line version and won't show "MIT" on the repository page. An
+  employer looking at the repository would notice that. When the repository is getting ready to go public, the fix is to replace the line with the standard MIT text.
+
+✻ Crunched for 10s · done 8:54 PM
+                                                                                                                                                                      [-]
+◇ Owner rep · A public repository on GitHub that shows serious engineering to employers, with a README, an MIT license file, a test suite as large as can reasonably
+  be written, and those tests run automatically on GitHub on every push.
+  Done means 6 things: 0 shown, 6 open
+  Reading revised at 8:54 pm: #2 asks for a license file, which adds to the result, and sets a new step.
+  Stands: Two files exist, and both are saved only in a scratch folder on your Mac, a kind the Mac clears out on its own. The README is a title and one sentence. The
+  title was guessed from that scratch folder's name, and the sentence describes tests that don't exist yet. The license file holds the word "MIT" and nothing more.
+  There is no project code, no tests, no automatic test run and no copy on GitHub.
+  Means: The agent did exactly the two small steps you asked for, and nothing more. The license file as you specified it won't count as an MIT license: GitHub won't
+  show it as one and an employer would notice. The agent told you this itself, so the file needs the full standard wording before this goes public. There is also
+  nothing yet for tests to test. You need to say what this project actually is, because the README, the tests and the GitHub run all depend on it.
+  Left out:
+    - The work exists only in a folder the Mac may wipe, with no GitHub copy, so it could vanish.
+    - The license file has one word, not the standard MIT wording with your name and year, so it doesn't actually license the work.
+    - The README title was guessed from a scratch folder name and says nothing about what the project does, so it won't read as serious work.
+    - There's no project code, so a test suite has nothing to test until you say what the project is.
+    - No tests, no automatic run on GitHub, and no push to a public repository have been started.
+  Next: The agent moves the project to your normal projects folder and backs it up to a private GitHub copy. Then it replaces the license file with the full MIT
+  wording, and holds the README until you say what the project is.
+  Check it starts a separate Claude Code run in a throwaway copy of the project, over the session record and the files. The first one measured used 210k fresh tokens
+  plus 2.3 million re-read from cache, in 2 minutes.
+  ╭─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+  │ Before going further, protect the work and fix the license.                                                                                                     │
+  │ 1. This project lives in a scratch folder the Mac can clear on its own. Move it into the normal projects folder, create a private GitHub repository for it      │
+  │ under my account, and push both saved snapshots. Show me the push output and the repository's address. Keep it private for now.                                 │
+  │ 2. Replace the one-word license file with the full standard MIT license text, with my name and 2026. Push that too, and show that GitHub now recognises the     │
+  │ repository as MIT-licensed.                                                                                                                                     │
+  │ 3. Don't rewrite the README yet. I'll tell you what the project is, and the README, the tests and the GitHub test run will all be built around that.            │
+  ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+  The agent saves the work to a private GitHub copy outside the scratch folder, turns the license into a real MIT license, and shows proof of both.
+  3: Check it   1: Put message in prompt   2: Fine, close   4: Tell the rep   0: Later   conversation at 5 percent of its window
+  Owner rep: 3 looks, 2 objective writes (7k tokens) this session; looks used 18k fresh tokens and 138k re-read from cache
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ Now add the test suite and stop.
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  [Opus 5.5] │ owner-rep-live.m8MDWYnQQO +owner-rep-live.m8MDWYnQ… +user git:(main) │ README and CI setup for public repository
+  Context █░░░░░░░░░ 5% │ Usage ██░░░░░░░░ 17% (resets in 3h 6m)
+  ⏵⏵ bypass permissions on (shift+tab to cycle)
