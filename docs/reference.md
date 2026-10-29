@@ -350,15 +350,53 @@ reading; the row shows `result`.
 
 Owner messages are `OwnerMsg`s: `n`, `kind` (`his`, `note` or `draft`), `text` (cut to
 `HIS_CUT`, 6,000 characters, for the owner's messages and notes, the writer's only input, and to
-`OWNER_CUT`, 1,200, for a draft), and `prior`, the end of the agent's last answer before it
-(`fitTail` to `PRIOR_CUT`, 400, keeping the end, where the question a short reply answers
-usually is). `rec.counter` gives every message its number, drafts
+`OWNER_CUT`, 1,200, for a draft), and `prior`, the end of the body under it, the agent's words
+the message answered (`fitTail` to `PRIOR_CUT`, 400, keeping the end, where the question a short
+reply answers usually is). A message whose stored `text` is not all of what was sent (over
+`HIS_CUT`, or split into words for the agent and a note to the rep) keeps the whole as
+`src.sent`, and `ownerWithPrior` prints that in place of `text` for the writer. `rec.counter` gives every message its number, drafts
 included, so the guards compare numbers, never list lengths, and `trimOwner` keeps the job's
 messages whole up to `JOB_MAX` (200) and `OWNER_MAX` (40) from before it. `loadRec` migrates
 older records: a list of strings becomes numbered messages (`migrateOwner`, which reads the
 old marks), and a record with a `reading` and no `objective` gets `objective: null`, its old
 text in `rec.stale` (kept as the first version when the objective is written) and
 `rec.jobStart` at the old job's first message; the next start, press or message writes it.
+
+The turn the owner answered is captured from the stream, never read back. `turn.step` (main loop
+only; a helper's step, with `agentId`, passes through) returns `yield* tapStep(next(e), keep)`:
+`tapStep` (rep.ts) is an iterator whose `next`, `return` and `throw` are the inner stream's own,
+each result shown to `keep` on its way up, so every chunk, return value and throw passes as under
+`yield* next(e)`; only `text` chunks are kept (never thinking), by block (`addText`), and
+`closeStep`, in a `finally`, moves the step's blocks in block order into the turn's. Blocks and
+steps are joined with a blank line (`joinTurn`, `runningText`); the step's `answer` and
+`turn.complete.answer` are never the text, since they drop or merge blocks. A turn's entry in
+`live` is made at its main-loop `turn.start`, labelled `by` how it began (`notification` after a
+task-notification submit or a start text that begins `<task-notification>`, `continuation` for an
+empty start text, `owner` after a composer or bridge submit, else `other`; `lastOrigin`, set on
+every submit, says which). A step with no entry (a reload mid-turn) makes one marked `incomplete`
+(`the rep did not see this turn from its start`); a step whose index is not the one expected marks
+it `a step of this turn was missed`; past `TURN_TEXT_MAX` (= `SOURCE_MAX`, 1,000,000 characters)
+nothing more is kept and it is `longer than the rep keeps`. At `turn.complete`, before anything
+is awaited, the turn joins `completedHere` and `saveTurn` saves its text (after what a message
+typed into it took, `restOf`) as the source `t-<turnId>` and appends `{ turnId, by, src,
+incomplete, note: 'interrupted' when aborted }` to the record's `pending` (at most `PENDING_MAX`,
+50; past it the oldest is let go and `pendingDropped` counted); `saving` holds that save.
+
+A composer or bridge submit fixes what it answers before its first `await` (`snapshot`): the turns
+in `completedHere` then, and, when `e.turnId` names a running turn, what that turn had streamed
+since anything was last taken (`taken` moves to the end, so the rest goes to the next message); a
+`turnId` with no entry gives an empty cut marked `the turn running when the owner typed was not
+watched from its start`. After `await saving`, inside the change that records the message,
+`takeBody` takes from `pending` every turn that ended before the submit (in the snapshot, or not
+in `completedHere` at all, as after a reload) and appends the cut (`bodyOf`): the body, its
+`turns` spans (`{ by, from, to, note?, incomplete? }`, at most `TURNS_KEPT`, 20, the oldest merged
+into one span that counts its turns by `merged`) and `incomplete` with the first reason (turns let
+go first). The body is saved as `src.body` (`<n>-body`) on the owner's part (his message, or a
+note sent alone); a draft part gets none, and a draft sent unchanged still takes the turns it
+answered. A turn that ended after the submit stays pending for the next message. An empty, whole
+body adds no field. `saveSource` holds each source inline in the record (`where: 'inline'`,
+`sha: ''`); one over `SOURCE_MAX` is not kept and says why in `lost`. `leaveSession` clears
+`live`, `lastOrigin`, `saving` and `completedHere`.
 
 A session the rep holds no record of (its record fell out of the newest `SESSIONS_MAX`, it
 was forked with a new id, or it is older than the mod) has none of the owner's messages. `seedOwner`

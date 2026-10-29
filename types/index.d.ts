@@ -72,6 +72,34 @@ export type Brief = {
 
 export type View = 'row' | 'note' | 'reading' | 'brief'
 
+// The owner's messages as the session record keeps them, and the turns they answered, captured
+// from the stream: the same shapes as in hooks/rep.ts, declared again for the same reason.
+export type OwnerKind = 'his' | 'note' | 'draft'
+export type TurnBy = 'owner' | 'notification' | 'continuation' | 'other'
+// A saved text: `text` only when inline, `lost` when it cannot be read; `sha` is '' until
+// sources take fingerprints.
+export type SourceRef = { chars: number; sha: string; where: 'file' | 'inline' | 'memory'; text?: string; lost?: string }
+// One turn's place in a message's body; `merged` counts the turns a merged span holds.
+export type TurnSpan = {
+  by: TurnBy
+  from: number
+  to: number
+  note?: 'interrupted' | 'typed-into'
+  incomplete?: string
+  merged?: Partial<Record<TurnBy, number>>
+}
+// A finished turn the owner has not answered yet, in the record's `pending` list.
+export type PendingTurn = { turnId: string; by: TurnBy; src?: SourceRef; incomplete?: string; note?: 'interrupted' }
+export type OwnerMsg = {
+  n: number
+  kind: OwnerKind
+  text: string
+  prior: string
+  turns?: TurnSpan[]
+  incomplete?: string
+  src?: { body?: SourceRef; sent?: SourceRef }
+}
+
 declare module 'claude-code' {
   interface PluginState {
     'owner-rep': {

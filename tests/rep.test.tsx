@@ -14,7 +14,7 @@
 import type { On, SessionMessage } from 'claude-code'
 import { expect, mock, test as kitTest, type Engine, type TestBody, type TestOptions } from 'claude-code/testing'
 
-import { type Memory, CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fillCard, countLine, refusedLine, type CardText, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, HIS_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, OLD_SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, toAgentVoice, sectionOf, takeOwnWords, parseOwnWords, ownWordsPrompt, askAgain, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
+import { type Memory, CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fillCard, countLine, refusedLine, type CardText, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, HIS_CUT, TURN_TEXT_MAX, PENDING_MAX, TURNS_KEPT, tapStep, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, OLD_SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, toAgentVoice, sectionOf, takeOwnWords, parseOwnWords, ownWordsPrompt, askAgain, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
 
 // Every test starts with the session's working folder a Unix path, so what the suite reads does not
 // depend on the folder the kit gives it: on a Windows machine that folder is a drive path, which
@@ -2520,7 +2520,7 @@ test("rule: the last three cards' messages are kept, so an earlier card's messag
 // What the record holds of a message's body and of the turns not yet answered, read loosely.
 type CapSrc = { chars: number; sha: string; where: string; text?: string; lost?: string }
 type CapSpan = { by: string; from: number; to: number; note?: string; incomplete?: string; merged?: Record<string, number> }
-type CapMsg = OwnerMsg & { turns?: CapSpan[]; incomplete?: string; src?: { body?: CapSrc; sent?: CapSrc } }
+type CapMsg = Omit<OwnerMsg, 'turns' | 'incomplete' | 'src'> & { turns?: CapSpan[]; incomplete?: string; src?: { body?: CapSrc; sent?: CapSrc } }
 type CapRec = { owner: CapMsg[]; pending?: Array<{ turnId: string; by: string; src?: CapSrc; incomplete?: string }>; pendingDropped?: number }
 
 type Chunk = Record<string, unknown>
@@ -2635,6 +2635,24 @@ const RECORDED = (more: Record<string, unknown> = {}): Record<string, unknown> =
   },
 })
 
+// For tests outside this block: a turn whose one step streams the reply as one text chunk, as
+// the engine streams it, so the reply reaches the next message's body.
+const oneStep = (on: On) => {
+  on('turn.start', (_$, e) => ({ turnId: e.turnId }))
+  const replies = new Map<string, string>()
+  on('turn.step', async function* (_$, e) {
+    const text = replies.get(e.turnId) ?? ''
+    yield txt(text) as never
+    return { turnId: e.turnId, index: e.index, answer: text, toolUses: [], stopReason: 'end_turn', usage: null } as never
+  })
+  return async ($: Engine, turnId: string, text: string) => {
+    replies.set(turnId, text)
+    await $.turn.start({ text: '', turnId })
+    await drive($, turnId, 0)
+    await $.turn.complete(stop(turnId, text))
+  }
+}
+
 test('rule: the body under the owner\'s message is every step of the turn he answered, whole and in order, and each step\'s result reaches the top unchanged', async ($, on) => {
   const { rec, scripts } = capture(on)
   const plan = planOf(5000)
@@ -2729,7 +2747,8 @@ test('rule: a message typed in the middle of a block is given exactly what had s
   expect(await it.next()).toEqual({ done: false, value: txt('Step one: make ') })
   // The owner presses Enter while the block is half written.
   const sent = $.prompt.submit({ ...typed('yes, go'), turnId: 't2' } as never)
-  for (let i = 0; i < 5; i++) await new Promise(r => setTimeout(r, 0))
+  const tick = (globalThis as unknown as { setTimeout: (f: () => void, ms: number) => unknown }).setTimeout
+  for (let i = 0; i < 5; i++) await new Promise<void>(r => tick(r, 0))
   releaseStream()
   for (let r = await it.next(); r.done !== true; r = await it.next()) {
     // The rest of the step streams after the message was sent.
@@ -2838,7 +2857,7 @@ test('rule: the same short answer sent twice, to two turns, gets each turn as it
 
 test('rule: a turn longer than the rep keeps is marked incomplete', async ($, on) => {
   const { rec, scripts } = capture(on)
-  const max = 1_000_000
+  const max = TURN_TEXT_MAX
   await runTurn($, scripts, 't1', [{ chunks: [txt('a'.repeat(max - 10)), txt('b'.repeat(11)), ends('end_turn')] }])
   await send($, 'yes')
   const m = rec()?.owner.at(-1)
@@ -2848,7 +2867,7 @@ test('rule: a turn longer than the rep keeps is marked incomplete', async ($, on
 
 test('rule: past the most finished turns the rep holds, the oldest is let go and counted, and the next body says so with every kept turn labelled', async ($, on) => {
   const { rec, scripts } = capture(on)
-  const most = 50
+  const most = PENDING_MAX
   for (let i = 0; i <= most; i++) await runTurn($, scripts, `t${i}`, [said(`turn ${i} text.`)])
   expect(rec()?.pending).toHaveLength(most)
   expect(rec()?.pendingDropped).toBe(1)
@@ -2859,7 +2878,7 @@ test('rule: past the most finished turns the rep holds, the oldest is let go and
   expect(body).not.toContain('turn 0 text.')
   for (let i = 1; i <= most; i++) expect(body).toContain(`turn ${i} text.`)
   const spans = m?.turns ?? []
-  expect(spans).toHaveLength(20)
+  expect(spans).toHaveLength(TURNS_KEPT)
   expect(spans.every(s => typeof s.by === 'string' && s.by !== '')).toBe(true)
   expect(spans.reduce((n, s) => n + (s.merged === undefined ? 1 : Object.values(s.merged).reduce((a, b) => a + b, 0)), 0)).toBe(most)
   expect(rec()?.pending ?? []).toEqual([])
@@ -2901,6 +2920,262 @@ test('rule: a message split into words for the agent and a note to the rep keeps
 })
 
 // Guards: these hold today and must hold after the capture.
+
+// The tap against native `yield*`: two outer generators over two fresh copies of one scripted
+// inner stream, one `yield* inner` and one `yield* tapStep(inner, keep)`, driven with the same
+// calls. The same chunks come out, the same calls reach the inner with the same arguments, and
+// the same value or throw comes back.
+type TapChunk = { kind: string; index: number; text?: string }
+type TapCall = { method: 'next' | 'return' | 'throw'; arg?: unknown }
+type TapOut = { chunks: TapChunk[]; result: unknown; error?: string; calls: TapCall[]; kept: string[] }
+const tapRun = async (
+  make: (log: TapCall[]) => AsyncIterator<TapChunk, string>,
+  drive: (g: AsyncGenerator<TapChunk, string>) => Promise<{ chunks: TapChunk[]; result: unknown }>,
+  tapped: boolean,
+): Promise<TapOut> => {
+  const calls: TapCall[] = []
+  const kept: string[] = []
+  const inner = make(calls)
+  const iterable = { [Symbol.asyncIterator]: () => inner }
+  const outer = tapped
+    ? (async function* () {
+        return yield* tapStep(inner, c => kept.push(c.text ?? ''))
+      })()
+    : (async function* () {
+        return yield* iterable
+      })()
+  try {
+    const out = await drive(outer)
+    return { ...out, calls, kept }
+  } catch (err) {
+    return { chunks: [], result: undefined, error: String(err), calls, kept }
+  }
+}
+// An inner generator logged: every call it receives, with its argument.
+const logged = (log: TapCall[], g: AsyncGenerator<TapChunk, string>): AsyncIterator<TapChunk, string> => ({
+  next: (...a: [] | [unknown]) => {
+    log.push({ method: 'next', ...(a.length > 0 ? { arg: a[0] } : {}) })
+    return g.next(...(a as []))
+  },
+  return: (v?: string | PromiseLike<string>) => {
+    log.push({ method: 'return', arg: v })
+    return g.return(v as string)
+  },
+  throw: (e?: unknown) => {
+    log.push({ method: 'throw', arg: String(e) })
+    return g.throw(e)
+  },
+})
+const tc = (text: string, index = 0): TapChunk => ({ kind: 'text', index, text })
+const tapBoth = async (
+  make: (log: TapCall[]) => AsyncIterator<TapChunk, string>,
+  drive: (g: AsyncGenerator<TapChunk, string>) => Promise<{ chunks: TapChunk[]; result: unknown }>,
+) => {
+  const native = await tapRun(make, drive, false)
+  const tap = await tapRun(make, drive, true)
+  const seen = (o: TapOut) => ({ chunks: o.chunks, result: o.result, error: o.error, calls: o.calls })
+  expect(seen(tap)).toEqual(seen(native))
+  return { native, tap }
+}
+const readAll = async (g: AsyncGenerator<TapChunk, string>) => {
+  const chunks: TapChunk[] = []
+  for (;;) {
+    const r = await g.next()
+    if (r.done === true) return { chunks, result: r.value }
+    chunks.push(r.value)
+  }
+}
+
+test('guard: tapStep over a stream that ends gives what native yield* gives, its return value included', async () => {
+  const { native, tap } = await tapBoth(
+    log =>
+      logged(
+        log,
+        (async function* () {
+          yield tc('one ')
+          yield { kind: 'thinking', index: 1, text: 'never kept' }
+          yield tc('two', 2)
+          return 'the result'
+        })(),
+      ),
+    readAll,
+  )
+  expect(native.result).toBe('the result')
+  expect(native.chunks).toHaveLength(3)
+  expect(tap.kept).toEqual(['one ', 'two'])
+})
+
+test('guard: tapStep over a stream that throws after one chunk throws the same error, the chunk kept', async () => {
+  const { native, tap } = await tapBoth(
+    log =>
+      logged(
+        log,
+        (async function* () {
+          yield tc('before the error')
+          throw new Error('the stream broke')
+        })(),
+      ),
+    async g => {
+      const chunks: TapChunk[] = []
+      const first = await g.next()
+      if (first.done !== true) chunks.push(first.value)
+      await g.next()
+      return { chunks, result: 'unreached' }
+    },
+  )
+  expect(native.error).toBe('Error: the stream broke')
+  expect(tap.kept).toEqual(['before the error'])
+})
+
+test('guard: tapStep passes a return(v) from above down to the inner, and gives back what the inner returned', async () => {
+  let ran = false
+  const { native, tap } = await tapBoth(
+    log =>
+      logged(
+        log,
+        (async function* () {
+          try {
+            yield tc('first')
+            yield tc('never reached')
+            return 'unreached'
+          } finally {
+            ran = true
+          }
+        })(),
+      ),
+    async g => {
+      const first = await g.next()
+      const r = await g.return('stopped')
+      return { chunks: first.done === true ? [] : [first.value], result: r }
+    },
+  )
+  expect(ran).toBe(true)
+  expect(native.calls).toContainEqual({ method: 'return', arg: 'stopped' })
+  expect(native.result).toEqual({ done: true, value: 'stopped' })
+  expect(tap.kept).toEqual(['first'])
+})
+
+test('guard: tapStep gives back a different value the inner\'s finally returns after return(v)', async () => {
+  const { native } = await tapBoth(
+    log =>
+      logged(
+        log,
+        (async function* () {
+          try {
+            yield tc('first')
+            return 'unreached'
+          } finally {
+            // biome-ignore lint: the finally's own return is what is tested
+            return 'w from finally'
+          }
+        })(),
+      ),
+    async g => {
+      await g.next()
+      return { chunks: [], result: await g.return('v') }
+    },
+  )
+  expect(native.result).toEqual({ done: true, value: 'w from finally' })
+})
+
+test('guard: tapStep passes up, and keeps, a chunk the inner yields while cleaning up after return(v)', async () => {
+  const { native, tap } = await tapBoth(
+    log =>
+      logged(
+        log,
+        (async function* () {
+          try {
+            yield tc('first')
+            return 'unreached'
+          } finally {
+            yield tc(' cleaning up')
+          }
+        })(),
+      ),
+    async g => {
+      const chunks: TapChunk[] = []
+      const a = await g.next()
+      if (a.done !== true) chunks.push(a.value)
+      const b = await g.return('v')
+      if (b.done !== true) chunks.push(b.value)
+      const c = await g.next()
+      return { chunks, result: c }
+    },
+  )
+  expect(native.chunks).toEqual([tc('first'), tc(' cleaning up')])
+  expect(native.result).toEqual({ done: true, value: 'v' })
+  expect(tap.kept).toEqual(['first', ' cleaning up'])
+})
+
+test('guard: tapStep passes a throw from above down to the inner, and gives back its answer, a chunk or a rethrow', async () => {
+  const caught = await tapBoth(
+    log =>
+      logged(
+        log,
+        (async function* () {
+          try {
+            yield tc('first')
+          } catch {
+            yield tc('caught it')
+          }
+          return 'after the catch'
+        })(),
+      ),
+    async g => {
+      const chunks: TapChunk[] = []
+      const a = await g.next()
+      if (a.done !== true) chunks.push(a.value)
+      const b = await g.throw(new Error('from above'))
+      if (b.done !== true) chunks.push(b.value)
+      return { chunks, result: await g.next() }
+    },
+  )
+  expect(caught.native.calls).toContainEqual({ method: 'throw', arg: 'Error: from above' })
+  expect(caught.native.chunks).toEqual([tc('first'), tc('caught it')])
+  expect(caught.native.result).toEqual({ done: true, value: 'after the catch' })
+  expect(caught.tap.kept).toEqual(['first', 'caught it'])
+  const rethrown = await tapBoth(
+    log =>
+      logged(
+        log,
+        (async function* () {
+          try {
+            yield tc('first')
+          } catch (err) {
+            throw new Error(`rethrown: ${String(err)}`)
+          }
+          return 'unreached'
+        })(),
+      ),
+    async g => {
+      await g.next()
+      await g.throw(new Error('from above'))
+      return { chunks: [], result: 'unreached' }
+    },
+  )
+  expect(rethrown.native.error).toBe('Error: rethrown: Error: from above')
+})
+
+test('guard: tapStep over an inner with no return method behaves as native yield* on return(v)', async () => {
+  const plain = (log: TapCall[]): AsyncIterator<TapChunk, string> => {
+    let i = 0
+    return {
+      next: async () => {
+        log.push({ method: 'next' })
+        i += 1
+        return i <= 2 ? { done: false, value: tc(`chunk ${i}`) } : { done: true, value: 'the end' }
+      },
+    }
+  }
+  const { native, tap } = await tapBoth(plain, async g => {
+    const a = await g.next()
+    const r = await g.return('v')
+    const after = await g.next()
+    return { chunks: a.done === true ? [] : [a.value], result: { r, after } }
+  })
+  expect(native.result).toEqual({ r: { done: true, value: 'v' }, after: { done: true, value: undefined } })
+  expect(tap.kept).toEqual(['chunk 1'])
+})
 
 test('guard: every chunk of a step reaches the top unchanged and in order, thinking included', async ($, on) => {
   const { scripts } = capture(on)
@@ -2988,7 +3263,9 @@ test('guard: a step the top stops early, or one that throws from beneath, keeps 
   expect(rec()?.owner.at(-1)?.src?.body?.text).toBe('Arrived before the stop.')
   await $.turn.start({ text: '', turnId: 't2' })
   scripts.set('t2/0', { chunks: [txt('Arrived before the error.')], fail: new Error('the stream broke') })
-  await expect(drive($, 't2', 0)).rejects.toThrow('the stream broke')
+  // The kit answers a throw from beneath as it does today, under `yield* next(e)`: the hook is
+  // skipped and the call fails with no implementation (measured at f0d0e0d, before the capture).
+  await expect(drive($, 't2', 0)).rejects.toThrow('no implementation for turn.step')
   await $.turn.complete(stop('t2'))
   await settle($)
   await send($, 'go on')
@@ -3680,7 +3957,8 @@ test('rule: the agent\'s words before the owner\'s message are kept from their e
   on('model.fork', () => ({ value: { isAnswered: true, text: HOLDS, usage: USAGE } }))
   const writes = writer(on, () => OBJ('A pushed branch.', ['the branch pushed | open']))
   const answer = `${'Earlier work was done here and checked. '.repeat(20)}Shall I push the branch now?`
-  await $.turn.complete(stop('t1', answer))
+  const streamed = oneStep(on)
+  await streamed($, 't1', answer)
   await settle($)
   await $.prompt.submit(typed('yes'))
   await settle($)
@@ -6702,9 +6980,10 @@ test('rule: after a /clear the owner\'s messages are kept under the new session,
     return { value: { isAnswered: true, text: a.text, usage: USAGE } }
   })
   quietBand(on)
+  const streamed = oneStep(on)
   await $.prompt.submit(typed('build the first thing'))
   expect(await rowSays($, /^Owner rep · The first job, built\.$/)).toBe(true)
-  await $.turn.complete(stop('t1', 'Built the first part. Shall I go on?'))
+  await streamed($, 't1', 'Built the first part. Shall I go on?')
   await $.prompt.submit(typed('yes, and polish it'))
   holdFork = true
   const before = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })

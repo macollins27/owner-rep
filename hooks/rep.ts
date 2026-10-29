@@ -32,7 +32,49 @@ export const VERSIONS_MAX = 20
 // owner's own words, a note to the rep, or a draft of the rep's that the owner
 // sent) and the agent's last answer before it.
 export type OwnerKind = 'his' | 'note' | 'draft'
-export type OwnerMsg = { n: number; kind: OwnerKind; text: string; prior: string }
+export type OwnerMsg = {
+  n: number
+  kind: OwnerKind
+  text: string
+  // The last PRIOR_CUT characters of the body: the agent's words just before the message.
+  prior: string
+  // Where each turn sits in `src.body`; only when there is a body.
+  turns?: TurnSpan[]
+  // Why the body is not the whole of what the owner was answering.
+  incomplete?: string
+  // The body (the turns the message answered, captured as they streamed) and, when the stored
+  // `text` is not all of what the owner sent, the whole as sent.
+  src?: { body?: SourceRef; sent?: SourceRef }
+}
+
+// The turns the owner answered, captured from the stream (`tapStep`): limits, and the shapes kept.
+// Longer than this, a text is not kept (a source) or stops being collected (a turn).
+export const SOURCE_MAX = 1_000_000
+export const TURN_TEXT_MAX = SOURCE_MAX
+// Spans listed under one message; past this, the oldest turns' spans merge into one.
+export const TURNS_KEPT = 20
+// Finished turns held for the owner's next message; past this, the oldest is let go and counted.
+export const PENDING_MAX = 50
+// How a turn began: the owner's message, a background task finishing, the agent going on by
+// itself (a start with no text), or anything else.
+export type TurnBy = 'owner' | 'notification' | 'continuation' | 'other'
+// A saved text. `sha` is '' until the saved sources take fingerprints; `text` only when inline;
+// `lost` says why it cannot be read.
+export type SourceRef = { chars: number; sha: string; where: 'file' | 'inline' | 'memory'; text?: string; lost?: string }
+// One turn's place in a body. `merged` counts, by how they began, the turns a merged span holds.
+export type TurnSpan = {
+  by: TurnBy
+  from: number
+  to: number
+  note?: 'interrupted' | 'typed-into'
+  incomplete?: string
+  merged?: Partial<Record<TurnBy, number>>
+}
+// A finished turn not yet answered; no `src` when it had no text.
+export type PendingTurn = { turnId: string; by: TurnBy; src?: SourceRef; incomplete?: string; note?: 'interrupted' }
+// What a message typed into a running turn takes of it: the text streamed since anything was last taken.
+export type TurnCut = { by: TurnBy; text: string; incomplete?: string }
+export type Body = { text: string; turns: TurnSpan[]; incomplete?: string; used: string[] }
 
 export type Memory = {
   // The objective held for the job in hand; null until the writer has written it.
@@ -381,6 +423,91 @@ export function migrateOwner(old: unknown[], lastSent?: string): OwnerMsg[] {
   })
 }
 
+// A step's stream seen on its way up: an iterator whose `next`, `return` and `throw` are the
+// inner stream's own, each result shown to `onText` when it is a text chunk and passed on as it
+// came. It adds no loop of its own, so `yield*` over it carries every call, value and throw
+// exactly as `yield*` over the inner does; a method the inner lacks stays absent.
+export function tapStep<C extends { kind: string }, R>(it: AsyncIterator<C, R>, onText: (c: C) => void): AsyncIterableIterator<C, R> {
+  const see = (r: IteratorResult<C, R>): IteratorResult<C, R> => {
+    if (r.done !== true && r.value.kind === 'text') onText(r.value)
+    return r
+  }
+  const tap: AsyncIterableIterator<C, R> = {
+    next: (...a: [] | [unknown]) => it.next(...a).then(see),
+    [Symbol.asyncIterator]() {
+      return tap
+    },
+  }
+  const ret = it.return
+  const thr = it.throw
+  if (ret !== undefined) tap.return = (v?: R | PromiseLike<R>) => ret.call(it, v).then(see)
+  if (thr !== undefined) tap.throw = (err?: unknown) => thr.call(it, err).then(see)
+  return tap
+}
+
+// A turn's text: its blocks in order, each step's blocks after the last step's, joined with a
+// blank line; an empty block adds nothing.
+export const joinTurn = (blocks: readonly string[]): string => blocks.filter(b => b !== '').join('\n\n')
+
+// What a turn has streamed so far: its finished steps' blocks, then the running step's in block order.
+export const runningText = (entry: { blocks: readonly string[]; stepBlocks: ReadonlyMap<number, string> }): string =>
+  joinTurn([...entry.blocks, ...[...entry.stepBlocks.entries()].sort((a, b) => a[0] - b[0]).map(([, t]) => t)])
+
+// The text of a turn after what a message typed into it already took: the blank line that
+// joined the taken part to the rest belongs to neither.
+export function restOf(all: string, taken: number): string {
+  const rest = all.slice(taken)
+  return taken > 0 && rest.startsWith('\n\n') ? rest.slice(2) : rest
+}
+
+export const droppedReason = (n: number): string =>
+  `${n} earlier turn${n === 1 ? '' : 's'} since the owner's last message ${n === 1 ? 'was' : 'were'} not kept`
+
+// The body under a message of the owner's: the pending turns that ended before it was sent (in
+// `answered`, or not in `completedHere` at all, which means they ended before this module
+// started), oldest first, each read through its source, joined with a blank line; then `cut`,
+// what the running turn had streamed when it was typed into. A lost source, an incomplete turn
+// or turns let go (`dropped`) make the body incomplete, with the first reason; a lost text is
+// never guessed. Past TURNS_KEPT, the oldest turns' spans merge into one.
+export function bodyOf(
+  pending: readonly PendingTurn[],
+  answered: ReadonlySet<string>,
+  completedHere: ReadonlySet<string>,
+  cut: TurnCut | null,
+  dropped = 0,
+): Body {
+  const take = pending.filter(p => answered.has(p.turnId) || !completedHere.has(p.turnId))
+  const parts: Array<{ by: TurnBy; text: string; note?: TurnSpan['note']; incomplete?: string }> = take.map(p => ({
+    by: p.by,
+    text: p.src?.text ?? '',
+    note: p.note,
+    incomplete: p.incomplete ?? (p.src !== undefined && p.src.text === undefined ? (p.src.lost ?? "the turn's saved text could not be read") : undefined),
+  }))
+  if (cut !== null) parts.push({ by: cut.by, text: cut.text, note: 'typed-into', incomplete: cut.incomplete })
+  let text = ''
+  const spans: TurnSpan[] = []
+  for (const p of parts) {
+    if (p.text !== '' && text !== '') text += '\n\n'
+    const from = text.length
+    text += p.text
+    spans.push({ by: p.by, from, to: text.length, ...(p.note === undefined ? {} : { note: p.note }), ...(p.incomplete === undefined ? {} : { incomplete: p.incomplete }) })
+  }
+  const reasons = [dropped > 0 ? droppedReason(dropped) : undefined, ...parts.map(p => p.incomplete)].filter((r): r is string => r !== undefined)
+  return { text, turns: mergeSpans(spans), ...(reasons[0] === undefined ? {} : { incomplete: reasons[0] }), used: take.map(p => p.turnId) }
+}
+
+// At most TURNS_KEPT spans: the oldest merged into one that counts its turns by how they began.
+function mergeSpans(spans: TurnSpan[]): TurnSpan[] {
+  if (spans.length <= TURNS_KEPT) return spans
+  const old = spans.slice(0, spans.length - TURNS_KEPT + 1)
+  const merged: Partial<Record<TurnBy, number>> = {}
+  for (const s of old) merged[s.by] = (merged[s.by] ?? 0) + (s.merged === undefined ? 1 : Object.values(s.merged).reduce((a, b) => a + b, 0))
+  const first = old[0] as TurnSpan
+  const reason = old.find(s => s.incomplete !== undefined)?.incomplete
+  const one: TurnSpan = { by: first.by, from: first.from, to: (old[old.length - 1] as TurnSpan).to, merged, ...(reason === undefined ? {} : { incomplete: reason }) }
+  return [one, ...spans.slice(old.length)]
+}
+
 const list = (items: readonly string[], empty: string): string =>
   items.length > 0 ? items.map(s => `- ${s}`).join('\n') : empty
 
@@ -556,7 +683,9 @@ const ownerWithPrior = (list: OwnerMsg[]): string =>
   list
     .map(m => {
       const prior = m.prior.replace(/\s+/g, ' ').trim()
-      return prior === '' ? ownerLines([m]) : `${ownerLines([m])}\n    (the agent, just before: ${prior})`
+      // A message whose stored text is cut is printed whole, as the owner sent it.
+      const line = ownerLines([{ ...m, text: m.src?.sent?.text ?? m.text }])
+      return prior === '' ? line : `${line}\n    (the agent, just before: ${prior})`
     })
     .join('\n')
 

@@ -16,6 +16,18 @@ import {
   PRIOR_CUT,
   type OwnerKind,
   type OwnerMsg,
+  type PendingTurn,
+  type SourceRef,
+  type TurnBy,
+  type TurnCut,
+  type Body,
+  PENDING_MAX,
+  SOURCE_MAX,
+  TURN_TEXT_MAX,
+  bodyOf,
+  restOf,
+  runningText,
+  tapStep,
   trimOwner,
   migrateOwner,
   PAST_MAX,
@@ -203,6 +215,10 @@ type Rec = {
   objectiveFailed: number
   // Why the last failed write failed: the engine's reason, or that the answer could not be read.
   objectiveWhy: string
+  // Finished turns the owner has not answered yet, oldest first, at most PENDING_MAX; absent when none.
+  pending?: PendingTurn[]
+  // Turns let go from `pending` since the owner's last message; absent when none.
+  pendingDropped?: number
 }
 
 const isRec = (v: unknown): v is Rec =>
@@ -1141,18 +1157,157 @@ async function putMessage($: EngineInterface, text: string): Promise<void> {
   $.ui.toast('The message is in your prompt box. Enter sends it; nothing is sent until you do.')
 }
 
-// The agent's last answer, the "prior" of the owner's next message.
-let lastAnswer = ''
-
-// Records one owner message with the next number and the end of the agent's
-// last answer. The owner's messages and notes are kept to the larger cut,
-// since the writer reads nothing else; a draft of the rep's to the smaller.
-function pushOwner(rec: Rec, kind: OwnerKind, text: string, prior: string = lastAnswer): void {
+// Records one owner message with the next number and the end of what the agent said before it
+// (`prior`, the body's end). The owner's messages and notes are kept to the larger cut, since
+// the writer reads nothing else; a draft of the rep's to the smaller. `more` carries the body's
+// spans, why it is incomplete, and the saved sources.
+function pushOwner(rec: Rec, kind: OwnerKind, text: string, prior: string, more: Partial<OwnerMsg> = {}): void {
   const cut = kind === 'draft' ? OWNER_CUT : HIS_CUT
   rec.owner = trimOwner(
-    [...rec.owner, { n: ++rec.counter, kind, text: fit(text, cut), prior: fitTail(prior, PRIOR_CUT) }],
+    [...rec.owner, { n: ++rec.counter, kind, text: fit(text, cut), prior: fitTail(prior, PRIOR_CUT), ...more }],
     jobOf(rec),
   )
+}
+
+// The turns the owner answers, captured from the stream (docs/reference.md, "The turn the owner
+// answered"). A main-loop turn's text chunks are kept as they pass up to the screen, by block;
+// the turn's text is saved when it ends and listed in the record's `pending`; the owner's next
+// message takes every pending turn that ended before it, and what a turn he typed into had
+// streamed, as its body.
+type TurnLive = {
+  turnId: string
+  by: TurnBy
+  // A main-loop turn.start for this turn was heard.
+  sawStart: boolean
+  // The step index expected next.
+  nextIndex: number
+  // The finished steps' blocks, in order.
+  blocks: string[]
+  // The running step's text by block index.
+  stepBlocks: Map<number, string>
+  // Characters of the turn's text already given to a message typed into it.
+  taken: number
+  // Why the text is not the whole turn.
+  incomplete?: string
+  // Characters kept so far, checked against TURN_TEXT_MAX.
+  chars: number
+}
+const live = new Map<string, TurnLive>()
+// How the last submit came: its origin's kind, read by the next turn.start for how the turn began.
+let lastOrigin: { kind: string } | null = null
+// The last turn-end save; a message's body waits for it.
+let saving: Promise<void> = Promise.resolve()
+// The turns this module saw end, added the moment each ended.
+const completedHere = new Set<string>()
+
+const newTurn = (turnId: string, by: TurnBy, sawStart: boolean, nextIndex: number, incomplete?: string): TurnLive => ({
+  turnId,
+  by,
+  sawStart,
+  nextIndex,
+  blocks: [],
+  stepBlocks: new Map(),
+  taken: 0,
+  chars: 0,
+  ...(incomplete === undefined ? {} : { incomplete }),
+})
+
+// One text chunk kept; past TURN_TEXT_MAX nothing more is, and the turn is incomplete.
+function addText(entry: TurnLive, index: number, text: string): void {
+  if (entry.chars > TURN_TEXT_MAX) return
+  if (entry.chars + text.length > TURN_TEXT_MAX) {
+    entry.incomplete ??= 'longer than the rep keeps'
+    entry.chars = TURN_TEXT_MAX + 1
+    return
+  }
+  entry.chars += text.length
+  entry.stepBlocks.set(index, (entry.stepBlocks.get(index) ?? '') + text)
+}
+
+// A step ended, finished or not: its blocks, in block order, join the turn's.
+function closeStep(entry: TurnLive, index: number): void {
+  entry.blocks.push(...[...entry.stepBlocks.entries()].sort((a, b) => a[0] - b[0]).map(([, t]) => t))
+  entry.stepBlocks.clear()
+  entry.nextIndex = index + 1
+}
+
+// A text saved for the record. Held inline in the record; one over SOURCE_MAX is not kept, and says so.
+async function saveSource(_$: EngineInterface, _sid: string, _id: string, text: string): Promise<SourceRef> {
+  if (text.length > SOURCE_MAX) return { chars: text.length, sha: '', where: 'file', lost: `longer than the rep keeps (${text.length} characters)` }
+  return { chars: text.length, sha: '', where: 'inline', text }
+}
+
+// What a message of the owner's answers, fixed the moment it arrives: the turns seen to end
+// before it, and what the turn it was typed into had streamed, which that turn then gives no more.
+type Snap = { answered: Set<string>; cut: TurnCut | null }
+function snapshot(turnId: string | undefined): Snap {
+  const answered = new Set(completedHere)
+  if (turnId === undefined) return { answered, cut: null }
+  const entry = live.get(turnId)
+  if (entry === undefined) {
+    if (completedHere.has(turnId)) return { answered, cut: null }
+    return { answered, cut: { by: 'other', text: '', incomplete: 'the turn running when the owner typed was not watched from its start' } }
+  }
+  const all = runningText(entry)
+  const cut: TurnCut = { by: entry.by, text: restOf(all, entry.taken), ...(entry.incomplete === undefined ? {} : { incomplete: entry.incomplete }) }
+  entry.taken = all.length
+  return { answered, cut }
+}
+
+// Inside the change that records the message: the body taken from the record's pending turns,
+// which leave it, and the count of turns let go starts again.
+function takeBody(rec: Rec, snap: Snap): Body {
+  const pending = rec.pending ?? []
+  const body = bodyOf(pending, snap.answered, completedHere, snap.cut, rec.pendingDropped ?? 0)
+  const used = new Set(body.used)
+  const left = pending.filter(p => !used.has(p.turnId))
+  if (left.length > 0) rec.pending = left
+  else delete rec.pending
+  delete rec.pendingDropped
+  return body
+}
+
+// The body's fields on the message that is numbered next: none when it is empty and whole.
+async function bodyFields($: EngineInterface, sid: string, rec: Rec, body: Body): Promise<Partial<OwnerMsg>> {
+  if (body.text === '' && body.incomplete === undefined) return {}
+  const src = body.text === '' ? {} : { src: { body: await saveSource($, sid, `${rec.counter + 1}-body`, body.text) } }
+  return { turns: body.turns, ...(body.incomplete === undefined ? {} : { incomplete: body.incomplete }), ...src }
+}
+
+// The whole message as sent, kept on the part numbered next when its stored text is not all of it.
+async function withSent($: EngineInterface, sid: string, rec: Rec, more: Partial<OwnerMsg>, sent: string | null): Promise<Partial<OwnerMsg>> {
+  if (sent === null) return more
+  return { ...more, src: { ...more.src, sent: await saveSource($, sid, `${rec.counter + 1}-sent`, sent) } }
+}
+
+// A turn ended: its text, after what a message typed into it took, saved and listed as pending.
+function saveTurn($: EngineInterface, turnId: string, isAborted: boolean): void {
+  completedHere.add(turnId)
+  const entry = live.get(turnId)
+  live.delete(turnId)
+  const text = entry === undefined ? '' : restOf(runningText(entry), entry.taken)
+  const by: TurnBy = entry?.by ?? 'other'
+  const incomplete = entry === undefined ? 'the rep saw none of this turn' : entry.incomplete
+  const save = (async () => {
+    const id = await sessionId($)
+    const src = text === '' ? undefined : await saveSource($, id, `t-${turnId}`, text)
+    const turn: PendingTurn = {
+      turnId,
+      by,
+      ...(src === undefined ? {} : { src }),
+      ...(incomplete === undefined ? {} : { incomplete }),
+      ...(isAborted ? { note: 'interrupted' as const } : {}),
+    }
+    await changeRec($, id, rec => {
+      const pending = [...(rec.pending ?? []), turn]
+      while (pending.length > PENDING_MAX) {
+        pending.shift()
+        rec.pendingDropped = (rec.pendingDropped ?? 0) + 1
+      }
+      rec.pending = pending
+    })
+  })()
+  saving = Promise.all([saving, save.catch(() => undefined)]).then(() => undefined)
 }
 
 // Where Claude Code saves each session's transcript, by session id, as the classic hooks
@@ -1318,8 +1473,15 @@ async function seedOnce($: EngineInterface, sid: string): Promise<boolean> {
 
 // A note to the rep, typed behind the prefix: recorded as the owner's, marked
 // as said to the rep, and read at once. The agent never sees it.
-async function takeNote($: EngineInterface, sid: string, note: string): Promise<void> {
-  await changeRec($, sid, rec => pushOwner(rec, 'note', note))
+// Alone, it takes the body the snapshot fixed; after a prompt, the prompt took it and the note
+// keeps the same `prior`.
+async function takeNote($: EngineInterface, sid: string, note: string, from: { snap: Snap } | { prior: string }): Promise<void> {
+  if ('snap' in from) await saving
+  await changeRec($, sid, async rec => {
+    const body = 'snap' in from ? takeBody(rec, from.snap) : null
+    const more = body === null ? {} : await bodyFields($, sid, rec, body)
+    pushOwner(rec, 'note', note, body?.text ?? ('prior' in from ? from.prior : ''), await withSent($, sid, rec, more, note.length > HIS_CUT ? note : null))
+  })
 }
 
 // "Tell the rep": the prefix goes into the owner's own prompt box, the owner
@@ -1425,7 +1587,10 @@ async function enterSession($: EngineInterface, id: string): Promise<void> {
 // is the ended session's, so the next one starts from nothing of it.
 async function leaveSession($: EngineInterface): Promise<void> {
   ended = true
-  lastAnswer = ''
+  live.clear()
+  lastOrigin = null
+  saving = Promise.resolve()
+  completedHere.clear()
   lastInstant = null
   lastOther = ''
   await update($, readingA, () => null)
@@ -1467,7 +1632,10 @@ export const register: Register = on => {
   on('prompt.submit', async ($, e, next) => {
     // The engine stamps the origin; the test kit's own submit carries none.
     const kind = e.origin?.kind ?? 'composer'
+    lastOrigin = { kind }
     if (kind === 'composer' || kind === 'bridge') {
+      // What this message answers, fixed now, before anything is awaited.
+      const snap = snapshot(e.turnId)
       // A note to the rep, alone or typed after a prompt to the agent. A slash
       // command's line is the command's: the engine applies no rewrite to it, so
       // a prefix in its arguments is never split off as a note.
@@ -1487,7 +1655,7 @@ export const register: Register = on => {
           const id = await sessionId($)
           // The owner's messages read from the session first, so the note is numbered after them.
           await seedOwner($, id).catch(() => false)
-          await takeNote($, id, note)
+          await takeNote($, id, note, { snap })
           // The note is the owner's and can move the objective: the writer reads it first.
           rebuildObjective($, id, 'note').catch(() => undefined)
           // A dropped prompt stays in the box for editing; a note the rep has
@@ -1515,7 +1683,11 @@ export const register: Register = on => {
         // after them.
         const seeded = await seedOwner($, id).catch(() => false)
         const view = await read($, viewA)
-        const { rec, split, isHis } = await changeRec($, id, async rec => {
+        // The turns this message answers are saved first.
+        await saving
+        const { rec, split, isHis, prior } = await changeRec($, id, async rec => {
+          // The body: every turn it answers, whole. A draft sent unchanged answered them too, and keeps none.
+          const body = takeBody(rec, snap)
           // A message the rep drafted and the owner sent is recorded as the rep's
           // words, marked, never as the owner's: the model must not grade against a job
           // the rep wrote. It is matched against the last few cards' messages as
@@ -1523,10 +1695,13 @@ export const register: Register = on => {
           // after the draft is their own message, numbered after it.
           const split = draftSplitAny(text, [...rec.drafts, rec.lastBrief?.message ?? ''])
           const isHis = split === null || split.his !== ''
-          if (split === null) pushOwner(rec, 'his', text)
-          else {
-            pushOwner(rec, 'draft', split.draft)
-            if (split.his !== '') pushOwner(rec, 'his', split.his)
+          if (split === null) {
+            // The whole as sent, when the stored text is not all of it: cut, or split from a note.
+            const sent = noted !== null ? e.text : text.length > HIS_CUT ? text : null
+            pushOwner(rec, 'his', text, body.text, await withSent($, id, rec, await bodyFields($, id, rec, body), sent))
+          } else {
+            pushOwner(rec, 'draft', split.draft, body.text)
+            if (split.his !== '') pushOwner(rec, 'his', split.his, body.text, await bodyFields($, id, rec, body))
             rec.lastSent = { text: split.draft, at: Date.now() }
             // A draft is the rep's words: it moves the step it asks for and nothing else.
             if (rec.objective !== null) rec.objective = { ...rec.objective, step: firstSentence(split.draft) }
@@ -1541,11 +1716,11 @@ export const register: Register = on => {
               await clearNote($)
             }
           }
-          return { rec, split, isHis }
+          return { rec, split, isHis, prior: body.text }
         })
         if (split !== null && onScreen(id)) await update($, readingA, () => rec.objective)
         // The note is numbered after the prompt it was typed behind.
-        if (note !== '') await takeNote($, id, note)
+        if (note !== '') await takeNote($, id, note, { prior })
         // A message of the owner's can move the objective: the writer reads it, never the agent's words.
         if (isHis || note !== '' || seeded) rebuildObjective($, id, note !== '' ? 'note' : 'message').catch(() => undefined)
         if (note !== '') {
@@ -1564,6 +1739,21 @@ export const register: Register = on => {
   })
 
   on('turn.start', async ($, e, next) => {
+    if (e.agentId === undefined) {
+      // How the turn began: a background task finishing, the agent going on by itself, the owner, or else.
+      const origin = lastOrigin?.kind
+      const text: string = typeof e.text === 'string' ? e.text : ''
+      const by: TurnBy =
+        origin === 'task-notification' || text.trimStart().startsWith('<task-notification>')
+          ? 'notification'
+          : text === ''
+            ? 'continuation'
+            : origin === 'composer' || origin === 'bridge'
+              ? 'owner'
+              : 'other'
+      lastOrigin = null
+      live.set(e.turnId, newTurn(e.turnId, by, true, 0))
+    }
     lastDoing = 'thinking'
     await setNow($, { isWorking: true, doing: 'thinking', mark: '' }).catch(() => undefined)
     return next(e)
@@ -1604,6 +1794,12 @@ export const register: Register = on => {
 
   on('turn.step', async function* ($, e, next) {
     if (e.agentId !== undefined) return yield* next(e)
+    let entry = live.get(e.turnId)
+    if (entry === undefined) {
+      entry = newTurn(e.turnId, 'other', false, e.index, 'the rep did not see this turn from its start')
+      live.set(e.turnId, entry)
+    }
+    if (e.index !== entry.nextIndex) entry.incomplete ??= 'a step of this turn was missed'
     if (e.index > 0 && e.index % CHECK_EVERY === 0 && !inFlight.has('look')) {
       inFlight.add('look')
       sessionId($)
@@ -1611,7 +1807,15 @@ export const register: Register = on => {
         .catch(() => undefined)
         .finally(() => inFlight.delete('look'))
     }
-    return yield* next(e)
+    // The step's stream passes up as it is; its text chunks are kept on the way.
+    const turn = entry
+    try {
+      return yield* tapStep(next(e), c => {
+        if (c.kind === 'text') addText(turn, c.index, c.text)
+      })
+    } finally {
+      closeStep(turn, e.index)
+    }
   })
 
   on('turn.complete', async ($, e, next) => {
@@ -1623,7 +1827,8 @@ export const register: Register = on => {
       )
       return next(e)
     }
-    lastAnswer = e.answer
+    // The turn's text saved first, before anything is awaited, so a message sent after this knows it ended.
+    saveTurn($, e.turnId, e.isAborted)
     const asking = /\?\s*$/.test(e.answer.trim())
     const doing = e.isAborted ? 'stopped by you' : asking ? 'asking you' : 'stopped, waiting on you'
     lastDoing = doing
