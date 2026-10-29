@@ -31,7 +31,9 @@ export const VERSIONS_MAX = 20
 // One message of the owner's: numbered in the order given, with its kind (the
 // owner's own words, a note to the rep, or a draft of the rep's that the owner
 // sent) and the agent's last answer before it.
-export type OwnerKind = 'his' | 'note' | 'draft'
+export type OwnerKind = 'his' | 'note' | 'draft' | 'plan'
+// Whether a message's plan or long words were read whole, are waiting to be, or could not be.
+export type ReadState = { state: 'read' | 'waiting' | 'unreadable'; why?: string }
 export type OwnerMsg = {
   n: number
   kind: OwnerKind
@@ -42,9 +44,19 @@ export type OwnerMsg = {
   turns?: TurnSpan[]
   // Why the body is not the whole of what the owner was answering.
   incomplete?: string
-  // The body (the turns the message answered, captured as they streamed) and, when the stored
-  // `text` is not all of what the owner sent, the whole as sent.
-  src?: { body?: SourceRef; sent?: SourceRef }
+  // What the owner took, when its JSON is at most TOOK_INLINE_BYTES; else '' and `src.took`.
+  // Present (`'approved' in m`, read only by `approvalOf`) when the message approves.
+  approved?: string
+  read?: ReadState
+  screen?: 'accepted' | 'edited' | 'rejected'
+  withDraft?: number
+  toolUseId?: string
+  // An approval of the open job kept past the trim (`trimKept`).
+  pinned?: true
+  // The body (the turns the message answered, captured as they streamed), what the owner took,
+  // the plan a rejection turned down, and, when the stored `text` is not all of what the owner
+  // sent, the whole as sent.
+  src?: { body?: SourceRef; took?: SourceRef; rejected?: SourceRef; sent?: SourceRef }
 }
 
 // The turns the owner answered, captured from the stream (`tapStep`): limits, and the shapes kept.
@@ -58,8 +70,8 @@ export const PENDING_MAX = 50
 // How a turn began: the owner's message, a background task finishing, the agent going on by
 // itself (a start with no text), or anything else.
 export type TurnBy = 'owner' | 'notification' | 'continuation' | 'other'
-// A saved text. `sha` is '' until the saved sources take fingerprints; `text` only when inline;
-// `lost` says why it cannot be read.
+// A saved text: its length, the SHA-256 of its UTF-8 bytes ('' only for one not kept, too
+// long), where it is held, `text` only when inline, and `lost` saying why it cannot be read.
 export type SourceRef = { chars: number; sha: string; where: 'file' | 'inline' | 'memory'; text?: string; lost?: string }
 // One turn's place in a body. `merged` counts, by how they began, the turns a merged span holds.
 export type TurnSpan = {
@@ -88,6 +100,8 @@ export type Memory = {
   lastSent?: { text: string; at: number }
   // The conversation's size against its window, from the engine; unknown when it could not be read.
   context?: { tokens: number; window: number; percent: number }
+  // What the record could not keep or save (`recordLines`), printed in place of the "none" line.
+  lines?: string[]
 }
 
 // Past this share of the window a session counts as long; under it, it never does.
@@ -389,13 +403,238 @@ Look especially for: work put off, shrunk or quietly dropped; work called finish
 - No hedging, no labels, no scores, no emoji.
 - The test of every answer: after reading it, the owner knows what is really going on and what to do next, without reading anything technical and without taking the agent's word for it.`
 
-// Every message with n >= since, the newest JOB_MAX of them; of those before
-// since, at most OWNER_MAX of the newest.
-export function trimOwner(list: OwnerMsg[], since: number): OwnerMsg[] {
-  const job = list.filter(m => m.n >= since).slice(-JOB_MAX)
-  const before = list.filter(m => m.n < since).slice(-OWNER_MAX)
-  return [...before, ...job]
+// Saved sources and the store (docs/reference.md, "Saved sources and the store"). Each source
+// is saved once in its own file under the session's folder, `<config>/owner-rep/sources/<session
+// id>/<id>.txt`, and checked against its SHA-256 before every use; one that cannot be written is
+// held in the record while it fits, then in the running process.
+export const INLINE_RECORD_BYTES = 65_536
+export const INLINE_STORE_BYTES = 524_288
+// What the owner took is kept on the message when its JSON is this small; longer, in `src.took`.
+export const TOOK_INLINE_BYTES = 1_024
+// A lost reason is cut to this many characters.
+export const LOST_REASON_CUT = 200
+// The whole record is written in parts of at most this many UTF-8 bytes when the store refuses it.
+export const FALLBACK_PART_BYTES = 3_000_000
+// Approvals of the open job kept past the trim, a record.
+export const APPROVED_KEEP_MAX = 60
+// A source file's write that takes longer than this counts as failed.
+export const SOURCE_WRITE_MS = 1_500
+// Why a source cannot be read.
+export const LOST_DAMAGED = 'its saved copy is missing or damaged'
+export const LOST_RESTART = 'the rep held it only until Claude Code restarted'
+export const lostTooLong = (chars: number): string => `longer than the rep keeps (${chars} characters)`
+// Why the store did not take a record.
+export const STORE_FULL_WHY = 'the shared store is full'
+export const NOT_KEPT_WHY = 'beyond its newest messages, the rep keeps at most 60 older approvals a job'
+
+// The folder sources live in, under the config folder.
+export const sourcesRoot = (config: string): string => `${config}/owner-rep/sources`
+
+// A session id of the uuid form Claude Code gives: only such a session has a folder of sources.
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+export const isSessionId = (id: string): boolean => UUID.test(id)
+// The names a session's folder can hold: a turn's source, a message's source, the record's copy.
+const SOURCE_FILE = /^(t-[A-Za-z0-9_-]+\.txt|\d+-(body|took|rejected|sent)\.txt|record(-\d+-\d+|-lost-\d+)?\.json)$/
+
+// Whether a path may be removed: a session folder named by a uuid right under the sources
+// folder, or a source or record file in one. Nothing else is ever removed.
+export function removablePath(root: string, p: string): boolean {
+  if (!root.startsWith('/') && !/^[A-Za-z]:\//.test(root)) return false
+  if (!root.endsWith('/owner-rep/sources') || !p.startsWith(`${root}/`)) return false
+  const rest = p.slice(root.length + 1).split('/')
+  const [sid, file] = rest
+  if (sid === undefined || !isSessionId(sid)) return false
+  return rest.length === 1 || (rest.length === 2 && file !== undefined && SOURCE_FILE.test(file))
 }
+
+// The SHA-256 of a text's UTF-8 bytes, as 64 hex characters, from the runtime.
+export async function sha256(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
+  return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+// A text's length in UTF-8 bytes.
+export const utf8Bytes = (text: string): number => new TextEncoder().encode(text).length
+
+// A record's JSON cut into parts of at most `max` UTF-8 bytes, never inside a character.
+export function splitRecord(json: string, max = FALLBACK_PART_BYTES): string[] {
+  const parts: string[] = []
+  let start = 0
+  let bytes = 0
+  for (let i = 0; i < json.length; ) {
+    const c = json.codePointAt(i) ?? 0
+    const len = c < 0x80 ? 1 : c < 0x800 ? 2 : c < 0x10000 ? 3 : 4
+    if (bytes + len > max && i > start) {
+      parts.push(json.slice(start, i))
+      start = i
+      bytes = 0
+    }
+    bytes += len
+    i += c >= 0x10000 ? 2 : 1
+  }
+  parts.push(json.slice(start))
+  return parts
+}
+
+// The list of a record's parts in the session's files (`record.json`), and the mark a lost one leaves.
+export type Manifest = { recRev: number; parts: Array<{ name: string; bytes: number; sha: string }>; why: string }
+export type LossMark = { lostRev: number; keptRev: number; after: number; why: string }
+// One part as the load read it: its text and fingerprint, or why it could not be read.
+export type PartRead = { text: string; sha: string } | { failed: 'missing' | 'unreadable' }
+
+// The list of parts read back from `record.json`, or null when it is not one: every part named
+// `record-<rev>-<k>.json`, so a list read back never names a file outside the folder.
+export function parseManifest(text: string | null): Manifest | null {
+  if (text === null) return null
+  try {
+    const v = JSON.parse(text) as { recRev?: unknown; parts?: unknown; why?: unknown }
+    if (typeof v !== 'object' || v === null || typeof v.recRev !== 'number' || !Array.isArray(v.parts)) return null
+    const parts = (v.parts as unknown[]).filter(
+      (p): p is Manifest['parts'][number] =>
+        typeof p === 'object' &&
+        p !== null &&
+        typeof (p as { name?: unknown }).name === 'string' &&
+        /^record-\d+-\d+\.json$/.test((p as { name: string }).name) &&
+        typeof (p as { sha?: unknown }).sha === 'string' &&
+        typeof (p as { bytes?: unknown }).bytes === 'number',
+    )
+    if (parts.length !== v.parts.length || parts.length === 0) return null
+    return { recRev: v.recRev, parts, why: typeof v.why === 'string' ? v.why : '' }
+  } catch {
+    return null
+  }
+}
+
+// A source id that names a file in the session's folder: a turn's, or a message's part.
+export const isSourceId = (id: string): boolean => /^(t-[A-Za-z0-9_-]+|\d+-(body|took|rejected|sent))$/.test(id)
+// How long one removal of files or folders may take.
+export const REMOVE_TIMEOUT_MS = 10_000
+
+// Whether a copy in the files is a fingerprint mismatch, which is final.
+export const isMismatch = (why: string): boolean => why.endsWith('does not match its fingerprint')
+
+// What a load does with a copy of the record in the session's files: a revision at or under the
+// stored one is stale; a newer one is used when every part read back with its fingerprint, and
+// otherwise the stored record stands with the loss marked.
+export function pickRecord(
+  stored: { recRev: number; after: number },
+  manifest: Manifest,
+  parts: readonly PartRead[],
+): { stale: true } | { json: string } | { mark: LossMark } {
+  if (manifest.recRev <= stored.recRev) return { stale: true }
+  const mark = (why: string) => ({ mark: { lostRev: manifest.recRev, keptRev: stored.recRev, after: stored.after, why } })
+  for (const [i, entry] of manifest.parts.entries()) {
+    const part = parts[i]
+    if (part === undefined || 'failed' in part) return mark(`part ${i + 1} ${part?.failed === 'unreadable' ? 'could not be read' : 'missing'}`)
+    if (part.sha !== entry.sha) return mark(`part ${i + 1} does not match its fingerprint`)
+  }
+  return { json: parts.map(p => ('text' in p ? p.text : '')).join('') }
+}
+
+// Whether a message carries an approval: the owner's own message, note or plan-screen plan with
+// the `approved` field present, never one that turned a plan down. The one place that reads it.
+export const approvalOf = (m: OwnerMsg): boolean =>
+  (m.kind === 'his' || m.kind === 'note' || m.kind === 'plan') && 'approved' in m && m.screen !== 'rejected'
+
+// An approval kept past the trim: its stored text cut to PRIOR_CUT, its whole words first kept
+// as `src.sent` when the cut takes any of them.
+const pin = (m: OwnerMsg): OwnerMsg => {
+  if (m.pinned === true) return m
+  if (m.text.length <= PRIOR_CUT) return { ...m, pinned: true }
+  const sent: SourceRef = m.src?.sent ?? { chars: m.text.length, sha: '', where: 'inline', text: m.text }
+  return { ...m, text: fit(m.text, PRIOR_CUT), pinned: true, src: { ...m.src, sent } }
+}
+
+// Every message with n >= since, the newest JOB_MAX of them; of those before since, at most
+// OWNER_MAX of the newest. An approval of the open job that falls outside them is kept,
+// pinned, up to APPROVED_KEEP_MAX of the newest; older ones are not kept, and are returned so
+// the owner can be told.
+export function trimKept(list: OwnerMsg[], since: number): { list: OwnerMsg[]; notKept: OwnerMsg[] } {
+  const inJob = list.filter(m => m.n >= since)
+  const job = inJob.slice(-JOB_MAX)
+  const outside = inJob.slice(0, inJob.length - job.length).filter(approvalOf)
+  const pinned = outside.slice(-APPROVED_KEEP_MAX).map(pin)
+  const notKept = outside.slice(0, outside.length - pinned.length)
+  const before = list.filter(m => m.n < since).slice(-OWNER_MAX)
+  return { list: [...before, ...pinned, ...job], notKept }
+}
+
+export function trimOwner(list: OwnerMsg[], since: number): OwnerMsg[] {
+  return trimKept(list, since).list
+}
+
+// What the record holds of the messages it could not keep for the job: `count` only grows,
+// `recent` the last 10.
+export type Uncovered = { job: number; count: number; recent: Array<{ n: number; why: 'not-kept'; kind: OwnerKind; screen?: OwnerMsg['screen'] }> }
+
+// The owner's lines for what the record could not keep or save (plan 6.4).
+const notKeptLine = (e: Uncovered['recent'][number]): string =>
+  e.kind === 'plan' && e.screen === 'edited'
+    ? `Not kept: the plan you edited and accepted on the plan screen (#${e.n}) (${NOT_KEPT_WHY})`
+    : e.kind === 'plan'
+      ? `Not kept: the plan you accepted on the plan screen (#${e.n}) (${NOT_KEPT_WHY})`
+      : `Not kept: the plan you approved in message #${e.n} (${NOT_KEPT_WHY})`
+export const lostRecordLine = (m: LossMark): string =>
+  `The rep lost its newest copy of this session's record (${m.why}): what you said after message #${m.after}, and any plan you approved there, may not be held`
+export const storeFullLine = (memoryOnly: boolean): string =>
+  `The rep could not save its record (${STORE_FULL_WHY}); this session's record is kept ${memoryOnly ? 'only until Claude Code restarts' : 'in its own files'}`
+
+// At most RECORD_LINES_MAX lines, in this order: the lost record, the messages not kept by
+// number, the store full; past that, the last shown says how many more, `uncovered.count` counted.
+export const RECORD_LINES_MAX = 3
+export function recordLines(rec: { lossMark?: LossMark; uncovered?: Uncovered }, full?: { memoryOnly: boolean }): string[] {
+  const recent = [...(rec.uncovered?.recent ?? [])].sort((a, b) => a.n - b.n)
+  const lines = [
+    ...(rec.lossMark === undefined ? [] : [lostRecordLine(rec.lossMark)]),
+    ...recent.map(notKeptLine),
+    ...(full === undefined ? [] : [storeFullLine(full.memoryOnly)]),
+  ]
+  const total = lines.length + Math.max(0, (rec.uncovered?.count ?? 0) - recent.length)
+  if (total <= RECORD_LINES_MAX) return lines
+  return [...lines.slice(0, RECORD_LINES_MAX - 1), `and ${total - (RECORD_LINES_MAX - 1)} more not checked`]
+}
+
+// The card's parts the rep writes while a record line stands, in place of a stop.
+export const RECORD_NEXT = 'The agent goes on with the job: the rep cannot be sure it holds everything you asked for.'
+export const RECORD_MESSAGE = 'Before treating any part of this job as complete, list everything I asked for in this session and show me where each part stands.'
+export const RECORD_DOES = 'Makes the agent account for everything you asked for before anything is called complete.'
+
+// A card while a record line stands: the lines first under what was left out, no going-well
+// line, and a stop shown as continue with the first line as its meaning; a next step, message
+// or what it does that says stop is the rep's own text.
+export function withRecordLines(a: BriefAnswer, lines: readonly string[]): BriefAnswer {
+  if (lines.length === 0) return a
+  const message = messageSaysStop(a.message)
+  return {
+    ...a,
+    verdict: 'continue',
+    well: '',
+    means: a.verdict === 'continue' ? a.means : (lines[0] as string),
+    next: a.next === '' || saysStop(a.next) ? RECORD_NEXT : a.next,
+    message: message ? RECORD_MESSAGE : a.message,
+    does: message || messageSaysStop(a.does) ? RECORD_DOES : a.does,
+    leftOut: [...lines, ...a.leftOut.filter(l => !lines.includes(l))],
+  }
+}
+
+// The approvals kept past the trim, each printed whole for the readers: the owner's words as
+// sent, the agent's words they answered, and what was taken.
+const pinnedLines = (list: readonly OwnerMsg[]): string =>
+  list
+    .map(m => {
+      const words = m.src?.sent?.text ?? m.text
+      const lost = (r: SourceRef | undefined) => (r?.lost === undefined ? '' : ` (could not be read: ${r.lost})`)
+      const body = m.src?.body?.text
+      const took = m.src?.took?.text ?? (m.approved === undefined || m.approved === '' ? undefined : m.approved)
+      return [
+        `- #${m.n} ${m.kind === 'note' ? NOTE_MARK : ''}${words}${lost(m.src?.sent)}`,
+        body === undefined ? (m.src?.body === undefined ? '' : `  The agent's words it answered${lost(m.src.body)}`) : `  The agent's words it answered:\n"""\n${body}\n"""`,
+        took === undefined ? (m.src?.took === undefined ? '' : `  What it took${lost(m.src.took)}`) : `  What it took:\n"""\n${took}\n"""`,
+      ]
+        .filter(l => l !== '')
+        .join('\n')
+    })
+    .join('\n')
 
 // One line per message: "- #n text", with the mark words for a note or a draft.
 export function ownerLines(list: OwnerMsg[]): string {
@@ -517,7 +756,8 @@ function memoryText(m: Memory): string {
     o === null
       ? "Not written yet: it is being written from the owner's messages. Until it is, measure against the owner's messages below."
       : `"${objectiveText(o)}"${o.movedAt === null ? '' : `\n(${revisedLine(o)})`}`
-  const onJob = o === null ? m.owner : m.owner.filter(x => x.n >= o.since)
+  const onJob = (o === null ? m.owner : m.owner.filter(x => x.n >= o.since)).filter(x => x.pinned !== true)
+  const pinned = m.owner.filter(x => x.pinned === true)
   const brief =
     m.lastBrief === undefined
       ? '(none yet)'
@@ -532,14 +772,14 @@ The objective of this job, written by a separate step of the rep from the owner'
 ${reading}
 
 Conditions still open:
-${o === null ? '- none written yet' : openLines(o, '- none: every condition is shown, or closed by the owner')}
+${o === null ? '- none written yet' : openLines(o, m.lines !== undefined && m.lines.length > 0 ? list(m.lines, '') : '- none: every condition is shown, or closed by the owner')}
 Mark one of these shown only where the conversation itself shows it (a command run and its printed output, a file written, a test's printed result), never on the agent's word; mark one closed only with the number of a message of the owner's own that closes it.${anyReopened(o) ? ' One marked "not shown: the check found …" was looked at by the paid check outside the conversation and found not so: only a later check can mark it shown; say what still stands in the way of it.' : ''}
 
 The conversation's size: ${contextLine(m)}
 
 The owner's own messages on this job, oldest first ("(to the rep)" marks one said to you; "(your draft, sent by the owner)" marks one you wrote and the owner sent):
 ${ownerLines(onJob) || '(none recorded yet)'}
-
+${pinned.length === 0 ? '' : `\nPlans the owner approved earlier in this job, kept whole with what each answered and what it took:\n${pinnedLines(pinned)}\n`}
 Jobs before this one in the session, closed:
 ${list(m.past, '(none)')}
 
@@ -2348,7 +2588,7 @@ export function isBlankRec(rec: object, blank: object): boolean {
   const loaded: Record<string, unknown> = { ...blank, ...rec }
   const base = blank as Record<string, unknown>
   for (const k of new Set([...Object.keys(loaded), ...Object.keys(base)])) {
-    if (k !== 'id' && k !== 'at' && canon(loaded[k]) !== canon(base[k])) return false
+    if (k !== 'id' && k !== 'at' && k !== 'recRev' && k !== 'objRev' && canon(loaded[k]) !== canon(base[k])) return false
   }
   return true
 }

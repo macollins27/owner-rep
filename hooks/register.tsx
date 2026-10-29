@@ -28,8 +28,32 @@ import {
   restOf,
   runningText,
   tapStep,
-  trimOwner,
+  trimKept,
   migrateOwner,
+  sha256,
+  isSessionId,
+  removablePath,
+  splitRecord,
+  pickRecord,
+  isMismatch,
+  recordLines,
+  withRecordLines,
+  type Manifest,
+  type LossMark,
+  type PartRead,
+  type Uncovered,
+  INLINE_RECORD_BYTES,
+  INLINE_STORE_BYTES,
+  SOURCE_WRITE_MS,
+  LOST_DAMAGED,
+  LOST_RESTART,
+  lostTooLong,
+  STORE_FULL_WHY,
+  sourcesRoot,
+  parseManifest,
+  isSourceId,
+  REMOVE_TIMEOUT_MS,
+  utf8Bytes,
   PAST_MAX,
   SEEN_MAX,
   SESSIONS_MAX,
@@ -167,6 +191,8 @@ const noteA = atom({ plugin: 'owner-rep', key: 'note' } as const, null)
 const briefA = atom({ plugin: 'owner-rep', key: 'brief' } as const, null)
 const viewA = atom({ plugin: 'owner-rep', key: 'view' } as const, 'row')
 const helpersA = atom({ plugin: 'owner-rep', key: 'helperIds' } as const, [])
+// What the record could not keep or save (`recordLines`): the row shows the first, the card all.
+const linesA = atom({ plugin: 'owner-rep', key: 'lines' } as const, [])
 
 // What came of a card's own-words call: its reply parsed whole, answered but not whole
 // (cut short, or missing a part), not answered or thrown, or no call made.
@@ -219,6 +245,14 @@ type Rec = {
   pending?: PendingTurn[]
   // Turns let go from `pending` since the owner's last message; absent when none.
   pendingDropped?: number
+  // Raised by every save that changes the record (`recRev`), and by every change of the
+  // objective (`objRev`); a copy in the session's files is newer only by `recRev`.
+  recRev: number
+  objRev: number
+  // A newer copy of the record in the session's files that could not be used; absent when none.
+  lossMark?: LossMark
+  // The approvals of the open job the record could not keep; absent when none.
+  uncovered?: Uncovered
 }
 
 const isRec = (v: unknown): v is Rec =>
@@ -250,12 +284,28 @@ const freshRec = (id: string): Rec => ({
   objectiveTokens: 0,
   objectiveFailed: 0,
   objectiveWhy: '',
+  recRev: 0,
+  objRev: 0,
 })
 
+// The session's record: the copy held while the store refuses it when there is one, else
+// the store's, after the first load in this process has reconciled it with the session's files.
 async function loadRec($: EngineInterface, id: string): Promise<Rec> {
+  await reconcileOnce($, id)
+  const held = fullRecs.get(id)
+  return held !== undefined ? (JSON.parse(JSON.stringify(held)) as Rec) : loadStored($, id)
+}
+
+// The store's record, as a copy of its own: a change never touches what the store holds
+// until the store takes it.
+async function loadStored($: EngineInterface, id: string): Promise<Rec> {
   const all = await $.store.get('sessions')
-  const rec = typeof all === 'object' && all !== null ? (all as Record<string, unknown>)[id] : undefined
-  if (!isRec(rec)) return freshRec(id)
+  const got = typeof all === 'object' && all !== null ? (all as Record<string, unknown>)[id] : undefined
+  if (!isRec(got)) return freshRec(id)
+  return fromStored(id, JSON.parse(JSON.stringify(got)) as Rec)
+}
+
+function fromStored(id: string, rec: Rec): Rec {
   const out: Rec = { ...freshRec(id), ...rec }
   if (typeof (out.owner as unknown[])[0] === 'string') out.owner = migrateOwner(out.owner as unknown[], out.lastSent?.text)
   out.counter = Math.max(out.counter, ...out.owner.map(m => m.n), 0)
@@ -270,7 +320,41 @@ async function loadRec($: EngineInterface, id: string): Promise<Rec> {
   return out
 }
 
-async function saveRec($: EngineInterface, rec: Rec): Promise<void> {
+// Saves the record: true when the store or the session's own files hold it. A save the store
+// refuses moves the record's inline sources to files (or memory) and tries again; refused
+// still, the whole record goes to the session's files (`saveToFiles`), and is read from there
+// while the store refuses. A save the store takes removes those files, and the folders of the
+// records it let go.
+async function saveRec($: EngineInterface, rec: Rec): Promise<boolean> {
+  const dropped = await storeRec($, rec).catch(() => null)
+  if (dropped === null) {
+    const moved = await moveInline($, rec)
+    const again = moved ? await storeRec($, rec).catch(() => null) : null
+    if (again === null) return saveToFiles($, rec)
+    return stored($, rec, again)
+  }
+  return stored($, rec, dropped)
+}
+
+// After the store took the record: the session's copy in files goes, and the folders of the
+// records let go.
+async function stored($: EngineInterface, rec: Rec, dropped: string[]): Promise<boolean> {
+  fullRecs.delete(rec.id)
+  if (storeFull.delete(rec.id)) {
+    const folder = await sourceFolder($, rec.id)
+    if (folder !== null) {
+      const manifest = parseManifest(await $.fs.read(`${folder}/record.json`).catch(() => null))
+      await removeFiles($, [`${folder}/record.json`, ...(manifest?.parts ?? []).map(p => `${folder}/${p.name}`)], false)
+    }
+  }
+  const root = await rootOf($)
+  if (root !== null) await removeFiles($, dropped.filter(isSessionId).map(k => `${root}/${k}`), true)
+  return true
+}
+
+// The store's save of the record, returning the ids of the records it let go; throws when the
+// store refuses it.
+async function storeRec($: EngineInterface, rec: Rec): Promise<string[]> {
   const got = await $.store.get('sessions')
   const all: Record<string, Rec> = {}
   if (typeof got === 'object' && got !== null) {
@@ -286,6 +370,7 @@ async function saveRec($: EngineInterface, rec: Rec): Promise<void> {
   const dropped = ids.slice(SESSIONS_MAX).flatMap(k => recDrafts(all[k]))
   if (dropped.length > 0) await $.store.set('droppedDrafts', keepDropped(await droppedDrafts($), dropped))
   await $.store.set('sessions', kept)
+  return ids.slice(SESSIONS_MAX)
 }
 
 // The drafts of records the store has let go (`saveRec`), newest first.
@@ -307,12 +392,413 @@ async function changeRec<T>($: EngineInterface, id: string, change: (rec: Rec) =
   await before
   try {
     const rec = await loadRec($, id)
+    const was = { json: bareJson(rec), objective: JSON.stringify(rec.objective), held: rec.objective !== null, job: jobOf(rec), files: await filesOf($, rec) }
     const out = await change(rec)
-    await saveRec($, rec)
+    // A new job: the old job's approvals kept past the trim go, and with them what was not
+    // kept and the mark of a lost copy, whose files go too.
+    let lost: string[] = []
+    if (was.held && jobOf(rec) > was.job) {
+      delete rec.uncovered
+      if (rec.lossMark !== undefined) {
+        lost = await lostFilesOf($, id, rec.lossMark.lostRev)
+        delete rec.lossMark
+      }
+      rec.owner = trimKept(rec.owner, jobOf(rec)).list
+    }
+    await placeSources($, id, rec)
+    if (JSON.stringify(rec.objective) !== was.objective) rec.objRev += 1
+    if (bareJson(rec) !== was.json) rec.recRev += 1
+    if (await saveRec($, rec)) {
+      const now = new Set(await filesOf($, rec))
+      await removeFiles($, [...was.files.filter(f => !now.has(f)), ...lost], false)
+    }
+    if (onScreen(id)) await update($, linesA, () => recordLines(rec, storeFull.get(id)))
     return out
   } finally {
     done()
     if (changing.get(id) === turn) changing.delete(id)
+  }
+}
+
+// Saved sources and the store (docs/reference.md, "Saved sources and the store").
+
+// The sources folder under the config folder (CLAUDE_CONFIG_DIR, else ~/.claude), read once a
+// process; null when neither can be read.
+let rootHeld: Promise<string | null> | null = null
+function rootOf($: EngineInterface): Promise<string | null> {
+  rootHeld ??= (async () => {
+    try {
+      const windows = (await osOf($)) === WINDOWS_OS
+      const set = await $.env.get('CLAUDE_CONFIG_DIR')
+      const home = await homeFor($)
+      const config = set !== undefined && set !== '' ? (windows ? slashed(set) : set) : home !== '' ? `${home}/.claude` : null
+      return config === null ? null : sourcesRoot(config.replace(/\/+$/, ''))
+    } catch {
+      return null
+    }
+  })()
+  return rootHeld
+}
+
+// The session's folder of sources: only a session id of the uuid form has one.
+async function sourceFolder($: EngineInterface, sid: string): Promise<string | null> {
+  if (!isSessionId(sid)) return null
+  const root = await rootOf($)
+  return root === null ? null : `${root}/${sid}`
+}
+
+// Texts held only by this process (`where: 'memory'`), by `<session id>/<source id>`.
+const memTexts = new Map<string, string>()
+// The sessions whose last save the store refused, and whether the files refused it too.
+const storeFull = new Map<string, { memoryOnly: boolean }>()
+// The record held, by session, while the store refuses it.
+const fullRecs = new Map<string, Rec>()
+// Each session's first load in this process, which reconciles the store with the session's files.
+const reconciled = new Map<string, Promise<void>>()
+
+// Every source reference the record holds: each owner message's parts, and each pending turn's.
+type RefAt = { id: string; ref: SourceRef; put: (r: SourceRef) => void }
+const PARTS = ['body', 'took', 'rejected', 'sent'] as const
+type Part = (typeof PARTS)[number]
+function refsOf(rec: Rec): RefAt[] {
+  const out: RefAt[] = []
+  for (const m of rec.owner) {
+    for (const part of PARTS) {
+      const ref = m.src?.[part]
+      if (ref !== undefined) out.push({ id: `${m.n}-${part}`, ref, put: r => (m.src = { ...m.src, [part]: r }) })
+    }
+  }
+  for (const p of rec.pending ?? []) {
+    if (p.src !== undefined) out.push({ id: `t-${p.turnId}`, ref: p.src, put: r => (p.src = r) })
+  }
+  return out
+}
+// A reference with nothing of its text, as the record keeps a file's or memory's.
+const refWithout = (r: SourceRef, where: SourceRef['where'], lost?: string): SourceRef => ({
+  chars: r.chars,
+  sha: r.sha,
+  where,
+  ...(lost === undefined ? {} : { lost }),
+})
+
+// The record's JSON without what every save changes, to tell whether a change changed it.
+const bareJson = (rec: Rec): string => {
+  const { at: _at, recRev: _rev, objRev: _obj, ...rest } = rec
+  return JSON.stringify(rest)
+}
+
+// The files the record's sources are saved in.
+async function filesOf($: EngineInterface, rec: Rec): Promise<string[]> {
+  const folder = await sourceFolder($, rec.id)
+  if (folder === null) return []
+  return refsOf(rec)
+    .filter(r => r.ref.where === 'file' && r.ref.sha !== '' && isSourceId(r.id))
+    .map(r => `${folder}/${r.id}.txt`)
+}
+
+async function readText($: EngineInterface, path: string): Promise<string | null> {
+  try {
+    const got = await $.fs.read(path)
+    return typeof got === 'string' ? got : null
+  } catch {
+    return null
+  }
+}
+
+// One file written; a write that fails or takes longer than SOURCE_WRITE_MS counts as failed.
+async function writeFile($: EngineInterface, path: string, text: string): Promise<boolean> {
+  const held: { timer?: { cancel: () => void } } = {}
+  const late = new Promise<boolean>(resolve => {
+    try {
+      held.timer = $.clock.after(SOURCE_WRITE_MS, () => resolve(false))
+    } catch {
+      // No timer: the write alone decides.
+    }
+  })
+  try {
+    return await Promise.race([$.fs.write(path, text).then(() => true, () => false), late])
+  } finally {
+    held.timer?.cancel()
+  }
+}
+
+// Removes files, or session folders, that `removablePath` allows, in one command; nothing else.
+async function removeFiles($: EngineInterface, paths: readonly string[], folders: boolean): Promise<void> {
+  const root = await rootOf($)
+  if (root === null) return
+  const ok = [...new Set(paths)].filter(p => removablePath(root, p) && p.slice(root.length + 1).includes('/') !== folders)
+  if (ok.length === 0) return
+  try {
+    await $.process.run(hostArgv(await hostOf($), ['rm', folders ? '-rf' : '-f', ...ok]), { timeoutMs: REMOVE_TIMEOUT_MS })
+  } catch {
+    // Left in place; the next save that drops them tries nothing more.
+  }
+}
+
+// Each source not yet in a file goes to its own file, written once: a file already there is
+// never written over. One that cannot be written is held in the record while the record's and
+// the store's budgets allow, else in memory.
+async function placeSources($: EngineInterface, sid: string, rec: Rec): Promise<void> {
+  const refs = refsOf(rec).filter(r => r.ref.lost === undefined && r.ref.where !== 'file')
+  if (refs.length === 0) return
+  const folder = await sourceFolder($, sid)
+  let canWrite = folder !== null
+  const unplaced: Array<{ at: RefAt; text: string }> = []
+  for (const at of refs) {
+    const key = `${sid}/${at.id}`
+    const text = at.ref.where === 'inline' ? at.ref.text : memTexts.get(key)
+    if (text === undefined) {
+      at.put(refWithout(at.ref, at.ref.where, at.ref.where === 'memory' ? LOST_RESTART : LOST_DAMAGED))
+      continue
+    }
+    const sha = at.ref.sha !== '' ? at.ref.sha : await sha256(text)
+    const ref: SourceRef = { ...at.ref, sha }
+    if (canWrite && folder !== null && isSourceId(at.id)) {
+      const path = `${folder}/${at.id}.txt`
+      // A file already there is never written over: its fingerprint is checked where it is read (`readRef`).
+      if (await $.fs.exists(path).catch(() => false)) {
+        at.put(refWithout(ref, 'file'))
+        memTexts.delete(key)
+        continue
+      }
+      if (await writeFile($, path, text)) {
+        at.put(refWithout(ref, 'file'))
+        memTexts.delete(key)
+        continue
+      }
+      canWrite = false
+    }
+    at.put(refWithout(ref, 'memory'))
+    memTexts.set(key, text)
+    unplaced.push({ at: { ...at, ref: refWithout(ref, 'memory') }, text })
+  }
+  if (unplaced.length === 0) return
+  const all = await $.store.get('sessions').catch(() => null)
+  let others = 0
+  if (typeof all === 'object' && all !== null) {
+    for (const [k, v] of Object.entries(all as Record<string, unknown>)) if (k !== sid && isRec(v)) others += inlineBytes(v)
+  }
+  let mine = inlineBytes(rec)
+  for (const { at, text } of unplaced) {
+    const cost = utf8Bytes(JSON.stringify(text))
+    if (mine + cost > INLINE_RECORD_BYTES || others + mine + cost > INLINE_STORE_BYTES) continue
+    at.put({ ...at.ref, where: 'inline', text })
+    memTexts.delete(`${sid}/${at.id}`)
+    mine += cost
+  }
+}
+
+// The bytes of JSON a record's inline texts take.
+const inlineBytes = (rec: Rec): number =>
+  refsOf(rec).reduce((a, r) => a + (r.ref.where === 'inline' && r.ref.text !== undefined ? utf8Bytes(JSON.stringify(r.ref.text)) : 0), 0)
+
+// A reference read for use: its text, from the record, memory or its file checked against the
+// fingerprint; or, when it cannot be read, why. Never saved: the record keeps no file's text.
+async function readRef($: EngineInterface, sid: string, id: string, ref: SourceRef): Promise<SourceRef> {
+  if (ref.lost !== undefined) return ref
+  if (ref.where === 'inline') return ref.text !== undefined ? ref : refWithout(ref, 'inline', LOST_DAMAGED)
+  if (ref.where === 'memory') {
+    const text = memTexts.get(`${sid}/${id}`)
+    return text !== undefined ? { ...ref, text } : refWithout(ref, 'memory', LOST_RESTART)
+  }
+  const folder = await sourceFolder($, sid)
+  const got = folder === null || !isSourceId(id) ? null : await readText($, `${folder}/${id}.txt`)
+  if (got !== null && ref.sha !== '' && (await sha256(got)) === ref.sha) return { ...ref, text: got }
+  return refWithout(ref, 'file', LOST_DAMAGED)
+}
+
+// Copies of messages with the named parts read for use, and the parts found lost by the reading.
+type Lost = { id: string; sha: string; lost: string }
+async function readable($: EngineInterface, sid: string, msgs: readonly OwnerMsg[], parts: readonly Part[]): Promise<{ msgs: OwnerMsg[]; lost: Lost[] }> {
+  const lost: Lost[] = []
+  const out: OwnerMsg[] = []
+  for (const m of msgs) {
+    if (m.src === undefined || !parts.some(p => m.src?.[p] !== undefined)) {
+      out.push(m)
+      continue
+    }
+    const src = { ...m.src }
+    for (const part of parts) {
+      const ref = src[part]
+      if (ref === undefined) continue
+      const got = await readRef($, sid, `${m.n}-${part}`, ref)
+      if (got.lost !== undefined && ref.lost === undefined) lost.push({ id: `${m.n}-${part}`, sha: ref.sha, lost: got.lost })
+      src[part] = got
+    }
+    out.push({ ...m, src })
+  }
+  return { msgs: out, lost }
+}
+
+// The parts found lost are marked so in the record, each only while it is the same source.
+async function markLost($: EngineInterface, sid: string, lost: readonly Lost[]): Promise<void> {
+  if (lost.length === 0) return
+  await changeRec($, sid, rec => {
+    for (const at of refsOf(rec)) {
+      const found = lost.find(l => l.id === at.id && l.sha === at.ref.sha)
+      if (found !== undefined && at.ref.lost === undefined) at.put(refWithout(at.ref, at.ref.where, found.lost))
+    }
+  })
+}
+
+// What the readers are given: the job's messages, the approvals kept past the trim read whole,
+// and the lines for what the record could not keep or save.
+async function memoryFor($: EngineInterface, sid: string, rec: Rec): Promise<Memory> {
+  const base = memoryOf(rec)
+  const pinned = base.owner.filter(m => m.pinned === true)
+  const { msgs, lost } = await readable($, sid, pinned, ['sent', 'body', 'took'])
+  await markLost($, sid, lost)
+  const owner = base.owner.map(m => (m.pinned === true ? (msgs[pinned.indexOf(m)] ?? m) : m))
+  return { ...base, owner, lines: recordLines(rec, storeFull.get(sid)) }
+}
+
+// The store refused the record: its inline texts go to files, or memory when the files refuse
+// them. Whether any moved.
+async function moveInline($: EngineInterface, rec: Rec): Promise<boolean> {
+  const folder = await sourceFolder($, rec.id)
+  let canWrite = folder !== null
+  let moved = false
+  for (const at of refsOf(rec)) {
+    if (at.ref.where !== 'inline' || at.ref.text === undefined || at.ref.lost !== undefined) continue
+    const text = at.ref.text
+    const ref: SourceRef = { ...at.ref, sha: at.ref.sha !== '' ? at.ref.sha : await sha256(text) }
+    if (canWrite && folder !== null && isSourceId(at.id) && (await writeFile($, `${folder}/${at.id}.txt`, text))) {
+      at.put(refWithout(ref, 'file'))
+    } else {
+      canWrite = false
+      memTexts.set(`${rec.id}/${at.id}`, text)
+      at.put(refWithout(ref, 'memory'))
+    }
+    moved = true
+  }
+  return moved
+}
+
+// The whole record written to the session's files, in parts of at most FALLBACK_PART_BYTES,
+// then the list of them (`record.json`); the old list's other parts go. The record is held in
+// this process either way. True when the files hold it.
+async function saveToFiles($: EngineInterface, rec: Rec): Promise<boolean> {
+  const held = JSON.parse(JSON.stringify({ ...rec, at: Date.now() })) as Rec
+  fullRecs.set(rec.id, held)
+  const folder = await sourceFolder($, rec.id)
+  let ok = folder !== null
+  if (folder !== null) {
+    const list: Manifest['parts'] = []
+    for (const [k, text] of splitRecord(JSON.stringify(held)).entries()) {
+      const name = `record-${rec.recRev}-${k + 1}.json`
+      if (!(await writeFile($, `${folder}/${name}`, text))) {
+        ok = false
+        break
+      }
+      list.push({ name, bytes: utf8Bytes(text), sha: await sha256(text) })
+    }
+    const old = ok ? parseManifest(await readText($, `${folder}/record.json`)) : null
+    const manifest: Manifest = { recRev: rec.recRev, parts: list, why: STORE_FULL_WHY }
+    ok = ok && (await writeFile($, `${folder}/record.json`, JSON.stringify(manifest)))
+    if (ok && old !== null) await removeFiles($, old.parts.filter(p => !list.some(l => l.name === p.name)).map(p => `${folder}/${p.name}`), false)
+  }
+  storeFull.set(rec.id, { memoryOnly: !ok })
+  return ok
+}
+
+// The files of a lost copy of the record: its list and the parts it names.
+async function lostFilesOf($: EngineInterface, sid: string, lostRev: number): Promise<string[]> {
+  const folder = await sourceFolder($, sid)
+  if (folder === null) return []
+  const path = `${folder}/record-lost-${lostRev}.json`
+  const manifest = parseManifest(await readText($, path))
+  return [path, ...(manifest?.parts ?? []).map(p => `${folder}/${p.name}`)]
+}
+
+// Each part a list names, read with its fingerprint, or why it could not be.
+async function readParts($: EngineInterface, folder: string, manifest: Manifest): Promise<PartRead[]> {
+  const out: PartRead[] = []
+  for (const p of manifest.parts) {
+    const path = `${folder}/${p.name}`
+    const text = await readText($, path)
+    if (text !== null) out.push({ text, sha: await sha256(text) })
+    else out.push({ failed: (await $.fs.exists(path).catch(() => true)) ? 'unreadable' : 'missing' })
+    if (text === null) break
+  }
+  return out
+}
+
+function reconcileOnce($: EngineInterface, sid: string): Promise<void> {
+  let run = reconciled.get(sid)
+  if (run === undefined) {
+    run = reconcile($, sid).catch(() => undefined)
+    reconciled.set(sid, run)
+  }
+  return run
+}
+
+// A session's first load in this process. A copy of the record in its files newer than the
+// store's is taken up when every part reads back with its fingerprint; otherwise the store's
+// record stands with the loss marked and the copy kept as `record-lost-<rev>.json`. A copy at
+// or under the store's revision goes. A loss to anything but a fingerprint that did not match is
+// taken up at a later start while nothing changed since the mark. Texts held only in memory by
+// an earlier process are lost.
+async function reconcile($: EngineInterface, sid: string): Promise<void> {
+  let rec = await loadStored($, sid)
+  let changed = false
+  const folder = await sourceFolder($, sid)
+  if (folder !== null) {
+    const after = Math.max(0, ...rec.owner.map(m => m.n))
+    const listPath = `${folder}/record.json`
+    const text = (await $.fs.exists(listPath).catch(() => false)) ? await readText($, listPath) : null
+    const manifest = parseManifest(text)
+    const markLoss = async (mark: LossMark) => {
+      if (text !== null && (await writeFile($, `${folder}/record-lost-${mark.lostRev}.json`, text))) await removeFiles($, [listPath], false)
+      rec.lossMark = mark
+      rec.recRev = mark.lostRev + 1
+      changed = true
+    }
+    if (text !== null && manifest === null) {
+      await markLoss({ lostRev: rec.recRev + 1, keptRev: rec.recRev, after, why: LOST_DAMAGED })
+    } else if (manifest !== null && manifest.recRev <= rec.recRev) {
+      await removeFiles($, [listPath, ...manifest.parts.map(p => `${folder}/${p.name}`)], false)
+    } else if (manifest !== null) {
+      const got = pickRecord({ recRev: rec.recRev, after }, manifest, await readParts($, folder, manifest))
+      const taken = 'json' in got ? parsedRec(sid, got.json) : null
+      if (taken !== null) {
+        rec = taken
+        storeFull.set(sid, { memoryOnly: false })
+        fullRecs.set(sid, JSON.parse(JSON.stringify(rec)) as Rec)
+        changed = true
+      } else {
+        await markLoss('mark' in got ? got.mark : { lostRev: manifest.recRev, keptRev: rec.recRev, after, why: LOST_DAMAGED })
+      }
+    } else if (rec.lossMark !== undefined && !isMismatch(rec.lossMark.why) && rec.recRev === rec.lossMark.lostRev + 1) {
+      const mark = rec.lossMark
+      const lostPath = `${folder}/record-lost-${mark.lostRev}.json`
+      const lost = parseManifest(await readText($, lostPath))
+      const got = lost === null ? null : pickRecord({ recRev: mark.keptRev, after: mark.after }, lost, await readParts($, folder, lost))
+      const taken = got !== null && 'json' in got ? parsedRec(sid, got.json) : null
+      if (taken !== null && lost !== null) {
+        rec = taken
+        delete rec.lossMark
+        rec.recRev = mark.lostRev + 2
+        await removeFiles($, [lostPath, ...lost.parts.map(p => `${folder}/${p.name}`)], false)
+        changed = true
+      }
+    }
+  }
+  for (const at of refsOf(rec)) {
+    if (at.ref.where === 'memory' && at.ref.lost === undefined && !memTexts.has(`${sid}/${at.id}`)) {
+      at.put(refWithout(at.ref, 'memory', LOST_RESTART))
+      changed = true
+    }
+  }
+  if (changed) await saveRec($, rec)
+}
+
+// A record read back from the session's files, or null when it is not this session's record.
+function parsedRec(sid: string, json: string): Rec | null {
+  try {
+    const v = JSON.parse(json) as unknown
+    return isRec(v) && v.id === sid ? fromStored(sid, v) : null
+  } catch {
+    return null
   }
 }
 
@@ -518,7 +1004,11 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
       // reply, an answer that cannot be read and a "holds" with nothing held are tried
       // again at the highest effort; a call that threw or was cut short is not. Only a
       // write whose every attempt failed counts as failed, with the last cause.
-      const prompt = objectivePrompt({ objective: rec.objective, owner: jobMsgs(rec), past: rec.past })
+      // The whole words of each message, read from where they were saved; the approvals kept
+      // past the trim are not the writer's.
+      const { msgs, lost } = await readable($, sid, jobMsgs(rec).filter(m => m.pinned !== true), ['sent'])
+      await markLost($, sid, lost)
+      const prompt = objectivePrompt({ objective: rec.objective, owner: msgs, past: rec.past })
       let after = rec
       for (let attempt = 0; attempt <= OBJECTIVE_RETRIES; attempt++) {
         const retry = attempt > 0
@@ -638,7 +1128,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
     return
   }
   // Only the look after the owner's note falls back to the record when there is nothing to fork.
-  const result = await readSession($, sid, watchPrompt({ ...memoryOf(rec), context: await contextOf($) }, reason), reason === 'note')
+  const result = await readSession($, sid, watchPrompt({ ...(await memoryFor($, sid, rec)), context: await contextOf($) }, reason), reason === 'note')
   const usage = 'usage' in result ? result.usage : null
   await changeRec($, sid, async after => {
     after.calls += 1
@@ -677,7 +1167,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     // conditions still open after them.
     const ask = async (extra: string) => {
       const rec = await loadRec($, sid)
-      const prompt = briefPrompt({ ...memoryOf(rec), context })
+      const prompt = briefPrompt({ ...(await memoryFor($, sid, rec)), context })
       const result = await readSession($, sid, extra === '' ? prompt : `${prompt}\n\n${extra}`, true)
       const usage = 'usage' in result ? result.usage : null
       return changeRec($, sid, async after => {
@@ -732,7 +1222,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
         .complete({
           model: OBJECTIVE_MODEL,
           system: OWN_WORDS_SYSTEM,
-          prompt: ownWordsPrompt({ ...memoryOf(rec), context }, taken.open, taken.answer),
+          prompt: ownWordsPrompt({ ...(await memoryFor($, sid, rec)), context }, taken.open, taken.answer),
           maxTokens: OWN_WORDS_MAX_TOKENS,
           effort: 'high',
           timeoutMs: OWN_WORDS_TIMEOUT_MS,
@@ -751,7 +1241,8 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       ownRead = !answered ? 'none' : own === null ? 'cut' : 'whole'
       taken = { ...taken, answer: takeOwnWords(taken.answer, taken.replaced, own) }
     }
-    const a = taken.answer
+    // While the record could not keep or save something, the card says so first and never stops.
+    const a = withRecordLines(taken.answer, recordLines(await loadRec($, sid), storeFull.get(sid)))
     const brief = await changeRec($, sid, after => {
       const brief: Brief = {
         result: after.objective === null ? '' : firstSentence(objectiveText(after.objective)),
@@ -1161,12 +1652,18 @@ async function putMessage($: EngineInterface, text: string): Promise<void> {
 // (`prior`, the body's end). The owner's messages and notes are kept to the larger cut, since
 // the writer reads nothing else; a draft of the rep's to the smaller. `more` carries the body's
 // spans, why it is incomplete, and the saved sources.
+// An approval of the open job the trim could not keep is counted in `uncovered`, the last 10 by number.
 function pushOwner(rec: Rec, kind: OwnerKind, text: string, prior: string, more: Partial<OwnerMsg> = {}): void {
   const cut = kind === 'draft' ? OWNER_CUT : HIS_CUT
-  rec.owner = trimOwner(
-    [...rec.owner, { n: ++rec.counter, kind, text: fit(text, cut), prior: fitTail(prior, PRIOR_CUT), ...more }],
-    jobOf(rec),
-  )
+  const job = jobOf(rec)
+  const { list, notKept } = trimKept([...rec.owner, { n: ++rec.counter, kind, text: fit(text, cut), prior: fitTail(prior, PRIOR_CUT), ...more }], job)
+  rec.owner = list
+  if (rec.uncovered !== undefined && rec.uncovered.job !== job) delete rec.uncovered
+  if (notKept.length > 0) {
+    const was = rec.uncovered
+    const recent = notKept.map(m => ({ n: m.n, why: 'not-kept' as const, kind: m.kind, ...(m.screen === undefined ? {} : { screen: m.screen }) }))
+    rec.uncovered = { job, count: (was?.count ?? 0) + notKept.length, recent: [...(was?.recent ?? []), ...recent].slice(-10) }
+  }
 }
 
 // The turns the owner answers, captured from the stream (docs/reference.md, "The turn the owner
@@ -1231,10 +1728,11 @@ function closeStep(entry: TurnLive, index: number): void {
   entry.nextIndex = index + 1
 }
 
-// A text saved for the record. Held inline in the record; one over SOURCE_MAX is not kept, and says so.
+// A text saved for the record, with its fingerprint: held inline until the change that records
+// it puts it in its own file (`placeSources`); one over SOURCE_MAX is not kept, and says so.
 async function saveSource(_$: EngineInterface, _sid: string, _id: string, text: string): Promise<SourceRef> {
-  if (text.length > SOURCE_MAX) return { chars: text.length, sha: '', where: 'file', lost: `longer than the rep keeps (${text.length} characters)` }
-  return { chars: text.length, sha: '', where: 'inline', text }
+  if (text.length > SOURCE_MAX) return { chars: text.length, sha: '', where: 'file', lost: lostTooLong(text.length) }
+  return { chars: text.length, sha: await sha256(text), where: 'inline', text }
 }
 
 // What a message of the owner's answers, fixed the moment it arrives: the turns seen to end
@@ -1255,10 +1753,13 @@ function snapshot(turnId: string | undefined): Snap {
 }
 
 // Inside the change that records the message: the body taken from the record's pending turns,
-// which leave it, and the count of turns let go starts again.
-function takeBody(rec: Rec, snap: Snap): Body {
+// which leave it, and the count of turns let go starts again. Each turn's text is read from where
+// it was saved; one that cannot be read leaves the body incomplete, with why.
+async function takeBody($: EngineInterface, sid: string, rec: Rec, snap: Snap): Promise<Body> {
   const pending = rec.pending ?? []
-  const body = bodyOf(pending, snap.answered, completedHere, snap.cut, rec.pendingDropped ?? 0)
+  const read: PendingTurn[] = []
+  for (const p of pending) read.push(p.src === undefined ? p : { ...p, src: await readRef($, sid, `t-${p.turnId}`, p.src) })
+  const body = bodyOf(read, snap.answered, completedHere, snap.cut, rec.pendingDropped ?? 0)
   const used = new Set(body.used)
   const left = pending.filter(p => !used.has(p.turnId))
   if (left.length > 0) rec.pending = left
@@ -1478,7 +1979,7 @@ async function seedOnce($: EngineInterface, sid: string): Promise<boolean> {
 async function takeNote($: EngineInterface, sid: string, note: string, from: { snap: Snap } | { prior: string }): Promise<void> {
   if ('snap' in from) await saving
   await changeRec($, sid, async rec => {
-    const body = 'snap' in from ? takeBody(rec, from.snap) : null
+    const body = 'snap' in from ? await takeBody($, sid, rec, from.snap) : null
     const more = body === null ? {} : await bodyFields($, sid, rec, body)
     pushOwner(rec, 'note', note, body?.text ?? ('prior' in from ? from.prior : ''), await withSent($, sid, rec, more, note.length > HIS_CUT ? note : null))
   })
@@ -1575,6 +2076,7 @@ const onScreen = (id: string): boolean => !ended && id === currentId
 async function enterSession($: EngineInterface, id: string): Promise<void> {
   const rec = await loadRec($, id)
   if (onScreen(id)) await update($, readingA, () => rec.objective)
+  if (onScreen(id)) await update($, linesA, () => recordLines(rec, storeFull.get(id)))
   seedOwner($, id)
     .then(seeded => (seeded ? rebuildObjective($, id, 'load') : undefined))
     .catch(() => undefined)
@@ -1597,6 +2099,7 @@ async function leaveSession($: EngineInterface): Promise<void> {
   await update($, briefA, () => null)
   await update($, noteA, () => null)
   await update($, helpersA, () => [])
+  await update($, linesA, () => [])
   await update($, nowA, () => IDLE)
   await update($, viewA, () => 'row')
 }
@@ -1687,7 +2190,7 @@ export const register: Register = on => {
         await saving
         const { rec, split, isHis, prior } = await changeRec($, id, async rec => {
           // The body: every turn it answers, whole. A draft sent unchanged answered them too, and keeps none.
-          const body = takeBody(rec, snap)
+          const body = await takeBody($, id, rec, snap)
           // A message the rep drafted and the owner sent is recorded as the rep's
           // words, marked, never as the owner's: the model must not grade against a job
           // the rep wrote. It is matched against the last few cards' messages as
@@ -1862,6 +2365,7 @@ export const register: Register = on => {
     const now = (await read($, nowA)) ?? IDLE
     const note = await read($, noteA)
     const brief = await read($, briefA)
+    const lines = (await read($, linesA)) ?? []
 
     // The band is one strip shared with every other mod, "You should know"
     // among them, and this mod draws first. Whatever is beneath is kept under
@@ -1932,6 +2436,13 @@ export const register: Register = on => {
     // and the objective whole at the card's end when the rows allow.
     const placeholder = 'working out the result you want from your messages…'
     const head = lead(headGlyph, headColor, 'Owner rep', reading?.result ?? placeholder)
+    // The first thing the record could not keep or save, under the row's head.
+    const recordLine =
+      lines[0] === undefined ? undefined : (
+        <Box paddingLeft={2} width={w(cols)}>
+          <Text wrap="wrap">{lines[0]}</Text>
+        </Box>
+      )
 
     if (view === 'note' && note !== null && !hasBeneath) {
       const clear = () => {
@@ -1957,6 +2468,7 @@ export const register: Register = on => {
             <Button key="later" plain hotkey="0" label="Later" onPress={clear} />,
           )}
           {head}
+          {recordLine}
           {choices(statusText, <Button key="rep" plain label="Brief me" onPress={onPress} />, <Button key="tell" plain label="Tell the rep" onPress={tell} />)}
           {beneath}
         </Box>
@@ -2022,7 +2534,7 @@ export const register: Register = on => {
               {shown.leftOut.map((item, i) => (
                 <Text key={`left-${i}`} wrap="wrap">
                   {'  - '}
-                  {item}
+                  <Text>{item}</Text>
                 </Text>
               ))}
             </Box>
@@ -2155,6 +2667,7 @@ export const register: Register = on => {
     return (
       <Box flexDirection="column" marginTop={gap}>
         {head}
+        {recordLine}
         {choices(statusText, repButton, tellButton)}
         {beneath}
       </Box>

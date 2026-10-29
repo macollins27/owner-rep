@@ -47,7 +47,7 @@ Two modules, deliberately split:
 - `hooks/register.tsx` is the engine side: hooks, state atoms, the store record, the band
   render, and the spawn of the check run. `hooks/hooks.json` names it as the only module.
 - `types/index.d.ts` declares the mod's `PluginState` keys (`reading`, `now`, `note`, `brief`,
-  `view`, `helperIds`) and the `Objective`/`Condition`/`Brief`/`Checked`/`Now`/`Note` shapes
+  `view`, `helperIds`, `lines`) and the `Objective`/`Condition`/`Brief`/`Checked`/`Now`/`Note` shapes
   the render reads. The `reading` key holds the objective under a shape tag (`objective-1`),
   so what an older build wrote there reads as absent.
 
@@ -387,16 +387,79 @@ in `completedHere` then, and, when `e.turnId` names a running turn, what that tu
 since anything was last taken (`taken` moves to the end, so the rest goes to the next message); a
 `turnId` with no entry gives an empty cut marked `the turn running when the owner typed was not
 watched from its start`. After `await saving`, inside the change that records the message,
-`takeBody` takes from `pending` every turn that ended before the submit (in the snapshot, or not
+`takeBody` (which reads each pending turn's text through `readRef`) takes from `pending` every turn that ended before the submit (in the snapshot, or not
 in `completedHere` at all, as after a reload) and appends the cut (`bodyOf`): the body, its
 `turns` spans (`{ by, from, to, note?, incomplete? }`, at most `TURNS_KEPT`, 20, the oldest merged
 into one span that counts its turns by `merged`) and `incomplete` with the first reason (turns let
 go first). The body is saved as `src.body` (`<n>-body`) on the owner's part (his message, or a
 note sent alone); a draft part gets none, and a draft sent unchanged still takes the turns it
 answered. A turn that ended after the submit stays pending for the next message. An empty, whole
-body adds no field. `saveSource` holds each source inline in the record (`where: 'inline'`,
-`sha: ''`); one over `SOURCE_MAX` is not kept and says why in `lost`. `leaveSession` clears
-`live`, `lastOrigin`, `saving` and `completedHere`.
+body adds no field. `saveSource` fingerprints each source and holds it inline in the record
+until the change saves it to its file (below); one over `SOURCE_MAX` is not kept and says why
+in `lost` (`lostTooLong`). `leaveSession` clears `live`, `lastOrigin`, `saving`,
+`completedHere` and the record lines.
+
+**Saved sources and the store.** Each source (a turn's text, a message's `body`, `took`,
+`rejected` or `sent`) is a `SourceRef`: `chars`, `sha` (`sha256`, the runtime's SHA-256 of
+its UTF-8 bytes, 64 hex characters), `where` (`inline`, `file` or `memory`), `text` only while
+inline, and `lost` with the reason when it cannot be read. Its file is
+`<config>/owner-rep/sources/<session id>/<source id>.txt` (`sourcesRoot`; the config folder is
+`CLAUDE_CONFIG_DIR`, else `.claude` in the home, read once a process by `rootOf`), the source id
+`t-<turnId>` or `<n>-<part>` (`isSourceId`); only a session id of the uuid form has a folder
+(`isSessionId`). In every `changeRec`, before the save, `placeSources` writes each source not
+yet in a file: a file already there is never written over, and is checked against the
+fingerprint where it is read. A write that fails or takes longer
+than `SOURCE_WRITE_MS` (1,500 ms, `writeFile`) stops the writes for that change; what was not
+written goes back inline while the record's inline texts stay within `INLINE_RECORD_BYTES`
+(65,536) and every record's within `INLINE_STORE_BYTES` (524,288), and is held in the running
+process past that (`where: 'memory'`, `memTexts`), each tried again at the next change.
+`readRef` gives a reference's text for use: inline from the record, memory from `memTexts`
+(else `LOST_RESTART`), a file only when what it reads has the reference's fingerprint (else
+`LOST_DAMAGED`); the record never keeps a file's text. `readable` reads the named parts of a
+list of messages and `markLost` marks in the record each found lost, only while it is the same
+source (id and fingerprint). The objective writer reads the job's `sent` parts this way; the
+readers (`memoryFor`) get the approvals kept past the trim with `sent`, `body` and `took` read
+whole. The files a change drops (a turn taken into a body, a message the trim lets go) are
+removed after a save that succeeds, and the folder of a record the store lets go goes in
+`stored`; `removeFiles` runs one `rm -f` or `rm -rf` through `hostArgv`
+(`REMOVE_TIMEOUT_MS`, 10 s) on only the paths `removablePath` allows: a folder named by a uuid
+right under the sources folder, or a source or record file in one.
+
+`changeRec` raises `rec.recRev` on every change that alters the saved record (`bareJson`
+compared before and after) and `rec.objRev` when the objective changed. A save the store
+refuses (`saveRec`) moves the record's inline texts to files, or to memory when the files
+refuse them (`moveInline`), and tries again; refused still, `saveToFiles` writes the whole
+record as parts of at most `FALLBACK_PART_BYTES` (3,000,000) UTF-8 bytes (`splitRecord`,
+never inside a character), `record-<recRev>-<k>.json`, then last the list of them,
+`record.json` (`{ recRev, parts: [{ name, bytes, sha }], why }`), and removes the older list's
+other parts. The record is held in the process (`fullRecs`, which `loadRec` returns while it is
+set) and `storeFull` says whether the files hold it (`memoryOnly` when a write failed). A
+later save the store takes removes the list and its parts (`stored`).
+
+A session's first `loadRec` in a process reconciles the store with its files once
+(`reconcileOnce`, `reconcile`): a list (`parseManifest`, which takes only part names of the form
+above) at or under the store's `recRev` is removed; a newer one is taken up when every part
+reads back with its fingerprint (`pickRecord`, `parsedRec`, which checks the session id), and
+`storeFull` is set again so the line shows after a restart; otherwise the store's record stands
+with `rec.lossMark` (`{ lostRev, keptRev, after, why }`), `recRev` set past the lost copy's, and
+the list renamed `record-lost-<lostRev>.json` with its parts kept. A loss for any reason but a
+fingerprint that did not match (`isMismatch`) is taken up at a later start while the record
+has not changed since the mark (`recRev` still `lostRev + 1`), its files then removed; a new job
+clears the mark and removes its files. Sources held in memory by an earlier process are marked
+`LOST_RESTART`.
+
+An approval (`approvalOf`: the owner's message, note or plan-screen plan carrying `approved`,
+never one that turned a plan down, never a draft) of the open job that falls outside the job's
+newest `JOB_MAX` is kept by `trimKept`, pinned, up to `APPROVED_KEEP_MAX` (60) of the newest;
+its stored text is cut to `PRIOR_CUT` with its whole words kept as `src.sent`. An older one is
+not kept: `pushOwner` counts it in `rec.uncovered` (`{ job, count, recent }`, the last 10), which
+a new job clears; the old job's approvals then leave with the rest of its messages, and their
+files with them. `recordLines` gives at most `RECORD_LINES_MAX` (3) lines, in this order: the
+lost copy (`lostRecordLine`), each approval not kept (`NOT_KEPT_WHY`), the store full
+(`storeFullLine`, kept in its own files or only until Claude Code restarts); past that the last
+says how many more. They are the state key `lines`, drawn under the row's head in the row and
+note views, given to the readers, and put first in a card's left-out list by
+`withRecordLines`, which also shows a stop as continue while a line stands.
 
 A session the rep holds no record of (its record fell out of the newest `SESSIONS_MAX`, it
 was forked with a new id, or it is older than the mod) has none of the owner's messages. `seedOwner`
