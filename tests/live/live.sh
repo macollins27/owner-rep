@@ -22,8 +22,9 @@
 # his messages (the turns that message answered, taken from the stream as it reached the
 # screen) is the transcript's text for those turns, character for character, through a plan
 # with a command, a reply typed mid-turn, two interrupts, a background task's turn, /compact, a
-# helper and /reload-plugins; it also prints what the engine sends as agentId on the main loop
-# (see turn_capture). Exit 0 when every scenario run showed what it should.
+# helper, and a reload between turns that starts the mod again, after which the next message
+# still holds the turn before it whole, from the saved record; it also prints what the engine
+# sends as agentId on the main loop (see turn_capture). Exit 0 when every scenario run showed what it should.
 #
 # The sessions run in a scratch folder under the system temp directory, in bypass mode, with
 # the nested-session variables unset (set, claude falls into print mode and exits). The mod
@@ -154,7 +155,10 @@ heights_card() {
 # a closing line; a reply asked for after a call to the advisor (two text blocks, when the
 # model gives them); a long list with a reply typed while it streams; a list cut by Escape; a
 # command cut by Escape; a background command whose notification starts a turn; /compact; a
-# helper started with the Agent tool; and /reload-plugins typed while a command runs. Each turn
+# helper started with the Agent tool; and, between turns, a line added to a file of each mod
+# and /reload-plugins, which starts a mod's module again only when its files changed (typed
+# while a turn runs, it waits for the turn's end). The rep runs from a copy of the checkout's
+# .claude-plugin, hooks and types, so that change never touches the checkout. Each turn
 # is followed by a message of the owner's, which is what saves it as a body. Afterwards the
 # rep's record of that one session (src.body.text and turns of each message, read from the
 # owner-rep_inline-*.json store; nothing else in the store is printed) is set against the
@@ -569,9 +573,9 @@ changed = [m.get("n") for m in withbody if (after.get(m.get("n")) or {}).get("sr
 verdict("the compaction changed no saved body", bool(withbody) and not changed,
         [f"{len(withbody)} bodies saved before /compact; changed or gone after it: {changed or 'none'}"])
 
-across = [tid for tid in L if len(turns[tid]["files"]) > 1]
-why = [f"turn {short(tid)} ran across the reload (seen by two loads of the logging mod); its body: {[h[2].get('incomplete') for h in found.get(tid, [])] or 'none'}" for tid in across]
-# when /reload-plugins was sent, when the transcript says it ran, and which turn was running then
+# A reload between turns, with a file of each mod changed first: both modules start again, so the
+# rep's next message can have the turn that ended before the reload only from its saved record.
+why = []
 try:
     sent = int(open(os.path.join(os.path.dirname(typed_path), "reload-at")).read().strip())
 except (OSError, ValueError):
@@ -586,23 +590,37 @@ if tr:
         c = (r.get("message") or {}).get("content")
         if r.get("type") == "user" and isinstance(c, str) and "<command-name>/reload-plugins" in c and r.get("timestamp"):
             ran.append(int(datetime.datetime.fromisoformat(r["timestamp"].replace("Z", "+00:00")).timestamp() * 1000))
-for a in ([sent] if sent else []):
-    during = [tid for tid in L if (turns[tid]["start"] or {"at": 1e18})["at"] <= a <= turns[tid]["complete"]["at"]]
-    why.append(f"/reload-plugins was sent while turn {', '.join(short(t) for t in during) or 'none'} ran"
-               + (f" (it ended {turns[during[0]]['complete']['at'] - a} ms later)" if during else ""))
-for a in ran:
-    during = [tid for tid in L if (turns[tid]["start"] or {"at": 1e18})["at"] <= a <= turns[tid]["complete"]["at"]]
-    prev = [tid for tid in L if turns[tid]["complete"]["at"] < a]
-    why.append(f"the transcript records it running {a - sent if sent else '?'} ms after it was sent, "
-               + (f"during turn {short(during[0])}" if during else f"between turns, {a - turns[prev[-1]]['complete']['at'] if prev else '?'} ms after turn {short(prev[-1]) if prev else '-'} ended"))
+ok_rl = False
 if not ran:
     why.append("the transcript records no /reload-plugins")
-if len(files) < 2:
-    why.append(f"the logging mod wrote {len(files)} log file: its module was not started again"
-               + (" although /reload-plugins ran" if ran else ""))
-elif not across:
-    why.append("the logging mod was started again, but between turns, not during one")
-verdict("the turn running across /reload-plugins is incomplete", bool(across) and all(found.get(tid) and all(h[2].get("incomplete") for h in found[tid]) for tid in across), why)
+else:
+    a0 = ran[0]
+    during = [tid for tid in L if (turns[tid]["start"] or {"at": 1e18})["at"] <= a0 <= turns[tid]["complete"]["at"]]
+    prev = [tid for tid in L if turns[tid]["complete"]["at"] < a0]
+    nxt = [tid for tid in L if (turns[tid]["start"] or {"at": 0})["at"] > a0]
+    why.append(f"/reload-plugins ran {a0 - sent if sent else '?'} ms after it was sent, "
+               + (f"during turn {short(during[0])}" if during else f"between turns, {a0 - turns[prev[-1]]['complete']['at'] if prev else '?'} ms after turn {short(prev[-1]) if prev else '-'} ended"))
+    why.append(f"the logging mod wrote {len(files)} log file(s): its module started {len(files)} time(s)")
+    T = prev[-1] if prev else None
+    after_sub = [e for e in events if e["ev"] == "submit" and e.get("origin") == "composer" and e["at"] > a0]
+    m_next = None
+    if after_sub:
+        head = after_sub[0]["text"][:40]
+        m_next = next((m for m in owner if str(m.get("text", "")).startswith(head)), None)
+    hits = found.get(T, []) if T else []
+    if T:
+        why.append(f"turn {short(T)}, the last before the reload ({len(turns[T]['log'])} chars, seen by load {sorted(turns[T]['files'])} of the logging mod): "
+                   + (", ".join(f"in #{h[0]}" + (f", {h[2].get('note')}" if h[2].get("note") else "") + (f", incomplete: {h[2].get('incomplete')}" if h[2].get("incomplete") else "") for h in hits) or "in no body"))
+    if m_next is not None:
+        why.append(f"the first message after the reload is #{m_next.get('n')}" + (f", incomplete: {m_next.get('incomplete')}" if m_next.get("incomplete") else ""))
+    else:
+        why.append("no message of the owner's after the reload was found in the record")
+    ok_rl = (not during and len(files) >= 2 and T is not None and len(turns[T]["files"]) == 1
+             and bool(nxt) and all(min(turns[t]["files"]) >= 1 for t in nxt)
+             and m_next is not None and not m_next.get("incomplete")
+             and len(hits) == 1 and hits[0][0] == m_next.get("n")
+             and not hits[0][2].get("incomplete") and not hits[0][2].get("note"))
+verdict("after a reload between turns that starts the mods again, the next message's body holds the turn before it whole, from the saved record", ok_rl, why)
 
 bodies = [((m.get("src") or {}).get("body") or {}).get("text") or "" for m in owner]
 leaks = [t for t in sub_texts if len(t) >= 15 and any(t in b for b in bodies)]
@@ -632,6 +650,12 @@ out.close()
 for name, ok in verdicts:
     print(f"{'0' if ok else '1'}\t{name}")
 PY
+  # The rep runs from a copy of what a session reads of this checkout, so the run can change one
+  # of its files before /reload-plugins without touching the checkout.
+  mkdir -p $T14/rep
+  cp -c -R $ROOT/.claude-plugin $ROOT/hooks $ROOT/types $T14/rep/ 2>/dev/null || cp -R $ROOT/.claude-plugin $ROOT/hooks $ROOT/types $T14/rep/
+  rm -rf "${T14:?}/rep/.claude-plugin/types"
+  local ROOT=$T14/rep
   start '' --plugin-dir $T14/log || { rm -rf "${T14:?}"; stop; return 1; }
   # count EV: the logged main-loop events of that kind, over every load of the logging mod.
   t14_count() { cat /dev/null $T14/logs/*.jsonl(N) | grep "\"ev\":\"$1\"" | grep -c '"agent":""'; }
@@ -694,11 +718,16 @@ PY
   send 'Use the Agent tool to have a helper write one sentence about a red kite, the bird. Do not repeat or summarise what it wrote; once it returns, reply with the single word received.'
   t14_settled 240
   send 'Run the shell command ping -c 20 127.0.0.1 in the foreground, then write two sentences about the sea.'
-  t14_tool_step 120
+  t14_settled 180
   sleep 3
+  # Between turns, a file of each mod changes, so /reload-plugins starts both modules again (a
+  # reload leaves a mod whose files are unchanged running). The rep then has only its saved
+  # record to give the next message the turn that ended before the reload.
+  print -r -- '// changed before /reload-plugins by live scenario 14' >> $T14/rep/hooks/register.tsx
+  print -r -- '// changed before /reload-plugins by live scenario 14' >> $T14/log/hooks/register.ts
   python3 -c 'import time; print(int(time.time() * 1000))' > $T14/reload-at
   send '/reload-plugins'
-  t14_settled 180
+  wait_for 'Reloaded:' 60
   sleep 3
   send 'Reply with the single word done and nothing else.'
   t14_settled 120
