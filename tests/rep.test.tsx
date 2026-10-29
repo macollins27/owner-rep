@@ -14,7 +14,7 @@
 import type { On, SessionMessage } from 'claude-code'
 import { expect, mock, test as kitTest, type Engine, type TestBody, type TestOptions } from 'claude-code/testing'
 
-import { type Memory, CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fillCard, countLine, refusedLine, type CardText, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, OLD_SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, toAgentVoice, sectionOf, takeOwnWords, parseOwnWords, ownWordsPrompt, askAgain, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
+import { type Memory, CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fillCard, countLine, refusedLine, type CardText, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, HIS_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, OLD_SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, toAgentVoice, sectionOf, takeOwnWords, parseOwnWords, ownWordsPrompt, askAgain, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
 
 // Every test starts with the session's working folder a Unix path, so what the suite reads does not
 // depend on the folder the kit gives it: on a Windows machine that folder is a drive path, which
@@ -2509,6 +2509,494 @@ test("rule: the last three cards' messages are kept, so an earlier card's messag
   await $.prompt.submit(typed(CARD_MESSAGE(1)))
   await settle($)
   expect(rec()?.owner.at(-1)).toMatchObject({ n: 6, kind: 'his' })
+})
+
+// ----------------------------------------------------------------------------------------------
+// The turn the owner answered, captured from the stream
+// Each turn's text is taken from its streamed text chunks as they reach the screen, saved when the
+// turn ends, and given whole to the owner's next message as its body.
+// ----------------------------------------------------------------------------------------------
+
+// What the record holds of a message's body and of the turns not yet answered, read loosely.
+type CapSrc = { chars: number; sha: string; where: string; text?: string; lost?: string }
+type CapSpan = { by: string; from: number; to: number; note?: string; incomplete?: string; merged?: Record<string, number> }
+type CapMsg = OwnerMsg & { turns?: CapSpan[]; incomplete?: string; src?: { body?: CapSrc; sent?: CapSrc } }
+type CapRec = { owner: CapMsg[]; pending?: Array<{ turnId: string; by: string; src?: CapSrc; incomplete?: string }>; pendingDropped?: number }
+
+type Chunk = Record<string, unknown>
+const txt = (text: string, index = 0): Chunk => ({ kind: 'text', index, text })
+const think = (text: string, index = 0): Chunk => ({ kind: 'thinking', index, text })
+const toolCall = (index: number, id = 'toolu_1'): Chunk[] => [
+  { kind: 'tool', index, id, name: 'Bash' },
+  { kind: 'input', index, json: '{"command":"ls"}' },
+]
+const ends = (stopReason: string): Chunk => ({ kind: 'stop', stopReason, usage: null })
+
+// One scripted response: its chunks in order (a function in the list is awaited where it sits, so
+// a test can hold the stream), what the step returns, and an error thrown after the chunks.
+type Script = { chunks: Array<Chunk | (() => Promise<void>)>; ret?: Record<string, unknown>; fail?: Error }
+
+// A plan of `n` characters whose lines can be told apart.
+const planOf = (n: number, tag = 'Plan') =>
+  Array.from({ length: Math.ceil(n / 20) + 1 }, (_, i) => `${tag} step ${i + 1}: change a file.\n`)
+    .join('')
+    .slice(0, n)
+
+// The engine beneath the mod for these tests: the store (a save can be held), the session, each
+// step played from its script, and every submit as it reached the bottom.
+const capture = (on: On, store: Record<string, unknown> = {}, sid: () => string = () => 'test-session') => {
+  const hold: { when?: (value: unknown) => boolean; gate?: Promise<void>; held?: boolean } = {}
+  on('store.get', (_$, e) => ({ value: store[e.key] }))
+  on('store.set', async (_$, e) => {
+    if (hold.when?.(e.value) === true) {
+      hold.when = undefined
+      hold.held = true
+      await hold.gate
+    }
+    store[e.key] = e.value
+    return { value: undefined }
+  })
+  on('session.id', () => ({ value: sid() }))
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  on('session.end', (_$, e) => ({ sessionId: e.sessionId }))
+  let reads = 0
+  on('session.messages', () => {
+    reads += 1
+    throw new Error('the session was read')
+  })
+  on('turn.start', (_$, e) => ({ turnId: e.turnId }))
+  on('turn.complete', () => ({ text: '' }))
+  const submits: Array<{ text: string; turnId?: string; origin?: string }> = []
+  on('prompt.submit', (_$, e) => {
+    submits.push({ text: e.text, turnId: (e as { turnId?: string }).turnId, origin: e.origin?.kind })
+    return { text: e.text }
+  })
+  on('ui.toast', () => ({ value: undefined }))
+  on('model.fork', () => ({ value: { isAnswered: true, text: HOLDS, usage: USAGE } }))
+  quietBand(on)
+  const prompts = writer(on, () => null)
+  const scripts = new Map<string, Script>()
+  on('turn.step', async function* (_$, e) {
+    const s = scripts.get(`${e.turnId}/${e.index}`) ?? { chunks: [] }
+    for (const c of s.chunks) {
+      if (typeof c === 'function') await c()
+      else yield c as never
+    }
+    if (s.fail !== undefined) throw s.fail
+    return { turnId: e.turnId, index: e.index, answer: '', toolUses: [], stopReason: 'end_turn', usage: null, ...s.ret } as never
+  })
+  const rec = () => (store.sessions as Record<string, CapRec> | undefined)?.[sid()]
+  return { rec, prompts, scripts, submits, hold, reads: () => reads }
+}
+
+// One step driven up through the mod and read as the engine reads it: every chunk, then the
+// generator's return value, which is the step's result.
+const drive = async ($: Engine, turnId: string, index: number, agentId?: string) => {
+  const it = $.turn.step({ turnId, index, model: 'm', messageCount: index + 1, ...(agentId === undefined ? {} : { agentId }) })[
+    Symbol.asyncIterator
+  ]()
+  const chunks: Chunk[] = []
+  for (;;) {
+    const r = await it.next()
+    if (r.done === true) return { chunks, result: r.value as unknown as Record<string, unknown> }
+    chunks.push(r.value as unknown as Chunk)
+  }
+}
+
+// A whole main-loop turn: its start (none when `start` is null), each step from its script, its end.
+const runTurn = async (
+  $: Engine,
+  scripts: Map<string, Script>,
+  turnId: string,
+  steps: Script[],
+  o: { start?: string | null; first?: number; aborted?: boolean; answer?: string } = {},
+) => {
+  if (o.start !== null) await $.turn.start({ text: o.start ?? '', turnId })
+  const first = o.first ?? 0
+  for (const [i, s] of steps.entries()) {
+    scripts.set(`${turnId}/${first + i}`, s)
+    await drive($, turnId, first + i)
+  }
+  await $.turn.complete(stop(turnId, o.answer ?? 'The last step\'s text.', o.aborted ?? false))
+  await settle($)
+}
+const said = (text: string): Script => ({ chunks: [txt(text), ends('end_turn')] })
+
+// The owner's message sent and everything it set off settled.
+const send = async ($: Engine, text: string) => {
+  await $.prompt.submit(typed(text))
+  await settle($)
+}
+
+// A record the rep already holds for the session, with one message of the owner's.
+const RECORDED = (more: Record<string, unknown> = {}): Record<string, unknown> => ({
+  sessions: {
+    'test-session': { id: 'test-session', at: Date.now(), objective: null, jobStart: 1, owner: [om('build the migration')], counter: 1, past: [], seen: [], others: [], drafts: [], ...more },
+  },
+})
+
+test('rule: the body under the owner\'s message is every step of the turn he answered, whole and in order, and each step\'s result reaches the top unchanged', async ($, on) => {
+  const { rec, scripts } = capture(on)
+  const plan = planOf(5000)
+  const close = 'Shall I start on step one now, or wait?'
+  await send($, 'plan the migration')
+  await $.turn.start({ text: 'plan the migration', turnId: 't1' })
+  const toolUses = [{ name: 'Bash', input: { command: 'ls' } }]
+  scripts.set('t1/0', { chunks: [txt(plan), ...toolCall(1), ends('tool_use')], ret: { answer: plan, toolUses, stopReason: 'tool_use' } })
+  const first = await drive($, 't1', 0)
+  scripts.set('t1/1', { chunks: [txt(close), ends('end_turn')], ret: { answer: close } })
+  const second = await drive($, 't1', 1)
+  await $.turn.complete(stop('t1', close))
+  await settle($)
+  await send($, 'yes')
+  const yes = rec()?.owner.at(-1)
+  const body = `${plan}\n\n${close}`
+  expect(yes?.src?.body?.text).toBe(body)
+  expect(yes?.text).toBe('yes')
+  expect(yes?.prior).toBe(fitTail(body, PRIOR_CUT))
+  expect(yes?.turns).toEqual([{ by: 'owner', from: 0, to: body.length }])
+  expect(first.result).toEqual({ turnId: 't1', index: 0, answer: plan, toolUses, stopReason: 'tool_use', usage: null })
+  expect(second.result).toEqual({ turnId: 't1', index: 1, answer: close, toolUses: [], stopReason: 'end_turn', usage: null })
+  // The message the turn answered has no body: nothing came before it.
+  expect(rec()?.owner[0]).toEqual({ n: 1, kind: 'his', text: 'plan the migration', prior: '' })
+})
+
+test('rule: a plan in a turn\'s first step is the body whole when the turn ends on a tool call with no text after it', async ($, on) => {
+  const { rec, scripts } = capture(on)
+  const plan = planOf(3000)
+  await runTurn($, scripts, 't1', [{ chunks: [txt(plan), ...toolCall(1), ends('tool_use')] }, { chunks: [...toolCall(0, 'toolu_2'), ends('tool_use')] }], { answer: '' })
+  await send($, 'yes')
+  expect(rec()?.owner.at(-1)?.src?.body?.text).toBe(plan)
+})
+
+test('rule: two text blocks of one response are kept apart with a blank line, and its thinking is never in the body', async ($, on) => {
+  const { rec, scripts } = capture(on)
+  const step: Script = {
+    chunks: [txt('Before the advice,'), txt(' still the first block.'), think('weighing what the adviser said', 1), txt('After the advice.', 4), ends('end_turn')],
+  }
+  await runTurn($, scripts, 't1', [step])
+  await send($, 'yes')
+  const body = rec()?.owner.at(-1)?.src?.body?.text
+  expect(body).toBe('Before the advice, still the first block.\n\nAfter the advice.')
+  expect(body).not.toContain('weighing')
+})
+
+test('rule: a turn the owner interrupted keeps every step that streamed, the earlier one whole and the cut one as far as it went', async ($, on) => {
+  const { rec, scripts } = capture(on)
+  const plan = planOf(200, 'Earlier')
+  const cut = planOf(300, 'Cut')
+  const steps: Script[] = [
+    { chunks: [txt(plan), ...toolCall(1), ends('tool_use')], ret: { answer: plan, toolUses: [{ name: 'Bash', input: {} }], stopReason: 'tool_use' } },
+    { chunks: [txt(cut)], ret: { answer: cut, stopReason: null } },
+  ]
+  await send($, 'plan it')
+  await runTurn($, scripts, 't1', steps, { start: 'plan it', aborted: true, answer: cut })
+  await send($, 'stop, do it differently')
+  const m = rec()?.owner.at(-1)
+  expect(m?.src?.body?.text).toBe(`${plan}\n\n${cut}`)
+  expect(m?.turns).toEqual([{ by: 'owner', from: 0, to: plan.length + 2 + cut.length, note: 'interrupted' }])
+  expect(m?.incomplete).toBeUndefined()
+})
+
+test('rule: a turn interrupted during a tool call keeps the text before the call, though the turn\'s own answer is empty', async ($, on) => {
+  const { rec, scripts } = capture(on)
+  const said41 = 'I will list the files, then read the plan.'.slice(0, 41)
+  await runTurn($, scripts, 't1', [{ chunks: [txt(said41), ...toolCall(1), ends('tool_use')], ret: { stopReason: 'tool_use', toolUses: [{ name: 'Bash', input: {} }] } }], {
+    aborted: true,
+    answer: '',
+  })
+  await send($, 'wait')
+  expect(said41).toHaveLength(41)
+  const m = rec()?.owner.at(-1)
+  expect(m?.src?.body?.text).toBe(said41)
+  expect(m?.turns?.[0]?.note).toBe('interrupted')
+})
+
+test('rule: a message typed in the middle of a block is given exactly what had streamed, a held save changes nothing, and the rest goes to the next message', async ($, on) => {
+  const { rec, scripts, submits, hold } = capture(on)
+  let releaseSave: () => void = () => undefined
+  hold.gate = new Promise<void>(r => (releaseSave = r))
+  let releaseStream: () => void = () => undefined
+  const streamGate = new Promise<void>(r => (releaseStream = r))
+  await send($, 'make the files')
+  // The first turn's save is held until the test lets it go.
+  hold.when = v => JSON.stringify(v).includes('"turnId":"t1"')
+  await runTurn($, scripts, 't1', [said('First I read the folder.')], { start: 'make the files' })
+  expect(hold.held).toBe(true)
+  await $.turn.start({ text: '', turnId: 't2' })
+  scripts.set('t2/0', { chunks: [txt('Step one: make '), () => streamGate, txt('apple.txt.'), txt(' Step two: make pear.txt.'), ends('end_turn')] })
+  const it = $.turn.step({ turnId: 't2', index: 0, model: 'm', messageCount: 1 })[Symbol.asyncIterator]()
+  expect(await it.next()).toEqual({ done: false, value: txt('Step one: make ') })
+  // The owner presses Enter while the block is half written.
+  const sent = $.prompt.submit({ ...typed('yes, go'), turnId: 't2' } as never)
+  for (let i = 0; i < 5; i++) await new Promise(r => setTimeout(r, 0))
+  releaseStream()
+  for (let r = await it.next(); r.done !== true; r = await it.next()) {
+    // The rest of the step streams after the message was sent.
+  }
+  await $.turn.complete(stop('t2', 'unused'))
+  // Another turn ends while the first save is still held.
+  await runTurn($, scripts, 't3', [said('A third turn, after the message.')])
+  releaseSave()
+  await sent
+  await settle($)
+  expect(submits.find(s => s.text === 'yes, go')?.turnId).toBe('t2')
+  await send($, 'and the next')
+  const [, his, next] = rec()?.owner ?? []
+  const first = his?.src?.body?.text ?? ''
+  const second = next?.src?.body?.text ?? ''
+  expect(first).toBe('First I read the folder.\n\nStep one: make ')
+  expect(first.endsWith('Step one: make ')).toBe(true)
+  expect(second.startsWith('apple.txt.')).toBe(true)
+  expect(second).toBe('apple.txt. Step two: make pear.txt.\n\nA third turn, after the message.')
+  expect(first).not.toContain('A third turn')
+  expect(first + second).toBe('First I read the folder.\n\nStep one: make apple.txt. Step two: make pear.txt.\n\nA third turn, after the message.')
+  expect(his?.turns?.at(-1)?.note).toBe('typed-into')
+})
+
+test('rule: a message typed into a running turn after its first step gets that step, and the second step goes to the next message', async ($, on) => {
+  const { rec, scripts } = capture(on)
+  await $.turn.start({ text: '', turnId: 't1' })
+  scripts.set('t1/0', { chunks: [txt('The first step\'s words.'), ...toolCall(1), ends('tool_use')] })
+  await drive($, 't1', 0)
+  await $.prompt.submit({ ...typed('also keep the logs'), turnId: 't1' } as never)
+  await settle($)
+  scripts.set('t1/1', said('The second step\'s words.'))
+  await drive($, 't1', 1)
+  await $.turn.complete(stop('t1'))
+  await settle($)
+  await send($, 'thanks')
+  const [typedIn, after] = rec()?.owner ?? []
+  expect(typedIn?.src?.body?.text).toBe('The first step\'s words.')
+  expect(after?.src?.body?.text).toBe('The second step\'s words.')
+})
+
+test('rule: after a reload in the middle of a turn, the steps that streamed afterwards reach the body, marked incomplete', async ($, on) => {
+  const { rec, scripts } = capture(on, RECORDED())
+  await started($)
+  await runTurn($, scripts, 't1', [said('Step two\'s words.'), said('Step three\'s words.')], { start: null, first: 2 })
+  await send($, 'yes')
+  const m = rec()?.owner.at(-1)
+  expect(m?.src?.body?.text).toBe('Step two\'s words.\n\nStep three\'s words.')
+  expect(m?.incomplete).toBe('the rep did not see this turn from its start')
+  expect(m?.turns?.[0]?.incomplete).toBe('the rep did not see this turn from its start')
+})
+
+test('rule: after a reload between a turn\'s end and the owner\'s answer, the saved turn is the whole body', async ($, on) => {
+  const plan = planOf(2400)
+  const { rec } = capture(on, RECORDED({ pending: [{ turnId: 't1', by: 'owner', src: { chars: plan.length, sha: '', where: 'inline', text: plan } }] }))
+  await started($)
+  await send($, 'yes')
+  const m = rec()?.owner.at(-1)
+  expect(m?.src?.body?.text).toBe(plan)
+  expect(m?.incomplete).toBeUndefined()
+  expect(rec()?.pending ?? []).toEqual([])
+})
+
+test('rule: a step whose index skips one, or a turn whose start the rep never heard, makes the body incomplete', async ($, on) => {
+  const { rec, scripts } = capture(on)
+  await $.turn.start({ text: '', turnId: 't1' })
+  scripts.set('t1/0', said('Step zero.'))
+  await drive($, 't1', 0)
+  scripts.set('t1/2', said('Step two.'))
+  await drive($, 't1', 2)
+  await $.turn.complete(stop('t1'))
+  await settle($)
+  await send($, 'yes')
+  expect(rec()?.owner.at(-1)?.incomplete).toBe('a step of this turn was missed')
+  expect(rec()?.owner.at(-1)?.src?.body?.text).toBe('Step zero.\n\nStep two.')
+  await runTurn($, scripts, 't2', [said('No start was heard.')], { start: null })
+  await send($, 'and again')
+  expect(rec()?.owner.at(-1)?.incomplete).toBe('the rep did not see this turn from its start')
+})
+
+test('rule: turns the agent ran on its own after the owner\'s message are one body, each turn labelled by how it began', async ($, on) => {
+  const { rec, scripts } = capture(on)
+  await send($, 'build it')
+  await runTurn($, scripts, 't1', [said('The owner\'s turn.')], { start: 'build it' })
+  await runTurn($, scripts, 't2', [said('The agent went on.')], { start: '' })
+  const note = '<task-notification>the build finished</task-notification>'
+  await $.prompt.submit({ text: note, wait: false, origin: { kind: 'task-notification' } } as never)
+  await runTurn($, scripts, 't3', [said('A background task finished.')], { start: note })
+  await send($, 'good, ship it')
+  const m = rec()?.owner.at(-1)
+  expect(m?.src?.body?.text).toBe('The owner\'s turn.\n\nThe agent went on.\n\nA background task finished.')
+  expect(m?.turns?.map(t => t.by)).toEqual(['owner', 'continuation', 'notification'])
+  expect(rec()?.owner.map(o => o.text)).toEqual(['build it', 'good, ship it'])
+})
+
+test('rule: the same short answer sent twice, to two turns, gets each turn as its own body', async ($, on) => {
+  const { rec, scripts } = capture(on)
+  await runTurn($, scripts, 't1', [said('Shall I add the tests?')])
+  await send($, 'yes')
+  await runTurn($, scripts, 't2', [said('Shall I delete the old folder?')])
+  await send($, 'yes')
+  const [a, b] = rec()?.owner ?? []
+  expect(a?.src?.body?.text).toBe('Shall I add the tests?')
+  expect(b?.src?.body?.text).toBe('Shall I delete the old folder?')
+})
+
+test('rule: a turn longer than the rep keeps is marked incomplete', async ($, on) => {
+  const { rec, scripts } = capture(on)
+  const max = 1_000_000
+  await runTurn($, scripts, 't1', [{ chunks: [txt('a'.repeat(max - 10)), txt('b'.repeat(11)), ends('end_turn')] }])
+  await send($, 'yes')
+  const m = rec()?.owner.at(-1)
+  expect(m?.incomplete).toBe('longer than the rep keeps')
+  expect((m?.src?.body?.text ?? '').length).toBeLessThanOrEqual(max)
+})
+
+test('rule: past the most finished turns the rep holds, the oldest is let go and counted, and the next body says so with every kept turn labelled', async ($, on) => {
+  const { rec, scripts } = capture(on)
+  const most = 50
+  for (let i = 0; i <= most; i++) await runTurn($, scripts, `t${i}`, [said(`turn ${i} text.`)])
+  expect(rec()?.pending).toHaveLength(most)
+  expect(rec()?.pendingDropped).toBe(1)
+  await send($, 'yes')
+  const m = rec()?.owner.at(-1)
+  const body = m?.src?.body?.text ?? ''
+  expect(m?.incomplete).toBe('1 earlier turn since the owner\'s last message was not kept')
+  expect(body).not.toContain('turn 0 text.')
+  for (let i = 1; i <= most; i++) expect(body).toContain(`turn ${i} text.`)
+  const spans = m?.turns ?? []
+  expect(spans).toHaveLength(20)
+  expect(spans.every(s => typeof s.by === 'string' && s.by !== '')).toBe(true)
+  expect(spans.reduce((n, s) => n + (s.merged === undefined ? 1 : Object.values(s.merged).reduce((a, b) => a + b, 0)), 0)).toBe(most)
+  expect(rec()?.pending ?? []).toEqual([])
+})
+
+test('rule: a typed reply longer than the cut keeps its first part as its text and the whole as sent, and the writer reads the whole', async ($, on) => {
+  const { rec, prompts } = capture(on)
+  const long = planOf(9000, 'Reply')
+  await send($, long)
+  const m = rec()?.owner.at(-1)
+  expect(m?.text).toBe(fit(long, HIS_CUT))
+  expect(m?.src?.sent?.text).toBe(long)
+  expect(prompts.some(p => p.includes(long))).toBe(true)
+})
+
+test('rule: an edited draft of the rep\'s, stored as the owner\'s, keeps the whole as sent, and the writer reads the whole', async ($, on) => {
+  const { rec, prompts } = capture(on, RECORDED({ drafts: ['Run the suite and show me the output.'] }))
+  await started($)
+  const long = `Run the whole suite and show me the output. ${planOf(9000, 'Edited')}`
+  await send($, long)
+  const m = rec()?.owner.at(-1)
+  expect(m?.kind).toBe('his')
+  expect(m?.text).toBe(fit(long, HIS_CUT))
+  expect(m?.src?.sent?.text).toBe(long)
+  expect(prompts.some(p => p.includes(long))).toBe(true)
+})
+
+test('rule: a message split into words for the agent and a note to the rep keeps the whole message as sent, and the writer reads the agent part whole', async ($, on) => {
+  const { rec, prompts } = capture(on)
+  const long = planOf(9000, 'Agent')
+  const whole = `${long}\nOwner rep: watch that the tests stay`
+  await send($, whole)
+  const owner = rec()?.owner ?? []
+  const his = owner.find(o => o.kind === 'his')
+  expect(his?.text).toBe(fit(long, HIS_CUT))
+  expect(his?.src?.sent?.text).toBe(whole)
+  expect(owner.find(o => o.kind === 'note')?.text).toBe('watch that the tests stay')
+  expect(prompts.some(p => p.includes(long))).toBe(true)
+})
+
+// Guards: these hold today and must hold after the capture.
+
+test('guard: every chunk of a step reaches the top unchanged and in order, thinking included', async ($, on) => {
+  const { scripts } = capture(on)
+  const chunks = [think('first, the plan'), txt('Here is the plan.'), think('a second thought', 2), txt('More.', 3), ...toolCall(4), ends('tool_use')]
+  await $.turn.start({ text: '', turnId: 't1' })
+  scripts.set('t1/0', { chunks })
+  expect((await drive($, 't1', 0)).chunks).toEqual(chunks)
+})
+
+test('guard: a turn with no text gives no body and no source', async ($, on) => {
+  const { rec, scripts } = capture(on)
+  await runTurn($, scripts, 't1', [{ chunks: [think('thinking only'), ...toolCall(1), ends('tool_use')] }], { answer: '' })
+  await send($, 'yes')
+  expect(rec()?.owner.at(-1)).toEqual({ n: 1, kind: 'his', text: 'yes', prior: '' })
+})
+
+test('guard: a helper\'s steps, streaming between the main loop\'s, leave none of their text in the body', async ($, on) => {
+  const { rec, scripts } = capture(on)
+  await $.turn.start({ text: '', turnId: 't1' })
+  scripts.set('t1/0', { chunks: [txt('The main loop, first.'), ...toolCall(1), ends('tool_use')] })
+  await drive($, 't1', 0)
+  scripts.set('h1/0', said('The helper\'s own words.'))
+  await drive($, 'h1', 0, 'agent-1')
+  scripts.set('t1/1', said('The main loop, second.'))
+  await drive($, 't1', 1)
+  await $.turn.complete({ ...stop('h1', 'The helper\'s own words.'), agentId: 'agent-1' } as never)
+  await $.turn.complete(stop('t1'))
+  await settle($)
+  await send($, 'yes')
+  const body = rec()?.owner.at(-1)?.src?.body?.text ?? ''
+  expect(body).not.toContain('helper')
+  expect(body).toBe('The main loop, first.\n\nThe main loop, second.')
+  expect(rec()?.owner.at(-1)?.incomplete).toBeUndefined()
+})
+
+test('guard: a later turn never changes an earlier message\'s body, and a plan quoted again lands only in the later one', async ($, on) => {
+  const { rec, scripts } = capture(on)
+  await runTurn($, scripts, 't1', [said('The plan: one, two, three.')])
+  await send($, 'yes')
+  await runTurn($, scripts, 't2', [said('The plan, edited: one, three.')])
+  await send($, 'fine')
+  const [a, b] = rec()?.owner ?? []
+  expect(a?.src?.body?.text).toBe('The plan: one, two, three.')
+  expect(b?.src?.body?.text).toBe('The plan, edited: one, three.')
+})
+
+test('guard: the first message after a reload, in a session the rep holds a record of, reads nothing from the session', async ($, on) => {
+  const { scripts, reads } = capture(on, RECORDED())
+  await started($)
+  await runTurn($, scripts, 't1', [said('A turn after the reload.')], { start: null })
+  await send($, 'yes')
+  expect(reads()).toBe(0)
+})
+
+test('guard: a session left by a /clear takes none of its running turn into the next session', async ($, on) => {
+  let id = 'before-clear'
+  const store: Record<string, unknown> = {}
+  const { scripts } = capture(on, store, () => id)
+  const recOf = (k: string) => (store.sessions as Record<string, CapRec> | undefined)?.[k]
+  await started($)
+  await send($, 'start the work')
+  await $.turn.start({ text: 'start the work', turnId: 't1' })
+  scripts.set('t1/0', { chunks: [txt('Words of the old session.'), ...toolCall(1), ends('tool_use')] })
+  await drive($, 't1', 0)
+  await $.session.end({ reason: 'clear', sessionId: 'before-clear', resume: { id: 'before-clear' } } as never)
+  id = 'after-clear'
+  await runTurn($, scripts, 't2', [said('Words of the new session.')])
+  await send($, 'yes')
+  const m = recOf('after-clear')?.owner.at(-1)
+  expect(m?.src?.body?.text).toBe('Words of the new session.')
+  expect(m?.incomplete).toBeUndefined()
+  expect(JSON.stringify(recOf('after-clear'))).not.toContain('old session')
+})
+
+test('guard: a step the top stops early, or one that throws from beneath, keeps what arrived, and the next turn is captured clean', async ($, on) => {
+  const { rec, scripts } = capture(on)
+  await $.turn.start({ text: '', turnId: 't1' })
+  scripts.set('t1/0', { chunks: [txt('Arrived before the stop.'), txt(' Never read.'), ends('end_turn')] })
+  const it = $.turn.step({ turnId: 't1', index: 0, model: 'm', messageCount: 1 })[Symbol.asyncIterator]()
+  expect(await it.next()).toEqual({ done: false, value: txt('Arrived before the stop.') })
+  await it.return?.(undefined as never)
+  await $.turn.complete(stop('t1'))
+  await settle($)
+  await send($, 'yes')
+  expect(rec()?.owner.at(-1)?.src?.body?.text).toBe('Arrived before the stop.')
+  await $.turn.start({ text: '', turnId: 't2' })
+  scripts.set('t2/0', { chunks: [txt('Arrived before the error.')], fail: new Error('the stream broke') })
+  await expect(drive($, 't2', 0)).rejects.toThrow('the stream broke')
+  await $.turn.complete(stop('t2'))
+  await settle($)
+  await send($, 'go on')
+  expect(rec()?.owner.at(-1)?.src?.body?.text).toBe('Arrived before the error.')
+  await runTurn($, scripts, 't3', [said('A clean turn.')])
+  await send($, 'thanks')
+  expect(rec()?.owner.at(-1)?.src?.body?.text).toBe('A clean turn.')
+  expect(rec()?.owner.at(-1)?.incomplete).toBeUndefined()
 })
 
 // ==============================================================================================
