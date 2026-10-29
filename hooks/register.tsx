@@ -160,6 +160,13 @@ import {
   parseBrief,
   parseCheck,
   parseObjective,
+  parseApproved,
+  settleConditions,
+  takeApprovals,
+  wordsUnread,
+  writerShowings,
+  TOOK_INLINE_BYTES,
+  approvalOf,
   writeFailure,
   parseWatch,
   resultOf,
@@ -253,6 +260,9 @@ type Rec = {
   lossMark?: LossMark
   // The approvals of the open job the record could not keep; absent when none.
   uncovered?: Uncovered
+  // The last write whose every attempt failed: when, and the last message it was shown;
+  // cleared by the next write that lands. A fresh start writes again while it is set.
+  failedWrite?: { at: number; upTo: number }
 }
 
 const isRec = (v: unknown): v is Rec =>
@@ -855,23 +865,37 @@ function honest(proposed: Condition[], held: Condition[], his: readonly number[]
 // whole and keeps every held condition the writer let go without a message of
 // the owner's that says so; a new job closes the old objective into `past`.
 // True when it changed.
-function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number): boolean {
+function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number, rev?: number): boolean {
   if (a === null || a.kind === 'holds') return false
   const held = rec.objective
+  // A message of the owner's closes or drops a condition, or opens a new job, only when it is
+  // all theirs and read whole: never an approval, whose plan is the agent's, nor words that
+  // could not be read in full.
+  const byN = new Map(rec.owner.map(m => [m.n, m]))
+  const canClose = (n: number): boolean => {
+    const m = byN.get(n)
+    return m !== undefined && !approvalOf(m) && !wordsUnread(m)
+  }
+  const canOpen = (n: number): boolean => {
+    const m = byN.get(n)
+    return m !== undefined && m.kind !== 'plan' && canClose(n)
+  }
+  const cited = Number(a.cause.match(/#(\d+)/)?.[1] ?? Number.NaN)
+  const lets = [...a.dropped, ...a.parts.done.filter(c => c.state === 'closed').map(c => ({ text: c.text, by: Number(c.by.slice(1)) || null }))]
   if (held === null) {
     let his = hisFrom(rec, rec.jobStart).filter(n => n <= saw)
     // A session seeded from its transcript can hold more than one job, all recorded as one:
     // when the first write says a new job opened at a message of the owner's after the first,
     // the job starts there, and the earlier messages are no longer their messages on this
     // job.
-    const opened = a.isNewJob ? Number(a.cause.match(/#(\d+)/)?.[1] ?? Number.NaN) : Number.NaN
+    const opened = a.isNewJob && canOpen(cited) ? cited : Number.NaN
     if (his.includes(opened) && opened > Math.min(...his)) {
       rec.jobStart = opened
       his = his.filter(n => n >= opened)
     }
     rec.objective = {
       ...a.parts,
-      done: honest(a.parts.done, [], his),
+      done: honest(a.parts.done, [], his.filter(canClose)),
       openedAt: now,
       since: his.length > 0 ? Math.min(...his) : rec.jobStart,
       from: saw,
@@ -883,17 +907,31 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number): 
     delete rec.stale
     return true
   }
+  // An answer to a write whose objective changed while it ran (`rev`, the objective's revision
+  // when the write loaded it) adds and closes conditions only: the result, the purpose and the
+  // step stay as the newer write left them.
+  if (rev !== undefined && rev < rec.objRev) {
+    const fresh = hisFrom(rec, held.from + 1).filter(n => n <= saw)
+    const closers = fresh.filter(canClose)
+    const merged = mergeConditions(held.done, honest(a.parts.done, held.done, closers), a.dropped, closers)
+    rec.objective = { ...held, done: settleConditions(held.done, merged, lets, rec.owner), from: Math.max(held.from, saw) }
+    return true
+  }
   if (saw <= held.from) return false
   const fresh = hisFrom(rec, held.from + 1).filter(n => n <= saw)
   if (fresh.length === 0) return false
+  const closers = fresh.filter(canClose)
   const version = { at: now, cause: a.cause, text: objectiveText(held) }
-  if (a.isNewJob) {
+  // The message a new job opens at: the one the answer names when this write is the first to
+  // see it, else the first it sees.
+  const opening = fresh.includes(cited) ? cited : Math.min(...fresh)
+  if (a.isNewJob && canOpen(opening)) {
     const since = Math.min(...fresh)
     rec.past = [...rec.past, held.result].slice(-PAST_MAX)
     rec.jobStart = since
     rec.objective = {
       ...a.parts,
-      done: honest(a.parts.done, [], hisFrom(rec, since).filter(n => n <= saw)),
+      done: honest(a.parts.done, [], hisFrom(rec, since).filter(n => n <= saw && canClose(n))),
       openedAt: now,
       since,
       from: saw,
@@ -911,7 +949,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number): 
     result: a.parts.result,
     purpose: a.parts.purpose,
     step: a.parts.step,
-    done: mergeConditions(held.done, honest(a.parts.done, held.done, fresh), a.dropped, fresh),
+    done: settleConditions(held.done, mergeConditions(held.done, honest(a.parts.done, held.done, closers), a.dropped, closers), lets, rec.owner),
     from: saw,
     movedAt: now,
     cause: a.cause,
@@ -973,9 +1011,12 @@ const writing = new Map<string, Writing>()
 // messages on the job, never the conversation, so nothing the agent says can
 // move what it writes. A request while one runs joins it, and a message or
 // note that joins is written after the write in hand. A load or a press asks
-// only for the first objective, and a message or a note for a rebuild. Never
-// awaited by the prompt hook that starts it, so the agent is never slowed.
-async function rebuildObjective($: EngineInterface, sid: string, cause: 'message' | 'note' | 'load' | 'press'): Promise<void> {
+// only for the first objective, a message or a note for a rebuild, and a retry
+// (a fresh start, or a turn's end, with a message waiting for a whole read or a
+// write that failed) for whatever is still to write. Never awaited by the hook
+// that starts it, so the agent is never slowed.
+type WriteCause = 'message' | 'note' | 'load' | 'press' | 'retry'
+async function rebuildObjective($: EngineInterface, sid: string, cause: WriteCause): Promise<void> {
   const running = writing.get(sid)
   if (running !== undefined) {
     if (cause === 'message' || cause === 'note') running.again = true
@@ -989,27 +1030,45 @@ async function rebuildObjective($: EngineInterface, sid: string, cause: 'message
   return entry.run
 }
 
+// The first message on the job waiting for a write that reads it whole.
+const waitingOf = (rec: Rec): number | undefined => jobMsgs(rec).find(m => m.pinned !== true && m.read?.state === 'waiting')?.n
+
 async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolean, entry: Writing): Promise<void> {
   // The last message number a write in this run was shown; a rerun with
   // nothing of the owner's past it makes no call.
   let shown = -1
+  // The last prompt whose answer landed: the same prompt again would answer the same.
+  let lastPrompt = ''
   for (;;) {
     entry.again = false
     const rec = await loadRec($, sid)
-    const saw = rec.counter
-    const due = !(onlyFirst && rec.objective !== null) && hisFrom(rec, Math.max(jobOf(rec), shown + 1)).length > 0
+    const newest = rec.counter
+    const waitingN = waitingOf(rec)
+    const due =
+      !(onlyFirst && rec.objective !== null) &&
+      (waitingN !== undefined || hisFrom(rec, Math.max(jobOf(rec), shown + 1)).length > 0)
+    let failed = false
+    if (!due) shown = Math.max(shown, newest)
     if (due) {
-      shown = saw
+      // The whole words of each message, what it answered or carried, and what an approval took,
+      // read from where they were saved; the approvals kept past the trim are not the writer's.
+      const { msgs, lost } = await readable($, sid, jobMsgs(rec).filter(m => m.pinned !== true), ['sent', 'body', 'took', 'rejected'])
+      await markLost($, sid, lost)
+      const memory = { objective: rec.objective, owner: msgs, past: rec.past, ...(waitingN === undefined ? {} : { whole: waitingN }) }
+      const showings = writerShowings(memory)
+      // The last message this write is shown: the one it reads whole, the last it listed before
+      // it stopped, or the newest.
+      const saw = waitingN ?? showings.stoppedAt ?? newest
+      const partial = waitingN !== undefined || showings.stoppedAt !== null
+      const prompt = objectivePrompt(memory)
+      if (prompt === lastPrompt) break
+      const rev = rec.objRev
+      let after = rec
+      let landed = false
       // Up to 1 + OBJECTIVE_RETRIES attempts over the same prompt: an empty or errored
       // reply, an answer that cannot be read and a "holds" with nothing held are tried
       // again at the highest effort; a call that threw or was cut short is not. Only a
       // write whose every attempt failed counts as failed, with the last cause.
-      // The whole words of each message, read from where they were saved; the approvals kept
-      // past the trim are not the writer's.
-      const { msgs, lost } = await readable($, sid, jobMsgs(rec).filter(m => m.pinned !== true), ['sent'])
-      await markLost($, sid, lost)
-      const prompt = objectivePrompt({ objective: rec.objective, owner: msgs, past: rec.past })
-      let after = rec
       for (let attempt = 0; attempt <= OBJECTIVE_RETRIES; attempt++) {
         const retry = attempt > 0
         const result = await $.model
@@ -1024,7 +1083,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
           .catch(() => null)
         let again = false
         let stale = false
-        after = await changeRec($, sid, r => {
+        after = await changeRec($, sid, async r => {
           if (result !== null) {
             r.objectiveCalls += 1
             r.objectiveTokens += tokensOf(result.usage)
@@ -1032,7 +1091,29 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
           const answer = result !== null && result.isAnswered ? parseObjective(result.text) : null
           const none = answer !== null && answer.kind === 'holds' && r.objective === null
           if (answer !== null && !none) {
-            takeObjective(r, answer, Date.now(), saw)
+            landed = true
+            delete r.failedWrite
+            // What the answer marked approved, and which messages it read whole; a mark or long
+            // words shown only in part sets the answer aside until they are read whole.
+            const marks = result !== null && result.isAnswered ? parseApproved(result.text) : []
+            const took = takeApprovals(r.owner, marks, showings.shows, waitingN, r.objectiveCalls)
+            for (const c of took.changes) {
+              const i = r.owner.findIndex(m => m.n === c.n)
+              const m = r.owner[i]
+              if (m === undefined) continue
+              const next: OwnerMsg = { ...m, read: c.read }
+              if (c.approved !== undefined) {
+                if (utf8Bytes(JSON.stringify(c.approved)) > TOOK_INLINE_BYTES) {
+                  next.approved = ''
+                  next.src = { ...next.src, took: await saveSource($, sid, `${m.n}-took`, c.approved) }
+                } else next.approved = c.approved
+              }
+              r.owner[i] = next
+            }
+            if (took.setAside) return r
+            if (answer.kind === 'holds') {
+              if (partial && r.objective !== null) r.objective = { ...r.objective, from: Math.max(r.objective.from, saw) }
+            } else takeObjective(r, answer, Date.now(), saw, rev)
             return r
           }
           const cut = result !== null && !result.isAnswered && result.reason === 'aborted'
@@ -1041,7 +1122,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
           // over the fresh prompt, so this write stops here and is not counted as failed.
           // Judged by number only: a request can join after this pass already loaded its
           // message.
-          if (again && r.owner.some(m => m.kind !== 'draft' && m.n > saw)) {
+          if (again && r.owner.some(m => m.kind !== 'draft' && m.n > newest)) {
             again = false
             stale = true
             return r
@@ -1049,11 +1130,15 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
           if (!again) {
             r.objectiveFailed += 1
             r.objectiveWhy = none ? 'holds-with-none' : writeFailure(result)
+            r.failedWrite = { at: Date.now(), upTo: saw }
+            failed = true
           }
           return r
         })
         if (!again || stale) break
       }
+      if (landed) lastPrompt = prompt
+      if (landed || failed) shown = saw
       // The row shows what the record holds, whichever write put it there,
       // while its session is the one on screen.
       if (onScreen(sid)) await update($, readingA, () => after.objective)
@@ -1061,14 +1146,19 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
     onlyFirst = false
     // A message of the owner's or a note that came in during the write is
     // written now: one whose request joined this run, or one saved after the
-    // write was shown the messages. The check and the release are one step, so
-    // a request that comes after it starts a run of its own.
+    // write was shown the messages; so is what the write left, a message still
+    // to read whole or messages past where it stopped, unless it failed. The
+    // check and the release are one step, so a request that comes after it
+    // starts a run of its own.
     const now = await loadRec($, sid)
-    if (!entry.again && !now.owner.some(m => m.kind !== 'draft' && m.n > saw)) {
+    const newer = now.owner.some(m => m.kind !== 'draft' && m.n > newest)
+    const left = !failed && (now.owner.some(m => m.kind !== 'draft' && m.n > shown) || waitingOf(now) !== undefined)
+    if (!entry.again && !newer && !left) {
       if (writing.get(sid) === entry) writing.delete(sid)
       return
     }
   }
+  if (writing.get(sid) === entry) writing.delete(sid)
 }
 
 async function setNow($: EngineInterface, patch: Partial<Now>): Promise<void> {
@@ -2080,7 +2170,9 @@ async function enterSession($: EngineInterface, id: string): Promise<void> {
   seedOwner($, id)
     .then(seeded => (seeded ? rebuildObjective($, id, 'load') : undefined))
     .catch(() => undefined)
-  if (rec.objective === null && hisFrom(rec, jobOf(rec)).length > 0) {
+  // A message left waiting for a whole read, or a write that failed, is written again now.
+  if (waitingOf(rec) !== undefined || rec.failedWrite !== undefined) rebuildObjective($, id, 'retry').catch(() => undefined)
+  else if (rec.objective === null && hisFrom(rec, jobOf(rec)).length > 0) {
     rebuildObjective($, id, 'load').catch(() => undefined)
   }
 }
@@ -2345,6 +2437,12 @@ export const register: Register = on => {
         .catch(() => undefined)
         .finally(() => inFlight.delete('look'))
     }
+    // A message still waiting for a whole read is tried again at each turn's end.
+    sessionId($)
+      .then(async id => {
+        if (waitingOf(await loadRec($, id)) !== undefined) await rebuildObjective($, id, 'retry')
+      })
+      .catch(() => undefined)
     return next(e)
   })
 

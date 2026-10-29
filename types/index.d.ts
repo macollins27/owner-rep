@@ -76,7 +76,7 @@ export type View = 'row' | 'note' | 'reading' | 'brief'
 // from the stream: the same shapes as in hooks/rep.ts, declared again for the same reason.
 export type OwnerKind = 'his' | 'note' | 'draft' | 'plan'
 // Whether the agent's words a message answered could be read when it came.
-export type ReadState = { state: 'read' | 'waiting' | 'unreadable'; why?: string }
+export type ReadState = { state: 'read' | 'waiting' | 'unreadable'; why?: string; write?: number }
 export type TurnBy = 'owner' | 'notification' | 'continuation' | 'other'
 // A saved text: its length, the SHA-256 of its UTF-8 bytes ('' only for one too long to keep),
 // where it is held, `text` only when inline, and `lost` when it cannot be read.

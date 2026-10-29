@@ -3311,7 +3311,7 @@ const range = (from: number, to: number): number[] => Array.from({ length: to - 
 
 // The record as these tests read it back, loosely.
 type T3Src = { chars: number; sha: string; where: string; text?: string; lost?: string }
-type T3Msg = { n: number; kind: string; text: string; prior: string; pinned?: boolean; approved?: string; screen?: string; incomplete?: string; src?: Record<string, T3Src | undefined> }
+type T3Msg = { n: number; kind: string; text: string; prior: string; pinned?: boolean; approved?: string; screen?: string; incomplete?: string; read?: { state: string; why?: string; write?: number }; withDraft?: number; src?: Record<string, T3Src | undefined> }
 type T3Mark = { lostRev: number; keptRev: number; after: number; why: string }
 type T3Rec = {
   owner: T3Msg[]
@@ -4173,6 +4173,18 @@ const asks = (on: On, owner: AskMsg[], more: Record<string, unknown> = {}, files
   const store = storeOf(recOf(owner, more))
   const cap = capture(on, store, () => SID)
   const held = () => heldIn(store) as AskRec | undefined
+  // A run of several writes in a row outlasts one settle: settles again, at most 60 times,
+  // until the store and the writer's calls stay the same through six settles.
+  const quietly = async ($: Engine) => {
+    let last = ''
+    let same = 0
+    for (let i = 0; i < 60 && same < 6; i++) {
+      await settle($)
+      const now = `${cap.prompts.length}|${JSON.stringify(store)}`
+      same = now === last ? same + 1 : 0
+      last = now
+    }
+  }
   return {
     d,
     store,
@@ -4184,6 +4196,11 @@ const asks = (on: On, owner: AskMsg[], more: Record<string, unknown> = {}, files
     ordinary: () => cap.prompts.filter(p => !p.includes(WHOLE_MARK)),
     answer: (f: (prompt: string) => string | null) => {
       cap.hold.write = () => f(cap.prompts.at(-1) ?? '')
+    },
+    quiet: quietly,
+    send: async ($: Engine, text: string) => {
+      await send($, text)
+      await quietly($)
     },
   }
 }
@@ -4213,7 +4230,7 @@ test('rule: a typed yes to a turn shown whole is an approval, read, and applied 
   s.answer(() => ANSWER(['apple.txt made | open'], { approved: ['#2 | all'] }))
   await started($)
   await runTurn($, s.scripts, 't1', [said(PLAN)])
-  await send($, 'yes, go')
+  await s.send($, 'yes, go')
   expect(s.prompts.length).toBe(1)
   expect(s.prompts[0]).toContain(WHOLE_LABEL(5000))
   expect(s.prompts[0]).toContain(PLAN)
@@ -4233,7 +4250,7 @@ test('rule: a yes to a turn shown only by its close is set aside and read whole 
   })
   await started($)
   await runTurn($, s.scripts, 't1', [said(PLAN)])
-  await send($, 'yes, go')
+  await s.send($, 'yes, go')
   expect(s.prompts.length).toBe(2)
   const [first = '', whole = ''] = s.prompts
   expect(first).toContain(CLOSE_LABEL(30000))
@@ -4259,7 +4276,7 @@ test('rule: a yes to a turn not shown, with the owner\'s words whole, is recorde
   s.answer(() => ANSWER(['apple.txt made | open'], { approved: ['#2 | all'] }))
   await started($)
   await runTurn($, s.scripts, 't1', [said('The plan: then delete old.txt and rebuild.')], { start: null })
-  await send($, 'yes, go')
+  await s.send($, 'yes, go')
   expect(s.prompts.length).toBe(1)
   expect(s.prompts[0]).toContain('(the agent\'s turn before #2 could not be captured: ')
   expect(s.prompts[0]).toContain('if the owner approved it, mark it, and none of its steps can be held)')
@@ -4277,7 +4294,7 @@ test('rule: a turn not shown and a long reply shown by its close: set aside, his
   )
   await started($)
   await runTurn($, s.scripts, 't1', [said('The plan: then delete old.txt and rebuild.')], { start: null })
-  await send($, REPLY)
+  await s.send($, REPLY)
   expect(s.prompts.length).toBe(2)
   const [first = '', whole = ''] = s.prompts
   expect(first).toContain(REPLY.slice(0, 5000))
@@ -4303,7 +4320,7 @@ const wholeReadSaysNo = async ($: Engine, on: On, line: string[]) => {
   )
   await started($)
   await runTurn($, s.scripts, 't1', [said(turnWith(30000))])
-  await send($, 'go with apple, and no pear after all')
+  await s.send($, 'go with apple, and no pear after all')
   expect(s.wholeReads().length).toBe(1)
   expect(approves(s.msg(2))).toBe(false)
   expect(s.msg(2)?.read?.state).toBe('read')
@@ -4325,7 +4342,7 @@ test('rule: a plan accepted on the plan screen and shown whole is printed with i
   const s = asks(on, [his(1, 'plan the fruit files'), await planMsg(2, PLAN)], {}, new Map([[`${DIR}/2-body.txt`, PLAN]]))
   s.answer(() => ANSWER(['apple.txt made | open']))
   await started($)
-  await send($, 'go on')
+  await s.send($, 'go on')
   expect(s.prompts.length).toBe(1)
   expect(s.prompts[0]).toContain(PLAN_LINE(2))
   expect(s.prompts[0]).toContain(PLAN)
@@ -4344,7 +4361,7 @@ test('rule: a plan-screen plan shown only by its close waits for a whole-read wr
     return ANSWER(['plum.txt made | open'], { approved: ['none'] })
   })
   await started($)
-  await send($, 'go on')
+  await s.send($, 'go on')
   const [first = '', whole = ''] = s.prompts
   expect(first).toContain(CLOSE_LABEL(30000))
   expect(first).not.toContain('make plum.txt')
@@ -4363,7 +4380,7 @@ test('rule: nothing of a plan-screen plan over the cap is printed anywhere: the 
   s.hold.fork = p => (p.includes(BRIEF_ASKED) ? BRIEF('The card.') : HOLDS)
   s.answer(() => ANSWER(['apple.txt made | open']))
   await started($)
-  await send($, 'go on')
+  await s.send($, 'go on')
   expect(s.prompts.length).toBe(1)
   expect(s.prompts[0]).toContain(PLAN_NOT_SHOWN(2))
   expect(s.prompts[0]).not.toContain('delete old.txt')
@@ -4388,8 +4405,8 @@ test('rule: nothing of a typed approval\'s turn over the cap is printed, before 
   s.answer(p => (p.includes('- #3 ') ? ANSWER(['old.txt deleted | open', 'totals added | open']) : ANSWER(['old.txt deleted | open'], { approved: ['#2 | all'] })))
   await started($)
   await runTurn($, s.scripts, 't1', [said(TURN)])
-  await send($, 'yes, go')
-  await send($, 'and the totals')
+  await s.send($, 'yes, go')
+  await s.send($, 'and the totals')
   expect(s.prompts.length).toBe(2)
   for (const p of s.prompts) {
     expect(p).toContain(`(the agent's turn before #2 is ${commas(130000)} characters, too long for the rep to check; if the owner approved it, mark it, and none of its steps can be held)`)
@@ -4411,8 +4428,8 @@ test('rule: a lost turn\'s prior is never printed, before the mark or after it',
   const s = asks(on, [his(1, 'plan the fruit files'), two], {}, new Map([[`${DIR}/2-body.txt`, 'Other words entirely.']]))
   s.answer(p => (p.includes('- #4 ') ? ANSWER(['old.txt deleted | open', 'totals added | open']) : ANSWER(['old.txt deleted | open'], { approved: ['#2 | all'] })))
   await started($)
-  await send($, 'go on')
-  await send($, 'and the totals')
+  await s.send($, 'go on')
+  await s.send($, 'and the totals')
   expect(s.prompts.length).toBe(2)
   for (const p of s.prompts) {
     expect(p).toContain('(the agent\'s turn before #2 could not be read: ')
@@ -4427,7 +4444,7 @@ test('rule: a mark on a message already read, on a draft, or on a message not li
   const s = asks(on, [his(1, 'plan the fruit files'), his(2, 'thanks', { read: { state: 'read' } }), { n: 3, kind: 'draft', text: 'Make the fruit files now.', prior: '' }])
   s.answer(() => ANSWER(['apple.txt made | open'], { approved: ['#2 | all', '#3 | all', '#9 | all'] }))
   await started($)
-  await send($, 'go on')
+  await s.send($, 'go on')
   expect(s.prompts.length).toBe(1)
   for (const n of [2, 3, 4]) expect(approves(s.msg(n))).toBe(false)
   expect(s.msg(2)?.read).toEqual({ state: 'read' })
@@ -4457,7 +4474,7 @@ test('rule: a mark on a draft moves to the owner\'s words sent with it, from the
   const s = asks(on, owner, {}, files)
   s.answer(() => ANSWER(['apple.txt made | open', 'pear.txt made | open'], { approved: ['#2 | all'] }))
   await started($)
-  await send($, 'go on')
+  await s.send($, 'go on')
   expect(s.prompts[0]).toContain('- #3 (one message the owner sent: your draft #2 with the owner\'s own words after it; read it as the owner\'s)')
   expect(s.prompts[0]).toContain(SENT)
   expect(s.msg(3)).toMatchObject({ approved: 'all', read: { state: 'read' } })
@@ -4468,7 +4485,7 @@ test('rule: a mark on a draft is dropped when the words after it came from anoth
   const s = asks(on, owner, {}, files)
   s.answer(() => ANSWER(['apple.txt made | open'], { approved: ['#2 | all'] }))
   await started($)
-  await send($, 'go on')
+  await s.send($, 'go on')
   for (const n of [2, 3, 4]) expect(approves(s.msg(n))).toBe(false)
   expect(doneOf(s.obj())).toContain('apple.txt made')
 })
@@ -4486,9 +4503,9 @@ test('rule: a mark on another listed message shown only by its close sets the an
   })
   await started($)
   await runTurn($, s.scripts, 't1', [said(A)])
-  await send($, 'ok, and the other one?')
+  await s.send($, 'ok, and the other one?')
   await runTurn($, s.scripts, 't2', [said(B)])
-  await send($, 'yes, go')
+  await s.send($, 'yes, go')
   const marks = s.wholeReads().map(p => /This write reads one owner message whole: #(\d+)\./.exec(p)?.[1])
   expect(marks).toEqual(['3', '2', '3'])
   expect(states).toEqual([
@@ -4508,7 +4525,7 @@ test('rule: a rejection note shown whole prints the plan it turned down, never a
   const s = asks(on, [his(1, 'plan the fruit files'), await REJECTED(2, 'no, keep the old names', PLAN)], {}, new Map([[`${DIR}/2-rejected.txt`, PLAN]]))
   s.answer(() => ANSWER(['the old names kept | open'], { approved: ['#2 | all'] }))
   await started($)
-  await send($, 'go on')
+  await s.send($, 'go on')
   expect(s.prompts.length).toBe(1)
   expect(s.prompts[0]).toContain('- #2 (typed while turning down the plan below on the plan screen) no, keep the old names')
   expect(s.prompts[0]).toContain(REJECTED_LINE)
@@ -4522,9 +4539,11 @@ test('rule: a rejection note shown whole prints the plan it turned down, never a
 test('rule: a rejection note whose plan shows only by its close waits, and its whole-read write holds only the note', async ($, on) => {
   const PLAN = turnWith(30000, [[100, 'Step: rename every file.']])
   const s = asks(on, [his(1, 'plan the fruit files'), await REJECTED(2, 'no, keep the old names', PLAN)], {}, new Map([[`${DIR}/2-rejected.txt`, PLAN]]))
-  s.answer(p => (p.includes(WHOLE_MARK) ? ANSWER(['the old names kept | open'], { approved: ['#2 | all'] }) : ANSWER(['every file renamed | open'])))
+  // The first ordinary write is set aside; the one after the whole read, over 'go on', finds the
+  // objective as it holds.
+  s.answer(p => (p.includes(WHOLE_MARK) ? ANSWER(['the old names kept | open'], { approved: ['#2 | all'] }) : s.ordinary().length === 1 ? ANSWER(['every file renamed | open']) : 'objective: holds'))
   await started($)
-  await send($, 'go on')
+  await s.send($, 'go on')
   expect(s.ordinary()[0]).toContain(CLOSE_LABEL(30000))
   expect(s.wholeReads().length).toBe(1)
   expect(s.wholeReads()[0]).toContain(PLAN)
@@ -4539,7 +4558,7 @@ test('rule: a rejection note whose plan is over the cap is unreadable, its plan 
   const s = asks(on, [his(1, 'plan the fruit files'), await REJECTED(2, 'no, keep the old names', PLAN)], {}, new Map([[`${DIR}/2-rejected.txt`, PLAN]]))
   s.answer(() => ANSWER(['the old names kept | open']))
   await started($)
-  await send($, 'go on')
+  await s.send($, 'go on')
   expect(s.prompts.length).toBe(1)
   expect(s.prompts[0]).toContain('no, keep the old names')
   expect(s.prompts[0]).not.toContain('rename every file')
@@ -4557,7 +4576,7 @@ test('rule: an owner note to the rep that says yes to a turn shown whole is an a
   s.answer(() => ANSWER(['apple.txt made | open'], { approved: ['#2 | all'] }))
   await started($)
   await runTurn($, s.scripts, 't1', [said(PLAN)])
-  await send($, NOTE_YES)
+  await s.send($, NOTE_YES)
   expect(s.msg(2)?.kind).toBe('note')
   expect(s.prompts.length).toBe(1)
   expect(s.prompts[0]).toContain('- #2 (to the rep) yes, go with it')
@@ -4579,7 +4598,7 @@ test('rule: an owner note that says yes to a turn shown only by its close waits,
   })
   await started($)
   await runTurn($, s.scripts, 't1', [said(PLAN)])
-  await send($, NOTE_YES)
+  await s.send($, NOTE_YES)
   expect(s.msg(2)?.kind).toBe('note')
   expect(s.ordinary().length).toBe(1)
   expect(s.ordinary()[0]).toContain(CLOSE_LABEL(30000))
@@ -4601,7 +4620,7 @@ test('rule: an owner note that says yes to a turn not shown is an approval recor
   s.answer(() => ANSWER(['apple.txt made | open'], { approved: ['#2 | all'] }))
   await started($)
   await runTurn($, s.scripts, 't1', [said('The plan: then delete old.txt and rebuild.')], { start: null })
-  await send($, NOTE_YES)
+  await s.send($, NOTE_YES)
   expect(s.msg(2)?.kind).toBe('note')
   expect(s.prompts.length).toBe(1)
   expect(s.prompts[0]).toContain('(the agent\'s turn before #2 could not be captured: ')
@@ -4626,9 +4645,9 @@ test('rule: two long approvals whose whole-read writes fail are read after a fre
   })
   await started($)
   await runTurn($, s.scripts, 't1', [said(A)])
-  await send($, 'yes, go with that')
+  await s.send($, 'yes, go with that')
   await runTurn($, s.scripts, 't2', [said(B)])
-  await send($, 'yes, and this one too')
+  await s.send($, 'yes, and this one too')
   // The whole-read write for #2 failed every attempt.
   expect(s.wholeReads().length).toBe(1 + OBJECTIVE_RETRIES)
   expect(s.msg(2)?.read?.state).toBe('waiting')
@@ -4638,13 +4657,13 @@ test('rule: two long approvals whose whole-read writes fail are read after a fre
   // A fresh start with the same store: #2 is read; #3's write fails once more.
   failA = false
   await started($)
-  await settle($)
+  await s.quiet($)
   expect(s.msg(2)).toMatchObject({ approved: 'all', read: { state: 'read' } })
   expect(s.msg(3)?.read?.state).toBe('waiting')
   expect(s.held()?.failedWrite?.upTo).toBe(3)
   // The next turn's end runs it again, and it lands.
   await runTurn($, s.scripts, 't3', [said('Working on it.')])
-  await settle($)
+  await s.quiet($)
   expect(s.msg(3)).toMatchObject({ approved: 'all', read: { state: 'read' } })
   expect(s.held()?.owner.some(m => m.read?.state === 'waiting')).toBe(false)
   expect(s.held()?.failedWrite).toBeUndefined()
@@ -4659,7 +4678,7 @@ test('rule: after an ordinary write fails, the next lists all three approvals an
   await started($)
   for (const [i, plan] of plans.entries()) {
     await runTurn($, s.scripts, `t${i}`, [said(plan)])
-    await send($, `yes to plan ${i + 1}`)
+    await s.send($, `yes to plan ${i + 1}`)
   }
   const last = s.prompts.at(-1) ?? ''
   for (const plan of plans) expect(last).toContain(plan)
@@ -4691,7 +4710,7 @@ test('rule: a draft with the owner\'s words read whole, a long took saved in its
     return ANSWER(['something | open'])
   })
   await started($)
-  await send($, 'go on')
+  await s.send($, 'go on')
   const first = s.ordinary()[0] ?? ''
   expect(first).toContain(CLOSE_LABEL(5000))
   expect(first).not.toContain(SENT)
@@ -4704,7 +4723,7 @@ test('rule: a draft with the owner\'s words read whole, a long took saved in its
   expect(s.msg(3)?.src?.took).toEqual({ chars: TOOK.length, sha: await shaOf(TOOK), where: 'file' })
   expect(s.d.files.get(`${DIR}/3-took.txt`)).toBe(TOOK)
   // The next write prints the took whole, and a drop cited to the approval is refused.
-  await send($, 'and the report')
+  await s.send($, 'and the report')
   const next = s.prompts.at(-1) ?? ''
   expect(next).toContain('(approved; read whole in write ')
   expect(next).toContain(TOOK)
@@ -4725,7 +4744,7 @@ test('rule: when three fresh messages\' closes do not all fit, the call lists th
   const s = asks(on, owner, { failedWrite: { at: 1, upTo: 4 } }, files)
   s.answer(() => ANSWER(['apple.txt made | open']))
   await started($)
-  await settle($)
+  await s.quiet($)
   const ords = s.ordinary()
   expect(ords[0]).toContain('- #2 ')
   expect(ords[0]).toContain('- #3 ')
@@ -4745,11 +4764,14 @@ const fruitPlan = async (more: Record<string, unknown> = {}) => ({
 })
 const LONG_NOTES = wordsWith(20000, [[10000, 'do not make plum.txt after all. ']])
 const correctionRead = (s: ReturnType<typeof asks>, n: number) => {
-  s.answer(p =>
-    p.includes(WHOLE_MARK)
-      ? ANSWER(['apple.txt made | open', 'pear.txt made | open', 'plum.txt not made | open'], { dropped: ['plum.txt made | #' + n], cause: `#${n} corrected it` })
-      : ANSWER(['notes filed | open'], { cause: `#${n} added notes` }),
-  )
+  // The first ordinary write is set aside; a later one, over a message sent after the
+  // correction, finds the objective as it holds.
+  let ordinary = 0
+  s.answer(p => {
+    if (p.includes(WHOLE_MARK)) return ANSWER(['apple.txt made | open', 'pear.txt made | open', 'plum.txt not made | open'], { dropped: ['plum.txt made | #' + n], cause: `#${n} corrected it` })
+    ordinary += 1
+    return ordinary === 1 ? ANSWER(['notes filed | open'], { cause: `#${n} added notes` }) : 'objective: holds'
+  })
 }
 const correctionChecks = (s: ReturnType<typeof asks>, n: number, between: AskRec | undefined) => {
   expect(between?.objective?.done.map(x => x.text)).toEqual(['apple.txt made', 'pear.txt made', 'plum.txt made'])
@@ -4773,7 +4795,7 @@ test('rule: a long correction with no approval words is read whole before anythi
     return write?.() ?? null
   }
   await started($)
-  await send($, LONG_NOTES)
+  await s.send($, LONG_NOTES)
   const first = s.ordinary()[0] ?? ''
   expect(first).toContain(LONG_NOTES.slice(0, 5000))
   expect(first).toContain(LONG_NOTES.slice(-2000))
@@ -4794,7 +4816,7 @@ test('rule: a long correction sent as a rejection note is read whole before anyt
     return write?.() ?? null
   }
   await started($)
-  await send($, 'go on')
+  await s.send($, 'go on')
   correctionChecks(s, 3, between)
 })
 
@@ -4812,7 +4834,7 @@ test('rule: a long correction sent as the owner\'s words after a draft is read w
     return write?.() ?? null
   }
   await started($)
-  await send($, 'go on')
+  await s.send($, 'go on')
   correctionChecks(s, 4, between)
 })
 
@@ -4822,7 +4844,7 @@ test('rule: an ordinary reply whose whole context does not fit is read whole, an
   s.answer(p => (p.includes(WHOLE_MARK) ? ANSWER(['apple.txt made | open', 'pear.txt left untouched | open']) : ANSWER(['apple.txt made | open'])))
   await started($)
   await runTurn($, s.scripts, 't1', [said(turnWith(10000))])
-  await send($, REPLY)
+  await s.send($, REPLY)
   expect(s.ordinary()[0]).toContain(CLOSE_LABEL(10000))
   expect(s.wholeReads().length).toBe(1)
   expect(s.wholeReads()[0]).toContain(REPLY)
@@ -4835,7 +4857,7 @@ test('rule: the owner\'s words over the cap are unreadable: no whole-read write,
   const BIG = wordsWith(150000, [[100, 'also make pear.txt. ']])
   s.answer(() => ANSWER(['pear.txt made | open'], { approved: ['#2 | all'] }))
   await started($)
-  await send($, BIG)
+  await s.send($, BIG)
   expect(s.prompts.length).toBe(1)
   expect(s.prompts[0]).toContain(UNREAD_LABEL)
   expect(s.prompts[0]).toContain(BIG.slice(-2000))
@@ -4851,7 +4873,7 @@ test('rule: the owner\'s words whose saved copy is damaged are unreadable: only 
   s.d.failRead.add(`${DIR}/2-sent.txt`)
   s.answer(() => ANSWER(['notes filed | open'], { approved: ['#2 | all'] }))
   await started($)
-  await send($, LONG_NOTES)
+  await s.send($, LONG_NOTES)
   expect(s.prompts.length).toBe(1)
   expect(s.prompts[0]).toContain(UNREAD_LABEL)
   expect(s.prompts[0]).not.toContain(LONG_NOTES.slice(-2000))
@@ -4872,7 +4894,7 @@ const visibleStart = async ($: Engine, on: On, o: { damaged?: boolean; newJob?: 
     ANSWER(['write apple.txt | open', 'pear.txt made | open'], { dropped: ['keep the old export working | #12'], cause: o.newJob === true ? 'new job at #12' : '#12 dropped it' }),
   )
   await started($)
-  await send($, BIG)
+  await s.send($, BIG)
   expect(s.wholeReads().length).toBe(0)
   const done = doneOf(s.obj())
   expect(done).toContain('keep the old export working')
@@ -4904,7 +4926,7 @@ test('rule: a stale answer adds its conditions and leaves the result, purpose an
     return ANSWER(['apple.txt made | open', 'pear.txt made | open'], { result: 'This write\'s result.', step: 'This write\'s step.' })
   })
   await started($)
-  await send($, 'and a pear')
+  await s.send($, 'and a pear')
   expect(s.obj()).toMatchObject({ result: 'Changed elsewhere.', purpose: 'For the other reason.', step: 'The other step.' })
   expect(doneOf(s.obj())).toEqual(['apple.txt made', 'pear.txt made'])
 })
@@ -4914,7 +4936,7 @@ test('guard: a typed message with no mark whose turn shows only by its close is 
   s.answer(() => ANSWER(['apple.txt made | open']))
   await started($)
   await runTurn($, s.scripts, 't1', [said(turnWith(30000))])
-  await send($, 'thanks, keep going')
+  await s.send($, 'thanks, keep going')
   expect(s.prompts.length).toBe(1)
   expect(s.prompts[0]).toContain(CLOSE_LABEL(30000))
   expect(s.msg(2)?.read).toBeUndefined()
