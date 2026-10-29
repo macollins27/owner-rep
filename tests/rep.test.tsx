@@ -15,6 +15,7 @@ import type { On, SessionMessage } from 'claude-code'
 import { expect, mock, test as kitTest, type Engine, type TestBody, type TestOptions } from 'claude-code/testing'
 
 import { type Memory, CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fillCard, countLine, refusedLine, type CardText, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, HIS_CUT, TURN_TEXT_MAX, PENDING_MAX, TURNS_KEPT, tapStep, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, OLD_SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, toAgentVoice, sectionOf, takeOwnWords, parseOwnWords, ownWordsPrompt, askAgain, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
+import * as rep from '../hooks/rep'
 
 // Every test starts with the session's working folder a Unix path, so what the suite reads does not
 // depend on the folder the kit gives it: on a Windows machine that folder is a drive path, which
@@ -2545,9 +2546,19 @@ const planOf = (n: number, tag = 'Plan') =>
 // The engine beneath the mod for these tests: the store (a save can be held), the session, each
 // step played from its script, and every submit as it reached the bottom.
 const capture = (on: On, store: Record<string, unknown> = {}, sid: () => string = () => 'test-session') => {
-  const hold: { when?: (value: unknown) => boolean; gate?: Promise<void>; held?: boolean } = {}
+  // `refuse` rejects a save as Claude Code rejects one over its limit; `fork` answers the reads
+  // (a look, a briefing) and `write` the objective writer, in place of the defaults.
+  const hold: {
+    when?: (value: unknown) => boolean
+    gate?: Promise<void>
+    held?: boolean
+    refuse?: (key: string, value: unknown) => boolean
+    fork?: (prompt: string) => string
+    write?: () => string | null
+  } = {}
   on('store.get', (_$, e) => ({ value: store[e.key] }))
   on('store.set', async (_$, e) => {
+    if (hold.refuse?.(e.key, e.value) === true) throw new Error('the value is over the store\'s limit')
     if (hold.when?.(e.value) === true) {
       hold.when = undefined
       hold.held = true
@@ -2572,9 +2583,13 @@ const capture = (on: On, store: Record<string, unknown> = {}, sid: () => string 
     return { text: e.text }
   })
   on('ui.toast', () => ({ value: undefined }))
-  on('model.fork', () => ({ value: { isAnswered: true, text: HOLDS, usage: USAGE } }))
+  const forks: string[] = []
+  on('model.fork', (_$, e) => {
+    forks.push(String(e.prompt))
+    return { value: { isAnswered: true, text: hold.fork?.(String(e.prompt)) ?? HOLDS, usage: USAGE } }
+  })
   quietBand(on)
-  const prompts = writer(on, () => null)
+  const prompts = writer(on, () => (hold.write === undefined ? null : hold.write()))
   const scripts = new Map<string, Script>()
   on('turn.step', async function* (_$, e) {
     const s = scripts.get(`${e.turnId}/${e.index}`) ?? { chunks: [] }
@@ -2586,7 +2601,7 @@ const capture = (on: On, store: Record<string, unknown> = {}, sid: () => string 
     return { turnId: e.turnId, index: e.index, answer: '', toolUses: [], stopReason: 'end_turn', usage: null, ...s.ret } as never
   })
   const rec = () => (store.sessions as Record<string, CapRec> | undefined)?.[sid()]
-  return { rec, prompts, scripts, submits, hold, reads: () => reads }
+  return { rec, prompts, forks, scripts, submits, hold, reads: () => reads }
 }
 
 // One step driven up through the mod and read as the engine reads it: every chunk, then the
@@ -3274,6 +3289,813 @@ test('guard: a step the top stops early, or one that throws from beneath, keeps 
   await send($, 'thanks')
   expect(rec()?.owner.at(-1)?.src?.body?.text).toBe('A clean turn.')
   expect(rec()?.owner.at(-1)?.incomplete).toBeUndefined()
+})
+
+// ----------------------------------------------------------------------------------------------
+// Saved sources and the store (docs/reference.md, "Saved sources and the store")
+// Each source is saved once in its own file under the session's folder and checked against its
+// SHA-256 before every use; a change the store refuses is kept in the session's own files; an
+// approval of the open job is kept past the trim; a lost newer copy of the record is marked.
+// ----------------------------------------------------------------------------------------------
+
+const SID = '6f1d2c3b-4a5e-4f60-8b7c-9d0e1f2a3b4c'
+const ROOT = '/cfg/owner-rep/sources'
+const DIR = `${ROOT}/${SID}`
+// Claude Code rejects a store value whose JSON is over 4 MiB (the declaration of `$.store.set`).
+const STORE_LIMIT = 4 * 1024 * 1024
+const utf8 = (s: string): number => new TextEncoder().encode(s).length
+// The test's own SHA-256, from the runtime, so a planted file's fingerprint does not lean on the code.
+const shaOf = async (text: string): Promise<string> =>
+  [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text)))].map(b => b.toString(16).padStart(2, '0')).join('')
+const range = (from: number, to: number): number[] => Array.from({ length: to - from + 1 }, (_, i) => from + i)
+
+// The record as these tests read it back, loosely.
+type T3Src = { chars: number; sha: string; where: string; text?: string; lost?: string }
+type T3Msg = { n: number; kind: string; text: string; prior: string; pinned?: boolean; approved?: string; screen?: string; incomplete?: string; src?: Record<string, T3Src | undefined> }
+type T3Mark = { lostRev: number; keptRev: number; after: number; why: string }
+type T3Rec = {
+  owner: T3Msg[]
+  recRev?: number
+  objRev?: number
+  lossMark?: T3Mark
+  uncovered?: { job: number; count: number; recent: Array<Record<string, unknown>> }
+  pending?: Array<{ turnId: string }>
+  objectiveFailed?: number
+}
+const heldIn = (store: Record<string, unknown>): T3Rec | undefined => (store.sessions as Record<string, T3Rec> | undefined)?.[SID]
+
+// The disk beneath the mod: files in a map, a write that can fail, a read that can fail once,
+// and every command run kept (a removal is applied to the map).
+type Disk = { files: Map<string, string>; failWrite: boolean; failRead: Set<string>; runs: string[][]; writes: string[] }
+const disk = (on: On, files: Map<string, string> = new Map()): Disk => {
+  const d: Disk = { files, failWrite: false, failRead: new Set(), runs: [], writes: [] }
+  on('env.get', (_$, e) => ({ value: e.name === 'CLAUDE_CONFIG_DIR' ? '/cfg' : e.name === 'HOME' ? '/Users/o' : undefined }))
+  on('fs.write', (_$, e) => {
+    if (d.failWrite) throw new Error('EACCES: permission denied')
+    d.writes.push(e.path)
+    files.set(e.path, e.text)
+    return { value: undefined }
+  })
+  on('fs.read', (_$, e) => {
+    if (d.failRead.delete(e.path)) throw new Error('EIO: i/o error')
+    const text = files.get(e.path)
+    if (text === undefined) throw new Error(`ENOENT: no such file, ${e.path}`)
+    return { value: text }
+  })
+  on('fs.exists', (_$, e) => ({ value: files.has(e.path) || [...files.keys()].some(k => k.startsWith(`${e.path}/`)) }))
+  on('process.run', (_$, e) => {
+    d.runs.push([...e.argv])
+    if (e.argv[0] === 'rm') {
+      for (const p of e.argv.slice(2)) for (const k of [...files.keys()]) if (k === p || k.startsWith(`${p}/`)) files.delete(k)
+    }
+    return { value: { exitCode: 0, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
+  return d
+}
+const removed = (d: Disk): string[] => d.runs.filter(r => r[0] === 'rm').flatMap(r => r.slice(2))
+
+// Records planted for the session: an objective held from #1 unless said otherwise, so no
+// write starts at the session's start.
+const HELD_OBJ = (since = 1, from = 1): Objective => ({ ...OBJ_FIXTURE, since, from })
+const his = (n: number, text = `message ${n}`, more: Record<string, unknown> = {}): T3Msg => ({ n, kind: 'his', text, prior: '', ...more })
+const recOf = (owner: T3Msg[], more: Record<string, unknown> = {}): Record<string, unknown> => ({
+  id: SID,
+  at: Date.now(),
+  objective: HELD_OBJ(),
+  jobStart: 1,
+  owner,
+  counter: owner.reduce((a, m) => Math.max(a, m.n), 0),
+  past: [],
+  seen: [],
+  others: [],
+  drafts: [],
+  ...more,
+})
+const storeOf = (rec: Record<string, unknown>, others: Record<string, unknown> = {}): Record<string, unknown> => ({ sessions: { ...others, [SID]: rec } })
+const fileRef = async (text: string): Promise<T3Src> => ({ chars: text.length, sha: await shaOf(text), where: 'file' })
+
+// A newer copy of the record in the session's files, as the store-full path writes it: one part
+// and the manifest; `damage` changes the part after its fingerprint was taken.
+const plantFallback = async (files: Map<string, string>, rec: Record<string, unknown>, recRev: number, o: { damage?: boolean; lost?: boolean } = {}) => {
+  const json = JSON.stringify({ ...rec, recRev })
+  const name = `record-${recRev}-1.json`
+  files.set(`${DIR}/${name}`, o.damage === true ? json.replace('FROM THE FILES', 'FROM THE FILEZ') : json)
+  files.set(`${DIR}/${o.lost === true ? `record-lost-${recRev}` : 'record'}.json`, JSON.stringify({ recRev, parts: [{ name, bytes: utf8(json), sha: await shaOf(json) }], why: 'the shared store is full' }))
+}
+const manifestIn = (files: Map<string, string>): { recRev: number; parts: Array<{ name: string; bytes: number; sha: string }> } | null =>
+  JSON.parse(files.get(`${DIR}/record.json`) ?? 'null')
+const fallbackIn = (files: Map<string, string>): T3Rec => {
+  const m = manifestIn(files)
+  expect(m).not.toBeNull()
+  return JSON.parse((m?.parts ?? []).map(p => files.get(`${DIR}/${p.name}`) ?? '').join(''))
+}
+
+// 31 other sessions' records, the first padded so the whole store's JSON is `target` bytes.
+const othersOf = (count: number): Record<string, unknown> =>
+  Object.fromEntries(
+    range(1, count).map(i => {
+      const id = `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`
+      return [id, { id, at: Date.now() - 1000 - i, objective: null, jobStart: 1, owner: [his(1, 'x')], counter: 1, past: [], seen: [], others: [], drafts: [] }]
+    }),
+  )
+const padTo = (store: Record<string, unknown>, target: number) => {
+  const sessions = store.sessions as Record<string, { owner: T3Msg[] }>
+  const first = sessions['00000000-0000-4000-8000-000000000001'] as { owner: T3Msg[] }
+  ;(first.owner[0] as T3Msg).text += 'x'.repeat(target - utf8(JSON.stringify(sessions)))
+  expect(utf8(JSON.stringify(sessions))).toBe(target)
+}
+const overLimit = (key: string, value: unknown): boolean => key === 'sessions' && utf8(JSON.stringify(value)) > STORE_LIMIT
+
+// The card for the press, read for one text.
+const cardHas = async ($: Engine, text: RegExp): Promise<boolean> => {
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  const found = await ui.find({ type: 'Text', text })
+  await ui.unmount()
+  return found !== undefined
+}
+const BRIEF_ASKED = 'The owner pressed the key'
+
+test('guard: the fingerprint is SHA-256 of the UTF-8 bytes, from the runtime', async () => {
+  expect(await rep.sha256('abc')).toBe('ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad')
+  expect(await rep.sha256('é😀')).toBe('1184d1f608158eea09d297565575892231550c403aaa913008d867a97cfd5c76')
+})
+
+test('rule: a source is written once, and one whose file does not match its fingerprint is marked lost and never used', async ($, on) => {
+  const d = disk(on, new Map([[`${DIR}/2-sent.txt`, 'Some other words entirely.']]))
+  const store = storeOf(recOf([his(1, 'start the report')]))
+  const { prompts } = capture(on, store, () => SID)
+  await started($)
+  const words = `${'Write the quarterly report. '.repeat(250)}KEEP THE TAIL WORDS`
+  await send($, words)
+  // The file was there already: nothing is written over it, and its text never reaches the writer.
+  expect(d.writes).not.toContain(`${DIR}/2-sent.txt`)
+  expect(d.files.get(`${DIR}/2-sent.txt`)).toBe('Some other words entirely.')
+  const two = heldIn(store)?.owner.find(m => m.n === 2)
+  expect(two?.src?.sent?.sha).toBe(await shaOf(words))
+  expect(two?.src?.sent?.where).toBe('file')
+  expect(two?.src?.sent?.lost).toBe('its saved copy is missing or damaged')
+  expect(prompts.length).toBeGreaterThan(0)
+  expect(prompts.some(p => p.includes('Some other words entirely'))).toBe(false)
+  expect(prompts.some(p => p.includes('KEEP THE TAIL WORDS'))).toBe(false)
+  // A healthy one is written once and read back whole.
+  const more = `${'Add the totals row. '.repeat(320)}THIRD TAIL`
+  await send($, more)
+  expect(d.writes.filter(w => w === `${DIR}/3-sent.txt`)).toEqual([`${DIR}/3-sent.txt`])
+  expect(d.files.get(`${DIR}/3-sent.txt`)).toBe(more)
+  expect(prompts.at(-1)).toContain('THIRD TAIL')
+})
+
+test('rule: a source whose file is missing is marked lost and never used', async ($, on) => {
+  const d = disk(on)
+  const store = storeOf(recOf([his(1, 'start the report')]))
+  const { prompts } = capture(on, store, () => SID)
+  await started($)
+  await send($, `${'Write the quarterly report. '.repeat(250)}KEEP THE TAIL WORDS`)
+  expect(d.files.has(`${DIR}/2-sent.txt`)).toBe(true)
+  expect(prompts.at(-1)).toContain('KEEP THE TAIL WORDS')
+  d.files.delete(`${DIR}/2-sent.txt`)
+  const before = prompts.length
+  await send($, 'and the charts')
+  expect(prompts.length).toBeGreaterThan(before)
+  expect(prompts.slice(before).some(p => p.includes('KEEP THE TAIL WORDS'))).toBe(false)
+  expect(heldIn(store)?.owner.find(m => m.n === 2)?.src?.sent?.lost).toBe('its saved copy is missing or damaged')
+})
+
+test('rule: a source that cannot be written is held in the record, past its budget in memory, and both go to files at the next change that can write', async ($, on) => {
+  const d = disk(on)
+  d.failWrite = true
+  const store = storeOf(recOf([his(1, 'start the report')]))
+  const { prompts } = capture(on, store, () => SID)
+  await started($)
+  const a = `${'A'.repeat(6990)} A-TAIL`
+  const b = `${'B'.repeat(70_000)} B-TAIL`
+  await send($, a)
+  await send($, b)
+  const held = () => heldIn(store)?.owner ?? []
+  expect(held().find(m => m.n === 2)?.src?.sent).toMatchObject({ where: 'inline', text: a })
+  expect(held().find(m => m.n === 3)?.src?.sent?.where).toBe('memory')
+  expect(held().find(m => m.n === 3)?.src?.sent?.text).toBeUndefined()
+  // Held in memory, it is still read whole while the process runs.
+  expect(prompts.at(-1)).toContain('B-TAIL')
+  d.failWrite = false
+  await send($, 'go on')
+  expect(held().find(m => m.n === 2)?.src?.sent?.where).toBe('file')
+  expect(held().find(m => m.n === 2)?.src?.sent?.text).toBeUndefined()
+  expect(held().find(m => m.n === 3)?.src?.sent?.where).toBe('file')
+  expect(d.files.get(`${DIR}/2-sent.txt`)).toBe(a)
+  expect(d.files.get(`${DIR}/3-sent.txt`)).toBe(b)
+})
+
+let inMemory: { store: Record<string, unknown>; files: Map<string, string> } | null = null
+test('rule: a source left in memory when Claude Code stops is lost at the next start, with its reason (before the restart)', async ($, on) => {
+  const d = disk(on)
+  d.failWrite = true
+  const store = storeOf(recOf([his(1, 'start the report')]))
+  capture(on, store, () => SID)
+  await started($)
+  await send($, 'C'.repeat(70_000))
+  expect(heldIn(store)?.owner.find(m => m.n === 2)?.src?.sent?.where).toBe('memory')
+  inMemory = { store, files: d.files }
+})
+
+test('rule: a source left in memory when Claude Code stops is lost at the next start, with its reason (after the restart)', async ($, on) => {
+  const { store, files } = inMemory as NonNullable<typeof inMemory>
+  disk(on, files)
+  capture(on, store, () => SID)
+  await started($)
+  await settle($)
+  expect(heldIn(store)?.owner.find(m => m.n === 2)?.src?.sent).toMatchObject({ where: 'memory', lost: 'the rep held it only until Claude Code restarted' })
+})
+
+test('rule: a sent message or a body over SOURCE_MAX is not saved, its reference says so, and nothing of it past the stored text is shown', async ($, on) => {
+  const d = disk(on)
+  const store = storeOf(recOf([his(1, 'start the report')]))
+  const { scripts, prompts } = capture(on, store, () => SID)
+  await started($)
+  await runTurn($, scripts, 't1', [said('X'.repeat(600_000))])
+  await runTurn($, scripts, 't2', [said('Y'.repeat(600_000))])
+  const huge = `${'Z'.repeat(1_000_000)}!`
+  await send($, huge)
+  const two = heldIn(store)?.owner.find(m => m.n === 2)
+  expect(two?.src?.sent).toEqual({ chars: 1_000_001, sha: '', where: 'file', lost: 'longer than the rep keeps (1000001 characters)' })
+  expect(two?.src?.body).toEqual({ chars: 1_200_002, sha: '', where: 'file', lost: 'longer than the rep keeps (1200002 characters)' })
+  expect(d.writes.filter(w => /\/2-(sent|body)\.txt$/.test(w))).toEqual([])
+  expect(prompts.some(p => p.includes('Z'.repeat(6001)))).toBe(false)
+})
+
+test('rule: a turn\'s file is removed once the owner\'s message takes it into its body, and a body made from a lost turn says it is incomplete', async ($, on) => {
+  const d = disk(on)
+  const store = storeOf(recOf([his(1, 'start the report')]))
+  const { scripts } = capture(on, store, () => SID)
+  await started($)
+  await runTurn($, scripts, 't1', [said('The first turn.')])
+  expect(d.files.get(`${DIR}/t-t1.txt`)).toBe('The first turn.')
+  await send($, 'thanks')
+  expect(d.files.get(`${DIR}/2-body.txt`)).toBe('The first turn.')
+  expect(d.files.has(`${DIR}/t-t1.txt`)).toBe(false)
+  expect(removed(d)).toContain(`${DIR}/t-t1.txt`)
+  await runTurn($, scripts, 't2', [said('The second turn.')])
+  d.files.delete(`${DIR}/t-t2.txt`)
+  await send($, 'and again')
+  expect(heldIn(store)?.owner.find(m => m.n === 3)?.incomplete).toBe('its saved copy is missing or damaged')
+})
+
+test('rule: a message the trim drops loses its files at the next save', async ($, on) => {
+  const words = 'the first words, kept in their own file'
+  const files = new Map([[`${DIR}/1-sent.txt`, words]])
+  const d = disk(on, files)
+  const store = storeOf(recOf([his(1, words, { src: { sent: await fileRef(words) } }), ...range(2, 200).map(n => his(n))]))
+  capture(on, store, () => SID)
+  await started($)
+  await send($, 'one more')
+  expect(heldIn(store)?.owner[0]?.n).toBe(2)
+  expect(files.has(`${DIR}/1-sent.txt`)).toBe(false)
+  expect(removed(d)).toContain(`${DIR}/1-sent.txt`)
+})
+
+test('rule: a session record the store lets go takes its folder with it, and nothing but a session folder of the checked form is ever removed', async ($, on) => {
+  const others = othersOf(32)
+  // The two oldest are let go: one named by a session id of the uuid form, one not.
+  const oldest = '00000000-0000-4000-8000-000000000032'
+  ;(others[oldest] as { at: number }).at = 2
+  others['old-session'] = { id: 'old-session', at: 1, objective: null, jobStart: 1, owner: [his(1, 'x')], counter: 1, past: [], seen: [], others: [], drafts: [] }
+  const files = new Map([
+    [`${ROOT}/${oldest}/1-sent.txt`, 'old words'],
+    [`${ROOT}/old-session/1-sent.txt`, 'older words'],
+    [`${ROOT}/00000000-0000-4000-8000-000000000001/1-sent.txt`, 'kept words'],
+  ])
+  const d = disk(on, files)
+  const store = storeOf(recOf([his(1, 'start the report')]), others)
+  capture(on, store, () => SID)
+  await started($)
+  await send($, 'and the charts')
+  expect(Object.keys(store.sessions as object)).not.toContain(oldest)
+  expect(Object.keys(store.sessions as object)).not.toContain('old-session')
+  expect(removed(d)).toContain(`${ROOT}/${oldest}`)
+  expect(files.has(`${ROOT}/${oldest}/1-sent.txt`)).toBe(false)
+  expect(files.get(`${ROOT}/old-session/1-sent.txt`)).toBe('older words')
+  expect(files.get(`${ROOT}/00000000-0000-4000-8000-000000000001/1-sent.txt`)).toBe('kept words')
+  expect(d.runs.flat().some(a => a.includes('old-session'))).toBe(false)
+  for (const p of removed(d)) expect(p).toMatch(/^\/cfg\/owner-rep\/sources\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(\/[^/]+)?$/)
+})
+
+test('rule: only a session folder named by a uuid under the sources folder, or a source or record file in it, can be removed', () => {
+  expect(rep.removablePath(ROOT, `${ROOT}/${SID}`)).toBe(true)
+  expect(rep.removablePath(ROOT, `${ROOT}/${SID}/3-body.txt`)).toBe(true)
+  expect(rep.removablePath(ROOT, `${ROOT}/${SID}/t-turn_9.txt`)).toBe(true)
+  expect(rep.removablePath(ROOT, `${ROOT}/${SID}/record.json`)).toBe(true)
+  expect(rep.removablePath(ROOT, `${ROOT}/${SID}/record-4-1.json`)).toBe(true)
+  expect(rep.removablePath(ROOT, `${ROOT}/${SID}/record-lost-4.json`)).toBe(true)
+  for (const p of [
+    ROOT,
+    `${ROOT}/`,
+    `${ROOT}/old-session`,
+    `${ROOT}/${SID}/../x`,
+    `${ROOT}/${SID}/..`,
+    `${ROOT}/${SID}/sub/3-body.txt`,
+    `${ROOT}/${SID}/notes.txt`,
+    `${ROOT}/${SID}/t-../../x.txt`,
+    `/etc/${SID}`,
+    `${ROOT}/../${SID}`,
+    `${ROOT}/${SID.toUpperCase()}`,
+  ]) expect([p, rep.removablePath(ROOT, p)]).toEqual([p, false])
+})
+
+let full: { store: Record<string, unknown>; files: Map<string, string> } | null = null
+test('rule: a change the store refuses is written to the session\'s own files, its revision raised and its objective revision unchanged (before the restart)', async ($, on) => {
+  const d = disk(on)
+  const store = storeOf(recOf([his(1, 'build the importer')], { recRev: 3, objRev: 1 }), othersOf(31))
+  // The turn's text goes to its own file, so the record grows by its reference only: the store
+  // is left 60 bytes of room, which the reference does not fit.
+  padTo(store, STORE_LIMIT - 60)
+  const { scripts, hold } = capture(on, store, () => SID)
+  hold.refuse = overLimit
+  await started($)
+  await runTurn($, scripts, 't1', [said('The importer is planned.')])
+  expect(heldIn(store)?.pending).toBeUndefined()
+  const manifest = manifestIn(d.files)
+  expect(manifest?.recRev).toBeGreaterThan(3)
+  const saved = fallbackIn(d.files)
+  expect(saved.pending?.[0]?.turnId).toBe('t1')
+  expect(saved.objRev).toBe(1)
+  expect(saved.recRev).toBe(manifest?.recRev)
+  expect(await rowSays($, /^The rep could not save its record \(the shared store is full\); this session's record is kept in its own files$/)).toBe(true)
+  full = { store, files: d.files }
+})
+
+test('rule: a change the store refuses is written to the session\'s own files (after the restart: it is read back, and a save that fits removes the files and the line)', async ($, on) => {
+  const { store, files } = full as NonNullable<typeof full>
+  const d = disk(on, files)
+  const { hold } = capture(on, store, () => SID)
+  hold.refuse = overLimit
+  await started($)
+  expect(await rowSays($, /kept in its own files/)).toBe(true)
+  hold.refuse = undefined
+  await send($, 'go ahead')
+  expect(d.files.get(`${DIR}/2-body.txt`)).toBe('The importer is planned.')
+  expect(heldIn(store)?.owner.find(m => m.n === 2)?.src?.body?.where).toBe('file')
+  expect(d.files.has(`${DIR}/record.json`)).toBe(false)
+  expect([...d.files.keys()].filter(k => /\/record-\d+-\d+\.json$/.test(k))).toEqual([])
+  expect(await rowSays($, /could not save its record/)).toBe(false)
+})
+
+let failedFull: { store: Record<string, unknown>; files: Map<string, string> } | null = null
+test('rule: a failed write the store refuses is written to the session\'s own files too (before the restart)', async ($, on) => {
+  const d = disk(on)
+  const store = storeOf(recOf([his(1, 'build the importer')], { objective: null, recRev: 3 }), othersOf(31))
+  padTo(store, STORE_LIMIT - 20)
+  const { hold, prompts } = capture(on, store, () => SID)
+  hold.refuse = overLimit
+  await started($)
+  await settle($)
+  expect(prompts.length).toBeGreaterThan(0)
+  expect(heldIn(store)?.objectiveFailed ?? 0).toBe(0)
+  const saved = fallbackIn(d.files)
+  expect(saved.objectiveFailed).toBe(1)
+  expect(saved.objRev ?? 0).toBe(0)
+  expect(saved.recRev).toBeGreaterThan(3)
+  failedFull = { store, files: d.files }
+})
+
+test('rule: a failed write the store refuses is written to the session\'s own files too (after the restart)', async ($, on) => {
+  const { store, files } = failedFull as NonNullable<typeof failedFull>
+  const d = disk(on, files)
+  const { hold } = capture(on, store, () => SID)
+  hold.refuse = overLimit
+  await started($)
+  await settle($)
+  expect(await rowSays($, /kept in its own files/)).toBe(true)
+  // The copy in the files was taken up, and the write that failed again at this start added to it.
+  expect(fallbackIn(d.files).objectiveFailed).toBe(2)
+  hold.refuse = undefined
+  await send($, 'go ahead')
+  expect(d.files.has(`${DIR}/record.json`)).toBe(false)
+  expect(await rowSays($, /could not save its record/)).toBe(false)
+})
+
+const staleFallback = async ($: Engine, on: On, rev: number) => {
+  const files = new Map<string, string>()
+  await plantFallback(files, recOf([his(1, 'from the store'), his(2, 'FROM THE FILES')]), rev)
+  disk(on, files)
+  const store = storeOf(recOf([his(1, 'from the store')], { recRev: 5 }))
+  capture(on, store, () => SID)
+  await started($)
+  await settle($)
+  expect(files.has(`${DIR}/record.json`)).toBe(false)
+  expect(files.has(`${DIR}/record-${rev}-1.json`)).toBe(false)
+  expect(heldIn(store)?.owner.map(m => m.text)).toEqual(['from the store'])
+  expect(await rowSays($, /could not save its record/)).toBe(false)
+}
+test('rule: a copy in the files whose revision equals the stored record\'s is removed, and the store\'s record is used', ($, on) => staleFallback($, on, 5))
+test('rule: a copy in the files whose revision is lower than the stored record\'s is removed, and the store\'s record is used', ($, on) => staleFallback($, on, 4))
+
+// A record as large as the store has held before this fix: 239 messages of about 6,000 characters,
+// nearly every one a character JSON escapes as six bytes, with quotes, backslashes, accented and
+// four-byte characters among them, and 25 objective versions. Its JSON is over 8 MB, so the store
+// refuses it and the files take it in three parts or more.
+const HEAVY = '"\\\u0001é😀'
+const heavy = (tag: string): string => `${tag}${HEAVY.repeat(100)}${'\u0001'.repeat(5390)}`
+let whole: { store: Record<string, unknown>; files: Map<string, string>; saved: string } | null = null
+test('rule: a whole record over one file is written in parts under the part limit, and read back the same (before the restart)', async ($, on) => {
+  const d = disk(on)
+  const owner = range(1, 239).map(n => his(n, heavy(`#${n} `), { prior: HEAVY.repeat(66), src: { body: { chars: 5000, sha: 'a'.repeat(64), where: 'file' } }, turns: [{ by: 'owner', from: 0, to: 5000 }] }))
+  const versions = range(1, 25).map(i => ({ at: i, cause: `#${i} moved it`, text: `version ${i} ${HEAVY.repeat(300)}` }))
+  const store = storeOf(recOf(owner, { objective: { ...HELD_OBJ(41, 239), versions }, jobStart: 41, recRev: 7 }))
+  expect(utf8(JSON.stringify(store.sessions))).toBeGreaterThan(8_000_000)
+  const { hold } = capture(on, store, () => SID)
+  hold.refuse = overLimit
+  await started($)
+  await send($, 'and the summary')
+  const manifest = manifestIn(d.files)
+  expect(manifest?.parts.length).toBeGreaterThanOrEqual(3)
+  for (const p of manifest?.parts ?? []) {
+    expect(p.bytes).toBeLessThanOrEqual(rep.FALLBACK_PART_BYTES)
+    expect(utf8(d.files.get(`${DIR}/${p.name}`) ?? '')).toBe(p.bytes)
+  }
+  const saved = (manifest?.parts ?? []).map(p => d.files.get(`${DIR}/${p.name}`) ?? '').join('')
+  expect(JSON.parse(saved).owner.at(-1).text).toBe('and the summary')
+  expect(JSON.parse(saved).owner[0].text).toBe(heavy('#1 '))
+  whole = { store, files: d.files, saved }
+})
+
+test('rule: a whole record over one file is written in parts under the part limit, and read back the same (after the restart)', async ($, on) => {
+  const { store, files, saved } = whole as NonNullable<typeof whole>
+  disk(on, files)
+  capture(on, store, () => SID)
+  await started($)
+  await settle($)
+  const { at: _a, ...was } = JSON.parse(saved) as Record<string, unknown>
+  const { at: _b, ...now } = heldIn(store) as unknown as Record<string, unknown>
+  expect(now).toEqual(was)
+  expect(JSON.stringify(now)).toBe(JSON.stringify(was))
+  expect(files.has(`${DIR}/record.json`)).toBe(false)
+})
+
+const FORTY = () => range(1, 40).map(n => his(n))
+const LOST_LINE = (why: string, after = 40) =>
+  `The rep lost its newest copy of this session's record (${why}): what you said after message #${after}, and any plan you approved there, may not be held`
+const lineRe = (line: string) => new RegExp(`^${line.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`)
+
+test('rule: a part of the copy in the files that does not match its fingerprint is never used: the store\'s record stands, the loss is marked and the files are kept', async ($, on) => {
+  const files = new Map<string, string>()
+  await plantFallback(files, recOf([...FORTY(), his(41, 'FROM THE FILES')]), 3, { damage: true })
+  disk(on, files)
+  const store = storeOf(recOf(FORTY(), { recRev: 2 }))
+  capture(on, store, () => SID)
+  await started($)
+  await settle($)
+  expect(heldIn(store)?.owner.map(m => m.n)).toEqual(range(1, 40))
+  expect(heldIn(store)?.lossMark).toEqual({ lostRev: 3, keptRev: 2, after: 40, why: 'part 1 does not match its fingerprint' })
+  expect(heldIn(store)?.recRev).toBe(4)
+  expect(files.has(`${DIR}/record.json`)).toBe(false)
+  expect(files.has(`${DIR}/record-lost-3.json`)).toBe(true)
+  expect(files.has(`${DIR}/record-3-1.json`)).toBe(true)
+})
+
+// A newer copy whose record holds an approval (#41, a typed yes with its sources) the stored one lacks.
+const APPROVAL_41 = his(41, 'yes, FROM THE FILES, do all of it', { approved: 'all', read: { state: 'read' }, src: { body: { chars: 10, sha: 'b'.repeat(64), where: 'file' } } })
+let lossChain: { store: Record<string, unknown>; files: Map<string, string>; rev: number } | null = null
+const lossCheck = async ($: Engine, store: Record<string, unknown>, files: Map<string, string>) => {
+  expect(await rowSays($, lineRe(LOST_LINE('part 1 does not match its fingerprint')))).toBe(true)
+  expect(files.has(`${DIR}/record-lost-3.json`)).toBe(true)
+  expect(files.has(`${DIR}/record-3-1.json`)).toBe(true)
+  expect(await cardHas($, /The rep lost its newest copy of this session's record/)).toBe(true)
+  expect(await cardHas($, /All done\./)).toBe(false)
+  expect(await cardHas($, /the job is finished/)).toBe(false)
+  return heldIn(store)?.recRev ?? 0
+}
+test('rule: a lost copy of the record stays named across saves and reloads (the start that finds it)', async ($, on) => {
+  const files = new Map<string, string>()
+  await plantFallback(files, recOf([...FORTY(), APPROVAL_41]), 3, { damage: true })
+  disk(on, files)
+  const store = storeOf(recOf(FORTY(), { recRev: 2 }))
+  const { hold } = capture(on, store, () => SID)
+  hold.fork = p => (p.includes(BRIEF_ASKED) ? STOP_BRIEF() : HOLDS)
+  await started($)
+  const rev = await lossCheck($, store, files)
+  expect(rev).toBeGreaterThanOrEqual(4)
+  lossChain = { store, files, rev }
+})
+test('rule: a lost copy of the record stays named across saves and reloads (a save that fits)', async ($, on) => {
+  const { store, files, rev } = lossChain as NonNullable<typeof lossChain>
+  disk(on, files)
+  const { hold } = capture(on, store, () => SID)
+  hold.fork = p => (p.includes(BRIEF_ASKED) ? STOP_BRIEF() : HOLDS)
+  await started($)
+  await send($, 'and add the totals row')
+  expect(heldIn(store)?.owner.at(-1)?.text).toBe('and add the totals row')
+  const after = await lossCheck($, store, files)
+  expect(after).toBeGreaterThan(rev)
+  lossChain = { store, files, rev: after }
+})
+test('rule: a lost copy of the record stays named across saves and reloads (the next start)', async ($, on) => {
+  const { store, files, rev } = lossChain as NonNullable<typeof lossChain>
+  disk(on, files)
+  const { hold } = capture(on, store, () => SID)
+  hold.fork = p => (p.includes(BRIEF_ASKED) ? STOP_BRIEF() : HOLDS)
+  await started($)
+  expect(await lossCheck($, store, files)).toBeGreaterThanOrEqual(rev)
+  expect(heldIn(store)?.owner.some(m => m.text.includes('FROM THE FILES'))).toBe(false)
+})
+
+let readFail: { store: Record<string, unknown>; files: Map<string, string> } | null = null
+test('rule: a copy lost to a read that failed is taken up at the next start when nothing changed since (the start whose read fails)', async ($, on) => {
+  const files = new Map<string, string>()
+  await plantFallback(files, recOf([...FORTY(), his(41, 'FROM THE FILES')]), 3)
+  const d = disk(on, files)
+  d.failRead.add(`${DIR}/record-3-1.json`)
+  const store = storeOf(recOf(FORTY(), { recRev: 2 }))
+  capture(on, store, () => SID)
+  await started($)
+  await settle($)
+  expect(heldIn(store)?.lossMark).toEqual({ lostRev: 3, keptRev: 2, after: 40, why: 'part 1 could not be read' })
+  expect(heldIn(store)?.recRev).toBe(4)
+  expect(files.has(`${DIR}/record-lost-3.json`)).toBe(true)
+  readFail = { store, files }
+})
+test('rule: a copy lost to a read that failed is taken up at the next start when nothing changed since (the next start)', async ($, on) => {
+  const { store, files } = readFail as NonNullable<typeof readFail>
+  disk(on, files)
+  capture(on, store, () => SID)
+  await started($)
+  await settle($)
+  expect(heldIn(store)?.lossMark).toBeUndefined()
+  expect(heldIn(store)?.recRev).toBe(5)
+  expect(heldIn(store)?.owner.at(-1)?.text).toBe('FROM THE FILES')
+  expect(files.has(`${DIR}/record-lost-3.json`)).toBe(false)
+  expect(files.has(`${DIR}/record-3-1.json`)).toBe(false)
+  expect(await rowSays($, /lost its newest copy/)).toBe(false)
+})
+
+test('rule: a copy lost to a read that failed is not taken up once the record changed after the mark', async ($, on) => {
+  const files = new Map<string, string>()
+  await plantFallback(files, recOf([...FORTY(), his(41, 'FROM THE FILES')]), 3, { lost: true })
+  disk(on, files)
+  const mark = { lostRev: 3, keptRev: 2, after: 40, why: 'part 1 could not be read' }
+  const store = storeOf(recOf([...FORTY(), his(42, 'a later message')], { recRev: 5, lossMark: mark }))
+  capture(on, store, () => SID)
+  await started($)
+  await settle($)
+  expect(heldIn(store)?.lossMark).toEqual(mark)
+  expect(heldIn(store)?.recRev).toBe(5)
+  expect(heldIn(store)?.owner.at(-1)?.text).toBe('a later message')
+  expect(files.has(`${DIR}/record-lost-3.json`)).toBe(true)
+  expect(await rowSays($, lineRe(LOST_LINE('part 1 could not be read')))).toBe(true)
+})
+
+let mismatch: { store: Record<string, unknown>; files: Map<string, string> } | null = null
+const MISMATCH = { lostRev: 3, keptRev: 2, after: 40, why: 'part 1 does not match its fingerprint' }
+test('rule: a copy lost to a fingerprint that did not match is never taken up, however often it is read again (one start)', async ($, on) => {
+  // The part reads back whole now (repaired, say), and the record has not changed since the mark.
+  const files = new Map<string, string>()
+  await plantFallback(files, recOf([...FORTY(), his(41, 'FROM THE FILES')]), 3, { lost: true })
+  disk(on, files)
+  const store = storeOf(recOf(FORTY(), { recRev: 4, lossMark: MISMATCH }))
+  capture(on, store, () => SID)
+  await started($)
+  await settle($)
+  expect(heldIn(store)?.lossMark).toEqual(MISMATCH)
+  expect(heldIn(store)?.recRev).toBe(4)
+  mismatch = { store, files }
+})
+test('rule: a copy lost to a fingerprint that did not match is never taken up, however often it is read again (another start)', async ($, on) => {
+  const { store, files } = mismatch as NonNullable<typeof mismatch>
+  disk(on, files)
+  capture(on, store, () => SID)
+  await started($)
+  await settle($)
+  expect(heldIn(store)?.lossMark).toEqual(MISMATCH)
+  expect(heldIn(store)?.owner.some(m => m.text === 'FROM THE FILES')).toBe(false)
+  expect(files.has(`${DIR}/record-lost-3.json`)).toBe(true)
+  expect(await rowSays($, lineRe(LOST_LINE('part 1 does not match its fingerprint')))).toBe(true)
+})
+
+test('rule: a lost copy\'s mark clears when the writer starts a new job, and its files go', async ($, on) => {
+  const files = new Map<string, string>()
+  await plantFallback(files, recOf([...FORTY(), his(41, 'FROM THE FILES')]), 3, { lost: true })
+  disk(on, files)
+  const store = storeOf(recOf(FORTY(), { recRev: 9, lossMark: MISMATCH, objective: HELD_OBJ(1, 40) }))
+  const { hold } = capture(on, store, () => SID)
+  hold.write = () => OBJ('A new report written.', ['the report written'], 'new job: #41 asked for a new report')
+  await started($)
+  await send($, 'now write the new report')
+  expect(heldIn(store)?.lossMark).toBeUndefined()
+  expect(files.has(`${DIR}/record-lost-3.json`)).toBe(false)
+  expect(files.has(`${DIR}/record-3-1.json`)).toBe(false)
+  expect(await rowSays($, /lost its newest copy/)).toBe(false)
+})
+
+// An approval (#5) over a plan, with its sources in files, and ordinary messages after it.
+const pinnedSetup = async (five: (refs: { body: T3Src; sent?: T3Src; took?: T3Src }) => T3Msg, texts: { body: string; sent?: string; took?: string }) => {
+  const files = new Map<string, string>([[`${DIR}/5-body.txt`, texts.body]])
+  if (texts.sent !== undefined) files.set(`${DIR}/5-sent.txt`, texts.sent)
+  if (texts.took !== undefined) files.set(`${DIR}/5-took.txt`, texts.took)
+  const refs = {
+    body: await fileRef(texts.body),
+    ...(texts.sent === undefined ? {} : { sent: await fileRef(texts.sent) }),
+    ...(texts.took === undefined ? {} : { took: await fileRef(texts.took) }),
+  }
+  const owner = [...range(1, 4).map(n => his(n)), five(refs), ...range(6, 250).map(n => his(n))]
+  return { files, store: storeOf(recOf(owner)) }
+}
+const readersHold = async ($: Engine, scripts: Map<string, Script>, forks: string[], texts: string[]) => {
+  await runTurn($, scripts, 't1', [said('Working on the totals.')])
+  const look = forks.filter(p => !p.includes(BRIEF_ASKED)).at(-1) ?? ''
+  for (const t of texts) expect(look).toContain(t)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.unmount()
+  const brief = forks.filter(p => p.includes(BRIEF_ASKED)).at(-1) ?? ''
+  for (const t of texts) expect(brief).toContain(t)
+}
+
+test('rule: a typed approval of the open job is kept past the trim, pinned with its sources, and both readers hold it whole', async ($, on) => {
+  const PLAN = planOf(6000, 'Pinned')
+  const YES = `yes, go ahead with all of it. ${'Keep the old names. '.repeat(40)}END OF MY YES`
+  const TOOK = JSON.stringify({ steps: range(1, 80).map(i => `step ${i} of the plan`) })
+  const { files, store } = await pinnedSetup(refs => his(5, YES, { prior: PLAN.slice(-400), approved: '', read: { state: 'read' }, src: refs }), { body: PLAN, sent: YES, took: TOOK })
+  disk(on, files)
+  const { scripts, forks } = capture(on, store, () => SID)
+  await started($)
+  await send($, 'and the totals')
+  const owner = heldIn(store)?.owner ?? []
+  const five = owner.find(m => m.n === 5)
+  expect(five?.pinned).toBe(true)
+  expect(five?.text.length).toBeLessThanOrEqual(400)
+  expect(owner.length).toBe(201)
+  expect(owner.filter(m => m.n !== 5 && m.pinned === true)).toEqual([])
+  for (const [part, text] of [['body', PLAN], ['sent', YES], ['took', TOOK]] as const) {
+    expect(five?.src?.[part]).toEqual({ chars: text.length, sha: await shaOf(text), where: 'file' })
+    expect(files.get(`${DIR}/5-${part}.txt`)).toBe(text)
+  }
+  await readersHold($, scripts, forks, [PLAN, YES, TOOK])
+})
+
+test('rule: a note approval of the open job is pinned too, and both readers hold the plan and the note whole', async ($, on) => {
+  const PLAN = 'Step 1: read pear.txt.\nStep 2: sort its lines.\nStep 3: rename pear.txt to fruit.txt.\nStep 4: report back.'
+  const NOTE = "yes, do it, but keep the date on pear.txt's first line"
+  const { files, store } = await pinnedSetup(refs => ({ n: 5, kind: 'note', text: NOTE, prior: PLAN, approved: 'all', read: { state: 'read' }, src: refs }), { body: PLAN })
+  ;(heldIn(store) as unknown as { objective: Objective }).objective = { ...HELD_OBJ(), done: [c('pear.txt renamed to fruit.txt', 'open')] }
+  disk(on, files)
+  const { scripts, forks } = capture(on, store, () => SID)
+  await started($)
+  await send($, 'and the totals')
+  const five = heldIn(store)?.owner.find(m => m.n === 5)
+  expect(five?.pinned).toBe(true)
+  expect(five?.src?.body).toEqual({ chars: PLAN.length, sha: await shaOf(PLAN), where: 'file' })
+  expect(rep.approvalOf(five as never)).toBe(true)
+  await readersHold($, scripts, forks, [PLAN, NOTE])
+})
+
+const NOT_KEPT_WHY = 'beyond its newest messages, the rep keeps at most 60 older approvals a job'
+// 40 messages before the job, 61 approvals (#41 to #101), and 199 ordinary messages after them.
+const capSetup = async (first: Record<string, unknown>) => {
+  const body = 'The first plan, in its own file.'
+  const files = new Map([[`${DIR}/41-body.txt`, body]])
+  const approvals = range(41, 101).map(n => his(n, `yes to plan ${n}`, { approved: 'all', read: { state: 'read' } }))
+  approvals[0] = { ...(approvals[0] as T3Msg), src: { body: await fileRef(body) }, ...first } as T3Msg
+  const store = storeOf(recOf([...FORTY(), ...approvals, ...range(102, 300).map(n => his(n))], { objective: HELD_OBJ(41, 300), jobStart: 41 }))
+  return { files, store }
+}
+const capCheck = async ($: Engine, on: On, first: Record<string, unknown>, recent: Record<string, unknown>, line: string) => {
+  const { files, store } = await capSetup(first)
+  const d = disk(on, files)
+  const { hold } = capture(on, store, () => SID)
+  hold.fork = p => (p.includes(BRIEF_ASKED) ? BRIEF('The card.') : HOLDS)
+  await started($)
+  await send($, 'and the totals')
+  const owner = heldIn(store)?.owner ?? []
+  expect(owner.filter(m => m.pinned === true).map(m => m.n)).toEqual(range(42, 101))
+  expect(owner.filter(m => m.pinned !== true).map(m => m.n)).toEqual([...range(1, 40), ...range(102, 301)])
+  expect(owner.some(m => m.n === 41)).toBe(false)
+  expect(files.has(`${DIR}/41-body.txt`)).toBe(false)
+  expect(removed(d)).toContain(`${DIR}/41-body.txt`)
+  expect(heldIn(store)?.uncovered).toEqual({ job: 41, count: 1, recent: [recent] })
+  expect(await rowSays($, lineRe(line))).toBe(true)
+  expect(await cardHas($, lineRe(line))).toBe(true)
+}
+test('rule: past 60 pinned approvals the oldest is dropped with its files and named as not kept, and no ordinary message is pushed out', ($, on) =>
+  capCheck($, on, {}, { n: 41, why: 'not-kept', kind: 'his' }, `Not kept: the plan you approved in message #41 (${NOT_KEPT_WHY})`))
+test('rule: a plan accepted on the plan screen and dropped past the cap is named as accepted there', ($, on) =>
+  capCheck(
+    $,
+    on,
+    { kind: 'plan', screen: 'accepted', text: 'Plan: build the importer in three steps.' },
+    { n: 41, why: 'not-kept', kind: 'plan', screen: 'accepted' },
+    `Not kept: the plan you accepted on the plan screen (#41) (${NOT_KEPT_WHY})`,
+  ))
+
+test('rule: a new job lets the old job\'s pinned approvals go with its files, clears what was not kept, and pins its own from one', async ($, on) => {
+  const body = 'A plan of the old job.'
+  const files = new Map([[`${DIR}/42-body.txt`, body]])
+  const pins = range(42, 101).map(n => his(n, `yes to plan ${n}`, { approved: 'all', read: { state: 'read' }, pinned: true }))
+  pins[0] = { ...(pins[0] as T3Msg), src: { body: await fileRef(body) } }
+  const store = storeOf(
+    recOf([...FORTY(), ...pins, ...range(102, 301).map(n => his(n))], {
+      objective: HELD_OBJ(41, 301),
+      jobStart: 41,
+      uncovered: { job: 41, count: 1, recent: [{ n: 41, why: 'not-kept', kind: 'his' }] },
+    }),
+  )
+  disk(on, files)
+  const { hold } = capture(on, store, () => SID)
+  hold.write = () => OBJ('The export built.', ['the export runs'], 'new job: #302 asked for the export')
+  await started($)
+  await send($, 'yes, now build the export')
+  hold.write = undefined
+  const rec = heldIn(store) as T3Rec
+  expect(rec.owner.filter(m => m.pinned === true)).toEqual([])
+  expect(rec.owner.map(m => m.n)).toEqual(range(262, 302))
+  expect(files.has(`${DIR}/42-body.txt`)).toBe(false)
+  expect(rec.uncovered).toBeUndefined()
+  expect(await rowSays($, /Not kept/)).toBe(false)
+  // The new job's first message carries an approval; 200 more follow it.
+  ;(rec.owner.find(m => m.n === 302) as T3Msg).approved = 'all'
+  rec.owner.push(...range(303, 502).map(n => his(n)))
+  ;(rec as unknown as { counter: number }).counter = 502
+  await send($, 'and the docs')
+  const after = heldIn(store) as T3Rec
+  expect(after.owner.filter(m => m.pinned === true).map(m => m.n)).toEqual([302])
+  expect(after.owner.some(m => m.n === 303)).toBe(false)
+  expect(after.uncovered).toBeUndefined()
+})
+
+test('rule: a rejection note carries no approval and is not pinned; a draft is never an approval', () => {
+  const note = { n: 5, kind: 'his', text: 'no, not like this', prior: '', screen: 'rejected', read: { state: 'read' } } as never
+  expect(rep.approvalOf(note)).toBe(false)
+  expect(rep.approvalOf({ ...(note as object), approved: 'all' } as never)).toBe(false)
+  expect(rep.approvalOf({ n: 5, kind: 'draft', text: 'x', prior: '', approved: 'all' } as never)).toBe(false)
+  expect(rep.approvalOf({ n: 5, kind: 'note', text: 'x', prior: '', approved: '' } as never)).toBe(true)
+  expect(rep.approvalOf({ n: 5, kind: 'plan', text: 'x', prior: '', approved: 'all', screen: 'accepted' } as never)).toBe(true)
+  expect(rep.approvalOf({ n: 5, kind: 'his', text: 'x', prior: '' } as never)).toBe(false)
+  const later = range(6, 205).map(n => his(n)) as never[]
+  expect(rep.trimOwner([{ ...(note as object), approved: 'all' } as never, ...later], 1).some(m => m.n === 5)).toBe(false)
+  expect(rep.trimOwner([{ ...his(5), approved: 'all' } as never, ...later], 1).find(m => m.n === 5)?.pinned).toBe(true)
+})
+
+test('rule: when the files cannot be written either, the line says the record is kept only until Claude Code restarts', async ($, on) => {
+  const d = disk(on)
+  d.failWrite = true
+  const store = storeOf(recOf([his(1, 'build the importer')], { recRev: 3 }), othersOf(31))
+  padTo(store, STORE_LIMIT - 60)
+  const { scripts, hold } = capture(on, store, () => SID)
+  hold.refuse = overLimit
+  await started($)
+  await runTurn($, scripts, 't1', [said('The importer is planned.')])
+  expect(d.files.has(`${DIR}/record.json`)).toBe(false)
+  expect(await rowSays($, /^The rep could not save its record \(the shared store is full\); this session's record is kept only until Claude Code restarts$/)).toBe(true)
+})
+
+test('guard: the worst-case record adds at most 1,853,300 bytes of JSON over today\'s, and through the store\'s refusal it comes back as parts each under 4 MiB', async ($, on) => {
+  // Every character escaped as \u00XX: six bytes of JSON each.
+  const esc = (n: number) => '\u0001'.repeat(n)
+  // Each field at its largest in section 4.4 of the plan, counted with its name as it sits in the
+  // record: `"name":value` is the figure given.
+  const field = (key: string, make: (pad: string) => unknown, bytes: number): unknown => {
+    const size = (pad: string) => utf8(JSON.stringify({ [key]: make(pad) })) - 2
+    const pad = 'x'.repeat(bytes - size(''))
+    expect([key, size(pad) <= bytes && size(pad) > bytes - 20]).toEqual([key, true])
+    return make(pad)
+  }
+  const ref = (pad: string) => ({ chars: 1_000_000, sha: 'c'.repeat(64), where: 'memory', lost: pad })
+  const span = (pad: string) => (i: number) => ({ by: 'continuation', from: 999_990 + i, to: 1_000_000, note: 'interrupted', incomplete: pad })
+  const added = {
+    turns: field('turns', pad => range(1, 20).map(span(pad.slice(0, Math.floor(pad.length / 20)))), 2_200),
+    incomplete: field('incomplete', pad => pad, 200),
+    approved: field('approved', pad => pad, 1_024),
+    read: field('read', pad => ({ state: 'unreadable', why: pad }), 260),
+    screen: 'accepted',
+    withDraft: 1_000_000,
+    toolUseId: 't'.repeat(64),
+    src: field('src', pad => ({ body: ref(pad.slice(0, Math.floor(pad.length / 4))), took: ref(pad.slice(0, Math.floor(pad.length / 4))), rejected: ref(pad.slice(0, Math.floor(pad.length / 4))), sent: ref(pad.slice(0, Math.floor(pad.length / 4))) }), 1_280),
+  }
+  expect(utf8(JSON.stringify({ screen: added.screen, withDraft: added.withDraft, toolUseId: added.toolUseId })) - 2).toBeLessThanOrEqual(160)
+  const today = (n: number) => ({ n, kind: 'his', text: esc(6000), prior: esc(400) })
+  const window = range(1, 240).map(n => today(n + 60))
+  const pinned = range(1, 60).map(n => ({ n, kind: 'his', text: esc(400), prior: esc(400), ...added, pinned: true }))
+  const pend = range(1, 50).map(i => ({ turnId: `toolu_${String(i).padStart(30, '0')}`, by: 'continuation', src: { chars: 1_000_000, sha: 'd'.repeat(64), where: 'file' }, incomplete: 'p'.repeat(150), note: 'interrupted' }))
+  for (const p of pend) expect(utf8(JSON.stringify(p))).toBeLessThanOrEqual(400)
+  const uncovered = { job: 1_000_000, count: 1_000_000, recent: range(1, 10).map(n => ({ n: 999_990 + n, why: 'not-kept', kind: 'plan', screen: 'accepted' })) }
+  const lossMark = { lostRev: 1_000_000, keptRev: 999_999, after: 1_000_000, why: `part 9 ${'does not match its fingerprint'}` }
+  const base = recOf(window as T3Msg[], { recRev: 0 })
+  delete (base as { recRev?: number }).recRev
+  const worst = recOf([...pinned, ...window.map(m => ({ ...m, ...added }))] as T3Msg[], { pending: pend, pendingDropped: 1_000_000, uncovered, lossMark, recRev: 1_000_000, objRev: 1_000_000, readerAt: 1_000_000 })
+  expect(utf8(JSON.stringify(worst)) - utf8(JSON.stringify(base))).toBeLessThanOrEqual(1_853_300)
+  // Written through the save with the store refusing it.
+  const d = disk(on)
+  const store = storeOf(worst)
+  const { hold } = capture(on, store, () => SID)
+  hold.refuse = overLimit
+  await started($)
+  await send($, 'and more')
+  const manifest = manifestIn(d.files)
+  expect(manifest?.parts.length).toBeGreaterThanOrEqual(3)
+  for (const p of manifest?.parts ?? []) expect(utf8(d.files.get(`${DIR}/${p.name}`) ?? '')).toBeLessThan(STORE_LIMIT)
+  // The newest 200 messages, and the newest 60 approvals before them pinned.
+  const held = fallbackIn(d.files).owner
+  expect(held.length).toBe(260)
+  expect(held.filter(m => m.pinned === true).map(m => m.n)).toEqual(range(42, 101))
 })
 
 // ==============================================================================================
