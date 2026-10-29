@@ -3404,6 +3404,15 @@ const padTo = (store: Record<string, unknown>, target: number) => {
   ;(first.owner[0] as T3Msg).text += 'x'.repeat(target - utf8(JSON.stringify(sessions)))
   expect(utf8(JSON.stringify(sessions))).toBe(target)
 }
+// Room made in the store, as when other sessions' records shrink: Claude Code (and the kit) refuse
+// a store value over 4 MiB by themselves, so relaxing the test's own refusal alone makes no room.
+const makeRoom = (store: Record<string, unknown>) => {
+  const sessions = { ...(store.sessions as Record<string, { owner: T3Msg[] }>) }
+  const id = '00000000-0000-4000-8000-000000000001'
+  const first = sessions[id] as { owner: T3Msg[] }
+  sessions[id] = { ...first, owner: [{ ...(first.owner[0] as T3Msg), text: 'x' }, ...first.owner.slice(1)] }
+  store.sessions = sessions
+}
 const overLimit = (key: string, value: unknown): boolean => key === 'sessions' && utf8(JSON.stringify(value)) > STORE_LIMIT
 
 // The card for the press, read for one text.
@@ -3411,6 +3420,8 @@ const cardHas = async ($: Engine, text: RegExp): Promise<boolean> => {
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   await ui.press({ key: 'rep' })
   const found = await ui.find({ type: 'Text', text })
+  // The card is closed again, so the next check can press the button.
+  await ui.press({ key: 'close' })
   await ui.unmount()
   return found !== undefined
 }
@@ -3632,6 +3643,7 @@ test('rule: a change the store refuses is written to the session\'s own files (a
   await started($)
   expect(await rowSays($, /kept in its own files/)).toBe(true)
   hold.refuse = undefined
+  makeRoom(store)
   await send($, 'go ahead')
   expect(d.files.get(`${DIR}/2-body.txt`)).toBe('The importer is planned.')
   expect(heldIn(store)?.owner.find(m => m.n === 2)?.src?.body?.where).toBe('file')
@@ -3669,6 +3681,7 @@ test('rule: a failed write the store refuses is written to the session\'s own fi
   // The copy in the files was taken up, and the write that failed again at this start added to it.
   expect(fallbackIn(d.files).objectiveFailed).toBe(2)
   hold.refuse = undefined
+  makeRoom(store)
   await send($, 'go ahead')
   expect(d.files.has(`${DIR}/record.json`)).toBe(false)
   expect(await rowSays($, /could not save its record/)).toBe(false)
@@ -3725,11 +3738,16 @@ test('rule: a whole record over one file is written in parts under the part limi
   capture(on, store, () => SID)
   await started($)
   await settle($)
+  // The record is over the store's 4 MiB, which Claude Code (and the kit) refuse by themselves, so
+  // the start that takes up the copy saves it back to the files: what it read is what it wrote.
+  expect(heldIn(store)?.owner.length).toBe(239)
   const { at: _a, ...was } = JSON.parse(saved) as Record<string, unknown>
-  const { at: _b, ...now } = heldIn(store) as unknown as Record<string, unknown>
-  expect(now).toEqual(was)
-  expect(JSON.stringify(now)).toBe(JSON.stringify(was))
-  expect(files.has(`${DIR}/record.json`)).toBe(false)
+  const { at: _b, ...now } = fallbackIn(files) as unknown as Record<string, unknown>
+  // Compared as one boolean: a failed comparison of two records this size prints a diff so long
+  // that the run ends without a report.
+  expect(JSON.stringify(now) === JSON.stringify(was)).toBe(true)
+  expect(files.has(`${DIR}/record.json`)).toBe(true)
+  expect(await rowSays($, /^The rep could not save its record \(the shared store is full\); this session's record is kept in its own files$/)).toBe(true)
 })
 
 const FORTY = () => range(1, 40).map(n => his(n))
@@ -4010,10 +4028,13 @@ test('rule: a new job lets the old job\'s pinned approvals go with its files, cl
   expect(files.has(`${DIR}/42-body.txt`)).toBe(false)
   expect(rec.uncovered).toBeUndefined()
   expect(await rowSays($, /Not kept/)).toBe(false)
-  // The new job's first message carries an approval; 200 more follow it.
-  ;(rec.owner.find(m => m.n === 302) as T3Msg).approved = 'all'
-  rec.owner.push(...range(303, 502).map(n => his(n)))
-  ;(rec as unknown as { counter: number }).counter = 502
+  // The new job's first message carries an approval; 200 more follow it. The record the store
+  // holds is frozen, so the next one is planted as a new object.
+  const next = JSON.parse(JSON.stringify(rec)) as T3Rec
+  ;(next.owner.find(m => m.n === 302) as T3Msg).approved = 'all'
+  next.owner.push(...range(303, 502).map(n => his(n)))
+  ;(next as unknown as { counter: number }).counter = 502
+  store.sessions = { ...(store.sessions as Record<string, unknown>), [SID]: next }
   await send($, 'and the docs')
   const after = heldIn(store) as T3Rec
   expect(after.owner.filter(m => m.pinned === true).map(m => m.n)).toEqual([302])
