@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 5abf1a5..08101c8 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2650,7 +2650,7 @@ const stepText = (step: string): string => {
+ // owner approved can be called that.
+ export function headsUp(a: WatchAnswer, seen: readonly string[], planShown: boolean): { line: string; why: string } | null {
+   const own = a.flag === null ? null : { line: a.flag, why: a.why }
+-  const fresh = planShown ? (a.dropped ?? []).filter(d => !seen.some(s => speaksOf(s, d.step))) : []
++  const fresh = planShown ? (a.dropped ?? []) : []
+   const first = fresh[0]
+   if (first === undefined || fresh.some(d => a.flag !== null && speaksOf(a.flag, d.step))) return own
+   const why = [

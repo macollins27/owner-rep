@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 5abf1a5..6521111 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2608,7 +2608,7 @@ export function parseWatch(text: string): WatchAnswer {
+ function stepsOf(part: string | undefined, walk: boolean): { notAssessed?: StepRef[] } {
+   const out: StepRef[] = []
+   for (const line of clean(part).split('\n')) {
+-    const m = (walk ? /^\s*[-*•]?\s*#(\d+)\s*:\s*(.+?)\s*\|\s*(?:not assessed|looks dropped)\W*$/i : /^\s*[-*•]?\s*#(\d+)\s*:\s*(.+?)\s*$/).exec(line)
++    const m = (walk ? /^\s*[-*•]?\s*#(\d+)\s*:\s*(.+?)\s*\|\s*(?:not assessed)\W*$/i : /^\s*[-*•]?\s*#(\d+)\s*:\s*(.+?)\s*$/).exec(line)
+     if (m !== null) out.push({ n: Number(m[1]), step: (m[2] as string).trim() })
+   }
+   return out.length === 0 ? {} : { notAssessed: out }

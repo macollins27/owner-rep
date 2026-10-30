@@ -356,15 +356,31 @@ call writes (below):
 
    `WALK_RULE` has both readers walk each shown plan's steps against the record first and give
    each a state (done, claimed, underway, not reached, no sign while later work goes on, done
-   before the summary, runs alongside, not assessed), a step with no sign while later work goes on
-   counting as the owner's ask dropped. The Heads up writes the walk under `steps:` before
-   `state:`; `parseWatch` reads that block as if it were not there, save its lines ending
-   `| not assessed`, which become `notAssessed`. `LIST_GAP_RULE`, in the Heads up alone, makes one
-   exception to staying quiet about such a step: where the agent's own full list of what it is
-   building or doing to carry out an approved plan, or a summary of what is done and what remains
-   of it, stands whole in the record and a step of that plan is not on it, the flag says the step looks dropped and `why` asks the agent
-   to show it. The step stays `not assessed` in the walk, so `NOT_ASSESSED_RULE` and the lines of
-   `boundaryCover` still hold: nothing is called skipped. The list can only raise this flag; it
+   before the summary, runs alongside, looks dropped, not assessed), a step with no sign while
+   later work goes on counting as the owner's ask dropped. The Heads up writes the walk under
+   `steps:` before `state:`; `parseWatch` reads that block as if it were not there, save that its
+   lines ending `| not assessed` or `| looks dropped` become `notAssessed`, and `walkDropped` turns
+   its `no sign` and `looks dropped` lines into `dropped`. `LIST_GAP_RULE`, in the Heads up alone,
+   makes the one exception to staying quiet about a step left not assessed: where the agent's own
+   full list of what it is building or doing to carry out an approved plan, or a summary of what
+   is done and what remains of it, stands whole in the record and a step of that plan is not on
+   it, the walk marks the step `looks dropped`, without calling it skipped or done. A left-out
+   part inside the list, a list from before the approval, a list of one part of the work, a list
+   called partial or a step the agent says comes later leaves it `not assessed`.
+
+   `headsUp`, called by the look after the reader answers, decides what the owner sees. A step
+   walked `no sign` or `looks dropped` takes the line, `A step of the plan you approved looks
+   dropped: <step>.`, cut at `DROPPED_STEP_MAX` (160), whatever the reader's flag was about. The
+   flag and its why move into the why after `Also:`, and further dropped steps after `Also looks
+   dropped:`, so no concern is lost. This outranks even a flag about harm, whose words stay in the
+   why. A step walked `not assessed` has no say, a flag that already speaks of the step keeps the
+   reader's wording, and a step `seen` already speaks of is not raised again (`speaksOf`: a drop
+   word and three of the step's words, or all of a shorter step's, so two near-identical steps
+   dropped at separate looks read as one). With no approved plan in this look's prompt the walk
+   carries nothing, since only a plan the owner approved may be called that. The step's number is
+   not checked against the plans shown, because readers write the step's own number there as often
+   as the message's. `NOT_ASSESSED_RULE` and the lines of `boundaryCover` still hold, and the list
+   can only raise the mark; it
    never moves the ask. The briefing walks to itself and names the steps
    it could not assess under `unassessed:` (`#n: step` lines), which `parseBrief` reads apart from
    `left:`. `recordText` keeps a compaction summary whole up to `RECORD_SUMMARY_CUT` (40,000)

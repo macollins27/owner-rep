@@ -9,7 +9,7 @@
     "name": "flag-shown-twice",
     "breaks": "The watch forgets which flags it has shown, so the same note comes back after the owner dismissed it.",
     "patch": "flag-shown-twice.patch",
-    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-29"
+    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-29; remade 2026-10-30"
   },
   {
     "name": "watch-never-backs-off",
@@ -33,7 +33,7 @@
     "name": "flag-replaces-card",
     "breaks": "A watch flag replaces the briefing card instead of waiting for the row.",
     "patch": "flag-replaces-card.patch",
-    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-29"
+    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-29; remade 2026-10-30"
   },
   {
     "name": "stop-never-marked",
@@ -303,7 +303,7 @@
     "name": "looks-write-objective",
     "breaks": "The watch takes an objective from its look at the conversation, so the agent's account of the job can rewrite the objective between the owner's message and the writer's answer.",
     "patch": "looks-write-objective.patch",
-    "fixed": "2026-10-15; remade 2026-10-29"
+    "fixed": "2026-10-15; remade 2026-10-29; remade 2026-10-30"
   },
   {
     "name": "marks-uncited",
@@ -2191,26 +2191,98 @@
   },
   {
     "name": "list-gap-rule-left-out",
-    "breaks": "The Heads up is never told that a step the agent's own full list leaves out takes the flag, so a dropped step stays silent as not assessed.",
+    "breaks": "The Heads up is never told that a step the agent's own full list leaves out is marked as looking dropped, so that step stays silent as not assessed.",
     "patch": "list-gap-rule-left-out.patch",
     "fixed": "2026-10-30"
   },
   {
     "name": "list-gap-rule-says-skipped",
-    "breaks": "The rule no longer keeps the step not assessed or forbids calling it skipped or done, so a reader may claim what it cannot see.",
+    "breaks": "The rule no longer forbids calling the step skipped or done, so a reader may claim what it cannot see.",
     "patch": "list-gap-rule-says-skipped.patch",
     "fixed": "2026-10-30"
   },
   {
     "name": "list-gap-rule-any-list",
-    "breaks": "The rule no longer rules out a list with a part left out inside it, a list of one part, a partial list or a step promised later, so any short list raises a false alarm.",
+    "breaks": "Any list raises the mark, so a partial list or a list from before the approval raises a false alarm.",
     "patch": "list-gap-rule-any-list.patch",
     "fixed": "2026-10-30"
   },
   {
     "name": "list-gap-rule-in-briefing",
-    "breaks": "The briefing is told the rule too, though it already names such a step, so its answers change where nothing needed it.",
+    "breaks": "The briefing is told the Heads up's rule too, so it marks steps it must leave under unassessed.",
     "patch": "list-gap-rule-in-briefing.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "walk-no-looks-dropped-state",
+    "breaks": "The walk's list of states has no looks dropped, so the reader has no mark to give.",
+    "patch": "walk-no-looks-dropped-state.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "walk-looks-dropped-not-unassessed",
+    "breaks": "A step marked looks dropped stops counting as not assessed, so the row and the card lose the line that says it was not compared.",
+    "patch": "walk-looks-dropped-not-unassessed.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "heads-up-not-carried",
+    "breaks": "The look shows the reader's own flag and never reads the walk, so a dropped step behind another flag stays silent.",
+    "patch": "heads-up-not-carried.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "heads-up-no-sign-not-carried",
+    "breaks": "Only the looks dropped mark is carried, so a step with no sign is left to the flag.",
+    "patch": "heads-up-no-sign-not-carried.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "heads-up-mark-not-carried",
+    "breaks": "Only no sign is carried, so a step marked looks dropped is left to the flag.",
+    "patch": "heads-up-mark-not-carried.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "heads-up-not-assessed-carried",
+    "breaks": "A step walked as not assessed is carried too, so the false-alarm protection is gone.",
+    "patch": "heads-up-not-assessed-carried.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "heads-up-flag-lost",
+    "breaks": "The reader's own flag is thrown away when a dropped step takes the line, so a concern disappears.",
+    "patch": "heads-up-flag-lost.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "heads-up-repeats-shown",
+    "breaks": "A step already shown is raised again at every look, reworded each time, and blocks the next flag.",
+    "patch": "heads-up-repeats-shown.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "heads-up-no-plan-shown",
+    "breaks": "A walked step is called part of the plan the owner approved when no approved plan was shown to the look.",
+    "patch": "heads-up-no-plan-shown.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "heads-up-register-no-plan-gate",
+    "breaks": "The look tells the mod a plan was shown whatever it held, so the gate does nothing.",
+    "patch": "heads-up-register-no-plan-gate.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "heads-up-flag-speaks-ignored",
+    "breaks": "A flag that already speaks of the step is replaced by the mod's line, losing the reader's named list.",
+    "patch": "heads-up-flag-speaks-ignored.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "heads-up-says-skipped",
+    "breaks": "The mod's own line calls the step skipped, which it cannot know.",
+    "patch": "heads-up-says-skipped.patch",
     "fixed": "2026-10-30"
   }
 ]

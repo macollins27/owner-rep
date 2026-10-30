@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 5abf1a5..52110eb 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2619,7 +2619,7 @@ function stepsOf(part: string | undefined, walk: boolean): { notAssessed?: StepR
+ function walkDropped(part: string | undefined): { dropped?: DroppedStep[] } {
+   const out: DroppedStep[] = []
+   for (const line of clean(part).split('\n')) {
+-    const m = /^\s*[-*•]?\s*#(\d+)(?:\s+[a-z ]*step\s+\d+)?\s*[:,]\s*(.+?)\s*\|\s*(no sign while later work goes on|looks dropped)\b/i.exec(line)
++    const m = /^\s*[-*•]?\s*#(\d+)(?:\s+[a-z ]*step\s+\d+)?\s*[:,]\s*(.+?)\s*\|\s*(no sign while later work goes on|looks dropped|not assessed)\b/i.exec(line)
+     if (m !== null) out.push({ n: Number(m[1]), step: (m[2] as string).trim(), how: /^no/i.test(m[3] as string) ? 'no sign' : 'looks dropped' })
+   }
+   return out.length === 0 ? {} : { dropped: out }

@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 5abf1a5..eca65d1 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2652,7 +2652,7 @@ export function headsUp(a: WatchAnswer, seen: readonly string[], planShown: bool
+   const own = a.flag === null ? null : { line: a.flag, why: a.why }
+   const fresh = planShown ? (a.dropped ?? []).filter(d => !seen.some(s => speaksOf(s, d.step))) : []
+   const first = fresh[0]
+-  if (first === undefined || fresh.some(d => a.flag !== null && speaksOf(a.flag, d.step))) return own
++  if (first === undefined) return own
+   const why = [
+     first.how === 'no sign'
+       ? 'The record shows later work and nothing of this step. The agent has to show it.'
