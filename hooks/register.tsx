@@ -99,6 +99,7 @@ import {
   takeOwnWords,
   ownMessageTaken,
   earlierMessage,
+  unusableReplaced,
   RECORD_MAX_TOKENS,
   RECORD_SYSTEM,
   RECORD_TIMEOUT_MS,
@@ -712,13 +713,16 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     // press goes on. It writes card parts only, never the objective. With no objective
     // written there is no such call.
     if (taken.refused && taken.replaced.length > 0 && first.open !== null && taken.open !== null) {
+      // A message the gate kept that is praise, thanks, a question or a back-reference alone counts as replaced.
+      const open = taken.open
+      taken = { ...taken, ...unusableReplaced(taken.answer, taken.replaced, open) }
       reads += 1
       const rec = await loadRec($, sid)
       const result = await $.model
         .complete({
           model: OBJECTIVE_MODEL,
           system: OWN_WORDS_SYSTEM,
-          prompt: ownWordsPrompt({ ...memoryOf(rec), context }, taken.open, taken.answer),
+          prompt: ownWordsPrompt({ ...memoryOf(rec), context }, open, taken.answer),
           maxTokens: OWN_WORDS_MAX_TOKENS,
           effort: 'high',
           timeoutMs: OWN_WORDS_TIMEOUT_MS,
@@ -735,9 +739,11 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       const answered = result !== null && result.isAnswered
       ownChars = answered ? result.text.length : 0
       ownRead = !answered ? 'none' : own === null ? 'cut' : 'whole'
-      taken = { ...taken, answer: takeOwnWords(taken.answer, taken.replaced, own) }
+      // The own-words message is taken only when it is usable: praise alone leaves the fixed text for read 1's message.
+      const ownTaken = ownMessageTaken(taken.replaced, own)
+      taken = { ...taken, answer: takeOwnWords(taken.answer, ownTaken ? taken.replaced : taken.replaced.filter(p => p !== 'message'), own) }
       // No usable message from the last read or the own-words call: one read 1 kept stands before the list.
-      taken = { ...taken, answer: earlierMessage(taken.answer, taken.replaced, ownMessageTaken(taken.replaced, own), first) }
+      taken = { ...taken, answer: earlierMessage(taken.answer, taken.replaced, ownTaken, first) }
     }
     const a = taken.answer
     const brief = await changeRec($, sid, after => {
