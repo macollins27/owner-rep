@@ -25,10 +25,28 @@
 # for the session, so the build under test is this folder's and the sessions' records go to
 # the store of a mod loaded that way (owner-rep_inline-*.json), never to the installed mod's,
 # which keeps only its newest records and would let the owner's own sessions go for these.
+#
+#     INSTALLED=1 tests/live/live.sh 11     # the installed copy, not this folder
+#
+# With INSTALLED=1 the sessions run the copy installed at user scope instead: no --plugin-dir
+# and no setting that switches the installed copy off, and the steps that read the rep's store
+# read the installed mod's (owner-rep_owner-rep-*.json). That store keeps only its newest 32
+# records, so each session such a run starts lets the oldest of the owner's go; use it for one
+# scenario at a time, to show what the installed build does. ROOT, the folder loaded with
+# --plugin-dir, can be set from the environment; captures go beside the script, in captures/.
 set -u
 HERE=${0:A:h}
-ROOT=${HERE:h:h}
+ROOT=${ROOT:-${HERE:h:h}}
 CAPS=$HERE/captures
+mkdir -p $CAPS
+INSTALLED=${INSTALLED:-}
+if [[ -n $INSTALLED ]]; then
+  PLUGIN_ARGS=''
+  STORE_NAME='owner-rep_owner-rep-*.json'
+else
+  PLUGIN_ARGS="--plugin-dir '$ROOT' --settings '{\"enabledPlugins\":{\"owner-rep@owner-rep\":false}}'"
+  STORE_NAME='owner-rep_inline-*.json'
+fi
 S=owner-rep-live
 STRIP_RE='Owner rep ·|Brief me|Tell the rep|Fine, close|Put message|Check it|Heads up'
 want=("$@")
@@ -74,7 +92,7 @@ start() {
   fi
   LIVE_DIR=$dir
   tmux new-session -d -s $S -x 170 -y 44 -c $dir \
-    "env -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT -u CLAUDE_CODE_SESSION_ID -u CLAUDE_CODE_CHILD_SESSION -u CLAUDE_CODE_MESSAGING_SOCKET -u CLAUDE_CODE_MESSAGING_TOKEN -u CLAUDE_CODE_SESSION_ATTENDED claude --plugin-dir '$ROOT' --settings '{\"enabledPlugins\":{\"owner-rep@owner-rep\":false}}' $* --permission-mode bypassPermissions"
+    "env -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT -u CLAUDE_CODE_SESSION_ID -u CLAUDE_CODE_CHILD_SESSION -u CLAUDE_CODE_MESSAGING_SOCKET -u CLAUDE_CODE_MESSAGING_TOKEN -u CLAUDE_CODE_SESSION_ATTENDED claude $PLUGIN_ARGS $* --permission-mode bypassPermissions"
   if wait_for 'Yes, I trust this folder' 20; then tmux send-keys -t $S Down; sleep 0.5; tmux send-keys -t $S Enter; fi
   wait_for 'Brief me' 40 || { echo "  the session did not draw the rep's row in 40s"; return 1; }
   sleep 2
@@ -97,7 +115,7 @@ save() { pane | sed "s/${USER:-user}/user/g" > $CAPS/$1.txt; echo "  saved captu
 # rows joined.
 heights_record() {
   local stores store
-  stores=("${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/store/owner-rep_inline-*.json(Nom))
+  stores=("${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/store/${~STORE_NAME}(Nom))
   store=${stores[1]:-}
   CARD=$card python3 -I - "$store" "$HEIGHTS_FIRST" "$1" <<'PY2'
 import json, os, sys
@@ -305,7 +323,7 @@ for n in $want; do
       # The rep's store, as the mod's $.store writes it for a mod loaded with --plugin-dir (the
       # file name carries a hash; the newest such file is the one the first session just wrote),
       # and the session ids it holds before the fork, so the fork's record is the new one.
-      stores=("${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/store/owner-rep_inline-*.json(Nom))
+      stores=("${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/store/${~STORE_NAME}(Nom))
       store=${stores[1]:-}
       ids_before=$(mktemp -t owner-rep-live-ids)
       [[ -n $store ]] && python3 -I -c 'import json, sys; print("\n".join(json.load(open(sys.argv[1])).get("sessions", {}).keys()))' $store > $ids_before
@@ -391,7 +409,7 @@ PY
       print -r -- "$card" | grep -A4 -E '^\s*Left out:' | grep -qE '^\s*- ' ; verdict 'left-out list present with an item' $?
       # The record: the newest record in the newest store holding the first prompt.
       sleep 2
-      stores=("${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/store/owner-rep_inline-*.json(Nom))
+      stores=("${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/store/${~STORE_NAME}(Nom))
       store=${stores[1]:-}
       if [[ -z $store ]]; then
         echo "  no owner-rep store file under ${CLAUDE_CONFIG_DIR:-$HOME/.claude}/plugins/store"

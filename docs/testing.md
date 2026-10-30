@@ -257,6 +257,12 @@ the checkout's and the sessions' records go to the store of a mod loaded that wa
 (`owner-rep_inline-*.json`). Until 17 Oct 2026 the script ran the installed mod, whose store
 keeps only its newest `SESSIONS_MAX` (32) records: two full runs had left fifteen test
 records among the owner's seventeen, and each further run would have let the owner's oldest go.
+`INSTALLED=1` runs the installed mod instead, for a picture of what an owner's sessions run
+today: the session starts with neither `--plugin-dir` nor the switch-off setting, and the script
+reads the installed mod's store (`owner-rep_owner-rep-*.json`). Each such session adds a record
+to that store, so a run of it can push the owner's oldest record out; use it only for a named
+before-and-after, never as the routine run. `ROOT=<folder>` sets the checkout the default run
+loads, in place of the one the script sits in; the captures are still written beside the script.
 Scenarios, one capture each:
 
 1. Idle: the row draws with the placeholder goal and "idle".
