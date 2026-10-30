@@ -1003,6 +1003,11 @@ export const WALK_RULE = `Before anything else, walk every step of each approved
 - runs alongside: a rule kept throughout, such as never touching a file, judged by whether any work broke it.
 A step with no sign while later work goes on is part of the owner's ask dropped: it outranks any flag about proof, tidiness or wording; it does not outrank a flag about harm happening now.`
 
+// A step the rule above keeps "not assessed" that the agent's own full list leaves out: the Heads
+// up raises it without calling it skipped. The agent's list can only raise this flag; it never
+// moves the ask, and a step on the list stays unproven.
+export const LIST_GAP_RULE = `One kind of step marked "not assessed" still takes the flag: where the agent's own full list of what it is building or doing, or a summary of what is done and what remains, stands whole in the record and a step of an approved plan is not on it, the flag says that step looks dropped because it does not appear in that list, and why names the list and asks the agent to show it. Keep the step "not assessed" in the walk, and never say it was skipped or done. A left-out part beside the list does not matter; a left-out part inside it, a list of one part of the work, a list called partial or a step the agent says comes later rules this out. This flag ranks with a step with no sign while later work goes on.`
+
 // An approval a reader can be shown: read whole, its context showable and in hand, none of its
 // sources lost, and the owner's words readable whole.
 const showable = (m: OwnerMsg): boolean =>
@@ -1280,6 +1285,7 @@ Notes the other watcher already showed the owner in this session, which you must
 ${list(m.others, '(none)')}
 
 ${WALK_RULE}
+${LIST_GAP_RULE}
 Write the walk first, under "steps:", one line per step; with no plan shown, write "steps: none".
 
 ## Output structure

@@ -606,7 +606,8 @@ test('the brief keeps every judgment line word for word and stays under 2,900 wo
   // what the reader sees, and the not-assessed rule, in the plan's words (plan 7.1 items 0d and 3).
   // 3,200 since Task 7: both carry the walk of the approved plans' steps, about 265 words (plan 7.1 item 4).
   expect(words(b)).toBeLessThan(3200)
-  expect(words(w)).toBeLessThan(3200)
+  // 3,350 for the Heads up alone: it carries LIST_GAP_RULE, about 130 words, and the briefing does not.
+  expect(words(w)).toBeLessThan(3350)
   // The bookkeeping the code enforces is gone from the brief.
   for (const gone of ['under the rule given with the conditions', 'sent after #', 'never the number of a draft', 'A later message replaces an earlier one only where the owner says so', 'Each condition of "done" stays open until the conversation shows it']) {
     expect(b).not.toContain(gone)
@@ -9811,6 +9812,27 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
       rep.NOT_ASSESSED_RULE,
     ])
       expect(w).toContain(rule)
+  })
+
+  test('A step missing from the agent\'s own full list: the Heads up says it looks dropped and asks to see it, the step stays not assessed, and the briefing is told nothing new', () => {
+    const w = watchPrompt(mem7([]), 'stop')
+    expect(w).toContain(rep.LIST_GAP_RULE)
+    expect(w.indexOf(rep.WALK_RULE)).toBeLessThan(w.indexOf(rep.LIST_GAP_RULE))
+    expect(w.indexOf(rep.LIST_GAP_RULE)).toBeLessThan(w.indexOf('Write the walk first'))
+    expect(w).toContain(rep.NOT_ASSESSED_RULE)
+    for (const rule of [
+      'looks dropped',
+      'does not appear in that list',
+      'asks the agent to show it',
+      'Keep the step "not assessed" in the walk',
+      'never say it was skipped or done',
+      'whole in the record',
+      'a left-out part inside it',
+      'a list of one part of the work',
+    ])
+      expect(rep.LIST_GAP_RULE).toContain(rule)
+    expect(briefPrompt(mem7([]))).not.toContain(rep.LIST_GAP_RULE)
+    expect(rep.boundaryCover({ outcome: 'unknown', n: 6, from: 0 }, false).told[0]).toContain('none of its steps may be called "no sign while later work goes on"')
   })
 
   test('Task 7: the briefing walks the same steps to itself, puts a step with no sign first under left:, and gives the steps it could not assess under unassessed:, with no steps: part', () => {

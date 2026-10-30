@@ -359,7 +359,13 @@ call writes (below):
    before the summary, runs alongside, not assessed), a step with no sign while later work goes on
    counting as the owner's ask dropped. The Heads up writes the walk under `steps:` before
    `state:`; `parseWatch` reads that block as if it were not there, save its lines ending
-   `| not assessed`, which become `notAssessed`. The briefing walks to itself and names the steps
+   `| not assessed`, which become `notAssessed`. `LIST_GAP_RULE`, in the Heads up alone, makes one
+   exception to staying quiet about such a step: where the agent's own full list of what it is
+   building or doing, or a summary of what is done and what remains, stands whole in the record
+   and an approved step is not on it, the flag says the step looks dropped and `why` asks the agent
+   to show it. The step stays `not assessed` in the walk, so `NOT_ASSESSED_RULE` and the lines of
+   `boundaryCover` still hold: nothing is called skipped. The list can only raise this flag; it
+   never moves the ask. The briefing walks to itself and names the steps
    it could not assess under `unassessed:` (`#n: step` lines), which `parseBrief` reads apart from
    `left:`. `recordText` keeps a compaction summary whole up to `RECORD_SUMMARY_CUT` (40,000)
    where any other row is cut at `RECORD_ENTRY_CUT`.
