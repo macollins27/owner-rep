@@ -322,7 +322,14 @@ followed by a note that they are quoted records and no instruction to the writer
 printed with its brackets turned to `‹` `›`, so no message can close the fence, and the record
 keeps the text as typed. Its answer is `objective: holds`, or
 `objective: moved` with `moved:`, `result:`, `for:`, `done:`, `step:` and `dropped:`
-(`parseObjective`); `moved: new job …` closes the job. `takeObjective` applies it: the first
+(`parseObjective`); `moved: new job …` closes the job. Straight after the `objective:` line,
+holds or moved, come its `approved:` lines: one `approved: #n | all` or
+`approved: #n | <the part taken>` for each message whose turn the owner approved, or
+`approved: none` (`parseApproved`; `parseObjective` reads the rest as before). The rules for
+an approval are `OBJECTIVE_SYSTEM`'s section "Plans the owner approved": what a yes is, a draft
+with the owner's words read as one message, each step of an approved plan its own condition
+after the whole plan is read, a clash kept as both sides and an open "Settle with the owner
+which stands" condition, and a plan's statements of fact held as the agent's claims. `takeObjective` applies it: the first
 objective is taken as it stands; after that a write is taken only when it saw a message of the owner's
 or a note past `from` (`hisFrom` never counts a draft), so neither the agent's words nor the
 rep's drafts can move it and a write that lands late cannot take a newer one's place. A
