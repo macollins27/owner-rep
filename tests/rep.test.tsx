@@ -8705,7 +8705,7 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
   // The owner's lines for a reader's gaps, through coverage, the one path to the row and the card.
   const cover7 = (owner: OwnerMsg[], gaps: rep.ReaderGaps) => rep.coverage({ owner, objective: null, jobStart: 1 }, { gaps })
   const NOT_ASSESSED_CUT = (n: number, step: string) => `Not assessed: "${step}" in the plan you approved in message #${n} (its proof could be in a part of the record that was cut short)`
-  const STATE_LINE = '- #<n>: <the step in plain words> | done | claimed | underway | not reached | no sign while later work goes on | done before the summary | runs alongside | not assessed'
+  const STATE_LINE = '- #<n>: <the step in plain words> | done | claimed | underway | not reached | no sign while later work goes on | done before the summary | runs alongside | not assessed — <where the record shows it, or "no sign">'
   const YES_LINE = 'The owner\'s "yes" to a plan an agent proposed: it makes the plan the owner\'s ask, held like the owner\'s own words; its steps are the ask, and its statements of fact are claims to check.'
   const DRAFT_LINE = 'A message marked "(your draft, sent by the owner)": your own words, which the owner sent. It asks the agent for the step it names and nothing more; it never narrows the job.'
   const person = (text: string): SessionMessage => ({ role: 'user', text, toolUses: [] })
@@ -8987,6 +8987,18 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     expect(brief.notAssessed).toEqual([{ n: 5, step: 'run check-fruit' }])
     expect(parseBrief(WELL).notAssessed ?? []).toEqual([])
     expect(parseBrief(WELL).leftOut).toEqual([])
+  })
+
+  test('Task 8, lever (b): a walk line that ends with where the record shows the step still parses, and the old form without it still parses', () => {
+    const plain = 'state: working\nflag: The agent skipped the look.\nwhy: No look in the record.\nshown:\n- the sorter built | the run printed sorted\nclosed:\n- nothing'
+    const withWhere = `steps:\n- #5: read pear.txt | done — event 12 shows it read\n- #5: run check-fruit | not assessed — no sign\n- #5: report back | no sign while later work goes on — no sign\n${plain}`
+    const a = parseWatch(withWhere)
+    const b = parseWatch(plain)
+    expect({ state: a.state, flag: a.flag, why: a.why, shown: a.shown, closed: a.closed }).toEqual({ state: b.state, flag: b.flag, why: b.why, shown: b.shown, closed: b.closed })
+    expect(a.notAssessed).toEqual([{ n: 5, step: 'run check-fruit' }])
+    const old = parseWatch(`steps:\n- #5: read pear.txt | done\n- #5: run check-fruit | not assessed.\n${plain}`)
+    expect(old.notAssessed).toEqual([{ n: 5, step: 'run check-fruit' }])
+    expect(old.flag).toBe(b.flag)
   })
 
   test('Task 7: the record keeps a compaction summary whole up to 40,000 characters, and cuts another row at 3,000', () => {
