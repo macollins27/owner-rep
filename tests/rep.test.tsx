@@ -10255,3 +10255,32 @@ describe('coverage: the failed write and the full store, both standing', () => {
     expect(brief).not.toContain('- none: every condition is shown')
   })
 })
+
+// Plan 6.4 row 3 across a restart (Task 4b, owed): a typed approval of a turn the rep did not see
+// whole, the turn's text held only in memory because no file could be written. After Claude Code
+// restarts, the row, the card and the briefing still name it; nothing goes quiet or says all done.
+let row3Kept: { store: Record<string, unknown>; files: Map<string, string> } | null = null
+describe('coverage: row 3 across a restart', () => {
+  test('rule: a typed yes to a turn the rep did not see, its text held only in memory, is named on the row, the card and the briefing (before the restart)', async ($, on) => {
+    const s = asks(on, [his(1, 'plan the fruit files')])
+    s.d.failWrite = true
+    s.answer(() => ANSWER([], { approved: ['#2 | all'] }))
+    await started($)
+    await runTurn($, s.scripts, 't1', [said(`The plan: then delete old.txt and rebuild. ${wordsWith(70_000)}`)], { start: null })
+    await s.send($, 'yes, go')
+    expect(s.msg(2)).toMatchObject({ approved: 'all', read: { state: 'unreadable' }, src: { body: { where: 'memory' } } })
+    await toldEverywhere($, s, `Could not be checked: the plan you approved in message #2 (${NOT_FROM_START})`)
+    row3Kept = { store: s.store, files: s.d.files }
+  })
+
+  test('rule: a typed yes to a turn the rep did not see, its text held only in memory, is still named on the row, the card and the briefing (after the restart)', async ($, on) => {
+    const { store, files } = row3Kept as NonNullable<typeof row3Kept>
+    disk(on, files)
+    const cap = capture(on, store, () => SID)
+    await started($)
+    await settle($)
+    const held = () => heldIn(store) as AskRec | undefined
+    expect(held()?.owner.find(m => m.n === 2)?.src?.body).toMatchObject({ where: 'memory', lost: 'the rep held it only until Claude Code restarted' })
+    await toldEverywhere($, { ...cap, obj: () => held()?.objective ?? null }, 'Could not be checked: the plan you approved in message #2 (the rep held it only until Claude Code restarted)')
+  })
+})
