@@ -1965,7 +1965,7 @@
     "name": "blank-lines-left",
     "breaks": "Taking out a stop sentence leaves its emptied line and the blank lines around it, so a removed paragraph or list item leaves gaps and a bare list marker in the card's message.",
     "patch": "blank-lines-left.patch",
-    "fixed": "2026-10-29"
+    "fixed": "2026-10-29; remade 2026-10-30"
   },
   {
     "name": "brief-me-no-read1-fallback",
@@ -2211,6 +2211,12 @@
     "name": "reporting-words-narrow",
     "breaks": "A log or file that reads, shows, prints or states a quote no longer reports it, so 'The log reads \"You can stop now.\"' is read as a stop and cut.",
     "patch": "reporting-words-narrow.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "number-read-as-marker",
+    "breaks": "A line left holding a number after a removal counts as a list marker though the number was the text, so 'You can stop now. 42.' loses the 42.",
+    "patch": "number-read-as-marker.patch",
     "fixed": "2026-10-30"
   }
 ]

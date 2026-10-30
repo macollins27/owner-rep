@@ -3206,7 +3206,8 @@ export const withoutStopSentences = (message: string): string => {
         from = end
       }
       text = (text + line.slice(from)).trimEnd()
-      lines.push({ text, dropped: text === '' || /^[ \t]*(?:[-*•]|\d+[.)])$/.test(text) })
+      const began = LIST_MARKER.exec(line)?.[0] ?? ''
+      lines.push({ text, dropped: text === '' || (began !== '' && text === began.trimEnd()) })
     }
     at += line.length + 1
   }

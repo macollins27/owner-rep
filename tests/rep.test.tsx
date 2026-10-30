@@ -1327,6 +1327,28 @@ test('a reported quote a few words after its word stays whole under the clause r
   expect(kept.map(READ_STOP)).toEqual(kept.map(STAYS_WHOLE))
 })
 
+test('a number left after a removed sentence stays: only a list marker that began the line before the removal goes with its sentence', () => {
+  const table = [
+    ['You can stop now. 42.', '42.'],
+    ['Run the suite.\nYou can stop now. 42.', 'Run the suite.\n42.'],
+    ['Show the log.\nYou can stop now. 7)', 'Show the log.\n7)'],
+  ]
+  expect(table.map(([m]) => [m, withoutStopSentences(m ?? '')])).toEqual(table)
+})
+
+test('a removed list item\'s own marker goes with it, and a marker with text after it stays', () => {
+  const table = [
+    ['Steps:\n3. You can stop now.\n4. Show the log.', 'Steps:\n4. Show the log.'],
+    ['Missing:\n- the empty-file test\n- Then stop.\n- the install log', 'Missing:\n- the empty-file test\n- the install log'],
+    ['Steps:\n  * You can stop now.\n  * Show the log.', 'Steps:\n  * Show the log.'],
+    ['Steps:\n2) You can stop now.\n3) Show the log.', 'Steps:\n3) Show the log.'],
+    ['Do these:\n1. Then stop. 42.\n2. the counts', 'Do these:\n1. 42.\n2. the counts'],
+    ['You can stop now. 3/4 = 0.75', '3/4 = 0.75'],
+    ['You can stop now.', ''],
+  ]
+  expect(table.map(([m]) => [m, withoutStopSentences(m ?? '')])).toEqual(table)
+})
+
 test('a wait on the owner\'s word on an operation that is the agent\'s is caught in every form of the word, however capitalised; a button named with a capital stays kept', () => {
   const caught = ['Wait for my word on Merging.', 'Wait for my word on Pushing.', 'Wait for my go-ahead on Merged.', 'Wait for my word on Deploys.', 'Wait for my word on INSTALLING.', 'Wait for my word on Deleting.', 'Wait for my word on Pushes.']
   expect(caught.map(R1_CAUGHT_WHOLE)).toEqual(caught.map(R1_CAUGHT_OUT))
