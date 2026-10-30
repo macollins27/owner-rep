@@ -14,7 +14,7 @@
 import type { On, SessionMessage } from 'claude-code'
 import { expect, mock, test as kitTest, type Engine, type TestBody, type TestOptions } from 'claude-code/testing'
 
-import { type Memory, CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fillCard, countLine, refusedLine, type CardText, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, OLD_SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, sentencesOf, withoutStopSentences, toAgentVoice, sectionOf, takeOwnWords, parseOwnWords, ownWordsPrompt, askAgain, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
+import { type Memory, CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fillCard, countLine, refusedLine, type CardText, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, OLD_SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, sentencesOf, withoutStopSentences, toAgentVoice, sectionOf, takeOwnWords, ownMessageTaken, earlierMessage, type Replaced, parseOwnWords, ownWordsPrompt, askAgain, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
 import { REFUSED_ENVIRONMENT, MISSING_REMOTE, BEFORE_YOU_STOP_COLON, WAIT_BEFORE_SUBMIT, THREE_BEFORE_YOU_STOP, TWO_BEFORE_YOU_STOP, GUARD_REFUSAL, STOP_SHAPES } from './fixtures/stop-shapes'
 
 // Every test starts with the session's working folder a Unix path, so what the suite reads does not
@@ -1114,6 +1114,47 @@ test('on a refused card, through the gate and as the own-words message, only the
   expect(nul('Great work. You can stop now.')).toEqual(['Great work. You can stop now.', ['means', 'next', 'message'], UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES])
   const nulDoes = gateVerdict(parseBrief(`verdict: stop\nwell:\nstands: s\nmeans: m\nleft:\n- nothing\nnext: Run the suite.\nmessage:\n${mixed}\nend\ndoes: Makes the agent stop and wait for my approval.`), null)
   expect([nulDoes.replaced, nulDoes.answer.message, nulDoes.answer.does]).toEqual([['means', 'next'], kept[0]?.[1], UNWRITTEN_DOES])
+})
+
+test('ownMessageTaken is true only where the message was replaced and the own-words reply left a usable message without its stop sentences', () => {
+  const own = (m: string) => OWN_WORDS_REPLY(m)
+  expect(ownMessageTaken(['means', 'message'], own('Run the suite and paste the counts.'))).toBe(true)
+  expect(ownMessageTaken(['means', 'message'], own('Run the suite and paste the counts. Then stop.'))).toBe(true)
+  expect(ownMessageTaken(['means', 'message'], null)).toBe(false)
+  expect(ownMessageTaken(['means', 'message'], own('You can stop now. Hand it over to me.'))).toBe(false)
+  expect(ownMessageTaken(['means', 'message'], own('Great work. You can stop now.'))).toBe(false)
+  expect(ownMessageTaken(['means', 'message'], own(''))).toBe(false)
+  expect(ownMessageTaken(['means'], own('Run the suite and paste the counts.'))).toBe(false)
+  expect(ownMessageTaken([], own('Run the suite and paste the counts.'))).toBe(false)
+})
+
+test('earlierMessage puts read 1\'s message, without its stop sentences, and its does line on the card only when the last read and the own-words call left the fixed text and read 1 kept its own', () => {
+  const C3_1 = 'Good progress on the parser. You skipped the empty-file case and the log shows no run of the full suite. Add the empty-file test, run the whole suite and paste the counts. Then wait for my sign-off.'
+  const C3_1_OUT = 'Good progress on the parser. You skipped the empty-file case and the log shows no run of the full suite. Add the empty-file test, run the whole suite and paste the counts.'
+  // The last read: its message all stop sentences, so the fixed text, listed as replaced.
+  const last = gateVerdict(REFUSED_CARD('Wrap up and stop here.'), OPEN_JOB_OPEN)
+  expect(last.replaced).toEqual(['means', 'message'])
+  // Read 1 kept its message without the stop sentence.
+  const read1 = gateVerdict(REFUSED_CARD(C3_1), OPEN_JOB_OPEN)
+  expect(read1.replaced).toEqual(['means'])
+  // Read 1 kept, the own-words call gave nothing usable (or was not answered): read 1's message and does line, the rest the last read's.
+  expect(earlierMessage(last.answer, last.replaced, false, read1)).toEqual({ ...last.answer, message: C3_1_OUT, does: 'Makes the agent show its work.' })
+  expect(earlierMessage(last.answer, last.replaced, false, read1).means).toBe(OPEN_MEANS(OPEN_JOB_OPEN))
+  // The own-words call took the message: it stands.
+  expect(earlierMessage(last.answer, last.replaced, true, read1)).toBe(last.answer)
+  // Read 1's message was replaced too: the fixed text stays, whatever read 1's message reads.
+  const replacedRead1 = { answer: { ...read1.answer, message: 'Read one text.' }, replaced: ['means', 'message'] as Replaced[] }
+  expect(earlierMessage(last.answer, last.replaced, false, replacedRead1)).toBe(last.answer)
+  // The last read kept its own message: it stands.
+  const keptLast = gateVerdict(REFUSED_CARD('Show me the install log.'), OPEN_JOB_OPEN)
+  expect(keptLast.replaced).toEqual(['means'])
+  expect(earlierMessage(keptLast.answer, keptLast.replaced, false, read1)).toBe(keptLast.answer)
+  // Read 1's message goes through withoutStopSentences before it is used: its stop sentence goes,
+  // and when nothing usable is left the fixed text stays.
+  const withStop = { answer: { ...read1.answer, message: 'Show the log. Then stop.' }, replaced: ['means'] as Replaced[] }
+  expect(earlierMessage(last.answer, last.replaced, false, withStop)).toEqual({ ...last.answer, message: 'Show the log.', does: 'Makes the agent show its work.' })
+  const unusable = { answer: { ...read1.answer, message: 'Great work. Then stop.' }, replaced: ['means'] as Replaced[] }
+  expect(earlierMessage(last.answer, last.replaced, false, unusable)).toBe(last.answer)
 })
 
 test('sectionOf takes one "## " section of a fixed text and throws, naming the heading, when the heading is missing', () => {

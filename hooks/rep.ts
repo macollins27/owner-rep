@@ -3245,6 +3245,25 @@ export function takeOwnWords(gated: BriefAnswer, replaced: Replaced[], own: Brie
   return out
 }
 
+// Whether takeOwnWords took the own-words message: the gate replaced the
+// message, the reply came back whole, and its message left something usable
+// once its stop sentences were taken out.
+export function ownMessageTaken(replaced: Replaced[], own: BriefAnswer | null): boolean {
+  return replaced.includes('message') && own !== null && withoutStopSentences(own.message) !== ''
+}
+
+// Brief me's last net before the fixed list: when the last read's message was
+// replaced by the rep's fixed text and the own-words call gave no usable one,
+// a message read 1 kept stands instead, without its stop sentences, with read
+// 1's does line (already through the gate). Read 1 replaced too, or nothing
+// usable left of it, and the fixed text stays. Every other part is the last
+// read's. Decided by the parts lists, never by comparing the message's text.
+export function earlierMessage(answer: BriefAnswer, replaced: Replaced[], ownTaken: boolean, first: { answer: BriefAnswer; replaced: Replaced[] }): BriefAnswer {
+  if (!replaced.includes('message') || ownTaken || first.replaced.includes('message')) return answer
+  const message = withoutStopSentences(first.answer.message)
+  return message === '' ? answer : { ...answer, message, does: first.answer.does }
+}
+
 // Whether a part ends at a sentence mark: a full stop, an exclamation mark or a
 // question mark, with any closing quotes or brackets after it.
 const endsSentence = (s: string): boolean => /[.!?]["'”’)\]]*$/.test(s.trim())

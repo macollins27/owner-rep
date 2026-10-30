@@ -97,6 +97,8 @@ import {
   ownWordsPrompt,
   parseOwnWords,
   takeOwnWords,
+  ownMessageTaken,
+  earlierMessage,
   RECORD_MAX_TOKENS,
   RECORD_SYSTEM,
   RECORD_TIMEOUT_MS,
@@ -734,6 +736,8 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       ownChars = answered ? result.text.length : 0
       ownRead = !answered ? 'none' : own === null ? 'cut' : 'whole'
       taken = { ...taken, answer: takeOwnWords(taken.answer, taken.replaced, own) }
+      // No usable message from the last read or the own-words call: one read 1 kept stands before the list.
+      taken = { ...taken, answer: earlierMessage(taken.answer, taken.replaced, ownMessageTaken(taken.replaced, own), first) }
     }
     const a = taken.answer
     const brief = await changeRec($, sid, after => {
