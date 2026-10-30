@@ -849,19 +849,50 @@ export const RECORD_NEXT = 'The agent goes on with the job: the rep cannot be su
 export const RECORD_MESSAGE = 'Before treating any part of this job as complete, list everything I asked for in this session and show me where each part stands.'
 export const RECORD_DOES = 'Makes the agent account for everything you asked for before anything is called complete.'
 
+// A message without the sentences that say stop, each judged alone by `messageSaysStop`: the
+// rest kept in order, a line with none taken as it was, each line's list mark and the
+// paragraph breaks with it; '' when nothing is left. A sentence ends at . ! or ? (and any
+// closing quote or bracket) before a space.
+const withoutStopSentences = (text: string): string => {
+  const lines = text.split('\n').map(line => {
+    const mark = /^\s*(?:[-*•]|\d+[.)])\s+/.exec(line)?.[0] ?? ''
+    let rest = line.slice(mark.length).trim()
+    if (rest === '') return line.trim() === '' ? '' : null
+    const kept: string[] = []
+    let all = 0
+    while (rest !== '') {
+      all += 1
+      const m = /^(.*?[.!?]["'”’)\]]*)(?:\s+|$)/.exec(rest)
+      const sentence = m?.[1] ?? rest
+      if (!messageSaysStop(sentence)) kept.push(sentence)
+      rest = m === null ? '' : rest.slice(m[0].length)
+    }
+    return kept.length === 0 ? null : kept.length === all ? line : mark + kept.join(' ')
+  })
+  return lines
+    .filter((l): l is string => l !== null)
+    .join('\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
 // A card while a record line stands: the lines first under what was left out, no going-well
-// line, and a stop shown as continue with the first line as its meaning; a next step, message
-// or what it does that says stop is the rep's own text.
+// line, and a stop shown as continue with the first line as its meaning; a next step that says
+// stop is the rep's own text. A message that says stop loses only its sentences that say it,
+// and is the rep's own ask only when nothing is left (or what is left still says stop, as a
+// stop spread over two sentences would); what it does is the rep's own when it says stop
+// itself or the message became the rep's.
 export function withRecordLines(a: BriefAnswer, lines: readonly string[]): BriefAnswer {
   if (lines.length === 0) return a
-  const message = messageSaysStop(a.message)
+  const kept = messageSaysStop(a.message) ? withoutStopSentences(a.message) : a.message
+  const message = kept === '' || messageSaysStop(kept)
   return {
     ...a,
     verdict: 'continue',
     well: '',
     means: a.verdict === 'continue' ? a.means : (lines[0] as string),
     next: a.next === '' || saysStop(a.next) ? RECORD_NEXT : a.next,
-    message: message ? RECORD_MESSAGE : a.message,
+    message: message ? RECORD_MESSAGE : kept,
     does: message || messageSaysStop(a.does) ? RECORD_DOES : a.does,
     leftOut: [...lines, ...a.leftOut.filter(l => !lines.includes(l))],
   }
