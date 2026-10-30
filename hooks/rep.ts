@@ -1036,15 +1036,39 @@ const showable = (m: OwnerMsg): boolean =>
   !(['sent', 'body', 'took'] as const).some(p => m.src?.[p]?.lost !== undefined) &&
   (m.kind === 'plan' || m.src?.body?.text !== undefined)
 
-// The owner's own words as sent: a typed message's part before a note to the rep, which is its own message.
-const sentWords = (m: OwnerMsg): string => {
-  const t = m.src?.sent?.text ?? m.text
+// One message holding a draft and the owner's words after it keeps the whole message in each part's
+// saved copy (Task 5). Its two parts, split as the writer split them, from the drafts the rep knows
+// (the part as stored, its last briefing's message); failing that, the owner's part as stored found
+// whole at the end; null when neither holds.
+function joinedSplit(whole: string, draft: OwnerMsg, his: OwnerMsg | undefined, known: readonly string[]): { draft: string; his: string } | null {
+  const split = draftSplitAny(whole, [draft.text, ...known])
+  if (split !== null) return split
+  const h = his?.text.trim() ?? ''
+  const at = h === '' || h.endsWith('…') ? -1 : whole.lastIndexOf(h)
+  return at > 0 && whole.slice(at + h.length).trim() === '' ? { draft: whole.slice(0, at).trimEnd(), his: whole.slice(at) } : null
+}
+
+// The words a message holds as sent: a typed message's part before a note to the rep, which is its
+// own message. A draft is its own words only, whole from its saved copy when that copy is the draft
+// alone; in one message with the owner's words after it, each part is its own share of the whole,
+// or its text as kept when the split fails: the draft's words are never the owner's, nor the
+// owner's the draft's.
+const sentWords = (m: OwnerMsg, list: readonly OwnerMsg[], known: readonly string[] = []): string => {
+  let t = m.src?.sent?.text ?? m.text
+  if (m.kind === 'draft') {
+    const his = list.find(x => x.withDraft === m.n)
+    return m.src?.sent?.text === undefined ? m.text : his === undefined ? t : (joinedSplit(t, m, his, known)?.draft ?? m.text)
+  }
+  if (m.withDraft !== undefined) {
+    const d = list.find(x => x.n === m.withDraft && x.kind === 'draft')
+    t = (d === undefined ? null : joinedSplit(t, d, m, known))?.his ?? m.text
+  }
   return m.kind === 'his' ? (noteSplit(t)?.before ?? t) : t
 }
 
 // One approved plan as the readers are shown it: what the owner took, the plan fenced, and the
 // owner's reply whole.
-function approvedBlock(m: OwnerMsg): string {
+function approvedBlock(m: OwnerMsg, list: readonly OwnerMsg[]): string {
   const head = m.kind === 'plan' ? `#${m.n} (${planLabel(m)})` : m.kind === 'note' ? `#${m.n} (approved in a note to the rep)` : `#${m.n}`
   const took = m.src?.took?.text ?? (m.approved === undefined || m.approved === '' ? undefined : m.approved)
   const body = m.kind === 'plan' ? (m.src?.body?.text ?? m.text) : (m.src?.body?.text ?? '')
@@ -1052,7 +1076,7 @@ function approvedBlock(m: OwnerMsg): string {
     head,
     ...(took === undefined ? [] : [`What the owner took: ${took}`]),
     `<approved_plan>\n${fenceTag(body, 'approved_plan')}\n</approved_plan>`,
-    ...(m.kind === 'plan' ? [] : [`The owner's reply:\n${quote(sentWords(m))}`]),
+    ...(m.kind === 'plan' ? [] : [`The owner's reply:\n${quote(sentWords(m, list))}`]),
   ].join('\n')
 }
 
@@ -1064,7 +1088,7 @@ const tooLongTold = (n: number, chars: number): string =>
 // turn after its cursor, oldest first, until one does not fit, then fills what room is left
 // newest first; its cursor becomes the highest it took in turn, and after the newest it wraps.
 export function readerParts(owner: readonly OwnerMsg[], budget: number, cursor?: number): ApprovedFill {
-  const all = owner.filter(showable).map(m => ({ m, text: approvedBlock(m) }))
+  const all = owner.filter(showable).map(m => ({ m, text: approvedBlock(m, owner) }))
   const over = all.filter(b => b.text.length > budget)
   const fits = all.filter(b => b.text.length <= budget)
   const taken: typeof fits = []
@@ -1151,12 +1175,14 @@ export function joinGaps(...all: readonly ReaderGaps[]): ReaderGaps {
 
 // The owner's words for the readers: whole from their saved copy; over what the rep reads whole,
 // its start and its end with what lies between said; a copy that could not be read, said.
-function readerWords(m: OwnerMsg): string {
+function readerWords(m: OwnerMsg, list: readonly OwnerMsg[], known: readonly string[]): string {
   const sent = m.src?.sent
   if (sent === undefined) return m.text
   if (sent.text !== undefined && sent.lost === undefined) {
-    if (sent.chars <= APPROVAL_READ_CAP) return sentWords(m)
-    return `${sent.text.slice(0, HIS_CUT)}\n${INDENT}(the owner's message #${m.n} is ${commas(sent.chars)} characters; only its start and its last ${commas(CLOSE_SHOW)} characters are shown, its first ${commas(HIS_CUT)} above and its last ${commas(CLOSE_SHOW)} below; what the owner asked between them may not all be held)\n${quote(sent.text.slice(-CLOSE_SHOW))}`
+    const words = sentWords(m, list, known)
+    // A draft is the rep's own words and carries no power: its share, never the owner's words.
+    if (sent.chars <= APPROVAL_READ_CAP || m.kind === 'draft') return words
+    return `${words.slice(0, HIS_CUT)}\n${INDENT}(the owner's message #${m.n} is ${commas(sent.chars)} characters; only its start and its last ${commas(CLOSE_SHOW)} characters are shown, its first ${commas(HIS_CUT)} above and its last ${commas(CLOSE_SHOW)} below; what the owner asked between them may not all be held)\n${quote(words.slice(-CLOSE_SHOW))}`
   }
   return `${m.text}\n${INDENT}(the owner's message #${m.n} is ${commas(sent.chars)} characters; only what is above could be read back: ${sent.lost ?? 'its saved copy was not read'}; what is shown is not all the owner asked)`
 }
@@ -1176,7 +1202,7 @@ function unshownLine(m: OwnerMsg, fill: ApprovedFill): string {
 
 // The owner's messages as the readers are shown them: each whole as sent; one whose approval is
 // shown under the approved plans points there; a plan-screen plan not shown there prints none of its text.
-function readerOwnerLines(list: readonly OwnerMsg[], fill?: ApprovedFill): string {
+function readerOwnerLines(list: readonly OwnerMsg[], fill?: ApprovedFill, known: readonly string[] = []): string {
   const shown = new Set(fill?.shown ?? [])
   return list
     .map(m => {
@@ -1185,8 +1211,8 @@ function readerOwnerLines(list: readonly OwnerMsg[], fill?: ApprovedFill): strin
           ? `- #${m.n} (${planLabel(m)}: shown whole under "Plans the owner approved on this job")`
           : `- #${m.n} (the owner's ${m.kind === 'note' ? 'note' : 'reply'} approving a plan: shown whole under "Plans the owner approved on this job")`
       const gap = fill === undefined || !approvalOf(m) ? null : unshownLine(m, fill)
-      if (m.kind === 'plan') return gap === null ? planHead(m, contextNotShown(m)) : `- #${m.n} (${planLabel(m)}; not shown: ${gap})`
-      const words = `- #${m.n} ${m.kind === 'note' ? NOTE_MARK : m.kind === 'draft' ? SENT_MARK : ''}${readerWords(m)}`
+      if (m.kind === 'plan') return gap === null || unresolved(m) !== null ? planHead(m, contextNotShown(m)) : `- #${m.n} (${planLabel(m)}; not shown: ${gap})`
+      const words = `- #${m.n} ${m.kind === 'note' ? NOTE_MARK : m.kind === 'draft' ? SENT_MARK : ''}${readerWords(m, list, known)}`
       return gap === null ? words : `${words}\n${INDENT}(the plan it approved is not shown: ${gap})`
     })
     .join('\n')
@@ -1227,7 +1253,7 @@ ${NOT_ASSESSED_RULE}${(m.cover ?? []).map(l => `\n${l}`).join('')}
 The conversation's size: ${contextLine(m)}
 
 ${section}The owner's own messages on this job, oldest first ("(to the rep)" marks one said to you; "(your draft, sent by the owner)" marks one you wrote and the owner sent):
-${readerOwnerLines(onJob, approved) || '(none recorded yet)'}
+${readerOwnerLines(onJob, approved, m.lastBrief === undefined ? [] : [m.lastBrief.message]) || '(none recorded yet)'}
 
 Jobs before this one in the session, closed:
 ${list(m.past, '(none)')}
