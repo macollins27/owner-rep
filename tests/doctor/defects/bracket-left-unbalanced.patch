@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 7fbe0b3..7d6c9ac 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3139,7 +3139,7 @@ export const withoutStopSentences = (message: string): string => {
+         let closes = ''
+         for (let i = c.start; i < c.end; i++) {
+           const p = partner.get(i)
+-          if (p === undefined || removed(p)) continue
++          if (p === undefined || removed(p) || p !== -1) continue
+           if (p > i) opens += message[i]
+           else closes += message[i]
+         }

@@ -1,0 +1,22 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 7fbe0b3..adfe6e3 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2997,7 +2997,7 @@ const BEFORE_STOPS = /\bbefore\s+the agent\s+(?:(?:can|may|should)\s+)?stops?\b/
+ // from it". "Wait for a reply." with no "from", or from the owner, stays caught.
+ // The lookahead also refuses a space, so a longer run of whitespace before the owner cannot
+ // backtrack past it: "Wait for a reply from  me." stays caught.
+-const WAIT_ON_OTHER = /\bwaits?\s+for\s+(?:a|an|the)\s+(?:reply|answer|response|decision|go-ahead|word|sign-off|instructions)\s+from\s+(?!\s|(?:the owner|him|her|them|he|his)\b)/gi
++const WAIT_ON_OTHER = /\bwaits?\s+for\s+(?:a|an|the)\s+(?:reply|answer|response|decision|go-ahead|word|sign-off|instructions)\s+from\s+(?!(?:the owner|him|her|them|he|his)\b)/gi
+ // 3. A stop on a blocker that tells the owner what stands in the way: the sentence opens with "if"
+ // and a condition, up to its first comma, that names a refusal or an absence, and the clause the
+ // condition opens (from that comma to the next comma, semicolon, colon or sentence mark, or to a
+@@ -3045,7 +3045,7 @@ const maskExempt = (read: string): string => {
+ // four exempt shapes above masked, then read by STOP_NEXT and STOP_ONCE. Only the copy read is
+ // changed; a removal cuts the message's own text.
+ const sentenceSaysStop = (sentence: string): boolean => {
+-  const read = maskExempt(toAgentVoice(maskReported(unwrap(sentence.replace(LIST_MARKER, '').replace(/\s+/g, ' ')))))
++  const read = maskExempt(toAgentVoice(maskReported(unwrap(sentence.replace(LIST_MARKER, '')))))
+   return STOP_NEXT.test(read) || STOP_ONCE.test(read)
+ }
+ 
