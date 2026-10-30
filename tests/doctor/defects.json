@@ -1933,7 +1933,7 @@
   },
   {
     "name": "quoted-order-skipped",
-    "breaks": "A quote after a reporting word followed by \"to\" is masked too, so an order to do what the quote says ('Then do as the note says to: \"You can stop now.\"') is not read as a stop.",
+    "breaks": "A quote after a reporting word is masked though \"to\" stands before it or an order leads to it, so an order to do what the quote says ('Then do as the note says to: \"You can stop now.\"') is not read as a stop.",
     "patch": "quoted-order-skipped.patch",
     "fixed": "2026-10-29; remade 2026-10-30"
   },
@@ -2169,6 +2169,48 @@
     "name": "punctuation-left-usable",
     "breaks": "What is left after a removal counts as usable with no letter or digit in it, so \"You can stop now. ...\" leaves \"...\" on the card in place of the fixed text.",
     "patch": "punctuation-left-usable.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "reported-gap-narrow",
+    "breaks": "A reported quote is masked only within four words of its reporting word, so a report with a long aside ('Your summary said in the final paragraph of the report: \"You can stop now.\"') is read as a stop and cut.",
+    "patch": "reported-gap-narrow.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "clause-end-coordinators-dropped",
+    "breaks": "A coordinating word no longer ends the reporting word's clause, so 'You said it passed and \"You can stop now.\"' is masked and reaches the card.",
+    "patch": "clause-end-coordinators-dropped.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "clause-end-instructions-dropped",
+    "breaks": "A word that starts a new instruction no longer ends the reporting word's clause, so 'The note said, follow this: \"You can stop now.\"' is masked and reaches the card.",
+    "patch": "clause-end-instructions-dropped.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "to-anywhere-in-gap",
+    "breaks": "Any \"to\" between the reporting word and the quote makes it an order, so 'Your summary said in its reply to the lead: \"You can stop now.\"' is read as a stop and cut.",
+    "patch": "to-anywhere-in-gap.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "obey-forms-unread",
+    "breaks": "A quote the agent is told to follow is masked as reported, so 'Follow what the note says: \"You can stop now.\"' reaches the card.",
+    "patch": "obey-forms-unread.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "obey-any-tense",
+    "breaks": "An obey word counts in any tense and anywhere in the clause, so a report of what was done ('Your summary said you followed what the note says: \"You can stop now.\"') is read as an order and cut.",
+    "patch": "obey-any-tense.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "reporting-words-narrow",
+    "breaks": "A log or file that reads, shows, prints or states a quote no longer reports it, so 'The log reads \"You can stop now.\"' is read as a stop and cut.",
+    "patch": "reporting-words-narrow.patch",
     "fixed": "2026-10-30"
   }
 ]

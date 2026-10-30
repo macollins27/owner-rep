@@ -1229,11 +1229,102 @@ test('a quote is someone\'s words only as the object of its reporting word, a fe
   const caught = [
     'You said the tests passed; then do as the note says to: "You can stop now."',
     'Do as the note says: "You can stop now."',
-    'You said it passed, and the log reads "You can stop now."',
   ]
   expect(caught.map(R1_CAUGHT_WHOLE)).toEqual(caught.map(R1_CAUGHT_OUT))
   for (const m of ['Your summary said "you can stop now", but the suite never ran. Run it.', 'The note says: "You can stop now." Run the suite anyway.', 'Your summary wrote: "You can stop now." Run the suite.'])
     expect([m, messageSaysStop(m), withoutStopSentences(m)]).toEqual([m, false, m])
+  for (const m of ['You said it passed, and the log reads "You can stop now."'])
+    expect([m, messageSaysStop(m), withoutStopSentences(m)]).toEqual([m, false, m])
+})
+
+const READ_STOP = (m: string) => [m, messageSaysStop(m), withoutStopSentences(m)]
+const STAYS_WHOLE = (m: string) => [m, false, m]
+const CUT_TO = (left: string) => (m: string) => [m, true, left]
+
+test('a quote that is the object of a reporting word in the same clause stays whole however many words and asides lie between', () => {
+  const kept = [
+    'Your summary said in the final paragraph of the report: "You can stop now.", but the suite never ran.',
+    'Your summary said, in the last line of its report, "You can stop now." Run the suite.',
+    'Your summary said in the final paragraph of the report "You can stop now." Run the suite.',
+    'Your summary said in the final paragraph of the report: \u201cYou can stop now.\u201d, but the suite never ran.',
+    'Your summary said in its reply to the lead: "You can stop now." Run the suite.',
+  ]
+  expect(kept.map(READ_STOP)).toEqual(kept.map(STAYS_WHOLE))
+})
+
+test('a quote the agent is told to do stays caught, past a reporting word in an earlier sentence or clause', () => {
+  const out = [
+    'You said it passed; do as the note says: "You can stop now."',
+    'You said the tests passed; then do as the note says to: "You can stop now."',
+    'Do as the note says: "You can stop now."',
+    'The note told the agent to: "You can stop now."',
+    'Your summary said it passed and do as the note says: "You can stop now."',
+    'Your summary said it passed, then follow what it says: "You can stop now."',
+  ]
+  expect(out.map(READ_STOP)).toEqual(out.map(CUT_TO('')))
+  const rest = 'Your summary said the tests passed. Do as the note says: "You can stop now." Show the log.'
+  expect(READ_STOP(rest)).toEqual(CUT_TO('Your summary said the tests passed. Show the log.')(rest))
+})
+
+test('a quote a log or a file reads, shows, prints or states is reported like one a person said', () => {
+  const kept = [
+    'You said it passed, and the log reads "You can stop now."',
+    'You said it passed, but the log reads "You can stop now."',
+    'The log shows "You can stop now."',
+    'The log prints "You can stop now."',
+    'The log printed "You can stop now."',
+    'The log states "You can stop now."',
+  ]
+  expect(kept.map(READ_STOP)).toEqual(kept.map(STAYS_WHOLE))
+})
+
+test('an order after a sentence end is removed though a kept reported quote stands before it', () => {
+  const m = 'The log reads "You can stop now." Then stop.'
+  expect(READ_STOP(m)).toEqual(CUT_TO('The log reads "You can stop now."')(m))
+})
+
+test('a quote given to follow, obey, do, act on or go by is an order and is read as the agent\'s own', () => {
+  const out = [
+    'Follow what the note says: "You can stop now."',
+    'Follow what it says: "You can stop now."',
+    'Obey what the note says: "You can stop now."',
+    'Do what the note says: "You can stop now."',
+    'Obey the note, which says: "You can stop now."',
+    'Act on what the note says: "You can stop now."',
+    'Go by what it says: "You can stop now."',
+    'Follow it as the note says: "You can stop now."',
+  ]
+  expect(out.map(READ_STOP)).toEqual(out.map(CUT_TO('')))
+})
+
+test('an obey word in the past tense is a report of what was done, and the quote stays whole', () => {
+  const kept = [
+    'Your summary said you followed what the note says: "You can stop now."',
+    'Your summary said it obeyed the note, which says: "You can stop now." Run the suite.',
+  ]
+  expect(kept.map(READ_STOP)).toEqual(kept.map(STAYS_WHOLE))
+})
+
+test('a reporting word reaches a quote only inside its clause: a coordinating word, a semicolon or a new instruction ends it', () => {
+  const out = [
+    'You said it passed and "You can stop now."',
+    'You said it passed but "You can stop now."',
+    'You said it passed then "You can stop now."',
+    'You said it passed; "You can stop now."',
+    'The note said, follow this: "You can stop now."',
+    'The note said, now run: "You can stop now."',
+  ]
+  expect(out.map(READ_STOP)).toEqual(out.map(CUT_TO('')))
+})
+
+test('a reported quote a few words after its word stays whole under the clause rule', () => {
+  const kept = [
+    'Your summary said in the report: "You can stop now.", but the suite never ran.',
+    'Your summary said in its last line: "You can stop now.", but the suite never ran.',
+    'Your summary said that "You can stop now." was the plan.',
+    'You wrote "You can stop now." before the suite ran. Run it now and paste its counts.',
+  ]
+  expect(kept.map(READ_STOP)).toEqual(kept.map(STAYS_WHOLE))
 })
 
 test('a wait on the owner\'s word on an operation that is the agent\'s is caught in every form of the word, however capitalised; a button named with a capital stays kept', () => {
