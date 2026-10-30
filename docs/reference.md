@@ -160,6 +160,51 @@ call writes (below):
    error. With no rows the fork's answer stands and the toast says there is nothing to read.
    The step look and the stop look pass no fallback and skip quietly on `nothing-to-fork`:
    a record read on each would be paid on every look of every new session's first turn.
+
+   **What the readers hold of the owner's messages and approved plans (Task 7).** `memoryFor`
+   reads back, by fingerprint, the saved copy (`src.sent`) of every message of the job and each
+   approval's `body` and `took` too, so a long message is in both readers whole up to
+   `APPROVAL_READ_CAP`, and past it as its first `HIS_CUT` characters and its last `CLOSE_SHOW`
+   with a line saying the rest was not read (`readerWords`). A draft is only its own words: alone,
+   its saved copy; sent in one message with the owner's words after it (Task 5's `withDraft`), each
+   part is its own share of the whole as the writer split it (`joinedSplit`, from the drafts the
+   rep knows and the last briefing's message), or its text as kept; a draft never takes the
+   owner's words and carries no power. A fingerprint this process has worked out is kept by its
+   text (`fingerprint`, bounded by `FINGERPRINT_MEMO_CHARS`), so a text read back unchanged needs
+   no second digest and a press is not slowed by a long message; a changed text is digested again.
+
+   The approved plans go in a section of their own (`approvedBlock`, each plan in an
+   `approved_plan` fence with what the owner took and the owner's whole reply), filled by
+   `readerParts` within a budget: `WATCH_APPROVED_BUDGET` (40,000 characters) for the Heads up,
+   `BRIEF_APPROVED_BUDGET` (80,000) for the briefing. A plan is never shown in part: one over the
+   briefing's budget is shown to neither reader (`over`), one between the two to the briefing
+   only; the briefing shows the newest plans that fit and names the rest as having no room
+   (`noRoom`). The Heads up takes the plans in turn from the record's cursor `readerAt.watch`,
+   saved after each answered look (`fill.cursor`) and wrapping to the start, so every plan is
+   shown whole within a few looks; the briefing keeps no cursor. With no approval there is no
+   section and the memory is as before Task 7.
+
+   `WALK_RULE` has both readers walk each shown plan's steps against the record first and give
+   each a state (done, claimed, underway, not reached, no sign while later work goes on, done
+   before the summary, runs alongside, not assessed), a step with no sign while later work goes on
+   counting as the owner's ask dropped. The Heads up writes the walk under `steps:` before
+   `state:`; `parseWatch` reads that block as if it were not there, save its lines ending
+   `| not assessed`, which become `notAssessed`. The briefing walks to itself and names the steps
+   it could not assess under `unassessed:` (`#n: step` lines), which `parseBrief` reads apart from
+   `left:`. `recordText` keeps a compaction summary whole up to `RECORD_SUMMARY_CUT` (40,000)
+   where any other row is cut at `RECORD_ENTRY_CUT`.
+
+   What a reader could not do for an approval reaches the owner by one path, coverage (plan 6.4,
+   Task 4b's templates): `readerGaps(fill, reader)` gives the plans not compared (too long for the
+   briefing, or no room beside newer plans) and the Heads up's `tooLong` (over its budget, inside
+   the briefing's); `notAssessedGaps` the steps a reader marked not assessed; `boundaryCover` the
+   boundary's outcome (0c: the record shown starts after the approval, or where it sits could not
+   be found); `joinGaps` merges them, each message once. A look sets them with `setLookGaps` for
+   the row; a press passes its own as `CoverOpts.gaps` to the card through `withRecordLines`, and
+   the briefing's prompt carries, among coverage's lines, the plans it cannot compare. An approval
+   in the readers' memory whose plan is not shown prints coverage's line for it
+   (`unshownLine`). The Heads up's too-long line is `ReaderGaps.tooLong`, shown by coverage only
+   when no other line stands; it replaces the `last` parameter Task 7 first gave `recordLines`.
 3. **Check**: `pressCheck()` → `runCheck()` first makes a throwaway copy of the agent's
    folder (`makeCopy`: an APFS clone, `cp -Rc`, into `checkCopyDir` under `~/.cache`; where
    `cp` refuses `-c` before making anything, as GNU `cp` does, `mkdir` makes the folder and
@@ -486,7 +531,11 @@ the row and note views; they are given to the briefing in place of its none line
 conditions (`memoryText`: with no objective, or with conditions open, the list is printed
 instead and no line); and they go first in a card's left-out list by `withRecordLines`, which
 also shows a stop as continue while a line stands, its meaning the first line and its next step
-`RECORD_NEXT`.
+`RECORD_NEXT`. A message that says stop (`messageSaysStop`) loses only the sentences that say it,
+each judged alone: every other sentence stays, in order, with its line's list mark and the
+paragraph breaks. Only when nothing is left, or what is left still says stop, is the message
+`RECORD_MESSAGE`; what it does is `RECORD_DOES` when it says stop itself or the message became
+`RECORD_MESSAGE`.
 
 A session the rep holds no record of (its record fell out of the newest `SESSIONS_MAX`, it
 was forked with a new id, or it is older than the mod) has none of the owner's messages. `seedOwner`

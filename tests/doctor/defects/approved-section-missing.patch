@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 9144d68..bf73cbb 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -918,7 +918,7 @@ function memoryText(m: Memory): string {
+       : `"${objectiveText(o)}"${o.movedAt === null ? '' : `\n(${revisedLine(o)})`}`
+   const onJob = o === null ? m.owner : m.owner.filter(x => x.n >= o.since)
+   const approved = m.approved
+-  const section = approved === undefined || approved.blocks.length + approved.told.length === 0 ? '' : `${APPROVED_HEAD}\n\n${[...approved.blocks, ...approved.told].join('\n\n')}\n\n`
++  const section = approved !== undefined || approved === undefined ? '' : `${APPROVED_HEAD}\n\n${[...approved.blocks, ...approved.told].join('\n\n')}\n\n`
+   const brief =
+     m.lastBrief === undefined
+       ? '(none yet)'

@@ -82,8 +82,9 @@ has to show (a list of conditions), and the step the session is on now. It is ne
 owner's text. The owner works by intent rather than exact wording, and a rep that only did
 what the client literally said would not be a good one, so the objective includes what a
 serious owner plainly wants without saying it. The owner's messages are weighed by kind:
-reasons and complaints first, instructions next, and a "yes" to an agent's proposal last,
-since that is the agent's idea with the owner's name on it.
+reasons and complaints first, then instructions. A "yes" to a plan the agent proposed makes
+that plan the owner's ask, held like the owner's own words: each of its steps becomes a
+condition of "done", read whole before any is written.
 
 The objective is written by a call of its own, never by the looks. Each message of the
 owner's, and each note to the rep, starts one plain model call, not a fork of the

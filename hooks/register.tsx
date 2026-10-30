@@ -32,6 +32,7 @@ import {
   trimCounted,
   migrateOwner,
   sha256,
+  FINGERPRINT_MEMO_CHARS,
   isSessionId,
   removablePath,
   splitRecord,
@@ -140,6 +141,10 @@ import {
   RECORD_SYSTEM,
   RECORD_TIMEOUT_MS,
   recordPrompt,
+  recordText,
+  RECORD_BUDGET,
+  boundaryRow,
+  boundaryCover,
   humanItems,
   typedFromItems,
   forkItems,
@@ -170,6 +175,12 @@ import {
   writerShowings,
   TOOK_INLINE_BYTES,
   approvalOf,
+  readerParts,
+  readerGaps,
+  notAssessedGaps,
+  joinGaps,
+  WATCH_APPROVED_BUDGET,
+  BRIEF_APPROVED_BUDGET,
   writeFailure,
   parseWatch,
   resultOf,
@@ -221,6 +232,8 @@ type Rec = {
   owner: OwnerMsg[]
   // The last number given to an owner message.
   counter: number
+  // The Heads up's cursor through the approved plans: the highest it showed in turn (`readerParts`).
+  readerAt?: { watch: number }
   past: string[]
   seen: string[]
   others: string[]
@@ -462,6 +475,25 @@ async function sourceFolder($: EngineInterface, sid: string): Promise<string | n
 
 // Texts held only by this process (`where: 'memory'`), by `<session id>/<source id>`.
 const memTexts = new Map<string, string>()
+// The fingerprints this process has worked out, by the text each is of: a text read back the same
+// is proven without a second digest, which runs off the engine's own turn, so a press stays quick
+// however long the owner's message. A changed text is digested again, so damage is still found.
+// The oldest are let go past FINGERPRINT_MEMO_CHARS.
+const fingerprints = new Map<string, string>()
+let fingerprintChars = 0
+async function fingerprint(text: string): Promise<string> {
+  const known = fingerprints.get(text)
+  if (known !== undefined) return known
+  const sha = await sha256(text)
+  fingerprints.set(text, sha)
+  fingerprintChars += text.length
+  for (const t of fingerprints.keys()) {
+    if (fingerprintChars <= FINGERPRINT_MEMO_CHARS) break
+    fingerprints.delete(t)
+    fingerprintChars -= t.length
+  }
+  return sha
+}
 // The sessions whose last save the store refused, and whether the files refused it too.
 const storeFull = new Map<string, { memoryOnly: boolean }>()
 
@@ -577,7 +609,7 @@ async function placeSources($: EngineInterface, sid: string, rec: Rec): Promise<
       at.put(refWithout(at.ref, at.ref.where, at.ref.where === 'memory' ? LOST_RESTART : LOST_DAMAGED))
       continue
     }
-    const sha = at.ref.sha !== '' ? at.ref.sha : await sha256(text)
+    const sha = at.ref.sha !== '' ? at.ref.sha : await fingerprint(text)
     const ref: SourceRef = { ...at.ref, sha }
     if (canWrite && folder !== null && isSourceId(at.id)) {
       const path = `${folder}/${at.id}.txt`
@@ -629,7 +661,7 @@ async function readRef($: EngineInterface, sid: string, id: string, ref: SourceR
   }
   const folder = await sourceFolder($, sid)
   const got = folder === null || !isSourceId(id) ? null : await readText($, `${folder}/${id}.txt`)
-  if (got !== null && ref.sha !== '' && (await sha256(got)) === ref.sha) return { ...ref, text: got }
+  if (got !== null && ref.sha !== '' && (await fingerprint(got)) === ref.sha) return { ...ref, text: got }
   return refWithout(ref, 'file', LOST_DAMAGED)
 }
 
@@ -667,15 +699,23 @@ async function markLost($: EngineInterface, sid: string, lost: readonly Lost[]):
   })
 }
 
-// What the readers are given: the job's messages, the approvals kept past the trim read whole,
-// and the lines for what the record could not keep or save.
-async function memoryFor($: EngineInterface, sid: string, rec: Rec): Promise<Memory> {
+// What a reader is given: the job's messages, each one's words as sent read back whole and each
+// approval's sources with them, the approved plans that fit its room (the Heads up from its
+// cursor), and the lines for what the record could not keep or save (for the briefing, and the
+// plans it cannot compare).
+async function memoryFor($: EngineInterface, sid: string, rec: Rec, reader: 'watch' | 'brief'): Promise<Memory> {
   const base = memoryOf(rec)
-  const pinned = base.owner.filter(m => m.pinned === true)
-  const { msgs, lost } = await readable($, sid, pinned, ['sent', 'body', 'took'])
-  await markLost($, sid, lost)
-  const owner = base.owner.map(m => (m.pinned === true ? (msgs[pinned.indexOf(m)] ?? m) : m))
-  return { ...base, owner, lines: coverage(rec, { full: storeFull.get(sid) }) }
+  const approvals = base.owner.filter(approvalOf)
+  const rest = base.owner.filter(m => !approvalOf(m))
+  const a = await readable($, sid, approvals, ['sent', 'body', 'took'])
+  const b = await readable($, sid, rest, ['sent'])
+  await markLost($, sid, [...a.lost, ...b.lost])
+  const owner = base.owner.map(m => (approvalOf(m) ? a.msgs[approvals.indexOf(m)] : b.msgs[rest.indexOf(m)]) ?? m)
+  const approved = reader === 'watch' ? readerParts(owner, WATCH_APPROVED_BUDGET, rec.readerAt?.watch ?? 0) : readerParts(owner, BRIEF_APPROVED_BUDGET)
+  // The briefing is told, among coverage's lines, of the plans it cannot compare, by the one path
+  // the row and the card take; what it finds itself goes on the card after it answers.
+  const gaps = reader === 'brief' ? readerGaps(approved, 'brief') : {}
+  return { ...base, owner, approved, lines: coverage(rec, { full: storeFull.get(sid), gaps }) }
 }
 
 // The store refused the record: its inline texts go to files, or memory when the files refuse
@@ -687,7 +727,7 @@ async function moveInline($: EngineInterface, rec: Rec): Promise<boolean> {
   for (const at of refsOf(rec)) {
     if (at.ref.where !== 'inline' || at.ref.text === undefined || at.ref.lost !== undefined) continue
     const text = at.ref.text
-    const ref: SourceRef = { ...at.ref, sha: at.ref.sha !== '' ? at.ref.sha : await sha256(text) }
+    const ref: SourceRef = { ...at.ref, sha: at.ref.sha !== '' ? at.ref.sha : await fingerprint(text) }
     if (canWrite && folder !== null && isSourceId(at.id) && (await writeFile($, `${folder}/${at.id}.txt`, text))) {
       at.put(refWithout(ref, 'file'))
     } else {
@@ -716,7 +756,7 @@ async function saveToFiles($: EngineInterface, rec: Rec): Promise<boolean> {
         ok = false
         break
       }
-      list.push({ name, bytes: utf8Bytes(text), sha: await sha256(text) })
+      list.push({ name, bytes: utf8Bytes(text), sha: await fingerprint(text) })
     }
     const old = ok ? parseManifest(await readText($, `${folder}/record.json`)) : null
     const manifest: Manifest = { recRev: rec.recRev, parts: list, why: STORE_FULL_WHY }
@@ -742,7 +782,7 @@ async function readParts($: EngineInterface, folder: string, manifest: Manifest)
   for (const p of manifest.parts) {
     const path = `${folder}/${p.name}`
     const text = await readText($, path)
-    if (text !== null) out.push({ text, sha: await sha256(text) })
+    if (text !== null) out.push({ text, sha: await fingerprint(text) })
     else out.push({ failed: (await $.fs.exists(path).catch(() => true)) ? 'unreadable' : 'missing' })
     if (text === null) break
   }
@@ -1181,31 +1221,40 @@ async function setNow($: EngineInterface, patch: Partial<Now>): Promise<void> {
   await update($, nowA, n => ({ ...(n ?? IDLE), ...patch }))
 }
 
-// One read of the conversation for the watch or the briefing: a fork of it. A fork has
-// nothing to fork before the first response of the process: in a session reopened with
-// --continue or --resume, after /clear, and through the whole first turn of a new session.
-// Then, only for a read the owner started (`fallback`: their press, and the look after their note),
-// the session's record is read instead, by one plain completion over the rows
-// `$.session.messages()` returns (recordPrompt), with the same task: a row is labelled the owner's
-// when its key is one of their messages in the session's transcript (heldItems), and the
-// session's when it is not; when no transcript can be read, by NOT_TYPED alone.
-// The watch's own looks, on a step and at a turn's end, skip quietly instead: a record
-// read on each of them would be paid on every look of every new session's first turn.
-// With no rows, or no fallback, the fork's answer stands, so the caller says there is
-// nothing to read yet or skips. A completion that throws reads as an API error, which the
-// callers already show. Either way the result has the fork's shape, so its spend is
-// counted as a fork's.
-async function readSession($: EngineInterface, sid: string, prompt: string, fallback: boolean): Promise<ModelForkResult> {
-  const forked = await $.model.fork({ prompt })
-  if (!fallback || forked.isAnswered || forked.reason !== 'nothing-to-fork') return forked
+// The readers read the session's record, never a fork: the rows `$.session.messages()` returns,
+// by one plain completion (recordPrompt) with the task. A row is labelled the owner's when its key
+// is one of their messages in the session's transcript (heldItems), and the session's when it is
+// not; when no transcript can be read, by NOT_TYPED alone. The job's approval is placed in the rows
+// (boundaryRow), its owner's messages read back whole first, and the rows from it on are read whole;
+// where it cannot be placed, or the record opens after it, the reader is told and the owner shown
+// (boundaryCover). With no rows there is nothing to read: the result says so as a fork's would, and
+// no model is called. A completion that throws reads as an API error, which the callers show.
+type Read = { result: ModelForkResult; gaps: ReaderGaps }
+const NOTHING_READ: ModelForkResult = {
+  isAnswered: false,
+  reason: 'nothing-to-fork',
+  usage: { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
+} as ModelForkResult
+async function readSession($: EngineInterface, sid: string, rec: Rec, task: (cover: string[]) => string): Promise<Read> {
   const rows = await $.session.messages().catch(() => [])
-  if (rows.length === 0) return forked
+  if (rows.length === 0) return { result: NOTHING_READ, gaps: {} }
   const items = await heldItems($, sid, rows)
-  return $.model
+  const human = items === null ? undefined : new Set(items.map(i => i.key))
+  const sent = await readable($, sid, jobMsgs(rec), ['sent'])
+  // A note approving alone is placed by the turn it answered, so its body is read back too.
+  const ap = sent.msgs.find(approvalOf)
+  const body = ap?.kind === 'note' ? await readable($, sid, [ap], ['body']) : { msgs: [], lost: [] }
+  const msgs = sent.msgs.map(m => (m === ap ? (body.msgs[0] ?? m) : m))
+  await markLost($, sid, [...sent.lost, ...body.lost])
+  const b = boundaryRow(rows, msgs)
+  const from = b.outcome === 'none' ? undefined : b.from
+  const opensAfter = b.outcome === 'established' && recordText(rows, RECORD_BUDGET, human, from).opensAfter
+  const cover = boundaryCover(b, opensAfter, b.outcome === 'none' ? undefined : msgs.find(m => m.n === b.n))
+  const result = await $.model
     .complete({
       model: OBJECTIVE_MODEL,
       system: RECORD_SYSTEM,
-      prompt: recordPrompt(rows, prompt, items === null ? undefined : new Set(items.map(i => i.key))),
+      prompt: recordPrompt(rows, task(cover.told), human, from),
       maxTokens: RECORD_MAX_TOKENS,
       effort: 'high',
       timeoutMs: RECORD_TIMEOUT_MS,
@@ -1219,6 +1268,7 @@ async function readSession($: EngineInterface, sid: string, prompt: string, fall
         usage: { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
       }),
     )
+  return { result: result as ModelForkResult, gaps: cover.gaps }
 }
 
 // One look by the watch: the same cached copy of the conversation the agent
@@ -1233,15 +1283,24 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
     })
     return
   }
-  // Only the look after the owner's note falls back to the record when there is nothing to fork.
-  const result = await readSession($, sid, watchPrompt({ ...(await memoryFor($, sid, rec)), context: await contextOf($) }, reason), reason === 'note')
+  const memory = { ...(await memoryFor($, sid, rec, 'watch')), context: await contextOf($) }
+  const got = await readSession($, sid, rec, cover => watchPrompt({ ...memory, cover }, reason))
+  // Nothing recorded yet: no model was called, and there is nothing to count.
+  if (got.result === NOTHING_READ) return
+  const result = got.result
+  const fill = memory.approved
+  const parsed = result.isAnswered ? parseWatch(result.text) : null
+  // What this look could not do for an approval goes to the row through coverage, the one path.
+  await setLookGaps($, sid, joinGaps(got.gaps, fill === undefined ? {} : readerGaps(fill, 'watch'), notAssessedGaps(parsed?.notAssessed ?? [])))
   const usage = 'usage' in result ? result.usage : null
   await changeRec($, sid, async after => {
     after.calls += 1
     after.tokens += tokensOf(usage)
     after.cached += cachedOf(usage)
-    if (!result.isAnswered) return
-    const answer = parseWatch(result.text)
+    if (!result.isAnswered || parsed === null) return
+    // An answered look moves the cursor, so the next one shows the plans after these.
+    if (fill?.cursor !== undefined) after.readerAt = { watch: fill.cursor }
+    const answer = parsed
     if (applyMarks(after, answer.shown, answer.closed) && onScreen(sid)) await update($, readingA, () => after.objective)
     const view = await read($, viewA)
     if (answer.flag !== null && view === 'row' && onScreen(sid) && ![...after.seen].some(s => same(s, answer.flag ?? ''))) {
@@ -1271,10 +1330,20 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     // One read of the conversation: its spend counted, and when it answered,
     // its marks applied and its verdict through the gate, against the
     // conditions still open after them.
+    // What this briefing's own read could not do for an approval, shown on the card by coverage.
+    let gaps: ReaderGaps = {}
     const ask = async (extra: string) => {
       const rec = await loadRec($, sid)
-      const prompt = briefPrompt({ ...(await memoryFor($, sid, rec)), context })
-      const result = await readSession($, sid, extra === '' ? prompt : `${prompt}\n\n${extra}`, true)
+      const memory = { ...(await memoryFor($, sid, rec, 'brief')), context }
+      const got = await readSession($, sid, rec, cover => {
+        const prompt = briefPrompt({ ...memory, cover })
+        return extra === '' ? prompt : `${prompt}\n\n${extra}`
+      })
+      const result = got.result
+      // The plans this briefing could not compare, and the steps it could not assess, go on the card.
+      const plans = memory.approved === undefined ? {} : readerGaps(memory.approved, 'brief')
+      const unassessed = result !== NOTHING_READ && result.isAnswered ? notAssessedGaps(parseBrief(result.text).notAssessed ?? []) : {}
+      if (result !== NOTHING_READ) gaps = joinGaps(got.gaps, plans, unassessed)
       const usage = 'usage' in result ? result.usage : null
       return changeRec($, sid, async after => {
         after.calls += 1
@@ -1328,7 +1397,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
         .complete({
           model: OBJECTIVE_MODEL,
           system: OWN_WORDS_SYSTEM,
-          prompt: ownWordsPrompt({ ...(await memoryFor($, sid, rec)), context }, taken.open, taken.answer),
+          prompt: ownWordsPrompt({ ...(await memoryFor($, sid, rec, 'brief')), context }, taken.open, taken.answer),
           maxTokens: OWN_WORDS_MAX_TOKENS,
           effort: 'high',
           timeoutMs: OWN_WORDS_TIMEOUT_MS,
@@ -1349,7 +1418,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     }
     // While the rep could not check, keep or save something, the card says so first and never
     // stops. The briefing's own gaps (Task 7) go in `gaps`; the Heads up's too-long line never does.
-    const a = withRecordLines(taken.answer, coverage(await loadRec($, sid), { full: storeFull.get(sid) }))
+    const a = withRecordLines(taken.answer, coverage(await loadRec($, sid), { full: storeFull.get(sid), gaps }))
     const brief = await changeRec($, sid, after => {
       const brief: Brief = {
         result: after.objective === null ? '' : firstSentence(objectiveText(after.objective)),
@@ -1835,7 +1904,7 @@ function closeStep(entry: TurnLive, index: number): void {
 // it puts it in its own file (`placeSources`); one over SOURCE_MAX is not kept, and says so.
 async function saveSource(_$: EngineInterface, _sid: string, _id: string, text: string): Promise<SourceRef> {
   if (text.length > SOURCE_MAX) return { chars: text.length, sha: '', where: 'file', lost: lostTooLong(text.length) }
-  return { chars: text.length, sha: await sha256(text), where: 'inline', text }
+  return { chars: text.length, sha: await fingerprint(text), where: 'inline', text }
 }
 
 // What a message of the owner's answers, fixed the moment it arrives: the turns seen to end
