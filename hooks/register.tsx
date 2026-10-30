@@ -1307,7 +1307,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
     const answer = parsed
     if (applyMarks(after, answer.shown, answer.closed) && onScreen(sid)) await update($, readingA, () => after.objective)
     const view = await read($, viewA)
-    const said = headsUp(answer, after.seen, (fill?.shown.length ?? 0) > 0)
+    const said = headsUp(answer, after.seen, fill?.blocks ?? [])
     if (said !== null && view === 'row' && onScreen(sid) && ![...after.seen].some(s => same(s, said.line))) {
       after.seen = [...after.seen, said.line].slice(-SEEN_MAX)
       const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId }

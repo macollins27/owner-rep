@@ -2608,59 +2608,98 @@ export function parseWatch(text: string): WatchAnswer {
 function stepsOf(part: string | undefined, walk: boolean): { notAssessed?: StepRef[] } {
   const out: StepRef[] = []
   for (const line of clean(part).split('\n')) {
-    const m = (walk ? /^\s*[-*•]?\s*#(\d+)\s*:\s*(.+?)\s*\|\s*(?:not assessed|looks dropped)\W*$/i : /^\s*[-*•]?\s*#(\d+)\s*:\s*(.+?)\s*$/).exec(line)
+    if (walk) {
+      const w = walkLine(line)
+      if (w !== null && /^(not assessed|looks dropped)\b/i.test(w.mark)) out.push({ n: w.n, step: w.step })
+      continue
+    }
+    const m = /^\s*[-*•]?\s*#(\d+)\s*:\s*(.+?)\s*$/.exec(line)
     if (m !== null) out.push({ n: Number(m[1]), step: (m[2] as string).trim() })
   }
   return out.length === 0 ? {} : { notAssessed: out }
 }
 
-// The steps a Heads up's walk marked as dropped. Readers also write "#6 step 2, the step" and add
-// a note after the mark, so these two forms are read as well.
+// One line of a walk. Readers also write "#6 step 2, the step" and add a note after the mark; the
+// mark is what follows the last "|", since a step's own words may hold one.
+function walkLine(line: string): { n: number; step: string; mark: string } | null {
+  const m = /^\s*[-*•]?\s*#(\d+)(?:\s+[a-z ]*step\s+\d+)?\s*[:,]\s*(.+)\|([^|]*)$/i.exec(line)
+  return m === null ? null : { n: Number(m[1]), step: (m[2] as string).trim(), mark: (m[3] as string).trim() }
+}
+
+// The steps a Heads up's walk marked as dropped.
 function walkDropped(part: string | undefined): { dropped?: DroppedStep[] } {
   const out: DroppedStep[] = []
   for (const line of clean(part).split('\n')) {
-    const m = /^\s*[-*•]?\s*#(\d+)(?:\s+[a-z ]*step\s+\d+)?\s*[:,]\s*(.+?)\s*\|\s*(no sign while later work goes on|looks dropped)\b/i.exec(line)
-    if (m !== null) out.push({ n: Number(m[1]), step: (m[2] as string).trim(), how: /^no/i.test(m[3] as string) ? 'no sign' : 'looks dropped' })
+    const w = walkLine(line)
+    const how = w === null ? null : /^(no sign while later work goes on|looks dropped)\b/i.exec(w.mark)
+    if (w !== null && how !== null) out.push({ n: w.n, step: w.step, how: /^no/i.test(how[1] as string) ? 'no sign' : 'looks dropped' })
   }
   return out.length === 0 ? {} : { dropped: out }
 }
 
+// A step's words, for telling steps apart: its long ones, or all of them when it has none.
+const DROP_WORD = /\b(dropped|skipped|left out|leaves out|missing|no sign)\b/i
+const allWords = (s: string): string[] => s.toLowerCase().match(/[a-z0-9]+/g) ?? []
+const stepWords = (s: string): string[] => {
+  const all = [...new Set(allWords(s))]
+  const long = all.filter(w => w.length >= 4)
+  return long.length > 0 ? long : all
+}
+
 // Whether a line already speaks of this step as dropped. Readers reword a step at every look, so
 // this goes by the step's words: three of them, or all of a shorter step's.
-const DROP_WORD = /\b(dropped|skipped|left out|leaves out|missing|no sign)\b/i
-const wordsOf = (s: string): string[] => s.toLowerCase().match(/[a-z0-9]{4,}/g) ?? []
 const speaksOf = (line: string, step: string): boolean => {
   if (!DROP_WORD.test(line)) return false
-  const has = new Set(wordsOf(line))
-  const words = [...new Set(wordsOf(step))]
+  const has = new Set(allWords(line))
+  const words = stepWords(step)
   return words.length > 0 && words.filter(w => has.has(w)).length >= Math.min(3, words.length)
 }
 
+// Only a step of a plan shown to this look may be called part of one. Readers reword steps, so the
+// test is words: on 18 saved dropped steps the lowest share found in the plan was a half.
+export const PLAN_WORDS_SHARE = 0.4
+const inPlans = (step: string, plans: readonly string[]): boolean => {
+  const has = new Set(plans.flatMap(allWords))
+  const words = stepWords(step)
+  return words.length > 0 && words.filter(w => has.has(w)).length >= words.length * PLAN_WORDS_SHARE
+}
+
 export const DROPPED_STEP_MAX = 160
+export const DROPPED_ALSO_MAX = 3
 const stepText = (step: string): string => {
   const s = step.replace(/[.\s]+$/, '')
   return s.length <= DROPPED_STEP_MAX ? s : `${s.slice(0, DROPPED_STEP_MAX - 1).trimEnd()}…`
 }
+const alsoDropped = (steps: readonly DroppedStep[]): string[] => [
+  ...steps.slice(0, DROPPED_ALSO_MAX).map(d => `Also looks dropped: ${stepText(d.step)}.`),
+  ...(steps.length > DROPPED_ALSO_MAX ? [`And ${steps.length - DROPPED_ALSO_MAX} more of its steps.`] : []),
+]
 
 // What the Heads up says for a look. A step the walk marks as dropped outranks whatever the flag
 // is about, and the flag moves to the why, so no concern is lost: one flag slot must not decide
-// whether the owner hears his ask was dropped. A step not assessed has no say here. A step already
-// shown, or one the flag already speaks of, leaves the reader's own flag as it is. With no approved
-// plan shown to this look the walk has nothing to stand on, so it carries nothing: only a plan the
-// owner approved can be called that.
-export function headsUp(a: WatchAnswer, seen: readonly string[], planShown: boolean): { line: string; why: string } | null {
+// whether the owner hears their ask was dropped. A step not assessed has no say here. A flag that
+// already speaks of a dropped step keeps its wording, and the others go under its why. A step
+// already shown is not raised again, and a step no shown plan holds is not called part of one:
+// only a plan the owner approved can be called that.
+export function headsUp(a: WatchAnswer, seen: readonly string[], plans: readonly string[]): { line: string; why: string } | null {
   const own = a.flag === null ? null : { line: a.flag, why: a.why }
-  const fresh = planShown ? (a.dropped ?? []).filter(d => !seen.some(s => speaksOf(s, d.step))) : []
-  const first = fresh[0]
-  if (first === undefined || fresh.some(d => a.flag !== null && speaksOf(a.flag, d.step))) return own
-  const why = [
-    first.how === 'no sign'
-      ? 'The record shows later work and nothing of this step. The agent has to show it.'
-      : 'It is not on the agent\'s own full list. The agent has to show it.',
-    ...fresh.slice(1).map(d => `Also looks dropped: ${stepText(d.step)}.`),
-    ...(own === null ? [] : [`Also: ${own.line}`, own.why]),
-  ]
-  return { line: `A step of the plan you approved looks dropped: ${stepText(first.step)}.`, why: why.filter(l => l !== '').join(' ') }
+  const fresh = (a.dropped ?? []).filter(d => inPlans(d.step, plans) && !seen.some(s => speaksOf(s, d.step)))
+  const named = fresh.filter(d => a.flag !== null && speaksOf(a.flag, d.step))
+  const rest = fresh.filter(d => !named.includes(d))
+  const first = rest[0]
+  if (first === undefined) return own
+  const joined = (lines: readonly string[]): string => lines.filter(l => l !== '').join(' ')
+  if (own !== null && named.length > 0) return { line: own.line, why: joined([own.why, ...alsoDropped(rest)]) }
+  return {
+    line: `A step of the plan you approved looks dropped: ${stepText(first.step)}.`,
+    why: joined([
+      first.how === 'no sign'
+        ? 'The record shows later work and nothing of this step. The agent has to show it.'
+        : 'It is not on the agent\'s own full list. The agent has to show it.',
+      ...alsoDropped(rest.slice(1)),
+      ...(own === null ? [] : [`Also: ${own.line}`, own.why]),
+    ]),
+  }
 }
 
 export function parseBrief(text: string): BriefAnswer {

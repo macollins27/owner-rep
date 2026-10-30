@@ -376,10 +376,15 @@ call writes (below):
    why. A step walked `not assessed` has no say, a flag that already speaks of the step keeps the
    reader's wording, and a step `seen` already speaks of is not raised again (`speaksOf`: a drop
    word and three of the step's words, or all of a shorter step's, so two near-identical steps
-   dropped at separate looks read as one). With no approved plan in this look's prompt the walk
-   carries nothing, since only a plan the owner approved may be called that. The step's number is
-   not checked against the plans shown, because readers write the step's own number there as often
-   as the message's. `NOT_ASSESSED_RULE` and the lines of `boundaryCover` still hold, and the list
+   dropped at separate looks read as one; the briefing still walks both). A flag that speaks of
+   one dropped step keeps the line, and the others go under its why, at most `DROPPED_ALSO_MAX`
+   (3) by name. A step counts only where the plans shown to this look hold at least
+   `PLAN_WORDS_SHARE` (0.4) of its words, so a step no shown plan holds is never called part of
+   one; words rather than exact text because readers reword steps. The walk's number is not
+   checked, because readers write a step's own number there as often as the plan's message.
+   `walkLine` reads both the walk's forms for `notAssessed` and for `dropped`, the mark being what
+   follows the last `|`. `NOT_ASSESSED_RULE` and the lines of `boundaryCover` still hold, and the
+   list
    can only raise the mark; it
    never moves the ask. The briefing walks to itself and names the steps
    it could not assess under `unassessed:` (`#n: step` lines), which `parseBrief` reads apart from
