@@ -853,33 +853,6 @@ export const RECORD_NEXT = 'The agent goes on with the job: the rep cannot be su
 export const RECORD_MESSAGE = 'Before treating any part of this job as complete, list everything I asked for in this session and show me where each part stands.'
 export const RECORD_DOES = 'Makes the agent account for everything you asked for before anything is called complete.'
 
-// A message without the sentences that say stop, each judged alone by `messageSaysStop`: the
-// rest kept in order, a line with none taken as it was, each line's list mark and the
-// paragraph breaks with it; '' when nothing is left. A sentence ends at . ! or ? (and any
-// closing quote or bracket) before a space.
-const withoutStopSentences = (text: string): string => {
-  const lines = text.split('\n').map(line => {
-    const mark = /^\s*(?:[-*•]|\d+[.)])\s+/.exec(line)?.[0] ?? ''
-    let rest = line.slice(mark.length).trim()
-    if (rest === '') return line.trim() === '' ? '' : null
-    const kept: string[] = []
-    let all = 0
-    while (rest !== '') {
-      all += 1
-      const m = /^(.*?[.!?]["'”’)\]]*)(?:\s+|$)/.exec(rest)
-      const sentence = m?.[1] ?? rest
-      if (!messageSaysStop(sentence)) kept.push(sentence)
-      rest = m === null ? '' : rest.slice(m[0].length)
-    }
-    return kept.length === 0 ? null : kept.length === all ? line : mark + kept.join(' ')
-  })
-  return lines
-    .filter((l): l is string => l !== null)
-    .join('\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim()
-}
-
 // A card while a record line stands: the lines first under what was left out, no going-well
 // line, and a stop shown as continue with the first line as its meaning; a next step that says
 // stop is the rep's own text. A message that says stop loses only its sentences that say it,
@@ -888,7 +861,7 @@ const withoutStopSentences = (text: string): string => {
 // itself or the message became the rep's.
 export function withRecordLines(a: BriefAnswer, lines: readonly string[]): BriefAnswer {
   if (lines.length === 0) return a
-  const kept = messageSaysStop(a.message) ? withoutStopSentences(a.message) : a.message
+  const kept = withoutStopSentences(a.message)
   const message = kept === '' || messageSaysStop(kept)
   return {
     ...a,
@@ -4237,7 +4210,7 @@ const STOP_WORK = String.raw`${STOP_LEAD}stops?\s+work(?:ing)?\s+on\s+(?:it|this
 // from the CI gate" is a run's); (further) instructions, a reply, an answer, the go-ahead; "a decision" only at the clause's end or with "from", "by", "on" or "about"
 // after it ("a decision tree" is a thing that trains); "confirmation" only at the clause's end
 // or from or by `him`, `her`, `them`, the owner or you ("confirmation emails" arrive in an inbox).
-const ON_HIM = String.raw`(?:him|he|his|the owner|you|(?:your|their)\s+(?:reply|answer|response|go-ahead|approval|decision|confirmation|instructions|input|say|sign-off|feedback|review|ok|okay|call|word)|approval(?!\s+(?:from|by)\s+(?!(?:him|her|them|the owner|you)\b))|(?:further\s+)?instructions|a reply|an answer|a decision(?=\s*(?:[.;:!?,]|$)|\s+(?:from|by|on|about)\b)|confirmation(?=\s*(?:[.;:!?,]|$)|\s+(?:from|by)\s+(?:him|her|them|the owner|you)\b)|the go-ahead)\b`
+const ON_HIM = String.raw`(?:him|he|his|the owner|you|(?:your|their)\s+(?:reply|answer|response|go-ahead|approval|decision|confirmation|instructions|input|say|sign-off|feedback|review|ok|okay|call|word)|approval(?!\s+(?:from|by)\s+(?!\s|(?:him|her|them|the owner|you)\b))|(?:further\s+)?instructions|a reply|an answer|a decision(?=\s*(?:[.;:!?,]|$)|\s+(?:from|by|on|about)\b)|confirmation(?=\s*(?:[.;:!?,]|$)|\s+(?:from|by)\s+(?:him|her|them|the owner|you)\b)|the go-ahead)\b`
 // A wait "for", "on", "until" or "till" whose next words are ON_HIM, whatever follows them to
 // the end of the sentence ("wait for him to reply", "wait until he replies", "wait for his
 // approval", "wait for further instructions from him").
@@ -4386,34 +4359,362 @@ const VOICE: Array<[RegExp, string]> = [
 ]
 export const toAgentVoice = (text: string): string => VOICE.reduce((out, [word, theirs]) => out.replace(word, theirs), text)
 
-// Whether a message, or what it does, tells the agent or the job to stop, calls the
-// work finished, or hands it back to the owner, read in the third person.
-export const messageSaysStop = (text: string): boolean => STOP_NEXT.test(toAgentVoice(text))
+// A message is read one sentence at a time, so a stop is judged in its own sentence and can be
+// taken out without touching the rest. A sentence ends at ".", "!" or "?" (a run of them, with
+// any closing quote or bracket after it) followed by whitespace or the end of its line, whatever
+// the case of the next letter, and at a line break. So a line ending in ":" is its own sentence,
+// a list item is its own sentence with its marker ("- ", "* ", "• ", "1. ", "2) ") on its first
+// sentence, a sentence wholly in brackets is its own, and digits make no difference ("Show build
+// 42. Then stop." is two). A decimal point ("0.4") is no end, having no whitespace after it, and
+// nor is a list marker at a line's start. The spans index the text itself; the whitespace
+// between sentences is in none of them.
+const LIST_MARKER = /^[ \t]*(?:[-*•]|\d+[.)])[ \t]+/
+const SENTENCE_MARKS = '.!?'
+const SENTENCE_CLOSERS = '"\'”’)]'
+const isSpace = (c: string | undefined): boolean => c !== undefined && /\s/.test(c)
+export const sentencesOf = (text: string): { start: number; end: number }[] => {
+  const spans: { start: number; end: number }[] = []
+  let at = 0
+  for (const line of text.split('\n')) {
+    const skip = (from: number): number => { let i = from; while (i < line.length && isSpace(line[i])) i++; return i }
+    const marker = LIST_MARKER.exec(line)?.[0].length ?? 0
+    let start = skip(0)
+    let i = Math.max(start, marker)
+    while (start < line.length) {
+      let end = -1
+      for (; i < line.length; i++) {
+        if (!SENTENCE_MARKS.includes(line[i] ?? '')) continue
+        let k = i
+        while (k < line.length && SENTENCE_MARKS.includes(line[k] ?? '')) k++
+        while (k < line.length && SENTENCE_CLOSERS.includes(line[k] ?? '')) k++
+        if (k === line.length || isSpace(line[k])) { end = k; break }
+        i = k - 1
+      }
+      if (end === -1) end = line.trimEnd().length
+      spans.push({ start: at + start, end: at + end })
+      start = skip(end)
+      i = start
+    }
+    at += line.length + 1
+  }
+  return spans
+}
+
+// A sentence wholly inside brackets or double quotes is read without them: "(Then you can stop.)".
+const ENCLOSERS: Record<string, string> = { '(': ')', '[': ']', '"': '"', '“': '”' }
+const unwrap = (sentence: string): string => {
+  let s = sentence
+  for (;;) {
+    const open = s[0] ?? ''
+    const close = ENCLOSERS[open]
+    if (close === undefined || s.length < 2 || s[s.length - 1] !== close) return s
+    const inner = s.slice(1, -1)
+    let depth = 0
+    let whole = true
+    for (const c of inner) {
+      if (open === close ? c === close : c === close && --depth < 0) { whole = false; break }
+      if (open !== close && c === open) depth++
+    }
+    if (!whole || depth !== 0) return s
+    s = inner.trim()
+  }
+}
+
+// Quoted words that are the object of a reporting word are someone's words being named, not
+// read for a stop: `Your summary said "you can stop now", but …`. The quote follows the nearest
+// reporting word before it with at most four words, commas and a colon between (`said "…"`,
+// `wrote: "…"`, `said plainly "…"`, `wrote, in its last line, "…"`). A "to" between
+// (`says to`, `told the agent to`), or "as" a few words before the reporting word (`do as the
+// note says`), gives an order to do what the quote says, and that quote is read: `Then do as the
+// note says to: "You can stop now."`. A reporting word further back in the sentence masks
+// nothing: `You said it passed, and the log reads "You can stop now."` is read.
+const REPORTING = /\b(?:said|says|wrote|writes|called|calls|claimed|reported|told)\b/gi
+const QUOTED = /"[^"]*"|“[^”]*”/g
+const REPORTED_GAP = /^[\s,:]*(?:[\w'’-]+[\s,:]+){0,4}$/
+const maskReported = (sentence: string): string =>
+  sentence.replace(QUOTED, (quote: string, at: number) => {
+    const before = sentence.slice(0, at)
+    const word = [...before.matchAll(REPORTING)].pop()
+    if (word === undefined) return quote
+    const lead = before.slice(0, word.index)
+    const gap = before.slice((word.index ?? 0) + word[0].length)
+    if (/\bto\b/i.test(gap) || /\bas\s+(?:[\w'’-]+\s+){0,3}$/i.test(lead)) return quote
+    return REPORTED_GAP.test(gap) ? '"x"' : quote
+  })
+
+// A stop once something is done, in a message: "You can stop after that.", "You can stop once
+// the README is fixed.", "Then stop when the suite is green." Its subject is the agent or a
+// clause's start only, never a thing ("It stops when the timer fires" is not the agent), or the
+// stop follows "and" or "then" anywhere in a clause with no "not", "never" or "n't" before it:
+// "Run the tests and then stop when they pass.", "Fix the parser and stop as soon as the suite is
+// green.", "Run the tests and stop after that."
+// Read on a message and its does line only; a next step keeps STOP_NEXT alone.
+const STOP_ONCE = new RegExp(String.raw`(?:${CLAUSE}|\bthe agent\s+(?:can|may|should|could|is free to)\s+)(?:please\s+)?stop\s+(?:after\s+(?:that|this|it)\b|once\b|when\b|as soon as\b)|${CLAUSE}(?:(?!\bnot\b|\bnever\b|n't\b)[^.;:!?,])*?\b(?:and\s+(?:then\s+)?|then\s+)(?:please\s+)?stop\s+(?:once|when|as soon as|after)\b`, 'i')
+
+// Five shapes of a message sentence that do not stop the agent while it could still move the work,
+// read on the third-person copy. Only the words that make each shape are masked (to "x", which
+// starts no clause and matches no pattern), so the rest of the sentence is still read: "Before you
+// stop, write the summary, then you're done." is still caught on "then the agent is done". Read on
+// a message and its does line only; a next step keeps STOP_NEXT alone.
+// 1. A push to finish more work before the agent stops: "Two things before you stop."
+const BEFORE_STOPS = /\bbefore\s+the agent\s+(?:(?:can|may|should)\s+)?stops?\b/gi
+// 2. A wait on someone other than the owner: "Wait for a reply from the lead", "wait for an answer
+// from it". "Wait for a reply." with no "from", or from the owner, stays caught.
+// The lookahead also refuses a space, so a longer run of whitespace before the owner cannot
+// backtrack past it: "Wait for a reply from  me." stays caught.
+const WAIT_ON_OTHER = /\bwaits?\s+for\s+(?:a|an|the)\s+(?:reply|answer|response|decision|go-ahead|word|sign-off|instructions)\s+from\s+(?!\s|(?:the owner|him|her|them|he|his)\b)/gi
+// 3. A stop on a blocker that tells the owner what stands in the way: the sentence opens with "if"
+// and a condition, up to its first comma, that names a refusal or an absence, and the clause the
+// condition opens (from that comma, past an optional "then", to the next comma, semicolon, colon
+// or sentence mark, or to a word that starts an unconditional instruction: "then", "otherwise",
+// "else", "but", "in any case", "either way", "anyway", "regardless" or "whatever happens"; a
+// bare "stop" and a comma may open it, with or without "and" after) tells the owner what, that,
+// why or which, or says so. Then the bare "stop" in that clause alone is masked: "If the guard
+// refuses the push, stop and tell me exactly what it refused.", "If the guard refuses the push,
+// then stop, and tell me what it refused." Both halves are needed, so "If anything fails, stop
+// and tell me." and "If the push is refused, stop." stay caught, and a stop in another clause is
+// read: "If the remote is missing, tell me why; otherwise, you can stop now." and "If the remote
+// is missing, tell me why but in any case you can stop now." are caught. A condition negated
+// ("not", "n't", "never" or "no longer", and at most one word, before the blocker word) names no
+// refusal or absence: "If the remote is not missing, stop and tell me why." is caught.
+const BLOCKER_ENDS = String.raw`then|otherwise|else|but|in\s+any\s+case|either\s+way|anyway|regardless|whatever\s+happens`
+const BLOCKER_IF = new RegExp(String.raw`^(\s*if\b[^,]*(?<!(?:\bnot|n['’]t|\bnever|\bno\s+longer)\s+(?:[\w'’-]+\s+)?)\b(?:refus(?:e|es|ed)|rejects?|rejected|missing|not found|does not exist|doesn['’]t exist|no\s+[\w-]+(?:\s+[\w-]+)?\s+(?:has|have)\s+been\s+added|no\b[^,]*\byet)\b[^,]*,(?:\s*then\b)?)((?:\s*stop\s*,)?(?:(?!\b(?:${BLOCKER_ENDS})\b)[^;:,.!?])*)`, 'i')
+const BLOCKER_TOLD = /\btell\s+the owner\s+(?:(?:exactly|plainly|clearly)\s+)?(?:what|that|why|which)\b|\bsay\s+so\b/i
+// 4. A wait on the owner's word before an outward act he alone decides toward the outside world,
+// from a closed list: submit, publish, pay, buy, purchase, send (an email, message, application,
+// letter or invoice), sign (an agreement, contract, form, lease, offer, NDA or the paperwork, bare
+// or after a determiner or possessive and up to two words: "signing the employment contract",
+// "signing our contract"), apply for or to, post publicly, online or to social media, or a
+// button only he presses, named after "on", in any case: Submit, Send, Publish, Post, Pay, Sign,
+// Apply, Approve or Purchase ("wait for my word on Submit"; "Wait for my word on Build." is
+// caught). Signing off, and signing, applying or posting anything else
+// ("signing off on the tests", "applying the migration", "posting the results to the pull
+// request"), are the agent's work, and so are merging, pushing, deleting, deploying and
+// installing in any form ("Wait for my go-ahead before merging.", "Wait for my word on Merging."
+// stay caught). Said as a wait on his word on, before or to the act ("Wait for my go-ahead before
+// you send the email."), or as the act said not to happen with a wait on him as the clause
+// directly after it (a semicolon, a comma, "and", or the end of the sentence before, between, and
+// nothing else) that has no object of its own, or whose only object refers back to the act ("on
+// that", "on it", "on this", "for that"): "Do not publish it; wait for my word.", "Do not publish
+// it; wait for my word on that.", "Do not publish it. Wait for my word." A wait before something
+// else after a negated act ("Do not publish the report; wait for my approval before running the
+// tests."), or after other work ("Do not publish the report; run the suite and wait for my
+// approval."), is read.
+const OUTWARD_ACT = String.raw`(?:submit(?:s|ting)?|publish(?:es|ing)?|post(?:s|ing)?\s+(?:(?:it|this|that|them|the\s+[\w'’-]+)\s+)?(?:publicly|online|(?:on|to)\s+social\s+media)|appl(?:y|ies|ying)\s+(?:for|to)|pay(?:s|ing)?|buy(?:s|ing)?|purchas(?:e|es|ing)|sign(?:s|ing)?\s+(?:(?:the|an?|this|that|our|the owner['’]s|the agent['’]s)\s+(?:[\w'’-]+\s+){0,2})?(?:agreement|contract|form|lease|offer|NDA|paperwork)s?|send(?:s|ing)?\s+(?:(?:the|an?|this|that|the owner['’]s)\s+)?(?:email|message|application|letter|invoice)s?)\b`
+const WAIT_BEFORE_ACT = new RegExp(String.raw`\bwaits?\s+for\s+(?:(?:the owner['’]s|his|the)\s+)?(?:word|go-ahead|approval|sign-off)\s+(?:(?:on|before|to)\s+(?:the agent\s+(?:(?:can|may)\s+)?)?${OUTWARD_ACT}|on\s+([\w-]+))`, 'gi')
+const OWNER_BUTTON = /^(?:submit|send|publish|post|pay|sign|apply|approve|purchase)$/i
+const NEGATED_ACT = String.raw`(?:\bnot|\bnever|n['’]t)\s+${OUTWARD_ACT}(?:(?!\band\b)[^;:,.!?])*?`
+const WAIT_ON_HIM_BARE = String.raw`\bwaits?\s+(?:for|on|until|till)\s+${ON_HIM}(?:['’]s\s+[\w-]+)?(?:\s+(?:on|for)\s+(?:that|it|this))?${CLAUSE_END}`
+const WAIT_AFTER_NEGATED = new RegExp(String.raw`(${NEGATED_ACT}(?:\s*[;,]\s*(?:and\s+)?|\s+and\s+))${WAIT_ON_HIM_BARE}`, 'gi')
+const NEGATED_LAST = new RegExp(String.raw`${NEGATED_ACT}[.!]*\s*$`, 'i')
+const WAIT_FIRST = new RegExp(String.raw`^(\s*(?:and\s+)?)${WAIT_ON_HIM_BARE}`, 'i')
+// 5. A stop or hand-back asked about as the thing a cause led to: "which" or "what", up to three
+// words ("which instruction or habit"), a causing verb (let, made, allowed, led, caused, told, got,
+// permitted, in any tense the list holds), the agent or agents as its object (an aside between
+// commas allowed: "let you, or any agent, stop"), an optional "to", then a stop or hand-back word;
+// masked from "which" or "what" to the clause's end (a comma, semicolon, colon, sentence mark or
+// a word that starts an unconditional instruction, as for a blocker). "Name which instruction let
+// you, or any agent, stop ordered work and hand it back to me." and "Find what made the agent stop
+// early and fix it." order no stop. A stop in another clause or sentence is read: "Find what made
+// you stop, then stop.", "Which rule lets you stop? You can stop now." (the second sentence). Not
+// after "do" ("Do what lets you stop." is an order), and "whatever" is no "what".
+const CAUSED = String.raw`(?:the agent|any agent|another agent|(?:the\s+)?(?:other\s+)?agents)`
+const CAUSE_ASKED = new RegExp(String.raw`(?<!\bdo\s+)\b(?:which|what)\b(?:\s+[\w'’-]+){0,3}?\s+(?:let|lets|made|makes|allowed|allows|led|leads|caused|causes|told|tells|got|gets|permitted)\s+${CAUSED}(?:\s+(?:or|and)\s+${CAUSED})?(?:\s*,[^,;:.!?]*,)?\s+(?:to\s+)?(?:stop(?:s|ped|ping)?|hand(?:s|ed|ing)?)\b(?:(?!\b(?:${BLOCKER_ENDS})\b)[^;:,.!?])*`, 'gi')
+const maskExempt = (read: string, afterNegated = false): string => {
+  let s = read.replace(BEFORE_STOPS, 'x').replace(WAIT_ON_OTHER, 'x ')
+  s = s.replace(BLOCKER_IF, (all: string, condition: string, clause: string) => (BLOCKER_TOLD.test(clause) ? condition + clause.replace(/\bstop\b/gi, 'x') : all))
+  s = s.replace(WAIT_BEFORE_ACT, (wait: string, button?: string) =>
+    button === undefined || OWNER_BUTTON.test(button) ? 'x' : wait)
+  s = s.replace(WAIT_AFTER_NEGATED, (_: string, act: string) => `${act}x`)
+  if (afterNegated) s = s.replace(WAIT_FIRST, (_: string, lead: string) => `${lead}x`)
+  return s.replace(CAUSE_ASKED, 'x ')
+}
+
+// One sentence of a message read for a stop: its list marker and any wholly enclosing brackets
+// or quotes taken off, every run of whitespace read as one space (so no run of spaces or tabs
+// changes a verdict: "Wait for a reply from  me." and "Leave the rest  to me." are caught as
+// with one space), quoted words after a reporting word masked, turned to the third person, the
+// five exempt shapes above masked, then read by STOP_NEXT and STOP_ONCE. The sentence before it
+// is read the same way only to see whether it ends on a negated outward act, which lets a bare
+// wait on the owner opening this one through (shape 4). Only the copy read is changed; a removal
+// cuts the message's own text.
+const readOf = (sentence: string): string => toAgentVoice(maskReported(unwrap(sentence.replace(LIST_MARKER, '').replace(/\s+/g, ' '))))
+const sentenceSaysStop = (sentence: string, before = ''): boolean => {
+  const read = maskExempt(readOf(sentence), NEGATED_LAST.test(readOf(before)))
+  return STOP_NEXT.test(read) || STOP_ONCE.test(read)
+}
+
+// The sentences of a text that say stop, each read with the sentence just before it.
+const stopSpans = (text: string): { start: number; end: number }[] => {
+  const spans = sentencesOf(text)
+  return spans.filter(({ start, end }, i) => sentenceSaysStop(text.slice(start, end), i === 0 ? '' : text.slice(spans[i - 1]?.start, spans[i - 1]?.end)))
+}
+
+// Whether a message, or what it does, tells the agent or the job to stop, calls the work
+// finished, or hands it back to the owner: true when any one of its sentences does, each read
+// in the third person with only the sentence before it beside it (`sentenceSaysStop`).
+export const messageSaysStop = (text: string): boolean => stopSpans(text).length > 0
+
+// What is left after a removal names something to do, show or fix when one of its sentences
+// holds a letter or a digit ("..." or "—" alone names nothing) and is not praise or thanks, not a
+// question and not a bare back-reference. The rep's messages are
+// about the work, so a statement of fact about it is a finding ("The install is not shown."
+// tells the agent what to show); only these three forms are left out.
+// Praise or thanks: the whole sentence, in any case, made of thanks, thank you, many thanks,
+// much appreciated, well done, and good, great, nice, excellent, solid or perfect (with work,
+// job or progress after it or not), each with "so far", "so much", "again" or "too", or "on" or
+// "for" and a short noun phrase, joined by "and" or a comma: "Great work.", "Well done so
+// far.", "Good progress on the parser.", "Great work, thank you!", "Thanks for the counts."
+// "Great work, now fix the parser." is not praise.
+const PRAISE_UNIT = String.raw`(?:thanks|thank you|many thanks|much appreciated|well done|(?:good|great|nice|excellent|solid|perfect)(?:\s+(?:work|job|progress))?)(?:\s+(?:so far|so much|again|too)|\s+(?:on|for)\s+[\w'’-]+(?:\s+[\w'’-]+){0,3})?`
+const PRAISE = new RegExp(String.raw`^${PRAISE_UNIT}(?:\s*(?:,\s*(?:and\s+)?|\s+and\s+)${PRAISE_UNIT})*\s*[.!]*$`, 'i')
+// A question: the sentence ends in "?".
+const QUESTION = /\?["'”’)\]]*$/
+// A bare back-reference, whose thing went with a removed sentence: a verb with "that", "this",
+// "it" or "so" as its object and at most one adverb (first, now, then, again, too, also,
+// please), after an optional "then", "and" or "please": "Do that first.", "Fix that.", "Then do
+// so." "Show why it failed." and "Fix it in the parser." say more.
+const BACK_ADVERB = String.raw`(?:first|now|then|again|too|also|please)`
+const BACK_REFERENCE = new RegExp(String.raw`^(?:(?:then|and)\s+)?(?:please\s+)?(?:${BACK_ADVERB}\s+[\w'’-]+\s+(?:that|this|it|so)|[\w'’-]+\s+(?:that|this|it|so)(?:\s+${BACK_ADVERB})?)\s*[.!]*$`, 'i')
+// Each sentence is read with its runs of whitespace as one space, as `sentenceSaysStop` reads
+// one, so "Thank  you  again!" is praise as "Thank you again!" is. Read bare (Brief me's
+// chooser, `messageUsable`), each sentence has every bracket and double quote mark taken off,
+// so praise spread across a bracket ("Great work. (Thanks. Nice job.)", split into "(Thanks."
+// and "Nice job.)") is praise, and a sentence of marks alone names nothing.
+const usable = (text: string, bare = false): boolean =>
+  sentencesOf(text).some(({ start, end }) => {
+    const one = text.slice(start, end).replace(LIST_MARKER, '').replace(/\s+/g, ' ')
+    const s = bare ? one.replace(/[()[\]"“”]/g, '').trim() : unwrap(one)
+    return /[\p{L}\p{N}]/u.test(s) && !PRAISE.test(s) && !QUESTION.test(s) && !BACK_REFERENCE.test(s)
+  })
+
+// Each bracket or double quote in a text paired with its partner, by position, both ways:
+// "(" with ")", "[" with "]", "“" with "”", each kind nested on its own, and straight double
+// quotes paired in turn. A mark with no partner is in no pair.
+const PAIRS: Record<string, string> = { ')': '(', ']': '[', '”': '“' }
+const pairsOf = (text: string): Map<number, number> => {
+  const pairs = new Map<number, number>()
+  const open: Record<string, number[]> = { '(': [], '[': [], '“': [] }
+  let quote = -1
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i] ?? ''
+    if (c === '"') {
+      if (quote < 0) quote = i
+      else { pairs.set(quote, i); pairs.set(i, quote); quote = -1 }
+    } else if (c in open) open[c]?.push(i)
+    else if (c in PAIRS) {
+      const o = open[PAIRS[c] ?? '']?.pop()
+      if (o !== undefined) { pairs.set(o, i); pairs.set(i, o) }
+    }
+  }
+  return pairs
+}
+
+// A message with every sentence that says stop (by messageSaysStop's reading) taken out, and
+// nothing else changed. A message with no such sentence comes back as it is, the same string.
+// A removed sentence takes the spaces and tabs after it on its line; a list item's marker
+// stays for the rest of its line; a line left empty, or holding only its marker, is dropped;
+// a blank line next to a dropped line is dropped where it would make two in a row, or stand
+// first; trailing whitespace is trimmed on the lines a removal touched and at the end. No
+// sentence is reworded, moved or reflowed. No bracket or double quote is left without its
+// partner: a mark in a removed sentence whose partner stands on kept text stays, an opening one
+// against the kept text after it and a closing one against the kept text before it ("Run the
+// suite. (You can stop now. Thanks.)" gives "Run the suite. (Thanks.)"), and a pair wholly in
+// removed text goes with it. When what is left names nothing to do, show or fix (`usable`), it
+// gives ''. Pure; '' gives ''.
+export const withoutStopSentences = (message: string): string => {
+  const cuts = stopSpans(message)
+  if (cuts.length === 0) return message
+  const partner = pairsOf(message)
+  const removed = (i: number): boolean => cuts.some(c => i >= c.start && i < c.end)
+  const lines: { text: string; dropped: boolean }[] = []
+  let at = 0
+  for (const line of message.split('\n')) {
+    const mine = cuts.filter(c => c.start >= at && c.end <= at + line.length)
+    if (mine.length === 0) lines.push({ text: line, dropped: false })
+    else {
+      let text = ''
+      let from = 0
+      for (const c of mine) {
+        let start = c.start - at
+        const marker = LIST_MARKER.exec(line)?.[0] ?? ''
+        if (marker !== '' && start === marker.length - marker.trimStart().length) start = marker.length
+        let end = c.end - at
+        while (end < line.length && (line[end] === ' ' || line[end] === '\t')) end++
+        // The marks of this sentence whose partners stand on kept text.
+        let opens = ''
+        let closes = ''
+        for (let i = c.start; i < c.end; i++) {
+          const p = partner.get(i)
+          if (p === undefined || removed(p)) continue
+          if (p > i) opens += message[i]
+          else closes += message[i]
+        }
+        text += line.slice(from, start)
+        if (closes !== '') {
+          text = text.trimEnd() + closes
+          if (opens === '') end = c.end - at
+          else text += ' '
+        }
+        text += opens
+        from = end
+      }
+      text = (text + line.slice(from)).trimEnd()
+      lines.push({ text, dropped: text === '' || /^[ \t]*(?:[-*•]|\d+[.)])$/.test(text) })
+    }
+    at += line.length + 1
+  }
+  const kept: string[] = []
+  let afterDrop = false
+  for (const { text, dropped } of lines) {
+    if (dropped) { afterDrop = true; continue }
+    if (afterDrop && text.trim() === '' && (kept.length === 0 || (kept[kept.length - 1] ?? '').trim() === '')) continue
+    kept.push(text)
+    afterDrop = false
+  }
+  const rest = kept.join('\n').trimEnd()
+  return usable(rest) ? rest : ''
+}
 
 // The objective is not finished while a condition is open, and the gate works
 // part by part. A verdict other than continue (stop, or none given), a
 // going-well line, or a next step or a message that says stop (the message read
-// in the third person, `messageSaysStop`) is refused: the
+// sentence by sentence in the third person, `messageSaysStop`) is refused: the
 // verdict becomes continue, the going-well line goes, and the conditions are
 // listed as left out. On a refusal the meaning is always the rep's own (it
 // stood on a verdict the gate rejected, and is not read for a stop, since "The
-// agent has finished the work, but …" says something true), and the next step,
-// and the message with what it does, are the rep's own only where they
-// themselves say stop or are empty; the model's own sound next step and message
-// stand, and beside a kept message only a does line that says stop is the rep's
-// (it is not listed in `replaced`, which the own-words call reads). `replaced` lists the parts written in the rep's text, in the order
-// means, next, message, so a refused card always lists the meaning. With no
-// objective written (open is null) the same is refused and every part is the
-// rep's text saying the objective is not written yet. What the agent did
-// ("stands") is kept as the model wrote it.
+// agent has finished the work, but …" says something true), and the next step
+// is the rep's own only where it says stop or is empty. The message keeps
+// everything but its stop sentences (`withoutStopSentences`): a message with
+// none stands as written, one with some stands without them, and only when
+// nothing usable is left (or it was empty) is the message, with what it does,
+// the rep's fixed text. Beside a kept message only a does line that says stop
+// is the rep's (it is not listed in `replaced`, which the own-words call reads,
+// so that call never writes over a kept message). `replaced` lists the parts
+// written in the rep's text, in the order means, next, message, so a refused
+// card always lists the meaning. With no objective written (open is null) the
+// same is refused; the meaning and next step are the rep's text saying the
+// objective is not written yet, and the message follows the same rule with
+// that text's message and does line. What the agent did ("stands") is kept as
+// the model wrote it.
 export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer: BriefAnswer; refused: boolean; replaced: Replaced[] } {
   if (open !== null && open.length === 0) return { answer: a, refused: false, replaced: [] }
   if (a.verdict === 'continue' && a.well === '' && !saysStop(a.next) && !messageSaysStop(a.message)) return { answer: a, refused: false, replaced: [] }
+  const kept = withoutStopSentences(a.message)
+  const message = kept === ''
   if (open === null) {
     return {
-      answer: { ...a, verdict: 'continue', well: '', means: UNWRITTEN_MEANS, next: UNWRITTEN_NEXT, message: UNWRITTEN_MESSAGE, does: UNWRITTEN_DOES },
+      answer: {
+        ...a,
+        verdict: 'continue',
+        well: '',
+        means: UNWRITTEN_MEANS,
+        next: UNWRITTEN_NEXT,
+        message: message ? UNWRITTEN_MESSAGE : kept,
+        does: message || messageSaysStop(a.does) ? UNWRITTEN_DOES : a.does,
+      },
       refused: true,
-      replaced: ['means', 'next', 'message'],
+      replaced: ['means', 'next', ...(message ? ['message' as const] : [])],
     }
   }
   const leftOut = [...a.leftOut]
@@ -4422,7 +4723,6 @@ export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer:
     if (!leftOut.some(l => same(bare(l), c.text))) leftOut.push(c.state === 'not-shown' ? `${c.text} (not shown)` : c.text)
   }
   const next = a.next === '' || saysStop(a.next)
-  const message = a.message === '' || messageSaysStop(a.message)
   return {
     answer: {
       ...a,
@@ -4430,7 +4730,7 @@ export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer:
       well: '',
       means: OPEN_MEANS(open),
       next: next ? OPEN_NEXT(open) : a.next,
-      message: message ? OPEN_MESSAGE(open) : a.message,
+      message: message ? OPEN_MESSAGE(open) : kept,
       does: message || messageSaysStop(a.does) ? OPEN_DOES : a.does,
       leftOut,
     },
@@ -4492,8 +4792,11 @@ does: <one line: what this message will make the agent do>`
 
 // The own-words answer taken into a card the gate refused: each part the gate
 // replaced is the answer's where the answer gave it and it does not say stop,
-// and stays the rep's fixed text otherwise; what the message does goes with the
-// message. Nothing else moves: the verdict stays continue, the going-well line
+// and stays the rep's fixed text otherwise. The message is taken as the gate
+// takes one, without its stop sentences (`withoutStopSentences`), and only when
+// something usable is left; what the message does goes with a taken message,
+// unless it says stop. A message the gate kept is not in `replaced`, so it is
+// never written over. Nothing else moves: the verdict stays continue, the going-well line
 // empty, and what stands, what is left out and the marks stay the gated card's.
 // The engine passes parseOwnWords's answer, so a reply that did not come back
 // whole is null here and every replaced part stays the rep's fixed text.
@@ -4502,12 +4805,51 @@ export function takeOwnWords(gated: BriefAnswer, replaced: Replaced[], own: Brie
   const out = { ...gated }
   const taken = new Set<Replaced>()
   for (const part of replaced) {
-    if (own[part] === '' || (part === 'message' ? messageSaysStop(own[part]) : saysStop(own[part]))) continue
-    out[part] = own[part]
+    const text = part === 'message' ? withoutStopSentences(own.message) : own[part]
+    if (text === '' || (part !== 'message' && saysStop(text))) continue
+    out[part] = text
     taken.add(part)
   }
   if (taken.has('message') && own.does !== '' && !messageSaysStop(own.does)) out.does = own.does
   return out
+}
+
+// Whether a message counts as usable in Brief me's choice among read 2's message, the
+// own-words message and read 1's: what is left once its stop sentences are taken out names
+// something to do, show or fix (`usable`), even where nothing was taken out. A message of only
+// praise, thanks, a question or a bare back-reference is not usable here, though the gate keeps
+// such a message whole on the card it gives.
+export const messageUsable = (message: string): boolean => {
+  const kept = withoutStopSentences(message)
+  return kept !== '' && usable(kept, true)
+}
+
+// Brief me's choice, before the own-words call: a message the gate kept on a refused card that
+// is not usable (`messageUsable`) is put to the fixed text, with what it does, and listed as
+// replaced, so the own-words message and then read 1's may stand in its place. A replaced
+// message, or a usable one, stays as it is.
+export function unusableReplaced(answer: BriefAnswer, replaced: Replaced[], open: Condition[]): { answer: BriefAnswer; replaced: Replaced[] } {
+  if (replaced.includes('message') || messageUsable(answer.message)) return { answer, replaced }
+  return { answer: { ...answer, message: OPEN_MESSAGE(open), does: OPEN_DOES }, replaced: [...replaced, 'message'] }
+}
+
+// Whether the own-words message is taken: the gate replaced the message, the
+// reply came back whole, and its message is usable (`messageUsable`) once its
+// stop sentences are taken out. Brief me hands takeOwnWords the message as a
+// replaced part only when this is true.
+export function ownMessageTaken(replaced: Replaced[], own: BriefAnswer | null): boolean {
+  return replaced.includes('message') && own !== null && messageUsable(own.message)
+}
+
+// Brief me's last net before the fixed list: when the last read's message was
+// replaced by the rep's fixed text and the own-words call gave no usable one,
+// a message read 1 kept stands instead, without its stop sentences, with read
+// 1's does line (already through the gate). Read 1 replaced too, or nothing
+// usable left of it (`messageUsable`, so praise alone is not), and the fixed text stays. Every other part is the last
+// read's. Decided by the parts lists, never by comparing the message's text.
+export function earlierMessage(answer: BriefAnswer, replaced: Replaced[], ownTaken: boolean, first: { answer: BriefAnswer; replaced: Replaced[] }): BriefAnswer {
+  if (!replaced.includes('message') || ownTaken || first.replaced.includes('message')) return answer
+  return messageUsable(first.answer.message) ? { ...answer, message: withoutStopSentences(first.answer.message), does: first.answer.does } : answer
 }
 
 // Whether a part ends at a sentence mark: a full stop, an exclamation mark or a

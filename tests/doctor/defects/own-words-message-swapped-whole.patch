@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index f91cbea..d4df7e9 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3236,7 +3236,7 @@ export function takeOwnWords(gated: BriefAnswer, replaced: Replaced[], own: Brie
+   const out = { ...gated }
+   const taken = new Set<Replaced>()
+   for (const part of replaced) {
+-    const text = part === 'message' ? withoutStopSentences(own.message) : own[part]
++    const text = part === 'message' ? (messageSaysStop(own.message) ? '' : own.message) : own[part]
+     if (text === '' || (part !== 'message' && saysStop(text))) continue
+     out[part] = text
+     taken.add(part)

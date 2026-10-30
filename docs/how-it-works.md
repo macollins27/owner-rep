@@ -149,18 +149,78 @@ conditions named, and that answer passes the same gate.
 
 The gate refuses part by part. On a refused card the verdict is continue, the line saying
 the work is going well is dropped, the open conditions are listed as left out, and the
-meaning is the rep's own; the next step, and the message with its line saying what it does,
-are the rep's only where they themselves say stop or are empty, so the model's own sound next
-step and message stand (beside a kept message, a line saying what it does that says stop is
-the rep's). When the second answer is refused too, or does not come back, the parts the gate
+meaning is the rep's own; the next step is the rep's only where it says stop or is empty, so
+the model's own sound next step stands. The message is read one sentence at a time, and only
+the sentences that tell the agent to stop, call the work finished or hand it back to the
+owner are taken out; every other sentence stays exactly as the model wrote it, nothing
+reworded or moved. A message with no such sentence stands whole. Only when what is left names
+nothing to do, show or fix (it is empty, holds no letter or digit, as "..." does, or holds
+only praise or thanks, questions, or a bare "Do that first." whose "that" went with the
+removed sentence) are the message and its line
+saying what it does the rep's fixed text, the list of open conditions. Beside a kept message,
+a line saying what it does that says stop is the rep's. A rep's message is about the work, so
+any sentence other than those three forms counts: a statement of fact such as "The install is
+not shown." is a finding that tells the agent what to show, and requiring an order would
+throw findings away.
+
+Read on its own, a sentence is judged in its own context. Five shapes are let through because they
+keep the agent on the work or leave with the owner only what is truly the owner's, and only
+the words that make the shape are set aside, so the rest of the sentence is still read. A
+push to finish more before stopping ("Two things before you stop.") moves the work on. A wait
+on someone other than the owner ("Wait for a reply from the lead.") is a step of the job, not
+a hand-back. A stop on a blocker that tells the owner exactly what stands in the way ("If the
+guard refuses the push, stop and tell me exactly what it refused.") is kept because the agent
+cannot move past a refusal or an absence on its own, and the report is the step that lets the
+owner clear it; both halves are needed, so "If anything fails, stop and tell me." and "If the
+push is refused, stop." are still taken out, and only the stop in the clause the condition
+opens is set aside, so "otherwise, you can stop now" or "but in any case you can stop now"
+after it is still taken out, while "then stop, and tell me what it refused" is the same kept
+stop said another way. A negated condition names no blocker, so "If the remote is not missing,
+stop and tell me why." is taken out. A wait on the
+owner's word before an outward act only the owner does toward the outside world, from a closed
+list (submitting, sending an email, message, application, letter or invoice, publishing,
+signing an agreement, contract or form, applying for something, posting publicly, paying,
+buying, purchasing, or pressing a button only the owner presses: Submit, Send, Publish, Post,
+Pay, Sign, Apply, Approve or Purchase, so "Wait for my word on Build." is taken out), is kept because acting there
+without the owner would speak or spend for them. The wait has to govern the act: a wait on the
+owner after a sentence that says not to publish is kept only when it is the very next clause
+(after a semicolon, a comma, "and" or the sentence's end) and waits on nothing else, or on that
+act again ("Do not publish it; wait for my word on that.", "Do not publish it. Wait for my
+word."), so "Do not publish the report; wait for my approval before running the tests." and
+"Do not publish the report; run the suite and wait for my approval." are still taken out. Signing off on the tests, applying a migration and posting results to a pull request are
+the agent's work, and so are merging, pushing, deleting, deploying and installing in any form,
+so a wait before them is still a stop. A stop or a hand-back named as what an instruction or
+habit led to ("name which instruction let you stop ordered work and hand it back to me") is
+the thing the owner wants found and removed, not an order, so it is kept; a stop in another
+clause or sentence ("Find what made you stop, then stop.") is still taken out. A run of spaces or tabs never changes what a sentence
+is taken to say. A stop once something is done
+("You can stop after that.", "You can stop once the README is fixed.", "Run the tests and then
+stop when they pass.") is caught, and a stop
+inside quotation marks is read only when the sentence orders it ("Do as the note says to:
+..."), never when it reports what someone said (a message noting that the agent's summary
+said "you can stop now" while the suite never ran). A quote counts as reported only when it
+follows its reporting word within a few words; a "said" earlier in the sentence does not
+cover a later quote. Taking sentences out never leaves a bracket or quotation mark without its
+partner: "Run the suite. (You can stop now. Thanks.)" leaves "Run the suite. (Thanks.)".
+
+When the second answer is refused too, or does not come back, the parts the gate
 replaced are written once more in the rep's own words by one plain model call, not a fork of
 the conversation: its standing instructions are the brief's own sections on who the rep is
 and how it writes to the owner, with one line against reproducing a secret, a key, a password
 or personal data it is shown, and it is shown the objective, the owner's messages on the
-job, the open conditions, and what stands and what is left out as the briefing found them. A
-part it writes that is empty or still says stop, or a call that fails, keeps the rep's fixed
-text built from the open conditions, so the card keeps the agent on the job and never offers
-a stop. The reply is taken only when it came back whole: its four parts each given once in
+job, the open conditions, and what stands and what is left out as the briefing found them. Its
+message is taken the way the gate takes one, without its stop sentences and only when
+something usable is left; a message the gate kept is never replaced by it. A part it writes
+that is empty or still says stop, or a call that fails, keeps the rep's fixed text built from
+the open conditions, so the card keeps the agent on the job and never offers a stop. Before
+that fixed list, one more message is tried: when the second answer's message had nothing
+usable and the call gave none, the first answer's message, without its stop sentences, stands
+with its line saying what it does, if it had something usable. So the card's message comes,
+in order, from the second answer, the call, the first answer, and only then the list. In this
+choice a message that is only praise, thanks, a question or a pointer back ("Great work.",
+"Do that first.") counts as having nothing usable, even with no stop in it, so "Great work."
+never stands on the card in place of a message that tells the agent what to do. The gate
+itself still keeps such a message whole when it has no stop in it. The reply is taken only when it came back whole: its four parts each given once in
 the order asked, the message closed by its end line and not empty, and the meaning, the next
 step and the line saying what it does each ending at a sentence mark. The message's last line
 is not held to a sentence mark, since its end line and a whole line after it show the message
@@ -172,8 +232,10 @@ card's parts only, never the objective, and the record keeps how many reads the 
 (one, two with the second ask, three with the call) and, in `lastBrief.own` and
 `lastBrief.ownChars`, what came of the call (`whole`; `cut`, answered but not whole; `none`,
 not answered or failed; `skipped`, no call made) and the length of its reply. While no
-objective is written, any of the same is refused at once, every part is the rep's fixed text
-saying the objective is not written yet, and nothing is asked again. The check's card passes
+objective is written, any of the same is refused at once and nothing is asked again: the
+meaning and next step are the rep's fixed text saying the objective is not written yet, and
+the message follows the same rule, kept without its stop sentences and that fixed text only
+when nothing usable is left. The check's card passes
 the same gate part by part, with no such call, and the record keeps the briefing's count of
 reads and what came of its call.
 
@@ -186,9 +248,14 @@ lock held the result's wording and nothing else: what "done" had to show could s
 away with a narrowing message, and nothing stopped a card from calling the job finished
 while part of it was undone. Until 19 Oct 2026 a card refused twice had its meaning, next step
 and message all replaced by the fixed texts, which named the open conditions and nothing the
-agent had done wrong; the gate now replaces the meaning and, of the next step and the
-message, only a part that says stop or is empty, and the call above writes those in the rep's
-own words.
+agent had done wrong; the gate then replaced the meaning and, of the next step and the
+message, only a part that said stop or was empty, and the call above wrote those in the rep's
+own words. Until 30 Oct 2026 one stop sentence anywhere in a message still swapped the whole
+message for the list, so a sound message ending in one stop sentence lost every finding it
+held, and seven of the 278 messages the rep had written in real sessions, which told
+the agent to finish more before stopping, to report a blocker, or to wait for the owner's
+word before submitting, were caught as stops. The message now loses
+only its stop sentences, and those four shapes, and a stop asked about as what a cause led to, are let through.
 
 A message the rep drafted and the owner sent through "Put message in prompt" is recorded as
 the rep's draft, never as the owner's words, and is recognised from the record after a
@@ -402,7 +469,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 236 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 281 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: twelve real sessions in tmux, the strip captured to tests/live/captures
 ```

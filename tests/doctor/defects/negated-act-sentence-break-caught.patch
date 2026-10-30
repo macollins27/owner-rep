@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 85e8014..f78ecb8 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3085,7 +3085,7 @@ const sentenceSaysStop = (sentence: string, before = ''): boolean => {
+ // The sentences of a text that say stop, each read with the sentence just before it.
+ const stopSpans = (text: string): { start: number; end: number }[] => {
+   const spans = sentencesOf(text)
+-  return spans.filter(({ start, end }, i) => sentenceSaysStop(text.slice(start, end), i === 0 ? '' : text.slice(spans[i - 1]?.start, spans[i - 1]?.end)))
++  return spans.filter(({ start, end }, i) => sentenceSaysStop(text.slice(start, end), ''))
+ }
+ 
+ // Whether a message, or what it does, tells the agent or the job to stop, calls the work

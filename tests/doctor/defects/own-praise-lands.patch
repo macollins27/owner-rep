@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index bc23d30..ae021a8 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -741,7 +741,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
+       ownRead = !answered ? 'none' : own === null ? 'cut' : 'whole'
+       // The own-words message is taken only when it is usable: praise alone leaves the fixed text for read 1's message.
+       const ownTaken = ownMessageTaken(taken.replaced, own)
+-      taken = { ...taken, answer: takeOwnWords(taken.answer, ownTaken ? taken.replaced : taken.replaced.filter(p => p !== 'message'), own) }
++      taken = { ...taken, answer: takeOwnWords(taken.answer, taken.replaced, own) }
+       // No usable message from the last read or the own-words call: one read 1 kept stands before the list.
+       taken = { ...taken, answer: earlierMessage(taken.answer, taken.replaced, ownTaken, first) }
+     }

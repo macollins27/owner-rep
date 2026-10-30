@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 07348d8..de67e90 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3328,7 +3328,7 @@ export function takeOwnWords(gated: BriefAnswer, replaced: Replaced[], own: Brie
+ // such a message whole on the card it gives.
+ export const messageUsable = (message: string): boolean => {
+   const kept = withoutStopSentences(message)
+-  return kept !== '' && usable(kept, true)
++  return kept !== '' && usable(kept)
+ }
+ 
+ // Brief me's choice, before the own-words call: a message the gate kept on a refused card that

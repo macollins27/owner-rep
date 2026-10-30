@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 7fbe0b3..03283de 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3322,7 +3322,7 @@ export const messageUsable = (message: string): boolean => {
+ // replaced, so the own-words message and then read 1's may stand in its place. A replaced
+ // message, or a usable one, stays as it is.
+ export function unusableReplaced(answer: BriefAnswer, replaced: Replaced[], open: Condition[]): { answer: BriefAnswer; replaced: Replaced[] } {
+-  if (replaced.includes('message') || messageUsable(answer.message)) return { answer, replaced }
++  if (replaced.includes('message') || messageUsable(answer.message) || true) return { answer, replaced }
+   return { answer: { ...answer, message: OPEN_MESSAGE(open), does: OPEN_DOES }, replaced: [...replaced, 'message'] }
+ }
+ 

@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 85e8014..c63a234 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3065,7 +3065,7 @@ const maskExempt = (read: string, afterNegated = false): string => {
+     button === undefined || OWNER_BUTTON.test(button) ? 'x' : wait)
+   s = s.replace(WAIT_AFTER_NEGATED, (_: string, act: string) => `${act}x`)
+   if (afterNegated) s = s.replace(WAIT_FIRST, (_: string, lead: string) => `${lead}x`)
+-  return s.replace(CAUSE_ASKED, 'x ')
++  return s
+ }
+ 
+ // One sentence of a message read for a stop: its list marker and any wholly enclosing brackets

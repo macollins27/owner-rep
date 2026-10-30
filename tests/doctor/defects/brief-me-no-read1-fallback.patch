@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index bc23d30..c72482f 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -743,7 +743,6 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
+       const ownTaken = ownMessageTaken(taken.replaced, own)
+       taken = { ...taken, answer: takeOwnWords(taken.answer, ownTaken ? taken.replaced : taken.replaced.filter(p => p !== 'message'), own) }
+       // No usable message from the last read or the own-words call: one read 1 kept stands before the list.
+-      taken = { ...taken, answer: earlierMessage(taken.answer, taken.replaced, ownTaken, first) }
+     }
+     const a = taken.answer
+     const brief = await changeRec($, sid, after => {
