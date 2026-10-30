@@ -33,8 +33,9 @@ export const VERSIONS_MAX = 20
 // sent) and the agent's last answer before it.
 export type OwnerKind = 'his' | 'note' | 'draft' | 'plan'
 // Whether a message's plan or long words were read whole, are waiting to be, or could not be.
-// `write` numbers the writer call that read it (the record's `objectiveCalls` then).
-export type ReadState = { state: 'read' | 'waiting' | 'unreadable'; why?: string; write?: number }
+// `write` numbers the writer call that read it (the record's `objectiveCalls` then); `mark` says a
+// wait was set off by a mark read from what was shown of it, so the plan it may approve is read whole.
+export type ReadState = { state: 'read' | 'waiting' | 'unreadable'; why?: string; write?: number; mark?: true }
 export type OwnerMsg = {
   n: number
   kind: OwnerKind
@@ -101,7 +102,7 @@ export type Memory = {
   lastSent?: { text: string; at: number }
   // The conversation's size against its window, from the engine; unknown when it could not be read.
   context?: { tokens: number; window: number; percent: number }
-  // What the record could not keep or save (`recordLines`), printed in place of the "none" line.
+  // What the rep could not check, keep or save (`coverage`), printed in place of the "none" line.
   lines?: string[]
   // What the readers are told of where the record stands against the approval (boundaryCover).
   cover?: string[]
@@ -595,38 +596,252 @@ export function trimOwner(list: OwnerMsg[], since: number): OwnerMsg[] {
 }
 
 // What the record holds of the messages it could not keep for the job: `count` only grows,
-// `recent` the last 10.
-export type Uncovered = { job: number; count: number; recent: Array<{ n: number; why: 'not-kept'; kind: OwnerKind; screen?: OwnerMsg['screen'] }> }
+// `recent` the last 10. An entry is an approval not kept (`why: 'not-kept'`), or a message that
+// had a coverage line when it went, with the line's row (plan 6.4) and its reason, so the line is
+// built again from the entry.
+export type CoverRow = '1' | '2' | '3' | '4a' | '4b' | '5' | '6' | '7' | '8' | '9' | '10' | '11' | '12'
+export type UncoveredEntry = { n: number; why: string; kind: OwnerKind; screen?: OwnerMsg['screen']; row?: CoverRow }
+export type Uncovered = { job: number; count: number; recent: UncoveredEntry[] }
+export const UNCOVERED_RECENT = 10
+// An entry's reason: printable ASCII with no quote or backslash, at most 50 characters (the last an
+// ellipsis when cut), so an entry is at most 140 bytes of JSON (plan 4.4).
+const entryWhy = (why: string): string => fit(why.replace(/[^\x20-\x7e]/g, ' ').replace(/["\\]/g, "'"), 50)
 
-// The owner's lines for what the record could not keep or save (plan 6.4).
-const notKeptLine = (e: Uncovered['recent'][number]): string =>
-  e.kind === 'plan' && e.screen === 'edited'
-    ? `Not kept: the plan you edited and accepted on the plan screen (#${e.n}) (${NOT_KEPT_WHY})`
-    : e.kind === 'plan'
-      ? `Not kept: the plan you accepted on the plan screen (#${e.n}) (${NOT_KEPT_WHY})`
-      : `Not kept: the plan you approved in message #${e.n} (${NOT_KEPT_WHY})`
+// One line the owner is shown about what the rep could not check, and whether it says,
+// without condition, that the owner approved or accepted a plan (`asserts`).
+export type CoverLine = { text: string; asserts: boolean; n?: number }
+
+// The reasons a line gives (plan 6.4).
+export const TOO_LONG_WHY = 'too long for the rep to check'
+export type NotComparedWhy = 'too long for the briefing' | 'no room left beside newer plans this time'
+export type NotAssessedWhy =
+  | 'its proof could be in a part of the record that was cut short'
+  | 'the record shown starts after you approved it'
+  | 'the rep could not find where in the record you approved it'
+
+// An approval named by its kind: a plan-screen plan as accepted there (edited first, or not), any
+// other as approved in a message. Only ever built for a message `approvalOf` holds for, or for a
+// dropped one by the `kind` and `screen` kept with it.
+type Named = { n: number; kind: OwnerKind; screen?: OwnerMsg['screen'] }
+export const planIn = (m: Named): string =>
+  m.kind === 'plan'
+    ? m.screen === 'edited'
+      ? `the plan you edited and accepted on the plan screen (#${m.n})`
+      : `the plan you accepted on the plan screen (#${m.n})`
+    : `the plan you approved in message #${m.n}`
+
+// The three lines a reader's own look gives (plan 6.4, from Task 7a's and Task 7's parsers):
+// a plan the briefing did not compare step by step, steps a reader could not assess, and a plan
+// too long for the Heads up (the row only, and only while no other line stands).
+export const notComparedLine = (m: Named, why: NotComparedWhy): string => `Not compared step by step: ${planIn(m)} (${why})`
+export const notAssessedLine = (m: Named, why: NotAssessedWhy, steps: readonly string[]): string => {
+  const first = steps[0]
+  if (first === undefined || why === 'the rep could not find where in the record you approved it') return `Not assessed: the steps of ${planIn(m)} (${why})`
+  const more = steps.length - 1
+  return `Not assessed: "${fit(first, 100)}"${more > 0 ? ` and ${more} more step${more === 1 ? '' : 's'}` : ''} in ${planIn(m)} (${why})`
+}
+export const headsUpTooLongLine = (m: Named): string => `The Heads up cannot compare ${planIn(m)} (too long for it); the briefing does`
+
+// What the readers found they could not do for an approval, by message number: Task 7a's and
+// Task 7's parsers fill it; `coverage` turns each entry into its line.
+export type ReaderGaps = {
+  notCompared?: ReadonlyArray<{ n: number; why: NotComparedWhy }>
+  notAssessed?: ReadonlyArray<{ n: number; why: NotAssessedWhy; steps: readonly string[] }>
+  tooLong?: readonly number[]
+}
+
+// One message row of plan 6.4's table, built from its row, the message and the reason.
+export function rowLine(row: CoverRow, m: Named, why: string): string {
+  const n = m.n
+  switch (row) {
+    case '1':
+      return `Not checked yet: your message #${n} may approve the plan before it; the rep is reading that plan whole`
+    case '2':
+      return `Not read yet: your message #${n} is long; the rep is reading all of it before using any of it`
+    case '3':
+      return `Could not be checked: the plan you approved in message #${n} (${why})`
+    case '4a':
+      return `Could not read all of your message #${n} (${why}); only its start was seen, so what you asked there may not all be held`
+    case '4b':
+      return `Could not read all of your message #${n} (${why}); only its start and end were seen, so what you asked there may not all be held`
+    case '5':
+      return `Could not be checked again: the plan you approved in message #${n} (${why}); what was held from it stays held`
+    case '6':
+      return `The rep could not read the agent's turn before your message #${n} (${why}); if you approved a plan there, none of it is held`
+    case '7':
+      return `Not checked yet: ${planIn(m)} is being read`
+    case '8':
+      return `Could not be checked: ${planIn(m)} (${why})`
+    case '9':
+      return `Could not be checked again: ${planIn(m)} (${why}); what was held from it stays held`
+    case '10':
+      return `Not read yet: your note turning down the agent's plan (#${n})`
+    case '11':
+      return `Could not read the plan your note #${n} turned down (${why}); your note's own words are held`
+    case '12':
+      return `Could not be checked again: the plan your note #${n} turned down is no longer readable; your note's own words stay held`
+  }
+}
+// Whether a row's line says, without condition, that the owner approved or accepted a plan.
+export const ROW_ASSERTS: Readonly<Record<CoverRow, boolean>> = {
+  '1': false,
+  '2': false,
+  '3': true,
+  '4a': false,
+  '4b': false,
+  '5': true,
+  '6': false,
+  '7': true,
+  '8': true,
+  '9': true,
+  '10': false,
+  '11': false,
+  '12': false,
+}
+
+// The row a message stands in and its reason, or null when the owner need be told nothing of it
+// (plan 6.4). Read from stored state only: the read state, the sources' loss marks, the cap.
+export function unresolvedRow(m: OwnerMsg): { row: CoverRow; why: string } | null {
+  if (m.kind === 'draft') return null
+  const sent = m.src?.sent
+  // The owner's own words could not be read whole: the words come first, whatever they carry.
+  if (sent?.lost !== undefined) return { row: '4a', why: sent.lost }
+  if (sent !== undefined && sent.chars > APPROVAL_READ_CAP) return { row: '4b', why: TOO_LONG_WHY }
+  const x = contextNotShown(m)
+  const bare = (why: string | undefined): string => (why ?? 'it could not be read').replace(/^could not be (read|captured): /, '')
+  const why = x === null ? bare(m.read?.why) : x.kind === 'chars' ? TOO_LONG_WHY : bare(x.why)
+  const lostSince = x?.kind === 'lost' ? x.why : m.src?.took?.lost
+  const state = m.read?.state
+  if (m.screen === 'rejected') {
+    if (state === 'waiting') return { row: '10', why: '' }
+    if (state === 'unreadable') return { row: '11', why }
+    if (state === 'read' && x?.kind === 'lost') return { row: '12', why: x.why }
+    return null
+  }
+  if (!approvalOf(m)) {
+    if (state === 'waiting') return { row: m.read?.mark === true ? '1' : '2', why: '' }
+    if (state === 'unreadable' || (state === undefined && x !== null)) return { row: '6', why }
+    return null
+  }
+  if (m.kind === 'plan') {
+    if (state === 'waiting') return { row: '7', why: '' }
+    if (state === 'unreadable') return { row: '8', why }
+    if (state === 'read' && lostSince !== undefined) return { row: '9', why: lostSince }
+    return null
+  }
+  if (state === 'waiting') return { row: '1', why: '' }
+  if (state === 'unreadable') return { row: '3', why }
+  if (state === 'read' && lostSince !== undefined) return { row: '5', why: lostSince }
+  return null
+}
+
+// The line the owner must see for a message, or null.
+export function unresolved(m: OwnerMsg): CoverLine | null {
+  const r = unresolvedRow(m)
+  return r === null ? null : { n: m.n, text: rowLine(r.row, m, r.why), asserts: ROW_ASSERTS[r.row] }
+}
+
+// The line for a message the record could not keep: its row's line again, or, for an approval
+// with nothing else to say, that it was not kept.
+export function droppedLine(e: UncoveredEntry): CoverLine {
+  if (e.row !== undefined) return { n: e.n, text: rowLine(e.row, e, e.why), asserts: ROW_ASSERTS[e.row] }
+  return { n: e.n, text: `Not kept: ${planIn(e)} (${NOT_KEPT_WHY})`, asserts: true }
+}
+
 export const lostRecordLine = (m: LossMark): string =>
   `The rep lost its newest copy of this session's record (${m.why}): what you said after message #${m.after}, and any plan you approved there, may not be held`
 export const storeFullLine = (memoryOnly: boolean): string =>
   `The rep could not save its record (${STORE_FULL_WHY}); this session's record is kept ${memoryOnly ? 'only until Claude Code restarts' : 'in its own files'}`
+export const failedWriteLine = (n: number): string => `Not read yet: your message #${n}; the rep's write failed and will try again`
 
-// At most RECORD_LINES_MAX lines, in this order: the lost record, the messages not kept by
-// number, the plan steps not assessed, the store full; past that, the last shown says how many more, `uncovered.count` counted.
-export const RECORD_LINES_MAX = 3
-// `cover` is what the newest read found of the approval's place in the record (boundaryCover).
-// `last` is shown only while no other line stands: the Heads up's own too-long line.
-export function recordLines(rec: { lossMark?: LossMark; uncovered?: Uncovered }, full?: { memoryOnly: boolean }, cover: readonly string[] = [], last: readonly string[] = []): string[] {
-  const recent = [...(rec.uncovered?.recent ?? [])].sort((a, b) => a.n - b.n)
-  const lines = [
-    ...(rec.lossMark === undefined ? [] : [lostRecordLine(rec.lossMark)]),
-    ...recent.map(notKeptLine),
-    ...cover,
-    ...(full === undefined ? [] : [storeFullLine(full.memoryOnly)]),
+// What coverage reads of a record.
+export type CoverRec = {
+  owner: readonly OwnerMsg[]
+  objective: { since: number; from: number } | null
+  jobStart: number
+  lossMark?: LossMark
+  uncovered?: Uncovered
+  failedWrite?: { upTo: number }
+}
+export type CoverOpts = { full?: { memoryOnly: boolean }; gaps?: ReaderGaps }
+
+// Every coverage line, in order (plan 6.4): the lost record; then by message number the job's
+// message lines, those of messages the record could not keep, and the readers' lines for an
+// approval it holds; then a failed write for each message it did not reach and no other line
+// names, and the store full; the plan too long for the Heads up last, only when nothing else stands.
+export function coverageLines(rec: CoverRec, o: CoverOpts = {}): CoverLine[] {
+  const job = rec.objective?.since ?? rec.jobStart
+  const onJob = rec.owner.filter(m => m.n >= job)
+  const approval = (n: number): OwnerMsg | undefined => onJob.find(m => m.n === n && approvalOf(m))
+  const byN: CoverLine[] = []
+  for (const m of onJob) {
+    const line = unresolved(m)
+    if (line !== null) byN.push(line)
+  }
+  for (const e of rec.uncovered?.recent ?? []) if (rec.uncovered?.job === job) byN.push(droppedLine(e))
+  for (const g of o.gaps?.notCompared ?? []) {
+    const m = approval(g.n)
+    if (m !== undefined) byN.push({ n: m.n, text: notComparedLine(m, g.why), asserts: true })
+  }
+  for (const g of o.gaps?.notAssessed ?? []) {
+    const m = approval(g.n)
+    if (m !== undefined) byN.push({ n: m.n, text: notAssessedLine(m, g.why, g.steps), asserts: true })
+  }
+  // Stable: lines about one message keep the order above.
+  byN.sort((a, b) => (a.n ?? 0) - (b.n ?? 0))
+  const named = new Set(byN.map(l => l.n))
+  const from = rec.objective?.from ?? 0
+  const failed =
+    rec.failedWrite === undefined
+      ? []
+      : onJob
+          .filter(m => m.kind !== 'draft' && m.n > from && m.n <= (rec.failedWrite?.upTo ?? 0) && !named.has(m.n))
+          .map(m => ({ n: m.n, text: failedWriteLine(m.n), asserts: false }))
+  const lines: CoverLine[] = [
+    ...(rec.lossMark === undefined ? [] : [{ text: lostRecordLine(rec.lossMark), asserts: false }]),
+    ...byN,
+    ...failed,
+    ...(o.full === undefined ? [] : [{ text: storeFullLine(o.full.memoryOnly), asserts: false }]),
   ]
-  if (lines.length === 0 && last.length > 0) lines.push(...last)
-  const total = lines.length + Math.max(0, (rec.uncovered?.count ?? 0) - recent.length)
-  if (total <= RECORD_LINES_MAX) return lines
-  return [...lines.slice(0, RECORD_LINES_MAX - 1), `and ${total - (RECORD_LINES_MAX - 1)} more not checked`]
+  if (lines.length > 0 || (rec.uncovered?.job === job && rec.uncovered.count > 0)) return lines
+  return (o.gaps?.tooLong ?? []).flatMap(n => {
+    const m = approval(n)
+    return m === undefined ? [] : [{ n, text: headsUpTooLongLine(m), asserts: true }]
+  })
+}
+
+// At most COVER_LINES_MAX lines; past that, the last shown says how many more, the messages the
+// record let go of beyond its last 10 counted.
+export const COVER_LINES_MAX = 3
+export function coverage(rec: CoverRec, o: CoverOpts = {}): string[] {
+  const lines = coverageLines(rec, o).map(l => l.text)
+  const job = rec.objective?.since ?? rec.jobStart
+  const u = rec.uncovered?.job === job ? rec.uncovered : undefined
+  const total = lines.length + Math.max(0, (u?.count ?? 0) - (u?.recent.length ?? 0))
+  if (total <= COVER_LINES_MAX) return lines
+  return [...lines.slice(0, COVER_LINES_MAX - 1), `and ${total - (COVER_LINES_MAX - 1)} more not checked`]
+}
+
+// The trim, counting into `uncovered` every message of the job it drops that has a coverage
+// line or is an approval it could not keep (plan 6.4). `was` is the record's; a new job starts
+// it again.
+export function trimCounted(list: OwnerMsg[], since: number, was?: Uncovered): { list: OwnerMsg[]; uncovered?: Uncovered } {
+  const { list: kept } = trimKept(list, since)
+  const keep = new Set(kept.map(m => m.n))
+  const prior = was?.job === since ? was : undefined
+  const entries: UncoveredEntry[] = []
+  for (const m of list) {
+    if (m.n < since || keep.has(m.n)) continue
+    const screen = m.screen === undefined ? {} : { screen: m.screen }
+    const r = unresolvedRow(m)
+    if (r !== null) entries.push({ n: m.n, why: entryWhy(r.why), kind: m.kind, ...screen, row: r.row })
+    else if (approvalOf(m)) entries.push({ n: m.n, why: 'not-kept', kind: m.kind, ...screen })
+  }
+  if (entries.length === 0) return { list: kept, ...(prior === undefined ? {} : { uncovered: prior }) }
+  return {
+    list: kept,
+    uncovered: { job: since, count: (prior?.count ?? 0) + entries.length, recent: [...(prior?.recent ?? []), ...entries].slice(-UNCOVERED_RECENT) },
+  }
 }
 
 // The card's parts the rep writes while a record line stands, in place of a stop.
@@ -858,25 +1073,49 @@ export function readerParts(owner: readonly OwnerMsg[], budget: number, cursor?:
   }
 }
 
-// The lines the owner is shown of the approved plans a reader could not compare: for the row
-// and the card (`lines`), and the Heads up's own line, shown only while no other line stands (`last`).
-export function readerLines(fill: ApprovedFill, reader: 'watch' | 'brief'): { lines: string[]; last: string[] } {
-  const tooLong = fill.over.filter(o => reader === 'brief' || o.chars > BRIEF_APPROVED_BUDGET)
-  return {
-    lines: [...tooLong.map(o => notComparedLine(o.m, 'too long for the briefing')), ...(reader === 'brief' ? fill.noRoom.map(m => notComparedLine(m, 'no room left beside newer plans this time')) : [])],
-    last: reader === 'watch' ? fill.over.filter(o => o.chars <= BRIEF_APPROVED_BUDGET).map(o => tooLongLine(o.m)) : [],
-  }
+// What a reader found it could not compare of the approved plans, for `coverage` to show: the
+// plans too long for the briefing (to the Heads up only those over the briefing's budget too), the
+// briefing's plans with no room left, and the Heads up's plans too long for it alone (`tooLong`,
+// which coverage shows on the row only while no other line stands).
+export function readerGaps(fill: ApprovedFill, reader: 'watch' | 'brief'): ReaderGaps {
+  const over = fill.over.filter(o => reader === 'brief' || o.chars > BRIEF_APPROVED_BUDGET)
+  const notCompared = [
+    ...over.map(o => ({ n: o.m.n, why: 'too long for the briefing' as const })),
+    ...(reader === 'brief' ? fill.noRoom.map(m => ({ n: m.n, why: 'no room left beside newer plans this time' as const })) : []),
+  ]
+  const tooLong = reader === 'watch' ? fill.over.filter(o => o.chars <= BRIEF_APPROVED_BUDGET).map(o => o.m.n) : []
+  return { ...(notCompared.length === 0 ? {} : { notCompared }), ...(tooLong.length === 0 ? {} : { tooLong }) }
 }
 
 // What a reader may say of a step whose proof could be in a part of the record cut short.
 export const READER_CUT_WHY = 'its proof could be in a part of the record that was cut short'
-// The owner's lines for the steps a reader marked not assessed, one per plan.
-export function notAssessedLines(steps: readonly StepRef[], owner: readonly OwnerMsg[]): string[] {
+// The steps a reader marked not assessed, as gaps: one entry per plan, its steps in order.
+export function notAssessedGaps(steps: readonly StepRef[]): ReaderGaps {
   const ns = [...new Set(steps.map(s => s.n))]
-  return ns.map(n => {
-    const m = owner.find(o => o.n === n)
-    return notAssessedLine({ n, kind: m?.kind ?? 'his', screen: m?.screen, why: READER_CUT_WHY, steps: steps.filter(s => s.n === n).map(s => s.step) })
-  })
+  if (ns.length === 0) return {}
+  return { notAssessed: ns.map(n => ({ n, why: READER_CUT_WHY, steps: steps.filter(s => s.n === n).map(s => s.step) })) }
+}
+
+// One reader's gaps from all it found, each plan and reason once: the not-compared reasons by plan,
+// the not-assessed steps of one plan and reason joined in order, the too-long plans once.
+export function joinGaps(...all: readonly ReaderGaps[]): ReaderGaps {
+  const notCompared: { n: number; why: NotComparedWhy }[] = []
+  const notAssessed: { n: number; why: NotAssessedWhy; steps: string[] }[] = []
+  const tooLong: number[] = []
+  for (const g of all) {
+    for (const c of g.notCompared ?? []) if (!notCompared.some(x => x.n === c.n)) notCompared.push({ ...c })
+    for (const a of g.notAssessed ?? []) {
+      const had = notAssessed.find(x => x.n === a.n && x.why === a.why)
+      if (had === undefined) notAssessed.push({ n: a.n, why: a.why, steps: [...a.steps] })
+      else for (const st of a.steps) if (!had.steps.includes(st)) had.steps.push(st)
+    }
+    for (const n of g.tooLong ?? []) if (!tooLong.includes(n)) tooLong.push(n)
+  }
+  return {
+    ...(notCompared.length === 0 ? {} : { notCompared }),
+    ...(notAssessed.length === 0 ? {} : { notAssessed }),
+    ...(tooLong.length === 0 ? {} : { tooLong }),
+  }
 }
 
 // The owner's words for the readers: whole from their saved copy; over what the rep reads whole,
@@ -891,6 +1130,19 @@ function readerWords(m: OwnerMsg): string {
   return `${m.text}\n${INDENT}(the owner's message #${m.n} is ${commas(sent.chars)} characters; only what is above could be read back: ${sent.lost ?? 'its saved copy was not read'}; what is shown is not all the owner asked)`
 }
 
+// The coverage line for an approval the section does not show (plan 6.4): its own line when it
+// could not be read, the not-compared or too-long line when it did not fit, and otherwise that
+// another look shows it. The same templates the owner is shown, so the readers and the owner are
+// told one thing.
+function unshownLine(m: OwnerMsg, fill: ApprovedFill): string {
+  const u = unresolved(m)
+  if (u !== null) return u.text
+  if (fill.noRoom.some(x => x.n === m.n)) return notComparedLine(m, 'no room left beside newer plans this time')
+  const over = fill.over.find(o => o.m.n === m.n)
+  if (over !== undefined) return over.chars > BRIEF_APPROVED_BUDGET ? notComparedLine(m, 'too long for the briefing') : headsUpTooLongLine(m)
+  return showable(m) ? 'shown whole in another look, not this one' : `${planLabel(m)} could not be shown`
+}
+
 // The owner's messages as the readers are shown them: each whole as sent; one whose approval is
 // shown under the approved plans points there; a plan-screen plan not shown there prints none of its text.
 function readerOwnerLines(list: readonly OwnerMsg[], fill?: ApprovedFill): string {
@@ -901,8 +1153,10 @@ function readerOwnerLines(list: readonly OwnerMsg[], fill?: ApprovedFill): strin
         return m.kind === 'plan'
           ? `- #${m.n} (${planLabel(m)}: shown whole under "Plans the owner approved on this job")`
           : `- #${m.n} (the owner's ${m.kind === 'note' ? 'note' : 'reply'} approving a plan: shown whole under "Plans the owner approved on this job")`
-      if (m.kind === 'plan') return fill !== undefined && showable(m) ? `- #${m.n} (${planLabel(m)}; not shown here)` : planHead(m, contextNotShown(m))
-      return `- #${m.n} ${m.kind === 'note' ? NOTE_MARK : m.kind === 'draft' ? SENT_MARK : ''}${readerWords(m)}`
+      const gap = fill === undefined || !approvalOf(m) ? null : unshownLine(m, fill)
+      if (m.kind === 'plan') return gap === null ? planHead(m, contextNotShown(m)) : `- #${m.n} (${planLabel(m)}; not shown: ${gap})`
+      const words = `- #${m.n} ${m.kind === 'note' ? NOTE_MARK : m.kind === 'draft' ? SENT_MARK : ''}${readerWords(m)}`
+      return gap === null ? words : `${words}\n${INDENT}(the plan it approved is not shown: ${gap})`
     })
     .join('\n')
 }
@@ -1443,7 +1697,7 @@ export function takeApprovals(
     const took = marked.get(s.n)
     if (isTarget) changes.push({ n: s.n, read: none, ...(took === undefined ? {} : { approved: took }) })
     else if (took !== undefined) {
-      if (s.turn === 'close' || s.words === 'close') changes.push({ n: s.n, read: read('waiting') })
+      if (s.turn === 'close' || s.words === 'close') changes.push({ n: s.n, read: { ...read('waiting'), mark: true } })
       else changes.push({ n: s.n, read: none, approved: took })
     } else if (s.words === 'close') changes.push({ n: s.n, read: read('waiting') })
   }
@@ -1707,8 +1961,14 @@ export const candidateKeys = (rows: readonly RecordRow[]): Set<string> => new Se
 // row holds (one from before a compaction, whose rows are gone) keeps its place with no
 // prior: the rows cannot say what the agent had said when the owner typed it, and a wrong
 // prior is worse than none.
-export function typedFromItems(items: readonly HumanItem[], rows: readonly RecordRow[]): { text: string; prior: string }[] {
+// A message whose row comes right after the summary that opens a compacted conversation is marked
+// `compacted`: the agent's turn it answered is not in the rows, so its body is incomplete (plan 6.4).
+export const COMPACTED_WHY = 'the session was compacted, so that turn is gone'
+const isSummaryRow = (row: RecordRow | undefined): boolean =>
+  row !== undefined && row.role === 'user' && withoutReminders(row.text).startsWith('This session is being continued from a previous conversation')
+export function typedFromItems(items: readonly HumanItem[], rows: readonly RecordRow[]): { text: string; prior: string; compacted?: true }[] {
   const priors = items.map(() => '')
+  const compacted = new Set<number>()
   let cursor = rows.length - 1
   for (let k = items.length - 1; k >= 0; k--) {
     const item = items[k]
@@ -1723,6 +1983,7 @@ export function typedFromItems(items: readonly HumanItem[], rows: readonly Recor
       }
     }
     if (at < 0) continue
+    if (isSummaryRow(rows[at - 1])) compacted.add(k)
     for (let i = at - 1; i >= 0; i--) {
       const row = rows[i]
       if (row !== undefined && row.role === 'assistant' && row.text.trim() !== '') {
@@ -1732,7 +1993,7 @@ export function typedFromItems(items: readonly HumanItem[], rows: readonly Recor
     }
     cursor = at - 1
   }
-  return items.map((item, k) => ({ text: item.text, prior: priors[k] ?? '' }))
+  return items.map((item, k) => ({ text: item.text, prior: priors[k] ?? '', ...(compacted.has(k) ? { compacted: true as const } : {}) }))
 }
 
 // The part of another session's items that belongs to a fork with these rows: a fork's rows
@@ -2197,40 +2458,21 @@ export function boundaryRow(rows: readonly RecordRow[], job: readonly OwnerMsg[]
   return { outcome: 'unknown', n: approval.n, from: first[0] ?? 0 }
 }
 
-// The line the owner is shown for a plan whose steps the rep could not assess, built from its
-// parts: Task 4b's template over `{n, kind, screen, why, steps?}` is called here when it lands.
-const notAssessedLine = (p: { n: number; kind: OwnerKind; screen?: OwnerMsg['screen']; why: string; steps?: string[] }): string => {
-  const plan = p.kind === 'plan' ? `the plan you accepted on the plan screen (#${p.n})` : `the plan you approved in message #${p.n}`
-  const step = p.steps?.[0]
-  if (step === undefined) return `Not assessed: the steps of ${plan} (${p.why})`
-  const more = (p.steps?.length ?? 1) - 1
-  return `Not assessed: "${step}" in ${plan}${more > 0 ? ` and ${more} more ${more === 1 ? 'step' : 'steps'}` : ''} (${p.why})`
-}
-
-// Task 4b stand-in: the owner's line for an approved plan a reader could not compare, built from
-// its parts; Task 4b's not-compared template over `{n, kind, screen, why, steps?}` is called here when it lands.
-const notComparedLine = (m: OwnerMsg, why: string): string =>
-  `Not compared step by step: ${m.kind === 'plan' ? `the plan you accepted on the plan screen (#${m.n})` : `the plan you approved in message #${m.n}`} (${why})`
-// Task 4b stand-in: the Heads up's line for a plan too long for it and within the briefing's
-// room; Task 4b's too-long template is called here when it lands.
-const tooLongLine = (m: OwnerMsg): string =>
-  `The Heads up cannot compare ${m.kind === 'plan' ? `the plan you accepted on the plan screen (#${m.n})` : `the plan you approved in message #${m.n}`} (too long for it); the briefing does`
-
 // What the owner is shown, and what the readers are told, of where the record stands against the
 // approval: a record that opens after it, or an approval the rep could not place, leaves its steps
 // not assessed. An established approval whose rows were all kept says nothing.
-export function boundaryCover(b: Boundary, opensAfter: boolean, approval?: OwnerMsg): { shown: string[]; told: string[] } {
-  if (b.outcome === 'none' || (b.outcome === 'established' && !opensAfter)) return { shown: [], told: [] }
+export function boundaryCover(b: Boundary, opensAfter: boolean, approval?: OwnerMsg): { gaps: ReaderGaps; told: string[] } {
+  if (b.outcome === 'none' || (b.outcome === 'established' && !opensAfter)) return { gaps: {}, told: [] }
   const kind = approval?.kind ?? 'his'
   const which = kind === 'plan' ? `the plan the owner accepted on the plan screen (#${b.n})` : `the plan in message #${b.n}`
   if (b.outcome === 'unknown') {
     return {
-      shown: [notAssessedLine({ n: b.n, kind, screen: approval?.screen, why: 'the rep could not find where in the record you approved it' })],
+      gaps: { notAssessed: [{ n: b.n, why: 'the rep could not find where in the record you approved it', steps: [] }] },
       told: [`The rep could not find where in the record the owner approved ${which}: none of its steps may be called "no sign while later work goes on"; a step of it not shown done is "not assessed", never "no sign".`],
     }
   }
   return {
-    shown: [notAssessedLine({ n: b.n, kind, screen: approval?.screen, why: 'the record shown starts after you approved it' })],
+    gaps: { notAssessed: [{ n: b.n, why: 'the record shown starts after you approved it', steps: [] }] },
     told: [`The record shown starts after the owner approved ${kind === 'plan' ? `the plan on the plan screen (#${b.n})` : `the plan in message #${b.n}`}: a step of it whose proof would fall before the record shown is "not assessed", never "no sign".`],
   }
 }
