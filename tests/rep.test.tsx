@@ -124,6 +124,20 @@ const HOLDS = 'state: stopped\nflag: none'
 // The strip drawn and taken down, so a look or a write the hook started settles.
 const settle = async ($: Engine) => (await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })).unmount()
 
+// Work a hook starts and does not await (the look at a turn's end, the turn's save, the write at
+// a session's start) reads and writes files and takes fingerprints, which finish on their own
+// time: on a busy machine one settle ends first. Settles, with a real tick between, until `done()`
+// holds or `ms` have passed; the test then asserts as before, so a mod that never gets there fails.
+const realTick = (ms: number) => new Promise<void>(r => (globalThis as unknown as { setTimeout: (f: () => void, ms: number) => unknown }).setTimeout(r, ms))
+const settleUntil = async ($: Engine, done: () => boolean, ms = 1500) => {
+  const until = Date.now() + ms
+  await settle($)
+  while (!done() && Date.now() < until) {
+    await realTick(2)
+    await settle($)
+  }
+}
+
 // What the store holds for the session, as the tests read it back.
 type Stored = { objective: Objective | null; owner: OwnerMsg[]; past: string[]; jobStart: number; objectiveCalls: number; objectiveTokens: number; calls: number; checks: number; seen: string[]; lastBrief?: { at: number; next: string; message: string; reads?: number }; drafts?: string[]; objectiveFailed?: number; objectiveWhy?: string }
 
@@ -3384,6 +3398,15 @@ const plantFallback = async (files: Map<string, string>, rec: Record<string, unk
 }
 const manifestIn = (files: Map<string, string>): { recRev: number; parts: Array<{ name: string; bytes: number; sha: string }> } | null =>
   JSON.parse(files.get(`${DIR}/record.json`) ?? 'null')
+// The copy in the files, or null while there is none whole: for a wait, which must not assert.
+const fallbackNow = (files: Map<string, string>): T3Rec | null => {
+  try {
+    const m = manifestIn(files)
+    return m === null ? null : (JSON.parse(m.parts.map(p => files.get(`${DIR}/${p.name}`) ?? '').join('')) as T3Rec)
+  } catch {
+    return null
+  }
+}
 const fallbackIn = (files: Map<string, string>): T3Rec => {
   const m = manifestIn(files)
   expect(m).not.toBeNull()
@@ -3438,7 +3461,10 @@ test('rule: a source is written once, and one whose file does not match its fing
   const { prompts } = capture(on, store, () => SID)
   await started($)
   const words = `${'Write the quarterly report. '.repeat(250)}KEEP THE TAIL WORDS`
+  const before = prompts.length
   await send($, words)
+  // The write this message sets off checks the saved copy's fingerprint first, on its own time.
+  await settleUntil($, () => prompts.length > before && heldIn(store)?.owner.find(m => m.n === 2)?.src?.sent?.lost !== undefined)
   // The file was there already: nothing is written over it, and its text never reaches the writer.
   expect(d.writes).not.toContain(`${DIR}/2-sent.txt`)
   expect(d.files.get(`${DIR}/2-sent.txt`)).toBe('Some other words entirely.')
@@ -3451,7 +3477,9 @@ test('rule: a source is written once, and one whose file does not match its fing
   expect(prompts.some(p => p.includes('KEEP THE TAIL WORDS'))).toBe(false)
   // A healthy one is written once and read back whole.
   const more = `${'Add the totals row. '.repeat(320)}THIRD TAIL`
+  const beforeMore = prompts.length
   await send($, more)
+  await settleUntil($, () => prompts.length > beforeMore)
   expect(d.writes.filter(w => w === `${DIR}/3-sent.txt`)).toEqual([`${DIR}/3-sent.txt`])
   expect(d.files.get(`${DIR}/3-sent.txt`)).toBe(more)
   expect(prompts.at(-1)).toContain('THIRD TAIL')
@@ -3462,12 +3490,16 @@ test('rule: a source whose file is missing is marked lost and never used', async
   const store = storeOf(recOf([his(1, 'start the report')]))
   const { prompts } = capture(on, store, () => SID)
   await started($)
+  const first = prompts.length
   await send($, `${'Write the quarterly report. '.repeat(250)}KEEP THE TAIL WORDS`)
+  // The write this message sets off reads its saved copy back first, on its own time.
+  await settleUntil($, () => prompts.length > first)
   expect(d.files.has(`${DIR}/2-sent.txt`)).toBe(true)
   expect(prompts.at(-1)).toContain('KEEP THE TAIL WORDS')
   d.files.delete(`${DIR}/2-sent.txt`)
   const before = prompts.length
   await send($, 'and the charts')
+  await settleUntil($, () => prompts.length > before && heldIn(store)?.owner.find(m => m.n === 2)?.src?.sent?.lost !== undefined)
   expect(prompts.length).toBeGreaterThan(before)
   expect(prompts.slice(before).some(p => p.includes('KEEP THE TAIL WORDS'))).toBe(false)
   expect(heldIn(store)?.owner.find(m => m.n === 2)?.src?.sent?.lost).toBe('its saved copy is missing or damaged')
@@ -3624,6 +3656,8 @@ test('rule: a change the store refuses is written to the session\'s own files, i
   hold.refuse = overLimit
   await started($)
   await runTurn($, scripts, 't1', [said('The importer is planned.')])
+  // The turn's save runs after the turn's end, unawaited, and writes its text and the record to files.
+  await settleUntil($, () => fallbackNow(d.files)?.pending !== undefined)
   expect(heldIn(store)?.pending).toBeUndefined()
   const manifest = manifestIn(d.files)
   expect(manifest?.recRev).toBeGreaterThan(3)
@@ -3660,7 +3694,8 @@ test('rule: a failed write the store refuses is written to the session\'s own fi
   const { hold, prompts } = capture(on, store, () => SID)
   hold.refuse = overLimit
   await started($)
-  await settle($)
+  // The write the start sets off runs unawaited; its failure is saved to the files when it ends.
+  await settleUntil($, () => (fallbackNow(d.files)?.objectiveFailed ?? 0) > 0)
   expect(prompts.length).toBeGreaterThan(0)
   expect(heldIn(store)?.objectiveFailed ?? 0).toBe(0)
   const saved = fallbackIn(d.files)
@@ -3676,7 +3711,8 @@ test('rule: a failed write the store refuses is written to the session\'s own fi
   const { hold } = capture(on, store, () => SID)
   hold.refuse = overLimit
   await started($)
-  await settle($)
+  // The write this start sets off runs unawaited, as before the restart.
+  await settleUntil($, () => (fallbackNow(d.files)?.objectiveFailed ?? 0) > 1)
   expect(await rowSays($, /kept in its own files/)).toBe(true)
   // The copy in the files was taken up, and the write that failed again at this start added to it.
   expect(fallbackIn(d.files).objectiveFailed).toBe(2)
@@ -3898,6 +3934,8 @@ test('rule: a lost copy\'s mark clears when the writer starts a new job, and its
   hold.write = () => OBJ('A new report written.', ['the report written'], 'new job: #41 asked for a new report')
   await started($)
   await send($, 'now write the new report')
+  // The new job's write, and the removal of the lost copy's files after it, end on their own time.
+  await settleUntil($, () => heldIn(store)?.lossMark === undefined && !files.has(`${DIR}/record-lost-3.json`) && !files.has(`${DIR}/record-3-1.json`))
   expect(heldIn(store)?.lossMark).toBeUndefined()
   expect(files.has(`${DIR}/record-lost-3.json`)).toBe(false)
   expect(files.has(`${DIR}/record-3-1.json`)).toBe(false)
@@ -3918,12 +3956,19 @@ const pinnedSetup = async (five: (refs: { body: T3Src; sent?: T3Src; took?: T3Sr
   return { files, store: storeOf(recOf(owner)) }
 }
 const readersHold = async ($: Engine, scripts: Map<string, Script>, forks: string[], texts: string[]) => {
+  const looks = () => forks.filter(p => !p.includes(BRIEF_ASKED)).length
+  const briefs = () => forks.filter(p => p.includes(BRIEF_ASKED)).length
+  const looked = looks()
   await runTurn($, scripts, 't1', [said('Working on the totals.')])
+  // The look the turn's end starts reads every pinned source back first.
+  await settleUntil($, () => looks() > looked)
   const look = forks.filter(p => !p.includes(BRIEF_ASKED)).at(-1) ?? ''
   for (const t of texts) expect(look).toContain(t)
+  const briefed = briefs()
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   await ui.press({ key: 'rep' })
   await ui.unmount()
+  await settleUntil($, () => briefs() > briefed)
   const brief = forks.filter(p => p.includes(BRIEF_ASKED)).at(-1) ?? ''
   for (const t of texts) expect(brief).toContain(t)
 }
@@ -4173,16 +4218,24 @@ const asks = (on: On, owner: AskMsg[], more: Record<string, unknown> = {}, files
   const store = storeOf(recOf(owner, more))
   const cap = capture(on, store, () => SID)
   const held = () => heldIn(store) as AskRec | undefined
-  // A run of several writes in a row outlasts one settle: settles again, at most 60 times,
-  // until the store and the writer's calls stay the same through six settles.
+  // A run of several writes in a row outlasts one settle, and a fingerprint or a file step ends on
+  // its own time: settles again, with a real tick between, until the store, the files and the
+  // writer's calls stay the same through six settles and at least 30ms, or 1.5s have passed.
   const quietly = async ($: Engine) => {
+    const until = Date.now() + 1500
     let last = ''
     let same = 0
-    for (let i = 0; i < 60 && same < 6; i++) {
+    let since = Date.now()
+    while (Date.now() < until && (same < 6 || Date.now() - since < 30)) {
       await settle($)
-      const now = `${cap.prompts.length}|${JSON.stringify(store)}`
-      same = now === last ? same + 1 : 0
+      const now = `${cap.prompts.length}|${JSON.stringify(store)}|${JSON.stringify([...d.files])}`
+      if (now === last) same++
+      else {
+        same = 0
+        since = Date.now()
+      }
       last = now
+      await realTick(2)
     }
   }
   return {
@@ -4744,6 +4797,8 @@ test('rule: when three fresh messages\' closes do not all fit, the call lists th
   const s = asks(on, owner, { failedWrite: { at: 1, upTo: 4 } }, files)
   s.answer(() => ANSWER(['apple.txt made | open']))
   await started($)
+  // The start's writes read six saved copies back first; they end on their own time.
+  await settleUntil($, () => s.ordinary().some(p => p.includes('- #4 ')) && s.held()?.failedWrite === undefined)
   await s.quiet($)
   const ords = s.ordinary()
   expect(ords[0]).toContain('- #2 ')
