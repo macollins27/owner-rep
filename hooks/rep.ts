@@ -516,7 +516,7 @@ ${memoryText(m)}
 
 The owner pressed the key. Give the owner the short briefing described below, measured against the objective above. Look at what the agent actually did in the conversation, including the helpers it launched and what they reported, not at what the agent says it did. Where the next step depends on a claim the conversation does not show, say "not shown" and have the message ask for the proof. If the owner sent your last message to the agent, say whether the agent did the step that message asked for.
 
-When every condition is shown or closed and the conversation shows the result working, say so in one line under "well:", and still fill in every other part: the owner wants the whole picture every time, not only when something is wrong. Leave the message empty when there is nothing worth sending.
+When every condition is shown or closed and the conversation shows the result working, say so in one line under "well:", and still fill in every other part: the owner wants the whole picture every time, not only when something is wrong. While any condition is open or not shown, write the message: it asks for the proof of each one. Leave the message empty only when every condition is shown or closed, or no objective is held and there is nothing worth sending. When a condition waits on the owner's go-ahead (publish, send, pay, a guard refusal), the message tells the agent to finish everything else, hold that step until the go-ahead comes, and say exactly what it will show the owner then; it never pushes the held step.
 
 ## Output structure
 
@@ -534,7 +534,7 @@ left:
 - <one line per item: work put off, shrunk or quietly dropped; a part of the objective, or of what the owner asked for on this job, never started; a condition still open that the agent called done; a check never run; a claim that matters and is not shown; a chore the agent left "for you". Each item says in a few words why it matters. Write "- nothing" when there is nothing.>
 next: <one or two sentences: what the agent does next; never a step for the owner to do; a stop only with a stop verdict>
 message:
-<the message for the owner to send to the agent, written to the agent, specific and professional, several lines if needed. It asks for the proof of what is not shown and pushes the agent off the easy option onto the right one. Leave empty when there is nothing to send.>
+<the message for the owner to send to the agent, written to the agent, specific and professional, several lines if needed. It asks for the proof of what is not shown and pushes the agent off the easy option onto the right one. Leave empty only when every condition is shown or closed.>
 end
 does: <one line: what this message will make the agent do>`
 }
@@ -2080,7 +2080,7 @@ left:
 - <work put off, shrunk or quietly dropped; a condition still open that the agent called done; a check never run; a claim that matters and is not shown; a chore the agent left "for you", which is its unfinished work; only items your checking supports>
 next: <what the agent should do next, one or two sentences; it can be stopping the agent now, but only with a stop verdict, when every condition is shown or closed by the owner; never a step for the owner to do>
 message:
-<the message for the owner to send to the agent, rewritten where your checking changed it: it names what is false and asks for the proof of what is not shown. Leave empty when there is nothing to send.>
+<the message for the owner to send to the agent, rewritten where your checking changed it: it names what is false and asks for the proof of what is not shown. While any condition is open or not shown after your checking, write it. Leave empty only when every condition is shown or closed.>
 end
 does: <one line: what this message will make the agent do>
 looked: <one line: what you checked yourself and what you could not look at>`

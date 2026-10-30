@@ -2302,5 +2302,29 @@
     "breaks": "A sound card with a usable message and open conditions is refused as if it were empty, so a good read 1 costs a second read and loses its message.",
     "patch": "usable-message-refused.patch",
     "fixed": "2026-10-30"
+  },
+  {
+    "name": "brief-may-leave-empty",
+    "breaks": "The brief lets the model leave the message empty with conditions open, so the first read keeps coming back with no message.",
+    "patch": "brief-may-leave-empty.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "brief-card-may-leave-empty",
+    "breaks": "The message placeholder in the brief's output structure lets the model leave the message empty without the limit.",
+    "patch": "brief-card-may-leave-empty.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "check-may-leave-empty",
+    "breaks": "The check prompt lets the checker leave the message empty with conditions open.",
+    "patch": "check-may-leave-empty.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "held-step-line-dropped",
+    "breaks": "The brief no longer says how a message treats a step held on the owner's go-ahead, so a forced message can push the held step.",
+    "patch": "held-step-line-dropped.patch",
+    "fixed": "2026-10-30"
   }
 ]

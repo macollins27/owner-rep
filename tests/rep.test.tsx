@@ -592,6 +592,25 @@ test('the briefs hold the objective open until it is completed with both qualifi
   expect(check).toMatch(/The "shown:", "closed:" and "reopen:" lines are not on the card/)
 })
 
+// Every sentence of a prompt that lets the message stay empty.
+const EMPTY_LINES = (prompt: string) => prompt.match(/[^.>\n]*Leave (?:the message )?empty[^.>\n]*/g) ?? []
+
+test('the brief and the check write a message while any condition is open or not shown, and limit an empty one to every condition shown or closed', () => {
+  const brief = briefPrompt({ objective: null, owner: [om('Build it.')], past: [], seen: [], others: [] })
+  const check = checkPrompt({ sessionId: 's', cwd: '/tmp', copy: '/tmp', owner: [om('Build it.')], reading: 'x', brief: parseBrief('stands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm', conditions: OBJECTIVE_FIXTURE.done, shown: [], from: 0 })
+  expect(brief).toContain('While any condition is open or not shown, write the message: it asks for the proof of each one.')
+  expect(brief).toContain('Leave the message empty only when every condition is shown or closed, or no objective is held and there is nothing worth sending.')
+  expect(check).toContain('While any condition is open or not shown after your checking, write it. Leave empty only when every condition is shown or closed.')
+  expect(EMPTY_LINES(brief)).toHaveLength(2)
+  expect(EMPTY_LINES(check)).toHaveLength(1)
+  for (const line of [...EMPTY_LINES(brief), ...EMPTY_LINES(check)]) expect(line).toContain('shown or closed')
+})
+
+test('the brief names all three duties for a step held on the owner\'s go-ahead: finish the rest, hold it, say what will be shown', () => {
+  const brief = briefPrompt({ objective: null, owner: [om('Build it.')], past: [], seen: [], others: [] })
+  expect(brief).toContain('When a condition waits on the owner\'s go-ahead (publish, send, pay, a guard refusal), the message tells the agent to finish everything else, hold that step until the go-ahead comes, and say exactly what it will show the owner then; it never pushes the held step.')
+})
+
 test('gateVerdict keeps a next and a message that do not say stop, replaces the meaning, drops the verdict and the going-well line, and lists the open conditions', () => {
   const a = parseBrief('verdict: stop\nwell: All done.\nstands: Both parts are finished.\nmeans: The build is made and the sessions are waiting.\nleft:\n- nothing\nnext: Show the two sessions finishing.\nmessage:\nShow me each session finishing.\nend\ndoes: Makes the agent show the sessions.')
   const g = gateVerdict(a, OPEN_JOB_OPEN)
