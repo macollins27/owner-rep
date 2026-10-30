@@ -9098,6 +9098,33 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     }
   })
 
+  test('Task 7 (join, mounted): an approval whose plan cannot be shown: the row, the card and the briefing carry 4b\'s coverage line once, and both readers its words and none of their own', async ($, on) => {
+    const lost = yes7(2, 'Step 1: read pear.txt.', { pinned: true, src: { body: { chars: 22, sha: 'a'.repeat(64), where: 'file', lost: 'its saved copy is missing or damaged' } } } as Partial<OwnerMsg>)
+    const LINE = rep.unresolved(lost)?.text ?? ''
+    expect(LINE).not.toBe('')
+    const m = mounted7(on, [msg7(1, 'build the sorter'), lost], brief => (brief ? STOP_WELL(`- ${LINE}`, 'none') : HOLDS))
+    await started($)
+    await m.look($, 't1')
+    expect(await rowSays($, lineRe(LINE))).toBe(true)
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    await ui.press({ key: 'rep' })
+    const texts = (await ui.findAll({ type: 'Text' })).map(t => t.text)
+    await ui.press({ key: 'close' })
+    await ui.unmount()
+    expect(texts[texts.indexOf('Left out:') + 1]).toBe(`  - ${LINE}`)
+    expect(texts.filter(t => t.includes(LINE) && t.startsWith('  - '))).toHaveLength(1)
+    const brief = m.briefs().at(-1) ?? ''
+    expect(brief.split(`- ${LINE}`).length - 1).toBe(1)
+    const watch = m.looks().at(-1) ?? ''
+    for (const p of [watch, brief]) {
+      expect(p).toContain(`(the plan it approved is not shown: ${LINE})`)
+      expect(p).not.toContain('could not be shown')
+      expect(p).not.toContain('not shown here')
+      expect(p).not.toContain('read pear.txt')
+    }
+    expect(texts.join('\n')).not.toMatch(/could not be shown|not shown here/)
+  })
+
   // Plan Task 7, "A note approval earned through the writer": no approval planted.
   const DATE_RULE = "put the date in pear.txt's first line, never anywhere else"
   const NOTE_PLAN = `The plan for the fruit files.\nStep 1: make apple.txt.\nStep 2: make plum.txt.\nStep 3: ${DATE_RULE}.\nStep 4: report back.`

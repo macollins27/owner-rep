@@ -140,7 +140,7 @@ objective it checked came from the writer's own call. The test now sends a furth
 the writer answers with `objective: holds` and a look whose answer carries an objective in
 the writer's shape, and asserts that the objective is unchanged.
 
-**Status.** 236 tests: the parsers, the status words (including the variable-first command, read
+**Status.** 451 tests: the parsers, the status words (including the variable-first command, read
 through the mounted strip), the note to the rep, the heads-up drawn above the row on the terminal and VS Code surfaces, the checker's prompt and tools, the row on
 the terminal, desktop and VS Code surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-
 failure toast, the sequence rules above, the card filling the band in order of importance with the result and a count line at its head, its message box giving way on a band too short for it and its buttons kept at every height, and drawn whole with no line given a width on the VS Code surface, whose band scrolls, the brief
