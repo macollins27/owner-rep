@@ -984,6 +984,67 @@ test('messageSaysStop reads each sentence alone: a stop once something is done i
     expect([m, messageSaysStop(m)]).toEqual([m, false])
 })
 
+test('messageSaysStop lets four message shapes through that do not stop the agent while it could move the work: a push before it stops, a wait on someone else, a blocker stop that tells the owner what stands in the way, and a wait on his word before an outward act he alone decides; the rest of the sentence is still read', () => {
+  // The done checks' C5: each is false.
+  const exempt = [
+    // A push to finish more work before the agent stops.
+    'Two things before you stop.',
+    'Before you stop: run the full suite and paste its counts.',
+    'Three things to close before you stop.',
+    // A wait on someone other than the owner.
+    'Wait for a reply from the lead, then check its proof yourself.',
+    'Send the fix to runner-73 and wait for an answer from it.',
+    // A stop on a refusal or an absence, with the owner told what stands in the way.
+    'If the guard refuses the push, stop and tell me exactly what it refused.',
+    'If no remote has been added yet, say so in one line and stop.',
+    'If the environment refuses to run it, tell me that plainly and stop.',
+    // A wait on the owner's word before an act he alone decides.
+    'After that, wait for my word on Submit.',
+    'Wait for my go-ahead before you send the email.',
+    'Do not publish it; wait for my word.',
+  ]
+  expect(exempt.map(m => [m, messageSaysStop(m)])).toEqual(exempt.map(m => [m, false]))
+  // The done checks' C5: each is true, and so is every caught message.
+  const stops = [
+    'Wait for my reply.',
+    'Wait for a reply.',
+    'Wait for my go-ahead before merging.',
+    'You can stop now.',
+    'You can stop after that.',
+    'Hand it over to me.',
+    'Stop and wait for my approval.',
+    'If the tests pass, you can stop.',
+    'If anything fails, stop and tell me.',
+    'When the suite is green, stop and wait for my approval.',
+    'You can stop once the README is fixed.',
+    'If the remote is missing, stop.',
+    'If the push is refused, stop.',
+    "Before you stop, write the summary, then you're done.",
+    ...STOP_CAUGHT,
+    // Past each exemption the rest of the sentence is read: a wait on the owner or a finish after it still trips.
+    'Two things before you stop, then you are done.',
+    'Wait for a reply from me.',
+    'Wait for a reply from the lead, then wait for my reply.',
+    'If the push is refused, tell me exactly what it refused, then hand it back to me.',
+    'If the push is refused, say so and wait for my reply.',
+    'After that, wait for my word on Submit, then you are done.',
+    'Do not publish it; wait for my word, then stop.',
+    // Each exemption needs all of its parts: a blocker named only after the stop, a report with no
+    // refusal or absence, a wait on him before an act not on the list or with no act, and an act not negated.
+    'Stop and tell me exactly what it refused if the guard refuses the push.',
+    'If the suite is green, say so and stop.',
+    'Wait for my go-ahead on Merge.',
+    'Wait for my word before you push.',
+    'Wait for my go-ahead before you send the fix.',
+    'Wait for my word on it.',
+    'Wait for my word on everything.',
+    'Publish it; wait for my word.',
+  ]
+  expect(stops.map(m => [m, messageSaysStop(m)])).toEqual(stops.map(m => [m, true]))
+  // The exemptions are a message's: a next step keeps STOP_NEXT's reading, which refuses these.
+  for (const n of ['Wait for a reply from the lead.', 'Wait for his word on Submit.', 'Then the agent can stop and tell him exactly what it refused.']) expect([n, saysStop(n)]).toEqual([n, true])
+})
+
 test('sectionOf takes one "## " section of a fixed text and throws, naming the heading, when the heading is missing', () => {
   expect(sectionOf('## A\n\none\n\n## B\n\ntwo', '## A')).toBe('## A\n\none')
   expect(sectionOf('## A\n\none\n\n## B\n\ntwo', '## B')).toBe('## B\n\ntwo')

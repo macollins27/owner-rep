@@ -2980,11 +2980,53 @@ const maskReported = (sentence: string): string =>
 // Read on a message and its does line only; a next step keeps STOP_NEXT alone.
 const STOP_ONCE = new RegExp(String.raw`(?:${CLAUSE}|\bthe agent\s+(?:can|may|should|could|is free to)\s+)(?:please\s+)?stop\s+(?:after\s+(?:that|this|it)\b|once\b|when\b|as soon as\b)`, 'i')
 
+// Four shapes of a message sentence that do not stop the agent while it could still move the work,
+// read on the third-person copy. Only the words that make each shape are masked (to "x", which
+// starts no clause and matches no pattern), so the rest of the sentence is still read: "Before you
+// stop, write the summary, then you're done." is still caught on "then the agent is done". Read on
+// a message and its does line only; a next step keeps STOP_NEXT alone.
+// 1. A push to finish more work before the agent stops: "Two things before you stop."
+const BEFORE_STOPS = /\bbefore\s+the agent\s+(?:(?:can|may|should)\s+)?stops?\b/gi
+// 2. A wait on someone other than the owner: "Wait for a reply from the lead", "wait for an answer
+// from it". "Wait for a reply." with no "from", or from the owner, stays caught.
+const WAIT_ON_OTHER = /\bwaits?\s+for\s+(?:a|an|the)\s+(?:reply|answer|response|decision|go-ahead|word|sign-off|instructions)\s+from\s+(?!(?:the owner|him|her|them|he|his)\b)/gi
+// 3. A stop on a blocker that tells the owner what stands in the way: the sentence opens with "if"
+// and a condition, up to its first comma, that names a refusal or an absence, and the sentence
+// tells the owner what, that, why or which, or says so. Then its bare "stop" is masked: "If the
+// guard refuses the push, stop and tell me exactly what it refused." Both halves are needed, so
+// "If anything fails, stop and tell me." and "If the push is refused, stop." stay caught.
+const BLOCKER_IF = /^\s*if\b[^,]*\b(?:refus(?:e|es|ed)|rejects?|rejected|missing|not found|does not exist|doesn['’]t exist|no\s+[\w-]+(?:\s+[\w-]+)?\s+(?:has|have)\s+been\s+added|no\b[^,]*\byet)\b/i
+const BLOCKER_TOLD = /\btell\s+the owner\s+(?:(?:exactly|plainly|clearly)\s+)?(?:what|that|why|which)\b|\bsay\s+so\b/i
+// 4. A wait on the owner's word before an outward act he alone decides, from a closed list: submit,
+// send (an email, message, application, letter or invoice), publish, post, apply, pay, buy,
+// purchase, sign, or a button named with a capital ("wait for my word on Submit"). Merging,
+// pushing, deleting, deploying and installing are the agent's to do, so "Wait for my go-ahead
+// before merging." stays caught. Said as a wait on his word on, before or to the act ("Wait for my
+// go-ahead before you send the email."), or as the act said not to happen with a wait on him after
+// it ("Do not publish it; wait for my word.").
+const OUTWARD_ACT = String.raw`(?:submit(?:s|ting)?|publish(?:es|ing)?|post(?:s|ing)?|apply(?:ing)?|applies|pay(?:s|ing)?|buy(?:s|ing)?|purchas(?:e|es|ing)|sign(?:s|ing)?|send(?:s|ing)?\s+(?:(?:the|an?|this|that|the owner['’]s)\s+)?(?:email|message|application|letter|invoice)s?)\b`
+const WAIT_BEFORE_ACT = new RegExp(String.raw`\bwaits?\s+for\s+(?:(?:the owner['’]s|his|the)\s+)?(?:word|go-ahead|approval|sign-off)\s+(?:(?:on|before|to)\s+(?:the agent\s+(?:(?:can|may)\s+)?)?${OUTWARD_ACT}|on\s+([\w-]+))`, 'gi')
+const NOT_A_BUTTON = /^(?:merge|push|delete|deploy|install|the|this|that|it|a|an)$/i
+const NEGATED_ACT = new RegExp(String.raw`(?:\bnot|\bnever|n['’]t)\s+${OUTWARD_ACT}`, 'i')
+const WAIT_ON_HIM_WORDS = new RegExp(String.raw`\bwaits?\s+(?:for|on|until|till)\s+${ON_HIM}(?:['’]s\s+[\w-]+)?`, 'gi')
+const maskExempt = (read: string): string => {
+  let s = read.replace(BEFORE_STOPS, 'x').replace(WAIT_ON_OTHER, 'x ')
+  if (BLOCKER_IF.test(s) && BLOCKER_TOLD.test(s)) s = s.replace(/\bstop\b/gi, 'x')
+  s = s.replace(WAIT_BEFORE_ACT, (wait: string, button?: string) =>
+    button === undefined || (/^[A-Z]/.test(button) && !NOT_A_BUTTON.test(button)) ? 'x' : wait)
+  const negated = NEGATED_ACT.exec(s)
+  if (negated !== null) {
+    const after = negated.index + negated[0].length
+    s = s.slice(0, after) + s.slice(after).replace(WAIT_ON_HIM_WORDS, 'x')
+  }
+  return s
+}
+
 // One sentence of a message read for a stop: its list marker and any wholly enclosing brackets
 // or quotes taken off, quoted words after a reporting word masked, turned to the third person,
-// then read by STOP_NEXT and STOP_ONCE.
+// the four exempt shapes above masked, then read by STOP_NEXT and STOP_ONCE.
 const sentenceSaysStop = (sentence: string): boolean => {
-  const read = toAgentVoice(maskReported(unwrap(sentence.replace(LIST_MARKER, ''))))
+  const read = maskExempt(toAgentVoice(maskReported(unwrap(sentence.replace(LIST_MARKER, '')))))
   return STOP_NEXT.test(read) || STOP_ONCE.test(read)
 }
 
