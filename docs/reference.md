@@ -479,7 +479,11 @@ the row and note views; they are given to the briefing in place of its none line
 conditions (`memoryText`: with no objective, or with conditions open, the list is printed
 instead and no line); and they go first in a card's left-out list by `withRecordLines`, which
 also shows a stop as continue while a line stands, its meaning the first line and its next step
-`RECORD_NEXT`.
+`RECORD_NEXT`. A message that says stop (`messageSaysStop`) loses only the sentences that say it,
+each judged alone: every other sentence stays, in order, with its line's list mark and the
+paragraph breaks. Only when nothing is left, or what is left still says stop, is the message
+`RECORD_MESSAGE`; what it does is `RECORD_DOES` when it says stop itself or the message became
+`RECORD_MESSAGE`.
 
 A session the rep holds no record of (its record fell out of the newest `SESSIONS_MAX`, it
 was forked with a new id, or it is older than the mod) has none of the owner's messages. `seedOwner`

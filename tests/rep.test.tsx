@@ -10307,6 +10307,97 @@ describe('coverage: the failed write and the full store, both standing', () => {
   })
 })
 
+// While a record line stands, a message that says stop loses only the sentences that say it:
+// every other sentence stays, in order, with its paragraph breaks, and the message is the rep's
+// own ask only when nothing is left (the stop line, lead f1fcada3 #1494).
+describe('stop line: a record line takes only the stop sentences out of the message', () => {
+  const LINE = 'The rep could not read the agent\'s turn before your message #2 (the rep did not see this turn from its start); if you approved a plan there, none of it is held'
+  const card = (message: string, does = 'Makes the agent show the run on the real data.') =>
+    parseBrief(`verdict: continue\nwell:\nstands: The importer is half built.\nmeans: The run is not shown yet.\nleft:\n- nothing\nnext: Run it on the real data.\nmessage:\n${message}\nend\ndoes: ${does}`)
+  const inOrder = (text: string, parts: string[]) => {
+    const at = parts.map(p => text.indexOf(p))
+    expect(at.every(i => i > -1)).toBe(true)
+    expect([...at].sort((x, y) => x - y)).toEqual(at)
+  }
+
+  for (const stop of ['Before you stop, list every file you changed.', 'Wait for a reply from the lead before merging.']) {
+    test(`rule: "${stop}" among other sentences goes alone; the rest stays, in order, paragraphs kept`, () => {
+      const message = [
+        'Run the importer on the real data. Show me the output it prints.',
+        `Check the totals against last month. ${stop} Fix any total that is off.`,
+        'Then push the branch and show me the commit.',
+      ].join('\n\n')
+      expect(messageSaysStop(message)).toBe(true)
+      const a = rep.withRecordLines(card(message), [LINE])
+      expect(a.message).not.toBe(rep.RECORD_MESSAGE)
+      expect(a.message).not.toContain(stop)
+      expect(a.message).toBe(
+        [
+          'Run the importer on the real data. Show me the output it prints.',
+          'Check the totals against last month. Fix any total that is off.',
+          'Then push the branch and show me the commit.',
+        ].join('\n\n'),
+      )
+      expect(messageSaysStop(a.message)).toBe(false)
+      expect(a.does).toBe('Makes the agent show the run on the real data.')
+      expect(a.leftOut[0]).toBe(LINE)
+    })
+  }
+
+  test('rule: a message whose only sentence says stop becomes the rep\'s ask, and what it does the rep\'s', () => {
+    const a = rep.withRecordLines(card('Before you stop, list every file you changed.'), [LINE])
+    expect(a.message).toBe(rep.RECORD_MESSAGE)
+    expect(a.does).toBe(rep.RECORD_DOES)
+    // Two stop sentences, nothing else: still nothing left.
+    const b = rep.withRecordLines(card('Stop here and hand the work back to me.\n\nYou can stop now.'), [LINE])
+    expect(b.message).toBe(rep.RECORD_MESSAGE)
+    expect(b.does).toBe(rep.RECORD_DOES)
+  })
+
+  test('rule: a real stop sentence goes and the instruction beside it stays; a does that says stop is the rep\'s', () => {
+    const a = rep.withRecordLines(card('Add the licence file to the repository. Stop here and hand the work back to me.', 'Makes the agent stop.'), [LINE])
+    expect(a.message).toBe('Add the licence file to the repository.')
+    expect(a.does).toBe(rep.RECORD_DOES)
+    expect(saysStop(a.message) || messageSaysStop(a.message)).toBe(false)
+    // A list keeps its lines and their marks; only the stop item goes.
+    const b = rep.withRecordLines(card('Do these in turn:\n- Add the licence file.\n- Stop here and hand the work back to me.\n- Push the branch.'), [LINE])
+    expect(b.message).toBe('Do these in turn:\n- Add the licence file.\n- Push the branch.')
+    inOrder(b.message, ['Do these in turn:', 'Add the licence file.', 'Push the branch.'])
+  })
+
+  test('rule: with no record line the message is untouched, stop sentence and all', () => {
+    const message = 'Run the importer. Before you stop, list every file you changed.'
+    expect(rep.withRecordLines(card(message), []).message).toBe(message)
+  })
+
+  test('rule: on the card, a written message with one stop sentence keeps the rest of its words while a record line stands', async ($, on) => {
+    const MESSAGE = 'Run the importer on the real data and show me the output.\n\nBefore you stop, list every file you changed.\n\nThen push the branch.'
+    const s = asks(on, [his(1, 'plan the fruit files')])
+    s.answer(() => ANSWER([]))
+    await started($)
+    await runTurn($, s.scripts, 't1', [said('The plan: then delete old.txt and rebuild.')], { start: null })
+    await s.send($, 'and the totals')
+    expect(await rowSays($, lineRe(LINE))).toBe(true)
+    const closed = (s.obj()?.done ?? []).length === 0 ? '' : `closed:\n${(s.obj()?.done ?? []).map(d => `- ${d.text} | #1`).join('\n')}\n`
+    s.hold.fork = p =>
+      p.includes(BRIEF_ASKED)
+        ? `verdict: continue\n${closed}well:\nstands: The importer is half built.\nmeans: The run is not shown yet.\nleft:\n- nothing\nnext: Run it on the real data.\nmessage:\n${MESSAGE}\nend\ndoes: Makes the agent show the run on the real data.`
+        : HOLDS
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    await ui.press({ key: 'rep' })
+    const texts = (await ui.findAll({ type: 'Text' })).map(t => t.text)
+    expect(texts[texts.indexOf('Left out:') + 1]).toBe(`  - ${LINE}`)
+    const shown = texts.find(t => t.includes('Run the importer on the real data and show me the output.')) ?? ''
+    expect(shown).toContain('Then push the branch.')
+    expect(texts.some(t => t.includes('Before you stop'))).toBe(false)
+    expect(texts.some(t => t.includes(rep.RECORD_MESSAGE))).toBe(false)
+    expect(texts).toContain('Makes the agent show the run on the real data.')
+    await ui.press({ key: 'close' })
+    await ui.unmount()
+    expect((s.held() as { lastBrief?: { message: string } } | undefined)?.lastBrief?.message).toBe('Run the importer on the real data and show me the output.\n\nThen push the branch.')
+  })
+})
+
 // Plan 6.4 row 3 across a restart (Task 4b, owed): a typed approval of a turn the rep did not see
 // whole, the turn's text held only in memory because no file could be written. After Claude Code
 // restarts, the row, the card and the briefing still name it; nothing goes quiet or says all done.
