@@ -1,17 +1,17 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index f91cbea..3bb55db 100644
+index a05c4e1..e05a4b1 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3012,13 +3012,6 @@ const WAIT_ON_HIM_WORDS = new RegExp(String.raw`\bwaits?\s+(?:for|on|until|till)
+@@ -3028,13 +3028,6 @@ const WAIT_ON_HIM_BARE = new RegExp(String.raw`\bwaits?\s+(?:for|on|until|till)\
  const maskExempt = (read: string): string => {
    let s = read.replace(BEFORE_STOPS, 'x').replace(WAIT_ON_OTHER, 'x ')
-   if (BLOCKER_IF.test(s) && BLOCKER_TOLD.test(s)) s = s.replace(/\bstop\b/gi, 'x')
+   s = s.replace(BLOCKER_IF, (all: string, condition: string, clause: string) => (BLOCKER_TOLD.test(clause) ? condition + clause.replace(/\bstop\b/gi, 'x') : all))
 -  s = s.replace(WAIT_BEFORE_ACT, (wait: string, button?: string) =>
 -    button === undefined || (/^[A-Z]/.test(button) && !NOT_A_BUTTON.test(button)) ? 'x' : wait)
 -  const negated = NEGATED_ACT.exec(s)
 -  if (negated !== null) {
 -    const after = negated.index + negated[0].length
--    s = s.slice(0, after) + s.slice(after).replace(WAIT_ON_HIM_WORDS, 'x')
+-    s = s.slice(0, after) + s.slice(after).replace(WAIT_ON_HIM_BARE, 'x')
 -  }
    return s
  }

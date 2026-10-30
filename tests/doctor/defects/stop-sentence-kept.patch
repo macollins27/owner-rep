@@ -1,12 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index f91cbea..2e5dd31 100644
+index a05c4e1..1a775d8 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3073,6 +3073,7 @@ const usable = (text: string): boolean =>
+@@ -3120,6 +3120,7 @@ const pairsOf = (text: string): Map<number, number> => {
  export const withoutStopSentences = (message: string): string => {
    const cuts = sentencesOf(message).filter(({ start, end }) => sentenceSaysStop(message.slice(start, end)))
    if (cuts.length === 0) return message
 +  cuts.pop()
+   const partner = pairsOf(message)
+   const removed = (i: number): boolean => cuts.some(c => i >= c.start && i < c.end)
    const lines: { text: string; dropped: boolean }[] = []
-   let at = 0
-   for (const line of message.split('\n')) {

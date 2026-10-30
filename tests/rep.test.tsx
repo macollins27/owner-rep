@@ -14,7 +14,7 @@
 import type { On, SessionMessage } from 'claude-code'
 import { expect, mock, test as kitTest, type Engine, type TestBody, type TestOptions } from 'claude-code/testing'
 
-import { type Memory, CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fillCard, countLine, refusedLine, type CardText, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, OLD_SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, sentencesOf, withoutStopSentences, toAgentVoice, sectionOf, takeOwnWords, ownMessageTaken, earlierMessage, type Replaced, parseOwnWords, ownWordsPrompt, askAgain, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
+import { type Memory, CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fillCard, countLine, refusedLine, type CardText, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, OLD_SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, sentencesOf, withoutStopSentences, toAgentVoice, sectionOf, takeOwnWords, ownMessageTaken, earlierMessage, messageUsable, type Replaced, parseOwnWords, ownWordsPrompt, askAgain, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
 import { REFUSED_ENVIRONMENT, MISSING_REMOTE, BEFORE_YOU_STOP_COLON, WAIT_BEFORE_SUBMIT, THREE_BEFORE_YOU_STOP, TWO_BEFORE_YOU_STOP, GUARD_REFUSAL, STOP_SHAPES } from './fixtures/stop-shapes'
 
 // Every test starts with the session's working folder a Unix path, so what the suite reads does not
@@ -995,9 +995,8 @@ test('messageSaysStop reads each sentence alone: a stop once something is done i
     expect([m, messageSaysStop(m)]).toEqual([m, false])
 })
 
-test('messageSaysStop lets four message shapes through that do not stop the agent while it could move the work: a push before it stops, a wait on someone else, a blocker stop that tells the owner what stands in the way, and a wait on his word before an outward act he alone decides; the rest of the sentence is still read', () => {
-  // The done checks' C5: each is false.
-  const exempt = [
+// The done checks' C5: each is false.
+const C5_EXEMPT = [
     // A push to finish more work before the agent stops.
     'Two things before you stop.',
     'Before you stop: run the full suite and paste its counts.',
@@ -1013,10 +1012,9 @@ test('messageSaysStop lets four message shapes through that do not stop the agen
     'After that, wait for my word on Submit.',
     'Wait for my go-ahead before you send the email.',
     'Do not publish it; wait for my word.',
-  ]
-  expect(exempt.map(m => [m, messageSaysStop(m)])).toEqual(exempt.map(m => [m, false]))
-  // The done checks' C5: each is true, and so is every caught message.
-  const stops = [
+]
+// The done checks' C5: each is true, and so is every caught message.
+const C5_STOPS = [
     'Wait for my reply.',
     'Wait for a reply.',
     'Wait for my go-ahead before merging.',
@@ -1050,7 +1048,12 @@ test('messageSaysStop lets four message shapes through that do not stop the agen
     'Wait for my word on it.',
     'Wait for my word on everything.',
     'Publish it; wait for my word.',
-  ]
+]
+
+test('messageSaysStop lets four message shapes through that do not stop the agent while it could move the work: a push before it stops, a wait on someone else, a blocker stop that tells the owner what stands in the way, and a wait on his word before an outward act he alone decides; the rest of the sentence is still read', () => {
+  const exempt = C5_EXEMPT
+  expect(exempt.map(m => [m, messageSaysStop(m)])).toEqual(exempt.map(m => [m, false]))
+  const stops = C5_STOPS
   expect(stops.map(m => [m, messageSaysStop(m)])).toEqual(stops.map(m => [m, true]))
   // The exemptions are a message's: a next step keeps STOP_NEXT's reading, which refuses these.
   for (const n of ['Wait for a reply from the lead.', 'Wait for his word on Submit.', 'Then the agent can stop and tell him exactly what it refused.']) expect([n, saysStop(n)]).toEqual([n, true])
@@ -1165,6 +1168,121 @@ test('earlierMessage puts read 1\'s message, without its stop sentences, and its
   expect(earlierMessage(last.answer, last.replaced, false, withStop)).toEqual({ ...last.answer, message: 'Show the log.', does: 'Makes the agent show its work.' })
   const unusable = { answer: { ...read1.answer, message: 'Great work. Then stop.' }, replaced: ['means'] as Replaced[] }
   expect(earlierMessage(last.answer, last.replaced, false, unusable)).toBe(last.answer)
+})
+
+// The second reader's eight findings on the stop reading and the chooser (review round 1). Each
+// takes the reader's exact input, with close variants that must stay caught or kept.
+
+// Whether a message is caught, what is left of it, and what the gate and the own-words path
+// make of it: a caught message all stop sentences reaches neither path.
+const R1_CAUGHT_WHOLE = (m: string) => [m, messageSaysStop(m), withoutStopSentences(m), viaGate(m)[2], viaOwnWords(m)[1]]
+const R1_CAUGHT_OUT = (m: string) => [m, true, '', OPEN_MESSAGE(OPEN_JOB_OPEN), OPEN_MESSAGE(OPEN_JOB_OPEN)]
+
+test('a blocker stop is let through only where the stop is the blocker\'s own: a stop in another clause, after a semicolon, "otherwise" or "then", is caught', () => {
+  const caught = [
+    'If the remote is missing, tell me why; otherwise, you can stop now.',
+    'If the remote is missing, tell me why, otherwise you can stop now.',
+    'If the push is refused, tell me exactly what it refused, then you can stop.',
+    'If the push is refused, tell me what it refused; then stop.',
+  ]
+  expect(caught.map(R1_CAUGHT_WHOLE)).toEqual(caught.map(R1_CAUGHT_OUT))
+  // Beside a usable sentence, the whole stop sentence goes and the rest stands.
+  expect(withoutStopSentences('Push main and show the run. If the remote is missing, tell me why; otherwise, you can stop now.')).toBe('Push main and show the run.')
+  // The blocker's own stop, with the report in the same clause, stays kept.
+  for (const m of ['If the guard refuses the push, stop and tell me exactly what it refused.', 'If no remote has been added yet, say so in one line and stop.', 'If the environment refuses to run it, tell me that plainly and stop.', 'If the push is refused, tell me what it refused and stop.'])
+    expect([m, messageSaysStop(m)]).toEqual([m, false])
+})
+
+test('a negated outward act lets through only a wait on the owner that has no object of its own: a wait before something else is caught', () => {
+  const caught = [
+    'Do not publish the report; wait for my approval before running the tests.',
+    'Do not send the email; wait for my go-ahead before merging.',
+    'Never publish it; wait for my approval before you run the suite.',
+  ]
+  expect(caught.map(R1_CAUGHT_WHOLE)).toEqual(caught.map(R1_CAUGHT_OUT))
+  for (const m of ['Do not publish it; wait for my word.', 'Do not send the email yet; wait for my go-ahead.', 'Do not publish it; wait for my word before you publish it.'])
+    expect([m, messageSaysStop(m)]).toEqual([m, false])
+})
+
+test('no run of whitespace changes a verdict: a wait on the owner past two spaces or a tab is caught, and every caught, kept and C5 message reads the same with its spaces doubled or turned to tabs', () => {
+  const caught = ['Wait for a reply from  me.', 'Wait for a reply from\tme.', 'Wait for an answer from \t me.', 'Wait for approval from  me.']
+  expect(caught.map(R1_CAUGHT_WHOLE)).toEqual(caught.map(R1_CAUGHT_OUT))
+  for (const m of ['Wait for a reply from  the lead, then check its proof yourself.', 'Send the fix to runner-73 and wait for an answer from\tit.'])
+    expect([m, messageSaysStop(m)]).toEqual([m, false])
+  const all = [...STOP_CAUGHT, ...STOP_KEPT, ...STOP_SHAPES, ...C5_EXEMPT, ...C5_STOPS]
+  for (const wide of [(m: string) => m.replace(/ /g, '  '), (m: string) => m.replace(/ /g, '\t'), (m: string) => m.replace(/ /g, ' \t ')])
+    expect(all.map(m => [m, messageSaysStop(wide(m))])).toEqual(all.map(m => [m, messageSaysStop(m)]))
+  // A next step keeps its own reading: approval from the owner past two spaces is still his.
+  for (const n of ['Wait for approval from  him.', 'Wait for approval by\t\tthe owner.']) expect([n, saysStop(n)]).toEqual([n, true])
+  expect(saysStop('Wait for approval from  the CI gate, then push.')).toBe(false)
+  // What is left after a removal is judged usable the same way: praise, thanks or a
+  // back-reference past two spaces or a tab is still not usable.
+  for (const rest of ['Thank you again!', 'Great work.', 'Do that first.', 'Good progress on the parser.', 'Many thanks, well done.'])
+    for (const wide of [(m: string) => m.replace(/ /g, '  '), (m: string) => m.replace(/ /g, '\t')]) {
+      const m = `You can stop now. ${wide(rest)}`
+      expect([m, withoutStopSentences(m), messageUsable(wide(rest))]).toEqual([m, '', false])
+    }
+})
+
+test('a quote is someone\'s words only as the object of its reporting word, a few words at most after it; an order to follow the quote, or a reporting word elsewhere in the sentence, leaves the quote read', () => {
+  const caught = [
+    'You said the tests passed; then do as the note says to: "You can stop now."',
+    'Do as the note says: "You can stop now."',
+    'You said it passed, and the log reads "You can stop now."',
+  ]
+  expect(caught.map(R1_CAUGHT_WHOLE)).toEqual(caught.map(R1_CAUGHT_OUT))
+  for (const m of ['Your summary said "you can stop now", but the suite never ran. Run it.', 'The note says: "You can stop now." Run the suite anyway.', 'Your summary wrote: "You can stop now." Run the suite.'])
+    expect([m, messageSaysStop(m), withoutStopSentences(m)]).toEqual([m, false, m])
+})
+
+test('a wait on the owner\'s word on an operation that is the agent\'s is caught in every form of the word, however capitalised; a button named with a capital stays kept', () => {
+  const caught = ['Wait for my word on Merging.', 'Wait for my word on Pushing.', 'Wait for my go-ahead on Merged.', 'Wait for my word on Deploys.', 'Wait for my word on INSTALLING.', 'Wait for my word on Deleting.', 'Wait for my word on Pushes.']
+  expect(caught.map(R1_CAUGHT_WHOLE)).toEqual(caught.map(R1_CAUGHT_OUT))
+  for (const m of ['After that, wait for my word on Submit.', 'Wait for my word on Send.'])
+    expect([m, messageSaysStop(m)]).toEqual([m, false])
+})
+
+test('the outward acts are only those the owner does toward the outside world: signing off, or signing, applying or posting something technical, is no outward act and the wait before it is caught', () => {
+  const caught = [
+    'Wait for my approval before signing off on the tests.',
+    'Wait for my approval before you sign off.',
+    'Wait for my go-ahead before signing the release tag.',
+    'Wait for my approval before applying the migration.',
+    'Wait for my word before posting the results to the pull request.',
+  ]
+  expect(caught.map(R1_CAUGHT_WHOLE)).toEqual(caught.map(R1_CAUGHT_OUT))
+  for (const m of ['Wait for my word before you sign the contract.', 'Wait for my approval before signing the agreement.', 'Wait for my go-ahead before you apply for the job.', 'Wait for my word before you post it publicly.', 'Wait for my go-ahead before you send the email.'])
+    expect([m, messageSaysStop(m)]).toEqual([m, false])
+})
+
+test('a removal leaves no bracket or quote unbalanced: a mark whose partner stays on kept text stays with it, and a pair both removed goes', () => {
+  const table: [string, string][] = [
+    ['Run the suite. (You can stop now. Thanks.)', 'Run the suite. (Thanks.)'],
+    ['Run the suite. (Thanks. You can stop now.)', 'Run the suite. (Thanks.)'],
+    ['Run the suite. (You can stop now. Then hand it back to me.)', 'Run the suite.'],
+    ['Run the suite (all of it. You can stop now.) Then paste the counts.', 'Run the suite (all of it.) Then paste the counts.'],
+    ['Paste this line: "Run the suite. You can stop now."', 'Paste this line: "Run the suite."'],
+    ['Run the suite. “You can stop now. Paste the counts.”', 'Run the suite. “Paste the counts.”'],
+    ['Run the suite. [You can stop now. See the log.]', 'Run the suite. [See the log.]'],
+    // A sentence wholly in brackets still goes whole.
+    ['Did the suite run? Run it and paste the counts. (Then you can stop.)', 'Did the suite run? Run it and paste the counts.'],
+  ]
+  expect(table.map(([m]) => [m, withoutStopSentences(m)])).toEqual(table)
+  const m = 'Run the suite. (You can stop now. Thanks.)'
+  expect([viaGate(m)[2], viaOwnWords(m)[1]]).toEqual(['Run the suite. (Thanks.)', 'Run the suite. (Thanks.)'])
+})
+
+test('the chooser counts a message of only praise, thanks, a question or a back-reference as not usable, even with nothing cut from it, while the gate keeps such a message whole', () => {
+  for (const m of ['Great work.', 'Thanks.', 'Did the suite run?', 'Do that first.', 'Great work. Thanks!'])
+    expect([m, ownMessageTaken(['means', 'message'], OWN_WORDS_REPLY(m))]).toEqual([m, false])
+  expect(ownMessageTaken(['means', 'message'], OWN_WORDS_REPLY('Great work. Run the suite.'))).toBe(true)
+  // Read 1's message praise only: the fixed text stays.
+  const last = gateVerdict(REFUSED_CARD('Stop.'), OPEN_JOB_OPEN)
+  const praise = gateVerdict(REFUSED_CARD('Great work.'), OPEN_JOB_OPEN)
+  expect([praise.replaced, praise.answer.message]).toEqual([['means'], 'Great work.'])
+  expect(earlierMessage(last.answer, last.replaced, false, praise)).toBe(last.answer)
+  // The gate and the own-words path still keep it whole (C1).
+  expect([viaGate('Great work.')[2], viaOwnWords('Great work.')[1]]).toEqual(['Great work.', 'Great work.'])
 })
 
 test('sectionOf takes one "## " section of a fixed text and throws, naming the heading, when the heading is missing', () => {
@@ -4051,6 +4169,60 @@ for (const [how, reply] of OWN_NONE) {
     expect(rec()?.lastBrief).toMatchObject({ reads: 3, message: OPEN_MESSAGE(OPEN_JOB_OPEN) })
   })
 }
+
+// Praise, thanks, a question or a back-reference alone is not a usable message in Brief me's
+// choice among read 2, the own-words message and read 1 (the second reader's finding 8).
+const R1_BRIEF_ME = async ($: Engine, on: On, answers: string[], own: () => Promise<string> | string) => {
+  const rec = openJob(on)
+  quietBand(on)
+  let forks = 0
+  on('model.fork', () => {
+    forks += 1
+    return { value: { isAnswered: true, text: answers[forks - 1] ?? '', usage: USAGE } }
+  })
+  const asks = ownWords(on, own)
+  await started($)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  expect(forks).toBe(2)
+  expect(asks).toHaveLength(1)
+  return { rec, ui }
+}
+
+test('rule: Brief me, read 2\'s message all stop sentences and the own-words message only praise: read 1\'s usable message stands, never the praise', async ($, on) => {
+  const { rec, ui } = await R1_BRIEF_ME($, on, [REFUSED_BRIEF('Run the suite and paste the counts.'), REFUSED_BRIEF('Stop.')], () => OWN_REPLY('Great work.'))
+  expect(rec()?.lastBrief?.message).toBe('Run the suite and paste the counts.')
+  expect(await showsExactly(ui, 'Run the suite and paste the counts.')).toBe(true)
+  expect(await showsExactly(ui, 'Makes the agent show its work.')).toBe(true)
+  expect(await ui.find({ type: 'Text', text: /Great work|Makes the agent show the install and the sessions|The job is not finished/ })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('rule: Brief me, read 1\'s and read 2\'s messages all stop sentences and the own-words message only praise: the card lists the open conditions', async ($, on) => {
+  const { rec, ui } = await R1_BRIEF_ME($, on, [STOP_BRIEF(), STOP_BRIEF()], () => OWN_REPLY('Great work.'))
+  expect(rec()?.lastBrief?.message).toBe(OPEN_MESSAGE(OPEN_JOB_OPEN))
+  expect(await showsExactly(ui, OPEN_MESSAGE(OPEN_JOB_OPEN))).toBe(true)
+  expect(await showsExactly(ui, OPEN_DOES)).toBe(true)
+  expect(await ui.find({ type: 'Text', text: /Great work|Makes the agent show the install and the sessions/ })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('rule: Brief me, read 2 refused with a message of praise alone and nothing cut: the own-words message stands in its place', async ($, on) => {
+  const { rec, ui } = await R1_BRIEF_ME($, on, [STOP_BRIEF(), REFUSED_BRIEF('Great work.')], () => OWN_REPLY(C3_IN_2))
+  expect(rec()?.lastBrief?.message).toBe(C3_OUT_2)
+  expect(await showsExactly(ui, C3_OUT_2)).toBe(true)
+  expect(await showsExactly(ui, 'Makes the agent show the install and the sessions.')).toBe(true)
+  expect(await ui.find({ type: 'Text', text: /Great work/ })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('rule: Brief me, read 2 refused with a message of thanks alone and the own-words call failing: read 1\'s usable message stands', async ($, on) => {
+  const { rec, ui } = await R1_BRIEF_ME($, on, [REFUSED_BRIEF(C3_IN_1), REFUSED_BRIEF('Thanks.')], () => Promise.reject(new Error('the model is down')))
+  expect(rec()?.lastBrief?.message).toBe(C3_OUT_1)
+  expect(await showsExactly(ui, C3_OUT_1)).toBe(true)
+  expect(await ui.find({ type: 'Text', text: /^Thanks\.$|The job is not finished/ })).toBeUndefined()
+  await ui.unmount()
+})
 
 test('rule: a briefing refused twice for its verdict alone keeps the model\'s own next step and message and takes only the meaning from the own-words call', async ($, on) => {
   const rec = openJob(on)

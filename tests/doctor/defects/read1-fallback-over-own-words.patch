@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index f91cbea..0aa1b53 100644
+index a05c4e1..ef90279 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3259,7 +3259,7 @@ export function ownMessageTaken(replaced: Replaced[], own: BriefAnswer | null):
- // usable left of it, and the fixed text stays. Every other part is the last
+@@ -3343,7 +3343,7 @@ export function ownMessageTaken(replaced: Replaced[], own: BriefAnswer | null):
+ // usable left of it (`messageUsable`, so praise alone is not), and the fixed text stays. Every other part is the last
  // read's. Decided by the parts lists, never by comparing the message's text.
  export function earlierMessage(answer: BriefAnswer, replaced: Replaced[], ownTaken: boolean, first: { answer: BriefAnswer; replaced: Replaced[] }): BriefAnswer {
 -  if (!replaced.includes('message') || ownTaken || first.replaced.includes('message')) return answer
 +  if (!replaced.includes('message') || first.replaced.includes('message')) return answer
-   const message = withoutStopSentences(first.answer.message)
-   return message === '' ? answer : { ...answer, message, does: first.answer.does }
+   return messageUsable(first.answer.message) ? { ...answer, message: withoutStopSentences(first.answer.message), does: first.answer.does } : answer
  }
+ 

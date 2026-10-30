@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index f91cbea..0f94243 100644
+index a05c4e1..82dbd14 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3059,7 +3059,7 @@ const BACK_REFERENCE = new RegExp(String.raw`^(?:(?:then|and)\s+)?(?:please\s+)?
+@@ -3080,7 +3080,7 @@ const BACK_REFERENCE = new RegExp(String.raw`^(?:(?:then|and)\s+)?(?:please\s+)?
  const usable = (text: string): boolean =>
    sentencesOf(text).some(({ start, end }) => {
-     const s = unwrap(text.slice(start, end).replace(LIST_MARKER, ''))
+     const s = unwrap(text.slice(start, end).replace(LIST_MARKER, '').replace(/\s+/g, ' '))
 -    return !PRAISE.test(s) && !QUESTION.test(s) && !BACK_REFERENCE.test(s)
 +    return !QUESTION.test(s) && !BACK_REFERENCE.test(s)
    })
  
- // A message with every sentence that says stop (by messageSaysStop's reading) taken out, and
+ // Each bracket or double quote in a text paired with its partner, by position, both ways:

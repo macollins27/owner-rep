@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index f91cbea..b2e37f9 100644
+index a05c4e1..7afc735 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3026,7 +3026,7 @@ const maskExempt = (read: string): string => {
- // or quotes taken off, quoted words after a reporting word masked, turned to the third person,
- // the four exempt shapes above masked, then read by STOP_NEXT and STOP_ONCE.
+@@ -3045,7 +3045,7 @@ const maskExempt = (read: string): string => {
+ // four exempt shapes above masked, then read by STOP_NEXT and STOP_ONCE. Only the copy read is
+ // changed; a removal cuts the message's own text.
  const sentenceSaysStop = (sentence: string): boolean => {
--  const read = maskExempt(toAgentVoice(maskReported(unwrap(sentence.replace(LIST_MARKER, '')))))
-+  const read = maskExempt(maskReported(unwrap(sentence.replace(LIST_MARKER, ''))))
+-  const read = maskExempt(toAgentVoice(maskReported(unwrap(sentence.replace(LIST_MARKER, '').replace(/\s+/g, ' ')))))
++  const read = maskExempt(maskReported(unwrap(sentence.replace(LIST_MARKER, '').replace(/\s+/g, ' '))))
    return STOP_NEXT.test(read) || STOP_ONCE.test(read)
  }
  

@@ -723,7 +723,7 @@
     "name": "wait-on-him-words-narrow",
     "breaks": "A wait on the owner's approval, their answer, their go-ahead, the owner's reply, a decision on something or confirmation from them passes the gate while a condition is open.",
     "patch": "wait-on-him-words-narrow.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-10-30"
   },
   {
     "name": "wait-until-passed",
@@ -855,19 +855,19 @@
     "name": "wait-your-any",
     "breaks": "A wait on anything after \"your\" counts as a wait on the owner, so \"Stop and wait for your build to finish, then push.\" is refused while a condition is open.",
     "patch": "wait-your-any.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-10-30"
   },
   {
     "name": "wait-confirmation-any",
     "breaks": "A wait on anything that starts with \"confirmation\" counts as a wait on the owner, so \"Stop and wait for confirmation emails to arrive in the test inbox, then check them.\" is refused while a condition is open.",
     "patch": "wait-confirmation-any.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-10-30"
   },
   {
     "name": "wait-decision-any",
     "breaks": "A wait on anything that starts with \"a decision\" counts as a wait on the owner, so \"Stop and wait for a decision tree to train, then evaluate it.\" is refused while a condition is open.",
     "patch": "wait-decision-any.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-10-30"
   },
   {
     "name": "wait-on-him-unstopped-passed",
@@ -927,7 +927,7 @@
     "name": "approval-from-anyone",
     "breaks": "A wait on approval from someone other than the owner (\"Wait for approval from the CI gate, then merge.\") is refused as a wait on them.",
     "patch": "approval-from-anyone.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-10-30"
   },
   {
     "name": "seed-drafts-held-ignored",
@@ -1791,7 +1791,7 @@
     "name": "own-words-not-asked",
     "breaks": "A briefing refused twice is never written in the rep's own words, so the card always shows the fixed texts in place of what the rep found.",
     "patch": "own-words-not-asked.patch",
-    "fixed": "2026-10-19; remade 2026-10-29"
+    "fixed": "2026-10-19; remade 2026-10-29; remade 2026-10-30"
   },
   {
     "name": "own-words-stop-taken",
@@ -1803,7 +1803,7 @@
     "name": "message-voice-unshifted",
     "breaks": "The gate reads the card's message as if it were a next step, so a message written in the owner's voice that has the agent wait for their sign-off or hand the work back to them stays on a refused card, and a message that has them wait until the agent has a log is refused.",
     "patch": "message-voice-unshifted.patch",
-    "fixed": "2026-10-19; remade 2026-10-29"
+    "fixed": "2026-10-19; remade 2026-10-29; remade 2026-10-30"
   },
   {
     "name": "card-cut-with-rows-empty",
@@ -1869,7 +1869,7 @@
     "name": "stop-sentence-kept",
     "breaks": "Taking the stop sentences out of a message keeps the last one, so a refused card can still tell the agent to stop while a condition is open.",
     "patch": "stop-sentence-kept.patch",
-    "fixed": "2026-10-29"
+    "fixed": "2026-10-29; remade 2026-10-30"
   },
   {
     "name": "own-words-message-swapped-whole",
@@ -1887,73 +1887,73 @@
     "name": "before-stop-exemption-dropped",
     "breaks": "\"Before you stop\" is read as a stop, so a message pushing the agent to finish more work before it stops is cut down or replaced.",
     "patch": "before-stop-exemption-dropped.patch",
-    "fixed": "2026-10-29"
+    "fixed": "2026-10-29; remade 2026-10-30"
   },
   {
     "name": "reply-from-other-caught",
     "breaks": "A wait for a reply from someone other than the owner is read as a stop, so a message telling the agent to wait on the lead or a tool is cut.",
     "patch": "reply-from-other-caught.patch",
-    "fixed": "2026-10-29"
+    "fixed": "2026-10-29; remade 2026-10-30"
   },
   {
     "name": "blocker-report-stop-removed",
     "breaks": "A stop on a blocker that tells the owner what stands in the way is read as a stop, so the message's instruction to report the refusal or absence is cut.",
     "patch": "blocker-report-stop-removed.patch",
-    "fixed": "2026-10-29"
+    "fixed": "2026-10-29; remade 2026-10-30"
   },
   {
     "name": "blocker-stop-unreported-kept",
     "breaks": "A stop on a refusal or an absence is let through even when the sentence does not tell the owner what stands in the way, so \"If the push is refused, stop.\" stays on a refused card.",
     "patch": "blocker-stop-unreported-kept.patch",
-    "fixed": "2026-10-29"
+    "fixed": "2026-10-29; remade 2026-10-30"
   },
   {
     "name": "outward-wait-exemption-dropped",
     "breaks": "A wait on the owner's word before an outward act he alone decides (submit, send, publish, pay) is read as a stop, so the message loses the line that keeps the agent from acting for him.",
     "patch": "outward-wait-exemption-dropped.patch",
-    "fixed": "2026-10-29"
+    "fixed": "2026-10-29; remade 2026-10-30"
   },
   {
     "name": "merge-wait-exempted",
     "breaks": "Merging is counted an outward act the owner alone decides, so \"Wait for my go-ahead before merging.\" stays on a refused card and stops the agent.",
     "patch": "merge-wait-exempted.patch",
-    "fixed": "2026-10-29"
+    "fixed": "2026-10-29; remade 2026-10-30"
   },
   {
     "name": "stop-once-missed",
     "breaks": "A stop once something is done (\"You can stop after that.\", \"Then stop once the suite is green.\") is not read as a stop, so it stays on a refused card.",
     "patch": "stop-once-missed.patch",
-    "fixed": "2026-10-29"
+    "fixed": "2026-10-29; remade 2026-10-30"
   },
   {
     "name": "quoted-stop-read",
     "breaks": "Quoted words are masked only right after the reporting word, so a sentence naming the agent's own words with a word between ('Your summary said plainly \"You can stop now.\"') is read as a stop and cut.",
     "patch": "quoted-stop-read.patch",
-    "fixed": "2026-10-29"
+    "fixed": "2026-10-29; remade 2026-10-30"
   },
   {
     "name": "quoted-order-skipped",
     "breaks": "A quote after a reporting word followed by \"to\" is masked too, so an order to do what the quote says ('Then do as the note says to: \"You can stop now.\"') is not read as a stop.",
     "patch": "quoted-order-skipped.patch",
-    "fixed": "2026-10-29"
+    "fixed": "2026-10-29; remade 2026-10-30"
   },
   {
     "name": "praise-usable",
     "breaks": "Praise or thanks counts as something to do, so a message cut down to \"Great work.\" stands in place of the fixed text.",
     "patch": "praise-usable.patch",
-    "fixed": "2026-10-29"
+    "fixed": "2026-10-29; remade 2026-10-30"
   },
   {
     "name": "back-reference-usable",
     "breaks": "A bare back-reference counts as something to do, so a message cut down to \"Do that first.\", whose thing went with the stop sentence, stands in place of the fixed text.",
     "patch": "back-reference-usable.patch",
-    "fixed": "2026-10-29"
+    "fixed": "2026-10-29; remade 2026-10-30"
   },
   {
     "name": "back-reference-too-wide",
     "breaks": "Any short sentence holding \"it\", \"that\", \"this\" or \"so\" counts as a bare back-reference, so a finding such as \"Show why it failed.\" is thrown away for the fixed text.",
     "patch": "back-reference-too-wide.patch",
-    "fixed": "2026-10-29"
+    "fixed": "2026-10-29; remade 2026-10-30"
   },
   {
     "name": "digit-stop-joins",
@@ -1971,7 +1971,7 @@
     "name": "brief-me-no-read1-fallback",
     "breaks": "Brief me never falls back to read 1's message, so when the last read and the own-words call give nothing usable the card shows the fixed text though read 1 wrote a sound message.",
     "patch": "brief-me-no-read1-fallback.patch",
-    "fixed": "2026-10-29"
+    "fixed": "2026-10-29; remade 2026-10-30"
   },
   {
     "name": "own-words-replaces-read2",
@@ -1983,12 +1983,96 @@
     "name": "read1-fallback-over-own-words",
     "breaks": "Read 1's message is put back even when the own-words call gave a usable one, so the own-words message is thrown away.",
     "patch": "read1-fallback-over-own-words.patch",
-    "fixed": "2026-10-29"
+    "fixed": "2026-10-29; remade 2026-10-30"
   },
   {
     "name": "own-message-taken-whole",
     "breaks": "The own-words message is counted taken when it is not empty, without its stop sentences taken out, so a reply that was all stop sentences blocks read 1's message from standing.",
     "patch": "own-message-taken-whole.patch",
-    "fixed": "2026-10-29"
+    "fixed": "2026-10-29; remade 2026-10-30"
+  },
+  {
+    "name": "blocker-stop-masks-other-clause",
+    "breaks": "A blocker stop that tells the owner what stands in the way masks every stop in its sentence, so a stop in another clause (\"tell me why; otherwise, you can stop now\") reaches the card.",
+    "patch": "blocker-stop-masks-other-clause.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "negated-act-masks-any-wait",
+    "breaks": "After a negated outward act, any wait on the owner is let through, so a wait before something else (\"Do not publish the report; wait for my approval before running the tests.\") reaches the card.",
+    "patch": "negated-act-masks-any-wait.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "whitespace-changes-verdict",
+    "breaks": "A sentence is read with its runs of whitespace as written and the wait on someone else's lookahead can backtrack past a space, so \"Wait for a reply from  me.\" with two spaces reaches the card.",
+    "patch": "whitespace-changes-verdict.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "approval-from-whitespace",
+    "breaks": "Approval from the owner past two spaces backtracks into approval from someone else, so a next step \"Wait for approval from  him.\" is not read as a stop.",
+    "patch": "approval-from-whitespace.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "quote-masked-by-earlier-report",
+    "breaks": "Any reporting word earlier in the sentence without \"to\" after it masks a later quote, so \"You said the tests passed; then do as the note says to: \\\"You can stop now.\\\"\" reaches the card.",
+    "patch": "quote-masked-by-earlier-report.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "button-inflection-exempted",
+    "breaks": "Only the bare forms of the agent's operations are kept out of the buttons, so \"Wait for my word on Merging.\" is let through as a wait before a button.",
+    "patch": "button-inflection-exempted.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "sign-off-outward",
+    "breaks": "Signing with any object, or signing off, counts as an outward act, so \"Wait for my approval before signing off on the tests.\" is let through.",
+    "patch": "sign-off-outward.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "technical-apply-post-outward",
+    "breaks": "Applying or posting anything counts as an outward act, so \"Wait for my approval before applying the migration.\" is let through.",
+    "patch": "technical-apply-post-outward.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "bracket-left-unbalanced",
+    "breaks": "A removed sentence takes every bracket and quote in it, so \"Run the suite. (You can stop now. Thanks.)\" leaves \"Run the suite. Thanks.)\" with its closing bracket alone.",
+    "patch": "bracket-left-unbalanced.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "own-praise-taken",
+    "breaks": "An own-words message of praise alone counts as taken, so \"Great work.\" stands on Brief me's card over read 1's usable message.",
+    "patch": "own-praise-taken.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "own-praise-lands",
+    "breaks": "An own-words message not counted as taken is still put on the card, so \"Great work.\" stands where read 1's message or the list of open conditions belongs.",
+    "patch": "own-praise-lands.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "read2-praise-kept",
+    "breaks": "A message read 2 kept whole that is only praise or thanks stands on Brief me's card, and the own-words message and read 1's are never tried in its place.",
+    "patch": "read2-praise-kept.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "read1-praise-used",
+    "breaks": "Read 1's message of praise alone counts as usable, so it stands on Brief me's card before the list of open conditions.",
+    "patch": "read1-praise-used.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "praise-whitespace-usable",
+    "breaks": "What is left after a removal is judged usable with its runs of whitespace as written, so \"Thank  you  again!\" with two spaces counts as usable and stands where nothing usable is left.",
+    "patch": "praise-whitespace-usable.patch",
+    "fixed": "2026-10-30"
   }
 ]

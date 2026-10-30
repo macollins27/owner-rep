@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index f91cbea..e83b280 100644
+index a05c4e1..57e57e3 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3010,7 +3010,7 @@ const NOT_A_BUTTON = /^(?:merge|push|delete|deploy|install|the|this|that|it|a|an
+@@ -3026,7 +3026,7 @@ const NOT_A_BUTTON = /^(?:merg(?:e|es|ed|ing)|push(?:es|ed|ing)?|delet(?:e|es|ed
  const NEGATED_ACT = new RegExp(String.raw`(?:\bnot|\bnever|n['’]t)\s+${OUTWARD_ACT}`, 'i')
- const WAIT_ON_HIM_WORDS = new RegExp(String.raw`\bwaits?\s+(?:for|on|until|till)\s+${ON_HIM}(?:['’]s\s+[\w-]+)?`, 'gi')
+ const WAIT_ON_HIM_BARE = new RegExp(String.raw`\bwaits?\s+(?:for|on|until|till)\s+${ON_HIM}(?:['’]s\s+[\w-]+)?${CLAUSE_END}`, 'gi')
  const maskExempt = (read: string): string => {
 -  let s = read.replace(BEFORE_STOPS, 'x').replace(WAIT_ON_OTHER, 'x ')
 +  let s = read.replace(BEFORE_STOPS, 'x')
-   if (BLOCKER_IF.test(s) && BLOCKER_TOLD.test(s)) s = s.replace(/\bstop\b/gi, 'x')
+   s = s.replace(BLOCKER_IF, (all: string, condition: string, clause: string) => (BLOCKER_TOLD.test(clause) ? condition + clause.replace(/\bstop\b/gi, 'x') : all))
    s = s.replace(WAIT_BEFORE_ACT, (wait: string, button?: string) =>
      button === undefined || (/^[A-Z]/.test(button) && !NOT_A_BUTTON.test(button)) ? 'x' : wait)
