@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 29f4acf..d3d8904 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1285,7 +1285,6 @@ Notes the other watcher already showed the owner in this session, which you must
+ ${list(m.others, '(none)')}
+ 
+ ${WALK_RULE}
+-${LIST_GAP_RULE}
+ Write the walk first, under "steps:", one line per step; with no plan shown, write "steps: none".
+ 
+ ## Output structure

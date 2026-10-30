@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 29f4acf..9047800 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1349,6 +1349,7 @@ The owner pressed the key. Give the owner the short briefing described below, me
+ When every condition is shown or closed and the conversation shows the result working, say so in one line under "well:", and still fill in every other part: the owner wants the whole picture every time, not only when something is wrong. Leave the message empty when there is nothing worth sending.
+ 
+ ${WALK_RULE}
++${LIST_GAP_RULE}
+ Walk them to yourself and do not write the walk out. Every step with no sign while later work goes on goes first under "left:", named with the plan's number; every step not assessed goes under "unassessed:".
+ 
+ ## Output structure

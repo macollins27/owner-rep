@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 29f4acf..00a6943 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1006,7 +1006,7 @@ A step with no sign while later work goes on is part of the owner's ask dropped:
+ // A step the rule above keeps "not assessed" that the agent's own full list leaves out: the Heads
+ // up raises it without calling it skipped. The agent's list can only raise this flag; it never
+ // moves the ask, and a step on the list stays unproven.
+-export const LIST_GAP_RULE = `One kind of step marked "not assessed" still takes the flag: where the agent's own full list of what it is building or doing, or a summary of what is done and what remains, stands whole in the record and a step of an approved plan is not on it, the flag says that step looks dropped because it does not appear in that list, and why names the list and asks the agent to show it. Keep the step "not assessed" in the walk, and never say it was skipped or done. A left-out part beside the list does not matter; a left-out part inside it, a list of one part of the work, a list called partial or a step the agent says comes later rules this out. This flag ranks with a step with no sign while later work goes on.`
++export const LIST_GAP_RULE = `One kind of step marked "not assessed" still takes the flag: where the agent's own full list of what it is building or doing, or a summary of what is done and what remains, stands whole in the record and a step of an approved plan is not on it, the flag says that step looks dropped because it does not appear in that list, and why names the list and asks the agent to show it. A left-out part beside the list does not matter; a left-out part inside it, a list of one part of the work, a list called partial or a step the agent says comes later rules this out. This flag ranks with a step with no sign while later work goes on.`
+ 
+ // An approval a reader can be shown: read whole, its context showable and in hand, none of its
+ // sources lost, and the owner's words readable whole.

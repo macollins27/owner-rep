@@ -2188,5 +2188,29 @@
     "breaks": "What is left after a removal counts as usable with no letter or digit in it, so \"You can stop now. ...\" leaves \"...\" on the card in place of the fixed text.",
     "patch": "punctuation-left-usable.patch",
     "fixed": "2026-10-30"
+  },
+  {
+    "name": "list-gap-rule-left-out",
+    "breaks": "The Heads up is never told that a step the agent's own full list leaves out takes the flag, so a dropped step stays silent as not assessed.",
+    "patch": "list-gap-rule-left-out.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "list-gap-rule-says-skipped",
+    "breaks": "The rule no longer keeps the step not assessed or forbids calling it skipped or done, so a reader may claim what it cannot see.",
+    "patch": "list-gap-rule-says-skipped.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "list-gap-rule-any-list",
+    "breaks": "The rule no longer rules out a list with a part left out inside it, a list of one part, a partial list or a step promised later, so any short list raises a false alarm.",
+    "patch": "list-gap-rule-any-list.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "list-gap-rule-in-briefing",
+    "breaks": "The briefing is told the rule too, though it already names such a step, so its answers change where nothing needed it.",
+    "patch": "list-gap-rule-in-briefing.patch",
+    "fixed": "2026-10-30"
   }
 ]
