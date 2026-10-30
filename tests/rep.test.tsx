@@ -10012,3 +10012,34 @@ describe('coverage: each line on the row, the card and the briefing', () => {
     expect(s.forks.filter(p => p.includes(BRIEF_ASKED)).at(-1)).toContain('- none: every condition is shown')
   })
 })
+
+describe('coverage: the failed write and the full store, both standing', () => {
+  // The row shows only the first line, the failed write's; the card and the briefing show both,
+  // the failed write's before the store's (plan 6.4's order).
+  test('rule: a write that fails while the store is full shows both lines on the card and in the briefing, the failed write first', async ($, on) => {
+    const s = asks(on, [his(1, 'build the importer')], { objective: HELD_OBJ(1, 1), recRev: 3 })
+    Object.assign(s.store.sessions as Record<string, unknown>, othersOf(31))
+    padTo(s.store, STORE_LIMIT - 60)
+    s.hold.refuse = overLimit
+    s.answer(() => null)
+    await started($)
+    await s.send($, 'add a licence file')
+    await settleUntil($, () => (fallbackNow(s.d.files)?.objectiveFailed ?? 0) > 0)
+    const failed = rep.failedWriteLine(2)
+    const full = rep.storeFullLine(false)
+    expect(await rowSays($, lineRe(failed))).toBe(true)
+    s.hold.fork = p => (p.includes(BRIEF_ASKED) ? COVER_STOP(s.obj()) : HOLDS)
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    await ui.press({ key: 'rep' })
+    const texts = (await ui.findAll({ type: 'Text' })).map(t => t.text)
+    const at = texts.indexOf('Left out:')
+    expect(at).toBeGreaterThan(-1)
+    // The kit lists each line's text twice (the line and its words); the card's lines are the dashed ones.
+    expect(texts.slice(at + 1).filter(t => t.startsWith('  - '))).toEqual([`  - ${failed}`, `  - ${full}`])
+    await ui.press({ key: 'close' })
+    await ui.unmount()
+    const brief = s.forks.filter(p => p.includes(BRIEF_ASKED)).at(-1) ?? ''
+    expect(brief).toContain(`- ${failed}\n- ${full}\n`)
+    expect(brief).not.toContain('- none: every condition is shown')
+  })
+})
