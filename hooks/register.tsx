@@ -29,6 +29,7 @@ import {
   runningText,
   tapStep,
   trimKept,
+  trimCounted,
   migrateOwner,
   sha256,
   isSessionId,
@@ -36,8 +37,10 @@ import {
   splitRecord,
   pickRecord,
   isMismatch,
-  recordLines,
+  coverage,
   withRecordLines,
+  type ReaderGaps,
+  COMPACTED_WHY,
   type Manifest,
   type LossMark,
   type PartRead,
@@ -198,7 +201,7 @@ const noteA = atom({ plugin: 'owner-rep', key: 'note' } as const, null)
 const briefA = atom({ plugin: 'owner-rep', key: 'brief' } as const, null)
 const viewA = atom({ plugin: 'owner-rep', key: 'view' } as const, 'row')
 const helpersA = atom({ plugin: 'owner-rep', key: 'helperIds' } as const, [])
-// What the record could not keep or save (`recordLines`): the row shows the first, the card all.
+// What the rep could not check, keep or save (`coverage`): the row shows the first, the card all.
 const linesA = atom({ plugin: 'owner-rep', key: 'lines' } as const, [])
 
 // What came of a card's own-words call: its reply parsed whole, answered but not whole
@@ -422,7 +425,7 @@ async function changeRec<T>($: EngineInterface, id: string, change: (rec: Rec) =
       const now = new Set(await filesOf($, rec))
       await removeFiles($, [...was.files.filter(f => !now.has(f)), ...lost], false)
     }
-    if (onScreen(id)) await update($, linesA, () => recordLines(rec, storeFull.get(id)))
+    if (onScreen(id)) await update($, linesA, () => rowCoverage(rec, id))
     return out
   } finally {
     done()
@@ -461,6 +464,19 @@ async function sourceFolder($: EngineInterface, sid: string): Promise<string | n
 const memTexts = new Map<string, string>()
 // The sessions whose last save the store refused, and whether the files refused it too.
 const storeFull = new Map<string, { memoryOnly: boolean }>()
+
+// What the newest look found it could not do for an approval, by session (Task 7a and Task 7
+// fill it through `setLookGaps`); the row's lines read it beside the record.
+const lookGaps = new Map<string, ReaderGaps>()
+const rowCoverage = (rec: Rec, id: string): string[] => coverage(rec, { full: storeFull.get(id), gaps: lookGaps.get(id) })
+// A look's gaps, kept for its session and shown on the row at once.
+async function setLookGaps($: EngineInterface, id: string, gaps: ReaderGaps): Promise<void> {
+  lookGaps.set(id, gaps)
+  if (onScreen(id)) {
+    const rec = await loadRec($, id)
+    await update($, linesA, () => rowCoverage(rec, id))
+  }
+}
 // The record held, by session, while the store refuses it.
 const fullRecs = new Map<string, Rec>()
 // Each session's first load in this process, which reconciles the store with the session's files.
@@ -659,7 +675,7 @@ async function memoryFor($: EngineInterface, sid: string, rec: Rec): Promise<Mem
   const { msgs, lost } = await readable($, sid, pinned, ['sent', 'body', 'took'])
   await markLost($, sid, lost)
   const owner = base.owner.map(m => (m.pinned === true ? (msgs[pinned.indexOf(m)] ?? m) : m))
-  return { ...base, owner, lines: recordLines(rec, storeFull.get(sid)) }
+  return { ...base, owner, lines: coverage(rec, { full: storeFull.get(sid) }) }
 }
 
 // The store refused the record: its inline texts go to files, or memory when the files refuse
@@ -1331,8 +1347,9 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       ownRead = !answered ? 'none' : own === null ? 'cut' : 'whole'
       taken = { ...taken, answer: takeOwnWords(taken.answer, taken.replaced, own) }
     }
-    // While the record could not keep or save something, the card says so first and never stops.
-    const a = withRecordLines(taken.answer, recordLines(await loadRec($, sid), storeFull.get(sid)))
+    // While the rep could not check, keep or save something, the card says so first and never
+    // stops. The briefing's own gaps (Task 7) go in `gaps`; the Heads up's too-long line never does.
+    const a = withRecordLines(taken.answer, coverage(await loadRec($, sid), { full: storeFull.get(sid) }))
     const brief = await changeRec($, sid, after => {
       const brief: Brief = {
         result: after.objective === null ? '' : firstSentence(objectiveText(after.objective)),
@@ -1742,18 +1759,14 @@ async function putMessage($: EngineInterface, text: string): Promise<void> {
 // (`prior`, the body's end). The owner's messages and notes are kept to the larger cut, since
 // the writer reads nothing else; a draft of the rep's to the smaller. `more` carries the body's
 // spans, why it is incomplete, and the saved sources.
-// An approval of the open job the trim could not keep is counted in `uncovered`, the last 10 by number.
+// A message of the job the trim drops is counted in `uncovered` when it had a coverage line or was
+// an approval the trim could not keep (`trimCounted`), the last 10 by number.
 function pushOwner(rec: Rec, kind: OwnerKind, text: string, prior: string, more: Partial<OwnerMsg> = {}): void {
   const cut = kind === 'draft' ? OWNER_CUT : HIS_CUT
-  const job = jobOf(rec)
-  const { list, notKept } = trimKept([...rec.owner, { n: ++rec.counter, kind, text: fit(text, cut), prior: fitTail(prior, PRIOR_CUT), ...more }], job)
+  const { list, uncovered } = trimCounted([...rec.owner, { n: ++rec.counter, kind, text: fit(text, cut), prior: fitTail(prior, PRIOR_CUT), ...more }], jobOf(rec), rec.uncovered)
   rec.owner = list
-  if (rec.uncovered !== undefined && rec.uncovered.job !== job) delete rec.uncovered
-  if (notKept.length > 0) {
-    const was = rec.uncovered
-    const recent = notKept.map(m => ({ n: m.n, why: 'not-kept' as const, kind: m.kind, ...(m.screen === undefined ? {} : { screen: m.screen }) }))
-    rec.uncovered = { job, count: (was?.count ?? 0) + notKept.length, recent: [...(was?.recent ?? []), ...recent].slice(-10) }
-  }
+  if (uncovered === undefined) delete rec.uncovered
+  else rec.uncovered = uncovered
 }
 
 // The turns the owner answers, captured from the stream (docs/reference.md, "The turn the owner
@@ -2052,10 +2065,11 @@ async function seedOnce($: EngineInterface, sid: string): Promise<boolean> {
     if (has(rec)) return false
     for (const t of typed) {
       const split = draftSplitAny(t.text, [...rec.drafts, rec.lastBrief?.message ?? '', ...others])
-      if (split === null) pushOwner(rec, 'his', t.text, t.prior)
+      const more = t.compacted === true ? { incomplete: COMPACTED_WHY } : {}
+      if (split === null) pushOwner(rec, 'his', t.text, t.prior, more)
       else {
         pushOwner(rec, 'draft', split.draft, t.prior)
-        if (split.his !== '') pushOwner(rec, 'his', split.his, t.prior)
+        if (split.his !== '') pushOwner(rec, 'his', split.his, t.prior, more)
       }
     }
     return has(rec)
@@ -2166,7 +2180,7 @@ const onScreen = (id: string): boolean => !ended && id === currentId
 async function enterSession($: EngineInterface, id: string): Promise<void> {
   const rec = await loadRec($, id)
   if (onScreen(id)) await update($, readingA, () => rec.objective)
-  if (onScreen(id)) await update($, linesA, () => recordLines(rec, storeFull.get(id)))
+  if (onScreen(id)) await update($, linesA, () => rowCoverage(rec, id))
   seedOwner($, id)
     .then(seeded => (seeded ? rebuildObjective($, id, 'load') : undefined))
     .catch(() => undefined)
