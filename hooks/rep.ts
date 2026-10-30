@@ -3110,27 +3110,42 @@ export const withoutStopSentences = (message: string): string => {
 // The objective is not finished while a condition is open, and the gate works
 // part by part. A verdict other than continue (stop, or none given), a
 // going-well line, or a next step or a message that says stop (the message read
-// in the third person, `messageSaysStop`) is refused: the
+// sentence by sentence in the third person, `messageSaysStop`) is refused: the
 // verdict becomes continue, the going-well line goes, and the conditions are
 // listed as left out. On a refusal the meaning is always the rep's own (it
 // stood on a verdict the gate rejected, and is not read for a stop, since "The
-// agent has finished the work, but …" says something true), and the next step,
-// and the message with what it does, are the rep's own only where they
-// themselves say stop or are empty; the model's own sound next step and message
-// stand, and beside a kept message only a does line that says stop is the rep's
-// (it is not listed in `replaced`, which the own-words call reads). `replaced` lists the parts written in the rep's text, in the order
-// means, next, message, so a refused card always lists the meaning. With no
-// objective written (open is null) the same is refused and every part is the
-// rep's text saying the objective is not written yet. What the agent did
-// ("stands") is kept as the model wrote it.
+// agent has finished the work, but …" says something true), and the next step
+// is the rep's own only where it says stop or is empty. The message keeps
+// everything but its stop sentences (`withoutStopSentences`): a message with
+// none stands as written, one with some stands without them, and only when
+// nothing usable is left (or it was empty) is the message, with what it does,
+// the rep's fixed text. Beside a kept message only a does line that says stop
+// is the rep's (it is not listed in `replaced`, which the own-words call reads,
+// so that call never writes over a kept message). `replaced` lists the parts
+// written in the rep's text, in the order means, next, message, so a refused
+// card always lists the meaning. With no objective written (open is null) the
+// same is refused; the meaning and next step are the rep's text saying the
+// objective is not written yet, and the message follows the same rule with
+// that text's message and does line. What the agent did ("stands") is kept as
+// the model wrote it.
 export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer: BriefAnswer; refused: boolean; replaced: Replaced[] } {
   if (open !== null && open.length === 0) return { answer: a, refused: false, replaced: [] }
   if (a.verdict === 'continue' && a.well === '' && !saysStop(a.next) && !messageSaysStop(a.message)) return { answer: a, refused: false, replaced: [] }
+  const kept = withoutStopSentences(a.message)
+  const message = kept === ''
   if (open === null) {
     return {
-      answer: { ...a, verdict: 'continue', well: '', means: UNWRITTEN_MEANS, next: UNWRITTEN_NEXT, message: UNWRITTEN_MESSAGE, does: UNWRITTEN_DOES },
+      answer: {
+        ...a,
+        verdict: 'continue',
+        well: '',
+        means: UNWRITTEN_MEANS,
+        next: UNWRITTEN_NEXT,
+        message: message ? UNWRITTEN_MESSAGE : kept,
+        does: message || messageSaysStop(a.does) ? UNWRITTEN_DOES : a.does,
+      },
       refused: true,
-      replaced: ['means', 'next', 'message'],
+      replaced: ['means', 'next', ...(message ? ['message' as const] : [])],
     }
   }
   const leftOut = [...a.leftOut]
@@ -3139,7 +3154,6 @@ export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer:
     if (!leftOut.some(l => same(bare(l), c.text))) leftOut.push(c.state === 'not-shown' ? `${c.text} (not shown)` : c.text)
   }
   const next = a.next === '' || saysStop(a.next)
-  const message = a.message === '' || messageSaysStop(a.message)
   return {
     answer: {
       ...a,
@@ -3147,7 +3161,7 @@ export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer:
       well: '',
       means: OPEN_MEANS(open),
       next: next ? OPEN_NEXT(open) : a.next,
-      message: message ? OPEN_MESSAGE(open) : a.message,
+      message: message ? OPEN_MESSAGE(open) : kept,
       does: message || messageSaysStop(a.does) ? OPEN_DOES : a.does,
       leftOut,
     },
@@ -3209,8 +3223,11 @@ does: <one line: what this message will make the agent do>`
 
 // The own-words answer taken into a card the gate refused: each part the gate
 // replaced is the answer's where the answer gave it and it does not say stop,
-// and stays the rep's fixed text otherwise; what the message does goes with the
-// message. Nothing else moves: the verdict stays continue, the going-well line
+// and stays the rep's fixed text otherwise. The message is taken as the gate
+// takes one, without its stop sentences (`withoutStopSentences`), and only when
+// something usable is left; what the message does goes with a taken message,
+// unless it says stop. A message the gate kept is not in `replaced`, so it is
+// never written over. Nothing else moves: the verdict stays continue, the going-well line
 // empty, and what stands, what is left out and the marks stay the gated card's.
 // The engine passes parseOwnWords's answer, so a reply that did not come back
 // whole is null here and every replaced part stays the rep's fixed text.
@@ -3219,8 +3236,9 @@ export function takeOwnWords(gated: BriefAnswer, replaced: Replaced[], own: Brie
   const out = { ...gated }
   const taken = new Set<Replaced>()
   for (const part of replaced) {
-    if (own[part] === '' || (part === 'message' ? messageSaysStop(own[part]) : saysStop(own[part]))) continue
-    out[part] = own[part]
+    const text = part === 'message' ? withoutStopSentences(own.message) : own[part]
+    if (text === '' || (part !== 'message' && saysStop(text))) continue
+    out[part] = text
     taken.add(part)
   }
   if (taken.has('message') && own.does !== '' && !messageSaysStop(own.does)) out.does = own.does

@@ -625,7 +625,7 @@ test('gateVerdict keeps a next and a message that do not say stop, replaces the 
   expect(parseBrief('stands: s\nleft:\n- nothing\nshown:\n- a | the diff\nclosed:\n- b | #4\nmessage:\nend\ndoes:')).toMatchObject({ verdict: 'missing', shown: [{ text: 'a', by: 'the diff' }], closed: [{ text: 'b', by: 4 }] })
 })
 
-test('gateVerdict replaces, beside the meaning, only the part that says stop: a next step or a message', () => {
+test('gateVerdict replaces, beside the meaning, only the part that says stop: a next step or a message; with no objective written, the meaning and next step are the rep\'s and a sound message stands', () => {
   const base = 'verdict: continue\nwell:\nstands: Both parts are finished.\nleft:\n- nothing\n'
   const next = gateVerdict(parseBrief(`${base}means: The sessions are waiting.\nnext: Stop the agent; the job is finished.\nmessage:\nShow me each session finishing.\nend\ndoes: Makes the agent show the sessions.`), OPEN_JOB_OPEN)
   expect(next.refused).toBe(true)
@@ -651,11 +651,12 @@ test('gateVerdict replaces, beside the meaning, only the part that says stop: a 
   expect(none.answer).toMatchObject({ means: UNWRITTEN_MEANS, next: UNWRITTEN_NEXT, message: UNWRITTEN_MESSAGE, does: UNWRITTEN_DOES })
   const go = parseBrief('verdict: continue\nstands: Both parts are finished.\nmeans: m\nleft:\n- nothing\nnext: Run the suite and show it passing.\nmessage:\nShow me the suite passing.\nend\ndoes: d')
   const open = [c('two sessions finished', 'open')]
-  // No objective written: nothing may stop or be called going well, and the card's texts are the rep's.
+  // No objective written: nothing may stop or be called going well; the meaning and next step are the rep's, and a sound message stands with what it does.
   expect(gateVerdict(go, null).refused).toBe(false)
   const u = gateVerdict({ ...go, verdict: 'stop' }, null)
   expect(u.refused).toBe(true)
-  expect(u.answer).toMatchObject({ verdict: 'continue', well: '', means: UNWRITTEN_MEANS, next: UNWRITTEN_NEXT, message: UNWRITTEN_MESSAGE, does: UNWRITTEN_DOES, stands: 'Both parts are finished.' })
+  expect(u.answer).toMatchObject({ verdict: 'continue', well: '', means: UNWRITTEN_MEANS, next: UNWRITTEN_NEXT, message: 'Show me the suite passing.', does: 'd', stands: 'Both parts are finished.' })
+  expect(u.replaced).toEqual(['means', 'next'])
   expect(gateVerdict({ ...go, well: 'Going well.' }, null).refused).toBe(true)
   expect(UNWRITTEN_NEXT).toMatch(/objective is not written yet/)
   // No verdict line, or one that names neither, is missing, and is refused like a stop while a condition is open.
@@ -1043,6 +1044,76 @@ test('messageSaysStop lets four message shapes through that do not stop the agen
   expect(stops.map(m => [m, messageSaysStop(m)])).toEqual(stops.map(m => [m, true]))
   // The exemptions are a message's: a next step keeps STOP_NEXT's reading, which refuses these.
   for (const n of ['Wait for a reply from the lead.', 'Wait for his word on Submit.', 'Then the agent can stop and tell him exactly what it refused.']) expect([n, saysStop(n)]).toEqual([n, true])
+})
+
+// The done checks' refused card and an own-words reply, each with the message under test; the
+// own-words path starts from a gated card whose message was all stop sentences, so the message
+// is a replaced part and the own-words message is what is read.
+const REFUSED_CARD = (message: string) =>
+  parseBrief(`verdict: stop\nwell:\nstands: The build is made.\nmeans: Nothing is waiting.\nleft:\n- nothing\nnext: Run the two sessions and show each one finishing.\nmessage:\n${message}\nend\ndoes: Makes the agent show its work.`)
+const OWN_WORDS_REPLY = (message: string) =>
+  parseBrief(`means: The build is made; the sessions are not shown.\nnext: Run the sessions.\nmessage:\n${message}\nend\ndoes: Makes the agent show its work.`)
+const viaGate = (m: string, open: Condition[] | null = OPEN_JOB_OPEN) => {
+  const g = gateVerdict(REFUSED_CARD(m), open)
+  return [m, g.replaced, g.answer.message, g.answer.does]
+}
+const viaOwnWords = (m: string) => {
+  const gated = gateVerdict(REFUSED_CARD('Wrap up and stop here.'), OPEN_JOB_OPEN)
+  expect(gated.replaced).toEqual(['means', 'message'])
+  const t = takeOwnWords(gated.answer, gated.replaced, OWN_WORDS_REPLY(m))
+  return [m, t.message, t.does]
+}
+
+test('gateVerdict and takeOwnWords keep a message that does not say stop whole, byte for byte, with its does line: every kept message and every one of the seven shapes', () => {
+  const whole = [...STOP_KEPT, ...STOP_SHAPES]
+  expect(whole.map(m => viaGate(m))).toEqual(whole.map(m => [m, ['means'], m, 'Makes the agent show its work.']))
+  expect(whole.map(viaOwnWords)).toEqual(whole.map(m => [m, m, 'Makes the agent show its work.']))
+})
+
+test('on a refused card, through the gate and as the own-words message, only the stop sentences go and the rest of the message stands exactly; the fixed text comes only when nothing usable is left', () => {
+  const OWN = 'Makes the agent show its work.'
+  // The done checks' C3 cases 1 to 5 and 7: each input gives exactly its output.
+  const kept: [string, string][] = [
+    ['Good progress on the parser. You skipped the empty-file case and the log shows no run of the full suite. Add the empty-file test, run the whole suite and paste the counts. Then wait for my sign-off.',
+      'Good progress on the parser. You skipped the empty-file case and the log shows no run of the full suite. Add the empty-file test, run the whole suite and paste the counts.'],
+    ['The install is not shown.\n\nYou called the docs done, but the README still says 0.4. Fix it. You can stop after that.\n\nThen run the live scenario and paste the capture.',
+      'The install is not shown.\n\nYou called the docs done, but the README still says 0.4. Fix it.\n\nThen run the live scenario and paste the capture.'],
+    ['Three things are missing:\n- the empty-file test\n- the suite counts\n- the install log\nShow each one. Then hand it back to me. Please stop here.',
+      'Three things are missing:\n- the empty-file test\n- the suite counts\n- the install log\nShow each one.'],
+    ["You're done. Thanks.\n\nShow me the install log and the suite counts.", 'Thanks.\n\nShow me the install log and the suite counts.'],
+    ['Your summary said "you can stop now", but the suite never ran. Run it and paste the counts.', 'Your summary said "you can stop now", but the suite never ran. Run it and paste the counts.'],
+    ['Run the suite. Then do as the note says to: "You can stop now."', 'Run the suite.'],
+    ['Show me the log! Then stop.', 'Show me the log!'],
+    ['Did the suite run? Run it and paste the counts. (Then you can stop.)', 'Did the suite run? Run it and paste the counts.'],
+    ['Paste the counts (all of them). Then wait for my sign-off.', 'Paste the counts (all of them).'],
+  ]
+  // A message that tripped the gate keeps its prose and is not listed as replaced; one that did not (C3.5) is the card's whole.
+  expect(kept.map(([m]) => viaGate(m))).toEqual(kept.map(([m, out]) => [m, ['means'], out, OWN]))
+  expect(kept.map(([m]) => viaOwnWords(m))).toEqual(kept.map(([m, out]) => [m, out, OWN]))
+  // What is kept never says stop: the output is the written one, and the gate passes it as it is.
+  for (const [, out] of kept) expect([out, messageSaysStop(out), gateVerdict(REFUSED_CARD(out), OPEN_JOB_OPEN).answer.message]).toEqual([out, false, out])
+  // Nothing usable left (C3.6, C4): stop sentences beside a bare back-reference, praise or thanks.
+  // Through the gate the message is the fixed text, with its does line and listed as replaced;
+  // as the own-words message, the gated card's fixed text is left in place.
+  const none = ['You can stop once the README is fixed. Do that first.', 'Great work. You can stop now.', 'Thanks. Please stop.', 'Many thanks. You can stop now.', 'Well done so far. Thank you. Please stop here.']
+  expect(none.map(m => viaGate(m))).toEqual(none.map(m => [m, ['means', 'message'], OPEN_MESSAGE(OPEN_JOB_OPEN), OPEN_DOES]))
+  expect(none.map(viaOwnWords)).toEqual(none.map(m => [m, OPEN_MESSAGE(OPEN_JOB_OPEN), OPEN_DOES]))
+  // A kept message beside a does line that says stop: only the does line is the rep's, on both paths.
+  const mixed = kept[0]?.[0] ?? ''
+  const stopDoes = gateVerdict(parseBrief(`verdict: stop\nwell:\nstands: s\nmeans: m\nleft:\n- nothing\nnext: Run the suite.\nmessage:\n${mixed}\nend\ndoes: Makes the agent stop and wait for my approval.`), OPEN_JOB_OPEN)
+  expect([stopDoes.replaced, stopDoes.answer.message, stopDoes.answer.does]).toEqual([['means'], kept[0]?.[1], OPEN_DOES])
+  const gated = gateVerdict(REFUSED_CARD('Wrap up and stop here.'), OPEN_JOB_OPEN)
+  expect(takeOwnWords(gated.answer, gated.replaced, parseBrief(`means: m.\nnext: n.\nmessage:\n${mixed}\nend\ndoes: Makes the agent hand it back to me.`)))
+    .toMatchObject({ message: kept[0]?.[1], does: OPEN_DOES })
+  // No objective written (C3.8): the meaning and next step are the rep's, the message follows the same rule with the unwritten texts.
+  const nul = (m: string) => {
+    const g = gateVerdict(REFUSED_CARD(m), null)
+    return [m, g.replaced, g.answer.means, g.answer.next, g.answer.message, g.answer.does]
+  }
+  expect(kept.slice(0, 2).map(([m]) => nul(m))).toEqual(kept.slice(0, 2).map(([m, out]) => [m, ['means', 'next'], UNWRITTEN_MEANS, UNWRITTEN_NEXT, out, OWN]))
+  expect(nul('Great work. You can stop now.')).toEqual(['Great work. You can stop now.', ['means', 'next', 'message'], UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES])
+  const nulDoes = gateVerdict(parseBrief(`verdict: stop\nwell:\nstands: s\nmeans: m\nleft:\n- nothing\nnext: Run the suite.\nmessage:\n${mixed}\nend\ndoes: Makes the agent stop and wait for my approval.`), null)
+  expect([nulDoes.replaced, nulDoes.answer.message, nulDoes.answer.does]).toEqual([['means', 'next'], kept[0]?.[1], UNWRITTEN_DOES])
 })
 
 test('sectionOf takes one "## " section of a fixed text and throws, naming the heading, when the heading is missing', () => {
