@@ -29,6 +29,12 @@ What changed in each release of Owner Rep, newest first. The full record is the
   any stop taken out, goes on the card before the bare list does.
 - With no objective written yet, a sound message stands in the same way instead of being
   replaced.
+- **Only the stop is taken, and only where it is said.** A stop on a blocker is let through
+  only in the part of the sentence its "if" opens, a wait is let through before an outward act
+  only when that act is what it waits on, and signing off or applying a technical change is
+  not an outward act. Taking a sentence out never leaves a bracket or quote without its
+  partner, and a message that is only praise, thanks, a question or a pointer to an earlier
+  message is not chosen for Brief me's card.
 
 ## 0.5.0 (26 October 2026)
 
