@@ -1,5 +1,5 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 07348d8..761edf6 100644
+index 2e922aa..19054c6 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
 @@ -3032,7 +3032,7 @@ const OUTWARD_ACT = String.raw`(?:submit(?:s|ting)?|publish(?:es|ing)?|post(?:s|
@@ -8,6 +8,6 @@ index 07348d8..761edf6 100644
  const NEGATED_ACT = new RegExp(String.raw`(?:\bnot|\bnever|n['’]t)\s+${OUTWARD_ACT}`, 'i')
 -const WAIT_ON_HIM_BARE = new RegExp(String.raw`\bwaits?\s+(?:for|on|until|till)\s+${ON_HIM}(?:['’]s\s+[\w-]+)?(?:\s+(?:on|for)\s+(?:that|it|this))?${CLAUSE_END}`, 'gi')
 +const WAIT_ON_HIM_BARE = new RegExp(String.raw`\bwaits?\s+(?:for|on|until|till)\s+${ON_HIM}(?:['’]s\s+[\w-]+)?`, 'gi')
- const maskExempt = (read: string): string => {
-   let s = read.replace(BEFORE_STOPS, 'x').replace(WAIT_ON_OTHER, 'x ')
-   s = s.replace(BLOCKER_IF, (all: string, condition: string, clause: string) => (BLOCKER_TOLD.test(clause) ? condition + clause.replace(/\bstop\b/gi, 'x') : all))
+ // 5. A stop or hand-back asked about as the thing a cause led to: "which" or "what", up to three
+ // words ("which instruction or habit"), a causing verb (let, made, allowed, led, caused, told, got,
+ // permitted, in any tense the list holds), the agent or agents as its object (an aside between

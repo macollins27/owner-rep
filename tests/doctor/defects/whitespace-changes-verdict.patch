@@ -1,5 +1,5 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 07348d8..3d29ac9 100644
+index 2e922aa..fd0f919 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
 @@ -2997,7 +2997,7 @@ const BEFORE_STOPS = /\bbefore\s+the agent\s+(?:(?:can|may|should)\s+)?stops?\b/
@@ -11,8 +11,8 @@ index 07348d8..3d29ac9 100644
  // 3. A stop on a blocker that tells the owner what stands in the way: the sentence opens with "if"
  // and a condition, up to its first comma, that names a refusal or an absence, and the clause the
  // condition opens (from that comma, past an optional "then", to the next comma, semicolon, colon
-@@ -3053,7 +3053,7 @@ const maskExempt = (read: string): string => {
- // four exempt shapes above masked, then read by STOP_NEXT and STOP_ONCE. Only the copy read is
+@@ -3065,7 +3065,7 @@ const maskExempt = (read: string): string => {
+ // five exempt shapes above masked, then read by STOP_NEXT and STOP_ONCE. Only the copy read is
  // changed; a removal cuts the message's own text.
  const sentenceSaysStop = (sentence: string): boolean => {
 -  const read = maskExempt(toAgentVoice(maskReported(unwrap(sentence.replace(LIST_MARKER, '').replace(/\s+/g, ' ')))))

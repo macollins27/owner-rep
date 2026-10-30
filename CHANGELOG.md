@@ -13,13 +13,14 @@ What changed in each release of Owner Rep, newest first. The full record is the
   back to you are taken out, and the rest of the message stays word for word. The bare list
   appears only when nothing useful is left, such as a message that was only "Great work.
   You can stop now."
-- **Fewer good messages mistaken for a stop.** Four kinds of sentence are no longer read as
+- **Fewer good messages mistaken for a stop.** Five kinds of sentence are no longer read as
   telling the agent to stop: a push to finish more before it stops ("Two things before you
   stop."), a wait on someone other than you ("Wait for a reply from the lead."), a stop on a
   blocker that tells you exactly what stands in the way ("If the guard refuses the push,
-  stop and tell me exactly what it refused."), and a wait for your word before something
+  stop and tell me exactly what it refused."), a wait for your word before something
   only you decide, such as submitting a form, sending an email, publishing, paying or
-  signing. A wait for your go-ahead before merging, pushing, deleting, deploying or
+  signing, and a request to find what let the agent stop or hand work back to you ("Name
+  which instruction let you stop ordered work and hand it back to me."). A wait for your go-ahead before merging, pushing, deleting, deploying or
   installing is still treated as a stop, since those are the agent's to do.
 - **A stop once something is done is caught.** "You can stop once the README is fixed." and
   "You can stop after that." were let through before; they are now taken out like any other

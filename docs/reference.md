@@ -189,11 +189,11 @@ call writes (below):
    says`), orders what the quote says, so that quote is read, and a reporting word further
    back masks nothing (`You said it passed, and the log reads "You can stop now."` is read);
    then `toAgentVoice`; then
-   four shapes masked (`maskExempt`) that do not stop the agent while it could still move the
+   five shapes masked (`maskExempt`) that do not stop the agent while it could still move the
    work; then `STOP_NEXT` and `STOP_ONCE`. Each mask replaces only the words that make its
    shape with `x`, so the rest of the sentence is still read (`Before you stop, write the
    summary, then you're done.` is caught on "then the agent is done"); next steps are never
-   masked. The four, on the third-person copy:
+   masked. The five, on the third-person copy:
    1. A push to finish before the agent stops (`BEFORE_STOPS`: "before the agent stops", with
       can, may or should or not): `Two things before you stop.`
    2. A wait on someone other than the owner (`WAIT_ON_OTHER`): a wait for a, an or the reply,
@@ -245,6 +245,19 @@ call writes (below):
       running the tests.` is caught). Merging, pushing, deleting, deploying
       and installing are the agent's to do, so `Wait for my go-ahead before merging.` is
       still caught.
+   5. A stop or hand-back asked about as the thing a cause led to (`CAUSE_ASKED`, masked last):
+      "which" or "what" (not after "do", and never "whatever"), up to three words (`which
+      instruction or habit`), a causing verb (let, lets, made, makes, allowed, allows, led,
+      leads, caused, causes, told, tells, got, gets, permitted), the agent, any agent, another
+      agent or agents as its object (`CAUSED`, two joined by "or" or "and", and an aside
+      between commas after it), an optional "to", then stop or hand in any form; masked from
+      "which" or "what" to the clause's end (a comma, semicolon, colon, sentence mark or a word
+      in `BLOCKER_ENDS`). `Name which instruction let you, or any agent, stop ordered work and
+      hand it back to me as a yes-or-no.`, `Find what made the agent stop early and fix it.`
+      and `Say which rule lets agents hand work back to me, and remove it.` are kept. A stop in
+      another clause or sentence is read: `Find what made you stop, then stop.`, `Find which
+      rule made you stop and then you can stop now.`, and the second sentence of `Which rule
+      lets you stop? You can stop now.` are caught, and so is `Do what lets you stop.`
 
    `STOP_ONCE` catches a stop once something is done, its subject
    a clause's start or the agent with can, may, should, could or is free to (`You can stop

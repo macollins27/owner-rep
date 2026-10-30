@@ -15,7 +15,7 @@ import type { On, SessionMessage } from 'claude-code'
 import { expect, mock, test as kitTest, type Engine, type TestBody, type TestOptions } from 'claude-code/testing'
 
 import { type Memory, CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fillCard, countLine, refusedLine, type CardText, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, OLD_SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, sentencesOf, withoutStopSentences, toAgentVoice, sectionOf, takeOwnWords, ownMessageTaken, earlierMessage, messageUsable, type Replaced, parseOwnWords, ownWordsPrompt, askAgain, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
-import { REFUSED_ENVIRONMENT, MISSING_REMOTE, BEFORE_YOU_STOP_COLON, WAIT_BEFORE_SUBMIT, THREE_BEFORE_YOU_STOP, TWO_BEFORE_YOU_STOP, GUARD_REFUSAL, STOP_SHAPES } from './fixtures/stop-shapes'
+import { REFUSED_ENVIRONMENT, MISSING_REMOTE, BEFORE_YOU_STOP_COLON, WAIT_BEFORE_SUBMIT, THREE_BEFORE_YOU_STOP, TWO_BEFORE_YOU_STOP, GUARD_REFUSAL, PAUSED_WORK_CAUSE, STOP_SHAPES } from './fixtures/stop-shapes'
 
 // Every test starts with the session's working folder a Unix path, so what the suite reads does not
 // depend on the folder the kit gives it: on a Windows machine that folder is a drive path, which
@@ -861,7 +861,7 @@ test('messageSaysStop reads a message in the owner\'s voice to the agent: shifte
   expect(takeOwnWords(gated.answer, gated.replaced, own(kept[3] ?? '', 'Makes the agent hand it back to me.'))).toMatchObject({ message: 'Show me each session finishing.', does: OPEN_DOES })
 })
 
-test('messageSaysStop leaves the seven shapes of message that once tripped it though none tells the agent to stop; each reaches the card whole, through the gate on a refused card and as the own-words message', () => {
+test('messageSaysStop leaves the eight shapes of message that once tripped it though none tells the agent to stop; each reaches the card whole, through the gate on a refused card and as the own-words message', () => {
   // A stop on a blocker paired with telling the owner what stands in the way, a wait on his word
   // before Submit, and "before you stop" pushes to finish more work (tests/fixtures/stop-shapes.ts).
   const shapes: [string, string][] = [
@@ -872,6 +872,7 @@ test('messageSaysStop leaves the seven shapes of message that once tripped it th
     ['three before you stop', THREE_BEFORE_YOU_STOP],
     ['two before you stop', TWO_BEFORE_YOU_STOP],
     ['guard refusal', GUARD_REFUSAL],
+    ['cause of a stop', PAUSED_WORK_CAUSE],
   ]
   expect(shapes.map(([, m]) => m)).toEqual(STOP_SHAPES)
   const card = (message: string) =>
@@ -880,7 +881,7 @@ test('messageSaysStop leaves the seven shapes of message that once tripped it th
     parseBrief(`means: The build is made; the sessions are not shown.\nnext: Run the sessions.\nmessage:\n${message}\nend\ndoes: Makes the agent show the sessions.`)
   const gated = gateVerdict(card('Wrap up and stop here.'), OPEN_JOB_OPEN)
   expect(gated.replaced).toEqual(['means', 'message'])
-  // Each assertion holds all seven, so a failure names every shape it fails on.
+  // Each assertion holds all eight, so a failure names every shape it fails on.
   expect(shapes.map(([name, m]) => [name, messageSaysStop(m)])).toEqual(shapes.map(([name]) => [name, false]))
   expect(shapes.map(([name, m]) => {
     const g = gateVerdict(card(m), OPEN_JOB_OPEN)
@@ -1077,7 +1078,7 @@ const viaOwnWords = (m: string) => {
   return [m, t.message, t.does]
 }
 
-test('gateVerdict and takeOwnWords keep a message that does not say stop whole, byte for byte, with its does line: every kept message and every one of the seven shapes', () => {
+test('gateVerdict and takeOwnWords keep a message that does not say stop whole, byte for byte, with its does line: every kept message and every one of the eight shapes', () => {
   const whole = [...STOP_KEPT, ...STOP_SHAPES]
   expect(whole.map(m => viaGate(m))).toEqual(whole.map(m => [m, ['means'], m, 'Makes the agent show its work.']))
   expect(whole.map(viaOwnWords)).toEqual(whole.map(m => [m, m, 'Makes the agent show its work.']))
@@ -1369,6 +1370,39 @@ test('after a negated outward act, a wait on the owner whose only object refers 
     'Do not publish it; wait for my word on the tests.',
     'Do not publish it; wait for my word on that, then stop.',
     'Wait for my word on that.',
+  ]
+  expect(caught.map(R1_CAUGHT_WHOLE)).toEqual(caught.map(R1_CAUGHT_OUT))
+})
+
+test('a stop or hand-back that is the object of a question about its cause ("which instruction let you stop", "what made the agent stop") orders no stop and is kept; a stop in another clause or sentence is caught', () => {
+  for (const m of [
+    PAUSED_WORK_CAUSE,
+    'Paused work: name exactly which instruction or habit let you, or any agent, stop ordered work and hand it back to me as a yes-or-no.',
+    'Find what made the agent stop early and fix it.',
+    'Say which rule lets agents hand work back to me, and remove it.',
+    'Find which setting made you stop, and remove it.',
+    'Name the line that says what told the agent to stop and hand it back to me.',
+    'Find out why you stopped.',
+    'Say why the agent stopped.',
+    'Say why you handed it back.',
+  ])
+    expect([m, messageSaysStop(m), withoutStopSentences(m), viaGate(m)[2], viaOwnWords(m)[1]]).toEqual([m, false, m, m, m])
+  // A question about the cause, with an order to stop in the next sentence: only that one goes.
+  for (const [m, out] of [
+    ['Which rule lets you stop? You can stop now.', ''],
+    ['Which rule lets you stop? Find it and remove it. You can stop now.', 'Which rule lets you stop? Find it and remove it.'],
+    ['Tell me what made you stop. Then hand it back to me.', 'Tell me what made you stop.'],
+  ] as [string, string][])
+    expect([m, withoutStopSentences(m)]).toEqual([m, out])
+  expect([messageSaysStop('Which rule lets you stop?'), messageSaysStop('You can stop now.')]).toEqual([false, true])
+  const caught = [
+    'Find what made you stop, then stop.',
+    'You can stop now, whatever made you start.',
+    'Let me know which step is next, then you can stop.',
+    'Find which rule made you stop and then you can stop now.',
+    'Say which rule made you stop; then stop.',
+    'Do what lets you stop, then hand it back to me.',
+    'Do what lets you stop.',
   ]
   expect(caught.map(R1_CAUGHT_WHOLE)).toEqual(caught.map(R1_CAUGHT_OUT))
 })

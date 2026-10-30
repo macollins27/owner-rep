@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 2e922aa..87dc544 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3055,7 +3055,7 @@ const maskExempt = (read: string): string => {
+     const after = negated.index + negated[0].length
+     s = s.slice(0, after) + s.slice(after).replace(WAIT_ON_HIM_BARE, 'x')
+   }
+-  return s.replace(CAUSE_ASKED, 'x ')
++  return s
+ }
+ 
+ // One sentence of a message read for a stop: its list marker and any wholly enclosing brackets

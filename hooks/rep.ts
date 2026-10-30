@@ -2986,7 +2986,7 @@ const maskReported = (sentence: string): string =>
 // Read on a message and its does line only; a next step keeps STOP_NEXT alone.
 const STOP_ONCE = new RegExp(String.raw`(?:${CLAUSE}|\bthe agent\s+(?:can|may|should|could|is free to)\s+)(?:please\s+)?stop\s+(?:after\s+(?:that|this|it)\b|once\b|when\b|as soon as\b)`, 'i')
 
-// Four shapes of a message sentence that do not stop the agent while it could still move the work,
+// Five shapes of a message sentence that do not stop the agent while it could still move the work,
 // read on the third-person copy. Only the words that make each shape are masked (to "x", which
 // starts no clause and matches no pattern), so the rest of the sentence is still read: "Before you
 // stop, write the summary, then you're done." is still caught on "then the agent is done". Read on
@@ -3033,6 +3033,18 @@ const WAIT_BEFORE_ACT = new RegExp(String.raw`\bwaits?\s+for\s+(?:(?:the owner['
 const NOT_A_BUTTON = /^(?:merg(?:e|es|ed|ing)|push(?:es|ed|ing)?|delet(?:e|es|ed|ing)|deploy(?:s|ed|ing)?|install(?:s|ed|ing)?|the|this|that|it|a|an)$/i
 const NEGATED_ACT = new RegExp(String.raw`(?:\bnot|\bnever|n['’]t)\s+${OUTWARD_ACT}`, 'i')
 const WAIT_ON_HIM_BARE = new RegExp(String.raw`\bwaits?\s+(?:for|on|until|till)\s+${ON_HIM}(?:['’]s\s+[\w-]+)?(?:\s+(?:on|for)\s+(?:that|it|this))?${CLAUSE_END}`, 'gi')
+// 5. A stop or hand-back asked about as the thing a cause led to: "which" or "what", up to three
+// words ("which instruction or habit"), a causing verb (let, made, allowed, led, caused, told, got,
+// permitted, in any tense the list holds), the agent or agents as its object (an aside between
+// commas allowed: "let you, or any agent, stop"), an optional "to", then a stop or hand-back word;
+// masked from "which" or "what" to the clause's end (a comma, semicolon, colon, sentence mark or
+// a word that starts an unconditional instruction, as for a blocker). "Name which instruction let
+// you, or any agent, stop ordered work and hand it back to me." and "Find what made the agent stop
+// early and fix it." order no stop. A stop in another clause or sentence is read: "Find what made
+// you stop, then stop.", "Which rule lets you stop? You can stop now." (the second sentence). Not
+// after "do" ("Do what lets you stop." is an order), and "whatever" is no "what".
+const CAUSED = String.raw`(?:the agent|any agent|another agent|(?:the\s+)?(?:other\s+)?agents)`
+const CAUSE_ASKED = new RegExp(String.raw`(?<!\bdo\s+)\b(?:which|what)\b(?:\s+[\w'’-]+){0,3}?\s+(?:let|lets|made|makes|allowed|allows|led|leads|caused|causes|told|tells|got|gets|permitted)\s+${CAUSED}(?:\s+(?:or|and)\s+${CAUSED})?(?:\s*,[^,;:.!?]*,)?\s+(?:to\s+)?(?:stop(?:s|ped|ping)?|hand(?:s|ed|ing)?)\b(?:(?!\b(?:${BLOCKER_ENDS})\b)[^;:,.!?])*`, 'gi')
 const maskExempt = (read: string): string => {
   let s = read.replace(BEFORE_STOPS, 'x').replace(WAIT_ON_OTHER, 'x ')
   s = s.replace(BLOCKER_IF, (all: string, condition: string, clause: string) => (BLOCKER_TOLD.test(clause) ? condition + clause.replace(/\bstop\b/gi, 'x') : all))
@@ -3043,14 +3055,14 @@ const maskExempt = (read: string): string => {
     const after = negated.index + negated[0].length
     s = s.slice(0, after) + s.slice(after).replace(WAIT_ON_HIM_BARE, 'x')
   }
-  return s
+  return s.replace(CAUSE_ASKED, 'x ')
 }
 
 // One sentence of a message read for a stop: its list marker and any wholly enclosing brackets
 // or quotes taken off, every run of whitespace read as one space (so no run of spaces or tabs
 // changes a verdict: "Wait for a reply from  me." and "Leave the rest  to me." are caught as
 // with one space), quoted words after a reporting word masked, turned to the third person, the
-// four exempt shapes above masked, then read by STOP_NEXT and STOP_ONCE. Only the copy read is
+// five exempt shapes above masked, then read by STOP_NEXT and STOP_ONCE. Only the copy read is
 // changed; a removal cuts the message's own text.
 const sentenceSaysStop = (sentence: string): boolean => {
   const read = maskExempt(toAgentVoice(maskReported(unwrap(sentence.replace(LIST_MARKER, '').replace(/\s+/g, ' ')))))

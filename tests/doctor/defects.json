@@ -2110,5 +2110,29 @@
     "breaks": "After a negated outward act, a wait on the owner whose only object refers back to it is read as a stop, so \"Do not publish it; wait for my word on that.\" is taken out.",
     "patch": "negated-act-back-reference-caught.patch",
     "fixed": "2026-10-30"
+  },
+  {
+    "name": "cause-question-stop-removed",
+    "breaks": "A stop or hand-back asked about as the thing a cause led to is read as an order, so \"Name which instruction let you, or any agent, stop ordered work and hand it back to me.\" is taken out.",
+    "patch": "cause-question-stop-removed.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "cause-question-past-clause",
+    "breaks": "The mask on a stop asked about as a cause runs to the sentence end, so the stop in its next clause is let through: \"Find what made you stop, then stop.\" is kept.",
+    "patch": "cause-question-past-clause.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "cause-question-after-do",
+    "breaks": "An order to do what lets the agent stop is read as a question about a cause, so \"Do what lets you stop.\" is kept.",
+    "patch": "cause-question-after-do.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "cause-question-aside-refused",
+    "breaks": "A question about a cause with an aside between commas after its object (\"let you, or any agent, stop\") is read as an order and its sentence taken out.",
+    "patch": "cause-question-aside-refused.patch",
+    "fixed": "2026-10-30"
   }
 ]

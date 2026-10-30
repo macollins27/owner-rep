@@ -1,8 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index a05c4e1..e05a4b1 100644
+index 2e922aa..46d5b46 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3028,13 +3028,6 @@ const WAIT_ON_HIM_BARE = new RegExp(String.raw`\bwaits?\s+(?:for|on|until|till)\
+@@ -3048,13 +3048,6 @@ const CAUSE_ASKED = new RegExp(String.raw`(?<!\bdo\s+)\b(?:which|what)\b(?:\s+[\
  const maskExempt = (read: string): string => {
    let s = read.replace(BEFORE_STOPS, 'x').replace(WAIT_ON_OTHER, 'x ')
    s = s.replace(BLOCKER_IF, (all: string, condition: string, clause: string) => (BLOCKER_TOLD.test(clause) ? condition + clause.replace(/\bstop\b/gi, 'x') : all))
@@ -13,6 +13,6 @@ index a05c4e1..e05a4b1 100644
 -    const after = negated.index + negated[0].length
 -    s = s.slice(0, after) + s.slice(after).replace(WAIT_ON_HIM_BARE, 'x')
 -  }
-   return s
+   return s.replace(CAUSE_ASKED, 'x ')
  }
  

@@ -1,5 +1,5 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 07348d8..bce04ac 100644
+index 2e922aa..68d541b 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
 @@ -3030,7 +3030,7 @@ const BLOCKER_TOLD = /\btell\s+the owner\s+(?:(?:exactly|plainly|clearly)\s+)?(?
@@ -10,4 +10,4 @@ index 07348d8..bce04ac 100644
 +const NOT_A_BUTTON = /^(?:merge|push|delete|deploy|install|the|this|that|it|a|an)$/i
  const NEGATED_ACT = new RegExp(String.raw`(?:\bnot|\bnever|n['’]t)\s+${OUTWARD_ACT}`, 'i')
  const WAIT_ON_HIM_BARE = new RegExp(String.raw`\bwaits?\s+(?:for|on|until|till)\s+${ON_HIM}(?:['’]s\s+[\w-]+)?(?:\s+(?:on|for)\s+(?:that|it|this))?${CLAUSE_END}`, 'gi')
- const maskExempt = (read: string): string => {
+ // 5. A stop or hand-back asked about as the thing a cause led to: "which" or "what", up to three

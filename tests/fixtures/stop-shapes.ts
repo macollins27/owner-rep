@@ -1,4 +1,4 @@
-// Seven messages of the shapes the rep's own messages took when one sentence tripped the stop
+// Eight messages of the shapes the rep's own messages took when one sentence tripped the stop
 // detector though none tells the agent to stop while it could still move the work. Each keeps a
 // real message's sentence boundaries, line breaks, lists and paragraphs, and its tripping clause
 // word for word; every name of a person, place, employer, project or folder is replaced by a
@@ -26,5 +26,9 @@ export const TWO_BEFORE_YOU_STOP = 'Two things before you stop. First, the share
 // Guard refusal: a stop on the guard refusing the push, telling the owner what it refused.
 export const GUARD_REFUSAL = "The new remote is now added. Finish the job:\n- Push main to the remote. Do not push the old-docs branch.\n- Watch the workflow run that this push starts until it finishes. Show the printed result for each of the three Node versions and give me the run's link. If any version fails, fix it, push again and show a passing run.\n- Then delete the spare old-docs branch with the cleanup tool and show the branch list afterwards.\n- Do not change the repository's visibility or settings, and do not create anything else online. If the guard refuses the push, stop and tell me exactly what it refused.\nReport back in plain words, with the printed run result."
 
-// All seven, in the order above.
-export const STOP_SHAPES = [REFUSED_ENVIRONMENT, MISSING_REMOTE, BEFORE_YOU_STOP_COLON, WAIT_BEFORE_SUBMIT, THREE_BEFORE_YOU_STOP, TWO_BEFORE_YOU_STOP, GUARD_REFUSAL]
+// The cause of a stop asked for: which instruction let the agent stop and hand work back, a
+// stop and hand-back named as the thing to find and remove, not ordered.
+export const PAUSED_WORK_CAUSE = '6. Paused work: name exactly which instruction or habit let you, or any agent, stop ordered work and hand it back to me as a yes-or-no. Show the change that removes it, saved and committed, and print it.'
+
+// All eight, in the order above.
+export const STOP_SHAPES = [REFUSED_ENVIRONMENT, MISSING_REMOTE, BEFORE_YOU_STOP_COLON, WAIT_BEFORE_SUBMIT, THREE_BEFORE_YOU_STOP, TWO_BEFORE_YOU_STOP, GUARD_REFUSAL, PAUSED_WORK_CAUSE]

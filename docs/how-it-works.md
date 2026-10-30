@@ -161,7 +161,7 @@ any sentence other than those three forms counts: a statement of fact such as "T
 not shown." is a finding that tells the agent what to show, and requiring an order would
 throw findings away.
 
-Read alone, a sentence is judged in its own context. Four shapes are let through because they
+Read alone, a sentence is judged in its own context. Five shapes are let through because they
 keep the agent on the work or leave with the owner only what is truly the owner's, and only
 the words that make the shape are set aside, so the rest of the sentence is still read. A
 push to finish more before stopping ("Two things before you stop.") moves the work on. A wait
@@ -183,7 +183,10 @@ owner after a sentence that says not to publish is kept only when it waits on no
 on that act again ("Do not publish it; wait for my word on that."), so "Do not publish the
 report; wait for my approval before running the tests." is still taken out. Signing off on the tests, applying a migration and posting results to a pull request are
 the agent's work, and so are merging, pushing, deleting, deploying and installing in any form,
-so a wait before them is still a stop. A run of spaces or tabs never changes what a sentence
+so a wait before them is still a stop. A stop or a hand-back named as what an instruction or
+habit led to ("name which instruction let you stop ordered work and hand it back to me") is
+the thing the owner wants found and removed, not an order, so it is kept; a stop in another
+clause or sentence ("Find what made you stop, then stop.") is still taken out. A run of spaces or tabs never changes what a sentence
 is taken to say. A stop once something is done
 ("You can stop after that.", "You can stop once the README is fixed.") is caught, and a stop
 inside quotation marks is read only when the sentence orders it ("Do as the note says to:
@@ -245,7 +248,7 @@ message for the list, so a sound message ending in one stop sentence lost every 
 held, and seven of the 278 messages the rep had written in real sessions, which told
 the agent to finish more before stopping, to report a blocker, or to wait for the owner's
 word before submitting, were caught as stops. The message now loses
-only its stop sentences, and those four shapes are let through.
+only its stop sentences, and those four shapes, and a stop asked about as what a cause led to, are let through.
 
 A message the rep drafted and the owner sent through "Put message in prompt" is recorded as
 the rep's draft, never as the owner's words, and is recognised from the record after a
