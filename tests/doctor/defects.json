@@ -2272,5 +2272,35 @@
     "breaks": "The second read is not told an empty message counts, so a read refused for its empty message is asked again without the reason.",
     "patch": "ask-again-silent-on-empty.patch",
     "fixed": "2026-10-30"
+  },
+  {
+    "name": "empty-refusal-no-second-read",
+    "breaks": "A card refused only for its empty message gets no second read, so the model is not asked to write the message.",
+    "patch": "empty-refusal-no-second-read.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "own-words-silent-on-empty",
+    "breaks": "The own-words call is not told the message was left empty, so its opening names a stop that never happened.",
+    "patch": "own-words-silent-on-empty.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "check-drops-instant-message",
+    "breaks": "The Check card drops the instant read's message when the checker writes none, though that card passed the gate.",
+    "patch": "check-drops-instant-message.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "empty-all-shown-refused",
+    "breaks": "The gate refuses every empty message, so a card with every condition shown or closed gets the fixed text with an empty list.",
+    "patch": "empty-all-shown-refused.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "usable-message-refused",
+    "breaks": "A sound card with a usable message and open conditions is refused as if it were empty, so a good read 1 costs a second read and loses its message.",
+    "patch": "usable-message-refused.patch",
+    "fixed": "2026-10-30"
   }
 ]

@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index bc23d30..c4ee99c 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -700,7 +700,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
+     // What came of the own-words call, and its reply's length, for the record.
+     let ownRead: OwnRead = 'skipped'
+     let ownChars = 0
+-    if (first.refused && first.open !== null) {
++    if (first.refused && first.open !== null && first.replaced.join() !== 'message') {
+       reads += 1
+       const again = await ask(askAgain(first.open))
+       if (!('reason' in again)) taken = again

@@ -4433,6 +4433,95 @@ const OWN_NONE: Array<[string, () => Promise<string> | string]> = [
 const showsExactly = async (ui: { findAll: (q: { type: string }) => Promise<Array<{ text: string }>> }, text: string) =>
   (await ui.findAll({ type: 'Text' })).some(t => t.text === text)
 
+// A sound answer with no message, and a stop whose message is usable; the fixed text as a literal.
+const EMPTY_BRIEF = () => 'verdict: continue\nwell:\nstands: Both parts are built.\nmeans: The build is made and nothing shows it running.\nleft:\n- nothing\nnext: Show the two sessions finishing.\nmessage:\nend\ndoes: Makes the agent show the sessions.'
+const USABLE_BRIEF = (verdict: string, well = '') => `verdict: ${verdict}\nwell:${well}\nstands: Both parts are built.\nmeans: The build is made and nothing shows it running.\nleft:\n- nothing\nnext: Show the two sessions finishing.\nmessage:\nShow me each session finishing.\nend\ndoes: Makes the agent show the sessions.`
+const FIXED_TEXT = 'The job is not finished. These conditions of done are still open:\n- the newest build installed (not shown)\n- two sessions finished\nBefore anything stops, show each one working, or say what stands in the way. If a step needs my go-ahead, hold it: finish the rest, and tell me what you will show me when I give it.'
+
+test('rule: Brief me, read 1 with no message while work is open: read 2 is told so, and read 2\'s message is the card\'s', async ($, on) => {
+  const rec = openJob(on)
+  quietBand(on)
+  const prompts: string[] = []
+  const replies = [EMPTY_BRIEF(), USABLE_BRIEF('continue')]
+  on('model.fork', (_$, e) => {
+    prompts.push(String(e.prompt))
+    return { value: { isAnswered: true, text: replies[prompts.length - 1] ?? '', usage: USAGE } }
+  })
+  const asks = ownWords(on, () => OWN_WORDS())
+  await started($)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.unmount()
+  expect(prompts).toHaveLength(2)
+  expect(prompts[0]).not.toContain('An empty message counts too')
+  expect(prompts[1]).toContain('An empty message counts too: while any of these is open, write the message to the agent, asking for the proof of each.')
+  expect(asks).toHaveLength(0)
+  expect(rec()?.lastBrief).toMatchObject({ message: 'Show me each session finishing.', reads: 2, own: 'skipped' })
+})
+
+test('rule: Brief me, reads 1 and 2 with no message: the own-words call, told why, writes the card\'s message', async ($, on) => {
+  const rec = openJob(on)
+  quietBand(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: EMPTY_BRIEF(), usage: USAGE } }))
+  const asks = ownWords(on, () => OWN_REPLY('Show me the install log and each session finishing.'))
+  await started($)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.unmount()
+  expect(asks).toHaveLength(1)
+  expect(asks[0]?.prompt).toContain('or said the work is going well, or left the message empty, and asking it once more')
+  expect(rec()?.lastBrief).toMatchObject({ message: 'Show me the install log and each session finishing.', reads: 3, own: 'whole' })
+})
+
+test('rule: Brief me, reads 1 and 2 with no message and the own-words call failing: the card carries the fixed text', async ($, on) => {
+  const rec = openJob(on)
+  quietBand(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: EMPTY_BRIEF(), usage: USAGE } }))
+  ownWords(on, () => Promise.reject(new Error('the model is down')))
+  await started($)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.unmount()
+  expect(rec()?.lastBrief).toMatchObject({ message: FIXED_TEXT, reads: 3, own: 'none' })
+})
+
+test('rule: Brief me, a stop with a usable message, then read 2 with none and the own-words call failing: read 1\'s message stands', async ($, on) => {
+  const rec = openJob(on)
+  quietBand(on)
+  const replies = [USABLE_BRIEF('stop', ' All done.'), EMPTY_BRIEF()]
+  let forks = 0
+  on('model.fork', () => {
+    forks += 1
+    return { value: { isAnswered: true, text: replies[forks - 1] ?? '', usage: USAGE } }
+  })
+  ownWords(on, () => Promise.reject(new Error('the model is down')))
+  await started($)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.unmount()
+  expect(forks).toBe(2)
+  expect(rec()?.lastBrief).toMatchObject({ message: 'Show me each session finishing.', reads: 3, own: 'none' })
+})
+
+test('rule: Brief me, a usable read 1 with open conditions: one read, and its message on the card', async ($, on) => {
+  const rec = openJob(on)
+  quietBand(on)
+  let forks = 0
+  on('model.fork', () => {
+    forks += 1
+    return { value: { isAnswered: true, text: USABLE_BRIEF('continue'), usage: USAGE } }
+  })
+  const asks = ownWords(on, () => OWN_WORDS())
+  await started($)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  expect(await showsExactly(ui, 'Show me each session finishing.')).toBe(true)
+  await ui.unmount()
+  expect(forks).toBe(1)
+  expect(asks).toHaveLength(0)
+  expect(rec()?.lastBrief).toMatchObject({ message: 'Show me each session finishing.', reads: 1, own: 'skipped' })
+})
+
 test('rule: Brief me, all three reads with messages made only of stop sentences: the card lists the open conditions', async ($, on) => {
   const rec = openJob(on)
   quietBand(on)
@@ -4946,6 +5035,37 @@ test('rule: a check that finds a condition held shown is not so moves it back to
   expect(await ui.find({ type: 'Text', text: /Stop the agent|Wrap up and stop here/ })).toBeUndefined()
   expect(await greens(ui)).toEqual([])
   await ui.unmount()
+})
+
+// The check's card over an open job: the instant read's reply, then the checker's.
+const checkedCard = async ($: Engine, on: On, brief: string, out: string) => {
+  const rec = kept(on, OPEN_JOB())
+  quietBand(on)
+  checkRoom(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: brief, usage: USAGE } }))
+  ownWords(on, () => Promise.reject(new Error('the model is down')))
+  on('process.spawn', async function* () {
+    yield { stream: 'stdout', text: out }
+    return { value: { code: 0, signal: null } }
+  })
+  await started($)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+  await ui.unmount()
+  return rec()?.lastBrief?.message
+}
+
+test('rule: the Check card, the instant card refused and the checker writing no message while conditions stay open: the card carries the fixed text', async ($, on) => {
+  expect(await checkedCard($, on, STOP_BRIEF(), CHECK_OUT('continue', {}))).toBe(FIXED_TEXT)
+})
+
+test('rule: the Check card, the instant card passed with a message and the checker writing none: the instant message stays', async ($, on) => {
+  expect(await checkedCard($, on, USABLE_BRIEF('continue'), CHECK_OUT('continue', {}))).toBe('Show me each session finishing.')
+})
+
+test('rule: the Check card, the checker showing every condition and writing no message: the message stays empty', async ($, on) => {
+  expect(await checkedCard($, on, STOP_BRIEF(), CHECK_OUT('continue', { shown: '- the newest build installed | the install log printed the revision\n- two sessions finished | both sessions printed their results' }))).toBe('')
 })
 
 // The condition the check found not so, as the record holds it after the check.

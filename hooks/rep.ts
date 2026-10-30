@@ -3330,7 +3330,7 @@ export function ownWordsPrompt(m: Memory, open: Condition[], a: BriefAnswer): st
 
 ## This request
 
-The briefing's answer said the agent should stop, gave no verdict, called the work finished, or said the work is going well, and asking it once more did not change that, while these conditions of done are still open:
+The briefing's answer said the agent should stop, gave no verdict, called the work finished, or said the work is going well, or left the message empty, and asking it once more did not change that, while these conditions of done are still open:
 ${list(open.map(promptLine), '- none')}
 So the card the rep shows the owner keeps the agent on the job. Here is what the rep itself found in the conversation:
 
