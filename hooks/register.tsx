@@ -171,6 +171,11 @@ import {
   writerShowings,
   TOOK_INLINE_BYTES,
   approvalOf,
+  readerParts,
+  readerLines,
+  notAssessedLines,
+  WATCH_APPROVED_BUDGET,
+  BRIEF_APPROVED_BUDGET,
   writeFailure,
   parseWatch,
   resultOf,
@@ -222,6 +227,8 @@ type Rec = {
   owner: OwnerMsg[]
   // The last number given to an owner message.
   counter: number
+  // The Heads up's cursor through the approved plans: the highest it showed in turn (`readerParts`).
+  readerAt?: { watch: number }
   past: string[]
   seen: string[]
   others: string[]
@@ -426,7 +433,7 @@ async function changeRec<T>($: EngineInterface, id: string, change: (rec: Rec) =
       const now = new Set(await filesOf($, rec))
       await removeFiles($, [...was.files.filter(f => !now.has(f)), ...lost], false)
     }
-    if (onScreen(id)) await update($, linesA, () => recordLines(rec, storeFull.get(id), coverShown.get(id)))
+    if (onScreen(id)) await update($, linesA, () => recordLines(rec, storeFull.get(id), coverShown.get(id), lastShown.get(id)))
     return out
   } finally {
     done()
@@ -655,15 +662,19 @@ async function markLost($: EngineInterface, sid: string, lost: readonly Lost[]):
   })
 }
 
-// What the readers are given: the job's messages, the approvals kept past the trim read whole,
-// and the lines for what the record could not keep or save.
-async function memoryFor($: EngineInterface, sid: string, rec: Rec): Promise<Memory> {
+// What a reader is given: the job's messages, each one's words as sent read back whole and each
+// approval's sources with them, the approved plans that fit its room (the Heads up from its
+// cursor), and the lines for what the record could not keep or save.
+async function memoryFor($: EngineInterface, sid: string, rec: Rec, reader: 'watch' | 'brief'): Promise<Memory> {
   const base = memoryOf(rec)
-  const pinned = base.owner.filter(m => m.pinned === true)
-  const { msgs, lost } = await readable($, sid, pinned, ['sent', 'body', 'took'])
-  await markLost($, sid, lost)
-  const owner = base.owner.map(m => (m.pinned === true ? (msgs[pinned.indexOf(m)] ?? m) : m))
-  return { ...base, owner, lines: recordLines(rec, storeFull.get(sid)) }
+  const approvals = base.owner.filter(approvalOf)
+  const rest = base.owner.filter(m => !approvalOf(m))
+  const a = await readable($, sid, approvals, ['sent', 'body', 'took'])
+  const b = await readable($, sid, rest, ['sent'])
+  await markLost($, sid, [...a.lost, ...b.lost])
+  const owner = base.owner.map(m => (approvalOf(m) ? a.msgs[approvals.indexOf(m)] : b.msgs[rest.indexOf(m)]) ?? m)
+  const approved = reader === 'watch' ? readerParts(owner, WATCH_APPROVED_BUDGET, rec.readerAt?.watch ?? 0) : readerParts(owner, BRIEF_APPROVED_BUDGET)
+  return { ...base, owner, approved, lines: recordLines(rec, storeFull.get(sid)) }
 }
 
 // The store refused the record: its inline texts go to files, or memory when the files refuse
@@ -1218,8 +1229,11 @@ async function readSession($: EngineInterface, sid: string, rec: Rec, task: (cov
     )
   return { result: result as ModelForkResult, shown: cover.shown }
 }
-// What the newest read of each session found of its approval's place, for the row.
+// What the newest read of each session found of its approval's place, the approved plans it
+// could not compare and the steps it could not assess, for the row; and the Heads up's own
+// too-long line, shown only while no other line stands.
 const coverShown = new Map<string, string[]>()
+const lastShown = new Map<string, string[]>()
 
 // One look by the watch: the same cached copy of the conversation the agent
 // works from, read by a fresh instance with the rep's brief. Never awaited by
@@ -1233,19 +1247,25 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
     })
     return
   }
-  const memory = { ...(await memoryFor($, sid, rec)), context: await contextOf($) }
+  const memory = { ...(await memoryFor($, sid, rec, 'watch')), context: await contextOf($) }
   const got = await readSession($, sid, rec, cover => watchPrompt({ ...memory, cover }, reason))
   // Nothing recorded yet: no model was called, and there is nothing to count.
   if (got.result === NOTHING_READ) return
   const result = got.result
-  coverShown.set(sid, got.shown)
+  const fill = memory.approved
+  const plans = fill === undefined ? { lines: [], last: [] } : readerLines(fill, 'watch')
+  const parsed = result.isAnswered ? parseWatch(result.text) : null
+  coverShown.set(sid, [...got.shown, ...plans.lines, ...notAssessedLines(parsed?.notAssessed ?? [], memory.owner)])
+  lastShown.set(sid, plans.last)
   const usage = 'usage' in result ? result.usage : null
   await changeRec($, sid, async after => {
     after.calls += 1
     after.tokens += tokensOf(usage)
     after.cached += cachedOf(usage)
-    if (!result.isAnswered) return
-    const answer = parseWatch(result.text)
+    if (!result.isAnswered || parsed === null) return
+    // An answered look moves the cursor, so the next one shows the plans after these.
+    if (fill?.cursor !== undefined) after.readerAt = { watch: fill.cursor }
+    const answer = parsed
     if (applyMarks(after, answer.shown, answer.closed) && onScreen(sid)) await update($, readingA, () => after.objective)
     const view = await read($, viewA)
     if (answer.flag !== null && view === 'row' && onScreen(sid) && ![...after.seen].some(s => same(s, answer.flag ?? ''))) {
@@ -1279,13 +1299,16 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     let shown: string[] = []
     const ask = async (extra: string) => {
       const rec = await loadRec($, sid)
-      const memory = { ...(await memoryFor($, sid, rec)), context }
+      const memory = { ...(await memoryFor($, sid, rec, 'brief')), context }
       const got = await readSession($, sid, rec, cover => {
         const prompt = briefPrompt({ ...memory, cover })
         return extra === '' ? prompt : `${prompt}\n\n${extra}`
       })
       const result = got.result
-      if (result !== NOTHING_READ) shown = got.shown
+      // The plans this briefing could not compare, and the steps it could not assess, go on the card.
+      const plans = memory.approved === undefined ? [] : readerLines(memory.approved, 'brief').lines
+      const unassessed = result !== NOTHING_READ && result.isAnswered ? notAssessedLines(parseBrief(result.text).notAssessed ?? [], memory.owner) : []
+      if (result !== NOTHING_READ) shown = [...got.shown, ...plans, ...unassessed]
       const usage = 'usage' in result ? result.usage : null
       return changeRec($, sid, async after => {
         after.calls += 1
@@ -1339,7 +1362,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
         .complete({
           model: OBJECTIVE_MODEL,
           system: OWN_WORDS_SYSTEM,
-          prompt: ownWordsPrompt({ ...(await memoryFor($, sid, rec)), context }, taken.open, taken.answer),
+          prompt: ownWordsPrompt({ ...(await memoryFor($, sid, rec, 'brief')), context }, taken.open, taken.answer),
           maxTokens: OWN_WORDS_MAX_TOKENS,
           effort: 'high',
           timeoutMs: OWN_WORDS_TIMEOUT_MS,
@@ -2193,7 +2216,7 @@ const onScreen = (id: string): boolean => !ended && id === currentId
 async function enterSession($: EngineInterface, id: string): Promise<void> {
   const rec = await loadRec($, id)
   if (onScreen(id)) await update($, readingA, () => rec.objective)
-  if (onScreen(id)) await update($, linesA, () => recordLines(rec, storeFull.get(id), coverShown.get(id)))
+  if (onScreen(id)) await update($, linesA, () => recordLines(rec, storeFull.get(id), coverShown.get(id), lastShown.get(id)))
   seedOwner($, id)
     .then(seeded => (seeded ? rebuildObjective($, id, 'load') : undefined))
     .catch(() => undefined)
