@@ -9,7 +9,7 @@
     "name": "flag-shown-twice",
     "breaks": "The watch forgets which flags it has shown, so the same note comes back after the owner dismissed it.",
     "patch": "flag-shown-twice.patch",
-    "fixed": "tested 2026-10-14; remade 2026-10-15"
+    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-29"
   },
   {
     "name": "watch-never-backs-off",
@@ -33,7 +33,7 @@
     "name": "flag-replaces-card",
     "breaks": "A watch flag replaces the briefing card instead of waiting for the row.",
     "patch": "flag-replaces-card.patch",
-    "fixed": "tested 2026-10-14; remade 2026-10-15"
+    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-29"
   },
   {
     "name": "stop-never-marked",
@@ -75,7 +75,7 @@
     "name": "whole-ask-rule-dropped",
     "breaks": "The brief loses the rule that the owner's messages add up, so the rep judges the last message alone.",
     "patch": "whole-ask-rule-dropped.patch",
-    "fixed": "2026-10-14; remade 2026-10-15; remade 2026-10-19"
+    "fixed": "2026-10-14; remade 2026-10-15; remade 2026-10-19; remade 2026-10-29"
   },
   {
     "name": "helper-not-counted",
@@ -231,7 +231,7 @@
     "name": "draft-weight-dropped",
     "breaks": "The briefs lose the weight for a message marked as the rep's draft, so the model reads one as the owner's words with full authority over what \"done\" means.",
     "patch": "draft-weight-dropped.patch",
-    "fixed": "2026-10-15; remade 2026-10-15; remade 2026-10-19"
+    "fixed": "2026-10-15; remade 2026-10-15; remade 2026-10-19; remade 2026-10-29"
   },
   {
     "name": "check-outside-copy",
@@ -303,7 +303,7 @@
     "name": "looks-write-objective",
     "breaks": "The watch takes an objective from its look at the conversation, so the agent's account of the job can rewrite the objective between the owner's message and the writer's answer.",
     "patch": "looks-write-objective.patch",
-    "fixed": "2026-10-15"
+    "fixed": "2026-10-15; remade 2026-10-29"
   },
   {
     "name": "marks-uncited",
@@ -1858,5 +1858,23 @@
     "breaks": "The voice shift turns \"me\" to \"him\" instead of \"the owner\", so a message that hands the work back to the owner is read as a hand-back to someone the patterns alone still name; the mark and the owner wording drift apart.",
     "patch": "voice-to-him.patch",
     "fixed": "2026-10-26"
+  },
+  {
+    "name": "approved-section-missing",
+    "breaks": "The readers' memory loses the section of plans the owner approved, so neither the Heads up nor the briefing sees a plan's steps and neither can walk them.",
+    "patch": "approved-section-missing.patch",
+    "fixed": "2026-10-29"
+  },
+  {
+    "name": "approved-cursor-not-saved",
+    "breaks": "An answered Heads up never stores where its rotation of approved plans stopped, so every look shows the same plans and the older ones are never compared.",
+    "patch": "approved-cursor-not-saved.patch",
+    "fixed": "2026-10-29"
+  },
+  {
+    "name": "unassessed-dropped",
+    "breaks": "The briefing's unassessed: part is not read, so a step the briefing could not judge leaves no line on the card and the owner is not told.",
+    "patch": "unassessed-dropped.patch",
+    "fixed": "2026-10-29"
   }
 ]

@@ -1,9 +1,9 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 57aadf7..0e03f00 100644
+index 15f4c6c..5e65ca5 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -495,7 +495,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
-     const answer = parseWatch(result.text)
+@@ -1268,7 +1268,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+     const answer = parsed
      if (applyMarks(after, answer.shown, answer.closed) && onScreen(sid)) await update($, readingA, () => after.objective)
      const view = await read($, viewA)
 -    if (answer.flag !== null && view === 'row' && onScreen(sid) && ![...after.seen].some(s => same(s, answer.flag ?? ''))) {

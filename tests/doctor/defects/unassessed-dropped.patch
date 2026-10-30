@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 9144d68..033ea72 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2330,7 +2330,6 @@ export function parseBrief(text: string): BriefAnswer {
+     next: clean(p.next),
+     message: clean(p.message),
+     does: clean(p.does),
+-    ...stepsOf(p.unassessed, false),
+   }
+ }
+ 
