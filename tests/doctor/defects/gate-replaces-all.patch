@@ -1,17 +1,17 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index f91cbea..56a14ae 100644
+index 79554ff..e948afb 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3153,7 +3153,7 @@ export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer:
-     // An entry already listed, with or without its state mark, is not listed again.
-     if (!leftOut.some(l => same(bare(l), c.text))) leftOut.push(c.state === 'not-shown' ? `${c.text} (not shown)` : c.text)
+@@ -3284,7 +3284,7 @@ export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer:
+       replaced: ['means', 'next', ...(message ? ['message' as const] : [])],
+     }
    }
 -  const next = a.next === '' || saysStop(a.next)
 +  const next = true
    return {
      answer: {
        ...a,
-@@ -3161,12 +3161,12 @@ export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer:
+@@ -3292,12 +3292,12 @@ export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer:
        well: '',
        means: OPEN_MEANS(open),
        next: next ? OPEN_NEXT(open) : a.next,
@@ -19,7 +19,7 @@ index f91cbea..56a14ae 100644
 -      does: message || messageSaysStop(a.does) ? OPEN_DOES : a.does,
 +      message: OPEN_MESSAGE(open),
 +      does: OPEN_DOES,
-       leftOut,
+       leftOut: withOpen(a.leftOut, open),
      },
      refused: true,
 -    replaced: ['means', ...(next ? ['next' as const] : []), ...(message ? ['message' as const] : [])],

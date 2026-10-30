@@ -261,13 +261,13 @@
     "name": "stop-while-open",
     "breaks": "The gate never refuses, so a card can say stop, or that the work is going well, while a condition of the objective is still open or none is written.",
     "patch": "stop-while-open.patch",
-    "fixed": "2026-10-15; remade 2026-10-19; remade 2026-10-29"
+    "fixed": "2026-10-15; remade 2026-10-19; remade 2026-10-29; remade 2026-10-30"
   },
   {
     "name": "unwritten-gate-open",
     "breaks": "With no objective written the gate lets everything through, so a card can tell the agent to stop, or say the work is going well, before anything measures it.",
     "patch": "unwritten-gate-open.patch",
-    "fixed": "2026-10-15; remade 2026-10-19; remade 2026-10-29"
+    "fixed": "2026-10-15; remade 2026-10-19; remade 2026-10-29; remade 2026-10-30"
   },
   {
     "name": "verdict-missing-continues",
@@ -279,7 +279,7 @@
     "name": "stop-next-unread",
     "breaks": "The gate reads only the verdict line, so an answer that says continue while its next step tells the agent to stop, or calls the work finished, passes while a condition is open.",
     "patch": "stop-next-unread.patch",
-    "fixed": "2026-10-15; remade 2026-10-19; remade 2026-10-29"
+    "fixed": "2026-10-15; remade 2026-10-19; remade 2026-10-29; remade 2026-10-30"
   },
   {
     "name": "draft-moves-result",
@@ -1779,13 +1779,13 @@
     "name": "gate-replaces-all",
     "breaks": "A refused card loses the model's own sound next step and message too, so a card refused only for its verdict or its going-well line drops what the agent should do now for the rep's fixed text.",
     "patch": "gate-replaces-all.patch",
-    "fixed": "2026-10-19; remade 2026-10-29"
+    "fixed": "2026-10-19; remade 2026-10-29; remade 2026-10-30"
   },
   {
     "name": "message-not-gated",
     "breaks": "The gate reads the next step but not the message, so a card whose message tells the agent to stop passes while a condition is open, and the owner can send that stop themselves.",
     "patch": "message-not-gated.patch",
-    "fixed": "2026-10-19; remade 2026-10-29"
+    "fixed": "2026-10-19; remade 2026-10-29; remade 2026-10-30"
   },
   {
     "name": "own-words-not-asked",
@@ -1863,7 +1863,7 @@
     "name": "message-swapped-whole",
     "breaks": "The gate replaces a refused card's whole message whenever any sentence of it says stop, so the rep's own findings and asks beside a stop sentence are lost for the fixed text.",
     "patch": "message-swapped-whole.patch",
-    "fixed": "2026-10-29"
+    "fixed": "2026-10-29; remade 2026-10-30"
   },
   {
     "name": "stop-sentence-kept",
@@ -1881,7 +1881,7 @@
     "name": "unwritten-swaps-usable",
     "breaks": "With no objective written the gate replaces every refused message with the fixed text, so a sound message that only stood beside a stop verdict is lost.",
     "patch": "unwritten-swaps-usable.patch",
-    "fixed": "2026-10-29"
+    "fixed": "2026-10-29; remade 2026-10-30"
   },
   {
     "name": "before-stop-exemption-dropped",
@@ -2217,6 +2217,60 @@
     "name": "number-read-as-marker",
     "breaks": "A line left holding a number after a removal counts as a list marker though the number was the text, so 'You can stop now. 42.' loses the 42.",
     "patch": "number-read-as-marker.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "empty-message-passes",
+    "breaks": "A sound card passes with an empty message while conditions are open, so the owner gets a card with work open and nothing to send.",
+    "patch": "empty-message-passes.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "blank-message-passes",
+    "breaks": "A message of blanks counts as written, so a card with open conditions and nothing to send passes the gate.",
+    "patch": "blank-message-passes.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "empty-no-objective-refused",
+    "breaks": "A card with an empty message and no objective written is refused, though the rule is only for open conditions.",
+    "patch": "empty-no-objective-refused.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "empty-replaces-means",
+    "breaks": "A card refused only for its empty message takes the full refused path, so the rep's text overwrites a good meaning.",
+    "patch": "empty-replaces-means.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "empty-left-out-not-merged",
+    "breaks": "A card refused for its empty message does not list the open conditions as left out.",
+    "patch": "empty-left-out-not-merged.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "empty-does-overwritten",
+    "breaks": "The does line of a card refused for its empty message is always the rep's, so a harmless line the model wrote is lost.",
+    "patch": "empty-does-overwritten.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "empty-does-kept",
+    "breaks": "The does line of a card refused for its empty message stays when empty or saying stop, so the fixed text sits over a line that does not describe it.",
+    "patch": "empty-does-kept.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "fixed-text-no-held-step",
+    "breaks": "The fixed text drops its held-step sentence, so a fallback message can push a step that waits on the owner.",
+    "patch": "fixed-text-no-held-step.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "ask-again-silent-on-empty",
+    "breaks": "The second read is not told an empty message counts, so a read refused for its empty message is asked again without the reason.",
+    "patch": "ask-again-silent-on-empty.patch",
     "fixed": "2026-10-30"
   }
 ]

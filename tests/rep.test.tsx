@@ -610,7 +610,7 @@ test('gateVerdict keeps a next and a message that do not say stop, replaces the 
   expect(all.answer.next).toBe('The job is still open: the newest build installed; two sessions finished. The agent shows these, or says what stands in the way, before anything stops.')
   expect(all.answer.leftOut).toEqual(['the newest build installed (not shown)', 'two sessions finished'])
   expect(all.answer.means).toBe('The agent has not shown the objective complete: the newest build installed (not shown); two sessions finished are still open.')
-  expect(all.answer.message).toBe('The job is not finished. These conditions of done are still open:\n- the newest build installed (not shown)\n- two sessions finished\nBefore anything stops, show each one working, or say what stands in the way.')
+  expect(all.answer.message).toBe('The job is not finished. These conditions of done are still open:\n- the newest build installed (not shown)\n- two sessions finished\nBefore anything stops, show each one working, or say what stands in the way. If a step needs my go-ahead, hold it: finish the rest, and tell me what you will show me when I give it.')
   expect(all.answer.does).toBe('Keeps the agent on the job until it shows each open condition working or says what stands in the way.')
   expect([all.answer.means, all.answer.message, all.answer.does]).toEqual([OPEN_MEANS(open), OPEN_MESSAGE(open), OPEN_DOES])
   expect(all.answer.stands).toBe('s')
@@ -621,8 +621,65 @@ test('gateVerdict keeps a next and a message that do not say stop, replaces the 
   expect(gateVerdict({ ...s, leftOut: ['the newest build installed (not shown)', 'two sessions finished (open)'] }, open).answer.leftOut)
     .toEqual(['the newest build installed (not shown)', 'two sessions finished (open)'])
   expect(gateVerdict(s, []).refused).toBe(false)
-  expect(gateVerdict(parseBrief('verdict: continue\nstands: s\nleft:\n- nothing\nnext: Go on.\nmessage:\nend\ndoes:'), open)).toMatchObject({ refused: false, replaced: [] })
+  expect(gateVerdict(parseBrief('verdict: continue\nstands: s\nleft:\n- nothing\nnext: Go on.\nmessage:\nend\ndoes:'), open)).toMatchObject({ refused: true, replaced: ['message'] })
   expect(parseBrief('stands: s\nleft:\n- nothing\nshown:\n- a | the diff\nclosed:\n- b | #4\nmessage:\nend\ndoes:')).toMatchObject({ verdict: 'missing', shown: [{ text: 'a', by: 'the diff' }], closed: [{ text: 'b', by: 4 }] })
+})
+
+const EMPTY_CARD = parseBrief('verdict: continue\nwell:\nstands: Both parts are built.\nmeans: The build is made and nothing shows it running.\nleft:\n- the laptop\nnext: Show the two sessions finishing.\nmessage:\nend\ndoes: Makes the agent show the sessions.')
+const HELD_LINE = 'If a step needs my go-ahead, hold it: finish the rest, and tell me what you will show me when I give it.'
+
+test('a sound card with an empty message and open conditions is refused on the message alone: the fixed text comes in, the model\'s other parts stay, and every open condition joins what was left out', () => {
+  const held = 'Before anything stops, show each one working, or say what stands in the way. If a step needs my go-ahead, hold it: finish the rest, and tell me what you will show me when I give it.'
+  const asked: Array<[Condition[], string, string[]]> = [
+    [OPEN_JOB_OPEN, `The job is not finished. These conditions of done are still open:\n- the newest build installed (not shown)\n- two sessions finished\n${held}`, ['the laptop', 'the newest build installed (not shown)', 'two sessions finished']],
+    [[c('the newest build installed', 'not-shown')], `The job is not finished. These conditions of done are still open:\n- the newest build installed (not shown)\n${held}`, ['the laptop', 'the newest build installed (not shown)']],
+    [openConditions({ done: [c('two sessions finished', 'open'), c('the newest build installed', 'shown', 'the log')] } as Objective), `The job is not finished. These conditions of done are still open:\n- two sessions finished\n${held}`, ['the laptop', 'two sessions finished']],
+  ]
+  for (const [open, message, leftOut] of asked) {
+    const g = gateVerdict(EMPTY_CARD, open)
+    expect(g.refused).toBe(true)
+    expect(g.replaced).toEqual(['message'])
+    expect(g.answer).toEqual({ ...EMPTY_CARD, message, leftOut })
+  }
+  // A message of blanks is an empty message.
+  expect(gateVerdict({ ...EMPTY_CARD, message: ' \n ' }, OPEN_JOB_OPEN)).toMatchObject({ refused: true, replaced: ['message'] })
+})
+
+test('the does line describes the message: an empty or stop-saying one goes with the empty message, a harmless one stays, and the meaning, next step and what stands stay the model\'s', () => {
+  const keptParts = { means: EMPTY_CARD.means, next: EMPTY_CARD.next, stands: EMPTY_CARD.stands }
+  const does = (line: string) => gateVerdict({ ...EMPTY_CARD, does: line }, OPEN_JOB_OPEN).answer
+  expect(does('')).toMatchObject({ ...keptParts, does: OPEN_DOES })
+  expect(does('You can stop now.')).toMatchObject({ ...keptParts, does: OPEN_DOES })
+  expect(does('Makes the agent show the sessions.')).toMatchObject({ ...keptParts, does: 'Makes the agent show the sessions.' })
+})
+
+test('an empty message on a card refused for another reason as well gives today\'s replaced list plus the message, and today\'s meaning', () => {
+  const g = gateVerdict({ ...EMPTY_CARD, next: 'Stop the agent; the job is finished.' }, OPEN_JOB_OPEN)
+  expect(g.refused).toBe(true)
+  expect(g.replaced).toEqual(['means', 'next', 'message'])
+  expect(g.answer.means).toBe(OPEN_MEANS(OPEN_JOB_OPEN))
+  expect(g.answer.next).toBe(OPEN_NEXT(OPEN_JOB_OPEN))
+  expect(g.answer.message).toBe(OPEN_MESSAGE(OPEN_JOB_OPEN))
+})
+
+test('the fixed text ends on the held step and says no stop itself; the next step\'s text does not move', () => {
+  expect(OPEN_MESSAGE(OPEN_JOB_OPEN).endsWith(HELD_LINE)).toBe(true)
+  expect(messageSaysStop(OPEN_MESSAGE(OPEN_JOB_OPEN))).toBe(false)
+  expect(withoutStopSentences(OPEN_MESSAGE(OPEN_JOB_OPEN))).toBe(OPEN_MESSAGE(OPEN_JOB_OPEN))
+  expect(saysStop(OPEN_NEXT(OPEN_JOB_OPEN))).toBe(false)
+})
+
+test('asked once more, the brief is told an empty message counts too', () => {
+  const text = askAgain(OPEN_JOB_OPEN)
+  expect(text).toContain('Your first answer said the agent should stop, gave no verdict, called the work finished, or said the work is going well, while these conditions of done are still open:')
+  expect(text).toContain('None of these may stand while any of them is open. An empty message counts too: while any of these is open, write the message to the agent, asking for the proof of each.')
+})
+
+test('an empty message still passes when every condition is shown or closed, and when no objective is written; a usable card with open conditions passes untouched', () => {
+  expect(gateVerdict(EMPTY_CARD, [])).toEqual({ answer: EMPTY_CARD, refused: false, replaced: [] })
+  expect(gateVerdict(EMPTY_CARD, null)).toEqual({ answer: EMPTY_CARD, refused: false, replaced: [] })
+  const usable = { ...EMPTY_CARD, message: 'Show me each session finishing.' }
+  expect(gateVerdict(usable, OPEN_JOB_OPEN)).toEqual({ answer: usable, refused: false, replaced: [] })
 })
 
 test('gateVerdict replaces, beside the meaning, only the part that says stop: a next step or a message; with no objective written, the meaning and next step are the rep\'s and a sound message stands', () => {

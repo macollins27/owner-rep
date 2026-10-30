@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index f91cbea..a684927 100644
+index 79554ff..70929b3 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3129,7 +3129,7 @@ export const withoutStopSentences = (message: string): string => {
- // that text's message and does line. What the agent did ("stands") is kept as
- // the model wrote it.
+@@ -3257,7 +3257,7 @@ const withOpen = (leftOut: string[], open: Condition[]): string[] => {
+   return all
+ }
  export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer: BriefAnswer; refused: boolean; replaced: Replaced[] } {
 -  if (open !== null && open.length === 0) return { answer: a, refused: false, replaced: [] }
 +  if (open === null || open.length >= 0) return { answer: a, refused: false, replaced: [] }
-   if (a.verdict === 'continue' && a.well === '' && !saysStop(a.next) && !messageSaysStop(a.message)) return { answer: a, refused: false, replaced: [] }
-   const kept = withoutStopSentences(a.message)
-   const message = kept === ''
+   const sound = a.verdict === 'continue' && a.well === '' && !saysStop(a.next) && !messageSaysStop(a.message)
+   if (sound && (open === null || a.message.trim() !== '')) return { answer: a, refused: false, replaced: [] }
+   if (sound && open !== null) {

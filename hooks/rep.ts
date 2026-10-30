@@ -2693,7 +2693,7 @@ export const OPEN_MEANS = (open: Condition[]): string =>
 // The message a refused card offers to send in place of the model's: it keeps
 // the agent on the job, never tells it to stop.
 export const OPEN_MESSAGE = (open: Condition[]): string =>
-  `The job is not finished. These conditions of done are still open:\n${list(open.map(conditionLine), '- none')}\nBefore anything stops, show each one working, or say what stands in the way.`
+  `The job is not finished. These conditions of done are still open:\n${list(open.map(conditionLine), '- none')}\nBefore anything stops, show each one working, or say what stands in the way. If a step needs my go-ahead, hold it: finish the rest, and tell me what you will show me when I give it.`
 
 // What sending that message makes the agent do.
 export const OPEN_DOES = 'Keeps the agent on the job until it shows each open condition working or says what stands in the way.'
@@ -2849,14 +2849,14 @@ export const STOP_NEXT = new RegExp(
 export const gateOpen = (o: Objective | null): Condition[] | null => (o === null ? null : openConditions(o))
 
 // Added to the brief when its answer said stop, gave no verdict, called the
-// work finished, or said the work is going well, while a condition was open:
+// work finished, said the work is going well, or left the message empty, while a condition was open:
 // the brief is asked once more, with the open conditions named.
 export const askAgain = (open: Condition[]): string => `## Asked once more
 
 Your first answer said the agent should stop, gave no verdict, called the work finished, or said the work is going well, while these conditions of done are still open:
 ${list(open.map(promptLine), '- none')}
 
-None of these may stand while any of them is open. Look at the conversation again: put under "shown:" each one it now shows, with where, and under "closed:" each one the owner closed in a message of the owner's own, with its number. Then give the whole briefing again in the same structure. While any of them stays open the verdict is "continue", "well" is empty, and "next" and "message" say what the agent does now to show it, or what stands in the way.`
+None of these may stand while any of them is open. An empty message counts too: while any of these is open, write the message to the agent, asking for the proof of each. Look at the conversation again: put under "shown:" each one it now shows, with where, and under "closed:" each one the owner closed in a message of the owner's own, with its number. Then give the whole briefing again in the same structure. While any of them stays open the verdict is "continue", "well" is empty, and "next" and "message" say what the agent does now to show it, or what stands in the way.`
 
 // A part of a refused card the gate wrote in the rep's fixed text, in place of the model's.
 export type Replaced = 'means' | 'next' | 'message'
@@ -3243,10 +3243,30 @@ export const withoutStopSentences = (message: string): string => {
 // same is refused; the meaning and next step are the rep's text saying the
 // objective is not written yet, and the message follows the same rule with
 // that text's message and does line. What the agent did ("stands") is kept as
-// the model wrote it.
+// the model wrote it. A card sound in every other way whose message is empty,
+// with an objective and an open condition, is refused on the message alone:
+// `replaced` is just the message, which is the rep's fixed text, the meaning,
+// next step and what stands stay the model's, and the does line stays unless it
+// is empty or says stop, since it describes the message.
+const withOpen = (leftOut: string[], open: Condition[]): string[] => {
+  const all = [...leftOut]
+  for (const c of open) {
+    // An entry already listed, with or without its state mark, is not listed again.
+    if (!all.some(l => same(bare(l), c.text))) all.push(c.state === 'not-shown' ? `${c.text} (not shown)` : c.text)
+  }
+  return all
+}
 export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer: BriefAnswer; refused: boolean; replaced: Replaced[] } {
   if (open !== null && open.length === 0) return { answer: a, refused: false, replaced: [] }
-  if (a.verdict === 'continue' && a.well === '' && !saysStop(a.next) && !messageSaysStop(a.message)) return { answer: a, refused: false, replaced: [] }
+  const sound = a.verdict === 'continue' && a.well === '' && !saysStop(a.next) && !messageSaysStop(a.message)
+  if (sound && (open === null || a.message.trim() !== '')) return { answer: a, refused: false, replaced: [] }
+  if (sound && open !== null) {
+    return {
+      answer: { ...a, message: OPEN_MESSAGE(open), does: a.does === '' || messageSaysStop(a.does) ? OPEN_DOES : a.does, leftOut: withOpen(a.leftOut, open) },
+      refused: true,
+      replaced: ['message'],
+    }
+  }
   const kept = withoutStopSentences(a.message)
   const message = kept === ''
   if (open === null) {
@@ -3264,11 +3284,6 @@ export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer:
       replaced: ['means', 'next', ...(message ? ['message' as const] : [])],
     }
   }
-  const leftOut = [...a.leftOut]
-  for (const c of open) {
-    // An entry already listed, with or without its state mark, is not listed again.
-    if (!leftOut.some(l => same(bare(l), c.text))) leftOut.push(c.state === 'not-shown' ? `${c.text} (not shown)` : c.text)
-  }
   const next = a.next === '' || saysStop(a.next)
   return {
     answer: {
@@ -3279,7 +3294,7 @@ export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer:
       next: next ? OPEN_NEXT(open) : a.next,
       message: message ? OPEN_MESSAGE(open) : kept,
       does: message || messageSaysStop(a.does) ? OPEN_DOES : a.does,
-      leftOut,
+      leftOut: withOpen(a.leftOut, open),
     },
     refused: true,
     replaced: ['means', ...(next ? ['next' as const] : []), ...(message ? ['message' as const] : [])],
