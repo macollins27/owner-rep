@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 85e8014..89b6f27 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3079,7 +3079,7 @@ const maskExempt = (read: string, afterNegated = false): string => {
+ const readOf = (sentence: string): string => toAgentVoice(maskReported(unwrap(sentence.replace(LIST_MARKER, '').replace(/\s+/g, ' '))))
+ const sentenceSaysStop = (sentence: string, before = ''): boolean => {
+   const read = maskExempt(readOf(sentence), NEGATED_LAST.test(readOf(before)))
+-  return STOP_NEXT.test(read) || STOP_ONCE.test(read)
++  return STOP_NEXT.test(read)
+ }
+ 
+ // The sentences of a text that say stop, each read with the sentence just before it.

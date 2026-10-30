@@ -69,7 +69,8 @@ call writes (below):
    `applyMarks` takes the marks, and `gateVerdict` refuses, while a condition is open, a
    verdict other than `continue` (a `stop`, or none given, which `verdictOf` reads as
    `missing`, never as continue), a `well:` line, or a `next:` (`saysStop`) or a `message:`
-   (`messageSaysStop`: the message read on a copy `toAgentVoice` turns to the third person,
+   (`messageSaysStop`: true when any one sentence of the message, read as the
+   paragraph on `withoutStopSentences` below says, trips, each read on a copy `toAgentVoice` turns to the third person,
    me, my and the capital I to the owner, the owner's and the owner, you and your to the agent and the agent's,
    the contractions and two-word forms shifted whole before them, with a straight or curly
    apostrophe: you're and you are to the agent is, you've and you have to the agent has,
@@ -77,7 +78,7 @@ call writes (below):
    "You're done." are caught and a wait until the agent has a log is not, and a few
    messages a reader would let through, such as a check-in with the owner before a step, are
    caught in the safe direction and rewritten by the own-words call) that
-   `STOP_NEXT` reads as
+   `STOP_NEXT` (or, in a message only, `STOP_ONCE` below) reads as
    telling the agent or the job to stop (with "please" before the stop or not, `STOP_LEAD`),
    calling the work finished, saying nothing is left or no further work is needed,
    closing the session, wrapping up, stopping work on it, stopping (or stopping here, or
@@ -104,11 +105,14 @@ call writes (below):
    "and stop" only being read, never "and stops" said of a program, a wait on a CI run or
    on "your build", and "Once the run is green, the session can end"). The gate refuses part
    by part: the verdict becomes continue, the `well:` line goes, the open conditions are
-   listed as left out, the meaning is always `OPEN_MEANS`, and the next step (`OPEN_NEXT`)
-   and the message with what it does (`OPEN_MESSAGE`, `OPEN_DOES`) are the rep's only where
-   they say stop or are empty, so the model's own sound next step and message stand; beside
-   a kept message a `does:` line `messageSaysStop` catches is `OPEN_DOES` alone. `replaced`
-   names the parts given the rep's text, in the order `means`, `next`, `message`. A refused
+   listed as left out, the meaning is always `OPEN_MEANS`, the next step is the rep's
+   (`OPEN_NEXT`) only where it says stop or is empty, and the message is
+   `withoutStopSentences(message)` (below): a message with no stop sentence stands as
+   written, one with some stands without them, and only when that is `''` (nothing usable
+   left, or the message empty) are the message and what it does the rep's (`OPEN_MESSAGE`,
+   `OPEN_DOES`); beside a kept message a `does:` line `messageSaysStop` catches is
+   `OPEN_DOES` alone. `replaced` names the parts given the rep's text, in the order `means`,
+   `next`, `message`, so a kept message, cut or whole, is never listed. A refused
    answer is asked once more (`askAgain`, naming the open conditions), and that answer
    passes the same gate. When it is refused too, or does not answer, one plain
    `$.model.complete` (`OBJECTIVE_MODEL`, high effort, `OWN_WORDS_SYSTEM`: the ROLE's "Who
@@ -123,10 +127,13 @@ call writes (below):
    closing quotes or brackets allowed after it); the message's last line is not held to a
    sentence mark, since its `end` line and a whole `does:` line show it was not cut, and a
    whole message may end in a list item. `takeOwnWords` takes from a
-   whole reply each part that is not empty and does not say stop (the message and its
-   `does:` line read by `messageSaysStop`, the does line taken only with the message); the
-   fixed texts stand otherwise, and a reply not whole, or a call that throws or does not
-   answer, leaves them all, never a stop. Two replies came back answered and cut
+   whole reply each part the gate replaced: the meaning and next step when not empty and not
+   caught by `saysStop`, the message as `withoutStopSentences(own.message)` when that is not
+   `''`, and its `does:` line only beside a taken message and only when `messageSaysStop`
+   does not catch it; the fixed texts stand otherwise, and a reply not whole, or a call that
+   throws or does not answer, leaves them all, never a stop. A message the gate kept is not
+   in `replaced`, so the call (still made, since the meaning is always replaced) never writes
+   over it. Two replies came back answered and cut
    mid-sentence live on 19 Oct 2026, with the cap at 4,000 tokens and at 16,000, for a cause
    not known (`docs/testing.md` scenario 11); the wholeness test keeps their half sentences
    off the card. Its spend counts with the looks, and it writes card parts only, never the
@@ -134,9 +141,172 @@ call writes (below):
    the own-words call; `lastBrief.own` what came of that call (`whole`; `cut`, answered but
    not whole; `none`, not answered or thrown; `skipped`, no call made) and
    `lastBrief.ownChars` its reply's length (0 with none); a check's card keeps all three
-   from the briefing it was pressed on. With no objective written (`gateOpen` is null) the same answers are
-   refused, never let through, every part given its `UNWRITTEN_*` text, not asked again and
-   given no own-words call.
+   from the briefing it was pressed on. The chooser asks more of a message than the gate:
+   `messageUsable(message)` is true when `withoutStopSentences(message)` is not `''` and
+   what it gives is `usable` read bare (`usable(kept, true)`: each sentence with every
+   bracket and double quote mark taken off, and a sentence of marks alone not usable), so a
+   message of only praise, thanks, a question or a bare back-reference is not usable even
+   with no stop sentence in it, and even when a bracket or quote spans its sentences
+   (`Great work. (Thanks. Nice job.)`, split into `(Thanks.` and `Nice job.)`). The gate
+   still keeps such a message whole, as C1 needs, and `withoutStopSentences` reads `usable`
+   with only a wholly enclosing bracket or quote taken off, as before. Before the own-words call, `unusableReplaced(answer,
+   replaced, open)` puts the last read's kept message that is not usable to `OPEN_MESSAGE`
+   and `OPEN_DOES` and adds `'message'` to `replaced`, so the call writes it and the choice
+   moves on. When the last read's message was replaced and the own-words call gave no usable
+   one (`ownMessageTaken(replaced, own)`: `'message'` in `replaced`, a whole reply, and
+   `messageUsable(own.message)`), `takeOwnWords` is not given the message to take, and
+   `earlierMessage(answer, replaced, ownTaken,
+   first)` puts read 1's message on the card, without its stop sentences, with read 1's gated
+   `does:` line, provided read 1 kept its message (`'message'` not in `first.replaced`) and
+   `messageUsable(first.answer.message)`; otherwise the card is unchanged. It is decided by the
+   `replaced` lists, never by comparing a message with `OPEN_MESSAGE`, and runs only after
+   the own-words call. So Brief me's message is, in this order: the last read's own message
+   without its stop sentences (read 2's, or read 1's when the second ask did not answer), the
+   own-words message without its stop sentences, read 1's without its stop sentences, and
+   only then the fixed list (`OPEN_MESSAGE`). With no objective written (`gateOpen` is null) the same answers are
+   refused, never let through, not asked again and given no own-words call; the meaning and
+   next step are `UNWRITTEN_MEANS` and `UNWRITTEN_NEXT`, and the message follows the same
+   rule as above with `UNWRITTEN_MESSAGE` and `UNWRITTEN_DOES` as its fixed texts, so a sound
+   message stands; `replaced` is `means`, `next`, and `message` only when it was replaced.
+
+   A message is read one sentence at a time. `sentencesOf(text)` gives each sentence as a
+   span `{ start, end }` over the text itself, the whitespace between sentences in none of
+   them: a sentence ends at `.`, `!` or `?` (a run of them, with any closing `"`, `'`, `”`,
+   `’`, `)` or `]` after it) followed by whitespace or its line's end, whatever the case of
+   the next letter, and at a line break; so a line ending in `:` is its own sentence, a list
+   item (a line starting `- `, `* `, `• `, `1. ` or `2) `, indented or not) is its own with its
+   marker on its first sentence, a sentence wholly in brackets is its own, and digits make no
+   difference (`Show build 42. Then stop.` is two). A decimal point (`0.4`) is no end, and nor
+   is a list marker at a line's start. Each sentence is read on its own (`sentenceSaysStop`),
+   the sentence before it read the same way only to see whether it ends on a negated outward
+   act (shape 4 below): its
+   list marker and any brackets or double quotes wholly enclosing it taken off; every run of
+   whitespace read as one space, so no run of spaces or tabs changes a verdict (`Wait for a
+   reply from  me.` is caught as with one space; a line break never falls inside a sentence,
+   since `sentencesOf` ends one there); quoted words (straight or curly double quotes) masked
+   only as the object of the nearest reporting word before them (said, says, wrote, writes,
+   called, calls, claimed, reported, told; `REPORTING`), with at most four words, commas and a
+   colon between (`REPORTED_GAP`: `said "…"`, `wrote: "…"`); a "to" between (`says to`,
+   `told the agent to`), or "as" up to three words before the reporting word (`do as the note
+   says`), orders what the quote says, so that quote is read, and a reporting word further
+   back masks nothing (`You said it passed, and the log reads "You can stop now."` is read);
+   then `toAgentVoice`; then
+   five shapes masked (`maskExempt`) that do not stop the agent while it could still move the
+   work; then `STOP_NEXT` and `STOP_ONCE`. Each mask replaces only the words that make its
+   shape with `x`, so the rest of the sentence is still read (`Before you stop, write the
+   summary, then you're done.` is caught on "then the agent is done"); next steps are never
+   masked. The five, on the third-person copy:
+   1. A push to finish before the agent stops (`BEFORE_STOPS`: "before the agent stops", with
+      can, may or should or not): `Two things before you stop.`
+   2. A wait on someone other than the owner (`WAIT_ON_OTHER`): a wait for a, an or the reply,
+      answer, response, decision, go-ahead, word, sign-off or instructions from anyone but the
+      owner (him, her, them, he and his count as the owner): `Wait for a reply from the
+      lead.` `Wait for a reply.`, with no "from", is still caught, and so is "from my lead".
+      Its lookahead refuses a space after "from", and `ON_HIM`'s approval from or by someone
+      else refuses one too, so a run of whitespace cannot backtrack past the owner, even on
+      a next step, which is not folded (`Wait for approval from  him.` stays a stop).
+   3. A stop on a blocker that tells the owner what stands in the way (`BLOCKER_IF` and
+      `BLOCKER_TOLD`, both needed): the sentence opens with "if" and a condition, up to its
+      first comma, naming a refusal or an absence (refuse, refuses, refused, rejects,
+      rejected, missing, not found, does not exist, no X has been added, no … yet), and it
+      tells the owner what, that, why or which (with exactly, plainly or clearly or not) or
+      says so in the clause the condition opens (from that comma, past an optional "then",
+      to the next comma, semicolon, colon or sentence mark, or to a word in `BLOCKER_ENDS`
+      that starts an unconditional instruction: then, otherwise, else, but, in any case,
+      either way, anyway, regardless, whatever happens; a bare "stop" and a comma may open
+      the clause, so the report may follow the stop past a comma, with "and" or without);
+      then the bare "stop" in that clause alone is masked: `If the guard refuses the push,
+      stop and tell me exactly what it refused.`, `If the guard refuses the push, then stop
+      and tell me what it refused.` and `If the guard refuses the push, stop, and tell me
+      what it refused.` are kept. `If anything fails, stop and tell me.`, `If the remote is
+      missing, stop.` and `If the push is refused, stop.` are still caught, and so is a stop
+      in another clause (`If the remote is missing, tell me why; otherwise, you can stop
+      now.`, `If the remote is missing, tell me why but in any case you can stop now.`). A
+      negated condition (not, n't, never or no longer, and at most one word, just before the
+      blocker word) names no refusal or absence, so `If the remote is not missing, stop and
+      tell me why.` is caught; `not found`, `does not exist` and `doesn't exist` are blocker
+      words themselves and still count.
+   4. A wait on the owner's word before an outward act only the owner does toward the
+      outside world, from a closed list (`OUTWARD_ACT`): submit, publish, pay, buy,
+      purchase; send with an email, message, application, letter or invoice as its object
+      (`send it` is no such act); sign with an agreement, contract, form, lease, offer, NDA
+      or paperwork as its object, bare or after the, a, an, this, that, our, my or your and
+      up to two more words (`signing the employment contract`, `signing our contract`; so
+      `signing the release commit form` counts too, while `signing the release tag` does
+      not); apply for or to; post publicly, online, or on or to social
+      media. Signing off, and signing, applying or posting anything else (`signing off on
+      the tests`, `applying the migration`), are the agent's work. Said as a wait for the
+      owner's word, go-ahead, approval or sign-off on,
+      before or to the act (`WAIT_BEFORE_ACT`: `Wait for my go-ahead before you send the
+      email.`), or on a button only the owner presses toward the outside world, named after
+      "on", in any case (`OWNER_BUTTON`: Submit, Send, Publish, Post, Pay, Sign, Apply,
+      Approve, Purchase; `wait for my word on Submit`; any other word is no button, so `Wait
+      for my word on Build.` and `Wait for my word on Merging.` are caught), or as
+      the act said not to happen (`NEGATED_ACT`: not, never or n't before it, and the rest of
+      its clause) with a wait on the owner as the clause directly after it, a semicolon, a
+      comma, "and" or a sentence's end between and nothing else (`WAIT_AFTER_NEGATED` in one
+      sentence; `NEGATED_LAST` on the sentence before and `WAIT_FIRST` opening this one), that
+      has no object of its own, or whose only object refers back to the act (on that, on it,
+      on this, for that) (`WAIT_ON_HIM_BARE`, ending its clause); its wait words are masked
+      (`Do not publish it; wait for my word.`, `Do not publish it; wait for my word on
+      that.`, `Do not publish it. Wait for my word.`). A wait before something else is read
+      (`Do not publish the report; wait for my approval before running the tests.` is
+      caught), and so is a wait after other work (`Do not publish the report; run the suite
+      and wait for my approval.`, or a sentence between). Merging, pushing, deleting, deploying
+      and installing are the agent's to do, so `Wait for my go-ahead before merging.` is
+      still caught.
+   5. A stop or hand-back asked about as the thing a cause led to (`CAUSE_ASKED`, masked last):
+      "which" or "what" (not after "do", and never "whatever"), up to three words (`which
+      instruction or habit`), a causing verb (let, lets, made, makes, allowed, allows, led,
+      leads, caused, causes, told, tells, got, gets, permitted), the agent, any agent, another
+      agent or agents as its object (`CAUSED`, two joined by "or" or "and", and an aside
+      between commas after it), an optional "to", then stop or hand in any form; masked from
+      "which" or "what" to the clause's end (a comma, semicolon, colon, sentence mark or a word
+      in `BLOCKER_ENDS`). `Name which instruction let you, or any agent, stop ordered work and
+      hand it back to me as a yes-or-no.`, `Find what made the agent stop early and fix it.`
+      and `Say which rule lets agents hand work back to me, and remove it.` are kept. A stop in
+      another clause or sentence is read: `Find what made you stop, then stop.`, `Find which
+      rule made you stop and then you can stop now.`, and the second sentence of `Which rule
+      lets you stop? You can stop now.` are caught, and so is `Do what lets you stop.`
+
+   `STOP_ONCE` catches a stop once something is done, its subject
+   a clause's start or the agent with can, may, should, could or is free to (`You can stop
+   after that.`, `You can stop once the README is fixed.`, `Then stop when the suite is
+   green.`), never a thing (`It stops when the timer fires.`), or a stop once, when, as soon
+   as or after something following "and" or "then" anywhere in a clause with no not, never
+   or n't before it (`Run the tests and then stop when they pass.`, `Run the tests and stop
+   after that.`); next steps are not read by it.
+   `withoutStopSentences(message: string): string`, exported and pure, is the message with
+   every sentence that reading catches taken out: it returns the input itself when no
+   sentence is caught (untidied, whitespace and all), and `''` for `''`. A removed sentence
+   takes the spaces and tabs after it on its line; a list item's marker stays for the rest of
+   its line; a line left empty, or holding only a marker, is dropped; a blank line beside a
+   dropped line goes where it would stand first or make two in a row; trailing whitespace is
+   trimmed on the lines a removal touched and at the end; nothing else changes, no sentence
+   reworded, moved or reflowed. No bracket or double quote is left without its partner
+   (`pairsOf` pairs `()`, `[]` and `“”`, each kind nested on its own, and straight `"` in
+   turn): a mark in a removed sentence whose partner stands on kept text stays, an opening
+   one against the kept text after it and a closing one against the kept text before it
+   (`Run the suite. (You can stop now. Thanks.)` gives `Run the suite. (Thanks.)`), and a
+   pair wholly in removed text goes with it. When what is left names nothing to do, show or fix
+   (`usable`: no sentence in it, read with its runs of whitespace as one space, that holds a
+   letter or a digit and is other than praise or thanks, a question or a bare back-reference,
+   so `You can stop now. ...` gives `''`) it returns `''`. Praise or thanks (`PRAISE`) is a sentence made only of
+   thanks, thank you, many thanks, much appreciated, well done, and good, great, nice,
+   excellent, solid or perfect with work, job or progress after it or not, each with "so far",
+   "so much", "again" or "too", or "on" or "for" and up to four words, joined by "and" or a
+   comma (`Great work, thank you!`, `Good progress on the parser.`); a question ends in `?`;
+   a bare back-reference (`BACK_REFERENCE`) is a verb with "that", "this", "it" or "so" as its
+   object and at most one adverb (first, now, then, again, too, also, please), after an
+   optional "then", "and" or "please" (`Do that first.`, `Then do so.`; not `Show why it
+   failed.` or `Fix it in the parser.`). A statement of fact about the work counts as usable,
+   since it is a finding (`The install is not shown.`). A caller that must not show a stop
+   uses the result when it is not `''` and its own fixed text otherwise; `gateVerdict` and
+   `takeOwnWords` do, and `ownMessageTaken`, `earlierMessage` and `unusableReplaced` do
+   through `messageUsable`, which also holds a message with no stop sentence to `usable`. `sentencesOf` and
+   `messageSaysStop` are exported beside it, and `messageSaysStop(text)` is true exactly when
+   `withoutStopSentences(text)` would take a sentence out, since both read each sentence the
+   same way, with the sentence before it (`stopSpans`, through `sentenceSaysStop`).
 
    The watch and the briefing (and its second ask) read through one helper, `readSession`.
    A fork answers `nothing-to-fork` before the first response of the process (a session

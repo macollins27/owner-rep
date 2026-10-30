@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index a05c4e1..0ee679a 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3333,7 +3333,7 @@ export function unusableReplaced(answer: BriefAnswer, replaced: Replaced[], open
+ // stop sentences are taken out. Brief me hands takeOwnWords the message as a
+ // replaced part only when this is true.
+ export function ownMessageTaken(replaced: Replaced[], own: BriefAnswer | null): boolean {
+-  return replaced.includes('message') && own !== null && messageUsable(own.message)
++  return replaced.includes('message') && own !== null && own.message !== ''
+ }
+ 
+ // Brief me's last net before the fixed list: when the last read's message was

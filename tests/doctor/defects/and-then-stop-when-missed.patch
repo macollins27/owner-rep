@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 85e8014..179d87e 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2987,7 +2987,7 @@ const maskReported = (sentence: string): string =>
+ // "Run the tests and then stop when they pass.", "Fix the parser and stop as soon as the suite is
+ // green.", "Run the tests and stop after that."
+ // Read on a message and its does line only; a next step keeps STOP_NEXT alone.
+-const STOP_ONCE = new RegExp(String.raw`(?:${CLAUSE}|\bthe agent\s+(?:can|may|should|could|is free to)\s+)(?:please\s+)?stop\s+(?:after\s+(?:that|this|it)\b|once\b|when\b|as soon as\b)|${CLAUSE}(?:(?!\bnot\b|\bnever\b|n't\b)[^.;:!?,])*?\b(?:and\s+(?:then\s+)?|then\s+)(?:please\s+)?stop\s+(?:once|when|as soon as|after)\b`, 'i')
++const STOP_ONCE = new RegExp(String.raw`(?:${CLAUSE}|\bthe agent\s+(?:can|may|should|could|is free to)\s+)(?:please\s+)?stop\s+(?:after\s+(?:that|this|it)\b|once\b|when\b|as soon as\b)`, 'i')
+ 
+ // Five shapes of a message sentence that do not stop the agent while it could still move the work,
+ // read on the third-person copy. Only the words that make each shape are masked (to "x", which

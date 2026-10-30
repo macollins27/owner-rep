@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index c95e00f..176f809 100644
+index 85e8014..d784d0a 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2841,7 +2841,7 @@ export const toAgentVoice = (text: string): string => VOICE.reduce((out, [word,
- 
- // Whether a message, or what it does, tells the agent or the job to stop, calls the
- // work finished, or hands it back to the owner, read in the third person.
--export const messageSaysStop = (text: string): boolean => STOP_NEXT.test(toAgentVoice(text))
-+export const messageSaysStop = (text: string): boolean => STOP_NEXT.test(text)
- 
- // The objective is not finished while a condition is open, and the gate works
- // part by part. A verdict other than continue (stop, or none given), a
+@@ -3076,7 +3076,7 @@ const maskExempt = (read: string, afterNegated = false): string => {
+ // is read the same way only to see whether it ends on a negated outward act, which lets a bare
+ // wait on the owner opening this one through (shape 4). Only the copy read is changed; a removal
+ // cuts the message's own text.
+-const readOf = (sentence: string): string => toAgentVoice(maskReported(unwrap(sentence.replace(LIST_MARKER, '').replace(/\s+/g, ' '))))
++const readOf = (sentence: string): string => maskReported(unwrap(sentence.replace(LIST_MARKER, '').replace(/\s+/g, ' ')))
+ const sentenceSaysStop = (sentence: string, before = ''): boolean => {
+   const read = maskExempt(readOf(sentence), NEGATED_LAST.test(readOf(before)))
+   return STOP_NEXT.test(read) || STOP_ONCE.test(read)

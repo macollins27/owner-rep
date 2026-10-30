@@ -1,0 +1,15 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 85e8014..b62fcd6 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3061,10 +3061,6 @@ const CAUSE_ASKED = new RegExp(String.raw`(?<!\bdo\s+)\b(?:which|what)\b(?:\s+[\
+ const maskExempt = (read: string, afterNegated = false): string => {
+   let s = read.replace(BEFORE_STOPS, 'x').replace(WAIT_ON_OTHER, 'x ')
+   s = s.replace(BLOCKER_IF, (all: string, condition: string, clause: string) => (BLOCKER_TOLD.test(clause) ? condition + clause.replace(/\bstop\b/gi, 'x') : all))
+-  s = s.replace(WAIT_BEFORE_ACT, (wait: string, button?: string) =>
+-    button === undefined || OWNER_BUTTON.test(button) ? 'x' : wait)
+-  s = s.replace(WAIT_AFTER_NEGATED, (_: string, act: string) => `${act}x`)
+-  if (afterNegated) s = s.replace(WAIT_FIRST, (_: string, lead: string) => `${lead}x`)
+   return s.replace(CAUSE_ASKED, 'x ')
+ }
+ 

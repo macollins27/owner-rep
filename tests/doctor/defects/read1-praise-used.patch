@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 7fbe0b3..10541a5 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3342,7 +3342,7 @@ export function ownMessageTaken(replaced: Replaced[], own: BriefAnswer | null):
+ // read's. Decided by the parts lists, never by comparing the message's text.
+ export function earlierMessage(answer: BriefAnswer, replaced: Replaced[], ownTaken: boolean, first: { answer: BriefAnswer; replaced: Replaced[] }): BriefAnswer {
+   if (!replaced.includes('message') || ownTaken || first.replaced.includes('message')) return answer
+-  return messageUsable(first.answer.message) ? { ...answer, message: withoutStopSentences(first.answer.message), does: first.answer.does } : answer
++  return withoutStopSentences(first.answer.message) !== '' ? { ...answer, message: withoutStopSentences(first.answer.message), does: first.answer.does } : answer
+ }
+ 
+ // Whether a part ends at a sentence mark: a full stop, an exclamation mark or a

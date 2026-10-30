@@ -1,0 +1,19 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index f91cbea..93dfb00 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3141,11 +3141,11 @@ export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer:
+         well: '',
+         means: UNWRITTEN_MEANS,
+         next: UNWRITTEN_NEXT,
+-        message: message ? UNWRITTEN_MESSAGE : kept,
+-        does: message || messageSaysStop(a.does) ? UNWRITTEN_DOES : a.does,
++        message: UNWRITTEN_MESSAGE,
++        does: UNWRITTEN_DOES,
+       },
+       refused: true,
+-      replaced: ['means', 'next', ...(message ? ['message' as const] : [])],
++      replaced: ['means', 'next', 'message'],
+     }
+   }
+   const leftOut = [...a.leftOut]

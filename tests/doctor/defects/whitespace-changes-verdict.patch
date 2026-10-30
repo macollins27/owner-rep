@@ -1,0 +1,22 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 85e8014..fcb11ad 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3000,7 +3000,7 @@ const BEFORE_STOPS = /\bbefore\s+the agent\s+(?:(?:can|may|should)\s+)?stops?\b/
+ // from it". "Wait for a reply." with no "from", or from the owner, stays caught.
+ // The lookahead also refuses a space, so a longer run of whitespace before the owner cannot
+ // backtrack past it: "Wait for a reply from  me." stays caught.
+-const WAIT_ON_OTHER = /\bwaits?\s+for\s+(?:a|an|the)\s+(?:reply|answer|response|decision|go-ahead|word|sign-off|instructions)\s+from\s+(?!\s|(?:the owner|him|her|them|he|his)\b)/gi
++const WAIT_ON_OTHER = /\bwaits?\s+for\s+(?:a|an|the)\s+(?:reply|answer|response|decision|go-ahead|word|sign-off|instructions)\s+from\s+(?!(?:the owner|him|her|them|he|his)\b)/gi
+ // 3. A stop on a blocker that tells the owner what stands in the way: the sentence opens with "if"
+ // and a condition, up to its first comma, that names a refusal or an absence, and the clause the
+ // condition opens (from that comma, past an optional "then", to the next comma, semicolon, colon
+@@ -3076,7 +3076,7 @@ const maskExempt = (read: string, afterNegated = false): string => {
+ // is read the same way only to see whether it ends on a negated outward act, which lets a bare
+ // wait on the owner opening this one through (shape 4). Only the copy read is changed; a removal
+ // cuts the message's own text.
+-const readOf = (sentence: string): string => toAgentVoice(maskReported(unwrap(sentence.replace(LIST_MARKER, '').replace(/\s+/g, ' '))))
++const readOf = (sentence: string): string => toAgentVoice(maskReported(unwrap(sentence.replace(LIST_MARKER, ''))))
+ const sentenceSaysStop = (sentence: string, before = ''): boolean => {
+   const read = maskExempt(readOf(sentence), NEGATED_LAST.test(readOf(before)))
+   return STOP_NEXT.test(read) || STOP_ONCE.test(read)
