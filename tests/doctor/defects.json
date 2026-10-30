@@ -9,7 +9,7 @@
     "name": "flag-shown-twice",
     "breaks": "The watch forgets which flags it has shown, so the same note comes back after the owner dismissed it.",
     "patch": "flag-shown-twice.patch",
-    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-29; remade 2026-10-30"
+    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-29; remade 2026-10-30; remade 2026-10-30"
   },
   {
     "name": "watch-never-backs-off",
@@ -33,7 +33,7 @@
     "name": "flag-replaces-card",
     "breaks": "A watch flag replaces the briefing card instead of waiting for the row.",
     "patch": "flag-replaces-card.patch",
-    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-29; remade 2026-10-30"
+    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-29; remade 2026-10-30; remade 2026-10-30"
   },
   {
     "name": "stop-never-marked",
@@ -303,7 +303,7 @@
     "name": "looks-write-objective",
     "breaks": "The watch takes an objective from its look at the conversation, so the agent's account of the job can rewrite the objective between the owner's message and the writer's answer.",
     "patch": "looks-write-objective.patch",
-    "fixed": "2026-10-15; remade 2026-10-29; remade 2026-10-30"
+    "fixed": "2026-10-15; remade 2026-10-29; remade 2026-10-30; remade 2026-10-30"
   },
   {
     "name": "marks-uncited",
@@ -2263,13 +2263,13 @@
   },
   {
     "name": "heads-up-no-plan-shown",
-    "breaks": "A walked step is called part of the plan the owner approved when no approved plan was shown to the look.",
+    "breaks": "A walked step is called part of the plan the owner approved when no shown plan holds it, or no plan was shown at all.",
     "patch": "heads-up-no-plan-shown.patch",
     "fixed": "2026-10-30"
   },
   {
     "name": "heads-up-register-no-plan-gate",
-    "breaks": "The look tells the mod a plan was shown whatever it held, so the gate does nothing.",
+    "breaks": "The look never hands the mod the plans it showed, so no dropped step is carried at all.",
     "patch": "heads-up-register-no-plan-gate.patch",
     "fixed": "2026-10-30"
   },
@@ -2283,6 +2283,36 @@
     "name": "heads-up-says-skipped",
     "breaks": "The mod's own line calls the step skipped, which it cannot know.",
     "patch": "heads-up-says-skipped.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "heads-up-plan-words-any",
+    "breaks": "Any step passes as part of the plan, so an unrelated step is called approved.",
+    "patch": "heads-up-plan-words-any.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "heads-up-named-hides-others",
+    "breaks": "A flag that speaks of one dropped step hides every other dropped step.",
+    "patch": "heads-up-named-hides-others.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "heads-up-also-unbounded",
+    "breaks": "Every dropped step is listed by name, so the why grows without limit.",
+    "patch": "heads-up-also-unbounded.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "heads-up-short-steps-repeat",
+    "breaks": "A step of only short words has no words to compare, so it repeats at every look.",
+    "patch": "heads-up-short-steps-repeat.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "walk-line-first-bar",
+    "breaks": "The mark is read from the first bar, so a step's own words can raise a false alarm.",
+    "patch": "walk-line-first-bar.patch",
     "fixed": "2026-10-30"
   }
 ]

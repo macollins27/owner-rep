@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index baaaf44..275a58d 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2622,7 +2622,7 @@ function stepsOf(part: string | undefined, walk: boolean): { notAssessed?: StepR
+ // One line of a walk. Readers also write "#6 step 2, the step" and add a note after the mark; the
+ // mark is what follows the last "|", since a step's own words may hold one.
+ function walkLine(line: string): { n: number; step: string; mark: string } | null {
+-  const m = /^\s*[-*•]?\s*#(\d+)(?:\s+[a-z ]*step\s+\d+)?\s*[:,]\s*(.+)\|([^|]*)$/i.exec(line)
++  const m = /^\s*[-*•]?\s*#(\d+)(?:\s+[a-z ]*step\s+\d+)?\s*[:,]\s*(.+?)\|(.*)$/i.exec(line)
+   return m === null ? null : { n: Number(m[1]), step: (m[2] as string).trim(), mark: (m[3] as string).trim() }
+ }
+ 

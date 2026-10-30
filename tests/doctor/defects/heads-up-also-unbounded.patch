@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index baaaf44..6b92753 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2671,7 +2671,7 @@ const stepText = (step: string): string => {
+   return s.length <= DROPPED_STEP_MAX ? s : `${s.slice(0, DROPPED_STEP_MAX - 1).trimEnd()}…`
+ }
+ const alsoDropped = (steps: readonly DroppedStep[]): string[] => [
+-  ...steps.slice(0, DROPPED_ALSO_MAX).map(d => `Also looks dropped: ${stepText(d.step)}.`),
++  ...steps.map(d => `Also looks dropped: ${stepText(d.step)}.`),
+   ...(steps.length > DROPPED_ALSO_MAX ? [`And ${steps.length - DROPPED_ALSO_MAX} more of its steps.`] : []),
+ ]
+ 
