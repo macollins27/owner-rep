@@ -4961,6 +4961,7 @@ const visibleStart = async ($: Engine, on: On, o: { damaged?: boolean; newJob?: 
   expect(s.obj()?.since).toBe(1)
   expect(rep.wordsUnread(s.msg(12) as never)).toBe(true)
   expect(s.msg(12)?.read?.state).toBe('unreadable')
+  return s
 }
 test('rule: a visible start over the cap cannot let go of a held condition', async ($, on) => {
   await visibleStart($, on)
@@ -4970,6 +4971,215 @@ test('rule: a visible start whose saved copy is damaged cannot let go of a held 
 })
 test('rule: a new job opened at a message not read in full is taken as a move that keeps every held condition', async ($, on) => {
   await visibleStart($, on, { newJob: true })
+})
+
+// Task 5 (plan 5.2, 5.3, 6.2's "a yes adds"): an approval adds and never takes away; a draft with
+// his words keeps the whole message he sent; long messages typed live are kept whole and read whole.
+const KEEP_ANALYTICS = 'keep the analytics'
+const SETTLE_APPROVED = (n: number, cond: string) => `Settle with the owner: #${n} approved a plan that would let go of: ${cond}`
+const PROPOSAL = 'Plan:\n1. Make apple.txt.\n2. Make pear.txt.'
+// A rep draft of 6,870 characters, and his words after it: 6,915 characters as sent.
+const LONG_DRAFT = `Before you begin, here is what I need. ${wordsWith(6870 - 39, [], 'Draft')}`
+const LONG_DRAFT_HIS = 'Yes, go ahead with both. Also add plum.txt.'
+const LONG_DRAFT_SENT = `${LONG_DRAFT}\n\n${LONG_DRAFT_HIS}`
+const ALL_THREE = ANSWER(['apple.txt made | open', 'pear.txt made | open', 'plum.txt made | open'], { approved: ['#3 | all'] })
+
+describe('Task 5: adding is not closing; drafts with his words; long messages through the live path', () => {
+  test('rule: a plan message with no follow-up whose answer drops a held condition by the plan\'s number, as a new job, adds and keeps both old conditions', async ($, on) => {
+    const PLAN = turnWith(3000, [[100, 'Step: make plum.txt. Step: make fig.txt.']])
+    // Nothing follows the plan: the write over it is the one the start retries (a write that failed before).
+    const s = asks(on, [his(1, 'plan the fruit files'), await planMsg(2, PLAN)], { objective: HELD_WITH(['apple.txt made', 'pear.txt made']), past: [], jobStart: 1, failedWrite: { at: 1, upTo: 2 } }, new Map([[`${DIR}/2-body.txt`, PLAN]]))
+    s.answer(() => ANSWER(['apple.txt made | open', 'plum.txt made | open', 'fig.txt made | open'], { dropped: ['pear.txt made | #2'], cause: 'new job: #2 planned the plum and fig files' }))
+    await started($)
+    await settleUntil($, () => s.prompts.length > 0 && s.held()?.failedWrite === undefined)
+    await s.quiet($)
+    expect(s.prompts.length).toBeGreaterThan(0)
+    const done = doneOf(s.obj())
+    expect(done).toContain('plum.txt made')
+    expect(done).toContain('fig.txt made')
+    expect(done).toContain('apple.txt made')
+    expect(done).toContain('pear.txt made')
+    expect(done).toContain(SETTLE_APPROVED(2, 'pear.txt made'))
+    expect((s.held() as { past?: unknown } | undefined)?.past).toEqual([])
+    expect((s.held() as { jobStart?: unknown } | undefined)?.jobStart).toBe(1)
+  })
+
+  test('rule: a typed approval of a plan that clashes with a held ask keeps the ask and adds a settle condition', async ($, on) => {
+    const s = asks(on, [his(1, 'build the dashboard, and keep the analytics')], { objective: HELD_WITH([KEEP_ANALYTICS, 'the dashboard built']) })
+    s.answer(() => ANSWER(['the dashboard built | open', 'the analytics removed | open'], { approved: ['#2 | all'], dropped: [`${KEEP_ANALYTICS} | #2`] }))
+    await started($)
+    await runTurn($, s.scripts, 't1', [said('Plan:\n1. Remove the analytics.\n2. Build the dashboard.')])
+    await s.send($, 'yes, go')
+    expect(approves(s.msg(2))).toBe(true)
+    const done = doneOf(s.obj())
+    expect(done).toContain(KEEP_ANALYTICS)
+    expect(done).toContain(SETTLE_APPROVED(2, KEEP_ANALYTICS))
+    expect(done).toContain('the dashboard built')
+  })
+
+  test('guard: a typed message that drops an ask in his own words, not marked approved, lets it go', async ($, on) => {
+    const s = asks(on, [his(1, 'build the dashboard, and keep the analytics')], { objective: HELD_WITH([KEEP_ANALYTICS, 'the dashboard built']) })
+    s.answer(() => ANSWER(['the dashboard built | open'], { dropped: [`${KEEP_ANALYTICS} | #2`], cause: '#2 dropped the analytics' }))
+    await started($)
+    await runTurn($, s.scripts, 't1', [said('Plan:\n1. Remove the analytics.\n2. Build the dashboard.')])
+    await s.send($, 'yes, and drop the analytics')
+    expect(approves(s.msg(2))).toBe(false)
+    expect(doneOf(s.obj())).toEqual(['the dashboard built'])
+  })
+
+  test('rule: an approval stored by one write cannot close a held condition in a later write', async ($, on) => {
+    const s = asks(on, [his(1, 'plan the fruit files')], { objective: HELD_WITH(['apple.txt made']) })
+    let n = 0
+    s.answer(() => (++n === 1 ? ANSWER(['apple.txt made | open', 'pear.txt made | open'], { approved: ['#2 | all'] }) : ANSWER(['pear.txt made | open'], { dropped: ['apple.txt made | #2'] })))
+    await started($)
+    await runTurn($, s.scripts, 't1', [said(PROPOSAL)])
+    await s.send($, 'yes, go')
+    expect(approves(s.msg(2))).toBe(true)
+    expect(doneOf(s.obj())).toEqual(['apple.txt made', 'pear.txt made'])
+    await s.send($, 'and the totals')
+    expect(n).toBe(2)
+    expect([...doneOf(s.obj())].sort()).toEqual(['apple.txt made', 'pear.txt made', SETTLE_APPROVED(2, 'apple.txt made')].sort())
+  })
+
+  test('rule: a note\'s approval is not a closer either', async ($, on) => {
+    const note = his(2, 'go with the plan', { kind: 'note', approved: 'all', read: { state: 'read' } })
+    const s = asks(on, [his(1, 'plan the fruit files'), note], { objective: HELD_WITH(['apple.txt made', 'pear.txt made'], 2) })
+    s.answer(() => ANSWER(['pear.txt made | open', 'totals added | open'], { dropped: ['apple.txt made | #2'] }))
+    await started($)
+    await s.send($, 'and the totals')
+    expect(approves(s.msg(2))).toBe(true)
+    const done = doneOf(s.obj())
+    expect(done).toContain('apple.txt made')
+    expect(done).toContain(SETTLE_APPROVED(2, 'apple.txt made'))
+  })
+
+  test('rule: a long draft with his words after it, typed live: the draft cut as today, his part with the draft and the whole message, and the writer reads all of it', async ($, on) => {
+    expect(LONG_DRAFT.length).toBe(6870)
+    expect(LONG_DRAFT_SENT.length).toBe(6915)
+    const s = asks(on, [his(1, 'plan the fruit files')], { drafts: [LONG_DRAFT] })
+    s.answer(p => (p.includes(LONG_DRAFT_SENT) ? ALL_THREE : ANSWER(['apple.txt made | open'])))
+    await started($)
+    await runTurn($, s.scripts, 't1', [said(PROPOSAL)])
+    await s.send($, LONG_DRAFT_SENT)
+    const sent = { chars: 6915, sha: await shaOf(LONG_DRAFT_SENT) }
+    expect(s.msg(2)).toMatchObject({ kind: 'draft', text: fit(LONG_DRAFT, rep.OWNER_CUT), src: { sent } })
+    expect(s.msg(3)).toMatchObject({ kind: 'his', text: LONG_DRAFT_HIS, withDraft: 2, src: { sent } })
+    expect(s.prompts.some(p => p.includes(LONG_DRAFT_SENT))).toBe(true)
+    expect(doneOf(s.obj())).toEqual(['apple.txt made', 'pear.txt made', 'plum.txt made'])
+  })
+
+  test('rule: a long draft with his words after it, read from the session: the draft cut as today, his part with the draft and the whole message, and the writer reads all of it', async ($, on) => {
+    const rec = kept(on, { sessions: { 'test-session': { id: 'test-session', at: Date.now(), objective: null, jobStart: 1, owner: [], counter: 0, past: [], seen: [], others: [], drafts: [LONG_DRAFT] } } })
+    on('session.start', (_$, e) => ({ cwd: e.cwd }))
+    quietBand(on)
+    on('session.messages', () => ({
+      value: [
+        { role: 'user', text: 'Plan the fruit files.', toolUses: [] },
+        { role: 'assistant', text: PROPOSAL, toolUses: [] },
+        { role: 'user', text: LONG_DRAFT_SENT, toolUses: [] },
+      ] satisfies SessionMessage[],
+    }))
+    transcript(on, { 'test-session.jsonl': [LINE('Plan the fruit files.'), LINE(LONG_DRAFT_SENT)].join('\n') })
+    const prompts = writer(on, () => ((prompts.at(-1) ?? '').includes(LONG_DRAFT_SENT) ? ALL_THREE : OBJ('Apple only.', ['apple.txt made | open'])))
+    await giveTranscript($, on)
+    await started($)
+    await settleUntil($, () => (rec()?.objective ?? null) !== null)
+    const owner = rec()?.owner as AskMsg[] | undefined
+    const sent = { chars: 6915, sha: await shaOf(LONG_DRAFT_SENT) }
+    expect(owner?.[1]).toMatchObject({ n: 2, kind: 'draft', text: fit(LONG_DRAFT, rep.OWNER_CUT), src: { sent } })
+    expect(owner?.[2]).toMatchObject({ n: 3, kind: 'his', text: LONG_DRAFT_HIS, withDraft: 2, src: { sent } })
+    expect(prompts.some(p => p.includes(LONG_DRAFT_SENT))).toBe(true)
+    expect(rec()?.objective?.done.map(d => d.text)).toEqual(['apple.txt made', 'pear.txt made', 'plum.txt made'])
+  })
+
+  test('guard: a draft sent alone and unchanged makes no writer call and saves no body', async ($, on) => {
+    const s = asks(on, [his(1, 'plan the fruit files')], { drafts: [LONG_DRAFT] })
+    s.answer(() => ANSWER(['apple.txt made | open']))
+    await started($)
+    await runTurn($, s.scripts, 't1', [said(PROPOSAL)])
+    await s.send($, LONG_DRAFT)
+    expect(s.prompts).toEqual([])
+    expect(s.msg(2)?.kind).toBe('draft')
+    expect(s.msg(3)).toBeUndefined()
+    expect(s.msg(2)?.src?.body).toBeUndefined()
+    expect([...s.d.files.keys()].filter(k => k.endsWith('-body.txt'))).toEqual([])
+  })
+
+  test('rule: a long correction typed live after an approved plan is kept whole, read whole, and applied', async ($, on) => {
+    const s = asks(on, [his(1, 'plan the fruit files'), his(2, 'yes, go', { approved: 'all', read: { state: 'read' } })], await fruitPlan())
+    correctionRead(s, 3)
+    await started($)
+    await s.send($, LONG_NOTES)
+    expect(s.msg(3)?.src?.sent).toMatchObject({ chars: 20000, sha: await shaOf(LONG_NOTES) })
+    expect(s.wholeReads().length).toBe(1)
+    expect(s.wholeReads()[0]).toContain('do not make plum.txt after all.')
+    const done = doneOf(s.obj())
+    expect(done).not.toContain('plum.txt made')
+    expect(done).toContain('apple.txt made')
+    expect(done).toContain('pear.txt made')
+  })
+
+  test('rule: a long reply typed live approving four steps with a late restriction: the writer reads the restriction, and both readers hold the conditions the approval added', async ($, on) => {
+    const REPLY = wordsWith(9000, [[0, 'Yes, go ahead with the plan. '], [8000, 'but do not touch pear.txt. ']]).padEnd(9000, ' And the rest.')
+    expect(REPLY.length).toBe(9000)
+    const s = asks(on, [his(1, 'plan the fruit files')])
+    const missing: string[] = []
+    s.answer(p => {
+      if (!p.includes('but do not touch pear.txt.')) missing.push(p.slice(0, 80))
+      return ANSWER(['apple.txt made | open', 'pear.txt left untouched | open', 'plum.txt made | open', 'fig.txt made | open'], { approved: ['#2 | all'] })
+    })
+    s.hold.fork = p => (p.includes(BRIEF_ASKED) ? BRIEF('The card.') : HOLDS)
+    await started($)
+    await runTurn($, s.scripts, 't1', [said('Plan:\n1. Make apple.txt.\n2. Make pear.txt.\n3. Make plum.txt.\n4. Make fig.txt.')])
+    await s.send($, REPLY)
+    expect(s.prompts.length).toBeGreaterThan(0)
+    expect(missing).toEqual([])
+    expect(s.msg(2)?.src?.sent?.chars).toBe(9000)
+    expect(doneOf(s.obj())).toEqual(['apple.txt made', 'pear.txt left untouched', 'plum.txt made', 'fig.txt made'])
+    await runTurn($, s.scripts, 't2', [said('Working on it.')])
+    await cardHas($, /./)
+    const look = s.forks.filter(p => !p.includes(BRIEF_ASKED)).at(-1) ?? ''
+    const brief = s.forks.filter(p => p.includes(BRIEF_ASKED)).at(-1) ?? ''
+    for (const p of [look, brief]) {
+      expect(p).toContain('pear.txt left untouched')
+      expect(p).toContain('fig.txt made')
+    }
+  })
+
+  test('rule: a draft he edited and sent at 7,000 characters is his own message, kept whole, and its last line is read and held', async ($, on) => {
+    const DRAFT = `Here is what I need. ${wordsWith(6940, [], 'Draft')}`
+    const SENT = `Here is what we need. ${wordsWith(6951, [], 'Draft')} and not the analytics part`
+    expect(SENT.length).toBe(7000)
+    const s = asks(on, [his(1, 'build the dashboard and the analytics')], { drafts: [DRAFT] })
+    s.answer(p => (p.includes('and not the analytics part') ? ANSWER(['the dashboard built | open', 'the analytics part left out | open']) : ANSWER(['the dashboard built | open', 'the analytics built | open'])))
+    await started($)
+    await s.send($, SENT)
+    expect(s.msg(2)?.kind).toBe('his')
+    expect(s.msg(2)?.src?.sent).toMatchObject({ chars: 7000, sha: await shaOf(SENT) })
+    expect(s.prompts.length).toBeGreaterThan(0)
+    expect(s.prompts.every(p => p.includes('and not the analytics part'))).toBe(true)
+    expect(doneOf(s.obj())).toEqual(['the dashboard built', 'the analytics part left out'])
+  })
+
+  test('rule: a visible start over the cap, typed live, cannot let go: both readers carry the held ask and the settle condition, and the card claims no completion', async ($, on) => {
+    const s = await visibleStart($, on)
+    const settleLine = 'Settle with the owner: your message #12 could not be read in full and may let go of: keep the old export working'
+    s.hold.fork = p => (p.includes(BRIEF_ASKED) ? STOP_BRIEF() : HOLDS)
+    await runTurn($, s.scripts, 't9', [said('Working on it.')])
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    await ui.press({ key: 'rep' })
+    const texts = (await ui.findAll({ type: 'Text' })).map(t => t.text)
+    expect(texts.filter(t => /Stop the agent|All done|Wrap up and stop/.test(t))).toEqual([])
+    expect(await greens(ui)).toEqual([])
+    await ui.press({ key: 'close' })
+    await ui.unmount()
+    const look = s.forks.filter(p => !p.includes(BRIEF_ASKED)).at(-1) ?? ''
+    const brief = s.forks.filter(p => p.includes(BRIEF_ASKED)).at(-1) ?? ''
+    for (const p of [look, brief]) {
+      expect(p).toContain('keep the old export working')
+      expect(p).toContain(settleLine)
+    }
+  })
 })
 
 test('rule: a stale answer adds its conditions and leaves the result, purpose and step as held', async ($, on) => {
@@ -8261,6 +8471,8 @@ test('rule: with no transcript path given and no file of the session\'s found by
   expect(runs.map(r => r.join(' '))).toEqual([FIND()])
 })
 
+// The whole message a draft with his words after it was sent as, kept on both parts (Task 5).
+const sentInline = async (text: string) => ({ sent: { chars: text.length, sha: await shaOf(text), where: 'inline', text } })
 test('rule: a card message the owner sent in the session this one was forked from is recorded as the rep\'s draft, found in that session\'s record', async ($, on) => {
   const drafted = 'Run it on the real data and show me the result.'
   const rec = kept(on, {
@@ -8286,8 +8498,8 @@ test('rule: a card message the owner sent in the session this one was forked fro
   await settle($)
   expect(rec()?.owner).toEqual([
     { n: 1, kind: 'his', text: 'Build the report.', prior: '' },
-    { n: 2, kind: 'draft', text: drafted, prior: 'Built.' },
-    { n: 3, kind: 'his', text: 'And keep the logs.', prior: 'Built.' },
+    { n: 2, kind: 'draft', text: drafted, prior: 'Built.', src: await sentInline(`${drafted} And keep the logs.`) },
+    { n: 3, kind: 'his', text: 'And keep the logs.', prior: 'Built.', withDraft: 2, src: await sentInline(`${drafted} And keep the logs.`) },
     { n: 4, kind: 'draft', text: CARD_MESSAGE(1), prior: 'Ran it.' },
   ])
 })
@@ -8351,8 +8563,8 @@ test('rule: a card message the owner sent in a session whose record the store ha
   await settle($)
   expect(rec()?.owner).toEqual([
     { n: 1, kind: 'his', text: 'Build the report.', prior: '' },
-    { n: 2, kind: 'draft', text: drafted, prior: 'Built.' },
-    { n: 3, kind: 'his', text: 'And keep the log.', prior: 'Built.' },
+    { n: 2, kind: 'draft', text: drafted, prior: 'Built.', src: await sentInline(`${drafted} And keep the log.`) },
+    { n: 3, kind: 'his', text: 'And keep the log.', prior: 'Built.', withDraft: 2, src: await sentInline(`${drafted} And keep the log.`) },
   ])
 })
 
@@ -8400,8 +8612,8 @@ test('rule: a record let go while the drafts are being read is still found, its 
   expect(moved).toBe(true)
   expect((store.sessions as Record<string, Stored>)['test-session']?.owner).toEqual([
     { n: 1, kind: 'his', text: 'Build the report.', prior: '' },
-    { n: 2, kind: 'draft', text: drafted, prior: 'Built.' },
-    { n: 3, kind: 'his', text: 'And keep the log.', prior: 'Built.' },
+    { n: 2, kind: 'draft', text: drafted, prior: 'Built.', src: await sentInline(`${drafted} And keep the log.`) },
+    { n: 3, kind: 'his', text: 'And keep the log.', prior: 'Built.', withDraft: 2, src: await sentInline(`${drafted} And keep the log.`) },
   ])
 })
 

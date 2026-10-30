@@ -1884,6 +1884,27 @@ async function withSent($: EngineInterface, sid: string, rec: Rec, more: Partial
   return { ...more, src: { ...more.src, sent: await saveSource($, sid, `${rec.counter + 1}-sent`, sent) } }
 }
 
+// A message that begins with a draft of the rep's: the draft, numbered first, and his words after
+// it, if any, numbered next and naming the draft. When he added words, both keep the whole message
+// as sent, each in its own saved copy, so the writer reads all of it and a mark on the draft moves
+// to his words (`takeApprovals`); a draft sent alone keeps nothing more. `his` gives his part's
+// other fields, built once the draft is numbered.
+async function pushDraft(
+  $: EngineInterface,
+  sid: string,
+  rec: Rec,
+  split: { draft: string; his: string },
+  prior: string,
+  whole: string,
+  his: () => Promise<Partial<OwnerMsg>>,
+): Promise<void> {
+  const added = split.his !== ''
+  pushOwner(rec, 'draft', split.draft, prior, added ? await withSent($, sid, rec, {}, whole) : {})
+  if (!added) return
+  const draft = rec.counter
+  pushOwner(rec, 'his', split.his, prior, await withSent($, sid, rec, { ...(await his()), withDraft: draft }, whole))
+}
+
 // A turn ended: its text, after what a message typed into it took, saved and listed as pending.
 function saveTurn($: EngineInterface, turnId: string, isAborted: boolean): void {
   completedHere.add(turnId)
@@ -2061,16 +2082,13 @@ async function seedOnce($: EngineInterface, sid: string): Promise<boolean> {
   const typed = typedFromItems(items, rows)
   if (typed.length === 0) return false
   const others = await storedDrafts($)
-  return changeRec($, sid, rec => {
+  return changeRec($, sid, async rec => {
     if (has(rec)) return false
     for (const t of typed) {
       const split = draftSplitAny(t.text, [...rec.drafts, rec.lastBrief?.message ?? '', ...others])
       const more = t.compacted === true ? { incomplete: COMPACTED_WHY } : {}
       if (split === null) pushOwner(rec, 'his', t.text, t.prior, more)
-      else {
-        pushOwner(rec, 'draft', split.draft, t.prior)
-        if (split.his !== '') pushOwner(rec, 'his', split.his, t.prior, more)
-      }
+      else await pushDraft($, sid, rec, split, t.prior, t.text, async () => more)
     }
     return has(rec)
   })
@@ -2309,8 +2327,7 @@ export const register: Register = on => {
             const sent = noted !== null ? e.text : text.length > HIS_CUT ? text : null
             pushOwner(rec, 'his', text, body.text, await withSent($, id, rec, await bodyFields($, id, rec, body), sent))
           } else {
-            pushOwner(rec, 'draft', split.draft, body.text)
-            if (split.his !== '') pushOwner(rec, 'his', split.his, body.text, await bodyFields($, id, rec, body))
+            await pushDraft($, id, rec, split, body.text, noted !== null ? e.text : text, async () => bodyFields($, id, rec, body))
             rec.lastSent = { text: split.draft, at: Date.now() }
             // A draft is the rep's words: it moves the step it asks for and nothing else.
             if (rec.objective !== null) rec.objective = { ...rec.objective, step: firstSentence(split.draft) }

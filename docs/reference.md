@@ -353,7 +353,7 @@ Owner messages are `OwnerMsg`s: `n`, `kind` (`his`, `note` or `draft`), `text` (
 `OWNER_CUT`, 1,200, for a draft), and `prior`, the end of the body under it, the agent's words
 the message answered (`fitTail` to `PRIOR_CUT`, 400, keeping the end, where the question a short
 reply answers usually is). A message whose stored `text` is not all of what was sent (over
-`HIS_CUT`, or split into words for the agent and a note to the rep) keeps the whole as
+`HIS_CUT`, or split into words for the agent and a note to the rep, or a draft with his words after it) keeps the whole as
 `src.sent`, and `ownerWithPrior` prints that in place of `text` for the writer. `rec.counter` gives every message its number, drafts
 included, so the guards compare numbers, never list lengths, and `trimOwner` keeps the job's
 messages whole up to `JOB_MAX` (200) and `OWNER_MAX` (40) from before it. `loadRec` migrates
@@ -588,7 +588,11 @@ sent through "Put message in prompt", is split by `draftSplitAny` against the la
 cards' messages (`rec.drafts`, fed by `keepDraft` wherever a card's message is set), so it is
 recognised after a reload and from an earlier card: the draft is recorded as a
 `draft`, listed to the model with `SENT_MARK` so it is weighed as the rep's draft and never as
-the owner's words, and whatever the owner typed after it is their own message, numbered after it. A
+the owner's words, and whatever the owner typed after it is their own message, numbered after it. When
+he typed words after it (`pushDraft`, on the live path and when a session is read in by `seedOnce`),
+both parts keep the whole message as sent in their own `src.sent` copy and his part names the draft
+in `withDraft`, so the writer reads all of it and `takeApprovals` can move a mark on the draft to his
+words; a draft sent alone keeps nothing more and makes no writer call. A
 prompt beginning `Owner rep` and a colon (`noteTyped`) is a note to the rep: it is recorded as
 a `note`, listed with `NOTE_MARK` (`(to the rep)`), the objective is rewritten and a look
 starts at once, and the prompt is dropped so the agent never sees it. `noteSplit` also finds
