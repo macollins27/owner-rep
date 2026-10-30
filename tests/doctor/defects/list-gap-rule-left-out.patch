@@ -1,5 +1,5 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 29f4acf..d3d8904 100644
+index df6fbe9..d3d7bdd 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
 @@ -1285,7 +1285,6 @@ Notes the other watcher already showed the owner in this session, which you must
