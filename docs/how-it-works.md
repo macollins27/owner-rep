@@ -170,16 +170,26 @@ a hand-back. A stop on a blocker that tells the owner exactly what stands in the
 guard refuses the push, stop and tell me exactly what it refused.") is kept because the agent
 cannot move past a refusal or an absence on its own, and the report is the step that lets the
 owner clear it; both halves are needed, so "If anything fails, stop and tell me." and "If the
-push is refused, stop." are still taken out. A wait on the owner's word before an outward act
-only the owner can decide, from a closed list (submitting, sending an email, message,
-application, letter or invoice, publishing, posting, applying, paying, buying, purchasing,
-signing, or pressing a named button such as Submit), is kept because acting there without the
-owner would speak or spend for them; merging, pushing, deleting, deploying and installing are
-the agent's to do, so a wait before them is still a stop. A stop once something is done
+push is refused, stop." are still taken out, and only the stop in the clause the condition
+opens is set aside, so "otherwise, you can stop now" after it is still taken out. A wait on the
+owner's word before an outward act only the owner does toward the outside world, from a closed
+list (submitting, sending an email, message, application, letter or invoice, publishing,
+signing an agreement, contract or form, applying for something, posting publicly, paying,
+buying, purchasing, or pressing a named button such as Submit), is kept because acting there
+without the owner would speak or spend for them. The wait has to govern the act: a wait on the
+owner after a sentence that says not to publish is kept only when it waits on nothing else, so
+"Do not publish the report; wait for my approval before running the tests." is still taken
+out. Signing off on the tests, applying a migration and posting results to a pull request are
+the agent's work, and so are merging, pushing, deleting, deploying and installing in any form,
+so a wait before them is still a stop. A run of spaces or tabs never changes what a sentence
+is taken to say. A stop once something is done
 ("You can stop after that.", "You can stop once the README is fixed.") is caught, and a stop
 inside quotation marks is read only when the sentence orders it ("Do as the note says to:
 ..."), never when it reports what someone said (a message noting that the agent's summary
-said "you can stop now" while the suite never ran).
+said "you can stop now" while the suite never ran). A quote counts as reported only when it
+follows its reporting word within a few words; a "said" earlier in the sentence does not
+cover a later quote. Taking sentences out never leaves a bracket or quotation mark without its
+partner: "Run the suite. (You can stop now. Thanks.)" leaves "Run the suite. (Thanks.)".
 
 When the second answer is refused too, or does not come back, the parts the gate
 replaced are written once more in the rep's own words by one plain model call, not a fork of
@@ -194,7 +204,11 @@ the open conditions, so the card keeps the agent on the job and never offers a s
 that fixed list, one more message is tried: when the second answer's message had nothing
 usable and the call gave none, the first answer's message, without its stop sentences, stands
 with its line saying what it does, if it had something usable. So the card's message comes,
-in order, from the second answer, the call, the first answer, and only then the list. The reply is taken only when it came back whole: its four parts each given once in
+in order, from the second answer, the call, the first answer, and only then the list. In this
+choice a message that is only praise, thanks, a question or a pointer back ("Great work.",
+"Do that first.") counts as having nothing usable, even with no stop in it, so "Great work."
+never stands on the card in place of a message that tells the agent what to do. The gate
+itself still keeps such a message whole when it has no stop in it. The reply is taken only when it came back whole: its four parts each given once in
 the order asked, the message closed by its end line and not empty, and the meaning, the next
 step and the line saying what it does each ending at a sentence mark. The message's last line
 is not held to a sentence mark, since its end line and a whole line after it show the message

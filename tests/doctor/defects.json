@@ -1990,5 +1990,83 @@
     "breaks": "The own-words message is counted taken when it is not empty, without its stop sentences taken out, so a reply that was all stop sentences blocks read 1's message from standing.",
     "patch": "own-message-taken-whole.patch",
     "fixed": "2026-10-29"
+  },
+  {
+    "name": "blocker-stop-masks-other-clause",
+    "breaks": "A blocker stop that tells the owner what stands in the way masks every stop in its sentence, so a stop in another clause (\"tell me why; otherwise, you can stop now\") reaches the card.",
+    "patch": "blocker-stop-masks-other-clause.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "negated-act-masks-any-wait",
+    "breaks": "After a negated outward act, any wait on the owner is let through, so a wait before something else (\"Do not publish the report; wait for my approval before running the tests.\") reaches the card.",
+    "patch": "negated-act-masks-any-wait.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "whitespace-changes-verdict",
+    "breaks": "A sentence is read with its runs of whitespace as written and the wait on someone else's lookahead can backtrack past a space, so \"Wait for a reply from  me.\" with two spaces reaches the card.",
+    "patch": "whitespace-changes-verdict.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "approval-from-whitespace",
+    "breaks": "Approval from the owner past two spaces backtracks into approval from someone else, so a next step \"Wait for approval from  him.\" is not read as a stop.",
+    "patch": "approval-from-whitespace.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "quote-masked-by-earlier-report",
+    "breaks": "Any reporting word earlier in the sentence without \"to\" after it masks a later quote, so \"You said the tests passed; then do as the note says to: \\\"You can stop now.\\\"\" reaches the card.",
+    "patch": "quote-masked-by-earlier-report.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "button-inflection-exempted",
+    "breaks": "Only the bare forms of the agent's operations are kept out of the buttons, so \"Wait for my word on Merging.\" is let through as a wait before a button.",
+    "patch": "button-inflection-exempted.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "sign-off-outward",
+    "breaks": "Signing with any object, or signing off, counts as an outward act, so \"Wait for my approval before signing off on the tests.\" is let through.",
+    "patch": "sign-off-outward.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "technical-apply-post-outward",
+    "breaks": "Applying or posting anything counts as an outward act, so \"Wait for my approval before applying the migration.\" is let through.",
+    "patch": "technical-apply-post-outward.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "bracket-left-unbalanced",
+    "breaks": "A removed sentence takes every bracket and quote in it, so \"Run the suite. (You can stop now. Thanks.)\" leaves \"Run the suite. Thanks.)\" with its closing bracket alone.",
+    "patch": "bracket-left-unbalanced.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "own-praise-taken",
+    "breaks": "An own-words message of praise alone counts as taken, so \"Great work.\" stands on Brief me's card over read 1's usable message.",
+    "patch": "own-praise-taken.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "own-praise-lands",
+    "breaks": "An own-words message not counted as taken is still put on the card, so \"Great work.\" stands where read 1's message or the list of open conditions belongs.",
+    "patch": "own-praise-lands.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "read2-praise-kept",
+    "breaks": "A message read 2 kept whole that is only praise or thanks stands on Brief me's card, and the own-words message and read 1's are never tried in its place.",
+    "patch": "read2-praise-kept.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "read1-praise-used",
+    "breaks": "Read 1's message of praise alone counts as usable, so it stands on Brief me's card before the list of open conditions.",
+    "patch": "read1-praise-used.patch",
+    "fixed": "2026-10-30"
   }
 ]
