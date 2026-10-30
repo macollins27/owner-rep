@@ -1023,8 +1023,6 @@ export const APPROVED_HEAD =
 
 // The walk both readers make of each approved plan's steps (plan 7.1 item 4).
 export const STEP_LINE = '- #<n>: <the step in plain words> | done | claimed | underway | not reached | no sign while later work goes on | done before the summary | runs alongside | not assessed'
-// The heading the approved plans and the walk stand under, last in each reader's request (plan 7.2, lever (a)).
-export const WALK_HEAD = '## The plans the owner approved, and the walk'
 export const WALK_RULE = `Before anything else, walk every step of each approved plan shown above in its approved_plan fence against the record, and give each step one state:
 - done: the record shows it done; claimed: the agent says so and the record does not show it; underway: being worked on now; not reached: work is still on the steps before it.
 - no sign while later work goes on: the record shows work on a step after it and nothing of it. A step comes before another only where the plan orders it (numbered, or "then", "after", "first"); steps it does not order are never late. Use it only where the record shown could hold the sign, never when the record could not hold the sign: that step is "not assessed".
@@ -1227,16 +1225,7 @@ function readerOwnerLines(list: readonly OwnerMsg[], fill?: ApprovedFill, known:
 const list = (items: readonly string[], empty: string): string =>
   items.length > 0 ? items.map(s => `- ${s}`).join('\n') : empty
 
-// The plans the owner approved, as the readers are shown them: the head and each block, or nothing.
-// Both readers are shown it at the end of the request, after the session record and the output
-// structure, with the walk rule beside it (plan 7.2, lever (a)); the own-words call keeps it in what
-// the rep knows.
-function approvedSection(m: Memory): string {
-  const approved = m.approved
-  return approved === undefined || approved.blocks.length + approved.told.length === 0 ? '' : `${APPROVED_HEAD}\n\n${[...approved.blocks, ...approved.told].join('\n\n')}\n\n`
-}
-
-function memoryText(m: Memory, approvedHere = true): string {
+function memoryText(m: Memory): string {
   const o = m.objective
   const reading =
     o === null
@@ -1244,7 +1233,7 @@ function memoryText(m: Memory, approvedHere = true): string {
       : `"${objectiveText(o)}"${o.movedAt === null ? '' : `\n(${revisedLine(o)})`}`
   const onJob = o === null ? m.owner : m.owner.filter(x => x.n >= o.since)
   const approved = m.approved
-  const section = approvedHere ? approvedSection(m) : ''
+  const section = approved === undefined || approved.blocks.length + approved.told.length === 0 ? '' : `${APPROVED_HEAD}\n\n${[...approved.blocks, ...approved.told].join('\n\n')}\n\n`
   const brief =
     m.lastBrief === undefined
       ? '(none yet)'
@@ -1299,7 +1288,7 @@ Answer straight away: do not think it over at length, and do not call any tool.
 
 ${ROLE}
 
-${memoryText(m, false)}
+${memoryText(m)}
 
 ## This request
 
@@ -1316,6 +1305,9 @@ ${list(m.seen, '(none yet)')}
 
 Notes the other watcher already showed the owner in this session, which you must not repeat either:
 ${list(m.others, '(none)')}
+
+${WALK_RULE}
+Write the walk first, under "steps:", one line per step; with no plan shown, write "steps: none".
 
 ## Output structure
 
@@ -1361,12 +1353,7 @@ flag: You may want to review the design decisions made so far.
 (Vague, nothing to act on.)
 
 flag: Your rule says every problem must be fixed before calling it done.
-(Reciting the owner's rules back to the owner.)
-
-${WALK_HEAD}
-
-${approvedSection(m)}${WALK_RULE}
-Write the walk first, under "steps:", one line per step; with no plan shown, write "steps: none".`
+(Reciting the owner's rules back to the owner.)`
 }
 
 export function briefPrompt(m: Memory): string {
@@ -1374,13 +1361,16 @@ export function briefPrompt(m: Memory): string {
 
 ${ROLE}
 
-${memoryText(m, false)}
+${memoryText(m)}
 
 ## This request
 
 The owner pressed the key. Give the owner the short briefing described below, measured against the objective above. Look at what the agent actually did in the conversation, including the helpers it launched and what they reported, not at what the agent says it did. Where the next step depends on a claim the conversation does not show, say "not shown" and have the message ask for the proof. If the owner sent your last message to the agent, say whether the agent did the step that message asked for.
 
 When every condition is shown or closed and the conversation shows the result working, say so in one line under "well:", and still fill in every other part: the owner wants the whole picture every time, not only when something is wrong. Leave the message empty when there is nothing worth sending.
+
+${WALK_RULE}
+Walk them to yourself and do not write the walk out. Every step with no sign while later work goes on goes first under "left:", named with the plan's number; every step not assessed goes under "unassessed:".
 
 ## Output structure
 
@@ -1402,12 +1392,7 @@ next: <one or two sentences: what the agent does next; never a step for the owne
 message:
 <the message for the owner to send to the agent, written to the agent, specific and professional, several lines if needed. It asks for the proof of what is not shown and pushes the agent off the easy option onto the right one. Leave empty when there is nothing to send.>
 end
-does: <one line: what this message will make the agent do>
-
-${WALK_HEAD}
-
-${approvedSection(m)}${WALK_RULE}
-Walk them to yourself and do not write the walk out. Every step with no sign while later work goes on goes first under "left:", named with the plan's number; every step not assessed goes under "unassessed:".`
+does: <one line: what this message will make the agent do>`
 }
 
 // A held condition as the writer is shown it and writes it back: its text and

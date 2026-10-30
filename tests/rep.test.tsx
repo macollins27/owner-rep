@@ -8786,34 +8786,8 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
       expect(p).not.toContain('The agent wrote </approved_plan>')
       expect(p).toContain(TOOK)
       expect(p).toContain(REPLY)
-      // Lever (a), plan 7.2: the section stands last, after the owner's messages and the output structure, with the walk rule after it.
-      // (the head ends "on this job."; the owner's line for the yes names it in quotes, earlier).
-      expect(p.indexOf(`${SECTION}.`)).toBeGreaterThan(p.indexOf("The owner's own messages on this job"))
-      expect(p.indexOf(`${SECTION}.`)).toBeGreaterThan(p.indexOf('## Output structure'))
-      expect(p.indexOf(`${SECTION}.`)).toBeLessThan(p.indexOf(rep.WALK_RULE))
-    }
-  })
-
-  test('Task 8, lever (a): both readers are shown the approved plans and the walk rule last, under their own heading after the output structure, and nowhere in what the rep knows', () => {
-    const owner = [msg7(1, 'build the sorter'), yes7(5, 'Step 1: read pear.txt.\nStep 2: run check-fruit.')]
-    for (const p of [watchOf(owner), briefOf(owner)]) {
-      const tail = p.slice(p.lastIndexOf(rep.WALK_HEAD))
-      expect(p.indexOf(rep.WALK_HEAD)).toBe(p.lastIndexOf(rep.WALK_HEAD))
-      expect(p.indexOf(rep.WALK_HEAD)).toBeGreaterThan(p.indexOf('## Output structure'))
-      expect(tail).toContain(`${SECTION}.`)
-      expect(tail).toContain('<approved_plan>\nStep 1: read pear.txt.\nStep 2: run check-fruit.\n</approved_plan>')
-      expect(tail.indexOf(`${SECTION}.`)).toBeLessThan(tail.indexOf(rep.WALK_RULE))
-      // Nothing of the plan or the rule stands before the heading, and nothing after the walk's own lines.
-      expect(p.slice(0, p.indexOf(rep.WALK_HEAD))).not.toContain('<approved_plan>')
-      expect(p.slice(0, p.indexOf(rep.WALK_HEAD))).not.toContain(rep.WALK_RULE)
-      expect(p.trimEnd().endsWith('write "steps: none".') || p.trimEnd().endsWith('goes under "unassessed:".')).toBe(true)
-      // His yes still points to the section by name.
-      expect(p).toContain(`shown whole under "${SECTION}"`)
-    }
-    // With no plan shown, the heading and the walk rule still stand last, with no section.
-    for (const p of [watchOf([msg7(1, 'build the sorter')]), briefOf([msg7(1, 'build the sorter')])]) {
-      expect(p).not.toContain(`${SECTION}.`)
-      expect(p.indexOf(rep.WALK_RULE)).toBeGreaterThan(p.indexOf('## Output structure'))
+      // The section comes before the owner's messages.
+      expect(p.indexOf(SECTION)).toBeLessThan(p.indexOf("The owner's own messages on this job"))
     }
   })
 
@@ -9039,7 +9013,7 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     // Shown with its approval, the reply is whole in the section.
     const shown = [msg7(1, 'build the sorter'), yes7(3, 'Step 1: sort.', { text: rep.fit(REPLY9, HIS_CUT), src: { body: inl('Step 1: sort.'), sent: inl(REPLY9) } } as Partial<OwnerMsg>)]
     for (const p of [watchOf(shown), briefOf(shown)]) {
-      const section = p.slice(p.indexOf(`${SECTION}.`), p.indexOf(rep.WALK_RULE))
+      const section = p.slice(p.indexOf(SECTION), p.indexOf("The owner's own messages on this job"))
       expect(section).toContain(REPLY9)
     }
   })
