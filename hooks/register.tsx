@@ -1188,8 +1188,12 @@ async function readSession($: EngineInterface, sid: string, rec: Rec, task: (cov
   if (rows.length === 0) return { result: NOTHING_READ, shown: [] }
   const items = await heldItems($, sid, rows)
   const human = items === null ? undefined : new Set(items.map(i => i.key))
-  const { msgs, lost } = await readable($, sid, jobMsgs(rec), ['sent'])
-  await markLost($, sid, lost)
+  const sent = await readable($, sid, jobMsgs(rec), ['sent'])
+  // A note approving alone is placed by the turn it answered, so its body is read back too.
+  const ap = sent.msgs.find(approvalOf)
+  const body = ap?.kind === 'note' ? await readable($, sid, [ap], ['body']) : { msgs: [], lost: [] }
+  const msgs = sent.msgs.map(m => (m === ap ? (body.msgs[0] ?? m) : m))
+  await markLost($, sid, [...sent.lost, ...body.lost])
   const b = boundaryRow(rows, msgs)
   const from = b.outcome === 'none' ? undefined : b.from
   const opensAfter = b.outcome === 'established' && recordText(rows, RECORD_BUDGET, human, from).opensAfter

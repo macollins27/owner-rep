@@ -8172,6 +8172,83 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     expect(out.text).toMatch(/^entry 1 the person:\nbuild the sorter\n\nentry 2 the agent:\nHEAD x+ \[… \d+ characters of this message left out here …\] x+ TAIL$/)
     expect(out.text.length).toBeLessThan('entry 1 the person:\nbuild the sorter\n\n'.length + 'entry 2 the agent:\n'.length + RECORD_ENTRY_CUT + 1)
   })
+
+  // ---- Task 7a (fix): an owner note's words never reach the rows (plan 7.1 item 0c, "Words that
+  // never reach the rows"). A note alone is placed at the end of the agent turn it answered; a note
+  // behind a prompt by the prompt's words.
+  const NOTE_YES = 'yes, that plan is approved'
+  const EARLIER = 'Looked at the folder.'
+  const NOTE_PLAN = 'Plan: 1. read pear.txt 2. sort it 3. report.'
+  // The body a note alone keeps: the turns it answered, the newest last.
+  const NOTE_BODY = `${EARLIER}\n\nReading pear.txt.\n\n${NOTE_PLAN}`
+  const NOTE_TURNS = [
+    { by: 'owner' as const, from: 0, to: EARLIER.length },
+    { by: 'owner' as const, from: EARLIER.length + 2, to: NOTE_BODY.length },
+  ]
+  const inline = (text: string) => ({ chars: text.length, sha: 'b'.repeat(64), where: 'inline' as const, text })
+  const noteYes = (n: number, more: Partial<OwnerMsg> = {}): OwnerMsg =>
+    ({ n, kind: 'note', text: NOTE_YES, prior: NOTE_PLAN, approved: 'all', read: { state: 'read' }, turns: NOTE_TURNS, src: { body: inline(NOTE_BODY) }, ...more }) as OwnerMsg
+
+  test('boundaryRow (fix): a note alone approving a plan is placed at the end of the turn it answered when that turn ends on one row only, and later messages follow it in order', () => {
+    const rows: SessionMessage[] = [person('build the sorter'), agent(EARLIER), person('go on'), agent('Reading pear.txt.'), agent(NOTE_PLAN), person('and report the count'), agent('Counted.')]
+    const job = [ownerMsg(1, 'build the sorter'), noteYes(2), ownerMsg(3, 'and report the count')]
+    expect(rep.boundaryRow(rows, job)).toEqual({ outcome: 'established', n: 2, from: 4 })
+    // Its body unread (a lost source): nothing places it.
+    const lost = noteYes(2, { src: { body: { chars: NOTE_BODY.length, sha: 'b'.repeat(64), where: 'file', lost: 'its saved copy is missing or damaged' } } })
+    expect(rep.boundaryRow(rows, [ownerMsg(1, 'build the sorter'), lost, ownerMsg(3, 'and report the count')]).outcome).toBe('unknown')
+  })
+
+  test('boundaryRow (fix): a note alone whose answered turn ends with text the record repeats leaves the two alignments disagreeing, so it is unknown', () => {
+    const rows: SessionMessage[] = [person('build the sorter'), agent('Reading pear.txt.'), agent(NOTE_PLAN), agent('Checking.'), agent(NOTE_PLAN), person('and report the count'), agent('Counted.')]
+    const out = rep.boundaryRow(rows, [ownerMsg(1, 'build the sorter'), noteYes(2), ownerMsg(3, 'and report the count')])
+    expect(out).toEqual({ outcome: 'unknown', n: 2, from: 2 })
+  })
+
+  test('boundaryRow (fix): a note approving a plan behind a prompt is matched by the prompt\'s words, the note stripped from the row', () => {
+    const SENT = `sort by year. Owner rep: ${NOTE_YES}`
+    const rows: SessionMessage[] = [person('build the sorter'), agent(NOTE_PLAN), person('sort by year.'), agent('Sorting.'), person('and report the count'), agent('Counted.')]
+    const job = [
+      ownerMsg(1, 'build the sorter'),
+      ownerMsg(2, 'sort by year.', { src: { sent: inline(SENT) } }),
+      { n: 3, kind: 'note', text: NOTE_YES, prior: NOTE_PLAN, approved: 'all', read: { state: 'read' } } as OwnerMsg,
+      ownerMsg(4, 'and report the count'),
+    ]
+    expect(rep.boundaryRow(rows, job)).toEqual({ outcome: 'established', n: 3, from: 2 })
+  })
+
+  test('rule (fix): a note alone approving a plan, its body read back from the session\'s files, is placed in the record and no not-assessed line shows', async ($, on) => {
+    // A session with a real id, so its sources are read from its own folder, and its body saved there.
+    const ref = { chars: NOTE_BODY.length, sha: await shaOf(NOTE_BODY), where: 'file' as const }
+    const planted = jobStore([ownerMsg(1, 'build the sorter'), noteYes(2, { src: { body: ref } }), ownerMsg(3, 'and report the count')])
+    const store: Record<string, unknown> = { sessions: { [SID]: { ...(planted.sessions as Record<string, Record<string, unknown>>)['test-session'], id: SID } } }
+    disk(on, new Map([[`${DIR}/2-body.txt`, NOTE_BODY]]))
+    on('store.get', (_$, e) => ({ value: store[e.key] }))
+    on('store.set', (_$, e) => {
+      store[e.key] = e.value
+      return { value: undefined }
+    })
+    on('session.id', () => ({ value: SID }))
+    on('turn.complete', () => ({ text: '' }))
+    on('prompt.submit', (_$, e) => ({ text: e.text }))
+    on('ui.toast', () => ({ value: undefined }))
+    on('session.start', (_$, e) => ({ cwd: e.cwd }))
+    quietBand(on)
+    on('session.messages', () => ({ value: [person('build the sorter'), agent(EARLIER), person('go on'), agent('Reading pear.txt.'), agent(NOTE_PLAN), person('and report the count'), agent('Counted.')] }))
+    const prompts: string[] = []
+    on('model.fork', (_$, e) => {
+      prompts.push(String(e.prompt))
+      return { value: { isAnswered: true, text: HOLDS, usage: USAGE } }
+    })
+    await started($)
+    await $.turn.complete(stop('t1'))
+    await settleUntil($, () => prompts.length >= 1)
+    await settle($)
+    expect(await rowSays($, /Not assessed/)).toBe(false)
+    const look = prompts.at(-1) ?? ''
+    // The reader is told nothing of an approval it cannot place, or of a record that opens after it.
+    expect(look).not.toMatch(/could not find where in the record/)
+    expect(look).not.toMatch(/The record shown starts after the owner approved/)
+  })
 }
 
 // What a reopened session's record holds: one typed prompt and one agent answer with a tool use.

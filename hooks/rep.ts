@@ -1936,8 +1936,8 @@ export function recordPrompt(rows: readonly RecordRow[], task: string, human?: R
 // removed and whitespace made one, equal its whole stored words (`src.sent` read back, or `text`
 // when no part was cut); one known only by its start (its saved copy lost: `text` is its start), or
 // by a start and end given in `words`, matches a row that begins with that start and ends with that
-// end. A note sent behind a message reached the agent without the note, and a note alone never
-// reached it: neither has a row. A draft the owner sent with his own words after it is one submit.
+// end. A note's words never reach the rows: a note sent behind a message is matched by that
+// message's words, and a note alone at the end of the agent turn it answered. A draft the owner sent with his own words after it is one submit.
 // A plan-screen approval matches the tool result carrying its tool use id. The messages are aligned
 // twice, each to its earliest feasible row and each to its latest; the approval is placed only when
 // both put it on the same row.
@@ -1967,6 +1967,24 @@ export function boundaryRow(rows: readonly RecordRow[], job: readonly OwnerMsg[]
     const end = norm(w.end ?? '')
     return rowsOf(s => s.startsWith(start) && s.endsWith(end) && s.length >= start.length + end.length)
   }
+  // A note sent behind a prompt (the prompt numbered just before it, the note keeping no body of its
+  // own) is matched as the start of the prompt's row. A note sent alone is placed on the last row of
+  // the agent turn it answered: a row of the agent's whose words end that turn's saved text, read back.
+  const noteRows = (m: OwnerMsg, prev: OwnerMsg | undefined): number[] => {
+    if (prev !== undefined && prev.kind === 'his' && prev.n === m.n - 1 && m.src?.body === undefined && m.turns === undefined) {
+      const w = wordsOf(prev)
+      return matches({ start: typeof w === 'string' ? (noteSplit(w)?.before ?? w) : w.start })
+    }
+    const body = m.src?.body
+    if (body?.text === undefined || body.lost !== undefined) return []
+    const last = m.turns?.[m.turns.length - 1]
+    const turn = norm(last === undefined ? body.text : body.text.slice(last.from, last.to))
+    if (turn === '') return []
+    return rows.flatMap((r, i) => {
+      const t = r.role === 'assistant' ? norm(r.text) : ''
+      return t !== '' && turn.endsWith(t) ? [i] : []
+    })
+  }
   const units: Array<{ n: number; rows: number[] }> = []
   const list = job.slice(at)
   list.forEach((m, i) => {
@@ -1977,8 +1995,9 @@ export function boundaryRow(rows: readonly RecordRow[], job: readonly OwnerMsg[]
       return
     }
     if (m.kind === 'note') {
-      // A note has a row only as part of the message it was sent behind, and that row is the message's.
-      if (m === approval) units.push({ n: m.n, rows: [] })
+      // A note's words never reach the rows. A later note is placed by the messages around it; the
+      // approving note by the words it was sent behind, or, sent alone, by the end of the turn it answered.
+      if (m === approval) units.push({ n: m.n, rows: noteRows(m, job[at - 1]) })
       return
     }
     if (m.kind === 'draft') {
