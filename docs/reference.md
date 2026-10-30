@@ -452,14 +452,34 @@ An approval (`approvalOf`: the owner's message, note or plan-screen plan carryin
 never one that turned a plan down, never a draft) of the open job that falls outside the job's
 newest `JOB_MAX` is kept by `trimKept`, pinned, up to `APPROVED_KEEP_MAX` (60) of the newest;
 its stored text is cut to `PRIOR_CUT` with its whole words kept as `src.sent`. An older one is
-not kept: `pushOwner` counts it in `rec.uncovered` (`{ job, count, recent }`, the last 10), which
-a new job clears; the old job's approvals then leave with the rest of its messages, and their
-files with them. `recordLines` gives at most `RECORD_LINES_MAX` (3) lines, in this order: the
-lost copy (`lostRecordLine`), each approval not kept (`NOT_KEPT_WHY`), the store full
-(`storeFullLine`, kept in its own files or only until Claude Code restarts); past that the last
-says how many more. They are the state key `lines`, drawn under the row's head in the row and
-note views, given to the readers, and put first in a card's left-out list by
-`withRecordLines`, which also shows a stop as continue while a line stands.
+not kept. `pushOwner` trims through `trimCounted`, which counts into `rec.uncovered`
+(`{ job, count, recent }`, the last `UNCOVERED_RECENT` (10) entries `{ n, why, kind, screen?, row? }`,
+each at most 140 bytes, its reason cut by `entryWhy`) every message of the job it drops that has a
+coverage line or is an approval it could not keep; a new job clears it, and the old job's
+approvals then leave with the rest of its messages, and their files with them.
+
+What the owner is told when a plan or message was not read (plan 6.4) is `coverageLines`, and
+`coverage` caps it at `COVER_LINES_MAX` (3): past that the third says how many more are not
+checked, the entries `uncovered` let go of counted. In order: the lost copy (`lostRecordLine`);
+then by message number each message of the job that `unresolvedRow` puts in one of the rows 1 to
+12 (`rowLine`; `ReadState.mark` tells row 1, a wait set off by a mark, from row 2), each entry
+`uncovered` holds (`droppedLine`; an approval with no row says it was not kept, `NOT_KEPT_WHY`),
+and the readers' lines for an approval the record holds (`notComparedLine`, `notAssessedLine`,
+passed as `CoverOpts.gaps`, a `ReaderGaps`); then a failed write (`failedWriteLine`) for each
+message after the objective's `from` up to `rec.failedWrite.upTo` that no other line names; then
+the store full (`storeFullLine`, kept in its own files or only until Claude Code restarts); the
+plan too long for the Heads up (`headsUpTooLongLine`) last, only when no other line stands. Each
+line carries `asserts`, true when it says without condition that the owner approved or accepted
+a plan (`ROW_ASSERTS`); `planIn` says "accepted on the plan screen" only for a plan-screen plan
+and "approved in message" only for the owner's message or note. A seeded copy that starts after
+a compaction summary (`typedFromItems`'s `compacted`) records its first turn incomplete with
+`COMPACTED_WHY`, so a message after it stands in row 6. The lines are the state key `lines`
+(`rowCoverage`, with the gaps `setLookGaps` keeps per session), drawn under the row's head in
+the row and note views; they are given to the briefing in place of its none line under the open
+conditions (`memoryText`: with no objective, or with conditions open, the list is printed
+instead and no line); and they go first in a card's left-out list by `withRecordLines`, which
+also shows a stop as continue while a line stands, its meaning the first line and its next step
+`RECORD_NEXT`.
 
 A session the rep holds no record of (its record fell out of the newest `SESSIONS_MAX`, it
 was forked with a new id, or it is older than the mod) has none of the owner's messages. `seedOwner`
