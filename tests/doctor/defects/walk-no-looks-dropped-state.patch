@@ -1,5 +1,5 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 5abf1a5..3b93edc 100644
+index baaaf44..bae85e6 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
 @@ -1001,7 +1001,7 @@ export const APPROVED_HEAD =

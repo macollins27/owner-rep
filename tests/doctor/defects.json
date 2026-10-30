@@ -9,7 +9,7 @@
     "name": "flag-shown-twice",
     "breaks": "The watch forgets which flags it has shown, so the same note comes back after the owner dismissed it.",
     "patch": "flag-shown-twice.patch",
-    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-29; remade 2026-10-30"
+    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-29; remade 2026-10-30; remade 2026-10-30"
   },
   {
     "name": "watch-never-backs-off",
@@ -33,7 +33,7 @@
     "name": "flag-replaces-card",
     "breaks": "A watch flag replaces the briefing card instead of waiting for the row.",
     "patch": "flag-replaces-card.patch",
-    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-29; remade 2026-10-30"
+    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-29; remade 2026-10-30; remade 2026-10-30"
   },
   {
     "name": "stop-never-marked",
@@ -303,7 +303,7 @@
     "name": "looks-write-objective",
     "breaks": "The watch takes an objective from its look at the conversation, so the agent's account of the job can rewrite the objective between the owner's message and the writer's answer.",
     "patch": "looks-write-objective.patch",
-    "fixed": "2026-10-15; remade 2026-10-29; remade 2026-10-30"
+    "fixed": "2026-10-15; remade 2026-10-29; remade 2026-10-30; remade 2026-10-30"
   },
   {
     "name": "marks-uncited",

@@ -1,5 +1,5 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 5abf1a5..b5253c1 100644
+index baaaf44..811985e 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
 @@ -1355,6 +1355,7 @@ The owner pressed the key. Give the owner the short briefing described below, me
