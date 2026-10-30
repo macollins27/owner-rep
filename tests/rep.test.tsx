@@ -6288,8 +6288,8 @@ describe("Task 6: the writer's rule and the approved line", () => {
     const plans = section('Plans the owner approved')
     for (const point of [
       // What is shown under a message, and what a yes is.
-      'a plain yes, a yes with additions (the additions are the owner\'s own words too), or a yes to part of it (only that part)',
-      'A question, a pushback, a wish to talk first, a request for changes before starting, or agent text the owner pasted in to ask about is not a yes, and nothing of that turn becomes the ask.',
+      'a plain yes, a yes with additions (the owner\'s own words too, even ones to do before building), or a yes to part of it (only that part)',
+      'A message that accepts none of it is not a yes, and nothing of that turn becomes the ask: a question, a pushback, a hold, a wish to talk first, or agent text pasted in to ask about.',
       // A draft with the owner's words after it.
       "When the owner sent your draft with words of their own after it, judge the whole message as the owner's.",
       "Words of the owner's that refuse, hold back or put off the plan win over a yes in the draft",
@@ -6323,6 +6323,19 @@ describe("Task 6: the writer's rule and the approved line", () => {
       'Write this line after "objective: holds" as well.',
     ])
       expect(plans).toContain(point)
+  })
+
+  test('fails today: a yes that asks for more before building is a yes with additions, and only a message that accepts none of the plan is not a yes', () => {
+    const plans = section('Plans the owner approved')
+    // W1-real run 1 on 9816ecc read a message that accepted the plan and asked for more first as
+    // "a request for changes before starting", which the old rule listed as not a yes.
+    expect(plans).not.toContain('a request for changes before starting')
+    expect(plans).toContain('a yes with additions (the owner\'s own words too, even ones to do before building)')
+    expect(plans).toContain('A message that accepts none of it is not a yes')
+    const rule = plans.slice(plans.indexOf('- The owner approves when'), plans.indexOf('\n', plans.indexOf('- The owner approves when')))
+    // Acceptance decides: the additions, even before building, sit inside the yes; the not-a-yes list follows the refusal of all of it.
+    expect(rule.indexOf('even ones to do before building')).toBeLessThan(rule.indexOf('accepts none of it'))
+    expect(rule.slice(rule.indexOf('accepts none of it'))).not.toContain('before')
   })
 
   test('fails today: the writer\'s rules and prompt hold no "name on it" and no "weighed like the owner", and keep "it never narrows the job"; the rules grew by at most 3,000 characters', () => {
