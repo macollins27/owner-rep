@@ -137,6 +137,10 @@ import {
   RECORD_SYSTEM,
   RECORD_TIMEOUT_MS,
   recordPrompt,
+  recordText,
+  RECORD_BUDGET,
+  boundaryRow,
+  boundaryCover,
   humanItems,
   typedFromItems,
   forkItems,
@@ -422,7 +426,7 @@ async function changeRec<T>($: EngineInterface, id: string, change: (rec: Rec) =
       const now = new Set(await filesOf($, rec))
       await removeFiles($, [...was.files.filter(f => !now.has(f)), ...lost], false)
     }
-    if (onScreen(id)) await update($, linesA, () => recordLines(rec, storeFull.get(id)))
+    if (onScreen(id)) await update($, linesA, () => recordLines(rec, storeFull.get(id), coverShown.get(id)))
     return out
   } finally {
     done()
@@ -1165,31 +1169,36 @@ async function setNow($: EngineInterface, patch: Partial<Now>): Promise<void> {
   await update($, nowA, n => ({ ...(n ?? IDLE), ...patch }))
 }
 
-// One read of the conversation for the watch or the briefing: a fork of it. A fork has
-// nothing to fork before the first response of the process: in a session reopened with
-// --continue or --resume, after /clear, and through the whole first turn of a new session.
-// Then, only for a read the owner started (`fallback`: their press, and the look after their note),
-// the session's record is read instead, by one plain completion over the rows
-// `$.session.messages()` returns (recordPrompt), with the same task: a row is labelled the owner's
-// when its key is one of their messages in the session's transcript (heldItems), and the
-// session's when it is not; when no transcript can be read, by NOT_TYPED alone.
-// The watch's own looks, on a step and at a turn's end, skip quietly instead: a record
-// read on each of them would be paid on every look of every new session's first turn.
-// With no rows, or no fallback, the fork's answer stands, so the caller says there is
-// nothing to read yet or skips. A completion that throws reads as an API error, which the
-// callers already show. Either way the result has the fork's shape, so its spend is
-// counted as a fork's.
-async function readSession($: EngineInterface, sid: string, prompt: string, fallback: boolean): Promise<ModelForkResult> {
-  const forked = await $.model.fork({ prompt })
-  if (!fallback || forked.isAnswered || forked.reason !== 'nothing-to-fork') return forked
+// The readers read the session's record, never a fork: the rows `$.session.messages()` returns,
+// by one plain completion (recordPrompt) with the task. A row is labelled the owner's when its key
+// is one of their messages in the session's transcript (heldItems), and the session's when it is
+// not; when no transcript can be read, by NOT_TYPED alone. The job's approval is placed in the rows
+// (boundaryRow), its owner's messages read back whole first, and the rows from it on are read whole;
+// where it cannot be placed, or the record opens after it, the reader is told and the owner shown
+// (boundaryCover). With no rows there is nothing to read: the result says so as a fork's would, and
+// no model is called. A completion that throws reads as an API error, which the callers show.
+type Read = { result: ModelForkResult; shown: string[] }
+const NOTHING_READ: ModelForkResult = {
+  isAnswered: false,
+  reason: 'nothing-to-fork',
+  usage: { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
+} as ModelForkResult
+async function readSession($: EngineInterface, sid: string, rec: Rec, task: (cover: string[]) => string): Promise<Read> {
   const rows = await $.session.messages().catch(() => [])
-  if (rows.length === 0) return forked
+  if (rows.length === 0) return { result: NOTHING_READ, shown: [] }
   const items = await heldItems($, sid, rows)
-  return $.model
+  const human = items === null ? undefined : new Set(items.map(i => i.key))
+  const { msgs, lost } = await readable($, sid, jobMsgs(rec), ['sent'])
+  await markLost($, sid, lost)
+  const b = boundaryRow(rows, msgs)
+  const from = b.outcome === 'none' ? undefined : b.from
+  const opensAfter = b.outcome === 'established' && recordText(rows, RECORD_BUDGET, human, from).opensAfter
+  const cover = boundaryCover(b, opensAfter, b.outcome === 'none' ? undefined : msgs.find(m => m.n === b.n))
+  const result = await $.model
     .complete({
       model: OBJECTIVE_MODEL,
       system: RECORD_SYSTEM,
-      prompt: recordPrompt(rows, prompt, items === null ? undefined : new Set(items.map(i => i.key))),
+      prompt: recordPrompt(rows, task(cover.told), human, from),
       maxTokens: RECORD_MAX_TOKENS,
       effort: 'high',
       timeoutMs: RECORD_TIMEOUT_MS,
@@ -1203,7 +1212,10 @@ async function readSession($: EngineInterface, sid: string, prompt: string, fall
         usage: { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
       }),
     )
+  return { result: result as ModelForkResult, shown: cover.shown }
 }
+// What the newest read of each session found of its approval's place, for the row.
+const coverShown = new Map<string, string[]>()
 
 // One look by the watch: the same cached copy of the conversation the agent
 // works from, read by a fresh instance with the rep's brief. Never awaited by
@@ -1217,8 +1229,12 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
     })
     return
   }
-  // Only the look after the owner's note falls back to the record when there is nothing to fork.
-  const result = await readSession($, sid, watchPrompt({ ...(await memoryFor($, sid, rec)), context: await contextOf($) }, reason), reason === 'note')
+  const memory = { ...(await memoryFor($, sid, rec)), context: await contextOf($) }
+  const got = await readSession($, sid, rec, cover => watchPrompt({ ...memory, cover }, reason))
+  // Nothing recorded yet: no model was called, and there is nothing to count.
+  if (got.result === NOTHING_READ) return
+  const result = got.result
+  coverShown.set(sid, got.shown)
   const usage = 'usage' in result ? result.usage : null
   await changeRec($, sid, async after => {
     after.calls += 1
@@ -1255,10 +1271,17 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     // One read of the conversation: its spend counted, and when it answered,
     // its marks applied and its verdict through the gate, against the
     // conditions still open after them.
+    // What this briefing's own read found of the approval's place, shown on the card.
+    let shown: string[] = []
     const ask = async (extra: string) => {
       const rec = await loadRec($, sid)
-      const prompt = briefPrompt({ ...(await memoryFor($, sid, rec)), context })
-      const result = await readSession($, sid, extra === '' ? prompt : `${prompt}\n\n${extra}`, true)
+      const memory = { ...(await memoryFor($, sid, rec)), context }
+      const got = await readSession($, sid, rec, cover => {
+        const prompt = briefPrompt({ ...memory, cover })
+        return extra === '' ? prompt : `${prompt}\n\n${extra}`
+      })
+      const result = got.result
+      if (result !== NOTHING_READ) shown = got.shown
       const usage = 'usage' in result ? result.usage : null
       return changeRec($, sid, async after => {
         after.calls += 1
@@ -1332,7 +1355,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       taken = { ...taken, answer: takeOwnWords(taken.answer, taken.replaced, own) }
     }
     // While the record could not keep or save something, the card says so first and never stops.
-    const a = withRecordLines(taken.answer, recordLines(await loadRec($, sid), storeFull.get(sid)))
+    const a = withRecordLines(taken.answer, recordLines(await loadRec($, sid), storeFull.get(sid), shown))
     const brief = await changeRec($, sid, after => {
       const brief: Brief = {
         result: after.objective === null ? '' : firstSentence(objectiveText(after.objective)),
@@ -2166,7 +2189,7 @@ const onScreen = (id: string): boolean => !ended && id === currentId
 async function enterSession($: EngineInterface, id: string): Promise<void> {
   const rec = await loadRec($, id)
   if (onScreen(id)) await update($, readingA, () => rec.objective)
-  if (onScreen(id)) await update($, linesA, () => recordLines(rec, storeFull.get(id)))
+  if (onScreen(id)) await update($, linesA, () => recordLines(rec, storeFull.get(id), coverShown.get(id)))
   seedOwner($, id)
     .then(seeded => (seeded ? rebuildObjective($, id, 'load') : undefined))
     .catch(() => undefined)
