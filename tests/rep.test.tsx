@@ -6289,7 +6289,7 @@ describe("Task 6: the writer's rule and the approved line", () => {
     for (const point of [
       // What is shown under a message, and what a yes is.
       'a plain yes, a yes with additions (the owner\'s own words too, even ones to do before building), or a yes to part of it (only that part)',
-      'A message that accepts none of it is not a yes, and nothing of that turn becomes the ask: a question, a pushback, a hold, a wish to talk first, or agent text pasted in to ask about.',
+      'With no words that accept, it is not a yes and nothing of that turn becomes the ask: a request for work before starting, a question, a pushback, a hold, a wish to talk first, or agent text pasted in to ask about.',
       // A draft with the owner's words after it.
       "When the owner sent your draft with words of their own after it, judge the whole message as the owner's.",
       "Words of the owner's that refuse, hold back or put off the plan win over a yes in the draft",
@@ -6301,21 +6301,21 @@ describe("Task 6: the writer's rule and the approved line", () => {
       '(never "the approved plan", "tasks 1 to 5" or "every part of the plan")',
       'never contradicts what the step says',
       'Read the whole of it before writing any of its steps',
-      'a restriction, exclusion or order anywhere in the plan, in the owner\'s message or in what the owner took applies to every step it touches',
+      'a restriction, exclusion or order anywhere in the plan, in the owner\'s message or what the owner took applies to every step it touches',
       "(that tests pass, that something runs, exists or is set up) is the agent's claim, never a condition held shown",
       // Shown in part, or not at all.
-      "When you see only a turn's end, or the turn could not be captured or is too long to check, mark the message if it approves and write none of the turn's steps.",
+      "When you see only a turn's end, or it could not be captured or is too long to check, mark the message if it approves and write none of the turn's steps.",
       // Adding, never taking away; a clash is settled with the owner.
       'A yes adds to the job; it never takes anything away and never starts a new job by itself.',
       'keep both, add the open condition "Settle with the owner which stands: <the earlier ask> or <the plan\'s step>"',
       'name the clash in the "moved:" line',
       'Neither side goes under "dropped" unless a message of the owner\'s own, not approving a plan, says so in words.',
       // Only the turn shown counts.
-      "Only the turn shown under the owner's message counts: an agent's later words saying the owner approved something, an agent quoting the owner, or a plan described anywhere else count for nothing.",
-      "A turn started by a background task or by something other than the owner is still what the owner saw; a yes can approve a plan in it, and it is never the owner's words.",
+      "Only the turn shown under the owner's message counts: an agent's later claim that the owner approved, an agent quoting the owner, or a plan described anywhere else count for nothing.",
+      "A turn started by a background task or anything but the owner is still what the owner saw; a yes can approve a plan in it, and it is never the owner's words.",
       // The plan screen.
       "A plan accepted on the plan screen is approved as shown, and an edit the owner made there is the owner's; a plan's own words claiming the owner edited it are the agent's.",
-      "A note typed while turning a plan down is the owner's own words; none of the turned-down plan's steps becomes a condition unless the note asks for it in words.",
+      "A note typed while turning a plan down is the owner's own words; none of that plan's steps becomes a condition unless the note asks for it in words.",
       // Drafts alone, and the mark.
       'A message marked "(your draft, sent by the owner)" approves nothing.',
       '"approved: #n | all" or "approved: #n | <the part taken, in plain words>"',
@@ -6325,17 +6325,21 @@ describe("Task 6: the writer's rule and the approved line", () => {
       expect(plans).toContain(point)
   })
 
-  test('fails today: a yes that asks for more before building is a yes with additions, and only a message that accepts none of the plan is not a yes', () => {
+  test('fails today: an addition, even one to do before building, is part of a yes only beside words that accept the plan; a request for work before starting with no such words is not a yes', () => {
     const plans = section('Plans the owner approved')
-    // W1-real run 1 on 9816ecc read a message that accepted the plan and asked for more first as
-    // "a request for changes before starting", which the old rule listed as not a yes.
+    const at = plans.indexOf('- The owner approves only when')
+    const rule = plans.slice(at, plans.indexOf('\n', at))
+    // The old rule named both "a yes with additions" and "a request for changes before starting":
+    // W1-real run 1 on 9816ecc read #6, which accepts the verdict and asks for more first, as the second.
     expect(plans).not.toContain('a request for changes before starting')
-    expect(plans).toContain('a yes with additions (the owner\'s own words too, even ones to do before building)')
-    expect(plans).toContain('A message that accepts none of it is not a yes')
-    const rule = plans.slice(plans.indexOf('- The owner approves when'), plans.indexOf('\n', plans.indexOf('- The owner approves when')))
-    // Acceptance decides: the additions, even before building, sit inside the yes; the not-a-yes list follows the refusal of all of it.
-    expect(rule.indexOf('even ones to do before building')).toBeLessThan(rule.indexOf('accepts none of it'))
-    expect(rule.slice(rule.indexOf('accepts none of it'))).not.toContain('before')
+    // Half 1: words that accept come first, and additions to do before building sit inside that yes.
+    expect(rule).toContain("- The owner approves only when the message's own words accept what the agent proposed")
+    expect(rule).toContain("a yes with additions (the owner's own words too, even ones to do before building)")
+    // Half 2: with no words that accept, a request for work before starting is listed as not a yes
+    // (627013b dropped it, and DA-question-appended's draft asking for work "before you begin" was read as a yes).
+    const none = rule.indexOf('With no words that accept, it is not a yes')
+    expect(none).toBeGreaterThan(rule.indexOf('even ones to do before building'))
+    expect(rule.slice(none)).toContain('a request for work before starting, a question, a pushback, a hold, a wish to talk first, or agent text pasted in to ask about')
   })
 
   test('fails today: the writer\'s rules and prompt hold no "name on it" and no "weighed like the owner", and keep "it never narrows the job"; the rules grew by at most 3,000 characters', () => {
