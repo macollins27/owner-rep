@@ -276,8 +276,11 @@ source before installing any mod, this one included.
   are judged against it: a poll that forks the agent's cached conversation every eighth
   model request and at each stop, a briefing on demand, and a verifier on a second press.
 - **An output gate.** The briefing is parsed from labelled lines and refused part by part
-  when it tells the agent to stop while a condition is open. A refused answer is asked
-  once more, then the refused parts are rewritten by a separate call.
+  when it tells the agent to stop while a condition is open. The message to the agent is
+  read one sentence at a time and loses only its stop sentences, the rest kept word for word;
+  the list of open conditions takes its place only when nothing usable is left. A refused
+  answer is asked once more, then the refused parts are rewritten by a separate call, and
+  the first answer's message is tried before the list.
 - **A sandboxed verifier.** The check is a headless `claude -p` in a copy-on-write clone of
   the project, under Claude Code's sandbox with a computed write-deny list (the git
   repositories reached by walking up and through symlinks, shell startup files,
@@ -295,9 +298,9 @@ The full design is in [How the owner rep works](docs/how-it-works.md).
 
 ## Built to be trusted
 
-- **236 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
+- **257 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
   the tests.
-- **A doctor that plants bugs.** It plants 310 known defects in a throwaway copy, one at a
+- **A doctor that plants bugs.** It plants 332 known defects in a throwaway copy, one at a
   time, and fails the build if the tests miss any of them.
 - **Real sessions.** Twelve scenarios run in real Claude Code sessions, with the screen
   captured in [`tests/live/captures`](tests/live/captures).

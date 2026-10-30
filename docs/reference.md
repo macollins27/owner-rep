@@ -105,11 +105,14 @@ call writes (below):
    "and stop" only being read, never "and stops" said of a program, a wait on a CI run or
    on "your build", and "Once the run is green, the session can end"). The gate refuses part
    by part: the verdict becomes continue, the `well:` line goes, the open conditions are
-   listed as left out, the meaning is always `OPEN_MEANS`, and the next step (`OPEN_NEXT`)
-   and the message with what it does (`OPEN_MESSAGE`, `OPEN_DOES`) are the rep's only where
-   they say stop or are empty, so the model's own sound next step and message stand; beside
-   a kept message a `does:` line `messageSaysStop` catches is `OPEN_DOES` alone. `replaced`
-   names the parts given the rep's text, in the order `means`, `next`, `message`. A refused
+   listed as left out, the meaning is always `OPEN_MEANS`, the next step is the rep's
+   (`OPEN_NEXT`) only where it says stop or is empty, and the message is
+   `withoutStopSentences(message)` (below): a message with no stop sentence stands as
+   written, one with some stands without them, and only when that is `''` (nothing usable
+   left, or the message empty) are the message and what it does the rep's (`OPEN_MESSAGE`,
+   `OPEN_DOES`); beside a kept message a `does:` line `messageSaysStop` catches is
+   `OPEN_DOES` alone. `replaced` names the parts given the rep's text, in the order `means`,
+   `next`, `message`, so a kept message, cut or whole, is never listed. A refused
    answer is asked once more (`askAgain`, naming the open conditions), and that answer
    passes the same gate. When it is refused too, or does not answer, one plain
    `$.model.complete` (`OBJECTIVE_MODEL`, high effort, `OWN_WORDS_SYSTEM`: the ROLE's "Who
@@ -124,10 +127,13 @@ call writes (below):
    closing quotes or brackets allowed after it); the message's last line is not held to a
    sentence mark, since its `end` line and a whole `does:` line show it was not cut, and a
    whole message may end in a list item. `takeOwnWords` takes from a
-   whole reply each part that is not empty and does not say stop (the message and its
-   `does:` line read by `messageSaysStop`, the does line taken only with the message); the
-   fixed texts stand otherwise, and a reply not whole, or a call that throws or does not
-   answer, leaves them all, never a stop. Two replies came back answered and cut
+   whole reply each part the gate replaced: the meaning and next step when not empty and not
+   caught by `saysStop`, the message as `withoutStopSentences(own.message)` when that is not
+   `''`, and its `does:` line only beside a taken message and only when `messageSaysStop`
+   does not catch it; the fixed texts stand otherwise, and a reply not whole, or a call that
+   throws or does not answer, leaves them all, never a stop. A message the gate kept is not
+   in `replaced`, so the call (still made, since the meaning is always replaced) never writes
+   over it. Two replies came back answered and cut
    mid-sentence live on 19 Oct 2026, with the cap at 4,000 tokens and at 16,000, for a cause
    not known (`docs/testing.md` scenario 11); the wholeness test keeps their half sentences
    off the card. Its spend counts with the looks, and it writes card parts only, never the
@@ -135,9 +141,21 @@ call writes (below):
    the own-words call; `lastBrief.own` what came of that call (`whole`; `cut`, answered but
    not whole; `none`, not answered or thrown; `skipped`, no call made) and
    `lastBrief.ownChars` its reply's length (0 with none); a check's card keeps all three
-   from the briefing it was pressed on. With no objective written (`gateOpen` is null) the same answers are
-   refused, never let through, every part given its `UNWRITTEN_*` text, not asked again and
-   given no own-words call.
+   from the briefing it was pressed on. When the last read's message was replaced and the own-words call gave no usable
+   one (`ownMessageTaken(replaced, own)`: `'message'` in `replaced`, a whole reply, and
+   `withoutStopSentences(own.message)` not `''`), `earlierMessage(answer, replaced, ownTaken,
+   first)` puts read 1's message on the card, without its stop sentences, with read 1's gated
+   `does:` line, provided read 1 kept its message (`'message'` not in `first.replaced`) and
+   something usable is left of it; otherwise the card is unchanged. It is decided by the
+   `replaced` lists, never by comparing a message with `OPEN_MESSAGE`, and runs only after
+   the own-words call. So Brief me's message is, in this order: the last read's own message
+   without its stop sentences (read 2's, or read 1's when the second ask did not answer), the
+   own-words message without its stop sentences, read 1's without its stop sentences, and
+   only then the fixed list (`OPEN_MESSAGE`). With no objective written (`gateOpen` is null) the same answers are
+   refused, never let through, not asked again and given no own-words call; the meaning and
+   next step are `UNWRITTEN_MEANS` and `UNWRITTEN_NEXT`, and the message follows the same
+   rule as above with `UNWRITTEN_MESSAGE` and `UNWRITTEN_DOES` as its fixed texts, so a sound
+   message stands; `replaced` is `means`, `next`, and `message` only when it was replaced.
 
    A message is read one sentence at a time. `sentencesOf(text)` gives each sentence as a
    span `{ start, end }` over the text itself, the whitespace between sentences in none of
@@ -153,7 +171,39 @@ call writes (below):
    called, calls, claimed, reported, told) stands anywhere earlier in the sentence, unless
    that word is followed by "to", directly or after an object (`says to`, `told the agent
    to`), which orders what the quote says, so that quote is read; then `toAgentVoice`; then
-   `STOP_NEXT` and `STOP_ONCE`. `STOP_ONCE` catches a stop once something is done, its subject
+   four shapes masked (`maskExempt`) that do not stop the agent while it could still move the
+   work; then `STOP_NEXT` and `STOP_ONCE`. Each mask replaces only the words that make its
+   shape with `x`, so the rest of the sentence is still read (`Before you stop, write the
+   summary, then you're done.` is caught on "then the agent is done"); next steps are never
+   masked. The four, on the third-person copy:
+   1. A push to finish before the agent stops (`BEFORE_STOPS`: "before the agent stops", with
+      can, may or should or not): `Two things before you stop.`
+   2. A wait on someone other than the owner (`WAIT_ON_OTHER`): a wait for a, an or the reply,
+      answer, response, decision, go-ahead, word, sign-off or instructions from anyone but the
+      owner (him, her, them, he and his count as the owner): `Wait for a reply from the
+      lead.` `Wait for a reply.`, with no "from", is still caught, and so is "from my lead".
+   3. A stop on a blocker that tells the owner what stands in the way (`BLOCKER_IF` and
+      `BLOCKER_TOLD`, both needed): the sentence opens with "if" and a condition, up to its
+      first comma, naming a refusal or an absence (refuse, refuses, refused, rejects,
+      rejected, missing, not found, does not exist, no X has been added, no … yet), and it
+      tells the owner what, that, why or which (with exactly, plainly or clearly or not) or
+      says so; then its bare "stop" is masked: `If the guard refuses the push, stop and tell
+      me exactly what it refused.` `If anything fails, stop and tell me.`, `If the remote is
+      missing, stop.` and `If the push is refused, stop.` are still caught.
+   4. A wait on the owner's word before an outward act only the owner decides, from a closed
+      list (`OUTWARD_ACT`): submit, publish, post, apply, pay, buy, purchase, sign, and send
+      with an email, message, application, letter or invoice as its object (`send it` is no
+      such act). Said as a wait for the owner's word, go-ahead, approval or sign-off on,
+      before or to the act (`WAIT_BEFORE_ACT`: `Wait for my go-ahead before you send the
+      email.`), or on a button named with a capital after "on" (`wait for my word on
+      Submit`; merge, push, delete, deploy, install and the articles and pronouns in
+      `NOT_A_BUTTON` are never a button), or as the act said not to happen (`NEGATED_ACT`:
+      not, never or n't before it) with a wait on the owner after it, whose wait words are
+      masked (`Do not publish it; wait for my word.`). Merging, pushing, deleting, deploying
+      and installing are the agent's to do, so `Wait for my go-ahead before merging.` is
+      still caught.
+
+   `STOP_ONCE` catches a stop once something is done, its subject
    a clause's start or the agent with can, may, should, could or is free to (`You can stop
    after that.`, `You can stop once the README is fixed.`, `Then stop when the suite is
    green.`), never a thing (`It stops when the timer fires.`); next steps are not read by it.
@@ -176,9 +226,11 @@ call writes (below):
    optional "then", "and" or "please" (`Do that first.`, `Then do so.`; not `Show why it
    failed.` or `Fix it in the parser.`). A statement of fact about the work counts as usable,
    since it is a finding (`The install is not shown.`). A caller that must not show a stop
-   uses the result when it is not `''` and its own fixed text otherwise. The gate and the
-   own-words call above do not call it yet: they still replace a message that says stop
-   whole.
+   uses the result when it is not `''` and its own fixed text otherwise; `gateVerdict`,
+   `takeOwnWords`, `ownMessageTaken` and `earlierMessage` above all do. `sentencesOf` and
+   `messageSaysStop` are exported beside it, and `messageSaysStop(text)` is true exactly when
+   `withoutStopSentences(text)` would take a sentence out, since both read each sentence the
+   same way (`sentenceSaysStop`).
 
    The watch and the briefing (and its second ask) read through one helper, `readSession`.
    A fork answers `nothing-to-fork` before the first response of the process (a session

@@ -3,6 +3,33 @@
 What changed in each release of Owner Rep, newest first. The full record is the
 [commit history](https://github.com/macollins27/owner-rep/commits/main).
 
+## 0.5.1 (30 October 2026)
+
+- **The message to the agent keeps everything but a stop.** While part of "done" is still
+  open, the rep never lets the card tell the agent to stop. Before, one sentence such as
+  "You can stop now." at the end of a good message threw the whole message away and
+  put a bare list of what is still open in its place, with every finding the rep had made
+  lost. Now only the sentences that tell the agent to stop, call the work finished or hand it
+  back to you are taken out, and the rest of the message stays word for word. The bare list
+  appears only when nothing useful is left, such as a message that was only "Great work.
+  You can stop now."
+- **Fewer good messages mistaken for a stop.** Four kinds of sentence are no longer read as
+  telling the agent to stop: a push to finish more before it stops ("Two things before you
+  stop."), a wait on someone other than you ("Wait for a reply from the lead."), a stop on a
+  blocker that tells you exactly what stands in the way ("If the guard refuses the push,
+  stop and tell me exactly what it refused."), and a wait for your word before something
+  only you decide, such as submitting a form, sending an email, publishing, paying or
+  signing. A wait for your go-ahead before merging, pushing, deleting, deploying or
+  installing is still treated as a stop, since those are the agent's to do.
+- **A stop once something is done is caught.** "You can stop once the README is fixed." and
+  "You can stop after that." were let through before; they are now taken out like any other
+  stop.
+- **The first reading's message is tried before the list.** When Brief me's second reading
+  and the rep's rewrite both leave nothing useful, the message from its first reading, with
+  any stop taken out, goes on the card before the bare list does.
+- With no objective written yet, a sound message stands in the same way instead of being
+  replaced.
+
 ## 0.5.0 (26 October 2026)
 
 - **The card fills the space it has, most important first.** It opens with the result you
