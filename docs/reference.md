@@ -361,8 +361,8 @@ call writes (below):
    `state:`; `parseWatch` reads that block as if it were not there, save its lines ending
    `| not assessed`, which become `notAssessed`. `LIST_GAP_RULE`, in the Heads up alone, makes one
    exception to staying quiet about such a step: where the agent's own full list of what it is
-   building or doing, or a summary of what is done and what remains, stands whole in the record
-   and an approved step is not on it, the flag says the step looks dropped and `why` asks the agent
+   building or doing to carry out an approved plan, or a summary of what is done and what remains
+   of it, stands whole in the record and a step of that plan is not on it, the flag says the step looks dropped and `why` asks the agent
    to show it. The step stays `not assessed` in the walk, so `NOT_ASSESSED_RULE` and the lines of
    `boundaryCover` still hold: nothing is called skipped. The list can only raise this flag; it
    never moves the ask. The briefing walks to itself and names the steps

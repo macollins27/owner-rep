@@ -9829,6 +9829,8 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
       'whole in the record',
       'a left-out part inside it',
       'a list of one part of the work',
+      'to carry out an approved plan',
+      'a list from before the plan was approved',
     ])
       expect(rep.LIST_GAP_RULE).toContain(rule)
     expect(briefPrompt(mem7([]))).not.toContain(rep.LIST_GAP_RULE)
