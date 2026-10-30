@@ -12656,7 +12656,13 @@ describe('coverage: the failed write and the full store, both standing', () => {
     s.hold.fork = p => (p.includes(BRIEF_ASKED) ? COVER_STOP(s.obj()) : HOLDS)
     const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
     await ui.press({ key: 'rep' })
-    const texts = (await ui.findAll({ type: 'Text' })).map(t => t.text)
+    // On a loaded machine the card can land after the press returns.
+    let texts: string[] = []
+    const shown = async () => {
+      texts = (await ui.findAll({ type: 'Text' })).map(t => t.text)
+      return texts.includes('Left out:')
+    }
+    for (const until = Date.now() + 20000; !(await shown()) && Date.now() < until; ) await realTick(2)
     const at = texts.indexOf('Left out:')
     expect(at).toBeGreaterThan(-1)
     // The kit lists each line's text twice (the line and its words); the card's lines are the dashed ones.
