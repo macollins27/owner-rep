@@ -978,6 +978,16 @@ test('withoutStopSentences takes out only the sentences that tell the agent to s
   for (const [, out] of table) expect([out, messageSaysStop(out)]).toEqual([out, false])
 })
 
+test('a quote after a reporting word anywhere earlier in its sentence is named words, not read for a stop, though the same quote read alone would stop the agent', () => {
+  // Each quote trips when nothing reports it ("noted" is no reporting word), so these cases can tell whether the mask reaches past the words between.
+  for (const m of ['Your summary noted plainly "You can stop now." Run the suite.', 'The log noted, in its last line, "You can stop now." Show the run.', 'Your summary noted at the end "You can stop now." Paste the counts.'])
+    expect([m, messageSaysStop(m)]).toEqual([m, true])
+  for (const m of ['Your summary said plainly "You can stop now." Run the suite and paste the counts.', 'The agent wrote, in its last line, "You can stop now." Show the run.', 'Your summary claimed at the end "You can stop now." Paste the counts.']) {
+    expect([m, messageSaysStop(m)]).toEqual([m, false])
+    expect([m, withoutStopSentences(m)]).toEqual([m, m])
+  }
+})
+
 test('messageSaysStop reads each sentence alone: a stop once something is done is caught when the agent or a clause stops, never when a thing stops; a stop in its own sentence is caught wherever it stands', () => {
   for (const m of ['You can stop after that.', 'You can stop once the README is fixed.', 'Then stop once the suite is green.', 'You may stop when the suite is green.', 'You should stop as soon as the run passes.', 'Run it. (Then you can stop.)', 'Run it. (Then stop.)', 'Show build 42. then stop.', 'Paste the line "Build 42 passed." then stop.', 'Steps:\n- Push main.\n- Then stop.', 'Fix the parser\nThen stop', 'Run the suite. Then do as the note says to: "You can stop now."'])
     expect([m, messageSaysStop(m)]).toEqual([m, true])

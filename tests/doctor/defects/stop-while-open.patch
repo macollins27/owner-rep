@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 19d12ba..5b98d6f 100644
+index f91cbea..a684927 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2792,7 +2792,7 @@ export const messageSaysStop = (text: string): boolean => STOP_NEXT.test(toAgent
- // rep's text saying the objective is not written yet. What the agent did
- // ("stands") is kept as the model wrote it.
+@@ -3129,7 +3129,7 @@ export const withoutStopSentences = (message: string): string => {
+ // that text's message and does line. What the agent did ("stands") is kept as
+ // the model wrote it.
  export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer: BriefAnswer; refused: boolean; replaced: Replaced[] } {
 -  if (open !== null && open.length === 0) return { answer: a, refused: false, replaced: [] }
 +  if (open === null || open.length >= 0) return { answer: a, refused: false, replaced: [] }
    if (a.verdict === 'continue' && a.well === '' && !saysStop(a.next) && !messageSaysStop(a.message)) return { answer: a, refused: false, replaced: [] }
-   if (open === null) {
-     return {
+   const kept = withoutStopSentences(a.message)
+   const message = kept === ''

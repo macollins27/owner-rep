@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index f91cbea..358806a 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3059,7 +3059,7 @@ const BACK_REFERENCE = new RegExp(String.raw`^(?:(?:then|and)\s+)?(?:please\s+)?
+ const usable = (text: string): boolean =>
+   sentencesOf(text).some(({ start, end }) => {
+     const s = unwrap(text.slice(start, end).replace(LIST_MARKER, ''))
+-    return !PRAISE.test(s) && !QUESTION.test(s) && !BACK_REFERENCE.test(s)
++    return !PRAISE.test(s) && !QUESTION.test(s) && !BACK_REFERENCE.test(s) && !(/\b(?:that|this|it|so)\b/i.test(s) && s.split(/\s+/).length <= 5)
+   })
+ 
+ // A message with every sentence that says stop (by messageSaysStop's reading) taken out, and

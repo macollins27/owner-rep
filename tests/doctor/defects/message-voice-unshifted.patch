@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index c95e00f..176f809 100644
+index f91cbea..b2e37f9 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2841,7 +2841,7 @@ export const toAgentVoice = (text: string): string => VOICE.reduce((out, [word,
+@@ -3026,7 +3026,7 @@ const maskExempt = (read: string): string => {
+ // or quotes taken off, quoted words after a reporting word masked, turned to the third person,
+ // the four exempt shapes above masked, then read by STOP_NEXT and STOP_ONCE.
+ const sentenceSaysStop = (sentence: string): boolean => {
+-  const read = maskExempt(toAgentVoice(maskReported(unwrap(sentence.replace(LIST_MARKER, '')))))
++  const read = maskExempt(maskReported(unwrap(sentence.replace(LIST_MARKER, ''))))
+   return STOP_NEXT.test(read) || STOP_ONCE.test(read)
+ }
  
- // Whether a message, or what it does, tells the agent or the job to stop, calls the
- // work finished, or hands it back to the owner, read in the third person.
--export const messageSaysStop = (text: string): boolean => STOP_NEXT.test(toAgentVoice(text))
-+export const messageSaysStop = (text: string): boolean => STOP_NEXT.test(text)
- 
- // The objective is not finished while a condition is open, and the gate works
- // part by part. A verdict other than continue (stop, or none given), a

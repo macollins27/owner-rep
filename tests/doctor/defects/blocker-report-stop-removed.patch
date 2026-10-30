@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index f91cbea..26a17ac 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3011,7 +3011,6 @@ const NEGATED_ACT = new RegExp(String.raw`(?:\bnot|\bnever|n['’]t)\s+${OUTWARD
+ const WAIT_ON_HIM_WORDS = new RegExp(String.raw`\bwaits?\s+(?:for|on|until|till)\s+${ON_HIM}(?:['’]s\s+[\w-]+)?`, 'gi')
+ const maskExempt = (read: string): string => {
+   let s = read.replace(BEFORE_STOPS, 'x').replace(WAIT_ON_OTHER, 'x ')
+-  if (BLOCKER_IF.test(s) && BLOCKER_TOLD.test(s)) s = s.replace(/\bstop\b/gi, 'x')
+   s = s.replace(WAIT_BEFORE_ACT, (wait: string, button?: string) =>
+     button === undefined || (/^[A-Z]/.test(button) && !NOT_A_BUTTON.test(button)) ? 'x' : wait)
+   const negated = NEGATED_ACT.exec(s)

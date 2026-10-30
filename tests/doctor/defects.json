@@ -261,13 +261,13 @@
     "name": "stop-while-open",
     "breaks": "The gate never refuses, so a card can say stop, or that the work is going well, while a condition of the objective is still open or none is written.",
     "patch": "stop-while-open.patch",
-    "fixed": "2026-10-15; remade 2026-10-19"
+    "fixed": "2026-10-15; remade 2026-10-19; remade 2026-10-29"
   },
   {
     "name": "unwritten-gate-open",
     "breaks": "With no objective written the gate lets everything through, so a card can tell the agent to stop, or say the work is going well, before anything measures it.",
     "patch": "unwritten-gate-open.patch",
-    "fixed": "2026-10-15; remade 2026-10-19"
+    "fixed": "2026-10-15; remade 2026-10-19; remade 2026-10-29"
   },
   {
     "name": "verdict-missing-continues",
@@ -279,7 +279,7 @@
     "name": "stop-next-unread",
     "breaks": "The gate reads only the verdict line, so an answer that says continue while its next step tells the agent to stop, or calls the work finished, passes while a condition is open.",
     "patch": "stop-next-unread.patch",
-    "fixed": "2026-10-15; remade 2026-10-19"
+    "fixed": "2026-10-15; remade 2026-10-19; remade 2026-10-29"
   },
   {
     "name": "draft-moves-result",
@@ -1779,31 +1779,31 @@
     "name": "gate-replaces-all",
     "breaks": "A refused card loses the model's own sound next step and message too, so a card refused only for its verdict or its going-well line drops what the agent should do now for the rep's fixed text.",
     "patch": "gate-replaces-all.patch",
-    "fixed": "2026-10-19"
+    "fixed": "2026-10-19; remade 2026-10-29"
   },
   {
     "name": "message-not-gated",
     "breaks": "The gate reads the next step but not the message, so a card whose message tells the agent to stop passes while a condition is open, and the owner can send that stop themselves.",
     "patch": "message-not-gated.patch",
-    "fixed": "2026-10-19"
+    "fixed": "2026-10-19; remade 2026-10-29"
   },
   {
     "name": "own-words-not-asked",
     "breaks": "A briefing refused twice is never written in the rep's own words, so the card always shows the fixed texts in place of what the rep found.",
     "patch": "own-words-not-asked.patch",
-    "fixed": "2026-10-19"
+    "fixed": "2026-10-19; remade 2026-10-29"
   },
   {
     "name": "own-words-stop-taken",
     "breaks": "A part the own-words call writes is taken even when it says stop, so a card refused for saying stop can say stop again while a condition is open.",
     "patch": "own-words-stop-taken.patch",
-    "fixed": "2026-10-19"
+    "fixed": "2026-10-19; remade 2026-10-29"
   },
   {
     "name": "message-voice-unshifted",
     "breaks": "The gate reads the card's message as if it were a next step, so a message written in the owner's voice that has the agent wait for their sign-off or hand the work back to them stays on a refused card, and a message that has them wait until the agent has a log is refused.",
     "patch": "message-voice-unshifted.patch",
-    "fixed": "2026-10-19"
+    "fixed": "2026-10-19; remade 2026-10-29"
   },
   {
     "name": "card-cut-with-rows-empty",
@@ -1858,5 +1858,137 @@
     "breaks": "The voice shift turns \"me\" to \"him\" instead of \"the owner\", so a message that hands the work back to the owner is read as a hand-back to someone the patterns alone still name; the mark and the owner wording drift apart.",
     "patch": "voice-to-him.patch",
     "fixed": "2026-10-26"
+  },
+  {
+    "name": "message-swapped-whole",
+    "breaks": "The gate replaces a refused card's whole message whenever any sentence of it says stop, so the rep's own findings and asks beside a stop sentence are lost for the fixed text.",
+    "patch": "message-swapped-whole.patch",
+    "fixed": "2026-10-29"
+  },
+  {
+    "name": "stop-sentence-kept",
+    "breaks": "Taking the stop sentences out of a message keeps the last one, so a refused card can still tell the agent to stop while a condition is open.",
+    "patch": "stop-sentence-kept.patch",
+    "fixed": "2026-10-29"
+  },
+  {
+    "name": "own-words-message-swapped-whole",
+    "breaks": "The own-words message is dropped whole when a sentence of it says stop, instead of being taken without that sentence, so the card falls back to the fixed text though the rep wrote a usable message.",
+    "patch": "own-words-message-swapped-whole.patch",
+    "fixed": "2026-10-29"
+  },
+  {
+    "name": "unwritten-swaps-usable",
+    "breaks": "With no objective written the gate replaces every refused message with the fixed text, so a sound message that only stood beside a stop verdict is lost.",
+    "patch": "unwritten-swaps-usable.patch",
+    "fixed": "2026-10-29"
+  },
+  {
+    "name": "before-stop-exemption-dropped",
+    "breaks": "\"Before you stop\" is read as a stop, so a message pushing the agent to finish more work before it stops is cut down or replaced.",
+    "patch": "before-stop-exemption-dropped.patch",
+    "fixed": "2026-10-29"
+  },
+  {
+    "name": "reply-from-other-caught",
+    "breaks": "A wait for a reply from someone other than the owner is read as a stop, so a message telling the agent to wait on the lead or a tool is cut.",
+    "patch": "reply-from-other-caught.patch",
+    "fixed": "2026-10-29"
+  },
+  {
+    "name": "blocker-report-stop-removed",
+    "breaks": "A stop on a blocker that tells the owner what stands in the way is read as a stop, so the message's instruction to report the refusal or absence is cut.",
+    "patch": "blocker-report-stop-removed.patch",
+    "fixed": "2026-10-29"
+  },
+  {
+    "name": "blocker-stop-unreported-kept",
+    "breaks": "A stop on a refusal or an absence is let through even when the sentence does not tell the owner what stands in the way, so \"If the push is refused, stop.\" stays on a refused card.",
+    "patch": "blocker-stop-unreported-kept.patch",
+    "fixed": "2026-10-29"
+  },
+  {
+    "name": "outward-wait-exemption-dropped",
+    "breaks": "A wait on the owner's word before an outward act he alone decides (submit, send, publish, pay) is read as a stop, so the message loses the line that keeps the agent from acting for him.",
+    "patch": "outward-wait-exemption-dropped.patch",
+    "fixed": "2026-10-29"
+  },
+  {
+    "name": "merge-wait-exempted",
+    "breaks": "Merging is counted an outward act the owner alone decides, so \"Wait for my go-ahead before merging.\" stays on a refused card and stops the agent.",
+    "patch": "merge-wait-exempted.patch",
+    "fixed": "2026-10-29"
+  },
+  {
+    "name": "stop-once-missed",
+    "breaks": "A stop once something is done (\"You can stop after that.\", \"Then stop once the suite is green.\") is not read as a stop, so it stays on a refused card.",
+    "patch": "stop-once-missed.patch",
+    "fixed": "2026-10-29"
+  },
+  {
+    "name": "quoted-stop-read",
+    "breaks": "Quoted words are masked only right after the reporting word, so a sentence naming the agent's own words with a word between ('Your summary said plainly \"You can stop now.\"') is read as a stop and cut.",
+    "patch": "quoted-stop-read.patch",
+    "fixed": "2026-10-29"
+  },
+  {
+    "name": "quoted-order-skipped",
+    "breaks": "A quote after a reporting word followed by \"to\" is masked too, so an order to do what the quote says ('Then do as the note says to: \"You can stop now.\"') is not read as a stop.",
+    "patch": "quoted-order-skipped.patch",
+    "fixed": "2026-10-29"
+  },
+  {
+    "name": "praise-usable",
+    "breaks": "Praise or thanks counts as something to do, so a message cut down to \"Great work.\" stands in place of the fixed text.",
+    "patch": "praise-usable.patch",
+    "fixed": "2026-10-29"
+  },
+  {
+    "name": "back-reference-usable",
+    "breaks": "A bare back-reference counts as something to do, so a message cut down to \"Do that first.\", whose thing went with the stop sentence, stands in place of the fixed text.",
+    "patch": "back-reference-usable.patch",
+    "fixed": "2026-10-29"
+  },
+  {
+    "name": "back-reference-too-wide",
+    "breaks": "Any short sentence holding \"it\", \"that\", \"this\" or \"so\" counts as a bare back-reference, so a finding such as \"Show why it failed.\" is thrown away for the fixed text.",
+    "patch": "back-reference-too-wide.patch",
+    "fixed": "2026-10-29"
+  },
+  {
+    "name": "digit-stop-joins",
+    "breaks": "A full stop after digits never ends a sentence, so \"Show build 42. Then stop.\" is read as one sentence and the whole message is cut.",
+    "patch": "digit-stop-joins.patch",
+    "fixed": "2026-10-29"
+  },
+  {
+    "name": "blank-lines-left",
+    "breaks": "Taking out a stop sentence leaves its emptied line and the blank lines around it, so a removed paragraph or list item leaves gaps and a bare list marker in the card's message.",
+    "patch": "blank-lines-left.patch",
+    "fixed": "2026-10-29"
+  },
+  {
+    "name": "brief-me-no-read1-fallback",
+    "breaks": "Brief me never falls back to read 1's message, so when the last read and the own-words call give nothing usable the card shows the fixed text though read 1 wrote a sound message.",
+    "patch": "brief-me-no-read1-fallback.patch",
+    "fixed": "2026-10-29"
+  },
+  {
+    "name": "own-words-replaces-read2",
+    "breaks": "The own-words message writes over a message the gate kept, so the rep's sound message from the read is replaced.",
+    "patch": "own-words-replaces-read2.patch",
+    "fixed": "2026-10-29"
+  },
+  {
+    "name": "read1-fallback-over-own-words",
+    "breaks": "Read 1's message is put back even when the own-words call gave a usable one, so the own-words message is thrown away.",
+    "patch": "read1-fallback-over-own-words.patch",
+    "fixed": "2026-10-29"
+  },
+  {
+    "name": "own-message-taken-whole",
+    "breaks": "The own-words message is counted taken when it is not empty, without its stop sentences taken out, so a reply that was all stop sentences blocks read 1's message from standing.",
+    "patch": "own-message-taken-whole.patch",
+    "fixed": "2026-10-29"
   }
 ]

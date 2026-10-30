@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index f91cbea..1134478 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2922,6 +2922,7 @@ export const sentencesOf = (text: string): { start: number; end: number }[] => {
+       let end = -1
+       for (; i < line.length; i++) {
+         if (!SENTENCE_MARKS.includes(line[i] ?? '')) continue
++        if (line[i] === '.' && /\d/.test(line[i - 1] ?? '')) continue
+         let k = i
+         while (k < line.length && SENTENCE_MARKS.includes(line[k] ?? '')) k++
+         while (k < line.length && SENTENCE_CLOSERS.includes(line[k] ?? '')) k++

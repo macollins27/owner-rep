@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index f91cbea..1820bdc 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2969,7 +2969,7 @@ const maskReported = (sentence: string): string =>
+   sentence.replace(QUOTED, (quote: string, at: number) => {
+     const before = sentence.slice(0, at)
+     for (const word of before.matchAll(REPORTING)) {
+-      if (!/^\s+(?:(?:the\s+)?[\w'’-]+\s+)?to\b/i.test(before.slice((word.index ?? 0) + word[0].length))) return '"x"'
++      if (word.index !== undefined) return '"x"'
+     }
+     return quote
+   })
