@@ -180,6 +180,7 @@ import {
   approvalOf,
   readerParts,
   readerGaps,
+  headsUp,
   notAssessedGaps,
   joinGaps,
   WATCH_APPROVED_BUDGET,
@@ -1306,9 +1307,10 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
     const answer = parsed
     if (applyMarks(after, answer.shown, answer.closed) && onScreen(sid)) await update($, readingA, () => after.objective)
     const view = await read($, viewA)
-    if (answer.flag !== null && view === 'row' && onScreen(sid) && ![...after.seen].some(s => same(s, answer.flag ?? ''))) {
-      after.seen = [...after.seen, answer.flag].slice(-SEEN_MAX)
-      const note: Note = { line: answer.flag, why: answer.why, shownAt: Date.now(), turnId }
+    const said = headsUp(answer, after.seen, (fill?.shown.length ?? 0) > 0)
+    if (said !== null && view === 'row' && onScreen(sid) && ![...after.seen].some(s => same(s, said.line))) {
+      after.seen = [...after.seen, said.line].slice(-SEEN_MAX)
+      const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId }
       await update($, noteA, () => note)
       await update($, viewA, () => 'note')
     }

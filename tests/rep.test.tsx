@@ -9583,7 +9583,7 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
   // The owner's lines for a reader's gaps, through coverage, the one path to the row and the card.
   const cover7 = (owner: OwnerMsg[], gaps: rep.ReaderGaps) => rep.coverage({ owner, objective: null, jobStart: 1 }, { gaps })
   const NOT_ASSESSED_CUT = (n: number, step: string) => `Not assessed: "${step}" in the plan you approved in message #${n} (its proof could be in a part of the record that was cut short)`
-  const STATE_LINE = '- #<n>: <the step in plain words> | done | claimed | underway | not reached | no sign while later work goes on | done before the summary | runs alongside | not assessed'
+  const STATE_LINE = '- #<n>: <the step in plain words> | done | claimed | underway | not reached | no sign while later work goes on | done before the summary | runs alongside | looks dropped | not assessed'
   const YES_LINE = 'The owner\'s "yes" to a plan an agent proposed: it makes the plan the owner\'s ask, held like the owner\'s own words; its steps are the ask, and its statements of fact are claims to check.'
   const DRAFT_LINE = 'A message marked "(your draft, sent by the owner)": your own words, which the owner sent. It asks the agent for the step it names and nothing more; it never narrows the job.'
   const person = (text: string): SessionMessage => ({ role: 'user', text, toolUses: [] })
@@ -9824,8 +9824,9 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
       'looks dropped',
       'does not appear in that list',
       'asks the agent to show it',
-      'Keep the step "not assessed" in the walk',
-      'never say it was skipped or done',
+      'is marked "looks dropped" in the walk instead',
+      'the step stays "not assessed"',
+      'Never say it was skipped or done',
       'whole in the record',
       'a left-out part inside it',
       'a list of one part of the work',
@@ -9835,6 +9836,66 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
       expect(rep.LIST_GAP_RULE).toContain(rule)
     expect(briefPrompt(mem7([]))).not.toContain(rep.LIST_GAP_RULE)
     expect(rep.boundaryCover({ outcome: 'unknown', n: 6, from: 0 }, false).told[0]).toContain('none of its steps may be called "no sign while later work goes on"')
+  })
+
+  // A step the walk marks as dropped reaches the owner whatever the one flag was about (lead f1fcada3).
+  const walked = (step: string, mark: string, flag = 'none', why = '') =>
+    parseWatch(`steps:\n- #6: Build the importer | done\n- #6: ${step} | ${mark}\nstate: working\nflag: ${flag}\n${why === '' ? '' : `why: ${why}\n`}`)
+  const STEP = 'Move the request limit to the local store'
+  const OTHER = 'The agent called all ten tasks done, but your dashboard never appears.'
+
+  test('Heads up: a step with no sign outranks the flag, and the flag moves to the why, so no concern is lost', () => {
+    const said = rep.headsUp(walked(STEP, 'no sign while later work goes on', OTHER, 'Only the opening lines show.'), [], true)
+    expect(said?.line).toBe(`A step of the plan you approved looks dropped: ${STEP}.`)
+    expect(said?.why).toContain('The agent has to show it.')
+    expect(said?.why).toContain(`Also: ${OTHER} Only the opening lines show.`)
+  })
+
+  test('Heads up: a step marked looks dropped is carried with no flag at all, is never called skipped, and still counts as not assessed', () => {
+    const a = walked(STEP, 'looks dropped')
+    const said = rep.headsUp(a, [], true)
+    expect(said?.line).toBe(`A step of the plan you approved looks dropped: ${STEP}.`)
+    expect(said?.why).toContain('not on the agent\'s own full list')
+    expect(`${said?.line} ${said?.why}`).not.toMatch(/skipped/i)
+    expect(a.notAssessed).toEqual([{ n: 6, step: STEP }])
+  })
+
+  test('Heads up: a step walked as not assessed stays out of it, so the false-alarm protection is unchanged', () => {
+    const a = walked(STEP, 'not assessed', OTHER, 'Only the opening lines show.')
+    expect(a.dropped).toBeUndefined()
+    expect(rep.headsUp(a, [], true)).toEqual({ line: OTHER, why: 'Only the opening lines show.' })
+    expect(rep.headsUp(walked(STEP, 'not assessed'), [], true)).toBeNull()
+    for (const mark of ['done', 'claimed', 'underway', 'not reached', 'done before the summary', 'runs alongside'])
+      expect(rep.headsUp(walked(STEP, mark), [], true)).toBeNull()
+  })
+
+  test('Heads up: with no approved plan shown to the look, the walk carries nothing', () => {
+    expect(rep.headsUp(walked(STEP, 'no sign while later work goes on', OTHER, 'Only the opening lines show.'), [], false)).toEqual({ line: OTHER, why: 'Only the opening lines show.' })
+    expect(rep.headsUp(walked(STEP, 'looks dropped'), [], false)).toBeNull()
+  })
+
+  test('Heads up: a flag that already speaks of the step keeps the reader\'s own wording', () => {
+    const flag = 'The request limit move to the local store looks dropped.'
+    expect(rep.headsUp(walked(STEP, 'looks dropped', flag, 'The list has no such step.'), [], true)).toEqual({ line: flag, why: 'The list has no such step.' })
+  })
+
+  test('Heads up: a step already shown, reworded at a later look, is not raised again, and the next flag gets through', () => {
+    const shown = `A step of the plan you approved looks dropped: ${STEP}.`
+    const later = 'Swap the request limit over to the local store'
+    expect(rep.headsUp(walked(later, 'no sign while later work goes on'), [shown], true)).toBeNull()
+    expect(rep.headsUp(walked(later, 'no sign while later work goes on', OTHER), [shown], true)?.line).toBe(OTHER)
+    // A different step is raised. Two near-identical steps dropped at separate looks read as one here;
+    // the briefing still walks both.
+    expect(rep.headsUp(walked('Copy the whole database to the archive', 'looks dropped'), [shown], true)?.line).toContain('Copy the whole database')
+  })
+
+  test('Heads up: more than one step, the forms readers write, and a very long step', () => {
+    const two = parseWatch(`steps:\n- #5 step 7: Search your typed messages | no sign while later work goes on\n- #5 step 8, Search all your projects last | no sign while later work goes on — the agent wrote none\nstate: working\nflag: none\n`)
+    expect(two.dropped?.map(d => d.step)).toEqual(['Search your typed messages', 'Search all your projects last'])
+    const said = rep.headsUp(two, [], true)
+    expect(said?.line).toContain('Search your typed messages')
+    expect(said?.why).toContain('Also looks dropped: Search all your projects last.')
+    expect(rep.headsUp(walked('word '.repeat(80).trim(), 'looks dropped'), [], true)?.line.length).toBeLessThan(rep.DROPPED_STEP_MAX + 60)
   })
 
   test('Task 7: the briefing walks the same steps to itself, puts a step with no sign first under left:, and gives the steps it could not assess under unassessed:, with no steps: part', () => {
@@ -10176,6 +10237,29 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     }
     expect(cursors).toEqual([5, 9, 10])
     expect([...seen].sort((a, b) => a - b)).toEqual(range(2, 10))
+  })
+
+  const WALKED = `steps:\n- #2: Read the real data first | done\n- #2: Move the request limit to the local store | no sign while later work goes on\nstate: working\nflag: The agent has not shown the dashboard working.\nwhy: Only the opening lines show.\n`
+  const CARRIED = /A step of the plan you approved looks dropped: Move the request limit to the local store\./
+
+  test('Task 8 (mounted): a look that walks a step as dropped puts that step on the Heads up over its own flag, keeps the flag in the why, and records it as shown', async ($, on) => {
+    const m = mounted7(on, [msg7(1, 'build the sorter'), yes7(2, 'Read the real data first.\nMove the request limit to the local store.')], () => WALKED)
+    await started($)
+    await m.look($, 't1')
+    expect(await rowSays($, CARRIED)).toBe(true)
+    expect(await rowSays($, /The agent has not shown the dashboard working\.$/)).toBe(false)
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    expect(await ui.find({ type: 'Text', text: /Also: The agent has not shown the dashboard working\. Only the opening lines show\./ })).toBeDefined()
+    await ui.unmount()
+    expect((m.rec() as { seen?: string[] }).seen).toEqual(['A step of the plan you approved looks dropped: Move the request limit to the local store.'])
+  })
+
+  test('Task 8 (mounted): with no approved plan shown to the look, a walked step is not called part of one, and the reader\'s own flag stands', async ($, on) => {
+    const m = mounted7(on, [msg7(1, 'build the sorter')], () => WALKED)
+    await started($)
+    await m.look($, 't1')
+    expect(await rowSays($, CARRIED)).toBe(false)
+    expect(await rowSays($, /The agent has not shown the dashboard working\.$/)).toBe(true)
   })
 }
 
@@ -12518,7 +12602,8 @@ describe('coverage: the failed write and the full store, both standing', () => {
     s.answer(() => null)
     await started($)
     await s.send($, 'add a licence file')
-    await settleUntil($, () => (fallbackNow(s.d.files)?.objectiveFailed ?? 0) > 0)
+    // A long limit: it ends as soon as the write fails, and on a loaded machine that takes seconds.
+    await settleUntil($, () => (fallbackNow(s.d.files)?.objectiveFailed ?? 0) > 0, 20000)
     const failed = rep.failedWriteLine(2)
     const full = rep.storeFullLine(false)
     expect(await rowSays($, lineRe(failed))).toBe(true)
