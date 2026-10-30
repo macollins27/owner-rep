@@ -8989,16 +8989,20 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     expect(parseBrief(WELL).leftOut).toEqual([])
   })
 
-  test('Task 8, lever (b): a walk line that ends with where the record shows the step still parses, and the old form without it still parses', () => {
+  test('Task 8, lever (b): a walk line that ends with where the record shows the step still parses', () => {
     const plain = 'state: working\nflag: The agent skipped the look.\nwhy: No look in the record.\nshown:\n- the sorter built | the run printed sorted\nclosed:\n- nothing'
     const withWhere = `steps:\n- #5: read pear.txt | done — event 12 shows it read\n- #5: run check-fruit | not assessed — no sign\n- #5: report back | no sign while later work goes on — no sign\n${plain}`
     const a = parseWatch(withWhere)
     const b = parseWatch(plain)
     expect({ state: a.state, flag: a.flag, why: a.why, shown: a.shown, closed: a.closed }).toEqual({ state: b.state, flag: b.flag, why: b.why, shown: b.shown, closed: b.closed })
     expect(a.notAssessed).toEqual([{ n: 5, step: 'run check-fruit' }])
+  })
+
+  test('Task 8, lever (b): a walk line in the old form, ending at its state, still parses', () => {
+    const plain = 'state: working\nflag: The agent skipped the look.\nwhy: No look in the record.\nshown:\n- the sorter built | the run printed sorted\nclosed:\n- nothing'
     const old = parseWatch(`steps:\n- #5: read pear.txt | done\n- #5: run check-fruit | not assessed.\n${plain}`)
     expect(old.notAssessed).toEqual([{ n: 5, step: 'run check-fruit' }])
-    expect(old.flag).toBe(b.flag)
+    expect(old.flag).toBe(parseWatch(plain).flag)
   })
 
   test('Task 7: the record keeps a compaction summary whole up to 40,000 characters, and cuts another row at 3,000', () => {
