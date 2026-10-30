@@ -479,6 +479,10 @@ export function removablePath(root: string, p: string): boolean {
   return rest.length === 1 || (rest.length === 2 && file !== undefined && SOURCE_FILE.test(file))
 }
 
+// The characters of text whose fingerprints the adapter keeps in this process, so a text read
+// back unchanged needs no second digest.
+export const FINGERPRINT_MEMO_CHARS = 4_000_000
+
 // The SHA-256 of a text's UTF-8 bytes, as 64 hex characters, from the runtime.
 export async function sha256(text: string): Promise<string> {
   const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))

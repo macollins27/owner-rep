@@ -32,6 +32,7 @@ import {
   trimCounted,
   migrateOwner,
   sha256,
+  FINGERPRINT_MEMO_CHARS,
   isSessionId,
   removablePath,
   splitRecord,
@@ -474,6 +475,25 @@ async function sourceFolder($: EngineInterface, sid: string): Promise<string | n
 
 // Texts held only by this process (`where: 'memory'`), by `<session id>/<source id>`.
 const memTexts = new Map<string, string>()
+// The fingerprints this process has worked out, by the text each is of: a text read back the same
+// is proven without a second digest, which runs off the engine's own turn, so a press stays quick
+// however long the owner's message. A changed text is digested again, so damage is still found.
+// The oldest are let go past FINGERPRINT_MEMO_CHARS.
+const fingerprints = new Map<string, string>()
+let fingerprintChars = 0
+async function fingerprint(text: string): Promise<string> {
+  const known = fingerprints.get(text)
+  if (known !== undefined) return known
+  const sha = await sha256(text)
+  fingerprints.set(text, sha)
+  fingerprintChars += text.length
+  for (const t of fingerprints.keys()) {
+    if (fingerprintChars <= FINGERPRINT_MEMO_CHARS) break
+    fingerprints.delete(t)
+    fingerprintChars -= t.length
+  }
+  return sha
+}
 // The sessions whose last save the store refused, and whether the files refused it too.
 const storeFull = new Map<string, { memoryOnly: boolean }>()
 
@@ -589,7 +609,7 @@ async function placeSources($: EngineInterface, sid: string, rec: Rec): Promise<
       at.put(refWithout(at.ref, at.ref.where, at.ref.where === 'memory' ? LOST_RESTART : LOST_DAMAGED))
       continue
     }
-    const sha = at.ref.sha !== '' ? at.ref.sha : await sha256(text)
+    const sha = at.ref.sha !== '' ? at.ref.sha : await fingerprint(text)
     const ref: SourceRef = { ...at.ref, sha }
     if (canWrite && folder !== null && isSourceId(at.id)) {
       const path = `${folder}/${at.id}.txt`
@@ -641,7 +661,7 @@ async function readRef($: EngineInterface, sid: string, id: string, ref: SourceR
   }
   const folder = await sourceFolder($, sid)
   const got = folder === null || !isSourceId(id) ? null : await readText($, `${folder}/${id}.txt`)
-  if (got !== null && ref.sha !== '' && (await sha256(got)) === ref.sha) return { ...ref, text: got }
+  if (got !== null && ref.sha !== '' && (await fingerprint(got)) === ref.sha) return { ...ref, text: got }
   return refWithout(ref, 'file', LOST_DAMAGED)
 }
 
@@ -703,7 +723,7 @@ async function moveInline($: EngineInterface, rec: Rec): Promise<boolean> {
   for (const at of refsOf(rec)) {
     if (at.ref.where !== 'inline' || at.ref.text === undefined || at.ref.lost !== undefined) continue
     const text = at.ref.text
-    const ref: SourceRef = { ...at.ref, sha: at.ref.sha !== '' ? at.ref.sha : await sha256(text) }
+    const ref: SourceRef = { ...at.ref, sha: at.ref.sha !== '' ? at.ref.sha : await fingerprint(text) }
     if (canWrite && folder !== null && isSourceId(at.id) && (await writeFile($, `${folder}/${at.id}.txt`, text))) {
       at.put(refWithout(ref, 'file'))
     } else {
@@ -732,7 +752,7 @@ async function saveToFiles($: EngineInterface, rec: Rec): Promise<boolean> {
         ok = false
         break
       }
-      list.push({ name, bytes: utf8Bytes(text), sha: await sha256(text) })
+      list.push({ name, bytes: utf8Bytes(text), sha: await fingerprint(text) })
     }
     const old = ok ? parseManifest(await readText($, `${folder}/record.json`)) : null
     const manifest: Manifest = { recRev: rec.recRev, parts: list, why: STORE_FULL_WHY }
@@ -758,7 +778,7 @@ async function readParts($: EngineInterface, folder: string, manifest: Manifest)
   for (const p of manifest.parts) {
     const path = `${folder}/${p.name}`
     const text = await readText($, path)
-    if (text !== null) out.push({ text, sha: await sha256(text) })
+    if (text !== null) out.push({ text, sha: await fingerprint(text) })
     else out.push({ failed: (await $.fs.exists(path).catch(() => true)) ? 'unreadable' : 'missing' })
     if (text === null) break
   }
@@ -1880,7 +1900,7 @@ function closeStep(entry: TurnLive, index: number): void {
 // it puts it in its own file (`placeSources`); one over SOURCE_MAX is not kept, and says so.
 async function saveSource(_$: EngineInterface, _sid: string, _id: string, text: string): Promise<SourceRef> {
   if (text.length > SOURCE_MAX) return { chars: text.length, sha: '', where: 'file', lost: lostTooLong(text.length) }
-  return { chars: text.length, sha: await sha256(text), where: 'inline', text }
+  return { chars: text.length, sha: await fingerprint(text), where: 'inline', text }
 }
 
 // What a message of the owner's answers, fixed the moment it arrives: the turns seen to end

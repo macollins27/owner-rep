@@ -11422,11 +11422,23 @@ describe('coverage: each line on the row, the card and the briefing', () => {
 
   test('guard: with every approval read whole and every source reading back, no line stands and the stop and its going-well line show as given', async ($, on) => {
     const PLAN = turnWith(5000, [[100, 'Step: make apple.txt.']])
-    const s = asks(on, [his(1, 'plan the fruit files'), await planMsg(2, PLAN)], {}, new Map([[`${DIR}/2-body.txt`, PLAN]]))
+    const s = asks(on, [his(1, 'plan the fruit files'), await planMsg(2, PLAN, { toolUseId: 'p1' })], {}, new Map([[`${DIR}/2-body.txt`, PLAN]]))
+    // Every source reads back, the record too: it holds the plan screen's accept and the yes, so
+    // the readers find where each approval sits (Task 7 0c) and add no not-assessed line.
+    const TURN = turnWith(4000)
+    on('session.messages', () => ({
+      value: [
+        { role: 'user', text: 'plan the fruit files', toolUses: [] },
+        { role: 'assistant', text: '', toolUses: [{ tool_use_id: 'p1', tool: 'ExitPlanMode', input: { plan: PLAN } }] },
+        { role: 'user', text: '', toolUses: [], toolResults: [{ tool_use_id: 'p1', text: 'User has approved your plan.', isError: false }] },
+        { role: 'assistant', text: TURN, toolUses: [] },
+        { role: 'user', text: 'yes, go', toolUses: [] },
+      ] as SessionMessage[],
+    }))
     let n = 0
     s.answer(() => (++n === 1 ? ANSWER([], { approved: ['#3 | all'] }) : 'objective: holds'))
     await started($)
-    await runTurn($, s.scripts, 't1', [said(turnWith(4000))])
+    await runTurn($, s.scripts, 't1', [said(TURN)])
     await s.send($, 'yes, go')
     expect(s.msg(2)?.read?.state).toBe('read')
     expect(s.msg(3)).toMatchObject({ approved: 'all', read: { state: 'read' } })
