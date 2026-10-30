@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index a05c4e1..388fc2e 100644
+index 07348d8..657b18b 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3020,7 +3020,7 @@ const BLOCKER_TOLD = /\btell\s+the owner\s+(?:(?:exactly|plainly|clearly)\s+)?(?
- // you send the email."), or as the act said not to happen with a wait on him after it that has no
- // object of its own ("Do not publish it; wait for my word."); a wait before something else after a
- // negated act ("Do not publish the report; wait for my approval before running the tests.") is read.
--const OUTWARD_ACT = String.raw`(?:submit(?:s|ting)?|publish(?:es|ing)?|post(?:s|ing)?\s+(?:(?:it|this|that|them|the\s+[\w'’-]+)\s+)?(?:publicly|online|(?:on|to)\s+social\s+media)|appl(?:y|ies|ying)\s+(?:for|to)|pay(?:s|ing)?|buy(?:s|ing)?|purchas(?:e|es|ing)|sign(?:s|ing)?\s+(?:(?:the|an?|this|that|the owner['’]s)\s+)?(?:agreement|contract|form|lease|offer|NDA|paperwork)s?|send(?:s|ing)?\s+(?:(?:the|an?|this|that|the owner['’]s)\s+)?(?:email|message|application|letter|invoice)s?)\b`
-+const OUTWARD_ACT = String.raw`(?:merg(?:e|es|ing)|submit(?:s|ting)?|publish(?:es|ing)?|post(?:s|ing)?\s+(?:(?:it|this|that|them|the\s+[\w'’-]+)\s+)?(?:publicly|online|(?:on|to)\s+social\s+media)|appl(?:y|ies|ying)\s+(?:for|to)|pay(?:s|ing)?|buy(?:s|ing)?|purchas(?:e|es|ing)|sign(?:s|ing)?\s+(?:(?:the|an?|this|that|the owner['’]s)\s+)?(?:agreement|contract|form|lease|offer|NDA|paperwork)s?|send(?:s|ing)?\s+(?:(?:the|an?|this|that|the owner['’]s)\s+)?(?:email|message|application|letter|invoice)s?)\b`
+@@ -3028,7 +3028,7 @@ const BLOCKER_TOLD = /\btell\s+the owner\s+(?:(?:exactly|plainly|clearly)\s+)?(?
+ // "for that"): "Do not publish it; wait for my word.", "Do not publish it; wait for my word on
+ // that." A wait before something else after a negated act ("Do not publish the report; wait for
+ // my approval before running the tests.") is read.
+-const OUTWARD_ACT = String.raw`(?:submit(?:s|ting)?|publish(?:es|ing)?|post(?:s|ing)?\s+(?:(?:it|this|that|them|the\s+[\w'’-]+)\s+)?(?:publicly|online|(?:on|to)\s+social\s+media)|appl(?:y|ies|ying)\s+(?:for|to)|pay(?:s|ing)?|buy(?:s|ing)?|purchas(?:e|es|ing)|sign(?:s|ing)?\s+(?:(?:the|an?|this|that|our|the owner['’]s|the agent['’]s)\s+(?:[\w'’-]+\s+){0,2})?(?:agreement|contract|form|lease|offer|NDA|paperwork)s?|send(?:s|ing)?\s+(?:(?:the|an?|this|that|the owner['’]s)\s+)?(?:email|message|application|letter|invoice)s?)\b`
++const OUTWARD_ACT = String.raw`(?:merg(?:e|es|ing)|submit(?:s|ting)?|publish(?:es|ing)?|post(?:s|ing)?\s+(?:(?:it|this|that|them|the\s+[\w'’-]+)\s+)?(?:publicly|online|(?:on|to)\s+social\s+media)|appl(?:y|ies|ying)\s+(?:for|to)|pay(?:s|ing)?|buy(?:s|ing)?|purchas(?:e|es|ing)|sign(?:s|ing)?\s+(?:(?:the|an?|this|that|our|the owner['’]s|the agent['’]s)\s+(?:[\w'’-]+\s+){0,2})?(?:agreement|contract|form|lease|offer|NDA|paperwork)s?|send(?:s|ing)?\s+(?:(?:the|an?|this|that|the owner['’]s)\s+)?(?:email|message|application|letter|invoice)s?)\b`
  const WAIT_BEFORE_ACT = new RegExp(String.raw`\bwaits?\s+for\s+(?:(?:the owner['’]s|his|the)\s+)?(?:word|go-ahead|approval|sign-off)\s+(?:(?:on|before|to)\s+(?:the agent\s+(?:(?:can|may)\s+)?)?${OUTWARD_ACT}|on\s+([\w-]+))`, 'gi')
  const NOT_A_BUTTON = /^(?:merg(?:e|es|ed|ing)|push(?:es|ed|ing)?|delet(?:e|es|ed|ing)|deploy(?:s|ed|ing)?|install(?:s|ed|ing)?|the|this|that|it|a|an)$/i
  const NEGATED_ACT = new RegExp(String.raw`(?:\bnot|\bnever|n['’]t)\s+${OUTWARD_ACT}`, 'i')

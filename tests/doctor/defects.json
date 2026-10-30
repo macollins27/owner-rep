@@ -2074,5 +2074,41 @@
     "breaks": "What is left after a removal is judged usable with its runs of whitespace as written, so \"Thank  you  again!\" with two spaces counts as usable and stands where nothing usable is left.",
     "patch": "praise-whitespace-usable.patch",
     "fixed": "2026-10-30"
+  },
+  {
+    "name": "blocker-clause-past-but",
+    "breaks": "A blocker's clause runs on past \"but\", \"in any case\", \"either way\", \"anyway\", \"regardless\" and \"whatever happens\", so \"If the remote is missing, tell me why but in any case you can stop now.\" keeps its unconditional stop.",
+    "patch": "blocker-clause-past-but.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "blocker-then-not-skipped",
+    "breaks": "A \"then\" after the blocker condition's comma ends the clause before its stop, so \"If the guard refuses the push, then stop and tell me what it refused.\" is taken out though it reports the refusal.",
+    "patch": "blocker-then-not-skipped.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "blocker-stop-comma-ends",
+    "breaks": "A comma after the blocker's stop ends the clause before its report, so \"If the guard refuses the push, stop, and tell me what it refused.\" is taken out though it reports the refusal.",
+    "patch": "blocker-stop-comma-ends.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "sign-modifiers-dropped",
+    "breaks": "Signing an agreement, contract or form is an outward act only right after a bare determiner, so \"Wait for my approval before signing the employment contract.\" and \"... signing our contract.\" are taken out.",
+    "patch": "sign-modifiers-dropped.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "grouped-praise-usable",
+    "breaks": "Brief me's chooser reads praise spread across a bracket as usable, so the own-words message \"Great work. (Thanks. Nice job.)\" displaces read 1's usable message.",
+    "patch": "grouped-praise-usable.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "negated-act-back-reference-caught",
+    "breaks": "After a negated outward act, a wait on the owner whose only object refers back to it is read as a stop, so \"Do not publish it; wait for my word on that.\" is taken out.",
+    "patch": "negated-act-back-reference-caught.patch",
+    "fixed": "2026-10-30"
   }
 ]

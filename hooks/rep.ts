@@ -3000,31 +3000,39 @@ const BEFORE_STOPS = /\bbefore\s+the agent\s+(?:(?:can|may|should)\s+)?stops?\b/
 const WAIT_ON_OTHER = /\bwaits?\s+for\s+(?:a|an|the)\s+(?:reply|answer|response|decision|go-ahead|word|sign-off|instructions)\s+from\s+(?!\s|(?:the owner|him|her|them|he|his)\b)/gi
 // 3. A stop on a blocker that tells the owner what stands in the way: the sentence opens with "if"
 // and a condition, up to its first comma, that names a refusal or an absence, and the clause the
-// condition opens (from that comma to the next comma, semicolon, colon or sentence mark, or to a
-// "then", "otherwise" or "else") tells the owner what, that, why or which, or says so. Then the
-// bare "stop" in that clause alone is masked: "If the guard refuses the push, stop and tell me
-// exactly what it refused." Both halves are needed, so "If anything fails, stop and tell me." and
-// "If the push is refused, stop." stay caught, and a stop in another clause is read: "If the
-// remote is missing, tell me why; otherwise, you can stop now." is caught.
-const BLOCKER_IF = new RegExp(String.raw`^(\s*if\b[^,]*\b(?:refus(?:e|es|ed)|rejects?|rejected|missing|not found|does not exist|doesn['’]t exist|no\s+[\w-]+(?:\s+[\w-]+)?\s+(?:has|have)\s+been\s+added|no\b[^,]*\byet)\b[^,]*,)((?:(?!\b(?:then|otherwise|else)\b)[^;:,.!?])*)`, 'i')
+// condition opens (from that comma, past an optional "then", to the next comma, semicolon, colon
+// or sentence mark, or to a word that starts an unconditional instruction: "then", "otherwise",
+// "else", "but", "in any case", "either way", "anyway", "regardless" or "whatever happens"; a
+// bare "stop" and a comma may open it, with or without "and" after) tells the owner what, that,
+// why or which, or says so. Then the bare "stop" in that clause alone is masked: "If the guard
+// refuses the push, stop and tell me exactly what it refused.", "If the guard refuses the push,
+// then stop, and tell me what it refused." Both halves are needed, so "If anything fails, stop
+// and tell me." and "If the push is refused, stop." stay caught, and a stop in another clause is
+// read: "If the remote is missing, tell me why; otherwise, you can stop now." and "If the remote
+// is missing, tell me why but in any case you can stop now." are caught.
+const BLOCKER_ENDS = String.raw`then|otherwise|else|but|in\s+any\s+case|either\s+way|anyway|regardless|whatever\s+happens`
+const BLOCKER_IF = new RegExp(String.raw`^(\s*if\b[^,]*\b(?:refus(?:e|es|ed)|rejects?|rejected|missing|not found|does not exist|doesn['’]t exist|no\s+[\w-]+(?:\s+[\w-]+)?\s+(?:has|have)\s+been\s+added|no\b[^,]*\byet)\b[^,]*,(?:\s*then\b)?)((?:\s*stop\s*,)?(?:(?!\b(?:${BLOCKER_ENDS})\b)[^;:,.!?])*)`, 'i')
 const BLOCKER_TOLD = /\btell\s+the owner\s+(?:(?:exactly|plainly|clearly)\s+)?(?:what|that|why|which)\b|\bsay\s+so\b/i
 // 4. A wait on the owner's word before an outward act he alone decides toward the outside world,
 // from a closed list: submit, publish, pay, buy, purchase, send (an email, message, application,
-// letter or invoice), sign (an agreement, contract, form, lease, offer, NDA or the paperwork),
-// apply for or to, post publicly, online or to social media, or a button named with a capital
-// ("wait for my word on Submit"). Signing off, and signing, applying or posting anything else
+// letter or invoice), sign (an agreement, contract, form, lease, offer, NDA or the paperwork, bare
+// or after a determiner or possessive and up to two words: "signing the employment contract",
+// "signing our contract"), apply for or to, post publicly, online or to social media, or a
+// button named with a capital ("wait for my word on Submit"). Signing off, and signing, applying or posting anything else
 // ("signing off on the tests", "applying the migration", "posting the results to the pull
 // request"), are the agent's work, and so are merging, pushing, deleting, deploying and
 // installing in any form ("Wait for my go-ahead before merging.", "Wait for my word on Merging."
 // stay caught). Said as a wait on his word on, before or to the act ("Wait for my go-ahead before
 // you send the email."), or as the act said not to happen with a wait on him after it that has no
-// object of its own ("Do not publish it; wait for my word."); a wait before something else after a
-// negated act ("Do not publish the report; wait for my approval before running the tests.") is read.
-const OUTWARD_ACT = String.raw`(?:submit(?:s|ting)?|publish(?:es|ing)?|post(?:s|ing)?\s+(?:(?:it|this|that|them|the\s+[\w'’-]+)\s+)?(?:publicly|online|(?:on|to)\s+social\s+media)|appl(?:y|ies|ying)\s+(?:for|to)|pay(?:s|ing)?|buy(?:s|ing)?|purchas(?:e|es|ing)|sign(?:s|ing)?\s+(?:(?:the|an?|this|that|the owner['’]s)\s+)?(?:agreement|contract|form|lease|offer|NDA|paperwork)s?|send(?:s|ing)?\s+(?:(?:the|an?|this|that|the owner['’]s)\s+)?(?:email|message|application|letter|invoice)s?)\b`
+// object of its own, or whose only object refers back to the act ("on that", "on it", "on this",
+// "for that"): "Do not publish it; wait for my word.", "Do not publish it; wait for my word on
+// that." A wait before something else after a negated act ("Do not publish the report; wait for
+// my approval before running the tests.") is read.
+const OUTWARD_ACT = String.raw`(?:submit(?:s|ting)?|publish(?:es|ing)?|post(?:s|ing)?\s+(?:(?:it|this|that|them|the\s+[\w'’-]+)\s+)?(?:publicly|online|(?:on|to)\s+social\s+media)|appl(?:y|ies|ying)\s+(?:for|to)|pay(?:s|ing)?|buy(?:s|ing)?|purchas(?:e|es|ing)|sign(?:s|ing)?\s+(?:(?:the|an?|this|that|our|the owner['’]s|the agent['’]s)\s+(?:[\w'’-]+\s+){0,2})?(?:agreement|contract|form|lease|offer|NDA|paperwork)s?|send(?:s|ing)?\s+(?:(?:the|an?|this|that|the owner['’]s)\s+)?(?:email|message|application|letter|invoice)s?)\b`
 const WAIT_BEFORE_ACT = new RegExp(String.raw`\bwaits?\s+for\s+(?:(?:the owner['’]s|his|the)\s+)?(?:word|go-ahead|approval|sign-off)\s+(?:(?:on|before|to)\s+(?:the agent\s+(?:(?:can|may)\s+)?)?${OUTWARD_ACT}|on\s+([\w-]+))`, 'gi')
 const NOT_A_BUTTON = /^(?:merg(?:e|es|ed|ing)|push(?:es|ed|ing)?|delet(?:e|es|ed|ing)|deploy(?:s|ed|ing)?|install(?:s|ed|ing)?|the|this|that|it|a|an)$/i
 const NEGATED_ACT = new RegExp(String.raw`(?:\bnot|\bnever|n['’]t)\s+${OUTWARD_ACT}`, 'i')
-const WAIT_ON_HIM_BARE = new RegExp(String.raw`\bwaits?\s+(?:for|on|until|till)\s+${ON_HIM}(?:['’]s\s+[\w-]+)?${CLAUSE_END}`, 'gi')
+const WAIT_ON_HIM_BARE = new RegExp(String.raw`\bwaits?\s+(?:for|on|until|till)\s+${ON_HIM}(?:['’]s\s+[\w-]+)?(?:\s+(?:on|for)\s+(?:that|it|this))?${CLAUSE_END}`, 'gi')
 const maskExempt = (read: string): string => {
   let s = read.replace(BEFORE_STOPS, 'x').replace(WAIT_ON_OTHER, 'x ')
   s = s.replace(BLOCKER_IF, (all: string, condition: string, clause: string) => (BLOCKER_TOLD.test(clause) ? condition + clause.replace(/\bstop\b/gi, 'x') : all))
@@ -3076,11 +3084,15 @@ const QUESTION = /\?["'”’)\]]*$/
 const BACK_ADVERB = String.raw`(?:first|now|then|again|too|also|please)`
 const BACK_REFERENCE = new RegExp(String.raw`^(?:(?:then|and)\s+)?(?:please\s+)?(?:${BACK_ADVERB}\s+[\w'’-]+\s+(?:that|this|it|so)|[\w'’-]+\s+(?:that|this|it|so)(?:\s+${BACK_ADVERB})?)\s*[.!]*$`, 'i')
 // Each sentence is read with its runs of whitespace as one space, as `sentenceSaysStop` reads
-// one, so "Thank  you  again!" is praise as "Thank you again!" is.
-const usable = (text: string): boolean =>
+// one, so "Thank  you  again!" is praise as "Thank you again!" is. Read bare (Brief me's
+// chooser, `messageUsable`), each sentence has every bracket and double quote mark taken off,
+// so praise spread across a bracket ("Great work. (Thanks. Nice job.)", split into "(Thanks."
+// and "Nice job.)") is praise, and a sentence of marks alone names nothing.
+const usable = (text: string, bare = false): boolean =>
   sentencesOf(text).some(({ start, end }) => {
-    const s = unwrap(text.slice(start, end).replace(LIST_MARKER, '').replace(/\s+/g, ' '))
-    return !PRAISE.test(s) && !QUESTION.test(s) && !BACK_REFERENCE.test(s)
+    const one = text.slice(start, end).replace(LIST_MARKER, '').replace(/\s+/g, ' ')
+    const s = bare ? one.replace(/[()[\]"“”]/g, '').trim() : unwrap(one)
+    return (!bare || s !== '') && !PRAISE.test(s) && !QUESTION.test(s) && !BACK_REFERENCE.test(s)
   })
 
 // Each bracket or double quote in a text paired with its partner, by position, both ways:
@@ -3316,7 +3328,7 @@ export function takeOwnWords(gated: BriefAnswer, replaced: Replaced[], own: Brie
 // such a message whole on the card it gives.
 export const messageUsable = (message: string): boolean => {
   const kept = withoutStopSentences(message)
-  return kept !== '' && usable(kept)
+  return kept !== '' && usable(kept, true)
 }
 
 // Brief me's choice, before the own-words call: a message the gate kept on a refused card that

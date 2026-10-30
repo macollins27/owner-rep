@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 07348d8..39ace11 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3032,7 +3032,7 @@ const OUTWARD_ACT = String.raw`(?:submit(?:s|ting)?|publish(?:es|ing)?|post(?:s|
+ const WAIT_BEFORE_ACT = new RegExp(String.raw`\bwaits?\s+for\s+(?:(?:the owner['’]s|his|the)\s+)?(?:word|go-ahead|approval|sign-off)\s+(?:(?:on|before|to)\s+(?:the agent\s+(?:(?:can|may)\s+)?)?${OUTWARD_ACT}|on\s+([\w-]+))`, 'gi')
+ const NOT_A_BUTTON = /^(?:merg(?:e|es|ed|ing)|push(?:es|ed|ing)?|delet(?:e|es|ed|ing)|deploy(?:s|ed|ing)?|install(?:s|ed|ing)?|the|this|that|it|a|an)$/i
+ const NEGATED_ACT = new RegExp(String.raw`(?:\bnot|\bnever|n['’]t)\s+${OUTWARD_ACT}`, 'i')
+-const WAIT_ON_HIM_BARE = new RegExp(String.raw`\bwaits?\s+(?:for|on|until|till)\s+${ON_HIM}(?:['’]s\s+[\w-]+)?(?:\s+(?:on|for)\s+(?:that|it|this))?${CLAUSE_END}`, 'gi')
++const WAIT_ON_HIM_BARE = new RegExp(String.raw`\bwaits?\s+(?:for|on|until|till)\s+${ON_HIM}(?:['’]s\s+[\w-]+)?${CLAUSE_END}`, 'gi')
+ const maskExempt = (read: string): string => {
+   let s = read.replace(BEFORE_STOPS, 'x').replace(WAIT_ON_OTHER, 'x ')
+   s = s.replace(BLOCKER_IF, (all: string, condition: string, clause: string) => (BLOCKER_TOLD.test(clause) ? condition + clause.replace(/\bstop\b/gi, 'x') : all))

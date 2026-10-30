@@ -171,15 +171,17 @@ guard refuses the push, stop and tell me exactly what it refused.") is kept beca
 cannot move past a refusal or an absence on its own, and the report is the step that lets the
 owner clear it; both halves are needed, so "If anything fails, stop and tell me." and "If the
 push is refused, stop." are still taken out, and only the stop in the clause the condition
-opens is set aside, so "otherwise, you can stop now" after it is still taken out. A wait on the
+opens is set aside, so "otherwise, you can stop now" or "but in any case you can stop now"
+after it is still taken out, while "then stop, and tell me what it refused" is the same kept
+stop said another way. A wait on the
 owner's word before an outward act only the owner does toward the outside world, from a closed
 list (submitting, sending an email, message, application, letter or invoice, publishing,
 signing an agreement, contract or form, applying for something, posting publicly, paying,
 buying, purchasing, or pressing a named button such as Submit), is kept because acting there
 without the owner would speak or spend for them. The wait has to govern the act: a wait on the
-owner after a sentence that says not to publish is kept only when it waits on nothing else, so
-"Do not publish the report; wait for my approval before running the tests." is still taken
-out. Signing off on the tests, applying a migration and posting results to a pull request are
+owner after a sentence that says not to publish is kept only when it waits on nothing else, or
+on that act again ("Do not publish it; wait for my word on that."), so "Do not publish the
+report; wait for my approval before running the tests." is still taken out. Signing off on the tests, applying a migration and posting results to a pull request are
 the agent's work, and so are merging, pushing, deleting, deploying and installing in any form,
 so a wait before them is still a stop. A run of spaces or tabs never changes what a sentence
 is taken to say. A stop once something is done

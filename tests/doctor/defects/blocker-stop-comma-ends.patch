@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 07348d8..4df3695 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3011,7 +3011,7 @@ const WAIT_ON_OTHER = /\bwaits?\s+for\s+(?:a|an|the)\s+(?:reply|answer|response|
+ // read: "If the remote is missing, tell me why; otherwise, you can stop now." and "If the remote
+ // is missing, tell me why but in any case you can stop now." are caught.
+ const BLOCKER_ENDS = String.raw`then|otherwise|else|but|in\s+any\s+case|either\s+way|anyway|regardless|whatever\s+happens`
+-const BLOCKER_IF = new RegExp(String.raw`^(\s*if\b[^,]*\b(?:refus(?:e|es|ed)|rejects?|rejected|missing|not found|does not exist|doesn['’]t exist|no\s+[\w-]+(?:\s+[\w-]+)?\s+(?:has|have)\s+been\s+added|no\b[^,]*\byet)\b[^,]*,(?:\s*then\b)?)((?:\s*stop\s*,)?(?:(?!\b(?:${BLOCKER_ENDS})\b)[^;:,.!?])*)`, 'i')
++const BLOCKER_IF = new RegExp(String.raw`^(\s*if\b[^,]*\b(?:refus(?:e|es|ed)|rejects?|rejected|missing|not found|does not exist|doesn['’]t exist|no\s+[\w-]+(?:\s+[\w-]+)?\s+(?:has|have)\s+been\s+added|no\b[^,]*\byet)\b[^,]*,(?:\s*then\b)?)((?:(?!\b(?:${BLOCKER_ENDS})\b)[^;:,.!?])*)`, 'i')
+ const BLOCKER_TOLD = /\btell\s+the owner\s+(?:(?:exactly|plainly|clearly)\s+)?(?:what|that|why|which)\b|\bsay\s+so\b/i
+ // 4. A wait on the owner's word before an outward act he alone decides toward the outside world,
+ // from a closed list: submit, publish, pay, buy, purchase, send (an email, message, application,

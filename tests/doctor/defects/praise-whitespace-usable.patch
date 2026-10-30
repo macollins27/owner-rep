@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index a05c4e1..a8032a5 100644
+index 07348d8..705b893 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3079,7 +3079,7 @@ const BACK_REFERENCE = new RegExp(String.raw`^(?:(?:then|and)\s+)?(?:please\s+)?
- // one, so "Thank  you  again!" is praise as "Thank you again!" is.
- const usable = (text: string): boolean =>
+@@ -3090,7 +3090,7 @@ const BACK_REFERENCE = new RegExp(String.raw`^(?:(?:then|and)\s+)?(?:please\s+)?
+ // and "Nice job.)") is praise, and a sentence of marks alone names nothing.
+ const usable = (text: string, bare = false): boolean =>
    sentencesOf(text).some(({ start, end }) => {
--    const s = unwrap(text.slice(start, end).replace(LIST_MARKER, '').replace(/\s+/g, ' '))
-+    const s = unwrap(text.slice(start, end).replace(LIST_MARKER, ''))
-     return !PRAISE.test(s) && !QUESTION.test(s) && !BACK_REFERENCE.test(s)
+-    const one = text.slice(start, end).replace(LIST_MARKER, '').replace(/\s+/g, ' ')
++    const one = text.slice(start, end).replace(LIST_MARKER, '')
+     const s = bare ? one.replace(/[()[\]"“”]/g, '').trim() : unwrap(one)
+     return (!bare || s !== '') && !PRAISE.test(s) && !QUESTION.test(s) && !BACK_REFERENCE.test(s)
    })
- 

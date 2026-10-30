@@ -1,9 +1,9 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index a05c4e1..2860d5e 100644
+index 07348d8..562aeb8 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3027,7 +3027,7 @@ const NEGATED_ACT = new RegExp(String.raw`(?:\bnot|\bnever|n['’]t)\s+${OUTWARD
- const WAIT_ON_HIM_BARE = new RegExp(String.raw`\bwaits?\s+(?:for|on|until|till)\s+${ON_HIM}(?:['’]s\s+[\w-]+)?${CLAUSE_END}`, 'gi')
+@@ -3035,7 +3035,7 @@ const NEGATED_ACT = new RegExp(String.raw`(?:\bnot|\bnever|n['’]t)\s+${OUTWARD
+ const WAIT_ON_HIM_BARE = new RegExp(String.raw`\bwaits?\s+(?:for|on|until|till)\s+${ON_HIM}(?:['’]s\s+[\w-]+)?(?:\s+(?:on|for)\s+(?:that|it|this))?${CLAUSE_END}`, 'gi')
  const maskExempt = (read: string): string => {
    let s = read.replace(BEFORE_STOPS, 'x').replace(WAIT_ON_OTHER, 'x ')
 -  s = s.replace(BLOCKER_IF, (all: string, condition: string, clause: string) => (BLOCKER_TOLD.test(clause) ? condition + clause.replace(/\bstop\b/gi, 'x') : all))

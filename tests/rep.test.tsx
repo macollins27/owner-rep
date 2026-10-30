@@ -1285,6 +1285,94 @@ test('the chooser counts a message of only praise, thanks, a question or a back-
   expect([viaGate('Great work.')[2], viaOwnWords('Great work.')[1]]).toEqual(['Great work.', 'Great work.'])
 })
 
+// The second reader's round-2 findings (review round 2), each with its exact input and close
+// variants that must stay caught or kept.
+
+test('a blocker\'s clause ends at a word that starts an unconditional instruction ("but", "in any case", "either way", "anyway", "regardless", "whatever happens", "and then"), so a stop after it is caught', () => {
+  const caught = [
+    'If the remote is missing, tell me why but in any case you can stop now.',
+    'If the remote is missing, tell me why anyway you can stop now.',
+    'If the remote is missing, tell me why regardless you can stop now.',
+    'If the remote is missing, tell me why whatever happens you can stop now.',
+    'If the remote is missing, tell me why and then you can stop now.',
+    'If the push is refused, tell me what it refused but either way you can stop.',
+  ]
+  expect(caught.map(R1_CAUGHT_WHOLE)).toEqual(caught.map(R1_CAUGHT_OUT))
+  expect(withoutStopSentences('Push main. If the remote is missing, tell me why but in any case you can stop now.')).toBe('Push main.')
+  for (const m of [REFUSED_ENVIRONMENT, GUARD_REFUSAL, 'If the guard refuses the push, stop and tell me exactly what it refused.'])
+    expect([m, messageSaysStop(m), withoutStopSentences(m)]).toEqual([m, false, m])
+})
+
+test('a blocker\'s stop may follow "then" after the condition\'s comma, and a comma, with or without "and", may stand between the stop and its report', () => {
+  for (const m of [
+    'If the guard refuses the push, then stop and tell me what it refused.',
+    'If the guard refuses the push, stop, and tell me what it refused.',
+    'If the guard refuses the push, stop, tell me what it refused.',
+    'If the guard refuses the push, then stop, and tell me exactly what it refused.',
+  ])
+    expect([m, messageSaysStop(m), withoutStopSentences(m), viaGate(m)[2]]).toEqual([m, false, m, m])
+  // Both halves are still needed, and ruling 1's cases are still caught.
+  const caught = [
+    'If the guard refuses the push, then stop.',
+    'If the guard refuses the push, stop, and fix it.',
+    'If the push is refused, stop, but in any case tell me what it refused.',
+    'If the remote is missing, then tell me why; otherwise, you can stop now.',
+  ]
+  expect(caught.map(R1_CAUGHT_WHOLE)).toEqual(caught.map(R1_CAUGHT_OUT))
+})
+
+test('signing an agreement, contract or form with a determiner or possessive and up to two words before the noun is an outward act; signing a technical thing or signing off is not', () => {
+  for (const m of [
+    'Wait for my approval before signing the employment contract.',
+    'Wait for my approval before signing our contract.',
+    'Wait for my go-ahead before you sign your new lease agreement.',
+    'Wait for my word before signing this rental agreement.',
+  ])
+    expect([m, messageSaysStop(m), withoutStopSentences(m), viaGate(m)[2]]).toEqual([m, false, m, m])
+  const caught = [
+    'Wait for my approval before signing the release tag.',
+    'Wait for my go-ahead before signing the release tag.',
+    'Wait for my approval before you sign off.',
+    'Wait for my approval before signing off on the contract.',
+    'Wait for my approval before signing the commits in the release contract branch.',
+  ]
+  expect(caught.map(R1_CAUGHT_WHOLE)).toEqual(caught.map(R1_CAUGHT_OUT))
+})
+
+test('the chooser judges each sentence with its brackets and quote marks off, so praise or thanks spread across a bracket is not usable and read 1\'s message stands; the gate keeps such a message whole', () => {
+  for (const m of ['Great work. (Thanks. Nice job.)', 'Great work. "Thanks. Nice job."', 'Thanks. [Great work. Did the suite run?]', '(Great work. Thanks.)'])
+    expect([m, messageUsable(m), ownMessageTaken(['means', 'message'], OWN_WORDS_REPLY(m))]).toEqual([m, false, false])
+  for (const m of ['Great work. (Thanks. Run the suite.)', '"Thanks. Paste the counts."'])
+    expect([m, messageUsable(m), ownMessageTaken(['means', 'message'], OWN_WORDS_REPLY(m))]).toEqual([m, true, true])
+  const first = gateVerdict(REFUSED_CARD('Run the suite and paste the counts.'), OPEN_JOB_OPEN)
+  const last = gateVerdict(REFUSED_CARD('Stop.'), OPEN_JOB_OPEN)
+  expect(last.replaced).toContain('message')
+  const ownTaken = ownMessageTaken(last.replaced, OWN_WORDS_REPLY('Great work. (Thanks. Nice job.)'))
+  expect(ownTaken).toBe(false)
+  expect(earlierMessage(last.answer, last.replaced, ownTaken, first).message).toBe('Run the suite and paste the counts.')
+  // The gate's output is unchanged: kept whole, alone or after a removed stop.
+  const m = 'Great work. (Thanks. Nice job.)'
+  expect([viaGate(m)[2], viaOwnWords(m)[1], withoutStopSentences(m)]).toEqual([m, m, m])
+  expect(withoutStopSentences(`You can stop now. ${m}`)).toBe(m)
+})
+
+test('after a negated outward act, a wait on the owner whose only object refers back to it ("on that", "on it", "on this", "for that") is let through; a wait before something else is caught', () => {
+  for (const m of [
+    'Do not publish it; wait for my word on that.',
+    'Do not publish it; wait for my word on it.',
+    'Do not send the email yet; wait for my go-ahead on this.',
+    'Never publish it; wait for my approval for that.',
+  ])
+    expect([m, messageSaysStop(m), withoutStopSentences(m), viaGate(m)[2]]).toEqual([m, false, m, m])
+  const caught = [
+    'Do not publish the report; wait for my approval before running the tests.',
+    'Do not publish it; wait for my word on the tests.',
+    'Do not publish it; wait for my word on that, then stop.',
+    'Wait for my word on that.',
+  ]
+  expect(caught.map(R1_CAUGHT_WHOLE)).toEqual(caught.map(R1_CAUGHT_OUT))
+})
+
 test('sectionOf takes one "## " section of a fixed text and throws, naming the heading, when the heading is missing', () => {
   expect(sectionOf('## A\n\none\n\n## B\n\ntwo', '## A')).toBe('## A\n\none')
   expect(sectionOf('## A\n\none\n\n## B\n\ntwo', '## B')).toBe('## B\n\ntwo')

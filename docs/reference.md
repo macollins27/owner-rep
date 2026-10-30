@@ -143,9 +143,13 @@ call writes (below):
    `lastBrief.ownChars` its reply's length (0 with none); a check's card keeps all three
    from the briefing it was pressed on. The chooser asks more of a message than the gate:
    `messageUsable(message)` is true when `withoutStopSentences(message)` is not `''` and
-   what it gives is `usable`, so a message of only praise, thanks, a question or a bare
-   back-reference is not usable even with no stop sentence in it (the gate still keeps such
-   a message whole, as C1 needs). Before the own-words call, `unusableReplaced(answer,
+   what it gives is `usable` read bare (`usable(kept, true)`: each sentence with every
+   bracket and double quote mark taken off, and a sentence of marks alone not usable), so a
+   message of only praise, thanks, a question or a bare back-reference is not usable even
+   with no stop sentence in it, and even when a bracket or quote spans its sentences
+   (`Great work. (Thanks. Nice job.)`, split into `(Thanks.` and `Nice job.)`). The gate
+   still keeps such a message whole, as C1 needs, and `withoutStopSentences` reads `usable`
+   with only a wholly enclosing bracket or quote taken off, as before. Before the own-words call, `unusableReplaced(answer,
    replaced, open)` puts the last read's kept message that is not usable to `OPEN_MESSAGE`
    and `OPEN_DOES` and adds `'message'` to `replaced`, so the call writes it and the choice
    moves on. When the last read's message was replaced and the own-words call gave no usable
@@ -204,18 +208,26 @@ call writes (below):
       first comma, naming a refusal or an absence (refuse, refuses, refused, rejects,
       rejected, missing, not found, does not exist, no X has been added, no … yet), and it
       tells the owner what, that, why or which (with exactly, plainly or clearly or not) or
-      says so in the clause the condition opens (from that comma to the next comma,
-      semicolon, colon or sentence mark, or to "then", "otherwise" or "else"); then the bare
-      "stop" in that clause alone is masked: `If the guard refuses the push, stop and tell
-      me exactly what it refused.` `If anything fails, stop and tell me.`, `If the remote is
+      says so in the clause the condition opens (from that comma, past an optional "then",
+      to the next comma, semicolon, colon or sentence mark, or to a word in `BLOCKER_ENDS`
+      that starts an unconditional instruction: then, otherwise, else, but, in any case,
+      either way, anyway, regardless, whatever happens; a bare "stop" and a comma may open
+      the clause, so the report may follow the stop past a comma, with "and" or without);
+      then the bare "stop" in that clause alone is masked: `If the guard refuses the push,
+      stop and tell me exactly what it refused.`, `If the guard refuses the push, then stop
+      and tell me what it refused.` and `If the guard refuses the push, stop, and tell me
+      what it refused.` are kept. `If anything fails, stop and tell me.`, `If the remote is
       missing, stop.` and `If the push is refused, stop.` are still caught, and so is a stop
       in another clause (`If the remote is missing, tell me why; otherwise, you can stop
-      now.`).
+      now.`, `If the remote is missing, tell me why but in any case you can stop now.`).
    4. A wait on the owner's word before an outward act only the owner does toward the
       outside world, from a closed list (`OUTWARD_ACT`): submit, publish, pay, buy,
       purchase; send with an email, message, application, letter or invoice as its object
       (`send it` is no such act); sign with an agreement, contract, form, lease, offer, NDA
-      or paperwork as its object; apply for or to; post publicly, online, or on or to social
+      or paperwork as its object, bare or after the, a, an, this, that, our, my or your and
+      up to two more words (`signing the employment contract`, `signing our contract`; so
+      `signing the release commit form` counts too, while `signing the release tag` does
+      not); apply for or to; post publicly, online, or on or to social
       media. Signing off, and signing, applying or posting anything else (`signing off on
       the tests`, `applying the migration`), are the agent's work. Said as a wait for the
       owner's word, go-ahead, approval or sign-off on,
@@ -225,8 +237,10 @@ call writes (below):
       and the articles and pronouns in
       `NOT_A_BUTTON` are never a button: `Wait for my word on Merging.` is caught), or as
       the act said not to happen (`NEGATED_ACT`: not, never or n't before it) with a wait on
-      the owner after it that has no object of its own (`WAIT_ON_HIM_BARE`, ending its
-      clause), whose wait words are masked (`Do not publish it; wait for my word.`); a wait
+      the owner after it that has no object of its own, or whose only object refers back to
+      the act (on that, on it, on this, for that) (`WAIT_ON_HIM_BARE`, ending its clause),
+      whose wait words are masked (`Do not publish it; wait for my word.`, `Do not publish
+      it; wait for my word on that.`); a wait
       before something else is read (`Do not publish the report; wait for my approval before
       running the tests.` is caught). Merging, pushing, deleting, deploying
       and installing are the agent's to do, so `Wait for my go-ahead before merging.` is
