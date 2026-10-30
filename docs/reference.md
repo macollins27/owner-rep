@@ -592,7 +592,9 @@ the owner's words, and whatever the owner typed after it is their own message, n
 he typed words after it (`pushDraft`, on the live path and when a session is read in by `seedOnce`),
 both parts keep the whole message as sent in their own `src.sent` copy and his part names the draft
 in `withDraft`, so the writer reads all of it and `takeApprovals` can move a mark on the draft to his
-words; a draft sent alone keeps nothing more and makes no writer call. A
+words; a draft sent alone keeps nothing more and makes no writer call. A message of his read in by
+`seedOnce` that is longer than `HIS_CUT` keeps its whole as `src.sent` as the live path does, so one
+over the cap or too long to save counts as not read in full (`wordsUnread`). A
 prompt beginning `Owner rep` and a colon (`noteTyped`) is a note to the rep: it is recorded as
 a `note`, listed with `NOTE_MARK` (`(to the rep)`), the objective is rewritten and a look
 starts at once, and the prompt is dropped so the agent never sees it. `noteSplit` also finds

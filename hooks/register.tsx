@@ -2087,7 +2087,7 @@ async function seedOnce($: EngineInterface, sid: string): Promise<boolean> {
     for (const t of typed) {
       const split = draftSplitAny(t.text, [...rec.drafts, rec.lastBrief?.message ?? '', ...others])
       const more = t.compacted === true ? { incomplete: COMPACTED_WHY } : {}
-      if (split === null) pushOwner(rec, 'his', t.text, t.prior, more)
+      if (split === null) pushOwner(rec, 'his', t.text, t.prior, await withSent($, sid, rec, more, t.text.length > HIS_CUT ? t.text : null))
       else await pushDraft($, sid, rec, split, t.prior, t.text, async () => more)
     }
     return has(rec)

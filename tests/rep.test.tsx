@@ -5182,6 +5182,57 @@ describe('Task 5: adding is not closing; drafts with his words; long messages th
   })
 })
 
+// Task 5, fix round: a long message of the owner's read in from the session, with no draft in
+// it, keeps the whole message as sent, as the live path does; when the whole cannot be kept or
+// is over the read cap, it is marked so, and the owner is told it was not read in full.
+describe('Task 5 fix: a long message read from the session keeps its whole', () => {
+  const seedLong = async ($: Engine, on: On, long: string, answer: (p: string) => string) => {
+    const rec = kept(on, { sessions: { 'test-session': { id: 'test-session', at: Date.now(), objective: null, jobStart: 1, owner: [], counter: 0, past: [], seen: [], others: [], drafts: [] } } })
+    on('session.start', (_$, e) => ({ cwd: e.cwd }))
+    quietBand(on)
+    on('session.messages', () => ({
+      value: [
+        { role: 'user', text: 'Plan the fruit files.', toolUses: [] },
+        { role: 'assistant', text: PROPOSAL, toolUses: [] },
+        { role: 'user', text: long, toolUses: [] },
+      ] satisfies SessionMessage[],
+    }))
+    transcript(on, { 'test-session.jsonl': [LINE('Plan the fruit files.'), LINE(long)].join('\n') })
+    const prompts = writer(on, () => answer(prompts.at(-1) ?? ''))
+    await giveTranscript($, on)
+    await started($)
+    await settleUntil($, () => (rec()?.objective ?? null) !== null)
+    return { rec, prompts, msg: () => (rec()?.owner as AskMsg[] | undefined)?.find(m => m.n === 2) }
+  }
+
+  test('rule: a long message read from the session keeps its first 6,000 characters as its text and the whole as sent, and the writer reads the whole', async ($, on) => {
+    const long = `${wordsWith(9000)} And keep the old export working.`
+    const s = await seedLong($, on, long, p => (p.includes(long) ? OBJ('The fruit files.', ['apple.txt made | open', 'the old export still works | open']) : OBJ('The fruit files.', ['apple.txt made | open'])))
+    expect(s.msg()).toMatchObject({ n: 2, kind: 'his', text: fit(long, rep.HIS_CUT), src: { sent: { chars: long.length, sha: await shaOf(long) } } })
+    expect(rep.wordsUnread(s.msg() as never)).toBe(false)
+    expect(s.prompts.some(p => p.includes(long))).toBe(true)
+    expect(s.rec()?.objective?.done.map(d => d.text)).toContain('the old export still works')
+  })
+
+  for (const [what, size, why] of [
+    ['over the read cap', 150_000, rep.TOO_LONG_WHY],
+    ['too long to save', rep.SOURCE_MAX + 1, null],
+  ] as const) {
+    test(`rule: a long message read from the session ${what} is marked not read in full, and the owner is told`, async ($, on) => {
+      const long = `${'Keep going with the fruit files. '.repeat(Math.ceil(size / 33)).slice(0, size - 10)}Last line.`
+      const s = await seedLong($, on, long, () => OBJ('The fruit files.', ['apple.txt made | open']))
+      const m = s.msg()
+      expect(m?.text).toBe(fit(long, rep.HIS_CUT))
+      expect(m?.src?.sent?.chars).toBe(size)
+      if (why === null) expect(m?.src?.sent?.lost).toBeDefined()
+      expect(rep.wordsUnread(m as never)).toBe(true)
+      const reason = why ?? m?.src?.sent?.lost ?? ''
+      const seen = why === null ? 'only its start was seen' : 'only its start and end were seen'
+      expect(await rowSays($, lineRe(`Could not read all of your message #2 (${reason}); ${seen}, so what you asked there may not all be held`))).toBe(true)
+    })
+  }
+})
+
 test('rule: a stale answer adds its conditions and leaves the result, purpose and step as held', async ($, on) => {
   const s = asks(on, [his(1, 'plan the fruit files')], { objective: HELD_WITH(['apple.txt made']), objRev: 4 })
   s.answer(() => {
