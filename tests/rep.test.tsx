@@ -3601,6 +3601,144 @@ test('rule: a briefing refused twice whose own-words reply comes back cut short 
   expect(rec()?.lastBrief).toMatchObject({ reads: 3, own: 'cut', ownChars: cut.length, next: OPEN_NEXT(OPEN_JOB_OPEN), message: OPEN_MESSAGE(OPEN_JOB_OPEN) })
 })
 
+// --- The card's message stays the rep's written message: only its stop sentences go, and the list of open conditions is the last net. ---
+
+// Mixed messages and what is left of them once their stop sentences are taken out (the done checks' C3, inputs 1 and 2).
+const C3_IN_1 = 'Good progress on the parser. You skipped the empty-file case and the log shows no run of the full suite. Add the empty-file test, run the whole suite and paste the counts. Then wait for my sign-off.'
+const C3_OUT_1 = 'Good progress on the parser. You skipped the empty-file case and the log shows no run of the full suite. Add the empty-file test, run the whole suite and paste the counts.'
+const C3_IN_2 = 'The install is not shown.\n\nYou called the docs done, but the README still says 0.4. Fix it. You can stop after that.\n\nThen run the live scenario and paste the capture.'
+const C3_OUT_2 = 'The install is not shown.\n\nYou called the docs done, but the README still says 0.4. Fix it.\n\nThen run the live scenario and paste the capture.'
+
+// A briefing that says stop with the message given; its means, next and does do not say stop.
+const REFUSED_BRIEF = (message: string) =>
+  `verdict: stop\nwell:\nstands: Both parts are finished.\nmeans: Nothing is waiting.\nleft:\n- nothing\nnext: Run the two sessions and show each one finishing.\nmessage:\n${message}\nend\ndoes: Makes the agent show its work.`
+
+// A whole own-words reply with the message given.
+const OWN_REPLY = (message: string) =>
+  `means: The agent calls the job finished, but the install and the two sessions are not shown.\nnext: Show the install log, then each session finishing.\nmessage:\n${message}\nend\ndoes: Makes the agent show the install and the sessions.`
+
+// The own-words call giving no usable message: an empty reply, a reply cut short, a call that fails.
+const OWN_NONE: Array<[string, () => Promise<string> | string]> = [
+  ['comes back empty', () => ''],
+  ['comes back cut short', () => `${OWN_WORDS().slice(0, OWN_WORDS().indexOf('next:'))}next: The agent gets ever`],
+  ['fails', () => Promise.reject(new Error('the model is down'))],
+]
+
+// Whether a Text on the card shows exactly this text, the whole of it and nothing more.
+const showsExactly = async (ui: { findAll: (q: { type: string }) => Promise<Array<{ text: string }>> }, text: string) =>
+  (await ui.findAll({ type: 'Text' })).some(t => t.text === text)
+
+test('rule: Brief me, all three reads with messages made only of stop sentences: the card lists the open conditions', async ($, on) => {
+  const rec = openJob(on)
+  quietBand(on)
+  let forks = 0
+  on('model.fork', () => {
+    forks += 1
+    return { value: { isAnswered: true, text: STOP_BRIEF(), usage: USAGE } }
+  })
+  const asks = ownWords(on, () => OWN_REPLY('You can stop now. Hand it over to me.'))
+  await started($)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  expect(forks).toBe(2)
+  expect(asks).toHaveLength(1)
+  expect(await showsExactly(ui, OPEN_MESSAGE(OPEN_JOB_OPEN))).toBe(true)
+  expect(await ui.find({ type: 'Text', text: /You can stop now|Hand it over to me|Wrap up and stop here/ })).toBeUndefined()
+  await ui.unmount()
+  expect(rec()?.lastBrief).toMatchObject({ reads: 3, own: 'whole', message: OPEN_MESSAGE(OPEN_JOB_OPEN) })
+})
+
+test('rule: Brief me, read 2 refused with a mixed message: its stop sentence goes and the rest stands, and the own-words call, still made for the meaning, does not replace it', async ($, on) => {
+  const rec = openJob(on)
+  quietBand(on)
+  const answers = [STOP_BRIEF(), REFUSED_BRIEF(C3_IN_1)]
+  let forks = 0
+  on('model.fork', () => {
+    forks += 1
+    return { value: { isAnswered: true, text: answers[forks - 1] ?? '', usage: USAGE } }
+  })
+  const asks = ownWords(on, () => OWN_WORDS())
+  await started($)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  expect(forks).toBe(2)
+  expect(asks).toHaveLength(1)
+  expect(rec()?.lastBrief?.message).toBe(C3_OUT_1)
+  expect(await showsExactly(ui, C3_OUT_1)).toBe(true)
+  expect(await showsExactly(ui, 'Makes the agent show its work.')).toBe(true)
+  expect(await ui.find({ type: 'Text', text: /Then wait for my sign-off|Show me the install log|The job is not finished/ })).toBeUndefined()
+  await ui.unmount()
+  expect(rec()?.lastBrief).toMatchObject({ reads: 3, own: 'whole' })
+})
+
+test('rule: Brief me, read 2\'s message all stop sentences and the own-words message mixed: the own-words message stands without its stop sentence', async ($, on) => {
+  const rec = openJob(on)
+  quietBand(on)
+  let forks = 0
+  on('model.fork', () => {
+    forks += 1
+    return { value: { isAnswered: true, text: STOP_BRIEF(), usage: USAGE } }
+  })
+  const asks = ownWords(on, () => OWN_REPLY(C3_IN_2))
+  await started($)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  expect(forks).toBe(2)
+  expect(asks).toHaveLength(1)
+  expect(rec()?.lastBrief?.message).toBe(C3_OUT_2)
+  expect(await showsExactly(ui, C3_OUT_2)).toBe(true)
+  expect(await showsExactly(ui, 'Makes the agent show the install and the sessions.')).toBe(true)
+  expect(await ui.find({ type: 'Text', text: /You can stop after that|Wrap up and stop here|The job is not finished/ })).toBeUndefined()
+  await ui.unmount()
+  expect(rec()?.lastBrief).toMatchObject({ reads: 3, own: 'whole' })
+})
+
+for (const [how, reply] of OWN_NONE) {
+  test(`rule: Brief me, read 2's message all stop sentences and the own-words call ${how}: read 1's usable message stands before the list`, async ($, on) => {
+    const rec = openJob(on)
+    quietBand(on)
+    const answers = [REFUSED_BRIEF(C3_IN_1), STOP_BRIEF()]
+    let forks = 0
+    on('model.fork', () => {
+      forks += 1
+      return { value: { isAnswered: true, text: answers[forks - 1] ?? '', usage: USAGE } }
+    })
+    const asks = ownWords(on, reply)
+    await started($)
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    await ui.press({ key: 'rep' })
+    expect(forks).toBe(2)
+    expect(asks).toHaveLength(1)
+    expect(rec()?.lastBrief?.message).toBe(C3_OUT_1)
+    expect(await showsExactly(ui, C3_OUT_1)).toBe(true)
+    expect(await showsExactly(ui, 'Makes the agent show its work.')).toBe(true)
+    expect(await ui.find({ type: 'Text', text: /Then wait for my sign-off|Wrap up and stop here|The job is not finished/ })).toBeUndefined()
+    await ui.unmount()
+    expect(rec()?.lastBrief?.reads).toBe(3)
+  })
+
+  test(`rule: Brief me, read 1's and read 2's messages all stop sentences and the own-words call ${how}: the card lists the open conditions`, async ($, on) => {
+    const rec = openJob(on)
+    quietBand(on)
+    let forks = 0
+    on('model.fork', () => {
+      forks += 1
+      return { value: { isAnswered: true, text: STOP_BRIEF(), usage: USAGE } }
+    })
+    const asks = ownWords(on, reply)
+    await started($)
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    await ui.press({ key: 'rep' })
+    expect(forks).toBe(2)
+    expect(asks).toHaveLength(1)
+    expect(await showsExactly(ui, OPEN_MESSAGE(OPEN_JOB_OPEN))).toBe(true)
+    expect(await showsExactly(ui, OPEN_DOES)).toBe(true)
+    expect(await ui.find({ type: 'Text', text: /Wrap up and stop here/ })).toBeUndefined()
+    await ui.unmount()
+    expect(rec()?.lastBrief).toMatchObject({ reads: 3, message: OPEN_MESSAGE(OPEN_JOB_OPEN) })
+  })
+}
+
 test('rule: a briefing refused twice for its verdict alone keeps the model\'s own next step and message and takes only the meaning from the own-words call', async ($, on) => {
   const rec = openJob(on)
   quietBand(on)
@@ -3781,6 +3919,56 @@ test('rule: a check that says stop while a condition is open is refused on the c
   expect(rec()?.lastBrief?.message).toBe('Show me each of the two sessions finishing, one by one.')
   // The briefing's reads and what came of its own-words call survive the check, which makes no such call.
   expect(rec()?.lastBrief).toMatchObject({ reads: 1, own: 'skipped', ownChars: 0 })
+})
+
+// The checker's answer with the verdict and message given, marking nothing, so both of OPEN_JOB's conditions stay open.
+const CHECKED_SAYING = (verdict: 'stop' | 'continue', message: string): string =>
+  JSON.stringify({
+    type: 'result',
+    result: `verdict: ${verdict}\nholds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nstands: The build is made.\nmeans: The two sessions are still waiting.\nleft:\n- two sessions finished\nnext: Run the two sessions and show each one finishing.\nmessage:\n${message}\nend\ndoes: Makes the agent show its work.\nlooked: Read the record.`,
+    usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+  })
+
+// The Check button pressed over a briefing whose message is "Show me the run.", the checker answering `checked`.
+const checkOver = async ($: Engine, on: On, checked: string) => {
+  const rec = openJob(on)
+  quietBand(on)
+  room(on)
+  on('session.cwd', () => ({ value: '/tmp/x' }))
+  mock.clock(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  on('process.spawn', async function* () {
+    yield { stream: 'stdout', text: checked }
+    return { value: { code: 0, signal: null } }
+  })
+  await started($)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  // The briefing's card is on screen first, with a message that differs from the checker's.
+  expect(await showsExactly(ui, 'Show me the run.')).toBe(true)
+  await ui.press({ key: 'check' })
+  return { rec, ui }
+}
+
+test('rule: the Check button\'s card keeps a checker\'s message that pushes the agent on before it stops', async ($, on) => {
+  const message = 'Two things before you stop. First, run the full suite and paste the counts. Second, push the branch and show the run.'
+  const { rec, ui } = await checkOver($, on, CHECKED_SAYING('continue', message))
+  expect(rec()?.objective?.done.map(x => x.state)).toEqual(['not-shown', 'open'])
+  expect(rec()?.lastBrief?.message).toBe(message)
+  expect(await showsExactly(ui, message)).toBe(true)
+  expect(await ui.find({ type: 'Text', text: /The job is not finished|Show me the run/ })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('rule: the Check button\'s refused card keeps the checker\'s message without its stop sentence, and the checker\'s own does line', async ($, on) => {
+  const { rec, ui } = await checkOver($, on, CHECKED_SAYING('stop', C3_IN_2))
+  expect(rec()?.objective?.done.map(x => x.state)).toEqual(['not-shown', 'open'])
+  expect(rec()?.lastBrief?.message).toBe(C3_OUT_2)
+  expect(await showsExactly(ui, C3_OUT_2)).toBe(true)
+  expect(await showsExactly(ui, 'Makes the agent show its work.')).toBe(true)
+  expect(await ui.find({ type: 'Text', text: /You can stop after that|The job is not finished|Show me the run/ })).toBeUndefined()
+  expect(await ui.find({ type: 'Text', text: OPEN_DOES })).toBeUndefined()
+  await ui.unmount()
 })
 
 test('rule: a check that shows every condition after a refused briefing does not carry the rep\'s not-finished texts', async ($, on) => {
