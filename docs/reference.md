@@ -69,7 +69,8 @@ call writes (below):
    `applyMarks` takes the marks, and `gateVerdict` refuses, while a condition is open, a
    verdict other than `continue` (a `stop`, or none given, which `verdictOf` reads as
    `missing`, never as continue), a `well:` line, or a `next:` (`saysStop`) or a `message:`
-   (`messageSaysStop`: the message read on a copy `toAgentVoice` turns to the third person,
+   (`messageSaysStop`: true when any one sentence of the message, read alone as the
+   paragraph on `withoutStopSentences` below says, trips, each read on a copy `toAgentVoice` turns to the third person,
    me, my and the capital I to the owner, the owner's and the owner, you and your to the agent and the agent's,
    the contractions and two-word forms shifted whole before them, with a straight or curly
    apostrophe: you're and you are to the agent is, you've and you have to the agent has,
@@ -77,7 +78,7 @@ call writes (below):
    "You're done." are caught and a wait until the agent has a log is not, and a few
    messages a reader would let through, such as a check-in with the owner before a step, are
    caught in the safe direction and rewritten by the own-words call) that
-   `STOP_NEXT` reads as
+   `STOP_NEXT` (or, in a message only, `STOP_ONCE` below) reads as
    telling the agent or the job to stop (with "please" before the stop or not, `STOP_LEAD`),
    calling the work finished, saying nothing is left or no further work is needed,
    closing the session, wrapping up, stopping work on it, stopping (or stopping here, or
@@ -137,6 +138,47 @@ call writes (below):
    from the briefing it was pressed on. With no objective written (`gateOpen` is null) the same answers are
    refused, never let through, every part given its `UNWRITTEN_*` text, not asked again and
    given no own-words call.
+
+   A message is read one sentence at a time. `sentencesOf(text)` gives each sentence as a
+   span `{ start, end }` over the text itself, the whitespace between sentences in none of
+   them: a sentence ends at `.`, `!` or `?` (a run of them, with any closing `"`, `'`, `”`,
+   `’`, `)` or `]` after it) followed by whitespace or its line's end, whatever the case of
+   the next letter, and at a line break; so a line ending in `:` is its own sentence, a list
+   item (a line starting `- `, `* `, `• `, `1. ` or `2) `, indented or not) is its own with its
+   marker on its first sentence, a sentence wholly in brackets is its own, and digits make no
+   difference (`Show build 42. Then stop.` is two). A decimal point (`0.4`) is no end, and nor
+   is a list marker at a line's start. Each sentence is read alone (`sentenceSaysStop`): its
+   list marker and any brackets or double quotes wholly enclosing it taken off; quoted words
+   (straight or curly double quotes) masked when a reporting word (said, says, wrote, writes,
+   called, calls, claimed, reported, told) stands anywhere earlier in the sentence, unless
+   that word is followed by "to", directly or after an object (`says to`, `told the agent
+   to`), which orders what the quote says, so that quote is read; then `toAgentVoice`; then
+   `STOP_NEXT` and `STOP_ONCE`. `STOP_ONCE` catches a stop once something is done, its subject
+   a clause's start or the agent with can, may, should, could or is free to (`You can stop
+   after that.`, `You can stop once the README is fixed.`, `Then stop when the suite is
+   green.`), never a thing (`It stops when the timer fires.`); next steps are not read by it.
+   `withoutStopSentences(message: string): string`, exported and pure, is the message with
+   every sentence that reading catches taken out: it returns the input itself when no
+   sentence is caught (untidied, whitespace and all), and `''` for `''`. A removed sentence
+   takes the spaces and tabs after it on its line; a list item's marker stays for the rest of
+   its line; a line left empty, or holding only a marker, is dropped; a blank line beside a
+   dropped line goes where it would stand first or make two in a row; trailing whitespace is
+   trimmed on the lines a removal touched and at the end; nothing else changes, no sentence
+   reworded, moved or reflowed. When what is left names nothing to do, show or fix
+   (`usable`: no sentence in it other than praise or thanks, a question or a bare
+   back-reference) it returns `''`. Praise or thanks (`PRAISE`) is a sentence made only of
+   thanks, thank you, many thanks, much appreciated, well done, and good, great, nice,
+   excellent, solid or perfect with work, job or progress after it or not, each with "so far",
+   "so much", "again" or "too", or "on" or "for" and up to four words, joined by "and" or a
+   comma (`Great work, thank you!`, `Good progress on the parser.`); a question ends in `?`;
+   a bare back-reference (`BACK_REFERENCE`) is a verb with "that", "this", "it" or "so" as its
+   object and at most one adverb (first, now, then, again, too, also, please), after an
+   optional "then", "and" or "please" (`Do that first.`, `Then do so.`; not `Show why it
+   failed.` or `Fix it in the parser.`). A statement of fact about the work counts as usable,
+   since it is a finding (`The install is not shown.`). A caller that must not show a stop
+   uses the result when it is not `''` and its own fixed text otherwise. The gate and the
+   own-words call above do not call it yet: they still replace a message that says stop
+   whole.
 
    The watch and the briefing (and its second ask) read through one helper, `readSession`.
    A fork answers `nothing-to-fork` before the first response of the process (a session

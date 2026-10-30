@@ -2897,9 +2897,173 @@ const VOICE: Array<[RegExp, string]> = [
 ]
 export const toAgentVoice = (text: string): string => VOICE.reduce((out, [word, theirs]) => out.replace(word, theirs), text)
 
-// Whether a message, or what it does, tells the agent or the job to stop, calls the
-// work finished, or hands it back to the owner, read in the third person.
-export const messageSaysStop = (text: string): boolean => STOP_NEXT.test(toAgentVoice(text))
+// A message is read one sentence at a time, so a stop is judged in its own sentence and can be
+// taken out without touching the rest. A sentence ends at ".", "!" or "?" (a run of them, with
+// any closing quote or bracket after it) followed by whitespace or the end of its line, whatever
+// the case of the next letter, and at a line break. So a line ending in ":" is its own sentence,
+// a list item is its own sentence with its marker ("- ", "* ", "• ", "1. ", "2) ") on its first
+// sentence, a sentence wholly in brackets is its own, and digits make no difference ("Show build
+// 42. Then stop." is two). A decimal point ("0.4") is no end, having no whitespace after it, and
+// nor is a list marker at a line's start. The spans index the text itself; the whitespace
+// between sentences is in none of them.
+const LIST_MARKER = /^[ \t]*(?:[-*•]|\d+[.)])[ \t]+/
+const SENTENCE_MARKS = '.!?'
+const SENTENCE_CLOSERS = '"\'”’)]'
+const isSpace = (c: string | undefined): boolean => c !== undefined && /\s/.test(c)
+export const sentencesOf = (text: string): { start: number; end: number }[] => {
+  const spans: { start: number; end: number }[] = []
+  let at = 0
+  for (const line of text.split('\n')) {
+    const skip = (from: number): number => { let i = from; while (i < line.length && isSpace(line[i])) i++; return i }
+    const marker = LIST_MARKER.exec(line)?.[0].length ?? 0
+    let start = skip(0)
+    let i = Math.max(start, marker)
+    while (start < line.length) {
+      let end = -1
+      for (; i < line.length; i++) {
+        if (!SENTENCE_MARKS.includes(line[i] ?? '')) continue
+        let k = i
+        while (k < line.length && SENTENCE_MARKS.includes(line[k] ?? '')) k++
+        while (k < line.length && SENTENCE_CLOSERS.includes(line[k] ?? '')) k++
+        if (k === line.length || isSpace(line[k])) { end = k; break }
+        i = k - 1
+      }
+      if (end === -1) end = line.trimEnd().length
+      spans.push({ start: at + start, end: at + end })
+      start = skip(end)
+      i = start
+    }
+    at += line.length + 1
+  }
+  return spans
+}
+
+// A sentence wholly inside brackets or double quotes is read without them: "(Then you can stop.)".
+const ENCLOSERS: Record<string, string> = { '(': ')', '[': ']', '"': '"', '“': '”' }
+const unwrap = (sentence: string): string => {
+  let s = sentence
+  for (;;) {
+    const open = s[0] ?? ''
+    const close = ENCLOSERS[open]
+    if (close === undefined || s.length < 2 || s[s.length - 1] !== close) return s
+    const inner = s.slice(1, -1)
+    let depth = 0
+    let whole = true
+    for (const c of inner) {
+      if (open === close ? c === close : c === close && --depth < 0) { whole = false; break }
+      if (open !== close && c === open) depth++
+    }
+    if (!whole || depth !== 0) return s
+    s = inner.trim()
+  }
+}
+
+// Quoted words after a reporting word are someone's words being named, not read for a stop:
+// `Your summary said "you can stop now", but …`. The reporting word may stand anywhere earlier
+// in the sentence (`said plainly "…"`). A reporting word followed by "to", directly or after an
+// object (`says to`, `told the agent to`), gives an order to do what the quote says, and that
+// quote is read: `Then do as the note says to: "You can stop now."`.
+const REPORTING = /\b(?:said|says|wrote|writes|called|calls|claimed|reported|told)\b/gi
+const QUOTED = /"[^"]*"|“[^”]*”/g
+const maskReported = (sentence: string): string =>
+  sentence.replace(QUOTED, (quote: string, at: number) => {
+    const before = sentence.slice(0, at)
+    for (const word of before.matchAll(REPORTING)) {
+      if (!/^\s+(?:(?:the\s+)?[\w'’-]+\s+)?to\b/i.test(before.slice((word.index ?? 0) + word[0].length))) return '"x"'
+    }
+    return quote
+  })
+
+// A stop once something is done, in a message: "You can stop after that.", "You can stop once
+// the README is fixed.", "Then stop when the suite is green." Its subject is the agent or a
+// clause's start only, never a thing ("It stops when the timer fires" is not the agent).
+// Read on a message and its does line only; a next step keeps STOP_NEXT alone.
+const STOP_ONCE = new RegExp(String.raw`(?:${CLAUSE}|\bthe agent\s+(?:can|may|should|could|is free to)\s+)(?:please\s+)?stop\s+(?:after\s+(?:that|this|it)\b|once\b|when\b|as soon as\b)`, 'i')
+
+// One sentence of a message read for a stop: its list marker and any wholly enclosing brackets
+// or quotes taken off, quoted words after a reporting word masked, turned to the third person,
+// then read by STOP_NEXT and STOP_ONCE.
+const sentenceSaysStop = (sentence: string): boolean => {
+  const read = toAgentVoice(maskReported(unwrap(sentence.replace(LIST_MARKER, ''))))
+  return STOP_NEXT.test(read) || STOP_ONCE.test(read)
+}
+
+// Whether a message, or what it does, tells the agent or the job to stop, calls the work
+// finished, or hands it back to the owner: true when any one of its sentences does, each read
+// alone in the third person.
+export const messageSaysStop = (text: string): boolean =>
+  sentencesOf(text).some(({ start, end }) => sentenceSaysStop(text.slice(start, end)))
+
+// What is left after a removal names something to do, show or fix when one of its sentences is
+// not praise or thanks, not a question and not a bare back-reference. The rep's messages are
+// about the work, so a statement of fact about it is a finding ("The install is not shown."
+// tells the agent what to show); only these three forms are left out.
+// Praise or thanks: the whole sentence, in any case, made of thanks, thank you, many thanks,
+// much appreciated, well done, and good, great, nice, excellent, solid or perfect (with work,
+// job or progress after it or not), each with "so far", "so much", "again" or "too", or "on" or
+// "for" and a short noun phrase, joined by "and" or a comma: "Great work.", "Well done so
+// far.", "Good progress on the parser.", "Great work, thank you!", "Thanks for the counts."
+// "Great work, now fix the parser." is not praise.
+const PRAISE_UNIT = String.raw`(?:thanks|thank you|many thanks|much appreciated|well done|(?:good|great|nice|excellent|solid|perfect)(?:\s+(?:work|job|progress))?)(?:\s+(?:so far|so much|again|too)|\s+(?:on|for)\s+[\w'’-]+(?:\s+[\w'’-]+){0,3})?`
+const PRAISE = new RegExp(String.raw`^${PRAISE_UNIT}(?:\s*(?:,\s*(?:and\s+)?|\s+and\s+)${PRAISE_UNIT})*\s*[.!]*$`, 'i')
+// A question: the sentence ends in "?".
+const QUESTION = /\?["'”’)\]]*$/
+// A bare back-reference, whose thing went with a removed sentence: a verb with "that", "this",
+// "it" or "so" as its object and at most one adverb (first, now, then, again, too, also,
+// please), after an optional "then", "and" or "please": "Do that first.", "Fix that.", "Then do
+// so." "Show why it failed." and "Fix it in the parser." say more.
+const BACK_ADVERB = String.raw`(?:first|now|then|again|too|also|please)`
+const BACK_REFERENCE = new RegExp(String.raw`^(?:(?:then|and)\s+)?(?:please\s+)?(?:${BACK_ADVERB}\s+[\w'’-]+\s+(?:that|this|it|so)|[\w'’-]+\s+(?:that|this|it|so)(?:\s+${BACK_ADVERB})?)\s*[.!]*$`, 'i')
+const usable = (text: string): boolean =>
+  sentencesOf(text).some(({ start, end }) => {
+    const s = unwrap(text.slice(start, end).replace(LIST_MARKER, ''))
+    return !PRAISE.test(s) && !QUESTION.test(s) && !BACK_REFERENCE.test(s)
+  })
+
+// A message with every sentence that says stop (by messageSaysStop's reading) taken out, and
+// nothing else changed. A message with no such sentence comes back as it is, the same string.
+// A removed sentence takes the spaces and tabs after it on its line; a list item's marker
+// stays for the rest of its line; a line left empty, or holding only its marker, is dropped;
+// a blank line next to a dropped line is dropped where it would make two in a row, or stand
+// first; trailing whitespace is trimmed on the lines a removal touched and at the end. No
+// sentence is reworded, moved or reflowed. When what is left names nothing to do, show or fix
+// (`usable`), it gives ''. Pure; '' gives ''.
+export const withoutStopSentences = (message: string): string => {
+  const cuts = sentencesOf(message).filter(({ start, end }) => sentenceSaysStop(message.slice(start, end)))
+  if (cuts.length === 0) return message
+  const lines: { text: string; dropped: boolean }[] = []
+  let at = 0
+  for (const line of message.split('\n')) {
+    const mine = cuts.filter(c => c.start >= at && c.end <= at + line.length)
+    if (mine.length === 0) lines.push({ text: line, dropped: false })
+    else {
+      let text = ''
+      let from = 0
+      for (const c of mine) {
+        let start = c.start - at
+        const marker = LIST_MARKER.exec(line)?.[0] ?? ''
+        if (marker !== '' && start === marker.length - marker.trimStart().length) start = marker.length
+        let end = c.end - at
+        while (end < line.length && (line[end] === ' ' || line[end] === '\t')) end++
+        text += line.slice(from, start)
+        from = end
+      }
+      text = (text + line.slice(from)).trimEnd()
+      lines.push({ text, dropped: text === '' || /^[ \t]*(?:[-*•]|\d+[.)])$/.test(text) })
+    }
+    at += line.length + 1
+  }
+  const kept: string[] = []
+  let afterDrop = false
+  for (const { text, dropped } of lines) {
+    if (dropped) { afterDrop = true; continue }
+    if (afterDrop && text.trim() === '' && (kept.length === 0 || (kept[kept.length - 1] ?? '').trim() === '')) continue
+    kept.push(text)
+    afterDrop = false
+  }
+  const rest = kept.join('\n').trimEnd()
+  return usable(rest) ? rest : ''
+}
 
 // The objective is not finished while a condition is open, and the gate works
 // part by part. A verdict other than continue (stop, or none given), a

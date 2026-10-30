@@ -14,7 +14,7 @@
 import type { On, SessionMessage } from 'claude-code'
 import { expect, mock, test as kitTest, type Engine, type TestBody, type TestOptions } from 'claude-code/testing'
 
-import { type Memory, CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fillCard, countLine, refusedLine, type CardText, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, OLD_SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, toAgentVoice, sectionOf, takeOwnWords, parseOwnWords, ownWordsPrompt, askAgain, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
+import { type Memory, CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fillCard, countLine, refusedLine, type CardText, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, OLD_SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, sentencesOf, withoutStopSentences, toAgentVoice, sectionOf, takeOwnWords, parseOwnWords, ownWordsPrompt, askAgain, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
 import { REFUSED_ENVIRONMENT, MISSING_REMOTE, BEFORE_YOU_STOP_COLON, WAIT_BEFORE_SUBMIT, THREE_BEFORE_YOU_STOP, TWO_BEFORE_YOU_STOP, GUARD_REFUSAL, STOP_SHAPES } from './fixtures/stop-shapes'
 
 // Every test starts with the session's working folder a Unix path, so what the suite reads does not
@@ -776,6 +776,46 @@ test('parseOwnWords takes an own-words reply only when it came back whole: the t
   expect(parseOwnWords('means: The agent said "done."\nnext: The agent shows the log (all of it.)\nmessage:\nnext: show me the log.\nend\ndoes: Makes the agent show the log.')).toMatchObject({ means: 'The agent said "done."', next: 'The agent shows the log (all of it.)', message: 'next: show me the log.' })
 })
 
+// Messages the stop reading catches, and messages it keeps whole; read by the detector's tests
+// and by withoutStopSentences's.
+const STOP_CAUGHT = [
+  'Summarise what you did and wait for my sign-off.',
+  "Report back and wait for the owner's reply.",
+  'Finish the README, then let them decide.',
+  'Stop here and ask her what she wants.',
+  'They will take it from here.',
+  'Report what is done, then hand it back to me.',
+  'Write up what you have and wait for my go-ahead before doing anything else.',
+  'Great work. You can stop now.',
+  'Show me the log, then wait for my reply.',
+  // A stop with "please", the agent called done in a contraction, no further work, the work
+  // handed over or left to the owner, and them taking it from here.
+  'Please stop. You\'re done.',
+  'Please stop here.',
+  'You are done. Thanks.',
+  'You\'re finished; thanks.',
+  'No further work is needed.',
+  'I will take it from here.',
+  'Leave the rest to me.',
+  'Hand the laptop install over to me.',
+]
+const STOP_KEPT = [
+  'Don\'t merge yet; wait until you have the install log, then show me.',
+  'Don\'t stop until the suite is green.',
+  'Stop guessing and run the tests, then show me the output.',
+  'Show me each session finishing.',
+  // A stop that goes on, a contraction that is not done, and the new forms said not to happen.
+  'Please stop guessing and run the suite.',
+  'Please don\'t stop until the suite is green.',
+  'You\'re not done until the install is shown; keep going.',
+  'I\'ve seen the log; now show me each session finishing.',
+  'You have the log open; run the suite next.',
+  'Don\'t hand the laptop install over to me; finish it yourself.',
+  'Don\'t leave the rest to me.',
+  // A bare "them" is a thing, not the owner: a wait on the tests goes on.
+  'Run the tests and wait for them to finish, then show me the output.',
+]
+
 test('messageSaysStop reads a message in the owner\'s voice to the agent: shifted to the third person, a wait on them, a hand-back to them or a stop is caught on the gated card and from the own-words reply, and a wait on the agent is not', () => {
   // The shift: me, my and the capital I are the owner's; you and your are the agent's. Whole words only, in any case but I's.
   expect(toAgentVoice('Show me my log. I said you and your build. Me, My, You, Your; meme, mystery, young, yours, i.'))
@@ -785,43 +825,8 @@ test('messageSaysStop reads a message in the owner\'s voice to the agent: shifte
     .toBe('the agent is done; the agent is close. the agent has run it; the agent has it. the agent is set. the owner is here, the owner is sure, the owner will look, the owner has seen it, the owner is in; i\'m not.')
   // The owner named without a pronoun: the shift reads me as the owner, and a message that already says so is caught too.
   expect(toAgentVoice('Hand it back to me when my reply comes.')).toBe("Hand it back to the owner when the owner's reply comes.")
-  const caught = [
-    'Summarise what you did and wait for my sign-off.',
-    "Report back and wait for the owner's reply.",
-    'Finish the README, then let them decide.',
-    'Stop here and ask her what she wants.',
-    'They will take it from here.',
-    'Report what is done, then hand it back to me.',
-    'Write up what you have and wait for my go-ahead before doing anything else.',
-    'Great work. You can stop now.',
-    'Show me the log, then wait for my reply.',
-    // A stop with "please", the agent called done in a contraction, no further work, the work
-    // handed over or left to the owner, and them taking it from here.
-    'Please stop. You\'re done.',
-    'Please stop here.',
-    'You are done. Thanks.',
-    'You\'re finished; thanks.',
-    'No further work is needed.',
-    'I will take it from here.',
-    'Leave the rest to me.',
-    'Hand the laptop install over to me.',
-  ]
-  const kept = [
-    'Don\'t merge yet; wait until you have the install log, then show me.',
-    'Don\'t stop until the suite is green.',
-    'Stop guessing and run the tests, then show me the output.',
-    'Show me each session finishing.',
-    // A stop that goes on, a contraction that is not done, and the new forms said not to happen.
-    'Please stop guessing and run the suite.',
-    'Please don\'t stop until the suite is green.',
-    'You\'re not done until the install is shown; keep going.',
-    'I\'ve seen the log; now show me each session finishing.',
-    'You have the log open; run the suite next.',
-    'Don\'t hand the laptop install over to me; finish it yourself.',
-    'Don\'t leave the rest to me.',
-    // A bare "them" is a thing, not the owner: a wait on the tests goes on.
-    'Run the tests and wait for them to finish, then show me the output.',
-  ]
+  const caught = STOP_CAUGHT
+  const kept = STOP_KEPT
   for (const m of caught) expect([m, messageSaysStop(m)]).toEqual([m, true])
   for (const m of kept) expect([m, messageSaysStop(m)]).toEqual([m, false])
   // The rep's own texts are never caught.
@@ -884,6 +889,99 @@ test('messageSaysStop leaves the seven shapes of message that once tripped it th
     const t = takeOwnWords(gated.answer, gated.replaced, own(m))
     return [name, t.message, t.does]
   })).toEqual(shapes.map(([name, m]) => [name, m, 'Makes the agent show the sessions.']))
+})
+
+test('sentencesOf splits a message into sentences as spans over the text: a mark with any closing quote or bracket before whitespace or the end, a line break, a list item with its marker, a line ending in a colon, never a decimal or a line-start list marker', () => {
+  const cut = (t: string) => sentencesOf(t).map(({ start, end }) => t.slice(start, end))
+  const table: [string, string[]][] = [
+    ['', []],
+    ['Show me the log! Then stop.', ['Show me the log!', 'Then stop.']],
+    ['Did the suite run? Run it and paste the counts. (Then you can stop.)', ['Did the suite run?', 'Run it and paste the counts.', '(Then you can stop.)']],
+    ['Paste the counts (all of them). Then wait for my sign-off.', ['Paste the counts (all of them).', 'Then wait for my sign-off.']],
+    // Digits make no difference, nor does the case of the next letter; a decimal point is not an end.
+    ['Show build 42. Then stop.', ['Show build 42.', 'Then stop.']],
+    ['Show build 42. then stop.', ['Show build 42.', 'then stop.']],
+    ['The README still says 0.4. Fix it.', ['The README still says 0.4.', 'Fix it.']],
+    // A closing quote belongs to the sentence it closes, straight or curly; whitespace after it ends that sentence.
+    ['Paste the line "Build 42 passed." then stop.', ['Paste the line "Build 42 passed."', 'then stop.']],
+    ['Paste the line “Build 42 passed.” Then stop.', ['Paste the line “Build 42 passed.”', 'Then stop.']],
+    ['"You can stop now." Run it.', ['"You can stop now."', 'Run it.']],
+    ['Run it again... Then stop.', ['Run it again...', 'Then stop.']],
+    // A list: a line ending in a colon, each item its own sentence with its marker on its first sentence.
+    ['Three things are missing:\n- the empty-file test\n- Then stop. Fix it.\n* the log\n• the counts', ['Three things are missing:', '- the empty-file test', '- Then stop.', 'Fix it.', '* the log', '• the counts']],
+    // A numbered list: the line-start marker is not a sentence end.
+    ['Steps:\n1. Push main.\n2) Show the run. Then stop.', ['Steps:', '1. Push main.', '2) Show the run.', 'Then stop.']],
+    // A line break ends a sentence with no mark; blank lines and the whitespace around sentences are in no span.
+    ['Fix the parser\nThen stop', ['Fix the parser', 'Then stop']],
+    ['Para one.\n\n  Para two.  \n', ['Para one.', 'Para two.']],
+  ]
+  expect(table.map(([t]) => [t, cut(t)])).toEqual(table)
+})
+
+test('withoutStopSentences takes out only the sentences that tell the agent to stop, call the work finished or hand it back, keeps every other byte, and gives an empty text when what is left names nothing to do, show or fix', () => {
+  const table: [string, string][] = [
+    // The done checks' C3 cases 1 to 7, at the function.
+    ['Good progress on the parser. You skipped the empty-file case and the log shows no run of the full suite. Add the empty-file test, run the whole suite and paste the counts. Then wait for my sign-off.',
+      'Good progress on the parser. You skipped the empty-file case and the log shows no run of the full suite. Add the empty-file test, run the whole suite and paste the counts.'],
+    ['The install is not shown.\n\nYou called the docs done, but the README still says 0.4. Fix it. You can stop after that.\n\nThen run the live scenario and paste the capture.',
+      'The install is not shown.\n\nYou called the docs done, but the README still says 0.4. Fix it.\n\nThen run the live scenario and paste the capture.'],
+    ['Three things are missing:\n- the empty-file test\n- the suite counts\n- the install log\nShow each one. Then hand it back to me. Please stop here.',
+      'Three things are missing:\n- the empty-file test\n- the suite counts\n- the install log\nShow each one.'],
+    ["You're done. Thanks.\n\nShow me the install log and the suite counts.", 'Thanks.\n\nShow me the install log and the suite counts.'],
+    ['Your summary said "you can stop now", but the suite never ran. Run it and paste the counts.', 'Your summary said "you can stop now", but the suite never ran. Run it and paste the counts.'],
+    ['Run the suite. Then do as the note says to: "You can stop now."', 'Run the suite.'],
+    ['You can stop once the README is fixed. Do that first.', ''],
+    ['Show me the log! Then stop.', 'Show me the log!'],
+    ['Did the suite run? Run it and paste the counts. (Then you can stop.)', 'Did the suite run? Run it and paste the counts.'],
+    ['Paste the counts (all of them). Then wait for my sign-off.', 'Paste the counts (all of them).'],
+    // Sentence ends after digits and before a lowercase letter, and a quoted continuation.
+    ['Show build 42. Then stop.', 'Show build 42.'],
+    ['Show build 42. then stop.', 'Show build 42.'],
+    ['Paste the line "Build 42 passed." then stop.', 'Paste the line "Build 42 passed."'],
+    // A whole middle paragraph, and a list line that is wholly a stop sentence, leave no empty line behind.
+    ['Para one.\n\nYou can stop now.\n\nPara three.', 'Para one.\n\nPara three.'],
+    ['Three things are missing:\n- the empty-file test\n- Then stop.\n- the install log', 'Three things are missing:\n- the empty-file test\n- the install log'],
+    // A list item's first sentence removed keeps the item's marker for the sentence after it.
+    ['Do these:\n- Then stop. Show the log.\n- the counts', 'Do these:\n- Show the log.\n- the counts'],
+    // A stop paragraph first or last leaves no blank line at the start or the end.
+    ['You can stop now.\n\nShow the log.', 'Show the log.'],
+    ['Show the log.\n\nYou can stop now.', 'Show the log.'],
+    // A decimal is no end, and a quote after a reporting word is someone's words, not read; a stop given as an order is.
+    ['The README still says 0.4. Fix it.', 'The README still says 0.4. Fix it.'],
+    ['Your summary said plainly "you can stop now", but the suite never ran. Run it.', 'Your summary said plainly "you can stop now", but the suite never ran. Run it.'],
+    ['Your summary said "You can stop now." Run the suite and paste the counts.', 'Your summary said "You can stop now." Run the suite and paste the counts.'],
+    // Usable: a sentence that is not praise or thanks, not a question and not a bare back-reference.
+    ['Show why it failed. Then stop.', 'Show why it failed.'],
+    ['The install is not shown. Then stop.', 'The install is not shown.'],
+    ['Great work, now fix the parser. Then stop.', 'Great work, now fix the parser.'],
+    ['Fix it in the parser. Then stop.', 'Fix it in the parser.'],
+    // Not usable: praise or thanks only, a question only, bare back-references only.
+    ['Fix that. Then stop.', ''],
+    ['Do it now. Then stop.', ''],
+    ['Then do so. Please stop here.', ''],
+    ['Good progress on the parser. Then stop.', ''],
+    ['Thank you! Then stop.', ''],
+    ['Many thanks. You can stop now.', ''],
+    ['Well done so far. Thank you. Please stop here.', ''],
+    ['Great work, thank you! Then stop.', ''],
+    ['Thanks for the counts. You can stop now.', ''],
+    ['Did the suite run? Then stop.', ''],
+    ['', ''],
+  ]
+  expect(table.map(([m]) => [m, withoutStopSentences(m)])).toEqual(table)
+  // A message with no stop sentence comes back as it is, untidied, whitespace and all.
+  for (const m of [...STOP_KEPT, ...STOP_SHAPES.filter(s => !messageSaysStop(s)), ' Show the log. \n\n\n\nRun it.  ']) expect([m, withoutStopSentences(m)]).toEqual([m, m])
+  // Every caught message is all stop sentences, or stop sentences with praise or thanks: nothing usable is left.
+  expect(STOP_CAUGHT.map(m => [m, withoutStopSentences(m)])).toEqual(STOP_CAUGHT.map(m => [m, '']))
+  // What is left never says stop, and the removed sentences are said stop by the same reading.
+  for (const [, out] of table) expect([out, messageSaysStop(out)]).toEqual([out, false])
+})
+
+test('messageSaysStop reads each sentence alone: a stop once something is done is caught when the agent or a clause stops, never when a thing stops; a stop in its own sentence is caught wherever it stands', () => {
+  for (const m of ['You can stop after that.', 'You can stop once the README is fixed.', 'Then stop once the suite is green.', 'You may stop when the suite is green.', 'You should stop as soon as the run passes.', 'Run it. (Then you can stop.)', 'Run it. (Then stop.)', 'Show build 42. then stop.', 'Paste the line "Build 42 passed." then stop.', 'Steps:\n- Push main.\n- Then stop.', 'Fix the parser\nThen stop', 'Run the suite. Then do as the note says to: "You can stop now."'])
+    expect([m, messageSaysStop(m)]).toEqual([m, true])
+  for (const m of ['It stops when the timer fires.', 'The job stops once the timer fires, so check the log.', "You can't stop once the suite is red; fix it.", 'Your summary said "You can stop now." Run the suite.', 'The README still says 0.4. Fix it.'])
+    expect([m, messageSaysStop(m)]).toEqual([m, false])
 })
 
 test('sectionOf takes one "## " section of a fixed text and throws, naming the heading, when the heading is missing', () => {
