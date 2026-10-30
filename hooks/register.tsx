@@ -701,7 +701,8 @@ async function markLost($: EngineInterface, sid: string, lost: readonly Lost[]):
 
 // What a reader is given: the job's messages, each one's words as sent read back whole and each
 // approval's sources with them, the approved plans that fit its room (the Heads up from its
-// cursor), and the lines for what the record could not keep or save.
+// cursor), and the lines for what the record could not keep or save (for the briefing, and the
+// plans it cannot compare).
 async function memoryFor($: EngineInterface, sid: string, rec: Rec, reader: 'watch' | 'brief'): Promise<Memory> {
   const base = memoryOf(rec)
   const approvals = base.owner.filter(approvalOf)
@@ -711,7 +712,10 @@ async function memoryFor($: EngineInterface, sid: string, rec: Rec, reader: 'wat
   await markLost($, sid, [...a.lost, ...b.lost])
   const owner = base.owner.map(m => (approvalOf(m) ? a.msgs[approvals.indexOf(m)] : b.msgs[rest.indexOf(m)]) ?? m)
   const approved = reader === 'watch' ? readerParts(owner, WATCH_APPROVED_BUDGET, rec.readerAt?.watch ?? 0) : readerParts(owner, BRIEF_APPROVED_BUDGET)
-  return { ...base, owner, approved, lines: coverage(rec, { full: storeFull.get(sid) }) }
+  // The briefing is told, among coverage's lines, of the plans it cannot compare, by the one path
+  // the row and the card take; what it finds itself goes on the card after it answers.
+  const gaps = reader === 'brief' ? readerGaps(approved, 'brief') : {}
+  return { ...base, owner, approved, lines: coverage(rec, { full: storeFull.get(sid), gaps }) }
 }
 
 // The store refused the record: its inline texts go to files, or memory when the files refuse

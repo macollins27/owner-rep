@@ -9064,6 +9064,113 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     for (const p of m.prompts) expect(p).not.toContain('Nine step')
   })
 
+  test('Task 7 (join): the plan the briefing cannot compare reaches the row, the card and the briefing through coverage alone, and a briefing that repeats the line shows it once', async ($, on) => {
+    const PLAN = planOf(90000, 'Nine')
+    const owner = [msg7(1, 'build the sorter'), yes7(2, PLAN)]
+    const LINE = NOT_COMPARED(2, 'too long for the briefing')
+    const m = mounted7(on, owner, brief => (brief ? STOP_WELL(`- ${LINE}`, 'none') : HOLDS))
+    await started($)
+    await m.look($, 't1')
+    expect(await rowSays($, re(LINE))).toBe(true)
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    await ui.press({ key: 'rep' })
+    const texts = (await ui.findAll({ type: 'Text' })).map(t => t.text)
+    await ui.press({ key: 'close' })
+    await ui.unmount()
+    expect(texts[texts.indexOf('Left out:') + 1]).toBe(`  - ${LINE}`)
+    expect(texts.filter(t => t.includes(LINE) && t.startsWith('  - '))).toHaveLength(1)
+    // The briefing is told among the lines coverage gives it, once.
+    const brief = m.briefs().at(-1) ?? ''
+    expect(brief.split(`- ${LINE}`).length - 1).toBe(1)
+    for (const p of m.prompts) expect(p).not.toContain('Nine step')
+  })
+
+  test('Task 7 (join): an approval whose plan cannot be shown carries 4b\'s coverage line in both readers, never a wording of the readers\' own', () => {
+    const lost = yes7(2, 'Step 1: read pear.txt.', { pinned: true, src: { body: { chars: 22, sha: 'a'.repeat(64), where: 'file', lost: 'its saved copy is missing or damaged' } } } as Partial<OwnerMsg>)
+    const line = rep.unresolved(lost)?.text ?? ''
+    expect(line).not.toBe('')
+    const owner = [msg7(1, 'build the sorter'), lost]
+    for (const p of [watchOf(owner), briefOf(owner)]) {
+      expect(p).toContain(`(the plan it approved is not shown: ${line})`)
+      expect(p).not.toContain('could not be shown')
+      expect(p).not.toContain('not shown here')
+      expect(p).not.toContain('read pear.txt')
+    }
+  })
+
+  // Plan Task 7, "A note approval earned through the writer": no approval planted.
+  const DATE_RULE = "put the date in pear.txt's first line, never anywhere else"
+  const NOTE_PLAN = `The plan for the fruit files.\nStep 1: make apple.txt.\nStep 2: make plum.txt.\nStep 3: ${DATE_RULE}.\nStep 4: report back.`
+  const DATE_FLAG = "The date went into pear.txt's last line, against step 3 of the plan you approved, which puts it in the first line only."
+  const DATE_LEFT = "The date in pear.txt's first line only: step 3 of the plan you approved; the agent put it in the last line."
+  // The session's record, read when a reader asks: his first message, the agent's plan turn (the
+  // note is placed at its end, Task 7 0c), and a person row for each later message of his.
+  const noteRows = (held: () => { owner: OwnerMsg[] } | undefined) => (): { value: SessionMessage[] } => ({
+    value: [
+      person('plan the fruit files'),
+      agent(NOTE_PLAN),
+      ...(held()?.owner ?? []).filter(m => m.n > 2 && m.kind !== 'note').map(m => person(m.text)),
+      agent('Working on it.'),
+    ],
+  })
+
+  test('Task 7: a note approval earned through the writer stays pinned through 250 more messages, both readers hold its plan whole with the date rule, and their answers on it reach the row and the card', async ($, on) => {
+    const s = asks(on, [his(1, 'plan the fruit files')])
+    on('session.messages', noteRows(() => s.held() as never))
+    let n = 0
+    s.answer(() => (++n === 1 ? ANSWER(['apple.txt made | open', "the date in pear.txt's first line only | open"], { approved: ['#2 | all'] }) : 'objective: holds'))
+    await started($)
+    await runTurn($, s.scripts, 't1', [said(NOTE_PLAN)])
+    await s.send($, NOTE_YES)
+    expect(s.msg(2)?.kind).toBe('note')
+    expect(s.msg(2)).toMatchObject({ approved: 'all', read: { state: 'read' } })
+    expect(approves(s.msg(2))).toBe(true)
+    // 250 more messages of his follow; the record the store holds is frozen, so they go in a new copy.
+    const next = JSON.parse(JSON.stringify(s.held())) as T3Rec
+    next.owner.push(...range(3, 252).map(k => his(k, `and item ${k}`)))
+    ;(next as unknown as { counter: number }).counter = 252
+    s.store.sessions = { ...(s.store.sessions as Record<string, unknown>), [SID]: next }
+    await s.send($, 'and the totals')
+    expect(s.msg(2)).toMatchObject({ approved: 'all', pinned: true })
+    expect(s.held()?.owner.some(m => m.n === 3)).toBe(false)
+    // Both readers hold the plan whole, the date rule in it.
+    s.hold.fork = p => (p.includes(BRIEF_ASKED) ? STOP_WELL(`- ${DATE_LEFT}`, 'none') : `state: working\nflag: ${DATE_FLAG}\nwhy: pear.txt's last line holds the date.`)
+    const was = s.forks.length
+    await $.turn.complete(stop('t2'))
+    await settleUntil($, () => s.forks.length > was)
+    await settle($)
+    const watch = s.forks.filter(p => !p.includes(BRIEF_ASKED)).at(-1) ?? ''
+    expect(watch).toContain(NOTE_PLAN)
+    expect(await rowSays($, re(DATE_FLAG))).toBe(true)
+    const [left] = await cardSays($, [re(DATE_LEFT)])
+    expect(left).toBe(true)
+    const brief = s.forks.filter(p => p.includes(BRIEF_ASKED)).at(-1) ?? ''
+    expect(brief).toContain(NOTE_PLAN)
+    for (const p of [watch, brief]) expect(p).toContain(DATE_RULE)
+  })
+
+  test('Task 7: the same note sent as a plan-screen rejection note stores no approval, and neither reader holds the plan', async ($, on) => {
+    const s = asks(on, [his(1, 'plan the fruit files'), await REJECTED(2, 'yes, go with it', NOTE_PLAN)], {}, new Map([[`${DIR}/2-rejected.txt`, NOTE_PLAN]]))
+    on('session.messages', noteRows(() => s.held() as never))
+    s.answer(() => ANSWER(["the date in pear.txt's first line only | open"], { approved: ['#2 | all'] }))
+    await started($)
+    await s.send($, 'go on')
+    expect(approves(s.msg(2))).toBe(false)
+    expect(s.msg(2)?.approved ?? '').toBe('')
+    s.hold.fork = p => (p.includes(BRIEF_ASKED) ? STOP_WELL('- nothing', 'none') : HOLDS)
+    const was = s.forks.length
+    await $.turn.complete(stop('t2'))
+    await settleUntil($, () => s.forks.length > was)
+    await settle($)
+    await cardSays($, [])
+    expect(s.forks.filter(p => p.includes(BRIEF_ASKED)).length).toBeGreaterThan(0)
+    expect(s.forks.length).toBeGreaterThan(1)
+    for (const p of s.forks) {
+      expect(p).not.toContain(DATE_RULE)
+      expect(p).not.toContain('<approved_plan')
+    }
+  })
+
   test('Task 7 (mounted): a plan over the Heads up\'s budget and inside the briefing\'s: the row says the Heads up cannot compare it only while no other line stands, and the card says nothing of it', async ($, on) => {
     const owner = [msg7(1, 'build the sorter'), yes7(2, planOf(50000, 'Half'))]
     const m = mounted7(on, owner, brief => (brief ? BRIEF('The card.') : HOLDS))
