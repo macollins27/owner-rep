@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 2e922aa..68d541b 100644
+index 85e8014..5cf8743 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3030,7 +3030,7 @@ const BLOCKER_TOLD = /\btell\s+the owner\s+(?:(?:exactly|plainly|clearly)\s+)?(?
- // my approval before running the tests.") is read.
- const OUTWARD_ACT = String.raw`(?:submit(?:s|ting)?|publish(?:es|ing)?|post(?:s|ing)?\s+(?:(?:it|this|that|them|the\s+[\w'’-]+)\s+)?(?:publicly|online|(?:on|to)\s+social\s+media)|appl(?:y|ies|ying)\s+(?:for|to)|pay(?:s|ing)?|buy(?:s|ing)?|purchas(?:e|es|ing)|sign(?:s|ing)?\s+(?:(?:the|an?|this|that|our|the owner['’]s|the agent['’]s)\s+(?:[\w'’-]+\s+){0,2})?(?:agreement|contract|form|lease|offer|NDA|paperwork)s?|send(?:s|ing)?\s+(?:(?:the|an?|this|that|the owner['’]s)\s+)?(?:email|message|application|letter|invoice)s?)\b`
- const WAIT_BEFORE_ACT = new RegExp(String.raw`\bwaits?\s+for\s+(?:(?:the owner['’]s|his|the)\s+)?(?:word|go-ahead|approval|sign-off)\s+(?:(?:on|before|to)\s+(?:the agent\s+(?:(?:can|may)\s+)?)?${OUTWARD_ACT}|on\s+([\w-]+))`, 'gi')
--const NOT_A_BUTTON = /^(?:merg(?:e|es|ed|ing)|push(?:es|ed|ing)?|delet(?:e|es|ed|ing)|deploy(?:s|ed|ing)?|install(?:s|ed|ing)?|the|this|that|it|a|an)$/i
-+const NOT_A_BUTTON = /^(?:merge|push|delete|deploy|install|the|this|that|it|a|an)$/i
- const NEGATED_ACT = new RegExp(String.raw`(?:\bnot|\bnever|n['’]t)\s+${OUTWARD_ACT}`, 'i')
- const WAIT_ON_HIM_BARE = new RegExp(String.raw`\bwaits?\s+(?:for|on|until|till)\s+${ON_HIM}(?:['’]s\s+[\w-]+)?(?:\s+(?:on|for)\s+(?:that|it|this))?${CLAUSE_END}`, 'gi')
- // 5. A stop or hand-back asked about as the thing a cause led to: "which" or "what", up to three
+@@ -3062,7 +3062,7 @@ const maskExempt = (read: string, afterNegated = false): string => {
+   let s = read.replace(BEFORE_STOPS, 'x').replace(WAIT_ON_OTHER, 'x ')
+   s = s.replace(BLOCKER_IF, (all: string, condition: string, clause: string) => (BLOCKER_TOLD.test(clause) ? condition + clause.replace(/\bstop\b/gi, 'x') : all))
+   s = s.replace(WAIT_BEFORE_ACT, (wait: string, button?: string) =>
+-    button === undefined || OWNER_BUTTON.test(button) ? 'x' : wait)
++    button === undefined || (/^[A-Z]/.test(button) && !/^(?:merge|push|delete|deploy|install|the|this|that|it|a|an)$/i.test(button)) ? 'x' : wait)
+   s = s.replace(WAIT_AFTER_NEGATED, (_: string, act: string) => `${act}x`)
+   if (afterNegated) s = s.replace(WAIT_FIRST, (_: string, lead: string) => `${lead}x`)
+   return s.replace(CAUSE_ASKED, 'x ')

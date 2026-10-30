@@ -153,15 +153,16 @@ the model's own sound next step stands. The message is read one sentence at a ti
 the sentences that tell the agent to stop, call the work finished or hand it back to the
 owner are taken out; every other sentence stays exactly as the model wrote it, nothing
 reworded or moved. A message with no such sentence stands whole. Only when what is left names
-nothing to do, show or fix (it is empty, or holds only praise or thanks, questions, or a bare
-"Do that first." whose "that" went with the removed sentence) are the message and its line
+nothing to do, show or fix (it is empty, holds no letter or digit, as "..." does, or holds
+only praise or thanks, questions, or a bare "Do that first." whose "that" went with the
+removed sentence) are the message and its line
 saying what it does the rep's fixed text, the list of open conditions. Beside a kept message,
 a line saying what it does that says stop is the rep's. A rep's message is about the work, so
 any sentence other than those three forms counts: a statement of fact such as "The install is
 not shown." is a finding that tells the agent what to show, and requiring an order would
 throw findings away.
 
-Read alone, a sentence is judged in its own context. Five shapes are let through because they
+Read on its own, a sentence is judged in its own context. Five shapes are let through because they
 keep the agent on the work or leave with the owner only what is truly the owner's, and only
 the words that make the shape are set aside, so the rest of the sentence is still read. A
 push to finish more before stopping ("Two things before you stop.") moves the work on. A wait
@@ -173,22 +174,27 @@ owner clear it; both halves are needed, so "If anything fails, stop and tell me.
 push is refused, stop." are still taken out, and only the stop in the clause the condition
 opens is set aside, so "otherwise, you can stop now" or "but in any case you can stop now"
 after it is still taken out, while "then stop, and tell me what it refused" is the same kept
-stop said another way. A wait on the
+stop said another way. A negated condition names no blocker, so "If the remote is not missing,
+stop and tell me why." is taken out. A wait on the
 owner's word before an outward act only the owner does toward the outside world, from a closed
 list (submitting, sending an email, message, application, letter or invoice, publishing,
 signing an agreement, contract or form, applying for something, posting publicly, paying,
-buying, purchasing, or pressing a named button such as Submit), is kept because acting there
+buying, purchasing, or pressing a button only the owner presses: Submit, Send, Publish, Post,
+Pay, Sign, Apply, Approve or Purchase, so "Wait for my word on Build." is taken out), is kept because acting there
 without the owner would speak or spend for them. The wait has to govern the act: a wait on the
-owner after a sentence that says not to publish is kept only when it waits on nothing else, or
-on that act again ("Do not publish it; wait for my word on that."), so "Do not publish the
-report; wait for my approval before running the tests." is still taken out. Signing off on the tests, applying a migration and posting results to a pull request are
+owner after a sentence that says not to publish is kept only when it is the very next clause
+(after a semicolon, a comma, "and" or the sentence's end) and waits on nothing else, or on that
+act again ("Do not publish it; wait for my word on that.", "Do not publish it. Wait for my
+word."), so "Do not publish the report; wait for my approval before running the tests." and
+"Do not publish the report; run the suite and wait for my approval." are still taken out. Signing off on the tests, applying a migration and posting results to a pull request are
 the agent's work, and so are merging, pushing, deleting, deploying and installing in any form,
 so a wait before them is still a stop. A stop or a hand-back named as what an instruction or
 habit led to ("name which instruction let you stop ordered work and hand it back to me") is
 the thing the owner wants found and removed, not an order, so it is kept; a stop in another
 clause or sentence ("Find what made you stop, then stop.") is still taken out. A run of spaces or tabs never changes what a sentence
 is taken to say. A stop once something is done
-("You can stop after that.", "You can stop once the README is fixed.") is caught, and a stop
+("You can stop after that.", "You can stop once the README is fixed.", "Run the tests and then
+stop when they pass.") is caught, and a stop
 inside quotation marks is read only when the sentence orders it ("Do as the note says to:
 ..."), never when it reports what someone said (a message noting that the agent's summary
 said "you can stop now" while the suite never ran). A quote counts as reported only when it
@@ -462,7 +468,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 257 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 281 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: twelve real sessions in tmux, the strip captured to tests/live/captures
 ```

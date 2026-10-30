@@ -2134,5 +2134,41 @@
     "breaks": "A question about a cause with an aside between commas after its object (\"let you, or any agent, stop\") is read as an order and its sentence taken out.",
     "patch": "cause-question-aside-refused.patch",
     "fixed": "2026-10-30"
+  },
+  {
+    "name": "button-any-capital-exempted",
+    "breaks": "Any word with a capital after \"on\" is let through as a button the owner presses, so \"Wait for my word on Build.\" reaches the card.",
+    "patch": "button-any-capital-exempted.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "negated-act-wait-anywhere-after",
+    "breaks": "After a negated outward act, a wait on the owner anywhere later in the sentence is let through, so \"Do not publish the report; run the suite and wait for my approval.\" reaches the card.",
+    "patch": "negated-act-wait-anywhere-after.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "negated-act-sentence-break-caught",
+    "breaks": "A wait on the owner in the sentence straight after a negated outward act is read as a stop, so \"Do not publish it. Wait for my word.\" loses its second sentence.",
+    "patch": "negated-act-sentence-break-caught.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "blocker-negated-condition-kept",
+    "breaks": "A blocker whose condition is negated is let through, so \"If the remote is not missing, stop and tell me why.\" reaches the card.",
+    "patch": "blocker-negated-condition-kept.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "and-then-stop-when-missed",
+    "breaks": "A stop once, when, as soon as or after something, after \"and\" or \"then\" inside a clause, is not read, so \"Run the tests and then stop when they pass.\" reaches the card.",
+    "patch": "and-then-stop-when-missed.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "punctuation-left-usable",
+    "breaks": "What is left after a removal counts as usable with no letter or digit in it, so \"You can stop now. ...\" leaves \"...\" on the card in place of the fixed text.",
+    "patch": "punctuation-left-usable.patch",
+    "fixed": "2026-10-30"
   }
 ]

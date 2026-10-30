@@ -36,6 +36,14 @@ What changed in each release of Owner Rep, newest first. The full record is the
   not an outward act. Taking a sentence out never leaves a bracket or quote without its
   partner, and a message that is only praise, thanks, a question or a pointer to an earlier
   message is not chosen for Brief me's card.
+- **Narrower exceptions.** A wait for your word "on" a button holds only for a button you
+  alone press toward the outside world (Submit, Send, Publish, Post, Pay, Sign, Apply, Approve,
+  Purchase), so "Wait for my word on Build." is taken out. After "do not publish it", a wait on
+  you is let through only as the very next part ("Do not publish it; wait for my word on
+  that."), not after other work. A blocker whose condition is negated ("If the remote is not
+  missing, stop") is no blocker. "Run the tests and then stop when they pass." is caught. What
+  is left after a stop is taken out counts only when it holds a letter or a digit, so a lone
+  "..." gives the list of what is still open.
 
 ## 0.5.0 (26 October 2026)
 

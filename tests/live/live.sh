@@ -32,21 +32,32 @@
 # and no setting that switches the installed copy off, and the steps that read the rep's store
 # read the installed mod's (owner-rep_owner-rep-*.json). That store keeps only its newest 32
 # records, so each session such a run starts lets the oldest of the owner's go; use it for one
-# scenario at a time, to show what the installed build does. ROOT, the folder loaded with
-# --plugin-dir, can be set from the environment; captures go beside the script, in captures/.
+# scenario at a time, to show what the installed build does. Only INSTALLED=1 does this; any
+# other value, INSTALLED=0 included, loads this checkout. ROOT, the folder loaded with
+# --plugin-dir, can be set from the environment, as a relative path too (ROOT=. is made
+# absolute before the sessions start in their scratch folders), and is quoted for the shell
+# tmux runs, so a path with a space or an apostrophe loads. Captures go beside the script, in
+# captures/.
+#
+#     LAUNCH_LINE=1 ROOT=. tests/live/live.sh   # print the command a session starts with, start none
 set -u
 HERE=${0:A:h}
 ROOT=${ROOT:-${HERE:h:h}}
+ROOT=${ROOT:A}
 CAPS=$HERE/captures
-mkdir -p $CAPS
-INSTALLED=${INSTALLED:-}
-if [[ -n $INSTALLED ]]; then
+if [[ ${INSTALLED:-} == 1 ]]; then
   PLUGIN_ARGS=''
   STORE_NAME='owner-rep_owner-rep-*.json'
 else
-  PLUGIN_ARGS="--plugin-dir '$ROOT' --settings '{\"enabledPlugins\":{\"owner-rep@owner-rep\":false}}'"
+  PLUGIN_ARGS="--plugin-dir ${(q)ROOT} --settings '{\"enabledPlugins\":{\"owner-rep@owner-rep\":false}}'"
   STORE_NAME='owner-rep_inline-*.json'
 fi
+# The command line tmux runs to start a session, with these arguments added to claude's.
+launch_line() {
+  print -r -- "env -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT -u CLAUDE_CODE_SESSION_ID -u CLAUDE_CODE_CHILD_SESSION -u CLAUDE_CODE_MESSAGING_SOCKET -u CLAUDE_CODE_MESSAGING_TOKEN -u CLAUDE_CODE_SESSION_ATTENDED claude $PLUGIN_ARGS $* --permission-mode bypassPermissions"
+}
+if [[ ${LAUNCH_LINE:-} == 1 ]]; then launch_line; exit 0; fi
+mkdir -p $CAPS
 S=owner-rep-live
 STRIP_RE='Owner rep ·|Brief me|Tell the rep|Fine, close|Put message|Check it|Heads up'
 want=("$@")
@@ -91,8 +102,7 @@ start() {
     git -C $dir init -q
   fi
   LIVE_DIR=$dir
-  tmux new-session -d -s $S -x 170 -y 44 -c $dir \
-    "env -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT -u CLAUDE_CODE_SESSION_ID -u CLAUDE_CODE_CHILD_SESSION -u CLAUDE_CODE_MESSAGING_SOCKET -u CLAUDE_CODE_MESSAGING_TOKEN -u CLAUDE_CODE_SESSION_ATTENDED claude $PLUGIN_ARGS $* --permission-mode bypassPermissions"
+  tmux new-session -d -s $S -x 170 -y 44 -c $dir "$(launch_line "$@")"
   if wait_for 'Yes, I trust this folder' 20; then tmux send-keys -t $S Down; sleep 0.5; tmux send-keys -t $S Enter; fi
   wait_for 'Brief me' 40 || { echo "  the session did not draw the rep's row in 40s"; return 1; }
   sleep 2

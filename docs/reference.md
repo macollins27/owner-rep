@@ -69,7 +69,7 @@ call writes (below):
    `applyMarks` takes the marks, and `gateVerdict` refuses, while a condition is open, a
    verdict other than `continue` (a `stop`, or none given, which `verdictOf` reads as
    `missing`, never as continue), a `well:` line, or a `next:` (`saysStop`) or a `message:`
-   (`messageSaysStop`: true when any one sentence of the message, read alone as the
+   (`messageSaysStop`: true when any one sentence of the message, read as the
    paragraph on `withoutStopSentences` below says, trips, each read on a copy `toAgentVoice` turns to the third person,
    me, my and the capital I to the owner, the owner's and the owner, you and your to the agent and the agent's,
    the contractions and two-word forms shifted whole before them, with a straight or curly
@@ -177,7 +177,9 @@ call writes (below):
    item (a line starting `- `, `* `, `• `, `1. ` or `2) `, indented or not) is its own with its
    marker on its first sentence, a sentence wholly in brackets is its own, and digits make no
    difference (`Show build 42. Then stop.` is two). A decimal point (`0.4`) is no end, and nor
-   is a list marker at a line's start. Each sentence is read alone (`sentenceSaysStop`): its
+   is a list marker at a line's start. Each sentence is read on its own (`sentenceSaysStop`),
+   the sentence before it read the same way only to see whether it ends on a negated outward
+   act (shape 4 below): its
    list marker and any brackets or double quotes wholly enclosing it taken off; every run of
    whitespace read as one space, so no run of spaces or tabs changes a verdict (`Wait for a
    reply from  me.` is caught as with one space; a line break never falls inside a sentence,
@@ -219,7 +221,11 @@ call writes (below):
       what it refused.` are kept. `If anything fails, stop and tell me.`, `If the remote is
       missing, stop.` and `If the push is refused, stop.` are still caught, and so is a stop
       in another clause (`If the remote is missing, tell me why; otherwise, you can stop
-      now.`, `If the remote is missing, tell me why but in any case you can stop now.`).
+      now.`, `If the remote is missing, tell me why but in any case you can stop now.`). A
+      negated condition (not, n't, never or no longer, and at most one word, just before the
+      blocker word) names no refusal or absence, so `If the remote is not missing, stop and
+      tell me why.` is caught; `not found`, `does not exist` and `doesn't exist` are blocker
+      words themselves and still count.
    4. A wait on the owner's word before an outward act only the owner does toward the
       outside world, from a closed list (`OUTWARD_ACT`): submit, publish, pay, buy,
       purchase; send with an email, message, application, letter or invoice as its object
@@ -232,17 +238,21 @@ call writes (below):
       the tests`, `applying the migration`), are the agent's work. Said as a wait for the
       owner's word, go-ahead, approval or sign-off on,
       before or to the act (`WAIT_BEFORE_ACT`: `Wait for my go-ahead before you send the
-      email.`), or on a button named with a capital after "on" (`wait for my word on
-      Submit`; merge, push, delete, deploy and install in every form, whatever the case,
-      and the articles and pronouns in
-      `NOT_A_BUTTON` are never a button: `Wait for my word on Merging.` is caught), or as
-      the act said not to happen (`NEGATED_ACT`: not, never or n't before it) with a wait on
-      the owner after it that has no object of its own, or whose only object refers back to
-      the act (on that, on it, on this, for that) (`WAIT_ON_HIM_BARE`, ending its clause),
-      whose wait words are masked (`Do not publish it; wait for my word.`, `Do not publish
-      it; wait for my word on that.`); a wait
-      before something else is read (`Do not publish the report; wait for my approval before
-      running the tests.` is caught). Merging, pushing, deleting, deploying
+      email.`), or on a button only the owner presses toward the outside world, named after
+      "on", in any case (`OWNER_BUTTON`: Submit, Send, Publish, Post, Pay, Sign, Apply,
+      Approve, Purchase; `wait for my word on Submit`; any other word is no button, so `Wait
+      for my word on Build.` and `Wait for my word on Merging.` are caught), or as
+      the act said not to happen (`NEGATED_ACT`: not, never or n't before it, and the rest of
+      its clause) with a wait on the owner as the clause directly after it, a semicolon, a
+      comma, "and" or a sentence's end between and nothing else (`WAIT_AFTER_NEGATED` in one
+      sentence; `NEGATED_LAST` on the sentence before and `WAIT_FIRST` opening this one), that
+      has no object of its own, or whose only object refers back to the act (on that, on it,
+      on this, for that) (`WAIT_ON_HIM_BARE`, ending its clause); its wait words are masked
+      (`Do not publish it; wait for my word.`, `Do not publish it; wait for my word on
+      that.`, `Do not publish it. Wait for my word.`). A wait before something else is read
+      (`Do not publish the report; wait for my approval before running the tests.` is
+      caught), and so is a wait after other work (`Do not publish the report; run the suite
+      and wait for my approval.`, or a sentence between). Merging, pushing, deleting, deploying
       and installing are the agent's to do, so `Wait for my go-ahead before merging.` is
       still caught.
    5. A stop or hand-back asked about as the thing a cause led to (`CAUSE_ASKED`, masked last):
@@ -262,7 +272,10 @@ call writes (below):
    `STOP_ONCE` catches a stop once something is done, its subject
    a clause's start or the agent with can, may, should, could or is free to (`You can stop
    after that.`, `You can stop once the README is fixed.`, `Then stop when the suite is
-   green.`), never a thing (`It stops when the timer fires.`); next steps are not read by it.
+   green.`), never a thing (`It stops when the timer fires.`), or a stop once, when, as soon
+   as or after something following "and" or "then" anywhere in a clause with no not, never
+   or n't before it (`Run the tests and then stop when they pass.`, `Run the tests and stop
+   after that.`); next steps are not read by it.
    `withoutStopSentences(message: string): string`, exported and pure, is the message with
    every sentence that reading catches taken out: it returns the input itself when no
    sentence is caught (untidied, whitespace and all), and `''` for `''`. A removed sentence
@@ -276,8 +289,9 @@ call writes (below):
    one against the kept text after it and a closing one against the kept text before it
    (`Run the suite. (You can stop now. Thanks.)` gives `Run the suite. (Thanks.)`), and a
    pair wholly in removed text goes with it. When what is left names nothing to do, show or fix
-   (`usable`: no sentence in it, read with its runs of whitespace as one space, other than
-   praise or thanks, a question or a bare back-reference) it returns `''`. Praise or thanks (`PRAISE`) is a sentence made only of
+   (`usable`: no sentence in it, read with its runs of whitespace as one space, that holds a
+   letter or a digit and is other than praise or thanks, a question or a bare back-reference,
+   so `You can stop now. ...` gives `''`) it returns `''`. Praise or thanks (`PRAISE`) is a sentence made only of
    thanks, thank you, many thanks, much appreciated, well done, and good, great, nice,
    excellent, solid or perfect with work, job or progress after it or not, each with "so far",
    "so much", "again" or "too", or "on" or "for" and up to four words, joined by "and" or a
@@ -292,7 +306,7 @@ call writes (below):
    through `messageUsable`, which also holds a message with no stop sentence to `usable`. `sentencesOf` and
    `messageSaysStop` are exported beside it, and `messageSaysStop(text)` is true exactly when
    `withoutStopSentences(text)` would take a sentence out, since both read each sentence the
-   same way (`sentenceSaysStop`).
+   same way, with the sentence before it (`stopSpans`, through `sentenceSaysStop`).
 
    The watch and the briefing (and its second ask) read through one helper, `readSession`.
    A fork answers `nothing-to-fork` before the first response of the process (a session

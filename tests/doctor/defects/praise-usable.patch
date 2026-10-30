@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 07348d8..e186981 100644
+index 85e8014..7c24c36 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3092,7 +3092,7 @@ const usable = (text: string, bare = false): boolean =>
+@@ -3123,7 +3123,7 @@ const usable = (text: string, bare = false): boolean =>
    sentencesOf(text).some(({ start, end }) => {
      const one = text.slice(start, end).replace(LIST_MARKER, '').replace(/\s+/g, ' ')
      const s = bare ? one.replace(/[()[\]"“”]/g, '').trim() : unwrap(one)
--    return (!bare || s !== '') && !PRAISE.test(s) && !QUESTION.test(s) && !BACK_REFERENCE.test(s)
-+    return (!bare || s !== '') && !QUESTION.test(s) && !BACK_REFERENCE.test(s)
+-    return /[\p{L}\p{N}]/u.test(s) && !PRAISE.test(s) && !QUESTION.test(s) && !BACK_REFERENCE.test(s)
++    return /[\p{L}\p{N}]/u.test(s) && !QUESTION.test(s) && !BACK_REFERENCE.test(s)
    })
  
  // Each bracket or double quote in a text paired with its partner, by position, both ways:

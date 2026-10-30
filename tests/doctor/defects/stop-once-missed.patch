@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index a05c4e1..faed219 100644
+index 85e8014..89b6f27 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3046,7 +3046,7 @@ const maskExempt = (read: string): string => {
- // changed; a removal cuts the message's own text.
- const sentenceSaysStop = (sentence: string): boolean => {
-   const read = maskExempt(toAgentVoice(maskReported(unwrap(sentence.replace(LIST_MARKER, '').replace(/\s+/g, ' ')))))
+@@ -3079,7 +3079,7 @@ const maskExempt = (read: string, afterNegated = false): string => {
+ const readOf = (sentence: string): string => toAgentVoice(maskReported(unwrap(sentence.replace(LIST_MARKER, '').replace(/\s+/g, ' '))))
+ const sentenceSaysStop = (sentence: string, before = ''): boolean => {
+   const read = maskExempt(readOf(sentence), NEGATED_LAST.test(readOf(before)))
 -  return STOP_NEXT.test(read) || STOP_ONCE.test(read)
 +  return STOP_NEXT.test(read)
  }
  
- // Whether a message, or what it does, tells the agent or the job to stop, calls the work
+ // The sentences of a text that say stop, each read with the sentence just before it.

@@ -1,10 +1,10 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index a05c4e1..1a775d8 100644
+index 85e8014..eb6ed7a 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3120,6 +3120,7 @@ const pairsOf = (text: string): Map<number, number> => {
+@@ -3163,6 +3163,7 @@ const pairsOf = (text: string): Map<number, number> => {
  export const withoutStopSentences = (message: string): string => {
-   const cuts = sentencesOf(message).filter(({ start, end }) => sentenceSaysStop(message.slice(start, end)))
+   const cuts = stopSpans(message)
    if (cuts.length === 0) return message
 +  cuts.pop()
    const partner = pairsOf(message)

@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 2e922aa..3ff02d9 100644
+index 85e8014..d784d0a 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3065,7 +3065,7 @@ const maskExempt = (read: string): string => {
- // five exempt shapes above masked, then read by STOP_NEXT and STOP_ONCE. Only the copy read is
- // changed; a removal cuts the message's own text.
- const sentenceSaysStop = (sentence: string): boolean => {
--  const read = maskExempt(toAgentVoice(maskReported(unwrap(sentence.replace(LIST_MARKER, '').replace(/\s+/g, ' ')))))
-+  const read = maskExempt(maskReported(unwrap(sentence.replace(LIST_MARKER, '').replace(/\s+/g, ' '))))
+@@ -3076,7 +3076,7 @@ const maskExempt = (read: string, afterNegated = false): string => {
+ // is read the same way only to see whether it ends on a negated outward act, which lets a bare
+ // wait on the owner opening this one through (shape 4). Only the copy read is changed; a removal
+ // cuts the message's own text.
+-const readOf = (sentence: string): string => toAgentVoice(maskReported(unwrap(sentence.replace(LIST_MARKER, '').replace(/\s+/g, ' '))))
++const readOf = (sentence: string): string => maskReported(unwrap(sentence.replace(LIST_MARKER, '').replace(/\s+/g, ' ')))
+ const sentenceSaysStop = (sentence: string, before = ''): boolean => {
+   const read = maskExempt(readOf(sentence), NEGATED_LAST.test(readOf(before)))
    return STOP_NEXT.test(read) || STOP_ONCE.test(read)
- }
- 

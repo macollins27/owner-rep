@@ -2982,9 +2982,12 @@ const maskReported = (sentence: string): string =>
 
 // A stop once something is done, in a message: "You can stop after that.", "You can stop once
 // the README is fixed.", "Then stop when the suite is green." Its subject is the agent or a
-// clause's start only, never a thing ("It stops when the timer fires" is not the agent).
+// clause's start only, never a thing ("It stops when the timer fires" is not the agent), or the
+// stop follows "and" or "then" anywhere in a clause with no "not", "never" or "n't" before it:
+// "Run the tests and then stop when they pass.", "Fix the parser and stop as soon as the suite is
+// green.", "Run the tests and stop after that."
 // Read on a message and its does line only; a next step keeps STOP_NEXT alone.
-const STOP_ONCE = new RegExp(String.raw`(?:${CLAUSE}|\bthe agent\s+(?:can|may|should|could|is free to)\s+)(?:please\s+)?stop\s+(?:after\s+(?:that|this|it)\b|once\b|when\b|as soon as\b)`, 'i')
+const STOP_ONCE = new RegExp(String.raw`(?:${CLAUSE}|\bthe agent\s+(?:can|may|should|could|is free to)\s+)(?:please\s+)?stop\s+(?:after\s+(?:that|this|it)\b|once\b|when\b|as soon as\b)|${CLAUSE}(?:(?!\bnot\b|\bnever\b|n't\b)[^.;:!?,])*?\b(?:and\s+(?:then\s+)?|then\s+)(?:please\s+)?stop\s+(?:once|when|as soon as|after)\b`, 'i')
 
 // Five shapes of a message sentence that do not stop the agent while it could still move the work,
 // read on the third-person copy. Only the words that make each shape are masked (to "x", which
@@ -3009,30 +3012,40 @@ const WAIT_ON_OTHER = /\bwaits?\s+for\s+(?:a|an|the)\s+(?:reply|answer|response|
 // then stop, and tell me what it refused." Both halves are needed, so "If anything fails, stop
 // and tell me." and "If the push is refused, stop." stay caught, and a stop in another clause is
 // read: "If the remote is missing, tell me why; otherwise, you can stop now." and "If the remote
-// is missing, tell me why but in any case you can stop now." are caught.
+// is missing, tell me why but in any case you can stop now." are caught. A condition negated
+// ("not", "n't", "never" or "no longer", and at most one word, before the blocker word) names no
+// refusal or absence: "If the remote is not missing, stop and tell me why." is caught.
 const BLOCKER_ENDS = String.raw`then|otherwise|else|but|in\s+any\s+case|either\s+way|anyway|regardless|whatever\s+happens`
-const BLOCKER_IF = new RegExp(String.raw`^(\s*if\b[^,]*\b(?:refus(?:e|es|ed)|rejects?|rejected|missing|not found|does not exist|doesn['’]t exist|no\s+[\w-]+(?:\s+[\w-]+)?\s+(?:has|have)\s+been\s+added|no\b[^,]*\byet)\b[^,]*,(?:\s*then\b)?)((?:\s*stop\s*,)?(?:(?!\b(?:${BLOCKER_ENDS})\b)[^;:,.!?])*)`, 'i')
+const BLOCKER_IF = new RegExp(String.raw`^(\s*if\b[^,]*(?<!(?:\bnot|n['’]t|\bnever|\bno\s+longer)\s+(?:[\w'’-]+\s+)?)\b(?:refus(?:e|es|ed)|rejects?|rejected|missing|not found|does not exist|doesn['’]t exist|no\s+[\w-]+(?:\s+[\w-]+)?\s+(?:has|have)\s+been\s+added|no\b[^,]*\byet)\b[^,]*,(?:\s*then\b)?)((?:\s*stop\s*,)?(?:(?!\b(?:${BLOCKER_ENDS})\b)[^;:,.!?])*)`, 'i')
 const BLOCKER_TOLD = /\btell\s+the owner\s+(?:(?:exactly|plainly|clearly)\s+)?(?:what|that|why|which)\b|\bsay\s+so\b/i
 // 4. A wait on the owner's word before an outward act he alone decides toward the outside world,
 // from a closed list: submit, publish, pay, buy, purchase, send (an email, message, application,
 // letter or invoice), sign (an agreement, contract, form, lease, offer, NDA or the paperwork, bare
 // or after a determiner or possessive and up to two words: "signing the employment contract",
 // "signing our contract"), apply for or to, post publicly, online or to social media, or a
-// button named with a capital ("wait for my word on Submit"). Signing off, and signing, applying or posting anything else
+// button only he presses, named after "on", in any case: Submit, Send, Publish, Post, Pay, Sign,
+// Apply, Approve or Purchase ("wait for my word on Submit"; "Wait for my word on Build." is
+// caught). Signing off, and signing, applying or posting anything else
 // ("signing off on the tests", "applying the migration", "posting the results to the pull
 // request"), are the agent's work, and so are merging, pushing, deleting, deploying and
 // installing in any form ("Wait for my go-ahead before merging.", "Wait for my word on Merging."
 // stay caught). Said as a wait on his word on, before or to the act ("Wait for my go-ahead before
-// you send the email."), or as the act said not to happen with a wait on him after it that has no
-// object of its own, or whose only object refers back to the act ("on that", "on it", "on this",
-// "for that"): "Do not publish it; wait for my word.", "Do not publish it; wait for my word on
-// that." A wait before something else after a negated act ("Do not publish the report; wait for
-// my approval before running the tests.") is read.
+// you send the email."), or as the act said not to happen with a wait on him as the clause
+// directly after it (a semicolon, a comma, "and", or the end of the sentence before, between, and
+// nothing else) that has no object of its own, or whose only object refers back to the act ("on
+// that", "on it", "on this", "for that"): "Do not publish it; wait for my word.", "Do not publish
+// it; wait for my word on that.", "Do not publish it. Wait for my word." A wait before something
+// else after a negated act ("Do not publish the report; wait for my approval before running the
+// tests."), or after other work ("Do not publish the report; run the suite and wait for my
+// approval."), is read.
 const OUTWARD_ACT = String.raw`(?:submit(?:s|ting)?|publish(?:es|ing)?|post(?:s|ing)?\s+(?:(?:it|this|that|them|the\s+[\w'’-]+)\s+)?(?:publicly|online|(?:on|to)\s+social\s+media)|appl(?:y|ies|ying)\s+(?:for|to)|pay(?:s|ing)?|buy(?:s|ing)?|purchas(?:e|es|ing)|sign(?:s|ing)?\s+(?:(?:the|an?|this|that|our|the owner['’]s|the agent['’]s)\s+(?:[\w'’-]+\s+){0,2})?(?:agreement|contract|form|lease|offer|NDA|paperwork)s?|send(?:s|ing)?\s+(?:(?:the|an?|this|that|the owner['’]s)\s+)?(?:email|message|application|letter|invoice)s?)\b`
 const WAIT_BEFORE_ACT = new RegExp(String.raw`\bwaits?\s+for\s+(?:(?:the owner['’]s|his|the)\s+)?(?:word|go-ahead|approval|sign-off)\s+(?:(?:on|before|to)\s+(?:the agent\s+(?:(?:can|may)\s+)?)?${OUTWARD_ACT}|on\s+([\w-]+))`, 'gi')
-const NOT_A_BUTTON = /^(?:merg(?:e|es|ed|ing)|push(?:es|ed|ing)?|delet(?:e|es|ed|ing)|deploy(?:s|ed|ing)?|install(?:s|ed|ing)?|the|this|that|it|a|an)$/i
-const NEGATED_ACT = new RegExp(String.raw`(?:\bnot|\bnever|n['’]t)\s+${OUTWARD_ACT}`, 'i')
-const WAIT_ON_HIM_BARE = new RegExp(String.raw`\bwaits?\s+(?:for|on|until|till)\s+${ON_HIM}(?:['’]s\s+[\w-]+)?(?:\s+(?:on|for)\s+(?:that|it|this))?${CLAUSE_END}`, 'gi')
+const OWNER_BUTTON = /^(?:submit|send|publish|post|pay|sign|apply|approve|purchase)$/i
+const NEGATED_ACT = String.raw`(?:\bnot|\bnever|n['’]t)\s+${OUTWARD_ACT}(?:(?!\band\b)[^;:,.!?])*?`
+const WAIT_ON_HIM_BARE = String.raw`\bwaits?\s+(?:for|on|until|till)\s+${ON_HIM}(?:['’]s\s+[\w-]+)?(?:\s+(?:on|for)\s+(?:that|it|this))?${CLAUSE_END}`
+const WAIT_AFTER_NEGATED = new RegExp(String.raw`(${NEGATED_ACT}(?:\s*[;,]\s*(?:and\s+)?|\s+and\s+))${WAIT_ON_HIM_BARE}`, 'gi')
+const NEGATED_LAST = new RegExp(String.raw`${NEGATED_ACT}[.!]*\s*$`, 'i')
+const WAIT_FIRST = new RegExp(String.raw`^(\s*(?:and\s+)?)${WAIT_ON_HIM_BARE}`, 'i')
 // 5. A stop or hand-back asked about as the thing a cause led to: "which" or "what", up to three
 // words ("which instruction or habit"), a causing verb (let, made, allowed, led, caused, told, got,
 // permitted, in any tense the list holds), the agent or agents as its object (an aside between
@@ -3045,16 +3058,13 @@ const WAIT_ON_HIM_BARE = new RegExp(String.raw`\bwaits?\s+(?:for|on|until|till)\
 // after "do" ("Do what lets you stop." is an order), and "whatever" is no "what".
 const CAUSED = String.raw`(?:the agent|any agent|another agent|(?:the\s+)?(?:other\s+)?agents)`
 const CAUSE_ASKED = new RegExp(String.raw`(?<!\bdo\s+)\b(?:which|what)\b(?:\s+[\w'’-]+){0,3}?\s+(?:let|lets|made|makes|allowed|allows|led|leads|caused|causes|told|tells|got|gets|permitted)\s+${CAUSED}(?:\s+(?:or|and)\s+${CAUSED})?(?:\s*,[^,;:.!?]*,)?\s+(?:to\s+)?(?:stop(?:s|ped|ping)?|hand(?:s|ed|ing)?)\b(?:(?!\b(?:${BLOCKER_ENDS})\b)[^;:,.!?])*`, 'gi')
-const maskExempt = (read: string): string => {
+const maskExempt = (read: string, afterNegated = false): string => {
   let s = read.replace(BEFORE_STOPS, 'x').replace(WAIT_ON_OTHER, 'x ')
   s = s.replace(BLOCKER_IF, (all: string, condition: string, clause: string) => (BLOCKER_TOLD.test(clause) ? condition + clause.replace(/\bstop\b/gi, 'x') : all))
   s = s.replace(WAIT_BEFORE_ACT, (wait: string, button?: string) =>
-    button === undefined || (/^[A-Z]/.test(button) && !NOT_A_BUTTON.test(button)) ? 'x' : wait)
-  const negated = NEGATED_ACT.exec(s)
-  if (negated !== null) {
-    const after = negated.index + negated[0].length
-    s = s.slice(0, after) + s.slice(after).replace(WAIT_ON_HIM_BARE, 'x')
-  }
+    button === undefined || OWNER_BUTTON.test(button) ? 'x' : wait)
+  s = s.replace(WAIT_AFTER_NEGATED, (_: string, act: string) => `${act}x`)
+  if (afterNegated) s = s.replace(WAIT_FIRST, (_: string, lead: string) => `${lead}x`)
   return s.replace(CAUSE_ASKED, 'x ')
 }
 
@@ -3062,21 +3072,30 @@ const maskExempt = (read: string): string => {
 // or quotes taken off, every run of whitespace read as one space (so no run of spaces or tabs
 // changes a verdict: "Wait for a reply from  me." and "Leave the rest  to me." are caught as
 // with one space), quoted words after a reporting word masked, turned to the third person, the
-// five exempt shapes above masked, then read by STOP_NEXT and STOP_ONCE. Only the copy read is
-// changed; a removal cuts the message's own text.
-const sentenceSaysStop = (sentence: string): boolean => {
-  const read = maskExempt(toAgentVoice(maskReported(unwrap(sentence.replace(LIST_MARKER, '').replace(/\s+/g, ' ')))))
+// five exempt shapes above masked, then read by STOP_NEXT and STOP_ONCE. The sentence before it
+// is read the same way only to see whether it ends on a negated outward act, which lets a bare
+// wait on the owner opening this one through (shape 4). Only the copy read is changed; a removal
+// cuts the message's own text.
+const readOf = (sentence: string): string => toAgentVoice(maskReported(unwrap(sentence.replace(LIST_MARKER, '').replace(/\s+/g, ' '))))
+const sentenceSaysStop = (sentence: string, before = ''): boolean => {
+  const read = maskExempt(readOf(sentence), NEGATED_LAST.test(readOf(before)))
   return STOP_NEXT.test(read) || STOP_ONCE.test(read)
+}
+
+// The sentences of a text that say stop, each read with the sentence just before it.
+const stopSpans = (text: string): { start: number; end: number }[] => {
+  const spans = sentencesOf(text)
+  return spans.filter(({ start, end }, i) => sentenceSaysStop(text.slice(start, end), i === 0 ? '' : text.slice(spans[i - 1]?.start, spans[i - 1]?.end)))
 }
 
 // Whether a message, or what it does, tells the agent or the job to stop, calls the work
 // finished, or hands it back to the owner: true when any one of its sentences does, each read
-// alone in the third person.
-export const messageSaysStop = (text: string): boolean =>
-  sentencesOf(text).some(({ start, end }) => sentenceSaysStop(text.slice(start, end)))
+// in the third person with only the sentence before it beside it (`sentenceSaysStop`).
+export const messageSaysStop = (text: string): boolean => stopSpans(text).length > 0
 
-// What is left after a removal names something to do, show or fix when one of its sentences is
-// not praise or thanks, not a question and not a bare back-reference. The rep's messages are
+// What is left after a removal names something to do, show or fix when one of its sentences
+// holds a letter or a digit ("..." or "—" alone names nothing) and is not praise or thanks, not a
+// question and not a bare back-reference. The rep's messages are
 // about the work, so a statement of fact about it is a finding ("The install is not shown."
 // tells the agent what to show); only these three forms are left out.
 // Praise or thanks: the whole sentence, in any case, made of thanks, thank you, many thanks,
@@ -3104,7 +3123,7 @@ const usable = (text: string, bare = false): boolean =>
   sentencesOf(text).some(({ start, end }) => {
     const one = text.slice(start, end).replace(LIST_MARKER, '').replace(/\s+/g, ' ')
     const s = bare ? one.replace(/[()[\]"“”]/g, '').trim() : unwrap(one)
-    return (!bare || s !== '') && !PRAISE.test(s) && !QUESTION.test(s) && !BACK_REFERENCE.test(s)
+    return /[\p{L}\p{N}]/u.test(s) && !PRAISE.test(s) && !QUESTION.test(s) && !BACK_REFERENCE.test(s)
   })
 
 // Each bracket or double quote in a text paired with its partner, by position, both ways:
@@ -3142,7 +3161,7 @@ const pairsOf = (text: string): Map<number, number> => {
 // removed text goes with it. When what is left names nothing to do, show or fix (`usable`), it
 // gives ''. Pure; '' gives ''.
 export const withoutStopSentences = (message: string): string => {
-  const cuts = sentencesOf(message).filter(({ start, end }) => sentenceSaysStop(message.slice(start, end)))
+  const cuts = stopSpans(message)
   if (cuts.length === 0) return message
   const partner = pairsOf(message)
   const removed = (i: number): boolean => cuts.some(c => i >= c.start && i < c.end)

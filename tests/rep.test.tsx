@@ -1407,6 +1407,88 @@ test('a stop or hand-back that is the object of a question about its cause ("whi
   expect(caught.map(R1_CAUGHT_WHOLE)).toEqual(caught.map(R1_CAUGHT_OUT))
 })
 
+// The automatic reviewer's findings on pull request #35 (fix 4), each with its exact input and
+// close variants that must stay caught or kept.
+
+test('the capital-word exemption after "on" holds only for a button the owner alone presses toward the outside world (Submit, Send, Publish, Post, Pay, Sign, Apply, Approve, Purchase), in any case; any other word is caught', () => {
+  const caught = ['Wait for my word on Build.', 'Wait for my word on Run.', 'Wait for my go-ahead on Release.', 'Wait for my approval on Tests.', 'Wait for my word on Continue.', 'Wait for my word on Merging.']
+  expect(caught.map(R1_CAUGHT_WHOLE)).toEqual(caught.map(R1_CAUGHT_OUT))
+  for (const m of ['Wait for my word on Submit.', 'Wait for my word on SEND.', 'Wait for my go-ahead on Publish.', 'Wait for my word on Post.', 'Wait for my word on pay.', 'Wait for my word on Sign.', 'Wait for my word on Apply.', 'Wait for my approval on Approve.', 'Wait for my word on Purchase.', 'After that, wait for my word on Submit.', WAIT_BEFORE_SUBMIT])
+    expect([m, messageSaysStop(m), withoutStopSentences(m), viaGate(m)[2], viaOwnWords(m)[1]]).toEqual([m, false, m, m, m])
+})
+
+test('after a negated outward act, a wait on the owner is let through only as the clause directly after it (a semicolon, a comma, "and" or a sentence break between, nothing else); a wait after other work is caught', () => {
+  const caught = [
+    'Do not publish the report; run the suite and wait for my approval.',
+    'Do not publish it; fix the tests, then wait for my word.',
+    'Do not send the email, run the suite and wait for my word on that.',
+    'Do not publish it, then stop. Wait for my word.',
+  ]
+  expect(caught.map(R1_CAUGHT_WHOLE)).toEqual(caught.map(R1_CAUGHT_OUT))
+  // With a sentence between, the wait is caught and only it goes.
+  expect([messageSaysStop('Never publish it. Run the suite. Wait for my word.'), withoutStopSentences('Never publish it. Run the suite. Wait for my word.')]).toEqual([true, 'Never publish it. Run the suite.'])
+  for (const m of [
+    'Do not publish it; wait for my word on that.',
+    'Do not publish it, and wait for my word.',
+    'Do not publish it and wait for my word on it.',
+    'Do not send the email yet, wait for my go-ahead.',
+    'Do not publish it. Wait for my word.',
+    'Run the suite. Do not send the email yet.\nWait for my go-ahead on that.',
+  ])
+    expect([m, messageSaysStop(m), withoutStopSentences(m), viaGate(m)[2], viaOwnWords(m)[1]]).toEqual([m, false, m, m, m])
+  // A wait standing alone, or after a sentence that negates no outward act, is still caught.
+  expect(['Wait for my word.', 'Run the suite. Wait for my word.'].map(messageSaysStop)).toEqual([true, true])
+  expect(withoutStopSentences('Run the suite. Wait for my word.')).toBe('Run the suite.')
+})
+
+test('a blocker whose condition is negated ("not", "n\'t", "never", "no longer" before the blocker word) lets no stop through; a refusal or absence said plainly still does', () => {
+  const caught = [
+    'If the remote is not missing, stop and tell me why.',
+    "If the remote isn't missing, stop and tell me why.",
+    'If the guard no longer refuses the push, stop and tell me what changed.',
+    'If the push is not refused, stop and tell me what happened.',
+    'If the guard never refuses it, stop and tell me why.',
+    'If the guard does not refuse the push, stop and tell me why.',
+  ]
+  expect(caught.map(R1_CAUGHT_WHOLE)).toEqual(caught.map(R1_CAUGHT_OUT))
+  for (const m of [GUARD_REFUSAL, REFUSED_ENVIRONMENT, MISSING_REMOTE, 'If the remote is missing, stop and tell me why.', 'If the file is not found, stop and tell me which file.', "If the branch doesn't exist, stop and tell me why."])
+    expect([m, messageSaysStop(m), withoutStopSentences(m), viaGate(m)[2], viaOwnWords(m)[1]]).toEqual([m, false, m, m, m])
+})
+
+test('a stop once, when, as soon as or after something, following "and" or "then" anywhere in a clause, is caught; every "before you stop" shape and a question about what let the agent stop are kept', () => {
+  const caught = [
+    'Run the tests and then stop when they pass.',
+    'Fix the parser and stop as soon as the suite is green.',
+    'Run the tests and stop after that.',
+    'Run the suite, fix what fails and then stop once it is green.',
+    'Run the tests then stop when they pass.',
+    'Push main and please stop after the run finishes.',
+  ]
+  expect(caught.map(R1_CAUGHT_WHOLE)).toEqual(caught.map(R1_CAUGHT_OUT))
+  expect(withoutStopSentences('Show me the diff. Run the tests and then stop when they pass.')).toBe('Show me the diff.')
+  for (const m of [BEFORE_YOU_STOP_COLON, THREE_BEFORE_YOU_STOP, TWO_BEFORE_YOU_STOP, PAUSED_WORK_CAUSE, 'Find what made the agent stop when the tests passed, and fix it.', 'Say which rule lets agents stop once a test passes, and remove it.', 'Run the tests and do not stop when one fails.'])
+    expect([m, messageSaysStop(m), withoutStopSentences(m), viaGate(m)[2], viaOwnWords(m)[1]]).toEqual([m, false, m, m, m])
+})
+
+test('what is left after a removal is usable only when it holds a letter or a digit: punctuation alone gives "" and the fixed text; a message of punctuation with nothing cut stays whole', () => {
+  for (const m of ['You can stop now. ...', 'You can stop now. —', 'You can stop now. (…)', 'You can stop now. !!', 'You can stop now.\n\n...'])
+    expect([m, withoutStopSentences(m), viaGate(m)[2], viaOwnWords(m)[1], messageUsable(m)]).toEqual([m, '', OPEN_MESSAGE(OPEN_JOB_OPEN), OPEN_MESSAGE(OPEN_JOB_OPEN), false])
+  for (const [m, out] of [['You can stop now. Run step 2.', 'Run step 2.'], ['You can stop now. 3/4 = 0.75', '3/4 = 0.75']] as [string, string][])
+    expect([m, withoutStopSentences(m)]).toEqual([m, out])
+  expect([withoutStopSentences('...'), viaGate('...')[2]]).toEqual(['...', '...'])
+})
+
+test('with no objective written, what is left after a removal is judged as the gate judges it: praise alone after a cut gives the fixed unwritten-objective text, and a message with nothing cut stays whole', () => {
+  const nul = (m: string) => {
+    const g = gateVerdict(REFUSED_CARD(m), null)
+    return [m, g.replaced, g.answer.message, g.answer.does]
+  }
+  for (const m of ['Great work. You can stop now.', 'You can stop now. Thanks!', 'You can stop now. ...'])
+    expect(nul(m)).toEqual([m, ['means', 'next', 'message'], UNWRITTEN_MESSAGE, UNWRITTEN_DOES])
+  for (const m of ['Great work.', 'Thanks.', 'Run the suite and paste the counts.'])
+    expect(nul(m)).toEqual([m, ['means', 'next'], m, 'Makes the agent show its work.'])
+})
+
 test('sectionOf takes one "## " section of a fixed text and throws, naming the heading, when the heading is missing', () => {
   expect(sectionOf('## A\n\none\n\n## B\n\ntwo', '## A')).toBe('## A\n\none')
   expect(sectionOf('## A\n\none\n\n## B\n\ntwo', '## B')).toBe('## B\n\ntwo')
