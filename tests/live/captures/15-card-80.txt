@@ -1,0 +1,80 @@
+
+
+⏺ Result you want: a small add function in this folder, with the other four items left until you ask for them. For now I'll read your build instructions, check the
+  folder, write add.py and stop.
+
+  Thought for 6s, read 1 file, ran 1 shell command
+
+⏺ Write(add.py)
+  ⎿  Wrote 2 lines to add.py
+      1 def add(a, b):
+      2     return a + b
+
+  Ran 1 shell command
+
+⏺ add.py is made and works, and I stopped there as you said. I couldn't run the test you wanted before stopping, because test_add.py doesn't exist yet. So there is no
+  test output to paste.
+
+  In its place, I called the function directly as a quick try, which is not the test. It printed:
+
+  add(2, 3) = 5
+  add(-1, 1) = 0
+
+  ┌─────────────────────────────────────────┬──────────────────────────────────────┐
+  │             Your five items             │           Where it stands            │
+  ├─────────────────────────────────────────┼──────────────────────────────────────┤
+  │ add.py with add(a, b)                   │ Done                                 │
+  ├─────────────────────────────────────────┼──────────────────────────────────────┤
+  │ test_add.py passing, with output pasted │ Not started                          │
+  ├─────────────────────────────────────────┼──────────────────────────────────────┤
+  │ One-line README.md                      │ Not started                          │
+  ├─────────────────────────────────────────┼──────────────────────────────────────┤
+  │ Saved with git                          │ Not started; add.py is not saved yet │
+  ├─────────────────────────────────────────┼──────────────────────────────────────┤
+  │ Copied into ./release                   │ Not started; waits for your word     │
+  └─────────────────────────────────────────┴──────────────────────────────────────┘
+
+  Build routine: I followed only part of it, because you limited this round to one file. I wrote add.py directly in this folder, without the routine's test-first step,
+  separate copy of the project or outside review. When the test comes, it will be written after the code, so I'll break the code on purpose to prove the test can fail.
+
+✻ Brewed for 18s · done 9:40 PM
+                                                                                                                                                                      [-]
+◇ Owner rep · A small working add(a, b) function in add.py in this folder, with a passing test_add.py, a one-line README.md, the work saved with git, and the work
+  copied into ./release once the owner gives the word.
+  Done means 6 things: 1 shown, 5 open
+  Stands: add.py is in the folder, and the conversation shows the function giving the right answers: 2 + 3 gives 5, and -1 + 1 gives 0. The agent stopped there as
+  you told it, and nothing is saved with git yet, which the folder listing confirms.
+  Means: add.py is in the folder and gave the right answers on a quick try, but that is only one of your five parts. There is no test yet, no README, nothing saved
+  with git and no copy in ./release, so the work is not shown complete.
+  Left out:
+    - test_add.py is not written, so nothing yet proves the function beyond one quick try by hand.
+    - The test has not been run, so you have no test output pasted here; the quick try does not count as the test.
+    - README.md is not written, and it is part of your definition of done.
+    - The work is not saved with git, so add.py could still be lost.
+    - The copy into ./release has not been made, and it must wait for your word.
+    - test_add.py exists and passes, with its output pasted into the conversation
+    - README.md exists and is one line long
+    - The work is saved with git; if git refuses the save, the agent stops and reports exactly what git said
+    - The work is published by copying it into ./release, and this happens only after the owner gives the word, never before
+    - Before the agent stops on the finished work, the test is run and what it printed is pasted into the conversation
+  Next: The agent writes test_add.py, runs it and pastes what it printed, then moves on to the README and the git save. The copy into ./release stays unmade until
+  you give your word.
+  ╭─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+  │ Please carry on with everything except publishing.                                                                                                              │
+  │                                                                                                                                                                 │
+  │ 1. Write test_add.py and run it. Because add.py came first, break add.py on purpose and show the test failing, then put it back and show the test passing.      │
+  │ Paste what each run printed.                                                                                                                                    │
+  │ 2. Write README.md, one line long, and show that it is one line.                                                                                                │
+  │ 3. Save the work with git. If git refuses, stop and tell me exactly what it said. If it accepts, paste what it printed and show that nothing is left unsaved.   │
+  │ 4. Run the test one last time after the save and paste what it printed.                                                                                         │
+  │ 5. Do not create ./release or copy anything into it until I give the word.                                                                                      │
+  ╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+  It makes the agent finish and show the test, the README and the git save, then hold the copy into ./release until you give the word.
+  3: Check it   1: Put message in prompt   2: Fine, close   4: Tell the rep   0: Later   conversation at 6 percent of its window
+
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ now write test_add.py and run it
+──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  [Opus 5.5] │ owner-rep-live.zg3xDyFTA2 +owner-rep-live.zg3xDyFT… +user git:(master*) │ Add.py add function
+  Context █░░░░░░░░░ 6% │ Usage █░░░░░░░░░ 10% (resets in 3h 20m)
+  ⏵⏵ bypass permissions on (shift+tab to cycle)
