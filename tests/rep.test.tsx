@@ -1437,9 +1437,16 @@ test('an aside right after the reporting word, closed by a comma before the quot
     'Your summary said, run by run, "You can stop now." Run the suite.',
     'Your summary said, step by step, "You can stop now."',
     'Your summary said, check by check, "You can stop now." Run the suite.',
+    'Your summary said \u2014 run by run \u2014 "You can stop now." Run the suite.',
+    'Your summary said \u2013 run by run \u2013 "You can stop now."',
+    'Your summary said - run by run - "You can stop now."',
   ]
   expect(kept.map(READ_STOP)).toEqual(kept.map(STAYS_WHOLE))
   const out = [
+    'The note said \u2014 follow this \u2014 "You can stop now."',
+    'The note said \u2014 run this, check it \u2014 "You can stop now."',
+    'The note said \u2014 run this, "You can stop now."',
+    'You said it passed \u2014 run the suite \u2014 "You can stop now."',
     'You said it passed, then run the suite, "You can stop now."',
     'You said it passed, run the suite, "You can stop now."',
     'The note said, follow this, "You can stop now."',

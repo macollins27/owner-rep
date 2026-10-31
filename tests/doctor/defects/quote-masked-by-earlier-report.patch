@@ -9,7 +9,7 @@ index 6dc5d1e..406da8e 100644
 -    const word = [...before.matchAll(REPORTING)].pop()
 -    if (word === undefined) return quote
 -    const lead = before.slice(0, word.index)
--    const gap = before.slice((word.index ?? 0) + word[0].length)
+-    const gap = before.slice((word.index ?? 0) + word[0].length).replace(/^\s*(?:[–—]|-\s)(.*?)(?:[–—]|\s-)\s*$/, ',$1,')
 -    if (TO_QUOTE.test(gap) || AS_LEAD.test(lead) || OBEY_LEAD.test(lead)) return quote
 -    return clauseEnds(gap) ? quote : '"x"'
 +    for (const word of before.matchAll(REPORTING)) {

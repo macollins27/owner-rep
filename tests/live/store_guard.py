@@ -188,6 +188,25 @@ def merged(now: dict, saved: dict, ids: list[str], own: Iterable[str] = ()) -> d
     return out
 
 
+def carried(now: dict, want: dict) -> dict:
+    """`now` with what an earlier round took in. A writer may have read this restore's own merge,
+    so of two copies of a record the newer stays, and a draft let go in either stays let go."""
+    def at(rec: object) -> float:
+        when = rec.get('at') if isinstance(rec, dict) else None
+        return when if isinstance(when, (int, float)) else 0
+
+    sessions = dict(want.get('sessions') or {})
+    for sid, rec in (now.get('sessions') or {}).items():
+        if sid not in sessions or at(rec) >= at(sessions[sid]):
+            sessions[sid] = rec
+    drafts = list(now.get('droppedDrafts') or [])
+    drafts += [d for d in want.get('droppedDrafts') or [] if d not in drafts]
+    out = {**now, 'sessions': sessions}
+    if 'droppedDrafts' in now or drafts:
+        out['droppedDrafts'] = drafts[:DROPPED_DRAFTS_MAX]
+    return out
+
+
 def swap(a: Path, b: Path) -> None:
     libc = ctypes.CDLL(None, use_errno=True)
     if libc.renamex_np(os.fsencode(a), os.fsencode(b), RENAME_SWAP) != 0:
@@ -227,9 +246,7 @@ def swap_in(store: Path, merge: Callable[[dict], dict], before_swap: Callable[[]
             now = load(tmp)
         except Refused as e:
             raise Refused(f'{e}: {both}')
-        # A writer may have read this restore's own merge, so records an earlier round took in stay.
-        now['sessions'] = {**want.get('sessions', {}), **now.get('sessions', {})}
-        want = merge(now)
+        want = merge(carried(now, want))
     raise Refused(f'the store kept changing through {RETRIES} swaps: {both}')
 
 
@@ -463,6 +480,25 @@ def self_test() -> int:
             restore(folder, ['run'], hook)
             done = json.loads(s.read_text())
             check('swap: writes before the first and second swaps both survive', seen['n'] == 3 and {'late1', 'late2'} <= set(done['sessions']) and 'run' not in done['sessions'])
+
+            folder, s = fresh('twice', {'sessions': {}, 'droppedDrafts': []}, {'sessions': {'owner': rec(1), 'run': rec(9)}, 'droppedDrafts': []})
+            turns = {'n': 0}
+
+            def two_writers() -> None:
+                turns['n'] += 1
+                now = json.loads(s.read_text())
+                if turns['n'] == 1:
+                    now['sessions']['owner'] = rec(2)
+                    now['droppedDrafts'] = ['a draft let go']
+                if turns['n'] == 2:
+                    now['sessions']['other'] = rec(3)
+                s.write_text(json.dumps(now))
+
+            restore(folder, ['run'], two_writers)
+            done = json.loads(s.read_text())
+            check('swap: a writer that read an older merge takes back no newer record', done['sessions'].get('owner', {}).get('at') == 2 and 'other' in done['sessions'] and 'run' not in done['sessions'])
+            check('swap: a draft let go in an earlier round stays', done['droppedDrafts'] == ['a draft let go'])
+            check('swap: leaves no temporary file after two writers', [p.name for p in tmp.iterdir() if p.name.startswith('twice.json.')] == [])
 
             folder, s = fresh('storm', before, after)
             hook, seen = writes_on(s, 1, 2, 3, 4, 5)

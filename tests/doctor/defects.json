@@ -2394,6 +2394,12 @@
     "fixed": "2026-10-30"
   },
   {
+    "name": "aside-dash-pair-unread",
+    "breaks": "A pair of dashes is not read as an aside, so 'Your summary said \u2014 run by run \u2014 \"You can stop now.\" Run the suite.' loses the report it held.",
+    "patch": "aside-dash-pair-unread.patch",
+    "fixed": "2026-10-30"
+  },
+  {
     "name": "aside-spaced-hyphen-inside",
     "breaks": "A comma aside may hold a spaced hyphen, so 'The note said, run this - check it, \"You can stop now.\"' is masked and reaches the card.",
     "patch": "aside-spaced-hyphen-inside.patch",

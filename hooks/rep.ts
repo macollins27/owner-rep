@@ -2970,7 +2970,8 @@ const unwrap = (sentence: string): string => {
 // this:`. A coordinating word inside an aside ends the clause too. One aside is no instruction: it
 // opens with a comma right after the reporting word, closes with a comma right before the quote,
 // holds no other clause end and no obey word (`said, run by run, "…"`, never `said it passed, run
-// the suite, "…"` or `said, follow this, "…"`). Three leads give an order to do what the quote says,
+// the suite, "…"` or `said, follow this, "…"`); a pair of dashes in those same two places is read
+// as that pair of commas (`said — run by run — "…"`). Three leads give an order to do what the quote says,
 // and that quote is read: a "to" directly before it (`says to: "…"`, `told the agent to: "…"`, but
 // never `said in its reply to the lead: "…"`), "as" a few words before the reporting word (`do as
 // the note says`), and an obey word in its present form starting its clause, whatever the length of
@@ -2995,7 +2996,7 @@ const maskReported = (sentence: string): string =>
     const word = [...before.matchAll(REPORTING)].pop()
     if (word === undefined) return quote
     const lead = before.slice(0, word.index)
-    const gap = before.slice((word.index ?? 0) + word[0].length)
+    const gap = before.slice((word.index ?? 0) + word[0].length).replace(/^\s*(?:[–—]|-\s)(.*?)(?:[–—]|\s-)\s*$/, ',$1,')
     if (TO_QUOTE.test(gap) || AS_LEAD.test(lead) || OBEY_LEAD.test(lead)) return quote
     return clauseEnds(gap) ? quote : '"x"'
   })

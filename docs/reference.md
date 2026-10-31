@@ -212,7 +212,8 @@ call writes (below):
    with a comma right after the reporting word, closes with a comma right before the quote,
    and holds no other clause end and no obey word (`OBEY_WORD`), so `said, run by run, "…"`
    stays a report and `said it passed, run the suite, "…"` and `said, follow this, "…"` are
-   read. Three leads order what the
+   read. A pair of dashes in those two places is read as that pair of commas (`said — run by
+   run — "…"`). Three leads order what the
    quote says, so that quote is read: a "to" directly before it (`TO_QUOTE`: `says to: "…"`,
    `told the agent to: "…"`, never `said in its reply to the lead: "…"`), "as" up to three
    words before the reporting word (`AS_LEAD`: `do as the note says`), and an obey word in its
