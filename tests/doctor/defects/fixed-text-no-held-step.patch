@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 79554ff..79c8c4d 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2693,7 +2693,7 @@ export const OPEN_MEANS = (open: Condition[]): string =>
+ // The message a refused card offers to send in place of the model's: it keeps
+ // the agent on the job, never tells it to stop.
+ export const OPEN_MESSAGE = (open: Condition[]): string =>
+-  `The job is not finished. These conditions of done are still open:\n${list(open.map(conditionLine), '- none')}\nBefore anything stops, show each one working, or say what stands in the way. If a step needs my go-ahead, hold it: finish the rest, and tell me what you will show me when I give it.`
++  `The job is not finished. These conditions of done are still open:\n${list(open.map(conditionLine), '- none')}\nBefore anything stops, show each one working, or say what stands in the way.`
+ 
+ // What sending that message makes the agent do.
+ export const OPEN_DOES = 'Keeps the agent on the job until it shows each open condition working or says what stands in the way.'

@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 79554ff..b1d5111 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2856,7 +2856,7 @@ export const askAgain = (open: Condition[]): string => `## Asked once more
+ Your first answer said the agent should stop, gave no verdict, called the work finished, or said the work is going well, while these conditions of done are still open:
+ ${list(open.map(promptLine), '- none')}
+ 
+-None of these may stand while any of them is open. An empty message counts too: while any of these is open, write the message to the agent, asking for the proof of each. Look at the conversation again: put under "shown:" each one it now shows, with where, and under "closed:" each one the owner closed in a message of the owner's own, with its number. Then give the whole briefing again in the same structure. While any of them stays open the verdict is "continue", "well" is empty, and "next" and "message" say what the agent does now to show it, or what stands in the way.`
++None of these may stand while any of them is open. Look at the conversation again: put under "shown:" each one it now shows, with where, and under "closed:" each one the owner closed in a message of the owner's own, with its number. Then give the whole briefing again in the same structure. While any of them stays open the verdict is "continue", "well" is empty, and "next" and "message" say what the agent does now to show it, or what stands in the way.`
+ 
+ // A part of a refused card the gate wrote in the rep's fixed text, in place of the model's.
+ export type Replaced = 'means' | 'next' | 'message'

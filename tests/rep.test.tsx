@@ -592,6 +592,25 @@ test('the briefs hold the objective open until it is completed with both qualifi
   expect(check).toMatch(/The "shown:", "closed:" and "reopen:" lines are not on the card/)
 })
 
+// Every sentence of a prompt that lets the message stay empty.
+const EMPTY_LINES = (prompt: string) => prompt.match(/[^.>\n]*Leave (?:the message )?empty[^.>\n]*/g) ?? []
+
+test('the brief and the check write a message while any condition is open or not shown, and limit an empty one to every condition shown or closed', () => {
+  const brief = briefPrompt({ objective: null, owner: [om('Build it.')], past: [], seen: [], others: [] })
+  const check = checkPrompt({ sessionId: 's', cwd: '/tmp', copy: '/tmp', owner: [om('Build it.')], reading: 'x', brief: parseBrief('stands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm', conditions: OBJECTIVE_FIXTURE.done, shown: [], from: 0 })
+  expect(brief).toContain('While any condition is open or not shown, write the message: it asks for the proof of each one.')
+  expect(brief).toContain('Leave the message empty only when every condition is shown or closed, or no objective is held and there is nothing worth sending.')
+  expect(check).toContain('While any condition is open or not shown after your checking, write it. Leave empty only when every condition is shown or closed.')
+  expect(EMPTY_LINES(brief)).toHaveLength(2)
+  expect(EMPTY_LINES(check)).toHaveLength(1)
+  for (const line of [...EMPTY_LINES(brief), ...EMPTY_LINES(check)]) expect(line).toContain('shown or closed')
+})
+
+test('the brief names all three duties for a step held on the owner\'s go-ahead: finish the rest, hold it, say what will be shown', () => {
+  const brief = briefPrompt({ objective: null, owner: [om('Build it.')], past: [], seen: [], others: [] })
+  expect(brief).toContain('When a condition waits on the owner\'s go-ahead (publish, send, pay, a guard refusal), the message tells the agent to finish everything else, hold that step until the go-ahead comes, and say exactly what it will show the owner then; it never pushes the held step.')
+})
+
 test('gateVerdict keeps a next and a message that do not say stop, replaces the meaning, drops the verdict and the going-well line, and lists the open conditions', () => {
   const a = parseBrief('verdict: stop\nwell: All done.\nstands: Both parts are finished.\nmeans: The build is made and the sessions are waiting.\nleft:\n- nothing\nnext: Show the two sessions finishing.\nmessage:\nShow me each session finishing.\nend\ndoes: Makes the agent show the sessions.')
   const g = gateVerdict(a, OPEN_JOB_OPEN)
@@ -610,7 +629,7 @@ test('gateVerdict keeps a next and a message that do not say stop, replaces the 
   expect(all.answer.next).toBe('The job is still open: the newest build installed; two sessions finished. The agent shows these, or says what stands in the way, before anything stops.')
   expect(all.answer.leftOut).toEqual(['the newest build installed (not shown)', 'two sessions finished'])
   expect(all.answer.means).toBe('The agent has not shown the objective complete: the newest build installed (not shown); two sessions finished are still open.')
-  expect(all.answer.message).toBe('The job is not finished. These conditions of done are still open:\n- the newest build installed (not shown)\n- two sessions finished\nBefore anything stops, show each one working, or say what stands in the way.')
+  expect(all.answer.message).toBe('The job is not finished. These conditions of done are still open:\n- the newest build installed (not shown)\n- two sessions finished\nBefore anything stops, show each one working, or say what stands in the way. If a step needs my go-ahead, hold it: finish the rest, and tell me what you will show me when I give it.')
   expect(all.answer.does).toBe('Keeps the agent on the job until it shows each open condition working or says what stands in the way.')
   expect([all.answer.means, all.answer.message, all.answer.does]).toEqual([OPEN_MEANS(open), OPEN_MESSAGE(open), OPEN_DOES])
   expect(all.answer.stands).toBe('s')
@@ -621,8 +640,65 @@ test('gateVerdict keeps a next and a message that do not say stop, replaces the 
   expect(gateVerdict({ ...s, leftOut: ['the newest build installed (not shown)', 'two sessions finished (open)'] }, open).answer.leftOut)
     .toEqual(['the newest build installed (not shown)', 'two sessions finished (open)'])
   expect(gateVerdict(s, []).refused).toBe(false)
-  expect(gateVerdict(parseBrief('verdict: continue\nstands: s\nleft:\n- nothing\nnext: Go on.\nmessage:\nend\ndoes:'), open)).toMatchObject({ refused: false, replaced: [] })
+  expect(gateVerdict(parseBrief('verdict: continue\nstands: s\nleft:\n- nothing\nnext: Go on.\nmessage:\nend\ndoes:'), open)).toMatchObject({ refused: true, replaced: ['message'] })
   expect(parseBrief('stands: s\nleft:\n- nothing\nshown:\n- a | the diff\nclosed:\n- b | #4\nmessage:\nend\ndoes:')).toMatchObject({ verdict: 'missing', shown: [{ text: 'a', by: 'the diff' }], closed: [{ text: 'b', by: 4 }] })
+})
+
+const EMPTY_CARD = parseBrief('verdict: continue\nwell:\nstands: Both parts are built.\nmeans: The build is made and nothing shows it running.\nleft:\n- the laptop\nnext: Show the two sessions finishing.\nmessage:\nend\ndoes: Makes the agent show the sessions.')
+const HELD_LINE = 'If a step needs my go-ahead, hold it: finish the rest, and tell me what you will show me when I give it.'
+
+test('a sound card with an empty message and open conditions is refused on the message alone: the fixed text comes in, the model\'s other parts stay, and every open condition joins what was left out', () => {
+  const held = 'Before anything stops, show each one working, or say what stands in the way. If a step needs my go-ahead, hold it: finish the rest, and tell me what you will show me when I give it.'
+  const asked: Array<[Condition[], string, string[]]> = [
+    [OPEN_JOB_OPEN, `The job is not finished. These conditions of done are still open:\n- the newest build installed (not shown)\n- two sessions finished\n${held}`, ['the laptop', 'the newest build installed (not shown)', 'two sessions finished']],
+    [[c('the newest build installed', 'not-shown')], `The job is not finished. These conditions of done are still open:\n- the newest build installed (not shown)\n${held}`, ['the laptop', 'the newest build installed (not shown)']],
+    [openConditions({ done: [c('two sessions finished', 'open'), c('the newest build installed', 'shown', 'the log')] } as Objective), `The job is not finished. These conditions of done are still open:\n- two sessions finished\n${held}`, ['the laptop', 'two sessions finished']],
+  ]
+  for (const [open, message, leftOut] of asked) {
+    const g = gateVerdict(EMPTY_CARD, open)
+    expect(g.refused).toBe(true)
+    expect(g.replaced).toEqual(['message'])
+    expect(g.answer).toEqual({ ...EMPTY_CARD, message, leftOut })
+  }
+  // A message of blanks is an empty message.
+  expect(gateVerdict({ ...EMPTY_CARD, message: ' \n ' }, OPEN_JOB_OPEN)).toMatchObject({ refused: true, replaced: ['message'] })
+})
+
+test('the does line describes the message: an empty or stop-saying one goes with the empty message, a harmless one stays, and the meaning, next step and what stands stay the model\'s', () => {
+  const keptParts = { means: EMPTY_CARD.means, next: EMPTY_CARD.next, stands: EMPTY_CARD.stands }
+  const does = (line: string) => gateVerdict({ ...EMPTY_CARD, does: line }, OPEN_JOB_OPEN).answer
+  expect(does('')).toMatchObject({ ...keptParts, does: OPEN_DOES })
+  expect(does('You can stop now.')).toMatchObject({ ...keptParts, does: OPEN_DOES })
+  expect(does('Makes the agent show the sessions.')).toMatchObject({ ...keptParts, does: 'Makes the agent show the sessions.' })
+})
+
+test('an empty message on a card refused for another reason as well gives today\'s replaced list plus the message, and today\'s meaning', () => {
+  const g = gateVerdict({ ...EMPTY_CARD, next: 'Stop the agent; the job is finished.' }, OPEN_JOB_OPEN)
+  expect(g.refused).toBe(true)
+  expect(g.replaced).toEqual(['means', 'next', 'message'])
+  expect(g.answer.means).toBe(OPEN_MEANS(OPEN_JOB_OPEN))
+  expect(g.answer.next).toBe(OPEN_NEXT(OPEN_JOB_OPEN))
+  expect(g.answer.message).toBe(OPEN_MESSAGE(OPEN_JOB_OPEN))
+})
+
+test('the fixed text ends on the held step and says no stop itself; the next step\'s text does not move', () => {
+  expect(OPEN_MESSAGE(OPEN_JOB_OPEN).endsWith(HELD_LINE)).toBe(true)
+  expect(messageSaysStop(OPEN_MESSAGE(OPEN_JOB_OPEN))).toBe(false)
+  expect(withoutStopSentences(OPEN_MESSAGE(OPEN_JOB_OPEN))).toBe(OPEN_MESSAGE(OPEN_JOB_OPEN))
+  expect(saysStop(OPEN_NEXT(OPEN_JOB_OPEN))).toBe(false)
+})
+
+test('asked once more, the brief is told an empty message counts too', () => {
+  const text = askAgain(OPEN_JOB_OPEN)
+  expect(text).toContain('Your first answer said the agent should stop, gave no verdict, called the work finished, or said the work is going well, while these conditions of done are still open:')
+  expect(text).toContain('None of these may stand while any of them is open. An empty message counts too: while any of these is open, write the message to the agent, asking for the proof of each.')
+})
+
+test('an empty message still passes when every condition is shown or closed, and when no objective is written; a usable card with open conditions passes untouched', () => {
+  expect(gateVerdict(EMPTY_CARD, [])).toEqual({ answer: EMPTY_CARD, refused: false, replaced: [] })
+  expect(gateVerdict(EMPTY_CARD, null)).toEqual({ answer: EMPTY_CARD, refused: false, replaced: [] })
+  const usable = { ...EMPTY_CARD, message: 'Show me each session finishing.' }
+  expect(gateVerdict(usable, OPEN_JOB_OPEN)).toEqual({ answer: usable, refused: false, replaced: [] })
 })
 
 test('gateVerdict replaces, beside the meaning, only the part that says stop: a next step or a message; with no objective written, the meaning and next step are the rep\'s and a sound message stands', () => {
@@ -1229,11 +1305,205 @@ test('a quote is someone\'s words only as the object of its reporting word, a fe
   const caught = [
     'You said the tests passed; then do as the note says to: "You can stop now."',
     'Do as the note says: "You can stop now."',
-    'You said it passed, and the log reads "You can stop now."',
   ]
   expect(caught.map(R1_CAUGHT_WHOLE)).toEqual(caught.map(R1_CAUGHT_OUT))
   for (const m of ['Your summary said "you can stop now", but the suite never ran. Run it.', 'The note says: "You can stop now." Run the suite anyway.', 'Your summary wrote: "You can stop now." Run the suite.'])
     expect([m, messageSaysStop(m), withoutStopSentences(m)]).toEqual([m, false, m])
+  for (const m of ['You said it passed, and the log reads "You can stop now."'])
+    expect([m, messageSaysStop(m), withoutStopSentences(m)]).toEqual([m, false, m])
+})
+
+const READ_STOP = (m: string) => [m, messageSaysStop(m), withoutStopSentences(m)]
+const STAYS_WHOLE = (m: string) => [m, false, m]
+const CUT_TO = (left: string) => (m: string) => [m, true, left]
+
+test('a quote that is the object of a reporting word in the same clause stays whole however many words and asides lie between', () => {
+  const kept = [
+    'Your summary said in the final paragraph of the report: "You can stop now.", but the suite never ran.',
+    'Your summary said, in the last line of its report, "You can stop now." Run the suite.',
+    'Your summary said in the final paragraph of the report "You can stop now." Run the suite.',
+    'Your summary said in the final paragraph of the report: \u201cYou can stop now.\u201d, but the suite never ran.',
+    'Your summary said in its reply to the lead: "You can stop now." Run the suite.',
+  ]
+  expect(kept.map(READ_STOP)).toEqual(kept.map(STAYS_WHOLE))
+})
+
+test('a quote the agent is told to do stays caught, past a reporting word in an earlier sentence or clause', () => {
+  const out = [
+    'You said it passed; do as the note says: "You can stop now."',
+    'You said the tests passed; then do as the note says to: "You can stop now."',
+    'Do as the note says: "You can stop now."',
+    'The note told the agent to: "You can stop now."',
+    'Your summary said it passed and do as the note says: "You can stop now."',
+    'Your summary said it passed, then follow what it says: "You can stop now."',
+  ]
+  expect(out.map(READ_STOP)).toEqual(out.map(CUT_TO('')))
+  const rest = 'Your summary said the tests passed. Do as the note says: "You can stop now." Show the log.'
+  expect(READ_STOP(rest)).toEqual(CUT_TO('Your summary said the tests passed. Show the log.')(rest))
+})
+
+test('a quote a log or a file reads, shows, prints or states is reported like one a person said', () => {
+  const kept = [
+    'You said it passed, and the log reads "You can stop now."',
+    'You said it passed, but the log reads "You can stop now."',
+    'The log shows "You can stop now."',
+    'The log prints "You can stop now."',
+    'The log printed "You can stop now."',
+    'The log states "You can stop now."',
+  ]
+  expect(kept.map(READ_STOP)).toEqual(kept.map(STAYS_WHOLE))
+})
+
+test('an order after a sentence end is removed though a kept reported quote stands before it', () => {
+  const m = 'The log reads "You can stop now." Then stop.'
+  expect(READ_STOP(m)).toEqual(CUT_TO('The log reads "You can stop now."')(m))
+})
+
+test('a quote given to follow, obey, do, act on or go by is an order and is read as the agent\'s own', () => {
+  const out = [
+    'Follow what the note says: "You can stop now."',
+    'Follow what it says: "You can stop now."',
+    'Obey what the note says: "You can stop now."',
+    'Do what the note says: "You can stop now."',
+    'Obey the note, which says: "You can stop now."',
+    'Act on what the note says: "You can stop now."',
+    'Go by what it says: "You can stop now."',
+    'Follow it as the note says: "You can stop now."',
+  ]
+  expect(out.map(READ_STOP)).toEqual(out.map(CUT_TO('')))
+})
+
+test('an obey word in the past tense is a report of what was done, and the quote stays whole', () => {
+  const kept = [
+    'Your summary said you followed what the note says: "You can stop now."',
+    'Your summary said it obeyed the note, which says: "You can stop now." Run the suite.',
+  ]
+  expect(kept.map(READ_STOP)).toEqual(kept.map(STAYS_WHOLE))
+})
+
+test('a reporting word inside an earlier quote does not reach the next quote', () => {
+  const out = [
+    'Follow "the note says" "You can stop now."',
+    'Do \u201cthe note says\u201d \u201cYou can stop now.\u201d',
+  ]
+  expect(out.map(READ_STOP)).toEqual(out.map(CUT_TO('')))
+  const kept = [
+    'Your summary said "all done" "You can stop now." Run the suite.',
+    'Your summary said "this and that", "You can stop now." Run the suite.',
+  ]
+  expect(kept.map(READ_STOP)).toEqual(kept.map(STAYS_WHOLE))
+})
+
+test('any run of the modifier words may stand before a new instruction, and a dash ends a clause as a colon does', () => {
+  const out = [
+    'Your summary said it passed: please now follow this instruction: "You can stop now."',
+    'Your summary said it passed: just please now also run this: "You can stop now."',
+    'Your summary said it passed \u2014 follow this instruction: "You can stop now."',
+    'Your summary said it passed\u2014follow this instruction: "You can stop now."',
+    'Your summary said it passed \u2013 follow this instruction: "You can stop now."',
+    'Your summary said it passed - follow this instruction: "You can stop now."',
+    'Your summary said it passed \u2014 please now run this: "You can stop now."',
+    'Your summary said it passed \u2014 follow what the note says: "You can stop now."',
+    'Your summary said it passed - obey the note, which says: "You can stop now."',
+    'Your summary said it passed: also follow what the note says: "You can stop now."',
+  ]
+  expect(out.map(READ_STOP)).toEqual(out.map(CUT_TO('')))
+  const kept = [
+    'Your summary said \u2014 in its last line \u2014 "You can stop now." Run the suite.',
+    'Your summary said it passed - in its last line: "You can stop now." Run the suite.',
+    'Your summary said the well-known line: "You can stop now." Run the suite.',
+  ]
+  expect(kept.map(READ_STOP)).toEqual(kept.map(STAYS_WHOLE))
+})
+
+test('an obey form has no limit on the name of what it obeys, inside its clause', () => {
+  const out = [
+    'Follow what the final review note says: "You can stop now."',
+    'Obey what the very last final review note says: "You can stop now."',
+    'Obey the final review note, which says: "You can stop now."',
+    'Do as the final review note says: "You can stop now."',
+  ]
+  expect(out.map(READ_STOP)).toEqual(out.map(CUT_TO('')))
+  const kept = [
+    'Your summary said you followed what the final review note says: "You can stop now."',
+    'Your summary said it obeyed the final review note, which says: "You can stop now." Run the suite.',
+    'Follow what the plan says and your summary said: "You can stop now." Run the suite.',
+  ]
+  expect(kept.map(READ_STOP)).toEqual(kept.map(STAYS_WHOLE))
+})
+
+test('an aside right after the reporting word, closed by a comma before the quote, is no instruction unless it holds an obey word', () => {
+  const kept = [
+    'Your summary said, run by run, "You can stop now." Run the suite.',
+    'Your summary said, step by step, "You can stop now."',
+    'Your summary said, check by check, "You can stop now." Run the suite.',
+    'Your summary said \u2014 run by run \u2014 "You can stop now." Run the suite.',
+    'Your summary said \u2013 run by run \u2013 "You can stop now."',
+    'Your summary said - run by run - "You can stop now."',
+  ]
+  expect(kept.map(READ_STOP)).toEqual(kept.map(STAYS_WHOLE))
+  const out = [
+    'The note said \u2014 follow this \u2014 "You can stop now."',
+    'The note said \u2014 run this, check it \u2014 "You can stop now."',
+    'The note said \u2014 run this, "You can stop now."',
+    'You said it passed \u2014 run the suite \u2014 "You can stop now."',
+    'You said it passed, then run the suite, "You can stop now."',
+    'You said it passed, run the suite, "You can stop now."',
+    'The note said, follow this, "You can stop now."',
+    'The note said, please go by this, "You can stop now."',
+    'The note said, run this - obey it, "You can stop now."',
+    'The note said, run this: "You can stop now."',
+    'The note said, run this, then that, "You can stop now."',
+    'The note said, run this: check it, "You can stop now."',
+    'The note said, run this \u2014 check it, "You can stop now."',
+    'The note said, run this - check it, "You can stop now."',
+    'The note said, run this "You can stop now."',
+  ]
+  expect(out.map(READ_STOP)).toEqual(out.map(CUT_TO('')))
+})
+
+test('a reporting word reaches a quote only inside its clause: a coordinating word, a semicolon or a new instruction ends it', () => {
+  const out = [
+    'You said it passed and "You can stop now."',
+    'You said it passed but "You can stop now."',
+    'You said it passed then "You can stop now."',
+    'You said it passed; "You can stop now."',
+    'The note said, follow this: "You can stop now."',
+    'The note said, now run: "You can stop now."',
+  ]
+  expect(out.map(READ_STOP)).toEqual(out.map(CUT_TO('')))
+})
+
+test('a reported quote a few words after its word stays whole under the clause rule', () => {
+  const kept = [
+    'Your summary said in the report: "You can stop now.", but the suite never ran.',
+    'Your summary said in its last line: "You can stop now.", but the suite never ran.',
+    'Your summary said that "You can stop now." was the plan.',
+    'You wrote "You can stop now." before the suite ran. Run it now and paste its counts.',
+  ]
+  expect(kept.map(READ_STOP)).toEqual(kept.map(STAYS_WHOLE))
+})
+
+test('a number left after a removed sentence stays: only a list marker that began the line before the removal goes with its sentence', () => {
+  const table = [
+    ['You can stop now. 42.', '42.'],
+    ['Run the suite.\nYou can stop now. 42.', 'Run the suite.\n42.'],
+    ['Show the log.\nYou can stop now. 7)', 'Show the log.\n7)'],
+  ]
+  expect(table.map(([m]) => [m, withoutStopSentences(m ?? '')])).toEqual(table)
+})
+
+test('a removed list item\'s own marker goes with it, and a marker with text after it stays', () => {
+  const table = [
+    ['Steps:\n3. You can stop now.\n4. Show the log.', 'Steps:\n4. Show the log.'],
+    ['Missing:\n- the empty-file test\n- Then stop.\n- the install log', 'Missing:\n- the empty-file test\n- the install log'],
+    ['Steps:\n  * You can stop now.\n  * Show the log.', 'Steps:\n  * Show the log.'],
+    ['Steps:\n2) You can stop now.\n3) Show the log.', 'Steps:\n3) Show the log.'],
+    ['Do these:\n1. Then stop. 42.\n2. the counts', 'Do these:\n1. 42.\n2. the counts'],
+    ['You can stop now. 3/4 = 0.75', '3/4 = 0.75'],
+    ['You can stop now.', ''],
+  ]
+  expect(table.map(([m]) => [m, withoutStopSentences(m ?? '')])).toEqual(table)
 })
 
 test('a wait on the owner\'s word on an operation that is the agent\'s is caught in every form of the word, however capitalised; a button named with a capital stays kept', () => {
@@ -4263,6 +4533,95 @@ const OWN_NONE: Array<[string, () => Promise<string> | string]> = [
 const showsExactly = async (ui: { findAll: (q: { type: string }) => Promise<Array<{ text: string }>> }, text: string) =>
   (await ui.findAll({ type: 'Text' })).some(t => t.text === text)
 
+// A sound answer with no message, and a stop whose message is usable; the fixed text as a literal.
+const EMPTY_BRIEF = () => 'verdict: continue\nwell:\nstands: Both parts are built.\nmeans: The build is made and nothing shows it running.\nleft:\n- nothing\nnext: Show the two sessions finishing.\nmessage:\nend\ndoes: Makes the agent show the sessions.'
+const USABLE_BRIEF = (verdict: string, well = '') => `verdict: ${verdict}\nwell:${well}\nstands: Both parts are built.\nmeans: The build is made and nothing shows it running.\nleft:\n- nothing\nnext: Show the two sessions finishing.\nmessage:\nShow me each session finishing.\nend\ndoes: Makes the agent show the sessions.`
+const FIXED_TEXT = 'The job is not finished. These conditions of done are still open:\n- the newest build installed (not shown)\n- two sessions finished\nBefore anything stops, show each one working, or say what stands in the way. If a step needs my go-ahead, hold it: finish the rest, and tell me what you will show me when I give it.'
+
+test('rule: Brief me, read 1 with no message while work is open: read 2 is told so, and read 2\'s message is the card\'s', async ($, on) => {
+  const rec = openJob(on)
+  quietBand(on)
+  const prompts: string[] = []
+  const replies = [EMPTY_BRIEF(), USABLE_BRIEF('continue')]
+  on('model.fork', (_$, e) => {
+    prompts.push(String(e.prompt))
+    return { value: { isAnswered: true, text: replies[prompts.length - 1] ?? '', usage: USAGE } }
+  })
+  const asks = ownWords(on, () => OWN_WORDS())
+  await started($)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.unmount()
+  expect(prompts).toHaveLength(2)
+  expect(prompts[0]).not.toContain('An empty message counts too')
+  expect(prompts[1]).toContain('An empty message counts too: while any of these is open, write the message to the agent, asking for the proof of each.')
+  expect(asks).toHaveLength(0)
+  expect(rec()?.lastBrief).toMatchObject({ message: 'Show me each session finishing.', reads: 2, own: 'skipped' })
+})
+
+test('rule: Brief me, reads 1 and 2 with no message: the own-words call, told why, writes the card\'s message', async ($, on) => {
+  const rec = openJob(on)
+  quietBand(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: EMPTY_BRIEF(), usage: USAGE } }))
+  const asks = ownWords(on, () => OWN_REPLY('Show me the install log and each session finishing.'))
+  await started($)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.unmount()
+  expect(asks).toHaveLength(1)
+  expect(asks[0]?.prompt).toContain('or said the work is going well, or left the message empty, and asking it once more')
+  expect(rec()?.lastBrief).toMatchObject({ message: 'Show me the install log and each session finishing.', reads: 3, own: 'whole' })
+})
+
+test('rule: Brief me, reads 1 and 2 with no message and the own-words call failing: the card carries the fixed text', async ($, on) => {
+  const rec = openJob(on)
+  quietBand(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: EMPTY_BRIEF(), usage: USAGE } }))
+  ownWords(on, () => Promise.reject(new Error('the model is down')))
+  await started($)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.unmount()
+  expect(rec()?.lastBrief).toMatchObject({ message: FIXED_TEXT, reads: 3, own: 'none' })
+})
+
+test('rule: Brief me, a stop with a usable message, then read 2 with none and the own-words call failing: read 1\'s message stands', async ($, on) => {
+  const rec = openJob(on)
+  quietBand(on)
+  const replies = [USABLE_BRIEF('stop', ' All done.'), EMPTY_BRIEF()]
+  let forks = 0
+  on('model.fork', () => {
+    forks += 1
+    return { value: { isAnswered: true, text: replies[forks - 1] ?? '', usage: USAGE } }
+  })
+  ownWords(on, () => Promise.reject(new Error('the model is down')))
+  await started($)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.unmount()
+  expect(forks).toBe(2)
+  expect(rec()?.lastBrief).toMatchObject({ message: 'Show me each session finishing.', reads: 3, own: 'none' })
+})
+
+test('rule: Brief me, a usable read 1 with open conditions: one read, and its message on the card', async ($, on) => {
+  const rec = openJob(on)
+  quietBand(on)
+  let forks = 0
+  on('model.fork', () => {
+    forks += 1
+    return { value: { isAnswered: true, text: USABLE_BRIEF('continue'), usage: USAGE } }
+  })
+  const asks = ownWords(on, () => OWN_WORDS())
+  await started($)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  expect(await showsExactly(ui, 'Show me each session finishing.')).toBe(true)
+  await ui.unmount()
+  expect(forks).toBe(1)
+  expect(asks).toHaveLength(0)
+  expect(rec()?.lastBrief).toMatchObject({ message: 'Show me each session finishing.', reads: 1, own: 'skipped' })
+})
+
 test('rule: Brief me, all three reads with messages made only of stop sentences: the card lists the open conditions', async ($, on) => {
   const rec = openJob(on)
   quietBand(on)
@@ -4776,6 +5135,37 @@ test('rule: a check that finds a condition held shown is not so moves it back to
   expect(await ui.find({ type: 'Text', text: /Stop the agent|Wrap up and stop here/ })).toBeUndefined()
   expect(await greens(ui)).toEqual([])
   await ui.unmount()
+})
+
+// The check's card over an open job: the instant read's reply, then the checker's.
+const checkedCard = async ($: Engine, on: On, brief: string, out: string) => {
+  const rec = kept(on, OPEN_JOB())
+  quietBand(on)
+  checkRoom(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: brief, usage: USAGE } }))
+  ownWords(on, () => Promise.reject(new Error('the model is down')))
+  on('process.spawn', async function* () {
+    yield { stream: 'stdout', text: out }
+    return { value: { code: 0, signal: null } }
+  })
+  await started($)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+  await ui.unmount()
+  return rec()?.lastBrief?.message
+}
+
+test('rule: the Check card, the instant card refused and the checker writing no message while conditions stay open: the card carries the fixed text', async ($, on) => {
+  expect(await checkedCard($, on, STOP_BRIEF(), CHECK_OUT('continue', {}))).toBe(FIXED_TEXT)
+})
+
+test('rule: the Check card, the instant card passed with a message and the checker writing none: the instant message stays', async ($, on) => {
+  expect(await checkedCard($, on, USABLE_BRIEF('continue'), CHECK_OUT('continue', {}))).toBe('Show me each session finishing.')
+})
+
+test('rule: the Check card, the checker showing every condition and writing no message: the message stays empty', async ($, on) => {
+  expect(await checkedCard($, on, STOP_BRIEF(), CHECK_OUT('continue', { shown: '- the newest build installed | the install log printed the revision\n- two sessions finished | both sessions printed their results' }))).toBe('')
 })
 
 // The condition the check found not so, as the record holds it after the check.

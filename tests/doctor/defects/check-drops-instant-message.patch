@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index bc23d30..7fa0b7a 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -922,7 +922,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
+       // part the checker left empty stays empty, and on a refusal the gate
+       // writes the meaning, and an empty next step or message, again for
+       // whatever is still open.
+-      const or = (mine: string, theirs: string): string => (mine !== '' ? mine : refused ? '' : theirs)
++      const or = (mine: string, theirs: string): string => (mine !== '' ? mine : '')
+       // The going-well line does not stand beside a claim the check found false or anything left out.
+       const leftOut = hasLeft ? c.leftOut : instant.leftOut
+       const card = gateVerdict(

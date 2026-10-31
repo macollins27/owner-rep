@@ -261,13 +261,13 @@
     "name": "stop-while-open",
     "breaks": "The gate never refuses, so a card can say stop, or that the work is going well, while a condition of the objective is still open or none is written.",
     "patch": "stop-while-open.patch",
-    "fixed": "2026-10-15; remade 2026-10-19; remade 2026-10-29"
+    "fixed": "2026-10-15; remade 2026-10-19; remade 2026-10-29; remade 2026-10-30"
   },
   {
     "name": "unwritten-gate-open",
     "breaks": "With no objective written the gate lets everything through, so a card can tell the agent to stop, or say the work is going well, before anything measures it.",
     "patch": "unwritten-gate-open.patch",
-    "fixed": "2026-10-15; remade 2026-10-19; remade 2026-10-29"
+    "fixed": "2026-10-15; remade 2026-10-19; remade 2026-10-29; remade 2026-10-30"
   },
   {
     "name": "verdict-missing-continues",
@@ -279,7 +279,7 @@
     "name": "stop-next-unread",
     "breaks": "The gate reads only the verdict line, so an answer that says continue while its next step tells the agent to stop, or calls the work finished, passes while a condition is open.",
     "patch": "stop-next-unread.patch",
-    "fixed": "2026-10-15; remade 2026-10-19; remade 2026-10-29"
+    "fixed": "2026-10-15; remade 2026-10-19; remade 2026-10-29; remade 2026-10-30"
   },
   {
     "name": "draft-moves-result",
@@ -1779,13 +1779,13 @@
     "name": "gate-replaces-all",
     "breaks": "A refused card loses the model's own sound next step and message too, so a card refused only for its verdict or its going-well line drops what the agent should do now for the rep's fixed text.",
     "patch": "gate-replaces-all.patch",
-    "fixed": "2026-10-19; remade 2026-10-29"
+    "fixed": "2026-10-19; remade 2026-10-29; remade 2026-10-30"
   },
   {
     "name": "message-not-gated",
     "breaks": "The gate reads the next step but not the message, so a card whose message tells the agent to stop passes while a condition is open, and the owner can send that stop themselves.",
     "patch": "message-not-gated.patch",
-    "fixed": "2026-10-19; remade 2026-10-29"
+    "fixed": "2026-10-19; remade 2026-10-29; remade 2026-10-30"
   },
   {
     "name": "own-words-not-asked",
@@ -1863,7 +1863,7 @@
     "name": "message-swapped-whole",
     "breaks": "The gate replaces a refused card's whole message whenever any sentence of it says stop, so the rep's own findings and asks beside a stop sentence are lost for the fixed text.",
     "patch": "message-swapped-whole.patch",
-    "fixed": "2026-10-29"
+    "fixed": "2026-10-29; remade 2026-10-30"
   },
   {
     "name": "stop-sentence-kept",
@@ -1881,7 +1881,7 @@
     "name": "unwritten-swaps-usable",
     "breaks": "With no objective written the gate replaces every refused message with the fixed text, so a sound message that only stood beside a stop verdict is lost.",
     "patch": "unwritten-swaps-usable.patch",
-    "fixed": "2026-10-29"
+    "fixed": "2026-10-29; remade 2026-10-30"
   },
   {
     "name": "before-stop-exemption-dropped",
@@ -1933,7 +1933,7 @@
   },
   {
     "name": "quoted-order-skipped",
-    "breaks": "A quote after a reporting word followed by \"to\" is masked too, so an order to do what the quote says ('Then do as the note says to: \"You can stop now.\"') is not read as a stop.",
+    "breaks": "A quote after a reporting word is masked though \"to\" stands before it or an order leads to it, so an order to do what the quote says ('Then do as the note says to: \"You can stop now.\"') is not read as a stop.",
     "patch": "quoted-order-skipped.patch",
     "fixed": "2026-10-29; remade 2026-10-30"
   },
@@ -1965,7 +1965,7 @@
     "name": "blank-lines-left",
     "breaks": "Taking out a stop sentence leaves its emptied line and the blank lines around it, so a removed paragraph or list item leaves gaps and a bare list marker in the card's message.",
     "patch": "blank-lines-left.patch",
-    "fixed": "2026-10-29"
+    "fixed": "2026-10-29; remade 2026-10-30"
   },
   {
     "name": "brief-me-no-read1-fallback",
@@ -2169,6 +2169,252 @@
     "name": "punctuation-left-usable",
     "breaks": "What is left after a removal counts as usable with no letter or digit in it, so \"You can stop now. ...\" leaves \"...\" on the card in place of the fixed text.",
     "patch": "punctuation-left-usable.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "reported-gap-narrow",
+    "breaks": "A reported quote is masked only within four words of its reporting word, so a report with a long aside ('Your summary said in the final paragraph of the report: \"You can stop now.\"') is read as a stop and cut.",
+    "patch": "reported-gap-narrow.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "clause-end-coordinators-dropped",
+    "breaks": "A coordinating word no longer ends the reporting word's clause, so 'You said it passed and \"You can stop now.\"' is masked and reaches the card.",
+    "patch": "clause-end-coordinators-dropped.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "clause-end-instructions-dropped",
+    "breaks": "A word that starts a new instruction no longer ends the reporting word's clause, so 'The note said, follow this: \"You can stop now.\"' is masked and reaches the card.",
+    "patch": "clause-end-instructions-dropped.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "to-anywhere-in-gap",
+    "breaks": "Any \"to\" between the reporting word and the quote makes it an order, so 'Your summary said in its reply to the lead: \"You can stop now.\"' is read as a stop and cut.",
+    "patch": "to-anywhere-in-gap.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "obey-forms-unread",
+    "breaks": "A quote the agent is told to follow is masked as reported, so 'Follow what the note says: \"You can stop now.\"' reaches the card.",
+    "patch": "obey-forms-unread.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "obey-any-tense",
+    "breaks": "An obey word counts in any tense and anywhere in the clause, so a report of what was done ('Your summary said you followed what the note says: \"You can stop now.\"') is read as an order and cut.",
+    "patch": "obey-any-tense.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "reporting-words-narrow",
+    "breaks": "A log or file that reads, shows, prints or states a quote no longer reports it, so 'The log reads \"You can stop now.\"' is read as a stop and cut.",
+    "patch": "reporting-words-narrow.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "number-read-as-marker",
+    "breaks": "A line left holding a number after a removal counts as a list marker though the number was the text, so 'You can stop now. 42.' loses the 42.",
+    "patch": "number-read-as-marker.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "empty-message-passes",
+    "breaks": "A sound card passes with an empty message while conditions are open, so the owner gets a card with work open and nothing to send.",
+    "patch": "empty-message-passes.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "blank-message-passes",
+    "breaks": "A message of blanks counts as written, so a card with open conditions and nothing to send passes the gate.",
+    "patch": "blank-message-passes.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "empty-no-objective-refused",
+    "breaks": "A card with an empty message and no objective written is refused, though the rule is only for open conditions.",
+    "patch": "empty-no-objective-refused.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "empty-replaces-means",
+    "breaks": "A card refused only for its empty message takes the full refused path, so the rep's text overwrites a good meaning.",
+    "patch": "empty-replaces-means.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "empty-left-out-not-merged",
+    "breaks": "A card refused for its empty message does not list the open conditions as left out.",
+    "patch": "empty-left-out-not-merged.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "empty-does-overwritten",
+    "breaks": "The does line of a card refused for its empty message is always the rep's, so a harmless line the model wrote is lost.",
+    "patch": "empty-does-overwritten.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "empty-does-kept",
+    "breaks": "The does line of a card refused for its empty message stays when empty or saying stop, so the fixed text sits over a line that does not describe it.",
+    "patch": "empty-does-kept.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "fixed-text-no-held-step",
+    "breaks": "The fixed text drops its held-step sentence, so a fallback message can push a step that waits on the owner.",
+    "patch": "fixed-text-no-held-step.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "ask-again-silent-on-empty",
+    "breaks": "The second read is not told an empty message counts, so a read refused for its empty message is asked again without the reason.",
+    "patch": "ask-again-silent-on-empty.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "empty-refusal-no-second-read",
+    "breaks": "A card refused only for its empty message gets no second read, so the model is not asked to write the message.",
+    "patch": "empty-refusal-no-second-read.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "own-words-silent-on-empty",
+    "breaks": "The own-words call is not told the message was left empty, so its opening names a stop that never happened.",
+    "patch": "own-words-silent-on-empty.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "check-drops-instant-message",
+    "breaks": "The Check card drops the instant read's message when the checker writes none, though that card passed the gate.",
+    "patch": "check-drops-instant-message.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "empty-all-shown-refused",
+    "breaks": "The gate refuses every empty message, so a card with every condition shown or closed gets the fixed text with an empty list.",
+    "patch": "empty-all-shown-refused.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "usable-message-refused",
+    "breaks": "A sound card with a usable message and open conditions is refused as if it were empty, so a good read 1 costs a second read and loses its message.",
+    "patch": "usable-message-refused.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "brief-may-leave-empty",
+    "breaks": "The brief lets the model leave the message empty with conditions open, so the first read keeps coming back with no message.",
+    "patch": "brief-may-leave-empty.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "brief-card-may-leave-empty",
+    "breaks": "The message placeholder in the brief's output structure lets the model leave the message empty without the limit.",
+    "patch": "brief-card-may-leave-empty.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "check-may-leave-empty",
+    "breaks": "The check prompt lets the checker leave the message empty with conditions open.",
+    "patch": "check-may-leave-empty.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "held-step-line-dropped",
+    "breaks": "The brief no longer says how a message treats a step held on the owner's go-ahead, so a forced message can push the held step.",
+    "patch": "held-step-line-dropped.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "clause-one-modifier-only",
+    "breaks": "Only one modifier word may stand before a new instruction, so 'Your summary said it passed: please now follow this instruction: \"You can stop now.\"' is masked and reaches the card.",
+    "patch": "clause-one-modifier-only.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "clause-dash-unread",
+    "breaks": "An em or en dash no longer ends a clause, so 'Your summary said it passed — follow this instruction: \"You can stop now.\"' is masked and reaches the card.",
+    "patch": "clause-dash-unread.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "clause-spaced-hyphen-unread",
+    "breaks": "A spaced hyphen no longer ends a clause, so 'Your summary said it passed - follow this instruction: \"You can stop now.\"' is masked and reaches the card.",
+    "patch": "clause-spaced-hyphen-unread.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "obey-name-limited",
+    "breaks": "The name of what is obeyed is held to two words again, so 'Follow what the final review note says: \"You can stop now.\"' is masked and reaches the card.",
+    "patch": "obey-name-limited.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "obey-name-crosses-clause",
+    "breaks": "The name of what is obeyed runs across a coordinating word, so a report in a later clause ('Follow what the plan says and your summary said: \"…\"') is read as an order and cut.",
+    "patch": "obey-name-crosses-clause.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "obey-dash-unread",
+    "breaks": "An obey form after a dash no longer counts, so 'Your summary said it passed — follow what the note says: \"You can stop now.\"' is masked and reaches the card.",
+    "patch": "obey-dash-unread.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "obey-also-dropped",
+    "breaks": "'also' no longer stands before an obey word, so 'Your summary said it passed: also follow what the note says: \"You can stop now.\"' is masked and reaches the card.",
+    "patch": "obey-also-dropped.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "aside-read-as-instruction",
+    "breaks": "A comma aside counts as a new instruction, so 'Your summary said, run by run, \"You can stop now.\"' is read as a stop and the message is cut.",
+    "patch": "aside-read-as-instruction.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "aside-obey-word-ignored",
+    "breaks": "An aside holding an obey word stays reported, so 'The note said, follow this, \"You can stop now.\"' is masked and reaches the card.",
+    "patch": "aside-obey-word-ignored.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "aside-anywhere-in-gap",
+    "breaks": "A comma aside counts anywhere in the gap, so 'You said it passed, run the suite, \"You can stop now.\"' is masked and reaches the card.",
+    "patch": "aside-anywhere-in-gap.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "aside-spans-clause-end",
+    "breaks": "A comma aside may hold a colon or a dash, so 'The note said, run this: check it, \"You can stop now.\"' is masked and reaches the card.",
+    "patch": "aside-spans-clause-end.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "aside-dash-pair-unread",
+    "breaks": "A pair of dashes is not read as an aside, so 'Your summary said \u2014 run by run \u2014 \"You can stop now.\" Run the suite.' loses the report it held.",
+    "patch": "aside-dash-pair-unread.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "aside-spaced-hyphen-inside",
+    "breaks": "A comma aside may hold a spaced hyphen, so 'The note said, run this - check it, \"You can stop now.\"' is masked and reaches the card.",
+    "patch": "aside-spaced-hyphen-inside.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "aside-unclosed",
+    "breaks": "An aside needs no comma right before the quote, so 'The note said, run this \"You can stop now.\"' is masked and reaches the card.",
+    "patch": "aside-unclosed.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "quote-report-in-earlier-quote",
+    "breaks": "A reporting word inside an earlier quote counts, so 'Follow \"the note says\" \"You can stop now.\"' is masked and reaches the card.",
+    "patch": "quote-report-in-earlier-quote.patch",
     "fixed": "2026-10-30"
   }
 ]

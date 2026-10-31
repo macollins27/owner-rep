@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 79554ff..2df037a 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3262,7 +3262,7 @@ export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer:
+   if (sound && (open === null || a.message.trim() !== '')) return { answer: a, refused: false, replaced: [] }
+   if (sound && open !== null) {
+     return {
+-      answer: { ...a, message: OPEN_MESSAGE(open), does: a.does === '' || messageSaysStop(a.does) ? OPEN_DOES : a.does, leftOut: withOpen(a.leftOut, open) },
++      answer: { ...a, message: OPEN_MESSAGE(open), does: a.does, leftOut: withOpen(a.leftOut, open) },
+       refused: true,
+       replaced: ['message'],
+     }

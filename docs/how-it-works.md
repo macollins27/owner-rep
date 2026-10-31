@@ -157,7 +157,12 @@ nothing to do, show or fix (it is empty, holds no letter or digit, as "..." does
 only praise or thanks, questions, or a bare "Do that first." whose "that" went with the
 removed sentence) are the message and its line
 saying what it does the rep's fixed text, the list of open conditions. Beside a kept message,
-a line saying what it does that says stop is the rep's. A rep's message is about the work, so
+a line saying what it does that says stop is the rep's. An empty message is refused the same
+way while a condition is open, on the message alone: an owner looking at open work with nothing
+to send has lost the one thing the card is for, and the rest of a sound card is kept because
+nothing in it is wrong. The fixed list also tells the agent to hold any step that needs the
+owner's go-ahead, finish the rest, and say what it will show, since a bare list of open work
+would push it into a step only the owner may order. A rep's message is about the work, so
 any sentence other than those three forms counts: a statement of fact such as "The install is
 not shown." is a finding that tells the agent what to show, and requiring an order would
 throw findings away.
@@ -197,9 +202,12 @@ is taken to say. A stop once something is done
 stop when they pass.") is caught, and a stop
 inside quotation marks is read only when the sentence orders it ("Do as the note says to:
 ..."), never when it reports what someone said (a message noting that the agent's summary
-said "you can stop now" while the suite never ran). A quote counts as reported only when it
-follows its reporting word within a few words; a "said" earlier in the sentence does not
-cover a later quote. Taking sentences out never leaves a bracket or quotation mark without its
+said "you can stop now" while the suite never ran). A quote counts as reported when it stands
+in the clause of a reporting word before it, however many words lie between, since how long a
+report runs says nothing about whether it is one; the clause ends at a coordinating word or a
+new instruction, so a "said" in an earlier clause does not cover a later quote. A present-tense
+"follow" or "obey" at the head of the clause orders the quote, and "you followed" reports it.
+Taking sentences out never leaves a bracket or quotation mark without its
 partner: "Run the suite. (You can stop now. Thanks.)" leaves "Run the suite. (Thanks.)".
 
 When the second answer is refused too, or does not come back, the parts the gate
@@ -468,7 +476,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 281 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 311 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: twelve real sessions in tmux, the strip captured to tests/live/captures
 ```

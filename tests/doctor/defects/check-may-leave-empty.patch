@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index ddcc398..954ac1a 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2080,7 +2080,7 @@ left:
+ - <work put off, shrunk or quietly dropped; a condition still open that the agent called done; a check never run; a claim that matters and is not shown; a chore the agent left "for you", which is its unfinished work; only items your checking supports>
+ next: <what the agent should do next, one or two sentences; it can be stopping the agent now, but only with a stop verdict, when every condition is shown or closed by the owner; never a step for the owner to do>
+ message:
+-<the message for the owner to send to the agent, rewritten where your checking changed it: it names what is false and asks for the proof of what is not shown. While any condition is open or not shown after your checking, write it. Leave empty only when every condition is shown or closed.>
++<the message for the owner to send to the agent, rewritten where your checking changed it: it names what is false and asks for the proof of what is not shown. Leave empty when there is nothing to send.>
+ end
+ does: <one line: what this message will make the agent do>
+ looked: <one line: what you checked yourself and what you could not look at>`

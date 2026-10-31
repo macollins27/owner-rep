@@ -1,0 +1,14 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index d7cd9ab..87d7a38 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3206,8 +3206,7 @@ export const withoutStopSentences = (message: string): string => {
+         from = end
+       }
+       text = (text + line.slice(from)).trimEnd()
+-      const began = LIST_MARKER.exec(line)?.[0] ?? ''
+-      lines.push({ text, dropped: text === '' || (began !== '' && text === began.trimEnd()) })
++      lines.push({ text, dropped: text === '' || /^[ \t]*(?:[-*•]|\d+[.)])$/.test(text) })
+     }
+     at += line.length + 1
+   }
