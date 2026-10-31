@@ -1,28 +1,28 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 264fffa..95407dd 100644
+index 97fd57d..e0ae95a 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -381,7 +381,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number):
+@@ -978,7 +978,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number, r
      return true
    }
    if (saw <= held.from) return false
 -  const fresh = hisFrom(rec, held.from + 1).filter(n => n <= saw)
 +  const fresh = rec.owner.filter(m => m.n > held.from && m.n <= saw).map(m => m.n)
    if (fresh.length === 0) return false
+   const closers = fresh.filter(canClose)
    const version = { at: now, cause: a.cause, text: objectiveText(held) }
-   if (a.isNewJob) {
-@@ -494,7 +494,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
-     entry.again = false
-     const rec = await loadRec($, sid)
-     const saw = rec.counter
--    const due = !(onlyFirst && rec.objective !== null) && hisFrom(rec, Math.max(jobOf(rec), shown + 1)).length > 0
-+    const due = !(onlyFirst && rec.objective !== null) && rec.owner.some(m => m.n >= Math.max(jobOf(rec), shown + 1))
+@@ -1106,7 +1106,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
+     const waitingN = waitingOf(rec)
+     const due =
+       !(onlyFirst && rec.objective !== null) &&
+-      (waitingN !== undefined || hisFrom(rec, Math.max(jobOf(rec), shown + 1)).length > 0)
++      (waitingN !== undefined || rec.owner.some(m => m.n >= Math.max(jobOf(rec), shown + 1)))
+     let failed = false
+     if (!due) shown = Math.max(shown, newest)
      if (due) {
-       shown = saw
-       // Up to 1 + OBJECTIVE_RETRIES attempts over the same prompt: an empty or errored
-@@ -1544,7 +1544,7 @@ export const register: Register = on => {
+@@ -2429,7 +2429,7 @@ export const register: Register = on => {
          // The note is numbered after the prompt it was typed behind.
-         if (note !== '') await takeNote($, id, note)
+         if (note !== '') await takeNote($, id, note, { prior })
          // A message of the owner's can move the objective: the writer reads it, never the agent's words.
 -        if (isHis || note !== '' || seeded) rebuildObjective($, id, note !== '' ? 'note' : 'message').catch(() => undefined)
 +        rebuildObjective($, id, note !== '' ? 'note' : 'message').catch(() => undefined)

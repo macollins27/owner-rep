@@ -1,12 +1,15 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 264fffa..6b85d22 100644
+index 97fd57d..dc3f17c 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -528,6 +528,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
-             takeObjective(r, answer, Date.now(), saw)
+@@ -1176,6 +1176,10 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
+             } else takeObjective(r, answer, Date.now(), saw, rev)
              return r
            }
-+          if (answer === null && result !== null && result.isAnswered) return r
++          if (answer === null && result !== null && result.isAnswered) {
++            failed = true
++            return r
++          }
            const cut = result !== null && !result.isAnswered && result.reason === 'aborted'
            again = result !== null && !cut && attempt < OBJECTIVE_RETRIES
            // A newer message of the owner's arrived during the attempt: the next pass writes

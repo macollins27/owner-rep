@@ -1,12 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 97fd57d..570cc69 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1726,7 +1726,7 @@
+@@ -2645,7 +2645,7 @@ export const register: Register = on => {
      // The row shows the result; so does the card's head, with the count line under it
      // and the objective whole at the card's end when the rows allow.
      const placeholder = 'working out the result you want from your messages…'
 -    const head = lead(headGlyph, headColor, 'Owner rep', reading?.result ?? placeholder)
 +    const head = lead(headGlyph, headColor, 'Owner rep', reading === null ? placeholder : objectiveText(reading))
- 
-     if (view === 'note' && note !== null && !hasBeneath) {
-       const clear = () => {
+     // The first thing the record could not keep or save, under the row's head.
+     const recordLine =
+       lines[0] === undefined ? undefined : (

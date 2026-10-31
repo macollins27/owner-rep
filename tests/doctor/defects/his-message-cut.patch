@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 264fffa..f656864 100644
+index 97fd57d..81c98e1 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1145,7 +1145,7 @@ let lastAnswer = ''
- // last answer. The owner's messages and notes are kept to the larger cut,
- // since the writer reads nothing else; a draft of the rep's to the smaller.
- function pushOwner(rec: Rec, kind: OwnerKind, text: string, prior: string = lastAnswer): void {
+@@ -1843,7 +1843,7 @@ async function putMessage($: EngineInterface, text: string): Promise<void> {
+ // A message of the job the trim drops is counted in `uncovered` when it had a coverage line or was
+ // an approval the trim could not keep (`trimCounted`), the last 10 by number.
+ function pushOwner(rec: Rec, kind: OwnerKind, text: string, prior: string, more: Partial<OwnerMsg> = {}): void {
 -  const cut = kind === 'draft' ? OWNER_CUT : HIS_CUT
 +  const cut = OWNER_CUT
-   rec.owner = trimOwner(
-     [...rec.owner, { n: ++rec.counter, kind, text: fit(text, cut), prior: fitTail(prior, PRIOR_CUT) }],
-     jobOf(rec),
+   const { list, uncovered } = trimCounted([...rec.owner, { n: ++rec.counter, kind, text: fit(text, cut), prior: fitTail(prior, PRIOR_CUT), ...more }], jobOf(rec), rec.uncovered)
+   rec.owner = list
+   if (uncovered === undefined) delete rec.uncovered

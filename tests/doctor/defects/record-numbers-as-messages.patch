@@ -1,22 +1,22 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 0d26727..e81734e 100644
+index 0e6d35a..ea56836 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -827,7 +827,7 @@ export function recordText(rows: readonly RecordRow[], budget: number, human?: R
-         if (u.text !== undefined && u.tool_use_id !== undefined) printed.add(u.tool_use_id)
-         lines.push(`- used ${u.tool} ${input} → ${result}`)
-       }
--      if (lines.length > 0) entries.push(`entry ${n} the agent:\n${lines.join('\n')}`)
-+      if (lines.length > 0) entries.push(`#${n} the agent:\n${lines.join('\n')}`)
-       continue
-     }
-     const text = withoutReminders(row.text)
-@@ -842,7 +842,7 @@ export function recordText(rows: readonly RecordRow[], budget: number, human?: R
-     const his = human === undefined ? !notTyped(text) : human.has(typedKey(row.text)) && !notTyped(typedForm(row.text))
-     entries.push(
-       his
--        ? `entry ${n} the person:\n${headTail(typedForm(row.text), RECORD_ENTRY_CUT)}`
-+        ? `#${n} the person:\n${headTail(typedForm(row.text), RECORD_ENTRY_CUT)}`
-         : `entry ${n} the session (written by Claude Code, not typed by the person):\n${headTail(text, RECORD_ENTRY_CUT)}`,
-     )
-   }
+@@ -2240,7 +2240,7 @@ function recordEntries(rows: readonly RecordRow[], human?: ReadonlySet<string>):
+         row: at,
+         fields,
+         build: show =>
+-          `entry ${n} the agent:\n${[
++          `#${n} the agent:\n${[
+             ...(said === null ? [] : [show(said)]),
+             ...uses.map(u => `- used ${u.tool} ${show(u.input)} → ${u.result === null ? '(no result)' : `${u.isError ? '(error) ' : ''}${show(u.result)}`}`),
+           ].join('\n')}`,
+@@ -2269,7 +2269,7 @@ function recordEntries(rows: readonly RecordRow[], human?: ReadonlySet<string>):
+       n,
+       row: at,
+       fields: [f],
+-      build: show => (his ? `entry ${n} the person:\n${show(f)}` : `entry ${n} the session (written by Claude Code, not typed by the person):\n${show(f)}`),
++      build: show => (his ? `#${n} the person:\n${show(f)}` : `entry ${n} the session (written by Claude Code, not typed by the person):\n${show(f)}`),
+     })
+   })
+   return entries

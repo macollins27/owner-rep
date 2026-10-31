@@ -1,8 +1,8 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index bc23d30..0d8feda 100644
+index 97fd57d..53af9c5 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -705,46 +705,6 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
+@@ -1388,46 +1388,6 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
        const again = await ask(askAgain(first.open))
        if (!('reason' in again)) taken = again
      }
@@ -23,7 +23,7 @@ index bc23d30..0d8feda 100644
 -        .complete({
 -          model: OBJECTIVE_MODEL,
 -          system: OWN_WORDS_SYSTEM,
--          prompt: ownWordsPrompt({ ...memoryOf(rec), context }, open, taken.answer),
+-          prompt: ownWordsPrompt({ ...(await memoryFor($, sid, rec, 'brief')), context }, open, taken.answer),
 -          maxTokens: OWN_WORDS_MAX_TOKENS,
 -          effort: 'high',
 -          timeoutMs: OWN_WORDS_TIMEOUT_MS,
@@ -46,6 +46,6 @@ index bc23d30..0d8feda 100644
 -      // No usable message from the last read or the own-words call: one read 1 kept stands before the list.
 -      taken = { ...taken, answer: earlierMessage(taken.answer, taken.replaced, ownTaken, first) }
 -    }
-     const a = taken.answer
-     const brief = await changeRec($, sid, after => {
-       const brief: Brief = {
+     // While the rep could not check, keep or save something, the card says so first and never
+     // stops. The briefing's own gaps (Task 7) go in `gaps`; the Heads up's too-long line never does.
+     const a = withRecordLines(taken.answer, coverage(await loadRec($, sid), { full: storeFull.get(sid), gaps }))

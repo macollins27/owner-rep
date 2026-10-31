@@ -1,13 +1,16 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 0afe637..7e74b82 100644
+index 97fd57d..a177162 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -573,7 +573,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
+@@ -1340,10 +1340,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
      const ask = async (extra: string) => {
        const rec = await loadRec($, sid)
-       const prompt = briefPrompt({ ...memoryOf(rec), context })
--      const result = await readSession($, sid, extra === '' ? prompt : `${prompt}\n\n${extra}`, true)
-+      const result = await readSession($, sid, extra === '' ? prompt : `${prompt}\n\n${extra}`, false)
-       const usage = 'usage' in result ? result.usage : null
-       return changeRec($, sid, async after => {
-         after.calls += 1
+       const memory = { ...(await memoryFor($, sid, rec, 'brief')), context }
+-      const got = await readSession($, sid, rec, cover => {
+-        const prompt = briefPrompt({ ...memory, cover })
+-        return extra === '' ? prompt : `${prompt}\n\n${extra}`
+-      })
++      const got: Read = { result: NOTHING_READ, gaps: {} }
+       const result = got.result
+       // The plans this briefing could not compare, and the steps it could not assess, go on the card.
+       const plans = memory.approved === undefined ? {} : readerGaps(memory.approved, 'brief')

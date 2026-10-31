@@ -1,11 +1,11 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index faabc01..b3146da 100644
+index 97fd57d..e60facb 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -571,7 +571,7 @@ export const register: Register = on => {
- 
-   on('turn.step', async function* ($, e, next) {
-     if (e.agentId !== undefined) return yield* next(e)
+@@ -2507,7 +2507,7 @@ export const register: Register = on => {
+       live.set(e.turnId, entry)
+     }
+     if (e.index !== entry.nextIndex) entry.incomplete ??= 'a step of this turn was missed'
 -    if (e.index > 0 && e.index % CHECK_EVERY === 0 && !inFlight.has('look')) {
 +    if (e.index < 0 && !inFlight.has('look')) {
        inFlight.add('look')
