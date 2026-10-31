@@ -487,7 +487,7 @@ the file). Never make one from an uncommitted tree: the checkout would wipe the 
 **Status.** Built: `tests/doctor/doctor.py`, with `defects.json` and one patch per defect in
 `tests/doctor/defects/`. Run it with `python3 tests/doctor/doctor.py`; it exits 1 when the
 clean suite fails or a defect survives, and stops before planting when the clean suite is
-not clean. Four hundred and two entries: 388 caught in the eight-shard run of 30 Oct 2026 and the last fourteen, with the ten remade for the same change, caught by name that day (on 19 Oct 2026 two patches,
+not clean. Four hundred and three entries: 388 caught in the eight-shard run of 30 Oct 2026 and the last fourteen, with the ten remade for the same change, caught by name that day (on 19 Oct 2026 two patches,
 `windows-card-offers-check` and `own-words-not-asked`, had stopped applying once the card
 recorded its reads, and were remade and caught; on 24 Oct 2026 the same two stopped applying
 once the card recorded what came of the own-words call, and were remade and caught with the
