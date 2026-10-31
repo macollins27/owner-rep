@@ -371,8 +371,8 @@ Scenarios, one capture each:
     "↓ 2 more" row; the box now goes on such a band (`message-box-hides-buttons`), and the
     rerun showed the head, Stands and the buttons at 24.
 15. An owner-held step, on demand only and not among the twelve: a first message that asks for
-    four things, one of them published only on the owner's word, and for the first file alone,
-    then Brief me with the window at 80 rows. The run is found by the session id it launched, in
+    five things, one of them published only on the owner's word and one with a stop if git
+    refuses the save, and for the first file alone, then Brief me with the window at 80 rows. The run is found by the session id it launched, in
     a tmux session of its own; `tests/live/store_guard.py` backs the store up first, reads the
     record and checks that the whole message is in the card's box, and takes the run's record out
     afterwards, however the run ends. On macOS that last step swaps the files in one move, so a
@@ -380,8 +380,13 @@ Scenarios, one capture each:
     back on a time check. With more than one matching store and no `STORE` it refuses rather than
     pick one, and `PROOF_DIR` and its files are owner-only. Its checks of the guard are `store_guard.py --self-test`.
     Needs `PROOF_DIR`, a private folder new for each run, which holds the debug log, the message
-    and the store's backup; one chosen capture goes to `captures/15-card-80.txt`. Status: built,
-    not yet run.
+    and the store's backup; one chosen capture goes to `captures/15-card-80.txt`. Status: run
+    three times on 30 Oct 2026 on the installed 0.5.2, the whole message in the card each time
+    and the store restored. The first two, whose first message had four things and no git
+    refusal, drew messages with no sentence the gate of 0.5.0 would refuse; the third, this
+    first message, drew `If git refuses, stop and tell me exactly what it said.`, whole on the
+    card, which is the saved capture. The debug log does not hold the rep's raw replies, so the
+    message is compared with the store record, not with the reply word for word.
 
 ### The side-by-side
 
