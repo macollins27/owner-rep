@@ -370,6 +370,15 @@ Scenarios, one capture each:
     buttons, was taller than the band's five rows, so the buttons sat under the engine's
     "↓ 2 more" row; the box now goes on such a band (`message-box-hides-buttons`), and the
     rerun showed the head, Stands and the buttons at 24.
+15. An owner-held step, on demand only and not among the twelve: a first message that asks for
+    four things, one of them published only on the owner's word, and for the first file alone,
+    then Brief me with the window at 80 rows. The run is found by the session id it launched, in
+    a tmux session of its own; `tests/live/store_guard.py` backs the store up first, reads the
+    record and checks that the whole message is in the card's box, and takes the run's record out
+    afterwards, however the run ends. Its checks of the guard are `store_guard.py --self-test`.
+    Needs `PROOF_DIR`, a private folder new for each run, which holds the debug log, the message
+    and the store's backup; one chosen capture goes to `captures/15-card-80.txt`. Status: built,
+    not yet run.
 
 ### The side-by-side
 

@@ -19,6 +19,14 @@
 # stay on screen at each, the judgment's parts are drawn from 44, and nothing is cut at 80. Exit
 # 0 when every scenario run showed what it should.
 #
+# Scenario 15 is on demand only, never in the default twelve: Brief me on a session with a step
+# held for the owner's word, the card read at 80 rows. It needs PROOF_DIR, a private folder of
+# its own for each run, for the session's debug log, its message and the store's backup; it runs
+# in a tmux session of its own, finds its record by the session id it launched, and
+# store_guard.py takes that record back out of the store afterwards, however the run ends.
+#
+#     PROOF_DIR=<folder> INSTALLED=1 tests/live/live.sh 15
+#
 # The sessions run in a scratch folder under the system temp directory, in bypass mode, with
 # the nested-session variables unset (set, claude falls into print mode and exits). The mod
 # loads from this checkout (--plugin-dir), with the copy installed at user scope switched off
@@ -166,6 +174,72 @@ heights_card() {
   print -r -- "$card" | grep -q '…$' ; [[ $? -ne 0 ]]; verdict "$rows rows: no line of the card cut" $?
   heights_record next ; verdict "$rows rows: Next whole, as the rep wrote it" $?
   heights_record message ; verdict "$rows rows: the whole message in the box" $?
+}
+
+# The session scenario 15 still has to clear away; empty when there is none.
+OWNED=''
+# owned_alive ID: 0 while the tmux session or its claude is there. tmux's own server can hold the
+# launch line in its arguments long after the session has gone, so it does not count, nor does
+# the grep reading this list.
+owned_alive() {
+  tmux has-session -t "=$S" 2>/dev/null && return 0
+  ps -axww -o args= | grep -F -- "--session-id $1" | grep -qvE '^[^ ]*(tmux|grep) '
+}
+# owned_down: scenario 15's end, once, however the run went. Its session is stopped and shown
+# gone, then the store is put right; restoring beside a live session would be undone by its
+# next save. 1 when either failed, with a line saying so.
+owned_down() {
+  [[ -n $OWNED ]] || return 0
+  local sid=$OWNED i
+  OWNED=''
+  stop
+  for i in $(seq 1 15); do
+    owned_alive $sid || break
+    sleep 1
+  done
+  if owned_alive $sid; then
+    echo "  FAILED: session $sid is still running, so the store was not restored"
+    return 1
+  fi
+  python3 $HERE/store_guard.py restore $PROOF_DIR $sid || { echo "  FAILED: the store was not restored after $sid"; return 1; }
+}
+# owner_held: scenario 15. The trap and the always block between them cover a timeout, a failed
+# start and an interrupt, each ending in owned_down.
+owner_held() {
+  echo "15 owner-held step: Brief me with a step held for the owner's word and open work, the card read at 80 rows"
+  [[ -n ${PROOF_DIR:-} ]] || { echo "  FAILED: needs PROOF_DIR, a private folder of its own for this run"; bad=1; return; }
+  PROOF_DIR=${PROOF_DIR:A}
+  mkdir -p $PROOF_DIR || { echo "  FAILED: cannot make $PROOF_DIR"; bad=1; return; }
+  local sid=$(uuidgen | tr A-Z a-z) at=$(date +%s) dir=$(mktemp -d -t owner-rep-live) short store capture manifest
+  short=${sid[1,8]}
+  capture=$PROOF_DIR/15-card-80-$short.txt
+  manifest=$PROOF_DIR/$sid.manifest.json
+  git -C $dir init -q
+  STORE_NAME=$STORE_NAME python3 $HERE/store_guard.py backup $PROOF_DIR || { echo "  FAILED: the store was not backed up, so nothing was started"; bad=1; return; }
+  store=$(<$PROOF_DIR/store.path)
+  S=owner-rep-live-15-$short
+  python3 -I -c 'import json, sys; k = ("sid", "launched", "folder", "tmux", "store", "capture"); json.dump(dict(zip(k, sys.argv[2:])), open(sys.argv[1], "w"), indent=2)' \
+    $manifest $sid $at $dir $S $store $capture || { echo "  FAILED: the manifest was not written"; bad=1; S=owner-rep-live; return; }
+  OWNED=$sid
+  trap 'owned_down; exit 130' INT TERM HUP
+  {
+    OWNER_HELD_FIRST='Build a small thing in this folder. Done means four things: add.py with a function add(a, b); test_add.py passing, with its output pasted here; a one-line README.md; and the work published, which means copied into ./release, and that happens only on my word. Before you stop, run the test and paste what it printed. For now make add.py only and stop.'
+    start $dir --session-id $sid --debug-file ${(q)PROOF_DIR}/$sid.debug.log || { echo "  FAILED: the session did not start"; bad=1; return; }
+    send $OWNER_HELD_FIRST
+    wait_for '^\s*stopped, waiting on you|^\s*asking you' 180 || { echo "  FAILED: the agent's turn did not end in 180s"; bad=1; return; }
+    sleep 20
+    tmux send-keys -t $S 1
+    wait_for 'Fine, close' 240 || { echo "  FAILED: the card did not draw in 240s"; bad=1; return; }
+    tmux resize-window -t $S -y 80; sleep 3
+    CAPS=$PROOF_DIR save ${capture:t:r}
+    STORE=$store python3 $HERE/store_guard.py show $sid $at $PROOF_DIR/$sid.message.txt || { echo "  FAILED: the run's record could not be read"; bad=1; return; }
+    python3 $HERE/store_guard.py whole $PROOF_DIR/$sid.message.txt $capture
+    verdict '80 rows: the whole message in the box, no line cut' $?
+  } always {
+    owned_down || bad=1
+    trap - INT TERM HUP
+    S=owner-rep-live
+  }
 }
 
 echo "owner rep live · $(date '+%Y-%m-%d %H:%M')"
@@ -464,6 +538,7 @@ PY
       save 12-height-80
       heights_card 80
       stop ;;
+    15) owner_held ;;
   esac
   [[ $bad -gt 0 ]] && fails=$((fails+1))
 done
