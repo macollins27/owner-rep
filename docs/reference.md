@@ -200,7 +200,7 @@ call writes (below):
    whitespace read as one space, so no run of spaces or tabs changes a verdict (`Wait for a
    reply from  me.` is caught as with one space; a line break never falls inside a sentence,
    since `sentencesOf` ends one there); quoted words (straight or curly double quotes) masked
-   only as the object of the nearest reporting word before them (said, says, wrote, writes,
+   only as the object of the nearest reporting word before them and outside any earlier quote (said, says, wrote, writes,
    called, calls, claimed, reported, told, reads, shows, prints, printed, states; `REPORTING`),
    however many words lie between, asides in commas included, inside that word's own clause.
    The clause ends (`clauseEnds`) at a semicolon or a coordinating word (`CLAUSE_WORD`: and,

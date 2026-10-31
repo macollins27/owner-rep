@@ -2960,8 +2960,8 @@ const unwrap = (sentence: string): string => {
 
 // Quoted words that are the object of a reporting word are someone's words being named, not
 // read for a stop: `Your summary said "you can stop now", but …`, `The log reads "…"`. A reporting
-// word reaches the quote after it however many words lie between, asides in commas included
-// (`said, in the last line of its report, "…"`), inside its own clause only. The clause ends at a
+// word outside any quote reaches the quote after it however many words lie between, asides in
+// commas included (`said, in the last line of its report, "…"`), inside its own clause only. The clause ends at a
 // semicolon, a sentence end, a coordinating word (`and`, `but`, `then`, `so`, `yet`, `or` and their
 // like) or a word that starts a new instruction, and a quote past that end is read:
 // `You said it passed and "You can stop now."`. A new instruction stands right after the reporting
@@ -2991,7 +2991,7 @@ const NAMED = String.raw`the(?:\s+(?!(?:and|but|then|so|yet|or)\b)[\w'’-]+)+`
 const OBEY_LEAD = new RegExp(String.raw`${OBEY}(?:(?:what|as)\s+(?:it|this|that|they|${NAMED})|(?:it|this|that|them|${NAMED})\s*,\s*which)\s+$`, 'i')
 const maskReported = (sentence: string): string =>
   sentence.replace(QUOTED, (quote: string, at: number) => {
-    const before = sentence.slice(0, at)
+    const before = sentence.slice(0, at).replace(QUOTED, (earlier: string) => ' '.repeat(earlier.length))
     const word = [...before.matchAll(REPORTING)].pop()
     if (word === undefined) return quote
     const lead = before.slice(0, word.index)

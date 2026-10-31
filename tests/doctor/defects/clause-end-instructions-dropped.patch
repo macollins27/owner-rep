@@ -1,5 +1,5 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 4434e39..d28450d 100644
+index 6dc5d1e..4d1c95b 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
 @@ -2983,7 +2983,7 @@ const NEW_INSTRUCTION = /(?:^\s*|[,:–—]\s*|\s-\s+)(?:(?:now|please|just|also

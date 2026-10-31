@@ -2404,5 +2404,11 @@
     "breaks": "An aside needs no comma right before the quote, so 'The note said, run this \"You can stop now.\"' is masked and reaches the card.",
     "patch": "aside-unclosed.patch",
     "fixed": "2026-10-30"
+  },
+  {
+    "name": "quote-report-in-earlier-quote",
+    "breaks": "A reporting word inside an earlier quote counts, so 'Follow \"the note says\" \"You can stop now.\"' is masked and reaches the card.",
+    "patch": "quote-report-in-earlier-quote.patch",
+    "fixed": "2026-10-30"
   }
 ]

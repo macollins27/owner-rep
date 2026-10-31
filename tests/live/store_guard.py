@@ -20,10 +20,11 @@ import ctypes
 import json
 import os
 import shutil
+import stat
 import sys
 import tempfile
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Iterable
 
 RETRIES = 5
 RENAME_SWAP = 0x2  # <stdio.h> on macOS
@@ -38,10 +39,11 @@ def newest_store() -> Path:
     if os.environ.get('STORE'):
         return Path(os.environ['STORE'])
     home = Path(os.environ.get('CLAUDE_CONFIG_DIR') or Path.home() / '.claude')
-    found = sorted((home / 'plugins' / 'store').glob(os.environ.get('STORE_NAME') or 'owner-rep_owner-rep-*.json'),
-                   key=lambda p: p.stat().st_mtime, reverse=True)
+    found = sorted((home / 'plugins' / 'store').glob(os.environ.get('STORE_NAME') or 'owner-rep_owner-rep-*.json'))
     if not found:
         raise Refused(f'no store found under {home}')
+    if len(found) > 1:
+        raise Refused(f'{len(found)} stores match, so none was chosen: set STORE to the one to use: ' + ', '.join(p.name for p in found))
     return found[0]
 
 
@@ -55,14 +57,21 @@ def load(path: Path) -> dict:
     return got
 
 
+def write_private(path: Path, data: bytes) -> None:
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, 'wb') as f:
+        f.write(data)
+    path.chmod(0o600)
+
+
 def backup(folder: Path, store: Path) -> None:
-    folder.mkdir(parents=True, exist_ok=True)
+    folder.mkdir(mode=0o700, parents=True, exist_ok=True)
     kept = folder / 'store.backup.json'
     if kept.exists():
         raise Refused(f'{kept} is already there, from an earlier run: use a new folder')
     load(store)
-    shutil.copy2(store, kept)
-    (folder / 'store.path').write_text(str(store))
+    write_private(kept, store.read_bytes())
+    write_private(folder / 'store.path', os.fsencode(store))
 
 
 def show(store: Path, sid: str, launched: int, out: Path) -> dict:
@@ -79,7 +88,8 @@ def show(store: Path, sid: str, launched: int, out: Path) -> dict:
     message = brief.get('message')
     if not isinstance(message, str):
         raise Refused(f'record {sid} holds no message')
-    out.write_text(message)
+    write_private(out, message.encode())
+    write_private(out.parent / f'{sid}.drafts.json', json.dumps(drafts_of(rec)).encode())
     return {'reads': brief.get('reads'), 'own': brief.get('own'), 'chars': len(message)}
 
 
@@ -96,26 +106,35 @@ def card_of(capture: str) -> list[str]:
     return []
 
 
-def box_of(card: list[str]) -> str | None:
+def box_rows(card: list[str]) -> tuple[int, int] | None:
     tops = [i for i, r in enumerate(card) if '╭' in r]
     ends = [i for i, r in enumerate(card) if '╰' in r]
     if not tops or not ends or ends[-1] <= tops[0]:
         return None
-    text = ' '.join(card[tops[0] + 1:ends[-1]])
+    return tops[0], ends[-1]
+
+
+def box_of(card: list[str]) -> str | None:
+    rows = box_rows(card)
+    if rows is None:
+        return None
+    text = ' '.join(card[rows[0] + 1:rows[1]])
     for mark in BOX:
         text = text.replace(mark, ' ')
     return text
 
 
 def is_whole(message: str, capture: str) -> str | None:
-    """None when the whole message is in the card's box and nothing in the card is cut, else why not."""
+    """None when the whole message is in the card's box and no row outside the box is cut, else
+    why not. A … inside the box may be the message's own; a cut there fails the whole-message check."""
     if message.strip() == '':
         return 'the message is empty'
     card = card_of(capture)
     box = box_of(card)
     if box is None:
         return 'the capture holds no card with a message box'
-    if any('…' in r for r in card):
+    top, end = box_rows(card) or (0, 0)
+    if any('…' in r for r in card[:top] + card[end + 1:]):
         return 'a line of the card is cut'
     # A saved capture has the username replaced, and a word too long for its row is broken
     # across two, so every run of white space goes, not only line breaks.
@@ -143,8 +162,10 @@ def drafts_of(rec: object) -> list[str]:
     return out
 
 
-def merged(now: dict, saved: dict, ids: list[str]) -> dict:
-    """The store as it stands, without the run's records and with those it pushed out."""
+def merged(now: dict, saved: dict, ids: list[str], own: Iterable[str] = ()) -> dict:
+    """The store as it stands, without the run's records and with those it pushed out. `own` is
+    the run's drafts as `show` read them: a run whose record was itself evicted left them in
+    droppedDrafts with nothing else to say whose they are."""
     out = dict(now)
     sessions = dict(now.get('sessions') or {})
     for sid in ids:
@@ -157,7 +178,7 @@ def merged(now: dict, saved: dict, ids: list[str]) -> dict:
     # and what the list's cap pushed out to make room goes back on its end.
     had = [d for d in saved.get('droppedDrafts') or [] if isinstance(d, str)]
     was = {folded(d) for d in had}
-    gone = {folded(d) for r in back.values() for d in drafts_of(r)} - was
+    gone = ({folded(d) for r in back.values() for d in drafts_of(r)} | {folded(d) for d in own}) - was
     if 'droppedDrafts' in now or had:
         kept = [d for d in now.get('droppedDrafts') or [] if not isinstance(d, str) or folded(d) not in gone]
         held = {folded(d) for d in kept if isinstance(d, str)}
@@ -174,14 +195,14 @@ def swap(a: Path, b: Path) -> None:
         raise OSError(err, os.strerror(err), str(a))
 
 
-def swap_in(store: Path, saved: dict, ids: list[str], before_swap: Callable[[], None]) -> str:
+def swap_in(store: Path, merge: Callable[[dict], dict], before_swap: Callable[[], None]) -> str:
     """The store is never absent and no version goes unseen: the swap hands back exactly what it
     displaced. `held` is what the store should hold at each swap: the bytes the first merge read,
     then the bytes the last swap put there, since after a swap the store holds this restore's own
     merge. Anything else that comes back was another session's write: merge from it and swap again."""
     held = store.read_bytes()
     now = load(store)
-    want = merged(now, saved, ids)
+    want = merge(now)
     if want == now:
         return 'nothing to put right'
     fd, name = tempfile.mkstemp(dir=store.parent, prefix=store.name + '.')
@@ -208,17 +229,17 @@ def swap_in(store: Path, saved: dict, ids: list[str], before_swap: Callable[[], 
             raise Refused(f'{e}: {both}')
         # A writer may have read this restore's own merge, so records an earlier round took in stay.
         now['sessions'] = {**want.get('sessions', {}), **now.get('sessions', {})}
-        want = merged(now, saved, ids)
+        want = merge(now)
     raise Refused(f'the store kept changing through {RETRIES} swaps: {both}')
 
 
-def replace_unless_changed(store: Path, saved: dict, ids: list[str], before_replace: Callable[[], None]) -> str:
+def replace_unless_changed(store: Path, merge: Callable[[dict], dict], before_replace: Callable[[], None]) -> str:
     """Off macOS there is no renamex_np, so this falls back to a time check: a save landing between
     the check and the replace is lost."""
     for _ in range(RETRIES):
         stamp = store.stat().st_mtime_ns
         now = load(store)
-        want = merged(now, saved, ids)
+        want = merge(now)
         if want == now:
             return 'nothing to put right'
         fd, name = tempfile.mkstemp(dir=store.parent, prefix=store.name + '.')
@@ -240,7 +261,8 @@ def replace_unless_changed(store: Path, saved: dict, ids: list[str], before_repl
 def restore(folder: Path, ids: list[str], before_write: Callable[[], None] = lambda: None, atomic: bool = sys.platform == 'darwin') -> str:
     store = Path((folder / 'store.path').read_text().strip())
     saved = load(folder / 'store.backup.json')
-    return (swap_in if atomic else replace_unless_changed)(store, saved, ids, before_write)
+    own = [d for sid in ids if (folder / f'{sid}.drafts.json').exists() for d in json.loads((folder / f'{sid}.drafts.json').read_text())]
+    return (swap_in if atomic else replace_unless_changed)(store, lambda now: merged(now, saved, ids, own), before_write)
 
 
 def self_test() -> int:
@@ -275,6 +297,9 @@ def self_test() -> int:
         check('whole: refuses a message cut', is_whole(message, capture('Run the test and paste what it', 'printed.')) is not None)
         check('whole: refuses a card with …', is_whole(message, full.replace('Stands: nothing yet', 'Stands: nothing y…')) is not None)
         check('whole: refuses an empty message', is_whole(' \n', full) is not None)
+        check('whole: a message holding … shown whole passes', is_whole('Wait… then run it.', capture('Wait… then run it.')) is None)
+        check('whole: a row cut outside the box is refused though the message holds …', is_whole('Wait… then run it.', capture('Wait… then run it.').replace('Stands: nothing yet', 'Stands: nothing y…')) is not None)
+        check('whole: a message cut with … in the box is refused', is_whole('Wait a while then run it.', capture('Wait a whi…')) is not None)
         check('whole: refuses a capture with no box', is_whole(message, capture()) is not None)
         check('whole: refuses a capture with no card', is_whole(message, 'no card here\n') is not None)
         check('whole: the message outside the box is not whole', is_whole('Stands: nothing yet', full) is not None)
@@ -317,6 +342,58 @@ def self_test() -> int:
         check('restore: a change to the rest of the store stays', done['other'] == 2)
         first = s.read_bytes()
         check('restore: twice changes nothing', restore(folder, ['run']) == 'nothing to put right' and s.read_bytes() == first)
+
+        folder, s = fresh('own', {'sessions': {'b': rec(2)}, 'droppedDrafts': ['older draft', 'said twice']}, {'sessions': {'b': rec(2), 'run': rec(9, 'draft of the run')}, 'droppedDrafts': ['older draft', 'said twice']})
+        show(s, 'run', 0, folder / 'run.message.txt')
+        now = json.loads(s.read_text())
+        del now['sessions']['run']
+        now['droppedDrafts'] = ['draft of the run', "another session's draft", 'older draft', 'said twice']
+        s.write_text(json.dumps(now))
+        restore(folder, ['run'])
+        done = json.loads(s.read_text())
+        check("restore: the run's own draft leaves when its record was evicted", done['droppedDrafts'] == ["another session's draft", 'older draft', 'said twice'])
+        folder, s = fresh('own2', {'sessions': {}, 'droppedDrafts': ['said twice', 'other']}, {'sessions': {'run': rec(9, 'said twice')}, 'droppedDrafts': ['said twice', 'other']})
+        show(s, 'run', 0, folder / 'run.message.txt')
+        restore(folder, ['run'])
+        check("restore: the run's draft stays listed when it was listed before the run", json.loads(s.read_text())['droppedDrafts'] == ['said twice', 'other'])
+
+        def store_named() -> str:
+            return newest_store().name
+
+        config = tmp / 'config'
+        (config / 'plugins' / 'store').mkdir(parents=True)
+        keep = {k: os.environ.get(k) for k in ('STORE', 'STORE_NAME', 'CLAUDE_CONFIG_DIR')}
+        try:
+            os.environ.pop('STORE', None)
+            os.environ.pop('STORE_NAME', None)
+            os.environ['CLAUDE_CONFIG_DIR'] = str(config)
+            check('store: refuses when none matches', refused(store_named))
+            (config / 'plugins' / 'store' / 'owner-rep_owner-rep-a.json').write_text('{}')
+            check('store: one match is taken', store_named() == 'owner-rep_owner-rep-a.json')
+            (config / 'plugins' / 'store' / 'owner-rep_owner-rep-b.json').write_text('{}')
+            try:
+                newest_store()
+                said = ''
+            except Refused as e:
+                said = str(e)
+            check('store: two matches are refused, each named', 'owner-rep_owner-rep-a.json' in said and 'owner-rep_owner-rep-b.json' in said and 'STORE' in said)
+            os.environ['STORE'] = str(config / 'plugins' / 'store' / 'owner-rep_owner-rep-b.json')
+            check('store: STORE names the one', store_named() == 'owner-rep_owner-rep-b.json')
+        finally:
+            for k, v in keep.items():
+                if v is None:
+                    os.environ.pop(k, None)
+                else:
+                    os.environ[k] = v
+
+        open_store = tmp / 'open.json'
+        open_store.write_text(json.dumps({'sessions': {'run': rec(9)}}))
+        open_store.chmod(0o644)
+        private = tmp / 'private'
+        backup(private, open_store)
+        show(open_store, 'run', 0, private / 'run.message.txt')
+        check('private: the folder is owner-only when made here', stat.S_IMODE(private.stat().st_mode) == 0o700)
+        check('private: every file written in it is 0600', sorted({stat.S_IMODE(p.stat().st_mode) for p in private.iterdir()}) == [0o600])
 
         folder, s = fresh('kept', {'sessions': {'a': rec(1, 'same')}, 'droppedDrafts': ['same']}, {'sessions': {'run': rec(9)}, 'droppedDrafts': ['same']})
         restore(folder, ['run'])

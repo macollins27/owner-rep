@@ -209,13 +209,14 @@ owner_held() {
   echo "15 owner-held step: Brief me with a step held for the owner's word and open work, the card read at 80 rows"
   [[ -n ${PROOF_DIR:-} ]] || { echo "  FAILED: needs PROOF_DIR, a private folder of its own for this run"; bad=1; return; }
   PROOF_DIR=${PROOF_DIR:A}
-  mkdir -p $PROOF_DIR || { echo "  FAILED: cannot make $PROOF_DIR"; bad=1; return; }
+  [[ -d $PROOF_DIR ]] || mkdir -p -m 700 $PROOF_DIR || { echo "  FAILED: cannot make $PROOF_DIR"; bad=1; return; }
   local sid=$(uuidgen | tr A-Z a-z) at=$(date +%s) dir=$(mktemp -d -t owner-rep-live) short store capture manifest
   short=${sid[1,8]}
   capture=$PROOF_DIR/15-card-80-$short.txt
   manifest=$PROOF_DIR/$sid.manifest.json
   git -C $dir init -q
-  STORE_NAME=$STORE_NAME python3 $HERE/store_guard.py backup $PROOF_DIR || { echo "  FAILED: the store was not backed up, so nothing was started"; bad=1; return; }
+  ( umask 077; : >> $capture; : >> $manifest; : >> $PROOF_DIR/$sid.debug.log )
+  STORE=${STORE:-} STORE_NAME=$STORE_NAME python3 $HERE/store_guard.py backup $PROOF_DIR || { echo "  FAILED: the store was not backed up, so nothing was started"; bad=1; return; }
   store=$(<$PROOF_DIR/store.path)
   S=owner-rep-live-15-$short
   python3 -I -c 'import json, sys; k = ("sid", "launched", "folder", "tmux", "store", "capture"); json.dump(dict(zip(k, sys.argv[2:])), open(sys.argv[1], "w"), indent=2)' \
@@ -237,6 +238,7 @@ owner_held() {
     verdict '80 rows: the whole message in the box, no line cut' $?
   } always {
     owned_down || bad=1
+    chmod 600 $PROOF_DIR/*(N.)
     trap - INT TERM HUP
     S=owner-rep-live
   }

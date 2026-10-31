@@ -1,11 +1,11 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 4434e39..e3eda30 100644
+index 6dc5d1e..406da8e 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
 @@ -2992,12 +2992,10 @@ const OBEY_LEAD = new RegExp(String.raw`${OBEY}(?:(?:what|as)\s+(?:it|this|that|
  const maskReported = (sentence: string): string =>
    sentence.replace(QUOTED, (quote: string, at: number) => {
-     const before = sentence.slice(0, at)
+     const before = sentence.slice(0, at).replace(QUOTED, (earlier: string) => ' '.repeat(earlier.length))
 -    const word = [...before.matchAll(REPORTING)].pop()
 -    if (word === undefined) return quote
 -    const lead = before.slice(0, word.index)

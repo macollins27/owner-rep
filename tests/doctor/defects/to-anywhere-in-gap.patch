@@ -1,5 +1,5 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 4434e39..f855e18 100644
+index 6dc5d1e..33b17eb 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
 @@ -2984,7 +2984,7 @@ const COMMA_ASIDE = /^\s*,(?:(?!\s-\s)[^,:;–—])*,\s*$/

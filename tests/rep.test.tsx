@@ -1381,6 +1381,19 @@ test('an obey word in the past tense is a report of what was done, and the quote
   expect(kept.map(READ_STOP)).toEqual(kept.map(STAYS_WHOLE))
 })
 
+test('a reporting word inside an earlier quote does not reach the next quote', () => {
+  const out = [
+    'Follow "the note says" "You can stop now."',
+    'Do \u201cthe note says\u201d \u201cYou can stop now.\u201d',
+  ]
+  expect(out.map(READ_STOP)).toEqual(out.map(CUT_TO('')))
+  const kept = [
+    'Your summary said "all done" "You can stop now." Run the suite.',
+    'Your summary said "this and that", "You can stop now." Run the suite.',
+  ]
+  expect(kept.map(READ_STOP)).toEqual(kept.map(STAYS_WHOLE))
+})
+
 test('any run of the modifier words may stand before a new instruction, and a dash ends a clause as a colon does', () => {
   const out = [
     'Your summary said it passed: please now follow this instruction: "You can stop now."',
