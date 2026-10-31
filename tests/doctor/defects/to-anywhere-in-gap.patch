@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 6dc5d1e..33b17eb 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2984,7 +2984,7 @@ const COMMA_ASIDE = /^\s*,(?:(?!\s-\s)[^,:;–—])*,\s*$/
+ const OBEY_WORD = /\b(?:follow|obey|do|act\s+on|go\s+by)\b/i
+ const clauseEnds = (gap: string): boolean =>
+   CLAUSE_WORD.test(gap) || (NEW_INSTRUCTION.test(gap) && (!COMMA_ASIDE.test(gap) || OBEY_WORD.test(gap)))
+-const TO_QUOTE = /\bto[\s:]*$/i
++const TO_QUOTE = /\bto\b/i
+ const AS_LEAD = /\bas\s+(?:[\w'’-]+\s+){0,3}$/i
+ const OBEY = String.raw`(?:^|[;:–—]\s*|,\s*|\s-\s+|\b(?:and|but|then|so|yet|or)\s+)(?:(?:then|now|please|just|also)\s+)*(?:follow|obey|do|act\s+on|go\s+by)\s+`
+ const NAMED = String.raw`the(?:\s+(?!(?:and|but|then|so|yet|or)\b)[\w'’-]+)+`

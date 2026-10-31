@@ -1352,7 +1352,7 @@ ${memoryText(m)}
 
 The owner pressed the key. Give the owner the short briefing described below, measured against the objective above. Look at what the agent actually did in the conversation, including the helpers it launched and what they reported, not at what the agent says it did. Where the next step depends on a claim the conversation does not show, say "not shown" and have the message ask for the proof. If the owner sent your last message to the agent, say whether the agent did the step that message asked for.
 
-When every condition is shown or closed and the conversation shows the result working, say so in one line under "well:", and still fill in every other part: the owner wants the whole picture every time, not only when something is wrong. Leave the message empty when there is nothing worth sending.
+When every condition is shown or closed and the conversation shows the result working, say so in one line under "well:", and still fill in every other part: the owner wants the whole picture every time, not only when something is wrong. While any condition is open or not shown, write the message: it asks for the proof of each one. Leave the message empty only when every condition is shown or closed, or no objective is held and there is nothing worth sending. When a condition waits on the owner's go-ahead (publish, send, pay, a guard refusal), the message tells the agent to finish everything else, hold that step until the go-ahead comes, and say exactly what it will show the owner then; it never pushes the held step.
 
 ${WALK_RULE}
 Walk them to yourself and do not write the walk out. Every step with no sign while later work goes on goes first under "left:", named with the plan's number; every step not assessed goes under "unassessed:".
@@ -1375,7 +1375,7 @@ unassessed:
 - #<n>: <a step of an approved plan you could not assess; "- none" when there is none>
 next: <one or two sentences: what the agent does next; never a step for the owner to do; a stop only with a stop verdict>
 message:
-<the message for the owner to send to the agent, written to the agent, specific and professional, several lines if needed. It asks for the proof of what is not shown and pushes the agent off the easy option onto the right one. Leave empty when there is nothing to send.>
+<the message for the owner to send to the agent, written to the agent, specific and professional, several lines if needed. It asks for the proof of what is not shown and pushes the agent off the easy option onto the right one. Leave empty only when every condition is shown or closed.>
 end
 does: <one line: what this message will make the agent do>`
 }
@@ -3644,7 +3644,7 @@ left:
 - <work put off, shrunk or quietly dropped; a condition still open that the agent called done; a check never run; a claim that matters and is not shown; a chore the agent left "for you", which is its unfinished work; only items your checking supports>
 next: <what the agent should do next, one or two sentences; it can be stopping the agent now, but only with a stop verdict, when every condition is shown or closed by the owner; never a step for the owner to do>
 message:
-<the message for the owner to send to the agent, rewritten where your checking changed it: it names what is false and asks for the proof of what is not shown. Leave empty when there is nothing to send.>
+<the message for the owner to send to the agent, rewritten where your checking changed it: it names what is false and asks for the proof of what is not shown. While any condition is open or not shown after your checking, write it. Leave empty only when every condition is shown or closed.>
 end
 does: <one line: what this message will make the agent do>
 looked: <one line: what you checked yourself and what you could not look at>`
@@ -4257,7 +4257,7 @@ export const OPEN_MEANS = (open: Condition[]): string =>
 // The message a refused card offers to send in place of the model's: it keeps
 // the agent on the job, never tells it to stop.
 export const OPEN_MESSAGE = (open: Condition[]): string =>
-  `The job is not finished. These conditions of done are still open:\n${list(open.map(conditionLine), '- none')}\nBefore anything stops, show each one working, or say what stands in the way.`
+  `The job is not finished. These conditions of done are still open:\n${list(open.map(conditionLine), '- none')}\nBefore anything stops, show each one working, or say what stands in the way. If a step needs my go-ahead, hold it: finish the rest, and tell me what you will show me when I give it.`
 
 // What sending that message makes the agent do.
 export const OPEN_DOES = 'Keeps the agent on the job until it shows each open condition working or says what stands in the way.'
@@ -4413,14 +4413,14 @@ export const STOP_NEXT = new RegExp(
 export const gateOpen = (o: Objective | null): Condition[] | null => (o === null ? null : openConditions(o))
 
 // Added to the brief when its answer said stop, gave no verdict, called the
-// work finished, or said the work is going well, while a condition was open:
+// work finished, said the work is going well, or left the message empty, while a condition was open:
 // the brief is asked once more, with the open conditions named.
 export const askAgain = (open: Condition[]): string => `## Asked once more
 
 Your first answer said the agent should stop, gave no verdict, called the work finished, or said the work is going well, while these conditions of done are still open:
 ${list(open.map(promptLine), '- none')}
 
-None of these may stand while any of them is open. Look at the conversation again: put under "shown:" each one it now shows, with where, and under "closed:" each one the owner closed in a message of the owner's own, with its number. Then give the whole briefing again in the same structure. While any of them stays open the verdict is "continue", "well" is empty, and "next" and "message" say what the agent does now to show it, or what stands in the way.`
+None of these may stand while any of them is open. An empty message counts too: while any of these is open, write the message to the agent, asking for the proof of each. Look at the conversation again: put under "shown:" each one it now shows, with where, and under "closed:" each one the owner closed in a message of the owner's own, with its number. Then give the whole briefing again in the same structure. While any of them stays open the verdict is "continue", "well" is empty, and "next" and "message" say what the agent does now to show it, or what stands in the way.`
 
 // A part of a refused card the gate wrote in the rep's fixed text, in place of the model's.
 export type Replaced = 'means' | 'next' | 'message'
@@ -4523,25 +4523,46 @@ const unwrap = (sentence: string): string => {
 }
 
 // Quoted words that are the object of a reporting word are someone's words being named, not
-// read for a stop: `Your summary said "you can stop now", but …`. The quote follows the nearest
-// reporting word before it with at most four words, commas and a colon between (`said "…"`,
-// `wrote: "…"`, `said plainly "…"`, `wrote, in its last line, "…"`). A "to" between
-// (`says to`, `told the agent to`), or "as" a few words before the reporting word (`do as the
-// note says`), gives an order to do what the quote says, and that quote is read: `Then do as the
-// note says to: "You can stop now."`. A reporting word further back in the sentence masks
-// nothing: `You said it passed, and the log reads "You can stop now."` is read.
-const REPORTING = /\b(?:said|says|wrote|writes|called|calls|claimed|reported|told)\b/gi
+// read for a stop: `Your summary said "you can stop now", but …`, `The log reads "…"`. A reporting
+// word outside any quote reaches the quote after it however many words lie between, asides in
+// commas included (`said, in the last line of its report, "…"`), inside its own clause only. The clause ends at a
+// semicolon, a sentence end, a coordinating word (`and`, `but`, `then`, `so`, `yet`, `or` and their
+// like) or a word that starts a new instruction, and a quote past that end is read:
+// `You said it passed and "You can stop now."`. A new instruction stands right after the reporting
+// word, a comma, a colon or a dash (em, en or a hyphen with a space each side), behind any run of
+// now, please, just and also: `said it passed: please now follow this:`, `said it passed — follow
+// this:`. A coordinating word inside an aside ends the clause too. One aside is no instruction: it
+// opens with a comma right after the reporting word, closes with a comma right before the quote,
+// holds no other clause end and no obey word (`said, run by run, "…"`, never `said it passed, run
+// the suite, "…"` or `said, follow this, "…"`); a pair of dashes in those same two places is read
+// as that pair of commas (`said — run by run — "…"`). Three leads give an order to do what the quote says,
+// and that quote is read: a "to" directly before it (`says to: "…"`, `told the agent to: "…"`, but
+// never `said in its reply to the lead: "…"`), "as" a few words before the reporting word (`do as
+// the note says`), and an obey word in its present form starting its clause, whatever the length of
+// the note's name inside that clause (`Follow what the final review note says:`, `Obey the note,
+// which says:`, never `you followed what the note says:`).
+const REPORTING = /\b(?:said|says|wrote|writes|called|calls|claimed|reported|told|reads|shows|prints|printed|states)\b/gi
 const QUOTED = /"[^"]*"|“[^”]*”/g
-const REPORTED_GAP = /^[\s,:]*(?:[\w'’-]+[\s,:]+){0,4}$/
+const CLAUSE_WORD = /;|\b(?:and|but|then|so|yet|or|otherwise|else|anyway|regardless|in\s+any\s+case|either\s+way|whatever\s+happens)\b/i
+const NEW_INSTRUCTION = /(?:^\s*|[,:–—]\s*|\s-\s+)(?:(?:now|please|just|also)\s+)*\b(?:do|follow|obey|act\s+on|go\s+by|run|show|paste|stop|tell|say|send|write|finish|hold|wait|check|fix|make|give|put|use|keep)\b/i
+const COMMA_ASIDE = /^\s*,(?:(?!\s-\s)[^,:;–—])*,\s*$/
+const OBEY_WORD = /\b(?:follow|obey|do|act\s+on|go\s+by)\b/i
+const clauseEnds = (gap: string): boolean =>
+  CLAUSE_WORD.test(gap) || (NEW_INSTRUCTION.test(gap) && (!COMMA_ASIDE.test(gap) || OBEY_WORD.test(gap)))
+const TO_QUOTE = /\bto[\s:]*$/i
+const AS_LEAD = /\bas\s+(?:[\w'’-]+\s+){0,3}$/i
+const OBEY = String.raw`(?:^|[;:–—]\s*|,\s*|\s-\s+|\b(?:and|but|then|so|yet|or)\s+)(?:(?:then|now|please|just|also)\s+)*(?:follow|obey|do|act\s+on|go\s+by)\s+`
+const NAMED = String.raw`the(?:\s+(?!(?:and|but|then|so|yet|or)\b)[\w'’-]+)+`
+const OBEY_LEAD = new RegExp(String.raw`${OBEY}(?:(?:what|as)\s+(?:it|this|that|they|${NAMED})|(?:it|this|that|them|${NAMED})\s*,\s*which)\s+$`, 'i')
 const maskReported = (sentence: string): string =>
   sentence.replace(QUOTED, (quote: string, at: number) => {
-    const before = sentence.slice(0, at)
+    const before = sentence.slice(0, at).replace(QUOTED, (earlier: string) => ' '.repeat(earlier.length))
     const word = [...before.matchAll(REPORTING)].pop()
     if (word === undefined) return quote
     const lead = before.slice(0, word.index)
-    const gap = before.slice((word.index ?? 0) + word[0].length)
-    if (/\bto\b/i.test(gap) || /\bas\s+(?:[\w'’-]+\s+){0,3}$/i.test(lead)) return quote
-    return REPORTED_GAP.test(gap) ? '"x"' : quote
+    const gap = before.slice((word.index ?? 0) + word[0].length).replace(/^\s*(?:[–—]|-\s)(.*?)(?:[–—]|\s-)\s*$/, ',$1,')
+    if (TO_QUOTE.test(gap) || AS_LEAD.test(lead) || OBEY_LEAD.test(lead)) return quote
+    return clauseEnds(gap) ? quote : '"x"'
   })
 
 // A stop once something is done, in a message: "You can stop after that.", "You can stop once
@@ -4762,7 +4783,8 @@ export const withoutStopSentences = (message: string): string => {
         from = end
       }
       text = (text + line.slice(from)).trimEnd()
-      lines.push({ text, dropped: text === '' || /^[ \t]*(?:[-*•]|\d+[.)])$/.test(text) })
+      const began = LIST_MARKER.exec(line)?.[0] ?? ''
+      lines.push({ text, dropped: text === '' || (began !== '' && text === began.trimEnd()) })
     }
     at += line.length + 1
   }
@@ -4798,10 +4820,30 @@ export const withoutStopSentences = (message: string): string => {
 // same is refused; the meaning and next step are the rep's text saying the
 // objective is not written yet, and the message follows the same rule with
 // that text's message and does line. What the agent did ("stands") is kept as
-// the model wrote it.
+// the model wrote it. A card sound in every other way whose message is empty,
+// with an objective and an open condition, is refused on the message alone:
+// `replaced` is just the message, which is the rep's fixed text, the meaning,
+// next step and what stands stay the model's, and the does line stays unless it
+// is empty or says stop, since it describes the message.
+const withOpen = (leftOut: string[], open: Condition[]): string[] => {
+  const all = [...leftOut]
+  for (const c of open) {
+    // An entry already listed, with or without its state mark, is not listed again.
+    if (!all.some(l => same(bare(l), c.text))) all.push(c.state === 'not-shown' ? `${c.text} (not shown)` : c.text)
+  }
+  return all
+}
 export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer: BriefAnswer; refused: boolean; replaced: Replaced[] } {
   if (open !== null && open.length === 0) return { answer: a, refused: false, replaced: [] }
-  if (a.verdict === 'continue' && a.well === '' && !saysStop(a.next) && !messageSaysStop(a.message)) return { answer: a, refused: false, replaced: [] }
+  const sound = a.verdict === 'continue' && a.well === '' && !saysStop(a.next) && !messageSaysStop(a.message)
+  if (sound && (open === null || a.message.trim() !== '')) return { answer: a, refused: false, replaced: [] }
+  if (sound && open !== null) {
+    return {
+      answer: { ...a, message: OPEN_MESSAGE(open), does: a.does === '' || messageSaysStop(a.does) ? OPEN_DOES : a.does, leftOut: withOpen(a.leftOut, open) },
+      refused: true,
+      replaced: ['message'],
+    }
+  }
   const kept = withoutStopSentences(a.message)
   const message = kept === ''
   if (open === null) {
@@ -4819,11 +4861,6 @@ export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer:
       replaced: ['means', 'next', ...(message ? ['message' as const] : [])],
     }
   }
-  const leftOut = [...a.leftOut]
-  for (const c of open) {
-    // An entry already listed, with or without its state mark, is not listed again.
-    if (!leftOut.some(l => same(bare(l), c.text))) leftOut.push(c.state === 'not-shown' ? `${c.text} (not shown)` : c.text)
-  }
   const next = a.next === '' || saysStop(a.next)
   return {
     answer: {
@@ -4834,7 +4871,7 @@ export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer:
       next: next ? OPEN_NEXT(open) : a.next,
       message: message ? OPEN_MESSAGE(open) : kept,
       does: message || messageSaysStop(a.does) ? OPEN_DOES : a.does,
-      leftOut,
+      leftOut: withOpen(a.leftOut, open),
     },
     refused: true,
     replaced: ['means', ...(next ? ['next' as const] : []), ...(message ? ['message' as const] : [])],
@@ -4870,7 +4907,7 @@ export function ownWordsPrompt(m: Memory, open: Condition[], a: BriefAnswer): st
 
 ## This request
 
-The briefing's answer said the agent should stop, gave no verdict, called the work finished, or said the work is going well, and asking it once more did not change that, while these conditions of done are still open:
+The briefing's answer said the agent should stop, gave no verdict, called the work finished, or said the work is going well, or left the message empty, and asking it once more did not change that, while these conditions of done are still open:
 ${list(open.map(promptLine), '- none')}
 So the card the rep shows the owner keeps the agent on the job. Here is what the rep itself found in the conversation:
 

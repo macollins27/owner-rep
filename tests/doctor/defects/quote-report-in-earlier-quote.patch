@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 6dc5d1e..83ab6bf 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2991,7 +2991,7 @@ const NAMED = String.raw`the(?:\s+(?!(?:and|but|then|so|yet|or)\b)[\w'’-]+)+`
+ const OBEY_LEAD = new RegExp(String.raw`${OBEY}(?:(?:what|as)\s+(?:it|this|that|they|${NAMED})|(?:it|this|that|them|${NAMED})\s*,\s*which)\s+$`, 'i')
+ const maskReported = (sentence: string): string =>
+   sentence.replace(QUOTED, (quote: string, at: number) => {
+-    const before = sentence.slice(0, at).replace(QUOTED, (earlier: string) => ' '.repeat(earlier.length))
++    const before = sentence.slice(0, at)
+     const word = [...before.matchAll(REPORTING)].pop()
+     if (word === undefined) return quote
+     const lead = before.slice(0, word.index)

@@ -3,6 +3,25 @@
 What changed in each release of Owner Rep, newest first. The full record is the
 [commit history](https://github.com/macollins27/owner-rep/commits/main).
 
+## 0.5.2 (30 October 2026)
+
+- **The card always carries a message while the work is open.** Before, the rep could leave
+  the message box empty while parts of "done" were still open, and you had nothing to send
+  the agent. An empty message now counts as a card to fix: the rep asks once more, writes it
+  in its own words if that fails, and only then falls back on its fixed list of what is
+  open. A good card with only the message missing keeps its meaning, next step and what
+  stands. When everything is shown or closed, an empty message is still fine.
+- **The fixed list holds a step that needs your word.** It tells the agent to hold any step
+  that needs your go-ahead, finish the rest, and say what it will show you when you give it.
+- **The brief says plainly when to write the message.** The rep is told to write it while
+  anything is open or not shown, in the briefing and in Check it alike.
+- **A quote is read the right way round.** A stop inside quotation marks that reports what
+  someone said is left alone however long the sentence is, including what a log reads,
+  shows or prints. A quote the sentence tells the agent to obey, or one that stands after
+  the report has ended, is read as the order it is.
+- **A number left beside a removed sentence stays.** Taking out a stop sentence no longer
+  takes with it a figure that was the line's own text and not a list number.
+
 ## 0.5.1 (30 October 2026)
 
 - **The message to the agent keeps everything but a stop.** While part of "done" is still

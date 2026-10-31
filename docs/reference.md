@@ -112,7 +112,23 @@ call writes (below):
    left, or the message empty) are the message and what it does the rep's (`OPEN_MESSAGE`,
    `OPEN_DOES`); beside a kept message a `does:` line `messageSaysStop` catches is
    `OPEN_DOES` alone. `replaced` names the parts given the rep's text, in the order `means`,
-   `next`, `message`, so a kept message, cut or whole, is never listed. A refused
+   `next`, `message`, so a kept message, cut or whole, is never listed. An answer sound in
+   every other way (verdict continue, no `well:`, no stop in `next:` or `message:`) whose
+   message is empty or only white space is refused on the message alone while a condition is
+   open: `replaced` is `['message']`, the message is `OPEN_MESSAGE`, the open conditions are
+   listed as left out (`withOpen`), the meaning, next step and what stands stay the model's,
+   and its `does:` line stays unless it is empty or `messageSaysStop` catches it, then
+   `OPEN_DOES`, since that line describes the message. With every condition shown or closed
+   an empty message stands, and with no objective written (`gateOpen` is null) it stands too,
+   since nothing says what is open. `pressBrief` takes this refusal as any other: the second
+   ask, whose `askAgain` says an empty message counts, then the own-words call, whose
+   `ownWordsPrompt` names the empty message, then read 1's usable message, then
+   `OPEN_MESSAGE`. `OPEN_MESSAGE` ends with the sentence on a held step: `If a step needs my
+   go-ahead, hold it: finish the rest, and tell me what you will show me when I give it.`
+   A Check card goes through the same gate and has no second ask or own-words call, so an
+   instant read refused with the checker's message empty gets `OPEN_MESSAGE` when a condition
+   is still open, an instant read that passed keeps its message when the checker leaves it
+   empty, and with every condition shown or closed the message stays empty. A refused
    answer is asked once more (`askAgain`, naming the open conditions), and that answer
    passes the same gate. When it is refused too, or does not answer, one plain
    `$.model.complete` (`OBJECTIVE_MODEL`, high effort, `OWN_WORDS_SYSTEM`: the ROLE's "Who
@@ -184,12 +200,27 @@ call writes (below):
    whitespace read as one space, so no run of spaces or tabs changes a verdict (`Wait for a
    reply from  me.` is caught as with one space; a line break never falls inside a sentence,
    since `sentencesOf` ends one there); quoted words (straight or curly double quotes) masked
-   only as the object of the nearest reporting word before them (said, says, wrote, writes,
-   called, calls, claimed, reported, told; `REPORTING`), with at most four words, commas and a
-   colon between (`REPORTED_GAP`: `said "…"`, `wrote: "…"`); a "to" between (`says to`,
-   `told the agent to`), or "as" up to three words before the reporting word (`do as the note
-   says`), orders what the quote says, so that quote is read, and a reporting word further
-   back masks nothing (`You said it passed, and the log reads "You can stop now."` is read);
+   only as the object of the nearest reporting word before them and outside any earlier quote (said, says, wrote, writes,
+   called, calls, claimed, reported, told, reads, shows, prints, printed, states; `REPORTING`),
+   however many words lie between, asides in commas included, inside that word's own clause.
+   The clause ends (`clauseEnds`) at a semicolon or a coordinating word (`CLAUSE_WORD`: and,
+   but, then, so, yet, or, otherwise, else, anyway, regardless, in any case, either way,
+   whatever happens) or at a word starting a new instruction (`NEW_INSTRUCTION`) right after
+   the reporting word, a comma, a colon or a dash (em, en, or a hyphen with a space each side),
+   behind any run of now, please, just and also, and a quote past that end is read (`You said
+   it passed and "You can stop now."`). One aside is no instruction (`COMMA_ASIDE`): it opens
+   with a comma right after the reporting word, closes with a comma right before the quote,
+   and holds no other clause end and no obey word (`OBEY_WORD`), so `said, run by run, "…"`
+   stays a report and `said it passed, run the suite, "…"` and `said, follow this, "…"` are
+   read. A pair of dashes in those two places is read as that pair of commas (`said — run by
+   run — "…"`). Three leads order what the
+   quote says, so that quote is read: a "to" directly before it (`TO_QUOTE`: `says to: "…"`,
+   `told the agent to: "…"`, never `said in its reply to the lead: "…"`), "as" up to three
+   words before the reporting word (`AS_LEAD`: `do as the note says`), and an obey word in its
+   present form (follow, obey, do, act on, go by) starting its clause (`OBEY_LEAD`: `Follow
+   what it says:`, `Obey the note, which says:`; `you followed what the note says:` stays a
+   report), with no limit on the note's name inside that clause (`NAMED`: a coordinating word
+   ends it);
    then `toAgentVoice`; then
    five shapes masked (`maskExempt`) that do not stop the agent while it could still move the
    work; then `STOP_NEXT` and `STOP_ONCE`. Each mask replaces only the words that make its
@@ -280,7 +311,8 @@ call writes (below):
    every sentence that reading catches taken out: it returns the input itself when no
    sentence is caught (untidied, whitespace and all), and `''` for `''`. A removed sentence
    takes the spaces and tabs after it on its line; a list item's marker stays for the rest of
-   its line; a line left empty, or holding only a marker, is dropped; a blank line beside a
+   its line; a line left empty, or holding only the marker it began with, is dropped, and a
+   number that was the line's own text, never its marker, stays; a blank line beside a
    dropped line goes where it would stand first or make two in a row; trailing whitespace is
    trimmed on the lines a removal touched and at the end; nothing else changes, no sentence
    reworded, moved or reflowed. No bracket or double quote is left without its partner

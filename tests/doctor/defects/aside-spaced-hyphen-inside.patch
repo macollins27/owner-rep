@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 6dc5d1e..7f476cc 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2980,7 +2980,7 @@ const REPORTING = /\b(?:said|says|wrote|writes|called|calls|claimed|reported|tol
+ const QUOTED = /"[^"]*"|“[^”]*”/g
+ const CLAUSE_WORD = /;|\b(?:and|but|then|so|yet|or|otherwise|else|anyway|regardless|in\s+any\s+case|either\s+way|whatever\s+happens)\b/i
+ const NEW_INSTRUCTION = /(?:^\s*|[,:–—]\s*|\s-\s+)(?:(?:now|please|just|also)\s+)*\b(?:do|follow|obey|act\s+on|go\s+by|run|show|paste|stop|tell|say|send|write|finish|hold|wait|check|fix|make|give|put|use|keep)\b/i
+-const COMMA_ASIDE = /^\s*,(?:(?!\s-\s)[^,:;–—])*,\s*$/
++const COMMA_ASIDE = /^\s*,(?:[^,:;–—])*,\s*$/
+ const OBEY_WORD = /\b(?:follow|obey|do|act\s+on|go\s+by)\b/i
+ const clauseEnds = (gap: string): boolean =>
+   CLAUSE_WORD.test(gap) || (NEW_INSTRUCTION.test(gap) && (!COMMA_ASIDE.test(gap) || OBEY_WORD.test(gap)))

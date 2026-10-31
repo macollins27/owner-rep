@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 6dc5d1e..8cb6178 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2986,7 +2986,7 @@ const clauseEnds = (gap: string): boolean =>
+   CLAUSE_WORD.test(gap) || (NEW_INSTRUCTION.test(gap) && (!COMMA_ASIDE.test(gap) || OBEY_WORD.test(gap)))
+ const TO_QUOTE = /\bto[\s:]*$/i
+ const AS_LEAD = /\bas\s+(?:[\w'’-]+\s+){0,3}$/i
+-const OBEY = String.raw`(?:^|[;:–—]\s*|,\s*|\s-\s+|\b(?:and|but|then|so|yet|or)\s+)(?:(?:then|now|please|just|also)\s+)*(?:follow|obey|do|act\s+on|go\s+by)\s+`
++const OBEY = String.raw`(?:(?:then|now|please|just|also)\s+)*(?:follow|obey|do|act\s+on|go\s+by)\w*\s+`
+ const NAMED = String.raw`the(?:\s+(?!(?:and|but|then|so|yet|or)\b)[\w'’-]+)+`
+ const OBEY_LEAD = new RegExp(String.raw`${OBEY}(?:(?:what|as)\s+(?:it|this|that|they|${NAMED})|(?:it|this|that|them|${NAMED})\s*,\s*which)\s+$`, 'i')
+ const maskReported = (sentence: string): string =>

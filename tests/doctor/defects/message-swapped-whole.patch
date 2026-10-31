@@ -1,11 +1,11 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index f91cbea..8c76d64 100644
+index 79554ff..8e52d40 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3131,7 +3131,7 @@ export const withoutStopSentences = (message: string): string => {
- export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer: BriefAnswer; refused: boolean; replaced: Replaced[] } {
-   if (open !== null && open.length === 0) return { answer: a, refused: false, replaced: [] }
-   if (a.verdict === 'continue' && a.well === '' && !saysStop(a.next) && !messageSaysStop(a.message)) return { answer: a, refused: false, replaced: [] }
+@@ -3267,7 +3267,7 @@ export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer:
+       replaced: ['message'],
+     }
+   }
 -  const kept = withoutStopSentences(a.message)
 +  const kept = messageSaysStop(a.message) ? '' : a.message
    const message = kept === ''

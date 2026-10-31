@@ -26,6 +26,14 @@
 # still holds the turn before it whole, from the saved record; it also prints what the engine
 # sends as agentId on the main loop (see turn_capture). Exit 0 when every scenario run showed what it should.
 #
+# Scenario 15 is on demand only, never in the default twelve: Brief me on a session with a step
+# held for the owner's word, the card read at 80 rows. It needs PROOF_DIR, a private folder of
+# its own for each run, for the session's debug log, its message and the store's backup; it runs
+# in a tmux session of its own, finds its record by the session id it launched, and
+# store_guard.py takes that record back out of the store afterwards, however the run ends.
+#
+#     PROOF_DIR=<folder> INSTALLED=1 tests/live/live.sh 15
+#
 # The sessions run in a scratch folder under the system temp directory, in bypass mode, with
 # the nested-session variables unset (set, claude falls into print mode and exits). The mod
 # loads from this checkout (--plugin-dir), with the copy installed at user scope switched off
@@ -74,7 +82,7 @@ bad=0
 # The folder the last session was started in, so a scenario can reopen a session there.
 LIVE_DIR=''
 
-pane() { tmux capture-pane -p -t $S 2>/dev/null; }
+pane() { tmux capture-pane -p -t "=$S:" 2>/dev/null; }
 strip() { pane | grep -E "$STRIP_RE" | sed 's/[[:space:]]*$//'; }
 # wait_for PATTERN SECONDS: polls the screen; 0 when the pattern appears.
 wait_for() {
@@ -90,18 +98,18 @@ wait_for() {
 # is pressed again (the box is the last line that starts with the prompt mark).
 send() {
   local head=${1[1,20]} i
-  tmux send-keys -t $S -l "$1"; sleep 1; tmux send-keys -t $S Enter
+  tmux send-keys -t "=$S:" -l "$1"; sleep 1; tmux send-keys -t "=$S:" Enter
   for i in 1 2 3; do
     sleep 1
     pane | grep -E '^❯' | tail -1 | grep -qF -- "$head" || return 0
-    tmux send-keys -t $S Enter
+    tmux send-keys -t "=$S:" Enter
   done
 }
 
 # start [DIR [ARG...]]: a session in a fresh scratch folder, or in DIR with these arguments
 # added to claude's (scenario 9 reopens the last session there with --continue).
 start() {
-  tmux kill-session -t $S 2>/dev/null
+  tmux kill-session -t "=$S:" 2>/dev/null
   local dir=${1:-}
   (( $# > 0 )) && shift
   if [[ -z $dir ]]; then
@@ -110,14 +118,14 @@ start() {
   fi
   LIVE_DIR=$dir
   tmux new-session -d -s $S -x 170 -y 44 -c $dir "$(launch_line "$@")"
-  if wait_for 'Yes, I trust this folder' 20; then tmux send-keys -t $S Down; sleep 0.5; tmux send-keys -t $S Enter; fi
+  if wait_for 'Yes, I trust this folder' 20; then tmux send-keys -t "=$S:" Down; sleep 0.5; tmux send-keys -t "=$S:" Enter; fi
   wait_for 'Brief me' 40 || { echo "  the session did not draw the rep's row in 40s"; return 1; }
   sleep 2
 }
 stop() {
-  tmux send-keys -t $S Escape 2>/dev/null; sleep 0.5
-  tmux send-keys -t $S C-c 2>/dev/null; sleep 0.5; tmux send-keys -t $S C-c 2>/dev/null; sleep 1
-  tmux kill-session -t $S 2>/dev/null
+  tmux send-keys -t "=$S:" Escape 2>/dev/null; sleep 0.5
+  tmux send-keys -t "=$S:" C-c 2>/dev/null; sleep 0.5; tmux send-keys -t "=$S:" C-c 2>/dev/null; sleep 1
+  tmux kill-session -t "=$S:" 2>/dev/null
 }
 # verdict NAME CONDITION-RESULT: prints and counts.
 verdict() {
@@ -125,7 +133,7 @@ verdict() {
   if [[ $ok -eq 0 ]]; then echo "  $name: shown"; else echo "  $name: NOT SHOWN"; bad=$((bad+1)); fi
 }
 # The status line can show the home folder's name; a saved capture shows `user` in its place.
-save() { pane | sed "s/${USER:-user}/user/g" > $CAPS/$1.txt; echo "  saved captures/$1.txt"; strip | sed 's/^/  | /'; }
+save() { pane | sed "s/${USER:-user}/user/g" > $CAPS/$1.txt; echo "  saved $CAPS/$1.txt"; strip | sed 's/^/  | /'; }
 
 # heights_record FIELD: 0 when the last ten words of lastBrief.FIELD, in the newest record that
 # holds scenario 12's first prompt, are in $card, read with the box's borders taken off and its
@@ -782,6 +790,73 @@ PY
   [[ -n $LIVE_DIR && $LIVE_DIR == *owner-rep-live* ]] && rm -rf "${LIVE_DIR:?}"
   return $ok
 }
+# The session scenario 15 still has to clear away; empty when there is none.
+OWNED=''
+# owned_alive ID: 0 while the tmux session or its claude is there. tmux's own server can hold the
+# launch line in its arguments long after the session has gone, so it does not count, nor does
+# the grep reading this list.
+owned_alive() {
+  tmux has-session -t "=$S:" 2>/dev/null && return 0
+  ps -axww -o args= | grep -F -- "--session-id $1" | grep -qvE '^[^ ]*(tmux|grep) '
+}
+# owned_down: scenario 15's end, once, however the run went. Its session is stopped and shown
+# gone, then the store is put right; restoring beside a live session would be undone by its
+# next save. 1 when either failed, with a line saying so.
+owned_down() {
+  [[ -n $OWNED ]] || return 0
+  local sid=$OWNED i
+  OWNED=''
+  stop
+  for i in $(seq 1 15); do
+    owned_alive $sid || break
+    sleep 1
+  done
+  if owned_alive $sid; then
+    echo "  FAILED: session $sid is still running, so the store was not restored"
+    return 1
+  fi
+  python3 $HERE/store_guard.py restore $PROOF_DIR $sid || { echo "  FAILED: the store was not restored after $sid"; return 1; }
+}
+# owner_held: scenario 15. The trap and the always block between them cover a timeout, a failed
+# start and an interrupt, each ending in owned_down.
+owner_held() {
+  echo "15 owner-held step: Brief me with a step held for the owner's word and open work, the card read at 80 rows"
+  [[ -n ${PROOF_DIR:-} ]] || { echo "  FAILED: needs PROOF_DIR, a private folder of its own for this run"; bad=1; return; }
+  PROOF_DIR=${PROOF_DIR:A}
+  [[ -d $PROOF_DIR ]] || mkdir -p -m 700 $PROOF_DIR || { echo "  FAILED: cannot make $PROOF_DIR"; bad=1; return; }
+  local sid=$(uuidgen | tr A-Z a-z) at=$(date +%s) dir=$(mktemp -d -t owner-rep-live) short store capture manifest
+  short=${sid[1,8]}
+  capture=$PROOF_DIR/15-card-80-$short.txt
+  manifest=$PROOF_DIR/$sid.manifest.json
+  git -C $dir init -q
+  ( umask 077; : >> $capture; : >> $manifest; : >> $PROOF_DIR/$sid.debug.log )
+  STORE=${STORE:-} STORE_NAME=$STORE_NAME python3 $HERE/store_guard.py backup $PROOF_DIR || { echo "  FAILED: the store was not backed up, so nothing was started"; bad=1; return; }
+  store=$(<$PROOF_DIR/store.path)
+  S=owner-rep-live-15-$short
+  python3 -I -c 'import json, sys; k = ("sid", "launched", "folder", "tmux", "store", "capture"); json.dump(dict(zip(k, sys.argv[2:])), open(sys.argv[1], "w"), indent=2)' \
+    $manifest $sid $at $dir $S $store $capture || { echo "  FAILED: the manifest was not written"; bad=1; S=owner-rep-live; return; }
+  OWNED=$sid
+  trap 'owned_down; exit 130' INT TERM HUP
+  {
+    OWNER_HELD_FIRST='Build a small thing in this folder. Done means four things: add.py with a function add(a, b); test_add.py passing, with its output pasted here; a one-line README.md; and the work published, which means copied into ./release, and that happens only on my word. Before you stop, run the test and paste what it printed. For now make add.py only and stop.'
+    start $dir --session-id $sid --debug-file ${(q)PROOF_DIR}/$sid.debug.log || { echo "  FAILED: the session did not start"; bad=1; return; }
+    send $OWNER_HELD_FIRST
+    wait_for '^\s*stopped, waiting on you|^\s*asking you' 180 || { echo "  FAILED: the agent's turn did not end in 180s"; bad=1; return; }
+    sleep 20
+    tmux send-keys -t "=$S:" 1
+    wait_for 'Fine, close' 240 || { echo "  FAILED: the card did not draw in 240s"; bad=1; return; }
+    tmux resize-window -t "=$S:" -y 80; sleep 3
+    CAPS=$PROOF_DIR save ${capture:t:r}
+    STORE=$store python3 $HERE/store_guard.py show $sid $at $PROOF_DIR/$sid.message.txt || { echo "  FAILED: the run's record could not be read"; bad=1; return; }
+    python3 $HERE/store_guard.py whole $PROOF_DIR/$sid.message.txt $capture
+    verdict '80 rows: the whole message in the box, no line cut' $?
+  } always {
+    owned_down || bad=1
+    chmod 600 $PROOF_DIR/*(N.)
+    trap - INT TERM HUP
+    S=owner-rep-live
+  }
+}
 
 echo "owner rep live · $(date '+%Y-%m-%d %H:%M')"
 for n in $want; do
@@ -828,7 +903,7 @@ for n in $want; do
       start || { bad=1; fails=$((fails+1)); stop; continue; }
       send 'Run exactly this one shell command and nothing else, then say done: sleep 90'
       wait_for '^\s*running sleep' 60
-      tmux send-keys -t $S 1
+      tmux send-keys -t "=$S:" 1
       wait_for 'Fine, close|↓ [0-9]+ more' 90
       save 4-briefing
       pane | grep -qE '^\s*Stands:' ; verdict 'card body drawn' $?
@@ -840,7 +915,7 @@ for n in $want; do
       # A command-like ask once came back empty from every objective write, leaving no objective.
       pane | grep -q 'working out the result you want' ; [[ $? -ne 0 ]]; verdict 'the card head shows the objective, not the placeholder' $?
       pane | grep -qE 'objective writes? failed' ; [[ $? -ne 0 ]]; verdict 'no failed objective write on the price line' $?
-      tmux send-keys -t $S 2
+      tmux send-keys -t "=$S:" 2
       wait_for '1: Brief me' 15
       save 4-briefing-closed
       strip | grep -qE '1: Brief me' ; verdict 'digit 2 closed the card and the row is back' $?
@@ -866,7 +941,7 @@ for n in $want; do
       sleep 2
       send 'Owner rep: the licence can wait. What matters most to me is the test suite and the GitHub run; judge the work by those.'
       sleep 20
-      tmux send-keys -t $S 1
+      tmux send-keys -t "=$S:" 1
       wait_for 'Fine, close' 120
       save 6-whole-ask
       pane | grep -qE '^\s*Left out:' ; verdict 'left-out list drawn' $?
@@ -883,12 +958,12 @@ for n in $want; do
       send 'This folder will be a small public Python tool I hand to a colleague: wc.py prints how many words are in the text file named on its command line. Two things must be true before it is done: a README that explains how to run it, and a test file whose tests pass on GitHub on every push. Never create a repository online; I will add the remote myself. Start with the README only: write a two-line README.md and stop.'
       wait_for '^\s*stopped, waiting on you|^\s*asking you' 120
       sleep 20
-      tmux send-keys -t $S 1
+      tmux send-keys -t "=$S:" 1
       wait_for 'Put message in prompt' 120
       head_before=$(strip | grep -E 'Owner rep' | head -1)
-      tmux send-keys -t $S 1
+      tmux send-keys -t "=$S:" 1
       sleep 1
-      tmux send-keys -t $S Enter
+      tmux send-keys -t "=$S:" Enter
       sleep 3
       wait_for '^\s*stopped, waiting on you|^\s*asking you' 240
       sleep 2
@@ -896,7 +971,7 @@ for n in $want; do
       sleep 3
       wait_for '^\s*stopped, waiting on you|^\s*asking you' 120
       sleep 30
-      tmux send-keys -t $S 1
+      tmux send-keys -t "=$S:" 1
       wait_for 'Fine, close' 120
       save 7-objective-whole
       head_after=$(strip | grep -E 'Owner rep' | head -1)
@@ -917,7 +992,7 @@ for n in $want; do
       # The objective is written after the message; the head leaves the placeholder once it is held.
       wait_for 'Owner rep · [^w]' 120
       sleep 2
-      tmux send-keys -t $S 1
+      tmux send-keys -t "=$S:" 1
       wait_for 'Fine, close' 120
       save 8-finished
       # The head's mark is ◆ or ◇ depending on the state; the card starts at the head either way.
@@ -955,7 +1030,7 @@ for n in $want; do
       # The same folder, the same unset variables and flags; --fork-session gives the reopened
       # session a new id, so the rep holds no record of it and must read the session itself.
       start $LIVE_DIR --continue --fork-session || { bad=1; fails=$((fails+1)); stop; continue; }
-      tmux send-keys -t $S 1
+      tmux send-keys -t "=$S:" 1
       # The toast for nothing to read shows for a few seconds and then goes, so the screen is read
       # every half second while the card is awaited, and the toast counts if it ever appeared.
       saw_nothing=1
@@ -1024,7 +1099,7 @@ PY
       wait_for '^\s*stopped, waiting on you|^\s*asking you' 120
       sleep 3
       sleep 20
-      tmux send-keys -t $S 1
+      tmux send-keys -t "=$S:" 1
       wait_for 'Fine, close' 240
       save 11-refused-stop
       card=$(pane | sed -n '/Owner rep ·/,$p')
@@ -1068,20 +1143,21 @@ PY
       sleep 3
       wait_for '^\s*stopped, waiting on you|^\s*asking you' 120
       sleep 20
-      tmux send-keys -t $S 1
+      tmux send-keys -t "=$S:" 1
       wait_for 'Fine, close' 240
       save 12-height-44
       heights_card 44
-      tmux resize-window -t $S -y 24; sleep 3
+      tmux resize-window -t "=$S:" -y 24; sleep 3
       save 12-height-24
       heights_card 24
-      tmux resize-window -t $S -y 80; sleep 3
+      tmux resize-window -t "=$S:" -y 80; sleep 3
       save 12-height-80
       heights_card 80
       stop ;;
     14)
       echo "14 the agent's turn as he saw it: the text each message of the owner's answers, as the rep saved it, against the transcript's, through a plan with a command, two text blocks, a reply typed mid-turn, two interrupts, a background task, /compact, a helper and /reload-plugins"
       turn_capture || bad=$((bad+1)) ;;
+    15) owner_held ;;
     *)
       echo "$n: no such scenario in this build"
       bad=1 ;;
