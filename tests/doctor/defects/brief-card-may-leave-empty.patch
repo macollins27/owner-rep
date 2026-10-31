@@ -1,9 +1,9 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index ddcc398..dd30dbd 100644
+index 0e6d35a..b718e79 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -534,7 +534,7 @@ left:
- - <one line per item: work put off, shrunk or quietly dropped; a part of the objective, or of what the owner asked for on this job, never started; a condition still open that the agent called done; a check never run; a claim that matters and is not shown; a chore the agent left "for you". Each item says in a few words why it matters. Write "- nothing" when there is nothing.>
+@@ -1375,7 +1375,7 @@ unassessed:
+ - #<n>: <a step of an approved plan you could not assess; "- none" when there is none>
  next: <one or two sentences: what the agent does next; never a step for the owner to do; a stop only with a stop verdict>
  message:
 -<the message for the owner to send to the agent, written to the agent, specific and professional, several lines if needed. It asks for the proof of what is not shown and pushes the agent off the easy option onto the right one. Leave empty only when every condition is shown or closed.>
