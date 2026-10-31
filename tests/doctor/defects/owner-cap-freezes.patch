@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 9c55ba2..d1a1684 100644
+index 0e6d35a..1cbae1b 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -281,7 +281,7 @@ Look especially for: work put off, shrunk or quietly dropped; work called finish
- export function trimOwner(list: OwnerMsg[], since: number): OwnerMsg[] {
-   const job = list.filter(m => m.n >= since).slice(-JOB_MAX)
+@@ -598,7 +598,7 @@ export function trimKept(list: OwnerMsg[], since: number): { list: OwnerMsg[]; n
+   const pinned = outside.slice(-APPROVED_KEEP_MAX).map(pin)
+   const notKept = outside.slice(0, outside.length - pinned.length)
    const before = list.filter(m => m.n < since).slice(-OWNER_MAX)
--  return [...before, ...job]
-+  return [...before, ...job].slice(-OWNER_MAX)
+-  return { list: [...before, ...pinned, ...job], notKept }
++  return { list: [...before, ...pinned, ...job].slice(-OWNER_MAX), notKept }
  }
  
- // One line per message: "- #n text", with the mark words for a note or a draft.
+ export function trimOwner(list: OwnerMsg[], since: number): OwnerMsg[] {
