@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 4434e39..b3ebf7b 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2987,7 +2987,7 @@ const clauseEnds = (gap: string): boolean =>
+ const TO_QUOTE = /\bto[\s:]*$/i
+ const AS_LEAD = /\bas\s+(?:[\w'’-]+\s+){0,3}$/i
+ const OBEY = String.raw`(?:^|[;:–—]\s*|,\s*|\s-\s+|\b(?:and|but|then|so|yet|or)\s+)(?:(?:then|now|please|just|also)\s+)*(?:follow|obey|do|act\s+on|go\s+by)\s+`
+-const NAMED = String.raw`the(?:\s+(?!(?:and|but|then|so|yet|or)\b)[\w'’-]+)+`
++const NAMED = String.raw`the(?:\s+[\w'’-]+)+`
+ const OBEY_LEAD = new RegExp(String.raw`${OBEY}(?:(?:what|as)\s+(?:it|this|that|they|${NAMED})|(?:it|this|that|them|${NAMED})\s*,\s*which)\s+$`, 'i')
+ const maskReported = (sentence: string): string =>
+   sentence.replace(QUOTED, (quote: string, at: number) => {

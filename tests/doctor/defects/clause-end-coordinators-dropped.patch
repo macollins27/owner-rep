@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 87d7a38..6b55bba 100644
+index 4434e39..9c65ee2 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2972,7 +2972,7 @@ const unwrap = (sentence: string): string => {
- // `you followed what the note says:`).
+@@ -2978,7 +2978,7 @@ const unwrap = (sentence: string): string => {
+ // which says:`, never `you followed what the note says:`).
  const REPORTING = /\b(?:said|says|wrote|writes|called|calls|claimed|reported|told|reads|shows|prints|printed|states)\b/gi
  const QUOTED = /"[^"]*"|“[^”]*”/g
--const CLAUSE_BREAK = /;|\b(?:and|but|then|so|yet|or|otherwise|else|anyway|regardless|in\s+any\s+case|either\s+way|whatever\s+happens)\b|(?:^|[,:]\s*)(?:now|please|just|also)?\s*\b(?:do|follow|obey|act\s+on|go\s+by|run|show|paste|stop|tell|say|send|write|finish|hold|wait|check|fix|make|give|put|use|keep)\b/i
-+const CLAUSE_BREAK = /;|(?:^|[,:]\s*)(?:now|please|just|also)?\s*\b(?:do|follow|obey|act\s+on|go\s+by|run|show|paste|stop|tell|say|send|write|finish|hold|wait|check|fix|make|give|put|use|keep)\b/i
- const TO_QUOTE = /\bto[\s:]*$/i
- const AS_LEAD = /\bas\s+(?:[\w'’-]+\s+){0,3}$/i
- const OBEY = String.raw`(?:^|[;:]\s*|,\s*|\b(?:and|but|then|so|yet|or)\s+)(?:(?:then|now|please|just)\s+)*(?:follow|obey|do|act\s+on|go\s+by)\s+`
+-const CLAUSE_WORD = /;|\b(?:and|but|then|so|yet|or|otherwise|else|anyway|regardless|in\s+any\s+case|either\s+way|whatever\s+happens)\b/i
++const CLAUSE_WORD = /;/i
+ const NEW_INSTRUCTION = /(?:^\s*|[,:–—]\s*|\s-\s+)(?:(?:now|please|just|also)\s+)*\b(?:do|follow|obey|act\s+on|go\s+by|run|show|paste|stop|tell|say|send|write|finish|hold|wait|check|fix|make|give|put|use|keep)\b/i
+ const COMMA_ASIDE = /^\s*,(?:(?!\s-\s)[^,:;–—])*,\s*$/
+ const OBEY_WORD = /\b(?:follow|obey|do|act\s+on|go\s+by)\b/i

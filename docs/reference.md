@@ -203,16 +203,23 @@ call writes (below):
    only as the object of the nearest reporting word before them (said, says, wrote, writes,
    called, calls, claimed, reported, told, reads, shows, prints, printed, states; `REPORTING`),
    however many words lie between, asides in commas included, inside that word's own clause.
-   The clause ends (`CLAUSE_BREAK`) at a semicolon, at a coordinating word (and, but, then,
-   so, yet, or, otherwise, else, anyway, regardless, in any case, either way, whatever
-   happens) or at a word starting a new instruction after a comma or colon, and a quote past
-   that end is read (`You said it passed and "You can stop now."`). Three leads order what the
+   The clause ends (`clauseEnds`) at a semicolon or a coordinating word (`CLAUSE_WORD`: and,
+   but, then, so, yet, or, otherwise, else, anyway, regardless, in any case, either way,
+   whatever happens) or at a word starting a new instruction (`NEW_INSTRUCTION`) right after
+   the reporting word, a comma, a colon or a dash (em, en, or a hyphen with a space each side),
+   behind any run of now, please, just and also, and a quote past that end is read (`You said
+   it passed and "You can stop now."`). One aside is no instruction (`COMMA_ASIDE`): it opens
+   with a comma right after the reporting word, closes with a comma right before the quote,
+   and holds no other clause end and no obey word (`OBEY_WORD`), so `said, run by run, "…"`
+   stays a report and `said it passed, run the suite, "…"` and `said, follow this, "…"` are
+   read. Three leads order what the
    quote says, so that quote is read: a "to" directly before it (`TO_QUOTE`: `says to: "…"`,
    `told the agent to: "…"`, never `said in its reply to the lead: "…"`), "as" up to three
    words before the reporting word (`AS_LEAD`: `do as the note says`), and an obey word in its
    present form (follow, obey, do, act on, go by) starting its clause (`OBEY_LEAD`: `Follow
    what it says:`, `Obey the note, which says:`; `you followed what the note says:` stays a
-   report);
+   report), with no limit on the note's name inside that clause (`NAMED`: a coordinating word
+   ends it);
    then `toAgentVoice`; then
    five shapes masked (`maskExempt`) that do not stop the agent while it could still move the
    work; then `STOP_NEXT` and `STOP_ONCE`. Each mask replaces only the words that make its

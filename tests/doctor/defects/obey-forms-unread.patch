@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 87d7a38..d2add8e 100644
+index 4434e39..dd220a9 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2984,7 +2984,7 @@ const maskReported = (sentence: string): string =>
+@@ -2996,7 +2996,7 @@ const maskReported = (sentence: string): string =>
      if (word === undefined) return quote
      const lead = before.slice(0, word.index)
      const gap = before.slice((word.index ?? 0) + word[0].length)
 -    if (TO_QUOTE.test(gap) || AS_LEAD.test(lead) || OBEY_LEAD.test(lead)) return quote
 +    if (TO_QUOTE.test(gap) || AS_LEAD.test(lead)) return quote
-     return CLAUSE_BREAK.test(gap) ? quote : '"x"'
+     return clauseEnds(gap) ? quote : '"x"'
    })
  

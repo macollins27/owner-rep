@@ -1,8 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 87d7a38..5f68a79 100644
+index 4434e39..e3eda30 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2980,12 +2980,10 @@ const OBEY_LEAD = new RegExp(String.raw`${OBEY}(?:(?:what|as)\s+(?:it|this|that|
+@@ -2992,12 +2992,10 @@ const OBEY_LEAD = new RegExp(String.raw`${OBEY}(?:(?:what|as)\s+(?:it|this|that|
  const maskReported = (sentence: string): string =>
    sentence.replace(QUOTED, (quote: string, at: number) => {
      const before = sentence.slice(0, at)
@@ -11,7 +11,7 @@ index 87d7a38..5f68a79 100644
 -    const lead = before.slice(0, word.index)
 -    const gap = before.slice((word.index ?? 0) + word[0].length)
 -    if (TO_QUOTE.test(gap) || AS_LEAD.test(lead) || OBEY_LEAD.test(lead)) return quote
--    return CLAUSE_BREAK.test(gap) ? quote : '"x"'
+-    return clauseEnds(gap) ? quote : '"x"'
 +    for (const word of before.matchAll(REPORTING)) {
 +      if (!/^\s+(?:(?:the\s+)?[\w'’-]+\s+)?to\b/i.test(before.slice((word.index ?? 0) + word[0].length))) return '"x"'
 +    }

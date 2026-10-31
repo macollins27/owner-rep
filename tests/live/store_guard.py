@@ -16,6 +16,7 @@ file: only a live run points it at a real store.
 """
 from __future__ import annotations
 
+import ctypes
 import json
 import os
 import shutil
@@ -25,6 +26,7 @@ from pathlib import Path
 from typing import Callable
 
 RETRIES = 5
+RENAME_SWAP = 0x2  # <stdio.h> on macOS
 DROPPED_DRAFTS_MAX = 200  # hooks/rep.ts
 
 
@@ -165,9 +167,54 @@ def merged(now: dict, saved: dict, ids: list[str]) -> dict:
     return out
 
 
-def restore(folder: Path, ids: list[str], before_replace: Callable[[], None] = lambda: None) -> str:
-    store = Path((folder / 'store.path').read_text().strip())
-    saved = load(folder / 'store.backup.json')
+def swap(a: Path, b: Path) -> None:
+    libc = ctypes.CDLL(None, use_errno=True)
+    if libc.renamex_np(os.fsencode(a), os.fsencode(b), RENAME_SWAP) != 0:
+        err = ctypes.get_errno()
+        raise OSError(err, os.strerror(err), str(a))
+
+
+def swap_in(store: Path, saved: dict, ids: list[str], before_swap: Callable[[], None]) -> str:
+    """The store is never absent and no version goes unseen: the swap hands back exactly what it
+    displaced. `held` is what the store should hold at each swap: the bytes the first merge read,
+    then the bytes the last swap put there, since after a swap the store holds this restore's own
+    merge. Anything else that comes back was another session's write: merge from it and swap again."""
+    held = store.read_bytes()
+    now = load(store)
+    want = merged(now, saved, ids)
+    if want == now:
+        return 'nothing to put right'
+    fd, name = tempfile.mkstemp(dir=store.parent, prefix=store.name + '.')
+    os.close(fd)
+    tmp = Path(name)
+    both = f'{store} holds this restore\'s last merge and {tmp} holds the version it displaced'
+    for _ in range(RETRIES):
+        body = json.dumps(want).encode()
+        tmp.write_bytes(body)
+        shutil.copymode(store, tmp)
+        before_swap()
+        try:
+            swap(tmp, store)
+        except OSError as e:
+            raise Refused(f'the swap failed ({e}): {store} and {tmp} are left as they stand')
+        displaced = tmp.read_bytes()
+        if displaced == held:
+            tmp.unlink()
+            return 'restored'
+        held = body
+        try:
+            now = load(tmp)
+        except Refused as e:
+            raise Refused(f'{e}: {both}')
+        # A writer may have read this restore's own merge, so records an earlier round took in stay.
+        now['sessions'] = {**want.get('sessions', {}), **now.get('sessions', {})}
+        want = merged(now, saved, ids)
+    raise Refused(f'the store kept changing through {RETRIES} swaps: {both}')
+
+
+def replace_unless_changed(store: Path, saved: dict, ids: list[str], before_replace: Callable[[], None]) -> str:
+    """Off macOS there is no renamex_np, so this falls back to a time check: a save landing between
+    the check and the replace is lost."""
     for _ in range(RETRIES):
         stamp = store.stat().st_mtime_ns
         now = load(store)
@@ -188,6 +235,12 @@ def restore(folder: Path, ids: list[str], before_replace: Callable[[], None] = l
         finally:
             tmp.unlink(missing_ok=True)
     raise Refused(f'the store kept changing through {RETRIES} tries: not restored')
+
+
+def restore(folder: Path, ids: list[str], before_write: Callable[[], None] = lambda: None, atomic: bool = sys.platform == 'darwin') -> str:
+    store = Path((folder / 'store.path').read_text().strip())
+    saved = load(folder / 'store.backup.json')
+    return (swap_in if atomic else replace_unless_changed)(store, saved, ids, before_write)
 
 
 def self_test() -> int:
@@ -285,7 +338,7 @@ def self_test() -> int:
                 s.write_text(json.dumps(now))
                 os.utime(s, ns=(1, 1))
 
-        restore(folder, ['run'], another_session)
+        restore(folder, ['run'], another_session, atomic=False)
         done = json.loads(s.read_text())
         check('restore: a write mid-way is read again and kept', tries['n'] == 2 and 'late' in done['sessions'] and 'run' not in done['sessions'])
 
@@ -296,10 +349,68 @@ def self_test() -> int:
             ticks['n'] += 1
             os.utime(s, ns=(ticks['n'], ticks['n']))
 
-        check('restore: a store that keeps changing is refused', refused(lambda: restore(folder, ['run'], always)))
+        check('restore: a store that keeps changing is refused', refused(lambda: restore(folder, ['run'], always, atomic=False)))
         check('restore: tries five times', ticks['n'] == RETRIES)
         check('restore: left as it stood when refused', 'run' in json.loads(s.read_text())['sessions'])
         check('restore: leaves no temporary file', [p.name for p in tmp.iterdir() if p.name.startswith('busy.json.')] == [])
+
+        if sys.platform != 'darwin':
+            print('  restore by swap: not run, this is macOS only')
+        else:
+            folder, s = fresh('swap', before, after)
+            restore(folder, ['run'])
+            done = json.loads(s.read_text())
+            check('swap: the run is gone and the record pushed out is back', 'run' not in done['sessions'] and 'a' in done['sessions'])
+            check('swap: leaves no temporary file', [p.name for p in tmp.iterdir() if p.name.startswith('swap.json.')] == [])
+
+            def writes_on(s: Path, *rounds: int) -> tuple[Callable[[], None], dict]:
+                seen = {'n': 0}
+
+                def hook() -> None:
+                    seen['n'] += 1
+                    if seen['n'] in rounds:
+                        now = json.loads(s.read_text())
+                        now['sessions'][f'late{seen["n"]}'] = rec(10)
+                        s.write_text(json.dumps(now))
+                return hook, seen
+
+            folder, s = fresh('instant', before, after)
+            hook, seen = writes_on(s, 1)
+            restore(folder, ['run'], hook)
+            done = json.loads(s.read_text())
+            check('swap: a write in the instant before the swap survives', seen['n'] == 2 and 'late1' in done['sessions'] and 'run' not in done['sessions'] and 'a' in done['sessions'])
+            check('swap: leaves no temporary file after a write', [p.name for p in tmp.iterdir() if p.name.startswith('instant.json.')] == [])
+
+            folder, s = fresh('second', before, after)
+            hook, seen = writes_on(s, 1, 2)
+            restore(folder, ['run'], hook)
+            done = json.loads(s.read_text())
+            check('swap: writes before the first and second swaps both survive', seen['n'] == 3 and {'late1', 'late2'} <= set(done['sessions']) and 'run' not in done['sessions'])
+
+            folder, s = fresh('storm', before, after)
+            hook, seen = writes_on(s, 1, 2, 3, 4, 5)
+            try:
+                restore(folder, ['run'], hook)
+                said = ''
+            except Refused as e:
+                said = str(e)
+            left = [p for p in tmp.iterdir() if p.name.startswith('storm.json.')]
+            check('swap: a store that keeps changing fails loudly after five swaps', seen['n'] == RETRIES and 'through 5 swaps' in said)
+            check('swap: the failure names both files', len(left) == 1 and str(s) in said and str(left[0]) in said)
+            check('swap: the store is there and the displaced version is kept', 'run' not in json.loads(s.read_text())['sessions'] and 'late5' in json.loads(left[0].read_text())['sessions'])
+
+            folder, s = fresh('torn', before, after)
+
+            def torn() -> None:
+                s.write_text('{"sessions"')
+
+            try:
+                restore(folder, ['run'], torn)
+                said = ''
+            except Refused as e:
+                said = str(e)
+            left = [p for p in tmp.iterdir() if p.name.startswith('torn.json.')]
+            check('swap: a displaced version that cannot be read is kept and named', len(left) == 1 and left[0].read_text() == '{"sessions"' and str(s) in said and str(left[0]) in said)
 
     print(f'{"all shown" if not bad else str(len(bad)) + " FAILED"}')
     return 1 if bad else 0

@@ -2964,19 +2964,31 @@ const unwrap = (sentence: string): string => {
 // (`said, in the last line of its report, "…"`), inside its own clause only. The clause ends at a
 // semicolon, a sentence end, a coordinating word (`and`, `but`, `then`, `so`, `yet`, `or` and their
 // like) or a word that starts a new instruction, and a quote past that end is read:
-// `You said it passed and "You can stop now."`. A coordinating word inside an aside ends the clause
-// too. Three leads give an order to do what the quote says, and that quote is read: a "to" directly
-// before it (`says to: "…"`, `told the agent to: "…"`, but never `said in its reply to the lead:
-// "…"`), "as" a few words before the reporting word (`do as the note says`), and an obey word in its
-// present form starting its clause (`Follow what it says:`, `Obey the note, which says:`, never
-// `you followed what the note says:`).
+// `You said it passed and "You can stop now."`. A new instruction stands right after the reporting
+// word, a comma, a colon or a dash (em, en or a hyphen with a space each side), behind any run of
+// now, please, just and also: `said it passed: please now follow this:`, `said it passed — follow
+// this:`. A coordinating word inside an aside ends the clause too. One aside is no instruction: it
+// opens with a comma right after the reporting word, closes with a comma right before the quote,
+// holds no other clause end and no obey word (`said, run by run, "…"`, never `said it passed, run
+// the suite, "…"` or `said, follow this, "…"`). Three leads give an order to do what the quote says,
+// and that quote is read: a "to" directly before it (`says to: "…"`, `told the agent to: "…"`, but
+// never `said in its reply to the lead: "…"`), "as" a few words before the reporting word (`do as
+// the note says`), and an obey word in its present form starting its clause, whatever the length of
+// the note's name inside that clause (`Follow what the final review note says:`, `Obey the note,
+// which says:`, never `you followed what the note says:`).
 const REPORTING = /\b(?:said|says|wrote|writes|called|calls|claimed|reported|told|reads|shows|prints|printed|states)\b/gi
 const QUOTED = /"[^"]*"|“[^”]*”/g
-const CLAUSE_BREAK = /;|\b(?:and|but|then|so|yet|or|otherwise|else|anyway|regardless|in\s+any\s+case|either\s+way|whatever\s+happens)\b|(?:^|[,:]\s*)(?:now|please|just|also)?\s*\b(?:do|follow|obey|act\s+on|go\s+by|run|show|paste|stop|tell|say|send|write|finish|hold|wait|check|fix|make|give|put|use|keep)\b/i
+const CLAUSE_WORD = /;|\b(?:and|but|then|so|yet|or|otherwise|else|anyway|regardless|in\s+any\s+case|either\s+way|whatever\s+happens)\b/i
+const NEW_INSTRUCTION = /(?:^\s*|[,:–—]\s*|\s-\s+)(?:(?:now|please|just|also)\s+)*\b(?:do|follow|obey|act\s+on|go\s+by|run|show|paste|stop|tell|say|send|write|finish|hold|wait|check|fix|make|give|put|use|keep)\b/i
+const COMMA_ASIDE = /^\s*,(?:(?!\s-\s)[^,:;–—])*,\s*$/
+const OBEY_WORD = /\b(?:follow|obey|do|act\s+on|go\s+by)\b/i
+const clauseEnds = (gap: string): boolean =>
+  CLAUSE_WORD.test(gap) || (NEW_INSTRUCTION.test(gap) && (!COMMA_ASIDE.test(gap) || OBEY_WORD.test(gap)))
 const TO_QUOTE = /\bto[\s:]*$/i
 const AS_LEAD = /\bas\s+(?:[\w'’-]+\s+){0,3}$/i
-const OBEY = String.raw`(?:^|[;:]\s*|,\s*|\b(?:and|but|then|so|yet|or)\s+)(?:(?:then|now|please|just)\s+)*(?:follow|obey|do|act\s+on|go\s+by)\s+`
-const OBEY_LEAD = new RegExp(String.raw`${OBEY}(?:(?:what|as)\s+(?:it|this|that|they|the\s+[\w'’-]+(?:\s+[\w'’-]+)?)|(?:it|this|that|them|the\s+[\w'’-]+(?:\s+[\w'’-]+)?)\s*,\s*which)\s+$`, 'i')
+const OBEY = String.raw`(?:^|[;:–—]\s*|,\s*|\s-\s+|\b(?:and|but|then|so|yet|or)\s+)(?:(?:then|now|please|just|also)\s+)*(?:follow|obey|do|act\s+on|go\s+by)\s+`
+const NAMED = String.raw`the(?:\s+(?!(?:and|but|then|so|yet|or)\b)[\w'’-]+)+`
+const OBEY_LEAD = new RegExp(String.raw`${OBEY}(?:(?:what|as)\s+(?:it|this|that|they|${NAMED})|(?:it|this|that|them|${NAMED})\s*,\s*which)\s+$`, 'i')
 const maskReported = (sentence: string): string =>
   sentence.replace(QUOTED, (quote: string, at: number) => {
     const before = sentence.slice(0, at)
@@ -2985,7 +2997,7 @@ const maskReported = (sentence: string): string =>
     const lead = before.slice(0, word.index)
     const gap = before.slice((word.index ?? 0) + word[0].length)
     if (TO_QUOTE.test(gap) || AS_LEAD.test(lead) || OBEY_LEAD.test(lead)) return quote
-    return CLAUSE_BREAK.test(gap) ? quote : '"x"'
+    return clauseEnds(gap) ? quote : '"x"'
   })
 
 // A stop once something is done, in a message: "You can stop after that.", "You can stop once
