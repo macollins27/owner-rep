@@ -240,9 +240,12 @@ full, this is everything it reads and runs:
   takes the transcript path Claude Code gives its hooks.
 - **What the Heads up and the briefing read:** the session's recorded messages, built from
   their text, tool calls and results, sent through one plain model call each look. Structured
-  thinking blocks, the agent's system prompt and your instruction files are not in it. Every
-  cut is marked. The rows after the earliest open approval are given whole up to a budget, and
-  the plans you approved are given whole regardless. The writer and these two readers never see
+  thinking blocks, the agent's system prompt and the instruction files Claude Code adds to the
+  agent's context are not in it; an instruction file the agent opened with a tool is a recorded
+  tool result, and is in it like any other. Every cut is marked. The rows after the earliest open
+  approval are given whole up to a budget. The plans you approved are given whole up to 40,000
+  characters a Heads up and 80,000 a briefing; a plan past that is left out, with a line saying
+  so, and a plan is never given in part. The writer and these two readers never see
   the agent's thinking. The check is different: it reads the session through agentsview, and
   that includes the agent's thinking.
 - **Environment variables:** `PATH`, `HOME`, `USERPROFILE`, `CLAUDE_CONFIG_DIR`, `OS`,

@@ -494,6 +494,9 @@ export const SOURCE_WRITE_MS = 1_500
 // Why a source cannot be read.
 export const LOST_DAMAGED = 'its saved copy is missing or damaged'
 export const LOST_RESTART = 'the rep held it only until Claude Code restarted'
+// Why the newest copy of a record in the session's files was not taken up.
+export const LOST_LIST_UNREAD = 'its saved copy could not be read'
+export const LOST_CHANGED = 'its saved copy could not be read until you had sent more'
 export const lostTooLong = (chars: number): string => `longer than the rep keeps (${chars} characters)`
 // Why the store did not take a record.
 export const STORE_FULL_WHY = 'the shared store is full'
@@ -764,7 +767,7 @@ export function unresolvedRow(m: OwnerMsg): { row: CoverRow; why: string } | nul
   }
   if (!approvalOf(m)) {
     if (state === 'waiting') return { row: m.read?.mark === true ? '1' : '2', why: '' }
-    if (state === 'unreadable' || (state === undefined && x !== null)) return { row: '6', why }
+    if (state === 'unreadable' || (state === undefined && x !== null && x.why !== NO_ROW_WHY)) return { row: '6', why }
     return null
   }
   if (m.kind === 'plan') {
@@ -2061,12 +2064,14 @@ export const candidateKeys = (rows: readonly RecordRow[]): Set<string> => new Se
 // `compacted`: the agent's turn it answered is not in the rows, so its body is incomplete (plan 6.4).
 export const COMPACTED_WHY = 'the session was compacted, so that turn is gone'
 export const TURN_START_WHY = 'the rep could not see where that turn began'
+export const NO_ROW_WHY = 'the rep could not find that message in the session'
 const isSummaryRow = (row: RecordRow | undefined): boolean =>
   row !== undefined && row.role === 'user' && withoutReminders(row.text).startsWith('This session is being continued from a previous conversation')
 // One seeded message: `at` is its row, when a row holds it; `body` is every word the agent wrote
 // between the owner's row before it and this one, oldest first and whole; `incomplete` says the
 // turn's start is not in the rows, so what `body` holds is part of a turn and is never shown as
-// all of it. The session's first message answers nothing, so its missing start is no gap.
+// all of it. An item no row holds has no body at all, and says so. The session's first message
+// answers nothing, so its missing start is no gap.
 export type SeededTurn = { text: string; prior: string; at?: number; body?: string; incomplete?: string }
 export function typedFromItems(items: readonly HumanItem[], rows: readonly RecordRow[]): SeededTurn[] {
   const priors = items.map(() => '')
@@ -2099,7 +2104,7 @@ export function typedFromItems(items: readonly HumanItem[], rows: readonly Recor
   return items.map((item, k) => {
     const out: SeededTurn = { text: item.text, prior: priors[k] ?? '' }
     const at = ats[k] ?? -1
-    if (at < 0) return out
+    if (at < 0) return k === 0 ? out : { ...out, incomplete: NO_ROW_WHY }
     const parts: string[] = []
     let i = at - 1
     while (i > before && !isSummaryRow(rows[i])) {

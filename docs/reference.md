@@ -757,9 +757,13 @@ reads back with its fingerprint (`pickRecord`, `parsedRec`, which checks the ses
 with `rec.lossMark` (`{ lostRev, keptRev, after, why }`), `recRev` set past the lost copy's, and
 the list renamed `record-lost-<lostRev>.json` with its parts kept. A loss for any reason but a
 fingerprint that did not match (`isMismatch`) is taken up at a later start while the record
-has not changed since the mark (`recRev` still `lostRev + 1`), its files then removed; a new job
-clears the mark and removes its files. Sources held in memory by an earlier process are marked
-`LOST_RESTART`.
+has not changed since the mark (`recRev` still `lostRev + 1`), its files then removed once the
+record is saved; a new job clears the mark and removes its files. A list that exists and cannot be
+read (`LOST_LIST_UNREAD`) stays where it is, the mark holding `keptRev` and `after`, and is read
+again at each start: at or under `keptRev` it goes and the mark with it; newer, it is taken up
+while the owner has sent nothing since the mark, and otherwise renamed as lost with
+`LOST_CHANGED`, which no later start takes up. Sources held in memory by an earlier process are
+marked `LOST_RESTART`.
 
 An approval (`approvalOf`: the owner's message, note or plan-screen plan carrying `approved`,
 never one that turned a plan down, never a draft) of the open job that falls outside the job's
@@ -803,9 +807,10 @@ row before it, collecting the agent's text oldest first, joined by a blank line,
 and `seededBody` gives it one span with `by: 'other'` and `note: 'read-back'`, which `spansText`
 shows as `READ_BACK_LINE`. A walk stopped by a summary row is `incomplete` with `COMPACTED_WHY`; one
 that runs out of rows with messages before it, with `TURN_START_WHY`. The first message is not
-marked: nothing comes before it. A message with no row at all, one from before a compaction, gets
-no body and no `incomplete`, because every compacted session would otherwise show many lines: that
-is a known limit.
+marked: nothing comes before it. A later message with no row at all, queued or from before a
+compaction, gets no body and `incomplete` with `NO_ROW_WHY`. That gives no line by itself, or every
+compacted session would show many: only an approval of such a message is named, as row 3, so a
+reader that cannot see the plan says so.
 
 A session the rep holds no record of (its record fell out of the newest `SESSIONS_MAX`, it
 was forked with a new id, or it is older than the mod) has none of the owner's messages. `seedOwner`

@@ -346,7 +346,9 @@ conversation. Rows after the job's earliest open approval are given whole up to 
 Earlier ones are cut, each message to 3,000 characters and each tool's input and result to 600, a
 compaction summary up to 40,000, and the oldest are left out past 200,000 characters, with a line
 saying how many. Every cut is marked inside the field it falls in. The approved plans themselves
-are given whole regardless, from their saved copies. The rows carry no number, time or turn, so
+are given from their saved copies, each whole or not at all, up to 40,000 characters for the Heads
+up and 80,000 for the briefing; a plan past the budget is left out and the reader's card says so.
+The rows carry no number, time or turn, so
 the approval is located by matching the job's messages against them, and the match has three
 outcomes: established, the record opens after the approval, or it cannot be placed. In the last
 two the reader is told, the steps are not assessed, and the owner sees a coverage line saying so.

@@ -437,7 +437,7 @@ const RESULT_LINE = (id: string) => JSON.stringify({ type: 'user', message: { ro
 const COMPACTED_FILE = [LINE('Add a licence file with the MIT text.'), LINE('Use this year, and push it.'), LINE(SUMMARY, {}), USE_LINE('toolu_01Push'), RESULT_LINE('toolu_01Push')].join('\n')
 const COMPACTED = [
   { n: 1, kind: 'his', text: 'Add a licence file with the MIT text.', prior: '' },
-  { n: 2, kind: 'his', text: 'Use this year, and push it.', prior: '' },
+  { n: 2, kind: 'his', text: 'Use this year, and push it.', prior: '', turns: [], incomplete: rep.NO_ROW_WHY },
 ]
 
 // A compaction line as Claude Code saves it, its one "uuid" after its mark, and a line of the
@@ -459,7 +459,7 @@ const TAIL_ROWS: SessionMessage[] = [
 // then what the owner typed in the fork.
 const TAIL_COPY = [META, META, BOUNDARY(), LINE(SUMMARY, {}), LINE('Keep the year in the header too.'), USE_LINE('toolu_01Push'), RESULT_LINE('toolu_01Push'), LINE('And a changelog.')].join('\n')
 const TAILED = [
-  ...COMPACTED,
+  ...noBody(COMPACTED),
   // Its row comes right after the summary: the turn it answered is gone, so its body is incomplete.
   { n: 3, kind: 'his', text: 'Keep the year in the header too.', prior: '', incomplete: 'the session was compacted, so that turn is gone' },
   { n: 4, kind: 'his', text: 'And a changelog.', prior: 'Pushed.' },
@@ -544,7 +544,7 @@ test('the briefs say a chore left for the owner is the agent\'s unfinished work,
   expect(checkPrompt({ sessionId: 's', cwd: '/tmp', owner: [om('Build it.')], reading: 'x', brief: parseBrief('stands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm', conditions: [], shown: [], from: 0 } as never)).toMatch(/never a step for the owner to do/)
 })
 
-test('the brief keeps every judgment line word for word and stays under 2,900 words', () => {
+test('the brief keeps every judgment line word for word and stays under its word limits', () => {
   const empty = { objective: null, owner: [], past: [], seen: [], others: [] }
   const b = briefPrompt(empty)
   const w = watchPrompt(empty, 'stop')
@@ -4911,6 +4911,170 @@ test('rule: a lost copy\'s mark clears when the writer starts a new job, and its
   expect(files.has(`${DIR}/record-lost-3.json`)).toBe(false)
   expect(files.has(`${DIR}/record-3-1.json`)).toBe(false)
   expect(await rowSays($, /lost its newest copy/)).toBe(false)
+})
+
+test('guard: a lost copy taken up at a start stays in the files until the recovered record is saved', async ($, on) => {
+  const files = new Map<string, string>()
+  await plantFallback(files, recOf([...FORTY(), his(41, 'FROM THE FILES')]), 3, { lost: true })
+  const d = disk(on, files)
+  const store = storeOf(recOf(FORTY(), { recRev: 4, lossMark: { lostRev: 3, keptRev: 2, after: 40, why: 'part 1 could not be read' } }))
+  const { hold } = capture(on, store, () => SID)
+  hold.refuse = () => true
+  d.failWrite = true
+  await started($)
+  await settle($)
+  expect(files.has(`${DIR}/record-lost-3.json`)).toBe(true)
+  expect(files.has(`${DIR}/record-3-1.json`)).toBe(true)
+})
+
+let unreadList: { store: Record<string, unknown>; files: Map<string, string> } | null = null
+const UNREAD_MARK = { lostRev: 3, keptRev: 2, after: 40, why: 'its saved copy could not be read' }
+test('guard: a list that exists and cannot be read is marked as a loss and left in place, never taken for no copy (the start that cannot read it)', async ($, on) => {
+  const files = new Map<string, string>()
+  await plantFallback(files, recOf([...FORTY(), his(41, 'FROM THE FILES')]), 3)
+  const d = disk(on, files)
+  d.failRead.add(`${DIR}/record.json`)
+  const store = storeOf(recOf(FORTY(), { recRev: 2 }))
+  capture(on, store, () => SID)
+  await started($)
+  await settle($)
+  expect(heldIn(store)?.lossMark).toEqual(UNREAD_MARK)
+  expect(heldIn(store)?.recRev).toBe(2)
+  expect(files.has(`${DIR}/record.json`)).toBe(true)
+  expect(await rowSays($, lineRe(LOST_LINE('its saved copy could not be read')))).toBe(true)
+  unreadList = { store, files }
+})
+test('guard: a list that exists and cannot be read is marked as a loss and left in place, never taken for no copy (the next start, which reads it)', async ($, on) => {
+  const { store, files } = unreadList as NonNullable<typeof unreadList>
+  disk(on, files)
+  capture(on, store, () => SID)
+  await started($)
+  await settle($)
+  expect(heldIn(store)?.lossMark).toBeUndefined()
+  expect(heldIn(store)?.owner.at(-1)?.text).toBe('FROM THE FILES')
+  expect(await rowSays($, /lost its newest copy/)).toBe(false)
+})
+
+test('rule: a list read at last at or under what the store kept goes, and the mark with it', async ($, on) => {
+  const files = new Map<string, string>()
+  await plantFallback(files, recOf(FORTY()), 2)
+  disk(on, files)
+  const store = storeOf(recOf(FORTY(), { recRev: 2, lossMark: UNREAD_MARK }))
+  capture(on, store, () => SID)
+  await started($)
+  await settle($)
+  expect(heldIn(store)?.lossMark).toBeUndefined()
+  expect(files.has(`${DIR}/record.json`)).toBe(false)
+})
+
+let lateList: { store: Record<string, unknown>; files: Map<string, string> } | null = null
+test('rule: a list read at last after the owner sent more is not taken over what he sent (the start that reads it)', async ($, on) => {
+  const files = new Map<string, string>()
+  await plantFallback(files, recOf([...FORTY(), his(41, 'FROM THE FILES')]), 3)
+  disk(on, files)
+  const store = storeOf(recOf([...FORTY(), his(41, 'SENT SINCE')], { recRev: 7, lossMark: UNREAD_MARK }))
+  capture(on, store, () => SID)
+  await started($)
+  await settle($)
+  expect(heldIn(store)?.owner.at(-1)?.text).toBe('SENT SINCE')
+  expect(heldIn(store)?.lossMark).toEqual({ ...UNREAD_MARK, why: 'its saved copy could not be read until you had sent more' })
+  expect(heldIn(store)?.recRev).toBe(7)
+  expect(files.has(`${DIR}/record.json`)).toBe(false)
+  expect(files.has(`${DIR}/record-lost-3.json`)).toBe(true)
+  lateList = { store, files }
+})
+test('rule: a list read at last after the owner sent more is not taken over what he sent (a later start)', async ($, on) => {
+  const { store: was, files } = lateList as NonNullable<typeof lateList>
+  // The revision the take-up of an ordinary loss looks for, so only the mark's reason refuses it.
+  const store = storeOf({ ...heldIn(was), recRev: 4 })
+  disk(on, files)
+  capture(on, store, () => SID)
+  await started($)
+  await settle($)
+  expect(heldIn(store)?.owner.at(-1)?.text).toBe('SENT SINCE')
+  expect(heldIn(store)?.lossMark?.why).toBe('its saved copy could not be read until you had sent more')
+  expect(files.has(`${DIR}/record-lost-3.json`)).toBe(true)
+})
+
+test('guard: a new job removes a list that could not be read, so no later start takes the old job over it', async ($, on) => {
+  const files = new Map<string, string>()
+  await plantFallback(files, recOf([...FORTY(), his(41, 'FROM THE FILES')]), 3)
+  const d = disk(on, files)
+  d.failRead.add(`${DIR}/record.json`)
+  const store = storeOf(recOf(FORTY(), { recRev: 2, objective: HELD_OBJ(1, 40) }))
+  const { hold } = capture(on, store, () => SID)
+  hold.write = () => OBJ('A new report written.', ['the report written'], 'new job: #41 asked for a new report')
+  await started($)
+  await send($, 'now write the new report')
+  await settleUntil($, () => heldIn(store)?.lossMark === undefined && !files.has(`${DIR}/record.json`))
+  expect(heldIn(store)?.lossMark).toBeUndefined()
+  expect(files.has(`${DIR}/record.json`)).toBe(false)
+  expect(files.has(`${DIR}/record-3-1.json`)).toBe(false)
+})
+
+test('rule: a reader cannot close a condition by citing an approved plan or a yes; the owner\'s own later message still closes it', async ($, on) => {
+  const rec = kept(on, {
+    sessions: {
+      'test-session': {
+        id: 'test-session',
+        at: Date.now(),
+        objective: { ...OBJECTIVE_FIXTURE, from: 1 },
+        jobStart: 1,
+        owner: [
+          om('finish the spec and the two other sessions'),
+          { n: 2, kind: 'plan', text: 'Leave the two sessions alone.', prior: '', approved: 'all', screen: 'accepted', read: { state: 'read' } },
+          { ...om('yes', 3), approved: 'all', read: { state: 'read' } },
+          om('never mind the two sessions', 4),
+        ],
+        counter: 4,
+        past: [],
+        seen: [],
+        others: [],
+      },
+    },
+  })
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  let closed = 'closed:\n- the two sessions finished | #2\n- the two sessions finished | #3\n'
+  on('model.fork', () => ({ value: { isAnswered: true, text: `state: stopped\nflag: none\nwhy: \nshown:\n- nothing\n${closed}`, usage: USAGE } }))
+  await started($)
+  await $.turn.complete(stop('t1'))
+  await settle($)
+  expect(rec()?.objective?.done.find(c => c.text === 'the two sessions finished')?.state).toBe('open')
+  closed = 'closed:\n- the two sessions finished | #4\n'
+  await $.turn.complete(stop('t2'))
+  await settle($)
+  expect(rec()?.objective?.done.find(c => c.text === 'the two sessions finished')).toMatchObject({ state: 'closed', by: '#4' })
+})
+
+test('guard: Check it keeps the lost-record warning on the card it rewrites, and no stop stands beside it', async ($, on) => {
+  const store = ALL_SHOWN()
+  ;(store.sessions as Record<string, Record<string, unknown>>)['test-session']!.lossMark = { lostRev: 3, keptRev: 2, after: 1, why: 'part 1 does not match its fingerprint' }
+  kept(on, store)
+  quietBand(on)
+  room(on)
+  on('session.cwd', () => ({ value: '/tmp/x' }))
+  mock.clock(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: STOP_BRIEF(), usage: USAGE } }))
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  on('process.spawn', async function* () {
+    yield {
+      stream: 'stdout',
+      text: JSON.stringify({
+        type: 'result',
+        result: 'verdict: stop\nholds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n- nothing\nclosed:\n- nothing\nnext: Stop the agent; the job is finished.\nmessage:\nWrap up and stop here.\nend\ndoes: It stops.',
+        usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+      }),
+    }
+    return { value: { code: 0, signal: null } }
+  })
+  await started($)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+  expect(await ui.find({ type: 'Text', text: /The rep lost its newest copy of this session's record/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Stop the agent/ })).toBeUndefined()
+  await ui.unmount()
 })
 
 // An approval (#5) over a plan, with its sources in files, and ordinary messages after it.
@@ -11183,6 +11347,8 @@ test('typedFromItems gives each message every word of the turn it answered, olde
   // An earlier message of the owner's that no row holds: the row before this one is not in the list.
   expect(typedFromItems([ITEM('Long gone.'), ITEM('Plan it.'), ITEM('yes')], rows).map(t => t.incomplete)).toEqual([undefined, rep.TURN_START_WHY, undefined])
   expect(typedFromItems([ITEM('Long gone.'), ITEM('yes')], rows.slice(1))[1]).toMatchObject({ incomplete: rep.TURN_START_WHY, body: 'The plan.\n\nShall I go ahead?' })
+  // A later message no row holds says so; the first has nothing before it to miss.
+  expect(typedFromItems([ITEM('Plan it.'), ITEM('Queued, so no row.', true), ITEM('yes')], rows).map(t => t.incomplete)).toEqual([undefined, rep.NO_ROW_WHY, undefined])
   // A queued message has no turn of its own, and the message after it still answers the whole turn.
   expect(typedFromItems([ITEM('Plan it.'), ITEM('Use pears.', true), ITEM('yes')], rows).map(t => t.body)).toEqual([undefined, undefined, 'The plan.\n\nShall I go ahead?'])
   // A compaction between the start of the turn and the message: what follows it is kept, and named as part of a turn.
@@ -11229,6 +11395,28 @@ test('rule: a seeded yes holds the whole turn it answered, the plan row, the too
   expect(approves(s.msg(2))).toBe(true)
   expect(s.msg(2)?.read?.state).toBe('read')
   expect(doneOf(s.obj())).toContain('plum.txt made')
+})
+
+test('guard: a seeded approval no row holds is never read as read: it says the rep could not find it', async ($, on) => {
+  const file = [LINE('Plan it.'), QUEUED('yes')].join('\n')
+  const s = seededSession(on, [you('Plan it.'), agentSaid('The plan.')], file)
+  s.answer(() => ANSWER(['the plan carried out | open'], { approved: ['#2 | all'], cause: '#2 moved it' }))
+  await started($)
+  await s.quiet($)
+  expect(s.msg(2)?.src?.body).toBeUndefined()
+  expect(approves(s.msg(2))).toBe(true)
+  expect(await rowSays($, new RegExp(rep.NO_ROW_WHY))).toBe(true)
+})
+
+test('rule: a seeded message no row holds that approves nothing stands without a line', async ($, on) => {
+  const file = [LINE('Plan it.'), QUEUED('Use pears.'), LINE('And apples.')].join('\n')
+  const s = seededSession(on, [you('Plan it.'), agentSaid('The plan.'), you('And apples.')], file)
+  s.answer(() => ANSWER(['the fruit files made | open']))
+  await started($)
+  await s.quiet($)
+  expect(s.msg(2)?.incomplete).toBe(rep.NO_ROW_WHY)
+  expect(await rowSays($, new RegExp(rep.NO_ROW_WHY))).toBe(false)
+  expect(await rowSays($, /could not read the agent's turn/)).toBe(false)
 })
 
 test('rule: a seeded message the owner queued has no body of its own', async ($, on) => {
@@ -11982,7 +12170,7 @@ test('rule: a message the owner typed while the agent worked, which is no row of
   await settle($)
   expect(noBody(rec()?.owner)).toEqual([
     { n: 1, kind: 'his', text: 'Add a licence file.', prior: '' },
-    { n: 2, kind: 'his', text: 'Use the Apache text, not MIT.', prior: '' },
+    { n: 2, kind: 'his', text: 'Use the Apache text, not MIT.', prior: '', incomplete: rep.NO_ROW_WHY },
     { n: 3, kind: 'his', text: '2026, and push it.', prior: 'Which year should it carry?' },
   ])
   expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), START('test-session.jsonl')])
@@ -12016,7 +12204,7 @@ test('rule: a fork whose own transcript is not saved yet takes the best-matching
   expect(noBody(rec()?.owner)).toEqual([
     { n: 1, kind: 'his', text: 'Build the report.', prior: '' },
     { n: 2, kind: 'his', text: 'Use the real data.', prior: 'Built.' },
-    { n: 3, kind: 'his', text: 'And keep the logs.', prior: '' },
+    { n: 3, kind: 'his', text: 'And keep the logs.', prior: '', incomplete: rep.NO_ROW_WHY },
   ])
   // Every row matched in the parent's file, so the scan stops there.
   expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), `ls -t ${FOLDER}`, SED('other.jsonl'), SED('sibling.jsonl'), SED('parent.jsonl')])
@@ -12038,7 +12226,7 @@ test('rule: of two files in a fork\'s folder that match its rows equally, the ne
   await settle($)
   expect(rec()?.owner).toEqual([
     { n: 1, kind: 'his', text: 'Build the report.', prior: '' },
-    { n: 2, kind: 'his', text: 'Queued in the newer.', prior: '' },
+    { n: 2, kind: 'his', text: 'Queued in the newer.', prior: '', turns: [], incomplete: rep.NO_ROW_WHY },
   ])
   expect(runs.filter(r => r[0] === 'sed').length).toBe(3)
 })

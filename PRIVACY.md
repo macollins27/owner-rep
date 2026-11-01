@@ -50,7 +50,9 @@ terms you already have with that provider. The rep's calls include parts of your
 
 - each Heads up look and each briefing sends your messages, the plans you approved, and the
   session's recorded messages, built from their text and tool fields. Structured thinking, the
-  agent's system prompt and your instruction files are not sent;
+  agent's system prompt and the instruction files Claude Code adds to the agent's context are not
+  sent; an instruction file the agent opened with a tool is a recorded tool result, and is sent
+  like any other;
 - each write of the rep's account of your job sends your messages, the agent's words before
   each, and the plans you approved;
 - **Check it** sends the session as agentsview reads it, thinking included, and any file the

@@ -48,7 +48,9 @@ import {
   INLINE_RECORD_BYTES,
   INLINE_STORE_BYTES,
   SOURCE_WRITE_MS,
+  LOST_CHANGED,
   LOST_DAMAGED,
+  LOST_LIST_UNREAD,
   LOST_RESTART,
   lostTooLong,
   STORE_FULL_WHY,
@@ -434,7 +436,7 @@ async function changeRec<T>($: EngineInterface, id: string, change: (rec: Rec) =
     if (was.held && jobOf(rec) > was.job) {
       delete rec.uncovered
       if (rec.lossMark !== undefined) {
-        lost = await lostFilesOf($, id, rec.lossMark.lostRev)
+        lost = await lostFilesOf($, id, rec.lossMark)
         delete rec.lossMark
       }
       rec.owner = trimKept(rec.owner, jobOf(rec)).list
@@ -444,7 +446,7 @@ async function changeRec<T>($: EngineInterface, id: string, change: (rec: Rec) =
     if (bareJson(rec) !== was.json) rec.recRev += 1
     if (await saveRec($, rec)) {
       const now = new Set(await filesOf($, rec))
-      await removeFiles($, [...was.files.filter(f => !now.has(f)), ...lost], false)
+      await removeFiles($, [...was.files.filter(f => !now.has(f)), ...(storeFull.has(id) ? [] : lost)], false)
     }
     if (onScreen(id)) await update($, linesA, () => rowCoverage(rec, id))
     return out
@@ -775,11 +777,12 @@ async function saveToFiles($: EngineInterface, rec: Rec): Promise<boolean> {
   return ok
 }
 
-// The files of a lost copy of the record: its list and the parts it names.
-async function lostFilesOf($: EngineInterface, sid: string, lostRev: number): Promise<string[]> {
+// The files of a lost copy of the record: its list and the parts it names. A list that could not
+// be read is still where it was.
+async function lostFilesOf($: EngineInterface, sid: string, mark: LossMark): Promise<string[]> {
   const folder = await sourceFolder($, sid)
   if (folder === null) return []
-  const path = `${folder}/record-lost-${lostRev}.json`
+  const path = `${folder}/${mark.why === LOST_LIST_UNREAD ? 'record' : `record-lost-${mark.lostRev}`}.json`
   const manifest = parseManifest(await readText($, path))
   return [path, ...(manifest?.parts ?? []).map(p => `${folder}/${p.name}`)]
 }
@@ -810,39 +813,59 @@ function reconcileOnce($: EngineInterface, sid: string): Promise<void> {
 // store's is taken up when every part reads back with its fingerprint; otherwise the store's
 // record stands with the loss marked and the copy kept as `record-lost-<rev>.json`. A copy at
 // or under the store's revision goes. A loss to anything but a fingerprint that did not match is
-// taken up at a later start while nothing changed since the mark. Texts held only in memory by
-// an earlier process are lost.
+// taken up at a later start while nothing changed since the mark. A list that exists and cannot
+// be read stays where it is with the loss marked, and is read again at each start: never taken
+// for no copy at all. Files a recovery replaced go only once the recovered record is saved. Texts
+// held only in memory by an earlier process are lost.
 async function reconcile($: EngineInterface, sid: string): Promise<void> {
   let rec = await loadStored($, sid)
   let changed = false
+  let removeOnceSaved: string[] = []
   const folder = await sourceFolder($, sid)
   if (folder !== null) {
     const after = Math.max(0, ...rec.owner.map(m => m.n))
     const listPath = `${folder}/record.json`
-    const text = (await $.fs.exists(listPath).catch(() => false)) ? await readText($, listPath) : null
+    const exists = await $.fs.exists(listPath).catch(() => true)
+    const text = exists ? await readText($, listPath) : null
     const manifest = parseManifest(text)
+    // A mark left by a list that could not be read: what it kept and when still measure the list.
+    const waiting = rec.lossMark?.why === LOST_LIST_UNREAD ? rec.lossMark : undefined
+    const kept = waiting?.keptRev ?? rec.recRev
+    const since = waiting?.after ?? after
     const markLoss = async (mark: LossMark) => {
       if (text !== null && (await writeFile($, `${folder}/record-lost-${mark.lostRev}.json`, text))) await removeFiles($, [listPath], false)
       rec.lossMark = mark
-      rec.recRev = mark.lostRev + 1
+      rec.recRev = Math.max(rec.recRev, mark.lostRev + 1)
       changed = true
     }
-    if (text !== null && manifest === null) {
-      await markLoss({ lostRev: rec.recRev + 1, keptRev: rec.recRev, after, why: LOST_DAMAGED })
-    } else if (manifest !== null && manifest.recRev <= rec.recRev) {
+    if (text === null && (exists || waiting !== undefined)) {
+      if (waiting === undefined) {
+        rec.lossMark = { lostRev: rec.recRev + 1, keptRev: rec.recRev, after, why: LOST_LIST_UNREAD }
+        changed = true
+      }
+    } else if (text !== null && manifest === null) {
+      await markLoss({ lostRev: rec.recRev + 1, keptRev: kept, after: since, why: LOST_DAMAGED })
+    } else if (manifest !== null && manifest.recRev <= kept) {
       await removeFiles($, [listPath, ...manifest.parts.map(p => `${folder}/${p.name}`)], false)
+      if (waiting !== undefined) {
+        delete rec.lossMark
+        changed = true
+      }
     } else if (manifest !== null) {
-      const got = pickRecord({ recRev: rec.recRev, after }, manifest, await readParts($, folder, manifest))
-      const taken = 'json' in got ? parsedRec(sid, got.json) : null
+      const unchanged = after === since
+      const got = pickRecord({ recRev: kept, after: since }, manifest, await readParts($, folder, manifest))
+      const taken = unchanged && 'json' in got ? parsedRec(sid, got.json) : null
       if (taken !== null) {
+        const held = rec.recRev
         rec = taken
+        if (waiting !== undefined) rec.recRev = Math.max(rec.recRev, held + 1)
         storeFull.set(sid, { memoryOnly: false })
         fullRecs.set(sid, JSON.parse(JSON.stringify(rec)) as Rec)
         changed = true
       } else {
-        await markLoss('mark' in got ? got.mark : { lostRev: manifest.recRev, keptRev: rec.recRev, after, why: LOST_DAMAGED })
+        await markLoss('mark' in got ? got.mark : { lostRev: manifest.recRev, keptRev: kept, after: since, why: unchanged ? LOST_DAMAGED : LOST_CHANGED })
       }
-    } else if (rec.lossMark !== undefined && !isMismatch(rec.lossMark.why) && rec.recRev === rec.lossMark.lostRev + 1) {
+    } else if (rec.lossMark !== undefined && rec.lossMark.why !== LOST_CHANGED && !isMismatch(rec.lossMark.why) && rec.recRev === rec.lossMark.lostRev + 1) {
       const mark = rec.lossMark
       const lostPath = `${folder}/record-lost-${mark.lostRev}.json`
       const lost = parseManifest(await readText($, lostPath))
@@ -852,7 +875,7 @@ async function reconcile($: EngineInterface, sid: string): Promise<void> {
         rec = taken
         delete rec.lossMark
         rec.recRev = mark.lostRev + 2
-        await removeFiles($, [lostPath, ...lost.parts.map(p => `${folder}/${p.name}`)], false)
+        removeOnceSaved = [lostPath, ...lost.parts.map(p => `${folder}/${p.name}`)]
         changed = true
       }
     }
@@ -863,7 +886,7 @@ async function reconcile($: EngineInterface, sid: string): Promise<void> {
       changed = true
     }
   }
-  if (changed) await saveRec($, rec)
+  if (changed && (await saveRec($, rec))) await removeFiles($, removeOnceSaved, false)
 }
 
 // A record read back from the session's files, or null when it is not this session's record.
@@ -1032,8 +1055,9 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number, r
 // except that a reopened one moves shown only on the check's own mark (`check`
 // is the check's marks, null for a look or a briefing), so a look rereading
 // the same conversation cannot undo what the paid check found. A draft's
-// number closes nothing, and a shown or reopen mark without a where is not
-// taken. True when a condition moved.
+// number closes nothing, nor does a plan's or an approval's (a yes adds and
+// never quietly takes away, as `canClose` holds for the writer), and a shown
+// or reopen mark without a where is not taken. True when a condition moved.
 function applyMarks(
   rec: Rec,
   shown: Array<{ text: string; by: string }>,
@@ -1042,7 +1066,8 @@ function applyMarks(
 ): boolean {
   const o = rec.objective
   if (o === null) return false
-  const his = hisFrom(rec, Math.max(o.since, o.from + 1))
+  const notHis = new Set(rec.owner.filter(m => m.kind === 'plan' || approvalOf(m)).map(m => m.n))
+  const his = hisFrom(rec, Math.max(o.since, o.from + 1)).filter(n => !notHis.has(n))
   let changed = false
   const done = o.done.map((c): Condition => {
     const close = closed.find(x => x.by !== null && his.includes(x.by) && same(x.text, c.text))
@@ -1614,7 +1639,8 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       const or = (mine: string, theirs: string): string => (mine !== '' ? mine : refused ? '' : theirs)
       // The going-well line does not stand beside a claim the check found false or anything left out.
       const leftOut = hasLeft ? c.leftOut : instant.leftOut
-      const card = gateVerdict(
+      // The record's own lines stand on the checked card as on the briefing it replaces.
+      const card = withRecordLines(gateVerdict(
         {
           verdict: c.verdict ?? instant.verdict,
           shown: [],
@@ -1628,7 +1654,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
           does: or(c.does, instant.does),
         },
         gateOpen(after.objective),
-      ).answer
+      ).answer, coverage(after, { full: storeFull.get(sid), gaps: lookGaps.get(sid) }))
       const patch: Partial<Brief> = {
         checked,
         ...(marked && after.objective !== null ? { reading: objectiveText(after.objective), count: countLine(after.objective) } : {}),
