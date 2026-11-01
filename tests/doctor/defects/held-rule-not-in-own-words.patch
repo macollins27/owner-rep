@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 5166e4f..3015b48 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3359,7 +3359,7 @@ stands: ${a.stands}
+ left:
+ ${list(a.leftOut, '- nothing')}
+ 
+-Write, in the rep's own plain words to the owner and to the agent, only the four parts below. The objective is not shown complete while any of these conditions is open: nothing you write tells the agent or the job to stop, calls the work finished, or leaves a step for the owner. ${HELD_STEP_RULE}
++Write, in the rep's own plain words to the owner and to the agent, only the four parts below. The objective is not shown complete while any of these conditions is open: nothing you write tells the agent or the job to stop, calls the work finished, or leaves a step for the owner.
+ 
+ ## Output structure
+ 

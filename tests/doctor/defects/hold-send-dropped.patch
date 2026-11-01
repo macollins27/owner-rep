@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 5166e4f..130e5a5 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3069,7 +3069,7 @@ const BLOCKER_TOLD = /\btell\s+the owner\s+(?:(?:exactly|plainly|clearly)\s+)?(?
+ const OUTWARD_ACT = String.raw`(?:submit(?:s|ting)?|publish(?:es|ing)?|post(?:s|ing)?\s+(?:(?:it|this|that|them|the\s+[\w'’-]+)\s+)?(?:publicly|online|(?:on|to)\s+social\s+media)|appl(?:y|ies|ying)\s+(?:for|to)|pay(?:s|ing)?|buy(?:s|ing)?|purchas(?:e|es|ing)|sign(?:s|ing)?\s+(?:(?:the|an?|this|that|our|the owner['’]s|the agent['’]s)\s+(?:[\w'’-]+\s+){0,2})?(?:agreement|contract|form|lease|offer|NDA|paperwork)s?|send(?:s|ing)?\s+(?:(?:the|an?|this|that|the owner['’]s)\s+)?(?:email|message|application|letter|invoice)s?)\b`
+ const WAIT_BEFORE_ACT = new RegExp(String.raw`\bwaits?\s+for\s+(?:(?:the owner['’]s|his|the)\s+)?(?:word|go-ahead|approval|sign-off)\s+(?:(?:on|before|to)\s+(?:the agent\s+(?:(?:can|may)\s+)?)?${OUTWARD_ACT}|on\s+([\w-]+))`, 'gi')
+ const OWNER_BUTTON = /^(?:submit|send|publish|post|pay|sign|apply|approve|purchase)$/i
+-const HELD_ACT = String.raw`\bhold(?:\s+(?:off|back)\s+on)?(?:\s+(?:the|this|that))?\s+(?:${OUTWARD_ACT}|send(?:ing)?\b)`
++const HELD_ACT = String.raw`\bhold(?:\s+(?:off|back)\s+on)?(?:\s+(?:the|this|that))?\s+${OUTWARD_ACT}`
+ const NEGATED_ACT = String.raw`(?:(?:\bnot|\bnever|n['’]t)\s+${OUTWARD_ACT}|${HELD_ACT})(?:(?!\band\b)[^;:,.!?])*?`
+ const WAIT_ON_HIM_BARE = String.raw`\bwaits?\s+(?:for|on|until|till)\s+${ON_HIM}(?:['’]s\s+[\w-]+)?(?:\s+(?:on|for)\s+(?:that|it|this))?${CLAUSE_END}`
+ const WAIT_AFTER_NEGATED = new RegExp(String.raw`(${NEGATED_ACT}(?:\s*[;,]\s*(?:and\s+)?|\s+and\s+))${WAIT_ON_HIM_BARE}`, 'gi')

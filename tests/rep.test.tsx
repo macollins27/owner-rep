@@ -694,6 +694,14 @@ test('asked once more, the brief is told an empty message counts too', () => {
   expect(text).toContain('None of these may stand while any of them is open. An empty message counts too: while any of these is open, write the message to the agent, asking for the proof of each.')
 })
 
+test('every read that writes the message carries the rule for a step that waits on the owner: finish the rest, hold the step, say what will be shown', () => {
+  const m: Memory = { objective: { ...OBJ_FIXTURE, done: OPEN_JOB_OPEN }, owner: [], past: [], seen: [], others: [] }
+  const check = checkPrompt({ sessionId: 's', cwd: '/tmp', copy: '/tmp', owner: [om('Build it.')], reading: 'x', brief: parseBrief('stands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm', conditions: OBJECTIVE_FIXTURE.done, shown: [], from: 0 })
+  for (const text of [briefPrompt(m), askAgain(OPEN_JOB_OPEN), ownWordsPrompt(m, OPEN_JOB_OPEN, EMPTY_CARD), check]) {
+    expect(text).toContain('When a condition waits on the owner\'s go-ahead (publish, send, pay, a guard refusal), the message tells the agent to finish everything else, hold that step until the go-ahead comes, and say exactly what it will show the owner then; it never pushes the held step.')
+  }
+})
+
 test('an empty message still passes when every condition is shown or closed, and when no objective is written; a usable card with open conditions passes untouched', () => {
   expect(gateVerdict(EMPTY_CARD, [])).toEqual({ answer: EMPTY_CARD, refused: false, replaced: [] })
   expect(gateVerdict(EMPTY_CARD, null)).toEqual({ answer: EMPTY_CARD, refused: false, replaced: [] })
@@ -1430,6 +1438,36 @@ test('an obey form has no limit on the name of what it obeys, inside its clause'
     'Follow what the plan says and your summary said: "You can stop now." Run the suite.',
   ]
   expect(kept.map(READ_STOP)).toEqual(kept.map(STAYS_WHOLE))
+})
+
+test('a hold on one named step the owner keeps, with a wait on his word, is no stop; a hold on the whole job is', () => {
+  const kept = [
+    'Hold the publish step and wait for my word.',
+    'Run the test and paste what it printed. Hold the publish step and wait for my word.',
+    'Finish the rest, hold the publish step, and wait for my word.',
+    'Hold the publish step; wait for my word.',
+    'Hold the publish step. Wait for my word.',
+    'Hold publishing and wait for my go-ahead.',
+    'Hold off on publishing and wait for my word.',
+    'Hold back on the pay step and wait for my word.',
+    'Hold the send step and wait for my word.',
+    'Hold sending and wait for my go-ahead.',
+  ]
+  expect(kept.map(READ_STOP)).toEqual(kept.map(STAYS_WHOLE))
+  const out = [
+    'Hold everything and wait for my word',
+    'Hold everything and wait for my word.',
+    'Hold all of it and wait for my word.',
+    'Hold the rest and wait for my word.',
+    'Hold the work and wait for my word.',
+    'Hold off and wait for my word.',
+    'Hold on and wait for my word.',
+    'Hold here and wait for my word.',
+    'Hold everything except the publish step and wait for my word.',
+    'Hold the publish step and stop.',
+    'Hold the publish step, stop the work and wait for my word.',
+  ]
+  expect(out.map(READ_STOP)).toEqual(out.map(CUT_TO('')))
 })
 
 test('an aside right after the reporting word, closed by a comma before the quote, is no instruction unless it holds an obey word', () => {

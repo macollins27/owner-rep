@@ -1,11 +1,11 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 85e8014..1dd3514 100644
+index 5166e4f..a31007c 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3042,7 +3042,7 @@ const OUTWARD_ACT = String.raw`(?:submit(?:s|ting)?|publish(?:es|ing)?|post(?:s|
- const WAIT_BEFORE_ACT = new RegExp(String.raw`\bwaits?\s+for\s+(?:(?:the owner['’]s|his|the)\s+)?(?:word|go-ahead|approval|sign-off)\s+(?:(?:on|before|to)\s+(?:the agent\s+(?:(?:can|may)\s+)?)?${OUTWARD_ACT}|on\s+([\w-]+))`, 'gi')
+@@ -3071,7 +3071,7 @@ const WAIT_BEFORE_ACT = new RegExp(String.raw`\bwaits?\s+for\s+(?:(?:the owner['
  const OWNER_BUTTON = /^(?:submit|send|publish|post|pay|sign|apply|approve|purchase)$/i
- const NEGATED_ACT = String.raw`(?:\bnot|\bnever|n['’]t)\s+${OUTWARD_ACT}(?:(?!\band\b)[^;:,.!?])*?`
+ const HELD_ACT = String.raw`\bhold(?:\s+(?:off|back)\s+on)?(?:\s+(?:the|this|that))?\s+(?:${OUTWARD_ACT}|send(?:ing)?\b)`
+ const NEGATED_ACT = String.raw`(?:(?:\bnot|\bnever|n['’]t)\s+${OUTWARD_ACT}|${HELD_ACT})(?:(?!\band\b)[^;:,.!?])*?`
 -const WAIT_ON_HIM_BARE = String.raw`\bwaits?\s+(?:for|on|until|till)\s+${ON_HIM}(?:['’]s\s+[\w-]+)?(?:\s+(?:on|for)\s+(?:that|it|this))?${CLAUSE_END}`
 +const WAIT_ON_HIM_BARE = String.raw`\bwaits?\s+(?:for|on|until|till)\s+${ON_HIM}(?:['’]s\s+[\w-]+)?`
  const WAIT_AFTER_NEGATED = new RegExp(String.raw`(${NEGATED_ACT}(?:\s*[;,]\s*(?:and\s+)?|\s+and\s+))${WAIT_ON_HIM_BARE}`, 'gi')

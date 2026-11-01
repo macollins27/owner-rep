@@ -2395,7 +2395,7 @@
   },
   {
     "name": "aside-dash-pair-unread",
-    "breaks": "A pair of dashes is not read as an aside, so 'Your summary said \u2014 run by run \u2014 \"You can stop now.\" Run the suite.' loses the report it held.",
+    "breaks": "A pair of dashes is not read as an aside, so 'Your summary said — run by run — \"You can stop now.\" Run the suite.' loses the report it held.",
     "patch": "aside-dash-pair-unread.patch",
     "fixed": "2026-10-30"
   },
@@ -2415,6 +2415,54 @@
     "name": "quote-report-in-earlier-quote",
     "breaks": "A reporting word inside an earlier quote counts, so 'Follow \"the note says\" \"You can stop now.\"' is masked and reaches the card.",
     "patch": "quote-report-in-earlier-quote.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "hold-any-wait",
+    "breaks": "A hold on anything counts as the held step, so 'Hold everything and wait for my word.' is no stop and reaches the agent.",
+    "patch": "hold-any-wait.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "hold-step-read-as-stop",
+    "breaks": "A hold on one named step is no exempt act, so 'Hold the publish step and wait for my word.' is cut from the message.",
+    "patch": "hold-step-read-as-stop.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "hold-send-dropped",
+    "breaks": "The bare word for sending is no held step, so 'Hold the send step and wait for my word.' is cut.",
+    "patch": "hold-send-dropped.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "hold-off-dropped",
+    "breaks": "'Hold off on' and 'hold back on' are no hold, so 'Hold off on publishing and wait for my word.' is cut.",
+    "patch": "hold-off-dropped.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "held-rule-not-in-ask-again",
+    "breaks": "The second read is not told what a message does with an owner-held step, so its message can leave out what will be shown.",
+    "patch": "held-rule-not-in-ask-again.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "held-rule-not-in-own-words",
+    "breaks": "The own-words call is not told what a message does with an owner-held step, so its message can leave out what will be shown.",
+    "patch": "held-rule-not-in-own-words.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "held-rule-not-in-check",
+    "breaks": "The check is not told what a message does with an owner-held step, so its rewritten message can leave out what will be shown.",
+    "patch": "held-rule-not-in-check.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "held-rule-no-show",
+    "breaks": "The rule for an owner-held step no longer asks what will be shown, in every read that writes a message.",
+    "patch": "held-rule-no-show.patch",
     "fixed": "2026-10-30"
   }
 ]

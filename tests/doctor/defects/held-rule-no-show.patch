@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 5166e4f..028849a 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -287,7 +287,7 @@ CRITICAL CONSTRAINTS:
+ 
+ // What a message does with a step only the owner can let go, said by every read that writes one:
+ // the brief, the second read, the own-words call and the check.
+-const HELD_STEP_RULE = `When a condition waits on the owner's go-ahead (publish, send, pay, a guard refusal), the message tells the agent to finish everything else, hold that step until the go-ahead comes, and say exactly what it will show the owner then; it never pushes the held step.`
++const HELD_STEP_RULE = `When a condition waits on the owner's go-ahead (publish, send, pay, a guard refusal), the message tells the agent to finish everything else, hold that step until the go-ahead comes; it never pushes the held step.`
+ 
+ const ROLE = `## Who you are
+ 
