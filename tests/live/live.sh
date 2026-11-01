@@ -3,8 +3,7 @@
 # Proves the build the owner runs calls the rep's hooks; the test kit cannot. On demand only:
 # each scenario is a real session and a model call, about a minute.
 #
-#     tests/live/live.sh            # every scenario, 1 to 14 (13 comes with the plan-screen
-#                                   # scenario; until then it is reported as not in this build)
+#     tests/live/live.sh            # every scenario, 1 to 14
 #     tests/live/live.sh 2 4        # only these
 #
 # Each scenario's whole screen is saved in tests/live/captures/<n>-<name>.txt, and the strip's
@@ -18,6 +17,10 @@
 # was the last net are printed, not judged, because the model's first answer decides them.
 # Scenario 12 resizes one session's window to 44, 24 and 80 rows with the card open: the buttons
 # stay on screen at each, the judgment's parts are drawn from 44, and nothing is cut at 80.
+# Scenario 13 answers the real plan screen twice: a plan turned down with a note, then the next
+# plan edited there and accepted. The record must hold the note as his, the edited plan whole in
+# its own file, and the steps of that plan as his; the capture must not call the added step
+# unasked-for (see plan_screen).
 # Scenario 14 shows the agent's turn as the owner saw it: the text the rep saved under each of
 # his messages (the turns that message answered, taken from the stream as it reached the
 # screen) is the transcript's text for those turns, character for character, through a plan
@@ -26,7 +29,7 @@
 # still holds the turn before it whole, from the saved record; it also prints what the engine
 # sends as agentId on the main loop (see turn_capture). Exit 0 when every scenario run showed what it should.
 #
-# Scenario 15 is on demand only, never in the default twelve: Brief me on a session with a step
+# Scenario 15 is on demand only, never in the default fourteen: Brief me on a session with a step
 # held for the owner's word, the card read at 80 rows. It needs PROOF_DIR, a private folder of
 # its own for each run, for the session's debug log, its message and the store's backup; it runs
 # in a tmux session of its own, finds its record by the session id it launched, and
@@ -69,7 +72,7 @@ else
 fi
 # The command line tmux runs to start a session, with these arguments added to claude's.
 launch_line() {
-  print -r -- "env -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT -u CLAUDE_CODE_SESSION_ID -u CLAUDE_CODE_CHILD_SESSION -u CLAUDE_CODE_MESSAGING_SOCKET -u CLAUDE_CODE_MESSAGING_TOKEN -u CLAUDE_CODE_SESSION_ATTENDED claude $PLUGIN_ARGS $* --permission-mode bypassPermissions"
+  print -r -- "env -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT -u CLAUDE_CODE_SESSION_ID -u CLAUDE_CODE_CHILD_SESSION -u CLAUDE_CODE_MESSAGING_SOCKET -u CLAUDE_CODE_MESSAGING_TOKEN -u CLAUDE_CODE_SESSION_ATTENDED ${LIVE_ENV:+$LIVE_ENV }claude $PLUGIN_ARGS $* --permission-mode ${LIVE_MODE:-bypassPermissions}"
 }
 if [[ ${LAUNCH_LINE:-} == 1 ]]; then launch_line; exit 0; fi
 mkdir -p $CAPS
@@ -183,6 +186,106 @@ heights_card() {
   heights_record message ; verdict "$rows rows: the whole message in the box" $?
 }
 
+# Scenario 13: the real plan screen, answered twice. A session in plan mode writes a plan; the
+# owner turns it down with a note; the next plan is edited on the screen (ctrl+g, EDITOR being a
+# script that adds one line to the file it is given) and accepted; the agent works and the Rep
+# button is pressed. All the text is invented. The record of this one session is read from the
+# store, and nothing else in the store is printed.
+PLAN_ASK='Plan how to create apple.txt containing apple and pear.txt containing pear, in three short steps, for approval.'
+PLAN_NOTE='Do not create pear.txt, only apple.txt.'
+PLAN_LINE='- ADDED BY OWNER: also create plum.txt containing plum.'
+plan_screen() {
+  local T13 ok=0
+  T13=$(mktemp -d -t owner-rep-live-13)
+  cat > $T13/edit.sh <<E
+#!/bin/sh
+printf '\n%s\n' '$PLAN_LINE' >> "\$1"
+E
+  chmod +x $T13/edit.sh
+  LIVE_MODE=plan LIVE_ENV="EDITOR=$T13/edit.sh VISUAL=$T13/edit.sh" start '' --model sonnet || { rm -rf "${T13:?}"; return 1; }
+  wait_for 'plan mode on' 120 ; verdict 'the session is in plan mode' $?
+  send "$PLAN_ASK"
+  wait_for 'Would you like to proceed' 120 ; verdict 'the plan screen drawn' $?
+  save 13-plan-screen-first
+  tmux send-keys -t "=$S:" 3; sleep 1
+  tmux send-keys -t "=$S:" -l "$PLAN_NOTE"; sleep 1
+  tmux send-keys -t "=$S:" Enter
+  sleep 8
+  wait_for 'Would you like to proceed' 120 ; verdict 'the next plan drawn after the note' $?
+  save 13-plan-screen-second
+  tmux send-keys -t "=$S:" C-g
+  sleep 5
+  save 13-plan-screen-edited
+  tmux send-keys -t "=$S:" 1
+  sleep 5
+  wait_for '^\s*(idle|stopped, waiting on you)\s+1: Brief me' 120 ; verdict 'the turn ended' $?
+  tmux send-keys -t "=$S:" 1
+  wait_for 'Fine, close|↓ [0-9]+ more' 120 ; verdict 'the card drawn' $?
+  save 13-plan-screen
+  pane | sed "s/${USER:-user}/user/g" > $T13/card.txt
+  cat > $T13/check.py <<'PY'
+import glob, hashlib, json, os, sys
+cfg = os.environ.get("CLAUDE_CONFIG_DIR") or os.path.expanduser("~/.claude")
+ask, note, name, card_file = os.environ["PLAN_ASK"], os.environ["PLAN_NOTE"], os.environ["STORE_NAME"], sys.argv[1]
+fold = lambda t: " ".join(str(t).split())
+hit = None
+for f in sorted(glob.glob(os.path.join(cfg, "plugins", "store", name)), key=os.path.getmtime, reverse=True):
+    try:
+        recs = json.load(open(f)).get("sessions", {})
+    except (OSError, ValueError):
+        continue
+    for sid, r in recs.items():
+        if any(isinstance(m, dict) and fold(m.get("text", "")) == fold(ask) for m in r.get("owner", [])):
+            if hit is None or r.get("at", 0) > hit[1].get("at", 0):
+                hit = (sid, r)
+    if hit:
+        break
+if hit is None:
+    print("  no record holding the request")
+    sys.exit(1)
+sid, rec = hit
+owner = [m for m in rec.get("owner", []) if isinstance(m, dict)]
+for m in owner:
+    print(f"  #{m.get('n')} {m.get('kind')}" + (f" screen {m['screen']}" if m.get("screen") else "") + (f" read {m['read'].get('state')}" if m.get("read") else "") + f": {fold(m.get('text', ''))[:70]}")
+bad = 0
+def verdict(name, ok, why=""):
+    global bad
+    print(f"  {name}: {'shown' if ok else 'NOT SHOWN'}" + (f" ({why})" if why else ""))
+    bad += 0 if ok else 1
+turned = [m for m in owner if m.get("kind") == "his" and m.get("screen") == "rejected" and fold(note) in fold(m.get("text", ""))]
+verdict("the note is held as his, with the plan screen's mark", bool(turned))
+verdict("the plan he turned down is saved beside the note", bool(turned) and bool((turned[0].get("src") or {}).get("rejected")))
+plans = [m for m in owner if m.get("kind") == "plan" and m.get("screen") == "edited"]
+verdict("the edited plan is held as an approved plan", bool(plans) and "approved" in plans[0])
+body = (plans[0].get("src") or {}).get("body") if plans else None
+verdict("that plan has been read whole", bool(plans) and (plans[0].get("read") or {}).get("state") == "read", str((plans[0].get("read") if plans else "")))
+text = None
+if body and body.get("where") == "file":
+    for g in glob.glob(os.path.join(cfg, "owner-rep", "sources", sid, "*.txt")):
+        t = open(g, encoding="utf-8", newline="").read()
+        if hashlib.sha256(t.encode("utf-8")).hexdigest() == body.get("sha"):
+            text = t
+verdict("its saved file matches its fingerprint", text is not None)
+verdict("the saved plan holds the line the owner added", text is not None and "plum.txt" in text)
+done = ((rec.get("objective") or {}).get("done")) or []
+for c in done:
+    print(f"    held: {fold(c.get('text', ''))[:110]}")
+says_no = ("not ", "no ", "never", "without", "only apple", "skip", "isn't", "absent", "does not")
+verdict("a condition holds the added step", any("plum" in c.get("text", "").lower() for c in done))
+verdict("no condition asks for pear.txt", not any("pear" in (t := c.get("text", "").lower()) and not any(w in t for w in says_no) for c in done))
+card = open(card_file).read().lower()
+verdict("the card or the objective shows the added step", "plum" in card or any("plum" in c.get("text", "").lower() for c in done))
+near = [l for l in card.splitlines() if "plum" in l and ("unasked" in l or "not asked" in l or "nobody asked" in l or "extra" in l)]
+verdict("nothing calls the added step unasked-for", not near, "; ".join(near))
+sys.exit(1 if bad else 0)
+PY
+  PLAN_ASK=$PLAN_ASK PLAN_NOTE=$PLAN_NOTE STORE_NAME=$STORE_NAME python3 -I $T13/check.py $T13/card.txt | tee $CAPS/13-plan-screen-record.txt
+  ok=${pipestatus[1]}
+  stop
+  rm -rf "${T13:?}"
+  return $ok
+}
+
 # Scenario 14: the agent's turn as he saw it. A second, throwaway mod loads beside the rep and
 # logs what the engine sends on every prompt.submit, turn.start, turn.step and turn.complete:
 # each text chunk, each stop chunk, how each step ended and what it returned, and, for agentId,
@@ -285,7 +388,7 @@ export const register: Register = on => {
 }
 TS
   cat > $T14/check.py <<'PY'
-import datetime, glob, json, os, sys
+import datetime, glob, hashlib, json, os, sys
 from collections import OrderedDict
 
 mode, logdir = sys.argv[1], sys.argv[2]
@@ -300,7 +403,8 @@ def session_id():
     return sorted(ids)[0] if len(ids) == 1 else None
 
 def record(sid):
-    # Only this session's record is read from the store; nothing else in it is printed.
+    # Only this session's record is read from the store; nothing else in it is printed. Each
+    # body kept in a file is read back from the session's sources folder by its fingerprint.
     files = glob.glob(os.path.join(cfg, "plugins", "store", "owner-rep_inline-*.json"))
     for f in sorted(files, key=os.path.getmtime, reverse=True):
         try:
@@ -308,7 +412,16 @@ def record(sid):
         except (OSError, ValueError):
             continue
         if sid in s:
-            return s[sid]
+            r = s[sid]
+            kept = {}
+            for g in glob.glob(os.path.join(cfg, "owner-rep", "sources", sid, "*.txt")):
+                t = open(g, encoding="utf-8", newline="").read()
+                kept[hashlib.sha256(t.encode("utf-8")).hexdigest()] = t
+            for m in r.get("owner", []):
+                b = ((m.get("src") or {}).get("body") or {}) if isinstance(m, dict) else {}
+                if b.get("where") == "file" and b.get("sha") in kept:
+                    b["text"] = kept[b["sha"]]
+            return r
     return None
 
 if mode == "sid":
@@ -491,6 +604,11 @@ for m in owner:
         for sp in m.get("turns") or []:
             extra = "".join(f", {x}: {sp[x]}" for x in ("note", "incomplete", "merged") if x in sp)
             say(f"       turn by {sp.get('by')} [{sp.get('from')}, {sp.get('to')}){extra}: {ends((body.get('text') or '')[sp.get('from', 0):sp.get('to', 0)], 40)}")
+
+saved = [m for m in owner if (m.get("src") or {}).get("body")]
+unread = [m.get("n") for m in saved if m["src"]["body"].get("where") != "file" or m["src"]["body"].get("text") is None]
+verdict("every body is in the sources folder and reads back with its fingerprint", bool(saved) and not unread,
+        [f"{len(saved)} bodies saved; not read back from a file: {unread or 'none'}"])
 
 # spans against turns
 say("\n== each turn in a body against the transcript's text for that turn")
@@ -1154,6 +1272,9 @@ PY
       save 12-height-80
       heights_card 80
       stop ;;
+    13)
+      echo "13 the plan screen: a plan turned down with a note, the next one edited and accepted, the plan held whole as his"
+      plan_screen || bad=$((bad+1)) ;;
     14)
       echo "14 the agent's turn as he saw it: the text each message of the owner's answers, as the rep saved it, against the transcript's, through a plan with a command, two text blocks, a reply typed mid-turn, two interrupts, a background task, /compact, a helper and /reload-plugins"
       turn_capture || bad=$((bad+1)) ;;

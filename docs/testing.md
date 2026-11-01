@@ -143,7 +143,7 @@ objective it checked came from the writer's own call. The test now sends a furth
 the writer answers with `objective: holds` and a look whose answer carries an objective in
 the writer's shape, and asserts that the objective is unchanged.
 
-**Status.** 543 tests: the parsers, the status words (including the variable-first command, read
+**Status.** 568 tests: the parsers, the status words (including the variable-first command, read
 through the mounted strip), the note to the rep, the heads-up drawn above the row on the terminal and VS Code surfaces, the checker's prompt and tools, the row on
 the terminal, desktop and VS Code surfaces, the briefing card, the going-well card, another mod's tree beneath, the model-
 failure toast, the sequence rules above, the card filling the band in order of importance with the result and a count line at its head, its message box giving way on a band too short for it and its buttons kept at every height, and drawn whole with no line given a width on the VS Code surface, whose band scrolls, the brief
@@ -370,7 +370,17 @@ Scenarios, one capture each:
     buttons, was taller than the band's five rows, so the buttons sat under the engine's
     "↓ 2 more" row; the box now goes on such a band (`message-box-hides-buttons`), and the
     rerun showed the head, Stands and the buttons at 24.
-15. An owner-held step, on demand only and not among the twelve: a first message that asks for
+13. The plan screen: a session in plan mode on Sonnet writes a plan; the plan is turned down
+    with a note; the next plan is edited on the screen (ctrl+g, `EDITOR` being a throwaway
+    script that adds one line) and accepted; the agent works; Brief me. From the store and the
+    sources folder: the note is a `his` message with `screen: 'rejected'` and the plan saved
+    beside it, the plan is a `plan` message with `screen: 'edited'`, read whole, its saved file
+    matches its fingerprint and holds the added line, a condition holds the added step and none
+    asks for what the note ruled out. From the capture: nothing calls the added step
+    unasked-for. Its first run, on 1 Nov 2026, also showed the thing the plan-screen work is
+    for: the agent left out the owner's added step, and the card named it as left out of the
+    approved plan and put the fix in the message.
+15. An owner-held step, on demand only and not among the fourteen: a first message that asks for
     five things, one of them published only on the owner's word and one with a stop if git
     refuses the save, and for the first file alone, then Brief me with the window at 80 rows. The run is found by the session id it launched, in
     a tmux session of its own; `tests/live/store_guard.py` backs the store up first, reads the

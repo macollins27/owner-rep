@@ -55,7 +55,7 @@ Three reads of increasing cost, all measured against the held objective, which a
 call writes (below):
 
 1. **Watch**: `look()` runs on `turn.step` every `CHECK_EVERY` (8) model requests and on every
-   `turn.complete`, via `$.model.fork` over the agent's cached conversation. It is never
+   `turn.complete`, over the session's record (`readSession`, below). It is never
    awaited by the hook that starts it. Its answer is `state:`, `flag:`, `why:`, `shown:` and
    `closed:`; it marks conditions and never writes the objective. A flag becomes a "Heads up"
    note only when the view is `row` and the flag was not already shown. The note draws above
@@ -63,7 +63,7 @@ call writes (below):
    mouse (the note's buttons carry the digits); from 13 to 23 Oct 2026 it took the row's place,
    a choice made with the you-should-know shape that no one asked for. Typing past notes
    backs the watch off (`skipAfter`).
-2. **Briefing**: `pressBrief()` on the Rep button, another fork, drawn as the card. The
+2. **Briefing**: `pressBrief()` on the Rep button, another record read, drawn as the card. The
    model's answer is labelled lines (`verdict:`, `shown:`, `closed:`, `well:`, `stands:`,
    `means:`, `left:`, `next:`, `message:` … `end`, `does:`); `parseBrief` splits them,
    `applyMarks` takes the marks, and `gateVerdict` refuses, while a condition is open, a
@@ -341,13 +341,9 @@ call writes (below):
    same way, with the sentence before it (`stopSpans`, through `sentenceSaysStop`).
 
    The watch and the briefing (and its second ask) read through one helper, `readSession`.
-   A fork answers `nothing-to-fork` before the first response of the process (a session
-   reopened with `--continue` or `--resume`), after `/clear`, and through the whole first
-   turn of a new session. Only for a read the owner started (`fallback`: the press's `ask`, its
-   second ask included, and `look` with reason `note`) the helper then reads
-   `$.session.messages()` and, when there are rows, makes one `$.model.complete`
+   It reads `$.session.messages()` and, when there are rows, makes one `$.model.complete`
    (`OBJECTIVE_MODEL`, high effort, `RECORD_SYSTEM`, `RECORD_MAX_TOKENS` 16,000,
-   `RECORD_TIMEOUT_MS` four minutes) over `recordPrompt`: the rows printed by `recordText`
+   `RECORD_TIMEOUT_MS` four minutes) over `recordPrompt`, never a fork: the rows printed by `recordText`
    as entries labelled `entry N`, never `#N` (the owner's rows as the person only where their key is
    one of the owner's messages that `heldItems` read from the transcript, `NOT_TYPED` applied after
    as a second filter, and with no transcript read, `NOT_TYPED` alone; every other row on
@@ -357,11 +353,26 @@ call writes (below):
    `RECORD_ENTRY_CUT` (3,000) and each tool input or result to `RECORD_TOOL_CUT` (600),
    head and tail kept around a marked gap, the oldest entries left out past `RECORD_BUDGET`
    (200,000 characters) with a line saying how many, fenced in `<session_record>` with any
-   fence tag inside printed with `‹ ›`, then the same task the fork would have had. Its
-   result has the fork's shape, so its spend is counted the same; a throw reads as an API
-   error. With no rows the fork's answer stands and the toast says there is nothing to read.
-   The step look and the stop look pass no fallback and skip quietly on `nothing-to-fork`:
-   a record read on each would be paid on every look of every new session's first turn.
+   fence tag inside printed with `‹ ›`, then the task. `headTail` marks every cut inside its
+   field (`[… n characters of this <field> left out here …]`). A compaction summary is cut at
+   `RECORD_SUMMARY_CUT` (40,000). `recordPrompt` sends the record as blocks of about
+   `RECORD_CHUNK` (50,000) characters and marks the last complete one for the cache, so a later
+   look reads the part it shares with an earlier one from the cache. Its result has a fork's
+   shape (`ModelForkResult`), so its spend is counted the same; a throw reads as an API error.
+   With no rows no model is called, the result is `NOTHING_READ` (`nothing-to-fork`), and the
+   toast says there is nothing to read. `SESSION_ROWS_CAP` (4,096) is the most rows
+   `$.session.messages()` returns, so a list that long may not reach the session's start.
+
+   `boundaryRow` places the job's earliest open approval in the rows, which carry no number,
+   time or turn: the job's stored messages, from that approval to the newest, are matched to the
+   rows by their words, read back whole first, each aligned to its earliest feasible row and then
+   its latest. It is placed only when both agree (`established`); `opens-after` says the record
+   starts after it, `unknown` that it could not be placed. A plan-screen approval matches the tool
+   result carrying its `toolUseId`, a note alone the end of the turn it answered. Rows from it on
+   are read whole up to the budget (`recordText`'s `from`); `boundaryCover` turns the other
+   outcomes into `ReaderGaps` and a line each reader is told. `STANDING_LINE` tells every reader
+   the agent's standing instructions are not in what it reads, and `NOT_ASSESSED_RULE` what it may
+   say of a step whose proof it cannot see.
 
    **What the readers hold of the owner's messages and approved plans (Task 7).** `memoryFor`
    reads back, by fingerprint, the saved copy (`src.sent`) of every message of the job and each
@@ -629,7 +640,28 @@ argument). A new job's conditions start with no mark. A draft moves only `step`,
 `prompt.submit`. The card shows `revisedLine` under the head and `objectiveText` as its
 reading; the row shows `result`.
 
-Owner messages are `OwnerMsg`s: `n`, `kind` (`his`, `note` or `draft`), `text` (cut to
+### The plan screen
+
+`planScreen(input, result)` reads what Claude Code's plan screen answered from the `ExitPlanMode`
+call, and `null` is everything it does not recognise. Accepted: a result object holding a
+non-empty `plan` and a boolean `planWasEdited` gives that plan and whether the owner edited it;
+otherwise a result or text opening `PLAN_ACCEPTED_TEXT` gives the part after
+`PLAN_ACCEPTED_HEADING`, else the call's own plan, with `edited` false. Rejected: an error result
+holding `PLAN_REJECTED_SAID` gives the owner's note, whatever follows it, and the plan the call
+carried; a rejection with no note is `null`, so nothing is stored. `takePlanScreen` runs after the
+call returns, so a thrown call stores nothing, and `storeScreen` writes one `OwnerMsg`: accepted is
+kind `plan`, `approved: 'all'`, `screen` `accepted` or `edited`, the plan saved whole as `src.body`
+and its start as `text`; rejected is kind `his`, the note as `text`, `screen: 'rejected'`, the plan
+saved as `src.rejected`, read by nobody as approved. Both keep the `toolUseId`, which `boundaryRow`
+uses to place them.
+
+A session the rep did not watch has its answers read back: `screenFromRows` finds each
+`ExitPlanMode` use in the rows and its answer, matched strictly by `tool_use_id` in a later row's
+results, else the use's own result. `seedOrder` sets them among the typed messages by time, and
+`storeScreen` stores each with `readBack: true`. `planLabel` then adds that whether the owner
+edited it there cannot be told, since the rows hold the text form.
+
+Owner messages are `OwnerMsg`s: `n`, `kind` (`his`, `note`, `draft` or `plan`), `text` (cut to
 `HIS_CUT`, 6,000 characters, for the owner's messages and notes, the writer's only input, and to
 `OWNER_CUT`, 1,200, for a draft), and `prior`, the end of the body under it, the agent's words
 the message answered (`fitTail` to `PRIOR_CUT`, 400, keeping the end, where the question a short
@@ -765,6 +797,15 @@ same removal the gate uses: every other sentence stays as written, and a message
 whole. Only when nothing usable is left, or what is left still says stop, is the message
 `RECORD_MESSAGE`; what it does is `RECORD_DOES` when it says stop itself or the message became
 `RECORD_MESSAGE`.
+
+A seeded message has a body too. `typedFromItems` walks back from each matched row to the matched
+row before it, collecting the agent's text oldest first, joined by a blank line, into a `SeededTurn`,
+and `seededBody` gives it one span with `by: 'other'` and `note: 'read-back'`, which `spansText`
+shows as `READ_BACK_LINE`. A walk stopped by a summary row is `incomplete` with `COMPACTED_WHY`; one
+that runs out of rows with messages before it, with `TURN_START_WHY`. The first message is not
+marked: nothing comes before it. A message with no row at all, one from before a compaction, gets
+no body and no `incomplete`, because every compacted session would otherwise show many lines: that
+is a known limit.
 
 A session the rep holds no record of (its record fell out of the newest `SESSIONS_MAX`, it
 was forked with a new id, or it is older than the mod) has none of the owner's messages. `seedOwner`
