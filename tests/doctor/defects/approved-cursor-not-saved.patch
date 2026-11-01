@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 15f4c6c..0f70183 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1264,7 +1264,6 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+     after.cached += cachedOf(usage)
+     if (!result.isAnswered || parsed === null) return
+     // An answered look moves the cursor, so the next one shows the plans after these.
+-    if (fill?.cursor !== undefined) after.readerAt = { watch: fill.cursor }
+     const answer = parsed
+     if (applyMarks(after, answer.shown, answer.closed) && onScreen(sid)) await update($, readingA, () => after.objective)
+     const view = await read($, viewA)

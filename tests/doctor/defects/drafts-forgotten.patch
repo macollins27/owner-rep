@@ -1,13 +1,12 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 264fffa..946ec41 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1518,7 +1518,7 @@ export const register: Register = on => {
+@@ -2401,7 +2401,7 @@ export const register: Register = on => {
            // the rep wrote. It is matched against the last few cards' messages as
            // stored, so it survives a reload and a newer card; what the owner added
            // after the draft is their own message, numbered after it.
 -          const split = draftSplitAny(text, [...rec.drafts, rec.lastBrief?.message ?? ''])
 +          const split = draftSplitAny(text, [rec.lastBrief?.message ?? ''])
            const isHis = split === null || split.his !== ''
-           if (split === null) pushOwner(rec, 'his', text)
-           else {
+           if (split === null) {
+             // The whole as sent, when the stored text is not all of it: cut, or split from a note.

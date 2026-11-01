@@ -47,7 +47,7 @@ Two modules, deliberately split:
 - `hooks/register.tsx` is the engine side: hooks, state atoms, the store record, the band
   render, and the spawn of the check run. `hooks/hooks.json` names it as the only module.
 - `types/index.d.ts` declares the mod's `PluginState` keys (`reading`, `now`, `note`, `brief`,
-  `view`, `helperIds`) and the `Objective`/`Condition`/`Brief`/`Checked`/`Now`/`Note` shapes
+  `view`, `helperIds`, `lines`) and the `Objective`/`Condition`/`Brief`/`Checked`/`Now`/`Note` shapes
   the render reads. The `reading` key holds the objective under a shape tag (`objective-1`),
   so what an older build wrote there reads as absent.
 
@@ -55,7 +55,7 @@ Three reads of increasing cost, all measured against the held objective, which a
 call writes (below):
 
 1. **Watch**: `look()` runs on `turn.step` every `CHECK_EVERY` (8) model requests and on every
-   `turn.complete`, via `$.model.fork` over the agent's cached conversation. It is never
+   `turn.complete`, over the session's record (`readSession`, below). It is never
    awaited by the hook that starts it. Its answer is `state:`, `flag:`, `why:`, `shown:` and
    `closed:`; it marks conditions and never writes the objective. A flag becomes a "Heads up"
    note only when the view is `row` and the flag was not already shown. The note draws above
@@ -63,7 +63,7 @@ call writes (below):
    mouse (the note's buttons carry the digits); from 13 to 23 Oct 2026 it took the row's place,
    a choice made with the you-should-know shape that no one asked for. Typing past notes
    backs the watch off (`skipAfter`).
-2. **Briefing**: `pressBrief()` on the Rep button, another fork, drawn as the card. The
+2. **Briefing**: `pressBrief()` on the Rep button, another record read, drawn as the card. The
    model's answer is labelled lines (`verdict:`, `shown:`, `closed:`, `well:`, `stands:`,
    `means:`, `left:`, `next:`, `message:` … `end`, `does:`); `parseBrief` splits them,
    `applyMarks` takes the marks, and `gateVerdict` refuses, while a condition is open, a
@@ -341,13 +341,9 @@ call writes (below):
    same way, with the sentence before it (`stopSpans`, through `sentenceSaysStop`).
 
    The watch and the briefing (and its second ask) read through one helper, `readSession`.
-   A fork answers `nothing-to-fork` before the first response of the process (a session
-   reopened with `--continue` or `--resume`), after `/clear`, and through the whole first
-   turn of a new session. Only for a read the owner started (`fallback`: the press's `ask`, its
-   second ask included, and `look` with reason `note`) the helper then reads
-   `$.session.messages()` and, when there are rows, makes one `$.model.complete`
+   It reads `$.session.messages()` and, when there are rows, makes one `$.model.complete`
    (`OBJECTIVE_MODEL`, high effort, `RECORD_SYSTEM`, `RECORD_MAX_TOKENS` 16,000,
-   `RECORD_TIMEOUT_MS` four minutes) over `recordPrompt`: the rows printed by `recordText`
+   `RECORD_TIMEOUT_MS` four minutes) over `recordPrompt`, never a fork: the rows printed by `recordText`
    as entries labelled `entry N`, never `#N` (the owner's rows as the person only where their key is
    one of the owner's messages that `heldItems` read from the transcript, `NOT_TYPED` applied after
    as a second filter, and with no transcript read, `NOT_TYPED` alone; every other row on
@@ -357,11 +353,98 @@ call writes (below):
    `RECORD_ENTRY_CUT` (3,000) and each tool input or result to `RECORD_TOOL_CUT` (600),
    head and tail kept around a marked gap, the oldest entries left out past `RECORD_BUDGET`
    (200,000 characters) with a line saying how many, fenced in `<session_record>` with any
-   fence tag inside printed with `‹ ›`, then the same task the fork would have had. Its
-   result has the fork's shape, so its spend is counted the same; a throw reads as an API
-   error. With no rows the fork's answer stands and the toast says there is nothing to read.
-   The step look and the stop look pass no fallback and skip quietly on `nothing-to-fork`:
-   a record read on each would be paid on every look of every new session's first turn.
+   fence tag inside printed with `‹ ›`, then the task. `headTail` marks every cut inside its
+   field (`[… n characters of this <field> left out here …]`). A compaction summary is cut at
+   `RECORD_SUMMARY_CUT` (40,000). `recordPrompt` sends the record as blocks of about
+   `RECORD_CHUNK` (50,000) characters and marks the last complete one for the cache, so a later
+   look reads the part it shares with an earlier one from the cache. Its result has a fork's
+   shape (`ModelForkResult`), so its spend is counted the same; a throw reads as an API error.
+   With no rows no model is called, the result is `NOTHING_READ` (`nothing-to-fork`), and the
+   toast says there is nothing to read. `SESSION_ROWS_CAP` (4,096) is the most rows
+   `$.session.messages()` returns, so a list that long may not reach the session's start.
+
+   `boundaryRow` places the job's earliest open approval in the rows, which carry no number,
+   time or turn: the job's stored messages, from that approval to the newest, are matched to the
+   rows by their words, read back whole first, each aligned to its earliest feasible row and then
+   its latest. It is placed only when both agree (`established`); `opens-after` says the record
+   starts after it, `unknown` that it could not be placed. A plan-screen approval matches the tool
+   result carrying its `toolUseId`, a note alone the end of the turn it answered. Rows from it on
+   are read whole up to the budget (`recordText`'s `from`); `boundaryCover` turns the other
+   outcomes into `ReaderGaps` and a line each reader is told. `STANDING_LINE` tells every reader
+   the agent's standing instructions are not in what it reads, and `NOT_ASSESSED_RULE` what it may
+   say of a step whose proof it cannot see.
+
+   **What the readers hold of the owner's messages and approved plans (Task 7).** `memoryFor`
+   reads back, by fingerprint, the saved copy (`src.sent`) of every message of the job and each
+   approval's `body` and `took` too, so a long message is in both readers whole up to
+   `APPROVAL_READ_CAP`, and past it as its first `HIS_CUT` characters and its last `CLOSE_SHOW`
+   with a line saying the rest was not read (`readerWords`). A draft is only its own words: alone,
+   its saved copy; sent in one message with the owner's words after it (Task 5's `withDraft`), each
+   part is its own share of the whole as the writer split it (`joinedSplit`, from the drafts the
+   rep knows and the last briefing's message), or its text as kept; a draft never takes the
+   owner's words and carries no power. A fingerprint this process has worked out is kept by its
+   text (`fingerprint`, bounded by `FINGERPRINT_MEMO_CHARS`), so a text read back unchanged needs
+   no second digest and a press is not slowed by a long message; a changed text is digested again.
+
+   The approved plans go in a section of their own (`approvedBlock`, each plan in an
+   `approved_plan` fence with what the owner took and the owner's whole reply), filled by
+   `readerParts` within a budget: `WATCH_APPROVED_BUDGET` (40,000 characters) for the Heads up,
+   `BRIEF_APPROVED_BUDGET` (80,000) for the briefing. A plan is never shown in part: one over the
+   briefing's budget is shown to neither reader (`over`), one between the two to the briefing
+   only; the briefing shows the newest plans that fit and names the rest as having no room
+   (`noRoom`). The Heads up takes the plans in turn from the record's cursor `readerAt.watch`,
+   saved after each answered look (`fill.cursor`) and wrapping to the start, so every plan is
+   shown whole within a few looks; the briefing keeps no cursor. With no approval there is no
+   section and the memory is as before Task 7.
+
+   `WALK_RULE` has both readers walk each shown plan's steps against the record first and give
+   each a state (done, claimed, underway, not reached, no sign while later work goes on, done
+   before the summary, runs alongside, looks dropped, not assessed), a step with no sign while
+   later work goes on counting as the owner's ask dropped. The Heads up writes the walk under
+   `steps:` before `state:`; `parseWatch` reads that block as if it were not there, save that its
+   lines ending `| not assessed` or `| looks dropped` become `notAssessed`, and `walkDropped` turns
+   its `no sign` and `looks dropped` lines into `dropped`. `LIST_GAP_RULE`, in the Heads up alone,
+   makes the one exception to staying quiet about a step left not assessed: where the agent's own
+   full list of what it is building or doing to carry out an approved plan, or a summary of what
+   is done and what remains of it, stands whole in the record and a step of that plan is not on
+   it, the walk marks the step `looks dropped`, without calling it skipped or done. A left-out
+   part inside the list, a list from before the approval, a list of one part of the work, a list
+   called partial or a step the agent says comes later leaves it `not assessed`.
+
+   `headsUp`, called by the look after the reader answers, decides what the owner sees. A step
+   walked `no sign` or `looks dropped` takes the line, `A step of the plan you approved looks
+   dropped: <step>.`, cut at `DROPPED_STEP_MAX` (160), whatever the reader's flag was about. The
+   flag and its why move into the why after `Also:`, and further dropped steps after `Also looks
+   dropped:`, so no concern is lost. This outranks even a flag about harm, whose words stay in the
+   why. A step walked `not assessed` has no say, a flag that already speaks of the step keeps the
+   reader's wording, and a step `seen` already speaks of is not raised again (`speaksOf`: a drop
+   word and three of the step's words, or all of a shorter step's, so two near-identical steps
+   dropped at separate looks read as one; the briefing still walks both). A flag that speaks of
+   one dropped step keeps the line, and the others go under its why, at most `DROPPED_ALSO_MAX`
+   (3) by name. A step counts only where the plans shown to this look hold at least
+   `PLAN_WORDS_SHARE` (0.4) of its words, so a step no shown plan holds is never called part of
+   one; words rather than exact text because readers reword steps. The walk's number is not
+   checked, because readers write a step's own number there as often as the plan's message.
+   `walkLine` reads both the walk's forms for `notAssessed` and for `dropped`, the mark being what
+   follows the last `|`. `NOT_ASSESSED_RULE` and the lines of `boundaryCover` still hold, and the
+   list
+   can only raise the mark; it
+   never moves the ask. The briefing walks to itself and names the steps
+   it could not assess under `unassessed:` (`#n: step` lines), which `parseBrief` reads apart from
+   `left:`. `recordText` keeps a compaction summary whole up to `RECORD_SUMMARY_CUT` (40,000)
+   where any other row is cut at `RECORD_ENTRY_CUT`.
+
+   What a reader could not do for an approval reaches the owner by one path, coverage (plan 6.4,
+   Task 4b's templates): `readerGaps(fill, reader)` gives the plans not compared (too long for the
+   briefing, or no room beside newer plans) and the Heads up's `tooLong` (over its budget, inside
+   the briefing's); `notAssessedGaps` the steps a reader marked not assessed; `boundaryCover` the
+   boundary's outcome (0c: the record shown starts after the approval, or where it sits could not
+   be found); `joinGaps` merges them, each message once. A look sets them with `setLookGaps` for
+   the row; a press passes its own as `CoverOpts.gaps` to the card through `withRecordLines`, and
+   the briefing's prompt carries, among coverage's lines, the plans it cannot compare. An approval
+   in the readers' memory whose plan is not shown prints coverage's line for it
+   (`unshownLine`). The Heads up's too-long line is `ReaderGaps.tooLong`, shown by coverage only
+   when no other line stands; it replaces the `last` parameter Task 7 first gave `recordLines`.
 3. **Check**: `pressCheck()` → `runCheck()` first makes a throwaway copy of the agent's
    folder (`makeCopy`: an APFS clone, `cp -Rc`, into `checkCopyDir` under `~/.cache`; where
    `cp` refuses `-c` before making anything, as GNU `cp` does, `mkdir` makes the folder and
@@ -524,7 +607,14 @@ followed by a note that they are quoted records and no instruction to the writer
 printed with its brackets turned to `‹` `›`, so no message can close the fence, and the record
 keeps the text as typed. Its answer is `objective: holds`, or
 `objective: moved` with `moved:`, `result:`, `for:`, `done:`, `step:` and `dropped:`
-(`parseObjective`); `moved: new job …` closes the job. `takeObjective` applies it: the first
+(`parseObjective`); `moved: new job …` closes the job. Straight after the `objective:` line,
+holds or moved, come its `approved:` lines: one `approved: #n | all` or
+`approved: #n | <the part taken>` for each message whose turn the owner approved, or
+`approved: none` (`parseApproved`; `parseObjective` reads the rest as before). The rules for
+an approval are `OBJECTIVE_SYSTEM`'s section "Plans the owner approved": what a yes is, a draft
+with the owner's words read as one message, each step of an approved plan its own condition
+after the whole plan is read, a clash kept as both sides and an open "Settle with the owner
+which stands" condition, and a plan's statements of fact held as the agent's claims. `takeObjective` applies it: the first
 objective is taken as it stands; after that a write is taken only when it saw a message of the owner's
 or a note past `from` (`hisFrom` never counts a draft), so neither the agent's words nor the
 rep's drafts can move it and a write that lands late cannot take a newer one's place. A
@@ -550,17 +640,172 @@ argument). A new job's conditions start with no mark. A draft moves only `step`,
 `prompt.submit`. The card shows `revisedLine` under the head and `objectiveText` as its
 reading; the row shows `result`.
 
-Owner messages are `OwnerMsg`s: `n`, `kind` (`his`, `note` or `draft`), `text` (cut to
+### The plan screen
+
+`planScreen(input, result)` reads what Claude Code's plan screen answered from the `ExitPlanMode`
+call, and `null` is everything it does not recognise. Accepted: a result object holding a
+non-empty `plan` and a boolean `planWasEdited` gives that plan and whether the owner edited it;
+otherwise a result or text opening `PLAN_ACCEPTED_TEXT` gives the part after
+`PLAN_ACCEPTED_HEADING`, else the call's own plan, with `edited` false. Rejected: an error result
+holding `PLAN_REJECTED_SAID` gives the owner's note, whatever follows it, and the plan the call
+carried; a rejection with no note is `null`, so nothing is stored. `takePlanScreen` runs after the
+call returns, so a thrown call stores nothing, and `storeScreen` writes one `OwnerMsg`: accepted is
+kind `plan`, `approved: 'all'`, `screen` `accepted` or `edited`, the plan saved whole as `src.body`
+and its start as `text`; rejected is kind `his`, the note as `text`, `screen: 'rejected'`, the plan
+saved as `src.rejected`, read by nobody as approved. Both keep the `toolUseId`, which `boundaryRow`
+uses to place them.
+
+A session the rep did not watch has its answers read back: `screenFromRows` finds each
+`ExitPlanMode` use in the rows and its answer, matched strictly by `tool_use_id` in a later row's
+results, else the use's own result. `seedOrder` sets them among the typed messages by time, and
+`storeScreen` stores each with `readBack: true`. `planLabel` then adds that whether the owner
+edited it there cannot be told, since the rows hold the text form.
+
+Owner messages are `OwnerMsg`s: `n`, `kind` (`his`, `note`, `draft` or `plan`), `text` (cut to
 `HIS_CUT`, 6,000 characters, for the owner's messages and notes, the writer's only input, and to
-`OWNER_CUT`, 1,200, for a draft), and `prior`, the end of the agent's last answer before it
-(`fitTail` to `PRIOR_CUT`, 400, keeping the end, where the question a short reply answers
-usually is). `rec.counter` gives every message its number, drafts
+`OWNER_CUT`, 1,200, for a draft), and `prior`, the end of the body under it, the agent's words
+the message answered (`fitTail` to `PRIOR_CUT`, 400, keeping the end, where the question a short
+reply answers usually is). A message whose stored `text` is not all of what was sent (over
+`HIS_CUT`, or split into words for the agent and a note to the rep, or a draft with his words after it) keeps the whole as
+`src.sent`, and `ownerWithPrior` prints that in place of `text` for the writer. `rec.counter` gives every message its number, drafts
 included, so the guards compare numbers, never list lengths, and `trimOwner` keeps the job's
 messages whole up to `JOB_MAX` (200) and `OWNER_MAX` (40) from before it. `loadRec` migrates
 older records: a list of strings becomes numbered messages (`migrateOwner`, which reads the
 old marks), and a record with a `reading` and no `objective` gets `objective: null`, its old
 text in `rec.stale` (kept as the first version when the objective is written) and
 `rec.jobStart` at the old job's first message; the next start, press or message writes it.
+
+The turn the owner answered is captured from the stream, never read back. `turn.step` (main loop
+only; a helper's step, with `agentId`, passes through) returns `yield* tapStep(next(e), keep)`:
+`tapStep` (rep.ts) is an iterator whose `next`, `return` and `throw` are the inner stream's own,
+each result shown to `keep` on its way up, so every chunk, return value and throw passes as under
+`yield* next(e)`; only `text` chunks are kept (never thinking), by block (`addText`), and
+`closeStep`, in a `finally`, moves the step's blocks in block order into the turn's. Blocks and
+steps are joined with a blank line (`joinTurn`, `runningText`); the step's `answer` and
+`turn.complete.answer` are never the text, since they drop or merge blocks. A turn's entry in
+`live` is made at its main-loop `turn.start`, labelled `by` how it began (`notification` after a
+task-notification submit or a start text that begins `<task-notification>`, `continuation` for an
+empty start text, `owner` after a composer or bridge submit, else `other`; `lastOrigin`, set on
+every submit, says which). A step with no entry (a reload mid-turn) makes one marked `incomplete`
+(`the rep did not see this turn from its start`); a step whose index is not the one expected marks
+it `a step of this turn was missed`; past `TURN_TEXT_MAX` (= `SOURCE_MAX`, 1,000,000 characters)
+nothing more is kept and it is `longer than the rep keeps`. At `turn.complete`, before anything
+is awaited, the turn joins `completedHere` and `saveTurn` saves its text (after what a message
+typed into it took, `restOf`) as the source `t-<turnId>` and appends `{ turnId, by, src,
+incomplete, note: 'interrupted' when aborted }` to the record's `pending` (at most `PENDING_MAX`,
+50; past it the oldest is let go and `pendingDropped` counted); `saving` holds that save.
+
+A composer or bridge submit fixes what it answers before its first `await` (`snapshot`): the turns
+in `completedHere` then, and, when `e.turnId` names a running turn, what that turn had streamed
+since anything was last taken (`taken` moves to the end, so the rest goes to the next message); a
+`turnId` with no entry gives an empty cut marked `the turn running when the owner typed was not
+watched from its start`. After `await saving`, inside the change that records the message,
+`takeBody` (which reads each pending turn's text through `readRef`) takes from `pending` every turn that ended before the submit (in the snapshot, or not
+in `completedHere` at all, as after a reload) and appends the cut (`bodyOf`): the body, its
+`turns` spans (`{ by, from, to, note?, incomplete? }`, at most `TURNS_KEPT`, 20, the oldest merged
+into one span that counts its turns by `merged`) and `incomplete` with the first reason (turns let
+go first). The body is saved as `src.body` (`<n>-body`) on the owner's part (his message, or a
+note sent alone); a draft part gets none, and a draft sent unchanged still takes the turns it
+answered. A turn that ended after the submit stays pending for the next message. An empty, whole
+body adds no field. `saveSource` fingerprints each source and holds it inline in the record
+until the change saves it to its file (below); one over `SOURCE_MAX` is not kept and says why
+in `lost` (`lostTooLong`). `leaveSession` clears `live`, `lastOrigin`, `saving`,
+`completedHere` and the record lines.
+
+**Saved sources and the store.** Each source (a turn's text, a message's `body`, `took`,
+`rejected` or `sent`) is a `SourceRef`: `chars`, `sha` (`sha256`, the runtime's SHA-256 of
+its UTF-8 bytes, 64 hex characters), `where` (`inline`, `file` or `memory`), `text` only while
+inline, and `lost` with the reason when it cannot be read. Its file is
+`<config>/owner-rep/sources/<session id>/<source id>.txt` (`sourcesRoot`; the config folder is
+`CLAUDE_CONFIG_DIR`, else `.claude` in the home, read once a process by `rootOf`), the source id
+`t-<turnId>` or `<n>-<part>` (`isSourceId`); only a session id of the uuid form has a folder
+(`isSessionId`). In every `changeRec`, before the save, `placeSources` writes each source not
+yet in a file: a file already there is never written over, and is checked against the
+fingerprint where it is read. A write that fails or takes longer
+than `SOURCE_WRITE_MS` (1,500 ms, `writeFile`) stops the writes for that change; what was not
+written goes back inline while the record's inline texts stay within `INLINE_RECORD_BYTES`
+(65,536) and every record's within `INLINE_STORE_BYTES` (524,288), and is held in the running
+process past that (`where: 'memory'`, `memTexts`), each tried again at the next change.
+`readRef` gives a reference's text for use: inline from the record, memory from `memTexts`
+(else `LOST_RESTART`), a file only when what it reads has the reference's fingerprint (else
+`LOST_DAMAGED`); the record never keeps a file's text. `readable` reads the named parts of a
+list of messages and `markLost` marks in the record each found lost, only while it is the same
+source (id and fingerprint). The objective writer reads the job's `sent` parts this way; the
+readers (`memoryFor`) get the approvals kept past the trim with `sent`, `body` and `took` read
+whole. The files a change drops (a turn taken into a body, a message the trim lets go) are
+removed after a save that succeeds, and the folder of a record the store lets go goes in
+`stored`; `removeFiles` runs one `rm -f` or `rm -rf` through `hostArgv`
+(`REMOVE_TIMEOUT_MS`, 10 s) on only the paths `removablePath` allows: a folder named by a uuid
+right under the sources folder, or a source or record file in one.
+
+`changeRec` raises `rec.recRev` on every change that alters the saved record (`bareJson`
+compared before and after) and `rec.objRev` when the objective changed. A save the store
+refuses (`saveRec`) moves the record's inline texts to files, or to memory when the files
+refuse them (`moveInline`), and tries again; refused still, `saveToFiles` writes the whole
+record as parts of at most `FALLBACK_PART_BYTES` (3,000,000) UTF-8 bytes (`splitRecord`,
+never inside a character), `record-<recRev>-<k>.json`, then last the list of them,
+`record.json` (`{ recRev, parts: [{ name, bytes, sha }], why }`), and removes the older list's
+other parts. The record is held in the process (`fullRecs`, which `loadRec` returns while it is
+set) and `storeFull` says whether the files hold it (`memoryOnly` when a write failed). A
+later save the store takes removes the list and its parts (`stored`).
+
+A session's first `loadRec` in a process reconciles the store with its files once
+(`reconcileOnce`, `reconcile`): a list (`parseManifest`, which takes only part names of the form
+above) at or under the store's `recRev` is removed; a newer one is taken up when every part
+reads back with its fingerprint (`pickRecord`, `parsedRec`, which checks the session id), and
+`storeFull` is set again so the line shows after a restart; otherwise the store's record stands
+with `rec.lossMark` (`{ lostRev, keptRev, after, why }`), `recRev` set past the lost copy's, and
+the list renamed `record-lost-<lostRev>.json` with its parts kept. A loss for any reason but a
+fingerprint that did not match (`isMismatch`) is taken up at a later start while the record
+has not changed since the mark (`recRev` still `lostRev + 1`), its files then removed; a new job
+clears the mark and removes its files. Sources held in memory by an earlier process are marked
+`LOST_RESTART`.
+
+An approval (`approvalOf`: the owner's message, note or plan-screen plan carrying `approved`,
+never one that turned a plan down, never a draft) of the open job that falls outside the job's
+newest `JOB_MAX` is kept by `trimKept`, pinned, up to `APPROVED_KEEP_MAX` (60) of the newest;
+its stored text is cut to `PRIOR_CUT` with its whole words kept as `src.sent`. An older one is
+not kept. `pushOwner` trims through `trimCounted`, which counts into `rec.uncovered`
+(`{ job, count, recent }`, the last `UNCOVERED_RECENT` (10) entries `{ n, why, kind, screen?, row? }`,
+each at most 140 bytes, its reason cut by `entryWhy`) every message of the job it drops that has a
+coverage line or is an approval it could not keep; a new job clears it, and the old job's
+approvals then leave with the rest of its messages, and their files with them.
+
+What the owner is told when a plan or message was not read (plan 6.4) is `coverageLines`, and
+`coverage` caps it at `COVER_LINES_MAX` (3): past that the third says how many more are not
+checked, the entries `uncovered` let go of counted. In order: the lost copy (`lostRecordLine`);
+then by message number each message of the job that `unresolvedRow` puts in one of the rows 1 to
+12 (`rowLine`; `ReadState.mark` tells row 1, a wait set off by a mark, from row 2), each entry
+`uncovered` holds (`droppedLine`; an approval with no row says it was not kept, `NOT_KEPT_WHY`),
+and the readers' lines for an approval the record holds (`notComparedLine`, `notAssessedLine`,
+passed as `CoverOpts.gaps`, a `ReaderGaps`); then a failed write (`failedWriteLine`) for each
+message after the objective's `from` up to `rec.failedWrite.upTo` that no other line names; then
+the store full (`storeFullLine`, kept in its own files or only until Claude Code restarts); the
+plan too long for the Heads up (`headsUpTooLongLine`) last, only when no other line stands. Each
+line carries `asserts`, true when it says without condition that the owner approved or accepted
+a plan (`ROW_ASSERTS`); `planIn` says "accepted on the plan screen" only for a plan-screen plan
+and "approved in message" only for the owner's message or note. A seeded copy that starts after
+a compaction summary (`typedFromItems`'s `compacted`) records its first turn incomplete with
+`COMPACTED_WHY`, so a message after it stands in row 6. The lines are the state key `lines`
+(`rowCoverage`, with the gaps `setLookGaps` keeps per session), drawn under the row's head in
+the row and note views; they are given to the briefing in place of its none line under the open
+conditions (`memoryText`: with no objective, or with conditions open, the list is printed
+instead and no line); and they go first in a card's left-out list by `withRecordLines`, which
+also shows a stop as continue while a line stands, its meaning the first line and its next step
+`RECORD_NEXT`. A message loses only the sentences that say stop, by `withoutStopSentences`, the
+same removal the gate uses: every other sentence stays as written, and a message with none stands
+whole. Only when nothing usable is left, or what is left still says stop, is the message
+`RECORD_MESSAGE`; what it does is `RECORD_DOES` when it says stop itself or the message became
+`RECORD_MESSAGE`.
+
+A seeded message has a body too. `typedFromItems` walks back from each matched row to the matched
+row before it, collecting the agent's text oldest first, joined by a blank line, into a `SeededTurn`,
+and `seededBody` gives it one span with `by: 'other'` and `note: 'read-back'`, which `spansText`
+shows as `READ_BACK_LINE`. A walk stopped by a summary row is `incomplete` with `COMPACTED_WHY`; one
+that runs out of rows with messages before it, with `TURN_START_WHY`. The first message is not
+marked: nothing comes before it. A message with no row at all, one from before a compaction, gets
+no body and no `incomplete`, because every compacted session would otherwise show many lines: that
+is a known limit.
 
 A session the rep holds no record of (its record fell out of the newest `SESSIONS_MAX`, it
 was forked with a new id, or it is older than the mod) has none of the owner's messages. `seedOwner`
@@ -669,7 +914,13 @@ sent through "Put message in prompt", is split by `draftSplitAny` against the la
 cards' messages (`rec.drafts`, fed by `keepDraft` wherever a card's message is set), so it is
 recognised after a reload and from an earlier card: the draft is recorded as a
 `draft`, listed to the model with `SENT_MARK` so it is weighed as the rep's draft and never as
-the owner's words, and whatever the owner typed after it is their own message, numbered after it. A
+the owner's words, and whatever the owner typed after it is their own message, numbered after it. When
+he typed words after it (`pushDraft`, on the live path and when a session is read in by `seedOnce`),
+both parts keep the whole message as sent in their own `src.sent` copy and his part names the draft
+in `withDraft`, so the writer reads all of it and `takeApprovals` can move a mark on the draft to his
+words; a draft sent alone keeps nothing more and makes no writer call. A message of his read in by
+`seedOnce` that is longer than `HIS_CUT` keeps its whole as `src.sent` as the live path does, so one
+over the cap or too long to save counts as not read in full (`wordsUnread`). A
 prompt beginning `Owner rep` and a colon (`noteTyped`) is a note to the rep: it is recorded as
 a `note`, listed with `NOTE_MARK` (`(to the rep)`), the objective is rewritten and a look
 starts at once, and the prompt is dropped so the agent never sees it. `noteSplit` also finds

@@ -1,11 +1,11 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index ec82737..3c2cc48 100644
+index 97fd57d..abc6014 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -267,7 +267,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number):
-   if (fresh.length === 0) return false
-   const version = { at: now, cause: a.cause, text: objectiveText(held) }
-   if (a.isNewJob) {
+@@ -986,7 +986,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number, r
+   // see it, else the first it sees.
+   const opening = fresh.includes(cited) ? cited : Math.min(...fresh)
+   if (a.isNewJob && canOpen(opening)) {
 -    const since = Math.min(...fresh)
 +    const since = held.since
      rec.past = [...rec.past, held.result].slice(-PAST_MAX)

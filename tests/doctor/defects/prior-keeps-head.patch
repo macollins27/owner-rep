@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index fbdfd7b..f2a0875 100644
+index 97fd57d..b162cce 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -831,7 +831,7 @@ let lastAnswer = ''
- function pushOwner(rec: Rec, kind: OwnerKind, text: string, prior: string = lastAnswer): void {
+@@ -1844,7 +1844,7 @@ async function putMessage($: EngineInterface, text: string): Promise<void> {
+ // an approval the trim could not keep (`trimCounted`), the last 10 by number.
+ function pushOwner(rec: Rec, kind: OwnerKind, text: string, prior: string, more: Partial<OwnerMsg> = {}): void {
    const cut = kind === 'draft' ? OWNER_CUT : HIS_CUT
-   rec.owner = trimOwner(
--    [...rec.owner, { n: ++rec.counter, kind, text: fit(text, cut), prior: fitTail(prior, PRIOR_CUT) }],
-+    [...rec.owner, { n: ++rec.counter, kind, text: fit(text, cut), prior: fit(prior, PRIOR_CUT) }],
-     jobOf(rec),
-   )
- }
+-  const { list, uncovered } = trimCounted([...rec.owner, { n: ++rec.counter, kind, text: fit(text, cut), prior: fitTail(prior, PRIOR_CUT), ...more }], jobOf(rec), rec.uncovered)
++  const { list, uncovered } = trimCounted([...rec.owner, { n: ++rec.counter, kind, text: fit(text, cut), prior: fit(prior, PRIOR_CUT), ...more }], jobOf(rec), rec.uncovered)
+   rec.owner = list
+   if (uncovered === undefined) delete rec.uncovered
+   else rec.uncovered = uncovered

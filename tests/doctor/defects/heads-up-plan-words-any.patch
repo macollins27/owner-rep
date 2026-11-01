@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index baaaf44..c6c2d63 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2661,7 +2661,7 @@ export const PLAN_WORDS_SHARE = 0.4
+ const inPlans = (step: string, plans: readonly string[]): boolean => {
+   const has = new Set(plans.flatMap(allWords))
+   const words = stepWords(step)
+-  return words.length > 0 && words.filter(w => has.has(w)).length >= words.length * PLAN_WORDS_SHARE
++  return words.length > 0 && words.filter(w => has.has(w)).length >= 0
+ }
+ 
+ export const DROPPED_STEP_MAX = 160

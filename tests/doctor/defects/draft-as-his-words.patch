@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 908ffa4..98391e4 100644
+index 97fd57d..2992036 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -949,7 +949,7 @@ export const register: Register = on => {
-           const isHis = split === null || split.his !== ''
-           if (split === null) pushOwner(rec, 'his', text)
-           else {
--            pushOwner(rec, 'draft', split.draft)
-+            pushOwner(rec, 'his', split.draft)
-             if (split.his !== '') pushOwner(rec, 'his', split.his)
-             rec.lastSent = { text: split.draft, at: Date.now() }
-             // A draft is the rep's words: it moves the step it asks for and nothing else.
+@@ -1980,7 +1980,7 @@ async function pushDraft(
+   his: () => Promise<Partial<OwnerMsg>>,
+ ): Promise<void> {
+   const added = split.his !== ''
+-  pushOwner(rec, 'draft', split.draft, prior, added ? await withSent($, sid, rec, {}, whole) : {})
++  pushOwner(rec, 'his', split.draft, prior, added ? await withSent($, sid, rec, {}, whole) : {})
+   if (!added) return
+   const draft = rec.counter
+   pushOwner(rec, 'his', split.his, prior, await withSent($, sid, rec, { ...(await his()), withDraft: draft }, whole))

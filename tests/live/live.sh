@@ -3,7 +3,7 @@
 # Proves the build the owner runs calls the rep's hooks; the test kit cannot. On demand only:
 # each scenario is a real session and a model call, about a minute.
 #
-#     tests/live/live.sh            # all twelve scenarios
+#     tests/live/live.sh            # every scenario, 1 to 14
 #     tests/live/live.sh 2 4        # only these
 #
 # Each scenario's whole screen is saved in tests/live/captures/<n>-<name>.txt, and the strip's
@@ -16,10 +16,20 @@
 # skipped when no call was made) with its reply's length (ownChars), and whether the fixed text
 # was the last net are printed, not judged, because the model's first answer decides them.
 # Scenario 12 resizes one session's window to 44, 24 and 80 rows with the card open: the buttons
-# stay on screen at each, the judgment's parts are drawn from 44, and nothing is cut at 80. Exit
-# 0 when every scenario run showed what it should.
+# stay on screen at each, the judgment's parts are drawn from 44, and nothing is cut at 80.
+# Scenario 13 answers the real plan screen twice: a plan turned down with a note, then the next
+# plan edited there and accepted. The record must hold the note as his, the edited plan whole in
+# its own file, and the steps of that plan as his; the capture must not call the added step
+# unasked-for (see plan_screen).
+# Scenario 14 shows the agent's turn as the owner saw it: the text the rep saved under each of
+# his messages (the turns that message answered, taken from the stream as it reached the
+# screen) is the transcript's text for those turns, character for character, through a plan
+# with a command, a reply typed mid-turn, two interrupts, a background task's turn, /compact, a
+# helper, and a reload between turns that starts the mod again, after which the next message
+# still holds the turn before it whole, from the saved record; it also prints what the engine
+# sends as agentId on the main loop (see turn_capture). Exit 0 when every scenario run showed what it should.
 #
-# Scenario 15 is on demand only, never in the default twelve: Brief me on a session with a step
+# Scenario 15 is on demand only, never in the default fourteen: Brief me on a session with a step
 # held for the owner's word, the card read at 80 rows. It needs PROOF_DIR, a private folder of
 # its own for each run, for the session's debug log, its message and the store's backup; it runs
 # in a tmux session of its own, finds its record by the session id it launched, and
@@ -62,14 +72,14 @@ else
 fi
 # The command line tmux runs to start a session, with these arguments added to claude's.
 launch_line() {
-  print -r -- "env -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT -u CLAUDE_CODE_SESSION_ID -u CLAUDE_CODE_CHILD_SESSION -u CLAUDE_CODE_MESSAGING_SOCKET -u CLAUDE_CODE_MESSAGING_TOKEN -u CLAUDE_CODE_SESSION_ATTENDED claude $PLUGIN_ARGS $* --permission-mode bypassPermissions"
+  print -r -- "env -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT -u CLAUDE_CODE_SESSION_ID -u CLAUDE_CODE_CHILD_SESSION -u CLAUDE_CODE_MESSAGING_SOCKET -u CLAUDE_CODE_MESSAGING_TOKEN -u CLAUDE_CODE_SESSION_ATTENDED ${LIVE_ENV:+$LIVE_ENV }claude $PLUGIN_ARGS $* --permission-mode ${LIVE_MODE:-bypassPermissions}"
 }
 if [[ ${LAUNCH_LINE:-} == 1 ]]; then launch_line; exit 0; fi
 mkdir -p $CAPS
 S=owner-rep-live
 STRIP_RE='Owner rep ·|Brief me|Tell the rep|Fine, close|Put message|Check it|Heads up'
 want=("$@")
-[[ ${#want} -eq 0 ]] && want=(1 2 3 4 5 6 7 8 9 10 11 12)
+[[ ${#want} -eq 0 ]] && want=(1 2 3 4 5 6 7 8 9 10 11 12 13 14)
 fails=0
 bad=0
 # The folder the last session was started in, so a scenario can reopen a session there.
@@ -176,6 +186,728 @@ heights_card() {
   heights_record message ; verdict "$rows rows: the whole message in the box" $?
 }
 
+# Scenario 13: the real plan screen, answered twice. A session in plan mode writes a plan; the
+# owner turns it down with a note; the next plan is edited on the screen (ctrl+g, EDITOR being a
+# script that adds one line to the file it is given) and accepted; the agent works and the Rep
+# button is pressed. All the text is invented. The record of this one session is read from the
+# store, and nothing else in the store is printed.
+PLAN_ASK='Plan how to create apple.txt containing apple and pear.txt containing pear, in three short steps, for approval.'
+PLAN_NOTE='Do not create pear.txt, only apple.txt.'
+PLAN_LINE='- ADDED BY OWNER: also create plum.txt containing plum.'
+plan_screen() {
+  local T13 ok=0
+  T13=$(mktemp -d -t owner-rep-live-13)
+  cat > $T13/edit.sh <<E
+#!/bin/sh
+printf '\n%s\n' '$PLAN_LINE' >> "\$1"
+E
+  chmod +x $T13/edit.sh
+  LIVE_MODE=plan LIVE_ENV="EDITOR=$T13/edit.sh VISUAL=$T13/edit.sh" start '' --model sonnet || { rm -rf "${T13:?}"; return 1; }
+  wait_for 'plan mode on' 120 ; verdict 'the session is in plan mode' $?
+  send "$PLAN_ASK"
+  wait_for 'Would you like to proceed' 120 ; verdict 'the plan screen drawn' $?
+  save 13-plan-screen-first
+  tmux send-keys -t "=$S:" 3; sleep 1
+  tmux send-keys -t "=$S:" -l "$PLAN_NOTE"; sleep 1
+  tmux send-keys -t "=$S:" Enter
+  sleep 8
+  wait_for 'Would you like to proceed' 120 ; verdict 'the next plan drawn after the note' $?
+  save 13-plan-screen-second
+  tmux send-keys -t "=$S:" C-g
+  sleep 5
+  save 13-plan-screen-edited
+  tmux send-keys -t "=$S:" 1
+  sleep 5
+  wait_for '^\s*(idle|stopped, waiting on you)\s+1: Brief me' 120 ; verdict 'the turn ended' $?
+  tmux send-keys -t "=$S:" 1
+  wait_for 'Fine, close|↓ [0-9]+ more' 120 ; verdict 'the card drawn' $?
+  save 13-plan-screen
+  pane | sed "s/${USER:-user}/user/g" > $T13/card.txt
+  cat > $T13/check.py <<'PY'
+import glob, hashlib, json, os, sys
+cfg = os.environ.get("CLAUDE_CONFIG_DIR") or os.path.expanduser("~/.claude")
+ask, note, name, card_file = os.environ["PLAN_ASK"], os.environ["PLAN_NOTE"], os.environ["STORE_NAME"], sys.argv[1]
+fold = lambda t: " ".join(str(t).split())
+hit = None
+for f in sorted(glob.glob(os.path.join(cfg, "plugins", "store", name)), key=os.path.getmtime, reverse=True):
+    try:
+        recs = json.load(open(f)).get("sessions", {})
+    except (OSError, ValueError):
+        continue
+    for sid, r in recs.items():
+        if any(isinstance(m, dict) and fold(m.get("text", "")) == fold(ask) for m in r.get("owner", [])):
+            if hit is None or r.get("at", 0) > hit[1].get("at", 0):
+                hit = (sid, r)
+    if hit:
+        break
+if hit is None:
+    print("  no record holding the request")
+    sys.exit(1)
+sid, rec = hit
+owner = [m for m in rec.get("owner", []) if isinstance(m, dict)]
+for m in owner:
+    print(f"  #{m.get('n')} {m.get('kind')}" + (f" screen {m['screen']}" if m.get("screen") else "") + (f" read {m['read'].get('state')}" if m.get("read") else "") + f": {fold(m.get('text', ''))[:70]}")
+bad = 0
+def verdict(name, ok, why=""):
+    global bad
+    print(f"  {name}: {'shown' if ok else 'NOT SHOWN'}" + (f" ({why})" if why else ""))
+    bad += 0 if ok else 1
+turned = [m for m in owner if m.get("kind") == "his" and m.get("screen") == "rejected" and fold(note) in fold(m.get("text", ""))]
+verdict("the note is held as his, with the plan screen's mark", bool(turned))
+verdict("the plan he turned down is saved beside the note", bool(turned) and bool((turned[0].get("src") or {}).get("rejected")))
+plans = [m for m in owner if m.get("kind") == "plan" and m.get("screen") == "edited"]
+verdict("the edited plan is held as an approved plan", bool(plans) and "approved" in plans[0])
+body = (plans[0].get("src") or {}).get("body") if plans else None
+verdict("that plan has been read whole", bool(plans) and (plans[0].get("read") or {}).get("state") == "read", str((plans[0].get("read") if plans else "")))
+text = None
+if body and body.get("where") == "file":
+    for g in glob.glob(os.path.join(cfg, "owner-rep", "sources", sid, "*.txt")):
+        t = open(g, encoding="utf-8", newline="").read()
+        if hashlib.sha256(t.encode("utf-8")).hexdigest() == body.get("sha"):
+            text = t
+verdict("its saved file matches its fingerprint", text is not None)
+verdict("the saved plan holds the line the owner added", text is not None and "plum.txt" in text)
+done = ((rec.get("objective") or {}).get("done")) or []
+for c in done:
+    print(f"    held: {fold(c.get('text', ''))[:110]}")
+says_no = ("not ", "no ", "never", "without", "only apple", "skip", "isn't", "absent", "does not")
+verdict("a condition holds the added step", any("plum" in c.get("text", "").lower() for c in done))
+verdict("no condition asks for pear.txt", not any("pear" in (t := c.get("text", "").lower()) and not any(w in t for w in says_no) for c in done))
+card = open(card_file).read().lower()
+verdict("the card or the objective shows the added step", "plum" in card or any("plum" in c.get("text", "").lower() for c in done))
+near = [l for l in card.splitlines() if "plum" in l and ("unasked" in l or "not asked" in l or "nobody asked" in l or "extra" in l)]
+verdict("nothing calls the added step unasked-for", not near, "; ".join(near))
+sys.exit(1 if bad else 0)
+PY
+  PLAN_ASK=$PLAN_ASK PLAN_NOTE=$PLAN_NOTE STORE_NAME=$STORE_NAME python3 -I $T13/check.py $T13/card.txt | tee $CAPS/13-plan-screen-record.txt
+  ok=${pipestatus[1]}
+  stop
+  rm -rf "${T13:?}"
+  return $ok
+}
+
+# Scenario 14: the agent's turn as he saw it. A second, throwaway mod loads beside the rep and
+# logs what the engine sends on every prompt.submit, turn.start, turn.step and turn.complete:
+# each text chunk, each stop chunk, how each step ended and what it returned, and, for agentId,
+# only whether the key is there ('agentId' in e) and typeof its value, so an absent value is
+# never shown as null. One session then runs, all text invented: a short plan, one command and
+# a closing line; a reply asked for after a call to the advisor (two text blocks, when the
+# model gives them); a long list with a reply typed while it streams; a list cut by Escape; a
+# command cut by Escape; a background command whose notification starts a turn; /compact; a
+# helper started with the Agent tool; and, between turns, a line added to a file of each mod
+# and /reload-plugins, which starts a mod's module again only when its files changed (typed
+# while a turn runs, it waits for the turn's end). The rep runs from a copy of the checkout's
+# .claude-plugin, hooks and types, so that change never touches the checkout. Each turn
+# is followed by a message of the owner's, which is what saves it as a body. Afterwards the
+# rep's record of that one session (src.body.text and turns of each message, read from the
+# owner-rep_inline-*.json store; nothing else in the store is printed) is set against the
+# session's transcript and the log, and the whole comparison is written to
+# captures/14-turn-capture.txt with the screen at the end.
+turn_capture() {
+  local T14 M14=0 ok verdicts line name i
+  T14=$(mktemp -d -t owner-rep-live-14)
+  mkdir -p $T14/log/.claude-plugin $T14/log/hooks $T14/logs
+  print -r -- '{ "name": "live-turn-log", "version": "0.0.1", "description": "Throwaway logger for live scenario 14." }' > $T14/log/.claude-plugin/plugin.json
+  print -r -- '{ "modules": ["./register.ts"] }' > $T14/log/hooks/hooks.json
+  sed "s|@LOGDIR@|$T14/logs|" > $T14/log/hooks/register.ts <<'TS'
+import type { Register } from 'claude-code'
+
+const LOGDIR = '@LOGDIR@'
+const t0 = Date.now()
+const events: Record<string, unknown>[] = []
+let sid = ''
+let writing: Promise<void> = Promise.resolve()
+
+// agentId as the engine sent it: whether the key is there, and typeof its value.
+const raw = (e: object) => {
+  const v = (e as { agentId?: unknown }).agentId
+  return { has: 'agentId' in e, type: typeof v, agent: typeof v === 'string' ? v : '' }
+}
+const word = (v: unknown) => (v === null ? 'null' : v === undefined ? 'undefined' : String(v))
+
+function flush($: any): Promise<void> {
+  writing = writing
+    .then(async () => {
+      if (sid === '') {
+        try { sid = await $.session.id() } catch { sid = 'unknown' }
+      }
+      await $.fs.write(`${LOGDIR}/${sid}-${t0}.jsonl`, events.map(x => JSON.stringify(x)).join('\n') + '\n')
+    })
+    .catch(() => undefined)
+  return writing
+}
+
+export const register: Register = on => {
+  on('prompt.submit', async ($: any, e: any, next: any) => {
+    events.push({ ev: 'submit', at: Date.now(), hasTurn: typeof e.turnId === 'string', turnId: typeof e.turnId === 'string' ? e.turnId : '', origin: word(e.origin?.kind), text: String(e.text).slice(0, 60) })
+    await flush($)
+    return next(e)
+  })
+  on('turn.start', async ($: any, e: any, next: any) => {
+    events.push({ ev: 'start', at: Date.now(), turnId: e.turnId, ...raw(e), text: typeof e.text === 'string' ? e.text.slice(0, 40) : word(e.text) })
+    await flush($)
+    return next(e)
+  })
+  on('turn.step', async function* ($: any, e: any, next: any): any {
+    const base = { turnId: e.turnId, step: e.index, ...raw(e) }
+    events.push({ ev: 'begin', at: Date.now(), ...base })
+    let ended = 'stopped from above'
+    let answer: unknown = null
+    let stopReason: unknown = 'none'
+    const it = next(e)
+    const see = (r: any) => {
+      if (r.done !== true) {
+        const c = r.value
+        if (c.kind === 'text') events.push({ ev: 'text', at: Date.now(), turnId: e.turnId, step: e.index, agent: base.agent, index: c.index, text: c.text })
+        else if (c.kind === 'stop') events.push({ ev: 'stopchunk', at: Date.now(), turnId: e.turnId, step: e.index, agent: base.agent, stopReason: word(c.stopReason) })
+      }
+      return r
+    }
+    const tap: any = { next: (...a: any[]) => it.next(...a).then(see), [Symbol.asyncIterator]() { return tap } }
+    if (it.return) tap.return = (v: any) => it.return(v).then(see)
+    if (it.throw) tap.throw = (err: any) => it.throw(err).then(see)
+    try {
+      const r = yield* tap
+      ended = 'returned'
+      answer = r?.answer
+      stopReason = r?.stopReason
+      return r
+    } catch (err) {
+      ended = 'threw'
+      throw err
+    } finally {
+      events.push({ ev: 'end', at: Date.now(), turnId: e.turnId, step: e.index, agent: base.agent, ended, answer: typeof answer === 'string' ? answer : word(answer), stopReason: word(stopReason) })
+      await flush($)
+    }
+  })
+  on('turn.complete', async ($: any, e: any, next: any) => {
+    events.push({ ev: 'complete', at: Date.now(), turnId: e.turnId, ...raw(e), isAborted: e.isAborted, reason: word(e.reason), answer: typeof e.answer === 'string' ? e.answer : word(e.answer) })
+    await flush($)
+    return next(e)
+  })
+}
+TS
+  cat > $T14/check.py <<'PY'
+import datetime, glob, hashlib, json, os, sys
+from collections import OrderedDict
+
+mode, logdir = sys.argv[1], sys.argv[2]
+cfg = os.environ.get("CLAUDE_CONFIG_DIR") or os.path.expanduser("~/.claude")
+
+def logs():
+    fs = glob.glob(os.path.join(logdir, "*.jsonl"))
+    return sorted(fs, key=lambda f: int(os.path.basename(f).rsplit("-", 1)[1].split(".")[0]))
+
+def session_id():
+    ids = {os.path.basename(f).rsplit("-", 1)[0] for f in logs()}
+    return sorted(ids)[0] if len(ids) == 1 else None
+
+def record(sid):
+    # Only this session's record is read from the store; nothing else in it is printed. Each
+    # body kept in a file is read back from the session's sources folder by its fingerprint.
+    files = glob.glob(os.path.join(cfg, "plugins", "store", "owner-rep_inline-*.json"))
+    for f in sorted(files, key=os.path.getmtime, reverse=True):
+        try:
+            s = json.load(open(f)).get("sessions", {})
+        except (OSError, ValueError):
+            continue
+        if sid in s:
+            r = s[sid]
+            kept = {}
+            for g in glob.glob(os.path.join(cfg, "owner-rep", "sources", sid, "*.txt")):
+                t = open(g, encoding="utf-8", newline="").read()
+                kept[hashlib.sha256(t.encode("utf-8")).hexdigest()] = t
+            for m in r.get("owner", []):
+                b = ((m.get("src") or {}).get("body") or {}) if isinstance(m, dict) else {}
+                if b.get("where") == "file" and b.get("sha") in kept:
+                    b["text"] = kept[b["sha"]]
+            return r
+    return None
+
+if mode == "sid":
+    print(session_id() or "")
+    sys.exit(0)
+if mode == "snap":
+    sid = session_id()
+    r = record(sid) if sid else None
+    json.dump((r or {}).get("owner", []), open(sys.argv[3], "w"))
+    sys.exit(0)
+
+before_path, typed_path, out_path = sys.argv[3], sys.argv[4], sys.argv[5]
+out = open(out_path, "w")
+def say(s=""):
+    out.write(s + "\n")
+verdicts = []
+def verdict(name, ok, why):
+    verdicts.append((name, ok))
+    say(f"  {'shown' if ok else 'NOT SHOWN'}: {name}")
+    for w in why:
+        say(f"    {w}")
+
+def ends(s, n=60):
+    s = s.replace("\n", "\\n")
+    return s if len(s) <= 2 * n + 5 else f"{s[:n]} ... {s[-n:]}"
+def first_diff(a, b):
+    for i, (x, y) in enumerate(zip(a, b)):
+        if x != y:
+            return i
+    return min(len(a), len(b)) if len(a) != len(b) else -1
+join = lambda blocks: "\n\n".join(b for b in blocks if b != "")
+short = lambda t: (t or "")[:8]
+
+sid = session_id()
+say(f"session {sid}")
+files = logs()
+say(f"log files (one per load of the logging mod; a reload starts a new one): {len(files)}")
+events = []
+for fi, f in enumerate(files):
+    for li, l in enumerate(open(f)):
+        if l.strip():
+            e = json.loads(l)
+            e["_f"], e["_i"] = fi, li
+            events.append(e)
+events.sort(key=lambda e: (e["at"], e["_f"], e["_i"]))
+
+# agentId as sent
+say("\n== agentId on turn.start and turn.step, as the engine sent it ('agentId' in e, typeof e.agentId)")
+seen = OrderedDict()
+for e in events:
+    if e["ev"] in ("start", "begin", "complete"):
+        k = (e["ev"], e["has"], e["type"])
+        seen[k] = seen.get(k, 0) + 1
+for (ev, has, typ), c in seen.items():
+    say(f"  {ev:9} 'agentId' in e: {str(has).lower():5}  typeof: {typ:9}  events: {c}")
+
+# steps
+steps = OrderedDict()
+for e in events:
+    key = (e.get("agent", ""), e.get("turnId"), e.get("step"))
+    if e["ev"] == "begin":
+        steps[key] = {"blocks": OrderedDict(), "stops": [], "end": None, "file": e["_f"], "at": e["at"]}
+    elif e["ev"] in ("text", "stopchunk", "end") and key in steps:
+        s = steps[key]
+        if e["ev"] == "text":
+            s["blocks"][e["index"]] = s["blocks"].get(e["index"], "") + e["text"]
+        elif e["ev"] == "stopchunk":
+            s["stops"].append(e["stopReason"])
+        else:
+            s["end"] = e
+main_steps = [(k, s) for k, s in steps.items() if k[0] == ""]
+sub_steps = [(k, s) for k, s in steps.items() if k[0] != ""]
+def step_blocks(s):
+    return [s["blocks"][i] for i in sorted(s["blocks"])]
+
+# transcript
+trs = glob.glob(os.path.join(cfg, "projects", "*", f"{sid}.jsonl")) if sid else []
+tr = trs[0] if trs else None
+msgs = OrderedDict()
+if tr:
+    for l in open(tr):
+        try:
+            r = json.loads(l)
+        except ValueError:
+            continue
+        if r.get("type") != "assistant" or r.get("isSidechain"):
+            continue
+        m = r.get("message") or {}
+        d = msgs.setdefault(m.get("id"), {"blocks": [], "stop": None, "model": m.get("model")})
+        d["stop"] = m.get("stop_reason")
+        for b in m.get("content") or []:
+            if isinstance(b, dict) and b.get("type") == "text":
+                d["blocks"].append(b.get("text", ""))
+sub_texts = []
+if tr:
+    for f in glob.glob(os.path.join(tr[: -len(".jsonl")], "subagents", "*.jsonl")):
+        for l in open(f):
+            try:
+                r = json.loads(l)
+            except ValueError:
+                continue
+            if r.get("type") == "assistant":
+                for b in (r.get("message") or {}).get("content") or []:
+                    if isinstance(b, dict) and b.get("type") == "text" and b.get("text"):
+                        sub_texts.append(b["text"])
+for k, s in sub_steps:
+    t = join(step_blocks(s))
+    if t:
+        sub_texts.append(t)
+say(f"\ntranscript: {tr.replace(os.path.expanduser('~'), '~') if tr else 'NOT FOUND'}")
+say(f"  {len(msgs)} assistant messages on the main loop; {len(sub_texts)} text pieces from helpers (their transcripts and their steps)")
+
+# each main-loop step against its transcript message, in order
+say("\n== each main-loop step's text chunks against the transcript (one step = one API message)")
+mlist = list(msgs.items())
+p = 0
+matched = {}
+for k, s in main_steps:
+    blocks = [b for b in step_blocks(s) if b != ""]
+    end = s["end"] or {}
+    m_id = None
+    if blocks:
+        for q in range(p, len(mlist)):
+            if [b for b in mlist[q][1]["blocks"] if b != ""] == blocks:
+                m_id, p = mlist[q][0], q + 1
+                break
+    matched[k] = m_id
+    joined = "".join(blocks)
+    ans = end.get("answer")
+    facts = []
+    if len(blocks) > 1:
+        facts.append(f"answer == blocks joined with one line break: {ans == chr(10).join(blocks)}")
+    facts.append(f"answer == chunks: {ans == joined}")
+    say(f"  turn {short(k[1])} step {k[2]}: {len(blocks)} text block(s), {len(joined)} chars; "
+        f"{'equal to transcript message ' + str(m_id)[:16] if m_id else ('no text' if not blocks else 'MATCHES NO TRANSCRIPT MESSAGE')}; "
+        f"stop chunks {s['stops'] or 'none'}; ended {end.get('ended', 'no end logged')}, stopReason {end.get('stopReason', '-')}; " + "; ".join(facts))
+two_blocks = [k for k, s in main_steps if len([b for b in step_blocks(s) if b]) > 1]
+used = set(v for v in matched.values() if v)
+unseen = [mid for mid, m in mlist if [b for b in m["blocks"] if b] and mid not in used]
+for mid in unseen:
+    say(f"  transcript message {str(mid)[:16]} with text matched no step: {ends(join(msgs[mid]['blocks']))}")
+
+# turns
+say("\n== main-loop turns, in the order they ended")
+turns = OrderedDict()
+for e in events:
+    if e.get("agent", "") != "" or e["ev"] not in ("start", "begin", "complete"):
+        continue
+    t = turns.setdefault(e["turnId"], {"start": None, "complete": None, "files": set(), "steps": []})
+    t["files"].add(e["_f"])
+    if e["ev"] == "start":
+        t["start"] = e
+    elif e["ev"] == "complete":
+        t["complete"] = e
+for k, s in main_steps:
+    turns[k[1]]["steps"].append((k, s))
+order = sorted(turns, key=lambda tid: (turns[tid]["complete"] or {"at": 1e18})["at"])
+for tid in order:
+    t = turns[tid]
+    ss = sorted(t["steps"], key=lambda ks: ks[0][2])
+    t["log"] = join([b for _, s in ss for b in step_blocks(s)])
+    t["tr"] = None if any([b for b in step_blocks(s) if b] and not matched[k] for k, s in ss) else join([b for k, s in ss if matched[k] for b in msgs[matched[k]]["blocks"]])
+    c = t["complete"] or {}
+    last = join(step_blocks(ss[-1][1])) if ss else ""
+    st = (t["start"] or {}).get("text")
+    say(f"  turn {short(tid)}: started {'with ' + json.dumps(st)[:50] if t['start'] else 'unseen'}; {len(ss)} step(s); "
+        f"{len(t['log'])} chars streamed, transcript {len(t['tr']) if t['tr'] is not None else 'UNKNOWN'}, equal {t['tr'] == t['log']}; "
+        f"aborted {c.get('isAborted')}; turn.complete.answer {len(c.get('answer') or '')} chars, == last step's text {c.get('answer') == last}"
+        + (f"; seen by {len(t['files'])} loads of the logging mod" if len(t["files"]) > 1 else ""))
+
+# the rep's record
+rec = record(sid) if sid else None
+owner = sorted([m for m in (rec or {}).get("owner", []) if isinstance(m, dict)], key=lambda m: m.get("n", 0))
+say(f"\n== the rep's record of this session: {len(owner)} messages; pending turns not yet answered: {len((rec or {}).get('pending') or [])}")
+for m in owner:
+    body = ((m.get("src") or {}).get("body") or {})
+    say(f"  #{m.get('n')} {m.get('kind')}: {ends(m.get('text', ''), 40)}")
+    if body or m.get("turns") or m.get("incomplete"):
+        say(f"     body {body.get('chars')} chars, kept {body.get('where')}{', incomplete: ' + m['incomplete'] if m.get('incomplete') else ''}")
+        for sp in m.get("turns") or []:
+            extra = "".join(f", {x}: {sp[x]}" for x in ("note", "incomplete", "merged") if x in sp)
+            say(f"       turn by {sp.get('by')} [{sp.get('from')}, {sp.get('to')}){extra}: {ends((body.get('text') or '')[sp.get('from', 0):sp.get('to', 0)], 40)}")
+
+saved = [m for m in owner if (m.get("src") or {}).get("body")]
+unread = [m.get("n") for m in saved if m["src"]["body"].get("where") != "file" or m["src"]["body"].get("text") is None]
+verdict("every body is in the sources folder and reads back with its fingerprint", bool(saved) and not unread,
+        [f"{len(saved)} bodies saved; not read back from a file: {unread or 'none'}"])
+
+# spans against turns
+say("\n== each turn in a body against the transcript's text for that turn")
+flat = []
+for m in owner:
+    text = ((m.get("src") or {}).get("body") or {}).get("text")
+    for j, sp in enumerate(m.get("turns") or []):
+        flat.append((m.get("n"), j, sp, (text or "")[sp.get("from", 0):sp.get("to", 0)] if text is not None else None))
+L = [tid for tid in order if turns[tid]["complete"]]
+i = 0
+problems, found, split, reloaded_spans = [], {}, None, []
+for n, j, sp, sl in flat:
+    want = lambda tid: turns[tid]["tr"] if turns[tid]["tr"] is not None else turns[tid]["log"]
+    if sl is None:
+        problems.append(f"#{n} turn {j}: its body's text could not be read")
+        continue
+    hit = None
+    if "did not see this turn from its start" in (sp.get("incomplete") or ""):
+        for q in range(i, len(L)):
+            if sl == "" or want(L[q]).endswith(sl):
+                hit = q
+                break
+        if hit is not None:
+            reloaded_spans.append((n, L[hit]))
+        else:
+            problems.append(f"#{n} turn {j} (by {sp.get('by')}, incomplete): is the end of no main-loop turn: {ends(sl, 40)}")
+    elif sp.get("note") == "typed-into":
+        for q in range(i, len(L)):
+            if sl != "" and want(L[q]).startswith(sl):
+                hit = q
+                break
+        if hit is not None:
+            split = (L[hit], len(sl), n)
+    elif split is not None and j == 0:
+        tid, cut, _ = split
+        rest = want(tid)[cut:]
+        rest = rest[2:] if rest.startswith("\n\n") else rest
+        hit = L.index(tid) if sl == rest else None
+        if hit is None:
+            problems.append(f"#{n} turn {j}: should hold the rest of turn {short(tid)} after #{split[2]}; differs at {first_diff(sl, rest)} ({ends(sl, 40)} | {ends(rest, 40)})")
+        split = None
+    else:
+        for q in range(i, len(L)):
+            if want(L[q]) == sl:
+                hit = q
+                break
+        if hit is None and i < len(L):
+            problems.append(f"#{n} turn {j} (by {sp.get('by')}): matches no turn; against the next turn {short(L[i])} it differs at {first_diff(sl, want(L[i]))}: {ends(sl, 40)} | {ends(want(L[i]), 40)}")
+    if hit is None:
+        continue
+    for q in range(i, hit):
+        if turns[L[q]]["log"] != "" and L[q] not in found:
+            problems.append(f"turn {short(L[q])} ({len(turns[L[q]]['log'])} chars) is in no body")
+    found.setdefault(L[hit], []).append((n, j, sp))
+    exact = turns[L[hit]]["tr"] is not None
+    say(f"  #{n} turn {j} by {sp.get('by')}{', ' + sp['note'] if sp.get('note') else ''}{', incomplete' if sp.get('incomplete') else ''}: "
+        f"turn {short(L[hit])}, {len(sl)} chars, {'equal to the transcript' if exact else 'equal to the log (the transcript does not hold this turn)'}")
+    if not exact:
+        problems.append(f"turn {short(L[hit])}: the transcript holds no text for a step of it")
+    i = hit if sp.get("note") == "typed-into" else hit + 1
+last_n = owner[-1]["n"] if owner else 0
+for p_ in problems:
+    say(f"  PROBLEM: {p_}")
+
+say("\n== verdicts")
+compared = [tid for tid in found if not any("did not see" in (sp.get("incomplete") or "") for _, _, sp in found[tid])]
+verdict("every turn seen from its start is, character for character, the transcript's text blocks joined with blank lines",
+        len(compared) >= 6 and not problems,
+        [f"{len(compared)} turns compared in bodies; {len(problems)} problems"])
+
+subs = [e for e in events if e["ev"] == "submit" and e.get("hasTurn")]
+typed_at = None
+try:
+    typed_at = int(open(typed_path).read().strip())
+except (OSError, ValueError):
+    pass
+why = []
+for e in subs:
+    before = [x for x in events if x["ev"] == "text" and x.get("agent", "") == "" and x["turnId"] == e["turnId"] and (x["at"], x["_f"], x["_i"]) < (e["at"], e["_f"], e["_i"])]
+    lag = f"{e['at'] - typed_at if typed_at else '?'} ms after Enter was pressed on the typed reply" if e["origin"] == "composer" else "delivered by the engine, not typed"
+    why.append(f"prompt.submit with turnId {short(e['turnId'])}, origin {e['origin']}, {lag}; "
+               f"{sum(len(x['text']) for x in before)} chars of that turn had streamed: {json.dumps(e['text'][:40])}")
+if not subs:
+    why.append("no prompt.submit carried a turnId: the typed reply reached the session only after the turn it was typed into had ended")
+ok_split = False
+for tid, hits in found.items():
+    typed = [h for h in hits if h[2].get("note") == "typed-into"]
+    if typed:
+        n, j, sp = typed[0]
+        cut = sp["to"] - sp["from"]
+        why.append(f"#{n} holds the first {cut} of the {len(turns[tid]['log'])} chars of turn {short(tid)}; the rest is in #{', #'.join(str(h[0]) for h in hits if h is not typed[0]) or ' no message'}")
+        ok_split = 0 < cut < len(turns[tid]["log"]) and len(hits) >= 2
+verdict("the reply typed while the agent worked holds the text up to the moment it was sent, and the next message's body the rest", ok_split, why)
+
+ab = [tid for tid in L if (turns[tid]["complete"] or {}).get("isAborted")]
+why, ok_ab = [], len(ab) >= 2
+for tid in ab:
+    hits = found.get(tid, [])
+    good = bool(hits) and all(h[2].get("note") == "interrupted" for h in hits)
+    ok_ab = ok_ab and good
+    why.append(f"turn {short(tid)}: interrupted, {len(turns[tid]['log'])} chars streamed, turn.complete.answer {len((turns[tid]['complete'] or {}).get('answer') or '')} chars; "
+               + (f"in #{hits[0][0]}, noted {hits[0][2].get('note')}" if hits else "in no body"))
+verdict("the interrupted turns hold what streamed", ok_ab, why)
+
+nt = [tid for tid in L if str(((turns[tid]["start"] or {}).get("text")) or "").lstrip().startswith("<task-notification>")]
+why = [f"turn {short(tid)} began with a task notification; in a body labelled {[h[2].get('by') for h in found.get(tid, [])] or 'nowhere'}" for tid in nt]
+verdict("the turn a task notification started is labelled so", bool(nt) and all(found.get(tid) and all(h[2].get("by") == "notification" for h in found[tid]) for tid in nt), why or ["no turn began with a task notification"])
+
+try:
+    before = json.load(open(before_path))
+except (OSError, ValueError):
+    before = []
+after = {m.get("n"): m for m in owner}
+withbody = [m for m in before if isinstance(m, dict) and (m.get("src") or {}).get("body")]
+changed = [m.get("n") for m in withbody if (after.get(m.get("n")) or {}).get("src") != m.get("src") or (after.get(m.get("n")) or {}).get("turns") != m.get("turns")]
+verdict("the compaction changed no saved body", bool(withbody) and not changed,
+        [f"{len(withbody)} bodies saved before /compact; changed or gone after it: {changed or 'none'}"])
+
+# A reload between turns, with a file of each mod changed first: both modules start again, so the
+# rep's next message can have the turn that ended before the reload only from its saved record.
+why = []
+try:
+    sent = int(open(os.path.join(os.path.dirname(typed_path), "reload-at")).read().strip())
+except (OSError, ValueError):
+    sent = None
+ran = []
+if tr:
+    for l in open(tr):
+        try:
+            r = json.loads(l)
+        except ValueError:
+            continue
+        c = (r.get("message") or {}).get("content")
+        if r.get("type") == "user" and isinstance(c, str) and "<command-name>/reload-plugins" in c and r.get("timestamp"):
+            ran.append(int(datetime.datetime.fromisoformat(r["timestamp"].replace("Z", "+00:00")).timestamp() * 1000))
+ok_rl = False
+if not ran:
+    why.append("the transcript records no /reload-plugins")
+else:
+    a0 = ran[0]
+    during = [tid for tid in L if (turns[tid]["start"] or {"at": 1e18})["at"] <= a0 <= turns[tid]["complete"]["at"]]
+    prev = [tid for tid in L if turns[tid]["complete"]["at"] < a0]
+    nxt = [tid for tid in L if (turns[tid]["start"] or {"at": 0})["at"] > a0]
+    why.append(f"/reload-plugins ran {a0 - sent if sent else '?'} ms after it was sent, "
+               + (f"during turn {short(during[0])}" if during else f"between turns, {a0 - turns[prev[-1]]['complete']['at'] if prev else '?'} ms after turn {short(prev[-1]) if prev else '-'} ended"))
+    why.append(f"the logging mod wrote {len(files)} log file(s): its module started {len(files)} time(s)")
+    T = prev[-1] if prev else None
+    after_sub = [e for e in events if e["ev"] == "submit" and e.get("origin") == "composer" and e["at"] > a0]
+    m_next = None
+    if after_sub:
+        head = after_sub[0]["text"][:40]
+        m_next = next((m for m in owner if str(m.get("text", "")).startswith(head)), None)
+    hits = found.get(T, []) if T else []
+    if T:
+        why.append(f"turn {short(T)}, the last before the reload ({len(turns[T]['log'])} chars, seen by load {sorted(turns[T]['files'])} of the logging mod): "
+                   + (", ".join(f"in #{h[0]}" + (f", {h[2].get('note')}" if h[2].get("note") else "") + (f", incomplete: {h[2].get('incomplete')}" if h[2].get("incomplete") else "") for h in hits) or "in no body"))
+    if m_next is not None:
+        why.append(f"the first message after the reload is #{m_next.get('n')}" + (f", incomplete: {m_next.get('incomplete')}" if m_next.get("incomplete") else ""))
+    else:
+        why.append("no message of the owner's after the reload was found in the record")
+    ok_rl = (not during and len(files) >= 2 and T is not None and len(turns[T]["files"]) == 1
+             and bool(nxt) and all(min(turns[t]["files"]) >= 1 for t in nxt)
+             and m_next is not None and not m_next.get("incomplete")
+             and len(hits) == 1 and hits[0][0] == m_next.get("n")
+             and not hits[0][2].get("incomplete") and not hits[0][2].get("note"))
+verdict("after a reload between turns that starts the mods again, the next message's body holds the turn before it whole, from the saved record", ok_rl, why)
+
+bodies = [((m.get("src") or {}).get("body") or {}).get("text") or "" for m in owner]
+leaks = [t for t in sub_texts if len(t) >= 15 and any(t in b for b in bodies)]
+main_tr = "\n".join(join(m["blocks"]) for m in msgs.values())
+# the main-loop turns around the helper: those running while it streamed, and the notification
+# turns after it. Its text can only leak into their bodies, so those bodies must exist to judge.
+h_at = [e["at"] for e in events if e.get("agent", "") != ""]
+near = [tid for tid in L if h_at and (
+    any((turns[tid]["start"] or {"at": 1e18})["at"] <= a <= turns[tid]["complete"]["at"] for a in h_at)
+    or (tid in nt and (turns[tid]["start"] or {"at": 0})["at"] >= min(h_at)))]
+verdict("no helper's text is in any body", bool(sub_steps) and bool(near) and all(tid in found for tid in near) and not leaks,
+        [f"{len(sub_steps)} helper steps seen; {len(leaks)} helper texts found in a body" + (" (also in the main transcript)" if any(t in main_tr for t in leaks) else "")]
+        + [f"turn {short(tid)}, running beside the helper or reporting it: " + (f"in #{found[tid][0][0]}" if tid in found else "in no body") for tid in near]
+        + [ends(t, 40) for t in leaks])
+
+objs = [k for k in seen if k[0] in ("start", "begin") and k[2] == "object"]
+verdict("agentId on main-loop turn.start and turn.step is absent or undefined, never null",
+        not objs and any(k[2] == "string" for k in seen) and any(k[2] == "undefined" for k in seen),
+        [f"{k[0]}: 'agentId' in e {k[1]}, typeof {k[2]}" for k in seen if k[0] != "complete"])
+
+say("\n== notes (not judged)")
+say(f"  two text blocks in one response: {'seen, turn ' + ', '.join(short(k[1]) + ' step ' + str(k[2]) for k in two_blocks) if two_blocks else 'not given by the model in this run'}")
+for e in events:
+    if e["ev"] == "submit":
+        say(f"  prompt.submit: origin {e['origin']}, turnId {short(e['turnId']) or 'none'}: {json.dumps(e['text'][:50])}")
+out.close()
+for name, ok in verdicts:
+    print(f"{'0' if ok else '1'}\t{name}")
+PY
+  # The rep runs from a copy of what a session reads of this checkout, so the run can change one
+  # of its files before /reload-plugins without touching the checkout.
+  mkdir -p $T14/rep
+  cp -c -R $ROOT/.claude-plugin $ROOT/hooks $ROOT/types $T14/rep/ 2>/dev/null || cp -R $ROOT/.claude-plugin $ROOT/hooks $ROOT/types $T14/rep/
+  rm -rf "${T14:?}/rep/.claude-plugin/types"
+  local ROOT=$T14/rep
+  start '' --plugin-dir $T14/log || { rm -rf "${T14:?}"; stop; return 1; }
+  # count EV: the logged main-loop events of that kind, over every load of the logging mod.
+  t14_count() { cat /dev/null $T14/logs/*.jsonl(N) | grep "\"ev\":\"$1\"" | grep -c '"agent":""'; }
+  # settled SECS: a main-loop turn has started since the last settle, and every started turn
+  # has ended, for five seconds in a row.
+  t14_settled() {
+    local secs=$1 calm=0 s c
+    for i in $(seq 1 $secs); do
+      s=$(t14_count start); c=$(t14_count complete)
+      if (( s > M14 && s == c )); then calm=$((calm+1)); (( calm >= 5 )) && { M14=$s; return 0; }; else calm=0; fi
+      sleep 1
+    done
+    M14=$(t14_count start)
+    echo "  no main-loop turn settled in ${secs}s"
+    return 1
+  }
+  # tool_step SECS: a main-loop step that ends on a tool call has ended since this was called.
+  t14_tool_step() {
+    local n0 secs=$1
+    n0=$(cat /dev/null $T14/logs/*.jsonl(N) | grep '"ev":"end"' | grep '"agent":""' | grep -c '"stopReason":"tool_use"')
+    for i in $(seq 1 $secs); do
+      (( $(cat /dev/null $T14/logs/*.jsonl(N) | grep '"ev":"end"' | grep '"agent":""' | grep -c '"stopReason":"tool_use"') > n0 )) && return 0
+      sleep 1
+    done
+    return 1
+  }
+  send 'Write a three-step plan, as a short numbered list, for adding a script that prints hello to this folder. Then run the shell command echo plan-ready and nothing else, and after it end with one short line saying the plan is ready. Do not create any file.'
+  t14_settled 180
+  send 'Before you answer, call the advisor tool once and ask it whether a hello script needs tests. Then tell me in two sentences what it said. Do not create any file.'
+  t14_settled 240
+  send 'Write a list of 25 tips for keeping a houseplant alive, two sentences each, starting each tip with the word Tip, its number and a colon. After the list, run the shell command ping -c 5 127.0.0.1 in the foreground, then end with one short line.'
+  wait_for 'Tip 4:' 120
+  python3 -c 'import time; print(int(time.time() * 1000))' > $T14/typed-at
+  send 'Typed while you worked: after the list, add one sentence about pots.'
+  t14_settled 300
+  send 'Write a list of 30 facts about the moon, one sentence each, starting each fact with the word Fact, its number and a colon.'
+  wait_for 'Fact 4:' 120
+  tmux send-keys -t $S Escape
+  t14_settled 60
+  sleep 2
+  send 'Write one sentence saying you will wait, then run the shell command python3 -c "import time; time.sleep(40)" in the foreground.'
+  t14_tool_step 120
+  sleep 5
+  tmux send-keys -t $S Escape
+  t14_settled 60
+  sleep 2
+  send 'Start the shell command sleep 15; echo background-finished as a background command, then reply with the single word started. When it finishes, reply with the single word finished.'
+  t14_settled 120
+  for i in $(seq 1 90); do
+    cat /dev/null $T14/logs/*.jsonl(N) | grep '"ev":"start"' | grep '"agent":""' | grep -q 'task-notification' && break
+    sleep 1
+  done
+  t14_settled 120
+  sleep 5
+  python3 -I $T14/check.py snap $T14/logs $T14/before.json
+  send '/compact'
+  wait_for 'Compacted|compacted' 240
+  sleep 5
+  M14=$(t14_count start)
+  send 'Use the Agent tool to have a helper write one sentence about a red kite, the bird. Do not repeat or summarise what it wrote; once it returns, reply with the single word received.'
+  t14_settled 240
+  send 'Run the shell command ping -c 20 127.0.0.1 in the foreground, then write two sentences about the sea.'
+  t14_settled 180
+  sleep 3
+  # Between turns, a file of each mod changes, so /reload-plugins starts both modules again (a
+  # reload leaves a mod whose files are unchanged running). The rep then has only its saved
+  # record to give the next message the turn that ended before the reload.
+  print -r -- '// changed before /reload-plugins by live scenario 14' >> $T14/rep/hooks/register.tsx
+  print -r -- '// changed before /reload-plugins by live scenario 14' >> $T14/log/hooks/register.ts
+  python3 -c 'import time; print(int(time.time() * 1000))' > $T14/reload-at
+  send '/reload-plugins'
+  wait_for 'Reloaded:' 60
+  sleep 3
+  send 'Reply with the single word done and nothing else.'
+  t14_settled 120
+  sleep 8
+  pane | sed "s/${USER:-user}/user/g" > $T14/pane.txt
+  stop
+  verdicts=$(python3 -I $T14/check.py check $T14/logs $T14/before.json $T14/typed-at $T14/report.txt)
+  {
+    echo "owner rep live · scenario 14 · $(date '+%Y-%m-%d %H:%M') · $(claude --version 2>/dev/null)"
+    cat $T14/report.txt
+    echo
+    echo "== the screen at the end"
+    cat $T14/pane.txt
+  } | sed "s/${USER:-user}/user/g" > $CAPS/14-turn-capture.txt
+  echo "  saved captures/14-turn-capture.txt"
+  ok=0
+  while IFS=$'\t' read -r line name; do
+    [[ -z $line ]] && continue
+    verdict "$name" $line
+    [[ $line -ne 0 ]] && ok=1
+  done <<< "$verdicts"
+  [[ -z $verdicts ]] && { echo "  the comparison did not run"; ok=1; }
+  rm -rf "${T14:?}"
+  [[ -n $LIVE_DIR && $LIVE_DIR == *owner-rep-live* ]] && rm -rf "${LIVE_DIR:?}"
+  return $ok
+}
 # The session scenario 15 still has to clear away; empty when there is none.
 OWNED=''
 # owned_alive ID: 0 while the tmux session or its claude is there. tmux's own server can hold the
@@ -540,7 +1272,16 @@ PY
       save 12-height-80
       heights_card 80
       stop ;;
+    13)
+      echo "13 the plan screen: a plan turned down with a note, the next one edited and accepted, the plan held whole as his"
+      plan_screen || bad=$((bad+1)) ;;
+    14)
+      echo "14 the agent's turn as he saw it: the text each message of the owner's answers, as the rep saved it, against the transcript's, through a plan with a command, two text blocks, a reply typed mid-turn, two interrupts, a background task, /compact, a helper and /reload-plugins"
+      turn_capture || bad=$((bad+1)) ;;
     15) owner_held ;;
+    *)
+      echo "$n: no such scenario in this build"
+      bad=1 ;;
   esac
   [[ $bad -gt 0 ]] && fails=$((fails+1))
 done

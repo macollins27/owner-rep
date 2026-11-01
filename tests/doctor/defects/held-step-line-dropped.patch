@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index ddcc398..8fd1e7f 100644
+index 0e6d35a..7877c87 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -516,7 +516,7 @@ ${memoryText(m)}
+@@ -1352,7 +1352,7 @@ ${memoryText(m)}
  
  The owner pressed the key. Give the owner the short briefing described below, measured against the objective above. Look at what the agent actually did in the conversation, including the helpers it launched and what they reported, not at what the agent says it did. Where the next step depends on a claim the conversation does not show, say "not shown" and have the message ask for the proof. If the owner sent your last message to the agent, say whether the agent did the step that message asked for.
  
 -When every condition is shown or closed and the conversation shows the result working, say so in one line under "well:", and still fill in every other part: the owner wants the whole picture every time, not only when something is wrong. While any condition is open or not shown, write the message: it asks for the proof of each one. Leave the message empty only when every condition is shown or closed, or no objective is held and there is nothing worth sending. When a condition waits on the owner's go-ahead (publish, send, pay, a guard refusal), the message tells the agent to finish everything else, hold that step until the go-ahead comes, and say exactly what it will show the owner then; it never pushes the held step.
 +When every condition is shown or closed and the conversation shows the result working, say so in one line under "well:", and still fill in every other part: the owner wants the whole picture every time, not only when something is wrong. While any condition is open or not shown, write the message: it asks for the proof of each one. Leave the message empty only when every condition is shown or closed, or no objective is held and there is nothing worth sending.
  
- ## Output structure
- 
+ ${WALK_RULE}
+ Walk them to yourself and do not write the walk out. Every step with no sign while later work goes on goes first under "left:", named with the plan's number; every step not assessed goes under "unassessed:".

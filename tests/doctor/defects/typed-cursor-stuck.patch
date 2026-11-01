@@ -1,12 +1,11 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index dd33d68..2be1bbc 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -834,7 +834,6 @@ export function typedFromItems(items: readonly HumanItem[], rows: readonly Recor
+@@ -2050,7 +2050,6 @@ export function typedFromItems(items: readonly HumanItem[], rows: readonly Recor
          break
        }
      }
 -    cursor = at - 1
    }
-   return items.map((item, k) => ({ text: item.text, prior: priors[k] ?? '' }))
+   return items.map((item, k) => ({ text: item.text, prior: priors[k] ?? '', ...(compacted.has(k) ? { compacted: true as const } : {}) }))
  }

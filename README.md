@@ -172,8 +172,10 @@ works this out from all your messages on the job, not just the latest one, so a 
 narrows the agent's next step can't shrink the whole job.
 
 It weighs your messages by kind. A note you send to the rep counts most of all. Then come
-your reasons and complaints, then your instructions. A "yes" to the agent's own idea counts
-least, because that is the agent's idea with your name on it.
+your reasons and complaints, then your instructions. A plan you approve, with a yes or on
+Claude Code's plan screen, counts as your own ask: each of its steps becomes part of "done",
+and the Heads up says so when one of them looks dropped. A yes never approves more than the
+text it answered, and the agent can't approve anything for you by saying you did.
 
 On top of that it holds five expectations for every job:
 
@@ -230,10 +232,19 @@ full, this is everything it reads and runs:
 
 - **Through Claude Code:** the prompt box, the session id and working directory, the
   session's messages, and the agent's tool calls and helper launches as they happen. The row
-  names a file or a program, never a command's text. It also reads the agent's last answer at
-  the end of each turn, the context window's size, what other mods draw in the strip above
-  the prompt, and a small per-session store. It calls the model with the session's own
-  credentials, and takes the transcript path Claude Code gives its hooks.
+  names a file or a program, never a command's text. It also reads the agent's visible text as
+  it streams (never its thinking), the plan shown on Claude Code's plan screen with the answer
+  you gave there, a plan you turned down beside your note, the agent's last answer at the end
+  of each turn, the context window's size, what other mods draw in the strip above the prompt,
+  and a small per-session store. It calls the model with the session's own credentials, and
+  takes the transcript path Claude Code gives its hooks.
+- **What the Heads up and the briefing read:** the session's recorded messages, built from
+  their text, tool calls and results, sent through one plain model call each look. Structured
+  thinking blocks, the agent's system prompt and your instruction files are not in it. Every
+  cut is marked. The rows after the earliest open approval are given whole up to a budget, and
+  the plans you approved are given whole regardless. The writer and these two readers never see
+  the agent's thinking. The check is different: it reads the session through agentsview, and
+  that includes the agent's thinking.
 - **Environment variables:** `PATH`, `HOME`, `USERPROFILE`, `CLAUDE_CONFIG_DIR`, `OS`,
   `SystemRoot`, `windir`, `PROGRAMFILES`, `ProgramFiles(x86)`, `LOCALAPPDATA` and `APPDATA`.
   It reads them to find your home, Claude Code's folder and the programs it runs, and to tell
@@ -242,7 +253,13 @@ full, this is everything it reads and runs:
   under `~/.claude/projects/` (or the folder `CLAUDE_CONFIG_DIR` names) to read which
   messages you typed. For a session it holds no record of, such as a fork, it may read up to
   40 of the newest other transcripts in the same project folder to find your earlier
-  messages.
+  messages, and it reads back from the session's messages the agent's words before each one and
+  any answers you gave on the plan screen.
+- **Its own folder:** `<config>/owner-rep/sources/`, under Claude Code's folder. It writes each
+  saved text there as a file named by the session and checked by fingerprint, and removes those
+  files with `rm` when their message or session goes. When the shared store is full it also
+  keeps the record's manifest and parts there, and it keeps the files of a lost copy while the
+  loss mark stands.
 - **On Windows:** those commands are Git for Windows' own, named by their full path. The rep
   finds them, and Claude Code's own `claude.exe`, by running each place they may be with
   `--version`.
@@ -273,7 +290,7 @@ source before installing any mod, this one included.
 - **A supervisor with a held objective.** A separate model call keeps a structured objective
   (result, purpose, conditions for done with their states, current step) written from the
   owner's messages alone, so nothing the agent says can move it. Three reads of rising cost
-  are judged against it: a poll that forks the agent's cached conversation every eighth
+  are judged against it: a poll over the session's recorded messages every eighth
   model request and at each stop, a briefing on demand, and a verifier on a second press.
 - **An output gate.** The briefing is parsed from labelled lines and refused part by part
   when it tells the agent to stop while a condition is open. The message to the agent is

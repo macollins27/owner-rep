@@ -1,9 +1,10 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 97fd57d..1652114 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1728,7 +1728,7 @@
-     const placeholder = 'working out the result you want from your messages…'
-     const head = lead(headGlyph, headColor, 'Owner rep', reading?.result ?? placeholder)
+@@ -2654,7 +2654,7 @@ export const register: Register = on => {
+         </Box>
+       )
  
 -    if (view === 'note' && note !== null && !hasBeneath) {
 +    if (view === 'note' && note !== null) {

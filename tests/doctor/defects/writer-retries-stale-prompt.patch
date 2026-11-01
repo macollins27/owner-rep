@@ -1,12 +1,12 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 264fffa..c72ca0b 100644
+index 97fd57d..4992a74 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -534,7 +534,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
+@@ -1182,7 +1182,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
            // over the fresh prompt, so this write stops here and is not counted as failed.
            // Judged by number only: a request can join after this pass already loaded its
            // message.
--          if (again && r.owner.some(m => m.kind !== 'draft' && m.n > saw)) {
+-          if (again && r.owner.some(m => m.kind !== 'draft' && m.n > newest)) {
 +          if (false) {
              again = false
              stale = true
