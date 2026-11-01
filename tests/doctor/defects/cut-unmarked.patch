@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 91d6584..d3ec09a 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2280,7 +2280,7 @@ export const HUMAN_SCAN_BUDGET_MS = 30_000
+ // knows what was left out and from what.
+ export function headTail(text: string, max: number, field = 'message'): string {
+   if (text.length <= max) return text
+-  const gap = (n: number) => ` [… ${n} characters of this ${field} left out here …] `
++  const gap = (n: number) => ` [… ${n} characters left out here …] `
+   const keep = Math.max(0, max - gap(text.length).length)
+   const head = Math.ceil(keep / 2)
+   const tail = keep - head

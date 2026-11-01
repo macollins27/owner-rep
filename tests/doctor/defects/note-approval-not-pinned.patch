@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 91d6584..7c1b49b 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -610,7 +610,7 @@ export function pickRecord(
+ // Whether a message carries an approval: the owner's own message, note or plan-screen plan with
+ // the `approved` field present, never one that turned a plan down. The one place that reads it.
+ export const approvalOf = (m: OwnerMsg): boolean =>
+-  (m.kind === 'his' || m.kind === 'note' || m.kind === 'plan') && 'approved' in m && m.screen !== 'rejected'
++  (m.kind === 'his' || m.kind === 'plan') && 'approved' in m && m.screen !== 'rejected'
+ 
+ // An approval kept past the trim: its stored text cut to PRIOR_CUT, its whole words first kept
+ // as `src.sent` when the cut takes any of them.

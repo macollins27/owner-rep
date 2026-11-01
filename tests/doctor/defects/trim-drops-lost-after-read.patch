@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 91d6584..f1b4678 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -877,7 +877,7 @@ export function trimCounted(list: OwnerMsg[], since: number, was?: Uncovered): {
+   for (const m of list) {
+     if (m.n < since || keep.has(m.n)) continue
+     const screen = m.screen === undefined ? {} : { screen: m.screen }
+-    const r = unresolvedRow(m)
++    const r = m.read?.state === 'waiting' || m.read?.state === 'unreadable' ? unresolvedRow(m) : null
+     if (r !== null) entries.push({ n: m.n, why: entryWhy(r.why), kind: m.kind, ...screen, row: r.row })
+     else if (approvalOf(m)) entries.push({ n: m.n, why: 'not-kept', kind: m.kind, ...screen })
+   }

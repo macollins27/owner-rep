@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 91d6584..d788ca6 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -884,7 +884,7 @@ export function trimCounted(list: OwnerMsg[], since: number, was?: Uncovered): {
+   if (entries.length === 0) return { list: kept, ...(prior === undefined ? {} : { uncovered: prior }) }
+   return {
+     list: kept,
+-    uncovered: { job: since, count: (prior?.count ?? 0) + entries.length, recent: [...(prior?.recent ?? []), ...entries].slice(-UNCOVERED_RECENT) },
++    uncovered: { job: since, count: Math.min(UNCOVERED_RECENT, (prior?.count ?? 0) + entries.length), recent: [...(prior?.recent ?? []), ...entries].slice(-UNCOVERED_RECENT) },
+   }
+ }
+ 

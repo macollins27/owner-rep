@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 1c7c5ed..35fa49a 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1195,6 +1195,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
+             r.objectiveFailed += 1
+             r.objectiveWhy = none ? 'holds-with-none' : writeFailure(result)
+             r.failedWrite = { at: Date.now(), upTo: saw }
++            for (const m of r.owner) if (m.read?.state === 'waiting') m.read = { state: 'read' }
+             failed = true
+           }
+           return r

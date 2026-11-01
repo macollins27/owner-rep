@@ -4197,6 +4197,18 @@ test('guard: a helper\'s steps, streaming between the main loop\'s, leave none o
   expect(rec()?.owner.at(-1)?.incomplete).toBeUndefined()
 })
 
+test('guard: a helper\'s step at the watch interval passes through without reading the main session', async ($, on) => {
+  const { scripts, reads } = capture(on, OPEN_JOB())
+  await started($)
+  await settle($)
+  const before = reads()
+  const chunks = [txt('The helper\'s own plan.'), ends('end_turn')]
+  scripts.set(`h1/${rep.CHECK_EVERY}`, { chunks })
+  expect((await drive($, 'h1', rep.CHECK_EVERY, 'agent-1')).chunks).toEqual(chunks)
+  await settle($)
+  expect(reads()).toBe(before)
+})
+
 test('guard: a later turn never changes an earlier message\'s body, and a plan quoted again lands only in the later one', async ($, on) => {
   const { rec, scripts } = capture(on)
   await runTurn($, scripts, 't1', [said('The plan: one, two, three.')])

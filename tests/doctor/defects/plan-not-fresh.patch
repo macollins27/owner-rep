@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 91d6584..765da47 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1680,7 +1680,7 @@ export function writerShowings(m: ObjectiveMemory & { whole?: number }): Showing
+   let freshListed = 0
+   for (const msg of onJob) {
+     if (target !== undefined && msg.n > target) break
+-    const fresh = o === null || msg.n > o.from
++    const fresh = msg.kind !== 'plan' && (o === null || msg.n > o.from)
+     if (!fresh) {
+       const b = heldBlock(msg, WRITER_SOURCE_BUDGET - used)
+       used += b.charged

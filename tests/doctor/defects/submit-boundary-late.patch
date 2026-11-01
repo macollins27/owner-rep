@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 1c7c5ed..edc5361 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2377,6 +2377,7 @@ export const register: Register = on => {
+     lastOrigin = { kind }
+     if (kind === 'composer' || kind === 'bridge') {
+       // What this message answers, fixed now, before anything is awaited.
++      await saving
+       const snap = snapshot(e.turnId)
+       // A note to the rep, alone or typed after a prompt to the agent. A slash
+       // command's line is the command's: the engine applies no rewrite to it, so

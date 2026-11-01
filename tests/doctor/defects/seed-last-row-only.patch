@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 91d6584..58cd7b8 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2109,7 +2109,7 @@ export function typedFromItems(items: readonly HumanItem[], rows: readonly Recor
+     }
+     const why = isSummaryRow(rows[i]) ? COMPACTED_WHY : before < 0 && k > 0 ? TURN_START_WHY : undefined
+     before = at
+-    return { ...out, at, ...(parts.length === 0 ? {} : { body: parts.join('\n\n') }), ...(why === undefined ? {} : { incomplete: why }) }
++    return { ...out, at, ...(parts.length === 0 ? {} : { body: parts.at(-1) ?? '' }), ...(why === undefined ? {} : { incomplete: why }) }
+   })
+ }
+ 

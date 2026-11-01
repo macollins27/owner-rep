@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 91d6584..74fe3fc 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1519,7 +1519,7 @@ const planLabel = (m: OwnerMsg): string =>
+ // A plan-screen plan's line: its label and stored text, or, when the plan cannot be shown, why
+ // and none of its text.
+ const planHead = (m: OwnerMsg, x: NotShown | null): string =>
+-  x === null ? `- #${m.n} (${planLabel(m)}) ${m.text}` : `- #${m.n} (${planLabel(m)}; not shown: ${planReason(x)})`
++  x === null ? `- #${m.n} (${planLabel(m)}) ${m.text}` : `- #${m.n} (${planLabel(m)}; not shown: ${planReason(x)}) ${m.text}`
+ 
+ const closeLabel = (chars: number): string =>
+   `(the end of the agent's turn the owner answered: the last ${commas(CLOSE_SHOW)} of ${commas(chars)} characters; the rest is read whole if the owner approved it)`

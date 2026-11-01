@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 1c7c5ed..aa88d50 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -829,7 +829,7 @@ async function reconcile($: EngineInterface, sid: string): Promise<void> {
+     }
+     if (text !== null && manifest === null) {
+       await markLoss({ lostRev: rec.recRev + 1, keptRev: rec.recRev, after, why: LOST_DAMAGED })
+-    } else if (manifest !== null && manifest.recRev <= rec.recRev) {
++    } else if (manifest !== null && manifest.recRev <= rec.objRev) {
+       await removeFiles($, [listPath, ...manifest.parts.map(p => `${folder}/${p.name}`)], false)
+     } else if (manifest !== null) {
+       const got = pickRecord({ recRev: rec.recRev, after }, manifest, await readParts($, folder, manifest))

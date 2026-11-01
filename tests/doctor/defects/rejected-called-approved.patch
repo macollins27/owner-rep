@@ -1,0 +1,19 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 91d6584..0919ffa 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -719,11 +719,11 @@ export function rowLine(row: CoverRow, m: Named, why: string): string {
+     case '9':
+       return `Could not be checked again: ${planIn(m)} (${why}); what was held from it stays held`
+     case '10':
+-      return `Not read yet: your note turning down the agent's plan (#${n})`
++      return `Not read yet: ${planIn(m)}`
+     case '11':
+-      return `Could not read the plan your note #${n} turned down (${why}); your note's own words are held`
++      return `Could not be checked: ${planIn(m)} (${why})`
+     case '12':
+-      return `Could not be checked again: the plan your note #${n} turned down is no longer readable; your note's own words stay held`
++      return `Could not be checked again: ${planIn(m)} (${why}); what was held from it stays held`
+   }
+ }
+ // Whether a row's line says, without condition, that the owner approved or accepted a plan.

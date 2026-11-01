@@ -2554,5 +2554,455 @@
     "breaks": "A reporting word inside an earlier quote counts, so 'Follow \"the note says\" \"You can stop now.\"' is masked and reaches the card.",
     "patch": "quote-report-in-earlier-quote.patch",
     "fixed": "2026-10-30"
+  },
+  {
+    "name": "approved-truthiness",
+    "breaks": "An approval with an empty inline value and a saved took source is no longer recognised.",
+    "patch": "approved-truthiness.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "note-approval-not-pinned",
+    "breaks": "A note approving a plan is not recognised as an approval and is not pinned.",
+    "patch": "note-approval-not-pinned.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "approved-trimmed-with-job",
+    "breaks": "Approvals outside the job message limit are dropped instead of pinned.",
+    "patch": "approved-trimmed-with-job.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "assert-tag-ignored",
+    "breaks": "Row 1 asserts approval although its asserts tag is false.",
+    "patch": "assert-tag-ignored.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "rejected-called-approved",
+    "breaks": "Rejection coverage rows 10 to 12 describe the rejected plan through the approval template.",
+    "patch": "rejected-called-approved.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "unmarked-incomplete-uncovered",
+    "breaks": "An unmarked message with incomplete context has no coverage line.",
+    "patch": "unmarked-incomplete-uncovered.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "trim-drops-lost-after-read",
+    "breaks": "The trim counts only waiting and unreadable messages, losing the coverage row of a source lost after reading.",
+    "patch": "trim-drops-lost-after-read.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "uncovered-count-capped",
+    "breaks": "The uncovered total stops growing at the recent-list limit.",
+    "patch": "uncovered-count-capped.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "coverage-line-missing",
+    "breaks": "Coverage omits the record lines about messages and plans that could not be checked.",
+    "patch": "coverage-line-missing.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "step-iterator-not-closed",
+    "breaks": "Closing the tap never calls the inner stream return method.",
+    "patch": "step-iterator-not-closed.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "return-value-dropped",
+    "breaks": "Closing the tap loses the inner stream return value in favour of the caller value.",
+    "patch": "return-value-dropped.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "cleanup-chunk-dropped",
+    "breaks": "A text chunk yielded during cleanup passes upstream without being captured.",
+    "patch": "cleanup-chunk-dropped.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "throw-not-forwarded",
+    "breaks": "Throwing into the tap never forwards the throw to the inner stream.",
+    "patch": "throw-not-forwarded.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "notification-unlabelled",
+    "breaks": "A background notification turn loses its origin label.",
+    "patch": "notification-unlabelled.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "prior-shown-when-unshown",
+    "breaks": "The writer sees prior text from a turn declared unshown.",
+    "patch": "prior-shown-when-unshown.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "plan-preview-shown-when-unshown",
+    "breaks": "A plan declared unshown still prints its stored preview.",
+    "patch": "plan-preview-shown-when-unshown.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "sent-hidden-with-turn",
+    "breaks": "The writer loses the whole sent words when the preceding turn is unshown.",
+    "patch": "sent-hidden-with-turn.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "over-cap-held",
+    "breaks": "A context over the reading cap is allowed to be read and held as a plan.",
+    "patch": "over-cap-held.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "close-only-applied",
+    "breaks": "A writer answer approving a close-only message is applied before its whole read.",
+    "patch": "close-only-applied.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "partial-words-applied",
+    "breaks": "An unmarked message shown only in part is applied without waiting for its whole words.",
+    "patch": "partial-words-applied.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "draft-mark-moved-anywhere",
+    "breaks": "A mark on a draft moves to unrelated owner words instead of only the same submit.",
+    "patch": "draft-mark-moved-anywhere.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "whole-read-target-refused",
+    "breaks": "The approval gate refuses the already-waiting target of a whole read.",
+    "patch": "whole-read-target-refused.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "plan-not-fresh",
+    "breaks": "A newly accepted plan is treated as already held rather than fresh input.",
+    "patch": "plan-not-fresh.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "reader-newest-only",
+    "breaks": "The readers compare only the newest approved plan.",
+    "patch": "reader-newest-only.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "reader-splits-plan",
+    "breaks": "Approved plans are clipped to fit the reader budget instead of shown whole or left out.",
+    "patch": "reader-splits-plan.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "seed-last-row-only",
+    "breaks": "A seeded reply keeps only the last assistant row instead of the whole preceding turn.",
+    "patch": "seed-last-row-only.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "summary-cut-3000",
+    "breaks": "A compaction summary is cut to 3000 characters instead of its larger allowance.",
+    "patch": "summary-cut-3000.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "cut-unmarked",
+    "breaks": "A cut marker no longer identifies which field lost text.",
+    "patch": "cut-unmarked.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "whole-after-approval-ignored",
+    "breaks": "The record text ignores the approval boundary and clips the rows after it.",
+    "patch": "whole-after-approval-ignored.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "cache-mark-on-tail",
+    "breaks": "The growing final record chunk is marked for the cache instead of the last complete chunk.",
+    "patch": "cache-mark-on-tail.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "boundary-guessed",
+    "breaks": "An ambiguous approval is placed at its earliest possible row instead of reported unknown.",
+    "patch": "boundary-guessed.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "not-assessed-dropped",
+    "breaks": "Both reader parsers discard not-assessed steps, so their coverage lines disappear.",
+    "patch": "not-assessed-dropped.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "approved-prior-cut-400",
+    "breaks": "The saved body keeps only its last 400 characters.",
+    "patch": "approved-prior-cut-400.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "missed-step-counted-complete",
+    "breaks": "A turn with a missed step is counted as complete.",
+    "patch": "missed-step-counted-complete.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "reload-counted-complete",
+    "breaks": "A turn first heard after reload is counted as complete.",
+    "patch": "reload-counted-complete.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "subagent-step-captured",
+    "breaks": "Helper steps enter the main-turn capture.",
+    "patch": "subagent-step-captured.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "interrupt-text-dropped",
+    "breaks": "Interrupting a turn discards the text already streamed.",
+    "patch": "interrupt-text-dropped.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "submit-boundary-late",
+    "breaks": "The submit snapshot is taken after awaiting turn saves, so later text can cross the boundary.",
+    "patch": "submit-boundary-late.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "typed-into-turn-whole",
+    "breaks": "A message typed into a running turn receives the turn text collected later as well.",
+    "patch": "typed-into-turn-whole.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "body-from-turn-answer",
+    "breaks": "The completed turn answer replaces the streamed body, losing earlier steps.",
+    "patch": "body-from-turn-answer.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "body-from-step-answer",
+    "breaks": "Capture uses the step answer, merging the streamed text blocks.",
+    "patch": "body-from-step-answer.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "long-reply-clipped",
+    "breaks": "An ordinary long reply loses its whole sent source.",
+    "patch": "long-reply-clipped.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "appended-draft-clipped",
+    "breaks": "The owner words appended to a draft lose their whole sent copy.",
+    "patch": "appended-draft-clipped.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "source-hash-ignored",
+    "breaks": "A saved source is read even when its fingerprint does not match.",
+    "patch": "source-hash-ignored.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "source-rewritten",
+    "breaks": "A source file already present is overwritten by a later placement.",
+    "patch": "source-rewritten.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "store-full-loses-record",
+    "breaks": "A full store no longer falls back to saving the record in files.",
+    "patch": "store-full-loses-record.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "fallback-single-file",
+    "breaks": "The fallback record is written as one unbounded file instead of bounded parts.",
+    "patch": "fallback-single-file.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "fallback-objrev-only",
+    "breaks": "The fallback manifest is compared with objective revision instead of record revision.",
+    "patch": "fallback-objrev-only.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "recovery-reuses-lostrev",
+    "breaks": "A recovered record reuses its lost revision instead of advancing beyond it.",
+    "patch": "recovery-reuses-lostrev.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "loss-mark-cleared-on-save",
+    "breaks": "A successful store save clears a still-relevant record loss mark.",
+    "patch": "loss-mark-cleared-on-save.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "stale-pass-replaces",
+    "breaks": "A stale writer pass replaces the newer objective result and step.",
+    "patch": "stale-pass-replaces.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "unreadable-closes",
+    "breaks": "Owner words that could not be read whole can close held conditions.",
+    "patch": "unreadable-closes.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "approval-drops-condition",
+    "breaks": "A typed approval can drop or close an earlier held condition.",
+    "patch": "approval-drops-condition.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "plan-closes-condition",
+    "breaks": "A plan-screen approval can close an earlier condition.",
+    "patch": "plan-closes-condition.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "approval-opens-new-job",
+    "breaks": "A typed approval can open a new job and abandon the current one.",
+    "patch": "approval-opens-new-job.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "stored-approval-closes",
+    "breaks": "A stored approval already read by the writer can close a held condition.",
+    "patch": "stored-approval-closes.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "waiting-dropped-on-failure",
+    "breaks": "A failed whole-read write clears waiting messages instead of leaving them for retry.",
+    "patch": "waiting-dropped-on-failure.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "took-cut-200",
+    "breaks": "What an approval took is cut to 200 characters before saving.",
+    "patch": "took-cut-200.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "question-counts-as-approval",
+    "breaks": "A moved answer without approved lines marks every listed owner message as approving, including questions.",
+    "patch": "question-counts-as-approval.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "screen-note-dropped",
+    "breaks": "A note entered when rejecting a plan is not recorded on the live path.",
+    "patch": "screen-note-dropped.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "screen-rejected-plan-held",
+    "breaks": "The plan rejected on the screen is stored as an accepted approval.",
+    "patch": "screen-rejected-plan-held.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "screen-edit-lost",
+    "breaks": "An edited plan-screen result is replaced with the original call plan.",
+    "patch": "screen-edit-lost.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "screen-unknown-accepted",
+    "breaks": "An unknown plan-screen response is treated as accepting the call plan.",
+    "patch": "screen-unknown-accepted.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "screen-plan-approval-none-unapproves",
+    "breaks": "A writer answering approved none removes the approval already recorded by the plan screen.",
+    "patch": "screen-plan-approval-none-unapproves.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "brief-rotates-silently",
+    "breaks": "The briefing rotates plans with a cursor and omits the no-room not-compared lines.",
+    "patch": "brief-rotates-silently.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "reader-uses-fork",
+    "breaks": "The session reader first uses a conversation fork instead of the saved record completion.",
+    "patch": "reader-uses-fork.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "later-claim-held",
+    "breaks": "Every completed turn rewrites the newest owner message body with the agent later claim.",
+    "patch": "later-claim-held.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "walk-rule-missing",
+    "breaks": "The prompt omits walk rule; a model's obedience to the rule is proved by the harness cases.",
+    "patch": "walk-rule-missing.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "not-assessed-rule-missing",
+    "breaks": "The prompt omits not assessed rule; a model's obedience to the rule is proved by the harness cases.",
+    "patch": "not-assessed-rule-missing.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "standing-instructions-line-missing",
+    "breaks": "The prompt omits standing instructions line; a model's obedience to the rule is proved by the harness cases.",
+    "patch": "standing-instructions-line-missing.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "combined-meaning-missing",
+    "breaks": "The prompt omits combined meaning; a model's obedience to the rule is proved by the harness cases.",
+    "patch": "combined-meaning-missing.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "whole-before-steps-missing",
+    "breaks": "The prompt omits whole before steps; a model's obedience to the rule is proved by the harness cases.",
+    "patch": "whole-before-steps-missing.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "draft-counts-as-approval",
+    "breaks": "The approval gate takes a mark on the rep's draft itself and stores it as an owner approval.",
+    "patch": "draft-counts-as-approval.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "gate-accepts-unlisted",
+    "breaks": "The approval gate accepts marks for owner messages that the writer was never shown.",
+    "patch": "gate-accepts-unlisted.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "thinking-captured",
+    "breaks": "Thinking chunks enter the captured body alongside text chunks.",
+    "patch": "thinking-captured.patch",
+    "fixed": "2026-11-01"
   }
 ]

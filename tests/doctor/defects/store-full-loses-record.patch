@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 1c7c5ed..1e09490 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -364,7 +364,7 @@ async function saveRec($: EngineInterface, rec: Rec): Promise<boolean> {
+   if (dropped === null) {
+     const moved = await moveInline($, rec)
+     const again = moved ? await storeRec($, rec).catch(() => null) : null
+-    if (again === null) return saveToFiles($, rec)
++    if (again === null) return false
+     return stored($, rec, again)
+   }
+   return stored($, rec, dropped)

@@ -1,0 +1,19 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 1c7c5ed..478c1c5 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2573,6 +2573,14 @@ export const register: Register = on => {
+     }
+     // The turn's text saved first, before anything is awaited, so a message sent after this knows it ended.
+     saveTurn($, e.turnId, e.isAborted)
++    await changeRec($, await sessionId($), async rec => {
++      const m = rec.owner.at(-1)
++      if (m !== undefined) {
++        const folder = await sourceFolder($, rec.id)
++        if (folder !== null) await writeFile($, `${folder}/${m.n}-body.txt`, e.answer)
++        m.src = { ...m.src, body: await saveSource($, rec.id, `${m.n}-body`, e.answer) }
++      }
++    })
+     const asking = /\?\s*$/.test(e.answer.trim())
+     const doing = e.isAborted ? 'stopped by you' : asking ? 'asking you' : 'stopped, waiting on you'
+     lastDoing = doing

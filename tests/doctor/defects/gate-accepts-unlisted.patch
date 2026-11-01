@@ -1,0 +1,15 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 91d6584..6b5836f 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1756,6 +1756,10 @@ export function takeApprovals(
+   target: number | undefined,
+   write: number,
+ ): { setAside: boolean; changes: ApprovalChange[] } {
++  shows = [...shows, ...marks.filter(mark => !shows.some(s => s.n === mark.n)).flatMap(mark => {
++    const m = owner.find(m => m.n === mark.n)
++    return m === undefined ? [] : [{ n: m.n, kind: m.kind, rejected: m.screen === 'rejected', turn: 'whole' as const, words: 'whole' as const }]
++  })]
+   const byN = new Map(owner.map(m => [m.n, m]))
+   const shown = new Map(shows.map(s => [s.n, s]))
+   const marked = new Map<number, string>()

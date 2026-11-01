@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 91d6584..96d46ff 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1794,7 +1794,7 @@ export function takeApprovals(
+     else if (took !== undefined) {
+       if (s.turn === 'close' || s.words === 'close') changes.push({ n: s.n, read: { ...read('waiting'), mark: true } })
+       else changes.push({ n: s.n, read: none, approved: took })
+-    } else if (s.words === 'close') changes.push({ n: s.n, read: read('waiting') })
++    }
+   }
+   if (target !== undefined && !changes.some(c => c.n === target)) changes.push({ n: target, read: read('unreadable', 'it could not be listed') })
+   const waits = changes.filter(c => c.n !== target && c.read.state === 'waiting')

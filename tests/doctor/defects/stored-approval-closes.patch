@@ -1,0 +1,22 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 1c7c5ed..5ab6334 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -976,7 +976,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number, r
+   // step stay as the newer write left them.
+   if (rev !== undefined && rev < rec.objRev) {
+     const fresh = hisFrom(rec, held.from + 1).filter(n => n <= saw)
+-    const closers = fresh.filter(canClose)
++    const closers = hisFrom(rec, jobOf(rec))
+     const merged = mergeConditions(held.done, honest(a.parts.done, held.done, closers), a.dropped, closers)
+     rec.objective = { ...held, done: settleConditions(held.done, merged, lets, rec.owner), from: Math.max(held.from, saw) }
+     return true
+@@ -984,7 +984,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number, r
+   if (saw <= held.from) return false
+   const fresh = hisFrom(rec, held.from + 1).filter(n => n <= saw)
+   if (fresh.length === 0) return false
+-  const closers = fresh.filter(canClose)
++  const closers = hisFrom(rec, jobOf(rec))
+   const version = { at: now, cause: a.cause, text: objectiveText(held) }
+   // The message a new job opens at: the one the answer names when this write is the first to
+   // see it, else the first it sees.

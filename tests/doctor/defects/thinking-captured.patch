@@ -1,0 +1,26 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 1c7c5ed..ece30eb 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2555,7 +2555,7 @@ export const register: Register = on => {
+     const turn = entry
+     try {
+       return yield* tapStep(next(e), c => {
+-        if (c.kind === 'text') addText(turn, c.index, c.text)
++        if (c.kind === 'text' || c.kind === 'thinking') addText(turn, c.index, c.text)
+       })
+     } finally {
+       closeStep(turn, e.index)
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 91d6584..09e8e21 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -950,7 +950,7 @@ export function migrateOwner(old: unknown[], lastSent?: string): OwnerMsg[] {
+ // exactly as `yield*` over the inner does; a method the inner lacks stays absent.
+ export function tapStep<C extends { kind: string }, R>(it: AsyncIterator<C, R>, onText: (c: C) => void): AsyncIterableIterator<C, R> {
+   const see = (r: IteratorResult<C, R>): IteratorResult<C, R> => {
+-    if (r.done !== true && r.value.kind === 'text') onText(r.value)
++    if (r.done !== true && (r.value.kind === 'text' || r.value.kind === 'thinking')) onText(r.value)
+     return r
+   }
+   const tap: AsyncIterableIterator<C, R> = {

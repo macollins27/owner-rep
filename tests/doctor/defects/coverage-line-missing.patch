@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 91d6584..9b3617b 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -858,7 +858,7 @@ export function coverageLines(rec: CoverRec, o: CoverOpts = {}): CoverLine[] {
+ // record let go of beyond its last 10 counted.
+ export const COVER_LINES_MAX = 3
+ export function coverage(rec: CoverRec, o: CoverOpts = {}): string[] {
+-  const lines = coverageLines(rec, o).map(l => l.text)
++  const lines: string[] = []
+   const job = rec.objective?.since ?? rec.jobStart
+   const u = rec.uncovered?.job === job ? rec.uncovered : undefined
+   const total = lines.length + Math.max(0, (u?.count ?? 0) - (u?.recent.length ?? 0))

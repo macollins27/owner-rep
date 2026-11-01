@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 91d6584..19c5fe7 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -961,7 +961,7 @@ export function tapStep<C extends { kind: string }, R>(it: AsyncIterator<C, R>,
+   }
+   const ret = it.return
+   const thr = it.throw
+-  if (ret !== undefined) tap.return = (v?: R | PromiseLike<R>) => ret.call(it, v).then(see)
++  if (ret !== undefined) tap.return = (v?: R | PromiseLike<R>) => Promise.resolve({ done: true as const, value: v as R })
+   if (thr !== undefined) tap.throw = (err?: unknown) => thr.call(it, err).then(see)
+   return tap
+ }

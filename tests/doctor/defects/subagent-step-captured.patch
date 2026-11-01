@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 1c7c5ed..2ac37e4 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2537,7 +2537,6 @@ export const register: Register = on => {
+   })
+ 
+   on('turn.step', async function* ($, e, next) {
+-    if (e.agentId !== undefined) return yield* next(e)
+     let entry = live.get(e.turnId)
+     if (entry === undefined) {
+       entry = newTurn(e.turnId, 'other', false, e.index, 'the rep did not see this turn from its start')

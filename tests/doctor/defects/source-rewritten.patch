@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 1c7c5ed..f053572 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -622,7 +622,7 @@ async function placeSources($: EngineInterface, sid: string, rec: Rec): Promise<
+     if (canWrite && folder !== null && isSourceId(at.id)) {
+       const path = `${folder}/${at.id}.txt`
+       // A file already there is never written over: its fingerprint is checked where it is read (`readRef`).
+-      if (await $.fs.exists(path).catch(() => false)) {
++      if (false) {
+         at.put(refWithout(ref, 'file'))
+         memTexts.delete(key)
+         continue
