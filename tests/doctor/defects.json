@@ -3064,5 +3064,29 @@
     "breaks": "A seeded message no row holds shows a line even when it approves nothing.",
     "patch": "no-row-line-on-every-message.patch",
     "fixed": "2026-11-01"
+  },
+  {
+    "name": "waiting-list-written-over",
+    "breaks": "A store that refuses the record writes the session's copy over a list still waiting to be read.",
+    "patch": "waiting-list-written-over.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "waiting-list-removed-by-store",
+    "breaks": "A store that takes the record again removes a list still waiting to be read.",
+    "patch": "waiting-list-removed-by-store.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "part-read-beats-owner-words",
+    "breaks": "A part that could not be read decides why a list was not taken, so a later start takes it over what the owner sent.",
+    "patch": "part-read-beats-owner-words.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "long-no-row-message-named",
+    "breaks": "A long seeded message no row holds shows a line once its whole read ends, though it approves nothing.",
+    "patch": "long-no-row-message-named.patch",
+    "fixed": "2026-11-01"
   }
 ]

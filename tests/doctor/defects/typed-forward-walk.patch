@@ -1,11 +1,11 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 0e6d35a..c069c3f 100644
+index 8cc49b2..06e9a32 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2028,12 +2028,12 @@ const isSummaryRow = (row: RecordRow | undefined): boolean =>
- export function typedFromItems(items: readonly HumanItem[], rows: readonly RecordRow[]): { text: string; prior: string; compacted?: true }[] {
+@@ -2076,12 +2076,12 @@ export type SeededTurn = { text: string; prior: string; at?: number; body?: stri
+ export function typedFromItems(items: readonly HumanItem[], rows: readonly RecordRow[]): SeededTurn[] {
    const priors = items.map(() => '')
-   const compacted = new Set<number>()
+   const ats = items.map(() => -1)
 -  let cursor = rows.length - 1
 -  for (let k = items.length - 1; k >= 0; k--) {
 +  let cursor = 0
@@ -18,12 +18,12 @@ index 0e6d35a..c069c3f 100644
        const row = rows[i]
        if (row === undefined || row.role !== 'user' || (row.toolResults ?? []).length > 0) continue
        if (typedKey(row.text) === item.key) {
-@@ -2050,7 +2050,7 @@ export function typedFromItems(items: readonly HumanItem[], rows: readonly Recor
+@@ -2098,7 +2098,7 @@ export function typedFromItems(items: readonly HumanItem[], rows: readonly Recor
          break
        }
      }
 -    cursor = at - 1
 +    cursor = at + 1
    }
-   return items.map((item, k) => ({ text: item.text, prior: priors[k] ?? '', ...(compacted.has(k) ? { compacted: true as const } : {}) }))
- }
+   let before = -1
+   return items.map((item, k) => {

@@ -1,14 +1,15 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 0e6d35a..599dbca 100644
+index 8cc49b2..67e100d 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2052,7 +2052,8 @@ export function typedFromItems(items: readonly HumanItem[], rows: readonly Recor
-     }
+@@ -2101,8 +2101,9 @@ export function typedFromItems(items: readonly HumanItem[], rows: readonly Recor
      cursor = at - 1
    }
--  return items.map((item, k) => ({ text: item.text, prior: priors[k] ?? '', ...(compacted.has(k) ? { compacted: true as const } : {}) }))
+   let before = -1
 +  let carried = ''
-+  return items.map((item, k) => ({ text: item.text, prior: (carried = priors[k] || carried), ...(compacted.has(k) ? { compacted: true as const } : {}) }))
- }
- 
- // The part of another session's items that belongs to a fork with these rows: a fork's rows
+   return items.map((item, k) => {
+-    const out: SeededTurn = { text: item.text, prior: priors[k] ?? '' }
++    const out: SeededTurn = { text: item.text, prior: (carried = priors[k] || carried) }
+     const at = ats[k] ?? -1
+     if (at < 0) return k === 0 ? out : { ...out, incomplete: NO_ROW_WHY }
+     const parts: string[] = []

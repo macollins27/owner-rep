@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 97fd57d..03f0d1b 100644
+index 5ad8026..6156620 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -2166,7 +2166,7 @@ async function seedOnce($: EngineInterface, sid: string): Promise<boolean> {
-   return changeRec($, sid, async rec => {
-     if (has(rec)) return false
-     for (const t of typed) {
+@@ -2207,7 +2207,7 @@ async function seedOnce($: EngineInterface, sid: string): Promise<boolean> {
+         await storeScreen($, sid, rec, t.seen, t.toolUseId, { readBack: true })
+         continue
+       }
 -      const split = draftSplitAny(t.text, [...rec.drafts, rec.lastBrief?.message ?? '', ...others])
 +      const split = draftSplitAny(t.text, [...rec.drafts, rec.lastBrief?.message ?? ''])
-       const more = t.compacted === true ? { incomplete: COMPACTED_WHY } : {}
-       if (split === null) pushOwner(rec, 'his', t.text, t.prior, await withSent($, sid, rec, more, t.text.length > HIS_CUT ? t.text : null))
-       else await pushDraft($, sid, rec, split, t.prior, t.text, async () => more)
+       const fields = async () => bodyFields($, sid, rec, seededBody(t))
+       if (split === null) pushOwner(rec, 'his', t.text, t.prior, await withSent($, sid, rec, await fields(), t.text.length > HIS_CUT ? t.text : null))
+       else await pushDraft($, sid, rec, split, t.prior, t.text, fields)

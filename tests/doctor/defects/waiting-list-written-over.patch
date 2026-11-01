@@ -1,0 +1,15 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 5ad8026..36393cb 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -757,10 +757,6 @@ async function moveInline($: EngineInterface, rec: Rec): Promise<boolean> {
+ async function saveToFiles($: EngineInterface, rec: Rec): Promise<boolean> {
+   const held = JSON.parse(JSON.stringify({ ...rec, at: Date.now() })) as Rec
+   fullRecs.set(rec.id, held)
+-  if (rec.lossMark?.why === LOST_LIST_UNREAD) {
+-    storeFull.set(rec.id, { memoryOnly: true })
+-    return false
+-  }
+   const folder = await sourceFolder($, rec.id)
+   let ok = folder !== null
+   if (folder !== null) {

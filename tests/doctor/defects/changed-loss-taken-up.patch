@@ -1,10 +1,10 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index eef10d1..189999f 100644
+index 5ad8026..c7de403 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -865,7 +865,7 @@ async function reconcile($: EngineInterface, sid: string): Promise<void> {
-       } else {
-         await markLoss('mark' in got ? got.mark : { lostRev: manifest.recRev, keptRev: kept, after: since, why: unchanged ? LOST_DAMAGED : LOST_CHANGED })
+@@ -871,7 +871,7 @@ async function reconcile($: EngineInterface, sid: string): Promise<void> {
+         const lost = { lostRev: manifest.recRev, keptRev: kept, after: since }
+         await markLoss(!unchanged ? { ...lost, why: LOST_CHANGED } : 'mark' in got ? got.mark : { ...lost, why: LOST_DAMAGED })
        }
 -    } else if (rec.lossMark !== undefined && rec.lossMark.why !== LOST_CHANGED && !isMismatch(rec.lossMark.why) && rec.recRev === rec.lossMark.lostRev + 1) {
 +    } else if (rec.lossMark !== undefined && !isMismatch(rec.lossMark.why) && rec.recRev === rec.lossMark.lostRev + 1) {
