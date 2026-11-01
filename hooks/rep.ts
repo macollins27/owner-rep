@@ -51,6 +51,8 @@ export type OwnerMsg = {
   approved?: string
   read?: ReadState
   screen?: 'accepted' | 'edited' | 'rejected'
+  // A plan-screen answer read from the session's rows, not seen as it happened.
+  readBack?: true
   withDraft?: number
   toolUseId?: string
   // An approval of the open job kept past the trim (`trimKept`).
@@ -112,7 +114,7 @@ export type TurnSpan = {
   by: TurnBy
   from: number
   to: number
-  note?: 'interrupted' | 'typed-into'
+  note?: 'interrupted' | 'typed-into' | 'read-back'
   incomplete?: string
   merged?: Partial<Record<TurnBy, number>>
 }
@@ -1512,7 +1514,8 @@ export const wordsUnread = (m: OwnerMsg): boolean =>
   m.kind !== 'draft' && m.src?.sent !== undefined && (m.src.sent.lost !== undefined || m.src.sent.chars > APPROVAL_READ_CAP)
 const unreadWhy = (m: OwnerMsg): string => m.src?.sent?.lost ?? `it is over the ${commas(APPROVAL_READ_CAP)} characters the rep can read`
 
-const planLabel = (m: OwnerMsg): string => `a plan the owner accepted on the plan screen${m.screen === 'edited' ? ', after editing it there' : ''}`
+const planLabel = (m: OwnerMsg): string =>
+  `a plan the owner accepted on the plan screen${m.screen === 'edited' ? ', after editing it there' : m.readBack === true ? ' (read back; whether the owner edited it there cannot be told)' : ''}`
 // A plan-screen plan's line: its label and stored text, or, when the plan cannot be shown, why
 // and none of its text.
 const planHead = (m: OwnerMsg, x: NotShown | null): string =>
@@ -1530,6 +1533,7 @@ const NEXT_TURN: Record<TurnBy, string> = {
   owner: '(next turn, started by something other than the owner)',
   other: '(next turn, started by something other than the owner)',
 }
+export const READ_BACK_LINE = "(read back from the session's saved record: the rep did not see this as it ran)"
 function spansText(text: string, turns: readonly TurnSpan[] | undefined): string {
   if (turns === undefined || turns.length === 0 || turns.at(-1)?.to !== text.length) return text
   const out: string[] = []
@@ -1538,6 +1542,7 @@ function spansText(text: string, turns: readonly TurnSpan[] | undefined): string
     out.push(text.slice(t.from, t.to))
     if (t.note === 'interrupted') out.push('(interrupted by the owner here)')
     if (t.note === 'typed-into') out.push('(the owner typed the message below while the agent was still working)')
+    if (t.note === 'read-back') out.push(READ_BACK_LINE)
   }
   return out.join('\n')
 }
@@ -1909,7 +1914,7 @@ export const RECORD_TOOL_CUT = 600
 export type RecordRow = {
   role: 'user' | 'assistant'
   text: string
-  toolUses: readonly { tool_use_id?: string; tool: string; input: unknown; text?: string; isError?: boolean }[]
+  toolUses: readonly { tool_use_id?: string; tool: string; input: unknown; result?: unknown; text?: string; isError?: boolean }[]
   toolResults?: readonly { tool_use_id?: string; text: string; isError: boolean }[]
 }
 
@@ -2055,11 +2060,17 @@ export const candidateKeys = (rows: readonly RecordRow[]): Set<string> => new Se
 // A message whose row comes right after the summary that opens a compacted conversation is marked
 // `compacted`: the agent's turn it answered is not in the rows, so its body is incomplete (plan 6.4).
 export const COMPACTED_WHY = 'the session was compacted, so that turn is gone'
+export const TURN_START_WHY = 'the rep could not see where that turn began'
 const isSummaryRow = (row: RecordRow | undefined): boolean =>
   row !== undefined && row.role === 'user' && withoutReminders(row.text).startsWith('This session is being continued from a previous conversation')
-export function typedFromItems(items: readonly HumanItem[], rows: readonly RecordRow[]): { text: string; prior: string; compacted?: true }[] {
+// One seeded message: `at` is its row, when a row holds it; `body` is every word the agent wrote
+// between the owner's row before it and this one, oldest first and whole; `incomplete` says the
+// turn's start is not in the rows, so what `body` holds is part of a turn and is never shown as
+// all of it. The session's first message answers nothing, so its missing start is no gap.
+export type SeededTurn = { text: string; prior: string; at?: number; body?: string; incomplete?: string }
+export function typedFromItems(items: readonly HumanItem[], rows: readonly RecordRow[]): SeededTurn[] {
   const priors = items.map(() => '')
-  const compacted = new Set<number>()
+  const ats = items.map(() => -1)
   let cursor = rows.length - 1
   for (let k = items.length - 1; k >= 0; k--) {
     const item = items[k]
@@ -2074,7 +2085,7 @@ export function typedFromItems(items: readonly HumanItem[], rows: readonly Recor
       }
     }
     if (at < 0) continue
-    if (isSummaryRow(rows[at - 1])) compacted.add(k)
+    ats[k] = at
     for (let i = at - 1; i >= 0; i--) {
       const row = rows[i]
       if (row !== undefined && row.role === 'assistant' && row.text.trim() !== '') {
@@ -2084,7 +2095,60 @@ export function typedFromItems(items: readonly HumanItem[], rows: readonly Recor
     }
     cursor = at - 1
   }
-  return items.map((item, k) => ({ text: item.text, prior: priors[k] ?? '', ...(compacted.has(k) ? { compacted: true as const } : {}) }))
+  let before = -1
+  return items.map((item, k) => {
+    const out: SeededTurn = { text: item.text, prior: priors[k] ?? '' }
+    const at = ats[k] ?? -1
+    if (at < 0) return out
+    const parts: string[] = []
+    let i = at - 1
+    while (i > before && !isSummaryRow(rows[i])) {
+      const row = rows[i]
+      if (row !== undefined && row.role === 'assistant' && row.text.trim() !== '') parts.unshift(row.text)
+      i--
+    }
+    const why = isSummaryRow(rows[i]) ? COMPACTED_WHY : before < 0 && k > 0 ? TURN_START_WHY : undefined
+    before = at
+    return { ...out, at, ...(parts.length === 0 ? {} : { body: parts.join('\n\n') }), ...(why === undefined ? {} : { incomplete: why }) }
+  })
+}
+
+// The plan screen's answers in a session's rows, each at the row that holds it. A call is matched
+// to its answer only by the call's own id; an answer to anything but `ExitPlanMode` is never read,
+// so a program's output in the same words is nothing here.
+export type ScreenEvent = { at: number; toolUseId: string; seen: NonNullable<PlanScreen> }
+export function screenFromRows(rows: readonly RecordRow[]): ScreenEvent[] {
+  const out: ScreenEvent[] = []
+  rows.forEach((row, i) => {
+    for (const use of row.toolUses) {
+      if (use.tool !== 'ExitPlanMode' || use.tool_use_id === undefined) continue
+      const id = use.tool_use_id
+      const k = rows.findIndex((r, j) => j > i && (r.toolResults ?? []).some(t => t.tool_use_id === id))
+      const answer = rows[k]?.toolResults?.find(t => t.tool_use_id === id)
+      const seen = planScreen(use.input, answer ?? { result: use.result, text: use.text, isError: use.isError })
+      if (seen !== null) out.push({ at: k < 0 ? i : k, toolUseId: id, seen })
+    }
+  })
+  return out.sort((a, b) => a.at - b.at)
+}
+
+// The seed's order: the owner's messages as the file has them, with each plan-screen answer before
+// the first message whose row comes after it. A message with no row keeps its place among the rest.
+export function seedOrder(typed: readonly SeededTurn[], screens: readonly ScreenEvent[]): Array<SeededTurn | ScreenEvent> {
+  const out: Array<SeededTurn | ScreenEvent> = []
+  let next = 0
+  for (const t of typed) {
+    while (t.at !== undefined && (screens[next]?.at ?? Infinity) < t.at) out.push(screens[next++] as ScreenEvent)
+    out.push(t)
+  }
+  return [...out, ...screens.slice(next)]
+}
+
+// The body of a seeded message, as `bodyFields` takes it: one span, read back rather than seen.
+export const seededBody = (t: SeededTurn): Body => {
+  const text = t.body ?? ''
+  const incomplete = t.incomplete === undefined ? {} : { incomplete: t.incomplete }
+  return { text, turns: text === '' ? [] : [{ by: 'other', from: 0, to: text.length, note: 'read-back' }], used: [], ...incomplete }
 }
 
 // The part of another session's items that belongs to a fork with these rows: a fork's rows

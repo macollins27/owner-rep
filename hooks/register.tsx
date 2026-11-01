@@ -41,7 +41,6 @@ import {
   coverage,
   withRecordLines,
   type ReaderGaps,
-  COMPACTED_WHY,
   type Manifest,
   type LossMark,
   type PartRead,
@@ -151,6 +150,10 @@ import {
   humanItems,
   typedFromItems,
   planScreen,
+  type PlanScreen,
+  screenFromRows,
+  seedOrder,
+  seededBody,
   forkItems,
   forkCandidates,
   lastToolId,
@@ -2162,15 +2165,20 @@ async function seedOnce($: EngineInterface, sid: string): Promise<boolean> {
   const items = await heldItems($, sid, rows)
   if (items === null) return false
   const typed = typedFromItems(items, rows)
-  if (typed.length === 0) return false
+  const screens = screenFromRows(rows as readonly RecordRow[])
+  if (typed.length === 0 && screens.length === 0) return false
   const others = await storedDrafts($)
   return changeRec($, sid, async rec => {
     if (has(rec)) return false
-    for (const t of typed) {
+    for (const t of seedOrder(typed, screens)) {
+      if ('seen' in t) {
+        await storeScreen($, sid, rec, t.seen, t.toolUseId, { readBack: true })
+        continue
+      }
       const split = draftSplitAny(t.text, [...rec.drafts, rec.lastBrief?.message ?? '', ...others])
-      const more = t.compacted === true ? { incomplete: COMPACTED_WHY } : {}
-      if (split === null) pushOwner(rec, 'his', t.text, t.prior, await withSent($, sid, rec, more, t.text.length > HIS_CUT ? t.text : null))
-      else await pushDraft($, sid, rec, split, t.prior, t.text, async () => more)
+      const fields = async () => bodyFields($, sid, rec, seededBody(t))
+      if (split === null) pushOwner(rec, 'his', t.text, t.prior, await withSent($, sid, rec, await fields(), t.text.length > HIS_CUT ? t.text : null))
+      else await pushDraft($, sid, rec, split, t.prior, t.text, fields)
     }
     return has(rec)
   })
@@ -2196,19 +2204,22 @@ async function takePlanScreen($: EngineInterface, e: unknown, result: unknown): 
   const seen = planScreen(e, result)
   if (seen === null) return
   const given = (e as { tool_use_id?: unknown }).tool_use_id
-  const toolUseId = typeof given === 'string' ? { toolUseId: given } : {}
   const sid = await sessionId($)
-  await changeRec($, sid, async rec => {
-    const n = rec.counter + 1
-    if (seen.kind === 'accepted') {
-      const body = await saveSource($, sid, `${n}-body`, seen.plan)
-      pushOwner(rec, 'plan', fit(seen.plan, PRIOR_CUT), '', { approved: 'all', screen: seen.edited ? 'edited' : 'accepted', src: { body }, ...toolUseId })
-      return
-    }
-    const src = seen.plan === '' ? {} : { src: { rejected: await saveSource($, sid, `${n}-rejected`, seen.plan) } }
-    pushOwner(rec, 'his', seen.note, '', await withSent($, sid, rec, { screen: 'rejected', ...src, ...toolUseId }, seen.note.length > HIS_CUT ? seen.note : null))
-  })
+  await changeRec($, sid, rec => storeScreen($, sid, rec, seen, typeof given === 'string' ? given : undefined, {}))
   rebuildObjective($, sid, 'message').catch(() => undefined)
+}
+
+// One answer of the plan screen's, seen as it happened or read back from the rows (`more`).
+async function storeScreen($: EngineInterface, sid: string, rec: Rec, seen: NonNullable<PlanScreen>, id: string | undefined, more: Partial<OwnerMsg>): Promise<void> {
+  const n = rec.counter + 1
+  const toolUseId = id === undefined ? {} : { toolUseId: id }
+  if (seen.kind === 'accepted') {
+    const body = await saveSource($, sid, `${n}-body`, seen.plan)
+    pushOwner(rec, 'plan', fit(seen.plan, PRIOR_CUT), '', { approved: 'all', screen: seen.edited ? 'edited' : 'accepted', src: { body }, ...toolUseId, ...more })
+    return
+  }
+  const src = seen.plan === '' ? {} : { src: { rejected: await saveSource($, sid, `${n}-rejected`, seen.plan) } }
+  pushOwner(rec, 'his', seen.note, '', await withSent($, sid, rec, { screen: 'rejected', ...src, ...toolUseId, ...more }, seen.note.length > HIS_CUT ? seen.note : null))
 }
 
 // "Tell the rep": the prefix goes into the owner's own prompt box, the owner
