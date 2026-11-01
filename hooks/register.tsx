@@ -372,11 +372,11 @@ async function saveRec($: EngineInterface, rec: Rec): Promise<boolean> {
   return stored($, rec, dropped)
 }
 
-// After the store took the record: the session's copy in files goes, and the folders of the
-// records let go.
+// After the store took the record: the session's copy in files goes, unless it is a list waiting
+// to be read again, and the folders of the records let go.
 async function stored($: EngineInterface, rec: Rec, dropped: string[]): Promise<boolean> {
   fullRecs.delete(rec.id)
-  if (storeFull.delete(rec.id)) {
+  if (storeFull.delete(rec.id) && rec.lossMark?.why !== LOST_LIST_UNREAD) {
     const folder = await sourceFolder($, rec.id)
     if (folder !== null) {
       const manifest = parseManifest(await $.fs.read(`${folder}/record.json`).catch(() => null))
@@ -752,10 +752,15 @@ async function moveInline($: EngineInterface, rec: Rec): Promise<boolean> {
 
 // The whole record written to the session's files, in parts of at most FALLBACK_PART_BYTES,
 // then the list of them (`record.json`); the old list's other parts go. The record is held in
-// this process either way. True when the files hold it.
+// this process either way. True when the files hold it. A list waiting to be read again may be
+// newer than this record, so while its mark stands the record stays in this process alone.
 async function saveToFiles($: EngineInterface, rec: Rec): Promise<boolean> {
   const held = JSON.parse(JSON.stringify({ ...rec, at: Date.now() })) as Rec
   fullRecs.set(rec.id, held)
+  if (rec.lossMark?.why === LOST_LIST_UNREAD) {
+    storeFull.set(rec.id, { memoryOnly: true })
+    return false
+  }
   const folder = await sourceFolder($, rec.id)
   let ok = folder !== null
   if (folder !== null) {
@@ -863,7 +868,8 @@ async function reconcile($: EngineInterface, sid: string): Promise<void> {
         fullRecs.set(sid, JSON.parse(JSON.stringify(rec)) as Rec)
         changed = true
       } else {
-        await markLoss('mark' in got ? got.mark : { lostRev: manifest.recRev, keptRev: kept, after: since, why: unchanged ? LOST_DAMAGED : LOST_CHANGED })
+        const lost = { lostRev: manifest.recRev, keptRev: kept, after: since }
+        await markLoss(!unchanged ? { ...lost, why: LOST_CHANGED } : 'mark' in got ? got.mark : { ...lost, why: LOST_DAMAGED })
       }
     } else if (rec.lossMark !== undefined && rec.lossMark.why !== LOST_CHANGED && !isMismatch(rec.lossMark.why) && rec.recRev === rec.lossMark.lostRev + 1) {
       const mark = rec.lossMark

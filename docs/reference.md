@@ -762,8 +762,10 @@ record is saved; a new job clears the mark and removes its files. A list that ex
 read (`LOST_LIST_UNREAD`) stays where it is, the mark holding `keptRev` and `after`, and is read
 again at each start: at or under `keptRev` it goes and the mark with it; newer, it is taken up
 while the owner has sent nothing since the mark, and otherwise renamed as lost with
-`LOST_CHANGED`, which no later start takes up. Sources held in memory by an earlier process are
-marked `LOST_RESTART`.
+`LOST_CHANGED`, which no later start takes up, whatever else was wrong with it. While the mark
+stands a store that refuses the record leaves it in this process alone (`saveToFiles`), and a
+store that takes it again leaves the list where it is (`stored`): the list may be newer than the
+record. Sources held in memory by an earlier process are marked `LOST_RESTART`.
 
 An approval (`approvalOf`: the owner's message, note or plan-screen plan carrying `approved`,
 never one that turned a plan down, never a draft) of the open job that falls outside the job's

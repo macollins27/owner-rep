@@ -4925,6 +4925,8 @@ test('guard: a lost copy taken up at a start stays in the files until the recove
   await settle($)
   expect(files.has(`${DIR}/record-lost-3.json`)).toBe(true)
   expect(files.has(`${DIR}/record-3-1.json`)).toBe(true)
+  // The recovery ran: this process holds the recovered record, so no loss is shown.
+  expect(await rowSays($, /lost its newest copy/)).toBe(false)
 })
 
 let unreadList: { store: Record<string, unknown>; files: Map<string, string> } | null = null
@@ -4968,6 +4970,7 @@ test('rule: a list read at last at or under what the store kept goes, and the ma
 })
 
 let lateList: { store: Record<string, unknown>; files: Map<string, string> } | null = null
+let lostParts: { store: Record<string, unknown>; files: Map<string, string> } | null = null
 test('rule: a list read at last after the owner sent more is not taken over what he sent (the start that reads it)', async ($, on) => {
   const files = new Map<string, string>()
   await plantFallback(files, recOf([...FORTY(), his(41, 'FROM THE FILES')]), 3)
@@ -4994,6 +4997,52 @@ test('rule: a list read at last after the owner sent more is not taken over what
   expect(heldIn(store)?.owner.at(-1)?.text).toBe('SENT SINCE')
   expect(heldIn(store)?.lossMark?.why).toBe('its saved copy could not be read until you had sent more')
   expect(files.has(`${DIR}/record-lost-3.json`)).toBe(true)
+})
+
+test('guard: while a list waits to be read again, a store that refuses the record writes nothing over it, and one that takes it again removes nothing', async ($, on) => {
+  const files = new Map<string, string>()
+  await plantFallback(files, recOf([...FORTY(), his(41, 'FROM THE FILES')]), 8)
+  const list = files.get(`${DIR}/record.json`)
+  const d = disk(on, files)
+  // One read fails: the save's own read of the list would then succeed, and write over it.
+  d.failRead.add(`${DIR}/record.json`)
+  const store = storeOf(recOf(FORTY(), { recRev: 2 }))
+  const { hold } = capture(on, store, () => SID)
+  hold.refuse = () => true
+  await started($)
+  await settle($)
+  expect(files.get(`${DIR}/record.json`)).toBe(list)
+  expect(files.has(`${DIR}/record-8-1.json`)).toBe(true)
+  expect(await rowSays($, lineRe(LOST_LINE('its saved copy could not be read')))).toBe(true)
+  hold.refuse = () => false
+  await send($, 'and one more thing')
+  await settleUntil($, () => heldIn(store)?.lossMark !== undefined)
+  expect(heldIn(store)?.lossMark?.why).toBe('its saved copy could not be read')
+  expect(files.get(`${DIR}/record.json`)).toBe(list)
+  expect(files.has(`${DIR}/record-8-1.json`)).toBe(true)
+})
+
+test('rule: a list read at last after the owner sent more is not taken even when its parts could not be read then', async ($, on) => {
+  const files = new Map<string, string>()
+  await plantFallback(files, recOf([...FORTY(), his(41, 'FROM THE FILES')]), 8)
+  const d = disk(on, files)
+  d.failRead.add(`${DIR}/record-8-1.json`)
+  const store = storeOf(recOf([...FORTY(), his(41, 'SENT SINCE')], { recRev: 3, lossMark: UNREAD_MARK }))
+  capture(on, store, () => SID)
+  await started($)
+  await settle($)
+  expect(heldIn(store)?.lossMark).toEqual({ lostRev: 8, keptRev: 2, after: 40, why: 'its saved copy could not be read until you had sent more' })
+  expect(heldIn(store)?.owner.at(-1)?.text).toBe('SENT SINCE')
+  lostParts = { store, files }
+})
+test('rule: a list read at last after the owner sent more is not taken even when its parts could not be read then (a later start, which can read them)', async ($, on) => {
+  const { store, files } = lostParts as NonNullable<typeof lostParts>
+  disk(on, files)
+  capture(on, store, () => SID)
+  await started($)
+  await settle($)
+  expect(heldIn(store)?.owner.at(-1)?.text).toBe('SENT SINCE')
+  expect(heldIn(store)?.lossMark?.why).toBe('its saved copy could not be read until you had sent more')
 })
 
 test('guard: a new job removes a list that could not be read, so no later start takes the old job over it', async ($, on) => {
@@ -5062,7 +5111,7 @@ test('guard: Check it keeps the lost-record warning on the card it rewrites, and
       stream: 'stdout',
       text: JSON.stringify({
         type: 'result',
-        result: 'verdict: stop\nholds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n- nothing\nclosed:\n- nothing\nnext: Stop the agent; the job is finished.\nmessage:\nWrap up and stop here.\nend\ndoes: It stops.',
+        result: 'verdict: stop\nholds:\n- the claim the check held\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n- nothing\nclosed:\n- nothing\nnext: Stop the agent; the job is finished.\nmessage:\nWrap up and stop here.\nend\ndoes: It stops.',
         usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
       }),
     }
@@ -5072,6 +5121,8 @@ test('guard: Check it keeps the lost-record warning on the card it rewrites, and
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   await ui.press({ key: 'rep' })
   await ui.press({ key: 'check' })
+  // The check's own finding: the card on screen is the one it rewrote.
+  expect(await ui.find({ type: 'Text', text: /the claim the check held/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /The rep lost its newest copy of this session's record/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /Stop the agent/ })).toBeUndefined()
   await ui.unmount()
@@ -11408,6 +11459,14 @@ test('guard: a seeded approval no row holds is never read as read: it says the r
   expect(await rowSays($, new RegExp(rep.NO_ROW_WHY))).toBe(true)
 })
 
+test('rule: a long seeded message no row holds that approves nothing stands without a line, its whole read done', () => {
+  const m = { n: 2, kind: 'his' as const, text: 'x'.repeat(100), prior: '', incomplete: rep.NO_ROW_WHY, read: { state: 'unreadable' as const, why: rep.NO_ROW_WHY } }
+  expect(rep.unresolved(m as never)).toBeNull()
+  // A read that failed for another reason still says so, and an approval is always named.
+  expect(rep.unresolved({ ...m, incomplete: undefined, read: { state: 'unreadable', why: 'it could not be listed' } } as never)?.text).toMatch(/could not be listed/)
+  expect(rep.unresolved({ ...m, approved: 'yes' } as never)?.text).toMatch(new RegExp(rep.NO_ROW_WHY))
+})
+
 test('rule: a seeded message no row holds that approves nothing stands without a line', async ($, on) => {
   const file = [LINE('Plan it.'), QUEUED('Use pears.'), LINE('And apples.')].join('\n')
   const s = seededSession(on, [you('Plan it.'), agentSaid('The plan.'), you('And apples.')], file)
@@ -11593,6 +11652,8 @@ test('rule: a press in a session the rep holds no record of records the owner\'s
   rows = SEEDED_ROWS
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   await ui.press({ key: 'rep' })
+  // The press seeds first, then reads, on its own time: the card can come after the press returns.
+  await settleUntil($, () => (rec()?.lastBrief ?? undefined) !== undefined)
   expect(await ui.find({ type: 'Text', text: /A licence file, read\./ })).toBeDefined()
   await ui.unmount()
   expect(rec()?.owner).toEqual(SEEDED)
@@ -11619,7 +11680,7 @@ test('rule: a session start with no record of the session records the owner\'s m
   const runs = transcript(on, { 'test-session.jsonl': SEEDED_FILE })
   const prompts = writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
   await started($)
-  await settle($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
   expect(rec()?.owner).toEqual(SEEDED)
   // No path was given by Claude Code here, so the file is found by its name.
   expect(runs.map(r => r.join(' '))).toEqual([FIND(), SED('test-session.jsonl'), START('test-session.jsonl')])
@@ -11681,7 +11742,7 @@ test('rule: a session forked with a new id, its own transcript not saved yet, ta
   // Claude Code names the fork's file before it is written.
   await giveTranscript($, on)
   await started($)
-  await settle($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
   expect(rec()?.owner).toEqual(SEEDED)
   expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), `ls -t ${FOLDER}`, SED('newer.jsonl'), SED('parent.jsonl')])
 })
@@ -11714,7 +11775,7 @@ test('rule: a session reopened after a compaction the owner has typed nothing si
   const prompts = writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
   await giveTranscript($, on, HELD(), 'resume')
   await started($)
-  await settle($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
   expect(rec()?.owner).toEqual(COMPACTED)
   expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), START('test-session.jsonl')])
   expect(prompts.length).toBe(1)
@@ -11732,7 +11793,7 @@ test('rule: a fork taken after a compaction the owner has typed nothing since, i
   writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
   await giveTranscript($, on)
   await started($)
-  await settle($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
   expect(rec()?.owner).toEqual(COMPACTED)
   expect(runs.map(r => r.join(' '))).toEqual([
     SED('test-session.jsonl'),
@@ -11767,7 +11828,7 @@ test('rule: a fork taken after a compaction, its own transcript saved as a copy 
   const prompts = writer(on, () => OBJ('A licence file with the MIT text and this year, and a changelog.', ['the file pushed | open'], '#1 to #4'))
   await giveTranscript($, on)
   await started($)
-  await settle($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
   expect(noBody(rec()?.owner)).toEqual(TAILED)
   expect(runs.map(r => r.join(' '))).toEqual([
     SED('test-session.jsonl'),
@@ -11793,7 +11854,7 @@ test('rule: a copy whose summary no other file in its folder holds gives the mes
   writer(on, () => OBJ('A changelog.', ['the changelog written | open'], '#1 and #2'))
   await giveTranscript($, on)
   await started($)
-  await settle($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
   expect(noBody(rec()?.owner)).toEqual([
     { n: 1, kind: 'his', text: 'Keep the year in the header too.', prior: '', incomplete: 'the session was compacted, so that turn is gone' },
     { n: 2, kind: 'his', text: 'And a changelog.', prior: 'Pushed.' },
@@ -11812,7 +11873,7 @@ test('rule: a fork taken while a tool call ran, its result marked interrupted an
   writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
   await giveTranscript($, on)
   await started($)
-  await settle($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
   expect(rec()?.owner).toEqual(COMPACTED)
   expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), `ls -t ${FOLDER}`, GREP('parent.jsonl', 'toolu_01Push'), SED_BEFORE('parent.jsonl', 4)])
 })
@@ -11843,7 +11904,7 @@ test('rule: the scan of a forked session\'s folder reads at most HUMAN_SCAN_MAX 
   writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
   await giveTranscript($, on)
   await started($)
-  await settle($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
   expect(rec()?.owner).toEqual(SEEDED)
   // The other session's message and the idle notice are in no file, so the scan runs to its cap.
   expect(runs.filter(r => r[0] === 'sed').length).toBe(1 + HUMAN_SCAN_MAX)
@@ -11909,7 +11970,7 @@ test('rule: a card message the owner sent in the session this one was forked fro
   writer(on, () => OBJ('The report run on the real data.', ['the run shown | open']))
   await giveTranscript($, on)
   await started($)
-  await settle($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
   expect(noBody(rec()?.owner)).toEqual([
     { n: 1, kind: 'his', text: 'Build the report.', prior: '' },
     { n: 2, kind: 'draft', text: drafted, prior: 'Built.', src: await sentInline(`${drafted} And keep the logs.`) },
@@ -11948,7 +12009,7 @@ test('rule: a card message the owner sent that the forked-from record holds only
   writer(on, () => OBJ('The report run on the real data.', ['the run shown | open']))
   await giveTranscript($, on)
   await started($)
-  await settle($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
   expect(noBody(rec()?.owner)).toEqual([
     { n: 1, kind: 'his', text: 'Build the report.', prior: '' },
     { n: 2, kind: 'draft', text: drafted, prior: 'Built.' },
@@ -11974,7 +12035,7 @@ test('rule: a card message the owner sent in a session whose record the store ha
   writer(on, () => OBJ('The report run on the real data, with the log kept.', ['the run shown | open']))
   await giveTranscript($, on, HELD('test-session.jsonl'))
   await started($)
-  await settle($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
   expect(noBody(rec()?.owner)).toEqual([
     { n: 1, kind: 'his', text: 'Build the report.', prior: '' },
     { n: 2, kind: 'draft', text: drafted, prior: 'Built.', src: await sentInline(`${drafted} And keep the log.`) },
@@ -12042,7 +12103,7 @@ test('rule: the transcript path Claude Code gives the session is the file read, 
   writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
   await giveTranscript($, on, HELD('test-session.jsonl', started_in), 'startup')
   await started($)
-  await settle($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
   expect(rec()?.owner).toEqual(SEEDED)
   expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl', started_in), START('test-session.jsonl', started_in)])
   expect(runs.timeouts).toEqual([HUMAN_READ_TIMEOUT_MS, HUMAN_READ_TIMEOUT_MS])
@@ -12059,7 +12120,7 @@ test('rule: the transcript path a later prompt carries replaces the one held fro
   await giveTranscript($, on, HELD('test-session.jsonl', `${PROJECTS}/-Users-o-gone`), 'startup')
   await $.classic.UserPromptSubmit({ prompt: 'Carry on.', transcript_path: HELD(), session_id: 'test-session' })
   await started($)
-  await settle($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
   expect(rec()?.owner).toEqual(SEEDED)
   expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), START('test-session.jsonl')])
 })
@@ -12108,7 +12169,7 @@ test('rule: a message of the owner\'s with a picture in it is proven from its te
   transcript(on, { 'test-session.jsonl': LINE([{ type: 'text', text: 'Look at this screen.' }, picture, { type: 'text', text: 'And fix the colour.' }]) })
   writer(on, () => OBJ('The screen fixed.', ['the colour fixed | open']))
   await started($)
-  await settle($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
   expect(rec()?.owner).toEqual([{ n: 1, kind: 'his', text: 'Look at this screen. And fix the colour.', prior: '' }])
 })
 
@@ -12122,7 +12183,7 @@ test('rule: in the scan of a forked session\'s folder, a file whose read was cut
   writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
   await giveTranscript($, on)
   await started($)
-  await settle($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
   expect(rec()?.owner).toEqual(SEEDED)
   expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), `ls -t ${FOLDER}`, SED('newer.jsonl'), SED('parent.jsonl')])
 })
@@ -12167,7 +12228,7 @@ test('rule: a message the owner typed while the agent worked, which is no row of
   writer(on, () => OBJ('An Apache licence file with this year, pushed.', ['the file pushed | open'], '#1 to #3'))
   await giveTranscript($, on, HELD(), 'startup')
   await started($)
-  await settle($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
   expect(noBody(rec()?.owner)).toEqual([
     { n: 1, kind: 'his', text: 'Add a licence file.', prior: '' },
     { n: 2, kind: 'his', text: 'Use the Apache text, not MIT.', prior: '', incomplete: rep.NO_ROW_WHY },
@@ -12200,7 +12261,7 @@ test('rule: a fork whose own transcript is not saved yet takes the best-matching
   writer(on, () => OBJ('The report run on the real data, with logs.', ['the run shown | open'], '#1 to #3'))
   await giveTranscript($, on)
   await started($)
-  await settle($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
   expect(noBody(rec()?.owner)).toEqual([
     { n: 1, kind: 'his', text: 'Build the report.', prior: '' },
     { n: 2, kind: 'his', text: 'Use the real data.', prior: 'Built.' },
@@ -12223,7 +12284,7 @@ test('rule: of two files in a fork\'s folder that match its rows equally, the ne
   writer(on, () => OBJ('The report built.', ['the report shown | open'], '#1'))
   await giveTranscript($, on)
   await started($)
-  await settle($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
   expect(rec()?.owner).toEqual([
     { n: 1, kind: 'his', text: 'Build the report.', prior: '' },
     { n: 2, kind: 'his', text: 'Queued in the newer.', prior: '', turns: [], incomplete: rep.NO_ROW_WHY },
@@ -12311,7 +12372,7 @@ test('rule: a prompt the owner sends while the start is still reading the sessio
   expect(await heldBack(sent)).toBe(true)
   release()
   await sent
-  await settle($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
   expect(rec()?.owner).toEqual([...SEEDED, { n: 3, kind: 'his', text: 'Also add a changelog.', prior: '' }])
   // The prompt's own seed is the start's read, not a second one.
   expect(reads.reads).toBe(1)
@@ -12324,7 +12385,7 @@ test('rule: a note to the rep sent while the start is still reading the session 
   expect(await heldBack(sent)).toBe(true)
   release()
   await sent
-  await settle($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
   expect(rec()?.owner).toEqual([...SEEDED, { n: 3, kind: 'note', text: 'the year matters most.', prior: '' }])
   // The note's seed is the start's read, not a second one; the second read is the look the note
   // starts, which reads the owner's messages from the transcript as every read does since Task 7a
@@ -12819,7 +12880,7 @@ test('rule: on Windows the owner\'s messages are read from the session\'s file t
   const runs = winTranscript(on, { 'test-session.jsonl': SEEDED_FILE })
   writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
   await started($)
-  await settle($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
   expect(rec()?.owner).toEqual(SEEDED)
   // Every command named by its full path, and the folder found under USERPROFILE.
   const ran = runs.filter(r => r[r.length - 1] !== '--version')
@@ -12835,7 +12896,7 @@ test('rule: on Windows with OS missing, the owner\'s messages are read under the
   const runs = winTranscript(on, { 'test-session.jsonl': SEEDED_FILE }, { os: '', systemRoot: 'C:\\Windows' })
   writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
   await started($)
-  await settle($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
   expect(rec()?.owner).toEqual(SEEDED)
   const ran = runs.filter(r => r[r.length - 1] !== '--version')
   expect(ran.map(r => r[0])).toEqual([`${WIN_GIT}/find.exe`, `${WIN_GIT}/sed.exe`, `${WIN_GIT}/grep.exe`])
@@ -12878,7 +12939,7 @@ test('rule: on Windows a transcript path given with backslashes is read written 
   writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
   await giveTranscript($, on, 'C:\\Users\\k\\.claude\\projects\\-C-work-app\\test-session.jsonl')
   await started($)
-  await settle($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
   expect(rec()?.owner).toEqual(SEEDED)
   const ran = runs.filter(r => r[r.length - 1] !== '--version')
   expect(ran.map(r => [r[0], r[r.length - 1]])).toEqual([[`${WIN_GIT}/sed.exe`, `${WIN_FOLDER}/test-session.jsonl`], [`${WIN_GIT}/grep.exe`, `${WIN_FOLDER}/test-session.jsonl`]])
@@ -12895,7 +12956,7 @@ test('rule: on Windows a probe for Git\'s commands that failed is tried again on
   await settle($)
   expect(rec()?.owner ?? []).toEqual([])
   await started($)
-  await settle($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
   expect(rec()?.owner).toEqual(SEEDED)
 })
 
@@ -12909,7 +12970,7 @@ test('rule: on Windows a fork taken after a compaction finds its parent by its l
   writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
   await giveTranscript($, on, 'C:\\Users\\k\\.claude\\projects\\-C-work-app\\test-session.jsonl')
   await started($)
-  await settle($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
   expect(rec()?.owner).toEqual(COMPACTED)
   const ran = runs.filter(r => r[r.length - 1] !== '--version')
   expect(ran.map(r => [r[0], r[r.length - 1]])).toEqual([
@@ -12931,7 +12992,7 @@ test('rule: on Windows a fork whose own file is a copy of the stretch since a su
   writer(on, () => OBJ('A licence file with the MIT text and this year, and a changelog.', ['the file pushed | open'], '#1 to #4'))
   await giveTranscript($, on, 'C:\\Users\\k\\.claude\\projects\\-C-work-app\\test-session.jsonl')
   await started($)
-  await settle($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
   expect(noBody(rec()?.owner)).toEqual(TAILED)
   const ran = runs.filter(r => r[r.length - 1] !== '--version')
   expect(ran.map(r => [r[0], r[r.length - 1]])).toEqual([
