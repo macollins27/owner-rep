@@ -72,44 +72,6 @@ export type Brief = {
 
 export type View = 'row' | 'note' | 'reading' | 'brief'
 
-// The owner's messages as the session record keeps them, and the turns they answered, captured
-// from the stream: the same shapes as in hooks/rep.ts, declared again for the same reason.
-export type OwnerKind = 'his' | 'note' | 'draft' | 'plan'
-// Whether the agent's words a message answered could be read when it came.
-export type ReadState = { state: 'read' | 'waiting' | 'unreadable'; why?: string; write?: number }
-export type TurnBy = 'owner' | 'notification' | 'continuation' | 'other'
-// A saved text: its length, the SHA-256 of its UTF-8 bytes ('' only for one too long to keep),
-// where it is held, `text` only when inline, and `lost` when it cannot be read.
-export type SourceRef = { chars: number; sha: string; where: 'file' | 'inline' | 'memory'; text?: string; lost?: string }
-// One turn's place in a message's body; `merged` counts the turns a merged span holds.
-export type TurnSpan = {
-  by: TurnBy
-  from: number
-  to: number
-  note?: 'interrupted' | 'typed-into'
-  incomplete?: string
-  merged?: Partial<Record<TurnBy, number>>
-}
-// A finished turn the owner has not answered yet, in the record's `pending` list.
-export type PendingTurn = { turnId: string; by: TurnBy; src?: SourceRef; incomplete?: string; note?: 'interrupted' }
-export type OwnerMsg = {
-  n: number
-  kind: OwnerKind
-  text: string
-  prior: string
-  turns?: TurnSpan[]
-  incomplete?: string
-  // Present when the message approves: what the owner took ('' when it sits in `src.took`).
-  approved?: string
-  read?: ReadState
-  screen?: 'accepted' | 'edited' | 'rejected'
-  withDraft?: number
-  toolUseId?: string
-  // An approval of the open job kept past the trim.
-  pinned?: true
-  src?: { body?: SourceRef; took?: SourceRef; rejected?: SourceRef; sent?: SourceRef }
-}
-
 declare module 'claude-code' {
   interface PluginState {
     'owner-rep': {
@@ -121,8 +83,6 @@ declare module 'claude-code' {
       brief: Brief | null
       view: View
       helperIds: string[]
-      // What the record could not keep or save, for the row and the card (at most three lines).
-      lines: string[]
     }
   }
 }

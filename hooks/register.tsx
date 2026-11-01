@@ -16,47 +16,8 @@ import {
   PRIOR_CUT,
   type OwnerKind,
   type OwnerMsg,
-  type PendingTurn,
-  type SourceRef,
-  type TurnBy,
-  type TurnCut,
-  type Body,
-  PENDING_MAX,
-  SOURCE_MAX,
-  TURN_TEXT_MAX,
-  bodyOf,
-  restOf,
-  runningText,
-  tapStep,
-  trimKept,
-  trimCounted,
+  trimOwner,
   migrateOwner,
-  sha256,
-  FINGERPRINT_MEMO_CHARS,
-  isSessionId,
-  removablePath,
-  splitRecord,
-  pickRecord,
-  isMismatch,
-  coverage,
-  withRecordLines,
-  type ReaderGaps,
-  type Manifest,
-  type LossMark,
-  type PartRead,
-  type Uncovered,
-  INLINE_RECORD_BYTES,
-  INLINE_STORE_BYTES,
-  SOURCE_WRITE_MS,
-  LOST_DAMAGED,
-  LOST_RESTART,
-  lostTooLong,
-  STORE_FULL_WHY,
-  sourcesRoot,
-  parseManifest,
-  isSourceId,
-  REMOVE_TIMEOUT_MS,
-  utf8Bytes,
   PAST_MAX,
   SEEN_MAX,
   SESSIONS_MAX,
@@ -143,17 +104,8 @@ import {
   RECORD_SYSTEM,
   RECORD_TIMEOUT_MS,
   recordPrompt,
-  recordText,
-  RECORD_BUDGET,
-  boundaryRow,
-  boundaryCover,
   humanItems,
   typedFromItems,
-  planScreen,
-  type PlanScreen,
-  screenFromRows,
-  seedOrder,
-  seededBody,
   forkItems,
   forkCandidates,
   lastToolId,
@@ -175,20 +127,6 @@ import {
   parseBrief,
   parseCheck,
   parseObjective,
-  parseApproved,
-  settleConditions,
-  takeApprovals,
-  wordsUnread,
-  writerShowings,
-  TOOK_INLINE_BYTES,
-  approvalOf,
-  readerParts,
-  readerGaps,
-  headsUp,
-  notAssessedGaps,
-  joinGaps,
-  WATCH_APPROVED_BUDGET,
-  BRIEF_APPROVED_BUDGET,
   writeFailure,
   parseWatch,
   resultOf,
@@ -220,8 +158,6 @@ const noteA = atom({ plugin: 'owner-rep', key: 'note' } as const, null)
 const briefA = atom({ plugin: 'owner-rep', key: 'brief' } as const, null)
 const viewA = atom({ plugin: 'owner-rep', key: 'view' } as const, 'row')
 const helpersA = atom({ plugin: 'owner-rep', key: 'helperIds' } as const, [])
-// What the rep could not check, keep or save (`coverage`): the row shows the first, the card all.
-const linesA = atom({ plugin: 'owner-rep', key: 'lines' } as const, [])
 
 // What came of a card's own-words call: its reply parsed whole, answered but not whole
 // (cut short, or missing a part), not answered or thrown, or no call made.
@@ -240,8 +176,6 @@ type Rec = {
   owner: OwnerMsg[]
   // The last number given to an owner message.
   counter: number
-  // The Heads up's cursor through the approved plans: the highest it showed in turn (`readerParts`).
-  readerAt?: { watch: number }
   past: string[]
   seen: string[]
   others: string[]
@@ -272,21 +206,6 @@ type Rec = {
   objectiveFailed: number
   // Why the last failed write failed: the engine's reason, or that the answer could not be read.
   objectiveWhy: string
-  // Finished turns the owner has not answered yet, oldest first, at most PENDING_MAX; absent when none.
-  pending?: PendingTurn[]
-  // Turns let go from `pending` since the owner's last message; absent when none.
-  pendingDropped?: number
-  // Raised by every save that changes the record (`recRev`), and by every change of the
-  // objective (`objRev`); a copy in the session's files is newer only by `recRev`.
-  recRev: number
-  objRev: number
-  // A newer copy of the record in the session's files that could not be used; absent when none.
-  lossMark?: LossMark
-  // The approvals of the open job the record could not keep; absent when none.
-  uncovered?: Uncovered
-  // The last write whose every attempt failed: when, and the last message it was shown;
-  // cleared by the next write that lands. A fresh start writes again while it is set.
-  failedWrite?: { at: number; upTo: number }
 }
 
 const isRec = (v: unknown): v is Rec =>
@@ -318,28 +237,12 @@ const freshRec = (id: string): Rec => ({
   objectiveTokens: 0,
   objectiveFailed: 0,
   objectiveWhy: '',
-  recRev: 0,
-  objRev: 0,
 })
 
-// The session's record: the copy held while the store refuses it when there is one, else
-// the store's, after the first load in this process has reconciled it with the session's files.
 async function loadRec($: EngineInterface, id: string): Promise<Rec> {
-  await reconcileOnce($, id)
-  const held = fullRecs.get(id)
-  return held !== undefined ? (JSON.parse(JSON.stringify(held)) as Rec) : loadStored($, id)
-}
-
-// The store's record, as a copy of its own: a change never touches what the store holds
-// until the store takes it.
-async function loadStored($: EngineInterface, id: string): Promise<Rec> {
   const all = await $.store.get('sessions')
-  const got = typeof all === 'object' && all !== null ? (all as Record<string, unknown>)[id] : undefined
-  if (!isRec(got)) return freshRec(id)
-  return fromStored(id, JSON.parse(JSON.stringify(got)) as Rec)
-}
-
-function fromStored(id: string, rec: Rec): Rec {
+  const rec = typeof all === 'object' && all !== null ? (all as Record<string, unknown>)[id] : undefined
+  if (!isRec(rec)) return freshRec(id)
   const out: Rec = { ...freshRec(id), ...rec }
   if (typeof (out.owner as unknown[])[0] === 'string') out.owner = migrateOwner(out.owner as unknown[], out.lastSent?.text)
   out.counter = Math.max(out.counter, ...out.owner.map(m => m.n), 0)
@@ -354,41 +257,7 @@ function fromStored(id: string, rec: Rec): Rec {
   return out
 }
 
-// Saves the record: true when the store or the session's own files hold it. A save the store
-// refuses moves the record's inline sources to files (or memory) and tries again; refused
-// still, the whole record goes to the session's files (`saveToFiles`), and is read from there
-// while the store refuses. A save the store takes removes those files, and the folders of the
-// records it let go.
-async function saveRec($: EngineInterface, rec: Rec): Promise<boolean> {
-  const dropped = await storeRec($, rec).catch(() => null)
-  if (dropped === null) {
-    const moved = await moveInline($, rec)
-    const again = moved ? await storeRec($, rec).catch(() => null) : null
-    if (again === null) return saveToFiles($, rec)
-    return stored($, rec, again)
-  }
-  return stored($, rec, dropped)
-}
-
-// After the store took the record: the session's copy in files goes, and the folders of the
-// records let go.
-async function stored($: EngineInterface, rec: Rec, dropped: string[]): Promise<boolean> {
-  fullRecs.delete(rec.id)
-  if (storeFull.delete(rec.id)) {
-    const folder = await sourceFolder($, rec.id)
-    if (folder !== null) {
-      const manifest = parseManifest(await $.fs.read(`${folder}/record.json`).catch(() => null))
-      await removeFiles($, [`${folder}/record.json`, ...(manifest?.parts ?? []).map(p => `${folder}/${p.name}`)], false)
-    }
-  }
-  const root = await rootOf($)
-  if (root !== null) await removeFiles($, dropped.filter(isSessionId).map(k => `${root}/${k}`), true)
-  return true
-}
-
-// The store's save of the record, returning the ids of the records it let go; throws when the
-// store refuses it.
-async function storeRec($: EngineInterface, rec: Rec): Promise<string[]> {
+async function saveRec($: EngineInterface, rec: Rec): Promise<void> {
   const got = await $.store.get('sessions')
   const all: Record<string, Rec> = {}
   if (typeof got === 'object' && got !== null) {
@@ -404,7 +273,6 @@ async function storeRec($: EngineInterface, rec: Rec): Promise<string[]> {
   const dropped = ids.slice(SESSIONS_MAX).flatMap(k => recDrafts(all[k]))
   if (dropped.length > 0) await $.store.set('droppedDrafts', keepDropped(await droppedDrafts($), dropped))
   await $.store.set('sessions', kept)
-  return ids.slice(SESSIONS_MAX)
 }
 
 // The drafts of records the store has let go (`saveRec`), newest first.
@@ -426,453 +294,12 @@ async function changeRec<T>($: EngineInterface, id: string, change: (rec: Rec) =
   await before
   try {
     const rec = await loadRec($, id)
-    const was = { json: bareJson(rec), objective: JSON.stringify(rec.objective), held: rec.objective !== null, job: jobOf(rec), files: await filesOf($, rec) }
     const out = await change(rec)
-    // A new job: the old job's approvals kept past the trim go, and with them what was not
-    // kept and the mark of a lost copy, whose files go too.
-    let lost: string[] = []
-    if (was.held && jobOf(rec) > was.job) {
-      delete rec.uncovered
-      if (rec.lossMark !== undefined) {
-        lost = await lostFilesOf($, id, rec.lossMark.lostRev)
-        delete rec.lossMark
-      }
-      rec.owner = trimKept(rec.owner, jobOf(rec)).list
-    }
-    await placeSources($, id, rec)
-    if (JSON.stringify(rec.objective) !== was.objective) rec.objRev += 1
-    if (bareJson(rec) !== was.json) rec.recRev += 1
-    if (await saveRec($, rec)) {
-      const now = new Set(await filesOf($, rec))
-      await removeFiles($, [...was.files.filter(f => !now.has(f)), ...lost], false)
-    }
-    if (onScreen(id)) await update($, linesA, () => rowCoverage(rec, id))
+    await saveRec($, rec)
     return out
   } finally {
     done()
     if (changing.get(id) === turn) changing.delete(id)
-  }
-}
-
-// Saved sources and the store (docs/reference.md, "Saved sources and the store").
-
-// The sources folder under the config folder (CLAUDE_CONFIG_DIR, else ~/.claude), read once a
-// process; null when neither can be read.
-let rootHeld: Promise<string | null> | null = null
-function rootOf($: EngineInterface): Promise<string | null> {
-  rootHeld ??= (async () => {
-    try {
-      const windows = (await osOf($)) === WINDOWS_OS
-      const set = await $.env.get('CLAUDE_CONFIG_DIR')
-      const home = await homeFor($)
-      const config = set !== undefined && set !== '' ? (windows ? slashed(set) : set) : home !== '' ? `${home}/.claude` : null
-      return config === null ? null : sourcesRoot(config.replace(/\/+$/, ''))
-    } catch {
-      return null
-    }
-  })()
-  return rootHeld
-}
-
-// The session's folder of sources: only a session id of the uuid form has one.
-async function sourceFolder($: EngineInterface, sid: string): Promise<string | null> {
-  if (!isSessionId(sid)) return null
-  const root = await rootOf($)
-  return root === null ? null : `${root}/${sid}`
-}
-
-// Texts held only by this process (`where: 'memory'`), by `<session id>/<source id>`.
-const memTexts = new Map<string, string>()
-// The fingerprints this process has worked out, by the text each is of: a text read back the same
-// is proven without a second digest, which runs off the engine's own turn, so a press stays quick
-// however long the owner's message. A changed text is digested again, so damage is still found.
-// The oldest are let go past FINGERPRINT_MEMO_CHARS.
-const fingerprints = new Map<string, string>()
-let fingerprintChars = 0
-async function fingerprint(text: string): Promise<string> {
-  const known = fingerprints.get(text)
-  if (known !== undefined) return known
-  const sha = await sha256(text)
-  fingerprints.set(text, sha)
-  fingerprintChars += text.length
-  for (const t of fingerprints.keys()) {
-    if (fingerprintChars <= FINGERPRINT_MEMO_CHARS) break
-    fingerprints.delete(t)
-    fingerprintChars -= t.length
-  }
-  return sha
-}
-// The sessions whose last save the store refused, and whether the files refused it too.
-const storeFull = new Map<string, { memoryOnly: boolean }>()
-
-// What the newest look found it could not do for an approval, by session (Task 7a and Task 7
-// fill it through `setLookGaps`); the row's lines read it beside the record.
-const lookGaps = new Map<string, ReaderGaps>()
-const rowCoverage = (rec: Rec, id: string): string[] => coverage(rec, { full: storeFull.get(id), gaps: lookGaps.get(id) })
-// A look's gaps, kept for its session and shown on the row at once.
-async function setLookGaps($: EngineInterface, id: string, gaps: ReaderGaps): Promise<void> {
-  lookGaps.set(id, gaps)
-  if (onScreen(id)) {
-    const rec = await loadRec($, id)
-    await update($, linesA, () => rowCoverage(rec, id))
-  }
-}
-// The record held, by session, while the store refuses it.
-const fullRecs = new Map<string, Rec>()
-// Each session's first load in this process, which reconciles the store with the session's files.
-const reconciled = new Map<string, Promise<void>>()
-
-// Every source reference the record holds: each owner message's parts, and each pending turn's.
-type RefAt = { id: string; ref: SourceRef; put: (r: SourceRef) => void }
-const PARTS = ['body', 'took', 'rejected', 'sent'] as const
-type Part = (typeof PARTS)[number]
-function refsOf(rec: Rec): RefAt[] {
-  const out: RefAt[] = []
-  for (const m of rec.owner) {
-    for (const part of PARTS) {
-      const ref = m.src?.[part]
-      if (ref !== undefined) out.push({ id: `${m.n}-${part}`, ref, put: r => (m.src = { ...m.src, [part]: r }) })
-    }
-  }
-  for (const p of rec.pending ?? []) {
-    if (p.src !== undefined) out.push({ id: `t-${p.turnId}`, ref: p.src, put: r => (p.src = r) })
-  }
-  return out
-}
-// A reference with nothing of its text, as the record keeps a file's or memory's.
-const refWithout = (r: SourceRef, where: SourceRef['where'], lost?: string): SourceRef => ({
-  chars: r.chars,
-  sha: r.sha,
-  where,
-  ...(lost === undefined ? {} : { lost }),
-})
-
-// The record's JSON without what every save changes, to tell whether a change changed it.
-const bareJson = (rec: Rec): string => {
-  const { at: _at, recRev: _rev, objRev: _obj, ...rest } = rec
-  return JSON.stringify(rest)
-}
-
-// The files the record's sources are saved in.
-async function filesOf($: EngineInterface, rec: Rec): Promise<string[]> {
-  const folder = await sourceFolder($, rec.id)
-  if (folder === null) return []
-  return refsOf(rec)
-    .filter(r => r.ref.where === 'file' && r.ref.sha !== '' && isSourceId(r.id))
-    .map(r => `${folder}/${r.id}.txt`)
-}
-
-async function readText($: EngineInterface, path: string): Promise<string | null> {
-  try {
-    const got = await $.fs.read(path)
-    return typeof got === 'string' ? got : null
-  } catch {
-    return null
-  }
-}
-
-// One file written; a write that fails or takes longer than SOURCE_WRITE_MS counts as failed.
-async function writeFile($: EngineInterface, path: string, text: string): Promise<boolean> {
-  const held: { timer?: { cancel: () => void } } = {}
-  const late = new Promise<boolean>(resolve => {
-    try {
-      held.timer = $.clock.after(SOURCE_WRITE_MS, () => resolve(false))
-    } catch {
-      // No timer: the write alone decides.
-    }
-  })
-  try {
-    return await Promise.race([$.fs.write(path, text).then(() => true, () => false), late])
-  } finally {
-    held.timer?.cancel()
-  }
-}
-
-// Removes files, or session folders, that `removablePath` allows, in one command; nothing else.
-async function removeFiles($: EngineInterface, paths: readonly string[], folders: boolean): Promise<void> {
-  const root = await rootOf($)
-  if (root === null) return
-  const ok = [...new Set(paths)].filter(p => removablePath(root, p) && p.slice(root.length + 1).includes('/') !== folders)
-  if (ok.length === 0) return
-  try {
-    await $.process.run(hostArgv(await hostOf($), ['rm', folders ? '-rf' : '-f', ...ok]), { timeoutMs: REMOVE_TIMEOUT_MS })
-  } catch {
-    // Left in place; the next save that drops them tries nothing more.
-  }
-}
-
-// Each source not yet in a file goes to its own file, written once: a file already there is
-// never written over. One that cannot be written is held in the record while the record's and
-// the store's budgets allow, else in memory.
-async function placeSources($: EngineInterface, sid: string, rec: Rec): Promise<void> {
-  const refs = refsOf(rec).filter(r => r.ref.lost === undefined && r.ref.where !== 'file')
-  if (refs.length === 0) return
-  const folder = await sourceFolder($, sid)
-  let canWrite = folder !== null
-  const unplaced: Array<{ at: RefAt; text: string }> = []
-  for (const at of refs) {
-    const key = `${sid}/${at.id}`
-    const text = at.ref.where === 'inline' ? at.ref.text : memTexts.get(key)
-    if (text === undefined) {
-      at.put(refWithout(at.ref, at.ref.where, at.ref.where === 'memory' ? LOST_RESTART : LOST_DAMAGED))
-      continue
-    }
-    const sha = at.ref.sha !== '' ? at.ref.sha : await fingerprint(text)
-    const ref: SourceRef = { ...at.ref, sha }
-    if (canWrite && folder !== null && isSourceId(at.id)) {
-      const path = `${folder}/${at.id}.txt`
-      // A file already there is never written over: its fingerprint is checked where it is read (`readRef`).
-      if (await $.fs.exists(path).catch(() => false)) {
-        at.put(refWithout(ref, 'file'))
-        memTexts.delete(key)
-        continue
-      }
-      if (await writeFile($, path, text)) {
-        at.put(refWithout(ref, 'file'))
-        memTexts.delete(key)
-        continue
-      }
-      canWrite = false
-    }
-    at.put(refWithout(ref, 'memory'))
-    memTexts.set(key, text)
-    unplaced.push({ at: { ...at, ref: refWithout(ref, 'memory') }, text })
-  }
-  if (unplaced.length === 0) return
-  const all = await $.store.get('sessions').catch(() => null)
-  let others = 0
-  if (typeof all === 'object' && all !== null) {
-    for (const [k, v] of Object.entries(all as Record<string, unknown>)) if (k !== sid && isRec(v)) others += inlineBytes(v)
-  }
-  let mine = inlineBytes(rec)
-  for (const { at, text } of unplaced) {
-    const cost = utf8Bytes(JSON.stringify(text))
-    if (mine + cost > INLINE_RECORD_BYTES || others + mine + cost > INLINE_STORE_BYTES) continue
-    at.put({ ...at.ref, where: 'inline', text })
-    memTexts.delete(`${sid}/${at.id}`)
-    mine += cost
-  }
-}
-
-// The bytes of JSON a record's inline texts take.
-const inlineBytes = (rec: Rec): number =>
-  refsOf(rec).reduce((a, r) => a + (r.ref.where === 'inline' && r.ref.text !== undefined ? utf8Bytes(JSON.stringify(r.ref.text)) : 0), 0)
-
-// A reference read for use: its text, from the record, memory or its file checked against the
-// fingerprint; or, when it cannot be read, why. Never saved: the record keeps no file's text.
-async function readRef($: EngineInterface, sid: string, id: string, ref: SourceRef): Promise<SourceRef> {
-  if (ref.lost !== undefined) return ref
-  if (ref.where === 'inline') return ref.text !== undefined ? ref : refWithout(ref, 'inline', LOST_DAMAGED)
-  if (ref.where === 'memory') {
-    const text = memTexts.get(`${sid}/${id}`)
-    return text !== undefined ? { ...ref, text } : refWithout(ref, 'memory', LOST_RESTART)
-  }
-  const folder = await sourceFolder($, sid)
-  const got = folder === null || !isSourceId(id) ? null : await readText($, `${folder}/${id}.txt`)
-  if (got !== null && ref.sha !== '' && (await fingerprint(got)) === ref.sha) return { ...ref, text: got }
-  return refWithout(ref, 'file', LOST_DAMAGED)
-}
-
-// Copies of messages with the named parts read for use, and the parts found lost by the reading.
-type Lost = { id: string; sha: string; lost: string }
-async function readable($: EngineInterface, sid: string, msgs: readonly OwnerMsg[], parts: readonly Part[]): Promise<{ msgs: OwnerMsg[]; lost: Lost[] }> {
-  const lost: Lost[] = []
-  const out: OwnerMsg[] = []
-  for (const m of msgs) {
-    if (m.src === undefined || !parts.some(p => m.src?.[p] !== undefined)) {
-      out.push(m)
-      continue
-    }
-    const src = { ...m.src }
-    for (const part of parts) {
-      const ref = src[part]
-      if (ref === undefined) continue
-      const got = await readRef($, sid, `${m.n}-${part}`, ref)
-      if (got.lost !== undefined && ref.lost === undefined) lost.push({ id: `${m.n}-${part}`, sha: ref.sha, lost: got.lost })
-      src[part] = got
-    }
-    out.push({ ...m, src })
-  }
-  return { msgs: out, lost }
-}
-
-// The parts found lost are marked so in the record, each only while it is the same source.
-async function markLost($: EngineInterface, sid: string, lost: readonly Lost[]): Promise<void> {
-  if (lost.length === 0) return
-  await changeRec($, sid, rec => {
-    for (const at of refsOf(rec)) {
-      const found = lost.find(l => l.id === at.id && l.sha === at.ref.sha)
-      if (found !== undefined && at.ref.lost === undefined) at.put(refWithout(at.ref, at.ref.where, found.lost))
-    }
-  })
-}
-
-// What a reader is given: the job's messages, each one's words as sent read back whole and each
-// approval's sources with them, the approved plans that fit its room (the Heads up from its
-// cursor), and the lines for what the record could not keep or save (for the briefing, and the
-// plans it cannot compare).
-async function memoryFor($: EngineInterface, sid: string, rec: Rec, reader: 'watch' | 'brief'): Promise<Memory> {
-  const base = memoryOf(rec)
-  const approvals = base.owner.filter(approvalOf)
-  const rest = base.owner.filter(m => !approvalOf(m))
-  const a = await readable($, sid, approvals, ['sent', 'body', 'took'])
-  const b = await readable($, sid, rest, ['sent'])
-  await markLost($, sid, [...a.lost, ...b.lost])
-  const owner = base.owner.map(m => (approvalOf(m) ? a.msgs[approvals.indexOf(m)] : b.msgs[rest.indexOf(m)]) ?? m)
-  const approved = reader === 'watch' ? readerParts(owner, WATCH_APPROVED_BUDGET, rec.readerAt?.watch ?? 0) : readerParts(owner, BRIEF_APPROVED_BUDGET)
-  // The briefing is told, among coverage's lines, of the plans it cannot compare, by the one path
-  // the row and the card take; what it finds itself goes on the card after it answers.
-  const gaps = reader === 'brief' ? readerGaps(approved, 'brief') : {}
-  return { ...base, owner, approved, lines: coverage(rec, { full: storeFull.get(sid), gaps }) }
-}
-
-// The store refused the record: its inline texts go to files, or memory when the files refuse
-// them. Whether any moved.
-async function moveInline($: EngineInterface, rec: Rec): Promise<boolean> {
-  const folder = await sourceFolder($, rec.id)
-  let canWrite = folder !== null
-  let moved = false
-  for (const at of refsOf(rec)) {
-    if (at.ref.where !== 'inline' || at.ref.text === undefined || at.ref.lost !== undefined) continue
-    const text = at.ref.text
-    const ref: SourceRef = { ...at.ref, sha: at.ref.sha !== '' ? at.ref.sha : await fingerprint(text) }
-    if (canWrite && folder !== null && isSourceId(at.id) && (await writeFile($, `${folder}/${at.id}.txt`, text))) {
-      at.put(refWithout(ref, 'file'))
-    } else {
-      canWrite = false
-      memTexts.set(`${rec.id}/${at.id}`, text)
-      at.put(refWithout(ref, 'memory'))
-    }
-    moved = true
-  }
-  return moved
-}
-
-// The whole record written to the session's files, in parts of at most FALLBACK_PART_BYTES,
-// then the list of them (`record.json`); the old list's other parts go. The record is held in
-// this process either way. True when the files hold it.
-async function saveToFiles($: EngineInterface, rec: Rec): Promise<boolean> {
-  const held = JSON.parse(JSON.stringify({ ...rec, at: Date.now() })) as Rec
-  fullRecs.set(rec.id, held)
-  const folder = await sourceFolder($, rec.id)
-  let ok = folder !== null
-  if (folder !== null) {
-    const list: Manifest['parts'] = []
-    for (const [k, text] of splitRecord(JSON.stringify(held)).entries()) {
-      const name = `record-${rec.recRev}-${k + 1}.json`
-      if (!(await writeFile($, `${folder}/${name}`, text))) {
-        ok = false
-        break
-      }
-      list.push({ name, bytes: utf8Bytes(text), sha: await fingerprint(text) })
-    }
-    const old = ok ? parseManifest(await readText($, `${folder}/record.json`)) : null
-    const manifest: Manifest = { recRev: rec.recRev, parts: list, why: STORE_FULL_WHY }
-    ok = ok && (await writeFile($, `${folder}/record.json`, JSON.stringify(manifest)))
-    if (ok && old !== null) await removeFiles($, old.parts.filter(p => !list.some(l => l.name === p.name)).map(p => `${folder}/${p.name}`), false)
-  }
-  storeFull.set(rec.id, { memoryOnly: !ok })
-  return ok
-}
-
-// The files of a lost copy of the record: its list and the parts it names.
-async function lostFilesOf($: EngineInterface, sid: string, lostRev: number): Promise<string[]> {
-  const folder = await sourceFolder($, sid)
-  if (folder === null) return []
-  const path = `${folder}/record-lost-${lostRev}.json`
-  const manifest = parseManifest(await readText($, path))
-  return [path, ...(manifest?.parts ?? []).map(p => `${folder}/${p.name}`)]
-}
-
-// Each part a list names, read with its fingerprint, or why it could not be.
-async function readParts($: EngineInterface, folder: string, manifest: Manifest): Promise<PartRead[]> {
-  const out: PartRead[] = []
-  for (const p of manifest.parts) {
-    const path = `${folder}/${p.name}`
-    const text = await readText($, path)
-    if (text !== null) out.push({ text, sha: await fingerprint(text) })
-    else out.push({ failed: (await $.fs.exists(path).catch(() => true)) ? 'unreadable' : 'missing' })
-    if (text === null) break
-  }
-  return out
-}
-
-function reconcileOnce($: EngineInterface, sid: string): Promise<void> {
-  let run = reconciled.get(sid)
-  if (run === undefined) {
-    run = reconcile($, sid).catch(() => undefined)
-    reconciled.set(sid, run)
-  }
-  return run
-}
-
-// A session's first load in this process. A copy of the record in its files newer than the
-// store's is taken up when every part reads back with its fingerprint; otherwise the store's
-// record stands with the loss marked and the copy kept as `record-lost-<rev>.json`. A copy at
-// or under the store's revision goes. A loss to anything but a fingerprint that did not match is
-// taken up at a later start while nothing changed since the mark. Texts held only in memory by
-// an earlier process are lost.
-async function reconcile($: EngineInterface, sid: string): Promise<void> {
-  let rec = await loadStored($, sid)
-  let changed = false
-  const folder = await sourceFolder($, sid)
-  if (folder !== null) {
-    const after = Math.max(0, ...rec.owner.map(m => m.n))
-    const listPath = `${folder}/record.json`
-    const text = (await $.fs.exists(listPath).catch(() => false)) ? await readText($, listPath) : null
-    const manifest = parseManifest(text)
-    const markLoss = async (mark: LossMark) => {
-      if (text !== null && (await writeFile($, `${folder}/record-lost-${mark.lostRev}.json`, text))) await removeFiles($, [listPath], false)
-      rec.lossMark = mark
-      rec.recRev = mark.lostRev + 1
-      changed = true
-    }
-    if (text !== null && manifest === null) {
-      await markLoss({ lostRev: rec.recRev + 1, keptRev: rec.recRev, after, why: LOST_DAMAGED })
-    } else if (manifest !== null && manifest.recRev <= rec.recRev) {
-      await removeFiles($, [listPath, ...manifest.parts.map(p => `${folder}/${p.name}`)], false)
-    } else if (manifest !== null) {
-      const got = pickRecord({ recRev: rec.recRev, after }, manifest, await readParts($, folder, manifest))
-      const taken = 'json' in got ? parsedRec(sid, got.json) : null
-      if (taken !== null) {
-        rec = taken
-        storeFull.set(sid, { memoryOnly: false })
-        fullRecs.set(sid, JSON.parse(JSON.stringify(rec)) as Rec)
-        changed = true
-      } else {
-        await markLoss('mark' in got ? got.mark : { lostRev: manifest.recRev, keptRev: rec.recRev, after, why: LOST_DAMAGED })
-      }
-    } else if (rec.lossMark !== undefined && !isMismatch(rec.lossMark.why) && rec.recRev === rec.lossMark.lostRev + 1) {
-      const mark = rec.lossMark
-      const lostPath = `${folder}/record-lost-${mark.lostRev}.json`
-      const lost = parseManifest(await readText($, lostPath))
-      const got = lost === null ? null : pickRecord({ recRev: mark.keptRev, after: mark.after }, lost, await readParts($, folder, lost))
-      const taken = got !== null && 'json' in got ? parsedRec(sid, got.json) : null
-      if (taken !== null && lost !== null) {
-        rec = taken
-        delete rec.lossMark
-        rec.recRev = mark.lostRev + 2
-        await removeFiles($, [lostPath, ...lost.parts.map(p => `${folder}/${p.name}`)], false)
-        changed = true
-      }
-    }
-  }
-  for (const at of refsOf(rec)) {
-    if (at.ref.where === 'memory' && at.ref.lost === undefined && !memTexts.has(`${sid}/${at.id}`)) {
-      at.put(refWithout(at.ref, 'memory', LOST_RESTART))
-      changed = true
-    }
-  }
-  if (changed) await saveRec($, rec)
-}
-
-// A record read back from the session's files, or null when it is not this session's record.
-function parsedRec(sid: string, json: string): Rec | null {
-  try {
-    const v = JSON.parse(json) as unknown
-    return isRec(v) && v.id === sid ? fromStored(sid, v) : null
-  } catch {
-    return null
   }
 }
 
@@ -929,37 +356,23 @@ function honest(proposed: Condition[], held: Condition[], his: readonly number[]
 // whole and keeps every held condition the writer let go without a message of
 // the owner's that says so; a new job closes the old objective into `past`.
 // True when it changed.
-function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number, rev?: number): boolean {
+function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number): boolean {
   if (a === null || a.kind === 'holds') return false
   const held = rec.objective
-  // A message of the owner's closes or drops a condition, or opens a new job, only when it is
-  // all theirs and read whole: never an approval, whose plan is the agent's, nor words that
-  // could not be read in full.
-  const byN = new Map(rec.owner.map(m => [m.n, m]))
-  const canClose = (n: number): boolean => {
-    const m = byN.get(n)
-    return m !== undefined && !approvalOf(m) && !wordsUnread(m)
-  }
-  const canOpen = (n: number): boolean => {
-    const m = byN.get(n)
-    return m !== undefined && m.kind !== 'plan' && canClose(n)
-  }
-  const cited = Number(a.cause.match(/#(\d+)/)?.[1] ?? Number.NaN)
-  const lets = [...a.dropped, ...a.parts.done.filter(c => c.state === 'closed').map(c => ({ text: c.text, by: Number(c.by.slice(1)) || null }))]
   if (held === null) {
     let his = hisFrom(rec, rec.jobStart).filter(n => n <= saw)
     // A session seeded from its transcript can hold more than one job, all recorded as one:
     // when the first write says a new job opened at a message of the owner's after the first,
     // the job starts there, and the earlier messages are no longer their messages on this
     // job.
-    const opened = a.isNewJob && canOpen(cited) ? cited : Number.NaN
+    const opened = a.isNewJob ? Number(a.cause.match(/#(\d+)/)?.[1] ?? Number.NaN) : Number.NaN
     if (his.includes(opened) && opened > Math.min(...his)) {
       rec.jobStart = opened
       his = his.filter(n => n >= opened)
     }
     rec.objective = {
       ...a.parts,
-      done: honest(a.parts.done, [], his.filter(canClose)),
+      done: honest(a.parts.done, [], his),
       openedAt: now,
       since: his.length > 0 ? Math.min(...his) : rec.jobStart,
       from: saw,
@@ -971,31 +384,17 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number, r
     delete rec.stale
     return true
   }
-  // An answer to a write whose objective changed while it ran (`rev`, the objective's revision
-  // when the write loaded it) adds and closes conditions only: the result, the purpose and the
-  // step stay as the newer write left them.
-  if (rev !== undefined && rev < rec.objRev) {
-    const fresh = hisFrom(rec, held.from + 1).filter(n => n <= saw)
-    const closers = fresh.filter(canClose)
-    const merged = mergeConditions(held.done, honest(a.parts.done, held.done, closers), a.dropped, closers)
-    rec.objective = { ...held, done: settleConditions(held.done, merged, lets, rec.owner), from: Math.max(held.from, saw) }
-    return true
-  }
   if (saw <= held.from) return false
   const fresh = hisFrom(rec, held.from + 1).filter(n => n <= saw)
   if (fresh.length === 0) return false
-  const closers = fresh.filter(canClose)
   const version = { at: now, cause: a.cause, text: objectiveText(held) }
-  // The message a new job opens at: the one the answer names when this write is the first to
-  // see it, else the first it sees.
-  const opening = fresh.includes(cited) ? cited : Math.min(...fresh)
-  if (a.isNewJob && canOpen(opening)) {
+  if (a.isNewJob) {
     const since = Math.min(...fresh)
     rec.past = [...rec.past, held.result].slice(-PAST_MAX)
     rec.jobStart = since
     rec.objective = {
       ...a.parts,
-      done: honest(a.parts.done, [], hisFrom(rec, since).filter(n => n <= saw && canClose(n))),
+      done: honest(a.parts.done, [], hisFrom(rec, since).filter(n => n <= saw)),
       openedAt: now,
       since,
       from: saw,
@@ -1013,7 +412,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number, r
     result: a.parts.result,
     purpose: a.parts.purpose,
     step: a.parts.step,
-    done: settleConditions(held.done, mergeConditions(held.done, honest(a.parts.done, held.done, closers), a.dropped, closers), lets, rec.owner),
+    done: mergeConditions(held.done, honest(a.parts.done, held.done, fresh), a.dropped, fresh),
     from: saw,
     movedAt: now,
     cause: a.cause,
@@ -1075,12 +474,9 @@ const writing = new Map<string, Writing>()
 // messages on the job, never the conversation, so nothing the agent says can
 // move what it writes. A request while one runs joins it, and a message or
 // note that joins is written after the write in hand. A load or a press asks
-// only for the first objective, a message or a note for a rebuild, and a retry
-// (a fresh start, or a turn's end, with a message waiting for a whole read or a
-// write that failed) for whatever is still to write. Never awaited by the hook
-// that starts it, so the agent is never slowed.
-type WriteCause = 'message' | 'note' | 'load' | 'press' | 'retry'
-async function rebuildObjective($: EngineInterface, sid: string, cause: WriteCause): Promise<void> {
+// only for the first objective, and a message or a note for a rebuild. Never
+// awaited by the prompt hook that starts it, so the agent is never slowed.
+async function rebuildObjective($: EngineInterface, sid: string, cause: 'message' | 'note' | 'load' | 'press'): Promise<void> {
   const running = writing.get(sid)
   if (running !== undefined) {
     if (cause === 'message' || cause === 'note') running.again = true
@@ -1094,45 +490,23 @@ async function rebuildObjective($: EngineInterface, sid: string, cause: WriteCau
   return entry.run
 }
 
-// The first message on the job waiting for a write that reads it whole.
-const waitingOf = (rec: Rec): number | undefined => jobMsgs(rec).find(m => m.pinned !== true && m.read?.state === 'waiting')?.n
-
 async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolean, entry: Writing): Promise<void> {
   // The last message number a write in this run was shown; a rerun with
   // nothing of the owner's past it makes no call.
   let shown = -1
-  // The last prompt whose answer landed: the same prompt again would answer the same.
-  let lastPrompt = ''
   for (;;) {
     entry.again = false
     const rec = await loadRec($, sid)
-    const newest = rec.counter
-    const waitingN = waitingOf(rec)
-    const due =
-      !(onlyFirst && rec.objective !== null) &&
-      (waitingN !== undefined || hisFrom(rec, Math.max(jobOf(rec), shown + 1)).length > 0)
-    let failed = false
-    if (!due) shown = Math.max(shown, newest)
+    const saw = rec.counter
+    const due = !(onlyFirst && rec.objective !== null) && hisFrom(rec, Math.max(jobOf(rec), shown + 1)).length > 0
     if (due) {
-      // The whole words of each message, what it answered or carried, and what an approval took,
-      // read from where they were saved; the approvals kept past the trim are not the writer's.
-      const { msgs, lost } = await readable($, sid, jobMsgs(rec).filter(m => m.pinned !== true), ['sent', 'body', 'took', 'rejected'])
-      await markLost($, sid, lost)
-      const memory = { objective: rec.objective, owner: msgs, past: rec.past, ...(waitingN === undefined ? {} : { whole: waitingN }) }
-      const showings = writerShowings(memory)
-      // The last message this write is shown: the one it reads whole, the last it listed before
-      // it stopped, or the newest.
-      const saw = waitingN ?? showings.stoppedAt ?? newest
-      const partial = waitingN !== undefined || showings.stoppedAt !== null
-      const prompt = objectivePrompt(memory)
-      if (prompt === lastPrompt) break
-      const rev = rec.objRev
-      let after = rec
-      let landed = false
+      shown = saw
       // Up to 1 + OBJECTIVE_RETRIES attempts over the same prompt: an empty or errored
       // reply, an answer that cannot be read and a "holds" with nothing held are tried
       // again at the highest effort; a call that threw or was cut short is not. Only a
       // write whose every attempt failed counts as failed, with the last cause.
+      const prompt = objectivePrompt({ objective: rec.objective, owner: jobMsgs(rec), past: rec.past })
+      let after = rec
       for (let attempt = 0; attempt <= OBJECTIVE_RETRIES; attempt++) {
         const retry = attempt > 0
         const result = await $.model
@@ -1147,7 +521,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
           .catch(() => null)
         let again = false
         let stale = false
-        after = await changeRec($, sid, async r => {
+        after = await changeRec($, sid, r => {
           if (result !== null) {
             r.objectiveCalls += 1
             r.objectiveTokens += tokensOf(result.usage)
@@ -1155,29 +529,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
           const answer = result !== null && result.isAnswered ? parseObjective(result.text) : null
           const none = answer !== null && answer.kind === 'holds' && r.objective === null
           if (answer !== null && !none) {
-            landed = true
-            delete r.failedWrite
-            // What the answer marked approved, and which messages it read whole; a mark or long
-            // words shown only in part sets the answer aside until they are read whole.
-            const marks = result !== null && result.isAnswered ? parseApproved(result.text) : []
-            const took = takeApprovals(r.owner, marks, showings.shows, waitingN, r.objectiveCalls)
-            for (const c of took.changes) {
-              const i = r.owner.findIndex(m => m.n === c.n)
-              const m = r.owner[i]
-              if (m === undefined) continue
-              const next: OwnerMsg = { ...m, read: c.read }
-              if (c.approved !== undefined) {
-                if (utf8Bytes(JSON.stringify(c.approved)) > TOOK_INLINE_BYTES) {
-                  next.approved = ''
-                  next.src = { ...next.src, took: await saveSource($, sid, `${m.n}-took`, c.approved) }
-                } else next.approved = c.approved
-              }
-              r.owner[i] = next
-            }
-            if (took.setAside) return r
-            if (answer.kind === 'holds') {
-              if (partial && r.objective !== null) r.objective = { ...r.objective, from: Math.max(r.objective.from, saw) }
-            } else takeObjective(r, answer, Date.now(), saw, rev)
+            takeObjective(r, answer, Date.now(), saw)
             return r
           }
           const cut = result !== null && !result.isAnswered && result.reason === 'aborted'
@@ -1186,7 +538,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
           // over the fresh prompt, so this write stops here and is not counted as failed.
           // Judged by number only: a request can join after this pass already loaded its
           // message.
-          if (again && r.owner.some(m => m.kind !== 'draft' && m.n > newest)) {
+          if (again && r.owner.some(m => m.kind !== 'draft' && m.n > saw)) {
             again = false
             stale = true
             return r
@@ -1194,15 +546,11 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
           if (!again) {
             r.objectiveFailed += 1
             r.objectiveWhy = none ? 'holds-with-none' : writeFailure(result)
-            r.failedWrite = { at: Date.now(), upTo: saw }
-            failed = true
           }
           return r
         })
         if (!again || stale) break
       }
-      if (landed) lastPrompt = prompt
-      if (landed || failed) shown = saw
       // The row shows what the record holds, whichever write put it there,
       // while its session is the one on screen.
       if (onScreen(sid)) await update($, readingA, () => after.objective)
@@ -1210,59 +558,45 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
     onlyFirst = false
     // A message of the owner's or a note that came in during the write is
     // written now: one whose request joined this run, or one saved after the
-    // write was shown the messages; so is what the write left, a message still
-    // to read whole or messages past where it stopped, unless it failed. The
-    // check and the release are one step, so a request that comes after it
-    // starts a run of its own.
+    // write was shown the messages. The check and the release are one step, so
+    // a request that comes after it starts a run of its own.
     const now = await loadRec($, sid)
-    const newer = now.owner.some(m => m.kind !== 'draft' && m.n > newest)
-    const left = !failed && (now.owner.some(m => m.kind !== 'draft' && m.n > shown) || waitingOf(now) !== undefined)
-    if (!entry.again && !newer && !left) {
+    if (!entry.again && !now.owner.some(m => m.kind !== 'draft' && m.n > saw)) {
       if (writing.get(sid) === entry) writing.delete(sid)
       return
     }
   }
-  if (writing.get(sid) === entry) writing.delete(sid)
 }
 
 async function setNow($: EngineInterface, patch: Partial<Now>): Promise<void> {
   await update($, nowA, n => ({ ...(n ?? IDLE), ...patch }))
 }
 
-// The readers read the session's record, never a fork: the rows `$.session.messages()` returns,
-// by one plain completion (recordPrompt) with the task. A row is labelled the owner's when its key
-// is one of their messages in the session's transcript (heldItems), and the session's when it is
-// not; when no transcript can be read, by NOT_TYPED alone. The job's approval is placed in the rows
-// (boundaryRow), its owner's messages read back whole first, and the rows from it on are read whole;
-// where it cannot be placed, or the record opens after it, the reader is told and the owner shown
-// (boundaryCover). With no rows there is nothing to read: the result says so as a fork's would, and
-// no model is called. A completion that throws reads as an API error, which the callers show.
-type Read = { result: ModelForkResult; gaps: ReaderGaps }
-const NOTHING_READ: ModelForkResult = {
-  isAnswered: false,
-  reason: 'nothing-to-fork',
-  usage: { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
-} as ModelForkResult
-async function readSession($: EngineInterface, sid: string, rec: Rec, task: (cover: string[]) => string): Promise<Read> {
+// One read of the conversation for the watch or the briefing: a fork of it. A fork has
+// nothing to fork before the first response of the process: in a session reopened with
+// --continue or --resume, after /clear, and through the whole first turn of a new session.
+// Then, only for a read the owner started (`fallback`: their press, and the look after their note),
+// the session's record is read instead, by one plain completion over the rows
+// `$.session.messages()` returns (recordPrompt), with the same task: a row is labelled the owner's
+// when its key is one of their messages in the session's transcript (heldItems), and the
+// session's when it is not; when no transcript can be read, by NOT_TYPED alone.
+// The watch's own looks, on a step and at a turn's end, skip quietly instead: a record
+// read on each of them would be paid on every look of every new session's first turn.
+// With no rows, or no fallback, the fork's answer stands, so the caller says there is
+// nothing to read yet or skips. A completion that throws reads as an API error, which the
+// callers already show. Either way the result has the fork's shape, so its spend is
+// counted as a fork's.
+async function readSession($: EngineInterface, sid: string, prompt: string, fallback: boolean): Promise<ModelForkResult> {
+  const forked = await $.model.fork({ prompt })
+  if (!fallback || forked.isAnswered || forked.reason !== 'nothing-to-fork') return forked
   const rows = await $.session.messages().catch(() => [])
-  if (rows.length === 0) return { result: NOTHING_READ, gaps: {} }
+  if (rows.length === 0) return forked
   const items = await heldItems($, sid, rows)
-  const human = items === null ? undefined : new Set(items.map(i => i.key))
-  const sent = await readable($, sid, jobMsgs(rec), ['sent'])
-  // A note approving alone is placed by the turn it answered, so its body is read back too.
-  const ap = sent.msgs.find(approvalOf)
-  const body = ap?.kind === 'note' ? await readable($, sid, [ap], ['body']) : { msgs: [], lost: [] }
-  const msgs = sent.msgs.map(m => (m === ap ? (body.msgs[0] ?? m) : m))
-  await markLost($, sid, [...sent.lost, ...body.lost])
-  const b = boundaryRow(rows, msgs)
-  const from = b.outcome === 'none' ? undefined : b.from
-  const opensAfter = b.outcome === 'established' && recordText(rows, RECORD_BUDGET, human, from).opensAfter
-  const cover = boundaryCover(b, opensAfter, b.outcome === 'none' ? undefined : msgs.find(m => m.n === b.n))
-  const result = await $.model
+  return $.model
     .complete({
       model: OBJECTIVE_MODEL,
       system: RECORD_SYSTEM,
-      prompt: recordPrompt(rows, task(cover.told), human, from),
+      prompt: recordPrompt(rows, prompt, items === null ? undefined : new Set(items.map(i => i.key))),
       maxTokens: RECORD_MAX_TOKENS,
       effort: 'high',
       timeoutMs: RECORD_TIMEOUT_MS,
@@ -1276,7 +610,6 @@ async function readSession($: EngineInterface, sid: string, rec: Rec, task: (cov
         usage: { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
       }),
     )
-  return { result: result as ModelForkResult, gaps: cover.gaps }
 }
 
 // One look by the watch: the same cached copy of the conversation the agent
@@ -1291,30 +624,20 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
     })
     return
   }
-  const memory = { ...(await memoryFor($, sid, rec, 'watch')), context: await contextOf($) }
-  const got = await readSession($, sid, rec, cover => watchPrompt({ ...memory, cover }, reason))
-  // Nothing recorded yet: no model was called, and there is nothing to count.
-  if (got.result === NOTHING_READ) return
-  const result = got.result
-  const fill = memory.approved
-  const parsed = result.isAnswered ? parseWatch(result.text) : null
-  // What this look could not do for an approval goes to the row through coverage, the one path.
-  await setLookGaps($, sid, joinGaps(got.gaps, fill === undefined ? {} : readerGaps(fill, 'watch'), notAssessedGaps(parsed?.notAssessed ?? [])))
+  // Only the look after the owner's note falls back to the record when there is nothing to fork.
+  const result = await readSession($, sid, watchPrompt({ ...memoryOf(rec), context: await contextOf($) }, reason), reason === 'note')
   const usage = 'usage' in result ? result.usage : null
   await changeRec($, sid, async after => {
     after.calls += 1
     after.tokens += tokensOf(usage)
     after.cached += cachedOf(usage)
-    if (!result.isAnswered || parsed === null) return
-    // An answered look moves the cursor, so the next one shows the plans after these.
-    if (fill?.cursor !== undefined) after.readerAt = { watch: fill.cursor }
-    const answer = parsed
+    if (!result.isAnswered) return
+    const answer = parseWatch(result.text)
     if (applyMarks(after, answer.shown, answer.closed) && onScreen(sid)) await update($, readingA, () => after.objective)
     const view = await read($, viewA)
-    const said = headsUp(answer, after.seen, fill?.blocks ?? [])
-    if (said !== null && view === 'row' && onScreen(sid) && ![...after.seen].some(s => same(s, said.line))) {
-      after.seen = [...after.seen, said.line].slice(-SEEN_MAX)
-      const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId }
+    if (answer.flag !== null && view === 'row' && onScreen(sid) && ![...after.seen].some(s => same(s, answer.flag ?? ''))) {
+      after.seen = [...after.seen, answer.flag].slice(-SEEN_MAX)
+      const note: Note = { line: answer.flag, why: answer.why, shownAt: Date.now(), turnId }
       await update($, noteA, () => note)
       await update($, viewA, () => 'note')
     }
@@ -1339,20 +662,10 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     // One read of the conversation: its spend counted, and when it answered,
     // its marks applied and its verdict through the gate, against the
     // conditions still open after them.
-    // What this briefing's own read could not do for an approval, shown on the card by coverage.
-    let gaps: ReaderGaps = {}
     const ask = async (extra: string) => {
       const rec = await loadRec($, sid)
-      const memory = { ...(await memoryFor($, sid, rec, 'brief')), context }
-      const got = await readSession($, sid, rec, cover => {
-        const prompt = briefPrompt({ ...memory, cover })
-        return extra === '' ? prompt : `${prompt}\n\n${extra}`
-      })
-      const result = got.result
-      // The plans this briefing could not compare, and the steps it could not assess, go on the card.
-      const plans = memory.approved === undefined ? {} : readerGaps(memory.approved, 'brief')
-      const unassessed = result !== NOTHING_READ && result.isAnswered ? notAssessedGaps(parseBrief(result.text).notAssessed ?? []) : {}
-      if (result !== NOTHING_READ) gaps = joinGaps(got.gaps, plans, unassessed)
+      const prompt = briefPrompt({ ...memoryOf(rec), context })
+      const result = await readSession($, sid, extra === '' ? prompt : `${prompt}\n\n${extra}`, true)
       const usage = 'usage' in result ? result.usage : null
       return changeRec($, sid, async after => {
         after.calls += 1
@@ -1409,7 +722,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
         .complete({
           model: OBJECTIVE_MODEL,
           system: OWN_WORDS_SYSTEM,
-          prompt: ownWordsPrompt({ ...(await memoryFor($, sid, rec, 'brief')), context }, open, taken.answer),
+          prompt: ownWordsPrompt({ ...memoryOf(rec), context }, open, taken.answer),
           maxTokens: OWN_WORDS_MAX_TOKENS,
           effort: 'high',
           timeoutMs: OWN_WORDS_TIMEOUT_MS,
@@ -1432,9 +745,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       // No usable message from the last read or the own-words call: one read 1 kept stands before the list.
       taken = { ...taken, answer: earlierMessage(taken.answer, taken.replaced, ownTaken, first) }
     }
-    // While the rep could not check, keep or save something, the card says so first and never
-    // stops. The briefing's own gaps (Task 7) go in `gaps`; the Heads up's too-long line never does.
-    const a = withRecordLines(taken.answer, coverage(await loadRec($, sid), { full: storeFull.get(sid), gaps }))
+    const a = taken.answer
     const brief = await changeRec($, sid, after => {
       const brief: Brief = {
         result: after.objective === null ? '' : firstSentence(objectiveText(after.objective)),
@@ -1840,184 +1151,18 @@ async function putMessage($: EngineInterface, text: string): Promise<void> {
   $.ui.toast('The message is in your prompt box. Enter sends it; nothing is sent until you do.')
 }
 
-// Records one owner message with the next number and the end of what the agent said before it
-// (`prior`, the body's end). The owner's messages and notes are kept to the larger cut, since
-// the writer reads nothing else; a draft of the rep's to the smaller. `more` carries the body's
-// spans, why it is incomplete, and the saved sources.
-// A message of the job the trim drops is counted in `uncovered` when it had a coverage line or was
-// an approval the trim could not keep (`trimCounted`), the last 10 by number.
-function pushOwner(rec: Rec, kind: OwnerKind, text: string, prior: string, more: Partial<OwnerMsg> = {}): void {
+// The agent's last answer, the "prior" of the owner's next message.
+let lastAnswer = ''
+
+// Records one owner message with the next number and the end of the agent's
+// last answer. The owner's messages and notes are kept to the larger cut,
+// since the writer reads nothing else; a draft of the rep's to the smaller.
+function pushOwner(rec: Rec, kind: OwnerKind, text: string, prior: string = lastAnswer): void {
   const cut = kind === 'draft' ? OWNER_CUT : HIS_CUT
-  const { list, uncovered } = trimCounted([...rec.owner, { n: ++rec.counter, kind, text: fit(text, cut), prior: fitTail(prior, PRIOR_CUT), ...more }], jobOf(rec), rec.uncovered)
-  rec.owner = list
-  if (uncovered === undefined) delete rec.uncovered
-  else rec.uncovered = uncovered
-}
-
-// The turns the owner answers, captured from the stream (docs/reference.md, "The turn the owner
-// answered"). A main-loop turn's text chunks are kept as they pass up to the screen, by block;
-// the turn's text is saved when it ends and listed in the record's `pending`; the owner's next
-// message takes every pending turn that ended before it, and what a turn he typed into had
-// streamed, as its body.
-type TurnLive = {
-  turnId: string
-  by: TurnBy
-  // A main-loop turn.start for this turn was heard.
-  sawStart: boolean
-  // The step index expected next.
-  nextIndex: number
-  // The finished steps' blocks, in order.
-  blocks: string[]
-  // The running step's text by block index.
-  stepBlocks: Map<number, string>
-  // Characters of the turn's text already given to a message typed into it.
-  taken: number
-  // Why the text is not the whole turn.
-  incomplete?: string
-  // Characters kept so far, checked against TURN_TEXT_MAX.
-  chars: number
-}
-const live = new Map<string, TurnLive>()
-// How the last submit came: its origin's kind, read by the next turn.start for how the turn began.
-let lastOrigin: { kind: string } | null = null
-// The last turn-end save; a message's body waits for it.
-let saving: Promise<void> = Promise.resolve()
-// The turns this module saw end, added the moment each ended.
-const completedHere = new Set<string>()
-
-const newTurn = (turnId: string, by: TurnBy, sawStart: boolean, nextIndex: number, incomplete?: string): TurnLive => ({
-  turnId,
-  by,
-  sawStart,
-  nextIndex,
-  blocks: [],
-  stepBlocks: new Map(),
-  taken: 0,
-  chars: 0,
-  ...(incomplete === undefined ? {} : { incomplete }),
-})
-
-// One text chunk kept; past TURN_TEXT_MAX nothing more is, and the turn is incomplete.
-function addText(entry: TurnLive, index: number, text: string): void {
-  if (entry.chars > TURN_TEXT_MAX) return
-  if (entry.chars + text.length > TURN_TEXT_MAX) {
-    entry.incomplete ??= 'longer than the rep keeps'
-    entry.chars = TURN_TEXT_MAX + 1
-    return
-  }
-  entry.chars += text.length
-  entry.stepBlocks.set(index, (entry.stepBlocks.get(index) ?? '') + text)
-}
-
-// A step ended, finished or not: its blocks, in block order, join the turn's.
-function closeStep(entry: TurnLive, index: number): void {
-  entry.blocks.push(...[...entry.stepBlocks.entries()].sort((a, b) => a[0] - b[0]).map(([, t]) => t))
-  entry.stepBlocks.clear()
-  entry.nextIndex = index + 1
-}
-
-// A text saved for the record, with its fingerprint: held inline until the change that records
-// it puts it in its own file (`placeSources`); one over SOURCE_MAX is not kept, and says so.
-async function saveSource(_$: EngineInterface, _sid: string, _id: string, text: string): Promise<SourceRef> {
-  if (text.length > SOURCE_MAX) return { chars: text.length, sha: '', where: 'file', lost: lostTooLong(text.length) }
-  return { chars: text.length, sha: await fingerprint(text), where: 'inline', text }
-}
-
-// What a message of the owner's answers, fixed the moment it arrives: the turns seen to end
-// before it, and what the turn it was typed into had streamed, which that turn then gives no more.
-type Snap = { answered: Set<string>; cut: TurnCut | null }
-function snapshot(turnId: string | undefined): Snap {
-  const answered = new Set(completedHere)
-  if (turnId === undefined) return { answered, cut: null }
-  const entry = live.get(turnId)
-  if (entry === undefined) {
-    if (completedHere.has(turnId)) return { answered, cut: null }
-    return { answered, cut: { by: 'other', text: '', incomplete: 'the turn running when the owner typed was not watched from its start' } }
-  }
-  const all = runningText(entry)
-  const cut: TurnCut = { by: entry.by, text: restOf(all, entry.taken), ...(entry.incomplete === undefined ? {} : { incomplete: entry.incomplete }) }
-  entry.taken = all.length
-  return { answered, cut }
-}
-
-// Inside the change that records the message: the body taken from the record's pending turns,
-// which leave it, and the count of turns let go starts again. Each turn's text is read from where
-// it was saved; one that cannot be read leaves the body incomplete, with why.
-async function takeBody($: EngineInterface, sid: string, rec: Rec, snap: Snap): Promise<Body> {
-  const pending = rec.pending ?? []
-  const read: PendingTurn[] = []
-  for (const p of pending) read.push(p.src === undefined ? p : { ...p, src: await readRef($, sid, `t-${p.turnId}`, p.src) })
-  const body = bodyOf(read, snap.answered, completedHere, snap.cut, rec.pendingDropped ?? 0)
-  const used = new Set(body.used)
-  const left = pending.filter(p => !used.has(p.turnId))
-  if (left.length > 0) rec.pending = left
-  else delete rec.pending
-  delete rec.pendingDropped
-  return body
-}
-
-// The body's fields on the message that is numbered next: none when it is empty and whole.
-async function bodyFields($: EngineInterface, sid: string, rec: Rec, body: Body): Promise<Partial<OwnerMsg>> {
-  if (body.text === '' && body.incomplete === undefined) return {}
-  const src = body.text === '' ? {} : { src: { body: await saveSource($, sid, `${rec.counter + 1}-body`, body.text) } }
-  return { turns: body.turns, ...(body.incomplete === undefined ? {} : { incomplete: body.incomplete }), ...src }
-}
-
-// The whole message as sent, kept on the part numbered next when its stored text is not all of it.
-async function withSent($: EngineInterface, sid: string, rec: Rec, more: Partial<OwnerMsg>, sent: string | null): Promise<Partial<OwnerMsg>> {
-  if (sent === null) return more
-  return { ...more, src: { ...more.src, sent: await saveSource($, sid, `${rec.counter + 1}-sent`, sent) } }
-}
-
-// A message that begins with a draft of the rep's: the draft, numbered first, and his words after
-// it, if any, numbered next and naming the draft. When he added words, both keep the whole message
-// as sent, each in its own saved copy, so the writer reads all of it and a mark on the draft moves
-// to his words (`takeApprovals`); a draft sent alone keeps nothing more. `his` gives his part's
-// other fields, built once the draft is numbered.
-async function pushDraft(
-  $: EngineInterface,
-  sid: string,
-  rec: Rec,
-  split: { draft: string; his: string },
-  prior: string,
-  whole: string,
-  his: () => Promise<Partial<OwnerMsg>>,
-): Promise<void> {
-  const added = split.his !== ''
-  pushOwner(rec, 'draft', split.draft, prior, added ? await withSent($, sid, rec, {}, whole) : {})
-  if (!added) return
-  const draft = rec.counter
-  pushOwner(rec, 'his', split.his, prior, await withSent($, sid, rec, { ...(await his()), withDraft: draft }, whole))
-}
-
-// A turn ended: its text, after what a message typed into it took, saved and listed as pending.
-function saveTurn($: EngineInterface, turnId: string, isAborted: boolean): void {
-  completedHere.add(turnId)
-  const entry = live.get(turnId)
-  live.delete(turnId)
-  const text = entry === undefined ? '' : restOf(runningText(entry), entry.taken)
-  const by: TurnBy = entry?.by ?? 'other'
-  const incomplete = entry === undefined ? 'the rep saw none of this turn' : entry.incomplete
-  const save = (async () => {
-    const id = await sessionId($)
-    const src = text === '' ? undefined : await saveSource($, id, `t-${turnId}`, text)
-    const turn: PendingTurn = {
-      turnId,
-      by,
-      ...(src === undefined ? {} : { src }),
-      ...(incomplete === undefined ? {} : { incomplete }),
-      ...(isAborted ? { note: 'interrupted' as const } : {}),
-    }
-    await changeRec($, id, rec => {
-      const pending = [...(rec.pending ?? []), turn]
-      while (pending.length > PENDING_MAX) {
-        pending.shift()
-        rec.pendingDropped = (rec.pendingDropped ?? 0) + 1
-      }
-      rec.pending = pending
-    })
-  })()
-  saving = Promise.all([saving, save.catch(() => undefined)]).then(() => undefined)
+  rec.owner = trimOwner(
+    [...rec.owner, { n: ++rec.counter, kind, text: fit(text, cut), prior: fitTail(prior, PRIOR_CUT) }],
+    jobOf(rec),
+  )
 }
 
 // Where Claude Code saves each session's transcript, by session id, as the classic hooks
@@ -2165,20 +1310,17 @@ async function seedOnce($: EngineInterface, sid: string): Promise<boolean> {
   const items = await heldItems($, sid, rows)
   if (items === null) return false
   const typed = typedFromItems(items, rows)
-  const screens = screenFromRows(rows as readonly RecordRow[])
-  if (typed.length === 0 && screens.length === 0) return false
+  if (typed.length === 0) return false
   const others = await storedDrafts($)
-  return changeRec($, sid, async rec => {
+  return changeRec($, sid, rec => {
     if (has(rec)) return false
-    for (const t of seedOrder(typed, screens)) {
-      if ('seen' in t) {
-        await storeScreen($, sid, rec, t.seen, t.toolUseId, { readBack: true })
-        continue
-      }
+    for (const t of typed) {
       const split = draftSplitAny(t.text, [...rec.drafts, rec.lastBrief?.message ?? '', ...others])
-      const fields = async () => bodyFields($, sid, rec, seededBody(t))
-      if (split === null) pushOwner(rec, 'his', t.text, t.prior, await withSent($, sid, rec, await fields(), t.text.length > HIS_CUT ? t.text : null))
-      else await pushDraft($, sid, rec, split, t.prior, t.text, fields)
+      if (split === null) pushOwner(rec, 'his', t.text, t.prior)
+      else {
+        pushOwner(rec, 'draft', split.draft, t.prior)
+        if (split.his !== '') pushOwner(rec, 'his', split.his, t.prior)
+      }
     }
     return has(rec)
   })
@@ -2186,40 +1328,8 @@ async function seedOnce($: EngineInterface, sid: string): Promise<boolean> {
 
 // A note to the rep, typed behind the prefix: recorded as the owner's, marked
 // as said to the rep, and read at once. The agent never sees it.
-// Alone, it takes the body the snapshot fixed; after a prompt, the prompt took it and the note
-// keeps the same `prior`.
-async function takeNote($: EngineInterface, sid: string, note: string, from: { snap: Snap } | { prior: string }): Promise<void> {
-  if ('snap' in from) await saving
-  await changeRec($, sid, async rec => {
-    const body = 'snap' in from ? await takeBody($, sid, rec, from.snap) : null
-    const more = body === null ? {} : await bodyFields($, sid, rec, body)
-    pushOwner(rec, 'note', note, body?.text ?? ('prior' in from ? from.prior : ''), await withSent($, sid, rec, more, note.length > HIS_CUT ? note : null))
-  })
-}
-
-// The plan screen's answer, stored as the owner's and read at once (docs/reference.md, "The plan
-// screen"): an accepted plan as approved by code, saved whole; a plan turned down, the owner's note
-// with that plan saved beside it, so its words can be read and none of it approved.
-async function takePlanScreen($: EngineInterface, e: unknown, result: unknown): Promise<void> {
-  const seen = planScreen(e, result)
-  if (seen === null) return
-  const given = (e as { tool_use_id?: unknown }).tool_use_id
-  const sid = await sessionId($)
-  await changeRec($, sid, rec => storeScreen($, sid, rec, seen, typeof given === 'string' ? given : undefined, {}))
-  rebuildObjective($, sid, 'message').catch(() => undefined)
-}
-
-// One answer of the plan screen's, seen as it happened or read back from the rows (`more`).
-async function storeScreen($: EngineInterface, sid: string, rec: Rec, seen: NonNullable<PlanScreen>, id: string | undefined, more: Partial<OwnerMsg>): Promise<void> {
-  const n = rec.counter + 1
-  const toolUseId = id === undefined ? {} : { toolUseId: id }
-  if (seen.kind === 'accepted') {
-    const body = await saveSource($, sid, `${n}-body`, seen.plan)
-    pushOwner(rec, 'plan', fit(seen.plan, PRIOR_CUT), '', { approved: 'all', screen: seen.edited ? 'edited' : 'accepted', src: { body }, ...toolUseId, ...more })
-    return
-  }
-  const src = seen.plan === '' ? {} : { src: { rejected: await saveSource($, sid, `${n}-rejected`, seen.plan) } }
-  pushOwner(rec, 'his', seen.note, '', await withSent($, sid, rec, { screen: 'rejected', ...src, ...toolUseId, ...more }, seen.note.length > HIS_CUT ? seen.note : null))
+async function takeNote($: EngineInterface, sid: string, note: string): Promise<void> {
+  await changeRec($, sid, rec => pushOwner(rec, 'note', note))
 }
 
 // "Tell the rep": the prefix goes into the owner's own prompt box, the owner
@@ -2313,13 +1423,10 @@ const onScreen = (id: string): boolean => !ended && id === currentId
 async function enterSession($: EngineInterface, id: string): Promise<void> {
   const rec = await loadRec($, id)
   if (onScreen(id)) await update($, readingA, () => rec.objective)
-  if (onScreen(id)) await update($, linesA, () => rowCoverage(rec, id))
   seedOwner($, id)
     .then(seeded => (seeded ? rebuildObjective($, id, 'load') : undefined))
     .catch(() => undefined)
-  // A message left waiting for a whole read, or a write that failed, is written again now.
-  if (waitingOf(rec) !== undefined || rec.failedWrite !== undefined) rebuildObjective($, id, 'retry').catch(() => undefined)
-  else if (rec.objective === null && hisFrom(rec, jobOf(rec)).length > 0) {
+  if (rec.objective === null && hisFrom(rec, jobOf(rec)).length > 0) {
     rebuildObjective($, id, 'load').catch(() => undefined)
   }
 }
@@ -2328,17 +1435,13 @@ async function enterSession($: EngineInterface, id: string): Promise<void> {
 // is the ended session's, so the next one starts from nothing of it.
 async function leaveSession($: EngineInterface): Promise<void> {
   ended = true
-  live.clear()
-  lastOrigin = null
-  saving = Promise.resolve()
-  completedHere.clear()
+  lastAnswer = ''
   lastInstant = null
   lastOther = ''
   await update($, readingA, () => null)
   await update($, briefA, () => null)
   await update($, noteA, () => null)
   await update($, helpersA, () => [])
-  await update($, linesA, () => [])
   await update($, nowA, () => IDLE)
   await update($, viewA, () => 'row')
 }
@@ -2374,10 +1477,7 @@ export const register: Register = on => {
   on('prompt.submit', async ($, e, next) => {
     // The engine stamps the origin; the test kit's own submit carries none.
     const kind = e.origin?.kind ?? 'composer'
-    lastOrigin = { kind }
     if (kind === 'composer' || kind === 'bridge') {
-      // What this message answers, fixed now, before anything is awaited.
-      const snap = snapshot(e.turnId)
       // A note to the rep, alone or typed after a prompt to the agent. A slash
       // command's line is the command's: the engine applies no rewrite to it, so
       // a prefix in its arguments is never split off as a note.
@@ -2397,7 +1497,7 @@ export const register: Register = on => {
           const id = await sessionId($)
           // The owner's messages read from the session first, so the note is numbered after them.
           await seedOwner($, id).catch(() => false)
-          await takeNote($, id, note, { snap })
+          await takeNote($, id, note)
           // The note is the owner's and can move the objective: the writer reads it first.
           rebuildObjective($, id, 'note').catch(() => undefined)
           // A dropped prompt stays in the box for editing; a note the rep has
@@ -2425,11 +1525,7 @@ export const register: Register = on => {
         // after them.
         const seeded = await seedOwner($, id).catch(() => false)
         const view = await read($, viewA)
-        // The turns this message answers are saved first.
-        await saving
-        const { rec, split, isHis, prior } = await changeRec($, id, async rec => {
-          // The body: every turn it answers, whole. A draft sent unchanged answered them too, and keeps none.
-          const body = await takeBody($, id, rec, snap)
+        const { rec, split, isHis } = await changeRec($, id, async rec => {
           // A message the rep drafted and the owner sent is recorded as the rep's
           // words, marked, never as the owner's: the model must not grade against a job
           // the rep wrote. It is matched against the last few cards' messages as
@@ -2437,12 +1533,10 @@ export const register: Register = on => {
           // after the draft is their own message, numbered after it.
           const split = draftSplitAny(text, [...rec.drafts, rec.lastBrief?.message ?? ''])
           const isHis = split === null || split.his !== ''
-          if (split === null) {
-            // The whole as sent, when the stored text is not all of it: cut, or split from a note.
-            const sent = noted !== null ? e.text : text.length > HIS_CUT ? text : null
-            pushOwner(rec, 'his', text, body.text, await withSent($, id, rec, await bodyFields($, id, rec, body), sent))
-          } else {
-            await pushDraft($, id, rec, split, body.text, noted !== null ? e.text : text, async () => bodyFields($, id, rec, body))
+          if (split === null) pushOwner(rec, 'his', text)
+          else {
+            pushOwner(rec, 'draft', split.draft)
+            if (split.his !== '') pushOwner(rec, 'his', split.his)
             rec.lastSent = { text: split.draft, at: Date.now() }
             // A draft is the rep's words: it moves the step it asks for and nothing else.
             if (rec.objective !== null) rec.objective = { ...rec.objective, step: firstSentence(split.draft) }
@@ -2457,11 +1551,11 @@ export const register: Register = on => {
               await clearNote($)
             }
           }
-          return { rec, split, isHis, prior: body.text }
+          return { rec, split, isHis }
         })
         if (split !== null && onScreen(id)) await update($, readingA, () => rec.objective)
         // The note is numbered after the prompt it was typed behind.
-        if (note !== '') await takeNote($, id, note, { prior })
+        if (note !== '') await takeNote($, id, note)
         // A message of the owner's can move the objective: the writer reads it, never the agent's words.
         if (isHis || note !== '' || seeded) rebuildObjective($, id, note !== '' ? 'note' : 'message').catch(() => undefined)
         if (note !== '') {
@@ -2480,21 +1574,6 @@ export const register: Register = on => {
   })
 
   on('turn.start', async ($, e, next) => {
-    if (e.agentId === undefined) {
-      // How the turn began: a background task finishing, the agent going on by itself, the owner, or else.
-      const origin = lastOrigin?.kind
-      const text: string = typeof e.text === 'string' ? e.text : ''
-      const by: TurnBy =
-        origin === 'task-notification' || text.trimStart().startsWith('<task-notification>')
-          ? 'notification'
-          : text === ''
-            ? 'continuation'
-            : origin === 'composer' || origin === 'bridge'
-              ? 'owner'
-              : 'other'
-      lastOrigin = null
-      live.set(e.turnId, newTurn(e.turnId, by, true, 0))
-    }
     lastDoing = 'thinking'
     await setNow($, { isWorking: true, doing: 'thinking', mark: '' }).catch(() => undefined)
     return next(e)
@@ -2514,10 +1593,7 @@ export const register: Register = on => {
       // Drawing is best effort.
     }
     try {
-      const result = await next(e)
-      // What the plan screen answered is stored after the call; a thrown call stores nothing.
-      if (tool === 'ExitPlanMode') await takePlanScreen($, e, result).catch(() => undefined)
-      return result
+      return await next(e)
     } finally {
       if (waits) {
         lastDoing = 'working'
@@ -2538,12 +1614,6 @@ export const register: Register = on => {
 
   on('turn.step', async function* ($, e, next) {
     if (e.agentId !== undefined) return yield* next(e)
-    let entry = live.get(e.turnId)
-    if (entry === undefined) {
-      entry = newTurn(e.turnId, 'other', false, e.index, 'the rep did not see this turn from its start')
-      live.set(e.turnId, entry)
-    }
-    if (e.index !== entry.nextIndex) entry.incomplete ??= 'a step of this turn was missed'
     if (e.index > 0 && e.index % CHECK_EVERY === 0 && !inFlight.has('look')) {
       inFlight.add('look')
       sessionId($)
@@ -2551,15 +1621,7 @@ export const register: Register = on => {
         .catch(() => undefined)
         .finally(() => inFlight.delete('look'))
     }
-    // The step's stream passes up as it is; its text chunks are kept on the way.
-    const turn = entry
-    try {
-      return yield* tapStep(next(e), c => {
-        if (c.kind === 'text') addText(turn, c.index, c.text)
-      })
-    } finally {
-      closeStep(turn, e.index)
-    }
+    return yield* next(e)
   })
 
   on('turn.complete', async ($, e, next) => {
@@ -2571,8 +1633,7 @@ export const register: Register = on => {
       )
       return next(e)
     }
-    // The turn's text saved first, before anything is awaited, so a message sent after this knows it ended.
-    saveTurn($, e.turnId, e.isAborted)
+    lastAnswer = e.answer
     const asking = /\?\s*$/.test(e.answer.trim())
     const doing = e.isAborted ? 'stopped by you' : asking ? 'asking you' : 'stopped, waiting on you'
     lastDoing = doing
@@ -2586,12 +1647,6 @@ export const register: Register = on => {
         .catch(() => undefined)
         .finally(() => inFlight.delete('look'))
     }
-    // A message still waiting for a whole read is tried again at each turn's end.
-    sessionId($)
-      .then(async id => {
-        if (waitingOf(await loadRec($, id)) !== undefined) await rebuildObjective($, id, 'retry')
-      })
-      .catch(() => undefined)
     return next(e)
   })
 
@@ -2612,7 +1667,6 @@ export const register: Register = on => {
     const now = (await read($, nowA)) ?? IDLE
     const note = await read($, noteA)
     const brief = await read($, briefA)
-    const lines = (await read($, linesA)) ?? []
 
     // The band is one strip shared with every other mod, "You should know"
     // among them, and this mod draws first. Whatever is beneath is kept under
@@ -2683,13 +1737,6 @@ export const register: Register = on => {
     // and the objective whole at the card's end when the rows allow.
     const placeholder = 'working out the result you want from your messages…'
     const head = lead(headGlyph, headColor, 'Owner rep', reading?.result ?? placeholder)
-    // The first thing the record could not keep or save, under the row's head.
-    const recordLine =
-      lines[0] === undefined ? undefined : (
-        <Box paddingLeft={2} width={w(cols)}>
-          <Text wrap="wrap">{lines[0]}</Text>
-        </Box>
-      )
 
     if (view === 'note' && note !== null && !hasBeneath) {
       const clear = () => {
@@ -2715,7 +1762,6 @@ export const register: Register = on => {
             <Button key="later" plain hotkey="0" label="Later" onPress={clear} />,
           )}
           {head}
-          {recordLine}
           {choices(statusText, <Button key="rep" plain label="Brief me" onPress={onPress} />, <Button key="tell" plain label="Tell the rep" onPress={tell} />)}
           {beneath}
         </Box>
@@ -2781,7 +1827,7 @@ export const register: Register = on => {
               {shown.leftOut.map((item, i) => (
                 <Text key={`left-${i}`} wrap="wrap">
                   {'  - '}
-                  <Text>{item}</Text>
+                  {item}
                 </Text>
               ))}
             </Box>
@@ -2914,7 +1960,6 @@ export const register: Register = on => {
     return (
       <Box flexDirection="column" marginTop={gap}>
         {head}
-        {recordLine}
         {choices(statusText, repButton, tellButton)}
         {beneath}
       </Box>
