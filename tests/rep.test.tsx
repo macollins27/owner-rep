@@ -4299,6 +4299,8 @@ type T3Msg = { n: number; kind: string; text: string; prior: string; pinned?: bo
 type T3Mark = { lostRev: number; keptRev: number; after: number; why: string }
 type T3Rec = {
   owner: T3Msg[]
+  jobStart?: number
+  past?: unknown[]
   recRev?: number
   objRev?: number
   lossMark?: T3Mark
@@ -5043,6 +5045,24 @@ test('rule: a list read at last after the owner sent more is not taken even when
   await settle($)
   expect(heldIn(store)?.owner.at(-1)?.text).toBe('SENT SINCE')
   expect(heldIn(store)?.lossMark?.why).toBe('its saved copy could not be read until you had sent more')
+})
+
+test('guard: an approval opens no new job, whatever the writer names: the writer\'s answer is read as a correction of the job already held', async ($, on) => {
+  const held = HELD_OBJ(1, 40)
+  const store = storeOf(recOf([...FORTY(), his(41, 'yes, do that', { approved: 'all', read: { state: 'read' } })], { objective: held }))
+  const { hold } = capture(on, store, () => SID)
+  let wrote = 0
+  hold.write = () => {
+    wrote++
+    return OBJ('A new report written.', ['the report written'], 'new job: #41 asked for a new report')
+  }
+  await started($)
+  await send($, 'and keep going')
+  await settleUntil($, () => wrote > 0)
+  await settle($)
+  expect(wrote).toBeGreaterThan(0)
+  expect(heldIn(store)?.jobStart).toBe(1)
+  expect(heldIn(store)?.past ?? []).toEqual([])
 })
 
 test('guard: a new job removes a list that could not be read, so no later start takes the old job over it', async ($, on) => {
