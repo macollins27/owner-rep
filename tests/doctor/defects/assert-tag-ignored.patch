@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 91d6584..d48d12a 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -699,7 +699,7 @@ export function rowLine(row: CoverRow, m: Named, why: string): string {
+   const n = m.n
+   switch (row) {
+     case '1':
+-      return `Not checked yet: your message #${n} may approve the plan before it; the rep is reading that plan whole`
++      return `Not checked yet: you approved the plan before message #${n}; the rep is reading that plan whole`
+     case '2':
+       return `Not read yet: your message #${n} is long; the rep is reading all of it before using any of it`
+     case '3':

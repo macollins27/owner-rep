@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 91d6584..f7029a6 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1620,7 +1620,7 @@ function freshBlock(m: OwnerMsg, s: { turn: Showing; words: Showing }, x: NotSho
+   if (m.kind === 'draft') return `- #${m.n} ${SENT_MARK}${m.text}${priorLine(m)}`
+   if (m.kind === 'plan') return planBlock(m, s.turn, x)
+   if (m.screen === 'rejected') return rejectionBlock(m, s, x)
+-  return `- #${m.n} ${markOf(m)}${wordsPart(m, s.words)}${turnPart(m, s.turn, x)}`
++  return `- #${m.n} ${markOf(m)}${s.turn === 'none' ? m.text : wordsPart(m, s.words)}${turnPart(m, s.turn, x)}`
+ }
+ 
+ // A message printed as before this change: its stored text and the agent's last words.

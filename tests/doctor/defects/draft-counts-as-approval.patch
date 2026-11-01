@@ -1,0 +1,36 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 91d6584..6f2edcb 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -610,7 +610,7 @@ export function pickRecord(
+ // Whether a message carries an approval: the owner's own message, note or plan-screen plan with
+ // the `approved` field present, never one that turned a plan down. The one place that reads it.
+ export const approvalOf = (m: OwnerMsg): boolean =>
+-  (m.kind === 'his' || m.kind === 'note' || m.kind === 'plan') && 'approved' in m && m.screen !== 'rejected'
++  (m.kind === 'his' || m.kind === 'note' || m.kind === 'plan' || m.kind === 'draft') && 'approved' in m && m.screen !== 'rejected'
+ 
+ // An approval kept past the trim: its stored text cut to PRIOR_CUT, its whole words first kept
+ // as `src.sent` when the cut takes any of them.
+@@ -1761,12 +1761,7 @@ export function takeApprovals(
+   const marked = new Map<number, string>()
+   for (const mark of marks) {
+     let m = byN.get(mark.n)
+-    if (m?.kind === 'draft') {
+-      const sha = m.src?.sent?.sha ?? ''
+-      const draft = m.n
+-      m = sha === '' ? undefined : owner.find(x => x.kind === 'his' && x.withDraft === draft && x.src?.sent?.sha === sha && shown.has(x.n))
+-    }
+-    if (m === undefined || (m.kind !== 'his' && m.kind !== 'note') || m.screen === 'rejected' || !shown.has(m.n)) continue
++    if (m === undefined || (m.kind !== 'his' && m.kind !== 'note' && m.kind !== 'draft') || m.screen === 'rejected' || !shown.has(m.n)) continue
+     if ((m.read !== undefined && m.n !== target) || approvalOf(m) || marked.has(m.n)) continue
+     marked.set(m.n, mark.took)
+   }
+@@ -1774,7 +1769,7 @@ export function takeApprovals(
+   const changes: ApprovalChange[] = []
+   for (const s of shows) {
+     const m = byN.get(s.n)
+-    if (m === undefined || m.kind === 'draft') continue
++    if (m === undefined) continue
+     const isTarget = s.n === target
+     if (!isTarget && m.read !== undefined) continue
+     const none = s.turn === 'none' ? read('unreadable', s.why) : read('read')

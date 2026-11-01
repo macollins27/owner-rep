@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 91d6584..02407b5 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1903,7 +1903,7 @@ export const RECORD_BUDGET = 200_000
+ export const RECORD_ENTRY_CUT = 3000
+ // A compaction summary at the record's start: kept whole up to this, since it may be all the
+ // record holds of steps done before it.
+-export const RECORD_SUMMARY_CUT = 40_000
++export const RECORD_SUMMARY_CUT = 3000
+ const SUMMARY_OPENING = 'This session is being continued from a previous conversation'
+ // A tool's input or its result: enough to say which file, which command and how it came
+ // out, the part a reader of the work needs; the bulk of a file or a log is not.

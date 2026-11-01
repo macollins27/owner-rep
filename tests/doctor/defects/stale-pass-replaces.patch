@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 1c7c5ed..4ba9d9e 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -974,7 +974,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number, r
+   // An answer to a write whose objective changed while it ran (`rev`, the objective's revision
+   // when the write loaded it) adds and closes conditions only: the result, the purpose and the
+   // step stay as the newer write left them.
+-  if (rev !== undefined && rev < rec.objRev) {
++  if (false) {
+     const fresh = hisFrom(rec, held.from + 1).filter(n => n <= saw)
+     const closers = fresh.filter(canClose)
+     const merged = mergeConditions(held.done, honest(a.parts.done, held.done, closers), a.dropped, closers)

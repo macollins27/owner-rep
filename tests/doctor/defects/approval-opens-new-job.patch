@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 1c7c5ed..17b456f 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -942,7 +942,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number, r
+   }
+   const canOpen = (n: number): boolean => {
+     const m = byN.get(n)
+-    return m !== undefined && m.kind !== 'plan' && canClose(n)
++    return m !== undefined && m.kind !== 'plan' && !wordsUnread(m)
+   }
+   const cited = Number(a.cause.match(/#(\d+)/)?.[1] ?? Number.NaN)
+   const lets = [...a.dropped, ...a.parts.done.filter(c => c.state === 'closed').map(c => ({ text: c.text, by: Number(c.by.slice(1)) || null }))]

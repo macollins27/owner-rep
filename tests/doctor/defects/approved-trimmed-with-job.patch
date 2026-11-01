@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 91d6584..c88cd10 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -629,7 +629,7 @@ export function trimKept(list: OwnerMsg[], since: number): { list: OwnerMsg[]; n
+   const inJob = list.filter(m => m.n >= since)
+   const job = inJob.slice(-JOB_MAX)
+   const outside = inJob.slice(0, inJob.length - job.length).filter(approvalOf)
+-  const pinned = outside.slice(-APPROVED_KEEP_MAX).map(pin)
++  const pinned: OwnerMsg[] = []
+   const notKept = outside.slice(0, outside.length - pinned.length)
+   const before = list.filter(m => m.n < since).slice(-OWNER_MAX)
+   return { list: [...before, ...pinned, ...job], notKept }

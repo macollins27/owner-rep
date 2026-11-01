@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 1c7c5ed..beef17d 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2572,6 +2572,8 @@ export const register: Register = on => {
+       return next(e)
+     }
+     // The turn's text saved first, before anything is awaited, so a message sent after this knows it ended.
++    const captured = live.get(e.turnId)
++    if (captured !== undefined) { captured.blocks = [e.answer]; captured.stepBlocks.clear() }
+     saveTurn($, e.turnId, e.isAborted)
+     const asking = /\?\s*$/.test(e.answer.trim())
+     const doing = e.isAborted ? 'stopped by you' : asking ? 'asking you' : 'stopped, waiting on you'

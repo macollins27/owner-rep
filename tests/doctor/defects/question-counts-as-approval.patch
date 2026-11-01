@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 1c7c5ed..80c62ad 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1160,6 +1160,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
+             // What the answer marked approved, and which messages it read whole; a mark or long
+             // words shown only in part sets the answer aside until they are read whole.
+             const marks = result !== null && result.isAnswered ? parseApproved(result.text) : []
++            if (answer.kind === 'moved' && marks.length === 0) marks.push(...showings.shows.map(s => ({ n: s.n, took: 'all' })))
+             const took = takeApprovals(r.owner, marks, showings.shows, waitingN, r.objectiveCalls)
+             for (const c of took.changes) {
+               const i = r.owner.findIndex(m => m.n === c.n)

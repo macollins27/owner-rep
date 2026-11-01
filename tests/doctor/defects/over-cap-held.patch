@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 91d6584..ab9dfca 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1500,7 +1500,7 @@ function contextNotShown(m: OwnerMsg): NotShown | null {
+   const chars = ref?.chars ?? 0
+   if (ref?.lost !== undefined) return { kind: 'lost', why: ref.lost, chars }
+   if (m.incomplete !== undefined && (m.kind === 'his' || m.kind === 'note') && m.screen !== 'rejected') return { kind: 'incomplete', why: m.incomplete, chars }
+-  if (ref !== undefined && ref.chars > APPROVAL_READ_CAP) return { kind: 'chars', why: '', chars }
++  
+   if (m.read?.state === 'unreadable' && ref !== undefined && !wordsUnread(m)) return { kind: 'unreadable', why: m.read.why ?? 'it could not be read', chars }
+   return null
+ }

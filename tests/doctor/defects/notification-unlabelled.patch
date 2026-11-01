@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 91d6584..66c716c 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1529,7 +1529,7 @@ const closeLabel = (chars: number): string =>
+ // leave it as it is.
+ const NEXT_TURN: Record<TurnBy, string> = {
+   continuation: '(next turn, continued by the agent)',
+-  notification: '(next turn, started by a background task finishing, not by the owner)',
++  notification: '(next turn)',
+   owner: '(next turn, started by something other than the owner)',
+   other: '(next turn, started by something other than the owner)',
+ }

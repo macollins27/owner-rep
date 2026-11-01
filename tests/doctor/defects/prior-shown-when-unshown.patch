@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 91d6584..fab74b9 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1579,7 +1579,7 @@ function turnPart(m: OwnerMsg, turn: Showing, x: NotShown | null): string {
+   if (ref?.text !== undefined && turn === 'whole')
+     return `${priorLine(m)}\n${INDENT}(the agent's turn the owner answered, captured as it was shown: ${commas(ref.chars)} characters)\n${quote(spansText(ref.text, m.turns))}`
+   if (ref?.text !== undefined && turn === 'close') return `\n${INDENT}${closeLabel(ref.chars)}\n${quote(ref.text.slice(-CLOSE_SHOW))}`
+-  if (x !== null && turn === 'none') return noneLine(m, x)
++  if (x !== null && turn === 'none') return priorLine(m) + noneLine(m, x)
+   return priorLine(m)
+ }
+ 

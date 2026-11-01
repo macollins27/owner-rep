@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 1c7c5ed..4cb1289 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1995,7 +1995,7 @@ function saveTurn($: EngineInterface, turnId: string, isAborted: boolean): void
+   completedHere.add(turnId)
+   const entry = live.get(turnId)
+   live.delete(turnId)
+-  const text = entry === undefined ? '' : restOf(runningText(entry), entry.taken)
++  const text = entry === undefined || isAborted ? '' : restOf(runningText(entry), entry.taken)
+   const by: TurnBy = entry?.by ?? 'other'
+   const incomplete = entry === undefined ? 'the rep saw none of this turn' : entry.incomplete
+   const save = (async () => {

@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 91d6584..42a7108 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -86,7 +86,7 @@ export function planScreen(input: unknown, r: unknown): PlanScreen {
+   }
+   if (result !== null && typeof result === 'object') {
+     const { plan, planWasEdited } = result as { plan?: unknown; planWasEdited?: unknown }
+-    if (typeof plan === 'string' && plan !== '' && typeof planWasEdited === 'boolean') return { kind: 'accepted', plan, edited: planWasEdited }
++    if (typeof plan === 'string' && plan !== '' && typeof planWasEdited === 'boolean') return { kind: 'accepted', plan: planWasEdited ? called : plan, edited: false }
+   }
+   const said = [result, text].find((t): t is string => typeof t === 'string' && t.startsWith(PLAN_ACCEPTED_TEXT))
+   if (said === undefined) return null
