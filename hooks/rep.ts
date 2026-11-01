@@ -32,6 +32,43 @@ export const VERSIONS_MAX = 20
 // owner's own words, a note to the rep, or a draft of the rep's that the owner
 // sent) and the agent's last answer before it.
 export type OwnerKind = 'his' | 'note' | 'draft'
+
+// A build that held approved plans saved records this one must still read after a roll back.
+// Its plan-screen plan reads as a draft here: no standing, never the owner's words. Everything
+// else that build added to a message or a record stays in place, unread, so a move forward finds
+// it as it was.
+export const fromPlanBuild = (owner: readonly OwnerMsg[]): OwnerMsg[] =>
+  owner.map(m => ((m as { kind: string }).kind === 'plan' ? { ...m, kind: 'draft' as const } : m))
+
+// A store too full for a record sent that build's record to the session's folder: a list
+// (`record.json`) of parts, each with its fingerprint. A list read back never names a file
+// outside the folder.
+export type RecordList = { recRev: number; parts: Array<{ name: string; sha: string }> }
+export function parseRecordList(text: string | null): RecordList | null {
+  if (text === null) return null
+  try {
+    const v = JSON.parse(text) as { recRev?: unknown; parts?: unknown }
+    if (typeof v !== 'object' || v === null || typeof v.recRev !== 'number' || !Array.isArray(v.parts)) return null
+    const parts = (v.parts as unknown[]).filter(
+      (p): p is RecordList['parts'][number] =>
+        typeof p === 'object' &&
+        p !== null &&
+        typeof (p as { name?: unknown }).name === 'string' &&
+        /^record-\d+-\d+\.json$/.test((p as { name: string }).name) &&
+        typeof (p as { sha?: unknown }).sha === 'string',
+    )
+    return parts.length === 0 || parts.length !== v.parts.length ? null : { recRev: v.recRev, parts }
+  } catch {
+    return null
+  }
+}
+
+export const isSessionFolder = (id: string): boolean => /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id)
+
+export async function textSha(text: string): Promise<string> {
+  const bytes = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
+  return [...new Uint8Array(bytes)].map(b => b.toString(16).padStart(2, '0')).join('')
+}
 export type OwnerMsg = { n: number; kind: OwnerKind; text: string; prior: string }
 
 export type Memory = {

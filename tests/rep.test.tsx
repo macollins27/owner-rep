@@ -14,7 +14,7 @@
 import type { On, SessionMessage } from 'claude-code'
 import { expect, mock, test as kitTest, type Engine, type TestBody, type TestOptions } from 'claude-code/testing'
 
-import { type Memory, CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fillCard, countLine, refusedLine, type CardText, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, OLD_SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, sentencesOf, withoutStopSentences, toAgentVoice, sectionOf, takeOwnWords, ownMessageTaken, earlierMessage, messageUsable, type Replaced, parseOwnWords, ownWordsPrompt, askAgain, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
+import { fromPlanBuild, parseRecordList, textSha, type Memory, CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fillCard, countLine, refusedLine, type CardText, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, OLD_SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, sentencesOf, withoutStopSentences, toAgentVoice, sectionOf, takeOwnWords, ownMessageTaken, earlierMessage, messageUsable, type Replaced, parseOwnWords, ownWordsPrompt, askAgain, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
 import { REFUSED_ENVIRONMENT, MISSING_REMOTE, BEFORE_YOU_STOP_COLON, WAIT_BEFORE_SUBMIT, THREE_BEFORE_YOU_STOP, TWO_BEFORE_YOU_STOP, GUARD_REFUSAL, PAUSED_WORK_CAUSE, STOP_SHAPES } from './fixtures/stop-shapes'
 
 // Every test starts with the session's working folder a Unix path, so what the suite reads does not
@@ -3104,6 +3104,140 @@ test('rule: Tell the rep puts the prefix in the prompt box, from the row and fro
 // 5. The store and the record
 // What is kept per session, what is let go, and records saved by older builds.
 // ==============================================================================================
+
+// A roll back: records a build that held approved plans saved, read by this one.
+const PLAN_BUILD_ID = '11111111-2222-4333-8444-555555555555'
+const planBuildRec = () => ({
+  id: PLAN_BUILD_ID,
+  at: 1000,
+  objective: null,
+  jobStart: 1,
+  counter: 7,
+  recRev: 9,
+  objRev: 2,
+  owner: [
+    { n: 1, kind: 'his', text: 'make the fruit folder', prior: '' },
+    { n: 2, kind: 'his', text: 'not pear', prior: 'p'.repeat(PRIOR_CUT), screen: 'rejected', src: { rejected: { chars: 40, sha: 'a'.repeat(64), where: 'file' } } },
+    { n: 3, kind: 'plan', text: 'plan with a fact: all 212 tests pass', prior: 'q'.repeat(PRIOR_CUT), approved: 'all', read: { state: 'read', write: 2 }, screen: 'accepted', turns: [{ by: 'owner', from: 0, to: 30 }], src: { body: { chars: 5000, sha: 'b'.repeat(64), where: 'file' } } },
+    { n: 4, kind: 'plan', text: 'a second plan, waiting', prior: '', approved: 'all', read: { state: 'waiting' }, pinned: true },
+    { n: 5, kind: 'his', text: 'yes, and add the plum', prior: '', approved: 'all', read: { state: 'waiting' }, withDraft: 6 },
+    { n: 6, kind: 'draft', text: 'the rep wrote this', prior: '', withDraft: 5 },
+    { n: 7, kind: 'his', text: 'an approval kept past the trim', prior: '', approved: '', pinned: true },
+  ],
+  pending: [{ turnId: 't1', by: 'owner', src: { chars: 10, sha: 'c'.repeat(64), where: 'inline', text: 'ten chars.' } }],
+  pendingDropped: 1,
+  lossMark: { lostRev: 3, keptRev: 2, after: 40, why: 'part 1 could not be read' },
+  readerAt: { watch: 12 },
+})
+
+const planBuildDisk = (on: On, files: Map<string, string>) => {
+  on('env.get', (_$, e) => ({ value: e.name === 'CLAUDE_CONFIG_DIR' ? '/cfg' : e.name === 'HOME' ? '/Users/o' : undefined }))
+  on('fs.read', (_$, e) => {
+    const text = files.get(e.path)
+    if (text === undefined) throw new Error(`ENOENT: ${e.path}`)
+    return { value: text }
+  })
+  on('fs.exists', (_$, e) => ({ value: files.has(e.path) }))
+}
+const planBuildStore = (on: On, store: Record<string, unknown>, refuse: () => boolean = () => false) => {
+  on('store.get', (_$, e) => ({ value: store[e.key] }))
+  on('store.set', (_$, e) => {
+    if (e.key === 'sessions' && refuse()) throw new Error('store full')
+    store[e.key] = e.value
+    return { value: undefined }
+  })
+  on('session.id', () => ({ value: PLAN_BUILD_ID }))
+  on('prompt.submit', (_$, e) => ({ text: e.text }))
+  quietBand(on)
+}
+const planHeld = (store: Record<string, unknown>) => (store.sessions as Record<string, ReturnType<typeof planBuildRec> & { owner: Array<Record<string, unknown>> }>)[PLAN_BUILD_ID]
+
+test('fromPlanBuild: a plan reads as a draft, so the objective writer never takes it for his words and its facts gain nothing; every other kind stays', () => {
+  const owner = fromPlanBuild(planBuildRec().owner as never)
+  expect(owner.map(m => m.kind)).toEqual(['his', 'his', 'draft', 'draft', 'his', 'draft', 'his'])
+  const p = objectivePrompt({ objective: null, past: [], owner })
+  const line = p.split('\n').find(l => l.includes('all 212 tests pass')) ?? ''
+  expect(line).toContain(SENT_MARK)
+  expect(line.startsWith('- #3 ')).toBe(true)
+  expect(p).not.toContain('p'.repeat(PRIOR_CUT + 1))
+  for (const m of owner) expect(m.prior.length <= PRIOR_CUT).toBe(true)
+  expect(ownerLines(owner).split('\n').find(l => l.includes('not pear'))?.startsWith('- #2 not pear')).toBe(true)
+})
+
+test('rule: a record the approved-plans build saved loads here and a save leaves what this build does not read in place', async ($, on) => {
+  const store: Record<string, unknown> = { sessions: { [PLAN_BUILD_ID]: planBuildRec() } }
+  planBuildDisk(on, new Map())
+  planBuildStore(on, store)
+  await $.prompt.submit(typed('a message after the roll back'))
+  const rec = planHeld(store)
+  expect(rec?.owner.filter(m => m.n === 3 || m.n === 4).map(m => m.kind)).toEqual(['draft', 'draft'])
+  expect(rec?.owner.find(m => m.n === 2)).toMatchObject({ kind: 'his', screen: 'rejected' })
+  const was = planBuildRec()
+  expect(rec?.lossMark).toEqual(was.lossMark)
+  expect(rec?.pending).toEqual(was.pending)
+  expect(rec?.pendingDropped).toBe(1)
+  expect(rec?.readerAt).toEqual(was.readerAt)
+  expect(rec?.recRev).toBe(9)
+  expect(rec?.owner.find(m => m.n === 3)).toMatchObject({ approved: 'all', read: { state: 'read', write: 2 }, screen: 'accepted', src: was.owner[2]?.src })
+  expect(rec?.owner.find(m => m.n === 4)).toMatchObject({ pinned: true, read: { state: 'waiting' } })
+  expect(rec?.owner.find(m => m.n === 5)).toMatchObject({ withDraft: 6 })
+  expect(rec?.owner.find(m => m.n === 7)).toMatchObject({ pinned: true })
+})
+
+const planFolder = `/cfg/owner-rep/sources/${PLAN_BUILD_ID}`
+const planFolderFiles = async (recRev: number, rec: unknown): Promise<Map<string, string>> => {
+  const json = JSON.stringify(rec)
+  const cut = Math.floor(json.length / 2)
+  const parts = [json.slice(0, cut), json.slice(cut)]
+  const list = await Promise.all(parts.map(async (t, k) => ({ name: `record-${recRev}-${k + 1}.json`, bytes: t.length, sha: await textSha(t) })))
+  const files = new Map<string, string>([[`${planFolder}/record.json`, JSON.stringify({ recRev, parts: list, why: 'store full' })]])
+  for (const [k, t] of parts.entries()) files.set(`${planFolder}/${list[k]?.name}`, t)
+  return files
+}
+const lostFile = `${planFolder}/record-lost-3.json`
+
+test('rule: a record held in the folder and newer than the store is read once and saved back; the files, the lost copy among them, are left byte for byte', async ($, on) => {
+  const files = await planFolderFiles(12, { ...planBuildRec(), recRev: 12 })
+  files.set(lostFile, '{"recRev":3,"parts":[{"name":"record-3-1.json","bytes":4,"sha":"d"}],"why":"x"}')
+  files.set(`${planFolder}/record-3-1.json`, 'lost')
+  const before = new Map(files)
+  const store: Record<string, unknown> = { sessions: { [PLAN_BUILD_ID]: { ...planBuildRec(), recRev: 9, owner: [] } } }
+  planBuildDisk(on, files)
+  planBuildStore(on, store)
+  await $.prompt.submit(typed('a message after the roll back'))
+  const rec = planHeld(store)
+  expect(rec?.recRev).toBe(12)
+  expect(rec?.owner.find(m => m.n === 1)?.text).toBe('make the fruit folder')
+  expect(rec?.lossMark).toEqual(planBuildRec().lossMark)
+  expect(files).toEqual(before)
+})
+
+test('rule: a copy in the folder at or under the store\'s revision, or with a part that does not match its fingerprint, is not read', async ($, on) => {
+  const files = await planFolderFiles(12, { ...planBuildRec(), recRev: 12, counter: 99 })
+  const part = [...files.keys()].find(k => k.endsWith('-2.json')) as string
+  files.set(part, `${files.get(part)}x`)
+  const store: Record<string, unknown> = { sessions: { [PLAN_BUILD_ID]: planBuildRec() } }
+  planBuildDisk(on, files)
+  planBuildStore(on, store)
+  await $.prompt.submit(typed('a message after the roll back'))
+  expect(planHeld(store)?.recRev).toBe(9)
+  expect(planHeld(store)?.owner.find(m => m.n === 1)?.text).toBe('make the fruit folder')
+  expect(parseRecordList(JSON.stringify({ recRev: 1, parts: [{ name: '../../secrets.json', sha: 'a' }] }))).toBeNull()
+})
+
+test('rule: a folder copy the store refuses is kept for this process and goes to the store once it fits', async ($, on) => {
+  const files = await planFolderFiles(14, { ...planBuildRec(), recRev: 14 })
+  const store: Record<string, unknown> = { sessions: { [PLAN_BUILD_ID]: { ...planBuildRec(), owner: [] } } }
+  let full = true
+  planBuildDisk(on, files)
+  planBuildStore(on, store, () => full)
+  await $.prompt.submit(typed('sent while the store is full')).catch(() => undefined)
+  expect(planHeld(store)?.recRev).toBe(9)
+  full = false
+  await $.prompt.submit(typed('sent once it has room'))
+  expect(planHeld(store)?.recRev).toBe(14)
+  expect(planHeld(store)?.owner.find(m => m.n === 1)?.text).toBe('make the fruit folder')
+})
 
 test('rule: the store keeps only the newest SESSIONS_MAX sessions', async ($, on) => {
   // The test's own store, so it can read back what the rep saved.

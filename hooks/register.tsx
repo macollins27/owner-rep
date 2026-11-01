@@ -16,6 +16,10 @@ import {
   PRIOR_CUT,
   type OwnerKind,
   type OwnerMsg,
+  fromPlanBuild,
+  parseRecordList,
+  isSessionFolder,
+  textSha,
   trimOwner,
   migrateOwner,
   PAST_MAX,
@@ -239,12 +243,57 @@ const freshRec = (id: string): Rec => ({
   objectiveWhy: '',
 })
 
+// The sessions whose folder has been looked at in this process, and the copies read from one
+// until the store takes them.
+const folderRead = new Set<string>()
+const folderCopies = new Map<string, Rec>()
+
+// The copy of a record in the session's folder, when it is newer than the store's by `recRev` and
+// every part reads back with its fingerprint. Nothing in the folder is changed.
+async function folderCopy($: EngineInterface, id: string, stored: Rec | undefined): Promise<Rec | null> {
+  try {
+    const set = await $.env.get('CLAUDE_CONFIG_DIR')
+    const home = await homeFor($)
+    const config = set !== undefined && set !== '' ? set : home !== '' ? `${home}/.claude` : null
+    if (config === null) return null
+    const folder = `${config.replace(/\/+$/, '')}/owner-rep/sources/${id}`
+    const listPath = `${folder}/record.json`
+    if (!(await $.fs.exists(listPath))) return null
+    const got = await $.fs.read(listPath)
+    const list = parseRecordList(typeof got === 'string' ? got : null)
+    const have = (stored as { recRev?: unknown } | undefined)?.recRev
+    if (list === null || list.recRev <= (typeof have === 'number' ? have : 0)) return null
+    let json = ''
+    for (const p of list.parts) {
+      const part = await $.fs.read(`${folder}/${p.name}`)
+      if (typeof part !== 'string' || (await textSha(part)) !== p.sha) return null
+      json += part
+    }
+    const rec = JSON.parse(json) as unknown
+    return isRec(rec) && rec.id === id ? rec : null
+  } catch {
+    return null
+  }
+}
+
 async function loadRec($: EngineInterface, id: string): Promise<Rec> {
   const all = await $.store.get('sessions')
-  const rec = typeof all === 'object' && all !== null ? (all as Record<string, unknown>)[id] : undefined
+  let rec = typeof all === 'object' && all !== null ? (all as Record<string, unknown>)[id] : undefined
+  if (isSessionFolder(id) && !folderRead.has(id)) {
+    folderRead.add(id)
+    const copy = await folderCopy($, id, isRec(rec) ? rec : undefined)
+    if (copy !== null) folderCopies.set(id, copy)
+  }
+  const held = folderCopies.get(id)
+  if (held !== undefined) {
+    rec = held
+    // Saved back when it fits; until it does this process keeps reading the copy.
+    if (await saveRec($, held).then(() => true, () => false)) folderCopies.delete(id)
+  }
   if (!isRec(rec)) return freshRec(id)
   const out: Rec = { ...freshRec(id), ...rec }
   if (typeof (out.owner as unknown[])[0] === 'string') out.owner = migrateOwner(out.owner as unknown[], out.lastSent?.text)
+  out.owner = fromPlanBuild(out.owner)
   out.counter = Math.max(out.counter, ...out.owner.map(m => m.n), 0)
   // A record saved with a reading and no objective is the old shape: its text waits as a version.
   const old = (rec as { reading?: { text?: unknown; cause?: unknown; movedAt?: unknown; openedAt?: unknown; since?: unknown } }).reading
