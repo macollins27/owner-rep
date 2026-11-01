@@ -1,0 +1,14 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index eef10d1..ea857b9 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -886,7 +886,8 @@ async function reconcile($: EngineInterface, sid: string): Promise<void> {
+       changed = true
+     }
+   }
+-  if (changed && (await saveRec($, rec))) await removeFiles($, removeOnceSaved, false)
++  await removeFiles($, removeOnceSaved, false)
++  if (changed) await saveRec($, rec)
+ }
+ 
+ // A record read back from the session's files, or null when it is not this session's record.

@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 71af9f4..2bf9d8f 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -767,7 +767,7 @@ export function unresolvedRow(m: OwnerMsg): { row: CoverRow; why: string } | nul
+   }
+   if (!approvalOf(m)) {
+     if (state === 'waiting') return { row: m.read?.mark === true ? '1' : '2', why: '' }
+-    if (state === 'unreadable' || (state === undefined && x !== null && x.why !== NO_ROW_WHY)) return { row: '6', why }
++    if (state === 'unreadable' || (state === undefined && x !== null)) return { row: '6', why }
+     return null
+   }
+   if (m.kind === 'plan') {

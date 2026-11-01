@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index eef10d1..c1ecaa3 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1654,7 +1654,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
+           does: or(c.does, instant.does),
+         },
+         gateOpen(after.objective),
+-      ).answer, coverage(after, { full: storeFull.get(sid), gaps: lookGaps.get(sid) }))
++      ).answer, [])
+       const patch: Partial<Brief> = {
+         checked,
+         ...(marked && after.objective !== null ? { reading: objectiveText(after.objective), count: countLine(after.objective) } : {}),

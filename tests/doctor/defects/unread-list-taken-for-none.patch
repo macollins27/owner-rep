@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index eef10d1..85bbf90 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -838,7 +838,7 @@ async function reconcile($: EngineInterface, sid: string): Promise<void> {
+       rec.recRev = Math.max(rec.recRev, mark.lostRev + 1)
+       changed = true
+     }
+-    if (text === null && (exists || waiting !== undefined)) {
++    if (text === null && waiting !== undefined) {
+       if (waiting === undefined) {
+         rec.lossMark = { lostRev: rec.recRev + 1, keptRev: rec.recRev, after, why: LOST_LIST_UNREAD }
+         changed = true

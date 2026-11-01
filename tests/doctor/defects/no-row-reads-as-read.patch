@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 71af9f4..7371f31 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2104,7 +2104,7 @@ export function typedFromItems(items: readonly HumanItem[], rows: readonly Recor
+   return items.map((item, k) => {
+     const out: SeededTurn = { text: item.text, prior: priors[k] ?? '' }
+     const at = ats[k] ?? -1
+-    if (at < 0) return k === 0 ? out : { ...out, incomplete: NO_ROW_WHY }
++    if (at < 0) return out
+     const parts: string[] = []
+     let i = at - 1
+     while (i > before && !isSummaryRow(rows[i])) {

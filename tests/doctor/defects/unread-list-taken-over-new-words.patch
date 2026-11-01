@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index eef10d1..20458a4 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -852,7 +852,7 @@ async function reconcile($: EngineInterface, sid: string): Promise<void> {
+         changed = true
+       }
+     } else if (manifest !== null) {
+-      const unchanged = after === since
++      const unchanged = after >= since
+       const got = pickRecord({ recRev: kept, after: since }, manifest, await readParts($, folder, manifest))
+       const taken = unchanged && 'json' in got ? parsedRec(sid, got.json) : null
+       if (taken !== null) {

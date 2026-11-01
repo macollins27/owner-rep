@@ -3004,5 +3004,65 @@
     "breaks": "Thinking chunks enter the captured body alongside text chunks.",
     "patch": "thinking-captured.patch",
     "fixed": "2026-11-01"
+  },
+  {
+    "name": "recovery-removes-before-save",
+    "breaks": "The files of a lost copy taken up at a start are removed even when the recovered record could not be saved.",
+    "patch": "recovery-removes-before-save.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "reader-closes-by-approval",
+    "breaks": "A reader's closed line citing an approved plan or a yes closes the condition.",
+    "patch": "reader-closes-by-approval.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "check-drops-record-lines",
+    "breaks": "The card Check it rewrites loses the record's own warnings, and a stop stands beside a lost record.",
+    "patch": "check-drops-record-lines.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "unread-list-taken-for-none",
+    "breaks": "A list that exists and cannot be read is treated as no copy at all, with no loss marked.",
+    "patch": "unread-list-taken-for-none.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "unread-list-taken-over-new-words",
+    "breaks": "A list read at last replaces the record even though the owner has sent more since it could not be read.",
+    "patch": "unread-list-taken-over-new-words.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "changed-loss-taken-up",
+    "breaks": "A later start takes up a copy marked lost because the owner had sent more, over what he sent.",
+    "patch": "changed-loss-taken-up.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "unread-mark-forgets-kept",
+    "breaks": "A waiting mark's kept revision is ignored, so a list at or under it stands the mark forever or is judged against later saves.",
+    "patch": "unread-mark-forgets-kept.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "unread-list-survives-new-job",
+    "breaks": "A new job leaves a list that could not be read in place, for a later start to take over the new job.",
+    "patch": "unread-list-survives-new-job.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "no-row-reads-as-read",
+    "breaks": "A later seeded message no row holds records nothing, so an approval of it reads as read with no line.",
+    "patch": "no-row-reads-as-read.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "no-row-line-on-every-message",
+    "breaks": "A seeded message no row holds shows a line even when it approves nothing.",
+    "patch": "no-row-line-on-every-message.patch",
+    "fixed": "2026-11-01"
   }
 ]
