@@ -61,6 +61,38 @@ export type OwnerMsg = {
   src?: { body?: SourceRef; took?: SourceRef; rejected?: SourceRef; sent?: SourceRef }
 }
 
+// What Claude Code's plan screen answered, read from the `ExitPlanMode` call's input and result
+// (docs/reference.md, "The plan screen"). Accepted: the plan as returned, which holds an edit the
+// owner made there, or the text form's plan after its heading, else the call's. Rejected: the
+// owner's note, everything after the first sentence that introduces it. Anything else is nothing.
+export type PlanScreen = { kind: 'accepted'; plan: string; edited: boolean } | { kind: 'rejected'; note: string; plan: string } | null
+const PLAN_REJECTED_SAID = 'To tell you how to proceed, the user said:\n'
+const PLAN_ACCEPTED_TEXT = 'User has approved your plan'
+const PLAN_ACCEPTED_HEADING = '## Approved Plan:\n'
+export function planScreen(input: unknown, r: unknown): PlanScreen {
+  if (r === null || typeof r !== 'object') return null
+  const { result, text, isError } = r as { result?: unknown; text?: unknown; isError?: unknown }
+  const given = (input as { plan?: unknown } | null | undefined)?.plan
+  const called = typeof given === 'string' ? given : ''
+  if (isError === true) {
+    const error = typeof result === 'string' ? result : text
+    if (typeof error !== 'string') return null
+    const at = error.indexOf(PLAN_REJECTED_SAID)
+    if (at < 0) return null
+    const note = error.slice(at + PLAN_REJECTED_SAID.length).trim()
+    return note === '' ? null : { kind: 'rejected', note, plan: called }
+  }
+  if (result !== null && typeof result === 'object') {
+    const { plan, planWasEdited } = result as { plan?: unknown; planWasEdited?: unknown }
+    if (typeof plan === 'string' && plan !== '' && typeof planWasEdited === 'boolean') return { kind: 'accepted', plan, edited: planWasEdited }
+  }
+  const said = [result, text].find((t): t is string => typeof t === 'string' && t.startsWith(PLAN_ACCEPTED_TEXT))
+  if (said === undefined) return null
+  const at = said.indexOf(PLAN_ACCEPTED_HEADING)
+  const plan = at < 0 ? called : said.slice(at + PLAN_ACCEPTED_HEADING.length)
+  return plan === '' ? null : { kind: 'accepted', plan, edited: false }
+}
+
 // The turns the owner answered, captured from the stream (`tapStep`): limits, and the shapes kept.
 // Longer than this, a text is not kept (a source) or stops being collected (a turn).
 export const SOURCE_MAX = 1_000_000

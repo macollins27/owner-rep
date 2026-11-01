@@ -150,6 +150,7 @@ import {
   boundaryCover,
   humanItems,
   typedFromItems,
+  planScreen,
   forkItems,
   forkCandidates,
   lastToolId,
@@ -2188,6 +2189,28 @@ async function takeNote($: EngineInterface, sid: string, note: string, from: { s
   })
 }
 
+// The plan screen's answer, stored as the owner's and read at once (docs/reference.md, "The plan
+// screen"): an accepted plan as approved by code, saved whole; a plan turned down, the owner's note
+// with that plan saved beside it, so its words can be read and none of it approved.
+async function takePlanScreen($: EngineInterface, e: unknown, result: unknown): Promise<void> {
+  const seen = planScreen(e, result)
+  if (seen === null) return
+  const given = (e as { tool_use_id?: unknown }).tool_use_id
+  const toolUseId = typeof given === 'string' ? { toolUseId: given } : {}
+  const sid = await sessionId($)
+  await changeRec($, sid, async rec => {
+    const n = rec.counter + 1
+    if (seen.kind === 'accepted') {
+      const body = await saveSource($, sid, `${n}-body`, seen.plan)
+      pushOwner(rec, 'plan', fit(seen.plan, PRIOR_CUT), '', { approved: 'all', screen: seen.edited ? 'edited' : 'accepted', src: { body }, ...toolUseId })
+      return
+    }
+    const src = seen.plan === '' ? {} : { src: { rejected: await saveSource($, sid, `${n}-rejected`, seen.plan) } }
+    pushOwner(rec, 'his', seen.note, '', await withSent($, sid, rec, { screen: 'rejected', ...src, ...toolUseId }, seen.note.length > HIS_CUT ? seen.note : null))
+  })
+  rebuildObjective($, sid, 'message').catch(() => undefined)
+}
+
 // "Tell the rep": the prefix goes into the owner's own prompt box, the owner
 // types after it and presses Enter; the prompt.submit hook takes the note and
 // drops it, so the agent never sees it.
@@ -2480,7 +2503,10 @@ export const register: Register = on => {
       // Drawing is best effort.
     }
     try {
-      return await next(e)
+      const result = await next(e)
+      // What the plan screen answered is stored after the call; a thrown call stores nothing.
+      if (tool === 'ExitPlanMode') await takePlanScreen($, e, result).catch(() => undefined)
+      return result
     } finally {
       if (waits) {
         lastDoing = 'working'

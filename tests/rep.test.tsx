@@ -5348,6 +5348,188 @@ test('rule: a whole-read write with no approved line for its target leaves it re
 const planMsg = async (n: number, plan: string, more: Record<string, unknown> = {}): Promise<AskMsg> =>
   ({ n, kind: 'plan', text: fit(plan, PRIOR_CUT), prior: '', approved: 'all', screen: 'accepted', src: { body: await fileRef(plan) }, ...more }) as AskMsg
 
+// Task 9: the plan screen's three answers, in the shapes check 21 recorded from a real session.
+const REJECT_TEXT = (note: string) =>
+  `Error: The user doesn't want to proceed with this tool use. The tool use was rejected (eg. if it was a file edit, the new_string was NOT written to the file). To tell you how to proceed, the user said:\n${note}`
+const ACCEPT_RESULT = (plan: string, planWasEdited = false) => ({
+  result: { plan, isAgent: false, filePath: '/cfg/plans/p.md', hasTaskTool: true, planWasEdited },
+  text: 'User has approved your plan. You can now start coding.',
+})
+// The plan screen, stubbed beneath the mod before the session starts: `answer` is what the next call returns.
+const planStub = (on: On) => {
+  const stub: { answer: () => Record<string, unknown> } = { answer: () => ({ result: 'the kit default' }) }
+  on('tool.call', { tool: 'ExitPlanMode' }, () => stub.answer() as never)
+  return {
+    stub,
+    call: async ($: Engine, plan: string, r: Record<string, unknown>, more: Record<string, unknown> = {}) => {
+      stub.answer = () => r
+      await $.tool.call({ tool: 'ExitPlanMode', plan, tool_use_id: 'p1', ...more } as never)
+    },
+  }
+}
+
+test('planScreen reads the recorded accepted, edited and rejected shapes', () => {
+  expect(rep.planScreen({ plan: 'called' }, ACCEPT_RESULT('returned'))).toEqual({ kind: 'accepted', plan: 'returned', edited: false })
+  expect(rep.planScreen({ plan: 'called' }, ACCEPT_RESULT('returned and edited', true))).toEqual({ kind: 'accepted', plan: 'returned and edited', edited: true })
+  expect(rep.planScreen({ plan: 'called' }, { isError: true, result: REJECT_TEXT('only hello.txt') })).toEqual({ kind: 'rejected', note: 'only hello.txt', plan: 'called' })
+  expect(rep.planScreen({ plan: 'called' }, { isError: true, result: { x: 1 }, text: REJECT_TEXT('from the text') })).toEqual({ kind: 'rejected', note: 'from the text', plan: 'called' })
+})
+
+test('planScreen reads the accepted text form, with its heading and without', () => {
+  const said = 'User has approved your plan. You can now start coding.'
+  expect(rep.planScreen({ plan: 'called' }, { result: `${said}\n\n## Approved Plan:\nstep one\nstep two` })).toEqual({ kind: 'accepted', plan: 'step one\nstep two', edited: false })
+  expect(rep.planScreen({ plan: 'called' }, { text: said })).toEqual({ kind: 'accepted', plan: 'called', edited: false })
+})
+
+test('planScreen keeps a note that itself holds the sentence that introduces it', () => {
+  const note = 'first part\nTo tell you how to proceed, the user said:\nsecond part'
+  expect(rep.planScreen({ plan: 'p' }, { isError: true, result: REJECT_TEXT(note) })).toEqual({ kind: 'rejected', note, plan: 'p' })
+})
+
+test('planScreen stores nothing for anything it does not recognise', () => {
+  for (const r of [
+    null,
+    undefined,
+    'text',
+    { result: '' },
+    { result: 'ran the tool' },
+    { text: 'ran the tool' },
+    { isError: true, result: 'Error: something else went wrong' },
+    { isError: true },
+    { isError: true, result: REJECT_TEXT('   ') },
+    { result: { isAgent: false } },
+    { result: { plan: 'p' } },
+    { result: { plan: '', planWasEdited: false } },
+    { result: { plan: 'p', planWasEdited: 'yes' } },
+  ]) expect(rep.planScreen({ plan: 'called' }, r)).toBeNull()
+  expect(rep.planScreen({}, { text: 'User has approved your plan.' })).toBeNull()
+})
+
+test('rule: an accepted plan with no message after it is saved whole, shown whole, and its steps reach a held objective', async ($, on) => {
+  const PLAN = turnWith(8000, [[7400, 'Step: merge and delete the branches.']])
+  const s = asks(on, [his(1, 'plan the fruit files')])
+  const screen = planStub(on)
+  s.answer(() => ANSWER(['the branches merged and deleted | open']))
+  await started($)
+  await screen.call($, PLAN, ACCEPT_RESULT(PLAN))
+  await s.quiet($)
+  expect(s.msg(2)?.kind).toBe('plan')
+  expect(s.msg(2)?.screen).toBe('accepted')
+  expect((s.msg(2) as { toolUseId?: string } | undefined)?.toolUseId).toBe('p1')
+  expect(approves(s.msg(2))).toBe(true)
+  expect(s.msg(2)?.text).toBe(fit(PLAN, PRIOR_CUT))
+  expect(s.msg(2)?.read?.state).toBe('read')
+  expect(s.d.files.get(`${DIR}/2-body.txt`)).toBe(PLAN)
+  expect(s.prompts.length).toBe(1)
+  expect(s.prompts[0]).toContain(PLAN_LINE(2))
+  expect(s.prompts[0]).toContain('Step: merge and delete the branches.')
+  expect(doneOf(s.obj())).toContain('the branches merged and deleted')
+})
+
+test('rule: an edited accept saves the plan returned, not the plan the agent called with, marked edited', async ($, on) => {
+  const ASKED = 'Plan: make hello.txt.'
+  const EDITED = `${ASKED}\n- ADDED BY OWNER: also create plum.txt.`
+  const s = asks(on, [his(1, 'plan the fruit files')])
+  const screen = planStub(on)
+  s.answer(() => ANSWER(['plum.txt made | open']))
+  await started($)
+  await screen.call($, ASKED, ACCEPT_RESULT(EDITED, true))
+  await s.quiet($)
+  expect(s.msg(2)?.screen).toBe('edited')
+  expect(s.d.files.get(`${DIR}/2-body.txt`) ?? s.msg(2)?.src?.body?.text).toBe(EDITED)
+  expect(s.prompts[0]).toContain('ADDED BY OWNER')
+  expect(s.prompts[0]).toContain('after editing it')
+})
+
+test('rule: a 20,000-character accepted plan waits and is read by the whole-read write, whose approved: none leaves it approved', async ($, on) => {
+  const PLAN = turnWith(20000, [[3000, 'Step: make plum.txt.']])
+  const s = asks(on, [his(1, 'plan the fruit files')])
+  const screen = planStub(on)
+  s.answer(p => (p.includes(WHOLE_MARK) ? ANSWER(['plum.txt made | open'], { approved: ['none'] }) : ANSWER(['nothing yet | open'])))
+  await started($)
+  await screen.call($, PLAN, ACCEPT_RESULT(PLAN))
+  await s.quiet($)
+  expect(s.wholeReads().length).toBe(1)
+  expect(s.wholeReads()[0]).toContain('Step: make plum.txt.')
+  expect(approves(s.msg(2))).toBe(true)
+  expect(s.msg(2)?.read?.state).toBe('read')
+  expect(doneOf(s.obj())).toContain('plum.txt made')
+})
+
+test('rule: an accepted plan over the cap is shown in no prompt, is unreadable, and is named on the card', async ($, on) => {
+  const PLAN = `Step one: delete the customer table.\n${'x'.repeat(130000)}`
+  const s = asks(on, [his(1, 'plan the fruit files')])
+  const screen = planStub(on)
+  s.answer(() => ANSWER(['nothing yet | open']))
+  await started($)
+  await screen.call($, PLAN, ACCEPT_RESULT(PLAN))
+  await s.quiet($)
+  expect(s.msg(2)?.read?.state).toBe('unreadable')
+  expect(s.prompts.length).toBeGreaterThan(0)
+  for (const p of s.prompts) {
+    expect(p).not.toContain('delete the customer table')
+    expect(p).toContain('too long for the rep to check')
+  }
+  expect(rep.coverage(s.held() as never).join('\n')).toContain('the plan you accepted on the plan screen (#2)')
+})
+
+test('rule: a rejected plan stores the note as his, approves nothing, keeps the plan beside it and refuses a mark on it', async ($, on) => {
+  const PLAN = 'Plan: make hello.txt and bye.txt.'
+  const s = asks(on, [his(1, 'plan the fruit files')])
+  const screen = planStub(on)
+  s.answer(() => ANSWER(['hello.txt made | open'], { approved: ['#2'] }))
+  await started($)
+  await screen.call($, PLAN, { isError: true, result: REJECT_TEXT('no bye.txt, only hello.txt') })
+  await s.quiet($)
+  expect(s.msg(2)?.kind).toBe('his')
+  expect(s.msg(2)?.text).toBe('no bye.txt, only hello.txt')
+  expect(s.msg(2)?.screen).toBe('rejected')
+  expect(approves(s.msg(2))).toBe(false)
+  expect('approved' in (s.msg(2) ?? {})).toBe(false)
+  expect(s.msg(2)?.read?.state).toBe('read')
+  expect(s.d.files.get(`${DIR}/2-rejected.txt`)).toBe(PLAN)
+  expect(s.prompts[0]).toContain('turning down the plan below')
+})
+
+test('rule: a note whose plan does not fit waits and is read with its plan whole, and a 9,000-character note is kept whole', async ($, on) => {
+  const PLAN = turnWith(20000, [[3000, 'Step: make plum.txt.']])
+  const NOTE = `${'n'.repeat(8000)} and do not make pear.txt ${'n'.repeat(1000)}`
+  const s = asks(on, [his(1, 'plan the fruit files')])
+  const screen = planStub(on)
+  s.answer(p => (p.includes(WHOLE_MARK) ? ANSWER(['no pear.txt | open']) : ANSWER(['nothing yet | open'])))
+  await started($)
+  await screen.call($, PLAN, { isError: true, result: REJECT_TEXT(NOTE) })
+  await s.quiet($)
+  expect(s.msg(2)?.text.length).toBeLessThanOrEqual(HIS_CUT)
+  expect(s.d.files.get(`${DIR}/2-sent.txt`)).toBe(NOTE)
+  expect(s.d.files.get(`${DIR}/2-rejected.txt`)).toBe(PLAN)
+  expect(s.wholeReads().length).toBe(1)
+  expect(s.wholeReads()[0]).toContain('do not make pear.txt')
+  expect(s.wholeReads()[0]).toContain('Step: make plum.txt.')
+  expect(s.msg(2)?.read?.state).toBe('read')
+  expect(approves(s.msg(2))).toBe(false)
+})
+
+test('rule: an unrecognised plan-screen result, a thrown call and a subagent call store nothing', async ($, on) => {
+  const s = asks(on, [his(1, 'plan the fruit files')])
+  const screen = planStub(on)
+  s.answer(() => ANSWER(['nothing yet | open']))
+  await started($)
+  await screen.call($, 'Plan: the kit default.', { result: 'the kit default' })
+  await s.quiet($)
+  expect(s.held()?.owner.length).toBe(1)
+  screen.stub.answer = () => {
+    throw new Error('the plan screen failed')
+  }
+  await expect($.tool.call({ tool: 'ExitPlanMode', plan: 'Plan: thrown.', tool_use_id: 'p1' } as never)).rejects.toThrow()
+  await s.quiet($)
+  expect(s.held()?.owner.length).toBe(1)
+  await screen.call($, 'Plan: a helper asked.', ACCEPT_RESULT('Plan: a helper asked.'), { agentId: 'helper-1' })
+  await s.quiet($)
+  expect(s.held()?.owner.length).toBe(1)
+  expect(s.prompts.length).toBe(0)
+})
+
 test('rule: a plan accepted on the plan screen and shown whole is printed with its label and read with the write', async ($, on) => {
   const PLAN = turnWith(5000, [[100, 'Step: make apple.txt.']])
   const s = asks(on, [his(1, 'plan the fruit files'), await planMsg(2, PLAN)], {}, new Map([[`${DIR}/2-body.txt`, PLAN]]))
