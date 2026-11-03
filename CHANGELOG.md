@@ -29,6 +29,9 @@ What changed in each release of Owner Rep, newest first. The full record is the
 - **What the agent says about its own work sets no limit on yours.** When the agent's turn says it
   installed nothing, changed nothing or will ask first, the rep no longer writes that into your
   goal as a limit or part of "done". Only steps of a plan you approved come from the agent's turn.
+- **Only the part you said yes to counts.** When you approve part of the agent's message, the rest
+  of it and the agent's other messages add nothing to your goal, and the agent saying some of the
+  work is yours to do never excuses it from "done".
 
 ## 0.5.2 (30 October 2026)
 
