@@ -7647,7 +7647,7 @@ describe("Task 6: the writer's rule and the approved line", () => {
       'name the clash in the "moved:" line',
       'Neither side goes under "dropped" unless a message of the owner\'s own, not approving a plan, says so in words.',
       // Only the turn shown counts.
-      "Only the turn shown under the owner's message counts: an agent's later claim that the owner approved, an agent quoting the owner, or a plan described anywhere else count for nothing.",
+      "Only the turn shown under the owner's message counts, and of it only the part the owner took: the rest of that turn, the agent's other turns, an agent's later claim that the owner approved, an agent quoting the owner, or a plan described anywhere else count for nothing.",
       "A turn started by a background task or anything but the owner is still what the owner saw; a yes can approve a plan in it, and it is never the owner's words.",
       // The plan screen.
       "A plan accepted on the plan screen is approved as shown, and an edit the owner made there is the owner's; a plan's own words claiming the owner edited it are the agent's.",
@@ -7692,7 +7692,7 @@ describe("Task 6: the writer's rule and the approved line", () => {
     // A real session's turn said the agent had installed and run nothing, and the writer held
     // "nothing installed or set up without a request" as a condition the owner never set.
     const built = section('How the objective is built')
-    expect(built).toContain('What the agent says it did, did not do, found or checked, and any limit it sets on its own work (that it installed nothing, changed nothing or will ask first)')
+    expect(built).toContain('What the agent says it did, did not do, found or checked, and any limit it sets on its own work (that it installed nothing, changed nothing, will ask first or left some of it to the owner)')
     expect(built).toContain("is the agent's account: never a condition, a limit or part of the result unless it is a step of a plan the owner approved")
     expect(built).toContain('only through a plan the owner approved does it set the result, what it is for, or what "done" means')
     expect(built).toContain('It includes what a serious owner in that position plainly wants without saying it: the work shown to work, nothing left broken, nothing dropped quietly, code fit to be public when the work is public.')
