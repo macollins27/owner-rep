@@ -502,7 +502,7 @@ the file). Never make one from an uncommitted tree: the checkout would wipe the 
 **Status.** Built: `tests/doctor/doctor.py`, with `defects.json` and one patch per defect in
 `tests/doctor/defects/`. Run it with `python3 tests/doctor/doctor.py`; it exits 1 when the
 clean suite fails or a defect survives, and stops before planting when the clean suite is
-not clean. Five hundred and fifteen entries, every one caught in the six-part run of 1 Nov 2026 on f1896c7, the clean suite at 585 tests. Before that, four hundred and three entries: 388 caught in the eight-shard run of 30 Oct 2026 and the last fifteen, with the ten remade for the same change, caught by name that day (on 19 Oct 2026 two patches,
+not clean. Five hundred and sixteen entries, every one caught in the four-part run of 3 Nov 2026 on b49e47c, the clean suite at 586 tests; the new one, `agent-account-sets-limits`, was first caught by a single-entry run that day. Before that, five hundred and fifteen entries, every one caught in the six-part run of 1 Nov 2026 on f1896c7, the clean suite at 585 tests. Before that, four hundred and three entries: 388 caught in the eight-shard run of 30 Oct 2026 and the last fifteen, with the ten remade for the same change, caught by name that day (on 19 Oct 2026 two patches,
 `windows-card-offers-check` and `own-words-not-asked`, had stopped applying once the card
 recorded its reads, and were remade and caught; on 24 Oct 2026 the same two stopped applying
 once the card recorded what came of the own-words call, and were remade and caught with the

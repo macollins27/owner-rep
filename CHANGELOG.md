@@ -3,7 +3,7 @@
 What changed in each release of Owner Rep, newest first. The full record is the
 [commit history](https://github.com/macollins27/owner-rep/commits/main).
 
-## 0.6.0 (1 November 2026)
+## 0.6.0 (15 November 2026)
 
 - **A plan you approved is your ask.** The rep used to keep only the last 400 characters of a
   plan you said yes to, and treated it as the agent's idea, so a step could be dropped without a
