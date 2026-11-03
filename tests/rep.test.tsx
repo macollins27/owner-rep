@@ -7688,6 +7688,16 @@ describe("Task 6: the writer's rule and the approved line", () => {
     expect(OBJECTIVE_SYSTEM.length).toBeLessThanOrEqual(SYSTEM_BEFORE + 3000)
   })
 
+  test("fails today: what the agent's turn says it did, did not do or holds back from, and any limit it sets on its own work, is its account and sets no condition or limit except as a step of a plan the owner approved; the unstated wants stay", () => {
+    // A real session's turn said the agent had installed and run nothing, and the writer held
+    // "nothing installed or set up without a request" as a condition the owner never set.
+    const built = section('How the objective is built')
+    expect(built).toContain('What the agent says it did, did not do, found or checked, and any limit it sets on its own work (that it installed nothing, changed nothing or will ask first)')
+    expect(built).toContain("is the agent's account: never a condition, a limit or part of the result unless it is a step of a plan the owner approved")
+    expect(built).toContain('only through a plan the owner approved does it set the result, what it is for, or what "done" means')
+    expect(built).toContain('It includes what a serious owner in that position plainly wants without saying it: the work shown to work, nothing left broken, nothing dropped quietly, code fit to be public when the work is public.')
+  })
+
   test('fails today: the output structure has the approved line straight after the objective line, and a held objective is answered with both', () => {
     const p = objectivePrompt({ objective: OBJ_FIXTURE, owner: [om('build it')], past: [] })
     expect(p).toMatch(/^objective: holds \| moved\napproved: #n \| all \| <the part taken, in plain words>\nmoved: /m)

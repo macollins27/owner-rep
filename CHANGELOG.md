@@ -26,6 +26,9 @@ What changed in each release of Owner Rep, newest first. The full record is the
   back.
 - **The rep tells you what it could not read.** A plan that was too long, a copy that was lost, or
   a store that was full gets a plain line on the row and the card.
+- **What the agent says about its own work sets no limit on yours.** When the agent's turn says it
+  installed nothing, changed nothing or will ask first, the rep no longer writes that into your
+  goal as a limit or part of "done". Only steps of a plan you approved come from the agent's turn.
 
 ## 0.5.2 (30 October 2026)
 
