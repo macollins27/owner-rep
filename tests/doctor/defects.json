@@ -3096,6 +3096,12 @@
     "fixed": "2026-11-03"
   },
   {
+    "name": "outside-part-counts",
+    "breaks": "The objective writer is no longer told that of the turn the owner answered only the part the owner took counts, that the agent's other turns count for nothing, or that the agent leaving some of the work to the owner is its account and no exception to done.",
+    "patch": "outside-part-counts.patch",
+    "fixed": "2026-11-03"
+  },
+  {
     "name": "screen-changed-file-held",
     "breaks": "An accepted plan screen holds the plan file as it was at approval, though the agent changed it while the screen was up, instead of the plan the screen showed.",
     "patch": "screen-changed-file-held.patch",
