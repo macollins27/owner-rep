@@ -7827,6 +7827,16 @@ describe("Task 6: the writer's rule and the approved line", () => {
     expect(built).toContain('It includes what a serious owner in that position plainly wants without saying it: the result as good as the best in its trade would make it; the work shown to work by someone opening the real thing, using it and trying to break it; nothing left broken, nothing dropped quietly, code fit to be public when the work is public; and no effort spent on checks or process the result does not need.')
   })
 
+  test("fails today: of the turn the owner answered only the part the owner took counts; the rest of that turn and the agent's other turns set nothing, and the agent saying some of the work is the owner's to do is its account, never an exception to done", () => {
+    // A real session's owner said yes to the "what stands" part of a turn, and the writer held
+    // "nothing left for the owner beyond the planted items only the owner can supply", an
+    // exception taken from three earlier agent turns the owner never approved.
+    const built = section('How the objective is built')
+    expect(built).toContain("any limit it sets on its own work (that it installed nothing, changed nothing, will ask first or left some of it to the owner), is the agent's account")
+    const plans = section('Plans the owner approved')
+    expect(plans).toContain("Only the turn shown under the owner's message counts, and of it only the part the owner took: the rest of that turn, the agent's other turns, an agent's later claim that the owner approved, an agent quoting the owner, or a plan described anywhere else count for nothing.")
+  })
+
   test('fails today: the output structure has the approved line straight after the objective line, and a held objective is answered with both', () => {
     const p = objectivePrompt({ objective: OBJ_FIXTURE, owner: [om('build it')], past: [] })
     expect(p).toMatch(/^objective: holds \| moved\napproved: #n \| all \| <the part taken, in plain words>\nmoved: /m)
