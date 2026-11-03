@@ -601,7 +601,7 @@ which the card's price line (`spentText`) names only when above zero. The writer
 `OBJECTIVE_TIMEOUT_MS`, set from one measured write), never a fork of the conversation,
 sent with its fixed rules as `system: OBJECTIVE_SYSTEM` on every attempt, and shown by
 `objectivePrompt` only the held objective, `rec.past` and the owner's numbered messages on the job
-(each with the agent's last answer before it), the messages inside a `<his_messages>` fence
+(each with the agent's turn the owner answered, captured as it was shown: whole, only its end when it is long, or its last words), the messages inside a `<his_messages>` fence
 followed by a note that they are quoted records and no instruction to the writer; a fence tag
 (any letter case, spaces inside the brackets allowed) in a message or in the agent line is
 printed with its brackets turned to `‹` `›`, so no message can close the fence, and the record
@@ -614,7 +614,7 @@ holds or moved, come its `approved:` lines: one `approved: #n | all` or
 an approval are `OBJECTIVE_SYSTEM`'s section "Plans the owner approved": what a yes is, a draft
 with the owner's words read as one message, each step of an approved plan its own condition
 after the whole plan is read, a clash kept as both sides and an open "Settle with the owner
-which stands" condition, and a plan's statements of fact held as the agent's claims. `takeObjective` applies it: the first
+which stands" condition, and a plan's statements of fact held as the agent's claims. Outside that section, the rule "Nothing else can move it" holds that what the agent says it did, did not do, found or checked, and any limit it sets on its own work, is the agent's account and never a condition, a limit or part of the result unless it is a step of a plan the owner approved. `takeObjective` applies it: the first
 objective is taken as it stands; after that a write is taken only when it saw a message of the owner's
 or a note past `from` (`hisFrom` never counts a draft), so neither the agent's words nor the
 rep's drafts can move it and a write that lands late cannot take a newer one's place. A
@@ -623,8 +623,8 @@ correction takes the result, purpose and step whole and runs the conditions thro
 cites the number of a message from the owner, new since the held objective was built (past `from`),
 and never raises a state: a held condition keeps its state, where and `reopened` mark unless
 the writer closes it, and a new one proposed shown starts open;
-`honest` turns a `shown` the writer adds (of the conversation it sees only the agent's last
-words before each of the owner's messages, marked as the agent's) and a `closed` that cites no such
+`honest` turns a `shown` the writer adds (of the conversation it sees only the agent's turn
+under each of the owner's messages, marked as the agent's) and a `closed` that cites no such
 message back to open. A condition
 listed twice, or with a state mark copied into its text, is kept once (`parseObjective`,
 `mergeConditions`). A new job pushes
