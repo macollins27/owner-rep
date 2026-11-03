@@ -3094,5 +3094,11 @@
     "breaks": "The objective writer is no longer told that what the agent says it did or did not do, and any limit it sets on its own work, is the agent's account and never a condition or limit unless a step of a plan the owner approved.",
     "patch": "agent-account-sets-limits.patch",
     "fixed": "2026-11-03"
+  },
+  {
+    "name": "outside-part-counts",
+    "breaks": "The objective writer is no longer told that of the turn the owner answered only the part the owner took counts, that the agent's other turns count for nothing, or that the agent leaving some of the work to the owner is its account and no exception to done.",
+    "patch": "outside-part-counts.patch",
+    "fixed": "2026-11-03"
   }
 ]
