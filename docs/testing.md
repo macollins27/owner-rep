@@ -477,8 +477,12 @@ for example:
 - `note-reaches-agent`: an `Owner rep:` prompt is passed through to the agent.
 - `digits-doubled`: the row keeps its digit hotkeys while another mod draws.
 
-The doctor makes a throwaway worktree of the mod, applies one defect, runs
-`claude plugin test`, and expects at least one failure. A defect that survives is a gap in
+The doctor copies the mod twice per run, once as an untouched reference and once as the
+working copy, then for each defect applies it to the working copy, runs
+`claude plugin test`, and expects at least one failure. Before the next defect it puts back
+only the files that differ from the reference and checks the copy matches it exactly; if the
+copy cannot be put back, it uses a fresh copy. One working copy instead of one per defect
+keeps the run from flooding macOS's file-change log. A defect that survives is a gap in
 the suite, and the doctor names it and the sentence. It never touches the main checkout,
 because the owner's live sessions load the mod from there and a planted defect would reach
 them. It can also run the layer 2 script against a defect to prove the live check bites.
