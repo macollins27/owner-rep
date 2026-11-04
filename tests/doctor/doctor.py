@@ -12,6 +12,12 @@ copies are made from the working folder as it stands, uncommitted edits included
 report is about the suite you have, not the last commit. The folder the mod is installed from
 is never touched: a planted defect there would reach the owner's live sessions.
 
+One run makes two full copies, not one per defect: a reference that nothing runs in, and a
+working copy each defect is planted in. After each defect only the files that differ from the
+reference are put back, so a run of 403 defects no longer writes 403 copies of the mod into the
+temporary folder (each copy is about 600 files, and every file written is an event macOS's
+file-change service must record). `--keep` still gives every defect its own copy to look at.
+
 Exit code 0 when the clean suite passes and every defect is caught; 1 otherwise.
 """
 from __future__ import annotations
@@ -19,8 +25,10 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import os
 import re
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -36,6 +44,142 @@ def copy_mod(into: Path) -> None:
         rel = Path(folder).resolve().relative_to(REPO)
         return {n for n in names if str(rel / n) in SKIP or n in SKIP}
     shutil.copytree(REPO, into, ignore=ignore, symlinks=True)
+
+
+def _tree(root: Path) -> dict[str, tuple]:
+    """Every entry under root, root itself as '', by relative path: its kind and what decides
+    whether it changed (permissions; for a link its target; for a file its size and link count).
+    A root that is not a real folder, or a folder that cannot be read, raises."""
+    def onerror(e: OSError) -> None:
+        raise e
+    st = root.lstat()
+    if not stat.S_ISDIR(st.st_mode):
+        raise OSError(f'{root} is no longer a folder')
+    out: dict[str, tuple] = {'': ('dir', stat.S_IMODE(st.st_mode))}
+    for folder, dirs, files in os.walk(root, onerror=onerror):
+        for name in dirs + files:
+            path = Path(folder) / name
+            st = path.lstat()
+            rel = str(path.relative_to(root))
+            mode = stat.S_IMODE(st.st_mode)
+            if stat.S_ISLNK(st.st_mode):
+                out[rel] = ('link', os.readlink(path), mode, st.st_nlink)
+            elif stat.S_ISDIR(st.st_mode):
+                out[rel] = ('dir', mode)
+            elif stat.S_ISREG(st.st_mode):
+                out[rel] = ('file', st.st_size, mode, st.st_nlink)
+            else:
+                out[rel] = ('other', mode)     # a pipe, socket or device: never kept
+        dirs[:] = [d for d in dirs if not (Path(folder) / d).is_symlink()]
+    return out
+
+
+def _same_bytes(a: Path, b: Path) -> bool:
+    """Read both files whole; no cache and no trust in sizes or times."""
+    with open(a, 'rb') as fa, open(b, 'rb') as fb:
+        while True:
+            x, y = fa.read(1 << 16), fb.read(1 << 16)
+            if x != y:
+                return False
+            if not x:
+                return True
+
+
+def _open_up(root: Path) -> None:
+    """Give the owner full access to every folder under root, so nothing a test locked can stop
+    the reset or the removal. Folder permissions are put back from the reference afterwards.
+    A folder that already has it is left alone, since every change is an event to record."""
+    def ensure(path: Path) -> None:
+        mode = stat.S_IMODE(path.lstat().st_mode)
+        if mode & stat.S_IRWXU != stat.S_IRWXU:
+            os.chmod(path, mode | stat.S_IRWXU)
+    if root.is_symlink() or not root.is_dir():
+        return
+    ensure(root)
+    for folder, dirs, _ in os.walk(root):
+        for d in list(dirs):
+            path = Path(folder) / d
+            if path.is_symlink():
+                dirs.remove(d)
+            else:
+                ensure(path)
+
+
+def _dispose(root: Path) -> None:
+    """Remove root whatever a test turned it into; raise if anything is left."""
+    if not os.path.lexists(root):
+        return
+    if root.is_symlink() or not root.is_dir():
+        root.unlink()
+    else:
+        try:
+            _open_up(root)
+        except OSError:
+            pass
+        shutil.rmtree(root, ignore_errors=True)
+        if os.path.lexists(root):              # a locked (immutable) entry: unlock all, then retry
+            for folder, dirs, files in os.walk(root):
+                for name in dirs + files:
+                    try:
+                        os.chflags(Path(folder) / name, 0, follow_symlinks=False)
+                    except OSError:
+                        pass
+            shutil.rmtree(root, ignore_errors=True)
+    if os.path.lexists(root):
+        raise OSError(f'could not remove {root}')
+
+
+def _remove(path: Path, kind: str) -> None:
+    shutil.rmtree(path) if kind == 'dir' else path.unlink()
+
+
+def reset_to(folder: Path, ref: Path, ref_tree: dict[str, tuple]) -> bool:
+    """Make folder match ref again by touching only what differs. True only when every entry
+    now matches the reference in kind, permissions and bytes; any error counts as a failure."""
+    try:
+        _open_up(folder)
+        now = _tree(folder)
+        for rel in sorted(set(now) - set(ref_tree), key=len):
+            path = folder / rel
+            if os.path.lexists(path):          # else it was inside a folder already removed
+                _remove(path, now[rel][0])
+        for rel in sorted(ref_tree, key=len):
+            if rel == '':
+                continue
+            want, have = ref_tree[rel], now.get(rel)
+            src, dst = ref / rel, folder / rel
+            if want[0] == 'dir':
+                if have is None or have[0] != 'dir':
+                    if have is not None:
+                        _remove(dst, have[0])
+                    dst.mkdir()
+                continue
+            if have == want and want[0] == 'link':
+                continue
+            if have is not None and have[0] == 'file' and want[0] == 'file' \
+                    and have[1] == want[1] and have[3] == want[3] and _same_bytes(src, dst):
+                if have[2] != want[2]:
+                    os.chmod(dst, want[2])
+                continue                       # same bytes; at most the permissions moved
+            if have is not None:
+                _remove(dst, have[0])
+            if want[0] == 'link':
+                os.symlink(want[1], dst)
+                if stat.S_IMODE(dst.lstat().st_mode) != want[2]:
+                    os.chmod(dst, want[2], follow_symlinks=False)
+            else:
+                shutil.copy2(src, dst)
+        # Folder permissions last and deepest first, so locking a folder never blocks its children.
+        for rel in sorted((r for r, w in ref_tree.items() if w[0] == 'dir'), key=len, reverse=True):
+            path = folder / rel if rel else folder
+            if stat.S_IMODE(path.lstat().st_mode) != ref_tree[rel][1]:
+                os.chmod(path, ref_tree[rel][1])
+        again = _tree(folder)
+        return again == ref_tree and all(
+            _same_bytes(ref / r, folder / r) for r, w in ref_tree.items() if w[0] == 'file')
+    except OSError as e:
+        print(f'    reset failed: {e}')
+        return False
 
 
 def run_suite(folder: Path) -> tuple[int, int, list[str], str]:
@@ -86,7 +230,12 @@ def main() -> int:
     print(f'owner rep doctor · {stamp} · {REPO}')
     bad = 0
 
-    clean = work / 'clean'
+    # The reference is copied first and nothing ever runs in it; the suite may write in the
+    # folder it runs in, so the clean run uses the working copy, which is reset afterwards.
+    ref = work / 'reference'
+    copy_mod(ref)
+    ref_tree = _tree(ref)
+    clean = work / 'mod'
     copy_mod(clean)
     p, f, failing, out = run_suite(clean)
     if p < 0 or f != 0:
@@ -97,15 +246,30 @@ def main() -> int:
         if p < 0:
             print(out[-2000:])
         print('stopped: nothing planted, because a defect cannot be told from the break already there.')
-        shutil.rmtree(work, ignore_errors=True)
+        try:
+            _dispose(work)
+        except OSError:
+            pass
         return 1
     else:
         print(f'suite with no defect: {p} pass, {f} fail — ok')
 
-    caught = survived = 0
+    caught = survived = spare = 0
     for d in defects:
-        folder = work / d['name']
-        copy_mod(folder)
+        if a.keep:
+            folder = work / d['name']
+            copy_mod(folder)
+        else:
+            folder = clean
+            if not reset_to(folder, ref, ref_tree):
+                print(f'{d["name"]}: the working copy did not reset cleanly; using a fresh copy')
+                try:
+                    _dispose(folder)
+                except OSError as e:
+                    print(f'    {e}; the fresh copy goes beside it')
+                    spare += 1
+                    clean = folder = work / f'mod-{spare}'
+                copy_mod(folder)
         err = apply_patch(folder, HERE / 'defects' / d['patch'])
         if err:
             bad += 1
@@ -128,7 +292,10 @@ def main() -> int:
     if a.keep:
         print(f'copies kept in {work}')
     else:
-        shutil.rmtree(work, ignore_errors=True)
+        try:
+            _dispose(work)
+        except OSError as e:
+            print(f'could not remove every throwaway copy: {e}')
     return 1 if bad else 0
 
 
