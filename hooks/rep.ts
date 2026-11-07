@@ -2384,14 +2384,19 @@ const entryText = (e: RecEntry, how: RecShow): string => fenceTag(e.build(shown(
 // An accepted plan screen's result as the record prints it: the plan it returns is the file as it
 // was at approval, which the agent may have changed while the screen was up, so unless the owner
 // edited it there the copy is replaced by a pointer to the plan the screen showed (the call's input,
-// printed beside it). Any other result as it is.
+// printed beside it) when it is the same, and printed under a mark saying it is not approved when it
+// changed, so the reader neither takes it as approved nor says it is missing. Any other result as it is.
 function planCopyOut(input: unknown, result: unknown, text: string): string {
   const at = text.indexOf(PLAN_ACCEPTED_HEADING)
   if (!text.startsWith(PLAN_ACCEPTED_TEXT) || at < 0 || text.includes(PLAN_EDITED_HEADING)) return text
   if (result !== null && typeof result === 'object' && (result as { planWasEdited?: unknown }).planWasEdited === true) return text
   const shown = (input as { plan?: unknown } | null | undefined)?.plan
   if (typeof shown !== 'string' || shown === '') return text
-  return `${text.slice(0, at)}${PLAN_ACCEPTED_HEADING}(the plan the screen showed, in this call's input; the copy returned here is the plan file as it was at approval and is not shown)`
+  const copy = text.slice(at + PLAN_ACCEPTED_HEADING.length)
+  const head = `${text.slice(0, at)}${PLAN_ACCEPTED_HEADING}`
+  if (copy.trim() === '' || copy.trim() === shown.trim()) return `${head}(the plan the screen showed, in this call's input)`
+  // The file changed while the screen was up: the reader sees what the agent was handed, marked as not approved.
+  return `${head}(the plan file as it was at approval, changed after the screen showed the plan in this call's input; the owner did not approve this copy:)\n${copy}`
 }
 
 // The session's rows as entries, each with its fields and how it is printed around them.
@@ -2888,7 +2893,7 @@ export function headsUp(a: WatchAnswer, seen: readonly string[], plans: readonly
     line: `A step of the plan you approved looks dropped: ${stepText(first.step)}.`,
     why: joined([
       first.how === 'no sign'
-        ? 'The record shows later work and nothing of this step. The agent has to show it.'
+        ? 'The record shows later work and does not show this step done. The agent has to show it.'
         : 'It is not on the agent\'s own full list. The agent has to show it.',
       ...alsoDropped(rest.slice(1)),
       ...(own === null ? [] : [`Also: ${own.line}`, own.why]),

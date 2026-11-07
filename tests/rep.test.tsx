@@ -5663,7 +5663,7 @@ test('rule: a plan file changed while the screen was up is not what the owner ap
   for (const p of s.prompts) expect(p).not.toContain('deploy')
 })
 
-test('recordText shows an accepted plan screen\'s returned copy only by a pointer when the screen showed another plan, and whole when the owner edited it', () => {
+test('recordText shows an accepted plan screen\'s returned copy marked not approved when the file changed under the screen, by a pointer when it did not, and whole when the owner edited it', () => {
   const rows = (result: unknown, text: string): RecordRow[] => [
     { role: 'user', text: 'plan hello.py', toolUses: [] },
     { role: 'assistant', text: '', toolUses: [{ tool_use_id: 'p1', tool: 'ExitPlanMode', input: { plan: SHOWN_PLAN }, result, text }] },
@@ -5671,8 +5671,14 @@ test('recordText shows an accepted plan screen\'s returned copy only by a pointe
   const real = REAL_ACCEPT(CHANGED_PLAN)
   const plain = recordText(rows(real.result, real.text), 1_000_000).text
   expect(plain).toContain(SHOWN_PLAN)
-  expect(plain).not.toContain('deploy')
   expect(plain).toContain('User has approved your plan')
+  // The changed file is in the record, so a reader can see what the agent was handed, but marked as not what was approved.
+  expect(plain).toContain(`(the plan file as it was at approval, changed after the screen showed the plan in this call's input; the owner did not approve this copy:) ${CHANGED_PLAN}`)
+  // A copy no different from the plan shown is not printed twice.
+  const same = REAL_ACCEPT(SHOWN_PLAN)
+  const once = recordText(rows(same.result, same.text), 1_000_000).text
+  expect(once).toContain('(the plan the screen showed, in this call\'s input)')
+  expect(once.split(SHOWN_PLAN).length).toBe(2)
   const edited = ACCEPT_RESULT(CHANGED_PLAN, true)
   expect(recordText(rows(edited.result, `${real.text.slice(0, real.text.indexOf('## Approved Plan:'))}## Approved Plan:\n${CHANGED_PLAN}`), 1_000_000).text).toContain('deploy')
 })
@@ -10732,7 +10738,9 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
   test('Heads up: a step with no sign outranks the flag, and the flag moves to the why, so no concern is lost', () => {
     const said = rep.headsUp(walked(STEP, 'no sign while later work goes on', OTHER, 'Only the opening lines show.'), [], PLANS)
     expect(said?.line).toBe(`A step of the plan you approved looks dropped: ${STEP}.`)
-    expect(said?.why).toContain('The agent has to show it.')
+    expect(said?.why).toContain('The record shows later work and does not show this step done. The agent has to show it.')
+    // A step partly done is marked so too: the Heads up never says nothing of it was done.
+    expect(said?.why).not.toContain('nothing of this step')
     expect(said?.why).toContain(`Also: ${OTHER} Only the opening lines show.`)
   })
 
