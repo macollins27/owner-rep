@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 8dd7e56..75437d4 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2247,7 +2247,6 @@ async function takePlanScreen($: EngineInterface, e: unknown, result: unknown):
+   await changeRec($, sid, rec => storeScreen($, sid, rec, seen, id, {}))
+   // A note typed with the accept reaches neither the call nor its result, only the row saved after
+   // the call returns: it is looked for before anything else this session does next (catchNotes).
+-  if (seen.kind === 'accepted' && id !== undefined) notesDue.set(sid, [...(notesDue.get(sid) ?? []), { id, tries: 0 }])
+   rebuildObjective($, sid, 'message').catch(() => undefined)
+ }
+ 

@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 950c949..066caaf 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2293,7 +2293,7 @@ export const folderOf = (path: string): string => path.slice(0, Math.max(0, path
+ // typed on the plan screen (NOTE_SED_MARK and NOTE_SED_ROW), so a long session's read is the
+ // owner's rows and not the whole file, and blanks every picture's data in them, so a line with a
+ // pasted image stays small and its text is still read whole.
+-export const HUMAN_SED = `/"kind":"human"/{s/"data":"[^"]*"/"data":""/g;p;d;};/${NOTE_SED_MARK}/{/${NOTE_SED_ROW}/{s/"data":"[^"]*"/"data":""/g;p;};}`
++export const HUMAN_SED = `/"kind":"human"/{s/"data":"[^"]*"/"data":""/g;p;}`
+ export const humanRead = (file: string): string[] => ['sed', '-n', '-E', HUMAN_SED, file]
+ // A fork taken after a compaction the owner has typed nothing since holds no row that could be
+ // the owner's, so its place in its parent's file is found by its last tool result instead: the id

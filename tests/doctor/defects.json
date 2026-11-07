@@ -3094,5 +3094,59 @@
     "breaks": "The objective writer is no longer told that what the agent says it did or did not do, and any limit it sets on its own work, is the agent's account and never a condition or limit unless a step of a plan the owner approved.",
     "patch": "agent-account-sets-limits.patch",
     "fixed": "2026-11-03"
+  },
+  {
+    "name": "screen-changed-file-held",
+    "breaks": "An accepted plan screen holds the plan file as it was at approval, though the agent changed it while the screen was up, instead of the plan the screen showed.",
+    "patch": "screen-changed-file-held.patch",
+    "fixed": "2026-11-07"
+  },
+  {
+    "name": "screen-edit-heading-ignored",
+    "breaks": "A plan read back from the rows is not known as edited by the owner, though Claude Code's heading says so, so the plan he did not approve is held.",
+    "patch": "screen-edit-heading-ignored.patch",
+    "fixed": "2026-11-07"
+  },
+  {
+    "name": "note-any-accept-source",
+    "breaks": "A note row beside an approval the engine gave by a setting, not the owner, is read as the owner's words.",
+    "patch": "note-any-accept-source.patch",
+    "fixed": "2026-11-07"
+  },
+  {
+    "name": "note-sed-skips-note",
+    "breaks": "The transcript read prints only lines marked human, so a note typed on the plan screen never reaches the check that proves it the owner's.",
+    "patch": "note-sed-skips-note.patch",
+    "fixed": "2026-11-07"
+  },
+  {
+    "name": "note-record-agent-side",
+    "breaks": "The record shows a note the owner typed while approving a plan as tool output on the agent's side, not as the person's words.",
+    "patch": "note-record-agent-side.patch",
+    "fixed": "2026-11-07"
+  },
+  {
+    "name": "note-other-call",
+    "breaks": "A note proven the owner's beside one plan screen also proves the same words beside another call.",
+    "patch": "note-other-call.patch",
+    "fixed": "2026-11-07"
+  },
+  {
+    "name": "note-not-caught-live",
+    "breaks": "A note typed while approving a plan in a live session is never read, so it does not reach the objective.",
+    "patch": "note-not-caught-live.patch",
+    "fixed": "2026-11-07"
+  },
+  {
+    "name": "note-placed-as-plan",
+    "breaks": "A note typed beside a plan approval is placed like a plan screen, so where the owner's ask stands cannot be told.",
+    "patch": "note-placed-as-plan.patch",
+    "fixed": "2026-11-07"
+  },
+  {
+    "name": "record-shows-changed-copy",
+    "breaks": "The record shows the plan file's copy returned at approval in full, though the screen showed another plan, so the reader sees a plan the owner never saw.",
+    "patch": "record-shows-changed-copy.patch",
+    "fixed": "2026-11-07"
   }
 ]
