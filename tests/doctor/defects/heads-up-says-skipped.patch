@@ -1,8 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index baaaf44..cb9ae2c 100644
+index fe5b367..d467494 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2691,7 +2691,7 @@ export function headsUp(a: WatchAnswer, seen: readonly string[], plans: readonly
+@@ -2890,7 +2890,7 @@ export function headsUp(a: WatchAnswer, seen: readonly string[], plans: readonly
    const joined = (lines: readonly string[]): string => lines.filter(l => l !== '').join(' ')
    if (own !== null && named.length > 0) return { line: own.line, why: joined([own.why, ...alsoDropped(rest)]) }
    return {
@@ -10,4 +10,4 @@ index baaaf44..cb9ae2c 100644
 +    line: `A step of the plan you approved was skipped: ${stepText(first.step)}.`,
      why: joined([
        first.how === 'no sign'
-         ? 'The record shows later work and nothing of this step. The agent has to show it.'
+         ? 'The record shows later work and does not show this step done. The agent has to show it.'

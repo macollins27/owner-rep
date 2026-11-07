@@ -3145,7 +3145,7 @@
   },
   {
     "name": "record-shows-changed-copy",
-    "breaks": "The record shows the plan file's copy returned at approval in full, though the screen showed another plan, so the reader sees a plan the owner never saw.",
+    "breaks": "The record shows the plan file's copy returned at approval in full and unmarked, though the screen showed another plan, so the reader takes a plan the owner never saw as approved.",
     "patch": "record-shows-changed-copy.patch",
     "fixed": "2026-11-07"
   },
@@ -3153,6 +3153,18 @@
     "name": "note-any-tool",
     "breaks": "Words the owner typed while allowing another tool's call are read as a note on the plan screen.",
     "patch": "note-any-tool.patch",
+    "fixed": "2026-11-07"
+  },
+  {
+    "name": "heads-up-says-nothing-done",
+    "breaks": "The Heads up says the record holds nothing of a dropped step, which the rep cannot know, since its sign that the step was not done is only that it found none.",
+    "patch": "heads-up-says-nothing-done.patch",
+    "fixed": "2026-11-07"
+  },
+  {
+    "name": "record-hides-changed-copy",
+    "breaks": "When the plan file changed after the screen showed the plan, the record replaces the changed copy with a pointer, so the reader never learns the file was changed under the screen.",
+    "patch": "record-hides-changed-copy.patch",
     "fixed": "2026-11-07"
   }
 ]

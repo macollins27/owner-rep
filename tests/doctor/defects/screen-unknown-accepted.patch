@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 91d6584..1bf658f 100644
+index fe5b367..63d4232 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -89,7 +89,7 @@ export function planScreen(input: unknown, r: unknown): PlanScreen {
-     if (typeof plan === 'string' && plan !== '' && typeof planWasEdited === 'boolean') return { kind: 'accepted', plan, edited: planWasEdited }
-   }
+@@ -105,7 +105,7 @@ export function planScreen(input: unknown, r: unknown): PlanScreen {
+   const { plan: back, planWasEdited } = result !== null && typeof result === 'object' ? (result as { plan?: unknown; planWasEdited?: unknown }) : {}
+   const object = typeof back === 'string' && back !== '' && typeof planWasEdited === 'boolean'
    const said = [result, text].find((t): t is string => typeof t === 'string' && t.startsWith(PLAN_ACCEPTED_TEXT))
--  if (said === undefined) return null
-+  if (said === undefined) return called === '' ? null : { kind: 'accepted', plan: called, edited: false }
-   const at = said.indexOf(PLAN_ACCEPTED_HEADING)
-   const plan = at < 0 ? called : said.slice(at + PLAN_ACCEPTED_HEADING.length)
-   return plan === '' ? null : { kind: 'accepted', plan, edited: false }
+-  if (!object && said === undefined) return null
++  if (!object && said === undefined) return called === '' ? null : { kind: 'accepted', plan: called, edited: false }
+   const after = planAfterHeading(said)
+   const returned = typeof back === 'string' && back !== '' ? back : (after?.plan ?? '')
+   const edited = planWasEdited === true || after?.edited === true

@@ -12,12 +12,14 @@ What changed in each release of Owner Rep, newest first. The full record is the
   can't approve anything for you by saying you did.
 - **The Heads up warns when a step looks dropped.** Each look walks your approved plans step by
   step against what the session shows, and says so when a step has no sign while later work
-  goes on, or when the agent's own full list leaves it out.
+  goes on, or when the agent's own full list leaves it out. It says only what it can know: that
+  the record does not show the step done, never that the record holds nothing of it.
 - **The plan screen counts.** A plan you accept or edit on Claude Code's plan screen is held the
   same way, your edits included. A plan you turn down stays beside your note, and none of it is
   taken as approved.
 - **The plan you saw is the plan held.** If the agent changes its plan file while the plan
-  screen is up, the rep holds the plan the screen showed you, not the changed file; a plan you
+  screen is up, the rep holds the plan the screen showed you, not the changed file, and its
+  record shows the changed file marked as one you did not approve; a plan you
   edit there is held with your edits. A note you type as you approve it ("approve with this
   feedback") is read as your own words beside that plan, never as the agent's output.
 - **The rep sees the whole turn you answered.** The agent's visible text is saved as it streams,

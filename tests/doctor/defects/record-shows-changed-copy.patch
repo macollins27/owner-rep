@@ -1,9 +1,9 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 950c949..4efdd75 100644
+index fe5b367..b059d62 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2383,7 +2383,7 @@ const entryText = (e: RecEntry, how: RecShow): string => fenceTag(e.build(shown(
- // printed beside it). Any other result as it is.
+@@ -2388,7 +2388,7 @@ const entryText = (e: RecEntry, how: RecShow): string => fenceTag(e.build(shown(
+ // changed, so the reader neither takes it as approved nor says it is missing. Any other result as it is.
  function planCopyOut(input: unknown, result: unknown, text: string): string {
    const at = text.indexOf(PLAN_ACCEPTED_HEADING)
 -  if (!text.startsWith(PLAN_ACCEPTED_TEXT) || at < 0 || text.includes(PLAN_EDITED_HEADING)) return text

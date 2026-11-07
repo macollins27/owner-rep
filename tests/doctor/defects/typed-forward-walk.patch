@@ -1,8 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 8cc49b2..06e9a32 100644
+index fe5b367..17c0205 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2076,12 +2076,12 @@ export type SeededTurn = { text: string; prior: string; at?: number; body?: stri
+@@ -2136,12 +2136,12 @@ export type SeededTurn = { text: string; prior: string; at?: number; body?: stri
  export function typedFromItems(items: readonly HumanItem[], rows: readonly RecordRow[]): SeededTurn[] {
    const priors = items.map(() => '')
    const ats = items.map(() => -1)
@@ -16,9 +16,9 @@ index 8cc49b2..06e9a32 100644
 -    for (let i = cursor; i >= 0; i--) {
 +    for (let i = cursor; i < rows.length; i++) {
        const row = rows[i]
-       if (row === undefined || row.role !== 'user' || (row.toolResults ?? []).length > 0) continue
-       if (typedKey(row.text) === item.key) {
-@@ -2098,7 +2098,7 @@ export function typedFromItems(items: readonly HumanItem[], rows: readonly Recor
+       if (row === undefined || row.role !== 'user') continue
+       const results = row.toolResults ?? []
+@@ -2160,7 +2160,7 @@ export function typedFromItems(items: readonly HumanItem[], rows: readonly Recor
          break
        }
      }

@@ -413,7 +413,9 @@ call writes (below):
 
    `headsUp`, called by the look after the reader answers, decides what the owner sees. A step
    walked `no sign` or `looks dropped` takes the line, `A step of the plan you approved looks
-   dropped: <step>.`, cut at `DROPPED_STEP_MAX` (160), whatever the reader's flag was about. The
+   dropped: <step>.`, cut at `DROPPED_STEP_MAX` (160), whatever the reader's flag was about. Its
+   why for `no sign` says only what the rep can know, that the record shows later work and does
+   not show the step done, never that the record holds nothing of it. The
    flag and its why move into the why after `Also:`, and further dropped steps after `Also looks
    dropped:`, so no concern is lost. This outranks even a flag about harm, whose words stay in the
    why. A step walked `not assessed` has no say, a flag that already speaks of the step keeps the
@@ -682,9 +684,13 @@ up to `NOTE_TRIES` times, and stores each note found with `pushNote` as kind `hi
 words that can narrow or add to the plan before it, and rebuilds the objective. Read back,
 `typedFromItems` matches a note only to the row holding its call's result, and `seedOrder` puts
 it after the screen of the same row. `boundaryRow` places nothing by a note. The record shows a
-note proven so as `the person (typed on the plan screen while accepting the plan)`, and an
-accepted plan's returned copy, when the owner did not edit it and the call carried a plan, by a
-pointer to the call's input (`planCopyOut`), so the reader never sees a plan the owner did not.
+note proven so as `the person (typed on the plan screen while accepting the plan)`. An
+accepted plan's returned copy, when the owner did not edit it and the call carried a plan, is
+shown by a pointer to the call's input when it matches the plan the screen showed
+(`planCopyOut`); when it differs, the file was changed under the screen, and the copy is shown
+after a mark saying it was changed after the screen showed the plan and the owner did not
+approve it. So the reader neither takes a plan the owner did not see as approved nor says the
+change is missing.
 
 Owner messages are `OwnerMsg`s: `n`, `kind` (`his`, `note`, `draft` or `plan`), `text` (cut to
 `HIS_CUT`, 6,000 characters, for the owner's messages and notes, the writer's only input, and to

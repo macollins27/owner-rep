@@ -1,9 +1,9 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 5ad8026..6156620 100644
+index 8dd7e56..3d1364b 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -2207,7 +2207,7 @@ async function seedOnce($: EngineInterface, sid: string): Promise<boolean> {
-         await storeScreen($, sid, rec, t.seen, t.toolUseId, { readBack: true })
+@@ -2213,7 +2213,7 @@ async function seedOnce($: EngineInterface, sid: string): Promise<boolean> {
+         pushNote(rec, t.text, t.toolUseId, { readBack: true })
          continue
        }
 -      const split = draftSplitAny(t.text, [...rec.drafts, rec.lastBrief?.message ?? '', ...others])

@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index fe5b367..e134d53 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2394,7 +2394,7 @@ function planCopyOut(input: unknown, result: unknown, text: string): string {
+   if (typeof shown !== 'string' || shown === '') return text
+   const copy = text.slice(at + PLAN_ACCEPTED_HEADING.length)
+   const head = `${text.slice(0, at)}${PLAN_ACCEPTED_HEADING}`
+-  if (copy.trim() === '' || copy.trim() === shown.trim()) return `${head}(the plan the screen showed, in this call's input)`
++  return `${head}(the plan the screen showed, in this call's input)`
+   // The file changed while the screen was up: the reader sees what the agent was handed, marked as not approved.
+   return `${head}(the plan file as it was at approval, changed after the screen showed the plan in this call's input; the owner did not approve this copy:)\n${copy}`
+ }
