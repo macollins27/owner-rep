@@ -11622,7 +11622,7 @@ test('rule: seeded rows with a turned-down and an accepted plan give the note an
   expect(s.msg(2)?.src?.rejected?.chars).toBe('Make pear.txt.'.length)
   expect((s.msg(3) as OwnerMsg | undefined)?.toolUseId).toBe('b')
   expect((s.msg(3) as OwnerMsg | undefined)?.readBack).toBe(true)
-  expect(s.prompts.join('\n')).toContain('read back; whether the owner edited it there cannot be told')
+  expect(s.prompts.join('\n')).toContain('a plan the owner accepted on the plan screen (read back from the session)')
   expect(s.msg(3)?.read?.state).toBe('read')
 })
 
@@ -11661,6 +11661,8 @@ test('humanItems reads a note typed on the plan screen as the owner\'s, tied to 
   expect(humanItems(NOTE_LINE('toolu_1', OWNER_NOTE, null))).toEqual([])
   expect(humanItems(NOTE_LINE('toolu_1', OWNER_NOTE, { decision: 'reject', source: 'user_temporary' }))).toEqual([])
   expect(humanItems(NOTE_LINE('toolu_1', ''))).toEqual([])
+  // Words typed while allowing another tool's call are not a plan-screen note.
+  expect(humanItems(NOTE_LINE('toolu_1', OWNER_NOTE).replace('User has approved your plan. You can now start coding.', 'Command ran with no output.'))).toEqual([])
   // A note's key never stands for a typed message of the same words.
   expect([...rep.heldKeys(humanItems(`${LINE(OWNER_NOTE)}\n${NOTE_LINE('toolu_1', OWNER_NOTE)}`))].length).toBe(2)
 })

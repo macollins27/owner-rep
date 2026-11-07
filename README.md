@@ -174,7 +174,8 @@ narrows the agent's next step can't shrink the whole job.
 It weighs your messages by kind. A note you send to the rep counts most of all. Then come
 your reasons and complaints, then your instructions. A plan you approve, with a yes or on
 Claude Code's plan screen, counts as your own ask: each of its steps becomes part of "done",
-and the Heads up says so when one of them looks dropped. A yes never approves more than the
+and the Heads up says so when one of them looks dropped. The plan held is the one the screen
+showed you, and a note you type as you approve it counts as your own words beside it. A yes never approves more than the
 text it answered, and the agent can't approve anything for you by saying you did.
 
 On top of that it holds five expectations for every job:
@@ -257,7 +258,8 @@ full, this is everything it reads and runs:
   messages you typed. For a session it holds no record of, such as a fork, it may read up to
   40 of the newest other transcripts in the same project folder to find your earlier
   messages, and it reads back from the session's messages the agent's words before each one and
-  any answers you gave on the plan screen.
+  any answers you gave on the plan screen. It also reads the transcript lines where you
+  approved a plan on that screen, to find a note you typed with the approval.
 - **Its own folder:** `<config>/owner-rep/sources/`, under Claude Code's folder. It writes each
   saved text there as a file named by the session and checked by fingerprint, and removes those
   files with `rm` when their message or session goes. When the shared store is full it also

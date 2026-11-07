@@ -644,9 +644,16 @@ reading; the row shows `result`.
 
 `planScreen(input, result)` reads what Claude Code's plan screen answered from the `ExitPlanMode`
 call, and `null` is everything it does not recognise. Accepted: a result object holding a
-non-empty `plan` and a boolean `planWasEdited` gives that plan and whether the owner edited it;
-otherwise a result or text opening `PLAN_ACCEPTED_TEXT` gives the part after
-`PLAN_ACCEPTED_HEADING`, else the call's own plan, with `edited` false. Rejected: an error result
+non-empty `plan` and a boolean `planWasEdited`, or a result or text opening
+`PLAN_ACCEPTED_TEXT`, is an approval. It holds the plan the call carried, which is the plan the
+screen showed: the `tool.call` hook's input is read from the plan file when the call arrives,
+while the plan the result returns is that file as it was at approval, which the agent may have
+changed while the screen was up. Only when the owner edited the plan on the screen, told by
+`planWasEdited` true or by the text form's `PLAN_EDITED_HEADING` ("Approved Plan (edited by
+user)") in place of `PLAN_ACCEPTED_HEADING`, does it hold the returned plan (the part after the
+heading, in the text form), with `edited` true. `planLabel` names a plan read back so as
+`(read back from the session)`, and one edited there, live or read back, `after editing it there`. With no plan in the call it holds the returned
+one. Rejected: an error result
 holding `PLAN_REJECTED_SAID` gives the owner's note, whatever follows it, and the plan the call
 carried; a rejection with no note is `null`, so nothing is stored. `takePlanScreen` runs after the
 call returns, so a thrown call stores nothing, and `storeScreen` writes one `OwnerMsg`: accepted is
@@ -658,8 +665,26 @@ uses to place them.
 A session the rep did not watch has its answers read back: `screenFromRows` finds each
 `ExitPlanMode` use in the rows and its answer, matched strictly by `tool_use_id` in a later row's
 results, else the use's own result. `seedOrder` sets them among the typed messages by time, and
-`storeScreen` stores each with `readBack: true`. `planLabel` then adds that whether the owner
-edited it there cannot be told, since the rows hold the text form.
+`storeScreen` stores each with `readBack: true`; the text form's heading says whether the owner
+edited the plan there.
+
+A note the owner types with an approval ("approve with this feedback") is in neither the call's
+input nor its result: Claude Code writes it as a second content block, a `text` after the
+`tool_result`, on the transcript row that carries the approval, a row of type user with no
+`origin` and a `permissionDecision` of `accept` whose `source` begins `user` (the engine's own
+accepts by a setting say `config`). `humanItems` reads such a row's text as a `HumanItem`
+tied to that call by `toolUseId` (`noteCallOf` takes the id of the result just before the
+text), and `heldKeys` keeps it as `noteKey(toolUseId, key)`, so the same words beside another
+call, or in any agent output, prove nothing. Live, `takePlanScreen` marks each accepted call as
+due (`notesDue`), and `catchNotes` reads the transcript at the next prompt, tool call or stop,
+up to `NOTE_TRIES` times, and stores each note found with `pushNote` as kind `his`,
+`screen: 'accept-note'`, its text marked `ACCEPT_NOTE_MARK` for the writer as the owner's own
+words that can narrow or add to the plan before it, and rebuilds the objective. Read back,
+`typedFromItems` matches a note only to the row holding its call's result, and `seedOrder` puts
+it after the screen of the same row. `boundaryRow` places nothing by a note. The record shows a
+note proven so as `the person (typed on the plan screen while accepting the plan)`, and an
+accepted plan's returned copy, when the owner did not edit it and the call carried a plan, by a
+pointer to the call's input (`planCopyOut`), so the reader never sees a plan the owner did not.
 
 Owner messages are `OwnerMsg`s: `n`, `kind` (`his`, `note`, `draft` or `plan`), `text` (cut to
 `HIS_CUT`, 6,000 characters, for the owner's messages and notes, the writer's only input, and to
@@ -827,8 +852,10 @@ path held, `heldItems` looks for `<id>.jsonl` by name, `find <config>/projects -
 (the config folder `CLAUDE_CONFIG_DIR`, else `.claude` in the home, none with no home), and
 with none found it is null.
 The file is read through `$.process.run` with `humanRead` (`sed`, `HUMAN_READ_TIMEOUT_MS`),
-which prints only the lines holding `"kind":"human"`, every picture's `"data"` blanked so a
-message with a picture stays under the output cap. A read cut at that cap
+(`HUMAN_SED`), which prints only the lines holding `"kind":"human"` and the plan screen's
+note rows (an owner accept, `NOTE_SED_MARK`, with a text block straight after a result,
+`NOTE_SED_ROW`), every picture's `"data"` blanked so a message with a picture stays under the
+output cap. A read cut at that cap
 (`isStdoutTruncated`) counts as no read: the session's own file cut makes `heldItems` null,
 and a cut file in the scan is skipped. `humanItems` reads, in file order, the lines of type
 user with origin kind `human` and not `isMeta`, and the lines of type attachment holding a

@@ -1536,7 +1536,7 @@ export const wordsUnread = (m: OwnerMsg): boolean =>
 const unreadWhy = (m: OwnerMsg): string => m.src?.sent?.lost ?? `it is over the ${commas(APPROVAL_READ_CAP)} characters the rep can read`
 
 const planLabel = (m: OwnerMsg): string =>
-  `a plan the owner accepted on the plan screen${m.screen === 'edited' ? ', after editing it there' : m.readBack === true ? ' (read back; whether the owner edited it there cannot be told)' : ''}`
+  `a plan the owner accepted on the plan screen${m.screen === 'edited' ? ', after editing it there' : m.readBack === true ? ' (read back from the session)' : ''}`
 // A plan-screen plan's line: its label and stored text, or, when the plan cannot be shown, why
 // and none of its text.
 const planHead = (m: OwnerMsg, x: NotShown | null): string =>
@@ -2024,7 +2024,11 @@ function noteCallOf(content: unknown): string | undefined {
   if (!Array.isArray(content)) return undefined
   const k = content.findIndex(b => typeof b === 'object' && b !== null && (b as { type?: unknown }).type === 'text')
   const before = k > 0 ? (content[k - 1] as { type?: unknown; tool_use_id?: unknown }) : undefined
-  return before?.type === 'tool_result' && typeof before.tool_use_id === 'string' && before.tool_use_id !== '' ? before.tool_use_id : undefined
+  if (before?.type !== 'tool_result' || typeof before.tool_use_id !== 'string' || before.tool_use_id === '') return undefined
+  // Only the plan screen's approval: words typed while allowing another tool's call are not read here.
+  const said = (before as { content?: unknown }).content
+  const first = Array.isArray(said) ? (said.find(b => typeof b === 'object' && b !== null && (b as { type?: unknown }).type === 'text') as { text?: unknown } | undefined)?.text : said
+  return typeof first === 'string' && first.startsWith(PLAN_ACCEPTED_TEXT) ? before.tool_use_id : undefined
 }
 
 // The keys the record read labels the owner's by: a typed message's key, and a plan-screen note's

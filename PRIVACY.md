@@ -37,8 +37,8 @@ full, the record's manifest and parts go in the same folder, and the files of a 
 while its loss mark stands.
 
 To read which messages you typed, the rep reads the session transcripts Claude Code already
-keeps under `~/.claude/projects/`. It copies only the messages you typed into the record
-above. For a session it holds no record of, it also reads the agent's words before each of
+keeps under `~/.claude/projects/`. It copies only the messages you typed, including a note you
+typed while approving a plan on Claude Code's plan screen, into the record above. For a session it holds no record of, it also reads the agent's words before each of
 your messages and your plan-screen answers back from the session's messages, and saves them the
 same way.
 

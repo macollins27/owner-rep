@@ -3148,5 +3148,11 @@
     "breaks": "The record shows the plan file's copy returned at approval in full, though the screen showed another plan, so the reader sees a plan the owner never saw.",
     "patch": "record-shows-changed-copy.patch",
     "fixed": "2026-11-07"
+  },
+  {
+    "name": "note-any-tool",
+    "breaks": "Words the owner typed while allowing another tool's call are read as a note on the plan screen.",
+    "patch": "note-any-tool.patch",
+    "fixed": "2026-11-07"
   }
 ]

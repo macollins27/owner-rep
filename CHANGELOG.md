@@ -16,6 +16,10 @@ What changed in each release of Owner Rep, newest first. The full record is the
 - **The plan screen counts.** A plan you accept or edit on Claude Code's plan screen is held the
   same way, your edits included. A plan you turn down stays beside your note, and none of it is
   taken as approved.
+- **The plan you saw is the plan held.** If the agent changes its plan file while the plan
+  screen is up, the rep holds the plan the screen showed you, not the changed file; a plan you
+  edit there is held with your edits. A note you type as you approve it ("approve with this
+  feedback") is read as your own words beside that plan, never as the agent's output.
 - **The rep sees the whole turn you answered.** The agent's visible text is saved as it streams,
   in its own checked file, so a yes is read against what was on your screen.
 - **The Heads up and the briefing read the session's record.** They no longer use a copy of the
