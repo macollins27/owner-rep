@@ -102,7 +102,7 @@ export type OwnerMsg = {
   // Present when the message approves: what the owner took ('' when it sits in `src.took`).
   approved?: string
   read?: ReadState
-  screen?: 'accepted' | 'edited' | 'rejected'
+  screen?: 'accepted' | 'edited' | 'rejected' | 'accept-note'
   withDraft?: number
   toolUseId?: string
   // An approval of the open job kept past the trim.

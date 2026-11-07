@@ -150,6 +150,8 @@ import {
   boundaryRow,
   boundaryCover,
   humanItems,
+  heldKeys,
+  typedKey,
   typedFromItems,
   planScreen,
   type PlanScreen,
@@ -1278,7 +1280,7 @@ async function readSession($: EngineInterface, sid: string, rec: Rec, task: (cov
   const rows = await $.session.messages().catch(() => [])
   if (rows.length === 0) return { result: NOTHING_READ, gaps: {} }
   const items = await heldItems($, sid, rows)
-  const human = items === null ? undefined : new Set(items.map(i => i.key))
+  const human = items === null ? undefined : heldKeys(items)
   const sent = await readable($, sid, jobMsgs(rec), ['sent'])
   // A note approving alone is placed by the turn it answered, so its body is read back too.
   const ap = sent.msgs.find(approvalOf)
@@ -2207,6 +2209,10 @@ async function seedOnce($: EngineInterface, sid: string): Promise<boolean> {
         await storeScreen($, sid, rec, t.seen, t.toolUseId, { readBack: true })
         continue
       }
+      if (t.toolUseId !== undefined) {
+        pushNote(rec, t.text, t.toolUseId, { readBack: true })
+        continue
+      }
       const split = draftSplitAny(t.text, [...rec.drafts, rec.lastBrief?.message ?? '', ...others])
       const fields = async () => bodyFields($, sid, rec, seededBody(t))
       if (split === null) pushOwner(rec, 'his', t.text, t.prior, await withSent($, sid, rec, await fields(), t.text.length > HIS_CUT ? t.text : null))
@@ -2236,9 +2242,55 @@ async function takePlanScreen($: EngineInterface, e: unknown, result: unknown): 
   const seen = planScreen(e, result)
   if (seen === null) return
   const given = (e as { tool_use_id?: unknown }).tool_use_id
+  const id = typeof given === 'string' ? given : undefined
   const sid = await sessionId($)
-  await changeRec($, sid, rec => storeScreen($, sid, rec, seen, typeof given === 'string' ? given : undefined, {}))
+  await changeRec($, sid, rec => storeScreen($, sid, rec, seen, id, {}))
+  // A note typed with the accept reaches neither the call nor its result, only the row saved after
+  // the call returns: it is looked for before anything else this session does next (catchNotes).
+  if (seen.kind === 'accepted' && id !== undefined) notesDue.set(sid, [...(notesDue.get(sid) ?? []), { id, tries: 0 }])
   rebuildObjective($, sid, 'message').catch(() => undefined)
+}
+
+// A plan-screen note, stored as the owner's own message right after the plan it was typed with,
+// once per call.
+function pushNote(rec: Rec, note: string, toolUseId: string, more: Partial<OwnerMsg>): void {
+  if (rec.owner.some(m => m.screen === 'accept-note' && m.toolUseId === toolUseId)) return
+  pushOwner(rec, 'his', note, '', { screen: 'accept-note', toolUseId, ...more })
+}
+
+// The accepted plans whose note, if the owner typed one, is not yet read, by session; each is
+// looked for at most NOTE_TRIES times. The row holding the call's result says whether a note came
+// with it; the session's transcript file proves the note the owner's (humanItems), and only a note
+// it proves for that same call is stored.
+const NOTE_TRIES = 5
+const notesDue = new Map<string, Array<{ id: string; tries: number }>>()
+async function catchNotes($: EngineInterface, sid: string): Promise<void> {
+  const due = notesDue.get(sid)
+  if (due === undefined || due.length === 0) return
+  notesDue.delete(sid)
+  const rows = (await $.session.messages().catch(() => [])) as readonly RecordRow[]
+  const left: Array<{ id: string; tries: number }> = []
+  const found: Array<{ id: string; key: string }> = []
+  for (const d of due) {
+    const row = rows.find(r => (r.toolResults ?? []).some(t => t.tool_use_id === d.id))
+    if (row === undefined) {
+      if (d.tries + 1 < NOTE_TRIES) left.push({ id: d.id, tries: d.tries + 1 })
+      continue
+    }
+    const key = typedKey(row.text)
+    if (key !== '') found.push({ id: d.id, key })
+  }
+  if (found.length > 0) {
+    const items = (await heldItems($, sid, rows).catch(() => null)) ?? []
+    const notes = found.flatMap(f => items.filter(i => i.toolUseId === f.id && i.key === f.key).slice(-1).map(i => ({ id: f.id, text: i.text })))
+    if (notes.length > 0) {
+      await changeRec($, sid, rec => {
+        for (const note of notes) pushNote(rec, note.text, note.id, {})
+      })
+      rebuildObjective($, sid, 'message').catch(() => undefined)
+    }
+  }
+  if (left.length > 0) notesDue.set(sid, [...left, ...(notesDue.get(sid) ?? [])])
 }
 
 // One answer of the plan screen's, seen as it happened or read back from the rows (`more`).
@@ -2452,6 +2504,8 @@ export const register: Register = on => {
       const note = noted === null ? '' : noted.note
       try {
         const id = await sessionId($)
+        // A note typed with a plan accepted on the plan screen is numbered before this prompt.
+        await catchNotes($, id).catch(() => undefined)
         // A session the rep holds no record of has the owner's messages read from the
         // session first (or the start's read finished), so this prompt is numbered
         // after them.
@@ -2537,6 +2591,8 @@ export const register: Register = on => {
     const tool = String(e.tool)
     const doing = doingFor(tool, e as unknown as Record<string, unknown>)
     const waits = tool === 'AskUserQuestion' || tool === 'ExitPlanMode'
+    // A note typed with the plan accepted before this call is saved by now: read first.
+    if (notesDue.size > 0) await sessionId($).then(id => catchNotes($, id)).catch(() => undefined)
     try {
       if (doing !== lastDoing || waits) {
         lastDoing = doing
@@ -2611,6 +2667,7 @@ export const register: Register = on => {
     await setNow($, { isWorking: false, doing, mark: e.isAborted ? '' : asking ? 'asking' : 'stopped' }).catch(
       () => undefined,
     )
+    if (notesDue.size > 0) await sessionId($).then(id => catchNotes($, id)).catch(() => undefined)
     if (!e.isAborted && !inFlight.has('look')) {
       inFlight.add('look')
       sessionId($)

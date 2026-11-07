@@ -50,7 +50,9 @@ export type OwnerMsg = {
   // Present (`'approved' in m`, read only by `approvalOf`) when the message approves.
   approved?: string
   read?: ReadState
-  screen?: 'accepted' | 'edited' | 'rejected'
+  // 'accept-note': the owner's note typed on the plan screen while accepting the plan whose call
+  // `toolUseId` names.
+  screen?: 'accepted' | 'edited' | 'rejected' | 'accept-note'
   // A plan-screen answer read from the session's rows, not seen as it happened.
   readBack?: true
   withDraft?: number
@@ -64,13 +66,29 @@ export type OwnerMsg = {
 }
 
 // What Claude Code's plan screen answered, read from the `ExitPlanMode` call's input and result
-// (docs/reference.md, "The plan screen"). Accepted: the plan as returned, which holds an edit the
-// owner made there, or the text form's plan after its heading, else the call's. Rejected: the
-// owner's note, everything after the first sentence that introduces it. Anything else is nothing.
+// (docs/reference.md, "The plan screen"). Accepted: the plan the screen showed, which is the call's
+// (Claude Code reads the plan file when the call arrives); the plan returned only when the owner
+// edited it there (`planWasEdited` true), since otherwise it is the file as it was at approval, which
+// the agent may have changed while the screen was up; the returned plan, or the text form's after its
+// heading, only when the call carried none. The text form says the owner edited it by its heading
+// ("Approved Plan (edited by user)"), which is how a plan read back from the rows tells. Rejected: the owner's note, everything after the first
+// sentence that introduces it. Anything else is nothing.
 export type PlanScreen = { kind: 'accepted'; plan: string; edited: boolean } | { kind: 'rejected'; note: string; plan: string } | null
 const PLAN_REJECTED_SAID = 'To tell you how to proceed, the user said:\n'
 const PLAN_ACCEPTED_TEXT = 'User has approved your plan'
 const PLAN_ACCEPTED_HEADING = '## Approved Plan:\n'
+// The heading Claude Code writes instead when the owner edited the plan on the screen.
+const PLAN_EDITED_HEADING = '## Approved Plan (edited by user):\n'
+// The plan an accepted answer's text form returns, after its heading, and whether the heading says
+// the owner edited it; null when the text holds neither heading.
+function planAfterHeading(said: string | undefined): { plan: string; edited: boolean } | null {
+  if (said === undefined) return null
+  for (const [heading, edited] of [[PLAN_EDITED_HEADING, true], [PLAN_ACCEPTED_HEADING, false]] as const) {
+    const at = said.indexOf(heading)
+    if (at >= 0) return { plan: said.slice(at + heading.length), edited }
+  }
+  return null
+}
 export function planScreen(input: unknown, r: unknown): PlanScreen {
   if (r === null || typeof r !== 'object') return null
   const { result, text, isError } = r as { result?: unknown; text?: unknown; isError?: unknown }
@@ -84,15 +102,15 @@ export function planScreen(input: unknown, r: unknown): PlanScreen {
     const note = error.slice(at + PLAN_REJECTED_SAID.length).trim()
     return note === '' ? null : { kind: 'rejected', note, plan: called }
   }
-  if (result !== null && typeof result === 'object') {
-    const { plan, planWasEdited } = result as { plan?: unknown; planWasEdited?: unknown }
-    if (typeof plan === 'string' && plan !== '' && typeof planWasEdited === 'boolean') return { kind: 'accepted', plan, edited: planWasEdited }
-  }
+  const { plan: back, planWasEdited } = result !== null && typeof result === 'object' ? (result as { plan?: unknown; planWasEdited?: unknown }) : {}
+  const object = typeof back === 'string' && back !== '' && typeof planWasEdited === 'boolean'
   const said = [result, text].find((t): t is string => typeof t === 'string' && t.startsWith(PLAN_ACCEPTED_TEXT))
-  if (said === undefined) return null
-  const at = said.indexOf(PLAN_ACCEPTED_HEADING)
-  const plan = at < 0 ? called : said.slice(at + PLAN_ACCEPTED_HEADING.length)
-  return plan === '' ? null : { kind: 'accepted', plan, edited: false }
+  if (!object && said === undefined) return null
+  const after = planAfterHeading(said)
+  const returned = typeof back === 'string' && back !== '' ? back : (after?.plan ?? '')
+  const edited = planWasEdited === true || after?.edited === true
+  const plan = edited ? returned || called : called || returned
+  return plan === '' ? null : { kind: 'accepted', plan, edited }
 }
 
 // The turns the owner answered, captured from the stream (`tapStep`): limits, and the shapes kept.
@@ -1593,7 +1611,12 @@ const markOf = (m: OwnerMsg): string =>
       ? SENT_MARK
       : m.withDraft !== undefined
         ? `(one message the owner sent: your draft #${m.withDraft} with the owner's own words after it; read it as the owner's) `
-        : ''
+        : m.screen === 'accept-note'
+          ? ACCEPT_NOTE_MARK
+          : ''
+
+// A note the owner typed on the plan screen while accepting a plan: their own words, said with it.
+export const ACCEPT_NOTE_MARK = '(typed by the owner on the plan screen while accepting the plan just before it; the owner\'s own words, which can narrow or add to that plan) '
 
 // A rejection note: the owner's words, then the plan turned down, fenced apart and never the
 // owner's ask; or, when the plan cannot be shown, why.
@@ -1980,14 +2003,43 @@ function contentText(content: unknown): string {
 
 // One message the owner typed, as a transcript file holds it, in the file's order:
 // `text` as typedForm reads it, `key` its typedKey, `queued` when the owner typed it
-// while the agent was working.
-export type HumanItem = { key: string; text: string; queued: boolean }
+// while the agent was working, `toolUseId` when it is a note typed on the plan screen while
+// accepting the plan of that call.
+export type HumanItem = { key: string; text: string; queued: boolean; toolUseId?: string }
+
+// The engine's record that the owner said yes to a call, and a text block right after a tool
+// result, on one transcript line: the shape of a note typed on the plan screen while accepting
+// (Claude Code 2.1.319). The text block follows the result's last key, which is its id or its error
+// flag. Extended regular expressions, read by sed and, in the tests, by JavaScript.
+export const NOTE_SED_MARK = '"permissionDecision":\\{"decision":"accept","source":"user'
+export const NOTE_SED_ROW = '("tool_use_id":"[A-Za-z0-9_-]+"|"is_error":(true|false))\\},\\{"type":"text","text":'
+// Whether a transcript row is the engine's record of an accept the owner made themselves.
+const ownerAccepted = (d: unknown): boolean => {
+  if (typeof d !== 'object' || d === null) return false
+  const { decision, source } = d as { decision?: unknown; source?: unknown }
+  return decision === 'accept' && typeof source === 'string' && source.startsWith('user')
+}
+// The id of the tool result a note's text block follows, or undefined when the content is not that shape.
+function noteCallOf(content: unknown): string | undefined {
+  if (!Array.isArray(content)) return undefined
+  const k = content.findIndex(b => typeof b === 'object' && b !== null && (b as { type?: unknown }).type === 'text')
+  const before = k > 0 ? (content[k - 1] as { type?: unknown; tool_use_id?: unknown }) : undefined
+  return before?.type === 'tool_result' && typeof before.tool_use_id === 'string' && before.tool_use_id !== '' ? before.tool_use_id : undefined
+}
+
+// The keys the record read labels the owner's by: a typed message's key, and a plan-screen note's
+// key bound to its call, so a note proves only the row of that call's result and never a typed row.
+export const noteKey = (toolUseId: string, key: string): string => `${toolUseId}\u0000${key}`
+export const heldKeys = (items: readonly HumanItem[]): Set<string> => new Set(items.map(i => (i.toolUseId === undefined ? i.key : noteKey(i.toolUseId, i.key))))
 
 // The session's transcript file says who wrote each row, which `$.session.messages()` does
 // not: a row the owner typed is a line with type "user", origin kind "human" and no isMeta,
 // or, when the owner typed it while the agent was working, a line with type "attachment"
 // holding a "queued_command" of origin kind "human", meta neither on the line nor on the
-// attachment, their text in its prompt. A message the owner queued that way is never a row of
+// attachment, their text in its prompt; or, typed on the plan screen while accepting a plan, a
+// line with type "user" and no origin, holding the screen's tool result and then the note as a text
+// block, and the engine's record that the owner accepted (a "permissionDecision" of "accept" whose
+// source begins "user"; the engine's own accepts say "config"). A message the owner queued that way is never a row of
 // `$.session.messages()` at all, so the file is the only place it is found. Every row the
 // engine writes into the owner's side (a task notification, another session's message, a
 // skill's body, a usage-limit note, a scheduled task, an automatic continuation, a compact
@@ -2007,12 +2059,15 @@ export function humanItems(jsonl: string): HumanItem[] {
       continue
     }
     if (typeof row !== 'object' || row === null) continue
-    const r = row as { type?: unknown; isMeta?: unknown; origin?: unknown; message?: unknown; attachment?: unknown }
+    const r = row as { type?: unknown; isMeta?: unknown; origin?: unknown; message?: unknown; attachment?: unknown; permissionDecision?: unknown }
     if (r.isMeta === true) continue
     let raw = ''
     let queued = false
+    let call: string | undefined
+    const message = typeof r.message === 'object' && r.message !== null ? (r.message as { content?: unknown }) : {}
     if (r.type === 'user' && kindOf(r.origin) === 'human') {
-      const message = typeof r.message === 'object' && r.message !== null ? (r.message as { content?: unknown }) : {}
+      raw = contentText(message.content)
+    } else if (r.type === 'user' && r.origin === undefined && ownerAccepted(r.permissionDecision) && (call = noteCallOf(message.content)) !== undefined) {
       raw = contentText(message.content)
     } else if (r.type === 'attachment' && typeof r.attachment === 'object' && r.attachment !== null) {
       const a = r.attachment as { type?: unknown; origin?: unknown; prompt?: unknown; isMeta?: unknown }
@@ -2024,14 +2079,14 @@ export function humanItems(jsonl: string): HumanItem[] {
     const text = typedForm(raw)
     const key = typedKey(raw)
     if (key === '' || notTyped(text)) continue
-    out.push({ key, text, queued })
+    out.push({ key, text, queued, ...(call === undefined ? {} : { toolUseId: call }) })
   }
   return out
 }
 
 // The keys of the owner's messages in the lines given (humanItems): the record read
 // labels a row the owner's when its key is among them.
-export const humanTexts = (jsonl: string): Set<string> => new Set(humanItems(jsonl).map(i => i.key))
+export const humanTexts = (jsonl: string): Set<string> => heldKeys(humanItems(jsonl))
 
 // The keys of the user rows that could be the owner's, in row order: no tool results,
 // something left once the reminders are out, nothing NOT_TYPED names.
@@ -2072,7 +2127,8 @@ const isSummaryRow = (row: RecordRow | undefined): boolean =>
 // turn's start is not in the rows, so what `body` holds is part of a turn and is never shown as
 // all of it. An item no row holds has no body at all, and says so. The session's first message
 // answers nothing, so its missing start is no gap.
-export type SeededTurn = { text: string; prior: string; at?: number; body?: string; incomplete?: string }
+// A plan-screen note keeps its call's id (`toolUseId`) and is matched only to the row of that call's result.
+export type SeededTurn = { text: string; prior: string; at?: number; body?: string; incomplete?: string; toolUseId?: string }
 export function typedFromItems(items: readonly HumanItem[], rows: readonly RecordRow[]): SeededTurn[] {
   const priors = items.map(() => '')
   const ats = items.map(() => -1)
@@ -2083,7 +2139,9 @@ export function typedFromItems(items: readonly HumanItem[], rows: readonly Recor
     let at = -1
     for (let i = cursor; i >= 0; i--) {
       const row = rows[i]
-      if (row === undefined || row.role !== 'user' || (row.toolResults ?? []).length > 0) continue
+      if (row === undefined || row.role !== 'user') continue
+      const results = row.toolResults ?? []
+      if (item.toolUseId === undefined ? results.length > 0 : !results.some(t => t.tool_use_id === item.toolUseId)) continue
       if (typedKey(row.text) === item.key) {
         at = i
         break
@@ -2102,7 +2160,7 @@ export function typedFromItems(items: readonly HumanItem[], rows: readonly Recor
   }
   let before = -1
   return items.map((item, k) => {
-    const out: SeededTurn = { text: item.text, prior: priors[k] ?? '' }
+    const out: SeededTurn = { text: item.text, prior: priors[k] ?? '', ...(item.toolUseId === undefined ? {} : { toolUseId: item.toolUseId }) }
     const at = ats[k] ?? -1
     if (at < 0) return k === 0 ? out : { ...out, incomplete: NO_ROW_WHY }
     const parts: string[] = []
@@ -2138,12 +2196,13 @@ export function screenFromRows(rows: readonly RecordRow[]): ScreenEvent[] {
 }
 
 // The seed's order: the owner's messages as the file has them, with each plan-screen answer before
-// the first message whose row comes after it. A message with no row keeps its place among the rest.
+// the first message whose row comes after it, or is its own (a note typed with it). A message with
+// no row keeps its place among the rest.
 export function seedOrder(typed: readonly SeededTurn[], screens: readonly ScreenEvent[]): Array<SeededTurn | ScreenEvent> {
   const out: Array<SeededTurn | ScreenEvent> = []
   let next = 0
   for (const t of typed) {
-    while (t.at !== undefined && (screens[next]?.at ?? Infinity) < t.at) out.push(screens[next++] as ScreenEvent)
+    while (t.at !== undefined && (screens[next]?.at ?? Infinity) <= t.at) out.push(screens[next++] as ScreenEvent)
     out.push(t)
   }
   return [...out, ...screens.slice(next)]
@@ -2176,7 +2235,7 @@ export function forkItems(items: readonly HumanItem[], rows: readonly RecordRow[
   const at = new Map<string, number[]>()
   const typedBefore = [0]
   items.forEach((item, i) => {
-    const typed = !item.queued
+    const typed = !item.queued && item.toolUseId === undefined
     typedBefore.push((typedBefore[i] ?? 0) + (typed ? 1 : 0))
     if (!typed || !wanted.has(item.key)) return
     const list = at.get(item.key)
@@ -2202,7 +2261,7 @@ export function forkItems(items: readonly HumanItem[], rows: readonly RecordRow[
   let best: { matched: number; gaps: number; end: number } | null = null
   for (let e = 0; e < items.length; e++) {
     const top = items[e]
-    if (top === undefined || top.queued || !wanted.has(top.key)) continue
+    if (top === undefined || top.queued || top.toolUseId !== undefined || !wanted.has(top.key)) continue
     let cursor = e
     let matched = 0
     let end = -1
@@ -2230,10 +2289,11 @@ export function forkItems(items: readonly HumanItem[], rows: readonly RecordRow[
 // The folder a transcript file is in: the path up to its last '/'.
 export const folderOf = (path: string): string => path.slice(0, Math.max(0, path.lastIndexOf('/')))
 
-// One read of a transcript file: sed prints only the lines marked human, so a long session's
-// read is the owner's rows and not the whole file, and blanks every picture's data in them,
-// so a line with a pasted image stays small and its text is still read whole.
-export const HUMAN_SED = '/"kind":"human"/{s/"data":"[^"]*"/"data":""/g;p;}'
+// One read of a transcript file: sed prints only the lines marked human and the lines of a note
+// typed on the plan screen (NOTE_SED_MARK and NOTE_SED_ROW), so a long session's read is the
+// owner's rows and not the whole file, and blanks every picture's data in them, so a line with a
+// pasted image stays small and its text is still read whole.
+export const HUMAN_SED = `/"kind":"human"/{s/"data":"[^"]*"/"data":""/g;p;d;};/${NOTE_SED_MARK}/{/${NOTE_SED_ROW}/{s/"data":"[^"]*"/"data":""/g;p;};}`
 export const humanRead = (file: string): string[] => ['sed', '-n', '-E', HUMAN_SED, file]
 // A fork taken after a compaction the owner has typed nothing since holds no row that could be
 // the owner's, so its place in its parent's file is found by its last tool result instead: the id
@@ -2317,10 +2377,25 @@ type RecShow = 'today' | 'whole' | number
 const shown = (how: RecShow) => (f: RecField): string => (how === 'whole' ? f.text : headTail(f.text, how === 'today' ? f.cut : how, f.name))
 const entryText = (e: RecEntry, how: RecShow): string => fenceTag(e.build(shown(how)), 'session_record')
 
+// An accepted plan screen's result as the record prints it: the plan it returns is the file as it
+// was at approval, which the agent may have changed while the screen was up, so unless the owner
+// edited it there the copy is replaced by a pointer to the plan the screen showed (the call's input,
+// printed beside it). Any other result as it is.
+function planCopyOut(input: unknown, result: unknown, text: string): string {
+  const at = text.indexOf(PLAN_ACCEPTED_HEADING)
+  if (!text.startsWith(PLAN_ACCEPTED_TEXT) || at < 0 || text.includes(PLAN_EDITED_HEADING)) return text
+  if (result !== null && typeof result === 'object' && (result as { planWasEdited?: unknown }).planWasEdited === true) return text
+  const shown = (input as { plan?: unknown } | null | undefined)?.plan
+  if (typeof shown !== 'string' || shown === '') return text
+  return `${text.slice(0, at)}${PLAN_ACCEPTED_HEADING}(the plan the screen showed, in this call's input; the copy returned here is the plan file as it was at approval and is not shown)`
+}
+
 // The session's rows as entries, each with its fields and how it is printed around them.
 function recordEntries(rows: readonly RecordRow[], human?: ReadonlySet<string>): RecEntry[] {
   const entries: RecEntry[] = []
   const printed = new Set<string>()
+  // Each plan screen's call input, so its result is printed as planCopyOut prints it wherever it lands.
+  const planInputs = new Map<string, unknown>()
   rows.forEach((row, at) => {
     const n = entries.length + 1
     if (row.role === 'assistant') {
@@ -2330,8 +2405,9 @@ function recordEntries(rows: readonly RecordRow[], human?: ReadonlySet<string>):
       if (said !== null) fields.push(said)
       const uses = row.toolUses.map(u => {
         const input = { text: compactJson(u.input), cut: RECORD_TOOL_CUT, name: 'tool input' }
-        const result = u.text === undefined ? null : { text: oneLine(u.text), cut: RECORD_TOOL_CUT, name: 'tool result' }
+        const result = u.text === undefined ? null : { text: oneLine(u.tool === 'ExitPlanMode' ? planCopyOut(u.input, u.result, u.text) : u.text), cut: RECORD_TOOL_CUT, name: 'tool result' }
         if (u.text !== undefined && u.tool_use_id !== undefined) printed.add(u.tool_use_id)
+        if (u.tool === 'ExitPlanMode' && u.tool_use_id !== undefined) planInputs.set(u.tool_use_id, u.input)
         fields.push(input, ...(result === null ? [] : [result]))
         return { tool: u.tool, input, result, isError: u.isError === true }
       })
@@ -2351,16 +2427,27 @@ function recordEntries(rows: readonly RecordRow[], human?: ReadonlySet<string>):
     const text = withoutReminders(row.text)
     const results = (row.toolResults ?? []).filter(r => r.tool_use_id === undefined || !printed.has(r.tool_use_id))
     if ((row.toolResults ?? []).length > 0) {
-      const parts = results.map(r => ({ f: { text: oneLine(r.text), cut: RECORD_TOOL_CUT, name: 'tool result' }, isError: r.isError }))
-      const own = text === '' ? null : { text, cut: RECORD_TOOL_CUT, name: 'message' }
-      if (parts.length === 0 && own === null) return
-      entries.push({
-        n,
-        row: at,
-        fields: [...parts.map(p => p.f), ...(own === null ? [] : [own])],
-        build: show =>
-          `entry ${n} tool results returned to the agent (not the person's words):\n${[...parts.map(p => `- ${p.isError ? '(error) ' : ''}${show(p.f)}`), ...(own === null ? [] : [show(own)])].join('\n')}`,
+      const parts = results.map(r => {
+        const plan = r.tool_use_id === undefined ? undefined : planInputs.get(r.tool_use_id)
+        return { f: { text: oneLine(plan === undefined ? r.text : planCopyOut(plan, undefined, r.text)), cut: RECORD_TOOL_CUT, name: 'tool result' }, isError: r.isError }
       })
+      // A note typed on the plan screen beside this result, proven the owner's for that call.
+      const key = typedKey(row.text)
+      const noted = human !== undefined && key !== '' && (row.toolResults ?? []).some(r => r.tool_use_id !== undefined && human.has(noteKey(r.tool_use_id, key)))
+      const own = text === '' || noted ? null : { text, cut: RECORD_TOOL_CUT, name: 'message' }
+      if (parts.length > 0 || own !== null)
+        entries.push({
+          n,
+          row: at,
+          fields: [...parts.map(p => p.f), ...(own === null ? [] : [own])],
+          build: show =>
+            `entry ${n} tool results returned to the agent (not the person's words):\n${[...parts.map(p => `- ${p.isError ? '(error) ' : ''}${show(p.f)}`), ...(own === null ? [] : [show(own)])].join('\n')}`,
+        })
+      if (noted) {
+        const m = entries.length + 1
+        const f = { text: typedForm(row.text), cut: RECORD_ENTRY_CUT, name: 'message' }
+        entries.push({ n: m, row: at, fields: [f], build: show => `entry ${m} the person (typed on the plan screen while accepting the plan):\n${show(f)}` })
+      }
       return
     }
     if (text === '') return
@@ -2558,6 +2645,8 @@ export function boundaryRow(rows: readonly RecordRow[], job: readonly OwnerMsg[]
   const list = job.slice(at)
   list.forEach((m, i) => {
     const prev = list[i - 1]
+    // A note typed with a plan on the plan screen sits in that plan's row and places nothing more.
+    if (m.screen === 'accept-note') return
     if (m.kind === 'plan') {
       const hit = rows.flatMap((r, k) => ((r.toolResults ?? []).some(t => t.tool_use_id !== undefined && t.tool_use_id === m.toolUseId) ? [k] : []))
       units.push({ n: m.n, rows: hit })

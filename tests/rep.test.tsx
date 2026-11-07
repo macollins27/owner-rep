@@ -369,7 +369,10 @@ const transcript = (on: On, files: Record<string, string>, opts: { folder?: stri
     const before = e.argv[3] === '-e' ? Number((e.argv[4] ?? '').replace(/q$/, '')) : Infinity
     const script = (e.argv[3] === '-e' ? e.argv[6] : e.argv[3]) ?? ''
     const mark = script.match(/^\/([^/]+)\//)?.[1] ?? '\u0000'
-    let lines = body.split('\n').slice(0, before - 1).filter(l => l.includes(mark))
+    // The second address, when the script has one: a row the engine records the owner accepted,
+    // holding a text block right after a tool result (rep.NOTE_SED_MARK, rep.NOTE_SED_ROW).
+    const noted = script.includes('"permissionDecision"') ? (l: string) => l.includes(rep.NOTE_SED_MARK.replace(/\\/g, '')) && new RegExp(rep.NOTE_SED_ROW).test(l) : () => false
+    let lines = body.split('\n').slice(0, before - 1).filter(l => l.includes(mark) || noted(l))
     if (script.includes('s/"data":"[^"]*"/"data":""/g')) lines = lines.map(l => l.replace(/"data":"[^"]*"/g, '"data":""'))
     if ((opts.cut ?? []).includes(name)) return out(0, `${lines[0] ?? ''}\n`, true)
     const stdout = lines.length > 0 ? `${lines.join('\n')}\n` : ''
@@ -5617,7 +5620,8 @@ const planStub = (on: On) => {
 }
 
 test('planScreen reads the recorded accepted, edited and rejected shapes', () => {
-  expect(rep.planScreen({ plan: 'called' }, ACCEPT_RESULT('returned'))).toEqual({ kind: 'accepted', plan: 'returned', edited: false })
+  // Not edited: the plan the screen showed (the call's), never the file as it was at approval.
+  expect(rep.planScreen({ plan: 'called' }, ACCEPT_RESULT('returned'))).toEqual({ kind: 'accepted', plan: 'called', edited: false })
   expect(rep.planScreen({ plan: 'called' }, ACCEPT_RESULT('returned and edited', true))).toEqual({ kind: 'accepted', plan: 'returned and edited', edited: true })
   expect(rep.planScreen({ plan: 'called' }, { isError: true, result: REJECT_TEXT('only hello.txt') })).toEqual({ kind: 'rejected', note: 'only hello.txt', plan: 'called' })
   expect(rep.planScreen({ plan: 'called' }, { isError: true, result: { x: 1 }, text: REJECT_TEXT('from the text') })).toEqual({ kind: 'rejected', note: 'from the text', plan: 'called' })
@@ -5625,8 +5629,52 @@ test('planScreen reads the recorded accepted, edited and rejected shapes', () =>
 
 test('planScreen reads the accepted text form, with its heading and without', () => {
   const said = 'User has approved your plan. You can now start coding.'
-  expect(rep.planScreen({ plan: 'called' }, { result: `${said}\n\n## Approved Plan:\nstep one\nstep two` })).toEqual({ kind: 'accepted', plan: 'step one\nstep two', edited: false })
+  expect(rep.planScreen({ plan: 'called' }, { result: `${said}\n\n## Approved Plan:\nstep one\nstep two` })).toEqual({ kind: 'accepted', plan: 'called', edited: false })
+  expect(rep.planScreen({}, { result: `${said}\n\n## Approved Plan:\nstep one\nstep two` })).toEqual({ kind: 'accepted', plan: 'step one\nstep two', edited: false })
   expect(rep.planScreen({ plan: 'called' }, { text: said })).toEqual({ kind: 'accepted', plan: 'called', edited: false })
+})
+
+// The accepted shape Claude Code 2.1.319 returns (probe session e533d8bd, 2026-11-07): the file as it
+// was at approval, no planWasEdited when the owner did not edit, and the text form after it.
+const REAL_ACCEPT = (plan: string) => ({
+  result: { plan, isAgent: false, filePath: '/cfg/plans/p.md' },
+  text: `User has approved your plan. You can now start coding. Start with updating your todo list if applicable\n\nYour plan has been saved to: /cfg/plans/p.md\nYou can refer back to it if needed during implementation.\n\n## Approved Plan:\n${plan}`,
+})
+const SHOWN_PLAN = 'Plan: make hello.py and run it.'
+const CHANGED_PLAN = 'Plan: make hello.py, run it, then push to the remote and deploy.'
+
+test('planScreen holds the plan the screen showed when the file changed under it, and the owner\'s own edit when he made one', () => {
+  expect(rep.planScreen({ plan: SHOWN_PLAN }, REAL_ACCEPT(CHANGED_PLAN))).toEqual({ kind: 'accepted', plan: SHOWN_PLAN, edited: false })
+  expect(rep.planScreen({ plan: SHOWN_PLAN }, ACCEPT_RESULT(CHANGED_PLAN))).toEqual({ kind: 'accepted', plan: SHOWN_PLAN, edited: false })
+  expect(rep.planScreen({ plan: SHOWN_PLAN }, ACCEPT_RESULT(CHANGED_PLAN, true))).toEqual({ kind: 'accepted', plan: CHANGED_PLAN, edited: true })
+  // A call that carried no plan: what came back is all there is.
+  expect(rep.planScreen({}, REAL_ACCEPT(CHANGED_PLAN))).toEqual({ kind: 'accepted', plan: CHANGED_PLAN, edited: false })
+})
+
+test('rule: a plan file changed while the screen was up is not what the owner approved: the plan shown is saved and the change reaches no prompt', async ($, on) => {
+  const s = asks(on, [his(1, 'plan hello.py')])
+  const screen = planStub(on)
+  s.answer(() => ANSWER(['hello.py made and run | open']))
+  await started($)
+  await screen.call($, SHOWN_PLAN, REAL_ACCEPT(CHANGED_PLAN))
+  await s.quiet($)
+  expect(s.msg(2)?.screen).toBe('accepted')
+  expect(s.d.files.get(`${DIR}/2-body.txt`) ?? s.msg(2)?.src?.body?.text).toBe(SHOWN_PLAN)
+  for (const p of s.prompts) expect(p).not.toContain('deploy')
+})
+
+test('recordText shows an accepted plan screen\'s returned copy only by a pointer when the screen showed another plan, and whole when the owner edited it', () => {
+  const rows = (result: unknown, text: string): RecordRow[] => [
+    { role: 'user', text: 'plan hello.py', toolUses: [] },
+    { role: 'assistant', text: '', toolUses: [{ tool_use_id: 'p1', tool: 'ExitPlanMode', input: { plan: SHOWN_PLAN }, result, text }] },
+  ]
+  const real = REAL_ACCEPT(CHANGED_PLAN)
+  const plain = recordText(rows(real.result, real.text), 1_000_000).text
+  expect(plain).toContain(SHOWN_PLAN)
+  expect(plain).not.toContain('deploy')
+  expect(plain).toContain('User has approved your plan')
+  const edited = ACCEPT_RESULT(CHANGED_PLAN, true)
+  expect(recordText(rows(edited.result, `${real.text.slice(0, real.text.indexOf('## Approved Plan:'))}## Approved Plan:\n${CHANGED_PLAN}`), 1_000_000).text).toContain('deploy')
 })
 
 test('planScreen keeps a note that itself holds the sentence that introduces it', () => {
@@ -9753,11 +9801,11 @@ const ENGINE_LINES = [
 ]
 
 // The runs `heldItems` makes, as a session would see them.
-const SED = (file: string, folder = FOLDER) => `sed -n -E /"kind":"human"/{s/"data":"[^"]*"/"data":""/g;p;} ${folder}/${file}`
+const SED = (file: string, folder = FOLDER) => `sed -n -E ${HUMAN_SED} ${folder}/${file}`
 const FIND = (id = 'test-session') => `find ${PROJECTS} -maxdepth 2 -name ${id}.jsonl`
 const GREP = (file: string, id: string, folder = FOLDER) => `grep -n -o -m 1 -F "id":"${id}" ${folder}/${file}`
 const START = (file: string, folder = FOLDER) => `grep -n -o -m 1 -E "subtype":"compact_boundary".*"uuid":"[0-9a-f-]+"|"kind":"human" ${folder}/${file}`
-const SED_BEFORE = (file: string, line: number, folder = FOLDER) => `sed -n -E -e ${line}q -e /"kind":"human"/{s/"data":"[^"]*"/"data":""/g;p;} ${folder}/${file}`
+const SED_BEFORE = (file: string, line: number, folder = FOLDER) => `sed -n -E -e ${line}q -e ${HUMAN_SED} ${folder}/${file}`
 
 test('humanTexts keeps only the rows the owner typed, origin human and not meta, a list of blocks as its text joined, a command as the owner ran it, and skips a cut line', () => {
   for (const line of ENGINE_LINES) expect([...humanTexts(line)]).toEqual([])
@@ -9806,8 +9854,14 @@ test('typedForm reads a command as prompt.submit sees it and a message without i
   expect(typedKey('Add  a licence\n\nfile.')).toBe('Add a licence file.')
 })
 
-test('humanRead prints only the lines marked human, with picture data blanked, and folderOf is the folder a transcript is in', () => {
-  expect(humanRead('/Users/o/.claude/projects/-x/a.jsonl')).toEqual(['sed', '-n', '-E', '/"kind":"human"/{s/"data":"[^"]*"/"data":""/g;p;}', '/Users/o/.claude/projects/-x/a.jsonl'])
+test('humanRead prints only the lines marked human and the plan-screen note lines, with picture data blanked, and folderOf is the folder a transcript is in', () => {
+  expect(humanRead('/Users/o/.claude/projects/-x/a.jsonl')).toEqual([
+    'sed',
+    '-n',
+    '-E',
+    '/"kind":"human"/{s/"data":"[^"]*"/"data":""/g;p;d;};/"permissionDecision":\\{"decision":"accept","source":"user/{/("tool_use_id":"[A-Za-z0-9_-]+"|"is_error":(true|false))\\},\\{"type":"text","text":/{s/"data":"[^"]*"/"data":""/g;p;};}',
+    '/Users/o/.claude/projects/-x/a.jsonl',
+  ])
   expect(folderOf('/Users/o/.claude/projects/-Users-o-work/a.jsonl')).toBe('/Users/o/.claude/projects/-Users-o-work')
   expect(HUMAN_READ_TIMEOUT_MS).toBe(10_000)
   expect(HUMAN_SCAN_BUDGET_MS).toBe(30_000)
@@ -11452,8 +11506,12 @@ test('screenFromRows finds each ExitPlanMode answer by its call\'s id and its ro
   ]
   expect(rep.screenFromRows(rows)).toEqual([
     { at: 1, toolUseId: 'a', seen: { kind: 'rejected', note: 'no pears', plan: 'First plan.' } },
-    { at: 4, toolUseId: 'b', seen: { kind: 'accepted', plan: 'Second plan, as held.', edited: false } },
+    // The plan the screen showed, not the file as it was at approval.
+    { at: 4, toolUseId: 'b', seen: { kind: 'accepted', plan: 'Second plan.', edited: false } },
   ])
+  // An edit the owner made on the screen is told by the heading Claude Code writes for it, read back too.
+  const edited = [planCall('f', 'Third plan.') as RecordRow, planAnswer('f', ACCEPT_TEXT('Third plan, edited by the owner.').replace('## Approved Plan:', '## Approved Plan (edited by user):')) as RecordRow]
+  expect(rep.screenFromRows(edited)).toEqual([{ at: 1, toolUseId: 'f', seen: { kind: 'accepted', plan: 'Third plan, edited by the owner.', edited: true } }])
 })
 
 test('rule: a seeded yes holds the whole turn it answered, the plan row, the tool call and the close, shown as read back', async ($, on) => {
@@ -11574,6 +11632,123 @@ test('rule: a seeded session whose only answers came on the plan screen is still
   await started($)
   await s.quiet($)
   expect(s.held()?.owner.map(m => [m.n, m.kind])).toEqual([[1, 'plan']])
+})
+
+// A note the owner typed while accepting a plan on the plan screen ("approve with this feedback"), as
+// Claude Code 2.1.319 saves it (probe session e533d8bd, line 159): a user row with no origin, the
+// screen's result and then the note as a text block, and the engine's record that the owner accepted.
+const NOTE_LINE = (id: string, note: string, decision: Record<string, unknown> | null = { decision: 'accept', source: 'user_temporary', grantScope: 'session', reasonCode: 'unknown' }) =>
+  JSON.stringify({
+    parentUuid: 'a',
+    isSidechain: false,
+    promptId: 'b',
+    type: 'user',
+    message: { role: 'user', content: [{ type: 'tool_result', content: 'User has approved your plan. You can now start coding.', tool_use_id: id }, { type: 'text', text: note }] },
+    uuid: 'c',
+    timestamp: '2026-11-07T08:40:00.000Z',
+    toolUseResult: { plan: 'the plan', isAgent: false, filePath: '/x/plan.md' },
+    sourceToolAssistantUUID: 'd',
+    ...(decision === null ? {} : { permissionDecision: decision }),
+    sessionId: 'test-session',
+  })
+const noteAnswer = (id: string, text: string, note: string): SessionMessage => ({ role: 'user', text: note, toolUses: [], toolResults: [{ tool_use_id: id, text, isError: false }] })
+const OWNER_NOTE = 'approved, but skip the remote check and do not push'
+
+test('humanItems reads a note typed on the plan screen as the owner\'s, tied to the screen\'s call, and nothing else in that shape', () => {
+  expect(humanItems(NOTE_LINE('toolu_1', OWNER_NOTE))).toEqual([{ key: OWNER_NOTE, text: OWNER_NOTE, queued: false, toolUseId: 'toolu_1' }])
+  // The engine's own accepts, a missing record of the decision, a refusal, or a result with no note: none of it.
+  expect(humanItems(NOTE_LINE('toolu_1', OWNER_NOTE, { decision: 'accept', source: 'config' }))).toEqual([])
+  expect(humanItems(NOTE_LINE('toolu_1', OWNER_NOTE, null))).toEqual([])
+  expect(humanItems(NOTE_LINE('toolu_1', OWNER_NOTE, { decision: 'reject', source: 'user_temporary' }))).toEqual([])
+  expect(humanItems(NOTE_LINE('toolu_1', ''))).toEqual([])
+  // A note's key never stands for a typed message of the same words.
+  expect([...rep.heldKeys(humanItems(`${LINE(OWNER_NOTE)}\n${NOTE_LINE('toolu_1', OWNER_NOTE)}`))].length).toBe(2)
+})
+
+test('HUMAN_SED prints a note row on the plan screen and no other tool result', () => {
+  expect(HUMAN_SED).toContain('"permissionDecision":\\{"decision":"accept","source":"user')
+  const re = new RegExp(rep.NOTE_SED_ROW)
+  expect(re.test(NOTE_LINE('toolu_01D34WKKAvurkw78ybCFxJbP', OWNER_NOTE))).toBe(true)
+  expect(re.test(NOTE_LINE('toolu_1', OWNER_NOTE).replace(',{"type":"text","text":"approved, but skip the remote check and do not push"}', ''))).toBe(false)
+})
+
+test('recordText prints a plan-screen note proven the owner\'s as the person\'s, and one not proven as a result', () => {
+  const rows: RecordRow[] = [
+    { role: 'user', text: 'plan hello.py', toolUses: [] },
+    { role: 'assistant', text: '', toolUses: [{ tool_use_id: 'p1', tool: 'ExitPlanMode', input: { plan: SHOWN_PLAN }, text: ACCEPT_TEXT(SHOWN_PLAN) }] },
+    noteAnswer('p1', ACCEPT_TEXT(SHOWN_PLAN), OWNER_NOTE),
+  ]
+  const proven = recordText(rows, 1_000_000, rep.heldKeys(humanItems(`${LINE('plan hello.py')}\n${NOTE_LINE('p1', OWNER_NOTE)}`))).text
+  expect(proven).toContain(`the person (typed on the plan screen while accepting the plan):\n${OWNER_NOTE}`)
+  expect(proven).not.toMatch(/not the person's words\):\n[^\n]*skip the remote check/)
+  // Proven for another call, or not at all: the agent's side.
+  for (const human of [rep.heldKeys(humanItems(`${LINE('plan hello.py')}\n${NOTE_LINE('p9', OWNER_NOTE)}`)), new Set(['plan hello.py', OWNER_NOTE])]) {
+    const text = recordText(rows, 1_000_000, human).text
+    expect(text).not.toContain(`the person (typed on the plan screen while accepting the plan):\n${OWNER_NOTE}`)
+    expect(text).toContain('not the person\'s words')
+  }
+})
+
+test('rule: a note typed while accepting a plan is the owner\'s next message, read with the plan, and reaches the writer', async ($, on) => {
+  const rows = [you('plan hello.py'), planCall('p1', SHOWN_PLAN), noteAnswer('p1', ACCEPT_TEXT(SHOWN_PLAN), OWNER_NOTE)]
+  const s = seededSession(on, rows, `${LINE('plan hello.py')}\n${NOTE_LINE('p1', OWNER_NOTE)}`, {}, [his(1, 'plan hello.py')])
+  const screen = planStub(on)
+  on('tool.call', { tool: 'Read' }, () => ({ result: 'print("hello")' }) as never)
+  s.answer(() => ANSWER(['hello.py made and run | open', 'nothing pushed | open']))
+  await started($)
+  await screen.call($, SHOWN_PLAN, REAL_ACCEPT(SHOWN_PLAN))
+  await $.tool.call({ tool: 'Read', file_path: '/x/hello.py', tool_use_id: 'r1' } as never)
+  await s.quiet($)
+  expect(s.held()?.owner.map(m => [m.n, m.kind, m.screen])).toEqual([
+    [1, 'his', undefined],
+    [2, 'plan', 'accepted'],
+    [3, 'his', 'accept-note'],
+  ])
+  expect(s.msg(3)?.text).toBe(OWNER_NOTE)
+  expect((s.msg(3) as { toolUseId?: string } | undefined)?.toolUseId).toBe('p1')
+  expect(s.prompts.at(-1)).toContain(OWNER_NOTE)
+})
+
+test('rule: a note beside a plan-screen result that the file does not prove the owner\'s is not stored', async ($, on) => {
+  const rows = [you('plan hello.py'), planCall('p1', SHOWN_PLAN), noteAnswer('p1', ACCEPT_TEXT(SHOWN_PLAN), OWNER_NOTE)]
+  const s = seededSession(on, rows, `${LINE('plan hello.py')}\n${NOTE_LINE('p1', OWNER_NOTE, { decision: 'accept', source: 'config' })}`, {}, [his(1, 'plan hello.py')])
+  const screen = planStub(on)
+  on('tool.call', { tool: 'Read' }, () => ({ result: 'print("hello")' }) as never)
+  s.answer(() => ANSWER(['hello.py made and run | open']))
+  await started($)
+  await screen.call($, SHOWN_PLAN, REAL_ACCEPT(SHOWN_PLAN))
+  await $.tool.call({ tool: 'Read', file_path: '/x/hello.py', tool_use_id: 'r1' } as never)
+  await s.quiet($)
+  expect(s.held()?.owner.map(m => [m.n, m.kind])).toEqual([
+    [1, 'his'],
+    [2, 'plan'],
+  ])
+})
+
+test('rule: a seeded session reads a note typed while accepting a plan back after that plan, as the owner\'s', async ($, on) => {
+  const rows = [you('plan hello.py'), planCall('p1', SHOWN_PLAN), noteAnswer('p1', ACCEPT_TEXT(SHOWN_PLAN), OWNER_NOTE), agentSaid('Made it.'), you('thanks')]
+  const s = seededSession(on, rows, [LINE('plan hello.py'), NOTE_LINE('p1', OWNER_NOTE), LINE('thanks')].join('\n'))
+  s.answer(() => ANSWER(['hello.py made and run | open']))
+  await started($)
+  await s.quiet($)
+  expect(s.held()?.owner.map(m => [m.n, m.kind, m.screen])).toEqual([
+    [1, 'his', undefined],
+    [2, 'plan', 'accepted'],
+    [3, 'his', 'accept-note'],
+    [4, 'his', undefined],
+  ])
+  expect(s.msg(3)?.text).toBe(OWNER_NOTE)
+})
+
+test('boundaryRow places a plan-screen note at the row of the result it was typed beside', () => {
+  const rows: RecordRow[] = [you('plan hello.py'), planCall('p1', SHOWN_PLAN), noteAnswer('p1', ACCEPT_TEXT(SHOWN_PLAN), OWNER_NOTE), agentSaid('Made it.')]
+  const job = [
+    { n: 1, kind: 'his', text: 'plan hello.py', prior: '' },
+    { n: 2, kind: 'plan', text: SHOWN_PLAN, prior: '', approved: 'all', screen: 'accepted', toolUseId: 'p1' },
+    { n: 3, kind: 'his', text: OWNER_NOTE, prior: '', screen: 'accept-note', toolUseId: 'p1' },
+  ] as unknown as OwnerMsg[]
+  const b = rep.boundaryRow(rows, job)
+  expect(b.outcome).toBe('established')
 })
 
 test('rule: a seeded draft with the owner\'s words after it keeps the whole message as sent, and his words keep the turn it answered', async ($, on) => {
