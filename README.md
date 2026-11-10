@@ -175,13 +175,24 @@ It weighs your messages by kind. A note you send to the rep counts most of all. 
 your reasons and complaints, then your instructions. A "yes" to the agent's own idea counts
 least, because that is the agent's idea with your name on it.
 
-On top of that it holds five expectations for every job:
+Its standard is the best work the trade can produce: a website as good as the best firm in
+that business would put up, software as good as the best team would ship. It judges the work
+itself against that, not only whether the agent did what it said. On top of that it holds six
+expectations for every job:
 
 - the whole result is delivered;
-- it is shown to work, not just said to work;
+- it is shown to work by someone opening the real thing, using it and trying to break it, not
+  by the agent's own checks;
 - no known problem is left behind;
-- nothing was added that the result doesn't need;
-- it was done the way that is best for the result, not the way that was easiest for the agent.
+- nothing was added that the result doesn't need, and that includes tests, check scripts,
+  graders, rule books and rounds of review the result doesn't need;
+- it was done the way that is best for the result, not the way that was easiest for the agent;
+- the result is the best it can be, judged by looking at it.
+
+The rep also watches where the work goes. When more of a session goes into the agent checking
+its own work than into the product, it says so, and the message it writes for you never asks
+for more tests, scripts or reports: where proof is missing it asks for a hands-on look at the
+real thing.
 
 You do no step of the job yourself. A chore the agent leaves "for you" is unfinished work,
 and the rep puts it in the message to the agent.
@@ -217,7 +228,10 @@ sandbox. Writes are denied to your real project, the git repositories it belongs
 into, Claude Code's settings, and the main places in your home folder that run code. The
 sandbox closes the network to the check's commands, except for your own machine, where
 agentsview answers. Reads are not fenced: like any agent, the check can read any file you can
-read, and what it reads goes to the model. The copy is deleted when the check ends.
+read, and what it reads goes to the model. The check also looks at what was built where it
+can reach it: it may open the pages, start the program or run the project's own commands
+inside that same copy and sandbox, with the same fences, so a site or service only on the
+internet stays out of its reach. The copy is deleted when the check ends.
 
 Nothing leaves your machine except the rep's own model calls, made with your Claude Code
 session's credentials and sent where your agent's calls go. The mod has no servers, no
@@ -300,7 +314,7 @@ The full design is in [How the owner rep works](docs/how-it-works.md).
 
 - **311 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
   the tests.
-- **A doctor that plants bugs.** It plants 403 known defects in a throwaway copy, one at a
+- **A doctor that plants bugs.** It plants 404 known defects in a throwaway copy, one at a
   time, and fails the build if the tests miss any of them.
 - **Real sessions.** Twelve scenarios run in real Claude Code sessions, with the screen
   captured in [`tests/live/captures`](tests/live/captures).

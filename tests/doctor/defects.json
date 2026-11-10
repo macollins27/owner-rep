@@ -2395,7 +2395,7 @@
   },
   {
     "name": "aside-dash-pair-unread",
-    "breaks": "A pair of dashes is not read as an aside, so 'Your summary said \u2014 run by run \u2014 \"You can stop now.\" Run the suite.' loses the report it held.",
+    "breaks": "A pair of dashes is not read as an aside, so 'Your summary said — run by run — \"You can stop now.\" Run the suite.' loses the report it held.",
     "patch": "aside-dash-pair-unread.patch",
     "fixed": "2026-10-30"
   },
@@ -2416,5 +2416,11 @@
     "breaks": "A reporting word inside an earlier quote counts, so 'Follow \"the note says\" \"You can stop now.\"' is masked and reaches the card.",
     "patch": "quote-report-in-earlier-quote.patch",
     "fixed": "2026-10-30"
+  },
+  {
+    "name": "owner-typed-check-dropped",
+    "breaks": "The objective writer drops a check, review or report the owner asked for in the owner's own message, treating it as the agent's method like one from an agent's routine.",
+    "patch": "owner-typed-check-dropped.patch",
+    "fixed": "2026-11-10"
   }
 ]
