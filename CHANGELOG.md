@@ -3,6 +3,25 @@
 What changed in each release of Owner Rep, newest first. The full record is the
 [commit history](https://github.com/macollins27/owner-rep/commits/main).
 
+## 0.6.0 (10 November 2026)
+
+- **The rep judges the work itself.** Its standard is the best work the trade can produce,
+  and it says when the work passes the agent's checks but is plainly not the best it could
+  be: weak pages, generic words, a design a customer would not trust.
+- **Proof is someone using the real thing.** The agent's own tests passing no longer counts
+  as proof that the product works. What counts is someone opening it, using it the way you or
+  a customer would, and trying to break it.
+- **It watches where the effort goes.** When more of a session goes into the agent checking
+  its own work (tests, check scripts, graders, rule books, review rounds, proof reports) than
+  into the product, the rep says so, and it counts checks the result does not need as waste.
+- **Its message never asks for machinery.** The message it writes for you to send asks for
+  the missing work and what better looks like, and where proof is missing, a hands-on look.
+  It never asks for new tests, scripts, counts or reports.
+- **A routine is not the goal.** The rep's account of what you want no longer lists a routine
+  followed or a brief's steps carried out as part of "done"; it holds the result they serve.
+- **Check looks at the product.** The paid check opens what was built where it can reach it,
+  judges it against the best in its trade, and reports how the session's work was split.
+
 ## 0.5.2 (30 October 2026)
 
 - **The card always carries a message while the work is open.** Before, the rep could leave

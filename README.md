@@ -175,13 +175,24 @@ It weighs your messages by kind. A note you send to the rep counts most of all. 
 your reasons and complaints, then your instructions. A "yes" to the agent's own idea counts
 least, because that is the agent's idea with your name on it.
 
-On top of that it holds five expectations for every job:
+Its standard is the best work the trade can produce: a website as good as the best firm in
+that business would put up, software as good as the best team would ship. It judges the work
+itself against that, not only whether the agent did what it said. On top of that it holds six
+expectations for every job:
 
 - the whole result is delivered;
-- it is shown to work, not just said to work;
+- it is shown to work by someone opening the real thing, using it and trying to break it, not
+  by the agent's own checks;
 - no known problem is left behind;
-- nothing was added that the result doesn't need;
-- it was done the way that is best for the result, not the way that was easiest for the agent.
+- nothing was added that the result doesn't need, and that includes tests, check scripts,
+  graders, rule books and rounds of review the result doesn't need;
+- it was done the way that is best for the result, not the way that was easiest for the agent;
+- the result is the best it can be, judged by looking at it.
+
+The rep also watches where the work goes. When more of a session goes into the agent checking
+its own work than into the product, it says so, and the message it writes for you never asks
+for more tests, scripts or reports: where proof is missing it asks for a hands-on look at the
+real thing.
 
 You do no step of the job yourself. A chore the agent leaves "for you" is unfinished work,
 and the rep puts it in the message to the agent.

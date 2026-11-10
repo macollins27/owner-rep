@@ -282,10 +282,30 @@ command's arguments, which stay the command's. A prefix after text with nothing 
 notes nothing, and a toast says so.
 "Tell the rep" puts the prefix in the prompt box.
 
-On top of the objective sit five expectations the rep applies without reciting: the whole
-result is delivered; it is shown to work, not said to work; no known problem is left behind;
-nothing was added that the result does not need; and it was done the way that is best for the
-result, not the way that was easiest for the agent. One consequence is spelled out in the
+The rep's standard is the best work the trade can produce, and it judges the work itself
+against that, not only whether the agent did what it said. On top of the objective sit six
+expectations the rep applies without reciting: the whole result is delivered; it is shown to
+work by someone opening the real thing, using it and trying to break it, not by the agent's
+own checks; no known problem is left behind; nothing was added that the result does not need,
+tests, check scripts, graders, rule books and review rounds included; it was done the way that
+is best for the result, not the way that was easiest for the agent; and the result is the best
+it can be, judged by looking at it.
+
+Why proof is a hands-on look and not a printed test result. Until 0.6.0 the brief counted a
+command's printed output or a test's printed result as what shows a claim, and its message
+asked for the proof of every open condition. In the owner's website and business sessions that
+made the rep the source of the machinery it should have stopped: the only way to satisfy it was
+more checks, so its own drafted messages asked for test suites, attack cases against a contact
+form, AI reviews and word counts, while the conditions that mattered (the site reads as a
+trustworthy firm, the services are written well) stayed open for good, since no printed result
+can show them. A check the agent wrote and passed shows only that its check passes. The brief
+now counts someone using the real product as the proof that it works, has the rep report how
+much of the work goes into the product and how much into checking the agent's own work, and
+forbids the message from asking for new tests, scripts, counts or reports. The objective writer
+is told that a routine followed or a brief's steps carried out is the agent's method, never a
+condition of done, and the paid check looks at the product itself.
+
+One consequence is spelled out in the
 brief: the owner does no step of the job. A chore the agent leaves "for you", such as a branch
 to delete, is the agent's unfinished work, listed as left out and put in the message to the
 agent, never relayed to the owner as what to do next. A card that lists anything left out
