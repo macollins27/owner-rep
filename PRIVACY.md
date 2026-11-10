@@ -34,7 +34,9 @@ terms you already have with that provider. The rep's calls include parts of your
 your messages, the agent's conversation, and, for **Check it**, the session record and any
 file the check reads.
 
-The check's commands run with the network closed except for your own machine. Nothing else
+The check may open what was built and run the project's own commands to look at it, all
+inside its throwaway copy and Claude Code's sandbox. The check's commands run with the
+network closed except for your own machine. Nothing else
 in the mod opens a network connection.
 
 ## Questions

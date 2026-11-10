@@ -228,7 +228,10 @@ sandbox. Writes are denied to your real project, the git repositories it belongs
 into, Claude Code's settings, and the main places in your home folder that run code. The
 sandbox closes the network to the check's commands, except for your own machine, where
 agentsview answers. Reads are not fenced: like any agent, the check can read any file you can
-read, and what it reads goes to the model. The copy is deleted when the check ends.
+read, and what it reads goes to the model. The check also looks at what was built where it
+can reach it: it may open the pages, start the program or run the project's own commands
+inside that same copy and sandbox, with the same fences, so a site or service only on the
+internet stays out of its reach. The copy is deleted when the check ends.
 
 Nothing leaves your machine except the rep's own model calls, made with your Claude Code
 session's credentials and sent where your agent's calls go. The mod has no servers, no
