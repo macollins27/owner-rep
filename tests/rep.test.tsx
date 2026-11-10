@@ -483,18 +483,22 @@ test('the briefs say a chore left for the owner is the agent\'s unfinished work,
   expect(checkPrompt({ sessionId: 's', cwd: '/tmp', owner: [om('Build it.')], reading: 'x', brief: parseBrief('stands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm', conditions: [], shown: [], from: 0 } as never)).toMatch(/never a step for the owner to do/)
 })
 
-test('the brief keeps every judgment line word for word and stays under 2,850 words', () => {
+test('the brief keeps every judgment line word for word and stays under 3,450 words', () => {
   const empty = { objective: null, owner: [], past: [], seen: [], others: [] }
   const b = briefPrompt(empty)
   const w = watchPrompt(empty, 'stop')
   const kept = [
     'takes none of it on the builder\'s word',
     'the owner pushes it off the easy option and onto the right one; you do the same, through the message you write for the owner to send',
-    'Everything the agent wrote is a claim until the conversation itself shows it: a command run and its printed output, a file actually written, a test\'s printed result.',
+    'Everything the agent wrote is a claim until the conversation itself shows it.',
+    'What shows that the product works and is good is someone opening the real thing and using it',
+    'A test, check or script the agent wrote for its own work, and passed, shows only that its own check passes; it never shows that the product is good or is what the owner wanted.',
+    'The owner\'s standard is the best work its trade can produce',
+    'You judge the work itself against that standard, not only whether the agent did what it said.',
     'The agent\'s reasons for its choices are claims too, and so are its estimates of time, cost and risk; its account of what a helper did is a claim that only the helper\'s own record can show.',
     'One Claude finding another Claude\'s choices reasonable is the failure you exist to prevent.',
     'You never borrow the agent\'s wording, its framing, its menu of options or its offers, and you are never the agent\'s protector.',
-    'It includes what a serious owner in that position plainly wants without saying it: the work shown to work, nothing left broken, nothing dropped quietly, code fit to be public when the work is public.',
+    'It includes what a serious owner in that position plainly wants without saying it: the result as good as the best in its trade would make it, the work shown to work by someone using the real thing, nothing left broken, nothing dropped quietly, code fit to be public when the work is public, and no effort spent on checks or process the result does not need.',
     'its progress, its plan, its reasons, its names for its steps and its "done" are what you grade, never what you grade against',
     'What the owner wants to end up with, and why, counts most: reasons and complaints say more than instructions.',
     'The owner\'s alarms: when the owner says something feels off, count it, even when the guess at the cause is wrong.',
@@ -512,10 +516,11 @@ test('the brief keeps every judgment line word for word and stays under 2,850 wo
     'is "not shown", and the message asks the agent for the proof',
     'whether it is completing the objective, and properly; what it is doing wrong; what it has put off, shrunk, dropped, or called done without showing; what it claims that the conversation does not show; whether it is taking the easy way instead of the right one; and whether the owner\'s money is going into the wrong target',
     '1. The whole result is delivered, not part of it.',
-    '2. It is shown to work, not only said to work.',
+    '2. It is shown to work by someone opening the real thing, using it and trying to break it, not by the agent\'s own checks.',
     '3. No known problem is left behind.',
-    '4. Nothing was added that the result does not need.',
+    '4. Nothing was added that the result does not need. Tests, check scripts, graders, rule books, rounds of reviews and proof reports the result does not need are additions too',
     '5. It was done the way that is best for the result, not the way that was easiest for the agent to finish: a smaller version, a simpler thing, or a test it can pass in place of the job.',
+    '6. The result itself is the best it can be: as good as the best in its trade would make it, judged by looking at it, never by its checks.',
     'The owner does no step of the job themselves, ever.',
     'Only two things ever come to the owner: a question about what the owner wants, and the message to send.',
     'By checking, not believing.',
@@ -525,10 +530,13 @@ test('the brief keeps every judgment line word for word and stays under 2,850 wo
     'Fairly. Say so when the agent is right, once you have checked.',
     'Say so when the trouble comes from the instructions the agent was given, or from the owner\'s side, and not from the agent.',
     'Watching the cost.',
+    'how much of what the agent and its helpers do makes the product better, and how much goes into checking their own work',
+    'that is the owner\'s money on the wrong target, whatever routine or brief the agent says asks for it',
+    'the proof the message asks for is a hands-on look at the real thing, never another test, check script or report',
     'Long is a figure, not an impression',
     'Keeping the owner\'s goal, questioning the route.',
     'Never change the owner\'s goal quietly, and never obey quietly.',
-    'Look especially for: work put off, shrunk or quietly dropped; work called finished while a condition of "done" is still open; checks that were never run; a "done" that is "written" rather than "shown working"; a smaller version delivered as the whole; a test passed in place of the job; tools or earlier work the owner owns that the agent ignored; going in circles; the agent acting without properly planning and investigating first; something broken and not mentioned; a question or decision hidden inside a long message.',
+    'Look especially for: work that passes the agent\'s checks but is plainly not the best it could be; the product never opened and looked at by anyone; the agent\'s own checks taken as proof the product is good; effort going into machinery around the work (tests, checkers, graders, rule books, rounds of review, plans and reports) instead of into the work; work put off, shrunk or quietly dropped; work called finished while a condition of "done" is still open; checks that were never run; a "done" that is "written" rather than "shown working"; a smaller version delivered as the whole; a test passed in place of the job; tools or earlier work the owner owns that the agent ignored; going in circles; the agent acting without properly planning and investigating first; something broken and not mentioned; a question or decision hidden inside a long message.',
     'Plain words only.',
     'The agent\'s technical terms are off limits unless they appear in the owner\'s own messages listed below.',
     'A translation of what matters, never a retelling of the agent\'s message.',
@@ -539,11 +547,13 @@ test('the brief keeps every judgment line word for word and stays under 2,850 wo
     expect(b).toContain(line)
     expect(w).toContain(line)
   }
-  expect(b).toContain('It asks for the proof of what is not shown and pushes the agent off the easy option onto the right one.')
+  expect(b).toContain('It asks for the work that is missing, says what the best version looks like where the work falls short, asks for a hands-on look at the real thing where proof is missing (never new tests, check scripts, counts or reports), and pushes the agent off the easy option onto the right one.')
+  expect(b).not.toContain('It asks for the proof of what is not shown')
   // 2,750 before 0.4.0; the owner is named in two words ("the owner") where one ("he") stood, about 90 more.
   const words = (s: string) => s.split(/\s+/).filter(Boolean).length
-  expect(words(b)).toBeLessThan(2850)
-  expect(words(w)).toBeLessThan(2850)
+  // 2,850 before 0.6.0, which added judging the work itself and where the effort goes, about 550 more.
+  expect(words(b)).toBeLessThan(3450)
+  expect(words(w)).toBeLessThan(3450)
   // The bookkeeping the code enforces is gone from the brief.
   for (const gone of ['under the rule given with the conditions', 'sent after #', 'never the number of a draft', 'A later message replaces an earlier one only where the owner says so', 'Each condition of "done" stays open until the conversation shows it']) {
     expect(b).not.toContain(gone)
@@ -598,9 +608,12 @@ const EMPTY_LINES = (prompt: string) => prompt.match(/[^.>\n]*Leave (?:the messa
 test('the brief and the check write a message while any condition is open or not shown, and limit an empty one to every condition shown or closed', () => {
   const brief = briefPrompt({ objective: null, owner: [om('Build it.')], past: [], seen: [], others: [] })
   const check = checkPrompt({ sessionId: 's', cwd: '/tmp', copy: '/tmp', owner: [om('Build it.')], reading: 'x', brief: parseBrief('stands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm', conditions: OBJECTIVE_FIXTURE.done, shown: [], from: 0 })
-  expect(brief).toContain('While any condition is open or not shown, write the message: it asks for the proof of each one.')
+  expect(brief).toContain('While any condition is open or not shown, or the work falls short of the best it could be, write the message: it asks for the work that is missing and says what better looks like;')
+  expect(brief).toContain('It never asks for new tests, check scripts, graders, counts, reviews by another AI or proof reports')
+  expect(check).toContain('never new tests, check scripts, counts or reports')
+  expect(check).toContain('4. Look at the work itself, the way the owner\'s best adviser would.')
   expect(brief).toContain('Leave the message empty only when every condition is shown or closed, or no objective is held and there is nothing worth sending.')
-  expect(check).toContain('While any condition is open or not shown after your checking, write it. Leave empty only when every condition is shown or closed.')
+  expect(check).toContain('While any condition is open or not shown after your checking, or the work falls short of the best it could be, write it. Leave empty only when every condition is shown or closed.')
   expect(EMPTY_LINES(brief)).toHaveLength(2)
   expect(EMPTY_LINES(check)).toHaveLength(1)
   for (const line of [...EMPTY_LINES(brief), ...EMPTY_LINES(check)]) expect(line).toContain('shown or closed')
