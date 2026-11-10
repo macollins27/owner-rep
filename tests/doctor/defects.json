@@ -3166,5 +3166,23 @@
     "breaks": "When the plan file changed after the screen showed the plan, the record replaces the changed copy with a pointer, so the reader never learns the file was changed under the screen.",
     "patch": "record-hides-changed-copy.patch",
     "fixed": "2026-11-07"
+  },
+  {
+    "name": "owner-typed-check-dropped",
+    "breaks": "The objective writer drops a check, review or report the owner asked for in the owner's own message, treating it as the agent's method like one from an agent's routine.",
+    "patch": "owner-typed-check-dropped.patch",
+    "fixed": "2026-11-10"
+  },
+  {
+    "name": "approved-check-made-method",
+    "breaks": "The objective writer is told that a check or test is the agent's method even when it is a step of a plan the owner approved, so 0.6.0's rule drops an approved step.",
+    "patch": "approved-check-made-method.patch",
+    "fixed": "2026-11-10"
+  },
+  {
+    "name": "approved-check-called-waste",
+    "breaks": "The brief counts a check the owner asked for, or a step of a plan the owner approved, as an addition the result does not need.",
+    "patch": "approved-check-called-waste.patch",
+    "fixed": "2026-11-10"
   }
 ]

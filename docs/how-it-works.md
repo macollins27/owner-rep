@@ -15,7 +15,7 @@ where the two ever differ, the code wins and this page is the one to fix.
 | **mod** | a Claude Code plugin with a hooks module (Claude Code's early-access mods API) |
 | **objective**, **conditions** | the rep's held spec of the task, as a list of acceptance criteria, each with a state |
 | **watch** (or look) | a periodic background evaluation of the agent's conversation |
-| **fork** | a model call over a copy of the agent's cached conversation, sharing its prompt cache; the readers used one until 0.6.0 |
+| **fork** | a model call over a copy of the agent's cached conversation, sharing its prompt cache; the readers used one until 0.7.0 |
 | **briefing**, **card** | an on-demand report to the owner, drawn above the prompt |
 | **gate** | an output filter that rewrites the model's answer when it breaks a rule |
 | **check** | a sandboxed verifier run, a separate headless `claude -p`, that re-runs and inspects the agent's claims |
@@ -288,10 +288,30 @@ command's arguments, which stay the command's. A prefix after text with nothing 
 notes nothing, and a toast says so.
 "Tell the rep" puts the prefix in the prompt box.
 
-On top of the objective sit five expectations the rep applies without reciting: the whole
-result is delivered; it is shown to work, not said to work; no known problem is left behind;
-nothing was added that the result does not need; and it was done the way that is best for the
-result, not the way that was easiest for the agent. One consequence is spelled out in the
+The rep's standard is the best work the trade can produce, and it judges the work itself
+against that, not only whether the agent did what it said. On top of the objective sit six
+expectations the rep applies without reciting: the whole result is delivered; it is shown to
+work by someone opening the real thing, using it and trying to break it, not by the agent's
+own checks; no known problem is left behind; nothing was added that the result does not need,
+tests, check scripts, graders, rule books and review rounds included; it was done the way that
+is best for the result, not the way that was easiest for the agent; and the result is the best
+it can be, judged by looking at it.
+
+Why proof is a hands-on look and not a printed test result. Until 0.6.0 the brief counted a
+command's printed output or a test's printed result as what shows a claim, and its message
+asked for the proof of every open condition. In the owner's website and business sessions that
+made the rep the source of the machinery it should have stopped: the only way to satisfy it was
+more checks, so its own drafted messages asked for test suites, attack cases against a contact
+form, AI reviews and word counts, while the conditions that mattered (the site reads as a
+trustworthy firm, the services are written well) stayed open for good, since no printed result
+can show them. A check the agent wrote and passed shows only that its check passes. The brief
+now counts someone using the real product as the proof that it works, has the rep report how
+much of the work goes into the product and how much into checking the agent's own work, and
+forbids the message from asking for new tests, scripts, counts or reports. The objective writer
+is told that a routine followed or a brief's steps carried out is the agent's method, never a
+condition of done, and the paid check looks at the product itself.
+
+One consequence is spelled out in the
 brief: the owner does no step of the job. A chore the agent leaves "for you", such as a branch
 to delete, is the agent's unfinished work, listed as left out and put in the message to the
 agent, never relayed to the owner as what to do next. A card that lists anything left out
@@ -596,7 +616,7 @@ to an agent by itself.
 
 - **Build on a mechanism that already works.** The built-in note's cached-fork read was cheap
   and proven, and the rep reused it with a different brief rather than adding a side channel.
-  It moved to reading the session's record in 0.6.0, for the reason given under "How it is built".
+  It moved to reading the session's record in 0.7.0, for the reason given under "How it is built".
 - **No side panel.** A clean row that is always there beats a panel that must be opened, and
   it has to share the strip politely with the mods already using it.
 - **Digits, not letters.** The first version used letter hotkeys; the first live press showed
