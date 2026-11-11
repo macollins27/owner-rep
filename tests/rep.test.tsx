@@ -4330,23 +4330,32 @@ const heldIn = (store: Record<string, unknown>): T3Rec | undefined => (store.ses
 
 // The disk beneath the mod: files in a map, a write that can fail, a read that can fail once,
 // and every command run kept (a removal is applied to the map).
+// The engine resolves a path before an `fs.*` hook sees it, and on a Windows machine `/cfg/…`
+// has no drive, so it reaches the hook as `D:\cfg\…`: the disk keys files by the path as the
+// mod wrote it, its drive and backslashes taken back off.
+const asWritten = (path: string): string => path.replace(/\\/g, '/').replace(/^[A-Za-z]:(?=\/)/, '')
 type Disk = { files: Map<string, string>; failWrite: boolean; failRead: Set<string>; runs: string[][]; writes: string[] }
 const disk = (on: On, files: Map<string, string> = new Map()): Disk => {
   const d: Disk = { files, failWrite: false, failRead: new Set(), runs: [], writes: [] }
   on('env.get', (_$, e) => ({ value: e.name === 'CLAUDE_CONFIG_DIR' ? '/cfg' : e.name === 'HOME' ? '/Users/o' : undefined }))
   on('fs.write', (_$, e) => {
     if (d.failWrite) throw new Error('EACCES: permission denied')
-    d.writes.push(e.path)
-    files.set(e.path, e.text)
+    const path = asWritten(e.path)
+    d.writes.push(path)
+    files.set(path, e.text)
     return { value: undefined }
   })
   on('fs.read', (_$, e) => {
-    if (d.failRead.delete(e.path)) throw new Error('EIO: i/o error')
-    const text = files.get(e.path)
-    if (text === undefined) throw new Error(`ENOENT: no such file, ${e.path}`)
+    const path = asWritten(e.path)
+    if (d.failRead.delete(path)) throw new Error('EIO: i/o error')
+    const text = files.get(path)
+    if (text === undefined) throw new Error(`ENOENT: no such file, ${path}`)
     return { value: text }
   })
-  on('fs.exists', (_$, e) => ({ value: files.has(e.path) || [...files.keys()].some(k => k.startsWith(`${e.path}/`)) }))
+  on('fs.exists', (_$, e) => {
+    const path = asWritten(e.path)
+    return { value: files.has(path) || [...files.keys()].some(k => k.startsWith(`${path}/`)) }
+  })
   on('process.run', (_$, e) => {
     d.runs.push([...e.argv])
     if (e.argv[0] === 'rm') {
@@ -10080,6 +10089,14 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     await $.turn.complete(stop('t1'))
     await settleUntil($, () => seen.length >= 1)
     const first = seen[0]
+    // 2.1.286 takes no blocks and is sent the same text joined (it refuses blocks at its host
+    // check, before any hook). Its test engine has no `prompt.mention`, which every build from
+    // 2.1.310 on has, and every one of those is held to the blocks.
+    if (first?.blocks === undefined && !('mention' in $.prompt)) {
+      expect(first?.prompt).toMatch(/\[The record shown starts at entry \d+; what came before it is not in view\.\]/)
+      expect(first?.prompt).toContain('</session_record>')
+      return
+    }
     expect(first?.blocks).toBeDefined()
     const blocks = first?.blocks ?? []
     expect(blocks.map(b => b.text).join('')).toBe(first?.prompt)
@@ -10105,6 +10122,30 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     const again = seen[1]?.blocks ?? []
     expect(again.slice(0, marked + 1).map(b => b.text)).toEqual(blocks.slice(0, marked + 1).map(b => b.text))
     expect(again.findIndex(b => b.cache === true)).toBe(marked)
+  })
+
+  test('rule: a build that refuses a prompt in blocks (2.1.286, at its host check) is sent the same text joined; any other failure is not retried and reads as an API error', async ($, on) => {
+    // The refusal is recognised in 2.1.286's words, and the joined text is the blocks' text exactly.
+    expect(rep.BLOCKS_REFUSED.test('HooksError: owner-rep: model.complete: takes { model, prompt } (host check)')).toBe(true)
+    expect(rep.BLOCKS_REFUSED.test('HooksError: no implementation for model.complete')).toBe(false)
+    const blocks = recordPrompt([person('build the release'), agent('The release is built.')], 'state: the task')
+    expect(rep.joinBlocks(blocks)).toBe(blocks.map(b => b.text).join(''))
+    expect(rep.joinBlocks(blocks)).toContain('The release is built.')
+    // A completion that fails another way is made once: nothing beneath answers it here, on any build.
+    openJob(on)
+    quietBand(on)
+    on('session.messages', () => ({ value: [person('build the release'), agent('The release is built.')] }))
+    let calls = 0
+    on('model.complete', (_$, e, next) => {
+      if (e.system !== RECORD_SYSTEM) return { value: { isAnswered: true, text: HOLDS, usage: USAGE } }
+      calls += 1
+      return next(e)
+    })
+    await started($)
+    await $.turn.complete(stop('t1'))
+    await settleUntil($, () => calls >= 1)
+    await settle($)
+    expect(calls).toBe(1)
   })
 
   test('recordText marks every cut inside the field it falls in (message, tool input, tool result, session entry), and a record that starts after the session\'s first row says where it starts', () => {

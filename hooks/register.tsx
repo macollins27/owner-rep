@@ -143,6 +143,9 @@ import {
   unusableReplaced,
   RECORD_MAX_TOKENS,
   RECORD_SYSTEM,
+  BLOCKS_REFUSED,
+  joinBlocks,
+  type PromptBlock,
   RECORD_TIMEOUT_MS,
   recordPrompt,
   recordText,
@@ -1291,14 +1294,22 @@ async function readSession($: EngineInterface, sid: string, rec: Rec, task: (cov
   const from = b.outcome === 'none' ? undefined : b.from
   const opensAfter = b.outcome === 'established' && recordText(rows, RECORD_BUDGET, human, from).opensAfter
   const cover = boundaryCover(b, opensAfter, b.outcome === 'none' ? undefined : msgs.find(m => m.n === b.n))
-  const result = await $.model
-    .complete({
+  const blocks = recordPrompt(rows, task(cover.told), human, from)
+  const ask = (prompt: string | PromptBlock[]) =>
+    $.model.complete({
       model: OBJECTIVE_MODEL,
       system: RECORD_SYSTEM,
-      prompt: recordPrompt(rows, task(cover.told), human, from),
+      prompt,
       maxTokens: RECORD_MAX_TOKENS,
       effort: 'high',
       timeoutMs: RECORD_TIMEOUT_MS,
+    })
+  // A build that takes only a text prompt (2.1.286 refuses blocks at its host check, before any
+  // model is called) is sent the same text joined, without the cache mark.
+  const result = await ask(blocks)
+    .catch((e: unknown) => {
+      if (!BLOCKS_REFUSED.test(String(e))) throw e
+      return ask(joinBlocks(blocks))
     })
     .catch(
       (): ModelForkResult => ({

@@ -807,7 +807,7 @@
     "name": "record-items-unused",
     "breaks": "The record read ignores the messages read from the transcript and labels rows by NOT_TYPED alone, so another session's message is shown as the owner's words.",
     "patch": "record-items-unused.patch",
-    "fixed": "2026-10-16; remade 2026-10-31"
+    "fixed": "2026-10-16; remade 2026-10-31 and 2026-11-10"
   },
   {
     "name": "human-items-deduped",
@@ -3183,6 +3183,12 @@
     "name": "approved-check-called-waste",
     "breaks": "The brief counts a check the owner asked for, or a step of a plan the owner approved, as an addition the result does not need.",
     "patch": "approved-check-called-waste.patch",
+    "fixed": "2026-11-10"
+  },
+  {
+    "name": "blocks-refusal-unrecognised",
+    "breaks": "A build that takes only a text prompt (2.1.286 refuses blocks at its host check) is never recognised, so its record read is never retried as joined text and every look reads as an API error.",
+    "patch": "blocks-refusal-unrecognised.patch",
     "fixed": "2026-11-10"
   }
 ]

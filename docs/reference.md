@@ -357,8 +357,11 @@ call writes (below):
    field (`[… n characters of this <field> left out here …]`). A compaction summary is cut at
    `RECORD_SUMMARY_CUT` (40,000). `recordPrompt` sends the record as blocks of about
    `RECORD_CHUNK` (50,000) characters and marks the last complete one for the cache, so a later
-   look reads the part it shares with an earlier one from the cache. Its result has a fork's
-   shape (`ModelForkResult`), so its spend is counted the same; a throw reads as an API error.
+   look reads the part it shares with an earlier one from the cache. A build that takes only a
+   text prompt (2.1.286, whose host check refuses blocks before any model is called, matched by
+   `BLOCKS_REFUSED`) is sent the same text joined (`joinBlocks`), without the cache mark. Its
+   result has a fork's shape (`ModelForkResult`), so its spend is counted the same; any other
+   throw, or a throw from the joined retry, reads as an API error.
    With no rows no model is called, the result is `NOTHING_READ` (`nothing-to-fork`), and the
    toast says there is nothing to read. `SESSION_ROWS_CAP` (4,096) is the most rows
    `$.session.messages()` returns, so a list that long may not reach the session's start.

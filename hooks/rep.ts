@@ -2585,6 +2585,10 @@ Answer in exactly the format the task asks for, with nothing before or after it.
 
 // A text block of a completion's prompt, as the engine takes it.
 export type PromptBlock = { text: string; cache?: true }
+// The same prompt as one text, for a build that takes no blocks.
+export const joinBlocks = (blocks: readonly PromptBlock[]): string => blocks.map(b => b.text).join('')
+// What a build that takes only a text prompt throws for blocks: 2.1.286's host check.
+export const BLOCKS_REFUSED = /model\.complete: takes \{ model, prompt \}/
 
 // The record read's prompt, as text blocks that join to: the fenced record, then the task (the
 // watch prompt, the brief, or the brief with the open conditions named again). The record's chunks

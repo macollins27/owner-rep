@@ -1,13 +1,12 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 97fd57d..67d1e2c 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1258,7 +1258,7 @@ async function readSession($: EngineInterface, sid: string, rec: Rec, task: (cov
-     .complete({
+@@ -1294,7 +1294,7 @@
+   const from = b.outcome === 'none' ? undefined : b.from
+   const opensAfter = b.outcome === 'established' && recordText(rows, RECORD_BUDGET, human, from).opensAfter
+   const cover = boundaryCover(b, opensAfter, b.outcome === 'none' ? undefined : msgs.find(m => m.n === b.n))
+-  const blocks = recordPrompt(rows, task(cover.told), human, from)
++  const blocks = recordPrompt(rows, task(cover.told), undefined, from)
+   const ask = (prompt: string | PromptBlock[]) =>
+     $.model.complete({
        model: OBJECTIVE_MODEL,
-       system: RECORD_SYSTEM,
--      prompt: recordPrompt(rows, task(cover.told), human, from),
-+      prompt: recordPrompt(rows, task(cover.told), undefined, from),
-       maxTokens: RECORD_MAX_TOKENS,
-       effort: 'high',
-       timeoutMs: RECORD_TIMEOUT_MS,
