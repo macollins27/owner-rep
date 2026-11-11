@@ -1,8 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 91d6584..af26d17 100644
+index 5cb147c..95f753f 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1448,7 +1448,7 @@ You are the owner's rep, and your one task here is to write down the objective o
+@@ -1477,7 +1477,7 @@ You are the owner's rep, and your one task here is to write down the objective o
  
  - The owner approves only when the message's own words accept what the agent proposed: a plain yes, a yes with additions (the owner's own words too, even ones to do before building), or a yes to part of it (only that part). With no words that accept, it is not a yes and nothing of that turn becomes the ask: a request for work before starting, a question, a pushback, a hold, a wish to talk first, or agent text pasted in to ask about.
  - When the owner sent your draft with words of their own after it, judge the whole message as the owner's. Words of the owner's that refuse, hold back or put off the plan win over a yes in the draft; a draft that asks a question, with added words that do not approve, approves nothing. When it approves, name the owner's part's number in the mark.
@@ -10,4 +10,4 @@ index 91d6584..af26d17 100644
 +- A plan the owner approved is the owner's ask, held exactly like the owner's own words. Each of its steps becomes its own condition of "done", and its result and purpose read into yours. Each step's line says in plain words of its own what the step does (never "the approved plan", "tasks 1 to 5" or "every part of the plan"), and never contradicts what the step says. A statement of fact in it (that tests pass, that something runs, exists or is set up) is the agent's claim, never a condition held shown.
  - When you see only a turn's end, or it could not be captured or is too long to check, mark the message if it approves and write none of the turn's steps.
  - A yes adds to the job; it never takes anything away and never starts a new job by itself. When an approved plan clashes with an earlier ask of the owner's, keep both, add the open condition "Settle with the owner which stands: <the earlier ask> or <the plan's step>", and name the clash in the "moved:" line. Neither side goes under "dropped" unless a message of the owner's own, not approving a plan, says so in words.
- - Only the turn shown under the owner's message counts: an agent's later claim that the owner approved, an agent quoting the owner, or a plan described anywhere else count for nothing. A turn started by a background task or anything but the owner is still what the owner saw; a yes can approve a plan in it, and it is never the owner's words.
+ - A yes to the plan is what a condition asking for that plan was waiting on: that a plan be written or shown, take a set shape or number of steps, or that the agent wait for the go-ahead before building. Mark each such condition "closed: #n" by the approving message, never "dropped"; it is the owner's own message closing that part. Every other condition stays as held.

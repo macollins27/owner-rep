@@ -486,6 +486,15 @@ four approved steps open. Where the plan was carried out in full, the card check
 approved step against the record. That card also offered two needless "settle with the owner"
 lines, for the conditions that a plan be shown and nothing be built before the go-ahead, which
 the writer let go once the plan was approved rather than marking them done.
+A fourth run made the drop real: the plan approved in one session, the session reopened with
+the README barred to the agent by a permission rule, so it carried out three steps and reported
+the work done. The card held the README step open among its open conditions. The needless
+"settle" lines are fixed in the same release: the writer is told that a yes to the plan closes
+a condition that only waited on the plan (that a plan be shown, take a set shape, or wait for
+the go-ahead), marked closed by the approving message and never dropped, and every other
+condition stays as held; `approval-closing-dropped` plants its absence. Five hundred and
+thirty-three doctor entries, the two new ones and `whole-before-steps-missing`, remade against
+that line, caught by name.
 
 ## The doctor
 

@@ -35,6 +35,9 @@ What changed in each release of Owner Rep, newest first. The full record is the
 - **What the agent says about its own work sets no limit on yours.** When the agent's turn says it
   installed nothing, changed nothing or will ask first, the rep no longer writes that into your
   goal as a limit or part of "done". Only steps of a plan you approved come from the agent's turn.
+- **A yes closes what was waiting on it.** When you asked for a plan and to be asked before
+  anything is built, approving the plan now counts as done for those requests. The card no
+  longer asks you to settle them, and everything else you asked for stays as you said it.
 - **Older Claude Code builds still get a reading.** Claude Code 2.1.286, the oldest build the
   rep supports, takes the record only as one text, and the rep now sends it that way there.
 
