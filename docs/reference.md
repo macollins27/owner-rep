@@ -125,6 +125,10 @@ call writes (below):
    `ownWordsPrompt` names the empty message, then read 1's usable message, then
    `OPEN_MESSAGE`. `OPEN_MESSAGE` ends with the sentence on a held step: `If a step needs my
    go-ahead, hold it: finish the rest, and tell me what you will show me when I give it.`
+   `HELD_STEP_RULE` gives that same direction to all four message-writing reads:
+   `briefPrompt`, `checkPrompt`, `askAgain` and `ownWordsPrompt`. Each tells the agent to
+   finish everything else, hold only the step awaiting the owner, and say exactly what it
+   will show when the go-ahead comes, without pushing the held step.
    A Check card goes through the same gate and has no second ask or own-words call, so an
    instant read refused with the checker's message empty gets `OPEN_MESSAGE` when a condition
    is still open, an instant read that passed keeps its message when the checker leaves it
@@ -273,8 +277,13 @@ call writes (below):
       "on", in any case (`OWNER_BUTTON`: Submit, Send, Publish, Post, Pay, Sign, Apply,
       Approve, Purchase; `wait for my word on Submit`; any other word is no button, so `Wait
       for my word on Build.` and `Wait for my word on Merging.` are caught), or as
-      the act said not to happen (`NEGATED_ACT`: not, never or n't before it, and the rest of
-      its clause) with a wait on the owner as the clause directly after it, a semicolon, a
+      the act said not to happen (`NEGATED_ACT`: not, never or n't before it, or `HELD_ACT`,
+      and the rest of its clause). `HELD_ACT` reads hold, hold off on or hold back on, an
+      optional the, this or that, then an outward act (bare send or sending also counts).
+      A named hold such as `Hold the publish step` or `Hold sending` counts only
+      with the directly following wait described here; `Hold everything`, `Hold the rest`,
+      `Hold off` and `Hold on` do not exempt a wait. The negated or held act is followed
+      by a wait on the owner as the clause directly after it, a semicolon, a
       comma, "and" or a sentence's end between and nothing else (`WAIT_AFTER_NEGATED` in one
       sentence; `NEGATED_LAST` on the sentence before and `WAIT_FIRST` opening this one), that
       has no object of its own, or whose only object refers back to the act (on that, on it,

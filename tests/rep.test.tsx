@@ -1353,6 +1353,44 @@ test('a blocker stop is let through only where the stop is the blocker\'s own: a
     expect([m, messageSaysStop(m)]).toEqual([m, false])
 })
 
+test('every read that writes the message carries the rule for a step that waits on the owner: finish the rest, hold the step, say what will be shown', () => {
+  const m: Memory = { objective: { ...OBJ_FIXTURE, done: OPEN_JOB_OPEN }, owner: [], past: [], seen: [], others: [] }
+  const check = checkPrompt({ sessionId: 's', cwd: '/tmp', copy: '/tmp', owner: [om('Build it.')], reading: 'x', brief: parseBrief('stands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm', conditions: OBJECTIVE_FIXTURE.done, shown: [], from: 0 })
+  for (const text of [briefPrompt(m), askAgain(OPEN_JOB_OPEN), ownWordsPrompt(m, OPEN_JOB_OPEN, EMPTY_CARD), check]) {
+    expect(text).toContain('When a condition waits on the owner\'s go-ahead (publish, send, pay, a guard refusal), the message tells the agent to finish everything else, hold that step until the go-ahead comes, and say exactly what it will show the owner then; it never pushes the held step.')
+  }
+})
+
+test('a hold on one named step the owner keeps, with a wait on his word, is no stop; a hold on the whole job is', () => {
+  const kept = [
+    'Hold the publish step and wait for my word.',
+    'Run the test and paste what it printed. Hold the publish step and wait for my word.',
+    'Finish the rest, hold the publish step, and wait for my word.',
+    'Hold the publish step; wait for my word.',
+    'Hold the publish step. Wait for my word.',
+    'Hold publishing and wait for my go-ahead.',
+    'Hold off on publishing and wait for my word.',
+    'Hold back on the pay step and wait for my word.',
+    'Hold the send step and wait for my word.',
+    'Hold sending and wait for my go-ahead.',
+  ]
+  expect(kept.map(READ_STOP)).toEqual(kept.map(STAYS_WHOLE))
+  const out = [
+    'Hold everything and wait for my word',
+    'Hold everything and wait for my word.',
+    'Hold all of it and wait for my word.',
+    'Hold the rest and wait for my word.',
+    'Hold the work and wait for my word.',
+    'Hold off and wait for my word.',
+    'Hold on and wait for my word.',
+    'Hold here and wait for my word.',
+    'Hold everything except the publish step and wait for my word.',
+    'Hold the publish step and stop.',
+    'Hold the publish step, stop the work and wait for my word.',
+  ]
+  expect(out.map(READ_STOP)).toEqual(out.map(CUT_TO('')))
+})
+
 test('a negated outward act lets through only a wait on the owner that has no object of its own: a wait before something else is caught', () => {
   const caught = [
     'Do not publish the report; wait for my approval before running the tests.',
