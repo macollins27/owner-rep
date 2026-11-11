@@ -1,12 +1,10 @@
-diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 4159090..d5863c0 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -950,7 +950,6 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
+@@ -2133,7 +2133,6 @@
        .split('\n')
        .map(f => f.trim())
        .filter(f => f.endsWith('.jsonl') && f !== name)
 -      .slice(0, HUMAN_SCAN_MAX)
      if (summary !== null || anchor !== null) {
+       let placed = false
        for (const file of files) {
-         const remaining = await left()
