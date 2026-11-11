@@ -3,6 +3,12 @@
 What changed in each release of Owner Rep, newest first. The full record is the
 [commit history](https://github.com/macollins27/owner-rep/commits/main).
 
+## 0.7.2 (11 November 2026)
+
+- **Only the part you said yes to counts.** When you approve part of the agent's message, the rest
+  of it and the agent's other messages add nothing to your goal, and the agent saying some of the
+  work is yours to do never excuses it from "done".
+
 ## 0.7.1 (10 November 2026)
 
 - **Hold one step, finish the rest.** Every message-writing read now tells the agent to

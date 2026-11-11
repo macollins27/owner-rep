@@ -628,7 +628,7 @@ holds or moved, come its `approved:` lines: one `approved: #n | all` or
 an approval are `OBJECTIVE_SYSTEM`'s section "Plans the owner approved": what a yes is, a draft
 with the owner's words read as one message, each step of an approved plan its own condition
 after the whole plan is read, a clash kept as both sides and an open "Settle with the owner
-which stands" condition, and a plan's statements of fact held as the agent's claims. Outside that section, the rule "Nothing else can move it" holds that what the agent says it did, did not do, found or checked, and any limit it sets on its own work, is the agent's account and never a condition, a limit or part of the result unless it is a step of a plan the owner approved. `takeObjective` applies it: the first
+which stands" condition, a plan's statements of fact held as the agent's claims, and, of the turn the owner answered, only the part the owner took counted, the rest of that turn and the agent's other turns counting for nothing. Outside that section, the rule "Nothing else can move it" holds that what the agent says it did, did not do, found or checked, and any limit it sets on its own work (that it installed nothing, changed nothing, will ask first or left some of it to the owner), is the agent's account and never a condition, a limit or part of the result unless it is a step of a plan the owner approved. `takeObjective` applies it: the first
 objective is taken as it stands; after that a write is taken only when it saw a message of the owner's
 or a note past `from` (`hisFrom` never counts a draft), so neither the agent's words nor the
 rep's drafts can move it and a write that lands late cannot take a newer one's place. A
