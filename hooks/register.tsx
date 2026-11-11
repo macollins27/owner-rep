@@ -2135,6 +2135,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
       .filter(f => f.endsWith('.jsonl') && f !== name)
       .slice(0, HUMAN_SCAN_MAX)
     if (summary !== null || anchor !== null) {
+      let placed = false
       for (const file of files) {
         const remaining = await left()
         if (remaining <= 0) break
@@ -2146,11 +2147,15 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
         if (time <= 0) break
         const found = await $.process.run(hostArgv(host, humanReadBefore(`${folder}/${file}`, line)), { timeoutMs: Math.min(HUMAN_READ_TIMEOUT_MS, time) })
         if (found.exitCode !== 0 || found.isStdoutTruncated) continue
+        // A file holding the line with nothing of the owner's before it is another copy of the
+        // stretch since the summary (an earlier fork of the same session), never the parent; it
+        // still proves the line was found, so a fork with no file holding more seeds from its rows.
         const before = humanItems(found.stdout)
-        if (summary === null) return before
-        if (before.length > 0) return [...before, ...copied]
+        placed = true
+        if (before.length === 0) continue
+        return summary === null ? before : [...before, ...copied]
       }
-      return summary === null ? null : copied
+      return summary !== null ? copied : placed ? [] : null
     }
     let best: { items: HumanItem[]; matched: number } = { items: [], matched: 0 }
     for (const file of files) {

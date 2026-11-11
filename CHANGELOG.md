@@ -3,6 +3,15 @@
 What changed in each release of Owner Rep, newest first. The full record is the
 [commit history](https://github.com/macollins27/owner-rep/commits/main).
 
+## 0.7.4 (11 November 2026)
+
+- **A forked session gets its goal at once again.** A session forked after a compaction
+  (copied into a new session), whose own file Claude Code had not finished saving when the rep
+  started, could take an earlier fork of the same session for the one it came from. That
+  earlier fork holds none of the owner's messages, so the rep had nothing to work from and
+  showed "working out the result you want" until the Rep button was pressed. It now passes over
+  such a copy and reads the owner's messages from the session it really came from.
+
 ## 0.7.3 (11 November 2026)
 
 - **Tests and reviews are good work again.** The rep no longer treats tests, code reviews,

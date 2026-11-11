@@ -513,8 +513,9 @@ messages queued right after it; the parent's later messages are never taken, and
 stops once a file matches every row that could be the owner's. A session compacted after the owner's last
 message holds no row the owner typed, only the summary and the agent's work since; its own file is
 read all the same, and a fork of it, with nothing typed to match, takes as its parent the
-newest file in the folder that holds the call of its last tool result, and their messages
-before that call. A fork taken after a compaction can also be saved at once as a file of its
+newest file in the folder that holds the call of its last tool result with any of their
+messages before it, and those messages; an earlier fork of the same session holds the same call
+with nothing of the owner's before it and is passed over. A fork taken after a compaction can also be saved at once as a file of its
 own that begins at the summary, a copy of the parent's stretch since it; that file is
 recognised by the summary coming first, and the owner's messages are the ones before the same
 summary line in the newest other file that holds any there, followed by the copy's own. Within a file the rows are lined up

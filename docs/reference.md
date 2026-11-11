@@ -927,8 +927,13 @@ rows hold no candidate (reopened or forked after a compaction the owner has type
 so the summary and the agent's work are all its rows) is read all the same: its own file
 whole, and in the scan, where nothing typed can be matched, the newest file holding the call
 of its last tool result (`lastToolId`, found by `toolLineFind`, `grep -n -o -m 1 -F` on the
-call's `"id"`, and `toolLineOf`) gives the items before that line (`humanReadBefore`, `sed`
-stopping there), a cut read skipped; the call, not the result, because a fork taken while a
+call's `"id"`, and `toolLineOf`) with any of the owner's lines before it gives the items before
+that line (`humanReadBefore`, `sed` stopping there), a cut read skipped; a file holding the call
+with nothing of the owner's before it, an earlier fork of the same session saved as the stretch
+since the summary, is passed over, as the summary search passes over a copy of the copy, so an
+earlier fork never makes a later one wait for a press; when every file holding the call is such a
+copy, the scan gives no items rather than none found, so the rows still seed a plan accepted on
+the plan screen; the call, not the result, because a fork taken while a
 tool ran holds a result Claude Code marks interrupted, which its parent saves only later.
 With no tool result either, nothing past its own file is read. `seedOwner`
 runs one seed per session at a time (`seeding`), and
