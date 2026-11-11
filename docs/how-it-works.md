@@ -15,7 +15,7 @@ where the two ever differ, the code wins and this page is the one to fix.
 | **mod** | a Claude Code plugin with a hooks module (Claude Code's early-access mods API) |
 | **objective**, **conditions** | the rep's held spec of the task, as a list of acceptance criteria, each with a state |
 | **watch** (or look) | a periodic background evaluation of the agent's conversation |
-| **fork** | a model call over a copy of the agent's cached conversation, sharing its prompt cache |
+| **fork** | a model call over a copy of the agent's cached conversation, sharing its prompt cache; the readers used one until 0.7.0 |
 | **briefing**, **card** | an on-demand report to the owner, drawn above the prompt |
 | **gate** | an output filter that rewrites the model's answer when it breaks a rule |
 | **check** | a sandboxed verifier run, a separate headless `claude -p`, that re-runs and inspects the agent's claims |
@@ -82,8 +82,14 @@ has to show (a list of conditions), and the step the session is on now. It is ne
 owner's text. The owner works by intent rather than exact wording, and a rep that only did
 what the client literally said would not be a good one, so the objective includes what a
 serious owner plainly wants without saying it. The owner's messages are weighed by kind:
-reasons and complaints first, instructions next, and a "yes" to an agent's proposal last,
-since that is the agent's idea with the owner's name on it.
+reasons and complaints first, then instructions. A "yes" to a plan the agent proposed makes
+that plan the owner's ask, held like the owner's own words: each of its steps becomes a
+condition of "done", read whole before any is written. Whether a message approves is the
+writer's call, because only reading can tell a yes to the plan from a yes to something else;
+the code's gate checks provenance alone: an approval counts only for a message of the owner's,
+and only for the text saved under it. An answer on Claude Code's plan screen is the one approval
+decided by code, because the screen says plainly what was accepted. See "What the rep holds of a
+turn and a plan" below.
 
 The objective is written by a call of its own, never by the looks. Each message of the
 owner's, and each note to the rep, starts one plain model call, not a fork of the
@@ -330,12 +336,21 @@ Two modules, split on purpose.
 - [`types/index.d.ts`](../types/index.d.ts) declares the mod's state keys and the shapes the
   render reads.
 
-The watch and the briefing use `$.model.fork`, the same mechanism as Claude Code's built-in
-"You should know" note: a fresh instance of the model over the agent's prompt-cached
-conversation, so a read costs little and never slows the agent. The rep's independence comes
-from its brief, which tells the model to treat everything the agent wrote as a claim, and,
-for the check step, from reading outside the conversation altogether. The objective writer is
-the exception to the fork: a plain completion (`$.model.complete`) shown the agent's words
+The watch and the briefing read the session's own record, never a fork of the agent's
+conversation: the rows `$.session.messages()` returns, sent by one plain completion
+(`$.model.complete`) with the task. They used to fork, as Claude Code's built-in "You should
+know" note does. The reason for the move is the API boundary: a fork sends whatever the main
+thread last sent, its system prompt, tools and messages, with one prompt appended, and offers no
+way to filter that, so the mod could neither see nor limit what a reader built on it judged from.
+A completion sends only what the mod builds. The cost is that a look pays for its own read, kept
+down by sending the record in chunks the cache can reuse, and that a reader no longer has the
+agent's system prompt or the owner's instruction files, so every reader is told what it does not
+see, and never to say an instruction did or did not exist. (An earlier experiment reported private
+reasoning in fork answers. Its files are gone, so it stands as an unverified report and the move
+does not rest on it.) The
+rep's independence comes from its brief, which tells the model to treat everything the agent
+wrote as a claim, and, for the check step, from reading outside the conversation altogether.
+The objective writer is a plain completion too, shown the agent's words
 only as the line before each of the owner's messages, marked as the agent's. Its rules go to
 it as its system prompt, and the owner's messages reach it fenced as quoted records that it is
 told are no instruction to it, because unfenced, a message that read like a command came back
@@ -344,20 +359,61 @@ line is there only so a short reply can be understood and never sets the result,
 the code takes a write only when it saw a message of the owner's past the ones the objective
 was built from, so the agent's words alone never move it.
 
-A fork has nothing to fork before the first response of the process: in a session reopened
-with `--continue` or `--resume`, after `/clear`, and through the whole first turn of a new
-session. A read the owner started, a press of the Rep button or the look after a note, then
-reads the session's own record (`$.session.messages()`) instead: one plain completion, given
-the record as entries labelled `entry 1`, `entry 2` and so on (never `#1`, the form the
-owner's numbered messages take, so no entry can be cited as one of the owner's) fenced as data
-(each message cut to 3,000 characters, each tool's input and result to 600, the oldest
-entries left out past 200,000 characters, with a line saying how many), a system prompt
-saying the task means that record wherever it speaks of the conversation, and then the same
-task the fork would have had. Only the rows that are one of the owner's messages in the session's
+The record reaches the model as entries labelled `entry 1`, `entry 2` and so on (never `#1`, the
+form the owner's numbered messages take, so no entry can be cited as one of the owner's), fenced
+as data, under a system prompt saying the task means that record wherever it speaks of the
+conversation. Rows after the job's earliest open approval are given whole up to the budget.
+Earlier ones are cut, each message to 3,000 characters and each tool's input and result to 600, a
+compaction summary up to 40,000, and the oldest are left out past 200,000 characters, with a line
+saying how many. Every cut is marked inside the field it falls in. The approved plans themselves
+are given from their saved copies, each whole or not at all, up to 40,000 characters for the Heads
+up and 80,000 for the briefing; a plan past the budget is left out and the reader's card says so.
+The rows carry no number, time or turn, so
+the approval is located by matching the job's messages against them, and the match has three
+outcomes: established, the record opens after the approval, or it cannot be placed. In the last
+two the reader is told, the steps are not assessed, and the owner sees a coverage line saying so.
+A step whose proof could be in a cut part is *not assessed*: a reader may not call it skipped or
+done. Only the rows that are one of the owner's messages in the session's
 transcript file are labelled as the person's; when no transcript can be read, every row on their side that is not
-a kind Claude Code is known to write there. The watch's own looks, on a step and at a turn's end, skip quietly
-instead, so a new session's first turn pays for no record read. With no record to read, as
-after `/clear`, the briefing says there is nothing to read yet.
+a kind Claude Code is known to write there. With no record to read, as after `/clear`, no model is
+called and the briefing says there is nothing to read yet.
+
+### What the rep holds of a turn and a plan
+
+**The turn.** What the owner answered is taken from the stream, chunk by chunk, as the text reached
+the screen, because that is the only place the whole of it exists. The declarations promise the
+text chunks and their joining within a block, the stop chunk's shape, and that `agentId` is absent
+on the main loop. Other things were only measured: the step's `answer` joins blocks with a line
+break, `turn.complete.answer` holds the last step alone and is empty on an interrupt during a tool
+call, and an interrupt ends only the response it lands in (that response has no stop chunk, while
+earlier steps ended normally, a tool-interrupted turn's last step with stop reason `tool_use`). The
+mod relies on none of the measured things, which is why it never uses the step answer, the turn
+answer or the transcript for this. The next message of the owner's takes the turns before it as
+its body, each marked with where it began and how it ended. A session the rep did not watch has
+its bodies read back from the session's rows, each marked as read back, because what it holds was
+not seen as it ran.
+
+**The plan.** A plan the owner approves is kept whole for as long as the job is open, up to 60 a
+job, and the writer reads it whole before writing any step of it. A step of it can only leave
+"done" the way anything else does: by a message of the owner's. A plan's statements of fact stay the
+agent's claims, and where a plan clashes with what the owner said earlier, both sides are kept and
+an open condition says to settle which stands. A long message of the owner's is read whole the same
+way. Each saved text sits in its own file, checked by fingerprint before every use, rather than in
+the shared store, which is small and shared with other mods. If the store refuses a record, its
+manifest and parts go to the same folder. If a copy is damaged or missing, the rep says so and
+marks the loss rather than judging from nothing. An approval carries one of three states, read,
+waiting or unreadable, and the writer may close it only once read; anything not read leaves a
+line in code's own words (the owner's coverage lines), so a gap can't be talked away by a model.
+
+**The walk.** Each reader walks every plan shown to it step by step against the record, and a step
+with no sign while later work goes on counts as dropped. The Heads up then raises the line "A step
+of the plan you approved looks dropped" in the code's words, whatever else it was going to say. The
+walk says only what the record shows: it does not claim a step was or was not done where the record
+was cut, and it never moves the owner's ask.
+
+**Suggestions.** The `prompt.suggest` event shows the mod a suggestion when one is offered (the
+declarations' `index.d.ts` lines 4242 to 4252), and a suggestion the owner sends reaches the mod as
+an ordinary typed message, which is why it counts as theirs.
 
 The check step runs in a room, not under a list of allowed commands. The rep first makes a
 throwaway copy of the project as it stands, uncommitted work included (an APFS clone on a
@@ -526,8 +582,7 @@ tsc -p . --noEmit             # needs .claude-plugin/types/, see below
 
 The tests cover the parsers, the row on the terminal, desktop and VS Code surfaces, the shared strip, the press, the
 objective writer and its rules (the guard, corrections, new jobs, drafts, the marks and the
-gate), the note to the rep, the stop forms the gate reads, the record read where there is
-nothing to fork, the seeding of the owner's messages from a stubbed transcript, and a press
+gate), the note to the rep, the stop forms the gate reads, the record read, the seeding of the owner's messages from a stubbed transcript, and a press
 followed by a check on a stubbed run. The test kit stubs the model and the
 band; no test spawns a real check.
 
@@ -545,8 +600,9 @@ of the mod).
 
 Like every Claude Code mod, it runs with the permissions of the person who installs it. Its
 own calls read the prompt box, the session id and working directory, the session's
-messages, a small per-session store, and the model through the session's own credentials,
-take the transcript path Claude Code gives its hooks at the session's start and with each
+messages, the agent's visible text as it streams and the plan screen's plan and answer, a small
+per-session store and the folder `<config>/owner-rep/sources/` it writes and removes, and the
+model through the session's own credentials, take the transcript path Claude Code gives its hooks at the session's start and with each
 prompt, and run `sed`, `ls` and `find` over the session's transcripts under
 `~/.claude/projects/` (or the folder `CLAUDE_CONFIG_DIR` names) to read which messages the
 person typed. On Windows those commands are Git for Windows' own, named by their full path,
@@ -558,8 +614,9 @@ to an agent by itself.
 
 ## Decisions along the way
 
-- **Build on a mechanism that already works.** The built-in note's cached-fork read is cheap
-  and proven; the rep reuses it with a different brief rather than adding a side channel.
+- **Build on a mechanism that already works.** The built-in note's cached-fork read was cheap
+  and proven, and the rep reused it with a different brief rather than adding a side channel.
+  It moved to reading the session's record in 0.7.0, for the reason given under "How it is built".
 - **No side panel.** A clean row that is always there beats a panel that must be opened, and
   it has to share the strip politely with the mods already using it.
 - **Digits, not letters.** The first version used letter hotkeys; the first live press showed

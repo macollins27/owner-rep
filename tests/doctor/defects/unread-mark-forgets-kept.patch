@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index eef10d1..330c46b 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -830,7 +830,7 @@ async function reconcile($: EngineInterface, sid: string): Promise<void> {
+     const manifest = parseManifest(text)
+     // A mark left by a list that could not be read: what it kept and when still measure the list.
+     const waiting = rec.lossMark?.why === LOST_LIST_UNREAD ? rec.lossMark : undefined
+-    const kept = waiting?.keptRev ?? rec.recRev
++    const kept = rec.recRev
+     const since = waiting?.after ?? after
+     const markLoss = async (mark: LossMark) => {
+       if (text !== null && (await writeFile($, `${folder}/record-lost-${mark.lostRev}.json`, text))) await removeFiles($, [listPath], false)

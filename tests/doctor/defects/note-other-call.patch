@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 950c949..23437a3 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2029,7 +2029,7 @@ function noteCallOf(content: unknown): string | undefined {
+ 
+ // The keys the record read labels the owner's by: a typed message's key, and a plan-screen note's
+ // key bound to its call, so a note proves only the row of that call's result and never a typed row.
+-export const noteKey = (toolUseId: string, key: string): string => `${toolUseId}\u0000${key}`
++export const noteKey = (toolUseId: string, key: string): string => key
+ export const heldKeys = (items: readonly HumanItem[]): Set<string> => new Set(items.map(i => (i.toolUseId === undefined ? i.key : noteKey(i.toolUseId, i.key))))
+ 
+ // The session's transcript file says who wrote each row, which `$.session.messages()` does

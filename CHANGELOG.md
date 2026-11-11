@@ -3,6 +3,44 @@
 What changed in each release of Owner Rep, newest first. The full record is the
 [commit history](https://github.com/macollins27/owner-rep/commits/main).
 
+## 0.7.0 (10 November 2026)
+
+- **A plan you approved is your ask.** The rep used to keep only the last 400 characters of a
+  plan you said yes to, and treated it as the agent's idea, so a step could be dropped without a
+  word. It now keeps the whole plan for as long as the job is open, reads it whole, and holds each
+  step as part of "done". A yes never approves more than the text it answered, and the agent
+  can't approve anything for you by saying you did.
+- **The Heads up warns when a step looks dropped.** Each look walks your approved plans step by
+  step against what the session shows, and says so when a step has no sign while later work
+  goes on, or when the agent's own full list leaves it out. It says only what it can know: that
+  the record does not show the step done, never that the record holds nothing of it.
+- **The plan screen counts.** A plan you accept or edit on Claude Code's plan screen is held the
+  same way, your edits included. A plan you turn down stays beside your note, and none of it is
+  taken as approved.
+- **The plan you saw is the plan held.** If the agent changes its plan file while the plan
+  screen is up, the rep holds the plan the screen showed you, not the changed file, and its
+  record shows the changed file marked as one you did not approve; a plan you
+  edit there is held with your edits. A note you type as you approve it ("approve with this
+  feedback") is read as your own words beside that plan, never as the agent's output.
+- **The rep sees the whole turn you answered.** The agent's visible text is saved as it streams,
+  in its own checked file, so a yes is read against what was on your screen.
+- **The Heads up and the briefing read the session's record.** They no longer use a copy of the
+  agent's conversation, so what they send is what the mod builds, every cut is marked, and they
+  say what they could not assess instead of guessing. See "What it can reach".
+- **Sessions the rep did not watch are read back.** Opening a session it holds no record of
+  brings in the agent's words before your messages and your plan-screen answers, marked as read
+  back.
+- **The rep tells you what it could not read.** A plan that was too long, a copy that was lost, or
+  a store that was full gets a plain line on the row and the card.
+- **What the agent says about its own work sets no limit on yours.** When the agent's turn says it
+  installed nothing, changed nothing or will ask first, the rep no longer writes that into your
+  goal as a limit or part of "done". Only steps of a plan you approved come from the agent's turn.
+- **A yes closes what was waiting on it.** When you asked for a plan and to be asked before
+  anything is built, approving the plan now counts as done for those requests. The card no
+  longer asks you to settle them, and everything else you asked for stays as you said it.
+- **Older Claude Code builds still get a reading.** Claude Code 2.1.286, the oldest build the
+  rep supports, takes the record only as one text, and the rep now sends it that way there.
+
 ## 0.6.0 (10 November 2026)
 
 - **The rep judges the work itself.** Its standard is the best work the trade can produce,

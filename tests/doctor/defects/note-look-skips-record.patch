@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 264fffa..bd3db1e 100644
+index 97fd57d..38406db 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -621,7 +621,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+@@ -1288,7 +1288,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
      return
    }
-   // Only the look after the owner's note falls back to the record when there is nothing to fork.
--  const result = await readSession($, sid, watchPrompt({ ...memoryOf(rec), context: await contextOf($) }, reason), reason === 'note')
-+  const result = await readSession($, sid, watchPrompt({ ...memoryOf(rec), context: await contextOf($) }, reason), false)
-   const usage = 'usage' in result ? result.usage : null
-   await changeRec($, sid, async after => {
-     after.calls += 1
+   const memory = { ...(await memoryFor($, sid, rec, 'watch')), context: await contextOf($) }
+-  const got = await readSession($, sid, rec, cover => watchPrompt({ ...memory, cover }, reason))
++  const got: Read = reason === 'note' ? { result: NOTHING_READ, gaps: {} } : await readSession($, sid, rec, cover => watchPrompt({ ...memory, cover }, reason))
+   // Nothing recorded yet: no model was called, and there is nothing to count.
+   if (got.result === NOTHING_READ) return
+   const result = got.result

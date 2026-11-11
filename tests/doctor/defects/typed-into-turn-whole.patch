@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 1c7c5ed..3b61ae2 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1935,7 +1935,7 @@ function snapshot(turnId: string | undefined): Snap {
+     return { answered, cut: { by: 'other', text: '', incomplete: 'the turn running when the owner typed was not watched from its start' } }
+   }
+   const all = runningText(entry)
+-  const cut: TurnCut = { by: entry.by, text: restOf(all, entry.taken), ...(entry.incomplete === undefined ? {} : { incomplete: entry.incomplete }) }
++  const cut: TurnCut = { by: entry.by, get text() { return runningText(entry) }, ...(entry.incomplete === undefined ? {} : { incomplete: entry.incomplete }) }
+   entry.taken = all.length
+   return { answered, cut }
+ }

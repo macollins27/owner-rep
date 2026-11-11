@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 1c7c5ed..3ff2d54 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -669,7 +669,7 @@ async function readRef($: EngineInterface, sid: string, id: string, ref: SourceR
+   }
+   const folder = await sourceFolder($, sid)
+   const got = folder === null || !isSourceId(id) ? null : await readText($, `${folder}/${id}.txt`)
+-  if (got !== null && ref.sha !== '' && (await fingerprint(got)) === ref.sha) return { ...ref, text: got }
++  if (got !== null) return { ...ref, text: got }
+   return refWithout(ref, 'file', LOST_DAMAGED)
+ }
+ 

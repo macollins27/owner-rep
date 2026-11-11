@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 91d6584..29bd7e0 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2601,7 +2601,7 @@ export function boundaryRow(rows: readonly RecordRow[], job: readonly OwnerMsg[]
+   }
+   const e = earliest(units)
+   const l = latest(units)
+-  if (e !== null && l !== null && e[0] === l[0]) return { outcome: 'established', n: approval.n, from: e[0] as number }
++  if (e !== null) return { outcome: 'established', n: approval.n, from: e[0] as number }
+   const reachesStart = rows.length < SESSION_ROWS_CAP && !(rows[0]?.role === 'user' && withoutReminders(rows[0].text).startsWith('This session is being continued from a previous conversation'))
+   const first = units[0]?.rows ?? []
+   if (first.length === 0 && !reachesStart) {

@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 1c7c5ed..a816fb4 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1987,7 +1987,7 @@ async function pushDraft(
+   pushOwner(rec, 'draft', split.draft, prior, added ? await withSent($, sid, rec, {}, whole) : {})
+   if (!added) return
+   const draft = rec.counter
+-  pushOwner(rec, 'his', split.his, prior, await withSent($, sid, rec, { ...(await his()), withDraft: draft }, whole))
++  pushOwner(rec, 'his', split.his, prior, await withSent($, sid, rec, { ...(await his()), withDraft: draft }, null))
+ }
+ 
+ // A turn ended: its text, after what a message typed into it took, saved and listed as pending.

@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2588,7 +2588,7 @@
+ // The same prompt as one text, for a build that takes no blocks.
+ export const joinBlocks = (blocks: readonly PromptBlock[]): string => blocks.map(b => b.text).join('')
+ // What a build that takes only a text prompt throws for blocks: 2.1.286's host check.
+-export const BLOCKS_REFUSED = /model\.complete: takes \{ model, prompt \}/
++export const BLOCKS_REFUSED = /a build that takes only text/
+ 
+ // The record read's prompt, as text blocks that join to: the fenced record, then the task (the
+ // watch prompt, the brief, or the brief with the open conditions named again). The record's chunks

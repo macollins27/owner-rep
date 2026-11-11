@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 91d6584..9c8f6d8 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1798,7 +1798,7 @@ export function takeApprovals(
+   }
+   if (target !== undefined && !changes.some(c => c.n === target)) changes.push({ n: target, read: read('unreadable', 'it could not be listed') })
+   const waits = changes.filter(c => c.n !== target && c.read.state === 'waiting')
+-  return waits.length > 0 ? { setAside: true, changes: waits } : { setAside: false, changes }
++  return { setAside: false, changes }
+ }
+ 
+ // A held condition a message of the owner's that could not be read whole, or an approval, would

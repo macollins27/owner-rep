@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 1c7c5ed..73b3996 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -758,7 +758,7 @@ async function saveToFiles($: EngineInterface, rec: Rec): Promise<boolean> {
+   let ok = folder !== null
+   if (folder !== null) {
+     const list: Manifest['parts'] = []
+-    for (const [k, text] of splitRecord(JSON.stringify(held)).entries()) {
++    for (const [k, text] of [JSON.stringify(held)].entries()) {
+       const name = `record-${rec.recRev}-${k + 1}.json`
+       if (!(await writeFile($, `${folder}/${name}`, text))) {
+         ok = false

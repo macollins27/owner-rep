@@ -9,7 +9,7 @@
     "name": "flag-shown-twice",
     "breaks": "The watch forgets which flags it has shown, so the same note comes back after the owner dismissed it.",
     "patch": "flag-shown-twice.patch",
-    "fixed": "tested 2026-10-14; remade 2026-10-15"
+    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-29; remade 2026-10-30; remade 2026-10-30"
   },
   {
     "name": "watch-never-backs-off",
@@ -33,7 +33,7 @@
     "name": "flag-replaces-card",
     "breaks": "A watch flag replaces the briefing card instead of waiting for the row.",
     "patch": "flag-replaces-card.patch",
-    "fixed": "tested 2026-10-14; remade 2026-10-15"
+    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-29; remade 2026-10-30; remade 2026-10-30"
   },
   {
     "name": "stop-never-marked",
@@ -45,7 +45,7 @@
     "name": "note-over-other-mod",
     "breaks": "The rep's note draws on top of another mod's note, putting two sets of digit buttons on screen.",
     "patch": "note-over-other-mod.patch",
-    "fixed": "tested 2026-10-14; remade 2026-10-15"
+    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-31"
   },
   {
     "name": "digits-doubled",
@@ -75,7 +75,7 @@
     "name": "whole-ask-rule-dropped",
     "breaks": "The brief loses the rule that the owner's messages add up, so the rep judges the last message alone.",
     "patch": "whole-ask-rule-dropped.patch",
-    "fixed": "2026-10-14; remade 2026-10-15; remade 2026-10-19"
+    "fixed": "2026-10-14; remade 2026-10-15; remade 2026-10-19; remade 2026-10-29"
   },
   {
     "name": "helper-not-counted",
@@ -117,7 +117,7 @@
     "name": "row-shows-whole-reading",
     "breaks": "The row draws the whole objective (result, purpose, conditions and step) instead of the result alone, so the strip is crowded and the result is lost in it.",
     "patch": "row-shows-whole-reading.patch",
-    "fixed": "tested 2026-10-14; remade 2026-10-15"
+    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-31"
   },
   {
     "name": "writer-forks-conversation",
@@ -129,7 +129,7 @@
     "name": "revision-cause-dropped",
     "breaks": "A correction keeps no cause, so the card cannot say which message of the owner's moved the objective.",
     "patch": "revision-cause-dropped.patch",
-    "fixed": "tested 2026-10-14; remade 2026-10-15"
+    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-31"
   },
   {
     "name": "note-reaches-agent",
@@ -147,7 +147,7 @@
     "name": "earlier-job-leaks",
     "breaks": "A new job keeps the old job's first message as its start, so the writer and the briefing are shown a closed job's messages as if they were on this one.",
     "patch": "earlier-job-leaks.patch",
-    "fixed": "tested 2026-10-14; remade 2026-10-15"
+    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-31"
   },
   {
     "name": "tell-prefix-dropped",
@@ -171,7 +171,7 @@
     "name": "step-look-dropped",
     "breaks": "The look that fires every CHECK_EVERY model requests never fires, so a long turn gets no watch until it stops.",
     "patch": "step-look-dropped.patch",
-    "fixed": "tested 2026-10-14"
+    "fixed": "tested 2026-10-14; remade 2026-10-31"
   },
   {
     "name": "note-left-in-box",
@@ -183,7 +183,7 @@
     "name": "late-look-wins",
     "breaks": "The guard measures a write against the job's first message instead of the messages the held objective was built from, so a write that lands late takes a newer write's place.",
     "patch": "late-look-wins.patch",
-    "fixed": "2026-10-14; remade 2026-10-15"
+    "fixed": "2026-10-14; remade 2026-10-15; remade 2026-10-31"
   },
   {
     "name": "revised-line-folds-first",
@@ -219,19 +219,19 @@
     "name": "draft-as-his-words",
     "breaks": "A message the rep drafted and the owner sent is recorded in the owner's list as their own words, unmarked, so the model grades the agent against a job the rep wrote and takes the rep's \"nothing else\" as the owner narrowing their job.",
     "patch": "draft-as-his-words.patch",
-    "fixed": "2026-10-15; remade 2026-10-15"
+    "fixed": "2026-10-15; remade 2026-10-15; remade 2026-10-31"
   },
   {
     "name": "drafts-forgotten",
     "breaks": "Only the newest card's message is kept for knowing a draft, so a message the owner sends from an earlier card is recorded as their own words and can move the objective.",
     "patch": "drafts-forgotten.patch",
-    "fixed": "2026-10-15"
+    "fixed": "2026-10-15; remade 2026-10-31"
   },
   {
     "name": "draft-weight-dropped",
     "breaks": "The briefs lose the weight for a message marked as the rep's draft, so the model reads one as the owner's words with full authority over what \"done\" means.",
     "patch": "draft-weight-dropped.patch",
-    "fixed": "2026-10-15; remade 2026-10-15; remade 2026-10-19"
+    "fixed": "2026-10-15; remade 2026-10-15; remade 2026-10-19; remade 2026-10-29"
   },
   {
     "name": "check-outside-copy",
@@ -285,13 +285,13 @@
     "name": "draft-moves-result",
     "breaks": "The rep's own draft, sent by the owner, starts a rewrite and counts as a message of the owner's, so the rep's words can change the result the owner asked for.",
     "patch": "draft-moves-result.patch",
-    "fixed": "2026-10-15"
+    "fixed": "2026-10-15; remade 2026-10-31"
   },
   {
     "name": "owner-cap-freezes",
     "breaks": "The record keeps only the newest 40 of the owner's messages, the job's included, so on a long job the owner's first message, which says the most, drops out of what the writer and the briefing read.",
     "patch": "owner-cap-freezes.patch",
-    "fixed": "2026-10-15"
+    "fixed": "2026-10-15; remade 2026-10-31"
   },
   {
     "name": "old-reading-converted",
@@ -303,7 +303,7 @@
     "name": "looks-write-objective",
     "breaks": "The watch takes an objective from its look at the conversation, so the agent's account of the job can rewrite the objective between the owner's message and the writer's answer.",
     "patch": "looks-write-objective.patch",
-    "fixed": "2026-10-15"
+    "fixed": "2026-10-15; remade 2026-10-29; remade 2026-10-30; remade 2026-10-30"
   },
   {
     "name": "marks-uncited",
@@ -321,7 +321,7 @@
     "name": "writer-cites-built-message",
     "breaks": "A correction can close or drop a condition by citing a message the held objective was already built from, so a later write reverses what the earlier one kept on the same words.",
     "patch": "writer-cites-built-message.patch",
-    "fixed": "2026-10-15"
+    "fixed": "2026-10-15; remade 2026-10-31"
   },
   {
     "name": "reopen-ignored",
@@ -351,13 +351,13 @@
     "name": "writer-failure-uncounted",
     "breaks": "A writer call that throws or comes back unanswered is not counted, so a session whose objective was never written looks on the price line as if nothing went wrong.",
     "patch": "writer-failure-uncounted.patch",
-    "fixed": "2026-10-15; remade 2026-10-16"
+    "fixed": "2026-10-15; remade 2026-10-16; remade 2026-10-31"
   },
   {
     "name": "writer-failure-erases",
     "breaks": "A writer call that fails clears the objective already held, so one unreachable call leaves the job with nothing to measure the agent against.",
     "patch": "writer-failure-erases.patch",
-    "fixed": "2026-10-15; remade 2026-10-16"
+    "fixed": "2026-10-15; remade 2026-10-16; remade 2026-10-31"
   },
   {
     "name": "writer-failure-unshown",
@@ -375,13 +375,13 @@
     "name": "his-message-cut",
     "breaks": "The owner's own messages are cut to the drafts' 1,200 characters, so the asks at the end of a long first message never reach the writer.",
     "patch": "his-message-cut.patch",
-    "fixed": "2026-10-15"
+    "fixed": "2026-10-15; remade 2026-10-31"
   },
   {
     "name": "prior-keeps-head",
     "breaks": "The agent's words before the owner's message are kept from their start, so the question a short reply answers, usually at the end, is cut off.",
     "patch": "prior-keeps-head.patch",
-    "fixed": "2026-10-15"
+    "fixed": "2026-10-15; remade 2026-10-31"
   },
   {
     "name": "writer-cap-cut",
@@ -393,7 +393,7 @@
     "name": "writer-unreadable-uncounted",
     "breaks": "A writer reply that arrives but cannot be read, as one cut off at its cap, is not counted as a failed write, so the objective never moves while the price line says nothing went wrong.",
     "patch": "writer-unreadable-uncounted.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-10-31"
   },
   {
     "name": "look-remarks-reopened",
@@ -423,19 +423,19 @@
     "name": "holds-with-none-lost",
     "breaks": "A holds answer while no objective is held is taken as nothing, neither retried nor counted as a failed write, so the write is lost silently.",
     "patch": "holds-with-none-lost.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-10-31"
   },
   {
     "name": "writer-retries-stale-prompt",
     "breaks": "A failed attempt is retried over the old prompt even after a newer message of the owner's arrived, so the retry spends a max-effort call on outdated messages and the write is counted failed.",
     "patch": "writer-retries-stale-prompt.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-10-31"
   },
   {
     "name": "writer-unfenced",
     "breaks": "The owner's messages reach the objective writer without the fence and the note that they are records, so a message that reads like a command is taken as an order to the writer and comes back empty.",
     "patch": "writer-unfenced.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-10-31"
   },
   {
     "name": "writer-no-system",
@@ -447,7 +447,7 @@
     "name": "writer-fence-closable",
     "breaks": "A fence tag typed in a message, or in the agent's words under it, is printed as it stands, so a message can close the fence and what follows reads as the writer's own instructions.",
     "patch": "writer-fence-closable.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-10-31"
   },
   {
     "name": "clear-id-read-once",
@@ -465,7 +465,7 @@
     "name": "clear-late-write-draws",
     "breaks": "An objective write the ended session started lands after the /clear and draws its result on the new session's row.",
     "patch": "clear-late-write-draws.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-10-31"
   },
   {
     "name": "clear-press-old-id",
@@ -501,7 +501,7 @@
     "name": "reopened-no-fallback",
     "breaks": "In a reopened session, or after /clear, where there is nothing to fork, the briefing says there is nothing to read yet and the watch reads nothing, though the session's record is there to read.",
     "patch": "reopened-no-fallback.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-10-31"
   },
   {
     "name": "reopened-no-seed",
@@ -513,7 +513,7 @@
     "name": "seed-trusts-text",
     "breaks": "A row the engine wrote on the owner's side that no prefix on NOT_TYPED names (another session's message, an idle notice, a scheduled task), and that the transcript does not hold as the owner's, is seeded as a message of theirs, and the objective is written from words the owner never typed.",
     "patch": "seed-trusts-text.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-10-31"
   },
   {
     "name": "human-rows-unchecked",
@@ -525,7 +525,7 @@
     "name": "record-trusts-text",
     "breaks": "The record read in a reopened session labels a row the engine wrote as the person's whenever no prefix names it, though the transcript says otherwise, so the briefing reads the engine's words as the owner's.",
     "patch": "record-trusts-text.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-10-31"
   },
   {
     "name": "seed-no-folder-scan",
@@ -549,7 +549,7 @@
     "name": "fork-draft-as-his",
     "breaks": "A card message the owner sent in the session this one was forked from is recorded as their own words, so the objective is written from the rep's draft.",
     "patch": "fork-draft-as-his.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-10-31"
   },
   {
     "name": "command-form-raw",
@@ -561,13 +561,13 @@
     "name": "seed-races-prompt",
     "breaks": "A prompt the owner sends while the session is still being read for their messages is recorded first, and the read then finds their message on record and seeds nothing, so every earlier message of theirs is lost to the objective.",
     "patch": "seed-races-prompt.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-10-31"
   },
   {
     "name": "seed-races-note",
     "breaks": "A note to the rep sent while the session is still being read for the owner's messages is recorded first, and the read then seeds nothing, so the objective is written from the note alone.",
     "patch": "seed-races-note.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-10-31"
   },
   {
     "name": "glued-note-after-any",
@@ -624,28 +624,22 @@
     "fixed": "2026-10-16"
   },
   {
-    "name": "step-look-reads-record",
-    "breaks": "readSession falls back to the session record for every look, so each step look and stop look in a new session's first turn pays a full record read",
-    "patch": "step-look-reads-record.patch",
-    "fixed": "2026-10-16"
-  },
-  {
     "name": "note-look-skips-record",
     "breaks": "the look after the owner's note never falls back to the session record, so a note in a reopened session reads nothing and moves no condition",
     "patch": "note-look-skips-record.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-10-31"
   },
   {
     "name": "press-skips-record",
     "breaks": "the press never falls back to the session record, so a briefing in a reopened session says there is nothing to read",
     "patch": "press-skips-record.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-10-31"
   },
   {
     "name": "record-numbers-as-messages",
     "breaks": "The session record labels its entries #N, the form the owner's numbered messages take, so a record entry can be cited, and read by applyMarks, as one of their messages.",
     "patch": "record-numbers-as-messages.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-10-31"
   },
   {
     "name": "truncated-read-trusted",
@@ -783,13 +777,13 @@
     "name": "queued-prior-carried",
     "breaks": "A queued message, or one no row holds, is given the prior of the message before it, so the writer is told the agent had just said something it had not said when the owner typed it.",
     "patch": "queued-prior-carried.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-10-31"
   },
   {
     "name": "typed-cursor-stuck",
     "breaks": "A message sent twice is matched to the same row both times, so the earlier sending is given the agent's words from before the later one.",
     "patch": "typed-cursor-stuck.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-10-31"
   },
   {
     "name": "scan-first-match-taken",
@@ -813,7 +807,7 @@
     "name": "record-items-unused",
     "breaks": "The record read ignores the messages read from the transcript and labels rows by NOT_TYPED alone, so another session's message is shown as the owner's words.",
     "patch": "record-items-unused.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-10-31 and 2026-11-10"
   },
   {
     "name": "human-items-deduped",
@@ -831,7 +825,7 @@
     "name": "typed-forward-walk",
     "breaks": "The owner's messages are matched to the rows from the start again, so after a compaction a short reply the owner sent before it takes the prior of its later sending, and the later one gets none.",
     "patch": "typed-forward-walk.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-10-31"
   },
   {
     "name": "fork-items-earliest-end",
@@ -849,7 +843,7 @@
     "name": "first-write-new-job-ignored",
     "breaks": "A session seeded from its transcript keeps every job it held as one: the first write's new job is ignored, so the earlier job's messages are shown to the writer and the briefing as this job's.",
     "patch": "first-write-new-job-ignored.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-10-31"
   },
   {
     "name": "wait-your-any",
@@ -939,7 +933,7 @@
     "name": "dropped-drafts-lost",
     "breaks": "A record the store lets go takes its drafts with it, so a card message the owner sent in that session is seeded as their own words when the session is reopened or forked later.",
     "patch": "dropped-drafts-lost.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-10-31"
   },
   {
     "name": "dropped-drafts-unread",
@@ -1725,13 +1719,13 @@
     "name": "blank-as-saved",
     "breaks": "A record saved by an older build with fewer fields is judged as saved rather than as it loads, so a record holding nothing is kept.",
     "patch": "blank-as-saved.patch",
-    "fixed": "2026-10-17"
+    "fixed": "2026-10-17; remade 2026-10-31"
   },
   {
     "name": "blank-ignores-extra",
     "breaks": "A field the blank record lacks, such as a briefing or an older build's reading, is not looked at, so a record holding it is dropped as blank and that is lost.",
     "patch": "blank-ignores-extra.patch",
-    "fixed": "2026-10-17"
+    "fixed": "2026-10-17; remade 2026-10-31"
   },
   {
     "name": "blank-key-order",
@@ -1791,7 +1785,7 @@
     "name": "own-words-not-asked",
     "breaks": "A briefing refused twice is never written in the rep's own words, so the card always shows the fixed texts in place of what the rep found.",
     "patch": "own-words-not-asked.patch",
-    "fixed": "2026-10-19; remade 2026-10-29; remade 2026-10-30"
+    "fixed": "2026-10-19; remade 2026-10-29; remade 2026-10-30; remade 2026-10-31"
   },
   {
     "name": "own-words-stop-taken",
@@ -1858,6 +1852,24 @@
     "breaks": "The voice shift turns \"me\" to \"him\" instead of \"the owner\", so a message that hands the work back to the owner is read as a hand-back to someone the patterns alone still name; the mark and the owner wording drift apart.",
     "patch": "voice-to-him.patch",
     "fixed": "2026-10-26"
+  },
+  {
+    "name": "approved-section-missing",
+    "breaks": "The readers' memory loses the section of plans the owner approved, so neither the Heads up nor the briefing sees a plan's steps and neither can walk them.",
+    "patch": "approved-section-missing.patch",
+    "fixed": "2026-10-29"
+  },
+  {
+    "name": "approved-cursor-not-saved",
+    "breaks": "An answered Heads up never stores where its rotation of approved plans stopped, so every look shows the same plans and the older ones are never compared.",
+    "patch": "approved-cursor-not-saved.patch",
+    "fixed": "2026-10-29"
+  },
+  {
+    "name": "unassessed-dropped",
+    "breaks": "The briefing's unassessed: part is not read, so a step the briefing could not judge leaves no line on the card and the owner is not told.",
+    "patch": "unassessed-dropped.patch",
+    "fixed": "2026-10-29"
   },
   {
     "name": "message-swapped-whole",
@@ -1971,7 +1983,7 @@
     "name": "brief-me-no-read1-fallback",
     "breaks": "Brief me never falls back to read 1's message, so when the last read and the own-words call give nothing usable the card shows the fixed text though read 1 wrote a sound message.",
     "patch": "brief-me-no-read1-fallback.patch",
-    "fixed": "2026-10-29; remade 2026-10-30"
+    "fixed": "2026-10-29; remade 2026-10-30; remade 2026-10-31"
   },
   {
     "name": "own-words-replaces-read2",
@@ -2169,6 +2181,132 @@
     "name": "punctuation-left-usable",
     "breaks": "What is left after a removal counts as usable with no letter or digit in it, so \"You can stop now. ...\" leaves \"...\" on the card in place of the fixed text.",
     "patch": "punctuation-left-usable.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "list-gap-rule-left-out",
+    "breaks": "The Heads up is never told that a step the agent's own full list leaves out is marked as looking dropped, so that step stays silent as not assessed.",
+    "patch": "list-gap-rule-left-out.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "list-gap-rule-says-skipped",
+    "breaks": "The rule no longer forbids calling the step skipped or done, so a reader may claim what it cannot see.",
+    "patch": "list-gap-rule-says-skipped.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "list-gap-rule-any-list",
+    "breaks": "Any list raises the mark, so a partial list or a list from before the approval raises a false alarm.",
+    "patch": "list-gap-rule-any-list.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "list-gap-rule-in-briefing",
+    "breaks": "The briefing is told the Heads up's rule too, so it marks steps it must leave under unassessed.",
+    "patch": "list-gap-rule-in-briefing.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "walk-no-looks-dropped-state",
+    "breaks": "The walk's list of states has no looks dropped, so the reader has no mark to give.",
+    "patch": "walk-no-looks-dropped-state.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "walk-looks-dropped-not-unassessed",
+    "breaks": "A step marked looks dropped stops counting as not assessed, so the row and the card lose the line that says it was not compared.",
+    "patch": "walk-looks-dropped-not-unassessed.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "heads-up-not-carried",
+    "breaks": "The look shows the reader's own flag and never reads the walk, so a dropped step behind another flag stays silent.",
+    "patch": "heads-up-not-carried.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "heads-up-no-sign-not-carried",
+    "breaks": "Only the looks dropped mark is carried, so a step with no sign is left to the flag.",
+    "patch": "heads-up-no-sign-not-carried.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "heads-up-mark-not-carried",
+    "breaks": "Only no sign is carried, so a step marked looks dropped is left to the flag.",
+    "patch": "heads-up-mark-not-carried.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "heads-up-not-assessed-carried",
+    "breaks": "A step walked as not assessed is carried too, so the false-alarm protection is gone.",
+    "patch": "heads-up-not-assessed-carried.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "heads-up-flag-lost",
+    "breaks": "The reader's own flag is thrown away when a dropped step takes the line, so a concern disappears.",
+    "patch": "heads-up-flag-lost.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "heads-up-repeats-shown",
+    "breaks": "A step already shown is raised again at every look, reworded each time, and blocks the next flag.",
+    "patch": "heads-up-repeats-shown.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "heads-up-no-plan-shown",
+    "breaks": "A walked step is called part of the plan the owner approved when no shown plan holds it, or no plan was shown at all.",
+    "patch": "heads-up-no-plan-shown.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "heads-up-register-no-plan-gate",
+    "breaks": "The look never hands the mod the plans it showed, so no dropped step is carried at all.",
+    "patch": "heads-up-register-no-plan-gate.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "heads-up-flag-speaks-ignored",
+    "breaks": "A flag that already speaks of the step is replaced by the mod's line, losing the reader's named list.",
+    "patch": "heads-up-flag-speaks-ignored.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "heads-up-says-skipped",
+    "breaks": "The mod's own line calls the step skipped, which it cannot know.",
+    "patch": "heads-up-says-skipped.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "heads-up-plan-words-any",
+    "breaks": "Any step passes as part of the plan, so an unrelated step is called approved.",
+    "patch": "heads-up-plan-words-any.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "heads-up-named-hides-others",
+    "breaks": "A flag that speaks of one dropped step hides every other dropped step.",
+    "patch": "heads-up-named-hides-others.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "heads-up-also-unbounded",
+    "breaks": "Every dropped step is listed by name, so the why grows without limit.",
+    "patch": "heads-up-also-unbounded.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "heads-up-short-steps-repeat",
+    "breaks": "A step of only short words has no words to compare, so it repeats at every look.",
+    "patch": "heads-up-short-steps-repeat.patch",
+    "fixed": "2026-10-30"
+  },
+  {
+    "name": "walk-line-first-bar",
+    "breaks": "The mark is read from the first bar, so a step's own words can raise a false alarm.",
+    "patch": "walk-line-first-bar.patch",
     "fixed": "2026-10-30"
   },
   {
@@ -2418,9 +2556,645 @@
     "fixed": "2026-10-30"
   },
   {
+    "name": "approved-truthiness",
+    "breaks": "An approval with an empty inline value and a saved took source is no longer recognised.",
+    "patch": "approved-truthiness.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "note-approval-not-pinned",
+    "breaks": "A note approving a plan is not recognised as an approval and is not pinned.",
+    "patch": "note-approval-not-pinned.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "approved-trimmed-with-job",
+    "breaks": "Approvals outside the job message limit are dropped instead of pinned.",
+    "patch": "approved-trimmed-with-job.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "assert-tag-ignored",
+    "breaks": "Row 1 asserts approval although its asserts tag is false.",
+    "patch": "assert-tag-ignored.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "rejected-called-approved",
+    "breaks": "Rejection coverage rows 10 to 12 describe the rejected plan through the approval template.",
+    "patch": "rejected-called-approved.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "unmarked-incomplete-uncovered",
+    "breaks": "An unmarked message with incomplete context has no coverage line.",
+    "patch": "unmarked-incomplete-uncovered.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "trim-drops-lost-after-read",
+    "breaks": "The trim counts only waiting and unreadable messages, losing the coverage row of a source lost after reading.",
+    "patch": "trim-drops-lost-after-read.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "uncovered-count-capped",
+    "breaks": "The uncovered total stops growing at the recent-list limit.",
+    "patch": "uncovered-count-capped.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "coverage-line-missing",
+    "breaks": "Coverage omits the record lines about messages and plans that could not be checked.",
+    "patch": "coverage-line-missing.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "step-iterator-not-closed",
+    "breaks": "Closing the tap never calls the inner stream return method.",
+    "patch": "step-iterator-not-closed.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "return-value-dropped",
+    "breaks": "Closing the tap loses the inner stream return value in favour of the caller value.",
+    "patch": "return-value-dropped.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "cleanup-chunk-dropped",
+    "breaks": "A text chunk yielded during cleanup passes upstream without being captured.",
+    "patch": "cleanup-chunk-dropped.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "throw-not-forwarded",
+    "breaks": "Throwing into the tap never forwards the throw to the inner stream.",
+    "patch": "throw-not-forwarded.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "notification-unlabelled",
+    "breaks": "A background notification turn loses its origin label.",
+    "patch": "notification-unlabelled.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "prior-shown-when-unshown",
+    "breaks": "The writer sees prior text from a turn declared unshown.",
+    "patch": "prior-shown-when-unshown.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "plan-preview-shown-when-unshown",
+    "breaks": "A plan declared unshown still prints its stored preview.",
+    "patch": "plan-preview-shown-when-unshown.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "sent-hidden-with-turn",
+    "breaks": "The writer loses the whole sent words when the preceding turn is unshown.",
+    "patch": "sent-hidden-with-turn.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "over-cap-held",
+    "breaks": "A context over the reading cap is allowed to be read and held as a plan.",
+    "patch": "over-cap-held.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "close-only-applied",
+    "breaks": "A writer answer approving a close-only message is applied before its whole read.",
+    "patch": "close-only-applied.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "partial-words-applied",
+    "breaks": "An unmarked message shown only in part is applied without waiting for its whole words.",
+    "patch": "partial-words-applied.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "draft-mark-moved-anywhere",
+    "breaks": "A mark on a draft moves to unrelated owner words instead of only the same submit.",
+    "patch": "draft-mark-moved-anywhere.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "whole-read-target-refused",
+    "breaks": "The approval gate refuses the already-waiting target of a whole read.",
+    "patch": "whole-read-target-refused.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "plan-not-fresh",
+    "breaks": "A newly accepted plan is treated as already held rather than fresh input.",
+    "patch": "plan-not-fresh.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "reader-newest-only",
+    "breaks": "The readers compare only the newest approved plan.",
+    "patch": "reader-newest-only.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "reader-splits-plan",
+    "breaks": "Approved plans are clipped to fit the reader budget instead of shown whole or left out.",
+    "patch": "reader-splits-plan.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "seed-last-row-only",
+    "breaks": "A seeded reply keeps only the last assistant row instead of the whole preceding turn.",
+    "patch": "seed-last-row-only.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "summary-cut-3000",
+    "breaks": "A compaction summary is cut to 3000 characters instead of its larger allowance.",
+    "patch": "summary-cut-3000.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "cut-unmarked",
+    "breaks": "A cut marker no longer identifies which field lost text.",
+    "patch": "cut-unmarked.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "whole-after-approval-ignored",
+    "breaks": "The record text ignores the approval boundary and clips the rows after it.",
+    "patch": "whole-after-approval-ignored.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "cache-mark-on-tail",
+    "breaks": "The growing final record chunk is marked for the cache instead of the last complete chunk.",
+    "patch": "cache-mark-on-tail.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "boundary-guessed",
+    "breaks": "An ambiguous approval is placed at its earliest possible row instead of reported unknown.",
+    "patch": "boundary-guessed.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "not-assessed-dropped",
+    "breaks": "Both reader parsers discard not-assessed steps, so their coverage lines disappear.",
+    "patch": "not-assessed-dropped.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "approved-prior-cut-400",
+    "breaks": "The saved body keeps only its last 400 characters.",
+    "patch": "approved-prior-cut-400.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "missed-step-counted-complete",
+    "breaks": "A turn with a missed step is counted as complete.",
+    "patch": "missed-step-counted-complete.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "reload-counted-complete",
+    "breaks": "A turn first heard after reload is counted as complete.",
+    "patch": "reload-counted-complete.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "subagent-step-captured",
+    "breaks": "Helper steps enter the main-turn capture.",
+    "patch": "subagent-step-captured.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "interrupt-text-dropped",
+    "breaks": "Interrupting a turn discards the text already streamed.",
+    "patch": "interrupt-text-dropped.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "submit-boundary-late",
+    "breaks": "The submit snapshot is taken after awaiting turn saves, so later text can cross the boundary.",
+    "patch": "submit-boundary-late.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "typed-into-turn-whole",
+    "breaks": "A message typed into a running turn receives the turn text collected later as well.",
+    "patch": "typed-into-turn-whole.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "body-from-turn-answer",
+    "breaks": "The completed turn answer replaces the streamed body, losing earlier steps.",
+    "patch": "body-from-turn-answer.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "body-from-step-answer",
+    "breaks": "Capture uses the step answer, merging the streamed text blocks.",
+    "patch": "body-from-step-answer.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "long-reply-clipped",
+    "breaks": "An ordinary long reply loses its whole sent source.",
+    "patch": "long-reply-clipped.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "appended-draft-clipped",
+    "breaks": "The owner words appended to a draft lose their whole sent copy.",
+    "patch": "appended-draft-clipped.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "source-hash-ignored",
+    "breaks": "A saved source is read even when its fingerprint does not match.",
+    "patch": "source-hash-ignored.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "source-rewritten",
+    "breaks": "A source file already present is overwritten by a later placement.",
+    "patch": "source-rewritten.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "store-full-loses-record",
+    "breaks": "A full store no longer falls back to saving the record in files.",
+    "patch": "store-full-loses-record.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "fallback-single-file",
+    "breaks": "The fallback record is written as one unbounded file instead of bounded parts.",
+    "patch": "fallback-single-file.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "fallback-objrev-only",
+    "breaks": "The fallback manifest is compared with objective revision instead of record revision.",
+    "patch": "fallback-objrev-only.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "recovery-reuses-lostrev",
+    "breaks": "A recovered record reuses its lost revision instead of advancing beyond it.",
+    "patch": "recovery-reuses-lostrev.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "loss-mark-cleared-on-save",
+    "breaks": "A successful store save clears a still-relevant record loss mark.",
+    "patch": "loss-mark-cleared-on-save.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "stale-pass-replaces",
+    "breaks": "A stale writer pass replaces the newer objective result and step.",
+    "patch": "stale-pass-replaces.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "unreadable-closes",
+    "breaks": "Owner words that could not be read whole can close held conditions.",
+    "patch": "unreadable-closes.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "approval-drops-condition",
+    "breaks": "A typed approval can drop or close an earlier held condition.",
+    "patch": "approval-drops-condition.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "plan-closes-condition",
+    "breaks": "A plan-screen approval can close an earlier condition.",
+    "patch": "plan-closes-condition.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "approval-opens-new-job",
+    "breaks": "A typed approval can open a new job and abandon the current one.",
+    "patch": "approval-opens-new-job.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "stored-approval-closes",
+    "breaks": "A stored approval already read by the writer can close a held condition.",
+    "patch": "stored-approval-closes.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "waiting-dropped-on-failure",
+    "breaks": "A failed whole-read write clears waiting messages instead of leaving them for retry.",
+    "patch": "waiting-dropped-on-failure.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "took-cut-200",
+    "breaks": "What an approval took is cut to 200 characters before saving.",
+    "patch": "took-cut-200.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "question-counts-as-approval",
+    "breaks": "A moved answer without approved lines marks every listed owner message as approving, including questions.",
+    "patch": "question-counts-as-approval.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "screen-note-dropped",
+    "breaks": "A note entered when rejecting a plan is not recorded on the live path.",
+    "patch": "screen-note-dropped.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "screen-rejected-plan-held",
+    "breaks": "The plan rejected on the screen is stored as an accepted approval.",
+    "patch": "screen-rejected-plan-held.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "screen-edit-lost",
+    "breaks": "An edited plan-screen result is replaced with the original call plan.",
+    "patch": "screen-edit-lost.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "screen-unknown-accepted",
+    "breaks": "An unknown plan-screen response is treated as accepting the call plan.",
+    "patch": "screen-unknown-accepted.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "screen-plan-approval-none-unapproves",
+    "breaks": "A writer answering approved none removes the approval already recorded by the plan screen.",
+    "patch": "screen-plan-approval-none-unapproves.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "brief-rotates-silently",
+    "breaks": "The briefing rotates plans with a cursor and omits the no-room not-compared lines.",
+    "patch": "brief-rotates-silently.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "reader-uses-fork",
+    "breaks": "The session reader first uses a conversation fork instead of the saved record completion.",
+    "patch": "reader-uses-fork.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "later-claim-held",
+    "breaks": "Every completed turn rewrites the newest owner message body with the agent later claim.",
+    "patch": "later-claim-held.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "walk-rule-missing",
+    "breaks": "The prompt omits walk rule; a model's obedience to the rule is proved by the harness cases.",
+    "patch": "walk-rule-missing.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "not-assessed-rule-missing",
+    "breaks": "The prompt omits not assessed rule; a model's obedience to the rule is proved by the harness cases.",
+    "patch": "not-assessed-rule-missing.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "standing-instructions-line-missing",
+    "breaks": "The prompt omits standing instructions line; a model's obedience to the rule is proved by the harness cases.",
+    "patch": "standing-instructions-line-missing.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "combined-meaning-missing",
+    "breaks": "The prompt omits combined meaning; a model's obedience to the rule is proved by the harness cases.",
+    "patch": "combined-meaning-missing.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "whole-before-steps-missing",
+    "breaks": "The prompt omits whole before steps; a model's obedience to the rule is proved by the harness cases.",
+    "patch": "whole-before-steps-missing.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "draft-counts-as-approval",
+    "breaks": "The approval gate takes a mark on the rep's draft itself and stores it as an owner approval.",
+    "patch": "draft-counts-as-approval.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "gate-accepts-unlisted",
+    "breaks": "The approval gate accepts marks for owner messages that the writer was never shown.",
+    "patch": "gate-accepts-unlisted.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "thinking-captured",
+    "breaks": "Thinking chunks enter the captured body alongside text chunks.",
+    "patch": "thinking-captured.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "recovery-removes-before-save",
+    "breaks": "The files of a lost copy taken up at a start are removed even when the recovered record could not be saved.",
+    "patch": "recovery-removes-before-save.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "reader-closes-by-approval",
+    "breaks": "A reader's closed line citing an approved plan or a yes closes the condition.",
+    "patch": "reader-closes-by-approval.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "check-drops-record-lines",
+    "breaks": "The card Check it rewrites loses the record's own warnings, and a stop stands beside a lost record.",
+    "patch": "check-drops-record-lines.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "unread-list-taken-for-none",
+    "breaks": "A list that exists and cannot be read is treated as no copy at all, with no loss marked.",
+    "patch": "unread-list-taken-for-none.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "unread-list-taken-over-new-words",
+    "breaks": "A list read at last replaces the record even though the owner has sent more since it could not be read.",
+    "patch": "unread-list-taken-over-new-words.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "changed-loss-taken-up",
+    "breaks": "A later start takes up a copy marked lost because the owner had sent more, over what he sent.",
+    "patch": "changed-loss-taken-up.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "unread-mark-forgets-kept",
+    "breaks": "A waiting mark's kept revision is ignored, so a list at or under it stands the mark forever or is judged against later saves.",
+    "patch": "unread-mark-forgets-kept.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "unread-list-survives-new-job",
+    "breaks": "A new job leaves a list that could not be read in place, for a later start to take over the new job.",
+    "patch": "unread-list-survives-new-job.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "no-row-reads-as-read",
+    "breaks": "A later seeded message no row holds records nothing, so an approval of it reads as read with no line.",
+    "patch": "no-row-reads-as-read.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "no-row-line-on-every-message",
+    "breaks": "A seeded message no row holds shows a line even when it approves nothing.",
+    "patch": "no-row-line-on-every-message.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "waiting-list-written-over",
+    "breaks": "A store that refuses the record writes the session's copy over a list still waiting to be read.",
+    "patch": "waiting-list-written-over.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "waiting-list-removed-by-store",
+    "breaks": "A store that takes the record again removes a list still waiting to be read.",
+    "patch": "waiting-list-removed-by-store.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "part-read-beats-owner-words",
+    "breaks": "A part that could not be read decides why a list was not taken, so a later start takes it over what the owner sent.",
+    "patch": "part-read-beats-owner-words.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "long-no-row-message-named",
+    "breaks": "A long seeded message no row holds shows a line once its whole read ends, though it approves nothing.",
+    "patch": "long-no-row-message-named.patch",
+    "fixed": "2026-11-01"
+  },
+  {
+    "name": "agent-account-sets-limits",
+    "breaks": "The objective writer is no longer told that what the agent says it did or did not do, and any limit it sets on its own work, is the agent's account and never a condition or limit unless a step of a plan the owner approved.",
+    "patch": "agent-account-sets-limits.patch",
+    "fixed": "2026-11-03"
+  },
+  {
+    "name": "screen-changed-file-held",
+    "breaks": "An accepted plan screen holds the plan file as it was at approval, though the agent changed it while the screen was up, instead of the plan the screen showed.",
+    "patch": "screen-changed-file-held.patch",
+    "fixed": "2026-11-07"
+  },
+  {
+    "name": "screen-edit-heading-ignored",
+    "breaks": "A plan read back from the rows is not known as edited by the owner, though Claude Code's heading says so, so the plan he did not approve is held.",
+    "patch": "screen-edit-heading-ignored.patch",
+    "fixed": "2026-11-07"
+  },
+  {
+    "name": "note-any-accept-source",
+    "breaks": "A note row beside an approval the engine gave by a setting, not the owner, is read as the owner's words.",
+    "patch": "note-any-accept-source.patch",
+    "fixed": "2026-11-07"
+  },
+  {
+    "name": "note-sed-skips-note",
+    "breaks": "The transcript read prints only lines marked human, so a note typed on the plan screen never reaches the check that proves it the owner's.",
+    "patch": "note-sed-skips-note.patch",
+    "fixed": "2026-11-07"
+  },
+  {
+    "name": "note-record-agent-side",
+    "breaks": "The record shows a note the owner typed while approving a plan as tool output on the agent's side, not as the person's words.",
+    "patch": "note-record-agent-side.patch",
+    "fixed": "2026-11-07"
+  },
+  {
+    "name": "note-other-call",
+    "breaks": "A note proven the owner's beside one plan screen also proves the same words beside another call.",
+    "patch": "note-other-call.patch",
+    "fixed": "2026-11-07"
+  },
+  {
+    "name": "note-not-caught-live",
+    "breaks": "A note typed while approving a plan in a live session is never read, so it does not reach the objective.",
+    "patch": "note-not-caught-live.patch",
+    "fixed": "2026-11-07"
+  },
+  {
+    "name": "note-placed-as-plan",
+    "breaks": "A note typed beside a plan approval is placed like a plan screen, so where the owner's ask stands cannot be told.",
+    "patch": "note-placed-as-plan.patch",
+    "fixed": "2026-11-07"
+  },
+  {
+    "name": "record-shows-changed-copy",
+    "breaks": "The record shows the plan file's copy returned at approval in full and unmarked, though the screen showed another plan, so the reader takes a plan the owner never saw as approved.",
+    "patch": "record-shows-changed-copy.patch",
+    "fixed": "2026-11-07"
+  },
+  {
+    "name": "note-any-tool",
+    "breaks": "Words the owner typed while allowing another tool's call are read as a note on the plan screen.",
+    "patch": "note-any-tool.patch",
+    "fixed": "2026-11-07"
+  },
+  {
+    "name": "heads-up-says-nothing-done",
+    "breaks": "The Heads up says the record holds nothing of a dropped step, which the rep cannot know, since its sign that the step was not done is only that it found none.",
+    "patch": "heads-up-says-nothing-done.patch",
+    "fixed": "2026-11-07"
+  },
+  {
+    "name": "record-hides-changed-copy",
+    "breaks": "When the plan file changed after the screen showed the plan, the record replaces the changed copy with a pointer, so the reader never learns the file was changed under the screen.",
+    "patch": "record-hides-changed-copy.patch",
+    "fixed": "2026-11-07"
+  },
+  {
     "name": "owner-typed-check-dropped",
     "breaks": "The objective writer drops a check, review or report the owner asked for in the owner's own message, treating it as the agent's method like one from an agent's routine.",
     "patch": "owner-typed-check-dropped.patch",
+    "fixed": "2026-11-10"
+  },
+  {
+    "name": "approved-check-made-method",
+    "breaks": "The objective writer is told that a check or test is the agent's method even when it is a step of a plan the owner approved, so 0.6.0's rule drops an approved step.",
+    "patch": "approved-check-made-method.patch",
+    "fixed": "2026-11-10"
+  },
+  {
+    "name": "approved-check-called-waste",
+    "breaks": "The brief counts a check the owner asked for, or a step of a plan the owner approved, as an addition the result does not need.",
+    "patch": "approved-check-called-waste.patch",
+    "fixed": "2026-11-10"
+  },
+  {
+    "name": "blocks-refusal-unrecognised",
+    "breaks": "A build that takes only a text prompt (2.1.286 refuses blocks at its host check) is never recognised, so its record read is never retried as joined text and every look reads as an API error.",
+    "patch": "blocks-refusal-unrecognised.patch",
+    "fixed": "2026-11-10"
+  },
+  {
+    "name": "approval-closing-dropped",
+    "breaks": "The objective writer is not told that a yes closes a condition that only waited on the plan, so it lists that condition as dropped by the approval and the card asks the owner to settle what the yes already did.",
+    "patch": "approval-closing-dropped.patch",
     "fixed": "2026-11-10"
   }
 ]

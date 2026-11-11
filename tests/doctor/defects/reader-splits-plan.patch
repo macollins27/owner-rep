@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 91d6584..4dbbcf1 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1110,7 +1110,7 @@ const tooLongTold = (n: number, chars: number): string =>
+ // turn after its cursor, oldest first, until one does not fit, then fills what room is left
+ // newest first; its cursor becomes the highest it took in turn, and after the newest it wraps.
+ export function readerParts(owner: readonly OwnerMsg[], budget: number, cursor?: number): ApprovedFill {
+-  const all = owner.filter(showable).map(m => ({ m, text: approvedBlock(m, owner) }))
++  const all = owner.filter(showable).map(m => ({ m, text: approvedBlock(m, owner).slice(0, budget) }))
+   const over = all.filter(b => b.text.length > budget)
+   const fits = all.filter(b => b.text.length <= budget)
+   const taken: typeof fits = []

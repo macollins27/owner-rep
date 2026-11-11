@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index eef10d1..5b8585f 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -782,7 +782,7 @@ async function saveToFiles($: EngineInterface, rec: Rec): Promise<boolean> {
+ async function lostFilesOf($: EngineInterface, sid: string, mark: LossMark): Promise<string[]> {
+   const folder = await sourceFolder($, sid)
+   if (folder === null) return []
+-  const path = `${folder}/${mark.why === LOST_LIST_UNREAD ? 'record' : `record-lost-${mark.lostRev}`}.json`
++  const path = `${folder}/record-lost-${mark.lostRev}.json`
+   const manifest = parseManifest(await readText($, path))
+   return [path, ...(manifest?.parts ?? []).map(p => `${folder}/${p.name}`)]
+ }

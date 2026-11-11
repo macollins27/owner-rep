@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 1c7c5ed..4859e97 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1167,6 +1167,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
+               if (m === undefined) continue
+               const next: OwnerMsg = { ...m, read: c.read }
+               if (c.approved !== undefined) {
++                c.approved = c.approved.slice(0, 200)
+                 if (utf8Bytes(JSON.stringify(c.approved)) > TOOK_INLINE_BYTES) {
+                   next.approved = ''
+                   next.src = { ...next.src, took: await saveSource($, sid, `${m.n}-took`, c.approved) }

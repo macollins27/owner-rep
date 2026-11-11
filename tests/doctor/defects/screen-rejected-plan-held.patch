@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 1c7c5ed..4bf1d51 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2211,6 +2211,7 @@ async function takePlanScreen($: EngineInterface, e: unknown, result: unknown):
+ 
+ // One answer of the plan screen's, seen as it happened or read back from the rows (`more`).
+ async function storeScreen($: EngineInterface, sid: string, rec: Rec, seen: NonNullable<PlanScreen>, id: string | undefined, more: Partial<OwnerMsg>): Promise<void> {
++  if (seen.kind === 'rejected') seen = { kind: 'accepted', plan: seen.plan, edited: false }
+   const n = rec.counter + 1
+   const toolUseId = id === undefined ? {} : { toolUseId: id }
+   if (seen.kind === 'accepted') {

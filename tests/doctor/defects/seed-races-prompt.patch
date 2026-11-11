@@ -1,13 +1,12 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 264fffa..74f0c16 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1510,7 +1510,7 @@ export const register: Register = on => {
+@@ -2389,7 +2389,7 @@ export const register: Register = on => {
          // A session the rep holds no record of has the owner's messages read from the
          // session first (or the start's read finished), so this prompt is numbered
          // after them.
 -        const seeded = await seedOwner($, id).catch(() => false)
 +        const seeded = false
          const view = await read($, viewA)
-         const { rec, split, isHis } = await changeRec($, id, async rec => {
-           // A message the rep drafted and the owner sent is recorded as the rep's
+         // The turns this message answers are saved first.
+         await saving

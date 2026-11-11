@@ -1,11 +1,11 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index c95e00f..d63d8c5 100644
+index fe5b367..17c0205 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -824,12 +824,12 @@ export const candidateKeys = (rows: readonly RecordRow[]): Set<string> => new Se
- // prior is worse than none.
- export function typedFromItems(items: readonly HumanItem[], rows: readonly RecordRow[]): { text: string; prior: string }[] {
+@@ -2136,12 +2136,12 @@ export type SeededTurn = { text: string; prior: string; at?: number; body?: stri
+ export function typedFromItems(items: readonly HumanItem[], rows: readonly RecordRow[]): SeededTurn[] {
    const priors = items.map(() => '')
+   const ats = items.map(() => -1)
 -  let cursor = rows.length - 1
 -  for (let k = items.length - 1; k >= 0; k--) {
 +  let cursor = 0
@@ -16,14 +16,14 @@ index c95e00f..d63d8c5 100644
 -    for (let i = cursor; i >= 0; i--) {
 +    for (let i = cursor; i < rows.length; i++) {
        const row = rows[i]
-       if (row === undefined || row.role !== 'user' || (row.toolResults ?? []).length > 0) continue
-       if (typedKey(row.text) === item.key) {
-@@ -845,7 +845,7 @@ export function typedFromItems(items: readonly HumanItem[], rows: readonly Recor
+       if (row === undefined || row.role !== 'user') continue
+       const results = row.toolResults ?? []
+@@ -2160,7 +2160,7 @@ export function typedFromItems(items: readonly HumanItem[], rows: readonly Recor
          break
        }
      }
 -    cursor = at - 1
 +    cursor = at + 1
    }
-   return items.map((item, k) => ({ text: item.text, prior: priors[k] ?? '' }))
- }
+   let before = -1
+   return items.map((item, k) => {

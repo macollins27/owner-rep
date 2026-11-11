@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 950c949..0c48bf4 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2646,7 +2646,6 @@ export function boundaryRow(rows: readonly RecordRow[], job: readonly OwnerMsg[]
+   list.forEach((m, i) => {
+     const prev = list[i - 1]
+     // A note typed with a plan on the plan screen sits in that plan's row and places nothing more.
+-    if (m.screen === 'accept-note') return
+     if (m.kind === 'plan') {
+       const hit = rows.flatMap((r, k) => ((r.toolResults ?? []).some(t => t.tool_use_id !== undefined && t.tool_use_id === m.toolUseId) ? [k] : []))
+       units.push({ n: m.n, rows: hit })

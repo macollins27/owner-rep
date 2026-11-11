@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 1c7c5ed..4db4e03 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1959,7 +1959,7 @@ async function takeBody($: EngineInterface, sid: string, rec: Rec, snap: Snap):
+ // The body's fields on the message that is numbered next: none when it is empty and whole.
+ async function bodyFields($: EngineInterface, sid: string, rec: Rec, body: Body): Promise<Partial<OwnerMsg>> {
+   if (body.text === '' && body.incomplete === undefined) return {}
+-  const src = body.text === '' ? {} : { src: { body: await saveSource($, sid, `${rec.counter + 1}-body`, body.text) } }
++  const src = body.text === '' ? {} : { src: { body: await saveSource($, sid, `${rec.counter + 1}-body`, body.text.slice(-400)) } }
+   return { turns: body.turns, ...(body.incomplete === undefined ? {} : { incomplete: body.incomplete }), ...src }
+ }
+ 

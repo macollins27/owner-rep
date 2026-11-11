@@ -1,0 +1,18 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 1c7c5ed..3e5de6c 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2554,9 +2554,10 @@ export const register: Register = on => {
+     // The step's stream passes up as it is; its text chunks are kept on the way.
+     const turn = entry
+     try {
+-      return yield* tapStep(next(e), c => {
+-        if (c.kind === 'text') addText(turn, c.index, c.text)
+-      })
++      const result = yield* next(e)
++      turn.stepBlocks.clear()
++      addText(turn, 0, result.answer)
++      return result
+     } finally {
+       closeStep(turn, e.index)
+     }

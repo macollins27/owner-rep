@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 950c949..cf1c2e2 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -108,7 +108,7 @@ export function planScreen(input: unknown, r: unknown): PlanScreen {
+   if (!object && said === undefined) return null
+   const after = planAfterHeading(said)
+   const returned = typeof back === 'string' && back !== '' ? back : (after?.plan ?? '')
+-  const edited = planWasEdited === true || after?.edited === true
++  const edited = planWasEdited === true
+   const plan = edited ? returned || called : called || returned
+   return plan === '' ? null : { kind: 'accepted', plan, edited }
+ }

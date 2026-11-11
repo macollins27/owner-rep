@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 950c949..490afb8 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2433,7 +2433,7 @@ function recordEntries(rows: readonly RecordRow[], human?: ReadonlySet<string>):
+       })
+       // A note typed on the plan screen beside this result, proven the owner's for that call.
+       const key = typedKey(row.text)
+-      const noted = human !== undefined && key !== '' && (row.toolResults ?? []).some(r => r.tool_use_id !== undefined && human.has(noteKey(r.tool_use_id, key)))
++      const noted = false && human !== undefined && key !== '' && (row.toolResults ?? []).some(r => r.tool_use_id !== undefined && human.has(noteKey(r.tool_use_id, key)))
+       const own = text === '' || noted ? null : { text, cut: RECORD_TOOL_CUT, name: 'message' }
+       if (parts.length > 0 || own !== null)
+         entries.push({

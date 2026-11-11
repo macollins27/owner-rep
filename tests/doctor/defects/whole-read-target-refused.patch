@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 91d6584..0560b6f 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1767,7 +1767,7 @@ export function takeApprovals(
+       m = sha === '' ? undefined : owner.find(x => x.kind === 'his' && x.withDraft === draft && x.src?.sent?.sha === sha && shown.has(x.n))
+     }
+     if (m === undefined || (m.kind !== 'his' && m.kind !== 'note') || m.screen === 'rejected' || !shown.has(m.n)) continue
+-    if ((m.read !== undefined && m.n !== target) || approvalOf(m) || marked.has(m.n)) continue
++    if ((m.read !== undefined) || approvalOf(m) || marked.has(m.n)) continue
+     marked.set(m.n, mark.took)
+   }
+   const read = (state: ReadState['state'], why?: string): ReadState => ({ state, ...(why === undefined ? {} : { why }), write })

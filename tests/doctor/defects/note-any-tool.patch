@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2028,7 +2028,7 @@
+   // Only the plan screen's approval: words typed while allowing another tool's call are not read here.
+   const said = (before as { content?: unknown }).content
+   const first = Array.isArray(said) ? (said.find(b => typeof b === 'object' && b !== null && (b as { type?: unknown }).type === 'text') as { text?: unknown } | undefined)?.text : said
+-  return typeof first === 'string' && first.startsWith(PLAN_ACCEPTED_TEXT) ? before.tool_use_id : undefined
++  return before.tool_use_id
+ }
+ 
+ // The keys the record read labels the owner's by: a typed message's key, and a plan-screen note's

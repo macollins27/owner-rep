@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 1c7c5ed..1043dfc 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -719,7 +719,7 @@ async function memoryFor($: EngineInterface, sid: string, rec: Rec, reader: 'wat
+   const b = await readable($, sid, rest, ['sent'])
+   await markLost($, sid, [...a.lost, ...b.lost])
+   const owner = base.owner.map(m => (approvalOf(m) ? a.msgs[approvals.indexOf(m)] : b.msgs[rest.indexOf(m)]) ?? m)
+-  const approved = reader === 'watch' ? readerParts(owner, WATCH_APPROVED_BUDGET, rec.readerAt?.watch ?? 0) : readerParts(owner, BRIEF_APPROVED_BUDGET)
++  const approved = reader === 'watch' ? readerParts(owner, WATCH_APPROVED_BUDGET, rec.readerAt?.watch ?? 0) : readerParts(owner, BRIEF_APPROVED_BUDGET, rec.readerAt?.watch ?? 0)
+   // The briefing is told, among coverage's lines, of the plans it cannot compare, by the one path
+   // the row and the card take; what it finds itself goes on the card after it answers.
+   const gaps = reader === 'brief' ? readerGaps(approved, 'brief') : {}

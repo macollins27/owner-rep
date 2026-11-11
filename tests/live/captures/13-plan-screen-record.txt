@@ -1,0 +1,25 @@
+  #1 his: Plan how to create apple.txt containing apple and pear.txt containing 
+  #2 his screen rejected read read: Do not create pear.txt, only apple.txt.
+  #3 plan screen edited read read: # Plan: create apple.txt ## Context Maxwell wants one tiny text file i
+  the note is held as his, with the plan screen's mark: shown
+  the plan he turned down is saved beside the note: shown
+  the edited plan is held as an approved plan: shown
+  that plan has been read whole: shown ({'state': 'read', 'write': 3})
+  its saved file matches its fingerprint: shown
+  the saved plan holds the line the owner added: shown
+    held: A plan for making apple.txt only, in three short steps, has been put to the owner for approval
+    held: Nothing is created before the owner approves the plan
+    held: A file named apple.txt exists and holds the word "apple"
+    held: No file named pear.txt is created
+    held: apple.txt has been checked after making it and holds exactly the word asked for
+    held: Nothing else has been changed or broken in the process
+    held: apple.txt holds one single line, the word "apple", and nothing more
+    held: After apple.txt is made, it has been confirmed that no pear.txt exists
+    held: apple.txt is saved in the project's history with a plain commit and is not pushed to any branch that deploys
+    held: After the commit, the project shows no uncommitted changes left over
+    held: A file named plum.txt exists holding the word "plum"
+    held: Settle with the owner which stands: only apple.txt being made, as asked before, or plum.txt also being made, a
+  a condition holds the added step: shown
+  no condition asks for pear.txt: shown
+  the card or the objective shows the added step: shown
+  nothing calls the added step unasked-for: shown

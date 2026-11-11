@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 1c7c5ed..0242ead 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -938,7 +938,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number, r
+   const byN = new Map(rec.owner.map(m => [m.n, m]))
+   const canClose = (n: number): boolean => {
+     const m = byN.get(n)
+-    return m !== undefined && !approvalOf(m) && !wordsUnread(m)
++    return m !== undefined && m.kind !== 'plan' && !wordsUnread(m)
+   }
+   const canOpen = (n: number): boolean => {
+     const m = byN.get(n)

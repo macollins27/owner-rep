@@ -23,3 +23,7 @@
   document itself; the test of the briefs checks that wording and that the old sentence is
   gone. Its successor is `stop-while-open`, which plants the gate never refusing a card that
   says stop, or that the work is going well, while a condition is still open.
+- `step-look-reads-record.patch`: planted every look reading the session's record, as a cost
+  defect. That became the design at bcba3aa ("Task 7a: the readers read
+  the session's record, never a fork"), so the behaviour it planted is the mod's own. No
+  successor: `tests/rep.test.tsx` asserts the new behaviour directly.

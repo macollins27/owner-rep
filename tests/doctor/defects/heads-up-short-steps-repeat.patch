@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index baaaf44..0349b8e 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2643,7 +2643,7 @@ const allWords = (s: string): string[] => s.toLowerCase().match(/[a-z0-9]+/g) ??
+ const stepWords = (s: string): string[] => {
+   const all = [...new Set(allWords(s))]
+   const long = all.filter(w => w.length >= 4)
+-  return long.length > 0 ? long : all
++  return long
+ }
+ 
+ // Whether a line already speaks of this step as dropped. Readers reword a step at every look, so

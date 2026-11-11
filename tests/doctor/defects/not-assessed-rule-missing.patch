@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 91d6584..f5cbb63 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1270,7 +1270,7 @@ ${o === null ? '- none written yet' : openLines(o, m.lines !== undefined && m.li
+ Mark one of these shown only where the conversation itself shows it (a command run and its printed output, a file written, a test's printed result), never on the agent's word; mark one closed only with the number of a message of the owner's own that closes it.${anyReopened(o) ? ' One marked "not shown: the check found …" was looked at by the paid check outside the conversation and found not so: only a later check can mark it shown; say what still stands in the way of it.' : ''}
+ 
+ ${STANDING_LINE}
+-${NOT_ASSESSED_RULE}${(m.cover ?? []).map(l => `\n${l}`).join('')}
++${(m.cover ?? []).map(l => `\n${l}`).join('')}
+ 
+ The conversation's size: ${contextLine(m)}
+ 

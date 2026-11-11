@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 0d26727..9273152 100644
+index 0e6d35a..109249f 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -839,7 +839,7 @@ export function recordText(rows: readonly RecordRow[], budget: number, human?: R
-       continue
+@@ -2263,7 +2263,7 @@ function recordEntries(rows: readonly RecordRow[], human?: ReadonlySet<string>):
+       return
      }
-     if (text === '') continue
+     if (text === '') return
 -    const his = human === undefined ? !notTyped(text) : human.has(typedKey(row.text)) && !notTyped(typedForm(row.text))
 +    const his = !notTyped(text)
-     entries.push(
-       his
-         ? `entry ${n} the person:\n${headTail(typedForm(row.text), RECORD_ENTRY_CUT)}`
+     const f = his ? { text: typedForm(row.text), cut: RECORD_ENTRY_CUT, name: 'message' } : { text, cut: text.startsWith(SUMMARY_OPENING) ? RECORD_SUMMARY_CUT : RECORD_ENTRY_CUT, name: 'session entry' }
+     entries.push({
+       n,

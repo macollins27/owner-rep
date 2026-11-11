@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 91d6584..93aeb68 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2452,7 +2452,7 @@ export function recordParts(rows: readonly RecordRow[], budget: number, human?:
+ // marked inside the field it falls in. A fence tag inside any text is printed with ‹ ›, so nothing
+ // in the session can close the fence around it. What is cut and left out: recordParts.
+ export function recordText(rows: readonly RecordRow[], budget: number, human?: ReadonlySet<string>, from?: number): { text: string; cutAfter: number; opensAfter: boolean } {
+-  const p = recordParts(rows, budget, human, from)
++  const p = recordParts(rows, budget, human)
+   const entries = p.chunks.flat()
+   return { text: entries.length === 0 ? '(nothing recorded)' : [...p.head, ...entries].join('\n\n'), cutAfter: p.cutAfter, opensAfter: p.opensAfter }
+ }

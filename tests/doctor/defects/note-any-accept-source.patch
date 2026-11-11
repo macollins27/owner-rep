@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 950c949..c56fb07 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2017,7 +2017,7 @@ export const NOTE_SED_ROW = '("tool_use_id":"[A-Za-z0-9_-]+"|"is_error":(true|fa
+ const ownerAccepted = (d: unknown): boolean => {
+   if (typeof d !== 'object' || d === null) return false
+   const { decision, source } = d as { decision?: unknown; source?: unknown }
+-  return decision === 'accept' && typeof source === 'string' && source.startsWith('user')
++  return decision === 'accept'
+ }
+ // The id of the tool result a note's text block follows, or undefined when the content is not that shape.
+ function noteCallOf(content: unknown): string | undefined {

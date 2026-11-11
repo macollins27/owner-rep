@@ -1,8 +1,7 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index ba9c1ed..1596b8e 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1589,7 +1589,7 @@ export function isBlankRec(rec: object, blank: object): boolean {
+@@ -3780,7 +3780,7 @@ export function isBlankRec(rec: object, blank: object): boolean {
          ? Object.fromEntries(Object.entries(x).sort(([p], [q]) => (p < q ? -1 : p > q ? 1 : 0)))
          : x,
      ) ?? 'undefined'
@@ -10,4 +9,4 @@ index ba9c1ed..1596b8e 100644
 +  const loaded: Record<string, unknown> = { ...rec }
    const base = blank as Record<string, unknown>
    for (const k of new Set([...Object.keys(loaded), ...Object.keys(base)])) {
-     if (k !== 'id' && k !== 'at' && canon(loaded[k]) !== canon(base[k])) return false
+     if (k !== 'id' && k !== 'at' && k !== 'recRev' && k !== 'objRev' && canon(loaded[k]) !== canon(base[k])) return false

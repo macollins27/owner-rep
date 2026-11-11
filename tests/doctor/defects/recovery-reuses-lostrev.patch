@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 5ad8026..70f8e55 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -880,7 +880,7 @@ async function reconcile($: EngineInterface, sid: string): Promise<void> {
+       if (taken !== null && lost !== null) {
+         rec = taken
+         delete rec.lossMark
+-        rec.recRev = mark.lostRev + 2
++        rec.recRev = mark.lostRev
+         removeOnceSaved = [lostPath, ...lost.parts.map(p => `${folder}/${p.name}`)]
+         changed = true
+       }

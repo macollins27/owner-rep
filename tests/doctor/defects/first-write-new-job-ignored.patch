@@ -1,12 +1,12 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 264fffa..49cd73a 100644
+index 97fd57d..744b5a1 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -361,7 +361,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number):
+@@ -948,7 +948,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number, r
      // when the first write says a new job opened at a message of the owner's after the first,
      // the job starts there, and the earlier messages are no longer their messages on this
      // job.
--    const opened = a.isNewJob ? Number(a.cause.match(/#(\d+)/)?.[1] ?? Number.NaN) : Number.NaN
+-    const opened = a.isNewJob && canOpen(cited) ? cited : Number.NaN
 +    const opened = Number.NaN
      if (his.includes(opened) && opened > Math.min(...his)) {
        rec.jobStart = opened

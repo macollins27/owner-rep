@@ -1,8 +1,9 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 97fd57d..5382a75 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -298,7 +298,7 @@
-     done: mergeConditions(held.done, honest(a.parts.done, held.done, fresh), a.dropped, fresh),
+@@ -1012,7 +1012,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number, r
+     done: settleConditions(held.done, mergeConditions(held.done, honest(a.parts.done, held.done, closers), a.dropped, closers), lets, rec.owner),
      from: saw,
      movedAt: now,
 -    cause: a.cause,

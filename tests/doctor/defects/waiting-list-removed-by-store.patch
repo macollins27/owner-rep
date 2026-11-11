@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 5ad8026..fdc51ba 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -376,7 +376,7 @@ async function saveRec($: EngineInterface, rec: Rec): Promise<boolean> {
+ // to be read again, and the folders of the records let go.
+ async function stored($: EngineInterface, rec: Rec, dropped: string[]): Promise<boolean> {
+   fullRecs.delete(rec.id)
+-  if (storeFull.delete(rec.id) && rec.lossMark?.why !== LOST_LIST_UNREAD) {
++  if (storeFull.delete(rec.id)) {
+     const folder = await sourceFolder($, rec.id)
+     if (folder !== null) {
+       const manifest = parseManifest(await $.fs.read(`${folder}/record.json`).catch(() => null))

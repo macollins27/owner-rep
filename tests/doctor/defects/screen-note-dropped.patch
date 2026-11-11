@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 8dd7e56..c4080c6 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2240,7 +2240,7 @@ async function takeNote($: EngineInterface, sid: string, note: string, from: { s
+ // with that plan saved beside it, so its words can be read and none of it approved.
+ async function takePlanScreen($: EngineInterface, e: unknown, result: unknown): Promise<void> {
+   const seen = planScreen(e, result)
+-  if (seen === null) return
++  if (seen === null || seen.kind === 'rejected') return
+   const given = (e as { tool_use_id?: unknown }).tool_use_id
+   const id = typeof given === 'string' ? given : undefined
+   const sid = await sessionId($)

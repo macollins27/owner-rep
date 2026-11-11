@@ -1,0 +1,15 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index fe5b367..5dfb064 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -109,8 +109,8 @@ export function planScreen(input: unknown, r: unknown): PlanScreen {
+   const after = planAfterHeading(said)
+   const returned = typeof back === 'string' && back !== '' ? back : (after?.plan ?? '')
+   const edited = planWasEdited === true || after?.edited === true
+-  const plan = edited ? returned || called : called || returned
+-  return plan === '' ? null : { kind: 'accepted', plan, edited }
++  const plan = called || returned
++  return plan === '' ? null : { kind: 'accepted', plan, edited: false }
+ }
+ 
+ // The turns the owner answered, captured from the stream (`tapStep`): limits, and the shapes kept.

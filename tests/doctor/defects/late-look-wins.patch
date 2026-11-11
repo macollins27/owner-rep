@@ -1,9 +1,9 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index ec82737..7c39917 100644
+index 97fd57d..1f7006a 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -262,8 +262,8 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number):
-     delete rec.stale
+@@ -977,8 +977,8 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number, r
+     rec.objective = { ...held, done: settleConditions(held.done, merged, lets, rec.owner), from: Math.max(held.from, saw) }
      return true
    }
 -  if (saw <= held.from) return false
@@ -11,5 +11,5 @@ index ec82737..7c39917 100644
 +  if (saw <= held.since) return false
 +  const fresh = hisFrom(rec, held.since + 1).filter(n => n <= saw)
    if (fresh.length === 0) return false
+   const closers = fresh.filter(canClose)
    const version = { at: now, cause: a.cause, text: objectiveText(held) }
-   if (a.isNewJob) {
