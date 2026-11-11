@@ -2146,9 +2146,11 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
         if (time <= 0) break
         const found = await $.process.run(hostArgv(host, humanReadBefore(`${folder}/${file}`, line)), { timeoutMs: Math.min(HUMAN_READ_TIMEOUT_MS, time) })
         if (found.exitCode !== 0 || found.isStdoutTruncated) continue
+        // A file holding the line with nothing of the owner's before it is another copy of the
+        // stretch since the summary (an earlier fork of the same session), never the parent.
         const before = humanItems(found.stdout)
-        if (summary === null) return before
-        if (before.length > 0) return [...before, ...copied]
+        if (before.length === 0) continue
+        return summary === null ? before : [...before, ...copied]
       }
       return summary === null ? null : copied
     }
