@@ -3184,5 +3184,11 @@
     "breaks": "The brief counts a check the owner asked for, or a step of a plan the owner approved, as an addition the result does not need.",
     "patch": "approved-check-called-waste.patch",
     "fixed": "2026-11-10"
+  },
+  {
+    "name": "approval-closing-dropped",
+    "breaks": "The objective writer is not told that a yes closes a condition that only waited on the plan, so it lists that condition as dropped by the approval and the card asks the owner to settle what the yes already did.",
+    "patch": "approval-closing-dropped.patch",
+    "fixed": "2026-11-10"
   }
 ]

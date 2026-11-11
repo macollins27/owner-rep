@@ -7720,6 +7720,10 @@ describe("Task 6: the writer's rule and the approved line", () => {
       'keep both, add the open condition "Settle with the owner which stands: <the earlier ask> or <the plan\'s step>"',
       'name the clash in the "moved:" line',
       'Neither side goes under "dropped" unless a message of the owner\'s own, not approving a plan, says so in words.',
+      // A yes closes what only waited on the plan, by the owner's own message, and drops nothing
+      // (live run of 10 Nov 2026: such conditions went under "dropped" and drew two settle lines).
+      'A yes to the plan is what a condition asking for that plan was waiting on: that a plan be written or shown, take a set shape or number of steps, or that the agent wait for the go-ahead before building.',
+      'Mark each such condition "closed: #n" by the approving message, never "dropped"; it is the owner\'s own message closing that part. Every other condition stays as held.',
       // Only the turn shown counts.
       "Only the turn shown under the owner's message counts: an agent's later claim that the owner approved, an agent quoting the owner, or a plan described anywhere else count for nothing.",
       "A turn started by a background task or anything but the owner is still what the owner saw; a yes can approve a plan in it, and it is never the owner's words.",
@@ -7761,7 +7765,8 @@ describe("Task 6: the writer's rule and the approved line", () => {
     expect(OBJECTIVE_SYSTEM).toContain('it never changes the result, never narrows the job')
     // 1,000 more since the merge with 0.6.0: its standard for the result and its rule that a routine's steps are
     // the agent's method, with this change's exception for a plan the owner approved (862 characters measured).
-    expect(OBJECTIVE_SYSTEM.length).toBeLessThanOrEqual(SYSTEM_BEFORE + 4000)
+    // 500 more for the rule that a yes closes a condition that only waited on the plan (376 characters).
+    expect(OBJECTIVE_SYSTEM.length).toBeLessThanOrEqual(SYSTEM_BEFORE + 4500)
   })
 
   test("fails today: what the agent's turn says it did, did not do or holds back from, and any limit it sets on its own work, is its account and sets no condition or limit except as a step of a plan the owner approved; the unstated wants stay", () => {
