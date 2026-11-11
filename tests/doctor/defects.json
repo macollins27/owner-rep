@@ -1140,6 +1140,12 @@
     "fixed": "2026-11-11"
   },
   {
+    "name": "plan-copy-unseeded",
+    "breaks": "A fork whose own file is not saved yet, whose folder holds only an earlier fork with nothing of the owner's before its last tool call, reports none found, so a plan the owner accepted on the plan screen is never seeded from the rows.",
+    "patch": "plan-copy-unseeded.patch",
+    "fixed": "2026-11-11"
+  },
+  {
     "name": "copy-own-dropped",
     "breaks": "The owner's messages since the summary, which the fork's own copy holds, are left out once the parent is found.",
     "patch": "copy-own-dropped.patch",

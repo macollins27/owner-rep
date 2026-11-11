@@ -1,0 +1,11 @@
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2155,7 +2155,7 @@
+         if (before.length === 0) continue
+         return summary === null ? before : [...before, ...copied]
+       }
+-      return summary !== null ? copied : placed ? [] : null
++      return summary !== null ? copied : null
+     }
+     let best: { items: HumanItem[]; matched: number } = { items: [], matched: 0 }
+     for (const file of files) {

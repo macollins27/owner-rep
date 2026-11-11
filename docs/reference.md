@@ -930,8 +930,10 @@ of its last tool result (`lastToolId`, found by `toolLineFind`, `grep -n -o -m 1
 call's `"id"`, and `toolLineOf`) with any of the owner's lines before it gives the items before
 that line (`humanReadBefore`, `sed` stopping there), a cut read skipped; a file holding the call
 with nothing of the owner's before it, an earlier fork of the same session saved as the stretch
-since the summary, is passed over, as the summary search passes over a copy of the copy, so a
-fork never waits for a press to find its parent; the call, not the result, because a fork taken while a
+since the summary, is passed over, as the summary search passes over a copy of the copy, so an
+earlier fork never makes a later one wait for a press; when every file holding the call is such a
+copy, the scan gives no items rather than none found, so the rows still seed a plan accepted on
+the plan screen; the call, not the result, because a fork taken while a
 tool ran holds a result Claude Code marks interrupted, which its parent saves only later.
 With no tool result either, nothing past its own file is read. `seedOwner`
 runs one seed per session at a time (`seeding`), and
