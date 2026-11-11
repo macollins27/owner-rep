@@ -12140,6 +12140,30 @@ test('rule: a fork taken after a compaction the owner has typed nothing since, i
     SED_BEFORE('parent.jsonl', 4),
   ])
 })
+test('rule: a fork taken after a compaction, its own transcript not saved yet, passes over an earlier fork of the same session that holds its last tool result but nothing the owner typed before it, and takes the messages from the file it was forked from', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: COMPACTED_ROWS }))
+  // An earlier fork of the same session: saved as the stretch since the summary, so it holds the
+  // same tool result with nothing of the owner's before it, and it is newer than the parent.
+  const earlier = [META, BOUNDARY(), LINE(SUMMARY, {}), USE_LINE('toolu_01Push'), RESULT_LINE('toolu_01Push')].join('\n')
+  const runs = transcript(on, { 'earlier.jsonl': earlier, 'parent.jsonl': COMPACTED_FILE })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await giveTranscript($, on)
+  await started($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
+  expect(rec()?.owner).toEqual(COMPACTED)
+  expect(runs.map(r => r.join(' '))).toEqual([
+    SED('test-session.jsonl'),
+    `ls -t ${FOLDER}`,
+    GREP('earlier.jsonl', 'toolu_01Push'),
+    SED_BEFORE('earlier.jsonl', 4),
+    GREP('parent.jsonl', 'toolu_01Push'),
+    SED_BEFORE('parent.jsonl', 4),
+  ])
+})
+
 const SUMMARY_GREP = (file: string, folder = FOLDER) => `grep -n -o -m 1 -F "uuid":"${BOUNDARY_ID}" ${folder}/${file}`
 
 test('startFind finds a file\'s first compaction mark, with its id, or line the owner typed; summaryStart reads the id only when the mark comes first; summaryLineFind finds that summary line elsewhere', () => {

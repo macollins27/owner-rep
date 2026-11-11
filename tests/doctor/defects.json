@@ -1134,6 +1134,12 @@
     "fixed": "2026-10-17"
   },
   {
+    "name": "anchor-copy-taken",
+    "breaks": "A fork whose own file is not saved yet takes as its parent an earlier fork of the same session, which holds its last tool call with nothing of the owner's before it, so none of their messages are read and the objective waits for a press.",
+    "patch": "anchor-copy-taken.patch",
+    "fixed": "2026-11-11"
+  },
+  {
     "name": "copy-own-dropped",
     "breaks": "The owner's messages since the summary, which the fork's own copy holds, are left out once the parent is found.",
     "patch": "copy-own-dropped.patch",

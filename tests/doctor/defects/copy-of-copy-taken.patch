@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 4159090..e81804f 100644
+index 7d5b279..0c6ec13 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -965,7 +965,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
-         if (found.exitCode !== 0 || found.isStdoutTruncated) continue
+@@ -2149,7 +2149,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
+         // A file holding the line with nothing of the owner's before it is another copy of the
+         // stretch since the summary (an earlier fork of the same session), never the parent.
          const before = humanItems(found.stdout)
-         if (summary === null) return before
--        if (before.length > 0) return [...before, ...copied]
-+        return [...before, ...copied]
+-        if (before.length === 0) continue
++        if (before.length === 0 && summary === null) continue
+         return summary === null ? before : [...before, ...copied]
        }
        return summary === null ? null : copied
-     }
