@@ -3,6 +3,13 @@
 What changed in each release of Owner Rep, newest first. The full record is the
 [commit history](https://github.com/macollins27/owner-rep/commits/main).
 
+## 0.7.1 (10 November 2026)
+
+- **Hold one step, finish the rest.** Every message-writing read now tells the agent to
+  finish the other work while one step waits for your go-ahead, and say what it will show
+  you then. The stop-check keeps a hold on a named outward step, such as publishing or
+  sending, while still removing instructions to hold the whole job.
+
 ## 0.7.0 (10 November 2026)
 
 - **A plan you approved is your ask.** The rep used to keep only the last 400 characters of a
