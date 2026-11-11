@@ -7827,7 +7827,7 @@ describe("Task 6: the writer's rule and the approved line", () => {
     expect(built).toContain('It includes what a serious owner in that position plainly wants without saying it: the result as good as the best in its trade would make it; the work shown to work by someone opening the real thing, using it and trying to break it; nothing left broken, nothing dropped quietly, code fit to be public when the work is public; and no effort spent on checks or process the result does not need.')
   })
 
-  test("fails today: of the turn the owner answered only the part the owner took counts; the rest of that turn and the agent's other turns set nothing, and the agent saying some of the work is the owner's to do is its account, never an exception to done", () => {
+  test("of the turn the owner answered only the part the owner took counts; the rest of that turn and the agent's other turns set nothing, and the agent saying some of the work is the owner's to do is its account, never an exception to done", () => {
     // A real session's owner said yes to the "what stands" part of a turn, and the writer held
     // "nothing left for the owner beyond the planted items only the owner can supply", an
     // exception taken from three earlier agent turns the owner never approved.
