@@ -3190,5 +3190,11 @@
     "breaks": "A build that takes only a text prompt (2.1.286 refuses blocks at its host check) is never recognised, so its record read is never retried as joined text and every look reads as an API error.",
     "patch": "blocks-refusal-unrecognised.patch",
     "fixed": "2026-11-10"
+  },
+  {
+    "name": "approval-closing-dropped",
+    "breaks": "The objective writer is not told that a yes closes a condition that only waited on the plan, so it lists that condition as dropped by the approval and the card asks the owner to settle what the yes already did.",
+    "patch": "approval-closing-dropped.patch",
+    "fixed": "2026-11-10"
   }
 ]
