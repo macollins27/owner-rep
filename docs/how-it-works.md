@@ -293,7 +293,7 @@ against that, not only whether the agent did what it said. On top of the objecti
 expectations the rep applies without reciting: the whole result is delivered; it is shown to
 work by someone opening the real thing, using it and trying to break it, not by the agent's
 own checks; no known problem is left behind; nothing was added that the result does not need,
-tests, check scripts, graders, rule books and review rounds included; it was done the way that
+anything built only to prove the agent did its own work included; it was done the way that
 is best for the result, not the way that was easiest for the agent; and the result is the best
 it can be, judged by looking at it.
 
@@ -306,8 +306,18 @@ form, AI reviews and word counts, while the conditions that mattered (the site r
 trustworthy firm, the services are written well) stayed open for good, since no printed result
 can show them. A check the agent wrote and passed shows only that its check passes. The brief
 now counts someone using the real product as the proof that it works, has the rep report how
-much of the work goes into the product and how much into checking the agent's own work, and
-forbids the message from asking for new tests, scripts, counts or reports. The objective writer
+much of the work goes into the product and how much into pieces built only to prove the
+agent's own work, and forbids the message from asking for such pieces or from taking a test
+or review in place of the hands-on look.
+
+What counts as waste. 0.6.0 named tests, review rounds and plans among the machinery to flag,
+and its message forbade asking for new tests or reviews by another AI. That steered agents away
+from normal good work. Since 0.7.3 the waste is narrower and named once, as a self-proving
+piece: something whose job is to prove the agent did its own work, such as a script or hook
+confirming its own steps ran, logs kept as evidence, a grader approving its own output, a guard
+on its own edits or a proof report. Tests, code reviews, plan checks, second readers and
+planning are work on the product. None of them is the sign-off, which stays a hands-on look by
+someone who did not build the thing. The objective writer
 is told that a routine followed or a brief's steps carried out is the agent's method, never a
 condition of done, and the paid check looks at the product itself.
 

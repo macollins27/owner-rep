@@ -187,8 +187,10 @@ expectations for every job:
 - it is shown to work by someone opening the real thing, using it and trying to break it, not
   by the agent's own checks;
 - no known problem is left behind;
-- nothing was added that the result doesn't need, and that includes tests, check scripts,
-  graders, rule books and rounds of review the result doesn't need;
+- nothing was added that the result doesn't need, and that includes anything built only to
+  prove the agent did its own work: a script that confirms its own steps ran, logs kept as
+  evidence, a grader approving its own output, a proof report. Tests, code reviews, plan checks
+  and second readers are normal good work, though none of them is the sign-off;
 - it was done the way that is best for the result, not the way that was easiest for the agent;
 - the result is the best it can be, judged by looking at it.
 

@@ -3,6 +3,15 @@
 What changed in each release of Owner Rep, newest first. The full record is the
 [commit history](https://github.com/macollins27/owner-rep/commits/main).
 
+## 0.7.3 (11 November 2026)
+
+- **Tests and reviews are good work again.** The rep no longer treats tests, code reviews,
+  plan checks, second readers or planning as waste, and its message no longer tells the agent
+  to stop them. What it flags as waste is anything built only to prove the agent did its own
+  work: scripts confirming its own steps ran, logs kept as evidence, graders approving its own
+  output, guards on its own edits, proof reports. The sign-off is still someone who did not
+  build the thing using it and trying to break it; a test or review never stands in for that.
+
 ## 0.7.2 (11 November 2026)
 
 - **Only the part you said yes to counts.** When you approve part of the agent's message, the rest

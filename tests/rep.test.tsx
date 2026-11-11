@@ -582,7 +582,8 @@ test('the brief keeps every judgment line word for word and stays under its word
     '1. The whole result is delivered, not part of it.',
     '2. It is shown to work by someone opening the real thing, using it and trying to break it, not by the agent\'s own checks.',
     '3. No known problem is left behind.',
-    '4. Nothing was added that the result does not need. Tests, check scripts, graders, rule books, rounds of reviews and proof reports the result does not need are additions too',
+    '4. Nothing was added that the result does not need. A self-proving piece, one whose job is to prove the agent did its own work',
+    'Tests, code reviews, plan checks and second readers that serve the result are normal good work, never additions, though none of them is the sign-off.',
     'A check the owner asked for, or one that is a step of a plan the owner approved, is part of the job, never an addition.',
     '5. It was done the way that is best for the result, not the way that was easiest for the agent to finish: a smaller version, a simpler thing, or a test it can pass in place of the job.',
     '6. The result itself is the best it can be: as good as the best in its trade would make it, judged by looking at it, never by its checks.',
@@ -595,13 +596,15 @@ test('the brief keeps every judgment line word for word and stays under its word
     'Fairly. Say so when the agent is right, once you have checked.',
     'Say so when the trouble comes from the instructions the agent was given, or from the owner\'s side, and not from the agent.',
     'Watching the cost.',
-    'how much of what the agent and its helpers do makes the product better, and how much goes into checking their own work',
+    'how much of what the agent and its helpers do makes the product better, and how much goes into self-proving pieces',
+    'tests, reviews and planning are work on the product',
     'that is the owner\'s money on the wrong target, whatever routine or brief the agent says asks for it',
-    'the proof the message asks for is a hands-on look at the real thing, never another test, check script or report',
+    'the sign-off the message asks for is a hands-on look at the real thing by someone who did not build it',
+    'by someone who did not build it; a test or a review never stands in for it.',
     'Long is a figure, not an impression',
     'Keeping the owner\'s goal, questioning the route.',
     'Never change the owner\'s goal quietly, and never obey quietly.',
-    'Look especially for: work that passes the agent\'s checks but is plainly not the best it could be; the product never opened and looked at by anyone; the agent\'s own checks taken as proof the product is good; effort going into machinery around the work (tests, checkers, graders, rule books, rounds of review, plans and reports) instead of into the work; work put off, shrunk or quietly dropped; work called finished while a condition of "done" is still open; checks that were never run; a "done" that is "written" rather than "shown working"; a smaller version delivered as the whole; a test passed in place of the job; tools or earlier work the owner owns that the agent ignored; going in circles; the agent acting without properly planning and investigating first; something broken and not mentioned; a question or decision hidden inside a long message.',
+    'Look especially for: work that passes the agent\'s checks but is plainly not the best it could be; the product never opened and looked at by anyone; tests or reviews passing taken as the sign-off while nobody has used the product; effort going into self-proving pieces instead of into the work; work put off, shrunk or quietly dropped; work called finished while a condition of "done" is still open; checks that were never run; a "done" that is "written" rather than "shown working"; a smaller version delivered as the whole; a test passed in place of the job; tools or earlier work the owner owns that the agent ignored; going in circles; the agent acting without properly planning and investigating first; something broken and not mentioned; a question or decision hidden inside a long message.',
     'Plain words only.',
     'The agent\'s technical terms are off limits unless they appear in the owner\'s own messages listed below.',
     'A translation of what matters, never a retelling of the agent\'s message.',
@@ -612,7 +615,7 @@ test('the brief keeps every judgment line word for word and stays under its word
     expect(b).toContain(line)
     expect(w).toContain(line)
   }
-  expect(b).toContain('It asks for the work that is missing, says what the best version looks like where the work falls short, asks for a hands-on look at the real thing where proof is missing (never new tests, check scripts, counts or reports), and pushes the agent off the easy option onto the right one.')
+  expect(b).toContain('It asks for the work that is missing, says what the best version looks like where the work falls short, asks for a hands-on look at the real thing where proof is missing (never a self-proving piece; a test or a review never stands in for it), and pushes the agent off the easy option onto the right one.')
   expect(b).not.toContain('It asks for the proof of what is not shown')
   // 2,750 before 0.4.0; the owner is named in two words ("the owner") where one ("he") stood, about 90 more.
   const words = (s: string) => s.split(/\s+/).filter(Boolean).length
@@ -679,8 +682,10 @@ test('the brief and the check write a message while any condition is open or not
   const brief = briefPrompt({ objective: null, owner: [om('Build it.')], past: [], seen: [], others: [] })
   const check = checkPrompt({ sessionId: 's', cwd: '/tmp', copy: '/tmp', owner: [om('Build it.')], reading: 'x', brief: parseBrief('stands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm', conditions: OBJECTIVE_FIXTURE.done, shown: [], from: 0 })
   expect(brief).toContain('While any condition is open or not shown, or the work falls short of the best it could be, write the message: it asks for the work that is missing and says what better looks like;')
-  expect(brief).toContain('It never asks for new tests, check scripts, graders, counts, reviews by another AI or proof reports')
-  expect(check).toContain('never new tests, check scripts, counts or reports')
+  expect(brief).toContain('It never accepts a test or a review in place of that look, never asks for a self-proving piece')
+  expect(brief).not.toContain('never asks for new tests')
+  expect(check).toContain('never a self-proving piece, and a test or a review never stands in for it')
+  expect(check).not.toContain('never new tests')
   expect(check).toContain('4. Look at the work itself, the way the owner\'s best adviser would.')
   expect(brief).toContain('Leave the message empty only when every condition is shown or closed, or no objective is held and there is nothing worth sending.')
   expect(check).toContain('While any condition is open or not shown after your checking, or the work falls short of the best it could be, write it. Leave empty only when every condition is shown or closed.')

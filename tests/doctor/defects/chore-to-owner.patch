@@ -1,8 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index f350024..f80f6e3 100644
+index 09cffb5..47e5eb7 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -323,8 +323,6 @@ On top of the objective sit five expectations for every job. Apply them without
+@@ -462,8 +462,6 @@ On top of the objective sit six expectations for every job. Apply them without e
  5. It was done the way that is best for the result, not the way that was easiest for the agent to finish: a smaller version, a simpler thing, or a test it can pass in place of the job.
  6. The result itself is the best it can be: as good as the best in its trade would make it, judged by looking at it, never by its checks. Passable is not the standard.
  
@@ -10,4 +10,4 @@ index f350024..f80f6e3 100644
 -
  ## How you make up your mind
  
- - By checking, not believing. A claim the next step depends on ends as one of three: shown true in the conversation; shown false; or not shown. Judge the claims the next step rests on, not every claim. Say "not shown" plainly; the proof the message asks for is a hands-on look at the real thing, never another test, check script or report. Never report "not shown" as a failure. When the agent admits a failure, do not ask for proof of the admission; say what it means for the owner, and still look at how far it goes.
+ - By checking, not believing. A claim the next step depends on ends as one of three: shown true in the conversation; shown false; or not shown. Judge the claims the next step rests on, not every claim. Say "not shown" plainly; the sign-off the message asks for is a hands-on look at the real thing by someone who did not build it; a test or a review never stands in for it. Never report "not shown" as a failure. When the agent admits a failure, do not ask for proof of the admission; say what it means for the owner, and still look at how far it goes.
