@@ -585,8 +585,8 @@ test('the brief keeps every judgment line word for word and stays under its word
     '2. It is shown to work by someone opening the real thing, using it and trying to break it, not by the agent\'s own checks.',
     '3. No known problem is left behind.',
     '4. Nothing was added that the result does not need. A self-proving piece, one whose job is to prove the agent did its own work',
-    'Tests, code reviews, plan checks and second readers that serve the result are normal good work, never additions, though none of them is the sign-off.',
-    'A check the owner asked for, or one that is a step of a plan the owner approved, is part of the job, never an addition.',
+    'Tests (written first or after), code reviews, plan checks, done lists and second readers that serve the result are normal good work, never self-proving pieces, though none of them is the sign-off',
+    'A step of a plan the owner approved, or a check the owner asked for, is part of the job: never argue it with the owner, and never tell the agent to stop, skip or drop it; one not yet finished stays open like any other part of the job.',
     '5. It was done the way that is best for the result, not the way that was easiest for the agent to finish: a smaller version, a simpler thing, or a test it can pass in place of the job.',
     '6. The result itself is the best it can be: as good as the best in its trade would make it, judged by looking at it, never by its checks.',
     'The owner does no step of the job themselves, ever.',
@@ -617,7 +617,7 @@ test('the brief keeps every judgment line word for word and stays under its word
     expect(b).toContain(line)
     expect(w).toContain(line)
   }
-  expect(b).toContain('It asks for the work that is missing, says what the best version looks like where the work falls short, asks for a hands-on look at the real thing where proof is missing (never a self-proving piece; a test or a review never stands in for it), and pushes the agent off the easy option onto the right one.')
+  expect(b).toContain('It asks for the work that is missing, says what the best version looks like where the work falls short, asks for a hands-on look at the real thing where proof is missing (never a self-proving piece the owner did not approve or ask for; a test or a review never stands in for it), and pushes the agent off the easy option onto the right one.')
   expect(b).not.toContain('It asks for the proof of what is not shown')
   // 2,750 before 0.4.0; the owner is named in two words ("the owner") where one ("he") stood, about 90 more.
   const words = (s: string) => s.split(/\s+/).filter(Boolean).length
@@ -626,9 +626,13 @@ test('the brief keeps every judgment line word for word and stays under its word
   // 3,200 since Task 7: both carry the walk of the approved plans' steps, about 265 words (plan 7.1 item 4).
   // 3,800 and 3,950 since the merge with 0.6.0, which added judging the work itself and where the effort goes,
   // about 550 words more in each (it moved main's own limit from 2,850 to 3,450).
-  expect(words(b)).toBeLessThan(3800)
+  // 4,100 and 4,300 since Gap 2 (0.7.5): expectation 4 holds an approved step as the owner's ask and
+  // still counts a self-proving one where the effort went (both, about 110 words); the briefing adds
+  // the approved-step, waste and waiting-plan rules (about 170), the Heads up the waiting-plan flag and
+  // its examples (about 240). 3,778 and 3,899 before it.
+  expect(words(b)).toBeLessThan(4100)
   // 3,350 for the Heads up alone: it carries LIST_GAP_RULE, about 130 words, and the briefing does not.
-  expect(words(w)).toBeLessThan(3950)
+  expect(words(w)).toBeLessThan(4300)
   // The bookkeeping the code enforces is gone from the brief.
   for (const gone of ['under the rule given with the conditions', 'sent after #', 'never the number of a draft', 'A later message replaces an earlier one only where the owner says so', 'Each condition of "done" stays open until the conversation shows it']) {
     expect(b).not.toContain(gone)
@@ -684,9 +688,9 @@ test('the brief and the check write a message while any condition is open or not
   const brief = briefPrompt({ objective: null, owner: [om('Build it.')], past: [], seen: [], others: [] })
   const check = checkPrompt({ sessionId: 's', cwd: '/tmp', copy: '/tmp', owner: [om('Build it.')], reading: 'x', brief: parseBrief('stands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm', conditions: OBJECTIVE_FIXTURE.done, shown: [], from: 0 })
   expect(brief).toContain('While any condition is open or not shown, or the work falls short of the best it could be, write the message: it asks for the work that is missing and says what better looks like;')
-  expect(brief).toContain('It never accepts a test or a review in place of that look, never asks for a self-proving piece')
+  expect(brief).toContain('It never accepts a test or a review in place of that look, never asks for a self-proving piece the owner did not approve or ask for')
   expect(brief).not.toContain('never asks for new tests')
-  expect(check).toContain('never a self-proving piece, and a test or a review never stands in for it')
+  expect(check).toContain('never a self-proving piece the owner did not approve or ask for, and a test or a review never stands in for it')
   expect(check).not.toContain('never new tests')
   expect(check).toContain('4. Look at the work itself, the way the owner\'s best adviser would.')
   expect(brief).toContain('Leave the message empty only when every condition is shown or closed, or no objective is held and there is nothing worth sending.')
@@ -694,6 +698,61 @@ test('the brief and the check write a message while any condition is open or not
   expect(EMPTY_LINES(brief)).toHaveLength(2)
   expect(EMPTY_LINES(check)).toHaveLength(1)
   for (const line of [...EMPTY_LINES(brief), ...EMPTY_LINES(check)]) expect(line).toContain('shown or closed')
+})
+
+// --- Gap 2 (session 6c159ee6, #145 item 5, #154 item 1): a plan the owner approved is the owner's ask; a
+// self-proving piece in it is named before the yes, never argued after it, and still counted as waste. ---
+
+const APPROVED_LINES = [
+  'A step of a plan the owner approved, or a check the owner asked for, is the owner\'s ask even when it is a self-proving piece: the message and "next" never argue it and never tell the agent to stop, skip or drop it, and while it is unfinished the message may ask the agent to finish it.',
+  'Effort already spent on such a self-proving step still did not make the product better: say so plainly under "stands", with how much went into it, never under "left".',
+  'While a plan waits for the owner\'s yes, "means" names every self-proving piece in it, the owner\'s own ask included, and the message may ask the agent to take it out.',
+]
+
+test('Gap 2: every reader holds an approved or owner-asked step as the job, never to be stopped, and still counts a self-proving one where the effort went', () => {
+  const m: Memory = { objective: { ...OBJ_FIXTURE, done: OPEN_JOB_OPEN }, owner: [om('Build it.')], past: [], seen: [], others: [] }
+  const b = briefPrompt(m)
+  const w = watchPrompt(m, 'stop')
+  const check = checkPrompt({ sessionId: 's', cwd: '/tmp', copy: '/tmp', owner: [om('Build it.')], reading: 'x', brief: parseBrief('stands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm', conditions: OBJECTIVE_FIXTURE.done, shown: [], from: 0 })
+  const own = ownWordsPrompt(m, OPEN_JOB_OPEN, EMPTY_CARD)
+  // ROLE, read by the watch and the brief.
+  for (const p of [b, w]) {
+    expect(p).toContain('A self-proving piece among them still costs the owner money without making the product better: wherever the effort is accounted for, say plainly that it went there, as a fact, never as work left.')
+    expect(p).toContain('Before the owner approves a plan, every self-proving piece in it is worth naming, the owner\'s own ask included, so the owner can decide.')
+    expect(p).not.toContain('is part of the job, never an addition')
+    expect(p).toContain('that is the owner\'s money on the wrong target, whatever routine or brief the agent says asks for it, and even when it is a step of a plan the owner approved, which you report as where the money went and never ask the agent to stop.')
+  }
+  // The brief and the check write stands, means, left and the message; the fallback writer writes means and the message.
+  for (const p of [b, check]) {
+    for (const line of APPROVED_LINES) expect(p).toContain(line)
+    expect(p).toContain('effort spent on self-proving pieces the owner did not ask for or approve')
+    expect(p).not.toMatch(/effort spent on self-proving pieces;/)
+  }
+  expect(b).toContain('when the agent spends the owner\'s money on such pieces of its own adding, tells it to put the effort into the product')
+  expect(check).toContain('where effort is going into such pieces of the agent\'s own adding, it tells the agent to put that effort into the product')
+  expect(check).toContain('A self-proving piece the owner asked for, or a step of a plan the owner approved, still counts on the self-proving side.')
+  expect(own).toContain(APPROVED_LINES[0])
+  expect(own).toContain(APPROVED_LINES[2])
+  expect(own).toContain('never a piece whose job is to prove the agent\'s own work unless the owner approved or asked for it')
+})
+
+test('Gap 2: the watch flags a self-proving piece in a plan waiting for the owner\'s yes, never tests or reviews however worded, and never an approved step', () => {
+  const m: Memory = { objective: null, owner: [om('Build it.')], past: [], seen: [], others: [] }
+  for (const when of ['stop', 'step', 'note'] as const) {
+    const w = watchPrompt(m, when)
+    expect(w).toContain('One case always clears the bar: the agent has set out a plan and waits for the owner\'s yes, and part of it is a self-proving piece (expectation 4).')
+    // Expectation 4, in ROLE, gives the watch the definition and what is never such a piece.
+    expect(w).toContain(rep.SELF_PROVING.slice(1))
+    expect(w).toContain(rep.NOT_SELF_PROVING)
+    expect(w).toContain('Then the flag starts "Before you approve:", names that part as the plan has it, and says it costs the owner money without making the product better; name it even when the owner asked for it, and only when its job is clear.')
+    expect(w).toContain('Tests, reviews, plan checks, done lists and second readers are never such a piece: never flag one of them, however the plan words it ("a full verification round", "a second reader signs off").')
+    expect(w).toContain('Once the owner has approved a plan, never flag a step of it as unneeded or waste: where that effort went is for the briefing, not a note.')
+    // The old first example taught that test scripts are waste.
+    expect(w).not.toContain('own checks and test scripts')
+    expect(w).toContain('flag: Most of this session has gone into scripts that confirm the agent\'s own steps ran, and the site itself has barely changed.')
+    expect(w).toContain('flag: Before you approve: step 6, a script confirming the agent\'s own steps ran, costs you money and does not improve the site.')
+    expect(w).toContain('flag: Before you approve: step 4 runs the tests and step 5 has another model review the code.')
+  }
 })
 
 test('the brief names all three duties for a step held on the owner\'s go-ahead: finish the rest, hold it, say what will be shown', () => {
