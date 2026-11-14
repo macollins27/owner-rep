@@ -2503,6 +2503,107 @@ test('rule: the watch looks every CHECK_EVERY model requests of a turn, through 
   expect(watchPrompt({ objective: null, owner: [], past: [], seen: [], others: [] }, 'step')).toMatch(/in the middle of working/)
 })
 
+// Gap 2: the look at a turn's end is the one that sees a plan waiting for the owner's yes.
+const PLAN_FLAG = 'Before you approve: step 3, a script confirming the agent\'s own steps ran, costs you money and does not improve the product.'
+const planWaiting = (flag: string | null) => `state: plan-waiting\nflag: ${flag ?? 'none'}\nwhy: ${flag === null ? '' : 'Step 3 of the plan writes a script that checks the agent\'s own steps.'}`
+// The watch with its answers given in turn, each held until the test lets it go when `held` says so.
+const heldWatch = (on: On, answers: string[], held: (n: number) => boolean) => {
+  session(on)
+  quietBand(on)
+  on('turn.start', (_$, e) => ({ turnId: e.turnId }))
+  on('turn.step', async function* (_$, e) {
+    return { turnId: e.turnId, index: e.index, answer: '', toolUses: [], stopReason: 'end_turn', usage: null }
+  })
+  const prompts: string[] = []
+  const gates: Array<() => void> = []
+  on('model.fork', async (_$, e) => {
+    prompts.push(String(e.prompt))
+    const n = prompts.length
+    if (held(n)) await new Promise<void>(r => gates.push(r))
+    return { value: { isAnswered: true, text: answers[n - 1] ?? watchAnswer(null), usage: USAGE } }
+  })
+  const step = async (turnId: string, index: number) => {
+    for await (const _ of $engine.turn.step({ turnId, index, model: 'm', messageCount: index + 1 })) {
+      // passed on as the engine's
+    }
+  }
+  let $engine: Engine
+  return {
+    prompts,
+    release: () => gates.shift()?.(),
+    bind: ($: Engine) => {
+      $engine = $
+    },
+    toLook: async (turnId: string) => {
+      for (let i = 0; i <= CHECK_EVERY; i++) await step(turnId, i)
+    },
+  }
+}
+
+test('rule: a turn that ends while a look is still reading gets its turn-end look once that one finishes, and its warning on the waiting plan shows', async ($, on) => {
+  const w = heldWatch(on, [watchAnswer(null), planWaiting(PLAN_FLAG)], n => n === 1)
+  w.bind($)
+  await $.turn.start({ text: 'plan the price page', turnId: 't1' })
+  await w.toLook('t1')
+  await settleUntil($, () => w.prompts.length === 1)
+  await $.turn.complete(stop('t1', 'Here is the plan. Shall I go ahead?'))
+  await settle($)
+  expect(w.prompts.length).toBe(1)
+  w.release()
+  await settleUntil($, () => w.prompts.length === 2)
+  expect(w.prompts.length).toBe(2)
+  expect(w.prompts[1]).toContain('The agent has just stopped')
+  await settleUntil($, () => false, 50)
+  expect(await rowSays($, /Before you approve: step 3/)).toBe(true)
+})
+
+test('rule: a turn-end look still owed when the owner starts a new turn is not run', async ($, on) => {
+  const w = heldWatch(on, [watchAnswer(null), planWaiting(PLAN_FLAG)], n => n === 1)
+  w.bind($)
+  await $.turn.start({ text: 'plan the price page', turnId: 't1' })
+  await w.toLook('t1')
+  await settleUntil($, () => w.prompts.length === 1)
+  await $.turn.complete(stop('t1', 'Here is the plan. Shall I go ahead?'))
+  await $.turn.start({ text: 'yes, go', turnId: 't2' })
+  w.release()
+  await settleUntil($, () => false, 60)
+  expect(w.prompts.length).toBe(1)
+  expect(await rowSays($, /Before you approve/)).toBe(false)
+})
+
+test('rule: a warning on a waiting plan that lands after the owner answered is not shown, and any other note still is', async ($, on) => {
+  const w = heldWatch(on, [planWaiting(PLAN_FLAG), watchAnswer('The agent says the tests pass, but never ran them.')], () => true)
+  w.bind($)
+  await $.turn.start({ text: 'plan the price page', turnId: 't1' })
+  await $.turn.complete(stop('t1', 'Here is the plan. Shall I go ahead?'))
+  await settleUntil($, () => w.prompts.length === 1)
+  await $.turn.start({ text: 'yes, go', turnId: 't2' })
+  w.release()
+  await settleUntil($, () => false, 60)
+  expect(await rowSays($, /Before you approve/)).toBe(false)
+  await $.turn.complete(stop('t2', 'Done.'))
+  await settleUntil($, () => w.prompts.length === 2)
+  await $.turn.start({ text: 'and the footer', turnId: 't3' })
+  w.release()
+  await settleUntil($, () => false, 60)
+  expect(await rowSays($, /never ran them/)).toBe(true)
+})
+
+test('rule: a warning on a waiting plan takes the place of an earlier note still on the row', async ($, on) => {
+  const w = heldWatch(on, [watchAnswer('The agent says the tests pass, but never ran them.'), planWaiting(PLAN_FLAG)], () => false)
+  w.bind($)
+  await $.turn.start({ text: 'fix the tests', turnId: 't1' })
+  await $.turn.complete(stop('t1', 'Done.'))
+  await settleUntil($, () => w.prompts.length === 1)
+  await settleUntil($, () => false, 40)
+  expect(await rowSays($, /never ran them/)).toBe(true)
+  await $.turn.start({ text: 'now plan the price page', turnId: 't2' })
+  await $.turn.complete(stop('t2', 'Here is the plan. Shall I go ahead?'))
+  await settleUntil($, () => w.prompts.length === 2)
+  await settleUntil($, () => false, 40)
+  expect(await rowSays($, /Before you approve: step 3/)).toBe(true)
+})
+
 // ==============================================================================================
 // 3. The briefing card
 // Pressing Rep, the card it draws, folding it to the band, and putting its message in the prompt box.

@@ -1332,8 +1332,16 @@ async function readSession($: EngineInterface, sid: string, rec: Rec, task: (cov
 
 // One look by the watch: the same cached copy of the conversation the agent
 // works from, read by a fresh instance with the rep's brief. Never awaited by
-// the hook that starts it, so the agent is never slowed.
-async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | 'note', turnId: string): Promise<void> {
+// the hook that starts it, so the agent is never slowed. `stale` says a newer turn has started
+// since the look began: the owner has answered, so a flag about a plan waiting for that answer is
+// no longer shown.
+async function look(
+  $: EngineInterface,
+  sid: string,
+  reason: 'step' | 'stop' | 'note',
+  turnId: string,
+  stale: () => boolean = () => false,
+): Promise<void> {
   const rec = await loadRec($, sid)
   // Typing past notes backs the watch off; a note to the rep is never skipped.
   if (rec.skip > 0 && reason !== 'note') {
@@ -1363,13 +1371,40 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
     if (applyMarks(after, answer.shown, answer.closed) && onScreen(sid)) await update($, readingA, () => after.objective)
     const view = await read($, viewA)
     const said = headsUp(answer, after.seen, fill?.blocks ?? [])
-    if (said !== null && view === 'row' && onScreen(sid) && ![...after.seen].some(s => same(s, said.line))) {
+    // A plan waiting for the owner's yes is a decision the owner is making now: its flag takes the
+    // place of an earlier note, and is dropped once the owner has answered.
+    const waits = answer.state === 'plan-waiting'
+    const room = view === 'row' || (waits && view === 'note')
+    if (said !== null && room && !(waits && stale()) && onScreen(sid) && ![...after.seen].some(s => same(s, said.line))) {
       after.seen = [...after.seen, said.line].slice(-SEEN_MAX)
       const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId }
       await update($, noteA, () => note)
       await update($, viewA, () => 'note')
     }
   })
+}
+
+// The watch's looks in one session: what is running, the main-agent turns started (so a look
+// knows whether the owner answered while it read), and the turn-end look owed when a look was
+// already running as the turn ended.
+type Looks = { inFlight: Set<string>; turnsStarted: number; stopDue: string | undefined }
+// One look at a time; a turn-end look that finds one running runs once it finishes.
+function startLook($: EngineInterface, reason: 'step' | 'stop', turnId: string, s: Looks): void {
+  if (s.inFlight.has('look')) {
+    if (reason === 'stop') s.stopDue = turnId
+    return
+  }
+  s.inFlight.add('look')
+  const began = s.turnsStarted
+  sessionId($)
+    .then(id => look($, id, reason, turnId, () => s.turnsStarted !== began))
+    .catch(() => undefined)
+    .finally(() => {
+      s.inFlight.delete('look')
+      const due = s.stopDue
+      s.stopDue = undefined
+      if (due !== undefined) startLook($, 'stop', due, s)
+    })
 }
 
 // The press: an instant read over the same copy, drawn in the band.
@@ -2471,6 +2506,7 @@ export const register: Register = on => {
   let lastDoing = ''
   let promptsPastNote = 0
   const inFlight = new Set<string>()
+  const looks: Looks = { inFlight, turnsStarted: 0, stopDue: undefined }
 
   on('session.start', async ($, e, next) => {
     try {
@@ -2607,6 +2643,9 @@ export const register: Register = on => {
 
   on('turn.start', async ($, e, next) => {
     if (e.agentId === undefined) {
+      // A newer turn: a turn-end look still owed for the last one would read a plan already answered.
+      looks.turnsStarted += 1
+      looks.stopDue = undefined
       // How the turn began: a background task finishing, the agent going on by itself, the owner, or else.
       const origin = lastOrigin?.kind
       const text: string = typeof e.text === 'string' ? e.text : ''
@@ -2682,13 +2721,7 @@ export const register: Register = on => {
       live.set(e.turnId, entry)
     }
     if (e.index !== entry.nextIndex) entry.incomplete ??= 'a step of this turn was missed'
-    if (e.index > 0 && e.index % CHECK_EVERY === 0 && !inFlight.has('look')) {
-      inFlight.add('look')
-      sessionId($)
-        .then(id => look($, id, 'step', e.turnId))
-        .catch(() => undefined)
-        .finally(() => inFlight.delete('look'))
-    }
+    if (e.index > 0 && e.index % CHECK_EVERY === 0) startLook($, 'step', e.turnId, looks)
     // The step's stream passes up as it is; its text chunks are kept on the way.
     const turn = entry
     try {
@@ -2718,13 +2751,7 @@ export const register: Register = on => {
       () => undefined,
     )
     if (notesDue.size > 0) await sessionId($).then(id => catchNotes($, id)).catch(() => undefined)
-    if (!e.isAborted && !inFlight.has('look')) {
-      inFlight.add('look')
-      sessionId($)
-        .then(id => look($, id, 'stop', e.turnId))
-        .catch(() => undefined)
-        .finally(() => inFlight.delete('look'))
-    }
+    if (!e.isAborted) startLook($, 'stop', e.turnId, looks)
     // A message still waiting for a whole read is tried again at each turn's end.
     sessionId($)
       .then(async id => {
