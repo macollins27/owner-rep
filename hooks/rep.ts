@@ -1440,7 +1440,7 @@ flag: none
 
 or the same with
 
-flag: <one plain sentence, at most 25 words, ending with a period: what the owner should know and what it costs the owner>
+flag: <one plain sentence, at most 25 words, ending with a period: what the owner should know and what it costs the owner; a flag that starts "Before you approve:" is as long as it takes to name each self-proving piece>
 why: <one or two short sentences: what you saw in the conversation that shows it, in plain words>
 
 and after them, either way ("- nothing" when there is none):
@@ -2590,30 +2590,41 @@ function recordEntries(rows: readonly RecordRow[], human?: ReadonlySet<string>):
 // The last row at which the owner answered: a message typed by the owner (as recordEntries labels
 // "the person"), or an answer on a screen the agent put up (the plan screen or a question), given
 // with the call or in a row of results. -1 when there is none.
+//
+// A question about what the agent said does not answer it. Nor does a message typed while the
+// agent was asking when the agent's newest words, after it, ask again: the owner asked for more
+// before the yes ("explain step 2 first"), so the plan asked about still waits. Erring this way
+// only reads more whole, within RECORD_WAITING_BUDGET.
 function lastAnswerRow(rows: readonly RecordRow[], human?: ReadonlySet<string>): number {
   const SCREENS = new Set(['ExitPlanMode', 'AskUserQuestion'])
   const screens = new Set<string>()
-  let last = -1
+  let firm = -1
+  let soft = -1
+  let asking = false
   rows.forEach((row, at) => {
     if (row.role === 'assistant') {
       for (const u of row.toolUses) {
         if (!SCREENS.has(u.tool) || u.tool_use_id === undefined) continue
         screens.add(u.tool_use_id)
-        if (u.text !== undefined) last = at
+        if (u.text !== undefined) firm = at
       }
+      const said = row.text.trim()
+      if (said !== '') asking = /\?\s*$/.test(said)
       return
     }
     if ((row.toolResults ?? []).length > 0) {
-      if ((row.toolResults ?? []).some(r => r.tool_use_id !== undefined && screens.has(r.tool_use_id))) last = at
+      if ((row.toolResults ?? []).some(r => r.tool_use_id !== undefined && screens.has(r.tool_use_id))) firm = at
       return
     }
     const text = withoutReminders(row.text)
     if (text === '') return
     const his = human === undefined ? !notTyped(text) : human.has(typedKey(row.text)) && !notTyped(typedForm(row.text))
-    // A question about what the agent said does not answer it: a plan asked about still waits.
-    if (his && !/\?\s*$/.test(text)) last = at
+    if (!his || /\?\s*$/.test(text)) return
+    if (asking) soft = at
+    else firm = at
+    asking = false
   })
-  return last
+  return asking ? firm : Math.max(firm, soft)
 }
 
 // The record in its parts: the opening lines, the entries in chunks, how many fields after the

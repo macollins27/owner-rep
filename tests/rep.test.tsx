@@ -744,6 +744,7 @@ test('Gap 2: the watch flags a self-proving piece in a plan waiting for the owne
     // Expectation 4, in ROLE, gives the watch the definition and what is never such a piece.
     expect(w).toContain(rep.SELF_PROVING.slice(1))
     expect(w).toContain(rep.NOT_SELF_PROVING)
+    expect(w).toContain('flag: <one plain sentence, at most 25 words, ending with a period: what the owner should know and what it costs the owner; a flag that starts "Before you approve:" is as long as it takes to name each self-proving piece>')
     expect(w).toContain('Then the flag starts "Before you approve:", names each such part as the plan has it, and says it costs the owner money without making the product better; name it even when the owner asked for it, and only when its job is clear.')
     expect(w).toContain('Tests, reviews, plan checks, done lists and second readers are never such a piece: never flag one of them, however the plan words it ("a full verification round", "a second reader signs off").')
     expect(w).toContain('Once the owner has approved a plan, never flag a step of it as unneeded or waste: where that effort went is for the briefing, not a note.')
@@ -2669,7 +2670,8 @@ test('rule: a warning on a waiting plan takes the place of an earlier note still
 })
 
 test('rule: a note to the rep that reads a waiting plan shows no warning once the owner answered while it read', async ($, on) => {
-  const w = heldWatch(on, [planWaiting(PLAN_FLAG)], () => true)
+  // The turn-end look finds nothing; only the look on the note would warn.
+  const w = heldWatch(on, [watchAnswer(null), planWaiting(PLAN_FLAG)], () => true)
   w.bind($)
   await $.turn.start({ text: 'plan the price page', turnId: 't1' })
   await $.turn.complete(stop('t1', 'Here is the plan. Shall I go ahead?'))
@@ -10450,6 +10452,17 @@ test('recordText keeps a plan whole through the owner\'s question about it, sinc
   // A yes ending in a question still lets more be read whole, never less.
   const yes = [ownerRow('plan it'), agentRow(PLAN), ownerRow('yes, go. will you also update the README?'), agentRow('Done.')]
   expect(recordText(yes, RECORD_BUDGET).text).toContain(BURIED)
+  // A request for more before the yes, worded any way, leaves the plan waiting while the agent asks again.
+  const ASKS = `${PLAN}\nShall I go ahead?`
+  for (const ask of ['Explain step 2 before I approve.', 'What does step 2 do? Thanks.']) {
+    const rows2 = [ownerRow('plan it'), agentRow(ASKS), ownerRow(ask), agentRow('Step 2 adds the price table. Shall I go ahead?')]
+    expect(recordText(rows2, RECORD_BUDGET).text).toContain(BURIED)
+  }
+  // Answered and acted on, the plan that asked is cut again; answered with no reply yet, too.
+  const done = [ownerRow('plan it'), agentRow(ASKS), ownerRow('yes, go'), agentRow('Done, the page is built.')]
+  expect(recordText(done, RECORD_BUDGET).text).not.toContain(BURIED)
+  const fresh = [ownerRow('plan it'), agentRow(ASKS), ownerRow('yes, go')]
+  expect(recordText(fresh, RECORD_BUDGET).text).not.toContain(BURIED)
 })
 
 test('recordText keeps the record within its budget when what the agent said since the owner\'s last answer comes before a long run of work', () => {

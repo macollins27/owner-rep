@@ -1382,6 +1382,9 @@ async function look(
       const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId, ...(waits ? { plan: true as const } : {}) }
       await update($, noteA, () => note)
       await update($, viewA, () => 'note')
+      // The owner may have answered while the note was being set, before it was on the row to clear.
+      const up = waits && stale() ? await read($, noteA) : null
+      if (up?.shownAt === note.shownAt && up.line === note.line) await clearNote($)
     }
   })
 }

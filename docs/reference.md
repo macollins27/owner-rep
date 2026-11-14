@@ -73,7 +73,8 @@ call writes (below):
    agent going on by itself is no answer. A look whose answer is `plan-waiting` shows its flag
    only when no answer came after it began (a look on a note to the rep included), and such a
    flag may take the place of a Heads up note already up, where any other flag waits for the
-   row. Its note is marked `plan` and leaves the row at the owner's first answer without
+   row; an answer that lands while the note is being set clears it once it is set. Its note is
+   marked `plan` and leaves the row at the owner's first answer without
    counting as typed past. While the watch is backed off, the step look is skipped and the
    turn-end look still reads, showing only a flag on a waiting plan.
 2. **Briefing**: `pressBrief()` on the Rep button, another record read, drawn as the card. The
@@ -376,7 +377,9 @@ call writes (below):
    head and tail kept around a marked gap, except what waits for the owner: the agent's
    messages and `ExitPlanMode` inputs after the owner last answered (`lastAnswerRow`: a row the
    owner typed that does not end in a question mark, since a question about a plan leaves it
-   waiting; an answered `ExitPlanMode` or `AskUserQuestion`; or the results row answering one)
+   waiting, and is not a request typed while the agent asked that the agent's newest words answer
+   by asking again; an answered `ExitPlanMode` or `AskUserQuestion`; or the results row answering
+   one)
    are given whole, newest first, up to `RECORD_WAITING_BUDGET` (60,000 characters), and
    marked `keep` so the budget below never cuts them (0.7.5; a plan buried past the first
    3,000 characters was unseen before). Past `RECORD_BUDGET` (200,000 characters) whole blocks
