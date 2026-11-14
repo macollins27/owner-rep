@@ -407,19 +407,26 @@ Scenarios, one capture each:
 
 ### The side-by-side
 
-`MODEL=<model> tests/live/compare.sh OLD_DIR NEW_DIR SESSION_ID [SESSION_ID ...]`, run from
-the folder the sessions were recorded in, runs two builds of the rep on the same real sessions
-of the owner's, named by their ids (`--resume` finds a session recorded under another project
-all the same). Each run forks the session
+`MODEL=<model> [CHECK=1] [TMUX_NAME=<name>] tests/live/compare.sh OLD_DIR NEW_DIR SESSION_ID [SESSION_ID ...]`
+runs two builds of the rep on the same real sessions of the owner's, named by their ids. Each
+session is forked from its own folder, the first `cwd` its transcript records, so sessions
+from different folders run together. Each run forks the session
 (`--resume <session> --fork-session --session-id <fresh uuid>`, so the parent's file is never
 written; the script prints each parent file's checksum before and after and they must match),
 loads one build with `--plugin-dir` and the installed copy switched off, sends nothing (a press with
 nothing to fork reads the session's own record, so the card judges the parent's job), waits up
 to 180 seconds for the row's head to leave the placeholder, which means the objective is
-written (the wait is printed), saves the screen, presses Brief me and saves the card. The model is `claude-opus-5-5` unless `MODEL` names
-another. `tests/live/compare/` (git-ignored) holds the captures and
-`report.txt`, which prints per card the Stands, Means, Left out (with its items), Next and Well
-lines, the message box and the price line; the green going-well line cannot be read from a
+written, saves the screen, presses Brief me and saves the card. With `CHECK=1` it then presses
+Check it, waits up to 600 seconds for the checked card, saves it at 170×200, resizes the window
+to 170×24 and saves it again. Three times are printed and go into `report.txt` per fork: the
+objective's seconds from `tmux new-session` (a stable start, not the row's first drawing), the
+card's seconds from pressing 1, and the checked card's seconds from pressing 3. The model is
+`claude-opus-5-5` unless `MODEL` names another; the forks run in the tmux session `owner-rep-cmp`
+unless `TMUX_NAME` names another, targeted by its exact name. The run passes when every expected
+capture was made, sessions × 2 builds × (1, or 3 with `CHECK=1`), and the parents' files are
+unchanged. `tests/live/compare/` (git-ignored) holds the captures and
+`report.txt`, which prints per card the times, the Stands, Means, Left out (with its items), Next and Well
+lines, the message box, the price line and, with `CHECK=1`, the checked lines; the green going-well line cannot be read from a
 capture. With two sessions named it costs four real sessions and about fifteen minutes. Status: built on 19 Oct 2026;
 run on one session with one build to show it forks, waits and captures the card of the parent's job (an earlier version sent a no-op prompt, and the card judged that instead). The
 full four-card run, main at 8daa0c5 against the shorter brief, was made the same day: all
@@ -429,7 +436,16 @@ build's left-out list held real items the other's missed. On `47d52e80` both car
 the agent's route as stopping early, because the record read cut 5,054 characters from the
 middle of the agent's last message, the same on both builds. On `c37172aa` neither build
 wrote the objective within the 180 seconds, so both cards were drawn with none and the
-part-by-part gate was not reached there.
+part-by-part gate was not reached there. The stable start, the three times, Check it at both
+sizes and the expected count were added on 14 Nov 2026 and run twice that day with
+`CHECK=1`, main against the same code. On Toy (`ef5e6b87`) alone: 6 of 6 captures, exit 0;
+objective 10 and 8 s from the start, card 40 and 42 s from pressing 1, checked card 188 and
+193 s from pressing 3. On Toy and Sync (`ecfb8b5c`, each forked from its own folder): 8 of
+12, exit 1, parents unchanged. Toy again took 11 and 14 s, 45 and 41 s, and 182 and 199 s.
+On Sync neither build wrote the objective within 180 seconds. Its cards came 48 and 51 s
+after pressing 1. Check it stopped after 15 s on both builds with "The check could not run
+(exit 1): mise ERROR": `claude` on this Mac is a mise shim, and mise refuses the
+`mise.toml` in the check's copy of Sync because that copy's path is not trusted.
 
 It runs on demand, not under `claude plugin test`, because each scenario costs a model call
 and about a minute. Its output is the captured screens, kept beside the script, so a reader
