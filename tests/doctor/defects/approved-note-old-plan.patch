@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index b8ea1d7..77b1dfa 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2770,7 +2770,7 @@ export const register: Register = on => {
+         const answered = planScreen(e, result)
+         if (answered?.kind === 'accepted') {
+           // A plan the owner changed on the screen is read again: the note names what was approved.
+-          if (answered.edited && typeof plan === 'string' && answered.plan.trim() !== plan.trim()) {
++          if (false as boolean) {
+             scanPlan($, answered.plan, { isOpen: false, sid: screen.sid, accepted: true, gen: screen.gen }).catch(() => undefined)
+           } else {
+             screen.accepted = true

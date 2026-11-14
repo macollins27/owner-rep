@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2741,8 +2741,7 @@
+     if (text === '') return
+     const his = human === undefined ? !notTyped(text) : human.has(typedKey(row.text)) && !notTyped(typedForm(row.text))
+     if (!his || !answeredAgent(text, asking, null)) return
+-    if (asking) soft = { at, text }
+-    else firm = at
++    firm = at
+     asking = false
+   })
+   // A message typed while the agent asked counts once the agent's newest words do not ask again.

@@ -9,7 +9,7 @@
     "name": "flag-shown-twice",
     "breaks": "The watch forgets which flags it has shown, so the same note comes back after the owner dismissed it.",
     "patch": "flag-shown-twice.patch",
-    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-29; remade 2026-10-30; remade 2026-10-30"
+    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-29; remade 2026-10-30; remade 2026-10-30; remade 2026-11-14"
   },
   {
     "name": "watch-never-backs-off",
@@ -33,7 +33,7 @@
     "name": "flag-replaces-card",
     "breaks": "A watch flag replaces the briefing card instead of waiting for the row.",
     "patch": "flag-replaces-card.patch",
-    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-29; remade 2026-10-30; remade 2026-10-30"
+    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-29; remade 2026-10-30; remade 2026-10-30; remade 2026-11-14"
   },
   {
     "name": "stop-never-marked",
@@ -141,7 +141,7 @@
     "name": "note-never-read",
     "breaks": "A note to the rep is recorded but starts no look, so the rep waits for the next stop to judge the work with it in mind.",
     "patch": "note-never-read.patch",
-    "fixed": "tested 2026-10-14; remade 2026-10-15"
+    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-11-14"
   },
   {
     "name": "earlier-job-leaks",
@@ -171,7 +171,7 @@
     "name": "step-look-dropped",
     "breaks": "The look that fires every CHECK_EVERY model requests never fires, so a long turn gets no watch until it stops.",
     "patch": "step-look-dropped.patch",
-    "fixed": "tested 2026-10-14; remade 2026-10-31"
+    "fixed": "tested 2026-10-14; remade 2026-10-31; remade 2026-11-14"
   },
   {
     "name": "note-left-in-box",
@@ -549,7 +549,7 @@
     "name": "fork-draft-as-his",
     "breaks": "A card message the owner sent in the session this one was forked from is recorded as their own words, so the objective is written from the rep's draft.",
     "patch": "fork-draft-as-his.patch",
-    "fixed": "2026-10-16; remade 2026-10-31"
+    "fixed": "2026-10-16; remade 2026-10-31; remade 2026-11-14"
   },
   {
     "name": "command-form-raw",
@@ -561,7 +561,7 @@
     "name": "seed-races-prompt",
     "breaks": "A prompt the owner sends while the session is still being read for their messages is recorded first, and the read then finds their message on record and seeds nothing, so every earlier message of theirs is lost to the objective.",
     "patch": "seed-races-prompt.patch",
-    "fixed": "2026-10-16; remade 2026-10-31"
+    "fixed": "2026-10-16; remade 2026-10-31; remade 2026-11-14"
   },
   {
     "name": "seed-races-note",
@@ -627,7 +627,7 @@
     "name": "note-look-skips-record",
     "breaks": "the look after the owner's note never falls back to the session record, so a note in a reopened session reads nothing and moves no condition",
     "patch": "note-look-skips-record.patch",
-    "fixed": "2026-10-16; remade 2026-10-31"
+    "fixed": "2026-10-16; remade 2026-10-31; remade 2026-11-14"
   },
   {
     "name": "press-skips-record",
@@ -639,7 +639,7 @@
     "name": "record-numbers-as-messages",
     "breaks": "The session record labels its entries #N, the form the owner's numbered messages take, so a record entry can be cited, and read by applyMarks, as one of their messages.",
     "patch": "record-numbers-as-messages.patch",
-    "fixed": "2026-10-16; remade 2026-10-31"
+    "fixed": "2026-10-16; remade 2026-10-31; remade 2026-11-14"
   },
   {
     "name": "truncated-read-trusted",
@@ -1779,7 +1779,7 @@
     "name": "judgment-line-dropped",
     "breaks": "The brief loses a judgment line, \"Never change his goal quietly, and never obey quietly.\", so the rep stops questioning the route.",
     "patch": "judgment-line-dropped.patch",
-    "fixed": "2026-10-19"
+    "fixed": "2026-10-19; remade 2026-11-14"
   },
   {
     "name": "gate-replaces-all",
@@ -2217,7 +2217,7 @@
     "name": "list-gap-rule-in-briefing",
     "breaks": "The briefing is told the Heads up's rule too, so it marks steps it must leave under unassessed.",
     "patch": "list-gap-rule-in-briefing.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-14"
   },
   {
     "name": "walk-no-looks-dropped-state",
@@ -2235,7 +2235,7 @@
     "name": "heads-up-not-carried",
     "breaks": "The look shows the reader's own flag and never reads the walk, so a dropped step behind another flag stays silent.",
     "patch": "heads-up-not-carried.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-14"
   },
   {
     "name": "heads-up-no-sign-not-carried",
@@ -2277,7 +2277,7 @@
     "name": "heads-up-register-no-plan-gate",
     "breaks": "The look never hands the mod the plans it showed, so no dropped step is carried at all.",
     "patch": "heads-up-register-no-plan-gate.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-14"
   },
   {
     "name": "heads-up-flag-speaks-ignored",
@@ -2457,25 +2457,25 @@
     "name": "brief-may-leave-empty",
     "breaks": "The brief lets the model leave the message empty with conditions open, so the first read keeps coming back with no message.",
     "patch": "brief-may-leave-empty.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-14"
   },
   {
     "name": "brief-card-may-leave-empty",
     "breaks": "The message placeholder in the brief's output structure lets the model leave the message empty without the limit.",
     "patch": "brief-card-may-leave-empty.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-14"
   },
   {
     "name": "check-may-leave-empty",
     "breaks": "The check prompt lets the checker leave the message empty with conditions open.",
     "patch": "check-may-leave-empty.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-14"
   },
   {
     "name": "held-step-line-dropped",
     "breaks": "The brief no longer says how a message treats a step held on the owner's go-ahead, so a forced message can push the held step.",
     "patch": "held-step-line-dropped.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-14"
   },
   {
     "name": "clause-one-modifier-only",
@@ -2763,13 +2763,13 @@
     "name": "approved-prior-cut-400",
     "breaks": "The saved body keeps only its last 400 characters.",
     "patch": "approved-prior-cut-400.patch",
-    "fixed": "2026-11-01"
+    "fixed": "2026-11-01; remade 2026-11-14"
   },
   {
     "name": "missed-step-counted-complete",
     "breaks": "A turn with a missed step is counted as complete.",
     "patch": "missed-step-counted-complete.patch",
-    "fixed": "2026-11-01"
+    "fixed": "2026-11-01; remade 2026-11-14"
   },
   {
     "name": "reload-counted-complete",
@@ -2817,7 +2817,7 @@
     "name": "long-reply-clipped",
     "breaks": "An ordinary long reply loses its whole sent source.",
     "patch": "long-reply-clipped.patch",
-    "fixed": "2026-11-01"
+    "fixed": "2026-11-01; remade 2026-11-14"
   },
   {
     "name": "appended-draft-clipped",
@@ -2925,7 +2925,7 @@
     "name": "screen-note-dropped",
     "breaks": "A note entered when rejecting a plan is not recorded on the live path.",
     "patch": "screen-note-dropped.patch",
-    "fixed": "2026-11-01"
+    "fixed": "2026-11-01; remade 2026-11-14"
   },
   {
     "name": "screen-rejected-plan-held",
@@ -2973,7 +2973,7 @@
     "name": "walk-rule-missing",
     "breaks": "The prompt omits walk rule; a model's obedience to the rule is proved by the harness cases.",
     "patch": "walk-rule-missing.patch",
-    "fixed": "2026-11-01"
+    "fixed": "2026-11-01; remade 2026-11-14"
   },
   {
     "name": "not-assessed-rule-missing",
@@ -3201,7 +3201,7 @@
     "name": "approved-check-called-waste",
     "breaks": "The brief counts a check the owner asked for, or a step of a plan the owner approved, as an addition the result does not need.",
     "patch": "approved-check-called-waste.patch",
-    "fixed": "2026-11-10"
+    "fixed": "2026-11-10; remade 2026-11-14"
   },
   {
     "name": "blocks-refusal-unrecognised",
@@ -3216,6 +3216,318 @@
     "fixed": "2026-11-10"
   },
   {
+    "name": "plan-warning-after-answer",
+    "breaks": "The plan-screen reading shows its line even after the owner has accepted or turned down the plan, so a warning about a plan already decided lands in the transcript.",
+    "patch": "plan-warning-after-answer.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "plan-warning-for-none",
+    "breaks": "A plan-screen reading that names nothing (\"- none\") is taken as a piece called \"none\", so every clean plan gets a warning before the owner approves.",
+    "patch": "plan-warning-for-none.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "plan-scan-awaited",
+    "breaks": "The plan screen waits for the rep's reading of the plan before it opens, so every plan screen is held up by a model call, up to a minute.",
+    "patch": "plan-scan-awaited.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "plan-scan-helper",
+    "breaks": "A helper's plan screen is read and warned about as if it were the owner's, though the owner never sees it or approves it.",
+    "patch": "plan-scan-helper.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "stop-look-dropped",
+    "breaks": "A turn that ends while a step look is still running gets no turn-end look, so a text plan waiting for the owner's yes is never read and its self-proving piece never named.",
+    "patch": "stop-look-dropped.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "owed-look-kept",
+    "breaks": "A turn-end look owed from a turn the owner has already answered still runs after the owner answers, reading a plan the owner has already decided.",
+    "patch": "owed-look-kept.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "stale-plan-flag-shown",
+    "breaks": "A warning about a waiting plan is shown even after the owner answered it while the look ran, so the owner is told to check a plan already approved or turned down.",
+    "patch": "stale-plan-flag-shown.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "plan-flag-behind-note",
+    "breaks": "A warning about a plan waiting for the owner's yes is dropped while an earlier note is still up, so the owner approves without seeing it.",
+    "patch": "plan-flag-behind-note.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "waiting-plan-cut",
+    "breaks": "What the agent said since the owner last answered is cut to its head and tail like any old message, so a self-proving piece buried in the middle of a long waiting plan is not in what the rep reads.",
+    "patch": "waiting-plan-cut.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "waiting-plan-budget-cut",
+    "breaks": "In a record crowded past its budget after an approval, the waiting plan is the first thing dropped, so the rep never reads the plan the owner is about to approve.",
+    "patch": "waiting-plan-budget-cut.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "answered-screen-unseen",
+    "breaks": "A plan the owner already answered on the plan screen is still read whole as if it were waiting, crowding out the agent's newer words.",
+    "patch": "answered-screen-unseen.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "brief-approved-rules-dropped",
+    "breaks": "The briefing is not told that an approved step is the owner's ask, that effort spent on an approved self-proving step goes under \"stands\", or that a waiting plan's self-proving piece is named, so the message can tell the agent to drop a step the owner approved.",
+    "patch": "brief-approved-rules-dropped.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "check-approved-rules-dropped",
+    "breaks": "The paid check rewrites the message without the approved-step rule, so its card can tell the agent to stop a step the owner approved.",
+    "patch": "check-approved-rules-dropped.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "own-words-approved-dropped",
+    "breaks": "The fallback card writer is not told an approved step is the owner's ask, so a card it writes can tell the agent to drop a step the owner approved.",
+    "patch": "own-words-approved-dropped.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "role-approved-exempt",
+    "breaks": "Expectation 4 goes back to exempting an approved step: a self-proving step the owner approved is never counted where the effort went, and nothing says to name one before the owner approves.",
+    "patch": "role-approved-exempt.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "cost-approved-exempt",
+    "breaks": "Watching the cost no longer covers an approved plan's steps, so effort on an approved self-proving step is either left out of the account or argued with the agent.",
+    "patch": "cost-approved-exempt.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "watch-plan-bar-dropped",
+    "breaks": "The Heads up is no longer told that a plan waiting for the owner's yes with a self-proving piece clears its bar, so under \"if in doubt, none\" the owner approves without a word.",
+    "patch": "watch-plan-bar-dropped.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "watch-flags-approved-step",
+    "breaks": "The Heads up may raise a note against a step the owner approved, arguing the owner's own plan.",
+    "patch": "watch-flags-approved-step.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "test-scripts-example-back",
+    "breaks": "The Heads up's first example teaches that test scripts are waste, so a plan with ordinary tests can be warned about.",
+    "patch": "test-scripts-example-back.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "left-counts-approved",
+    "breaks": "The briefing lists effort on an approved self-proving step under \"left\", so the card can never say the job is done on a plan the owner shaped that way.",
+    "patch": "left-counts-approved.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "question-answers-plan",
+    "breaks": "The owner's question about a waiting plan is taken as the answer to it, so the plan is cut like any old message and a self-proving piece in its middle is no longer read.",
+    "patch": "question-answers-plan.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "waiting-entries-trimmed",
+    "breaks": "When the record runs past its budget, what the agent said since the owner last answered is trimmed with the oldest entries, so a long run of work after a waiting plan drops the plan from what the rep reads.",
+    "patch": "waiting-entries-trimmed.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "backed-off-plan-unread",
+    "breaks": "While the watch is backed off after the owner typed past notes, the turn-end look is skipped, so a plan waiting for the owner's yes is never read and its self-proving piece never named.",
+    "patch": "backed-off-plan-unread.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "backed-off-notes-shown",
+    "breaks": "A turn-end look read while the watch is backed off shows its ordinary notes, so the owner who typed past notes gets them anyway.",
+    "patch": "backed-off-notes-shown.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "note-look-not-stale",
+    "breaks": "A note to the rep that reads a waiting plan shows its warning even after the owner answered the plan while it read.",
+    "patch": "note-look-not-stale.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "plan-note-kept",
+    "breaks": "A warning about a waiting plan stays on the row after the owner answers the plan, and answering counts as typing past it, backing the watch off.",
+    "patch": "plan-note-kept.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "screen-answer-uncounted",
+    "breaks": "An answer on the plan screen is not counted as the owner answering, so a look still reading the plan shows a warning about a plan already approved.",
+    "patch": "screen-answer-uncounted.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "typed-answer-uncounted",
+    "breaks": "Text the owner types to the agent is not counted as answering, so a turn-end look owed for a plan the owner already answered still runs and shows its warning.",
+    "patch": "typed-answer-uncounted.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "background-turn-answers",
+    "breaks": "A background task finishing starts a turn that is taken as the owner answering, so the turn-end look owed for a waiting plan is dropped and its warning never shows.",
+    "patch": "background-turn-answers.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "plan-pieces-capped",
+    "breaks": "The warning before approval names only the first few self-proving pieces, so one further down the plan goes unnamed.",
+    "patch": "plan-pieces-capped.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "cut-piece-period",
+    "breaks": "A warning or row note whose last piece was cut ends on the cut mark and a period, which reads as a slip.",
+    "patch": "cut-piece-period.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "clarification-answers-plan",
+    "breaks": "The owner's request for more before the yes (\"explain step 2 first\") is taken as the answer to the plan, so while the agent asks again the plan is cut like any old message and a self-proving piece in its middle is no longer read.",
+    "patch": "clarification-answers-plan.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "plan-flag-length-capped",
+    "breaks": "The Heads up's output format holds every flag to 25 words, so a text plan with several self-proving pieces has some of them left unnamed.",
+    "patch": "plan-flag-length-capped.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "approved-note-missing",
+    "breaks": "Accepting a plan whose reading named self-proving pieces puts nothing on the rep's row, so an owner whose plan filled the terminal never hears what the warning said.",
+    "patch": "approved-note-missing.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "approved-note-late-dropped",
+    "breaks": "When the plan reading lands after the owner accepted the plan, its pieces are dropped, so a quick yes on the plan screen hides them.",
+    "patch": "approved-note-late-dropped.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "approved-note-on-reject",
+    "breaks": "A plan the owner turned down still gets the row note saying the owner approved it.",
+    "patch": "approved-note-on-reject.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "carry-dropped",
+    "breaks": "A yes after the owner's question about a waiting plan carries only the agent's answer to the objective writer, so the plan itself is never approved.",
+    "patch": "carry-dropped.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "carry-into-question",
+    "breaks": "A question of the owner's takes the earlier unanswered turns with it, so the writer reads a question as answering a plan.",
+    "patch": "carry-into-question.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "carry-past-approval",
+    "breaks": "The carry walks past a message that already approved a plan, so a later yes is shown that plan again as waiting.",
+    "patch": "carry-past-approval.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "carry-past-answer",
+    "breaks": "The carry walks past a message the agent took as its answer, so an old plan rides along with every later short reply.",
+    "patch": "carry-past-answer.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "carry-ask-line-dropped",
+    "breaks": "The carried turns lose the line saying where the owner's question came, so the writer reads the plan, the question's answer and the yes as one run of the agent's words.",
+    "patch": "carry-ask-line-dropped.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "done-step-rerun-allowed",
+    "breaks": "The readers lose the rule that a finished approved step is never asked to run again, so the message asks the agent to rerun or keep up a self-proving script once it is done.",
+    "patch": "done-step-rerun-allowed.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "piece-cut-mid-word",
+    "breaks": "A long piece in the plan warning is cut in the middle of a word, so the warning ends on a broken word.",
+    "patch": "piece-cut-mid-word.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "carry-twice",
+    "breaks": "A message whose body already carries an earlier turn is walked past, so a plan asked about, then a note, then a yes, carries the plan twice.",
+    "patch": "carry-twice.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "carry-past-approved-note",
+    "breaks": "A note to the rep that the writer marked approved is walked past, so the plan it approved is carried into a later message about other work.",
+    "patch": "carry-past-approved-note.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "yes-not-answer",
+    "breaks": "A plain yes typed while the agent asked is not an answer when the agent's next turn asks something new, so the answered turn is carried into the next reply.",
+    "patch": "yes-not-answer.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "approved-note-other-session",
+    "breaks": "A plan reading that lands after a /clear or a resume puts the plan's pieces on the next session's row.",
+    "patch": "approved-note-other-session.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "piece-cut-in-parse",
+    "breaks": "The plan reading's pieces are cut by characters as they are parsed, so the warning ends on a broken word.",
+    "patch": "piece-cut-in-parse.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "approved-rerun-bundled",
+    "breaks": "The readers lose the rule that a finished approved step is never asked for again even bundled into other work, so the message asks for a new review and its findings added to the approved proof folder.",
+    "patch": "approved-rerun-bundled.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "plan-clear-line-missing",
+    "breaks": "A later plan whose reading names nothing gets no line, so the warning about an earlier plan, still above the plan screen, reads as about this one.",
+    "patch": "plan-clear-line-missing.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "plan-clear-line-unwarned",
+    "breaks": "The line saying a plan has no self-proving piece is logged for every clean plan, even when no warning about an earlier plan sits above it.",
+    "patch": "plan-clear-line-unwarned.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "plan-scan-review-record",
+    "breaks": "The plan reading loses the rule that a review's own record of findings and fixes is part of the review, and that a pass report with evidence is a proof report, so a review's notes are named as self-proving.",
+    "patch": "plan-scan-review-record.patch",
+    "fixed": "2026-11-14"
+  },
+  {
     "name": "other-rows-unread",
     "breaks": "From Claude Code 2.1.325 the rep's row looks only at what is drawn beneath it, which no longer holds another mod's row, so its note and its digit buttons stay up beside another mod's and one digit presses neither.",
     "patch": "other-rows-unread.patch",
@@ -3225,6 +3537,42 @@
     "name": "card-shares-strip",
     "breaks": "From Claude Code 2.1.325 the briefing no longer takes the strip alone: another mod's row stays stacked under the card the owner asked for.",
     "patch": "card-shares-strip.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "owed-look-after-clear",
+    "breaks": "A turn-end look still owed when the owner runs /clear or resumes another session runs in the next session, reading the old one's turn there.",
+    "patch": "owed-look-after-clear.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "approved-note-old-plan",
+    "breaks": "A plan the owner edited on the plan screen before accepting is never read again: the rep's row names the pieces of the plan as the agent wrote it, including one the owner took out.",
+    "patch": "approved-note-old-plan.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "carry-unseen-dropped",
+    "breaks": "A yes after a question about a turn the rep never saw carries nothing and says nothing is missing, so the reader takes the yes as answering only what came after.",
+    "patch": "carry-unseen-dropped.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "waiting-fit-capped",
+    "breaks": "What the agent said since the owner last answered that fits its usual cut is cut through its middle by the shared cap when the record runs long, while longer waiting messages stay whole, so a step buried in a short waiting plan goes unseen.",
+    "patch": "waiting-fit-capped.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "look-after-typed-answer",
+    "breaks": "A message typed ahead, sent the moment the turn ends, does not stop that turn's look: it reads the plan as still waiting and can flag a plan the owner already answered.",
+    "patch": "look-after-typed-answer.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "approved-note-superseded",
+    "breaks": "The reading of a plan accepted earlier, landing after a later plan was accepted in the same session, replaces the later plan's note on the rep's row with the earlier plan's pieces.",
+    "patch": "approved-note-superseded.patch",
     "fixed": "2026-11-14"
   }
 ]

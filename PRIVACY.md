@@ -55,6 +55,8 @@ terms you already have with that provider. The rep's calls include parts of your
   like any other;
 - each write of the rep's account of your job sends your messages, the agent's words before
   each, and the plans you approved;
+- each time the agent opens Claude Code's plan screen, the plan's text is sent alone, in one
+  call, to find any part that only proves the agent's own work;
 - **Check it** sends the session as agentsview reads it, thinking included, and any file the
   check reads.
 

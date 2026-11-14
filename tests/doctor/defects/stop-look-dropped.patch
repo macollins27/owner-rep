@@ -1,0 +1,16 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index b8ea1d7..8e4f19d 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1403,10 +1403,7 @@ type Looks = { inFlight: Set<string>; answers: number; stopDue: string | undefin
+ // the look would read a plan already answered, so none starts.
+ function startLook($: EngineInterface, reason: 'step' | 'stop', turnId: string, s: Looks, asOf?: number): void {
+   if (asOf !== undefined && s.answers !== asOf) return
+-  if (s.inFlight.has('look')) {
+-    if (reason === 'stop') s.stopDue = turnId
+-    return
+-  }
++  if (s.inFlight.has('look')) return
+   s.inFlight.add('look')
+   const began = s.answers
+   sessionId($)

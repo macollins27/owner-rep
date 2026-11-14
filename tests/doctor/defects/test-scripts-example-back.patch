@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1452,7 +1452,7 @@
+ 
+ ## Examples of a good flag
+ 
+-flag: Most of this session has gone into scripts that confirm the agent's own steps ran, and the site itself has barely changed.
++flag: Most of this session has gone into the agent's own checks and test scripts, and the site itself has barely changed.
+ why: Of the last forty steps, about thirty wrote or ran those scripts; the pages a customer sees were edited twice.
+ 
+ flag: Before you approve: step 6, a script confirming the agent's own steps ran, costs you money and does not improve the site.

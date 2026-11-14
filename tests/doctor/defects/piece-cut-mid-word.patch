@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -495,7 +495,7 @@
+   if (t.length <= PLAN_PIECE_CUT) return t
+   const head = t.slice(0, PLAN_PIECE_CUT - 1)
+   const at = head.lastIndexOf(' ')
+-  return `${(at > PLAN_PIECE_CUT / 2 ? head.slice(0, at) : head).replace(/[\s.,;:]+$/, '')}…`
++  return `${head.replace(/[\s.,;:]+$/, '')}…`
+ }
+ 
+ // What a self-proving piece costs, said once, before the pieces it names.

@@ -1,0 +1,11 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1417,7 +1417,6 @@
+ async function ownerAnswered($: EngineInterface, s: Looks): Promise<void> {
+   s.answers += 1
+   s.stopDue = undefined
+-  if ((await read($, viewA)) === 'note' && (await read($, noteA))?.plan === true) await clearNote($)
+ }
+ 
+ // The press: an instant read over the same copy, drawn in the band.

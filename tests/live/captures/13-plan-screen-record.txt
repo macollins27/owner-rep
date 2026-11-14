@@ -1,24 +1,29 @@
   #1 his: Plan how to create apple.txt containing apple and pear.txt containing 
   #2 his screen rejected read read: Do not create pear.txt, only apple.txt.
-  #3 plan screen edited read read: # Plan: create apple.txt ## Context Maxwell wants one tiny text file i
+  #3 plan screen edited read read: # Plan: create apple.txt ## Context Goal: one small text file in the w
   the note is held as his, with the plan screen's mark: shown
   the plan he turned down is saved beside the note: shown
   the edited plan is held as an approved plan: shown
   that plan has been read whole: shown ({'state': 'read', 'write': 3})
   its saved file matches its fingerprint: shown
   the saved plan holds the line the owner added: shown
-    held: A plan for making apple.txt only, in three short steps, has been put to the owner for approval
-    held: Nothing is created before the owner approves the plan
-    held: A file named apple.txt exists and holds the word "apple"
-    held: No file named pear.txt is created
-    held: apple.txt has been checked after making it and holds exactly the word asked for
-    held: Nothing else has been changed or broken in the process
-    held: apple.txt holds one single line, the word "apple", and nothing more
-    held: After apple.txt is made, it has been confirmed that no pear.txt exists
-    held: apple.txt is saved in the project's history with a plain commit and is not pushed to any branch that deploys
-    held: After the commit, the project shows no uncommitted changes left over
-    held: A file named plum.txt exists holding the word "plum"
-    held: Settle with the owner which stands: only apple.txt being made, as asked before, or plum.txt also being made, a
+    held: A new plan for making apple.txt only, in three short steps, is shown for approval
+    held: No file is made and nothing is changed until the plan is approved
+    held: apple.txt exists and holds the word apple and nothing else
+    held: pear.txt is not created
+    held: Nothing else is changed, added or left behind beyond apple.txt
+    held: A plan for making the two files, written as three short steps, is shown for approval
+    held: Neither file is made and nothing is changed until the plan is approved
+    held: Nothing else is changed, added or left behind beyond the two files
+    held: apple.txt is made in the working directory itself
+    held: apple.txt is read back after it is made and found to hold the word apple
+    held: After the work, it is confirmed that no other files were made or changed, and in particular that pear.txt does
+    held: plum.txt is made holding the word plum
+    held: Settle with the owner which stands: only apple.txt being made and no other file created, or also making plum.t
+    held: Settle with the owner: #3 approved a plan that would let go of: A new plan for making apple.txt only, in three
+    held: Settle with the owner: #3 approved a plan that would let go of: No file is made and nothing is changed until t
+    held: Settle with the owner: #3 approved a plan that would let go of: A plan for making the two files, written as th
+    held: Settle with the owner: #3 approved a plan that would let go of: Neither file is made and nothing is changed un
   a condition holds the added step: shown
   no condition asks for pear.txt: shown
   the card or the objective shows the added step: shown

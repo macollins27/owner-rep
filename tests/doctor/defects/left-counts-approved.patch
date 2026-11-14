@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1517,7 +1517,7 @@
+ stands: <one or two sentences: where the work really stands, as the conversation shows it, not as the agent says it>
+ means: <one or two sentences: what the agent's latest message means for the owner measured against the whole result; what the owner has now and what, if anything, is waiting; never a retelling of the steps the agent took>
+ left:
+-- <one line per item: work put off, shrunk or quietly dropped; a part of the objective, or of what the owner asked for on this job, never started; a condition still open that the agent called done; work that is passable but not the best it could be; the product never opened and used; effort spent on self-proving pieces the owner did not ask for or approve; a claim that matters and is not shown; a chore the agent left "for you". Each item says in a few words why it matters. Write "- nothing" when there is nothing.>
++- <one line per item: work put off, shrunk or quietly dropped; a part of the objective, or of what the owner asked for on this job, never started; a condition still open that the agent called done; work that is passable but not the best it could be; the product never opened and used; effort spent on self-proving pieces; a claim that matters and is not shown; a chore the agent left "for you". Each item says in a few words why it matters. Write "- nothing" when there is nothing.>
+ unassessed:
+ - #<n>: <a step of an approved plan you could not assess; "- none" when there is none>
+ next: <one or two sentences: what the agent does next; never a step for the owner to do; a stop only with a stop verdict>

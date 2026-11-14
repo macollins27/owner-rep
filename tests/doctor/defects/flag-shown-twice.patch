@@ -1,13 +1,12 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 97fd57d..8b839a1 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1308,7 +1308,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
-     if (applyMarks(after, answer.shown, answer.closed) && onScreen(sid)) await update($, readingA, () => after.objective)
-     const view = await read($, viewA)
-     const said = headsUp(answer, after.seen, fill?.blocks ?? [])
--    if (said !== null && view === 'row' && onScreen(sid) && ![...after.seen].some(s => same(s, said.line))) {
-+    if (said !== null && view === 'row' && onScreen(sid) && true) {
+@@ -1377,7 +1377,7 @@
+     // place of an earlier note, and is dropped once the owner has answered.
+     const waits = answer.state === 'plan-waiting'
+     const room = view === 'row' || (waits && view === 'note')
+-    if (said !== null && room && (waits ? !stale() : !backedOff) && onScreen(sid) && ![...after.seen].some(s => same(s, said.line))) {
++    if (said !== null && room && (waits ? !stale() : !backedOff) && onScreen(sid) && true) {
        after.seen = [...after.seen, said.line].slice(-SEEN_MAX)
-       const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId }
+       const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId, ...(waits ? { plan: true as const } : {}) }
        await update($, noteA, () => note)

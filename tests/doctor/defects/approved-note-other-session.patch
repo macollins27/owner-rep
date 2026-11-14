@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2349,7 +2349,7 @@
+ // The pieces of a plan the owner just accepted in session `sid`, on the rep's row as a note, in
+ // place of what it held, while that session is still the one on screen.
+ async function showApproved($: EngineInterface, sid: string, pieces: string[]): Promise<void> {
+-  if ((await sessionId($)) !== sid || !onScreen(sid)) return
++  if (!onScreen(await sessionId($))) return
+   const note: Note = { line: planApprovedLine(pieces), why: PLAN_APPROVED_WHY, shownAt: Date.now(), turnId: '' }
+   await update($, noteA, () => note)
+   await update($, viewA, () => 'note')

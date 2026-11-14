@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1778,7 +1778,7 @@
+     if (t.note === 'interrupted') out.push('(interrupted by the owner here)')
+     if (t.note === 'typed-into') out.push('(the owner typed the message below while the agent was still working)')
+     if (t.note === 'read-back') out.push(READ_BACK_LINE)
+-    if (t.ask !== undefined) out.push(carryLine(t.ask))
++    if (t.ask === null) out.push(carryLine(t.ask))
+   }
+   return out.join('\n')
+ }

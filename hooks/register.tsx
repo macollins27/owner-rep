@@ -25,6 +25,8 @@ import {
   SOURCE_MAX,
   TURN_TEXT_MAX,
   bodyOf,
+  carriedBody,
+  CARRY_MSGS,
   restOf,
   runningText,
   tapStep,
@@ -134,6 +136,16 @@ import {
   objectivePrompt,
   OWN_WORDS_MAX_TOKENS,
   OWN_WORDS_SYSTEM,
+  PLAN_SCAN_MAX_TOKENS,
+  PLAN_SCAN_MODEL,
+  PLAN_SCAN_SYSTEM,
+  PLAN_SCAN_TIMEOUT_MS,
+  parsePlanScan,
+  planScanPrompt,
+  planWarning,
+  PLAN_CLEAR_LINE,
+  planApprovedLine,
+  PLAN_APPROVED_WHY,
   OWN_WORDS_TIMEOUT_MS,
   ownWordsPrompt,
   parseOwnWords,
@@ -1325,15 +1337,25 @@ async function readSession($: EngineInterface, sid: string, rec: Rec, task: (cov
 
 // One look by the watch: the same cached copy of the conversation the agent
 // works from, read by a fresh instance with the rep's brief. Never awaited by
-// the hook that starts it, so the agent is never slowed.
-async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | 'note', turnId: string): Promise<void> {
+// the hook that starts it, so the agent is never slowed. `stale` says the owner has answered since
+// the look began, so a flag about a plan waiting for that answer is no longer shown.
+async function look(
+  $: EngineInterface,
+  sid: string,
+  reason: 'step' | 'stop' | 'note',
+  turnId: string,
+  stale: () => boolean = () => false,
+): Promise<void> {
   const rec = await loadRec($, sid)
-  // Typing past notes backs the watch off; a note to the rep is never skipped.
-  if (rec.skip > 0 && reason !== 'note') {
+  // Typing past notes backs the watch off; a note to the rep is never skipped. A turn-end look still
+  // reads while backed off, for the one flag that cannot wait, a plan waiting for the owner's yes,
+  // and shows nothing else.
+  const backedOff = rec.skip > 0 && reason !== 'note'
+  if (backedOff) {
     await changeRec($, sid, r => {
       r.skip = Math.max(0, r.skip - 1)
     })
-    return
+    if (reason !== 'stop') return
   }
   const memory = { ...(await memoryFor($, sid, rec, 'watch')), context: await contextOf($) }
   const got = await readSession($, sid, rec, cover => watchPrompt({ ...memory, cover }, reason))
@@ -1356,13 +1378,57 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
     if (applyMarks(after, answer.shown, answer.closed) && onScreen(sid)) await update($, readingA, () => after.objective)
     const view = await read($, viewA)
     const said = headsUp(answer, after.seen, fill?.blocks ?? [])
-    if (said !== null && view === 'row' && onScreen(sid) && ![...after.seen].some(s => same(s, said.line))) {
+    // A plan waiting for the owner's yes is a decision the owner is making now: its flag takes the
+    // place of an earlier note, and is dropped once the owner has answered.
+    const waits = answer.state === 'plan-waiting'
+    const room = view === 'row' || (waits && view === 'note')
+    if (said !== null && room && (waits ? !stale() : !backedOff) && onScreen(sid) && ![...after.seen].some(s => same(s, said.line))) {
       after.seen = [...after.seen, said.line].slice(-SEEN_MAX)
-      const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId }
+      const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId, ...(waits ? { plan: true as const } : {}) }
       await update($, noteA, () => note)
       await update($, viewA, () => 'note')
+      // The owner may have answered while the note was being set, before it was on the row to clear.
+      const up = waits && stale() ? await read($, noteA) : null
+      if (up?.shownAt === note.shownAt && up.line === note.line) await clearNote($)
     }
   })
+}
+
+// The watch's looks in one session: what is running, how many times the owner has answered (so a
+// look knows whether a plan it read still waits), and the turn-end look owed when a look was
+// already running as the turn ended.
+type Looks = { inFlight: Set<string>; answers: number; stopDue: string | undefined }
+// One look at a time; a turn-end look that finds one running runs once it finishes. `asOf`: the
+// answer count when the turn ended; an answer since (one typed ahead lands as the turn ends) means
+// the look would read a plan already answered, so none starts.
+function startLook($: EngineInterface, reason: 'step' | 'stop', turnId: string, s: Looks, asOf?: number): void {
+  if (asOf !== undefined && s.answers !== asOf) return
+  if (s.inFlight.has('look')) {
+    if (reason === 'stop') s.stopDue = turnId
+    return
+  }
+  s.inFlight.add('look')
+  const began = s.answers
+  sessionId($)
+    .then(id => look($, id, reason, turnId, () => s.answers !== began))
+    .catch(() => undefined)
+    .finally(() => {
+      s.inFlight.delete('look')
+      const due = s.stopDue
+      s.stopDue = undefined
+      if (due !== undefined) startLook($, 'stop', due, s)
+    })
+}
+
+// The owner answered the agent: a message typed to it, or an answer on the plan screen or to a
+// question. Counted before anything is awaited. A turn-end look still owed would read a plan already
+// answered, a look still reading shows no flag about it, and a warning on the waiting plan leaves
+// the row: it was answered, not typed past. A background task's turn or the agent going on by
+// itself is no answer.
+async function ownerAnswered($: EngineInterface, s: Looks): Promise<void> {
+  s.answers += 1
+  s.stopDue = undefined
+  if ((await read($, viewA)) === 'note' && (await read($, noteA))?.plan === true) await clearNote($)
 }
 
 // The press: an instant read over the same copy, drawn in the band.
@@ -2001,8 +2067,15 @@ async function takeBody($: EngineInterface, sid: string, rec: Rec, snap: Snap): 
   return body
 }
 
-// The body's fields on the message that is numbered next: none when it is empty and whole.
-async function bodyFields($: EngineInterface, sid: string, rec: Rec, body: Body): Promise<Partial<OwnerMsg>> {
+// The body's fields on the message that is numbered next: none when it is empty and whole. `words`
+// are what that message sent; what the agent put to the owner and the messages before it did not
+// answer is carried in front of its own turns (`carriedBody`). `afterDraft`: the message is the
+// owner's words after a draft of the rep's, which is numbered just before it and is walked past.
+async function bodyFields($: EngineInterface, sid: string, rec: Rec, own: Body, words: string, afterDraft = false): Promise<Partial<OwnerMsg>> {
+  const job = jobMsgs(rec)
+  const earlier = afterDraft && job.at(-1)?.kind === 'draft' ? job.slice(0, -1) : job
+  const { msgs } = await readable($, sid, earlier.slice(-CARRY_MSGS * 3), ['body', 'sent'])
+  const body = carriedBody(msgs, words, own)
   if (body.text === '' && body.incomplete === undefined) return {}
   const src = body.text === '' ? {} : { src: { body: await saveSource($, sid, `${rec.counter + 1}-body`, body.text) } }
   return { turns: body.turns, ...(body.incomplete === undefined ? {} : { incomplete: body.incomplete }), ...src }
@@ -2230,9 +2303,8 @@ async function seedOnce($: EngineInterface, sid: string): Promise<boolean> {
         continue
       }
       const split = draftSplitAny(t.text, [...rec.drafts, rec.lastBrief?.message ?? '', ...others])
-      const fields = async () => bodyFields($, sid, rec, seededBody(t))
-      if (split === null) pushOwner(rec, 'his', t.text, t.prior, await withSent($, sid, rec, await fields(), t.text.length > HIS_CUT ? t.text : null))
-      else await pushDraft($, sid, rec, split, t.prior, t.text, fields)
+      if (split === null) pushOwner(rec, 'his', t.text, t.prior, await withSent($, sid, rec, await bodyFields($, sid, rec, seededBody(t), t.text), t.text.length > HIS_CUT ? t.text : null))
+      else await pushDraft($, sid, rec, split, t.prior, t.text, async () => bodyFields($, sid, rec, seededBody(t), split.his, true))
     }
     return has(rec)
   })
@@ -2246,7 +2318,7 @@ async function takeNote($: EngineInterface, sid: string, note: string, from: { s
   if ('snap' in from) await saving
   await changeRec($, sid, async rec => {
     const body = 'snap' in from ? await takeBody($, sid, rec, from.snap) : null
-    const more = body === null ? {} : await bodyFields($, sid, rec, body)
+    const more = body === null ? {} : await bodyFields($, sid, rec, body, note)
     pushOwner(rec, 'note', note, body?.text ?? ('prior' in from ? from.prior : ''), await withSent($, sid, rec, more, note.length > HIS_CUT ? note : null))
   })
 }
@@ -2254,6 +2326,51 @@ async function takeNote($: EngineInterface, sid: string, note: string, from: { s
 // The plan screen's answer, stored as the owner's and read at once (docs/reference.md, "The plan
 // screen"): an accepted plan as approved by code, saved whole; a plan turned down, the owner's note
 // with that plan saved beside it, so its words can be read and none of it approved.
+// The plan screen read while it waits for the owner (docs/reference.md, "The plan screen read
+// before the owner's yes"): one completion on the plan alone, never awaited by the hook. Its line
+// is logged above the screen only while the screen is still open; a plan with pieces that the
+// owner accepted, whichever of the reading and the answer lands last, puts them on the rep's row
+// (`showApproved`), since a plan that fills the terminal pushes that line out of sight. `sid` is
+// the session the screen was called in, so a reading that lands after a /clear or a resume shows
+// nothing in the next one.
+// `gen`: the plan screen's number in this process (`planGen`), so the reading of a plan a later
+// screen has followed shows nothing.
+type PlanRead = { isOpen: boolean; sid: string; pieces?: string[]; accepted?: boolean; gen?: number }
+let planGen = 0
+// The session whose plan screen last had a warning logged above it: a later plan there whose
+// reading names nothing logs PLAN_CLEAR_LINE, so that warning is not read as about it.
+let warnedIn: string | null = null
+async function scanPlan($: EngineInterface, plan: string, screen: PlanRead): Promise<void> {
+  const result = await $.model.complete({
+    model: PLAN_SCAN_MODEL,
+    system: PLAN_SCAN_SYSTEM,
+    prompt: planScanPrompt(plan),
+    maxTokens: PLAN_SCAN_MAX_TOKENS,
+    timeoutMs: PLAN_SCAN_TIMEOUT_MS,
+  })
+  if (!result.isAnswered) return
+  const pieces = parsePlanScan(result.text)
+  if (pieces === null) return
+  if (pieces.length === 0) {
+    if (screen.isOpen && screen.sid !== '' && warnedIn === screen.sid) $.ui.log(PLAN_CLEAR_LINE)
+    return
+  }
+  screen.pieces = pieces
+  if (screen.isOpen) {
+    $.ui.log(planWarning(pieces))
+    if (screen.sid !== '') warnedIn = screen.sid
+  } else if (screen.accepted === true && screen.gen === planGen) await showApproved($, screen.sid, pieces)
+}
+
+// The pieces of a plan the owner just accepted in session `sid`, on the rep's row as a note, in
+// place of what it held, while that session is still the one on screen.
+async function showApproved($: EngineInterface, sid: string, pieces: string[]): Promise<void> {
+  if ((await sessionId($)) !== sid || !onScreen(sid)) return
+  const note: Note = { line: planApprovedLine(pieces), why: PLAN_APPROVED_WHY, shownAt: Date.now(), turnId: '' }
+  await update($, noteA, () => note)
+  await update($, viewA, () => 'note')
+}
+
 async function takePlanScreen($: EngineInterface, e: unknown, result: unknown): Promise<void> {
   const seen = planScreen(e, result)
   if (seen === null) return
@@ -2459,6 +2576,7 @@ export const register: Register = on => {
   let lastDoing = ''
   let promptsPastNote = 0
   const inFlight = new Set<string>()
+  const looks: Looks = { inFlight, answers: 0, stopDue: undefined }
 
   on('session.start', async ($, e, next) => {
     try {
@@ -2498,7 +2616,8 @@ export const register: Register = on => {
       const lookAtNote = (id: string) => {
         if (inFlight.has('note')) return
         inFlight.add('note')
-        look($, id, 'note', '')
+        const began = looks.answers
+        look($, id, 'note', '', () => looks.answers !== began)
           .catch(() => undefined)
           .finally(() => inFlight.delete('note'))
       }
@@ -2530,6 +2649,8 @@ export const register: Register = on => {
       // needs no emptying.
       const text = noted === null ? e.text : noted.before
       const note = noted === null ? '' : noted.note
+      // Text that reaches the agent answers it.
+      const answered = ownerAnswered($, looks).catch(() => undefined)
       try {
         const id = await sessionId($)
         // A note typed with a plan accepted on the plan screen is numbered before this prompt.
@@ -2538,6 +2659,7 @@ export const register: Register = on => {
         // session first (or the start's read finished), so this prompt is numbered
         // after them.
         const seeded = await seedOwner($, id).catch(() => false)
+        await answered
         const view = await read($, viewA)
         // The turns this message answers are saved first.
         await saving
@@ -2554,9 +2676,9 @@ export const register: Register = on => {
           if (split === null) {
             // The whole as sent, when the stored text is not all of it: cut, or split from a note.
             const sent = noted !== null ? e.text : text.length > HIS_CUT ? text : null
-            pushOwner(rec, 'his', text, body.text, await withSent($, id, rec, await bodyFields($, id, rec, body), sent))
+            pushOwner(rec, 'his', text, body.text, await withSent($, id, rec, await bodyFields($, id, rec, body, text), sent))
           } else {
-            await pushDraft($, id, rec, split, body.text, noted !== null ? e.text : text, async () => bodyFields($, id, rec, body))
+            await pushDraft($, id, rec, split, body.text, noted !== null ? e.text : text, async () => bodyFields($, id, rec, body, split.his, true))
             rec.lastSent = { text: split.draft, at: Date.now() }
             // A draft is the rep's words: it moves the step it asks for and nothing else.
             if (rec.objective !== null) rec.objective = { ...rec.objective, step: firstSentence(split.draft) }
@@ -2619,6 +2741,10 @@ export const register: Register = on => {
     const tool = String(e.tool)
     const doing = doingFor(tool, e as unknown as Record<string, unknown>)
     const waits = tool === 'AskUserQuestion' || tool === 'ExitPlanMode'
+    // The plan screen is read from the moment it is called, before anything here is awaited.
+    const screen: PlanRead = { isOpen: true, sid: ended ? '' : currentId, ...(tool === 'ExitPlanMode' ? { gen: ++planGen } : {}) }
+    const plan = tool === 'ExitPlanMode' ? (e as { plan?: unknown }).plan : undefined
+    if (typeof plan === 'string' && plan.trim() !== '') scanPlan($, plan, screen).catch(() => undefined)
     // A note typed with the plan accepted before this call is saved by now: read first.
     if (notesDue.size > 0) await sessionId($).then(id => catchNotes($, id)).catch(() => undefined)
     try {
@@ -2630,9 +2756,28 @@ export const register: Register = on => {
       // Drawing is best effort.
     }
     try {
-      const result = await next(e)
+      let result: Awaited<ReturnType<typeof next>>
+      try {
+        result = await next(e)
+      } finally {
+        // The owner has answered (or the call failed): a reading still out shows nothing now.
+        screen.isOpen = false
+        if (waits) ownerAnswered($, looks).catch(() => undefined)
+      }
       // What the plan screen answered is stored after the call; a thrown call stores nothing.
-      if (tool === 'ExitPlanMode') await takePlanScreen($, e, result).catch(() => undefined)
+      if (tool === 'ExitPlanMode') {
+        await takePlanScreen($, e, result).catch(() => undefined)
+        const answered = planScreen(e, result)
+        if (answered?.kind === 'accepted') {
+          // A plan the owner changed on the screen is read again: the note names what was approved.
+          if (answered.edited && typeof plan === 'string' && answered.plan.trim() !== plan.trim()) {
+            scanPlan($, answered.plan, { isOpen: false, sid: screen.sid, accepted: true, gen: screen.gen }).catch(() => undefined)
+          } else {
+            screen.accepted = true
+            if (screen.pieces !== undefined) await showApproved($, screen.sid, screen.pieces).catch(() => undefined)
+          }
+        }
+      }
       return result
     } finally {
       if (waits) {
@@ -2660,13 +2805,7 @@ export const register: Register = on => {
       live.set(e.turnId, entry)
     }
     if (e.index !== entry.nextIndex) entry.incomplete ??= 'a step of this turn was missed'
-    if (e.index > 0 && e.index % CHECK_EVERY === 0 && !inFlight.has('look')) {
-      inFlight.add('look')
-      sessionId($)
-        .then(id => look($, id, 'step', e.turnId))
-        .catch(() => undefined)
-        .finally(() => inFlight.delete('look'))
-    }
+    if (e.index > 0 && e.index % CHECK_EVERY === 0) startLook($, 'step', e.turnId, looks)
     // The step's stream passes up as it is; its text chunks are kept on the way.
     const turn = entry
     try {
@@ -2689,6 +2828,7 @@ export const register: Register = on => {
     }
     // The turn's text saved first, before anything is awaited, so a message sent after this knows it ended.
     saveTurn($, e.turnId, e.isAborted)
+    const answersAtEnd = looks.answers
     const asking = /\?\s*$/.test(e.answer.trim())
     const doing = e.isAborted ? 'stopped by you' : asking ? 'asking you' : 'stopped, waiting on you'
     lastDoing = doing
@@ -2696,13 +2836,7 @@ export const register: Register = on => {
       () => undefined,
     )
     if (notesDue.size > 0) await sessionId($).then(id => catchNotes($, id)).catch(() => undefined)
-    if (!e.isAborted && !inFlight.has('look')) {
-      inFlight.add('look')
-      sessionId($)
-        .then(id => look($, id, 'stop', e.turnId))
-        .catch(() => undefined)
-        .finally(() => inFlight.delete('look'))
-    }
+    if (!e.isAborted) startLook($, 'stop', e.turnId, looks, answersAtEnd)
     // A message still waiting for a whole read is tried again at each turn's end.
     sessionId($)
       .then(async id => {
@@ -3069,6 +3203,8 @@ export const register: Register = on => {
     if (e.reason === 'clear' || e.reason === 'resume') {
       lastDoing = ''
       promptsPastNote = 0
+      // A turn-end look owed to the session left behind never runs in the next one.
+      looks.stopDue = undefined
       await leaveSession($).catch(() => undefined)
     }
     return next(e)

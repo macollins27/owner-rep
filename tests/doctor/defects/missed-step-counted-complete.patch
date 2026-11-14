@@ -1,12 +1,11 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 1c7c5ed..0d535f1 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -2543,7 +2543,6 @@ export const register: Register = on => {
+@@ -2735,7 +2735,6 @@
        entry = newTurn(e.turnId, 'other', false, e.index, 'the rep did not see this turn from its start')
        live.set(e.turnId, entry)
      }
 -    if (e.index !== entry.nextIndex) entry.incomplete ??= 'a step of this turn was missed'
-     if (e.index > 0 && e.index % CHECK_EVERY === 0 && !inFlight.has('look')) {
-       inFlight.add('look')
-       sessionId($)
+     if (e.index > 0 && e.index % CHECK_EVERY === 0) startLook($, 'step', e.turnId, looks)
+     // The step's stream passes up as it is; its text chunks are kept on the way.
+     const turn = entry

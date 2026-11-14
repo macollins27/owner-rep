@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -532,7 +532,7 @@
+ 1. The whole result is delivered, not part of it.
+ 2. It is shown to work by someone opening the real thing, using it and trying to break it, not by the agent's own checks.
+ 3. No known problem is left behind.
+-4. Nothing was added that the result does not need. ${SELF_PROVING_CAP} is such an addition: it costs the owner money without making the product better. ${NOT_SELF_PROVING} A step of a plan the owner approved, or a check the owner asked for, is part of the job: never argue it with the owner, and never tell the agent to stop, skip or drop it; one not yet finished stays open like any other part of the job. A self-proving piece among them still costs the owner money without making the product better: wherever the effort is accounted for, say plainly that it went there, as a fact, never as work left. Before the owner approves a plan, every self-proving piece in it is worth naming, the owner's own ask included, so the owner can decide.
++4. Nothing was added that the result does not need. ${SELF_PROVING_CAP} is such an addition: it costs the owner money without making the product better. ${NOT_SELF_PROVING} A check the owner asked for, or one that is a step of a plan the owner approved, is part of the job, never an addition.
+ 5. It was done the way that is best for the result, not the way that was easiest for the agent to finish: a smaller version, a simpler thing, or a test it can pass in place of the job.
+ 6. The result itself is the best it can be: as good as the best in its trade would make it, judged by looking at it, never by its checks. Passable is not the standard.
+ 

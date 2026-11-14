@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1376,7 +1376,7 @@
+     // A plan waiting for the owner's yes is a decision the owner is making now: its flag takes the
+     // place of an earlier note, and is dropped once the owner has answered.
+     const waits = answer.state === 'plan-waiting'
+-    const room = view === 'row' || (waits && view === 'note')
++    const room = view === 'row'
+     if (said !== null && room && (waits ? !stale() : !backedOff) && onScreen(sid) && ![...after.seen].some(s => same(s, said.line))) {
+       after.seen = [...after.seen, said.line].slice(-SEEN_MAX)
+       const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId, ...(waits ? { plan: true as const } : {}) }

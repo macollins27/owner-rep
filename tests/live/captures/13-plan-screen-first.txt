@@ -11,17 +11,17 @@
 
    Context
 
-   Maxwell wants two tiny text files in the project folder: apple.txt containing the word "apple" and pear.txt containing the word "pear".
+   Goal: two small text files in the working directory, apple.txt containing apple and pear.txt containing pear.
 
    Steps
 
-   1. Create apple.txt in the project folder with the single line apple.
-   2. Create pear.txt in the same folder with the single line pear.
-   3. Read both files back to confirm each holds the right word, then commit them (plain commit, no push to a deploying branch).
+   1. Create apple.txt in the working directory with the content apple.
+   2. Create pear.txt in the working directory with the content pear.
+   3. Read both files back to confirm each holds the right word.
 
    Verification
 
-   cat apple.txt pear.txt prints apple then pear; git status is clean after the commit.
+   apple.txt reads apple and pear.txt reads pear, and no other files were changed.
   ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 
 
@@ -41,4 +41,4 @@
      3. Tell Claude what to change
         shift+tab to approve with this feedback
 
-   ctrl+g to edit in Edit.sh · ~/.claude/plans/plan-how-to-create-shiny-meerkat.md
+   ctrl+g to edit in Edit.sh · ~/.claude/plans/plan-how-to-create-wobbly-twilight.md

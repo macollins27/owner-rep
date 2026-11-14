@@ -1,12 +1,12 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 908ffa4..e04989c 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -906,9 +906,7 @@ export const register: Register = on => {
+@@ -2559,10 +2559,7 @@
        const lookAtNote = (id: string) => {
          if (inFlight.has('note')) return
          inFlight.add('note')
--        look($, id, 'note', '')
+-        const began = looks.answers
+-        look($, id, 'note', '', () => looks.answers !== began)
 -          .catch(() => undefined)
 -          .finally(() => inFlight.delete('note'))
 +        inFlight.delete('note')

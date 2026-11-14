@@ -847,13 +847,13 @@ PY
   t14_settled 300
   send 'Write a list of 30 facts about the moon, one sentence each, starting each fact with the word Fact, its number and a colon.'
   wait_for 'Fact 4:' 120
-  tmux send-keys -t $S Escape
+  tmux send-keys -t "=$S:" Escape
   t14_settled 60
   sleep 2
   send 'Write one sentence saying you will wait, then run the shell command python3 -c "import time; time.sleep(40)" in the foreground.'
   t14_tool_step 120
   sleep 5
-  tmux send-keys -t $S Escape
+  tmux send-keys -t "=$S:" Escape
   t14_settled 60
   sleep 2
   send 'Start the shell command sleep 15; echo background-finished as a background command, then reply with the single word started. When it finishes, reply with the single word finished.'

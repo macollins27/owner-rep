@@ -62,7 +62,25 @@ call writes (below):
    the row, which stays beneath it with its head, its status and both its buttons for the
    mouse (the note's buttons carry the digits); from 13 to 23 Oct 2026 it took the row's place,
    a choice made with the you-should-know shape that no one asked for. Typing past notes
-   backs the watch off (`skipAfter`).
+   backs the watch off (`skipAfter`). Every look starts through `startLook`. A turn end that
+   finds a look in flight is not dropped: its turn id is kept as `looks.stopDue`, and the stop
+   look runs once the running look finishes, a newer turn end replacing it and the owner's
+   answer clearing it, and so does a session ended by a /clear or a resume, so a look owed to
+   the session left behind never runs in the next one. The turn end takes `looks.answers` before
+   it awaits anything and hands it to `startLook` as `asOf`; an answer counted since (a message
+   typed ahead is sent the moment the turn ends) starts no turn-end look, which would read the
+   plan as still waiting (until 0.7.5 the turn-end look was skipped, so a plan written as the
+   turn's last message was never read while it waited). `ownerAnswered` counts each answer in
+   `looks.answers`: text typed to the agent (`prompt.submit`, the part before any note to the
+   rep) and an answer on the plan screen or to a question (the `tool.call` hook of
+   `ExitPlanMode` and `AskUserQuestion` once `next(e)` settles); a background task's turn or the
+   agent going on by itself is no answer. A look whose answer is `plan-waiting` shows its flag
+   only when no answer came after it began (a look on a note to the rep included), and such a
+   flag may take the place of a Heads up note already up, where any other flag waits for the
+   row; an answer that lands while the note is being set clears it once it is set. Its note is
+   marked `plan` and leaves the row at the owner's first answer without
+   counting as typed past. While the watch is backed off, the step look is skipped and the
+   turn-end look still reads, showing only a flag on a waiting plan.
 2. **Briefing**: `pressBrief()` on the Rep button, another record read, drawn as the card. The
    model's answer is labelled lines (`verdict:`, `shown:`, `closed:`, `well:`, `stands:`,
    `means:`, `left:`, `next:`, `message:` … `end`, `does:`); `parseBrief` splits them,
@@ -360,8 +378,20 @@ call writes (below):
    each tool use on one line with its result, a row of tool
    results shown only for results not already printed), each message cut to
    `RECORD_ENTRY_CUT` (3,000) and each tool input or result to `RECORD_TOOL_CUT` (600),
-   head and tail kept around a marked gap, the oldest entries left out past `RECORD_BUDGET`
-   (200,000 characters) with a line saying how many, fenced in `<session_record>` with any
+   head and tail kept around a marked gap, except what waits for the owner: the agent's
+   messages and `ExitPlanMode` inputs after the owner last answered (`lastAnswerRow`: a row the
+   owner typed that does not end in a question mark, since a question about a plan leaves it
+   waiting, and is not a request typed while the agent asked that the agent's newest words answer
+   by asking again; an answered `ExitPlanMode` or `AskUserQuestion`; or the results row answering
+   one)
+   are given whole, newest first, up to `RECORD_WAITING_BUDGET` (60,000 characters), and
+   marked `keep` so the budget below never cuts them (0.7.5; a plan buried past the first
+   3,000 characters was unseen before); one that fits its usual cut is marked `whole`, so the
+   shared cap below never cuts it either, though its entry can still be left out for size. Past `RECORD_BUDGET` (200,000 characters) whole blocks
+   of the oldest entries are left out first, then single entries oldest first, passing over the
+   entries that hold what waits and everything after the approval, with a line saying how many
+   were left out (and, where entries in the middle went, that the entry numbers show where),
+   fenced in `<session_record>` with any
    fence tag inside printed with `‹ ›`, then the task. `headTail` marks every cut inside its
    field (`[… n characters of this <field> left out here …]`). A compaction summary is cut at
    `RECORD_SUMMARY_CUT` (40,000). `recordPrompt` sends the record as blocks of about
@@ -704,6 +734,54 @@ after a mark saying it was changed after the screen showed the plan and the owne
 approve it. So the reader neither takes a plan the owner did not see as approved nor says the
 change is missing.
 
+### The plan screen read before the owner's yes
+
+When the main agent calls `ExitPlanMode`, the `tool.call` hook starts `scanPlan` before
+`next(e)` and never awaits it, so the screen opens at once. `scanPlan` makes one
+`$.model.complete` (`PLAN_SCAN_MODEL` Sonnet, `PLAN_SCAN_MAX_TOKENS` 1,200,
+`PLAN_SCAN_TIMEOUT_MS` 60 seconds) with `PLAN_SCAN_SYSTEM` and `planScanPrompt(plan)`: the plan alone,
+fenced as the agent's text, up to `PLAN_SCAN_PLAN_CUT` (150,000 characters, head and tail past
+that). No owner message is sent, since a piece is named before the yes even when the owner asked
+for it. The system holds the definition shared with every reader (`SELF_PROVING`) and the list
+that never counts (`NOT_SELF_PROVING`: tests, code reviews, plan checks, done lists, second
+readers, however the plan words them) and two lines on reports: a review's or a test's own
+note of what it found and fixed is part of it, and a report written to show the owner each item
+passed, with evidence attached, is a proof report. `parsePlanScan` reads `pieces:` and its `- ` lines, `none`
+giving an empty list and an unreadable answer `null`; each piece is kept whole. `planWarning`
+writes the line, "Before you approve:" and every piece named, each cut by `pieceOf` to
+`PLAN_PIECE_CUT` (160 characters) at a word, with no cap on the line, so no piece goes unnamed; the
+line ends with a period, or on the cut mark alone when its last piece was cut. It is shown
+with `$.ui.log`, the one surface Claude Code draws above its plan screen, and only while
+`screen.isOpen` holds the call id: the hook clears it the moment `next(e)` settles, before the
+answer is stored, so a warning that lands after the owner answered is dropped. A warning logged
+sets `warnedIn` to the screen's session; a later reading in that session that names nothing,
+while its screen is open, logs `PLAN_CLEAR_LINE` (this plan has no such piece; the warning above
+was about an earlier plan). An unreadable answer logs nothing either way, and any failure shows
+nothing. A plan that fills the terminal pushes that line out of sight, and nothing a mod draws
+shows under the plan screen (measured on 2.1.325: `$.ui.notice` and the row draw nothing there).
+So when the owner accepts a plan whose reading named pieces, whichever of the answer and the
+reading lands last calls `showApproved`, which puts `planApprovedLine` on the rep's row as a
+note ("The plan you approved has …", every piece named) with `PLAN_APPROVED_WHY` as its reason.
+A plan the owner edited on the screen before accepting (`planScreen` gives `edited` and a plan
+that differs from the call's) is read again, closed and accepted, and that reading alone names
+the pieces, so a piece the owner took out is never named and one the owner added is. Each plan
+screen takes the next `planGen` as `PlanRead.gen`, and a reading shows its note only while its
+screen is still the latest, so a slow reading of an earlier plan never replaces a later plan's
+note. A plan turned down gets no note. The reading keeps the session the screen was called in
+(`PlanRead.sid`), and `showApproved` draws only while that session is still on screen, so a
+reading that lands after a /clear or a resume shows nothing in the next session.
+
+The readers hold the other half (`APPROVED_RULES`, in the brief, the check and the fallback
+writer, and expectation 4 of `ROLE`): a step of an approved plan, or a check the owner asked for,
+is the owner's ask even when it is self-proving. No message or `next:` argues it or tells the
+agent to stop, skip or drop it; an unfinished one may be asked for, and once it is done
+nothing asks the agent to run it again, update it or keep it working, not even bundled into
+other work (`APPROVED_STEP_RULE`). Effort already spent on it is
+said under `stands`, never under `left`. While a plan waits, `means:` names each self-proving
+piece and the message may ask the agent to take it out. The watch's one case that always clears
+its bar is such a piece in a waiting plan, its flag starting "Before you approve:"; once the plan
+is approved, the watch never flags a step of it as waste.
+
 Owner messages are `OwnerMsg`s: `n`, `kind` (`his`, `note`, `draft` or `plan`), `text` (cut to
 `HIS_CUT`, 6,000 characters, for the owner's messages and notes, the writer's only input, and to
 `OWNER_CUT`, 1,200, for a draft), and `prior`, the end of the body under it, the agent's words
@@ -749,7 +827,22 @@ in `completedHere` at all, as after a reload) and appends the cut (`bodyOf`): th
 into one span that counts its turns by `merged`) and `incomplete` with the first reason (turns let
 go first). The body is saved as `src.body` (`<n>-body`) on the owner's part (his message, or a
 note sent alone); a draft part gets none, and a draft sent unchanged still takes the turns it
-answered. A turn that ended after the submit stays pending for the next message. An empty, whole
+answered. A turn that ended after the submit stays pending for the next message. Before it is
+saved, `bodyFields` passes the body through `carriedBody` (0.7.5) with the last
+`CARRY_MSGS * 3` messages on the job read whole: when the owner's words do not ask (no closing
+question mark), it walks back over at most `CARRY_MSGS` (4) messages, each of the owner's own
+that the agent never took as an answer (`answeredAgent`: it asked, or the agent's next words
+asked again, unless it was only a yes or a no, which always answers: `DECIDES`) and every note
+to the rep between them, stopping at an approval (a note's included) or any other kind, and
+after a message whose body already carries turns from before it, so nothing is carried twice;
+it puts their bodies before this one, oldest first and newest kept within `SOURCE_MAX`.
+The last span of each carried body gets `ask: { n, kind, words }` (words cut to
+`CARRY_ASK_CUT`, 300), and `spansText` prints `carryLine` after it in place of the next-turn
+line, so the writer reads a plan, the owner's question about it, the agent's answer and the
+yes in order and can mark the plan approved by the yes. A carried body that cannot be read, or a message whose turn the rep never saw and so saved no body,
+adds `carryLostWhy(n)` to `incomplete`; bodies cut for length add that reason. `prior` stays the
+message's own body. `lastAnswerRow` uses the same `answeredAgent` test, so a plan the record
+holds as waiting is the one a later yes carries. An empty, whole
 body adds no field. `saveSource` fingerprints each source and holds it inline in the record
 until the change saves it to its file (below); one over `SOURCE_MAX` is not kept and says why
 in `lost` (`lostTooLong`). `leaveSession` clears `live`, `lastOrigin`, `saving`,

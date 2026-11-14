@@ -1,0 +1,21 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2737,14 +2737,13 @@
+   })
+ 
+   on('tool.call', async ($, e, next) => {
+-    if (e.agentId !== undefined) return next(e)
+     const tool = String(e.tool)
+-    const doing = doingFor(tool, e as unknown as Record<string, unknown>)
+-    const waits = tool === 'AskUserQuestion' || tool === 'ExitPlanMode'
+-    // The plan screen is read from the moment it is called, before anything here is awaited.
+     const screen: PlanRead = { isOpen: true, sid: ended ? '' : currentId, ...(tool === 'ExitPlanMode' ? { gen: ++planGen } : {}) }
+     const plan = tool === 'ExitPlanMode' ? (e as { plan?: unknown }).plan : undefined
+     if (typeof plan === 'string' && plan.trim() !== '') scanPlan($, plan, screen).catch(() => undefined)
++    if (e.agentId !== undefined) return next(e)
++    const doing = doingFor(tool, e as unknown as Record<string, unknown>)
++    const waits = tool === 'AskUserQuestion' || tool === 'ExitPlanMode'
+     // A note typed with the plan accepted before this call is saved by now: read first.
+     if (notesDue.size > 0) await sessionId($).then(id => catchNotes($, id)).catch(() => undefined)
+     try {

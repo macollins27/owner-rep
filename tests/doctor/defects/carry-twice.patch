@@ -1,0 +1,11 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1218,7 +1218,6 @@
+     }
+     walked.unshift(m)
+     if (text !== '') after = text
+-    if (m.turns?.some(t => t.ask !== undefined) === true) break
+   }
+   // Only what holds a turn, or lost one (a saved turn gone, or one the rep never saw), is carried;
+   // with none, the body is its own.
