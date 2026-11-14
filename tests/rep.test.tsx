@@ -2765,6 +2765,22 @@ test('rule: a background task\'s turn is not the owner answering: the turn-end l
   expect(await rowSays($, /Before you approve: step 3/)).toBe(true)
 })
 
+test('rule: a plan screen answered while a look is still reading leaves that look\'s warning off the row', async ($, on) => {
+  // The look started during the turn reads the plan as waiting; the owner accepts it on the screen before the look answers.
+  const w = heldWatch(on, [planWaiting(PLAN_FLAG)], n => n === 1)
+  on('model.complete', () => ({ value: { isAnswered: false, reason: 'empty-reply', usage: USAGE } }) as never)
+  on('tool.call', { tool: 'ExitPlanMode' }, () => ACCEPT_RESULT('accepted') as never)
+  w.bind($)
+  await $.turn.start({ text: 'plan the price page', turnId: 't1' })
+  await w.toLook('t1')
+  await settleUntil($, () => w.prompts.length === 1)
+  await $.tool.call({ tool: 'ExitPlanMode', plan: BURIED_PLAN, tool_use_id: 'p1' } as never)
+  w.release()
+  await settleUntil($, () => false, 60)
+  expect(w.prompts.length).toBe(1)
+  expect(await rowSays($, /Before you approve/)).toBe(false)
+})
+
 test('rule: a warning on a waiting plan leaves the row at the owner\'s first answer, and answering it does not back the watch off', async ($, on) => {
   const w = heldWatch(on, [planWaiting(PLAN_FLAG), watchAnswer('The agent says the tests pass, but never ran them.')], () => false)
   w.bind($)

@@ -1,11 +1,11 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -2660,6 +2660,7 @@
- 
-   on('turn.start', async ($, e, next) => {
-     if (e.agentId === undefined) {
-+      looks.answers += 1
-       // How the turn began: a background task finishing, the agent going on by itself, the owner, or else.
-       const origin = lastOrigin?.kind
-       const text: string = typeof e.text === 'string' ? e.text : ''
+@@ -2605,6 +2605,7 @@
+     // The engine stamps the origin; the test kit's own submit carries none.
+     const kind = e.origin?.kind ?? 'composer'
+     lastOrigin = { kind }
++    if (kind === 'task-notification') ownerAnswered($, looks).catch(() => undefined)
+     if (kind === 'composer' || kind === 'bridge') {
+       // What this message answers, fixed now, before anything is awaited.
+       const snap = snapshot(e.turnId)
