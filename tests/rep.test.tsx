@@ -4850,7 +4850,9 @@ test('rule: a whole record over one file is written in parts under the part limi
   disk(on, files)
   capture(on, store, () => SID)
   await started($)
-  await settle($)
+  // The start's save of a record this size writes several files; on a slow machine one settle
+  // ends before the last part is written.
+  await settleUntil($, () => heldIn(store)?.owner.length === 239 && files.has(`${DIR}/record.json`), 10_000)
   // The record is over the store's 4 MiB, which Claude Code (and the kit) refuse by themselves, so
   // the start that takes up the copy saves it back to the files: what it read is what it wrote.
   expect(heldIn(store)?.owner.length).toBe(239)
@@ -12492,7 +12494,9 @@ test('rule: a record let go while the drafts are being read is still found, its 
   writer(on, () => OBJ('The report run on the real data, with the log kept.', ['the run shown | open']))
   await giveTranscript($, on, HELD('test-session.jsonl'))
   await started($)
-  await settle($)
+  // The seed reads the transcript and both stores before it saves; on a slow machine one settle
+  // ends first.
+  await settleUntil($, () => ((store.sessions as Record<string, Stored>)['test-session']?.owner?.length ?? 0) >= 3, 5000)
   expect(moved).toBe(true)
   expect(noBody((store.sessions as Record<string, Stored>)['test-session']?.owner)).toEqual([
     { n: 1, kind: 'his', text: 'Build the report.', prior: '' },
