@@ -4847,12 +4847,14 @@ test('rule: a whole record over one file is written in parts under the part limi
 
 test('rule: a whole record over one file is written in parts under the part limit, and read back the same (after the restart)', async ($, on) => {
   const { store, files, saved } = whole as NonNullable<typeof whole>
-  disk(on, files)
+  const d = disk(on, files)
   capture(on, store, () => SID)
   await started($)
-  // The start's save of a record this size writes several files; on a slow machine one settle
-  // ends before the last part is written.
-  await settleUntil($, () => heldIn(store)?.owner.length === 239 && files.has(`${DIR}/record.json`), 10_000)
+  // The start's save of a record this size writes its parts and then their list, record.json; on
+  // a slow machine one settle ends before that last write. The files and the store already hold
+  // the record from the test before, so the wait is for this start's own write of the list.
+  await settleUntil($, () => heldIn(store)?.owner.length === 239 && d.writes.includes(`${DIR}/record.json`), 10_000)
+  expect(d.writes).toContain(`${DIR}/record.json`)
   // The record is over the store's 4 MiB, which Claude Code (and the kit) refuse by themselves, so
   // the start that takes up the copy saves it back to the files: what it read is what it wrote.
   expect(heldIn(store)?.owner.length).toBe(239)
