@@ -5124,9 +5124,23 @@ const BAN_MORE = String.raw`(?:(?:any|more|new|extra|further|additional|other)\s
 const BAN_SELF = String.raw`(?!\s+(?:that|which|whose|to\s+(?:confirm|prove|show)|confirming|proving|only|of\s+your\s+own))`
 const CHECK_BAN = new RegExp(String.raw`^(?:[^,;:]{0,60}[,;:]\s+)?(?:(?:please|and|so|then|also|but|just)\s+)*(?:do\s+not|don['’]t|never|no\s+need\s+to|you\s+need\s+not)\s+(?:(?:yet|again|now|bother\s+to|go\s+on\s+to)\s+)?(?:build|add|write|create|make|set\s+up|run|start)\s+${BAN_MORE}${BAN_OBJ}\b${BAN_SELF}`, 'i')
 const WITHOUT_BAN = new RegExp(String.raw`,?[ \t]+(?:and[ \t]+)?without[ \t]+(?:building|adding|writing|creating|making|running|setting[ \t]+up)[ \t]+${BAN_MORE}${BAN_OBJ}\b${BAN_SELF}[^.!?\n]*`, 'gi')
+const isCheckBan = (clause: string): boolean => CHECK_BAN.test(clause.replace(LIST_MARKER, '').replace(/\s+/g, ' ').trim().replace(/^["“(]+/, ''))
 export const withoutCheckBans = (message: string): string => {
-  const bans = sentencesOf(message).filter(({ start, end }) => CHECK_BAN.test(message.slice(start, end).replace(LIST_MARKER, '').replace(/\s+/g, ' ').replace(/^["“(]+/, '')))
-  const kept = withoutSpans(message, bans)
+  // A sentence of clauses joined by semicolons loses only its ban clauses, so a remedy joined
+  // to the ban ("Do not add new checks; open it and use it.") stays, its first letter raised.
+  let text = message
+  for (const { start, end } of sentencesOf(message).reverse()) {
+    const sentence = message.slice(start, end)
+    const clauses = sentence.split(';')
+    if (clauses.length < 2 || !clauses.some(isCheckBan) || clauses.every(isCheckBan)) continue
+    const stop = /[.!?]["'”’)\]]*\s*$/.exec(clauses[clauses.length - 1] ?? '')?.[0].trim() ?? ''
+    const marker = LIST_MARKER.exec(sentence)?.[0] ?? ''
+    let joined = clauses.filter(c => !isCheckBan(c)).map(c => c.replace(LIST_MARKER, '').trim()).join('; ')
+    if (!/[.!?]["'”’)\]]*$/.test(joined)) joined += stop
+    text = text.slice(0, start) + marker + joined.charAt(0).toUpperCase() + joined.slice(1) + text.slice(end)
+  }
+  const bans = sentencesOf(text).filter(({ start, end }) => isCheckBan(text.slice(start, end)))
+  const kept = withoutSpans(text, bans)
   return kept === '' ? '' : kept.replace(WITHOUT_BAN, '')
 }
 

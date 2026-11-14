@@ -10468,6 +10468,12 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     // Inside a sentence that asks for work, only the "without" clause goes.
     expect(cut('Read the brief, and do it without building any more tests.')).toBe('Read the brief, and do it.')
     expect(cut('Please finish them without building any new checks or reports.')).toBe('Please finish them.')
+    // A ban joined to its remedy by a semicolon (main's card on Cetacean) loses the ban only;
+    // the remedy is what the owner asked for.
+    expect(cut('Try to break it.\nDo not add new checks or reports to prove this; open it, use it and tell me what you saw.')).toBe('Try to break it.\nOpen it, use it and tell me what you saw.')
+    expect(cut('Open the page; do not add more checks.')).toBe('Open the page.')
+    expect(cut('Open the page; do not add more checks; tell me what you saw.')).toBe('Open the page; tell me what you saw.')
+    expect(cut('Fix it.\n- Do not add more tests; open the page.\n- Send it.')).toBe('Fix it.\n- Open the page.\n- Send it.')
     // Sentences that say what the tests are not, or ban a self-proving piece, stay.
     for (const s of [
       'Your tests passing does not count as this look.',
