@@ -3,7 +3,7 @@
 What changed in each release of Owner Rep, newest first. The full record is the
 [commit history](https://github.com/macollins27/owner-rep/commits/main).
 
-## 0.7.6 (14 November 2026)
+## 0.7.7 (14 November 2026)
 
 - **A session started from another folder than the one it was recorded in gets its goal.** A
   session recorded in a worktree that was later removed, then resumed or forked from the main
