@@ -30,7 +30,7 @@ if (( $# < 3 )); then echo "usage: MODEL=<model> compare.sh OLD_DIR NEW_DIR SESS
 OLD=${1:A}; NEW=${2:A}; SESSIONS=(${@:3}); MODEL=${MODEL:-claude-opus-5-5}
 mkdir -p $OUT
 
-pane() { tmux capture-pane -p -t $S 2>/dev/null; }
+pane() { tmux capture-pane -p -t "=$S:" 2>/dev/null; }
 wait_for() {
   local re=$1 secs=$2 i
   for i in $(seq 1 $secs); do
@@ -53,7 +53,7 @@ wait_for_head() {
 run() {
   local sess=$1 label=$2 dir=$3 id
   id=$(uuidgen | tr A-F a-f)
-  tmux kill-session -t $S 2>/dev/null
+  tmux kill-session -t "=$S:" 2>/dev/null
   tmux new-session -d -s $S -x 170 -y 200 -c $PROJ \
     "env -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT -u CLAUDE_CODE_SESSION_ID -u CLAUDE_CODE_CHILD_SESSION -u CLAUDE_CODE_MESSAGING_SOCKET -u CLAUDE_CODE_MESSAGING_TOKEN -u CLAUDE_CODE_SESSION_ATTENDED claude --model $MODEL --resume $sess --fork-session --session-id $id --settings '{\"enabledPlugins\":{\"owner-rep@owner-rep\":false}}' --plugin-dir '$dir'"
   local ok=0
@@ -63,7 +63,7 @@ run() {
     if wait_for_head 180; then echo "  objective written after $((SECONDS - t0)) s ($sess $label)"
     else echo "  the head still shows the placeholder after 180 s ($sess $label)"; fi
     pane > $OUT/$sess-$label-before.txt
-    tmux send-keys -t $S 1
+    tmux send-keys -t "=$S:" 1
     if wait_for 'Fine, close' 300; then
       sleep 3
       pane > $OUT/$sess-$label-card.txt
@@ -74,14 +74,14 @@ run() {
   else
     echo "  the session did not draw the rep's row in 90s ($sess $label)"
   fi
-  tmux send-keys -t $S Escape 2>/dev/null; sleep 0.5
-  tmux send-keys -t $S -l '/exit' 2>/dev/null; sleep 1; tmux send-keys -t $S Enter 2>/dev/null; sleep 3
-  tmux kill-session -t $S 2>/dev/null
+  tmux send-keys -t "=$S:" Escape 2>/dev/null; sleep 0.5
+  tmux send-keys -t "=$S:" -l '/exit' 2>/dev/null; sleep 1; tmux send-keys -t "=$S:" Enter 2>/dev/null; sleep 3
+  tmux kill-session -t "=$S:" 2>/dev/null
   (( ok )) && echo "  captured $sess-$label-card.txt" && return 0
   return 1
 }
 
-trap 'tmux kill-session -t $S 2>/dev/null; exit 130' INT TERM
+trap 'tmux kill-session -t "=$S:" 2>/dev/null; exit 130' INT TERM
 # sum_of SESSION: the parent file's checksum; stops the script when the file is not found.
 sum_of() {
   local f; f=$(parent_of $1)
