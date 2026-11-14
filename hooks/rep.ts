@@ -3719,8 +3719,10 @@ export const PNPM_STORE_ENV = 'npm_config_store_dir'
 // code outside the fence. So the run and the pnpm question are told, by mise's own setting in
 // their environment, to ignore every config in the folder they start in (the copy, or the
 // agent's folder where no copy is made) and below it; nothing is trusted. The folder is added
-// after any list the owner has set, joined by `:` (mise splits the list as it splits PATH; a
-// comma is not read), so what the owner ignores stays ignored. The run's own commands inherit it:
+// after any list the owner has set, joined by `:` (mise splits the list with Rust's
+// `split_paths`, as PATH is split; a comma is not read), so what the owner ignores stays
+// ignored. Windows would need `;`, but the check never starts there (`CHECK_NO_ROOM`); give
+// `miseIgnoring` the host's separator before the check runs on Windows. The run's own commands inherit it:
 // a tool the project pins through mise runs at the version the owner's own config names, not
 // the project's. Measured 14 Nov 2026, mise 2026.10.19: a folder named here is ignored with
 // everything below it, and the shim then starts the claude of the owner's config.

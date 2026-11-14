@@ -565,7 +565,7 @@ call writes (below):
    `MISE_IGNORED_CONFIG_PATHS` naming the folder they start in, the copy or the agent's folder
    where no copy is made (`checkEnv`, `pnpmAskEnv`, `miseIgnoring`), added after the owner's
    own value of it, joined by `:`, since mise splits that list as it splits `PATH` and reads no
-   comma: where `claude` or `pnpm` is a mise shim, the shim reads the mise config of the folder it
+   comma (Windows would take `;`, but the check does not start there, `CHECK_NO_ROOM`): where `claude` or `pnpm` is a mise shim, the shim reads the mise config of the folder it
    starts in before the program runs, outside the fence; a `mise.toml` in the copy is untrusted,
    so the shim exited with "mise ERROR … not trusted" and the check said it could not run
    (exit 1), and trusted, its `[env]` and hooks would run the project's code unfenced. Ignored,
