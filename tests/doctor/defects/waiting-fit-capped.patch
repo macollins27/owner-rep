@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2612,7 +2612,7 @@
+ // How a field is shown: with today's cut, at one shared cap, or whole.
+ type RecShow = 'today' | 'whole' | number
+ const shown = (how: RecShow) => (f: RecField): string =>
+-  f.keep === true ? headTail(f.text, f.cut, f.name) : how === 'whole' || f.whole === true ? f.text : headTail(f.text, how === 'today' ? f.cut : how, f.name)
++  f.keep === true ? headTail(f.text, f.cut, f.name) : how === 'whole' ? f.text : headTail(f.text, how === 'today' ? f.cut : how, f.name)
+ const entryText = (e: RecEntry, how: RecShow): string => fenceTag(e.build(shown(how)), 'session_record')
+ 
+ // An accepted plan screen's result as the record prints it: the plan it returns is the file as it

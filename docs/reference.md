@@ -65,7 +65,8 @@ call writes (below):
    backs the watch off (`skipAfter`). Every look starts through `startLook`. A turn end that
    finds a look in flight is not dropped: its turn id is kept as `looks.stopDue`, and the stop
    look runs once the running look finishes, a newer turn end replacing it and the owner's
-   answer clearing it (until 0.7.5 the turn-end look was skipped, so a plan written as the
+   answer clearing it, and so does a session ended by a /clear or a resume, so a look owed to
+   the session left behind never runs in the next one (until 0.7.5 the turn-end look was skipped, so a plan written as the
    turn's last message was never read while it waited). `ownerAnswered` counts each answer in
    `looks.answers`: text typed to the agent (`prompt.submit`, the part before any note to the
    rep) and an answer on the plan screen or to a question (the `tool.call` hook of
@@ -382,7 +383,8 @@ call writes (below):
    one)
    are given whole, newest first, up to `RECORD_WAITING_BUDGET` (60,000 characters), and
    marked `keep` so the budget below never cuts them (0.7.5; a plan buried past the first
-   3,000 characters was unseen before). Past `RECORD_BUDGET` (200,000 characters) whole blocks
+   3,000 characters was unseen before); one that fits its usual cut is marked `whole`, so the
+   shared cap below never cuts it either, though its entry can still be left out for size. Past `RECORD_BUDGET` (200,000 characters) whole blocks
    of the oldest entries are left out first, then single entries oldest first, passing over the
    entries that hold what waits and everything after the approval, with a line saying how many
    were left out (and, where entries in the middle went, that the entry numbers show where),
@@ -756,7 +758,10 @@ shows under the plan screen (measured on 2.1.325: `$.ui.notice` and the row draw
 So when the owner accepts a plan whose reading named pieces, whichever of the answer and the
 reading lands last calls `showApproved`, which puts `planApprovedLine` on the rep's row as a
 note ("The plan you approved has …", every piece named) with `PLAN_APPROVED_WHY` as its reason.
-A plan turned down gets no note. The reading keeps the session the screen was called in
+A plan the owner edited on the screen before accepting (`planScreen` gives `edited` and a plan
+that differs from the call's) is read again, closed and accepted, and that reading alone names
+the pieces, so a piece the owner took out is never named and one the owner added is. A plan
+turned down gets no note. The reading keeps the session the screen was called in
 (`PlanRead.sid`), and `showApproved` draws only while that session is still on screen, so a
 reading that lands after a /clear or a resume shows nothing in the next session.
 
@@ -828,8 +833,8 @@ it puts their bodies before this one, oldest first and newest kept within `SOURC
 The last span of each carried body gets `ask: { n, kind, words }` (words cut to
 `CARRY_ASK_CUT`, 300), and `spansText` prints `carryLine` after it in place of the next-turn
 line, so the writer reads a plan, the owner's question about it, the agent's answer and the
-yes in order and can mark the plan approved by the yes. A carried body that cannot be read adds
-`carryLostWhy(n)` to `incomplete`; bodies cut for length add that reason. `prior` stays the
+yes in order and can mark the plan approved by the yes. A carried body that cannot be read, or a message whose turn the rep never saw and so saved no body,
+adds `carryLostWhy(n)` to `incomplete`; bodies cut for length add that reason. `prior` stays the
 message's own body. `lastAnswerRow` uses the same `answeredAgent` test, so a plan the record
 holds as waiting is the one a later yes carries. An empty, whole
 body adds no field. `saveSource` fingerprints each source and holds it inline in the record

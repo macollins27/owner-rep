@@ -11,7 +11,7 @@ What changed in each release of Owner Rep, newest first. The full record is the
   you approve, even one you asked for. On the plan screen the line appears just above the
   screen while it is up, from one Sonnet call over the plan alone; a plan long enough to fill
   the terminal pushes that line out of sight, so once you accept, the rep's row names the same
-  parts, and a later plan with none gets a line saying the warning above was about an earlier
+  parts (those of your edited plan, if you changed it on the screen), and a later plan with none gets a line saying the warning above was about an earlier
   one. A plan written in the agent's message is read whole and the Heads up names it. Tests,
   reviews, plan checks and second readers are never named, however the plan words them, and
   neither is a review's own note of what it found and fixed.

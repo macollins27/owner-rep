@@ -1,11 +1,10 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 57aadf7..5467d00 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1359,7 +1359,7 @@ export const register: Register = on => {
-     if (e.reason === 'clear' || e.reason === 'resume') {
-       lastDoing = ''
+@@ -3198,7 +3198,7 @@
        promptsPastNote = 0
+       // A turn-end look owed to the session left behind never runs in the next one.
+       looks.stopDue = undefined
 -      await leaveSession($).catch(() => undefined)
 +      ended = true
      }

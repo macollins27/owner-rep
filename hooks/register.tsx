@@ -2761,9 +2761,15 @@ export const register: Register = on => {
       // What the plan screen answered is stored after the call; a thrown call stores nothing.
       if (tool === 'ExitPlanMode') {
         await takePlanScreen($, e, result).catch(() => undefined)
-        if (planScreen(e, result)?.kind === 'accepted') {
-          screen.accepted = true
-          if (screen.pieces !== undefined) await showApproved($, screen.sid, screen.pieces).catch(() => undefined)
+        const answered = planScreen(e, result)
+        if (answered?.kind === 'accepted') {
+          // A plan the owner changed on the screen is read again: the note names what was approved.
+          if (answered.edited && typeof plan === 'string' && answered.plan.trim() !== plan.trim()) {
+            scanPlan($, answered.plan, { isOpen: false, sid: screen.sid, accepted: true }).catch(() => undefined)
+          } else {
+            screen.accepted = true
+            if (screen.pieces !== undefined) await showApproved($, screen.sid, screen.pieces).catch(() => undefined)
+          }
         }
       }
       return result
@@ -3190,6 +3196,8 @@ export const register: Register = on => {
     if (e.reason === 'clear' || e.reason === 'resume') {
       lastDoing = ''
       promptsPastNote = 0
+      // A turn-end look owed to the session left behind never runs in the next one.
+      looks.stopDue = undefined
       await leaveSession($).catch(() => undefined)
     }
     return next(e)

@@ -1,12 +1,12 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -2739,7 +2739,7 @@
-       // What the plan screen answered is stored after the call; a thrown call stores nothing.
+@@ -2762,7 +2762,7 @@
        if (tool === 'ExitPlanMode') {
          await takePlanScreen($, e, result).catch(() => undefined)
--        if (planScreen(e, result)?.kind === 'accepted') {
-+        if (planScreen(e, result) !== null) {
-           screen.accepted = true
-           if (screen.pieces !== undefined) await showApproved($, screen.sid, screen.pieces).catch(() => undefined)
-         }
+         const answered = planScreen(e, result)
+-        if (answered?.kind === 'accepted') {
++        if (answered !== null) {
+           // A plan the owner changed on the screen is read again: the note names what was approved.
+           if (answered.edited && typeof plan === 'string' && answered.plan.trim() !== plan.trim()) {
+             scanPlan($, answered.plan, { isOpen: false, sid: screen.sid, accepted: true }).catch(() => undefined)

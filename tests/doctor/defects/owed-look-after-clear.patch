@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -3196,8 +3196,6 @@
+     if (e.reason === 'clear' || e.reason === 'resume') {
+       lastDoing = ''
+       promptsPastNote = 0
+-      // A turn-end look owed to the session left behind never runs in the next one.
+-      looks.stopDue = undefined
+       await leaveSession($).catch(() => undefined)
+     }
+     return next(e)

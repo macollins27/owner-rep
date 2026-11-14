@@ -3532,5 +3532,29 @@
     "breaks": "From Claude Code 2.1.325 the briefing no longer takes the strip alone: another mod's row stays stacked under the card the owner asked for.",
     "patch": "card-shares-strip.patch",
     "fixed": "2026-11-14"
+  },
+  {
+    "name": "owed-look-after-clear",
+    "breaks": "A turn-end look still owed when the owner runs /clear or resumes another session runs in the next session, reading the old one's turn there.",
+    "patch": "owed-look-after-clear.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "approved-note-old-plan",
+    "breaks": "A plan the owner edited on the plan screen before accepting is never read again: the rep's row names the pieces of the plan as the agent wrote it, including one the owner took out.",
+    "patch": "approved-note-old-plan.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "carry-unseen-dropped",
+    "breaks": "A yes after a question about a turn the rep never saw carries nothing and says nothing is missing, so the reader takes the yes as answering only what came after.",
+    "patch": "carry-unseen-dropped.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "waiting-fit-capped",
+    "breaks": "What the agent said since the owner last answered that fits its usual cut is cut through its middle by the shared cap when the record runs long, while longer waiting messages stay whole, so a step buried in a short waiting plan goes unseen.",
+    "patch": "waiting-fit-capped.patch",
+    "fixed": "2026-11-14"
   }
 ]

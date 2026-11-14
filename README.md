@@ -69,7 +69,8 @@ yes, the rep reads the whole plan. If any part of it only proves the agent did i
 output, a proof report), a line starting "Before you approve:" names that part, even one you
 asked for. On Claude Code's plan screen the line appears just above the screen while it is up;
 a plan long enough to fill the terminal pushes it out of sight, so once you accept, the rep's
-row names the same parts. A later plan with no such part gets a line saying so, so a warning
+row names the same parts; if you edited the plan on the screen first, it names what the plan
+you accepted holds. A later plan with no such part gets a line saying so, so a warning
 about an earlier plan, still above the screen, is not read as about it. For a plan written in the agent's message it is the Heads
 up, and a question you ask about the plan leaves it waiting: your yes after the agent's answer
 approves the plan itself. Tests, code reviews, plan checks

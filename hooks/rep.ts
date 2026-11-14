@@ -1220,8 +1220,9 @@ export function carriedBody(earlier: readonly OwnerMsg[], words: string, body: B
     if (text !== '') after = text
     if (m.turns?.some(t => t.ask !== undefined) === true) break
   }
-  // Only what holds a turn, or lost one, is carried; with none, the body is its own.
-  const carried = walked.filter(m => m.src?.body !== undefined)
+  // Only what holds a turn, or lost one (a saved turn gone, or one the rep never saw), is carried;
+  // with none, the body is its own.
+  const carried = walked.filter(m => m.src?.body !== undefined || m.incomplete !== undefined)
   if (carried.length === 0) return body
   let total = body.text.length
   const kept: OwnerMsg[] = []
@@ -2604,13 +2605,14 @@ export const SESSION_ROWS_CAP = 4096
 const RECORD_HEAD_ROOM = 200
 
 // `keep`: a field of what the agent said since the owner last answered, shown at its own cut, which
-// the shared cap never lowers (recordEntries, RECORD_WAITING_BUDGET).
-type RecField = { text: string; cut: number; name: string; keep?: true }
+// the shared cap never lowers (recordEntries, RECORD_WAITING_BUDGET). `whole`: such a field that fits
+// its usual cut, which the shared cap never lowers either, though its entry may be left out.
+type RecField = { text: string; cut: number; name: string; keep?: true; whole?: true }
 type RecEntry = { n: number; row: number; fields: RecField[]; build: (show: (f: RecField) => string) => string }
 // How a field is shown: with today's cut, at one shared cap, or whole.
 type RecShow = 'today' | 'whole' | number
 const shown = (how: RecShow) => (f: RecField): string =>
-  f.keep === true ? headTail(f.text, f.cut, f.name) : how === 'whole' ? f.text : headTail(f.text, how === 'today' ? f.cut : how, f.name)
+  f.keep === true ? headTail(f.text, f.cut, f.name) : how === 'whole' || f.whole === true ? f.text : headTail(f.text, how === 'today' ? f.cut : how, f.name)
 const entryText = (e: RecEntry, how: RecShow): string => fenceTag(e.build(shown(how)), 'session_record')
 
 // An accepted plan screen's result as the record prints it: the plan it returns is the file as it
@@ -2706,9 +2708,14 @@ function recordEntries(rows: readonly RecordRow[], human?: ReadonlySet<string>):
       build: show => (his ? `entry ${n} the person:\n${show(f)}` : `entry ${n} the session (written by Claude Code, not typed by the person):\n${show(f)}`),
     })
   })
-  // The newest first, each as whole as what is left of the budget allows, when that is more than its usual cut.
+  // The newest first, each as whole as what is left of the budget allows, when that is more than its
+  // usual cut; one that fits its usual cut is shown whole, below any shared cap.
   let left = RECORD_WAITING_BUDGET
   for (const f of waiting.reverse()) {
+    if (f.text.length <= f.cut) {
+      f.whole = true
+      continue
+    }
     const give = Math.min(f.text.length, left)
     if (give <= f.cut) continue
     f.cut = give
@@ -2783,7 +2790,7 @@ export function recordParts(rows: readonly RecordRow[], budget: number, human?: 
   let cutAfter = 0
   let opensAfter = false
   if (size(after, 'whole') > room) {
-    const longest = Math.max(RECORD_TOOL_CUT, ...after.flatMap(e => e.fields.filter(f => f.keep !== true).map(f => f.text.length)))
+    const longest = Math.max(RECORD_TOOL_CUT, ...after.flatMap(e => e.fields.filter(f => f.keep !== true && f.whole !== true).map(f => f.text.length)))
     let lo = RECORD_TOOL_CUT
     let hi = longest
     while (lo < hi) {
@@ -2797,7 +2804,7 @@ export function recordParts(rows: readonly RecordRow[], budget: number, human?: 
       opensAfter = true
     }
     const cap = how
-    cutAfter = post.reduce((s, e) => s + e.fields.filter(f => f.keep !== true && f.text.length > cap).length, 0)
+    cutAfter = post.reduce((s, e) => s + e.fields.filter(f => f.keep !== true && f.whole !== true && f.text.length > cap).length, 0)
   }
   // Rows before the approval are left out with the oldest rows after it.
   // An entry holding what the agent said since the owner last answered is kept like one after the approval.

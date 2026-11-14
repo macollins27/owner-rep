@@ -1,7 +1,7 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2532,7 +2532,7 @@
+@@ -2665,7 +2665,7 @@
          row: at,
          fields,
          build: show =>
@@ -10,7 +10,7 @@ diff --git a/hooks/rep.ts b/hooks/rep.ts
              ...(said === null ? [] : [show(said)]),
              ...uses.map(u => `- used ${u.tool} ${show(u.input)} → ${u.result === null ? '(no result)' : `${u.isError ? '(error) ' : ''}${show(u.result)}`}`),
            ].join('\n')}`,
-@@ -2572,7 +2572,7 @@
+@@ -2705,7 +2705,7 @@
        n,
        row: at,
        fields: [f],
@@ -18,4 +18,4 @@ diff --git a/hooks/rep.ts b/hooks/rep.ts
 +      build: show => (his ? `#${n} the person:\n${show(f)}` : `entry ${n} the session (written by Claude Code, not typed by the person):\n${show(f)}`),
      })
    })
-   // The newest first, each as whole as what is left of the budget allows, when that is more than its usual cut.
+   // The newest first, each as whole as what is left of the budget allows, when that is more than its

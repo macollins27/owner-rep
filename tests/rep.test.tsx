@@ -2654,6 +2654,21 @@ test('rule: a turn that ends while a look is still reading gets its turn-end loo
   expect(await rowSays($, /Before you approve: step 3/)).toBe(true)
 })
 
+test('guard: a turn-end look still owed when the session ends by a /clear is not run in the next session', async ($, on) => {
+  const w = heldWatch(on, [watchAnswer(null), planWaiting(PLAN_FLAG)], n => n === 1)
+  on('session.end', (_$, e) => ({ sessionId: e.sessionId }))
+  w.bind($)
+  await $.turn.start({ text: 'plan the price page', turnId: 't1' })
+  await w.toLook('t1')
+  await settleUntil($, () => w.prompts.length === 1)
+  await $.turn.complete(stop('t1', 'Here is the plan. Shall I go ahead?'))
+  await $.session.end({ reason: 'clear', sessionId: 'test-session', resume: { id: 'test-session' } } as never)
+  w.release()
+  await settleUntil($, () => false, 60)
+  expect(w.prompts.length).toBe(1)
+  expect(await rowSays($, /Before you approve/)).toBe(false)
+})
+
 test('rule: a turn-end look still owed when the owner starts a new turn is not run', async ($, on) => {
   const w = heldWatch(on, [watchAnswer(null), planWaiting(PLAN_FLAG)], n => n === 1)
   w.bind($)
@@ -4283,6 +4298,11 @@ test('rule: a question keeps its own body: nothing is carried into a message tha
   const got = rep.carriedBody([om('plan it'), lost], 'yes', body)
   expect(got.text).toBe(body.text)
   expect(got.incomplete).toBe(rep.carryLostWhy(2))
+  // So is a turn the rep never saw, which left the question no saved body at all.
+  const unseen: OwnerMsg = { n: 2, kind: 'his', text: 'Why Decimal?', prior: '', turns: [], incomplete: 'the rep saw none of this turn' }
+  const blind = rep.carriedBody([om('plan it'), unseen], 'yes', body)
+  expect(blind.text).toBe(body.text)
+  expect(blind.incomplete).toBe(rep.carryLostWhy(2))
 })
 
 test('rule: a plain yes answered what the agent asked, so nothing is carried past it even when the agent then asks something new', () => {
@@ -6554,6 +6574,33 @@ test('rule: a plan accepted on the plan screen after its reading named a piece p
   await waitFor(() => false, 30)
   expect(await rowSays($, /The plan you approved has one piece/)).toBe(true)
   expect(await rowSays($, new RegExp(SCAN_PIECE.slice(0, 40)))).toBe(true)
+})
+
+test('rule: a plan the owner edited on the screen before accepting is read again, and the rep\'s row names only what the accepted plan holds', async ($, on) => {
+  const edited = BURIED_PLAN.split('\n').filter(l => !l.startsWith('3.')).join('\n')
+  const s = planScreenScan(on, p => (p.includes('saves its output') ? `pieces:\n- ${SCAN_PIECE}` : 'pieces:\n- none'), undefined, ACCEPT_RESULT(edited, true))
+  await started($)
+  const call = $.tool.call({ tool: 'ExitPlanMode', plan: BURIED_PLAN, tool_use_id: 'p1' } as never)
+  await waitFor(() => s.logs.length > 0)
+  s.release()
+  await call
+  await waitFor(() => false, 40)
+  expect(s.scans.length).toBe(2)
+  expect(s.scans[1]?.prompt.includes('saves its output')).toBe(false)
+  expect(await rowSays($, /The plan you approved/)).toBe(false)
+})
+
+test('rule: a plan the owner edited on the screen that still holds a piece names it on the rep\'s row from the reading of the accepted plan', async ($, on) => {
+  const edited = `${BURIED_PLAN}\n6. Add a hook that blocks my own edits to the test files.`
+  const s = planScreenScan(on, p => (p.includes('blocks my own edits') ? 'pieces:\n- step 6, a hook that blocks the agent\'s own edits to the test files' : `pieces:\n- ${SCAN_PIECE}`), undefined, ACCEPT_RESULT(edited, true))
+  await started($)
+  const call = $.tool.call({ tool: 'ExitPlanMode', plan: BURIED_PLAN, tool_use_id: 'p1' } as never)
+  await waitFor(() => s.logs.length > 0)
+  s.release()
+  await call
+  await waitFor(() => false, 40)
+  expect(await rowSays($, /step 6, a hook that blocks/)).toBe(true)
+  expect(await rowSays($, /step 3, a script/)).toBe(false)
 })
 
 test('rule: a reading that lands after the plan was accepted puts the piece on the rep\'s row then, and logs nothing', async ($, on) => {
@@ -10817,6 +10864,15 @@ test('recordText reads at most RECORD_WAITING_BUDGET of the agent\'s words since
   const text = recordText([ownerRow('go'), agentRow(OLD), agentRow(NEW)], RECORD_BUDGET).text
   expect(text).toContain(BURIED)
   expect(text).not.toContain('Old marker in the middle.')
+})
+
+test('recordParts never lowers a waiting message that fits its usual cut when a shared cap cuts the rows after the approval', () => {
+  const PLAN = turnWith(2_500, [[1_250, BURIED]])
+  const rows = [ownerRow('yes'), ...Array.from({ length: 10 }, (_, i) => agentRow(turnWith(5_000, [], `Work${i}`))), ownerRow('good, now plan the tests'), agentRow(PLAN)]
+  const parts = rep.recordParts(rows, 20_000, undefined, 0)
+  const text = [...parts.head, ...parts.chunks.flat()].join('\n')
+  expect(parts.cutAfter).toBeGreaterThan(0)
+  expect(text).toContain(BURIED)
 })
 
 test('recordText, given the rows the owner\'s transcript proves, labels only those as the person, a command as the owner ran it, and every other row on their side as the session\'s', () => {
