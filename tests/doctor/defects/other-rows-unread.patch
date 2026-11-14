@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2758,7 +2758,7 @@
+     // so only one set of digit buttons is ever on screen. The briefing, which
+     // the owner asked for, takes the strip alone.
+     const beneath = await next(e)
+-    const hasBeneath = drawsSomething(beneath) || (othersDraw.get(e.surface) ?? false)
++    const hasBeneath = drawsSomething(beneath)
+     if (hasBeneath) rememberOther($, textOf(beneath)).catch(() => undefined)
+ 
+     // A press reads the id then, so one made just after a /clear is the new session's.

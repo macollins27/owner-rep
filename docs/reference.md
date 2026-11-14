@@ -9,9 +9,9 @@ true when you do. Every name here is in [`hooks/rep.ts`](../hooks/rep.ts),
 ## Tests on GitHub
 
 GitHub runs validate, `tests/ci/host-calls.sh`, `tests/ci/host-commands.mjs`, test and the
-type check on Ubuntu, macOS and Windows with Claude Code 2.1.310, and validate, the two
-host steps and the tests on Ubuntu with 2.1.286 (the first build with mods on by default) and the
-newest release, on every push that touches more than prose and pictures (`paths-ignore` in
+type check on Ubuntu, macOS and Windows with Claude Code 2.1.325, and validate, the two
+host steps and the tests on Ubuntu with 2.1.286 (the first build with mods on by default), 2.1.310
+(the last build whose band draws every mod in one chain) and the newest release, on every push that touches more than prose and pictures (`paths-ignore` in
 the workflow: the Markdown files, `docs/`, `llms.txt`, the licence, the issue forms and the
 live captures get no run), and the doctor as eight Ubuntu
 jobs at once, each planting every eighth defect (`doctor.py --shard K/8`), so the whole run
@@ -25,7 +25,7 @@ finds them), against `tests/ci/fixtures/` and a scratch folder whose command fol
 link, and reads the answers with the mod's own parsers (`linkTargets` for the path links); on
 Windows one of the check's questions that fails is printed as skipped, since the check does
 not start there, and the copy's commands must still pass (`tests/ci/README.md`). The run's type check uses `tests/ci/types/`, a pinned copy of the
-declarations for Claude Code 2.1.310, the build the declarations step and the type check
+declarations for Claude Code 2.1.325, the build the declarations step and the type check
 run on; move both together. On a push to main the `merged` job runs first: when the push is
 a merge whose second parent holds the same files and has a passing `pull_request` run of the
 workflow, it sets `tested` and the tests and the doctor are skipped, so the run passes on
@@ -996,7 +996,15 @@ The `AbovePrompt` band is a strip shared with other mods ("You should know" amon
 this mod draws first. Rules the render enforces: whatever is beneath is kept under the row;
 while another mod draws something (`drawsSomething`), the rep's own note waits and the row's
 buttons lose their digits, so only one set of digit hotkeys is ever on screen; the briefing
-takes the strip alone; on the terminal each line has its width in columns and the card fills the band's rows in order of importance (`fillCard`: the head's result and one row of the message with the buttons under it first, then the judgment one row each, most telling first (stands, then the revision line from `revisedLine`, so a long message never crowds out that the reading moved), then the count line (`countLine`), then the judgment whole as the rows allow, then the message with the rows that remain, then the extras while they fit; on a band too short for the message's box between the head and the buttons the box goes and Put message in prompt, drawn while the brief has a message, carries it whole; rows counted by `cardRows` as the band wraps them), and on a surface whose band is a scrolling box in a proportional font (`sizesInColumns` false: Claude Code for VS Code, whose extension counts columns by a wide glyph and draws widths in `ch`) no line is given a width, so each fills the box, and the card is drawn whole. Buttons use bare digits for hotkeys because from the prompt box only a
+takes the strip alone. Up to 2.1.310 every mod draws in one chain and what another mod draws
+is the rep's `next(e)`. From 2.1.325 the band asks each mod for a row of its own (the
+`AbovePrompt` hook hears only its own row) and stacks the rows in `AbovePromptList`, where
+`next(e)` under the rep's row answers only the engine's own drawing; so the rep's
+`AbovePromptList` hook reads the other mods' rows (`e.props.rows`, every row whose `plugin`
+is not `PLUGIN`), keeps whether any draws something in `othersDraw` by surface and draws the
+band again when that changes, and while the rep's row last drew the briefing (`cardUp`, set
+by the row's render) passes on only the rep's own row. The `AbovePrompt` render takes
+`hasBeneath` from both, so the same rules hold on every build; on the terminal each line has its width in columns and the card fills the band's rows in order of importance (`fillCard`: the head's result and one row of the message with the buttons under it first, then the judgment one row each, most telling first (stands, then the revision line from `revisedLine`, so a long message never crowds out that the reading moved), then the count line (`countLine`), then the judgment whole as the rows allow, then the message with the rows that remain, then the extras while they fit; on a band too short for the message's box between the head and the buttons the box goes and Put message in prompt, drawn while the brief has a message, carries it whole; rows counted by `cardRows` as the band wraps them), and on a surface whose band is a scrolling box in a proportional font (`sizesInColumns` false: Claude Code for VS Code, whose extension counts columns by a wide glyph and draws widths in `ch`) no line is given a width, so each fills the box, and the card is drawn whole. Buttons use bare digits for hotkeys because from the prompt box only a
 digit presses a band button. A keyboard chord for the Rep button once rode on an unrelated
 engine action; it could not be proven and was removed on 14 Oct 2026. Do not bring it back
 without a binding that is shown working.
