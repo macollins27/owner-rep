@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -504,7 +504,7 @@
+ // The list ends with a period, or on the last piece's cut mark alone when that piece was cut.
+ const pieceList = (pieces: string[]): string => {
+   const list = pieces.map(pieceOf).join('; ')
+-  return list.endsWith('…') ? list : `${list}.`
++  return `${list}.`
+ }
+ 
+ // The one line shown above the plan screen, naming every piece after the one sentence on its cost.

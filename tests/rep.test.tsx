@@ -6557,7 +6557,9 @@ test('planWarning names every piece in one plain line, the cost said once and ea
   const last = /(\S+)…/.exec(cut)
   expect(last).not.toBeNull()
   expect(words.split(' ')).toContain(last?.[1])
-  expect(cut).toMatch(/…\.$/)
+  // A line that ends on a cut piece ends on its cut mark alone, never a mark and a period.
+  expect(cut).toMatch(/\w…$/)
+  expect(rep.planApprovedLine([words])).toMatch(/\w…$/)
   // The reading's own answer, parsed, is cut the same way: the parse keeps the piece whole for the line to cut.
   const parsed = rep.parsePlanScan(`pieces:\n- ${words}`)
   expect(parsed).toEqual([words])

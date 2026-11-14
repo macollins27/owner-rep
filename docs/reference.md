@@ -749,7 +749,8 @@ note of what it found and fixed is part of it, and a report written to show the 
 passed, with evidence attached, is a proof report. `parsePlanScan` reads `pieces:` and its `- ` lines, `none`
 giving an empty list and an unreadable answer `null`; each piece is kept whole. `planWarning`
 writes the line, "Before you approve:" and every piece named, each cut by `pieceOf` to
-`PLAN_PIECE_CUT` (160 characters) at a word, with no cap on the line, so no piece goes unnamed. It is shown
+`PLAN_PIECE_CUT` (160 characters) at a word, with no cap on the line, so no piece goes unnamed; the
+line ends with a period, or on the cut mark alone when its last piece was cut. It is shown
 with `$.ui.log`, the one surface Claude Code draws above its plan screen, and only while
 `screen.isOpen` holds the call id: the hook clears it the moment `next(e)` settles, before the
 answer is stored, so a warning that lands after the owner answered is dropped. A warning logged

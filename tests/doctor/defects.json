@@ -3396,6 +3396,12 @@
     "fixed": "2026-11-14"
   },
   {
+    "name": "cut-piece-period",
+    "breaks": "A warning or row note whose last piece was cut ends on the cut mark and a period, which reads as a slip.",
+    "patch": "cut-piece-period.patch",
+    "fixed": "2026-11-14"
+  },
+  {
     "name": "clarification-answers-plan",
     "breaks": "The owner's request for more before the yes (\"explain step 2 first\") is taken as the answer to the plan, so while the agent asks again the plan is cut like any old message and a self-proving piece in its middle is no longer read.",
     "patch": "clarification-answers-plan.patch",

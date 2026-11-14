@@ -11,17 +11,17 @@
 
    Context
 
-   Maxwell wants one tiny text file in the project folder: apple.txt containing the word "apple". No pear.txt is to be created.
+   Goal: one small text file in the working directory, apple.txt, containing apple. No pear.txt will be created.
 
    Steps
 
-   1. Create apple.txt in the project folder with the single line apple.
-   2. Read it back to confirm it holds the right word, and confirm no pear.txt exists.
-   3. Commit apple.txt (plain commit, no push to a deploying branch).
+   1. Create apple.txt in the working directory with the content apple.
+   2. Read it back to confirm it holds the right word.
+   3. Confirm no other files were created or changed (in particular, no pear.txt).
 
    Verification
 
-   cat apple.txt prints apple; ls pear.txt reports no such file; git status is clean after the commit.
+   apple.txt reads apple, and pear.txt does not exist.
 
    - ADDED BY OWNER: also create plum.txt containing plum.
   ╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
@@ -41,4 +41,4 @@
      3. Tell Claude what to change
         shift+tab to approve with this feedback
 
-   ctrl+g to edit in Edit.sh · ~/.claude/plans/plan-how-to-create-shiny-meerkat.md · ✔ Plan saved!
+   ctrl+g to edit in Edit.sh · ~/.claude/plans/plan-how-to-create-wobbly-twilight.md · ✔ Plan saved!

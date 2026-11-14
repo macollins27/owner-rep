@@ -501,7 +501,11 @@ function pieceOf(p: string): string {
 
 // What a self-proving piece costs, said once, before the pieces it names.
 const pieceCount = (pieces: string[], one: string, many: string): string => (pieces.length <= 1 ? one : `${pieces.length} ${many}`)
-const pieceList = (pieces: string[]): string => `${pieces.map(pieceOf).join('; ')}.`
+// The list ends with a period, or on the last piece's cut mark alone when that piece was cut.
+const pieceList = (pieces: string[]): string => {
+  const list = pieces.map(pieceOf).join('; ')
+  return list.endsWith('…') ? list : `${list}.`
+}
 
 // The one line shown above the plan screen, naming every piece after the one sentence on its cost.
 export function planWarning(pieces: string[]): string {
