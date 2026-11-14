@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2724,9 +2724,6 @@
+       othersDraw.set(e.surface, draws)
+       $.ui.invalidate('ui.render')
+     }
+-    if (cardUp.get(e.surface) === true && e.props.rows.some(r => r.plugin === PLUGIN)) {
+-      return next({ ...e, props: { ...e.props, rows: e.props.rows.filter(r => r.plugin === PLUGIN) } })
+-    }
+     return next(e)
+   })
+ 
