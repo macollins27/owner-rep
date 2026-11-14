@@ -12970,6 +12970,42 @@ test('rule: a session resumed in the same process is read for the owner\'s messa
   expect(await rowSays($, /and a readme/)).toBe(true)
 })
 
+test('rule: a session resumed while another mod draws is taken up whole, though the band is drawn before any prompt', { plugins: [OTHER_MOD] }, async ($, on) => {
+  const store: Record<string, unknown> = {}
+  on('store.get', (_$, e) => ({ value: store[e.key] }))
+  on('store.set', (_$, e) => {
+    store[e.key] = e.value
+    return { value: undefined }
+  })
+  const recOf = (id: string) => (store.sessions as Record<string, Stored> | undefined)?.[id]
+  let id = 'resumed-from'
+  on('session.id', () => ({ value: id }))
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  on('session.end', (_$, e) => ({ sessionId: e.sessionId }))
+  on('prompt.submit', (_$, e) => ({ text: e.text }))
+  on('turn.complete', () => ({ text: '' }))
+  on('ui.toast', () => ({ value: undefined }))
+  on('session.messages', () => ({ value: id === 'test-session' ? SEEDED_ROWS : [] }))
+  transcript(on, { 'test-session.jsonl': SEEDED_FILE })
+  writer(on, () => OBJ('A licence file with the MIT text and this year, and a readme.', ['the file pushed | open']))
+  quietBand(on)
+  await started($)
+  await settle($)
+  await $.session.end({ reason: 'resume', sessionId: 'resumed-from', resume: { id: 'resumed-from' } } as never)
+  id = 'test-session'
+  // The band is drawn under the resumed session before anything else reads its id, and the
+  // other mod's note is the first thing the rep reads there.
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  expect(await ui.find({ type: 'Text', text: /a note from another mod/ })).toBeDefined()
+  await settle($)
+  expect(recOf('test-session')?.owner.map(m => [m.n, m.kind, m.text])).toEqual([
+    [1, 'his', 'Add a licence file with the MIT text.'],
+    [2, 'his', 'Use this year, and push it.'],
+  ])
+  expect(await rowSays($, /and a readme/)).toBe(true)
+  await ui.unmount()
+})
+
 // ==============================================================================================
 // 10. Hosts: Windows, Linux and the home
 // How every program is named on each system, and where the home and the transcripts are found.
