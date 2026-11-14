@@ -13360,7 +13360,7 @@ test('rule: a record let go while the drafts are being read is still found, its 
   writer(on, () => OBJ('The report run on the real data, with the log kept.', ['the run shown | open']))
   await giveTranscript($, on, HELD('test-session.jsonl'))
   await started($)
-  await settle($)
+  await settleUntil($, () => ((store.sessions as Record<string, Stored>)['test-session']?.owner.length ?? 0) >= 3)
   expect(moved).toBe(true)
   expect(noBody((store.sessions as Record<string, Stored>)['test-session']?.owner)).toEqual([
     { n: 1, kind: 'his', text: 'Build the report.', prior: '' },
