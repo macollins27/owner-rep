@@ -10459,6 +10459,36 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     expect(rep.ENTRY_RULE).toMatch(/entry numbers/)
   })
 
+  test('rule: the message never forbids tests, checks or reviews in general: such a sentence is cut, and one against self-proving pieces stays', () => {
+    const cut = rep.withoutCheckBans
+    // From the Cetacean cards: a ban on new tests carried from the owner's complaint without its remedy.
+    expect(cut('Run it once on a copy of the Portstead session. Do not build new tests or reports for this. Read the text and say what it tells you.')).toBe('Run it once on a copy of the Portstead session. Read the text and say what it tells you.')
+    expect(cut('Compare it with 0.6.0.\nDon\'t build any new checks, scripts or reports for this.')).toBe('Compare it with 0.6.0.')
+    expect(cut('Ask the lead for a hands-on run. Do not add new test machinery for this.')).toBe('Ask the lead for a hands-on run.')
+    // Inside a sentence that asks for work, only the "without" clause goes.
+    expect(cut('Read the brief, and do it without building any more tests.')).toBe('Read the brief, and do it.')
+    expect(cut('Please finish them without building any new checks or reports.')).toBe('Please finish them.')
+    // Sentences that say what the tests are not, or ban a self-proving piece, stay.
+    for (const s of [
+      'Your tests passing does not count as this look.',
+      'Do not count the tests as the sign-off.',
+      'Never write tests that only confirm your own steps ran.',
+      'Do not build a script that checks your own report.',
+      'Do not rely on the word-list check.',
+      'Add tests for the parser and run the suite.',
+    ])
+      expect(cut(s)).toBe(s)
+    // A message that is nothing but the ban is left with nothing to send.
+    expect(cut('Do not add more tests.')).toBe('')
+    const card = parseBrief('verdict: continue\nwell:\nstands: a\nmeans: b\nleft:\n- c\nnext: d\nmessage:\nFind the branch on this Mac. Do not build new tests or reports for this.\nend\ndoes: e')
+    expect(card.message).toBe('Find the branch on this Mac.')
+    const check = parseCheck('verdict: on track\nholds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n- nothing\nclosed:\n- nothing\nreopen:\n- nothing\nstands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nOpen the page. Do not add more checks.\nend\ndoes: x\nlooked: the record')
+    expect(check.message).toBe('Open the page.')
+    // The card writers are told so beside expectation 4.
+    expect(rep.ROLE).toContain(rep.CHECK_BAN_RULE)
+    expect(rep.CHECK_BAN_RULE).toMatch(/never yours to write/)
+  })
+
   test('recordText from an approval\'s row prints every row after it whole: a proof inside the span a cut would leave out is shown, the same row before the approval is cut and marked, and rows past the budget share one cap, then lose their oldest', () => {
     const LONG = `${'p'.repeat(2500)}PROOF-7Q${'p'.repeat(2492)}`
     expect(LONG.length).toBe(5000)

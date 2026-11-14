@@ -444,6 +444,9 @@ const HELD_STEP_RULE = `When a condition waits on the owner's go-ahead (publish,
 // The record numbers its entries for the readers ("entry 105"); neither the owner nor the agent
 // can look one up, so no part of the card or the message names one.
 export const ENTRY_RULE = 'Never name the record\'s entry numbers ("entry 105"): neither the owner nor the agent can look one up; say what happened.'
+// An owner's complaint about checks, carried into the message without its remedy, came out as
+// "do not build new tests for this": a ban on normal good work. withoutCheckBans cuts such a line.
+export const CHECK_BAN_RULE = 'A line against them in general, such as "build no new tests for this", is never yours to write: where effort goes into self-proving pieces, name those pieces.'
 
 export const ROLE = `## Who you are
 
@@ -479,7 +482,7 @@ On top of the objective sit six expectations for every job. Apply them without e
 1. The whole result is delivered, not part of it.
 2. It is shown to work by someone opening the real thing, using it and trying to break it, not by the agent's own checks.
 3. No known problem is left behind.
-4. Nothing was added that the result does not need. A self-proving piece, one whose job is to prove the agent did its own work (a script or hook confirming its own steps ran, logs kept as evidence, a grader approving its own output, a guard on its own edits, a proof report), is such an addition: it costs the owner money without making the product better. Tests, code reviews, plan checks and second readers that serve the result are normal good work, never additions, though none of them is the sign-off. Never ask the agent for fewer of them, and never forbid a new one that serves the result. A check the owner asked for, or one that is a step of a plan the owner approved, is part of the job, never an addition.
+4. Nothing was added that the result does not need. A self-proving piece, one whose job is to prove the agent did its own work (a script or hook confirming its own steps ran, logs kept as evidence, a grader approving its own output, a guard on its own edits, a proof report), is such an addition: it costs the owner money without making the product better. Tests, code reviews, plan checks and second readers that serve the result are normal good work, never additions, though none of them is the sign-off. Never ask the agent for fewer of them, and never forbid a new one that serves the result. ${CHECK_BAN_RULE} A check the owner asked for, or one that is a step of a plan the owner approved, is part of the job, never an addition.
 5. It was done the way that is best for the result, not the way that was easiest for the agent to finish: a smaller version, a simpler thing, or a test it can pass in place of the job.
 6. The result itself is the best it can be: as good as the best in its trade would make it, judged by looking at it, never by its checks. Passable is not the standard.
 
@@ -2990,7 +2993,7 @@ export function parseBrief(text: string): BriefAnswer {
     means: cardText(p.means),
     leftOut,
     next: cardText(p.next),
-    message: cardText(p.message),
+    message: withoutCheckBans(cardText(p.message)),
     does: cardText(p.does),
     ...stepsOf(p.unassessed, false),
   }
@@ -3943,7 +3946,7 @@ export function parseCheck(text: string): CheckAnswer {
     means: cardText(p.means),
     leftOut: items(p.left).map(withoutEntryRefs),
     next: cardText(p.next),
-    message: cardText(p.message),
+    message: withoutCheckBans(cardText(p.message)),
     does: cardText(p.does),
     looked: clean(p.looked),
   }
@@ -5054,8 +5057,8 @@ const pairsOf = (text: string): Map<number, number> => {
 // suite. (You can stop now. Thanks.)" gives "Run the suite. (Thanks.)"), and a pair wholly in
 // removed text goes with it. When what is left names nothing to do, show or fix (`usable`), it
 // gives ''. Pure; '' gives ''.
-export const withoutStopSentences = (message: string): string => {
-  const cuts = stopSpans(message)
+export const withoutStopSentences = (message: string): string => withoutSpans(message, stopSpans(message))
+const withoutSpans = (message: string, cuts: { start: number; end: number }[]): string => {
   if (cuts.length === 0) return message
   const partner = pairsOf(message)
   const removed = (i: number): boolean => cuts.some(c => i >= c.start && i < c.end)
@@ -5107,6 +5110,24 @@ export const withoutStopSentences = (message: string): string => {
   }
   const rest = kept.join('\n').trimEnd()
   return usable(rest) ? rest : ''
+}
+
+// A sentence of a message that forbids tests, checks or reviews in general ("Do not build new
+// tests or reports for this.", "Don't add any more checks."), cut by `withoutCheckBans`: they are
+// normal good work (ROLE, expectation 4), and the ban came from the owner's complaint about
+// checks read without its remedy. A ban qualified as self-proving ("tests that only confirm your
+// own steps ran"), one on a single named piece ("a script that checks your report"), and a line
+// on what tests are not ("Do not count the tests as the sign-off.") stay. Inside a sentence that
+// asks for work, only a "without building any new tests" clause goes, to the sentence's end.
+const BAN_OBJ = String.raw`(?:tests?|test\s+(?:machinery|suites?|scripts?|harness(?:es)?|runs?)|testing|checks?|check\s+scripts?|checking(?:\s+(?:tools?|scripts?|machinery))?|(?:code\s+)?reviews?|plan\s+checks?|second\s+readers?)`
+const BAN_MORE = String.raw`(?:(?:any|more|new|extra|further|additional|other)\s+)*`
+const BAN_SELF = String.raw`(?!\s+(?:that|which|whose|to\s+(?:confirm|prove|show)|confirming|proving|only|of\s+your\s+own))`
+const CHECK_BAN = new RegExp(String.raw`^(?:[^,;:]{0,60}[,;:]\s+)?(?:(?:please|and|so|then|also|but|just)\s+)*(?:do\s+not|don['’]t|never|no\s+need\s+to|you\s+need\s+not)\s+(?:(?:yet|again|now|bother\s+to|go\s+on\s+to)\s+)?(?:build|add|write|create|make|set\s+up|run|start)\s+${BAN_MORE}${BAN_OBJ}\b${BAN_SELF}`, 'i')
+const WITHOUT_BAN = new RegExp(String.raw`,?[ \t]+(?:and[ \t]+)?without[ \t]+(?:building|adding|writing|creating|making|running|setting[ \t]+up)[ \t]+${BAN_MORE}${BAN_OBJ}\b${BAN_SELF}[^.!?\n]*`, 'gi')
+export const withoutCheckBans = (message: string): string => {
+  const bans = sentencesOf(message).filter(({ start, end }) => CHECK_BAN.test(message.slice(start, end).replace(LIST_MARKER, '').replace(/\s+/g, ' ').replace(/^["“(]+/, '')))
+  const kept = withoutSpans(message, bans)
+  return kept === '' ? '' : kept.replace(WITHOUT_BAN, '')
 }
 
 // The objective is not finished while a condition is open, and the gate works
