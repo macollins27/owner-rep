@@ -16,7 +16,7 @@
 # record, so the card judges the parent's job, not a prompt of ours), wait until the row's head
 # leaves the placeholder, which means the objective is written (up to 180 s; the time is
 # printed), save the screen before, press 1, wait for the card, save it. The captures and report.txt are in tests/live/compare/ (git-ignored). Exit 0 when every card
-# were captured and the parents' files are unchanged.
+# was captured and the parents' files are unchanged.
 set -u
 HERE=${0:A:h}
 OUT=$HERE/compare
@@ -129,4 +129,4 @@ same=0
   done
 } > $OUT/report.txt
 cat $OUT/report.txt
-(( captured == 4 && same )) ; exit $?
+(( captured == 2 * ${#SESSIONS} && same )) ; exit $?

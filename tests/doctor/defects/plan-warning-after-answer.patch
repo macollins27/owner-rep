@@ -1,14 +1,17 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -2342,8 +2342,8 @@
-   const pieces = parsePlanScan(result.text)
-   if (pieces === null || pieces.length === 0) return
+@@ -2350,10 +2350,11 @@
+     return
+   }
    screen.pieces = pieces
--  if (screen.isOpen) $.ui.log(planWarning(pieces))
--  else if (screen.accepted === true) await showApproved($, screen.sid, pieces)
-+  $.ui.log(planWarning(pieces))
-+  if (!screen.isOpen) if (screen.accepted === true) await showApproved($, screen.sid, pieces)
+-  if (screen.isOpen) {
++  {
+     $.ui.log(planWarning(pieces))
+     if (screen.sid !== '') warnedIn = screen.sid
+-  } else if (screen.accepted === true) await showApproved($, screen.sid, pieces)
++  }
++  if (!screen.isOpen && screen.accepted === true) await showApproved($, screen.sid, pieces)
  }
  
  // The pieces of a plan the owner just accepted in session `sid`, on the rep's row as a note, in

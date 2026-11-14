@@ -1,0 +1,11 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2346,7 +2346,6 @@
+   const pieces = parsePlanScan(result.text)
+   if (pieces === null) return
+   if (pieces.length === 0) {
+-    if (screen.isOpen && screen.sid !== '' && warnedIn === screen.sid) $.ui.log(PLAN_CLEAR_LINE)
+     return
+   }
+   screen.pieces = pieces

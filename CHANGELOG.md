@@ -11,10 +11,12 @@ What changed in each release of Owner Rep, newest first. The full record is the
   you approve, even one you asked for. On the plan screen the line appears just above the
   screen while it is up, from one Sonnet call over the plan alone; a plan long enough to fill
   the terminal pushes that line out of sight, so once you accept, the rep's row names the same
-  parts. A plan written in the agent's message is read whole and the Heads up names it. Tests, reviews, plan checks and
-  second readers are never named, however the plan words them.
+  parts, and a later plan with none gets a line saying the warning above was about an earlier
+  one. A plan written in the agent's message is read whole and the Heads up names it. Tests,
+  reviews, plan checks and second readers are never named, however the plan words them, and
+  neither is a review's own note of what it found and fixed.
 - **An approved plan is your ask.** The rep never argues a step you approved and never tells
-  the agent to stop, skip or drop one, and never asks for a finished one to be run again.
+  the agent to stop, skip or drop one, and never asks for a finished one to be run again, even folded into other work.
   Effort spent on an approved step that only proves the agent's own work is still said plainly where the card accounts for the effort, never as work
   left, so it does not keep the card from saying the job is done.
 - **The turn-end look is never lost.** A turn that ended while a look was still running got no

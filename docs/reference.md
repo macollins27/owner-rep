@@ -739,13 +739,18 @@ fenced as the agent's text, up to `PLAN_SCAN_PLAN_CUT` (150,000 characters, head
 that). No owner message is sent, since a piece is named before the yes even when the owner asked
 for it. The system holds the definition shared with every reader (`SELF_PROVING`) and the list
 that never counts (`NOT_SELF_PROVING`: tests, code reviews, plan checks, done lists, second
-readers, however the plan words them). `parsePlanScan` reads `pieces:` and its `- ` lines, `none`
+readers, however the plan words them) and two lines on reports: a review's or a test's own
+note of what it found and fixed is part of it, and a report written to show the owner each item
+passed, with evidence attached, is a proof report. `parsePlanScan` reads `pieces:` and its `- ` lines, `none`
 giving an empty list and an unreadable answer `null`; each piece is kept whole. `planWarning`
 writes the line, "Before you approve:" and every piece named, each cut by `pieceOf` to
 `PLAN_PIECE_CUT` (160 characters) at a word, with no cap on the line, so no piece goes unnamed. It is shown
 with `$.ui.log`, the one surface Claude Code draws above its plan screen, and only while
 `screen.isOpen` holds the call id: the hook clears it the moment `next(e)` settles, before the
-answer is stored, so a warning that lands after the owner answered is dropped. Any failure shows
+answer is stored, so a warning that lands after the owner answered is dropped. A warning logged
+sets `warnedIn` to the screen's session; a later reading in that session that names nothing,
+while its screen is open, logs `PLAN_CLEAR_LINE` (this plan has no such piece; the warning above
+was about an earlier plan). An unreadable answer logs nothing either way, and any failure shows
 nothing. A plan that fills the terminal pushes that line out of sight, and nothing a mod draws
 shows under the plan screen (measured on 2.1.325: `$.ui.notice` and the row draw nothing there).
 So when the owner accepts a plan whose reading named pieces, whichever of the answer and the
@@ -759,7 +764,8 @@ The readers hold the other half (`APPROVED_RULES`, in the brief, the check and t
 writer, and expectation 4 of `ROLE`): a step of an approved plan, or a check the owner asked for,
 is the owner's ask even when it is self-proving. No message or `next:` argues it or tells the
 agent to stop, skip or drop it; an unfinished one may be asked for, and once it is done
-nothing asks the agent to run it again, update it or keep it working (`APPROVED_STEP_RULE`). Effort already spent on it is
+nothing asks the agent to run it again, update it or keep it working, not even bundled into
+other work (`APPROVED_STEP_RULE`). Effort already spent on it is
 said under `stands`, never under `left`. While a plan waits, `means:` names each self-proving
 piece and the message may ask the agent to take it out. The watch's one case that always clears
 its bar is such a piece in a waiting plan, its flag starting "Before you approve:"; once the plan

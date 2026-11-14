@@ -3496,5 +3496,29 @@
     "breaks": "The plan reading's pieces are cut by characters as they are parsed, so the warning ends on a broken word.",
     "patch": "piece-cut-in-parse.patch",
     "fixed": "2026-11-14"
+  },
+  {
+    "name": "approved-rerun-bundled",
+    "breaks": "The readers lose the rule that a finished approved step is never asked for again even bundled into other work, so the message asks for a new review and its findings added to the approved proof folder.",
+    "patch": "approved-rerun-bundled.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "plan-clear-line-missing",
+    "breaks": "A later plan whose reading names nothing gets no line, so the warning about an earlier plan, still above the plan screen, reads as about this one.",
+    "patch": "plan-clear-line-missing.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "plan-clear-line-unwarned",
+    "breaks": "The line saying a plan has no self-proving piece is logged for every clean plan, even when no warning about an earlier plan sits above it.",
+    "patch": "plan-clear-line-unwarned.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "plan-scan-review-record",
+    "breaks": "The plan reading loses the rule that a review's own record of findings and fixes is part of the review, and that a pass report with evidence is a proof report, so a review's notes are named as self-proving.",
+    "patch": "plan-scan-review-record.patch",
+    "fixed": "2026-11-14"
   }
 ]

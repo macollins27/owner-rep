@@ -704,7 +704,7 @@ test('the brief and the check write a message while any condition is open or not
 // self-proving piece in it is named before the yes, never argued after it, and still counted as waste. ---
 
 const APPROVED_LINES = [
-  'A step of a plan the owner approved, or a check the owner asked for, is the owner\'s ask even when it is a self-proving piece: the message and "next" never argue it and never tell the agent to stop, skip or drop it, and while it is unfinished the message may ask the agent to finish it. Once it is done, the message and "next" never ask the agent to run it again, update it, keep it working or spend anything more on it.',
+  'A step of a plan the owner approved, or a check the owner asked for, is the owner\'s ask even when it is a self-proving piece: the message and "next" never argue it and never tell the agent to stop, skip or drop it, and while it is unfinished the message may ask the agent to finish it. Once it is done, the message and "next" never ask the agent to run it again, update it, keep it working or spend anything more on it, not even bundled into other work.',
   'Effort already spent on such a self-proving step still did not make the product better: say so plainly under "stands", with how much went into it, never under "left".',
   'While a plan waits for the owner\'s yes, "means" names every self-proving piece in it, the owner\'s own ask included, and the message may ask the agent to take it out.',
 ]
@@ -6305,14 +6305,20 @@ const planScreenScan = (on: On, answer: (prompt: string) => string | null, gate?
     return { value: text === null ? { isAnswered: false, reason: 'empty-reply', usage: USAGE } : { isAnswered: true, text, usage: USAGE } } as never
   })
   let release = () => {}
-  const open = new Promise<void>(r => {
+  let open = new Promise<void>(r => {
     release = r
   })
+  // Holds the next plan screens open again, until the next release.
+  const hold = () => {
+    open = new Promise<void>(r => {
+      release = r
+    })
+  }
   on('tool.call', { tool: 'ExitPlanMode' }, async () => {
     await open
     return answered as never
   })
-  return { cap, logs, scans, release }
+  return { cap, logs, scans, release: () => release(), hold }
 }
 const waitFor = async (done: () => boolean, ms = 1500) => {
   const until = Date.now() + ms
@@ -6394,6 +6400,30 @@ test('rule: a plan screen with only normal work, or a reading that names nothing
   expect(s.logs).toEqual([])
 })
 
+test('rule: a later plan screen whose reading names nothing, after a warning in the same session, says so, so the warning above is not read as about it', async ($, on) => {
+  const s = planScreenScan(on, prompt => (prompt.includes('saves its output') ? `pieces:\n- ${SCAN_PIECE}` : prompt.includes('Plan: X.') ? 'I could not read it.' : 'pieces:\n- none'))
+  await started($)
+  const first = $.tool.call({ tool: 'ExitPlanMode', plan: BURIED_PLAN, tool_use_id: 'p1' } as never)
+  await waitFor(() => s.logs.length > 0)
+  s.release()
+  await first
+  s.hold()
+  const second = $.tool.call({ tool: 'ExitPlanMode', plan: 'Plan: tests first, then a code review.', tool_use_id: 'p2' } as never)
+  await waitFor(() => s.logs.length > 1)
+  expect(s.logs).toEqual([rep.planWarning([SCAN_PIECE]), rep.PLAN_CLEAR_LINE])
+  expect(rep.PLAN_CLEAR_LINE).toContain('the warning above was about an earlier plan')
+  s.release()
+  await second
+  // An unreadable reading says nothing either way.
+  s.hold()
+  const third = $.tool.call({ tool: 'ExitPlanMode', plan: 'Plan: X.', tool_use_id: 'p3' } as never)
+  await waitFor(() => s.scans.length > 2)
+  await waitFor(() => false, 30)
+  s.release()
+  await third
+  expect(s.logs).toHaveLength(2)
+})
+
 test('rule: a helper\'s plan screen and an empty plan are not read', async ($, on) => {
   const s = planScreenScan(on, () => `pieces:\n- ${SCAN_PIECE}`)
   await started($)
@@ -6422,6 +6452,8 @@ test('planScanPrompt fences the whole plan as the agent\'s text, and the system 
   expect(sys).toContain('- none')
   // The reading names the piece alone; what it costs is the rep's one sentence, said once.
   expect(sys).toContain('never what it costs or whether it is worth it')
+  // A review's own record is part of the review; a pass-or-fail report with evidence is a proof report.
+  expect(sys).toContain('Writing down what a review or a test found and what was fixed is part of that review or test, never a piece of its own. A report written to show the owner that each item passed, with evidence attached, is a proof report.')
   expect(rep.PLAN_SCAN_MODEL).toBe('sonnet')
 })
 

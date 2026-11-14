@@ -143,6 +143,7 @@ import {
   parsePlanScan,
   planScanPrompt,
   planWarning,
+  PLAN_CLEAR_LINE,
   planApprovedLine,
   PLAN_APPROVED_WHY,
   OWN_WORDS_TIMEOUT_MS,
@@ -2330,6 +2331,9 @@ async function takeNote($: EngineInterface, sid: string, note: string, from: { s
 // the session the screen was called in, so a reading that lands after a /clear or a resume shows
 // nothing in the next one.
 type PlanRead = { isOpen: boolean; sid: string; pieces?: string[]; accepted?: boolean }
+// The session whose plan screen last had a warning logged above it: a later plan there whose
+// reading names nothing logs PLAN_CLEAR_LINE, so that warning is not read as about it.
+let warnedIn: string | null = null
 async function scanPlan($: EngineInterface, plan: string, screen: PlanRead): Promise<void> {
   const result = await $.model.complete({
     model: PLAN_SCAN_MODEL,
@@ -2340,10 +2344,16 @@ async function scanPlan($: EngineInterface, plan: string, screen: PlanRead): Pro
   })
   if (!result.isAnswered) return
   const pieces = parsePlanScan(result.text)
-  if (pieces === null || pieces.length === 0) return
+  if (pieces === null) return
+  if (pieces.length === 0) {
+    if (screen.isOpen && screen.sid !== '' && warnedIn === screen.sid) $.ui.log(PLAN_CLEAR_LINE)
+    return
+  }
   screen.pieces = pieces
-  if (screen.isOpen) $.ui.log(planWarning(pieces))
-  else if (screen.accepted === true) await showApproved($, screen.sid, pieces)
+  if (screen.isOpen) {
+    $.ui.log(planWarning(pieces))
+    if (screen.sid !== '') warnedIn = screen.sid
+  } else if (screen.accepted === true) await showApproved($, screen.sid, pieces)
 }
 
 // The pieces of a plan the owner just accepted in session `sid`, on the rep's row as a note, in
