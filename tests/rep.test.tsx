@@ -334,28 +334,60 @@ const RUN_CAP = 4 * 1024 * 1024
 // first line, as a read past the cap keeps the oldest lines and drops the rest.
 // Every argv kept, and each run's time allowed in `timeouts`. The clock reads `now.t`, and
 // each read of a file other than the session's own takes `slow` milliseconds of it.
-const transcript = (on: On, files: Record<string, string>, opts: { folder?: string; cut?: readonly string[]; slow?: number; home?: string; profile?: string; config?: string } = {}) => {
+// `elsewhere` holds files in other project folders by full path, newest first after the
+// folder's own; `git grep`, run from the projects folder, names every file in either holding
+// the text after `-e`, relative and ending in NUL, `grep -r` the same by full path, and
+// `ls -t` of paths gives them newest first. `noFolder`: the folder is gone, so `ls` of it
+// fails. `noGit`: git cannot start, so its run rejects. Each run's folder kept in `cwds`.
+const transcript = (on: On, files: Record<string, string>, opts: { folder?: string; cut?: readonly string[]; slow?: number; home?: string; profile?: string; config?: string; elsewhere?: Record<string, string>; noFolder?: boolean; noGit?: boolean } = {}) => {
   const folder = opts.folder ?? FOLDER
+  const projects = opts.config === undefined ? PROJECTS : `${opts.config}/projects`
+  const elsewhere = opts.elsewhere ?? {}
+  // Every file by full path, newest first.
+  const all: [string, string][] = [...Object.entries(files).map(([n, b]): [string, string] => [`${folder}/${n}`, b]), ...Object.entries(elsewhere)]
   const runs: string[][] = []
   const timeouts: number[] = []
+  const cwds: (string | undefined)[] = []
   const now = { t: 1_000_000 }
   mock.env(on, { HOME: opts.home ?? '/Users/o', ...(opts.profile ? { USERPROFILE: opts.profile } : {}), ...(opts.config ? { CLAUDE_CONFIG_DIR: opts.config } : {}) })
   on('clock.now', () => ({ value: now.t }))
   on('process.run', (_$, e) => {
     runs.push([...e.argv])
     timeouts.push(e.init?.timeoutMs ?? 0)
+    cwds.push(e.init?.cwd)
     if (e.argv[0] === 'sed' && !(e.argv[e.argv.length - 1] ?? '').endsWith('/test-session.jsonl')) now.t += opts.slow ?? 0
     const out = (exitCode: number, stdout = '', isStdoutTruncated = false) => ({ value: { exitCode, stdout, stderr: '', isStdoutTruncated, isStderrTruncated: false } })
     if (e.argv[0] === 'find') {
-      if (e.argv[1] !== (opts.config === undefined ? PROJECTS : `${opts.config}/projects`)) return out(1)
+      if (e.argv[1] !== projects) return out(1)
       const name = e.argv[e.argv.length - 1] ?? ''
       return out(0, name in files ? `${folder}/${name}\n` : '')
     }
-    if (e.argv[0] === 'ls') return e.argv[2] === folder ? out(0, `${Object.keys(files).join('\n')}\n`) : out(1)
+    // The files under the projects folder, one folder down, holding the text after -e.
+    const holding = (argv: readonly string[]) => {
+      const text = argv[argv.indexOf('-e') + 1] ?? '\u0000'
+      return all.filter(([p, b]) => p.startsWith(`${projects}/`) && p.slice(projects.length + 1).split('/').length === 2 && b.includes(text)).map(([p]) => p)
+    }
+    if (e.argv[0] === 'git') {
+      if (opts.noGit) throw new Error('spawn git ENOENT')
+      if (e.init?.cwd !== projects) return out(128)
+      const hits = holding(e.argv).map(p => p.slice(projects.length + 1)).sort()
+      return hits.length === 0 ? out(1) : out(0, hits.map(h => `${h}\0`).join(''))
+    }
+    if (e.argv[0] === 'grep' && e.argv[1] === '-r') {
+      if (e.argv[e.argv.length - 1] !== projects) return out(2)
+      const hits = holding(e.argv).sort()
+      return hits.length === 0 ? out(1) : out(0, `${hits.join('\n')}\n`)
+    }
+    if (e.argv[0] === 'ls') {
+      if (e.argv.length === 3 && e.argv[2] === folder) return opts.noFolder ? out(1) : out(0, `${Object.keys(files).join('\n')}\n`)
+      const asked = e.argv.slice(2)
+      if (asked.length < 2 || asked.some(a => !a.startsWith('/'))) return out(1)
+      return out(0, `${all.map(([p]) => p).filter(p => asked.includes(p)).join('\n')}\n`)
+    }
     if (e.argv[0] !== 'sed' && e.argv[0] !== 'grep') return out(127)
     const path = e.argv[e.argv.length - 1] ?? ''
     const name = path.slice(folder.length + 1)
-    const body = path.startsWith(`${folder}/`) ? files[name] : undefined
+    const body = path.startsWith(`${folder}/`) && !opts.noFolder ? files[name] : elsewhere[path]
     if (body === undefined) return out(e.argv[0] === 'grep' ? 2 : 1)
     // grep -n -o -m 1 -F (or -E): the number of the first line holding the text (or a match
     // of the pattern), and the text matched.
@@ -378,7 +410,7 @@ const transcript = (on: On, files: Record<string, string>, opts: { folder?: stri
     const stdout = lines.length > 0 ? `${lines.join('\n')}\n` : ''
     return out(0, stdout.slice(0, RUN_CAP), stdout.length > RUN_CAP)
   })
-  return Object.assign(runs, { timeouts, now })
+  return Object.assign(runs, { timeouts, now, cwds })
 }
 
 // The transcript path Claude Code gives a session through its classic hooks.
@@ -9902,6 +9934,9 @@ const FIND = (id = 'test-session') => `find ${PROJECTS} -maxdepth 2 -name ${id}.
 const GREP = (file: string, id: string, folder = FOLDER) => `grep -n -o -m 1 -F "id":"${id}" ${folder}/${file}`
 const START = (file: string, folder = FOLDER) => `grep -n -o -m 1 -E "subtype":"compact_boundary".*"uuid":"[0-9a-f-]+"|"kind":"human" ${folder}/${file}`
 const SED_BEFORE = (file: string, line: number, folder = FOLDER) => `sed -n -E -e ${line}q -e ${HUMAN_SED} ${folder}/${file}`
+// The search of every project folder for a line, and the search used when git cannot start.
+const GIT = (needle: string) => `git grep --no-index -l -z -F --max-depth 1 -e ${needle} -- *.jsonl`
+const GREP_R = (needle: string, projects = PROJECTS) => `grep -r -l -F --include=*.jsonl --exclude-dir=subagents --exclude-dir=tool-results -e ${needle} ${projects}`
 
 test('humanTexts keeps only the rows the owner typed, origin human and not meta, a list of blocks as its text joined, a command as the owner ran it, and skips a cut line', () => {
   for (const line of ENGINE_LINES) expect([...humanTexts(line)]).toEqual([])
@@ -12081,7 +12116,8 @@ test('rule: a session forked with a new id, its own transcript not saved yet, ta
   await started($)
   await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
   expect(rec()?.owner).toEqual(SEEDED)
-  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), `ls -t ${FOLDER}`, SED('newer.jsonl'), SED('parent.jsonl')])
+  // A file that matches is asked whether it begins at a summary: a copy is never the parent.
+  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), `ls -t ${FOLDER}`, SED('newer.jsonl'), SED('parent.jsonl'), START('parent.jsonl')])
 })
 
 test('lastToolId is the id of the rows\' last tool result, a tool\'s own id only; toolLineOf reads the line number grep prints; the read before a line stops sed there', () => {
@@ -12234,7 +12270,206 @@ test('rule: a copy whose summary no other file in its folder holds gives the mes
     { n: 1, kind: 'his', text: 'Keep the year in the header too.', prior: '', incomplete: 'the session was compacted, so that turn is gone' },
     { n: 2, kind: 'his', text: 'And a changelog.', prior: 'Pushed.' },
   ])
-  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), START('test-session.jsonl'), `ls -t ${FOLDER}`, SUMMARY_GREP('newer.jsonl')])
+  // Its folder holds no file with the summary, so every project folder is searched for it once.
+  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), START('test-session.jsonl'), `ls -t ${FOLDER}`, SUMMARY_GREP('newer.jsonl'), GIT(`"uuid":"${BOUNDARY_ID}"`)])
+})
+
+// A folder of another project, where a session was recorded before its folder was removed.
+const GONE = `${PROJECTS}/-Users-o-work-app-gone`
+
+test('parentGitArgv searches every project folder one level down for the text as written, naming the files by NUL; parentGrepArgv does the same with grep, past the helpers\' folders; parentHits reads either into full paths of transcripts one folder down', () => {
+  expect(rep.parentGitArgv('"id":"toolu_01Push"')).toEqual(['git', 'grep', '--no-index', '-l', '-z', '-F', '--max-depth', '1', '-e', '"id":"toolu_01Push"', '--', '*.jsonl'])
+  expect(rep.parentGrepArgv(PROJECTS, '"id":"toolu_01Push"')).toEqual(['grep', '-r', '-l', '-F', '--include=*.jsonl', '--exclude-dir=subagents', '--exclude-dir=tool-results', '-e', '"id":"toolu_01Push"', PROJECTS])
+  // git names them relative to the projects folder, ending each in NUL; a folder name that starts with '-' is a path, never an option.
+  expect(rep.parentHits('-Users-o-work-app-gone/parent.jsonl\0-Users-o-a/b.jsonl\0', PROJECTS)).toEqual([`${GONE}/parent.jsonl`, `${PROJECTS}/-Users-o-a/b.jsonl`])
+  // grep names them in full, a line each; a helper's transcript, a file of another kind, a path elsewhere and a repeat are dropped.
+  expect(rep.parentHits(`${GONE}/parent.jsonl\n${GONE}/parent/subagents/agent-1.jsonl\n${GONE}/notes.txt\n/elsewhere/x.jsonl\n${GONE}/parent.jsonl\n`, PROJECTS)).toEqual([`${GONE}/parent.jsonl`])
+  expect(rep.parentHits('', PROJECTS)).toEqual([])
+  // A Windows path, written with forward slashes as every path there is.
+  expect(rep.parentHits('C:/Users/k/.claude/projects/-C-gone/p.jsonl\n', 'C:/Users/k/.claude/projects')).toEqual(['C:/Users/k/.claude/projects/-C-gone/p.jsonl'])
+  expect(rep.parentHits('C:/elsewhere/p.jsonl\n', 'C:/Users/k/.claude/projects')).toEqual([])
+})
+
+test('rule: a fork whose parent was recorded in another project folder, its own transcript not saved yet and its folder holding nothing of its rows, takes the owner\'s messages from the file every project folder is searched for by its last tool call', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS.filter(r => r.text !== PEER && r.text !== IDLE) }))
+  const parent = `${SEEDED_FILE}\n${USE_LINE('u1')}`
+  // The folder the fork started in holds other sessions; the parent's folder holds it and one unrelated file.
+  const runs = transcript(on, { 'newer.jsonl': LINE('Something he typed elsewhere.') }, { elsewhere: { [`${GONE}/parent.jsonl`]: parent, [`${GONE}/other.jsonl`]: LINE('Unrelated.') } })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await giveTranscript($, on)
+  await started($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
+  expect(rec()?.owner).toEqual(SEEDED)
+  expect(runs.map(r => r.join(' '))).toEqual([
+    SED('test-session.jsonl'),
+    `ls -t ${FOLDER}`,
+    SED('newer.jsonl'),
+    GIT('"id":"u1"'),
+    SED('parent.jsonl', GONE),
+    START('parent.jsonl', GONE),
+  ])
+  // git searches from the projects folder, so every folder name is a path below it.
+  expect(runs.cwds[runs.findIndex(r => r[0] === 'git')]).toBe(PROJECTS)
+})
+
+test('rule: a fork started from a folder whose records are gone finds its parent in another project folder all the same', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS.filter(r => r.text !== PEER && r.text !== IDLE) }))
+  const runs = transcript(on, {}, { noFolder: true, elsewhere: { [`${GONE}/parent.jsonl`]: `${SEEDED_FILE}\n${USE_LINE('u1')}` } })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await giveTranscript($, on)
+  await started($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
+  expect(rec()?.owner).toEqual(SEEDED)
+  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), `ls -t ${FOLDER}`, GIT('"id":"u1"'), SED('parent.jsonl', GONE), START('parent.jsonl', GONE)])
+})
+
+test('rule: where git cannot start, every project folder is searched with grep instead', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS.filter(r => r.text !== PEER && r.text !== IDLE) }))
+  const runs = transcript(on, {}, { noGit: true, elsewhere: { [`${GONE}/parent.jsonl`]: `${SEEDED_FILE}\n${USE_LINE('u1')}` } })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await giveTranscript($, on)
+  await started($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
+  expect(rec()?.owner).toEqual(SEEDED)
+  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), `ls -t ${FOLDER}`, GIT('"id":"u1"'), GREP_R('"id":"u1"'), SED('parent.jsonl', GONE), START('parent.jsonl', GONE)])
+})
+
+test('rule: the files found in other project folders are tried newest first, and the folder\'s own files already read are not read again', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS.filter(r => r.text !== PEER && r.text !== IDLE) }))
+  // An unrelated file in the start folder holds the call too, and the newest file found holds it with none of the owner's rows.
+  const runs = transcript(on, { 'near.jsonl': USE_LINE('u1') }, { elsewhere: { [`${PROJECTS}/-z-newest/a.jsonl`]: USE_LINE('u1'), [`${GONE}/parent.jsonl`]: `${SEEDED_FILE}\n${USE_LINE('u1')}` } })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await giveTranscript($, on)
+  await started($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
+  expect(rec()?.owner).toEqual(SEEDED)
+  expect(runs.map(r => r.join(' '))).toEqual([
+    SED('test-session.jsonl'),
+    `ls -t ${FOLDER}`,
+    SED('near.jsonl'),
+    GIT('"id":"u1"'),
+    // git names them in the order of their names; ls puts them newest first.
+    `ls -t ${GONE}/parent.jsonl ${PROJECTS}/-z-newest/a.jsonl`,
+    SED('a.jsonl', `${PROJECTS}/-z-newest`),
+    SED('parent.jsonl', GONE),
+    START('parent.jsonl', GONE),
+  ])
+})
+
+test('rule: a fork taken after a compaction the owner has typed nothing since, its parent recorded in another project folder, finds the call there and takes the messages before it', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: COMPACTED_ROWS }))
+  const runs = transcript(on, { 'newer.jsonl': LINE('Something he typed elsewhere.') }, { elsewhere: { [`${GONE}/parent.jsonl`]: `${COMPACTED_FILE}\n${LINE('Now add a readme.')}` } })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await giveTranscript($, on)
+  await started($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
+  expect(rec()?.owner).toEqual(COMPACTED)
+  expect(runs.map(r => r.join(' '))).toEqual([
+    SED('test-session.jsonl'),
+    `ls -t ${FOLDER}`,
+    GREP('newer.jsonl', 'toolu_01Push'),
+    GIT('"id":"toolu_01Push"'),
+    GREP('parent.jsonl', 'toolu_01Push', GONE),
+    SED_BEFORE('parent.jsonl', 4, GONE),
+  ])
+})
+
+test('rule: a fork saved as a copy of the stretch since the summary, its parent recorded in another project folder, takes the messages before the summary there and then the copy\'s own', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: TAIL_ROWS }))
+  const parent = [LINE('Add a licence file with the MIT text.'), LINE('Use this year, and push it.'), BOUNDARY(), LINE(SUMMARY, {}), LINE('Keep the year in the header too.'), USE_LINE('toolu_01Push'), LINE('Now add a readme.'), RESULT_LINE('toolu_01Push')].join('\n')
+  const runs = transcript(on, { 'test-session.jsonl': TAIL_COPY, 'newer.jsonl': LINE('Something he typed elsewhere.') }, { elsewhere: { [`${GONE}/parent.jsonl`]: parent } })
+  writer(on, () => OBJ('A licence file with the MIT text and this year, and a changelog.', ['the file pushed | open'], '#1 to #4'))
+  await giveTranscript($, on)
+  await started($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
+  expect(noBody(rec()?.owner)).toEqual(TAILED)
+  expect(runs.map(r => r.join(' '))).toEqual([
+    SED('test-session.jsonl'),
+    START('test-session.jsonl'),
+    `ls -t ${FOLDER}`,
+    SUMMARY_GREP('newer.jsonl'),
+    // The copy itself holds the line too, and is never searched again.
+    GIT(`"uuid":"${BOUNDARY_ID}"`),
+    SUMMARY_GREP('parent.jsonl', GONE),
+    SED_BEFORE('parent.jsonl', 3, GONE),
+  ])
+})
+
+// A fork's rows taken after a compaction, before the owner typed in it: the summary, the message
+// he typed after it in the parent, and the call it was taken during.
+const COPIED_ROWS = TAIL_ROWS.slice(0, 5)
+const PARENT_WHOLE = [LINE('Add a licence file with the MIT text.'), LINE('Use this year, and push it.'), BOUNDARY(), LINE(SUMMARY, {}), LINE('Keep the year in the header too.'), USE_LINE('toolu_01Push'), RESULT_LINE('toolu_01Push')].join('\n')
+// An earlier fork of the same session, saved as the stretch since the summary and what was typed in it.
+const EARLIER_COPY = [META, BOUNDARY(), LINE(SUMMARY, {}), LINE('Keep the year in the header too.'), USE_LINE('toolu_01Push'), RESULT_LINE('toolu_01Push'), LINE('Something the earlier fork was told.')].join('\n')
+
+test('rule: a fork whose own transcript is not saved yet takes its messages from the whole file it was forked from, never from an earlier fork\'s copy that is newer and matches as well, so its messages keep the numbers the owner sees', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: COPIED_ROWS }))
+  const runs = transcript(on, { 'earlier.jsonl': EARLIER_COPY, 'parent.jsonl': PARENT_WHOLE })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 to #3'))
+  await giveTranscript($, on)
+  await started($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
+  expect(rec()?.owner.map(m => [m.n, m.text])).toEqual([
+    [1, 'Add a licence file with the MIT text.'],
+    [2, 'Use this year, and push it.'],
+    [3, 'Keep the year in the header too.'],
+  ])
+  expect(runs.map(r => r.join(' '))).toEqual([
+    SED('test-session.jsonl'),
+    `ls -t ${FOLDER}`,
+    SED('earlier.jsonl'),
+    START('earlier.jsonl'),
+    SED('parent.jsonl'),
+    START('parent.jsonl'),
+  ])
+})
+
+test('rule: when only an earlier fork\'s copy matches a fork\'s rows, its summary is followed back to the file it was copied from, and the owner\'s messages before it there come first', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  // No tool result in its rows, so nothing but the copy's summary names the parent.
+  on('session.messages', () => ({ value: [TAIL_ROWS[0], TAIL_ROWS[1], { role: 'assistant', text: 'The header has the year.', toolUses: [] }] as SessionMessage[] }))
+  const runs = transcript(on, { 'earlier.jsonl': EARLIER_COPY }, { elsewhere: { [`${GONE}/parent.jsonl`]: PARENT_WHOLE } })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 to #3'))
+  await giveTranscript($, on)
+  await started($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
+  expect(rec()?.owner.map(m => [m.n, m.text])).toEqual([
+    [1, 'Add a licence file with the MIT text.'],
+    [2, 'Use this year, and push it.'],
+    [3, 'Keep the year in the header too.'],
+  ])
+  expect(runs.map(r => r.join(' '))).toEqual([
+    SED('test-session.jsonl'),
+    `ls -t ${FOLDER}`,
+    SED('earlier.jsonl'),
+    START('earlier.jsonl'),
+    GIT(`"uuid":"${BOUNDARY_ID}"`),
+    SUMMARY_GREP('parent.jsonl', GONE),
+    SED_BEFORE('parent.jsonl', 3, GONE),
+  ])
 })
 
 test('rule: a fork taken while a tool call ran, its result marked interrupted and not yet saved in the parent, finds its place in the parent by that call', async ($, on) => {
@@ -12303,7 +12538,7 @@ test('rule: when no transcript can be read, nothing is seeded, nothing is writte
   await settle($)
   expect(rec()?.owner ?? []).toEqual([])
   expect(prompts.length).toBe(0)
-  expect(runs.map(r => r[0])).toEqual(['sed', 'ls'])
+  expect(runs.map(r => r[0])).toEqual(['sed', 'ls', 'git'])
 })
 
 test('rule: with no transcript path given and no file of the session\'s found by name, nothing is read or seeded', async ($, on) => {
@@ -12560,7 +12795,9 @@ test('rule: in the scan of a forked session\'s folder, a file whose read was cut
   await started($)
   await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
   expect(rec()?.owner).toEqual(SEEDED)
-  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), `ls -t ${FOLDER}`, SED('newer.jsonl'), SED('parent.jsonl')])
+  // A file that matches is asked whether it begins at a summary: a copy is never the parent. The row
+  // only the cut file holds leaves the parent short of every row, so the other folders are searched once.
+  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), `ls -t ${FOLDER}`, SED('newer.jsonl'), SED('parent.jsonl'), START('parent.jsonl'), GIT('"id":"u1"')])
 })
 
 test('rule: the scan of a forked session\'s folder ends with what it has once its time is spent, each read given no more than the time left', async ($, on) => {
@@ -12643,7 +12880,7 @@ test('rule: a fork whose own transcript is not saved yet takes the best-matching
     { n: 3, kind: 'his', text: 'And keep the logs.', prior: '', incomplete: rep.NO_ROW_WHY },
   ])
   // Every row matched in the parent's file, so the scan stops there.
-  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), `ls -t ${FOLDER}`, SED('other.jsonl'), SED('sibling.jsonl'), SED('parent.jsonl')])
+  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), `ls -t ${FOLDER}`, SED('other.jsonl'), SED('sibling.jsonl'), START('sibling.jsonl'), SED('parent.jsonl'), START('parent.jsonl')])
 })
 
 test('rule: of two files in a fork\'s folder that match its rows equally, the newer is taken', async ($, on) => {
@@ -13203,9 +13440,13 @@ test('rule: with OS missing, the check pressed on a card drawn before SystemRoot
 const WIN_GIT = 'C:/PF/Git/usr/bin'
 const WIN_PROJECTS = 'C:/Users/k/.claude/projects'
 const WIN_FOLDER = `${WIN_PROJECTS}/-C-work-app`
-const winTranscript = (on: On, files: Record<string, string>, opts: { probeFails?: number; os?: string; systemRoot?: string; home?: string } = {}): string[][] => {
+// `elsewhere` holds files in other project folders by full path, which Git's grep -r names and
+// ls -t puts newest first after the folder's own.
+const winTranscript = (on: On, files: Record<string, string>, opts: { probeFails?: number; os?: string; systemRoot?: string; home?: string; elsewhere?: Record<string, string> } = {}): string[][] => {
   const runs: string[][] = []
   const folder = WIN_FOLDER
+  const elsewhere = opts.elsewhere ?? {}
+  const all: [string, string][] = [...Object.entries(files).map(([n, b]): [string, string] => [`${folder}/${n}`, b]), ...Object.entries(elsewhere)]
   let fails = opts.probeFails ?? 0
   mock.env(on, { OS: opts.os ?? WINDOWS_OS, ...(opts.systemRoot ? { SystemRoot: opts.systemRoot } : {}), ...(opts.home ? { HOME: opts.home } : {}), USERPROFILE: 'C:\\Users\\k', PROGRAMFILES: 'C:\\PF' })
   on('clock.now', () => ({ value: 1_000_000 }))
@@ -13228,10 +13469,19 @@ const winTranscript = (on: On, files: Record<string, string>, opts: { probeFails
       const file = argv[argv.length - 1] ?? ''
       return out(0, file in files ? `${folder}/${file}\n` : '')
     }
-    if (name === 'ls') return argv[2] === folder ? out(0, `${Object.keys(files).join('\n')}\n`) : out(1)
+    if (name === 'grep' && argv[1] === '-r') {
+      if (argv[argv.length - 1] !== WIN_PROJECTS) return out(2)
+      const text = argv[argv.indexOf('-e') + 1] ?? '\u0000'
+      const hits = all.filter(([, b]) => b.includes(text)).map(([p]) => p).sort()
+      return hits.length === 0 ? out(1) : out(0, `${hits.join('\n')}\n`)
+    }
+    if (name === 'ls') {
+      if (argv.length === 3) return argv[2] === folder ? out(0, `${Object.keys(files).join('\n')}\n`) : out(1)
+      return out(0, `${all.map(([p]) => p).filter(p => argv.slice(2).includes(p)).join('\n')}\n`)
+    }
     if (name !== 'sed' && name !== 'grep') return out(1)
     const path = argv[argv.length - 1] ?? ''
-    const body = path.startsWith(`${folder}/`) ? files[path.slice(folder.length + 1)] : undefined
+    const body = path.startsWith(`${folder}/`) ? files[path.slice(folder.length + 1)] : elsewhere[path]
     if (body === undefined) return out(name === 'grep' ? 2 : 1)
     if (name === 'grep') {
       const text = argv[6] ?? '\u0000'
@@ -13246,6 +13496,24 @@ const winTranscript = (on: On, files: Record<string, string>, opts: { probeFails
   })
   return runs
 }
+
+test('rule: on Windows a fork whose parent was recorded in another project folder finds it with Git\'s own grep when git is not found by name', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS.filter(r => r.text !== PEER && r.text !== IDLE) }))
+  const gone = `${WIN_PROJECTS}/-C-work-gone`
+  const runs = winTranscript(on, {}, { elsewhere: { [`${gone}/parent.jsonl`]: `${SEEDED_FILE}\n${USE_LINE('u1')}` } })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await giveTranscript($, on, `${WIN_FOLDER}/test-session.jsonl`)
+  await started($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
+  expect(rec()?.owner).toEqual(SEEDED)
+  const searches = runs.filter(r => r.includes('-e'))
+  expect(searches.map(r => r[0])).toEqual(['git', `${WIN_GIT}/grep.exe`])
+  expect(searches[1]?.[searches[1].length - 1]).toBe(WIN_PROJECTS)
+  expect(runs.some(r => r[0] === `${WIN_GIT}/sed.exe` && r[r.length - 1] === `${gone}/parent.jsonl`)).toBe(true)
+})
 
 test('rule: on Windows the owner\'s messages are read from the session\'s file through Git\'s own commands, under the home USERPROFILE names, written with forward slashes', async ($, on) => {
   const rec = kept(on, {})

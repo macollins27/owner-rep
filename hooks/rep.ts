@@ -2356,6 +2356,35 @@ export const HUMAN_SCAN_MAX = 40
 // within this much time for the whole scan; past it, the scan ends with what it has.
 export const HUMAN_SCAN_BUDGET_MS = 30_000
 
+// A session resumed or forked from another folder than the one it was recorded in (a worktree
+// removed after merge is the usual case) has its parent's file in another project folder under
+// the config folder, and Claude Code names neither the parent nor its folder to the mod (no hook
+// input, transcript field or row holds them). When the start folder's newest files do not hold
+// the parent, it is found by one search of every project folder's transcripts for a line only
+// it, and copies of it, can hold: its call of the fork's last tool result (`"id":"<id>"`) or the
+// summary line a copy begins at (`"uuid":"<id>"`). git's own grep does it in one run, searching
+// files outside any repository (`--no-index`), run in the projects folder since it searches only
+// below where it runs: on this Mac all 5,097 transcripts, 8.2 GB, in under 2 s, where the
+// system's grep takes 11 s for a fifth of them. A host where git does not start falls back to
+// grep reading the folder as a tree, leaving out the helpers' and tools' folders inside a
+// session's own. Only transcripts directly in a project folder are taken (parentHits).
+export const parentGitArgv = (needle: string): string[] => ['git', 'grep', '--no-index', '-l', '-z', '-F', '--max-depth', '1', '-e', needle, '--', '*.jsonl']
+export const parentGrepArgv = (projects: string, needle: string): string[] => ['grep', '-r', '-l', '-F', '--include=*.jsonl', '--exclude-dir=subagents', '--exclude-dir=tool-results', '-e', needle, projects]
+// The files either search names, as full paths: git's are relative to the projects folder and
+// end in a NUL each, grep's are full and end in a line break. Only `<projects>/<folder>/<file>.jsonl`.
+export function parentHits(stdout: string, projects: string): string[] {
+  const out: string[] = []
+  for (const raw of stdout.split(/[\0\n]/)) {
+    const hit = raw.trim()
+    if (hit === '') continue
+    const rel = hit.startsWith(`${projects}/`) ? hit.slice(projects.length + 1) : hit.startsWith('/') || /^[A-Za-z]:/.test(hit) ? null : hit.replace(/^\.\//, '')
+    if (rel === null || !rel.endsWith('.jsonl') || rel.split('/').length !== 2) continue
+    const full = `${projects}/${rel}`
+    if (!out.includes(full)) out.push(full)
+  }
+  return out
+}
+
 // Cuts a text to `max` characters, keeping its head and its tail around a gap marked inside the
 // field it falls in (`field`: message, session entry, tool input or tool result), so a reader
 // knows what was left out and from what.

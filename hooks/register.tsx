@@ -176,6 +176,9 @@ import {
   HUMAN_READ_TIMEOUT_MS,
   HUMAN_SCAN_MAX,
   HUMAN_SCAN_BUDGET_MS,
+  parentGitArgv,
+  parentGrepArgv,
+  parentHits,
   type RecordRow,
   objectiveText,
   openConditions,
@@ -2090,23 +2093,36 @@ function holdTranscript(id: unknown, path: unknown): void {
 // other files are read instead, a cut read skipped, and the file whose items match the most
 // of the fork's rows (forkItems; the newest on a tie) gives its part up to the last match
 // and the queued messages right after it, the scan stopping once every row that could be
-// the owner's is matched. A fork taken after a compaction the owner has typed nothing since
-// holds no such row: its parent is then the newest file holding the call of its last tool
-// result (lastToolId), and their messages are the ones before that call's line. Null when
-// nothing could be read in the session's own file, and when the scan matched none of the
-// fork's rows, whether no file could be read whole or the files read hold none of them: a
-// file that matches nothing proves nothing about who wrote the rows.
+// the owner's is matched. A file that begins at a summary is an earlier fork's copy, never
+// the parent: it never ends the scan and never wins a tie against a whole file, and when only
+// a copy matches, its summary line is followed back to the file it was copied from and the
+// messages before it there come first. A fork taken after a compaction the owner has typed
+// nothing since holds no such row: its parent is then the newest file holding the call of its
+// last tool result (lastToolId), and their messages are the ones before that call's line.
+// When the start folder's newest files hold none of this (the session was recorded in another
+// folder, one since removed), every project folder is searched once for that summary line or
+// that call (parentGitArgv), within what is left of the same time, and the files found are
+// tried the same way, newest first. Null when nothing could be read in the session's own
+// file, and when the scan matched none of the fork's rows, whether no file could be read whole
+// or the files read hold none of them: a file that matches nothing proves nothing about who
+// wrote the rows.
 async function heldItems($: EngineInterface, sid: string, rows: readonly RecordRow[]): Promise<HumanItem[] | null> {
   try {
     const host = await hostOf($)
     const local = (p: string): string => (isWindowsHost(host) ? slashed(p) : p)
-    let path = local(transcripts.get(sid) ?? '')
-    if (path === '') {
+    let config: string | null | undefined
+    const configDir = async (): Promise<string | null> => {
+      if (config !== undefined) return config
       const set = await $.env.get('CLAUDE_CONFIG_DIR')
       const home = await homeFor($)
-      const config = set !== undefined && set !== '' ? local(set) : home !== '' ? `${home}/.claude` : null
-      if (config === null) return null
-      const found = await $.process.run(hostArgv(host, ['find', `${config}/projects`, '-maxdepth', '2', '-name', `${sid}.jsonl`]), { timeoutMs: HUMAN_READ_TIMEOUT_MS })
+      config = set !== undefined && set !== '' ? local(set) : home !== '' ? `${home}/.claude` : null
+      return config
+    }
+    let path = local(transcripts.get(sid) ?? '')
+    if (path === '') {
+      const dir = await configDir()
+      if (dir === null) return null
+      const found = await $.process.run(hostArgv(host, ['find', `${dir}/projects`, '-maxdepth', '2', '-name', `${sid}.jsonl`]), { timeoutMs: HUMAN_READ_TIMEOUT_MS })
       path = found.exitCode === 0 ? local(found.stdout.split('\n').find(l => l.trim() !== '')?.trim() ?? '') : ''
       if (path === '') return null
     }
@@ -2121,53 +2137,114 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
     }
     const copied = own.exitCode === 0 ? humanItems(own.stdout) : []
     const folder = folderOf(path)
-    const name = path.slice(folder.length + 1)
     const want = summary === null ? forkCandidates(rows).length : 0
-    const anchor = summary === null && want === 0 ? lastToolId(rows) : null
-    if (summary === null && want === 0 && anchor === null) return null
+    const tool = summary === null ? lastToolId(rows) : null
+    if (summary === null && want === 0 && tool === null) return null
     const start = await $.clock.now()
     const left = async () => HUMAN_SCAN_BUDGET_MS - ((await $.clock.now()) - start)
+    const seen = new Set<string>([path])
+    // The newest other files in the start folder; none when it cannot be listed.
     const listed = await $.process.run(hostArgv(host, ['ls', '-t', folder]), { timeoutMs: HUMAN_READ_TIMEOUT_MS })
-    if (listed.exitCode !== 0) return summary === null ? null : copied
-    const files = listed.stdout
-      .split('\n')
+    const near = (listed.exitCode === 0 ? listed.stdout.split('\n') : [])
       .map(f => f.trim())
-      .filter(f => f.endsWith('.jsonl') && f !== name)
+      .filter(f => f.endsWith('.jsonl'))
+      .map(f => `${folder}/${f}`)
+      .filter(f => f !== path)
       .slice(0, HUMAN_SCAN_MAX)
-    if (summary !== null || anchor !== null) {
+    // The files in every project folder holding the needle, newest first, none tried yet.
+    const far = async (needle: string): Promise<string[]> => {
+      const dir = await configDir()
+      const time = await left()
+      if (dir === null || time <= 0) return []
+      const projects = `${dir}/projects`
+      let hits: string[] | null = null
+      const git = await $.process.run(hostArgv(host, parentGitArgv(needle)), { cwd: projects, timeoutMs: Math.min(HUMAN_READ_TIMEOUT_MS, time) }).catch(() => null)
+      if (git !== null && (git.exitCode === 0 || git.exitCode === 1)) hits = git.exitCode === 0 ? parentHits(git.stdout, projects) : []
+      if (hits === null) {
+        const rest = await left()
+        if (rest <= 0) return []
+        const grep = await $.process.run(hostArgv(host, parentGrepArgv(projects, needle)), { timeoutMs: Math.min(HUMAN_READ_TIMEOUT_MS, rest) }).catch(() => null)
+        hits = grep === null || grep.exitCode === 1 ? [] : parentHits(grep.stdout, projects)
+      }
+      const fresh = hits.filter(h => !seen.has(h))
+      if (fresh.length < 2) return fresh
+      const sorted = await $.process.run(hostArgv(host, ['ls', '-t', ...fresh]), { timeoutMs: HUMAN_READ_TIMEOUT_MS }).catch(() => null)
+      const order = sorted !== null && sorted.exitCode === 0 ? sorted.stdout.split('\n').map(l => l.trim()).filter(l => fresh.includes(l)) : []
+      return [...new Set([...order, ...fresh])].slice(0, HUMAN_SCAN_MAX)
+    }
+    // The owner's messages before the line `find` names, in the first of the files holding any
+    // there. 'placed' when only files holding the line with nothing of the owner's before it were
+    // found: another copy of the stretch since the summary (an earlier fork of the same session),
+    // never the parent, which still proves the line was found. Null when none held it.
+    const before = async (files: readonly string[], find: (file: string) => string[]): Promise<HumanItem[] | 'placed' | null> => {
       let placed = false
       for (const file of files) {
+        seen.add(file)
         const remaining = await left()
         if (remaining <= 0) break
-        const find = summary !== null ? summaryLineFind(`${folder}/${file}`, summary) : toolLineFind(`${folder}/${file}`, anchor ?? '')
-        const at = await $.process.run(hostArgv(host, find), { timeoutMs: Math.min(HUMAN_READ_TIMEOUT_MS, remaining) })
+        const at = await $.process.run(hostArgv(host, find(file)), { timeoutMs: Math.min(HUMAN_READ_TIMEOUT_MS, remaining) })
         const line = at.exitCode === 0 ? toolLineOf(at.stdout) : null
         if (line === null) continue
         const time = await left()
         if (time <= 0) break
-        const found = await $.process.run(hostArgv(host, humanReadBefore(`${folder}/${file}`, line)), { timeoutMs: Math.min(HUMAN_READ_TIMEOUT_MS, time) })
+        const found = await $.process.run(hostArgv(host, humanReadBefore(file, line)), { timeoutMs: Math.min(HUMAN_READ_TIMEOUT_MS, time) })
         if (found.exitCode !== 0 || found.isStdoutTruncated) continue
-        // A file holding the line with nothing of the owner's before it is another copy of the
-        // stretch since the summary (an earlier fork of the same session), never the parent; it
-        // still proves the line was found, so a fork with no file holding more seeds from its rows.
-        const before = humanItems(found.stdout)
+        const items = humanItems(found.stdout)
         placed = true
-        if (before.length === 0) continue
-        return summary === null ? before : [...before, ...copied]
+        if (items.length > 0) return items
       }
-      return summary !== null ? copied : placed ? [] : null
+      return placed ? 'placed' : null
     }
-    let best: { items: HumanItem[]; matched: number } = { items: [], matched: 0 }
-    for (const file of files) {
-      const remaining = await left()
-      if (remaining <= 0) break
-      const found = await read(`${folder}/${file}`, Math.min(HUMAN_READ_TIMEOUT_MS, remaining))
-      if (found.exitCode !== 0 || found.isStdoutTruncated) continue
-      const part = forkItems(humanItems(found.stdout), rows)
-      if (part.matched > best.matched) best = part
-      if (best.matched === want) break
+    if (summary !== null) {
+      const id = summary
+      const find = (file: string) => summaryLineFind(file, id)
+      const nearby = await before(near, find)
+      const items = Array.isArray(nearby) ? nearby : await before(await far(`"uuid":"${id}"`), find)
+      return Array.isArray(items) ? [...items, ...copied] : copied
     }
-    return best.matched > 0 ? best.items : null
+    if (want === 0 && tool !== null) {
+      const id = tool
+      const find = (file: string) => toolLineFind(file, id)
+      const nearby = await before(near, find)
+      if (Array.isArray(nearby)) return nearby
+      const elsewhere = await before(await far(`"id":"${id}"`), find)
+      if (Array.isArray(elsewhere)) return elsewhere
+      return nearby === 'placed' || elsewhere === 'placed' ? [] : null
+    }
+    // The best whole file and the best copy, by rows matched; the first read, the newest, on a tie.
+    type Match = { items: HumanItem[]; matched: number; file: string; summary: string | null }
+    let whole: Match = { items: [], matched: 0, file: '', summary: null }
+    let copy: Match = whole
+    const scan = async (files: readonly string[]): Promise<void> => {
+      for (const file of files) {
+        seen.add(file)
+        const remaining = await left()
+        if (remaining <= 0) break
+        const found = await read(file, Math.min(HUMAN_READ_TIMEOUT_MS, remaining))
+        if (found.exitCode !== 0 || found.isStdoutTruncated) continue
+        const part = forkItems(humanItems(found.stdout), rows)
+        if (part.matched === 0) continue
+        const time = await left()
+        if (time <= 0) break
+        const begins = await $.process.run(hostArgv(host, startFind(file)), { timeoutMs: Math.min(HUMAN_READ_TIMEOUT_MS, time) })
+        const from = begins.exitCode === 0 ? summaryStart(begins.stdout) : null
+        if (from !== null) {
+          if (part.matched > copy.matched) copy = { ...part, file, summary: from }
+          continue
+        }
+        if (part.matched > whole.matched) whole = { ...part, file, summary: null }
+        if (whole.matched === want) return
+      }
+    }
+    await scan(near)
+    if (whole.matched < want && tool !== null) await scan(await far(`"id":"${tool}"`))
+    if (whole.matched > 0 && whole.matched >= copy.matched) return whole.items
+    if (copy.matched === 0 || copy.summary === null) return null
+    const id = copy.summary
+    const find = (file: string) => summaryLineFind(file, id)
+    const nearby = await before(near.filter(f => f !== copy.file), find)
+    const source = Array.isArray(nearby) ? nearby : await before(await far(`"uuid":"${id}"`), find)
+    return Array.isArray(source) ? [...source, ...copy.items] : copy.items
   } catch {
     return null
   }
