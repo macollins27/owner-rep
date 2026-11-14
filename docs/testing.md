@@ -407,19 +407,26 @@ Scenarios, one capture each:
 
 ### The side-by-side
 
-`MODEL=<model> tests/live/compare.sh OLD_DIR NEW_DIR SESSION_ID [SESSION_ID ...]`, run from
-the folder the sessions were recorded in, runs two builds of the rep on the same real sessions
-of the owner's, named by their ids (`--resume` finds a session recorded under another project
-all the same). Each run forks the session
+`MODEL=<model> [CHECK=1] [TMUX_NAME=<name>] tests/live/compare.sh OLD_DIR NEW_DIR SESSION_ID [SESSION_ID ...]`
+runs two builds of the rep on the same real sessions of the owner's, named by their ids. Each
+session is forked from its own folder, the first `cwd` its transcript records, so sessions
+from different folders run together. Each run forks the session
 (`--resume <session> --fork-session --session-id <fresh uuid>`, so the parent's file is never
 written; the script prints each parent file's checksum before and after and they must match),
 loads one build with `--plugin-dir` and the installed copy switched off, sends nothing (a press with
 nothing to fork reads the session's own record, so the card judges the parent's job), waits up
 to 180 seconds for the row's head to leave the placeholder, which means the objective is
-written (the wait is printed), saves the screen, presses Brief me and saves the card. The model is `claude-opus-5-5` unless `MODEL` names
-another. `tests/live/compare/` (git-ignored) holds the captures and
-`report.txt`, which prints per card the Stands, Means, Left out (with its items), Next and Well
-lines, the message box and the price line; the green going-well line cannot be read from a
+written, saves the screen, presses Brief me and saves the card. With `CHECK=1` it then presses
+Check it, waits up to 600 seconds for the checked card, saves it at 170×200, resizes the window
+to 170×24 and saves it again. Three times are printed and go into `report.txt` per fork: the
+objective's seconds from `tmux new-session` (a stable start, not the row's first drawing), the
+card's seconds from pressing 1, and the checked card's seconds from pressing 3. The model is
+`claude-opus-5-5` unless `MODEL` names another; the forks run in the tmux session `owner-rep-cmp`
+unless `TMUX_NAME` names another, targeted by its exact name. The run passes when every expected
+capture was made, sessions × 2 builds × (1, or 3 with `CHECK=1`), and the parents' files are
+unchanged. `tests/live/compare/` (git-ignored) holds the captures and
+`report.txt`, which prints per card the times, the Stands, Means, Left out (with its items), Next and Well
+lines, the message box, the price line and, with `CHECK=1`, the checked lines; the green going-well line cannot be read from a
 capture. With two sessions named it costs four real sessions and about fifteen minutes. Status: built on 19 Oct 2026;
 run on one session with one build to show it forks, waits and captures the card of the parent's job (an earlier version sent a no-op prompt, and the card judged that instead). The
 full four-card run, main at 8daa0c5 against the shorter brief, was made the same day: all
