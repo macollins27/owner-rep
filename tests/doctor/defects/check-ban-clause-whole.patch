@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 664d9b0..f137323 100644
+index 32c513d..6d9b030 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -5132,7 +5132,7 @@ export const withoutCheckBans = (message: string): string => {
-   for (const { start, end } of sentencesOf(message).reverse()) {
-     const sentence = message.slice(start, end)
-     const clauses = sentence.split(';')
--    if (clauses.length < 2 || !clauses.some(isCheckBan) || clauses.every(isCheckBan)) continue
-+    if (clauses.length < 99 || !clauses.some(isCheckBan) || clauses.every(isCheckBan)) continue
-     const stop = /[.!?]["'”’)\]]*\s*$/.exec(clauses[clauses.length - 1] ?? '')?.[0].trim() ?? ''
-     const marker = LIST_MARKER.exec(sentence)?.[0] ?? ''
-     let joined = clauses.filter(c => !isCheckBan(c)).map(c => c.replace(LIST_MARKER, '').trim()).join('; ')
+@@ -5167,7 +5167,7 @@ const BAN_THING = String.raw`(?:tests?|checks?|(?:code\s+)?reviews?)`
+ const CHECK_BAN = new RegExp(String.raw`^(?:do\s+not|don['’]t|never)\s+(?:build|add|write|create)\s+(?:(?:new|more)\s+)?${BAN_THING}(?:(?:\s*,\s*|\s+(?:or|and)\s+|\s*,\s*(?:or|and)\s+)${BAN_THING})*(?:\s+for\s+this)?\s*[.!]?$`, 'i')
+ const isCheckBan = (sentence: string): boolean => CHECK_BAN.test(sentence.replace(LIST_MARKER, '').replace(/\s+/g, ' ').trim())
+ export const withoutCheckBans = (message: string): string =>
+-  withoutSpans(message, sentencesOf(message).filter(({ start, end }) => isCheckBan(message.slice(start, end))))
++  withoutSpans(message, sentencesOf(message).filter(({ start, end }) => isCheckBan(message.slice(start, end).split(';')[0].replace(/^\(/, ''))))
+ 
+ // The objective is not finished while a condition is open, and the gate works
+ // part by part. A verdict other than continue (stop, or none given), a

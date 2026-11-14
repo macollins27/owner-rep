@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 32c513d..10600ba 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2872,7 +2872,7 @@ const ENTRY_ONE = String.raw`\bentry\s+#?\d+\b`
+ const ENTRY_RANGE = String.raw`\bentries\s+#?\d+\s*(?:[-–—]|to)\s*#?\d+\b`
+ const ENTRY_CITED = String.raw`(?:${ENTRY_ONE}|${ENTRY_RANGE})`
+ const ENTRY_BRACKET = new RegExp(String.raw`[ \t]*\(\s*(?:(?:(?:found|seen|shown)\s+)?(?:in|at|from)\s+)?${ENTRY_CITED}\s*\)`, 'gi')
+-const ENTRY_PHRASE = new RegExp(String.raw`(,?)[ \t]+\b(?:in|at|from)\s+${ENTRY_CITED}(,?)`, 'gi')
++const ENTRY_PHRASE = new RegExp(String.raw`(,?)[ \t]+\b(?:(?:in|at|from)\s+)?${ENTRY_CITED}(,?)`, 'gi')
+ const ENTRY_SPAN = new RegExp(String.raw`[ \t]*${ENTRY_RANGE}`, 'gi')
+ export function withoutEntryRefs(text: string): string {
+   return text

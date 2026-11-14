@@ -1,10 +1,10 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index a2ff546..465ad6b 100644
+index 32c513d..ed1e483 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3976,7 +3976,7 @@ export const same = (a: string, b: string): boolean =>
- // other condition's by MARK_LEAD, so a mark too loose to name one condition, or between two, moves
- // none. -1 when it names none.
+@@ -4017,7 +4017,7 @@ export const same = (a: string, b: string): boolean =>
+ // marks "the live site" and "deleted" never marks "not deleted". -1 when it names none, and the
+ // condition stays as it was.
  export const MARK_MATCH = 0.5
 -export const MARK_LEAD = 0.2
 +export const MARK_LEAD = 0

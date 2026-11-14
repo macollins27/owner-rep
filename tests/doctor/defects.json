@@ -3319,7 +3319,7 @@
   },
   {
     "name": "check-ban-kept",
-    "breaks": "A message line that forbids tests, checks or reviews in general (\"Do not build new tests or reports for this.\") reaches the agent, so the card bans normal good work.",
+    "breaks": "A message sentence that is nothing but a ban on tests, checks or reviews (\"Do not write new tests.\") reaches the agent, so the card bans normal good work.",
     "patch": "check-ban-kept.patch",
     "fixed": "2026-11-14"
   },
@@ -3331,7 +3331,7 @@
   },
   {
     "name": "check-ban-clause-whole",
-    "breaks": "A ban joined to its remedy by a semicolon (\"Do not add new checks; open it and use it.\") is cut whole, so the hands-on look the owner asked for goes with it.",
+    "breaks": "A ban joined to its remedy by a semicolon (\"Do not add tests; open the page.\") is cut whole, so the instruction after the semicolon is lost.",
     "patch": "check-ban-clause-whole.patch",
     "fixed": "2026-11-14"
   },
@@ -3339,6 +3339,96 @@
     "name": "check-ban-tail-loose",
     "breaks": "A ban on tests in one place or of one kind (\"Don't add tests to the vendored folder.\") is cut from the message as if it banned tests in general, so an instruction the owner needs sent is lost.",
     "patch": "check-ban-tail-loose.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "stop-exempt-without-asking",
+    "breaks": "A message telling the agent to do \"what stops\" a fault is let through as a question, so \"Do what lets you stop\" is never read as a stop.",
+    "patch": "stop-exempt-without-asking.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "stop-permitted-read-as-question",
+    "breaks": "A message telling the agent to say what permits or enables it to stop is read as asking which fact stops, so a stop the message gives is let through.",
+    "patch": "stop-permitted-read-as-question.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "mark-negation-ignored",
+    "breaks": "A shown line that says the opposite of a held condition (\"not deleted\" for \"deleted\") marks it, so the done list ticks a condition the proof denies.",
+    "patch": "mark-negation-ignored.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "mark-apart-word-ignored",
+    "breaks": "A shown line that leaves out the word setting one held condition apart from another (\"staging\" for \"live\") marks it, so a condition is ticked on another's proof.",
+    "patch": "mark-apart-word-ignored.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "helpers-read-as-waiting-on-owner",
+    "breaks": "When the agent's turn ends with helpers or background commands still running, Right now says it is waiting on the owner, so the owner steps in on work that is not finished.",
+    "patch": "helpers-read-as-waiting-on-owner.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "background-task-not-tracked",
+    "breaks": "A command the agent sends to the background is never counted, so when its turn ends Right now says it is waiting on the owner while the command still runs.",
+    "patch": "background-task-not-tracked.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "background-notification-ignored",
+    "breaks": "A background command stays counted after its notification says it finished, so Right now keeps saying the agent waits on it when it waits on the owner.",
+    "patch": "background-notification-ignored.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "open-card-right-now-frozen",
+    "breaks": "An open card keeps the Right now it was drawn with after the agent moves on or stops, so the owner reads a state that is no longer true.",
+    "patch": "open-card-right-now-frozen.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "entry-word-boundary-lost",
+    "breaks": "Entry citations are matched without word boundaries, so \"at entry 3B\", a door the owner named, loses its number and leaves \"B\" behind.",
+    "patch": "entry-word-boundary-lost.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "entry-bare-stripped",
+    "breaks": "Any \"entry N\" is stripped, not only a citation of the record, so \"Fix entry 2 in the guest list\" loses the item the owner named.",
+    "patch": "entry-bare-stripped.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "check-ban-mid-sentence",
+    "breaks": "A sentence that ends in a ban on tests after other instructions (\"Fix the parser and do not add tests.\") is cut whole, so the instruction before the ban is lost.",
+    "patch": "check-ban-mid-sentence.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "check-ban-other-thing",
+    "breaks": "A ban that also names something other than tests, checks or reviews (\"Do not build new tests or reports for this.\") is cut, so the owner's ban on the other thing never reaches the agent.",
+    "patch": "check-ban-other-thing.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "git-c-clean-missed",
+    "breaks": "A \"git -C <folder> clean\" is not read as removing files, so its long file list is cut short and the reader says files were never deleted.",
+    "patch": "git-c-clean-missed.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "find-delete-missed",
+    "breaks": "A \"find ... -delete\" is not read as removing files, so its long file list is cut short and the reader says files were never deleted.",
+    "patch": "find-delete-missed.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "windows-removal-missed",
+    "breaks": "Windows removal commands (rd, del, Remove-Item) are not read as removing files, so their long file lists are cut short and the reader says files were never deleted.",
+    "patch": "windows-removal-missed.patch",
     "fixed": "2026-11-14"
   }
 ]

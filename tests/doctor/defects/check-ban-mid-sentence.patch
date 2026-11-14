@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 32c513d..2e6b8e6 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -5164,7 +5164,7 @@ const withoutSpans = (message: string, cuts: { start: number; end: number }[]):
+ // tests" asks for them), a place, a kind of test, a self-proving target, another thing banned
+ // beside the tests. A message left empty is refused by the gate, as any empty message is.
+ const BAN_THING = String.raw`(?:tests?|checks?|(?:code\s+)?reviews?)`
+-const CHECK_BAN = new RegExp(String.raw`^(?:do\s+not|don['’]t|never)\s+(?:build|add|write|create)\s+(?:(?:new|more)\s+)?${BAN_THING}(?:(?:\s*,\s*|\s+(?:or|and)\s+|\s*,\s*(?:or|and)\s+)${BAN_THING})*(?:\s+for\s+this)?\s*[.!]?$`, 'i')
++const CHECK_BAN = new RegExp(String.raw`(?:do\s+not|don['’]t|never)\s+(?:build|add|write|create)\s+(?:(?:new|more)\s+)?${BAN_THING}(?:(?:\s*,\s*|\s+(?:or|and)\s+|\s*,\s*(?:or|and)\s+)${BAN_THING})*(?:\s+for\s+this)?\s*[.!]?$`, 'i')
+ const isCheckBan = (sentence: string): boolean => CHECK_BAN.test(sentence.replace(LIST_MARKER, '').replace(/\s+/g, ' ').trim())
+ export const withoutCheckBans = (message: string): string =>
+   withoutSpans(message, sentencesOf(message).filter(({ start, end }) => isCheckBan(message.slice(start, end))))

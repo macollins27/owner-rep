@@ -67,29 +67,28 @@ call writes (below):
    model's answer is labelled lines (`verdict:`, `shown:`, `closed:`, `well:`, `stands:`,
    `means:`, `left:`, `next:`, `message:` … `end`, `does:`); `parseBrief` splits them
    (every part the card shows and the message through `withoutEntryRefs`, as `parseCheck`'s
-   card parts and `parseWatch`'s flag and why: a bracket holding only a record entry number,
-   such as "(found in entry 105)" or "(entries 96–97)", goes whole, so does a phrase leading
-   into one ("in", "at", "from", "as shown at", "as of") with its commas, and any other "entry
-   N" becomes "the conversation"; the kept `shown:`, `closed:` and `reopen:` lines keep theirs,
+   card parts and `parseWatch`'s flag and why: only a citation of the record goes, with nothing
+   put in its place. A bracket holding only an entry number, such as "(entry 105)", "(found in
+   entry 105)" or "(entries 96–97)" (`ENTRY_BRACKET`), goes whole; so does "in", "at" or "from"
+   followed by one, with one of its commas (`ENTRY_PHRASE`), and a bare range "entries N–M"
+   (`ENTRY_SPAN`); each matches on word boundaries (`ENTRY_ONE`, `ENTRY_RANGE`), so "reentry 2"
+   stays, and an "entry N" with no such lead word, as in "Fix entry 2 in the guest list" or
+   "what entry 9 shows", stays as written; the kept `shown:`, `closed:` and `reopen:` lines keep theirs,
    and `ENTRY_RULE`, in the ROLE's plain-words line and the check's rule 6, tells every reader
    not to name one; the message then goes through `withoutCheckBans`, as `parseCheck`'s does:
-   a sentence that tells the agent not to build, add, write, create, make or set up tests,
-   checks or reviews in general (`CHECK_BAN`: "Do not build new tests or reports for this.",
-   "Don't add any more checks either.", read with a list marker and leading quotes dropped),
-   with nothing after its list of things (`BAN_LIST`, closed words such as reports, scripts
-   and counts) but "for this", "for any of this", "to prove this" or a word such as "either"
-   (`BAN_TAIL`), is cut through the same `withoutSpans` as `withoutStopSentences`, except that
-   a sentence of clauses joined by semicolons loses only its ban clauses, its first kept letter
-   raised and its end mark kept ("Do not add new checks or reports to prove this; open it, use
-   it and tell me what you saw." gives "Open it, use it and tell me what you saw."); inside a
-   sentence that asks for work only a "without building any new tests" clause of the same
-   shape goes (`WITHOUT_BAN`); anything else after the list keeps the sentence, so a ban
-   qualified as self-proving ("tests that only confirm your own steps ran"), on one named piece
-   ("a script that checks your report"), on a place or a time ("tests against the live
-   database", "until the parser is fixed"), on running tests, and a line on what tests are not
-   ("Do not count the tests as the sign-off") stay; a message that was nothing but the ban,
-   or the ban and praise, becomes `''`, so the gate's empty-message rules apply (it is refused
-   and read again, a rare path);
+   only a whole sentence that is a bare blanket ban is cut (`isCheckBan`, read with a list
+   marker dropped and its spaces folded): "do not", "don't" or "never", then build, add, write
+   or create, then at most "new" or "more", then tests, checks or reviews (`BAN_THING`, joined
+   by commas, "or" and "and"), then at most "for this" and an end mark, and nothing else
+   (`CHECK_BAN`: "Do not build new tests for this.", "Don't add more checks."); it is cut
+   through the same `withoutSpans` as `withoutStopSentences`. Every other sentence stays as
+   written, clause and all: one with a remedy joined by a comma or a semicolon ("Open the page;
+   do not add more checks."), a "without", a place, a time or a kind ("tests in the vendored
+   folder", "until the parser is fixed"), a self-proving target ("tests that only confirm your
+   own steps ran"), a ban on something besides tests, checks and reviews ("Do not build new
+   tests or reports for this."), on running tests, or a line on what tests are not ("Do not
+   count the tests as the sign-off"); a message that was nothing but the ban becomes `''`, so
+   the gate's empty-message rules apply (it is refused and read again, a rare path);
    `CHECK_BAN_RULE`, in the ROLE's fourth expectation, tells the card writers the same),
    `applyMarks` takes the marks, and `gateVerdict` refuses, while a condition is open, a
    verdict other than `continue` (a `stop`, or none given, which `verdictOf` reads as
@@ -105,9 +104,12 @@ call writes (below):
    caught in the safe direction and rewritten by the own-words call) that
    `STOP_NEXT` (or, in a message only, `STOP_ONCE` below) reads as
    telling the agent or the job to stop (with "please" before the stop or not, `STOP_LEAD`;
-   never within three words after "which" or "what", so "say which invented fact it stops"
-   asks a question and is no stop, a joining word such as "and", "then" or "lets" ending that
-   reach),
+   never where the stop is asked about: within three words after "which" or "what" that
+   follow a verb of asking or telling (say, tell, ask, name, state, list, explain, describe,
+   report, show, know, find out, check, confirm, question, with "me", "the owner" or another
+   object after tell or show), so "say which invented fact it stops" asks a question and is no
+   stop, while "do what lets you stop" or "do what permits you to stop" is one; a joining word
+   such as "and", "then", "lets", "permits" or "enables" ends that reach),
    calling the work finished, saying nothing is left or no further work is needed,
    closing the session, wrapping up, stopping work on it, stopping (or stopping here, or
    stopping work) to report, to wait bare or on the owner, to await them or to ask them
@@ -395,9 +397,10 @@ call writes (below):
    each tool use on one line with its result, a row of tool
    results shown only for results not already printed), each message cut to
    `RECORD_ENTRY_CUT` (3,000) and each tool input or result to `RECORD_TOOL_CUT` (600), except a
-   shell command that removes files (`removesFiles`: `rm`, `rmdir`, `unlink`, `shred`, `trash`,
-   `del`, `erase`, `Remove-Item`, `-delete`, `worktree remove` or `git clean` in a `Bash` or
-   `PowerShell` command), whose input is cut at `RECORD_ENTRY_CUT`, so a long list of paths it
+   shell command that removes files (`removesFiles`: `rm`, `rmdir`, `rd`, `unlink`, `shred`,
+   `trash`, `del`, `erase`, `Remove-Item`, `find`'s `-delete`, `worktree remove`, or `git clean`
+   with any `-C <folder>` before it, in a `Bash` or `PowerShell` command, so `xargs rm` and
+   `rmdir /s` count too), whose input is cut at `RECORD_ENTRY_CUT`, so a long list of paths it
    deletes is read whole rather than as its first paths and a gap,
    head and tail kept around a marked gap, the oldest entries left out past `RECORD_BUDGET`
    (200,000 characters) with a line saying how many, fenced in `<session_record>` with any
@@ -694,8 +697,12 @@ when it was written), and the check's `reopen:` lines when they say what shows o
 argument). Each of those lines names the held condition `markedCondition` finds for it: the one
 it copies exactly (case and a closing full stop aside), and failing that the one whose content
 words it shares most (Dice over word sets, short words and plain endings folded), when that
-score is at least `MARK_MATCH` (0.5) and leads every other condition's by `MARK_LEAD` (0.2); a
-line too loose to name one condition, or between two, moves none. Readers reword the
+score is at least `MARK_MATCH` (0.5) and leads every other condition's by `MARK_LEAD` (0.2),
+says yes or no the same way (both negated or neither, `negated`: not, no, never, none, nothing,
+nowhere, cannot, without or an n't), and holds every content word of that condition that no
+other held condition has, so "staging" never marks a condition about the live site and "not
+deleted" never marks "deleted"; a line too loose to name one condition, or between two, moves
+none. Readers reword the
 condition they copy ("The live site runs the newest saved version" for "The live site is shown
 to run the newest saved version"), and before 0.7.6 an exact match alone dropped such a mark.
 The watch's and the briefing's formats ask for each held condition copied word for word. A
@@ -706,8 +713,15 @@ the agent's turn has ended (`now.isWorking` false and `doing` set by `turn.compl
 (`STOPPED_NOW` for a stop that waits on the owner, `ASKING_NOW` for a question, `HALTED_NOW` when
 the owner stopped it), and a session opened or resumed with no turn run since (`doing` still
 `'idle'`, as `session.start` sets it) reads as `STOPPED_NOW`, since `step` moves only with the objective writer or a sent draft and
-would otherwise still name a step the agent has left. The briefing, the check and the card's
-render each pass the live `nowA`; the check's own prompt reads the objective without it.
+would otherwise still name a step the agent has left. When the turn ended as `STOPPED_NOW` while
+helpers (`now.helpers`) or background commands (`now.background`) still run, it says the turn
+has ended and the agent waits on them, not on the owner. `now.background` counts the commands
+the agent sent to the background (`backgroundTaskOf`: a `Bash` or `PowerShell` result's
+`backgroundTaskId`), each dropped when a task notification names it (`notifiedTasks`, read at
+`turn.start`) or a `TaskStop` or `KillShell` stops it. The briefing, the check and the card's
+render each pass the live `nowA`; the check's own prompt reads the objective without it. An open
+card's Right now is redrawn from today's `nowA` on each render (`withRightNow` over the drawn
+reading), so a card left open does not keep a state the agent has left.
 
 ### The plan screen
 

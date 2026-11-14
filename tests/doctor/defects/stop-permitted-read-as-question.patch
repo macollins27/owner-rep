@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 32c513d..2d72ebc 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -4631,7 +4631,7 @@ const CLAUSE_END = String.raw`(?=\s*(?:[.;:!?,]|$))`
+ // ("Please stop here."). What follows the stop still has to end the clause, so
+ // "Please stop guessing and run the suite" and "Please don't stop until the
+ // suite is green" go on.
+-const STOP_LEAD = String.raw`(?:${CLAUSE}|(?<!(?:\bnot|\bnever|n't|\blet)\s+)(?<!\b(?:say|says|said|tell(?:\s+(?:me|him|her|us|them|the\s+owner))?|ask|asks|asked|name|state|list|explain|describe|report|show(?:\s+(?:me|him|her|us|them|the\s+owner))?|know|find\s+out|check|confirm|question)\s+(?:(?:either|also|plainly|exactly|clearly)\s+)?(?:which|what)(?:\s+(?!(?:and|then|or|but|so|lets?|made|makes|allows?|permits?|enables?|told|tells|causes?|caused|helps?)\b)[\w'’-]+){0,3}\s+)(?:\b(?:the agent|it|you|we|the session|claude)\s+(?:(?:can|could|should|may|might|must|will|needs to|has to|is to|is free to|is ready to)\s+)?(?:now\s+|just\s+)?|\blet\s+(?:the agent|it|the session)\s+|\bto\s+))(?:please\s+)?`
++const STOP_LEAD = String.raw`(?:${CLAUSE}|(?<!(?:\bnot|\bnever|n't|\blet)\s+)(?<!\b(?:say|says|said|tell(?:\s+(?:me|him|her|us|them|the\s+owner))?|ask|asks|asked|name|state|list|explain|describe|report|show(?:\s+(?:me|him|her|us|them|the\s+owner))?|know|find\s+out|check|confirm|question)\s+(?:(?:either|also|plainly|exactly|clearly)\s+)?(?:which|what)(?:\s+(?!(?:and|then|or|but|so|lets?|made|makes|allows?|told|tells|causes?|caused|helps?)\b)[\w'’-]+){0,3}\s+)(?:\b(?:the agent|it|you|we|the session|claude)\s+(?:(?:can|could|should|may|might|must|will|needs to|has to|is to|is free to|is ready to)\s+)?(?:now\s+|just\s+)?|\blet\s+(?:the agent|it|the session)\s+|\bto\s+))(?:please\s+)?`
+ // "stop" said to or of the agent or the job, from that start; then at most an
+ // object (the agent, the session, the job, everything) and a word of place or
+ // time (here, now, for now), and the clause ends there.

@@ -9,25 +9,34 @@ What changed in each release of Owner Rep, newest first. The full record is the
   every open item of the done list under the real gaps, with no heading, and that second read made
   the card take twice as long. The card now keeps its own list of gaps. A stray "then stop" in an
   otherwise sound message is simply cut, and "say which fact it stops" is no longer mistaken for
-  telling the agent to stop, so the card is not read a second time for nothing.
+  telling the agent to stop, so the card is not read a second time for nothing. "Do what lets you
+  stop" is still read as a stop.
 - **Proof that was given now counts.** When the briefing showed a done-list item had been proven
   but worded it differently, the item stayed "not shown". It is now marked shown when the wording
-  plainly names it.
+  plainly names it: it must say yes or no the same way the item does, and keep every word that sets
+  the item apart from the others ("staging" never marks "live"). A looser wording marks nothing.
 - **Right now tells the truth after the agent stops.** The card said the agent was mid-task after
   it had finished and was waiting, and on a session reopened after the agent had finished. It now
-  says the agent has stopped and is waiting, is asking you something, or was stopped by you.
+  says the agent has stopped and is waiting, is asking you something, or was stopped by you. When
+  its turn ends with helpers or background commands still running, it says the agent is waiting on
+  them, not on you. A card left open updates its Right now as the agent moves on.
 - **A complaint about checks keeps its remedy.** When you complain that effort went into checks
   and in the same message ask for someone to open the real thing and try to break it, the rep now
   holds that ask. It no longer treats tests and reviews as extra cost or asks the agent for fewer
-  of them, and a line in the message such as "do not build new tests for this" is cut before it
-  reaches the agent, while the remedy joined to it ("…; open it, use it and tell me what you
-  saw") stays, and so do a line against pieces built only to prove the agent's own work and one against
-  tests in a single place or of a single kind.
+  of them. A sentence in the message that is nothing but a ban on tests, checks or reviews ("Do
+  not build new tests for this.") is cut before it reaches the agent. Any sentence with more in it
+  stays exactly as written: one joined to a remedy, one against pieces built only to prove the
+  agent's own work, one against tests in a single place or of a single kind, or one that also bans
+  something else ("tests or reports").
 - **No false "files not deleted" warning.** A long delete command was cut short in what the rep
   read, and beside an older to-do list it looked like the files were never removed. Delete
   commands are now read whole, and an old to-do list no longer outweighs a later step that did it.
+  This covers `git clean`, `find … -delete`, `unlink`, `xargs rm` and the Windows `rd`, `del` and
+  `Remove-Item` as well as `rm`.
 - **No record numbers on the card.** "Found in entry 105" pointed to the rep's own numbering,
-  which you cannot look up. Those references are now left off the card and the message.
+  which you cannot look up. Citations of the record ("(entry 105)", "in entry 105", "entries
+  3–7") are now left off the card and the message; your own words, such as "fix entry 2 in the
+  guest list", are left alone.
 
 ## 0.7.5 (14 November 2026)
 

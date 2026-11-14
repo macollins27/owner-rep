@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index badb7df..9372c23 100644
+index 32c513d..65040fa 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -399,7 +399,7 @@ export const ASKING_NOW = 'The agent has stopped to ask you something.'
- export const HALTED_NOW = 'You stopped the agent.'
- const NOW_AFTER_TURN: Record<string, string> = { 'stopped, waiting on you': STOPPED_NOW, idle: STOPPED_NOW, 'asking you': ASKING_NOW, 'stopped by you': HALTED_NOW }
- export function rightNow(step: string, now?: { isWorking: boolean; doing: string }): string {
+@@ -404,7 +404,7 @@ const NOW_AFTER_TURN: Record<string, string> = { 'stopped, waiting on you': STOP
+ export type LiveNow = { isWorking: boolean; doing: string; helpers?: number; background?: number }
+ const counted = (n: number, one: string): string => (n === 1 ? `a ${one}` : `${n} ${one}s`)
+ export function rightNow(step: string, now?: LiveNow): string {
 -  const stopped = now === undefined || now.isWorking ? undefined : NOW_AFTER_TURN[now.doing]
 +  const stopped = undefined as string | undefined
-   return stopped ?? (step.trim() === '' ? '' : sentence(step))
- }
- 
+   const helpers = now?.helpers ?? 0
+   const background = now?.background ?? 0
+   if (stopped === STOPPED_NOW && helpers + background > 0) {

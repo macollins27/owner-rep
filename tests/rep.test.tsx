@@ -756,9 +756,10 @@ test("a sentence that asks which thing a rule stops is not a stop: a subject aft
     expect(messageSaysStop(s)).toBe(false)
     expect(saysStop(s)).toBe(false)
   }
-  for (const s of ['Say what changed and you stop.', 'Then it stops.', 'Fix the form, then the agent can stop.', 'Show me what the agent changed, then stop.', 'Do what lets you stop.', 'Do what permits you to stop.', 'Do what enables you to stop.', 'Tell me why; whatever happens you can stop now.']) expect(messageSaysStop(s)).toBe(true)
+  for (const s of ['Say what changed and you stop.', 'Then it stops.', 'Fix the form, then the agent can stop.', 'Show me what the agent changed, then stop.', 'Do what lets you stop.', 'Do what permits you to stop.', 'Do what enables you to stop.', 'Say what permits you to stop.', 'Tell me what enables you to stop.', 'Do what it takes to stop.', 'Tell me why; whatever happens you can stop now.']) expect(messageSaysStop(s)).toBe(true)
+  // What permits or enables the agent to stop is read as a stop even after a verb of asking: the safe direction, rewritten in the agent's own words.
   // Only asking which thing it stops is exempt: a card that tells the agent to do what lets it stop is refused, as before.
-  for (const s of ['Do what permits you to stop.', 'Do what enables you to stop.']) {
+  for (const s of ['Do what permits you to stop.', 'Do what enables you to stop.', 'Do what it takes to stop.']) {
     const g = gateVerdict(parseBrief(`verdict: continue\nstands: s\nmeans: m\nleft:\n- nothing\nnext: ${s}\nmessage:\n${s}\nend\ndoes: d`), OPEN_JOB_OPEN)
     expect(g.refused).toBe(true)
   }
@@ -8729,6 +8730,8 @@ test('markedCondition matches a mark to the held condition it rewords only when 
   expect(rep.markedCondition('', held)).toBe(-1)
   // Between two conditions it fits as well: none.
   expect(rep.markedCondition('the site is live', ['the site is live on the Mac', 'the site is live on the web'])).toBe(-1)
+  // A mark naming two conditions at once fits both equally and moves neither, though it holds the words that set each apart.
+  expect(rep.markedCondition('the site is live on the Mac and on the web', ['the site is live on the Mac', 'the site is live on the web'])).toBe(-1)
   // A word-for-word copy wins over a closer rewording of another.
   expect(rep.markedCondition('tests pass', ['tests pass', 'the tests pass on main'])).toBe(0)
 })
@@ -10520,7 +10523,7 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     // A reference is taken out, never replaced, and the words and numbers beside it stay.
     expect(strip('Look at entry 105 and 2 tests fail.')).toBe('Look and 2 tests fail.')
     // Anything that is not one of the readers' citation forms stays as written.
-    for (const s of ['Message #2 asked for it.', 'The entry form takes 105 characters.', 'Each entry in the guest list is saved.', 'Fix entry 2 in the guest list.', 'The reentry 2 flow fails.', 'Fix what entry 9 shows.'])
+    for (const s of ['Message #2 asked for it.', 'The entry form takes 105 characters.', 'Each entry in the guest list is saved.', 'Fix entry 2 in the guest list.', 'The reentry 2 flow fails.', 'Fix what entry 9 shows.', 'The guests wait at entry 3B.', 'Bring them in from entry 2A, then seat them.'])
       expect(strip(s)).toBe(s)
     const card = parseBrief(
       'verdict: off track\nshown:\n- The site is live | entry 12 printed the stamp\nclosed:\n- nothing\nwell: \nstands: The site is live (entry 12).\nmeans: The agent saw the old file in entry 105 and kept it.\nleft out:\n- The old file is still there (found in entry 105)\nnext: The agent removes it (entry 105).\nmessage: Remove the old file you found in entry 105.\ndoes: Removes the file (entry 105).\nunassessed:\n- nothing',

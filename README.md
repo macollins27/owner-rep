@@ -248,7 +248,8 @@ Like every Claude Code mod, it runs with the permissions of the person who insta
 full, this is everything it reads and runs:
 
 - **Through Claude Code:** the prompt box, the session id and working directory, the
-  session's messages, and the agent's tool calls and helper launches as they happen. The row
+  session's messages, and the agent's tool calls and helper launches as they happen, with the
+  id of each command it sends to the background so the rep knows when that work ends. The row
   names a file or a program, never a command's text. It also reads the agent's visible text as
   it streams (never its thinking), the plan shown on Claude Code's plan screen with the answer
   you gave there, a plan you turned down beside your note, the agent's last answer at the end

@@ -1,10 +1,10 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index a2ff546..9c4a3e3 100644
+index 32c513d..b5b1749 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2843,7 +2843,7 @@ export function withoutEntryRefs(text: string): string {
+@@ -2880,7 +2880,7 @@ export function withoutEntryRefs(text: string): string {
      .replace(ENTRY_PHRASE, (_m, before: string, after: string) => (before === '' ? after : ''))
-     .replace(new RegExp(ENTRY_NUM, 'gi'), m => (/^E/.test(m) ? 'The conversation' : 'the conversation'))
+     .replace(ENTRY_SPAN, '')
  }
 -const cardText = (s: string | undefined): string => withoutEntryRefs(clean(s))
 +const cardText = (s: string | undefined): string => clean(s)
