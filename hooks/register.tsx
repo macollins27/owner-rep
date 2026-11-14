@@ -201,6 +201,7 @@ import {
   resultOf,
   revisedLine,
   same,
+  markedCondition,
   skipAfter,
   spentText,
   textOf,
@@ -1080,18 +1081,20 @@ function applyMarks(
   const notHis = new Set(rec.owner.filter(m => m.kind === 'plan' || approvalOf(m)).map(m => m.n))
   const his = hisFrom(rec, Math.max(o.since, o.from + 1)).filter(n => !notHis.has(n))
   let changed = false
-  const done = o.done.map((c): Condition => {
-    const close = closed.find(x => x.by !== null && his.includes(x.by) && same(x.text, c.text))
+  const held = o.done.map(c => c.text)
+  const names = (text: string, at: number) => markedCondition(text, held) === at
+  const done = o.done.map((c, at): Condition => {
+    const close = closed.find(x => x.by !== null && his.includes(x.by) && names(x.text, at))
     if (close !== undefined && c.state !== 'closed') {
       changed = true
       return { text: c.text, state: 'closed', by: `#${close.by}` }
     }
-    const back = check?.reopen.find(x => x.by !== '' && same(x.text, c.text))
+    const back = check?.reopen.find(x => x.by !== '' && names(x.text, at))
     if (back !== undefined && c.state === 'shown') {
       changed = true
       return { text: c.text, state: 'not-shown', by: back.by, reopened: true }
     }
-    const show = shown.find(x => x.by !== '' && same(x.text, c.text))
+    const show = shown.find(x => x.by !== '' && names(x.text, at))
     if (show !== undefined && (c.state === 'open' || c.state === 'not-shown') && !(c.reopened === true && check === null)) {
       changed = true
       return { text: c.text, state: 'shown', by: show.by }
@@ -1479,11 +1482,12 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     // While the rep could not check, keep or save something, the card says so first and never
     // stops. The briefing's own gaps (Task 7) go in `gaps`; the Heads up's too-long line never does.
     const a = withRecordLines(taken.answer, coverage(await loadRec($, sid), { full: storeFull.get(sid), gaps }))
+    const live = (await read($, nowA)) ?? IDLE
     const brief = await changeRec($, sid, after => {
       const brief: Brief = {
         result: after.objective === null ? '' : firstSentence(objectiveText(after.objective)),
         count: countLine(after.objective),
-        reading: after.objective === null ? '' : objectiveText(after.objective),
+        reading: after.objective === null ? '' : objectiveText(after.objective, live),
         revised: revisedLine(after.objective),
         well: a.well,
         stands: a.stands,
@@ -1623,6 +1627,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       const why = stderr.trim().split('\n').pop() ?? ''
       return finish({ checkNote: `The check could not run${end.code === null ? '' : ` (exit ${end.code})`}${why === '' ? '' : `: ${fit(why, 160)}`}.` })
     }
+    const live = (await read($, nowA)) ?? IDLE
     const patch = await changeRec($, sid, async after => {
       after.checks += 1
       after.checkTokens += got.tokens
@@ -1676,7 +1681,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       ).answer, coverage(after, { full: storeFull.get(sid), gaps: lookGaps.get(sid) }))
       const patch: Partial<Brief> = {
         checked,
-        ...(marked && after.objective !== null ? { reading: objectiveText(after.objective), count: countLine(after.objective) } : {}),
+        ...(marked && after.objective !== null ? { reading: objectiveText(after.objective, live), count: countLine(after.objective) } : {}),
         well: card.well,
         stands: card.stands,
         means: card.means,
@@ -2835,7 +2840,7 @@ export const register: Register = on => {
       // takes the one held now.
       const held = brief.reading !== ''
       const result = held ? (brief.result ?? firstSentence(brief.reading)) : reading === null ? placeholder : firstSentence(objectiveText(reading))
-      const objective = held ? brief.reading : reading === null ? '' : objectiveText(reading)
+      const objective = held ? brief.reading : reading === null ? '' : objectiveText(reading, now)
       const whole = {
         ...brief,
         result,
