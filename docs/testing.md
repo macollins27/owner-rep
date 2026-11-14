@@ -444,8 +444,8 @@ objective 10 and 8 s from the start, card 40 and 42 s from pressing 1, checked c
 12, exit 1, parents unchanged. Toy again took 11 and 14 s, 45 and 41 s, and 182 and 199 s.
 On Sync neither build wrote the objective within 180 seconds. Its cards came 48 and 51 s
 after pressing 1. Check it stopped after 15 s on both builds with "The check could not run
-(exit 1): mise ERROR": `claude` on this Mac is a mise shim, and the check's copy of Sync
-holds the folder's `mise.toml`.
+(exit 1): mise ERROR": `claude` on this Mac is a mise shim, and mise refuses the
+`mise.toml` in the check's copy of Sync because that copy's path is not trusted.
 
 It runs on demand, not under `claude plugin test`, because each scenario costs a model call
 and about a minute. Its output is the captured screens, kept beside the script, so a reader
