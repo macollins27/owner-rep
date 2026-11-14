@@ -1,10 +1,10 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index a2ff546..1cb6944 100644
+index 012f157..3dcd75c 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2990,7 +2990,6 @@ export function parseBrief(text: string): BriefAnswer {
+@@ -2995,7 +2995,6 @@ export function parseBrief(text: string): BriefAnswer {
      next: cardText(p.next),
-     message: cardText(p.message),
+     message: withoutCheckBans(cardText(p.message)),
      does: cardText(p.does),
 -    ...stepsOf(p.unassessed, false),
    }

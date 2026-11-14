@@ -81,7 +81,8 @@ wants on the job in hand. It is held in four parts: the result, what it is for, 
 has to show (a list of conditions), and the step the session is on now. The step moves only
 when the objective is written or a draft is sent, so once the agent's turn has ended the card's
 "Right now" says the agent has stopped and is waiting, is asking, or was stopped by the owner,
-never the step it has left. It is never the
+never the step it has left. A session reopened with no turn run since is read the same way: the
+agent stopped before it was opened. It is never the
 owner's text. The owner works by intent rather than exact wording, and a rep that only did
 what the client literally said would not be a good one, so the objective includes what a
 serious owner plainly wants without saying it. The owner's messages are weighed by kind:
@@ -90,7 +91,11 @@ message asks for: an owner who says too much effort went into checks and rounds,
 same message asks for someone to open the real thing and try to break it, is asking for that
 look and against pieces built only to prove the agent did its own work, never for fewer
 tests, code reviews or second readers. On the Cetacean session of 14 Nov 2026 the writer held
-the complaint without its remedy, and the card treated tests and reviews as extra cost. A "yes" to a plan the agent proposed makes
+the complaint without its remedy, and the card treated tests and reviews as extra cost. Even
+with the remedy held, a card's message sometimes still ended "Do not build new tests or reports
+for this.", so such a line is cut from every message before it reaches the agent, as a stop
+sentence is (`withoutCheckBans`), while a line against pieces built only to prove the agent's
+own work stays: a ban on good work cannot be talked out of a model every time, only removed. A "yes" to a plan the agent proposed makes
 that plan the owner's ask, held like the owner's own words: each of its steps becomes a
 condition of "done", read whole before any is written. Whether a message approves is the
 writer's call, because only reading can tell a yes to the plan from a yes to something else;

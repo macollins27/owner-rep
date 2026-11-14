@@ -14,12 +14,13 @@ What changed in each release of Owner Rep, newest first. The full record is the
   but worded it differently, the item stayed "not shown". It is now marked shown when the wording
   plainly names it.
 - **Right now tells the truth after the agent stops.** The card said the agent was mid-task after
-  it had finished and was waiting. It now says the agent has stopped and is waiting, is asking you
-  something, or was stopped by you.
+  it had finished and was waiting, and on a session reopened after the agent had finished. It now
+  says the agent has stopped and is waiting, is asking you something, or was stopped by you.
 - **A complaint about checks keeps its remedy.** When you complain that effort went into checks
   and in the same message ask for someone to open the real thing and try to break it, the rep now
   holds that ask. It no longer treats tests and reviews as extra cost or asks the agent for fewer
-  of them.
+  of them, and a line in the message such as "do not build new tests for this" is cut before it
+  reaches the agent; a line against pieces built only to prove the agent's own work stays.
 - **No false "files not deleted" warning.** A long delete command was cut short in what the rep
   read, and beside an older to-do list it looked like the files were never removed. Delete
   commands are now read whole, and an old to-do list no longer outweighs a later step that did it.

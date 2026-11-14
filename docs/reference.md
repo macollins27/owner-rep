@@ -72,7 +72,17 @@ call writes (below):
    into one ("in", "at", "from", "as shown at", "as of") with its commas, and any other "entry
    N" becomes "the conversation"; the kept `shown:`, `closed:` and `reopen:` lines keep theirs,
    and `ENTRY_RULE`, in the ROLE's plain-words line and the check's rule 6, tells every reader
-   not to name one),
+   not to name one; the message then goes through `withoutCheckBans`, as `parseCheck`'s does:
+   a sentence that tells the agent not to build, add, write, make, set up or run tests, checks
+   or reviews in general (`CHECK_BAN`: "Do not build new tests or reports for this.", "Don't
+   add any more checks.", read with a list marker and leading quotes dropped) is cut through
+   the same `withoutSpans` as `withoutStopSentences`, and inside a sentence that asks for work
+   only a "without building any new tests" clause goes, to the sentence's end
+   (`WITHOUT_BAN`); a ban qualified as self-proving ("tests that only confirm your own steps
+   ran", `BAN_SELF`), a ban on one named piece ("a script that checks your report") and a
+   line on what tests are not ("Do not count the tests as the sign-off") stay, and a message
+   that was nothing but the ban becomes `''`, so the gate's empty-message rules apply;
+   `CHECK_BAN_RULE`, in the ROLE's fourth expectation, tells the card writers the same),
    `applyMarks` takes the marks, and `gateVerdict` refuses, while a condition is open, a
    verdict other than `continue` (a `stop`, or none given, which `verdictOf` reads as
    `missing`, never as continue), a `well:` line, or a `next:` (`saysStop`) or a `message:`
@@ -686,7 +696,8 @@ new job's conditions start with no mark. A draft moves only `step`, set to the d
 reading; the row shows `result`. The reading's "Right now" line is `rightNow(step, now)`: once
 the agent's turn has ended (`now.isWorking` false and `doing` set by `turn.complete`) it says so
 (`STOPPED_NOW` for a stop that waits on the owner, `ASKING_NOW` for a question, `HALTED_NOW` when
-the owner stopped it), since `step` moves only with the objective writer or a sent draft and
+the owner stopped it), and a session opened or resumed with no turn run since (`doing` still
+`'idle'`, as `session.start` sets it) reads as `STOPPED_NOW`, since `step` moves only with the objective writer or a sent draft and
 would otherwise still name a step the agent has left. The briefing, the check and the card's
 render each pass the live `nowA`; the check's own prompt reads the objective without it.
 

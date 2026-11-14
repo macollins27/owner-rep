@@ -1,0 +1,14 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 012f157..926d54b 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -5126,8 +5126,7 @@ const CHECK_BAN = new RegExp(String.raw`^(?:[^,;:]{0,60}[,;:]\s+)?(?:(?:please|a
+ const WITHOUT_BAN = new RegExp(String.raw`,?[ \t]+(?:and[ \t]+)?without[ \t]+(?:building|adding|writing|creating|making|running|setting[ \t]+up)[ \t]+${BAN_MORE}${BAN_OBJ}\b${BAN_SELF}[^.!?\n]*`, 'gi')
+ export const withoutCheckBans = (message: string): string => {
+   const bans = sentencesOf(message).filter(({ start, end }) => CHECK_BAN.test(message.slice(start, end).replace(LIST_MARKER, '').replace(/\s+/g, ' ').replace(/^["“(]+/, '')))
+-  const kept = withoutSpans(message, bans)
+-  return kept === '' ? '' : kept.replace(WITHOUT_BAN, '')
++  return message
+ }
+ 
+ // The objective is not finished while a condition is open, and the gate works

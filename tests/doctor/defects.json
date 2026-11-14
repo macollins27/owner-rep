@@ -3316,5 +3316,17 @@
     "breaks": "The readers are no longer told never to name the record's entry numbers.",
     "patch": "entry-rule-dropped.patch",
     "fixed": "2026-11-14"
+  },
+  {
+    "name": "check-ban-kept",
+    "breaks": "A message line that forbids tests, checks or reviews in general (\"Do not build new tests or reports for this.\") reaches the agent, so the card bans normal good work.",
+    "patch": "check-ban-kept.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "check-ban-rule-dropped",
+    "breaks": "The card writers are no longer told that a line against tests, checks or reviews in general is never theirs to write.",
+    "patch": "check-ban-rule-dropped.patch",
+    "fixed": "2026-11-14"
   }
 ]
