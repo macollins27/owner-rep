@@ -9231,9 +9231,8 @@ test('rule: the check runs in a throwaway copy of the project, fenced, and the c
   expect(argv[argv.indexOf('--settings') + 1]).toBe(checkSettings('/Users/o', '/tmp/x', '/usr/bin:/Users/o/.cargo/bin'))
   expect(argv[argv.indexOf('--settings') + 1]).toContain('"/Users/o/.cargo"')
   expect(argv[argv.indexOf('--allowedTools') + 1]?.split(',')).toContain('Bash')
-  // pnpm named no store, so none is named to the run; the copy's mise config is ignored, after
-  // what the owner's list holds (every variable but PATH reads /Users/o here).
-  expect(seen.env).toEqual({ MISE_IGNORED_CONFIG_PATHS: `/Users/o:${copy}` })
+  // pnpm named no store and no mise shim is on the path, so the run is told nothing.
+  expect(seen.env).toEqual({})
   expect(runs.filter(r => r[0] === 'rm' && r[2] === copy).length).toBeGreaterThanOrEqual(2)
   expect(runs.findIndex(r => r[0] === 'cp')).toBeLessThan(runs.length - 1)
   await ui.unmount()
@@ -9267,32 +9266,56 @@ test('rule: the check names pnpm\'s store to its run, asked of pnpm in the copy 
   // pnpm-workspace.yaml overrides them, and its pnpmfile, a pinned pnpm or its config
   // dependencies would run or be fetched outside the fence. Corepack, which fetches a pinned
   // pnpm before pnpm reads its command line, is told by the environment to fetch nothing.
-  expect(runs.find(r => r.argv[0] === 'pnpm')).toEqual({ argv: ['pnpm', 'store', 'path', '--config.ignore-pnpmfile=true', '--config.manage-package-manager-versions=false', '--config.offline=true'], cwd: copy, env: { COREPACK_ENABLE_NETWORK: '0', MISE_IGNORED_CONFIG_PATHS: `/Users/o:${copy}` } })
-  expect(env).toEqual({ npm_config_store_dir: '/Users/o/Library/pnpm/store', MISE_IGNORED_CONFIG_PATHS: `/Users/o:${copy}` })
+  expect(runs.find(r => r.argv[0] === 'pnpm')).toEqual({ argv: ['pnpm', 'store', 'path', '--config.ignore-pnpmfile=true', '--config.manage-package-manager-versions=false', '--config.offline=true'], cwd: copy, env: { COREPACK_ENABLE_NETWORK: '0' } })
+  expect(env).toEqual({ npm_config_store_dir: '/Users/o/Library/pnpm/store' })
   await ui.unmount()
 })
 
-// Where `claude` is a mise shim, the shim reads the config of the folder it starts in before
-// the fence exists. The copy holds the agent's work, so a mise.toml there is untrusted and the
-// shim stops the run ("mise ERROR ... not trusted"); trusted, its env and hooks would run
-// unfenced. The run and the pnpm question are told to ignore that folder's config, added to
-// any list the owner already set, and nothing is trusted.
-const miseRun = async ($: Engine, on: On, copies: boolean, ignored: string | undefined): Promise<{ copy: string; run?: Record<string, string>; pnpm?: Record<string, string>; trusted: boolean }> => {
+// Where `claude` is a mise shim, the shim runs mise on the folder it starts in, and on every
+// folder above it, before the fence exists: the copy's untrusted mise.toml stopped the run
+// ("mise ERROR"), and an env file mise is told to read (MISE_ENV_FILE) is loaded from the copy
+// even where its config is ignored, so a NODE_OPTIONS the agent wrote there would run when
+// node starts. So the check asks mise, from the home, where the owner's tools are
+// (`mise bin-paths`), takes mise's shims off the command path in favour of those folders, and
+// starts claude and pnpm by their full paths: no mise runs on the copy's files.
+const SHIMS = '/Users/o/.local/share/mise/shims'
+const NODE_BIN = '/Users/o/.local/share/mise/installs/node/22.22.3/bin'
+const MISE_REAL = '/opt/homebrew/Cellar/mise/2026.10.19/bin/mise'
+const SHIM_PATH = `${SHIMS}:/opt/homebrew/bin:/usr/bin`
+const SHIM_FOUND = [
+  `${NODE_BIN}/./claude`, `${NODE_BIN}/../lib/node_modules/@anthropic-ai/claude-code/bin/claude.exe`.replace('/bin/../', '/'),
+  `${NODE_BIN}/./node`, `${NODE_BIN}/node`,
+  `${SHIMS}/./claude`, MISE_REAL,
+  `${SHIMS}/./node`, MISE_REAL,
+  `${SHIMS}/./pnpm`, MISE_REAL,
+  '/opt/homebrew/bin/./pnpm', '/opt/homebrew/Cellar/pnpm/10.26.2/libexec/lib/node_modules/pnpm/bin/pnpm.cjs',
+  '/opt/homebrew/bin/./node', '/opt/homebrew/Cellar/node/25.1.0/bin/node',
+].join('\n') + '\n'
+type ShimRun = { argv: string[]; cwd?: string; env?: Record<string, string> }
+const shimRoom = async ($: Engine, on: On, o: { cwd?: string; copies?: boolean; bins: string | null; found?: string | null; ignored?: string; path?: string }): Promise<{ copy: string; runs: ShimRun[]; spawned: { argv: readonly string[]; cwd?: string; env?: Record<string, string> } | null; pnpm?: ShimRun; mise?: ShimRun; denied: string[] }> => {
   session(on)
   quietBand(on)
-  const runs: { argv: string[]; cwd?: string; env?: Record<string, string> }[] = []
-  on('env.get', (_$, e) => ({ value: e.name === 'MISE_IGNORED_CONFIG_PATHS' ? ignored : '/Users/o' }))
+  const cwd = o.cwd ?? '/tmp/x'
+  const runs: ShimRun[] = []
+  on('env.get', (_$, e) => ({ value: e.name === 'PATH' ? (o.path ?? SHIM_PATH) : e.name === 'MISE_IGNORED_CONFIG_PATHS' ? o.ignored : '/Users/o' }))
   on('process.run', (_$, e) => {
     runs.push({ argv: [...e.argv], cwd: e.init?.cwd, env: e.init?.env })
-    const stdout = e.argv[0] === 'pnpm' ? '/Users/o/Library/pnpm/store/v10\n' : ''
-    return { value: { exitCode: e.argv[0] === 'cp' && !copies ? 1 : 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+    const out = (exitCode: number, stdout = '') => ({ value: { exitCode, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
+    if (e.argv[0] === 'mise') return o.bins === null ? out(1) : out(0, o.bins)
+    if (e.argv[0] === 'find' && e.argv.includes('pnpm')) {
+      if (o.found === null) throw new Error('find timed out')
+      return out(1, o.found ?? SHIM_FOUND)
+    }
+    if ((e.argv[0] ?? '').endsWith('pnpm')) return out(0, '/Users/o/Library/pnpm/store/v10\n')
+    if (e.argv[0] === 'cp' && o.copies === false) return out(1)
+    return out(0)
   })
-  on('session.cwd', () => ({ value: '/tmp/x' }))
+  on('session.cwd', () => ({ value: cwd }))
   mock.clock(on)
   on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
-  let run: Record<string, string> | undefined
+  let spawned: { argv: readonly string[]; cwd?: string; env?: Record<string, string> } | null = null
   on('process.spawn', async function* (_$, e) {
-    run = e.env
+    spawned = { argv: e.argv, cwd: e.cwd, env: e.env }
     yield { stream: 'stdout', text: CHECKED_WITH(0) }
     return { value: { code: 0, signal: null } }
   })
@@ -9300,28 +9323,109 @@ const miseRun = async ($: Engine, on: On, copies: boolean, ignored: string | und
   await ui.press({ key: 'rep' })
   await ui.press({ key: 'check' })
   await ui.unmount()
-  const copy = copies ? (runs.find(r => r.argv[0] === 'cp')?.argv[3] ?? '') : '/tmp/x'
-  return { copy, run, pnpm: runs.find(r => r.argv[0] === 'pnpm')?.env, trusted: runs.some(r => r.argv.includes('trust')) }
+  const made = runs.find(r => r.argv[0] === 'cp' && o.copies !== false)?.argv[3]
+  const got = spawned as { argv: readonly string[]; cwd?: string; env?: Record<string, string> } | null
+  const settings = got?.argv[got.argv.indexOf('--settings') + 1] ?? '{"sandbox":{"filesystem":{"denyWrite":[]}}}'
+  return {
+    copy: made ?? cwd,
+    runs,
+    spawned: got,
+    pnpm: runs.find(r => (r.argv[0] ?? '').endsWith('pnpm')),
+    mise: runs.find(r => r.argv[0] === 'mise'),
+    denied: (JSON.parse(settings) as { sandbox: { filesystem: { denyWrite: string[] } } }).sandbox.filesystem.denyWrite,
+  }
 }
+const AROUND_PATH = `${NODE_BIN}:/opt/homebrew/bin:/usr/bin`
 
-test('rule: where claude is a mise shim, the check\'s run and its pnpm question are told to ignore the mise config of the copy they start in, never to trust it', async ($, on) => {
-  const got = await miseRun($, on, true, undefined)
+test('rule: where claude is a mise shim, the check starts the claude mise names for the owner by its full path, mise\'s shims off the command path, so no mise runs on the copy or the folders above it before the fence', async ($, on) => {
+  const got = await shimRoom($, on, { bins: `${NODE_BIN}\n` })
   expect(got.copy.startsWith('/Users/o/.cache/owner-rep/checks/')).toBe(true)
-  expect(got.run).toEqual({ npm_config_store_dir: '/Users/o/Library/pnpm/store', MISE_IGNORED_CONFIG_PATHS: got.copy })
-  expect(got.pnpm).toEqual({ COREPACK_ENABLE_NETWORK: '0', MISE_IGNORED_CONFIG_PATHS: got.copy })
-  expect(got.trusted).toBe(false)
+  // mise is asked once, from the home, with no env file read, where the owner's tools are.
+  expect(got.mise).toEqual({ argv: ['mise', 'bin-paths'], cwd: '/Users/o', env: { MISE_ENV_FILE: '' } })
+  expect(got.spawned?.argv[0]).toBe(`${NODE_BIN}/claude`)
+  expect(got.spawned?.cwd).toBe(got.copy)
+  // The run's commands find the owner's node, not a shim; nothing tells mise anything.
+  expect(got.spawned?.env).toEqual({ npm_config_store_dir: '/Users/o/Library/pnpm/store', PATH: AROUND_PATH })
+  // pnpm, which mise does not hold, is the one the shim would have fallen through to, and its
+  // `#!/usr/bin/env node` finds the owner's node on the same path.
+  expect(got.pnpm?.argv[0]).toBe('/opt/homebrew/bin/pnpm')
+  expect(got.pnpm?.cwd).toBe(got.copy)
+  expect(got.pnpm?.env).toEqual({ COREPACK_ENABLE_NETWORK: '0', PATH: AROUND_PATH })
+  // The install the new path leads into is fenced as the shims' was.
+  expect(got.denied).toContain('/Users/o/.local/share/mise')
+  expect(got.runs.some(r => r.argv.includes('trust'))).toBe(false)
 })
 
-test('rule: the folder the check ignores is added after the ones the owner already has mise ignore, which stay ignored', async ($, on) => {
-  const got = await miseRun($, on, true, '/srv/a:/srv/b')
-  expect(got.run?.MISE_IGNORED_CONFIG_PATHS).toBe(`/srv/a:/srv/b:${got.copy}`)
-  expect(got.pnpm?.MISE_IGNORED_CONFIG_PATHS).toBe(`/srv/a:/srv/b:${got.copy}`)
+test('rule: where mise cannot say where the owner\'s tools are, claude starts by name with mise reading no env file and ignoring the copy\'s config and the folders above it, after the folders the owner already has it ignore', async ($, on) => {
+  const got = await shimRoom($, on, { bins: null, ignored: '/srv/a:/srv/b' })
+  expect(got.spawned?.argv[0]).toBe('claude')
+  const ignored = `/srv/a:/srv/b:${got.copy}:/Users/o/.cache/owner-rep/checks:/Users/o/.cache/owner-rep:/Users/o/.cache`
+  expect(got.spawned?.env).toEqual({ npm_config_store_dir: '/Users/o/Library/pnpm/store', MISE_ENV_FILE: '', MISE_IGNORED_CONFIG_PATHS: ignored })
+  expect(got.pnpm?.argv[0]).toBe('pnpm')
+  expect(got.pnpm?.env).toEqual({ COREPACK_ENABLE_NETWORK: '0', MISE_ENV_FILE: '', MISE_IGNORED_CONFIG_PATHS: ignored })
 })
 
-test('rule: where no copy can be made, the mise config ignored is the agent\'s own folder, which the run then starts in', async ($, on) => {
-  const got = await miseRun($, on, false, '')
-  expect(got.run?.MISE_IGNORED_CONFIG_PATHS).toBe('/tmp/x')
-  expect(got.pnpm?.MISE_IGNORED_CONFIG_PATHS).toBe('/tmp/x')
+test('rule: where the command path cannot be asked about, the check starts claude by name as where mise cannot answer, and where no copy is made the folders ignored are the agent\'s own and those above it', async ($, on) => {
+  const got = await shimRoom($, on, { bins: `${NODE_BIN}\n`, found: null, copies: false })
+  expect(got.copy).toBe('/tmp/x')
+  expect(got.spawned?.argv[0]).toBe('claude')
+  expect(got.spawned?.env).toEqual({ npm_config_store_dir: '/Users/o/Library/pnpm/store', MISE_ENV_FILE: '', MISE_IGNORED_CONFIG_PATHS: '/tmp/x:/tmp' })
+})
+
+test('rule: a check from the home folder starts the owner\'s claude, and never has mise ignore the home, where its config names the owner\'s tools', async ($, on) => {
+  const around = await shimRoom($, on, { cwd: '/Users/o', bins: `${NODE_BIN}\n` })
+  expect(around.copy).toBe('/Users/o')
+  expect(around.spawned?.argv[0]).toBe(`${NODE_BIN}/claude`)
+  expect(around.spawned?.cwd).toBe('/Users/o')
+  expect(around.spawned?.env).toEqual({ npm_config_store_dir: '/Users/o/Library/pnpm/store', PATH: AROUND_PATH })
+})
+
+test('rule: where mise cannot answer for a check from the home folder, the home is not ignored, nor a folder holding it', async ($, on) => {
+  const home = await shimRoom($, on, { cwd: '/Users/o', bins: null })
+  expect(home.spawned?.argv[0]).toBe('claude')
+  expect(home.spawned?.env).toEqual({ npm_config_store_dir: '/Users/o/Library/pnpm/store', MISE_ENV_FILE: '' })
+  expect(home.pnpm?.env).toEqual({ COREPACK_ENABLE_NETWORK: '0', MISE_ENV_FILE: '' })
+})
+
+test('rule: where claude is no mise shim, the check starts it by name with the command path as it is and nothing told to mise', async ($, on) => {
+  const got = await shimRoom($, on, { bins: `${NODE_BIN}\n`, path: '/Users/o/.local/bin:/usr/bin', found: '/Users/o/.local/bin/./claude\n/Users/o/.local/share/claude/versions/2.1.325\n/usr/bin/./pnpm\n/usr/bin/pnpm\n' })
+  expect(got.spawned?.argv[0]).toBe('claude')
+  expect(got.spawned?.env).toEqual({ npm_config_store_dir: '/Users/o/Library/pnpm/store' })
+  expect(got.pnpm?.argv[0]).toBe('pnpm')
+  expect(got.pnpm?.env).toEqual({ COREPACK_ENABLE_NETWORK: '0' })
+})
+
+// A check whose Claude Code ended mid-run (a fork killed, a session closed) never reaches the
+// step that removes its copy, which stays in the copies' folder, gigabytes at a time. Each
+// check removes the copies older checks left there: folders named for a session, not its own,
+// unchanged for longer than any check lives.
+test('rule: a check removes the copies older checks left behind, unchanged for longer than any check lives, never its own session\'s nor a folder not named for a session', async ($, on) => {
+  session(on)
+  quietBand(on)
+  const dir = '/Users/o/.cache/owner-rep/checks'
+  const runs: string[][] = []
+  on('env.get', () => ({ value: '/Users/o' }))
+  on('process.run', (_$, e) => {
+    runs.push([...e.argv])
+    const stdout = e.argv[0] === 'find' && e.argv.includes('-mmin') ? `${dir}/0201eaf7-05c7-4b4c-aba9-143a4fc54455\n${dir}/probe6\n${dir}/test-session\n/Users/o/b015a3c0-bd5d-4f49-a417-bc7d9aac2e20\nfind: ${dir}/x: Permission denied\n` : ''
+    return { value: { exitCode: 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
+  on('session.cwd', () => ({ value: '/tmp/x' }))
+  mock.clock(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  on('process.spawn', async function* () {
+    yield { stream: 'stdout', text: CHECKED_WITH(0) }
+    return { value: { code: 0, signal: null } }
+  })
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+  await ui.unmount()
+  const asked = runs.findIndex(r => r[0] === 'find' && r.includes('-mmin'))
+  expect(runs[asked]).toEqual(rep.staleCopiesArgv('/Users/o', 'test-session'))
+  expect(asked).toBeLessThan(runs.findIndex(r => r[0] === 'cp'))
+  const copy = checkCopyDir('/Users/o', 'test-session')
+  expect(runs.filter(r => r[0] === 'rm' && r[2] !== copy)).toEqual([['rm', '-rf', `${dir}/0201eaf7-05c7-4b4c-aba9-143a4fc54455`]])
 })
 
 test('rule: a machine where pnpm or find cannot be asked still runs the check, naming no store, no linked install and no repository, and its brief says the links and the repository could not be found', async ($, on) => {
@@ -9347,9 +9451,9 @@ test('rule: a machine where pnpm or find cannot be asked still runs the check, n
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   await ui.press({ key: 'rep' })
   await ui.press({ key: 'check' })
-  // No store is named; only the copy's mise config is ignored.
+  // No store is named; with the path unasked, mise reads no env file and ignores the copy's config.
   const got = spawned as { env?: Record<string, string>; settings?: string } | null
-  expect(Object.keys(got?.env ?? {})).toEqual(['MISE_IGNORED_CONFIG_PATHS'])
+  expect(Object.keys(got?.env ?? {})).toEqual(['MISE_ENV_FILE', 'MISE_IGNORED_CONFIG_PATHS'])
   expect(got?.settings).toBe(checkSettings('/Users/o', '/tmp/x', '/Users/o'))
   expect(prompt).toContain('could be found this time, so stage, commit and stash nothing, and write nothing through a link that leads out of the copy')
   expect(prompt).toContain('this time not the installs the links in those folders lead to, which could not be found')
@@ -9527,7 +9631,7 @@ test('rule: the check asks, outside the fence, where the command path\'s folders
     runs.push([...e.argv])
     // Since Task 7a every read looks for the session's transcript to label the owner's rows
     // (`find <projects> … -name <id>.jsonl`); that find is not the check's.
-    const links = e.argv[0] === 'find' && !e.argv.includes('printf') && !e.argv.some(a => a.endsWith('.jsonl'))
+    const links = e.argv[0] === 'find' && !e.argv.includes('printf') && !e.argv.includes('pnpm') && !e.argv.includes('-mmin') && !e.argv.some(a => a.endsWith('.jsonl'))
     if (links) waited = e.init?.timeoutMs
     // find ends 1 when a path folder is missing; what it printed still counts.
     return links
@@ -9546,7 +9650,7 @@ test('rule: the check asks, outside the fence, where the command path\'s folders
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   await ui.press({ key: 'rep' })
   await ui.press({ key: 'check' })
-  expect(runs.find(r => r[0] === 'find' && !r.includes('printf') && !r.some(a => a.endsWith('.jsonl')))).toEqual(pathLinksArgv('/Users/o', '/usr/bin:/Users/o/.cargo/bin'))
+  expect(runs.find(r => r[0] === 'find' && !r.includes('printf') && !r.includes('pnpm') && !r.includes('-mmin') && !r.some(a => a.endsWith('.jsonl')))).toEqual(pathLinksArgv('/Users/o', '/usr/bin:/Users/o/.cargo/bin'))
   // Thirty seconds: under two on the machine it was measured on, and a slower machine's answer is not cut off.
   expect(waited).toBe(30000)
   const denied = (JSON.parse(settings) as { sandbox: { filesystem: { denyWrite: string[] } } }).sandbox.filesystem.denyWrite
@@ -9805,11 +9909,77 @@ test('gitLinksOf names where the links in the copy lead, leaving out the copy an
   expect(denied.filter(d => d.startsWith('/srv/'))).toEqual(['/srv/app', '/srv/apple', '/srv/lib'])
 })
 
-test('checkEnv and pnpmAskEnv name the folder the check starts in to mise as ignored, after any the owner already ignores, and checkEnv names pnpm\'s store when there is one', () => {
-  expect(rep.checkEnv('/c', '', '')).toEqual({ MISE_IGNORED_CONFIG_PATHS: '/c' })
-  expect(rep.checkEnv('/c', '/s', '/a:/b')).toEqual({ npm_config_store_dir: '/s', MISE_IGNORED_CONFIG_PATHS: '/a:/b:/c' })
-  expect(rep.pnpmAskEnv('/c', '')).toEqual({ COREPACK_ENABLE_NETWORK: '0', MISE_IGNORED_CONFIG_PATHS: '/c' })
-  expect(rep.pnpmAskEnv('/c', '/a')).toEqual({ COREPACK_ENABLE_NETWORK: '0', MISE_IGNORED_CONFIG_PATHS: '/a:/c' })
+test('binPathsOf keeps the folders mise named, one to a line', () => {
+  expect(rep.binPathsOf('/a/bin\n/b/bin\n\nmise WARN x\n')).toEqual(['/a/bin', '/b/bin'])
+  expect(rep.binPathsOf('')).toEqual([])
+})
+
+test('programsArgv asks, in each folder once, for claude and pnpm and where each leads; programsOf pairs each with its place and drops one with none', () => {
+  expect(rep.programsArgv(['/a/bin/', '/b', 'rel', '/a/bin'])).toEqual(['find', '/a/bin/.', '/b/.', '-maxdepth', '1', '(', '-name', 'claude', '-o', '-name', 'pnpm', ')', '-print', '-exec', 'readlink', '-f', '{}', ';'])
+  expect(rep.programsOf('/a/bin/./claude\n/x/claude.exe\n/b/./pnpm\n/a/bin/./pnpm\n/opt/mise\n')).toEqual([
+    { dir: '/a/bin', name: 'claude', target: '/x/claude.exe' },
+    { dir: '/a/bin', name: 'pnpm', target: '/opt/mise' },
+  ])
+})
+
+test('launchOf takes mise\'s shims off the command path for the folders mise named, in their place, and names claude and pnpm by the first that is no shim', () => {
+  const found = rep.programsOf(SHIM_FOUND)
+  expect(rep.launchOf(SHIM_PATH, [NODE_BIN], found)).toEqual({ path: AROUND_PATH, claude: `${NODE_BIN}/claude`, pnpm: '/opt/homebrew/bin/pnpm', mise: 'around' })
+  // A second shims folder adds nothing more; mise naming no folder leaves claude to the rest of the path.
+  expect(rep.launchOf(`/x:${SHIMS}/:/opt/homebrew/bin:${SHIMS}`, [NODE_BIN], found).path).toBe(`/x:${NODE_BIN}:/opt/homebrew/bin`)
+  // No shim: nothing changes. Shims, but mise cannot answer, the path cannot be asked about, or no claude
+  // but the shim: claude by name, and mise told what to ignore.
+  expect(rep.launchOf('/usr/bin', [NODE_BIN], rep.programsOf('/usr/bin/./pnpm\n/usr/bin/pnpm\n'))).toEqual({ path: '/usr/bin', claude: '', pnpm: '', mise: 'none' })
+  expect(rep.launchOf(SHIM_PATH, null, found)).toEqual({ path: SHIM_PATH, claude: '', pnpm: '', mise: 'unresolved' })
+  expect(rep.launchOf(SHIM_PATH, [NODE_BIN], null)).toEqual({ path: SHIM_PATH, claude: '', pnpm: '', mise: 'unresolved' })
+  expect(rep.launchOf(SHIM_PATH, [], found).mise).toBe('unresolved')
+  // pnpm nowhere but a shim: none named.
+  expect(rep.launchOf(SHIM_PATH, [NODE_BIN], found.filter(f => !f.dir.startsWith('/opt/homebrew'))).pnpm).toBe('')
+})
+
+test('withProgram names the program a command starts by its full path where one is known; guardedPath fences the path the check starts on as well as the owner\'s', () => {
+  expect(rep.withProgram(['claude', '-p'], '/a/claude')).toEqual(['/a/claude', '-p'])
+  expect(rep.withProgram(['claude', '-p'], '')).toEqual(['claude', '-p'])
+  expect(rep.guardedPath('/a:/b', { path: '/a:/b', claude: '', pnpm: '', mise: 'none' })).toBe('/a:/b')
+  expect(rep.guardedPath('/s:/b', { path: '/n:/b', claude: '/n/claude', pnpm: '', mise: 'around' })).toBe('/s:/b:/n:/b')
+})
+
+test('miseIgnoring names the folder and the folders above it, after any the owner already ignores, never the home nor a folder holding it', () => {
+  expect(rep.miseIgnoring('/tmp/x', '', '/Users/o')).toEqual({ MISE_IGNORED_CONFIG_PATHS: '/tmp/x:/tmp' })
+  expect(rep.miseIgnoring('/Users/o/p/q/', '/a', '/Users/o')).toEqual({ MISE_IGNORED_CONFIG_PATHS: '/a:/Users/o/p/q:/Users/o/p' })
+  expect(rep.miseIgnoring('/Users/o', '/a', '/Users/o')).toEqual({})
+  expect(rep.miseIgnoring('/Users', '', '/Users/o')).toEqual({})
+  expect(rep.miseIgnoring('/Users/ox', '', '/Users/o')).toEqual({ MISE_IGNORED_CONFIG_PATHS: '/Users/ox' })
+})
+
+test('checkEnv and pnpmAskEnv give the shim-free path where mise answered, no env file and the ignore where it could not, nothing where there is no shim, and checkEnv names pnpm\'s store when there is one', () => {
+  const around = { path: '/n:/b', claude: '/n/claude', pnpm: '/b/pnpm', mise: 'around' as const }
+  const unresolved = { path: '/s:/b', claude: '', pnpm: '', mise: 'unresolved' as const }
+  const none = { path: '/b', claude: '', pnpm: '', mise: 'none' as const }
+  expect(rep.checkEnv(around, '/c', '/st', '/a', '/h')).toEqual({ npm_config_store_dir: '/st', PATH: '/n:/b' })
+  expect(rep.checkEnv(unresolved, '/c', '', '/a', '/h')).toEqual({ MISE_ENV_FILE: '', MISE_IGNORED_CONFIG_PATHS: '/a:/c' })
+  expect(rep.checkEnv(none, '/c', '', '/a', '/h')).toEqual({})
+  expect(rep.pnpmAskEnv(around, '/c', '', '/h')).toEqual({ COREPACK_ENABLE_NETWORK: '0', PATH: '/n:/b' })
+  expect(rep.pnpmAskEnv(unresolved, '/h', '', '/h')).toEqual({ COREPACK_ENABLE_NETWORK: '0', MISE_ENV_FILE: '' })
+  expect(rep.pnpmAskEnv(none, '/c', '', '/h')).toEqual({ COREPACK_ENABLE_NETWORK: '0' })
+})
+
+test('a copy is left alone until no check that made it could still be running: the age past which one is removed covers every step from the copy to its removal', () => {
+  const lifetime = rep.COPY_REMOVE_TIMEOUT_MS + rep.COPY_STEP_TIMEOUT_MS + rep.COPY_TIMEOUT_MS + rep.COPY_STEP_TIMEOUT_MS + rep.COPY_TIMEOUT_MS
+    + rep.MISE_ASK_TIMEOUT_MS + rep.PROGRAMS_TIMEOUT_MS + rep.PNPM_STORE_TIMEOUT_MS + rep.PATH_LINKS_TIMEOUT_MS + 4 * rep.GIT_FIND_TIMEOUT_MS
+    + rep.CHECK_TIMEOUT_MS + rep.COPY_REMOVE_TIMEOUT_MS
+  expect(rep.STALE_COPY_MS).toBeGreaterThanOrEqual(lifetime + 30 * 60000)
+})
+
+test('staleCopiesArgv asks for the copies folder\'s session-named folders, not this session\'s, unchanged past the age; staleCopiesOf keeps only those', () => {
+  const dir = '/Users/o/.cache/owner-rep/checks'
+  const mins = `+${Math.ceil(rep.STALE_COPY_MS / 60000)}`
+  expect(rep.staleCopiesArgv('/Users/o', 'abc')).toEqual(['find', dir, '-mindepth', '1', '-maxdepth', '1', '-type', 'd', '(', '-name', '????????-????-????-????-????????????', '-o', '-name', 'session', ')', '!', '-name', 'abc', '-mmin', mins, '-print'])
+  expect(rep.staleCopiesArgv('/Users/o', '').at(-4)).toBe('session')
+  const a = '0201eaf7-05c7-4b4c-aba9-143a4fc54455'
+  const out = `${dir}/${a}\n${dir}/session\n${dir}/probe6\n${dir}/${a}/inner\n/elsewhere/${a}\n${dir}/b015a3c0-bd5d-4f49-a417-bc7d9aac2e20\n`
+  expect(rep.staleCopiesOf(out, '/Users/o', 'b015a3c0-bd5d-4f49-a417-bc7d9aac2e20')).toEqual([`${dir}/${a}`, `${dir}/session`])
+  expect(rep.staleCopiesOf(out, '/Users/o', '')).toEqual([`${dir}/${a}`, `${dir}/b015a3c0-bd5d-4f49-a417-bc7d9aac2e20`])
 })
 
 test('pnpmStoreDir takes the folder above the versioned store pnpm prints, and nothing when pnpm prints no path', () => {

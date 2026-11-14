@@ -75,6 +75,22 @@ import {
   PNPM_STORE_ARGV,
   checkEnv,
   pnpmAskEnv,
+  MISE_BIN_PATHS_ARGV,
+  MISE_ASK_ENV,
+  MISE_ASK_TIMEOUT_MS,
+  binPathsOf,
+  programsArgv,
+  programsOf,
+  PROGRAMS_TIMEOUT_MS,
+  launchOf,
+  withProgram,
+  guardedPath,
+  staleCopiesArgv,
+  staleCopiesOf,
+  STALE_FIND_TIMEOUT_MS,
+  COPY_TIMEOUT_MS,
+  COPY_STEP_TIMEOUT_MS,
+  COPY_REMOVE_TIMEOUT_MS,
   PNPM_STORE_TIMEOUT_MS,
   pnpmStoreDir,
   PATH_LINKS_TIMEOUT_MS,
@@ -96,6 +112,7 @@ import {
   noFenceNote,
   copyArgvs,
   type Host,
+  type Launch,
   homeOf,
   hostArgv,
   isWindowsHost,
@@ -1565,11 +1582,14 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
     const checkHost = await hostOf($)
     if (isWindowsHost(checkHost)) return finish({ checkNote: CHECK_NO_ROOM })
     if (noFence !== '') return finish({ checkNote: noFence })
+    await sweepCopies($, checkHost, home, sid)
     const copy = await makeCopy($, home, sid, cwd)
     const path = (await $.env.get('PATH')) ?? ''
     const miseIgnored = (await $.env.get('MISE_IGNORED_CONFIG_PATHS')) ?? ''
-    const store = await pnpmStore($, checkHost, copy, miseIgnored)
-    const links = await pathLinks($, checkHost, home, path)
+    const launch = await launchFor($, checkHost, home, path)
+    const store = await pnpmStore($, checkHost, launch, copy, miseIgnored, home)
+    const guarded = guardedPath(path, launch)
+    const links = await pathLinks($, checkHost, home, guarded)
     const repos = await gitRepos($, checkHost, home, copy, cwd)
     const prompt = checkPrompt({
       sessionId: sid,
@@ -1585,7 +1605,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       unanswered: [...(links === null ? ['links' as const] : []), ...(repos.whole ? [] : ['repos' as const])],
     })
     const startedAt = Date.now()
-    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, path, links ?? [], repos.dirs))), cwd: copy, env: checkEnv(copy, store, miseIgnored) })
+    const stream = $.process.spawn({ argv: hostArgv(checkHost, withProgram(checkArgv(prompt, checkSettings(home, cwd, guarded, links ?? [], repos.dirs)), launch.claude)), cwd: copy, env: checkEnv(launch, copy, store, miseIgnored, home) })
     let stdout = ''
     let stderr = ''
     let timedOut = false
@@ -1611,7 +1631,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
     } finally {
       stop.cancel()
       if (activeCheck !== null && epoch === checkEpoch) activeCheck = null
-      if (copy !== cwd) $.process.run(hostArgv(checkHost, ['rm', '-rf', copy]), { timeoutMs: 120000 }).catch(() => undefined)
+      if (copy !== cwd) $.process.run(hostArgv(checkHost, ['rm', '-rf', copy]), { timeoutMs: COPY_REMOVE_TIMEOUT_MS }).catch(() => undefined)
     }
     if (timedOut) return finish({ checkNote: `The check ran out of time (${CHECK_TIMEOUT_WORDS}) and was stopped.` })
     const got = resultOf(stdout)
@@ -1799,11 +1819,32 @@ async function homeFor($: EngineInterface): Promise<string> {
 
 // pnpm's store as pnpm names it in the copy, outside the fence, its pnpmfile ignored, its
 // version left alone and nothing fetched, by its command line (`PNPM_STORE_ARGV`) and
-// corepack's network off and the copy's mise config ignored (`pnpmAskEnv`), or '' when there
+// corepack's network off and mise's shims kept off its start (`pnpmAskEnv`), or '' when there
 // is no pnpm or it does not answer (`pnpmStoreDir`).
-async function pnpmStore($: EngineInterface, host: Host, copy: string, miseIgnored: string): Promise<string> {
-  const r = await $.process.run(hostArgv(host, PNPM_STORE_ARGV), { cwd: copy, env: pnpmAskEnv(copy, miseIgnored), timeoutMs: PNPM_STORE_TIMEOUT_MS }).catch(() => null)
+async function pnpmStore($: EngineInterface, host: Host, launch: Launch, copy: string, miseIgnored: string, home: string): Promise<string> {
+  // Off mise's shims, a pnpm found nowhere else is not asked: by name it would be the shim.
+  if (launch.mise === 'around' && launch.pnpm === '') return ''
+  const r = await $.process.run(hostArgv(host, withProgram(PNPM_STORE_ARGV, launch.pnpm)), { cwd: copy, env: pnpmAskEnv(launch, copy, miseIgnored, home), timeoutMs: PNPM_STORE_TIMEOUT_MS }).catch(() => null)
   return r === null || r.exitCode !== 0 ? '' : pnpmStoreDir(r.stdout)
+}
+
+// How the check starts claude and pnpm where they are mise shims (`launchOf`): mise asked from
+// the home, with no env file read, where the owner's tools are, and the path's folders asked
+// which programs are there and where each leads, both outside the fence.
+async function launchFor($: EngineInterface, host: Host, home: string, path: string): Promise<Launch> {
+  const bins = await $.process.run(hostArgv(host, MISE_BIN_PATHS_ARGV), { cwd: home, env: MISE_ASK_ENV, timeoutMs: MISE_ASK_TIMEOUT_MS }).catch(() => null)
+  const named = bins === null || bins.exitCode !== 0 ? null : binPathsOf(bins.stdout)
+  const dirs = [...(named ?? []), ...path.split(':')].filter(d => d.startsWith('/'))
+  // find ends 1 when a folder is missing, having printed the rest, so its exit code is not read.
+  const found = dirs.length === 0 ? { stdout: '', isStdoutTruncated: false } : await $.process.run(hostArgv(host, programsArgv(dirs)), { timeoutMs: PROGRAMS_TIMEOUT_MS }).catch(() => null)
+  return launchOf(path, named, found === null || found.isStdoutTruncated ? null : programsOf(found.stdout))
+}
+
+// Removes the copies checks that never finished left behind (`staleCopiesArgv`); the removals
+// are not waited on.
+async function sweepCopies($: EngineInterface, host: Host, home: string, sid: string): Promise<void> {
+  const r = await $.process.run(hostArgv(host, staleCopiesArgv(home, sid)), { timeoutMs: STALE_FIND_TIMEOUT_MS }).catch(() => null)
+  for (const dir of r === null ? [] : staleCopiesOf(r.stdout, home, sid)) $.process.run(hostArgv(host, ['rm', '-rf', dir]), { timeoutMs: COPY_REMOVE_TIMEOUT_MS }).catch(() => undefined)
 }
 
 // Where the command path's folders and the links in them lead, asked outside the fence
@@ -1852,18 +1893,18 @@ async function makeCopy($: EngineInterface, home: string, sid: string, cwd: stri
   const copy = checkCopyDir(home, sid)
   const host = await hostOf($)
   try {
-    await $.process.run(hostArgv(host, ['rm', '-rf', copy]), { timeoutMs: 120000 })
-    await $.process.run(hostArgv(host, ['mkdir', '-p', checkCopiesDir(home)]), { timeoutMs: 30000 })
+    await $.process.run(hostArgv(host, ['rm', '-rf', copy]), { timeoutMs: COPY_REMOVE_TIMEOUT_MS })
+    await $.process.run(hostArgv(host, ['mkdir', '-p', checkCopiesDir(home)]), { timeoutMs: COPY_STEP_TIMEOUT_MS })
     const [clone, plain] = copyArgvs(host, cwd, copy)
-    if ((await $.process.run(clone, { timeoutMs: 600000 })).exitCode === 0) return copy
+    if ((await $.process.run(clone, { timeoutMs: COPY_TIMEOUT_MS })).exitCode === 0) return copy
     // mkdir without -p fails on a folder that is there, which tells a cp that refused -c
     // from a clone that failed part-way.
-    const free = await $.process.run(hostArgv(host, ['mkdir', copy]), { timeoutMs: 30000 })
-    if (free.exitCode === 0 && (await $.process.run(plain, { timeoutMs: 600000 })).exitCode === 0) return copy
+    const free = await $.process.run(hostArgv(host, ['mkdir', copy]), { timeoutMs: COPY_STEP_TIMEOUT_MS })
+    if (free.exitCode === 0 && (await $.process.run(plain, { timeoutMs: COPY_TIMEOUT_MS })).exitCode === 0) return copy
   } catch {
     // fall through: no copy
   }
-  $.process.run(hostArgv(host, ['rm', '-rf', copy]), { timeoutMs: 120000 }).catch(() => undefined)
+  $.process.run(hostArgv(host, ['rm', '-rf', copy]), { timeoutMs: COPY_REMOVE_TIMEOUT_MS }).catch(() => undefined)
   return cwd
 }
 

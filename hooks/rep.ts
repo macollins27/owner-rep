@@ -3645,6 +3645,53 @@ export const copyArgvs = (host: Host, from: string, to: string): [string[], stri
 
 export const checkCopiesDir = (home: string): string => `${home}/.cache/owner-rep/checks`
 export const checkCopyDir = (home: string, sessionId: string): string => `${checkCopiesDir(home)}/${sessionId === '' ? 'session' : sessionId}`
+// A check whose Claude Code ends mid-run (a session closed, a process killed) never reaches the
+// step that removes its copy. Each check removes the copies other checks left in the copies
+// folder: folders named for a session (a session id, or `session` where there was none), never
+// its own session's, unchanged for longer than any check that made one could still be running.
+// A copy's folder is dated when the copy fills it (cp keeps no dates without -p) and only gets
+// newer as the run writes in it, so `STALE_COPY_MS` covers every step from the copy to its
+// removal, with an hour to spare; a live session's copy is never that old.
+export const COPY_TIMEOUT_MS = 600000
+export const COPY_STEP_TIMEOUT_MS = 30000
+export const COPY_REMOVE_TIMEOUT_MS = 120000
+export const STALE_MARGIN_MS = 3600000
+export const STALE_COPY_MS = CHECK_TIMEOUT_MS + 2 * COPY_TIMEOUT_MS + STALE_MARGIN_MS
+export const STALE_FIND_TIMEOUT_MS = 30000
+const SESSION_NAME = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+export const staleCopiesArgv = (home: string, sessionId: string): string[] => [
+  'find',
+  checkCopiesDir(home),
+  '-mindepth',
+  '1',
+  '-maxdepth',
+  '1',
+  '-type',
+  'd',
+  '(',
+  '-name',
+  '????????-????-????-????-????????????',
+  '-o',
+  '-name',
+  'session',
+  ')',
+  '!',
+  '-name',
+  sessionId === '' ? 'session' : sessionId,
+  '-mmin',
+  `+${Math.ceil(STALE_COPY_MS / 60000)}`,
+  '-print',
+]
+export const staleCopiesOf = (stdout: string, home: string, sessionId: string): string[] => {
+  const own = sessionId === '' ? 'session' : sessionId
+  return stdout
+    .split('\n')
+    .map(l => l.trim())
+    .filter(l => {
+      const name = l.slice(checkCopiesDir(home).length + 1)
+      return l.startsWith(`${checkCopiesDir(home)}/`) && !name.includes('/') && name !== own && (name === 'session' || SESSION_NAME.test(name))
+    })
+}
 
 // WHY THE CHECK DOES NOT START ON WINDOWS.
 // Claude Code 2.1.302 does ship a Windows sandbox — the binary carries
@@ -3711,30 +3758,113 @@ export const noFenceNote = (stderr: string): string | null => {
 export const PNPM_STORE_ARGV = ['pnpm', 'store', 'path', '--config.ignore-pnpmfile=true', '--config.manage-package-manager-versions=false', '--config.offline=true']
 export const COREPACK_ASK_ENV = { COREPACK_ENABLE_NETWORK: '0' }
 export const PNPM_STORE_ENV = 'npm_config_store_dir'
-// Where `claude` (or pnpm) is a mise shim, the shim reads the mise config of the folder it starts
-// in (`mise.toml`, `.mise.toml`, `.tool-versions` and the rest, and the folders above) before the
-// program runs, so before the fence exists. The check starts in its copy, which holds the agent's
-// work: mise refuses a `mise.toml` there as untrusted and the shim exits ("mise ERROR ... not
-// trusted", exit 1, the check dead), and trusted, its `[env]` and hooks would run the project's
-// code outside the fence. So the run and the pnpm question are told, by mise's own setting in
-// their environment, to ignore every config in the folder they start in (the copy, or the
-// agent's folder where no copy is made) and below it; nothing is trusted. The folder is added
-// after any list the owner has set, joined by `:` (mise splits the list with Rust's
-// `split_paths`, as PATH is split; a comma is not read), so what the owner ignores stays
-// ignored. Windows would need `;`, but the check never starts there (`CHECK_NO_ROOM`); give
-// `miseIgnoring` the host's separator before the check runs on Windows. The run's own commands inherit it:
-// a tool the project pins through mise runs at the version the owner's own config names, not
-// the project's. Measured 14 Nov 2026, mise 2026.10.19: a folder named here is ignored with
-// everything below it, and the shim then starts the claude of the owner's config.
+// WHY THE CHECK STARTS AROUND MISE'S SHIMS.
+// Where `claude` (or pnpm) is a mise shim, the shim is mise itself: it reads the mise config of
+// the folder it starts in and of every folder above it (`mise.toml`, `.tool-versions` and the
+// rest), and any env file `MISE_ENV_FILE` names there, before the program runs, so before the
+// fence exists. The check starts in its copy, which holds the agent's work: mise refuses a
+// `mise.toml` there as untrusted and the shim exits ("mise ERROR ... not trusted", the check
+// dead); trusted, its `[env]` and hooks would run the project's code outside the fence; and an
+// env file is loaded even from a folder mise is told to ignore, so a `NODE_OPTIONS=--require=`
+// the agent wrote there runs when node starts (measured 14 Nov 2026, mise 2026.10.19).
+// So mise is asked one question, from the home and with no env file read (`MISE_ASK_ENV`):
+// which folders hold the owner's own tools (`mise bin-paths`). The check's command path has
+// mise's shims folder replaced by those folders, in its place, and claude and pnpm are started
+// by their full paths on that path (`launchOf`), so no mise runs on the copy's files or the
+// folders above it, and pnpm's `#!/usr/bin/env node` finds the owner's node, not node's shim.
+// The run's own commands use the owner's tools: one the project pins through mise alone runs at
+// the owner's version or not at all. The new folders are fenced like the path's (`guardedPath`).
+// A shim is known by where it leads: a program on the path whose link ends at `mise`.
+export type Launch = { path: string; claude: string; pnpm: string; mise: 'none' | 'around' | 'unresolved' }
+export const MISE_BIN_PATHS_ARGV = ['mise', 'bin-paths']
+export const MISE_ASK_ENV = { MISE_ENV_FILE: '' }
+export const MISE_ASK_TIMEOUT_MS = 15000
+export const binPathsOf = (stdout: string): string[] => stdout.split('\n').map(l => l.trim()).filter(l => l.startsWith('/'))
+// Each folder is given as `<folder>/.`, so each name it prints holds `/./` where the folder
+// ends, and `readlink -f` prints where it leads on the next line, which never holds `/./`.
+export const PROGRAMS_TIMEOUT_MS = 30000
+const unslashed = (d: string): string => d.replace(/\/+$/, '')
+export const programsArgv = (dirs: string[]): string[] => [
+  'find',
+  ...new Set(dirs.filter(d => d.startsWith('/')).map(d => `${unslashed(d)}/.`)),
+  '-maxdepth',
+  '1',
+  '(',
+  '-name',
+  'claude',
+  '-o',
+  '-name',
+  'pnpm',
+  ')',
+  '-print',
+  '-exec',
+  'readlink',
+  '-f',
+  '{}',
+  ';',
+]
+export type Found = { dir: string; name: string; target: string }
+export const programsOf = (stdout: string): Found[] => {
+  const lines = stdout.split('\n')
+  const out: Found[] = []
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i] ?? ''
+    const at = line.lastIndexOf('/./')
+    const target = lines[i + 1] ?? ''
+    if (!line.startsWith('/') || at < 0 || !target.startsWith('/') || target.includes('/./')) continue
+    out.push({ dir: line.slice(0, at), name: line.slice(at + 3), target })
+    i++
+  }
+  return out
+}
+const isShim = (f: Found): boolean => /^mise(\.exe)?$/.test(f.target.split('/').pop() ?? '')
+// `found` is null when the path could not be asked about, `bins` when mise could not answer.
+export const launchOf = (path: string, bins: string[] | null, found: Found[] | null): Launch => {
+  const unresolved: Launch = { path, claude: '', pnpm: '', mise: 'unresolved' }
+  if (found === null) return unresolved
+  const shims = new Set(found.filter(isShim).map(f => f.dir))
+  if (shims.size === 0) return { path, claude: '', pnpm: '', mise: 'none' }
+  if (bins === null) return unresolved
+  let placed = false
+  const dirs = path.split(':').flatMap(d => (!shims.has(unslashed(d)) ? [d] : placed ? [] : ((placed = true), bins)))
+  const first = (name: string): string => {
+    for (const d of dirs) if (found.some(f => f.dir === unslashed(d) && f.name === name && !isShim(f))) return `${unslashed(d)}/${name}`
+    return ''
+  }
+  const claude = first('claude')
+  return claude === '' ? unresolved : { path: dirs.join(':'), claude, pnpm: first('pnpm'), mise: 'around' }
+}
+export const withProgram = (argv: readonly string[], program: string): string[] => (program === '' ? [...argv] : [program, ...argv.slice(1)])
+// The path the fence guards: the owner's, and the check's own where it differs.
+export const guardedPath = (path: string, launch: Launch): string => (launch.path === path ? path : `${path}:${launch.path}`)
+// WHERE MISE CANNOT ANSWER (no `mise bin-paths`, or the path could not be asked about), claude
+// and pnpm start by name, through the shim, with no env file read and mise told, by its own
+// setting, to ignore every config in the folder they start in (the copy, or the agent's folder
+// where no copy is made), below it, and in each folder above it; nothing is trusted. The home
+// and the folders holding it are never named: ignoring the home drops the owner's own config
+// (`~/.config/mise/config.toml`), and the shim then finds no claude ("not currently active").
+// So in this case alone a config in the home itself is still read, which is the agent's when
+// the agent works in the home. The folders are added after any list the owner has set, joined
+// by `:` (mise splits the list with Rust's `split_paths`, as PATH is split; a comma is not read),
+// so what the owner ignores stays ignored. Windows would need `;`, but the check never starts
+// there (`CHECK_NO_ROOM`). Measured 14 Nov 2026, mise 2026.10.19: a folder named here is ignored
+// with everything below it, and an empty `MISE_ENV_FILE` loads no env file.
 export const MISE_IGNORE_ENV = 'MISE_IGNORED_CONFIG_PATHS'
-export const miseIgnoring = (folder: string, already: string): Record<string, string> => ({ [MISE_IGNORE_ENV]: already === '' ? folder : `${already}:${folder}` })
-// The check run's environment: pnpm's store where pnpm named one, and the mise ignore.
-export const checkEnv = (folder: string, store: string, already: string): Record<string, string> => ({
+export const miseIgnoring = (folder: string, already: string, home: string): Record<string, string> => {
+  const holdsHome = (d: string): boolean => `${unslashed(home)}/`.startsWith(`${d}/`)
+  const up: string[] = []
+  for (let d = unslashed(folder); d !== ''; d = d.slice(0, d.lastIndexOf('/'))) if (!holdsHome(d)) up.push(d)
+  return up.length === 0 ? {} : { [MISE_IGNORE_ENV]: [...(already === '' ? [] : [already]), ...up].join(':') }
+}
+const launchEnv = (launch: Launch, folder: string, already: string, home: string): Record<string, string> =>
+  launch.mise === 'around' ? { PATH: launch.path } : launch.mise === 'unresolved' ? { ...MISE_ASK_ENV, ...miseIgnoring(folder, already, home) } : {}
+// The check run's environment: pnpm's store where pnpm named one, and the launch's.
+export const checkEnv = (launch: Launch, folder: string, store: string, already: string, home: string): Record<string, string> => ({
   ...(store === '' ? {} : { [PNPM_STORE_ENV]: store }),
-  ...miseIgnoring(folder, already),
+  ...launchEnv(launch, folder, already, home),
 })
-// The pnpm question's environment: corepack's network off, and the mise ignore.
-export const pnpmAskEnv = (folder: string, already: string): Record<string, string> => ({ ...COREPACK_ASK_ENV, ...miseIgnoring(folder, already) })
+// The pnpm question's environment: corepack's network off, and the launch's.
+export const pnpmAskEnv = (launch: Launch, folder: string, already: string, home: string): Record<string, string> => ({ ...COREPACK_ASK_ENV, ...launchEnv(launch, folder, already, home) })
 export const PNPM_STORE_TIMEOUT_MS = 10000
 export const pnpmStoreDir = (stdout: string): string => {
   const line = stdout.trim().split('\n').pop()?.trim() ?? ''
