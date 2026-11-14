@@ -5674,7 +5674,7 @@ test('rule: a yes to a turn not shown, with the owner\'s words whole, is recorde
   await s.send($, 'yes, go')
   expect(s.prompts.length).toBe(1)
   expect(s.prompts[0]).toContain('(the agent\'s turn before #2 could not be captured: ')
-  expect(s.prompts[0]).toContain("so nothing of it is shown; mark #2 approved only if its own words accept a plan or proposal in so many words, and none of the turn's steps can be held)")
+  expect(s.prompts[0]).toContain("so nothing of it is shown; mark #2 approved only if its words accept the agent's plan itself, never for words that say what to do, and none of the turn's steps can be held)")
   expect(s.prompts[0]).not.toContain('delete old.txt')
   expect(s.msg(2)?.approved).toBe('all')
   expect(s.msg(2)?.read?.state).toBe('unreadable')
@@ -6037,7 +6037,7 @@ test('rule: nothing of a typed approval\'s turn over the cap is printed, before 
   await s.send($, 'and the totals')
   expect(s.prompts.length).toBe(2)
   for (const p of s.prompts) {
-    expect(p).toContain(`(the agent's turn before #2 is ${commas(130000)} characters, too long for the rep to check, so nothing of it is shown; mark #2 approved only if its own words accept a plan or proposal in so many words, and none of the turn's steps can be held)`)
+    expect(p).toContain(`(the agent's turn before #2 is ${commas(130000)} characters, too long for the rep to check, so nothing of it is shown; mark #2 approved only if its words accept the agent's plan itself, never for words that say what to do, and none of the turn's steps can be held)`)
     expect(p).not.toContain('delete old.txt')
     expect(p).not.toContain(TURN.slice(-400, -300))
   }
@@ -7833,8 +7833,8 @@ describe("Task 6: the writer's rule and the approved line", () => {
       "(that tests pass, that something runs, exists or is set up) is the agent's claim, never a condition held shown",
       // Shown in part, or not at all.
       "When you see only a turn's end, mark the message if it approves and write none of the turn's steps.",
-      'When none of a turn is shown, you cannot tell whether it held a plan: mark the message only when its own words accept a plan in so many words',
-      'words that only say start, go on or do some work ("keep going", "take over and build it"), praise ("looks good") or a request for changes approve nothing. Write none of that turn\'s steps either way.',
+      'When none of a turn is shown, you cannot tell whether it held a plan: mark the message only when its words accept the agent\'s plan itself',
+      'A message that says what to do ("go ahead with the runs, then the fix", "keep going") is the owner\'s own ask, never an approval; praise or a request for changes approves nothing. Write none of that turn\'s steps either way.',
       // Adding, never taking away; a clash is settled with the owner.
       'A yes adds to the job; it never takes anything away and never starts a new job by itself.',
       'keep both, add the open condition "Settle with the owner which stands: <the earlier ask> or <the plan\'s step>"',
@@ -7886,7 +7886,7 @@ describe("Task 6: the writer's rule and the approved line", () => {
     // 1,000 more since the merge with 0.6.0: its standard for the result and its rule that a routine's steps are
     // the agent's method, with this change's exception for a plan the owner approved (862 characters measured).
     // 500 more for the rule that a yes closes a condition that only waited on the plan (376 characters).
-    // 300 more for the rule that a turn none of which is shown is approved only by words that accept a plan (323 characters).
+    // 300 more for the rule that a turn none of which is shown is approved only by words that accept a plan (357 characters).
     expect(OBJECTIVE_SYSTEM.length).toBeLessThanOrEqual(SYSTEM_BEFORE + 4800)
   })
 
@@ -7964,7 +7964,7 @@ describe("Task 6: the writer's rule and the approved line", () => {
     ]
     const q = objectivePrompt({ objective: OBJ_FIXTURE, owner: part, past: [] })
     expect(q).toContain(CLOSE_LABEL(30000))
-    expect(q).toContain(`- #3 yes\n    (the agent's turn before #3 is ${commas(rep.APPROVAL_READ_CAP + 1)} characters, too long for the rep to check, so nothing of it is shown; mark #3 approved only if its own words accept a plan or proposal in so many words, and none of the turn's steps can be held)`)
+    expect(q).toContain(`- #3 yes\n    (the agent's turn before #3 is ${commas(rep.APPROVAL_READ_CAP + 1)} characters, too long for the rep to check, so nothing of it is shown; mark #3 approved only if its words accept the agent's plan itself, never for words that say what to do, and none of the turn's steps can be held)`)
     expect(q).not.toContain('A distinctive last line.')
     expect(q).toContain(PLAN_NOT_SHOWN(4))
     expect(q).not.toContain('A distinctive plan preview.')
