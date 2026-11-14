@@ -3334,5 +3334,11 @@
     "breaks": "A ban joined to its remedy by a semicolon (\"Do not add new checks; open it and use it.\") is cut whole, so the hands-on look the owner asked for goes with it.",
     "patch": "check-ban-clause-whole.patch",
     "fixed": "2026-11-14"
+  },
+  {
+    "name": "check-ban-tail-loose",
+    "breaks": "A ban on tests in one place or of one kind (\"Don't add tests to the vendored folder.\") is cut from the message as if it banned tests in general, so an instruction the owner needs sent is lost.",
+    "patch": "check-ban-tail-loose.patch",
+    "fixed": "2026-11-14"
   }
 ]
