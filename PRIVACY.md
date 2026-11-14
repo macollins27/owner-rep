@@ -40,7 +40,10 @@ To read which messages you typed, the rep reads the session transcripts Claude C
 keeps under `~/.claude/projects/`. It copies only the messages you typed, including a note you
 typed while approving a plan on Claude Code's plan screen, into the record above. For a session it holds no record of, it also reads the agent's words before each of
 your messages and your plan-screen answers back from the session's messages, and saves them the
-same way.
+same way. For such a session started from another folder than the one it was recorded in, it
+searches the transcripts of every project there with `git grep` (or `grep -r`) for one line of
+the session it came from, and reads your messages from the files that hold it; nothing else of
+those files is kept.
 
 ## What leaves your machine
 

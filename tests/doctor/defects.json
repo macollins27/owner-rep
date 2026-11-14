@@ -531,19 +531,19 @@
     "name": "seed-no-folder-scan",
     "breaks": "A session forked with a new id, whose own transcript is not saved yet, has none of the owner's messages read, so its objective is not written until the owner types again.",
     "patch": "seed-no-folder-scan.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-11-14"
   },
   {
     "name": "human-scan-uncapped",
     "breaks": "The scan of a forked session's folder reads every transcript in it, however many, before the press can go on.",
     "patch": "human-scan-uncapped.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-11-14"
   },
   {
     "name": "human-scan-no-stop",
     "breaks": "The scan of a forked session's folder reads on after a file has matched every row that could be the owner's, paying for reads that change nothing.",
     "patch": "human-scan-no-stop.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-11-14"
   },
   {
     "name": "fork-draft-as-his",
@@ -651,7 +651,7 @@
     "name": "scan-cut-read-trusted",
     "breaks": "In the scan of a forked session's folder, a file whose read was cut at the output cap is taken as read whole, so the part taken from it rests on a part of the file.",
     "patch": "scan-cut-read-trusted.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-11-14"
   },
   {
     "name": "picture-data-kept",
@@ -663,7 +663,7 @@
     "name": "transcript-path-ignored",
     "breaks": "The transcript path Claude Code gives the session is never used: a forked session finds no file and seeds nothing, and every read starts with a search by name.",
     "patch": "transcript-path-ignored.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-11-14"
   },
   {
     "name": "prompt-path-not-held",
@@ -675,19 +675,19 @@
     "name": "find-fallback-missing",
     "breaks": "With no transcript path given, the session's file is never searched for by name, so a session reopened in place has none of the owner's messages proven.",
     "patch": "find-fallback-missing.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-11-14"
   },
   {
     "name": "scan-unbounded",
     "breaks": "The scan of a forked session's folder runs on past its 30 seconds, reading file after file while the owner's first prompt waits.",
     "patch": "scan-unbounded.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-11-14"
   },
   {
     "name": "scan-timeout-fixed",
     "breaks": "Each read in the scan of a forked session's folder is allowed its full time even when less is left, so a slow disk holds the owner's first prompt well past the scan's limit.",
     "patch": "scan-timeout-fixed.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-11-14"
   },
   {
     "name": "queued-message-unproven",
@@ -789,19 +789,19 @@
     "name": "scan-first-match-taken",
     "breaks": "The scan of a forked session's folder takes the first file that matches any of the fork's rows, such as a sibling session sharing only the owner's first message, instead of the file that matches the most.",
     "patch": "scan-first-match-taken.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-11-14"
   },
   {
     "name": "scan-tie-takes-older",
     "breaks": "Of two files that match a fork's rows equally, the older is taken instead of the newer.",
     "patch": "scan-tie-takes-older.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-11-14"
   },
   {
     "name": "scan-unread-as-empty",
     "breaks": "A scan of a fork's folder that matched none of the fork's rows, because no file could be read whole or because the files read hold none of them, comes back as a read that found nothing of the owner's, so the record read labels every one of their rows as written by Claude Code.",
     "patch": "scan-unread-as-empty.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-11-14"
   },
   {
     "name": "record-items-unused",
@@ -1017,7 +1017,7 @@
     "name": "windows-find-by-name",
     "breaks": "On Windows the session's transcript is looked for with find by name, which finds nothing there, so none of the owner's messages is read.",
     "patch": "windows-find-by-name.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-11-14"
   },
   {
     "name": "windows-read-by-name",
@@ -1041,7 +1041,7 @@
     "name": "home-tmp-is-none",
     "breaks": "A home that is /tmp is taken for no home, so the session's transcript is never looked for under /tmp/.claude.",
     "patch": "home-tmp-is-none.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-11-14"
   },
   {
     "name": "windows-home-mixed-slashes",
@@ -1053,7 +1053,7 @@
     "name": "windows-held-path-backslashed",
     "breaks": "On Windows a transcript path Claude Code gives with backslashes is read as given, so a forked session's folder is never found and none of the owner's messages is read.",
     "patch": "windows-held-path-backslashed.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-11-14"
   },
   {
     "name": "windows-card-offers-check",
@@ -1095,19 +1095,19 @@
     "name": "fork-scan-no-anchor",
     "breaks": "A fork taken after a compaction the owner has typed nothing since finds no parent, so it holds none of their messages and no objective.",
     "patch": "fork-scan-no-anchor.patch",
-    "fixed": "2026-10-17"
+    "fixed": "2026-10-17; remade 2026-11-14"
   },
   {
     "name": "anchor-reads-whole-file",
     "breaks": "A fork found by its last tool result takes the parent's messages from after the fork as well as before it.",
     "patch": "anchor-reads-whole-file.patch",
-    "fixed": "2026-10-17"
+    "fixed": "2026-10-17; remade 2026-11-14"
   },
   {
     "name": "anchor-none-still-scans",
     "breaks": "A fork whose rows hold neither a typed row nor a tool result still lists and reads the folder, for nothing.",
     "patch": "anchor-none-still-scans.patch",
-    "fixed": "2026-10-17"
+    "fixed": "2026-10-17; remade 2026-11-14"
   },
   {
     "name": "tool-id-unchecked",
@@ -1125,37 +1125,37 @@
     "name": "copy-scans-itself",
     "breaks": "The search of a fork's folder reads the fork's own file too, which holds the same summary line and tool ids as its parent.",
     "patch": "copy-scans-itself.patch",
-    "fixed": "2026-10-17"
+    "fixed": "2026-10-17; remade 2026-11-14"
   },
   {
     "name": "copy-of-copy-taken",
     "breaks": "A copy of the copy, which holds the same summary line with nothing of the owner's before it, is taken as the parent, so their messages before the summary are lost.",
     "patch": "copy-of-copy-taken.patch",
-    "fixed": "2026-10-17"
+    "fixed": "2026-10-17; remade 2026-11-14"
   },
   {
     "name": "anchor-copy-taken",
     "breaks": "A fork whose own file is not saved yet takes as its parent an earlier fork of the same session, which holds its last tool call with nothing of the owner's before it, so none of their messages are read and the objective waits for a press.",
     "patch": "anchor-copy-taken.patch",
-    "fixed": "2026-11-11"
+    "fixed": "2026-11-11; remade 2026-11-14"
   },
   {
     "name": "plan-copy-unseeded",
     "breaks": "A fork whose own file is not saved yet, whose folder holds only an earlier fork with nothing of the owner's before its last tool call, reports none found, so a plan the owner accepted on the plan screen is never seeded from the rows.",
     "patch": "plan-copy-unseeded.patch",
-    "fixed": "2026-11-11"
+    "fixed": "2026-11-11; remade 2026-11-14"
   },
   {
     "name": "copy-own-dropped",
     "breaks": "The owner's messages since the summary, which the fork's own copy holds, are left out once the parent is found.",
     "patch": "copy-own-dropped.patch",
-    "fixed": "2026-10-17"
+    "fixed": "2026-10-17; remade 2026-11-14"
   },
   {
     "name": "copy-unfound-empty",
     "breaks": "A copy whose summary no other file in its folder holds seeds nothing, though it holds the owner's messages since the summary.",
     "patch": "copy-unfound-empty.patch",
-    "fixed": "2026-10-17"
+    "fixed": "2026-10-17; remade 2026-11-14"
   },
   {
     "name": "anchor-on-result",
@@ -1167,13 +1167,13 @@
     "name": "windows-tool-line-by-name",
     "breaks": "On Windows the seed's search for a fork's parent, by its last tool result or by a copy's summary line, runs grep by its bare name, which Windows cannot find, so a fork taken after a compaction reads none of the owner's messages from before it.",
     "patch": "windows-tool-line-by-name.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-11-14"
   },
   {
     "name": "windows-read-before-by-name",
     "breaks": "On Windows the read of a parent's messages before its last tool result runs sed by its bare name, which Windows cannot find, so a fork taken after a compaction reads none of the owner's messages.",
     "patch": "windows-read-before-by-name.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-11-14"
   },
   {
     "name": "fence-runs-later-open",
@@ -2991,13 +2991,13 @@
     "name": "combined-meaning-missing",
     "breaks": "The prompt omits combined meaning; a model's obedience to the rule is proved by the harness cases.",
     "patch": "combined-meaning-missing.patch",
-    "fixed": "2026-11-01"
+    "fixed": "2026-11-01; remade 2026-11-14"
   },
   {
     "name": "whole-before-steps-missing",
     "breaks": "The prompt omits whole before steps; a model's obedience to the rule is proved by the harness cases.",
     "patch": "whole-before-steps-missing.patch",
-    "fixed": "2026-11-01"
+    "fixed": "2026-11-01; remade 2026-11-14"
   },
   {
     "name": "draft-counts-as-approval",
@@ -3111,7 +3111,7 @@
     "name": "outside-part-counts",
     "breaks": "The objective writer is no longer told that of the turn the owner answered only the part the owner took counts, that the agent's other turns count for nothing, or that the agent leaving some of the work to the owner is its account and no exception to done.",
     "patch": "outside-part-counts.patch",
-    "fixed": "2026-11-03"
+    "fixed": "2026-11-03; remade 2026-11-14"
   },
   {
     "name": "screen-changed-file-held",
@@ -3213,7 +3213,7 @@
     "name": "approval-closing-dropped",
     "breaks": "The objective writer is not told that a yes closes a condition that only waited on the plan, so it lists that condition as dropped by the approval and the card asks the owner to settle what the yes already did.",
     "patch": "approval-closing-dropped.patch",
-    "fixed": "2026-11-10"
+    "fixed": "2026-11-10; remade 2026-11-14"
   },
   {
     "name": "other-rows-unread",
@@ -3225,6 +3225,60 @@
     "name": "card-shares-strip",
     "breaks": "From Claude Code 2.1.325 the briefing no longer takes the strip alone: another mod's row stays stacked under the card the owner asked for.",
     "patch": "card-shares-strip.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "parent-other-folder-unsearched",
+    "breaks": "A session recorded in a folder since removed, then forked or resumed from another folder, never looks beyond the start folder's records, so none of the owner's messages is read and no goal is written.",
+    "patch": "parent-other-folder-unsearched.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "parent-search-no-grep",
+    "breaks": "Where git cannot search the project folders (none installed, or it fails), the search for a fork's parent in other folders finds nothing instead of falling back to grep.",
+    "patch": "parent-search-no-grep.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "parent-search-unordered",
+    "breaks": "The files the search of other project folders finds are tried in name order, not newest first, so an old session sharing the line can be taken before the parent.",
+    "patch": "parent-search-unordered.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "fork-copy-taken-as-parent",
+    "breaks": "An earlier fork's copy, which begins at a compaction summary, is weighed as a whole file: being newer it wins and ends the scan, so only the messages since the summary are read and the compacted turn is numbered #1.",
+    "patch": "fork-copy-taken-as-parent.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "fork-copy-wins-tie",
+    "breaks": "An earlier fork's copy matching as many of the fork's rows as a whole file wins the tie, so the owner's messages before the summary are lost.",
+    "patch": "fork-copy-wins-tie.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "fork-copy-unchained",
+    "breaks": "When only an earlier fork's copy matches, its summary is not followed back to the file it was copied from, so the owner's messages before the summary are lost.",
+    "patch": "fork-copy-unchained.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "unshown-turn-approval-loose",
+    "breaks": "The writer is told to mark a message after a turn none of which is shown whenever it approves, so go-ahead words such as \"keep going\" are taken for a plan approval and the card names a plan nobody approved.",
+    "patch": "unshown-turn-approval-loose.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "unshown-turn-note-loose",
+    "breaks": "The note under a message whose turn is not shown tells the writer to mark it if the owner approved it, without saying only words that accept a plan count, so a go-ahead is taken for an approval.",
+    "patch": "unshown-turn-note-loose.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "unseen-plan-steps-listed",
+    "breaks": "Steps a reader names for an approved plan it was never shown reach the card's Left out as \"Not assessed\" lines, though they are the reader's guesses.",
+    "patch": "unseen-plan-steps-listed.patch",
     "fixed": "2026-11-14"
   }
 ]

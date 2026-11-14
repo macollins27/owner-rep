@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index c8022ab..83f9627 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2244,7 +2244,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
+     const find = (file: string) => summaryLineFind(file, id)
+     const nearby = await before(near.filter(f => f !== copy.file), find)
+     const source = Array.isArray(nearby) ? nearby : await before(await far(`"uuid":"${id}"`), find)
+-    return Array.isArray(source) ? [...source, ...copy.items] : copy.items
++    return copy.items
+   } catch {
+     return null
+   }

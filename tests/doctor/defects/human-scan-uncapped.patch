@@ -1,10 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index c8022ab..1285f95 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -2133,7 +2133,6 @@
-       .split('\n')
-       .map(f => f.trim())
-       .filter(f => f.endsWith('.jsonl') && f !== name)
+@@ -2150,7 +2150,6 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
+       .filter(f => f.endsWith('.jsonl'))
+       .map(f => `${folder}/${f}`)
+       .filter(f => f !== path)
 -      .slice(0, HUMAN_SCAN_MAX)
-     if (summary !== null || anchor !== null) {
-       let placed = false
-       for (const file of files) {
+     // The files in every project folder holding the needle, newest first, none tried yet.
+     const far = async (needle: string): Promise<string[]> => {
+       const dir = await configDir()

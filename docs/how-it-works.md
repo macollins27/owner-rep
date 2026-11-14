@@ -521,8 +521,21 @@ recognised by the summary coming first, and the owner's messages are the ones be
 summary line in the newest other file that holds any there, followed by the copy's own. Within a file the rows are lined up
 from the end, and where they fit more than one place, the place with the fewest of the owner's
 messages left between the matched ones, then the latest, is taken, so a fork of a compacted
-parent keeps every message up to the fork. A scan in which no file matched any row proves
-nothing, and nothing is seeded from it. A row the transcript does not hold as the owner's (task
+parent keeps every message up to the fork. A file in the folder that begins at a summary is an
+earlier fork's copy: it matches the newest rows as well as the parent and is newer, so it is
+never taken over a whole file that matches as many, and when it alone matches, its summary line
+is followed back to the parent and the messages before it there come first; taking it read only
+the messages since the summary and numbered them from #1. A session recorded in a folder since
+removed (a worktree removed after its merge, the normal end of one) and then resumed or forked
+from another folder is in none of the start folder's files, and Claude Code hands the mod
+nothing that names the parent. When the start folder holds nothing of it, every project folder
+is searched once for the summary line or the last tool call, with `git grep` (0.04 seconds
+over 3 GB of transcripts) or `grep -r` where git cannot run, and the files found are tried the
+same way, newest first, inside the same 30 seconds. A scan in which no file matched any row proves
+nothing, and nothing is seeded from it. A message read back from before a compaction has no row,
+so the writer sees nothing of the agent's turn before it: it is taken as approving a plan only
+when the owner's own words accept a plan, never on a go-ahead such as "keep going", which would
+name a plan nobody approved on the card, and a different message on each run. A row the transcript does not hold as the owner's (task
 notifications, another session's message, the summary of a compacted conversation) is never
 taken as the owner's, and when no transcript can be read nothing is seeded.
 A message the rep drafted that the owner sent in any session the rep holds, the one forked from
@@ -566,7 +579,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 604 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 615 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: twelve real sessions in tmux, the strip captured to tests/live/captures
 ```
