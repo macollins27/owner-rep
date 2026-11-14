@@ -67,8 +67,9 @@ jobs:
           echo "tested=$tested" >> "$GITHUB_OUTPUT"
 
   # The suite runs on three systems with the build the pinned declarations came from, and on
-  # Ubuntu with 2.1.286, the first build with mods on by default, and with the newest
-  # release, so a release that breaks the mod shows here.
+  # Ubuntu with 2.1.286, the first build with mods on by default, with 2.1.310, the last
+  # build whose band draws every mod in one chain, and with the newest release, so a release
+  # that breaks the mod shows here.
   tests:
     needs: merged
     if: ${{ !cancelled() && needs.merged.outputs.tested != 'true' }}
@@ -76,10 +77,12 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        claude: ['2.1.310']
+        claude: ['2.1.325']
         include:
           - os: ubuntu-latest
             claude: '2.1.286'
+          - os: ubuntu-latest
+            claude: '2.1.310'
           - os: ubuntu-latest
             claude: latest
     runs-on: ${{ matrix.os }}
@@ -96,7 +99,7 @@ jobs:
           npm install -g @anthropic-ai/claude-code@${{ matrix.claude }}
           claude --version
       - name: Fail when the installed build is not the one the pinned declarations came from
-        if: matrix.claude == '2.1.310'
+        if: matrix.claude == '2.1.325'
         run: tests/ci/declarations.sh
       - name: Validate the manifest and the hooks module
         run: claude plugin validate .
@@ -107,7 +110,7 @@ jobs:
       - name: Run the tests
         run: claude plugin test .
       - name: Type-check the hooks and the tests
-        if: matrix.claude == '2.1.310'
+        if: matrix.claude == '2.1.325'
         run: |
           npm install -g typescript@5.9.3
           tsc -p tests/ci/tsconfig.json --noEmit
@@ -128,6 +131,6 @@ jobs:
         with:
           node-version: 22
       - name: Install Claude Code, the build the type declarations are pinned to
-        run: npm install -g @anthropic-ai/claude-code@2.1.310
+        run: npm install -g @anthropic-ai/claude-code@2.1.325
       - name: Plant every eighth known defect and expect the suite to fail each time
         run: python3 tests/doctor/doctor.py --shard ${{ matrix.shard }}/8
