@@ -2876,8 +2876,9 @@ test('rule: once the agent has stopped, the card\'s Right now says so in place o
   const o: Objective = { ...OBJ_FIXTURE, result: 'R.', step: 'The review.' }
   expect(objectiveText(o, { isWorking: false, doing: 'stopped, waiting on you' })).toBe(`R. Right now: ${rep.STOPPED_NOW}`)
   expect(objectiveText(o, { isWorking: true, doing: 'running npm' })).toBe('R. Right now: The review.')
-  // Before any turn of this run has ended the rep does not know, and the written step stands.
-  expect(objectiveText(o, { isWorking: false, doing: 'idle' })).toBe('R. Right now: The review.')
+  // A session opened or resumed with no turn run since: nothing is running, so the agent has
+  // stopped, as on a fork of a finished session, and the written step is stale.
+  expect(objectiveText(o, { isWorking: false, doing: 'idle' })).toBe(`R. Right now: ${rep.STOPPED_NOW}`)
   expect(objectiveText({ ...o, step: '' }, { isWorking: false, doing: 'stopped, waiting on you' })).toBe(`R. Right now: ${rep.STOPPED_NOW}`)
 })
 
@@ -2896,13 +2897,14 @@ test('rule: the card heads with the result and a count line, fills the band in o
   await $.prompt.submit(typed('a public repository, please'))
   await settle($)
   // Forty rows and a short card: everything shows, the objective whole under the does line, nothing cut.
+  // No turn has run in this test, so Right now says the agent has stopped.
   let ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   await ui.press({ key: 'rep' })
   expect(await ui.find({ type: 'Text', text: /^Owner rep · A public repository that reads as serious engineering\.$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /^Done means 3 things: 0 shown, 3 open$/ })).toBeDefined()
   let texts = (await ui.findAll({ type: 'Text' })).map(t => t.text ?? '')
   const does = texts.findIndex(t => t === 'Makes the agent write the suite.')
-  const whole = texts.findIndex(t => /^A public repository that reads as serious engineering\. So he can rely on it\. Done when: a README; a test suite; a GitHub run\. Right now: The first step\.$/.test(t))
+  const whole = texts.findIndex(t => /^A public repository that reads as serious engineering\. So he can rely on it\. Done when: a README; a test suite; a GitHub run\. Right now: The agent has stopped and is waiting for you\.$/.test(t))
   expect(does).toBeGreaterThan(-1)
   expect(whole).toBeGreaterThan(does)
   expect(texts.filter(t => t.endsWith('…'))).toEqual([])

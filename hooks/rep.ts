@@ -391,11 +391,13 @@ const anyReopened = (o: Objective | null): boolean => openConditions(o).some(c =
 
 // What the agent is doing, as the owner sees it under the objective. The writer sets the step from
 // the owner's messages and never hears of the agent's turns, so once a turn has ended (the agent
-// stopped, asked or was stopped) the step it wrote is stale and the stop is what is true.
+// stopped, asked or was stopped) the step it wrote is stale and the stop is what is true. A
+// session opened or resumed with no turn run since ('idle') has nothing running either: the
+// agent stopped before it was opened.
 export const STOPPED_NOW = 'The agent has stopped and is waiting for you.'
 export const ASKING_NOW = 'The agent has stopped to ask you something.'
 export const HALTED_NOW = 'You stopped the agent.'
-const NOW_AFTER_TURN: Record<string, string> = { 'stopped, waiting on you': STOPPED_NOW, 'asking you': ASKING_NOW, 'stopped by you': HALTED_NOW }
+const NOW_AFTER_TURN: Record<string, string> = { 'stopped, waiting on you': STOPPED_NOW, idle: STOPPED_NOW, 'asking you': ASKING_NOW, 'stopped by you': HALTED_NOW }
 export function rightNow(step: string, now?: { isWorking: boolean; doing: string }): string {
   const stopped = now === undefined || now.isWorking ? undefined : NOW_AFTER_TURN[now.doing]
   return stopped ?? (step.trim() === '' ? '' : sentence(step))
