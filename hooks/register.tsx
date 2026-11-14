@@ -134,6 +134,13 @@ import {
   objectivePrompt,
   OWN_WORDS_MAX_TOKENS,
   OWN_WORDS_SYSTEM,
+  PLAN_SCAN_MAX_TOKENS,
+  PLAN_SCAN_MODEL,
+  PLAN_SCAN_SYSTEM,
+  PLAN_SCAN_TIMEOUT_MS,
+  parsePlanScan,
+  planScanPrompt,
+  planWarning,
   OWN_WORDS_TIMEOUT_MS,
   ownWordsPrompt,
   parseOwnWords,
@@ -2254,6 +2261,23 @@ async function takeNote($: EngineInterface, sid: string, note: string, from: { s
 // The plan screen's answer, stored as the owner's and read at once (docs/reference.md, "The plan
 // screen"): an accepted plan as approved by code, saved whole; a plan turned down, the owner's note
 // with that plan saved beside it, so its words can be read and none of it approved.
+// The plan screen read while it waits for the owner (docs/reference.md, "The plan screen read
+// before the owner's yes"): one completion on the plan alone, never awaited by the hook, and its
+// line shown only while the screen is still open, so nothing lands after the owner answered.
+async function scanPlan($: EngineInterface, plan: string, screen: { isOpen: boolean }): Promise<void> {
+  const result = await $.model.complete({
+    model: PLAN_SCAN_MODEL,
+    system: PLAN_SCAN_SYSTEM,
+    prompt: planScanPrompt(plan),
+    maxTokens: PLAN_SCAN_MAX_TOKENS,
+    timeoutMs: PLAN_SCAN_TIMEOUT_MS,
+  })
+  if (!result.isAnswered) return
+  const pieces = parsePlanScan(result.text)
+  if (pieces === null || pieces.length === 0 || !screen.isOpen) return
+  $.ui.log(planWarning(pieces))
+}
+
 async function takePlanScreen($: EngineInterface, e: unknown, result: unknown): Promise<void> {
   const seen = planScreen(e, result)
   if (seen === null) return
@@ -2607,6 +2631,10 @@ export const register: Register = on => {
     const tool = String(e.tool)
     const doing = doingFor(tool, e as unknown as Record<string, unknown>)
     const waits = tool === 'AskUserQuestion' || tool === 'ExitPlanMode'
+    // The plan screen is read from the moment it is called, before anything here is awaited.
+    const screen = { isOpen: true }
+    const plan = tool === 'ExitPlanMode' ? (e as { plan?: unknown }).plan : undefined
+    if (typeof plan === 'string' && plan.trim() !== '') scanPlan($, plan, screen).catch(() => undefined)
     // A note typed with the plan accepted before this call is saved by now: read first.
     if (notesDue.size > 0) await sessionId($).then(id => catchNotes($, id)).catch(() => undefined)
     try {
@@ -2618,7 +2646,13 @@ export const register: Register = on => {
       // Drawing is best effort.
     }
     try {
-      const result = await next(e)
+      let result: Awaited<ReturnType<typeof next>>
+      try {
+        result = await next(e)
+      } finally {
+        // The owner has answered (or the call failed): a reading still out shows nothing now.
+        screen.isOpen = false
+      }
       // What the plan screen answered is stored after the call; a thrown call stores nothing.
       if (tool === 'ExitPlanMode') await takePlanScreen($, e, result).catch(() => undefined)
       return result

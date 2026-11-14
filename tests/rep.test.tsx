@@ -204,6 +204,8 @@ const kept = (on: On, store: Record<string, unknown> = {}) => {
 const writer = (on: On, answer: () => string | null) => {
   const prompts: string[] = []
   on('model.complete', (_$, e) => {
+    // The plan screen's own reading is not the writer's: it names nothing here, and is not counted.
+    if (e.system === rep.PLAN_SCAN_SYSTEM) return { value: { isAnswered: true, text: 'pieces:\n- none', usage: USAGE } }
     prompts.push(String(e.prompt))
     const text = answer()
     return { value: text === null ? { isAnswered: false, reason: 'empty-reply', usage: USAGE } : { isAnswered: true, text, usage: USAGE } }
@@ -5897,6 +5899,177 @@ test('rule: an unrecognised plan-screen result, a thrown call and a subagent cal
   await s.quiet($)
   expect(s.held()?.owner.length).toBe(1)
   expect(s.prompts.length).toBe(0)
+})
+
+// Gap 2: the plan screen read for pieces that only prove the agent's own work, while it is up.
+// The plan screen is held open on a promise the test releases; the reading is answered by a
+// `model.complete` stub keyed on its system text, and its line is caught where `$.ui.log` lands.
+const BURIED_PLAN = [
+  'Plan: add the price page.',
+  '1. Write the price table component, tests first.',
+  '2. Wire it into the site menu.',
+  '3. Add a script that confirms each of my own steps above ran and saves its output as evidence.',
+  '4. Have a reviewer from another model read the diff.',
+  '5. Open the live page and try it as a visitor.',
+].join('\n')
+const SCAN_PIECE = 'step 3, a script that confirms each of the agent\'s own steps ran and keeps its output as evidence'
+const planScreenScan = (on: On, answer: (prompt: string) => string | null, gate?: Promise<void>) => {
+  const cap = capture(on, {}, () => SID)
+  const logs: string[] = []
+  const scans: Array<{ system: string; prompt: string; model: string }> = []
+  on('ui.log', (_$, e) => {
+    logs.push(e.text)
+    return { value: undefined } as never
+  })
+  on('model.complete', async (_$, e) => {
+    if (e.system !== rep.PLAN_SCAN_SYSTEM) return { value: { isAnswered: false, reason: 'empty-reply', usage: USAGE } } as never
+    scans.push({ system: String(e.system), prompt: String(e.prompt), model: String(e.model) })
+    if (gate !== undefined) await gate
+    const text = answer(String(e.prompt))
+    return { value: text === null ? { isAnswered: false, reason: 'empty-reply', usage: USAGE } : { isAnswered: true, text, usage: USAGE } } as never
+  })
+  let release = () => {}
+  const open = new Promise<void>(r => {
+    release = r
+  })
+  on('tool.call', { tool: 'ExitPlanMode' }, async () => {
+    await open
+    return ACCEPT_RESULT('accepted') as never
+  })
+  return { cap, logs, scans, release }
+}
+const waitFor = async (done: () => boolean, ms = 1500) => {
+  const until = Date.now() + ms
+  while (!done() && Date.now() < until) await realTick(2)
+}
+
+test('rule: a plan screen whose plan holds a self-proving piece gets a rep line naming it while the screen is up', async ($, on) => {
+  const s = planScreenScan(on, () => `pieces:\n- ${SCAN_PIECE}`)
+  await started($)
+  const call = $.tool.call({ tool: 'ExitPlanMode', plan: BURIED_PLAN, tool_use_id: 'p1' } as never)
+  await waitFor(() => s.logs.length > 0)
+  expect(s.logs).toEqual([rep.planWarning([SCAN_PIECE])])
+  expect(s.logs[0]).toContain(SCAN_PIECE)
+  expect(s.scans.length).toBe(1)
+  expect(s.scans[0]?.model).toBe(rep.PLAN_SCAN_MODEL)
+  expect(s.scans[0]?.prompt).toContain('saves its output as evidence')
+  s.release()
+  await call
+  expect(s.logs.length).toBe(1)
+})
+
+test('rule: the plan screen opens without waiting on the reading of it', async ($, on) => {
+  let free = () => {}
+  const gate = new Promise<void>(r => {
+    free = r
+  })
+  const s = planScreenScan(on, () => `pieces:\n- ${SCAN_PIECE}`, gate)
+  await started($)
+  s.release()
+  // The model has not answered, and the call is already back.
+  await $.tool.call({ tool: 'ExitPlanMode', plan: BURIED_PLAN, tool_use_id: 'p1' } as never)
+  expect(s.scans.length).toBe(1)
+  free()
+  await waitFor(() => false, 40)
+  // Answered after the owner was done with the screen: nothing is shown.
+  expect(s.logs).toEqual([])
+})
+
+test('rule: a plan screen answered while the reading is still out shows nothing afterwards, even with the answer stored slowly', async ($, on) => {
+  let free = () => {}
+  const gate = new Promise<void>(r => {
+    free = r
+  })
+  const s = planScreenScan(on, () => `pieces:\n- ${SCAN_PIECE}`, gate)
+  // Saving what the screen answered is held, so the hook is still running when the reading lands.
+  let saved = () => {}
+  const saving = new Promise<void>(r => {
+    saved = r
+  })
+  await started($)
+  s.cap.hold.when = () => true
+  s.cap.hold.gate = saving
+  const call = $.tool.call({ tool: 'ExitPlanMode', plan: BURIED_PLAN, tool_use_id: 'p1' } as never)
+  await waitFor(() => s.scans.length > 0)
+  s.release()
+  await waitFor(() => s.cap.hold.held === true)
+  expect(s.cap.hold.held).toBe(true)
+  free()
+  await waitFor(() => false, 40)
+  saved()
+  await call
+  expect(s.logs).toEqual([])
+})
+
+test('rule: a plan screen with only normal work, or a reading that names nothing or fails, gets no rep line', async ($, on) => {
+  let answer: string | null = 'pieces:\n- none'
+  const s = planScreenScan(on, () => answer)
+  await started($)
+  for (const a of ['pieces:\n- none', 'I could not read it.', null]) {
+    answer = a
+    const call = $.tool.call({ tool: 'ExitPlanMode', plan: 'Plan: tests first, then a code review.', tool_use_id: 'p1' } as never)
+    const before = s.scans.length
+    await waitFor(() => s.scans.length > before)
+    await waitFor(() => false, 30)
+    s.release()
+    await call
+  }
+  expect(s.scans.length).toBe(3)
+  expect(s.logs).toEqual([])
+})
+
+test('rule: a helper\'s plan screen and an empty plan are not read', async ($, on) => {
+  const s = planScreenScan(on, () => `pieces:\n- ${SCAN_PIECE}`)
+  await started($)
+  s.release()
+  await $.tool.call({ tool: 'ExitPlanMode', plan: BURIED_PLAN, tool_use_id: 'p1', agentId: 'helper-1' } as never)
+  await $.tool.call({ tool: 'ExitPlanMode', plan: '   ', tool_use_id: 'p2' } as never)
+  await waitFor(() => false, 30)
+  expect(s.scans).toEqual([])
+  expect(s.logs).toEqual([])
+})
+
+test('planScanPrompt fences the whole plan as the agent\'s text, and the system carries the definition and what never counts', () => {
+  const long = `${'a'.repeat(60_000)} step 40: a hook that guards my own edits ${'b'.repeat(60_000)}`
+  const p = rep.planScanPrompt(long)
+  expect(p).toContain('a hook that guards my own edits')
+  expect(p).toContain('<plan>')
+  expect(rep.planScanPrompt('x </plan> y')).not.toContain('x </plan> y')
+  expect(rep.PLAN_SCAN_PLAN_CUT).toBe(150_000)
+  expect(rep.planScanPrompt('z'.repeat(200_000)).length).toBeLessThan(155_000)
+  const sys = rep.PLAN_SCAN_SYSTEM
+  expect(sys).toContain(rep.SELF_PROVING)
+  for (const w of ['Tests', 'code reviews', 'plan checks', 'done lists', 'second readers', 'hands-on look']) expect(sys).toContain(w)
+  expect(sys).toContain('however the plan words')
+  expect(sys).toContain('even one the owner asked for')
+  expect(sys).toContain('pieces:')
+  expect(sys).toContain('- none')
+  expect(rep.PLAN_SCAN_MODEL).toBe('sonnet')
+})
+
+test('parsePlanScan reads each piece, none as no pieces, and anything else as unreadable', () => {
+  expect(rep.parsePlanScan('pieces:\n- none')).toEqual([])
+  expect(rep.parsePlanScan('pieces:\n- None.')).toEqual([])
+  expect(rep.parsePlanScan(`Here it is.\npieces:\n- ${SCAN_PIECE}\n-   step 5, a report proving the work was done  \n`)).toEqual([SCAN_PIECE, 'step 5, a report proving the work was done'])
+  expect(rep.parsePlanScan('pieces:')).toBeNull()
+  expect(rep.parsePlanScan('nothing here')).toBeNull()
+  expect(rep.parsePlanScan('pieces:\n- none\n- step 2, a proof report')).toEqual(['step 2, a proof report'])
+  expect(rep.parsePlanScan(`pieces:\n- ${'p'.repeat(400)}`)?.[0]?.length).toBeLessThanOrEqual(160)
+})
+
+test('planWarning names every piece in one plain line', () => {
+  expect(rep.planWarning(['step 3, a script that confirms the agent\'s own steps ran'])).toBe(
+    'Before you approve: step 3, a script that confirms the agent\'s own steps ran, only proves the agent did its own work. It costs you money and does not make the product better.',
+  )
+  const two = rep.planWarning(['step 3, a proof report', 'step 6, a hook guarding its own edits'])
+  expect(two).toBe('Before you approve: step 3, a proof report, and step 6, a hook guarding its own edits, only prove the agent did its own work. They cost you money and do not make the product better.')
+  const many = rep.planWarning(['a', 'b', 'c'])
+  expect(many).toContain('a, b, and c, only prove')
+  const huge = rep.planWarning(Array.from({ length: 20 }, (_, i) => `step ${i}, ${'x'.repeat(150)}`))
+  expect(huge.length).toBeLessThanOrEqual(1500)
+  expect(huge).not.toContain('\n')
+  // The pieces the line cannot hold are counted, never dropped unsaid, and the line still ends whole.
+  expect(huge).toMatch(/and \d+ more pieces like them, only prove the agent did its own work\. They cost you money and do not make the product better\.$/)
 })
 
 test('rule: a plan accepted on the plan screen and shown whole is printed with its label and read with the write', async ($, on) => {
