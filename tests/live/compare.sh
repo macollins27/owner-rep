@@ -98,7 +98,7 @@ run() {
     "env -u CLAUDECODE -u CLAUDE_CODE_ENTRYPOINT -u CLAUDE_CODE_SESSION_ID -u CLAUDE_CODE_CHILD_SESSION -u CLAUDE_CODE_MESSAGING_SOCKET -u CLAUDE_CODE_MESSAGING_TOKEN -u CLAUDE_CODE_SESSION_ATTENDED claude --model $MODEL --resume $sess --fork-session --session-id $id --settings '{\"enabledPlugins\":{\"owner-rep@owner-rep\":false}}' --plugin-dir '$dir'"
   if wait_for 'Brief me' 90; then
     if wait_for_head 180; then t_obj=$((SECONDS - t0)); echo "  objective written $t_obj s after the session started ($sess $label)"
-    else echo "  the head still shows the placeholder $((SECONDS - t0)) s after the session started ($sess $label)"; fi
+    else t_obj="none after $((SECONDS - t0))"; echo "  the head still shows the placeholder $((SECONDS - t0)) s after the session started ($sess $label)"; fi
     pane > $base-before.txt
     local t1=$SECONDS
     keys 1
@@ -193,8 +193,14 @@ same=0
       grep -E 'Owner rep: [0-9]+ look' $f | sed 's/^\s*/  /'
       c=$OUT/$s-$label-check.txt
       if (( CHECK )) && [[ -f $c ]]; then
-        echo "  checked:"
-        awk '/Checked against the record and the files:/{p=1} p && (/^[[:space:]]*$/ || /╭/){p=0} p{print "    " $0}' $c
+        if grep -q 'Checked against the record and the files:' $c; then
+          echo "  checked:"
+          awk '/Checked against the record and the files:/{p=1} p && (/^[[:space:]]*$/ || /╭/){p=0} p{print "    " $0}' $c
+        else
+          # The note the card gave in place of a checked card.
+          echo "  no checked card:"
+          grep -E '^[[:space:]]*The check ' $c | sed 's/^/  /'
+        fi
       fi
     done
   done

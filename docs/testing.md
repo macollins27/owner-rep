@@ -436,7 +436,16 @@ build's left-out list held real items the other's missed. On `47d52e80` both car
 the agent's route as stopping early, because the record read cut 5,054 characters from the
 middle of the agent's last message, the same on both builds. On `c37172aa` neither build
 wrote the objective within the 180 seconds, so both cards were drawn with none and the
-part-by-part gate was not reached there.
+part-by-part gate was not reached there. The stable start, the three times, Check it at both
+sizes and the expected count were added on 14 Nov 2026 and run twice that day with
+`CHECK=1`, main against the same code. On Toy (`ef5e6b87`) alone: 6 of 6 captures, exit 0;
+objective 10 and 8 s from the start, card 40 and 42 s from pressing 1, checked card 188 and
+193 s from pressing 3. On Toy and Sync (`ecfb8b5c`, each forked from its own folder): 8 of
+12, exit 1, parents unchanged. Toy again took 11 and 14 s, 45 and 41 s, and 182 and 199 s.
+On Sync neither build wrote the objective within 180 seconds. Its cards came 48 and 51 s
+after pressing 1. Check it stopped after 15 s on both builds with "The check could not run
+(exit 1): mise ERROR": `claude` on this Mac is a mise shim, and the check's copy of Sync
+holds the folder's `mise.toml`.
 
 It runs on demand, not under `claude plugin test`, because each scenario costs a model call
 and about a minute. Its output is the captured screens, kept beside the script, so a reader
