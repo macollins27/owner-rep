@@ -321,6 +321,25 @@ someone who did not build the thing. The objective writer
 is told that a routine followed or a brief's steps carried out is the agent's method, never a
 condition of done, and the paid check looks at the product itself.
 
+Plans the owner approves. Since 0.7.5 the rep treats a plan before and after the owner's yes
+differently. Before the yes, the owner can still change it, so every self-proving piece in it is
+worth naming, even one the owner asked for. When the agent opens Claude Code's plan screen,
+one quick call reads the plan alone and, while the screen still waits, writes a line above it
+starting "Before you approve:" that names each such piece. A plan the agent writes as a
+message is caught by the watch instead, read whole until the owner answers it (a question
+about it is no answer), and still read at each turn end while the watch is quiet because the
+owner typed past its notes. The rule that sets the watch's bar has one case that
+always clears it, a self-proving piece in a plan waiting for the yes. In the same rule, tests,
+reviews, plan checks, done lists and second readers are never flagged, however heavy the plan
+makes them sound. After the yes, every step is the owner's ask. No reader argues one or tells
+the agent to stop, skip or drop it. A step not yet done stays open like any other part of the
+job, and the message may ask the agent to finish it. But the money spent on a self-proving step
+still did not make the product better, so the card's account of the effort says where it went
+under "stands", as a fact, never as work left. Until then an agent could get a self-proving
+step past the rep in two ways: by burying it in a long plan, since only the start of the plan
+reached the readers, or by getting the owner to approve it, after which the rep went quiet
+about its cost.
+
 One consequence is spelled out in the
 brief: the owner does no step of the job. A chore the agent leaves "for you", such as a branch
 to delete, is the agent's unfinished work, listed as left out and put in the message to the

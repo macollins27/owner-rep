@@ -446,7 +446,6 @@ export const PLAN_SCAN_TIMEOUT_MS = 60_000
 export const PLAN_SCAN_PLAN_CUT = 150_000
 // Each piece named, and the whole line, cut to these.
 export const PLAN_PIECE_CUT = 160
-export const PLAN_WARNING_CUT = 1500
 
 export const PLAN_SCAN_SYSTEM = `You are the owner's rep. The person you work for owns the work and directs coding agents; the owner does not read code, and the owner's business runs on what the agents build. An agent has shown the owner a plan and is waiting for the owner's yes. Before the owner says yes, you tell the owner about any part of the plan that would spend the owner's money without making the product better.
 
@@ -492,16 +491,8 @@ export function parsePlanScan(text: string): string[] | null {
 export function planWarning(pieces: string[]): string {
   const named = pieces.map(p => fit(p, PLAN_PIECE_CUT).replace(/[.,;:]+$/, ''))
   const one = named.length <= 1
-  const tail = ` only ${one ? 'proves' : 'prove'} the agent did its own work. ${one ? 'It costs' : 'They cost'} you money and ${one ? 'does' : 'do'} not make the product better.`
-  const listOf = (shown: string[], more: number): string => {
-    const all = more > 0 ? [...shown, `${more} more ${more === 1 ? 'piece' : 'pieces'} like them`] : shown
-    return all.length <= 1 ? (all[0] ?? '') : `${all.slice(0, -1).join(', ')}, and ${all.at(-1)}`
-  }
-  for (let k = named.length; k >= 1; k--) {
-    const line = `Before you approve: ${listOf(named.slice(0, k), named.length - k)},${tail}`
-    if (line.length <= PLAN_WARNING_CUT) return line
-  }
-  return fit(`Before you approve: ${listOf(named.slice(0, 1), named.length - 1)},${tail}`, PLAN_WARNING_CUT)
+  const list = named.length <= 1 ? (named[0] ?? '') : `${named.slice(0, -1).join(', ')}, and ${named.at(-1)}`
+  return `Before you approve: ${list}, only ${one ? 'proves' : 'prove'} the agent did its own work. ${one ? 'It costs' : 'They cost'} you money and ${one ? 'does' : 'do'} not make the product better.`
 }
 
 // Every read that writes a message keeps an owner-held step separate from the rest of the job.
@@ -1426,7 +1417,7 @@ First, measure the work against the objective above. A condition still open that
 
 Second, decide whether there is one thing the owner should know right now that the owner would very likely miss, and that has a cost to the owner: money, time, wasted work, a wrong result, a decision the owner is in the middle of, or work called finished that is not. The bar is very high. Most of the time the answer is none. Skip anything the owner is already discussing with the agent, anything the agent plainly said and the owner replied to, and anything already shown to the owner (listed below). "Interesting" is not "important". If in doubt, none.
 
-One case always clears the bar: the agent has set out a plan and waits for the owner's yes, and part of it is a self-proving piece (expectation 4). Then the flag starts "Before you approve:", names that part as the plan has it, and says it costs the owner money without making the product better; name it even when the owner asked for it, and only when its job is clear. Tests, reviews, plan checks, done lists and second readers are never such a piece: never flag one of them, however the plan words it ("a full verification round", "a second reader signs off"). Once the owner has approved a plan, never flag a step of it as unneeded or waste: where that effort went is for the briefing, not a note.
+One case always clears the bar: the agent has set out a plan and waits for the owner's yes, and part of it is a self-proving piece (expectation 4). Then the flag starts "Before you approve:", names each such part as the plan has it, and says it costs the owner money without making the product better; name it even when the owner asked for it, and only when its job is clear. Tests, reviews, plan checks, done lists and second readers are never such a piece: never flag one of them, however the plan words it ("a full verification round", "a second reader signs off"). Once the owner has approved a plan, never flag a step of it as unneeded or waste: where that effort went is for the briefing, not a note.
 
 Lines already shown to the owner, which you must not repeat:
 ${list(m.seen, '(none yet)')}
@@ -2619,7 +2610,8 @@ function lastAnswerRow(rows: readonly RecordRow[], human?: ReadonlySet<string>):
     const text = withoutReminders(row.text)
     if (text === '') return
     const his = human === undefined ? !notTyped(text) : human.has(typedKey(row.text)) && !notTyped(typedForm(row.text))
-    if (his) last = at
+    // A question about what the agent said does not answer it: a plan asked about still waits.
+    if (his && !/\?\s*$/.test(text)) last = at
   })
   return last
 }
@@ -2679,18 +2671,41 @@ export function recordParts(rows: readonly RecordRow[], budget: number, human?: 
     used += t.text.length + 2
   }
   if (open.length > 0) chunks.push(open)
-  const total = () => chunks.reduce((s, c) => s + c.reduce((x, t) => x + t.text.length + 2, 0), 0)
-  while (chunks.length > 1 && total() > room && !(chunks[0] ?? []).some(t => t.late)) chunks.shift()
-  while (total() > room && (chunks[0]?.length ?? 0) > 0 && chunks.flat().length > 1 && !(chunks[0]?.[0]?.late ?? true)) {
-    chunks[0]?.shift()
-    if (chunks[0]?.length === 0) chunks.shift()
+  const sizeOf = (c: typeof texts) => c.reduce((x, t) => x + t.text.length + 2, 0)
+  let total = chunks.reduce((s, c) => s + sizeOf(c), 0)
+  while (chunks.length > 1 && total > room && !(chunks[0] ?? []).some(t => t.late)) total -= sizeOf(chunks.shift() ?? [])
+  // Then single entries, oldest first. Rows after the approval are never left out here, and neither
+  // is an entry holding what the agent said since the owner last answered; such an entry is passed
+  // over, so the entries after it are still left out, oldest first, and the record keeps its size.
+  let count = chunks.reduce((s, c) => s + c.length, 0)
+  for (const chunk of chunks) {
+    for (let i = 0; i < chunk.length && total > room && count > 1; ) {
+      const t = chunk[i] as (typeof texts)[number]
+      if (t.late) {
+        i++
+        continue
+      }
+      chunk.splice(i, 1)
+      total -= t.text.length + 2
+      count -= 1
+    }
   }
+  for (let c = chunks.length - 1; c >= 0; c--) if (chunks[c]?.length === 0) chunks.splice(c, 1)
   const kept = chunks.flat()
   const first = kept[0]?.e.n ?? 1
-  const dropped = first - 1
+  const last = kept.at(-1)?.e.n ?? 0
+  const shown = new Set(kept.map(t => t.e))
+  // Entries left out after the first one shown: only where a kept entry was passed over.
+  const inner = texts.filter(t => t.e.n > first && t.e.n < last && !shown.has(t.e)).length
+  const dropped = first - 1 + inner
+  const gap = inner > 0
   const fromStart = rows.length < SESSION_ROWS_CAP && !(rows[0]?.role === 'user' && withoutReminders(rows[0].text).startsWith('This session is being continued from a previous conversation'))
   const head = [
-    ...(dropped > 0 ? [`[The oldest ${dropped} ${dropped === 1 ? 'entry is' : 'entries are'} left out to keep the record within its size.]`] : []),
+    ...(gap
+      ? [`[${dropped} of the older ${dropped === 1 ? 'entry is' : 'entries are'} left out to keep the record within its size; the entry numbers show where.]`]
+      : dropped > 0
+        ? [`[The oldest ${dropped} ${dropped === 1 ? 'entry is' : 'entries are'} left out to keep the record within its size.]`]
+        : []),
     ...(kept.length > 0 && (dropped > 0 || !fromStart) ? [`[The record shown starts at entry ${first}; what came before it is not in view.]`] : []),
   ]
   return { head, chunks: chunks.map(c => c.map(t => t.text)), cutAfter, opensAfter }

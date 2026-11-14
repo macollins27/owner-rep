@@ -63,6 +63,17 @@ every eighth model request and at every stop. It stays silent unless it finds so
 a cost to you: work dropped or shrunk, a claim not shown, a test never run, or the easy
 option taken in place of the right one. Then one "Heads up" line appears above the row.
 
+**A warning before you approve a plan.** When the agent sets out a plan and waits for your
+yes, the rep reads the whole plan. If any part of it only proves the agent did its own work
+(a script that confirms its own steps ran, logs kept as evidence, a grader approving its own
+output, a proof report), a line starting "Before you approve:" names that part, even one you
+asked for. On Claude Code's plan screen the line appears just above the screen while it is up;
+for a plan written in the agent's message it is the Heads up. Tests, code reviews, plan checks
+and second readers are never named, however the plan words them. Once you approve, every step
+is part of the job: the rep never argues a step with you and never tells the agent to stop or
+drop one. When it accounts for where the effort went, it still says plainly what went into a
+piece that only proves the agent's own work.
+
 **A briefing when you press `1`.** The card opens with the result you want and a count of
 how many things it takes to be done, how many are shown and how many are still open. Then it
 says where the work really stands, what the agent's last message means, what was left out,
@@ -174,7 +185,9 @@ narrows the agent's next step can't shrink the whole job.
 It weighs your messages by kind. A note you send to the rep counts most of all. Then come
 your reasons and complaints, then your instructions. A plan you approve, with a yes or on
 Claude Code's plan screen, counts as your own ask: each of its steps becomes part of "done",
-and the Heads up says so when one of them looks dropped. The plan held is the one the screen
+and the Heads up says so when one of them looks dropped. The rep never argues an approved
+step or tells the agent to drop it, though effort spent on a step that only proves the agent's
+own work is still counted as effort that did not make the product better. The plan held is the one the screen
 showed you, and a note you type as you approve it counts as your own words beside it. A yes never approves more than the
 text it answered, and the agent can't approve anything for you by saying you did.
 
@@ -218,6 +231,7 @@ account as your session.
 |---|---|---|
 | The rep's account of your job | Each message you send, and each note to the rep | One call to Opus at high effort, over your messages only, not the whole conversation. A failed write is tried up to twice more |
 | The watch | Every eighth model request of a turn, and at every stop | A fresh look over the agent's cached conversation. Mostly cache reads, and it never slows the agent |
+| The plan read | Each time the agent opens Claude Code's plan screen | One call to Sonnet over the plan alone, with an answer of at most 1,200 tokens. The screen opens without waiting for it |
 | The briefing | When you press for it | One model call, sometimes two or three when the rep has to rewrite an answer |
 | The check | Only when you press **Check it** | Measured at about 210k fresh tokens plus 2.25 million re-read from cache, in about two minutes |
 
@@ -260,11 +274,17 @@ full, this is everything it reads and runs:
   thinking blocks, the agent's system prompt and the instruction files Claude Code adds to the
   agent's context are not in it; an instruction file the agent opened with a tool is a recorded
   tool result, and is in it like any other. Every cut is marked. The rows after the earliest open
-  approval are given whole up to a budget. The plans you approved are given whole up to 40,000
+  approval are given whole up to a budget. What the agent has said since you last answered,
+  a plan waiting for your yes among it, is given whole up to 60,000 characters, newest first,
+  and never cut for the budget. The plans you approved are given whole up to 40,000
   characters a Heads up and 80,000 a briefing; a plan past that is left out, with a line saying
   so, and a plan is never given in part. The writer and these two readers never see
   the agent's thinking. The check is different: it reads the session through agentsview, and
   that includes the agent's thinking.
+- **What the plan read sends:** when the agent opens Claude Code's plan screen, the plan's
+  text alone (up to 150,000 characters; past that its head and tail), in one model call, to
+  find any part that only proves the agent's own work. Nothing else of the session goes with
+  it.
 - **Environment variables:** `PATH`, `HOME`, `USERPROFILE`, `CLAUDE_CONFIG_DIR`, `OS`,
   `SystemRoot`, `windir`, `PROGRAMFILES`, `ProgramFiles(x86)`, `LOCALAPPDATA` and `APPDATA`.
   It reads them to find your home, Claude Code's folder and the programs it runs, and to tell

@@ -30,6 +30,8 @@ export type Note = {
   why: string
   shownAt: number
   turnId: string
+  // A warning on a plan waiting for the owner's yes: it leaves the row at the owner's first answer.
+  plan?: true
 }
 
 export type Checked = {

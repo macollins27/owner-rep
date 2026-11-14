@@ -744,7 +744,7 @@ test('Gap 2: the watch flags a self-proving piece in a plan waiting for the owne
     // Expectation 4, in ROLE, gives the watch the definition and what is never such a piece.
     expect(w).toContain(rep.SELF_PROVING.slice(1))
     expect(w).toContain(rep.NOT_SELF_PROVING)
-    expect(w).toContain('Then the flag starts "Before you approve:", names that part as the plan has it, and says it costs the owner money without making the product better; name it even when the owner asked for it, and only when its job is clear.')
+    expect(w).toContain('Then the flag starts "Before you approve:", names each such part as the plan has it, and says it costs the owner money without making the product better; name it even when the owner asked for it, and only when its job is clear.')
     expect(w).toContain('Tests, reviews, plan checks, done lists and second readers are never such a piece: never flag one of them, however the plan words it ("a full verification round", "a second reader signs off").')
     expect(w).toContain('Once the owner has approved a plan, never flag a step of it as unneeded or waste: where that effort went is for the briefing, not a note.')
     // The old first example taught that test scripts are waste.
@@ -2347,16 +2347,19 @@ test('rule: typing past notes backs the watch off, after the free ones', async (
     for (let k = 0; k < CLEAR_AFTER_PROMPTS; k++) await $.prompt.submit(typed(`carry on ${i} ${k}`))
   }
   expect(forks).toBe(TYPED_PAST_FREE + 1)
-  // One past the free ones: the next look is skipped, the one after runs. The
-  // strip is drawn between stops, as a session draws it, so each look settles.
+  // One past the free ones: the next turn-end look reads (for a plan waiting on the owner) but
+  // shows no ordinary note; the one after shows again. The strip is drawn between stops, as a
+  // session draws it, so each look settles.
   const settle = async () => (await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })).unmount()
   await settle()
   await $.turn.complete(stop('skipped'))
   await settle()
-  expect(forks).toBe(TYPED_PAST_FREE + 1)
+  expect(forks).toBe(TYPED_PAST_FREE + 2)
+  expect(await rowSays($, new RegExp(`Flag number ${TYPED_PAST_FREE + 2}`))).toBe(false)
   await $.turn.complete(stop('runs'))
   await settle()
-  expect(forks).toBe(TYPED_PAST_FREE + 2)
+  expect(forks).toBe(TYPED_PAST_FREE + 3)
+  expect(await rowSays($, new RegExp(`Flag number ${TYPED_PAST_FREE + 3}`))).toBe(true)
 })
 
 const CHECKED = (stands: string) =>
@@ -2566,8 +2569,8 @@ test('rule: the watch looks every CHECK_EVERY model requests of a turn, through 
 const PLAN_FLAG = 'Before you approve: step 3, a script confirming the agent\'s own steps ran, costs you money and does not improve the product.'
 const planWaiting = (flag: string | null) => `state: plan-waiting\nflag: ${flag ?? 'none'}\nwhy: ${flag === null ? '' : 'Step 3 of the plan writes a script that checks the agent\'s own steps.'}`
 // The watch with its answers given in turn, each held until the test lets it go when `held` says so.
-const heldWatch = (on: On, answers: string[], held: (n: number) => boolean) => {
-  session(on)
+const heldWatch = (on: On, answers: string[], held: (n: number) => boolean, store: Record<string, unknown> = {}) => {
+  session(on, store)
   quietBand(on)
   on('turn.start', (_$, e) => ({ turnId: e.turnId }))
   on('turn.step', async function* (_$, e) {
@@ -2623,6 +2626,7 @@ test('rule: a turn-end look still owed when the owner starts a new turn is not r
   await w.toLook('t1')
   await settleUntil($, () => w.prompts.length === 1)
   await $.turn.complete(stop('t1', 'Here is the plan. Shall I go ahead?'))
+  await $.prompt.submit(typed('yes, go'))
   await $.turn.start({ text: 'yes, go', turnId: 't2' })
   w.release()
   await settleUntil($, () => false, 60)
@@ -2636,6 +2640,7 @@ test('rule: a warning on a waiting plan that lands after the owner answered is n
   await $.turn.start({ text: 'plan the price page', turnId: 't1' })
   await $.turn.complete(stop('t1', 'Here is the plan. Shall I go ahead?'))
   await settleUntil($, () => w.prompts.length === 1)
+  await $.prompt.submit(typed('yes, go'))
   await $.turn.start({ text: 'yes, go', turnId: 't2' })
   w.release()
   await settleUntil($, () => false, 60)
@@ -2657,6 +2662,79 @@ test('rule: a warning on a waiting plan takes the place of an earlier note still
   await settleUntil($, () => false, 40)
   expect(await rowSays($, /never ran them/)).toBe(true)
   await $.turn.start({ text: 'now plan the price page', turnId: 't2' })
+  await $.turn.complete(stop('t2', 'Here is the plan. Shall I go ahead?'))
+  await settleUntil($, () => w.prompts.length === 2)
+  await settleUntil($, () => false, 40)
+  expect(await rowSays($, /Before you approve: step 3/)).toBe(true)
+})
+
+test('rule: a note to the rep that reads a waiting plan shows no warning once the owner answered while it read', async ($, on) => {
+  const w = heldWatch(on, [planWaiting(PLAN_FLAG)], () => true)
+  w.bind($)
+  await $.turn.start({ text: 'plan the price page', turnId: 't1' })
+  await $.turn.complete(stop('t1', 'Here is the plan. Shall I go ahead?'))
+  await settleUntil($, () => w.prompts.length === 1)
+  w.release()
+  await settleUntil($, () => false, 40)
+  await $.prompt.submit(typed('Owner rep: is this plan sound?'))
+  await settleUntil($, () => w.prompts.length === 2)
+  await $.prompt.submit(typed('yes, go'))
+  await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND }).then(ui => ui.unmount())
+  w.release()
+  await settleUntil($, () => false, 60)
+  expect(await rowSays($, /Before you approve/)).toBe(false)
+})
+
+test('rule: a background task\'s turn is not the owner answering: the turn-end look owed still runs and its warning shows', async ($, on) => {
+  const w = heldWatch(on, [watchAnswer(null), planWaiting(PLAN_FLAG)], n => n === 1)
+  w.bind($)
+  await $.turn.start({ text: 'plan the price page', turnId: 't1' })
+  await w.toLook('t1')
+  await settleUntil($, () => w.prompts.length === 1)
+  await $.turn.complete(stop('t1', 'Here is the plan. Shall I go ahead?'))
+  const done = '<task-notification>the scan finished</task-notification>'
+  await $.prompt.submit({ text: done, wait: false, origin: { kind: 'task-notification' } } as never)
+  await $.turn.start({ text: done, turnId: 't2' })
+  w.release()
+  await settleUntil($, () => w.prompts.length === 2)
+  expect(w.prompts.length).toBe(2)
+  await settleUntil($, () => false, 60)
+  expect(await rowSays($, /Before you approve: step 3/)).toBe(true)
+})
+
+test('rule: a warning on a waiting plan leaves the row at the owner\'s first answer, and answering it does not back the watch off', async ($, on) => {
+  const w = heldWatch(on, [planWaiting(PLAN_FLAG), watchAnswer('The agent says the tests pass, but never ran them.')], () => false)
+  w.bind($)
+  await $.turn.start({ text: 'plan the price page', turnId: 't1' })
+  await $.turn.complete(stop('t1', 'Here is the plan. Shall I go ahead?'))
+  await settleUntil($, () => w.prompts.length === 1)
+  await settleUntil($, () => false, 40)
+  expect(await rowSays($, /Before you approve: step 3/)).toBe(true)
+  await $.prompt.submit(typed('take step 3 out, then go'))
+  await settleUntil($, () => false, 40)
+  expect(await rowSays($, /Before you approve/)).toBe(false)
+  await $.turn.start({ text: 'take step 3 out, then go', turnId: 't2' })
+  await $.turn.complete(stop('t2', 'Done.'))
+  await settleUntil($, () => w.prompts.length === 2)
+  await settleUntil($, () => false, 40)
+  expect(await rowSays($, /never ran them/)).toBe(true)
+})
+
+test('rule: while the watch is backed off, the turn-end look still reads and shows only a warning on a waiting plan', async ($, on) => {
+  // Backed off: the record says the next looks are skipped, as after the owner typed past notes.
+  const backedOff = { sessions: { 'test-session': { id: 'test-session', at: Date.now(), objective: null, owner: [], counter: 1, skip: 4, typedPast: 4 } } }
+  const w = heldWatch(on, [watchAnswer('The agent says the tests pass, but never ran them.'), planWaiting(PLAN_FLAG)], () => false, backedOff)
+  w.bind($)
+  await $.turn.start({ text: 'go on', turnId: 't1' })
+  // A look during the turn is still skipped.
+  await w.toLook('t1')
+  await settleUntil($, () => false, 40)
+  expect(w.prompts.length).toBe(0)
+  await $.turn.complete(stop('t1', 'Done.'))
+  await settleUntil($, () => w.prompts.length === 1)
+  await settleUntil($, () => false, 40)
+  expect(await rowSays($, /never ran them/)).toBe(false)
+  await $.turn.start({ text: 'go on', turnId: 't2' })
   await $.turn.complete(stop('t2', 'Here is the plan. Shall I go ahead?'))
   await settleUntil($, () => w.prompts.length === 2)
   await settleUntil($, () => false, 40)
@@ -6226,10 +6304,13 @@ test('planWarning names every piece in one plain line', () => {
   const many = rep.planWarning(['a', 'b', 'c'])
   expect(many).toContain('a, b, and c, only prove')
   const huge = rep.planWarning(Array.from({ length: 20 }, (_, i) => `step ${i}, ${'x'.repeat(150)}`))
-  expect(huge.length).toBeLessThanOrEqual(1500)
   expect(huge).not.toContain('\n')
-  // The pieces the line cannot hold are counted, never dropped unsaid, and the line still ends whole.
-  expect(huge).toMatch(/and \d+ more pieces like them, only prove the agent did its own work\. They cost you money and do not make the product better\.$/)
+  // Every piece is named, however many: none is counted in place of its name.
+  for (let i = 0; i < 20; i++) expect(huge).toContain(`step ${i}, x`)
+  expect(huge).not.toMatch(/more pieces/)
+  expect(huge).toMatch(/only prove the agent did its own work\. They cost you money and do not make the product better\.$/)
+  // Each piece is cut to its own limit, so one long piece cannot crowd out the others.
+  expect(rep.planWarning(['y'.repeat(1000)]).length).toBeLessThan(rep.PLAN_PIECE_CUT + 200)
 })
 
 test('rule: a plan accepted on the plan screen and shown whole is printed with its label and read with the write', async ($, on) => {
@@ -10357,9 +10438,30 @@ test('recordText prints the agent\'s messages since the owner\'s last one whole,
   const PLAN = turnWith(12_000, [[6_000, BURIED]])
   const waiting = recordText([ownerRow('plan the price page'), agentRow(PLAN)], RECORD_BUDGET).text
   expect(waiting).toContain(BURIED)
-  const answered = recordText([ownerRow('plan the price page'), agentRow(PLAN), ownerRow('what does step 2 do?')], RECORD_BUDGET).text
+  const answered = recordText([ownerRow('plan the price page'), agentRow(PLAN), ownerRow('make step 2 a table instead')], RECORD_BUDGET).text
   expect(answered).not.toContain(BURIED)
   expect(answered).toContain('characters of this message left out here')
+})
+
+test('recordText keeps a plan whole through the owner\'s question about it, since a question does not answer the plan', () => {
+  const PLAN = turnWith(12_000, [[6_000, BURIED]])
+  const rows = [ownerRow('plan the price page'), agentRow(PLAN), ownerRow('what does step 2 do?  '), agentRow('Step 2 adds the price table. Shall I go ahead?')]
+  expect(recordText(rows, RECORD_BUDGET).text).toContain(BURIED)
+  // A yes ending in a question still lets more be read whole, never less.
+  const yes = [ownerRow('plan it'), agentRow(PLAN), ownerRow('yes, go. will you also update the README?'), agentRow('Done.')]
+  expect(recordText(yes, RECORD_BUDGET).text).toContain(BURIED)
+})
+
+test('recordText keeps the record within its budget when what the agent said since the owner\'s last answer comes before a long run of work', () => {
+  const PLAN = turnWith(12_000, [[6_000, BURIED]])
+  const work = Array.from({ length: 600 }, (_, i) => agentRow(`work ${i}`, [{ tool_use_id: `b${i}`, tool: 'Bash', input: { command: `step ${i}` }, text: 'o'.repeat(600) }]))
+  const r = recordText([ownerRow('plan it'), agentRow(PLAN), ...work], RECORD_BUDGET)
+  expect(r.text).toContain(BURIED)
+  expect(r.text.length).toBeLessThanOrEqual(RECORD_BUDGET)
+  // The newest work is kept, the oldest left out, and the record says entries are missing.
+  expect(r.text).toContain('work 599')
+  expect(r.text).not.toContain('work 0\n')
+  expect(r.text).toMatch(/entries are left out to keep the record within its size/)
 })
 
 test('recordText prints a plan-screen call\'s plan since the owner\'s last message whole, and any other tool input cut as before', () => {
@@ -10369,6 +10471,22 @@ test('recordText prints a plan-screen call\'s plan since the owner\'s last messa
   expect(text.split(BURIED).length).toBe(2)
   expect(text).toContain(`"plan":${JSON.stringify(PLAN.slice(0, 40)).slice(0, -1)}`)
   expect(text).toContain('characters of this tool input left out here')
+})
+
+test('recordText counts an answer given on the plan screen or to a question as the owner\'s, so the plan answered there is cut and what the agent said after it is whole', () => {
+  const PLAN = turnWith(5_000, [[2_500, 'Approved marker in the middle.']])
+  const LATER = turnWith(6_000, [[3_000, BURIED]])
+  for (const tool of ['ExitPlanMode', 'AskUserQuestion']) {
+    const answered = { tool_use_id: 's1', tool, input: { plan: PLAN }, text: 'User has approved your plan.' }
+    const rows = [ownerRow('plan the price page'), agentRow('', [answered]), agentRow(LATER)]
+    const text = recordText(rows, RECORD_BUDGET).text
+    expect(text).toContain(BURIED)
+    expect(text).not.toContain('Approved marker in the middle.')
+  }
+  const byResult: RecordRow[] = [ownerRow('plan it'), agentRow('', [{ tool_use_id: 's2', tool: 'ExitPlanMode', input: { plan: PLAN } }]), { role: 'user', text: '', toolUses: [], toolResults: [{ tool_use_id: 's2', text: 'User has approved your plan.', isError: false }] }, agentRow(LATER)]
+  const text = recordText(byResult, RECORD_BUDGET).text
+  expect(text).toContain(BURIED)
+  expect(text).not.toContain('Approved marker in the middle.')
 })
 
 test('recordText keeps the waiting plan whole in a record crowded past its budget after an approval', () => {
