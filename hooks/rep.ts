@@ -5115,15 +5115,20 @@ const withoutSpans = (message: string, cuts: { start: number; end: number }[]): 
 // A sentence of a message that forbids tests, checks or reviews in general ("Do not build new
 // tests or reports for this.", "Don't add any more checks."), cut by `withoutCheckBans`: they are
 // normal good work (ROLE, expectation 4), and the ban came from the owner's complaint about
-// checks read without its remedy. A ban qualified as self-proving ("tests that only confirm your
-// own steps ran"), one on a single named piece ("a script that checks your report"), and a line
-// on what tests are not ("Do not count the tests as the sign-off.") stay. Inside a sentence that
-// asks for work, only a "without building any new tests" clause goes, to the sentence's end.
+// checks read without its remedy. The ban is cut only when nothing follows its list of things
+// but "for this", "to prove this" or a word such as "either", so a ban qualified as
+// self-proving ("tests that only confirm your own steps ran"), one on a single named piece ("a
+// script that checks your report"), one on a place or a time ("tests against the live
+// database", "until the parser is fixed") and a line on what tests are not ("Do not count the
+// tests as the sign-off.") stay. Inside a sentence that asks for work, only a "without building
+// any new tests" clause of the same shape goes.
 const BAN_OBJ = String.raw`(?:tests?|test\s+(?:machinery|suites?|scripts?|harness(?:es)?|runs?)|testing|checks?|check\s+scripts?|checking(?:\s+(?:tools?|scripts?|machinery))?|(?:code\s+)?reviews?|plan\s+checks?|second\s+readers?)`
 const BAN_MORE = String.raw`(?:(?:any|more|new|extra|further|additional|other)\s+)*`
-const BAN_SELF = String.raw`(?!\s+(?:that|which|whose|to\s+(?:confirm|prove|show)|confirming|proving|only|of\s+your\s+own))`
-const CHECK_BAN = new RegExp(String.raw`^(?:[^,;:]{0,60}[,;:]\s+)?(?:(?:please|and|so|then|also|but|just)\s+)*(?:do\s+not|don['’]t|never|no\s+need\s+to|you\s+need\s+not)\s+(?:(?:yet|again|now|bother\s+to|go\s+on\s+to)\s+)?(?:build|add|write|create|make|set\s+up|run|start)\s+${BAN_MORE}${BAN_OBJ}\b${BAN_SELF}`, 'i')
-const WITHOUT_BAN = new RegExp(String.raw`,?[ \t]+(?:and[ \t]+)?without[ \t]+(?:building|adding|writing|creating|making|running|setting[ \t]+up)[ \t]+${BAN_MORE}${BAN_OBJ}\b${BAN_SELF}[^.!?\n]*`, 'gi')
+const BAN_ITEM = String.raw`(?:${BAN_OBJ}|(?:proof\s+)?reports?|scripts?|counts?|graders?|rule\s+books?|logs?|machinery|process)`
+const BAN_LIST = String.raw`${BAN_MORE}${BAN_OBJ}(?:\s*,\s*(?:(?:or|and)\s+)?${BAN_MORE}${BAN_ITEM}|\s+(?:or|and)\s+${BAN_MORE}${BAN_ITEM})*`
+const BAN_TAIL = String.raw`(?:\s+(?:for|about|on|around)\s+(?:(?:any|all)\s+of\s+)?(?:this|that|it|these|them)|\s+to\s+(?:prove|confirm|show|check)\s+(?:this|that|it))?(?:\s+(?:either|now|yet|again|here))?`
+const CHECK_BAN = new RegExp(String.raw`^(?:[^,;:]{0,60}[,;:]\s+)?(?:(?:please|and|so|then|also|but|just)\s+)*(?:do\s+not|don['’]t|never|no\s+need\s+to|you\s+need\s+not)\s+(?:(?:yet|again|now|bother\s+to|go\s+on\s+to)\s+)?(?:build|add|write|create|make|set\s+up)\s+${BAN_LIST}${BAN_TAIL}\s*[.!]*["'”’)\]]*$`, 'i')
+const WITHOUT_BAN = new RegExp(String.raw`,?[ \t]+(?:and[ \t]+)?without[ \t]+(?:building|adding|writing|creating|making|setting[ \t]+up)[ \t]+${BAN_LIST}${BAN_TAIL}(?=[ \t]*(?:[.!?]|\n|$))`, 'gi')
 const isCheckBan = (clause: string): boolean => CHECK_BAN.test(clause.replace(LIST_MARKER, '').replace(/\s+/g, ' ').trim().replace(/^["“(]+/, ''))
 export const withoutCheckBans = (message: string): string => {
   // A sentence of clauses joined by semicolons loses only its ban clauses, so a remedy joined

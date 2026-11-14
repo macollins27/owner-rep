@@ -73,18 +73,23 @@ call writes (below):
    N" becomes "the conversation"; the kept `shown:`, `closed:` and `reopen:` lines keep theirs,
    and `ENTRY_RULE`, in the ROLE's plain-words line and the check's rule 6, tells every reader
    not to name one; the message then goes through `withoutCheckBans`, as `parseCheck`'s does:
-   a sentence that tells the agent not to build, add, write, make, set up or run tests, checks
-   or reviews in general (`CHECK_BAN`: "Do not build new tests or reports for this.", "Don't
-   add any more checks.", read with a list marker and leading quotes dropped) is cut through
-   the same `withoutSpans` as `withoutStopSentences`, except that a sentence of clauses joined
-   by semicolons loses only its ban clauses, its first kept letter raised and its end mark
-   kept ("Do not add new checks or reports to prove this; open it, use it and tell me what you
-   saw." gives "Open it, use it and tell me what you saw."), and inside a sentence that asks for work
-   only a "without building any new tests" clause goes, to the sentence's end
-   (`WITHOUT_BAN`); a ban qualified as self-proving ("tests that only confirm your own steps
-   ran", `BAN_SELF`), a ban on one named piece ("a script that checks your report") and a
-   line on what tests are not ("Do not count the tests as the sign-off") stay, and a message
-   that was nothing but the ban becomes `''`, so the gate's empty-message rules apply;
+   a sentence that tells the agent not to build, add, write, create, make or set up tests,
+   checks or reviews in general (`CHECK_BAN`: "Do not build new tests or reports for this.",
+   "Don't add any more checks either.", read with a list marker and leading quotes dropped),
+   with nothing after its list of things (`BAN_LIST`, closed words such as reports, scripts
+   and counts) but "for this", "for any of this", "to prove this" or a word such as "either"
+   (`BAN_TAIL`), is cut through the same `withoutSpans` as `withoutStopSentences`, except that
+   a sentence of clauses joined by semicolons loses only its ban clauses, its first kept letter
+   raised and its end mark kept ("Do not add new checks or reports to prove this; open it, use
+   it and tell me what you saw." gives "Open it, use it and tell me what you saw."); inside a
+   sentence that asks for work only a "without building any new tests" clause of the same
+   shape goes (`WITHOUT_BAN`); anything else after the list keeps the sentence, so a ban
+   qualified as self-proving ("tests that only confirm your own steps ran"), on one named piece
+   ("a script that checks your report"), on a place or a time ("tests against the live
+   database", "until the parser is fixed"), on running tests, and a line on what tests are not
+   ("Do not count the tests as the sign-off") stay; a message that was nothing but the ban,
+   or the ban and praise, becomes `''`, so the gate's empty-message rules apply (it is refused
+   and read again, a rare path);
    `CHECK_BAN_RULE`, in the ROLE's fourth expectation, tells the card writers the same),
    `applyMarks` takes the marks, and `gateVerdict` refuses, while a condition is open, a
    verdict other than `continue` (a `stop`, or none given, which `verdictOf` reads as

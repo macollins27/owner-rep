@@ -10465,6 +10465,10 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     expect(cut('Run it once on a copy of the Portstead session. Do not build new tests or reports for this. Read the text and say what it tells you.')).toBe('Run it once on a copy of the Portstead session. Read the text and say what it tells you.')
     expect(cut('Compare it with 0.6.0.\nDon\'t build any new checks, scripts or reports for this.')).toBe('Compare it with 0.6.0.')
     expect(cut('Ask the lead for a hands-on run. Do not add new test machinery for this.')).toBe('Ask the lead for a hands-on run.')
+    expect(cut('Look at it yourself. Do not build new tests, check scripts or reports for any of this.')).toBe('Look at it yourself.')
+    expect(cut('Open the page. Do not build any new checks either.')).toBe('Open the page.')
+    // A "without" clause that names one place stays.
+    expect(cut('Finish it without writing new tests against the vendored folder.')).toBe('Finish it without writing new tests against the vendored folder.')
     // Inside a sentence that asks for work, only the "without" clause goes.
     expect(cut('Read the brief, and do it without building any more tests.')).toBe('Read the brief, and do it.')
     expect(cut('Please finish them without building any new checks or reports.')).toBe('Please finish them.')
@@ -10482,6 +10486,11 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
       'Do not build a script that checks your own report.',
       'Do not rely on the word-list check.',
       'Add tests for the parser and run the suite.',
+      // A ban on tests in one place or of one kind is an instruction the owner may need sent.
+      'Do not run tests against the live database.',
+      "Don't add tests to the vendored folder.",
+      'Do not add more tests until the parser is fixed.',
+      'Do not write tests that call the payment service.',
     ])
       expect(cut(s)).toBe(s)
     // A message that is nothing but the ban is left with nothing to send.
