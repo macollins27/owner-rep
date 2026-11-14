@@ -3556,5 +3556,17 @@
     "breaks": "What the agent said since the owner last answered that fits its usual cut is cut through its middle by the shared cap when the record runs long, while longer waiting messages stay whole, so a step buried in a short waiting plan goes unseen.",
     "patch": "waiting-fit-capped.patch",
     "fixed": "2026-11-14"
+  },
+  {
+    "name": "look-after-typed-answer",
+    "breaks": "A message typed ahead, sent the moment the turn ends, does not stop that turn's look: it reads the plan as still waiting and can flag a plan the owner already answered.",
+    "patch": "look-after-typed-answer.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "approved-note-superseded",
+    "breaks": "The reading of a plan accepted earlier, landing after a later plan was accepted in the same session, replaces the later plan's note on the rep's row with the earlier plan's pieces.",
+    "patch": "approved-note-superseded.patch",
+    "fixed": "2026-11-14"
   }
 ]

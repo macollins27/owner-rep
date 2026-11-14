@@ -1398,8 +1398,11 @@ async function look(
 // look knows whether a plan it read still waits), and the turn-end look owed when a look was
 // already running as the turn ended.
 type Looks = { inFlight: Set<string>; answers: number; stopDue: string | undefined }
-// One look at a time; a turn-end look that finds one running runs once it finishes.
-function startLook($: EngineInterface, reason: 'step' | 'stop', turnId: string, s: Looks): void {
+// One look at a time; a turn-end look that finds one running runs once it finishes. `asOf`: the
+// answer count when the turn ended; an answer since (one typed ahead lands as the turn ends) means
+// the look would read a plan already answered, so none starts.
+function startLook($: EngineInterface, reason: 'step' | 'stop', turnId: string, s: Looks, asOf?: number): void {
+  if (asOf !== undefined && s.answers !== asOf) return
   if (s.inFlight.has('look')) {
     if (reason === 'stop') s.stopDue = turnId
     return
@@ -2330,7 +2333,10 @@ async function takeNote($: EngineInterface, sid: string, note: string, from: { s
 // (`showApproved`), since a plan that fills the terminal pushes that line out of sight. `sid` is
 // the session the screen was called in, so a reading that lands after a /clear or a resume shows
 // nothing in the next one.
-type PlanRead = { isOpen: boolean; sid: string; pieces?: string[]; accepted?: boolean }
+// `gen`: the plan screen's number in this process (`planGen`), so the reading of a plan a later
+// screen has followed shows nothing.
+type PlanRead = { isOpen: boolean; sid: string; pieces?: string[]; accepted?: boolean; gen?: number }
+let planGen = 0
 // The session whose plan screen last had a warning logged above it: a later plan there whose
 // reading names nothing logs PLAN_CLEAR_LINE, so that warning is not read as about it.
 let warnedIn: string | null = null
@@ -2353,7 +2359,7 @@ async function scanPlan($: EngineInterface, plan: string, screen: PlanRead): Pro
   if (screen.isOpen) {
     $.ui.log(planWarning(pieces))
     if (screen.sid !== '') warnedIn = screen.sid
-  } else if (screen.accepted === true) await showApproved($, screen.sid, pieces)
+  } else if (screen.accepted === true && screen.gen === planGen) await showApproved($, screen.sid, pieces)
 }
 
 // The pieces of a plan the owner just accepted in session `sid`, on the rep's row as a note, in
@@ -2736,7 +2742,7 @@ export const register: Register = on => {
     const doing = doingFor(tool, e as unknown as Record<string, unknown>)
     const waits = tool === 'AskUserQuestion' || tool === 'ExitPlanMode'
     // The plan screen is read from the moment it is called, before anything here is awaited.
-    const screen: PlanRead = { isOpen: true, sid: ended ? '' : currentId }
+    const screen: PlanRead = { isOpen: true, sid: ended ? '' : currentId, ...(tool === 'ExitPlanMode' ? { gen: ++planGen } : {}) }
     const plan = tool === 'ExitPlanMode' ? (e as { plan?: unknown }).plan : undefined
     if (typeof plan === 'string' && plan.trim() !== '') scanPlan($, plan, screen).catch(() => undefined)
     // A note typed with the plan accepted before this call is saved by now: read first.
@@ -2765,7 +2771,7 @@ export const register: Register = on => {
         if (answered?.kind === 'accepted') {
           // A plan the owner changed on the screen is read again: the note names what was approved.
           if (answered.edited && typeof plan === 'string' && answered.plan.trim() !== plan.trim()) {
-            scanPlan($, answered.plan, { isOpen: false, sid: screen.sid, accepted: true }).catch(() => undefined)
+            scanPlan($, answered.plan, { isOpen: false, sid: screen.sid, accepted: true, gen: screen.gen }).catch(() => undefined)
           } else {
             screen.accepted = true
             if (screen.pieces !== undefined) await showApproved($, screen.sid, screen.pieces).catch(() => undefined)
@@ -2822,6 +2828,7 @@ export const register: Register = on => {
     }
     // The turn's text saved first, before anything is awaited, so a message sent after this knows it ended.
     saveTurn($, e.turnId, e.isAborted)
+    const answersAtEnd = looks.answers
     const asking = /\?\s*$/.test(e.answer.trim())
     const doing = e.isAborted ? 'stopped by you' : asking ? 'asking you' : 'stopped, waiting on you'
     lastDoing = doing
@@ -2829,7 +2836,7 @@ export const register: Register = on => {
       () => undefined,
     )
     if (notesDue.size > 0) await sessionId($).then(id => catchNotes($, id)).catch(() => undefined)
-    if (!e.isAborted) startLook($, 'stop', e.turnId, looks)
+    if (!e.isAborted) startLook($, 'stop', e.turnId, looks, answersAtEnd)
     // A message still waiting for a whole read is tried again at each turn's end.
     sessionId($)
       .then(async id => {

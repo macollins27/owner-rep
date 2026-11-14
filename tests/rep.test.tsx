@@ -2669,6 +2669,18 @@ test('guard: a turn-end look still owed when the session ends by a /clear is not
   expect(await rowSays($, /Before you approve/)).toBe(false)
 })
 
+test('rule: an answer that lands while the turn end is still being drawn stops its look, so a plan already answered is never flagged', async ($, on) => {
+  const w = heldWatch(on, [planWaiting(PLAN_FLAG)], () => false)
+  w.bind($)
+  await $.turn.start({ text: 'plan the price page', turnId: 't1' })
+  const ended = $.turn.complete(stop('t1', 'Here is the plan. Shall I go ahead?'))
+  const typedAhead = $.prompt.submit(typed('yes, go'))
+  await Promise.all([ended, typedAhead])
+  await settleUntil($, () => false, 60)
+  expect(w.prompts.length).toBe(0)
+  expect(await rowSays($, /Before you approve/)).toBe(false)
+})
+
 test('rule: a turn-end look still owed when the owner starts a new turn is not run', async ($, on) => {
   const w = heldWatch(on, [watchAnswer(null), planWaiting(PLAN_FLAG)], n => n === 1)
   w.bind($)
@@ -6343,7 +6355,7 @@ const BURIED_PLAN = [
   '5. Open the live page and try it as a visitor.',
 ].join('\n')
 const SCAN_PIECE = 'step 3, a script that confirms each of the agent\'s own steps ran and keeps its output as evidence'
-const planScreenScan = (on: On, answer: (prompt: string) => string | null, gate?: Promise<void>, answered: Record<string, unknown> = ACCEPT_RESULT('accepted'), sid: () => string = () => SID) => {
+const planScreenScan = (on: On, answer: (prompt: string) => string | null, gate?: Promise<void> | ((prompt: string) => Promise<void> | undefined), answered: Record<string, unknown> = ACCEPT_RESULT('accepted'), sid: () => string = () => SID) => {
   const cap = capture(on, {}, sid)
   const logs: string[] = []
   const scans: Array<{ system: string; prompt: string; model: string }> = []
@@ -6354,7 +6366,8 @@ const planScreenScan = (on: On, answer: (prompt: string) => string | null, gate?
   on('model.complete', async (_$, e) => {
     if (e.system !== rep.PLAN_SCAN_SYSTEM) return { value: { isAnswered: false, reason: 'empty-reply', usage: USAGE } } as never
     scans.push({ system: String(e.system), prompt: String(e.prompt), model: String(e.model) })
-    if (gate !== undefined) await gate
+    const held = typeof gate === 'function' ? gate(String(e.prompt)) : gate
+    if (held !== undefined) await held
     const text = answer(String(e.prompt))
     return { value: text === null ? { isAnswered: false, reason: 'empty-reply', usage: USAGE } : { isAnswered: true, text, usage: USAGE } } as never
   })
@@ -6600,6 +6613,25 @@ test('rule: a plan the owner edited on the screen that still holds a piece names
   await call
   await waitFor(() => false, 40)
   expect(await rowSays($, /step 6, a hook that blocks/)).toBe(true)
+  expect(await rowSays($, /step 3, a script/)).toBe(false)
+})
+
+test('rule: a reading of an earlier accepted plan that lands after a later plan was accepted never replaces the later plan\'s note', async ($, on) => {
+  let free = () => {}
+  const held = new Promise<void>(r => {
+    free = r
+  })
+  const later = 'Plan: add the menu.\n1. Add a hook that blocks my own edits to the test files.'
+  const s = planScreenScan(on, p => (p.includes('blocks my own edits') ? 'pieces:\n- step 1, a hook that blocks the agent\'s own edits to the test files' : `pieces:\n- ${SCAN_PIECE}`), p => (p.includes('saves its output') ? held : undefined))
+  await started($)
+  s.release()
+  await $.tool.call({ tool: 'ExitPlanMode', plan: BURIED_PLAN, tool_use_id: 'p1' } as never)
+  await $.tool.call({ tool: 'ExitPlanMode', plan: later, tool_use_id: 'p2' } as never)
+  await waitFor(() => false, 30)
+  expect(await rowSays($, /step 1, a hook that blocks/)).toBe(true)
+  free()
+  await waitFor(() => false, 40)
+  expect(await rowSays($, /step 1, a hook that blocks/)).toBe(true)
   expect(await rowSays($, /step 3, a script/)).toBe(false)
 })
 

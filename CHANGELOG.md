@@ -21,7 +21,8 @@ What changed in each release of Owner Rep, newest first. The full record is the
   left, so it does not keep the card from saying the job is done.
 - **The turn-end look is never lost.** A turn that ended while a look was still running got no
   look of its own, so a plan waiting at that turn's end could go unread; it now runs once the
-  running look finishes, and is dropped if you answer first. A Heads up about a waiting plan
+  running look finishes, and is dropped if you answer first, even with a message typed ahead
+  that is sent as the turn ends. A Heads up about a waiting plan
   replaces an earlier note, is not shown once you have answered the plan, and leaves the row
   when you answer. A question you ask about the plan leaves it waiting, and your yes after the
   agent's answer approves the plan itself; a background task finishing is not taken as your

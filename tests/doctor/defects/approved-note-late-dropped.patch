@@ -1,11 +1,11 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -2353,7 +2353,7 @@
+@@ -2359,7 +2359,7 @@
    if (screen.isOpen) {
      $.ui.log(planWarning(pieces))
      if (screen.sid !== '') warnedIn = screen.sid
--  } else if (screen.accepted === true) await showApproved($, screen.sid, pieces)
+-  } else if (screen.accepted === true && screen.gen === planGen) await showApproved($, screen.sid, pieces)
 +  }
  }
  

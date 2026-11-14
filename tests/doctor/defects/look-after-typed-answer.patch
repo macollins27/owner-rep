@@ -1,0 +1,11 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1402,7 +1402,6 @@
+ // answer count when the turn ended; an answer since (one typed ahead lands as the turn ends) means
+ // the look would read a plan already answered, so none starts.
+ function startLook($: EngineInterface, reason: 'step' | 'stop', turnId: string, s: Looks, asOf?: number): void {
+-  if (asOf !== undefined && s.answers !== asOf) return
+   if (s.inFlight.has('look')) {
+     if (reason === 'stop') s.stopDue = turnId
+     return

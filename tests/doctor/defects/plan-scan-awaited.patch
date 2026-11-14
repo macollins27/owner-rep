@@ -1,9 +1,10 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
+index b8ea1d7..9e1049b 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -2716,7 +2716,7 @@
+@@ -2744,7 +2744,7 @@ export const register: Register = on => {
      // The plan screen is read from the moment it is called, before anything here is awaited.
-     const screen: PlanRead = { isOpen: true, sid: ended ? '' : currentId }
+     const screen: PlanRead = { isOpen: true, sid: ended ? '' : currentId, ...(tool === 'ExitPlanMode' ? { gen: ++planGen } : {}) }
      const plan = tool === 'ExitPlanMode' ? (e as { plan?: unknown }).plan : undefined
 -    if (typeof plan === 'string' && plan.trim() !== '') scanPlan($, plan, screen).catch(() => undefined)
 +    if (typeof plan === 'string' && plan.trim() !== '') await scanPlan($, plan, screen).catch(() => undefined)

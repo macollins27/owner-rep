@@ -66,7 +66,10 @@ call writes (below):
    finds a look in flight is not dropped: its turn id is kept as `looks.stopDue`, and the stop
    look runs once the running look finishes, a newer turn end replacing it and the owner's
    answer clearing it, and so does a session ended by a /clear or a resume, so a look owed to
-   the session left behind never runs in the next one (until 0.7.5 the turn-end look was skipped, so a plan written as the
+   the session left behind never runs in the next one. The turn end takes `looks.answers` before
+   it awaits anything and hands it to `startLook` as `asOf`; an answer counted since (a message
+   typed ahead is sent the moment the turn ends) starts no turn-end look, which would read the
+   plan as still waiting (until 0.7.5 the turn-end look was skipped, so a plan written as the
    turn's last message was never read while it waited). `ownerAnswered` counts each answer in
    `looks.answers`: text typed to the agent (`prompt.submit`, the part before any note to the
    rep) and an answer on the plan screen or to a question (the `tool.call` hook of
@@ -760,8 +763,10 @@ reading lands last calls `showApproved`, which puts `planApprovedLine` on the re
 note ("The plan you approved has …", every piece named) with `PLAN_APPROVED_WHY` as its reason.
 A plan the owner edited on the screen before accepting (`planScreen` gives `edited` and a plan
 that differs from the call's) is read again, closed and accepted, and that reading alone names
-the pieces, so a piece the owner took out is never named and one the owner added is. A plan
-turned down gets no note. The reading keeps the session the screen was called in
+the pieces, so a piece the owner took out is never named and one the owner added is. Each plan
+screen takes the next `planGen` as `PlanRead.gen`, and a reading shows its note only while its
+screen is still the latest, so a slow reading of an earlier plan never replaces a later plan's
+note. A plan turned down gets no note. The reading keeps the session the screen was called in
 (`PlanRead.sid`), and `showApproved` draws only while that session is still on screen, so a
 reading that lands after a /clear or a resume shows nothing in the next session.
 
