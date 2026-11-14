@@ -3229,20 +3229,92 @@
   },
   {
     "name": "check-mise-config-read",
-    "breaks": "The check's run is started without mise told to ignore the copy's config, so where claude is a mise shim a mise.toml in the copy is refused as untrusted and the check stops before it runs (\"mise ERROR\"), or, trusted, its env and hooks run outside the fence.",
+    "breaks": "The check's run starts claude by name, so where claude is a mise shim mise runs in the copy before the fence: a mise.toml there is refused as untrusted and the check stops (\"mise ERROR\"), or its env and hooks, or an env file mise is told to read, run outside the fence.",
     "patch": "check-mise-config-read.patch",
     "fixed": "2026-11-14"
   },
   {
     "name": "pnpm-ask-mise-config-read",
-    "breaks": "pnpm is asked for its store in the copy without mise told to ignore the copy's config, so where pnpm is a mise shim the question fails on the untrusted mise.toml and the run is told no store.",
+    "breaks": "pnpm is asked for its store by name, so where pnpm is a mise shim mise runs in the copy for it, outside the fence, and fails on its untrusted mise.toml.",
     "patch": "pnpm-ask-mise-config-read.patch",
     "fixed": "2026-11-14"
   },
   {
     "name": "mise-ignore-replaces-owner-list",
-    "breaks": "The folder the check ignores replaces the list of config paths the owner already has mise ignore, so inside the check mise reads the configs the owner chose to ignore.",
+    "breaks": "Where mise cannot answer, the folders the check has mise ignore replace the list the owner already has it ignore, so inside the check mise reads the configs the owner chose to ignore.",
     "patch": "mise-ignore-replaces-owner-list.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "check-path-keeps-shims",
+    "breaks": "The check's run keeps mise's shims on its command path, so node, pnpm and every other shimmed tool the run starts goes through mise in the copy.",
+    "patch": "check-path-keeps-shims.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "mise-asked-outside-home",
+    "breaks": "mise is asked where the owner's tools are from the agent's folder rather than the home, so the project's mise config and its env and hooks are read for the answer, outside the fence.",
+    "patch": "mise-asked-outside-home.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "mise-asked-with-env-file",
+    "breaks": "mise is asked where the owner's tools are with the env file the owner's MISE_ENV_FILE names still loaded.",
+    "patch": "mise-asked-with-env-file.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "mise-fallback-reads-env-file",
+    "breaks": "Where mise cannot answer, the shim is not told to read no env file, so an env file in the copy (a NODE_OPTIONS the agent wrote) is loaded outside the fence, which ignoring the folder does not stop.",
+    "patch": "mise-fallback-reads-env-file.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "mise-fallback-ignores-home",
+    "breaks": "Where mise cannot answer, a check started in the home has mise ignore the home, which drops the owner's own config, and the shim then finds no claude (\"not currently active\").",
+    "patch": "mise-fallback-ignores-home.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "mise-fallback-skips-parents",
+    "breaks": "Where mise cannot answer, only the folder the check starts in is ignored, so the mise configs of the folders above it are still read outside the fence.",
+    "patch": "mise-fallback-skips-parents.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "mise-shim-pnpm-asked",
+    "breaks": "Off mise's shims, a pnpm found nowhere but a shim is still asked by name, which runs mise in the copy for it.",
+    "patch": "mise-shim-pnpm-asked.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "guard-misses-check-path",
+    "breaks": "The fence and the links question take only the owner's command path, so the folders the check's path takes in place of mise's shims are left writable.",
+    "patch": "guard-misses-check-path.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "stale-copies-left",
+    "breaks": "A check never removes the copies earlier checks left when their Claude Code ended mid-run, so they stay in the copies folder for good.",
+    "patch": "stale-copies-left.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "stale-sweep-takes-own",
+    "breaks": "The sweep of stale copies takes this session's own copy too.",
+    "patch": "stale-sweep-takes-own.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "stale-sweep-any-folder",
+    "breaks": "The sweep of stale copies removes any folder in the copies folder, not only those named for a session.",
+    "patch": "stale-sweep-any-folder.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "stale-age-under-check",
+    "breaks": "A copy counts as stale after the check's own time limit alone, so the copy of a check still copying or running is removed under it.",
+    "patch": "stale-age-under-check.patch",
     "fixed": "2026-11-14"
   }
 ]

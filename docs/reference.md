@@ -561,20 +561,47 @@ call writes (below):
    corepack 0.36.0), and the answer, its version folder
    taken off (`pnpmStoreDir`), passed to the run as `npm_config_store_dir`: inside the fence
    pnpm finds its store unwritable, moves it into a scratch folder, and an offline install
-   there fails (measured 17 Oct 2026, pnpm 10). The run and the pnpm question are started with
-   `MISE_IGNORED_CONFIG_PATHS` naming the folder they start in, the copy or the agent's folder
-   where no copy is made (`checkEnv`, `pnpmAskEnv`, `miseIgnoring`), added after the owner's
-   own value of it, joined by `:`, since mise splits that list as it splits `PATH` and reads no
-   comma (Windows would take `;`, but the check does not start there, `CHECK_NO_ROOM`): where `claude` or `pnpm` is a mise shim, the shim reads the mise config of the folder it
-   starts in before the program runs, outside the fence; a `mise.toml` in the copy is untrusted,
-   so the shim exited with "mise ERROR … not trusted" and the check said it could not run
-   (exit 1), and trusted, its `[env]` and hooks would run the project's code unfenced. Ignored,
-   the shim starts the program the owner's own mise config names, and nothing is trusted
-   (measured 14 Nov 2026, mise 2026.10.19: a folder named there is ignored with everything
-   below it, `mise.toml`, `.mise.toml` and `.tool-versions` alike). The run's commands inherit
-   it, so a tool the project pins through mise runs inside the check at the version the owner's
-   config names. On Windows the check does not start, so the `;` mise splits by there is never
-   needed. The three questions come before the run's clock
+   there fails (measured 17 Oct 2026, pnpm 10). Where `claude` or `pnpm` is a mise shim, the
+   shim is mise itself: before the program runs, so outside the fence, it reads the mise
+   config of the folder it starts in and of every folder above it, and any env file
+   `MISE_ENV_FILE` names there. A `mise.toml` in the copy is untrusted, so the shim exited
+   with "mise ERROR … not trusted" and the check said it could not run (exit 1); trusted, its
+   `[env]` and hooks would run the project's code unfenced; and the env file loads even from
+   a folder `MISE_IGNORED_CONFIG_PATHS` names, so a `NODE_OPTIONS=--require=…` the agent wrote
+   in the copy's `.env` runs when node starts (measured 14 Nov 2026, mise 2026.10.19). So the
+   check starts neither through a shim (`launchFor`, `launchOf`): it asks `mise bin-paths`
+   from the home with `MISE_ENV_FILE` empty (`MISE_BIN_PATHS_ARGV`, `MISE_ASK_ENV`, 15 s),
+   which names the folders of the owner's own tools from the owner's own config, then one
+   `find` over those folders and the command path's (`programsArgv`, read by `programsOf`, 30
+   s) for `claude` and `pnpm` and where each leads; a program that leads to `mise` is a shim.
+   Where there is one, the command path has the shims folder replaced by mise's folders, in
+   its place, and `claude` and `pnpm` start by their full paths, the first on that path that
+   is no shim (`withProgram`), with that path as their `PATH` (`checkEnv`, `pnpmAskEnv`), so no
+   mise runs on the copy's files or the folders above it, and pnpm's `#!/usr/bin/env node`
+   finds the owner's node rather than node's shim. Where the owner's claude comes through
+   mise's node, that is the claude the shim started. A pnpm found only as a shim is not
+   asked, and the run gets no store. The fence and the links question take the owner's path
+   and the check's both (`guardedPath`). The run's own commands use that path, so a tool the
+   project pins through mise alone runs inside the check at the owner's version, or is not
+   found. Where there is no shim, nothing changes: both start by name with no `PATH` given.
+   Where mise cannot answer, or the `find` fails or is cut, both start by name, through any
+   shim, with `MISE_ENV_FILE` empty and `MISE_IGNORED_CONFIG_PATHS` naming the folder they
+   start in (the copy, or the agent's folder where no copy is made) and each folder above it,
+   after the owner's own value, joined by `:` (`miseIgnoring`; mise splits the list as it
+   splits `PATH` and reads no comma, and on Windows would split by `;`, but the check does not
+   start there, `CHECK_NO_ROOM`). The home and the folders holding it are never named:
+   ignoring the home drops the owner's `~/.config/mise/config.toml`, and the shim then fails
+   with "not currently active" (measured). That leaves one exposure, in this fallback alone: a
+   mise config in the home itself is still read before the fence, and it is the agent's when
+   the agent works in the home. Before the copy, each check removes the copies other checks
+   left behind when their Claude Code ended mid-run, whose own removal never ran
+   (`sweepCopies`): a `find` in the copies folder for folders named for a session (an id, or
+   `session`), never this session's, unchanged for more than `STALE_COPY_MS`, read back by
+   `staleCopiesOf`, each removed with `rm -rf` and not waited on. `STALE_COPY_MS` is the run's
+   time limit, two copies' (`COPY_TIMEOUT_MS`) and an hour, which a test holds above every
+   time limit from the copy to its removal: a copy's folder is dated when the copy fills it
+   (cp keeps no dates without `-p`) and only gets newer while the run writes there, so a live
+   check's copy is never that old. The questions come before the run's clock
    starts, so the check's measured time is the run's own. Fifteen-minute timeout
    (`CHECK_TIMEOUT_MS`), 120 turns, JSON output; `permission_denials` in the output is the
    count of commands refused approval, shown on the checked card (`refusedLine`, which says

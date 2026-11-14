@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 55b4d99..dceded9 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3689,7 +3689,7 @@ export const staleCopiesOf = (stdout: string, home: string, sessionId: string):
+     .map(l => l.trim())
+     .filter(l => {
+       const name = l.slice(checkCopiesDir(home).length + 1)
+-      return l.startsWith(`${checkCopiesDir(home)}/`) && !name.includes('/') && name !== own && (name === 'session' || SESSION_NAME.test(name))
++      return l.startsWith(`${checkCopiesDir(home)}/`) && !name.includes('/') && name !== own 
+     })
+ }
+ 

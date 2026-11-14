@@ -60,9 +60,11 @@ terms you already have with that provider. The rep's calls include parts of your
 
 The check may open what was built and run the project's own commands to look at it, all
 inside its throwaway copy and Claude Code's sandbox. The check's commands run with the
-network closed except for your own machine. Where `claude` or pnpm is a mise shim, they start
-with mise told to ignore the copy's mise config, so nothing in that config runs. Nothing else
-in the mod opens a network connection.
+network closed except for your own machine. Where `claude` or pnpm is a mise shim, the rep
+asks mise in your home where your own tools are and starts them from there, so nothing in the
+project's mise config or env file runs. Each check also deletes the copies earlier checks
+left behind in its copies folder when they were cut off. Nothing else in the mod opens a
+network connection.
 
 ## Questions
 

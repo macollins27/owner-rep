@@ -457,10 +457,15 @@ is asked of pnpm in the copy before the run and named to it. pnpm is told on its
 line, which the project's own pnpm settings cannot override, to load none of the project's
 hook file, install no pinned pnpm and download nothing, and corepack, which can fetch a
 pinned pnpm before pnpm starts, is told to fetch nothing. Where `claude` or pnpm is a mise
-shim, which reads the mise config of the folder it starts in before the program runs, the run
-and the pnpm question tell mise to ignore the config in the copy (the agent's work, which mise
-would refuse as untrusted, and whose env and hooks would otherwise run outside the fence), so
-the shim starts the program the owner's own config names and nothing in the copy is trusted.
+shim, the shim is mise itself, which reads the config and env file of the folder it starts in
+and the folders above before the program runs, outside the fence; in the copy those are the
+agent's work. So the check does not start through the shim: it asks mise, from the home and
+with no env file, where the owner's own tools are, takes the shims off the command path in
+favour of those folders, and starts claude and pnpm by their full paths, which the fence then
+also guards. Only where mise cannot answer does it go through the shim, with no env file read
+and the copy and the folders above it ignored, never the home, whose config names the owner's
+tools. Each check also removes the copies older checks left when their Claude Code ended
+mid-run: folders named for another session, older than any check can live.
 When the machine does not answer
 the question about where the links in the command folders lead, the run's brief says the
 installs those links lead to could not be found. When a git question fails, times out, is
@@ -571,7 +576,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 608 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 621 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: twelve real sessions in tmux, the strip captured to tests/live/captures
 ```

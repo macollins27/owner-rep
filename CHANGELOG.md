@@ -8,9 +8,16 @@ What changed in each release of Owner Rep, newest first. The full record is the
 - **Check it works where Claude Code comes through mise.** Where `claude` is a mise shim and the
   project holds a `mise.toml`, the check stopped about 15 seconds in with "The check could not
   run (exit 1): mise ERROR", because mise refused the project's config in the check's copy as
-  untrusted. The check now tells mise to ignore the copy's config, so it starts the Claude Code
-  your own mise config names, and nothing in the project's config is trusted or run. Mise
-  config paths you already ignore stay ignored.
+  untrusted. The check now asks mise, from your home, where your own tools are and starts
+  Claude Code and pnpm from there by full path, with mise's shims off their command path, so
+  nothing in the project's mise config, or an env file the agent wrote, runs outside the
+  fence. A check started from your home works too. Where mise cannot answer, the check goes
+  through the shim with no env file read and the project's mise config ignored, never your
+  own.
+- **Copies of cut-off checks are cleaned up.** A check whose Claude Code ended mid-run left its
+  copy of the project in `~/.cache/owner-rep/checks`. Each check now deletes copies other
+  sessions' checks left there more than an hour and a half ago; a running check's copy is
+  never touched.
 
 ## 0.7.5 (14 November 2026)
 

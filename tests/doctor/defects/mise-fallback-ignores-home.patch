@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 55b4d99..ae62c3a 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3853,7 +3853,7 @@ export const MISE_IGNORE_ENV = 'MISE_IGNORED_CONFIG_PATHS'
+ export const miseIgnoring = (folder: string, already: string, home: string): Record<string, string> => {
+   const holdsHome = (d: string): boolean => `${unslashed(home)}/`.startsWith(`${d}/`)
+   const up: string[] = []
+-  for (let d = unslashed(folder); d !== ''; d = d.slice(0, d.lastIndexOf('/'))) if (!holdsHome(d)) up.push(d)
++  for (let d = unslashed(folder); d !== ''; d = d.slice(0, d.lastIndexOf('/'))) up.push(d)
+   return up.length === 0 ? {} : { [MISE_IGNORE_ENV]: [...(already === '' ? [] : [already]), ...up].join(':') }
+ }
+ const launchEnv = (launch: Launch, folder: string, already: string, home: string): Record<string, string> =>

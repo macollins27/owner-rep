@@ -269,7 +269,7 @@ full, this is everything it reads and runs:
   `SystemRoot`, `windir`, `PROGRAMFILES`, `ProgramFiles(x86)`, `LOCALAPPDATA`, `APPDATA` and
   `MISE_IGNORED_CONFIG_PATHS`. It reads them to find your home, Claude Code's folder and the
   programs it runs, to tell whether it is on Windows, and, on a press of Check it, to keep the
-  mise config paths you already ignore ignored inside the check.
+  mise config paths you already ignore ignored where it has to start the check through mise.
 - **Your transcripts:** it runs `sed`, `grep`, `ls` and `find` over the session's transcript
   under `~/.claude/projects/` (or the folder `CLAUDE_CONFIG_DIR` names) to read which
   messages you typed. For a session it holds no record of, such as a fork, it may read up to
@@ -289,9 +289,14 @@ full, this is everything it reads and runs:
   find the git repositories your project belongs to or links into and where links lead, so
   it can fence them. It runs `pnpm store path` to find pnpm's store, which the check is given
   to install from. It runs `mkdir`, `cp` and `rm` to make the throwaway copy and delete it
-  afterwards. It starts `pnpm` and the check with mise told to ignore the copy's mise config
-  (`MISE_IGNORED_CONFIG_PATHS`), so where you installed them through mise a `mise.toml` the
-  agent left in the project neither stops the check nor runs anything.
+  afterwards, and with `find` and `rm` it deletes copies earlier checks left in its copies
+  folder (`~/.cache/owner-rep/checks`) when their Claude Code ended mid-check, only those named
+  for another session and untouched for over an hour and a half. Where `claude` or `pnpm` is
+  a mise shim, it runs `mise bin-paths` in your home to find your own tools' folders, and
+  `find` and `readlink` over those and your command path, then starts `pnpm` and the check by
+  their full paths with mise's shims off their command path, so no mise runs on the project.
+  Where mise does not answer, it starts them through the shim with no env file read and the
+  project's mise config ignored (`MISE_ENV_FILE`, `MISE_IGNORED_CONFIG_PATHS`).
 - **The check itself:** a separate `claude -p` run that may read files, search, run the
   project's own tests and read agentsview. It may not edit through a tool, send, fetch the
   web, or launch helpers. It runs with your own Claude Code settings, so your hooks fire
@@ -339,7 +344,7 @@ The full design is in [How the owner rep works](docs/how-it-works.md).
 
 ## Built to be trusted
 
-- **608 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
+- **621 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
   the tests.
 - **A doctor that plants bugs.** It plants 538 known defects in a throwaway copy, one at a
   time, and fails the build if the tests miss any of them.

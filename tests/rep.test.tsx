@@ -9356,6 +9356,25 @@ test('rule: where claude is a mise shim, the check starts the claude mise names 
   expect(got.runs.some(r => r.argv.includes('trust'))).toBe(false)
 })
 
+test('rule: the folders the check\'s command path takes in place of mise\'s shims are fenced, and the links in them asked about, as the owner\'s path is', async ($, on) => {
+  const tools = '/Users/o/tools/node/bin'
+  const found = `${tools}/./claude\n/Users/o/tools/node/lib/claude.exe\n${SHIMS}/./claude\n${MISE_REAL}\n`
+  const got = await shimRoom($, on, { bins: `${tools}\n`, found })
+  const both = `${SHIM_PATH}:${tools}:/opt/homebrew/bin:/usr/bin`
+  expect(got.spawned?.argv[0]).toBe(`${tools}/claude`)
+  const fence = (path: string) => (JSON.parse(checkSettings('/Users/o', '/tmp/x', path)) as { sandbox: { filesystem: { denyWrite: string[] } } }).sandbox.filesystem.denyWrite
+  expect(got.denied).toEqual(fence(both))
+  expect(got.denied).not.toEqual(fence(SHIM_PATH))
+  expect(got.runs.some(r => JSON.stringify(r.argv) === JSON.stringify(pathLinksArgv('/Users/o', both)))).toBe(true)
+})
+
+test('rule: off mise\'s shims, a pnpm found nowhere but a shim is not asked, so mise never runs on the copy for it, and the run is told no store', async ($, on) => {
+  const got = await shimRoom($, on, { bins: `${NODE_BIN}\n`, found: SHIM_FOUND.split('\n').slice(0, 10).join('\n') + '\n' })
+  expect(got.spawned?.argv[0]).toBe(`${NODE_BIN}/claude`)
+  expect(got.pnpm).toBeUndefined()
+  expect(got.spawned?.env).toEqual({ PATH: AROUND_PATH })
+})
+
 test('rule: where mise cannot say where the owner\'s tools are, claude starts by name with mise reading no env file and ignoring the copy\'s config and the folders above it, after the folders the owner already has it ignore', async ($, on) => {
   const got = await shimRoom($, on, { bins: null, ignored: '/srv/a:/srv/b' })
   expect(got.spawned?.argv[0]).toBe('claude')

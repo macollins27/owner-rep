@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 44d6ee3..36137e1 100644
+index 4f9f7af..4aaf6ea 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1585,7 +1585,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
+@@ -1605,7 +1605,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
        unanswered: [...(links === null ? ['links' as const] : []), ...(repos.whole ? [] : ['repos' as const])],
      })
      const startedAt = Date.now()
--    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, path, links ?? [], repos.dirs))), cwd: copy, env: checkEnv(copy, store, miseIgnored) })
-+    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, '', links ?? [], repos.dirs))), cwd: copy, env: checkEnv(copy, store, miseIgnored) })
+-    const stream = $.process.spawn({ argv: hostArgv(checkHost, withProgram(checkArgv(prompt, checkSettings(home, cwd, guarded, links ?? [], repos.dirs)), launch.claude)), cwd: copy, env: checkEnv(launch, copy, store, miseIgnored, home) })
++    const stream = $.process.spawn({ argv: hostArgv(checkHost, withProgram(checkArgv(prompt, checkSettings(home, cwd, '', links ?? [], repos.dirs)), launch.claude)), cwd: copy, env: checkEnv(launch, copy, store, miseIgnored, home) })
      let stdout = ''
      let stderr = ''
      let timedOut = false
