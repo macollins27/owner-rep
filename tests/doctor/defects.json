@@ -3214,5 +3214,23 @@
     "breaks": "The objective writer is not told that a yes closes a condition that only waited on the plan, so it lists that condition as dropped by the approval and the card asks the owner to settle what the yes already did.",
     "patch": "approval-closing-dropped.patch",
     "fixed": "2026-11-10"
+  },
+  {
+    "name": "check-mise-config-read",
+    "breaks": "The check's run is started without mise told to ignore the copy's config, so where claude is a mise shim a mise.toml in the copy is refused as untrusted and the check stops before it runs (\"mise ERROR\"), or, trusted, its env and hooks run outside the fence.",
+    "patch": "check-mise-config-read.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "pnpm-ask-mise-config-read",
+    "breaks": "pnpm is asked for its store in the copy without mise told to ignore the copy's config, so where pnpm is a mise shim the question fails on the untrusted mise.toml and the run is told no store.",
+    "patch": "pnpm-ask-mise-config-read.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "mise-ignore-replaces-owner-list",
+    "breaks": "The folder the check ignores replaces the list of config paths the owner already has mise ignore, so inside the check mise reads the configs the owner chose to ignore.",
+    "patch": "mise-ignore-replaces-owner-list.patch",
+    "fixed": "2026-11-14"
   }
 ]

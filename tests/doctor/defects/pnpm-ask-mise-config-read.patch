@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 44d6ee3..bda1d0a 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1802,7 +1802,7 @@ async function homeFor($: EngineInterface): Promise<string> {
+ // corepack's network off and the copy's mise config ignored (`pnpmAskEnv`), or '' when there
+ // is no pnpm or it does not answer (`pnpmStoreDir`).
+ async function pnpmStore($: EngineInterface, host: Host, copy: string, miseIgnored: string): Promise<string> {
+-  const r = await $.process.run(hostArgv(host, PNPM_STORE_ARGV), { cwd: copy, env: pnpmAskEnv(copy, miseIgnored), timeoutMs: PNPM_STORE_TIMEOUT_MS }).catch(() => null)
++  const r = await $.process.run(hostArgv(host, PNPM_STORE_ARGV), { cwd: copy, env: { COREPACK_ENABLE_NETWORK: "0" }, timeoutMs: PNPM_STORE_TIMEOUT_MS }).catch(() => null)
+   return r === null || r.exitCode !== 0 ? '' : pnpmStoreDir(r.stdout)
+ }
+ 

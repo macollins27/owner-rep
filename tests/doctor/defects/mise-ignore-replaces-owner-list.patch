@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index ddda923..50edd3c 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3725,7 +3725,7 @@ export const PNPM_STORE_ENV = 'npm_config_store_dir'
+ // the project's. Measured 14 Nov 2026, mise 2026.10.19: a folder named here is ignored with
+ // everything below it, and the shim then starts the claude of the owner's config.
+ export const MISE_IGNORE_ENV = 'MISE_IGNORED_CONFIG_PATHS'
+-export const miseIgnoring = (folder: string, already: string): Record<string, string> => ({ [MISE_IGNORE_ENV]: already === '' ? folder : `${already}:${folder}` })
++export const miseIgnoring = (folder: string, already: string): Record<string, string> => ({ [MISE_IGNORE_ENV]: folder })
+ // The check run's environment: pnpm's store where pnpm named one, and the mise ignore.
+ export const checkEnv = (folder: string, store: string, already: string): Record<string, string> => ({
+   ...(store === '' ? {} : { [PNPM_STORE_ENV]: store }),
