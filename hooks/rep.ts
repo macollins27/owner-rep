@@ -3645,53 +3645,91 @@ export const copyArgvs = (host: Host, from: string, to: string): [string[], stri
 
 export const checkCopiesDir = (home: string): string => `${home}/.cache/owner-rep/checks`
 export const checkCopyDir = (home: string, sessionId: string): string => `${checkCopiesDir(home)}/${sessionId === '' ? 'session' : sessionId}`
-// A check whose Claude Code ends mid-run (a session closed, a process killed) never reaches the
-// step that removes its copy. Each check removes the copies other checks left in the copies
-// folder: folders named for a session (a session id, or `session` where there was none), never
-// its own session's, unchanged for longer than any check that made one could still be running.
-// A copy's folder is dated when the copy fills it (cp keeps no dates without -p) and only gets
-// newer as the run writes in it, so `STALE_COPY_MS` covers every step from the copy to its
-// removal, with an hour to spare; a live session's copy is never that old.
 export const COPY_TIMEOUT_MS = 600000
 export const COPY_STEP_TIMEOUT_MS = 30000
 export const COPY_REMOVE_TIMEOUT_MS = 120000
-export const STALE_MARGIN_MS = 3600000
-export const STALE_COPY_MS = CHECK_TIMEOUT_MS + 2 * COPY_TIMEOUT_MS + STALE_MARGIN_MS
-export const STALE_FIND_TIMEOUT_MS = 30000
+// WHO OWNS A COPY, AND WHEN ONE IS REMOVED.
+// A check whose Claude Code ends mid-run (a session closed, a process killed), or that closes
+// straight after a check, never finishes removing its copy, gigabytes at a time. So each copy has
+// an owner file beside it (`ownerFile`: `<copy>.owner`), written before the copy is made, naming
+// the process that made it by its pid and its start time (`ownerWriteArgv`). The process is the
+// Claude Code the mod runs in: a shell the mod starts has it as its parent (`$PPID`), measured on
+// 14 Nov 2026 (Claude Code 2.1.325, macOS), the pid and start time those of the `claude` process.
+// The sweep (`copiesListArgv`, read by `copiesOf`) reads each owner file of a session-named copy
+// and asks ps about those pids (`aliveArgv`, read by `deadOwned`), and removes a copy only when its
+// owner is gone: no process has that pid, or the one that has it started at another time. Never
+// for its age, never this process's own, and none at all when ps does not see the process asking
+// (a sandbox or a hidden process table proves nothing gone). A copy with no owner file it can read
+// is kept. Both ps calls run with `PS_ENV`, so a start time reads the same whatever clock or
+// language the session that wrote it had. A copy is removed by renaming it, with its owner file,
+// to a name no session uses (`goneDir`, `.gone-…` in the copies folder; `retireArgv`), which is
+// waited on, and only then removing the renamed folder, not waited on: a session that makes a copy
+// at the same path again is never hit by a removal still running. The sweep's rename is refused
+// when the owner file no longer holds the line the sweep read. Leftovers of removals (`.gone-…`,
+// a removal cut off when its Claude Code closed) are removed once more than a minute old: no
+// session uses those names, and a minute covers the rename that fills one.
+export const PS_ENV = { TZ: 'UTC', LC_ALL: 'C' }
+export const OWNER_WRITE_TIMEOUT_MS = 10000
+export const SWEEP_LIST_TIMEOUT_MS = 30000
+export const ALIVE_TIMEOUT_MS = 10000
+export const RETIRE_TIMEOUT_MS = 30000
 const SESSION_NAME = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-export const staleCopiesArgv = (home: string, sessionId: string): string[] => [
-  'find',
+export const ownerFile = (copy: string): string => `${copy}.owner`
+export const goneDir = (home: string, tag: string): string => `${checkCopiesDir(home)}/.gone-${tag}`
+export const ownerWriteArgv = (file: string): string[] => ['sh', '-c', 's=$(ps -o lstart= -p "$PPID") && [ -n "$s" ] && printf \'%s %s\\n\' "$PPID" "$s" > "$1"', 'sh', file]
+export const copiesListArgv = (home: string): string[] => [
+  'sh',
+  '-c',
+  'for f in "$1"/*.owner; do [ -f "$f" ] && printf \'%s\\t%s\\n\' "$f" "$(head -n 1 "$f")"; done; find "$1" -mindepth 1 -maxdepth 1 -name \'.gone-*\' -mmin +1 -print 2>/dev/null; exit 0',
+  'sh',
   checkCopiesDir(home),
-  '-mindepth',
-  '1',
-  '-maxdepth',
-  '1',
-  '-type',
-  'd',
-  '(',
-  '-name',
-  '????????-????-????-????-????????????',
-  '-o',
-  '-name',
-  'session',
-  ')',
-  '!',
-  '-name',
-  sessionId === '' ? 'session' : sessionId,
-  '-mmin',
-  `+${Math.ceil(STALE_COPY_MS / 60000)}`,
-  '-print',
 ]
-export const staleCopiesOf = (stdout: string, home: string, sessionId: string): string[] => {
-  const own = sessionId === '' ? 'session' : sessionId
-  return stdout
-    .split('\n')
-    .map(l => l.trim())
-    .filter(l => {
-      const name = l.slice(checkCopiesDir(home).length + 1)
-      return l.startsWith(`${checkCopiesDir(home)}/`) && !name.includes('/') && name !== own && (name === 'session' || SESSION_NAME.test(name))
-    })
+export type Owned = { copy: string; file: string; pid: string; start: string; line: string }
+const spaced = (t: string): string => t.trim().replace(/\s+/g, ' ')
+export const copiesOf = (stdout: string, home: string): { owned: Owned[]; gone: string[] } => {
+  const dir = `${checkCopiesDir(home)}/`
+  const owned: Owned[] = []
+  const gone: string[] = []
+  for (const raw of stdout.split('\n')) {
+    const tab = raw.indexOf('\t')
+    const path = tab < 0 ? raw.trim() : raw.slice(0, tab)
+    if (!path.startsWith(dir)) continue
+    const name = path.slice(dir.length)
+    if (tab < 0) {
+      if (name.startsWith('.gone-') && !name.includes('/')) gone.push(path)
+      continue
+    }
+    const session = name.endsWith('.owner') ? name.slice(0, -'.owner'.length) : ''
+    const m = /^(\d+) +(\S.*)$/.exec(raw.slice(tab + 1))
+    if ((session !== 'session' && !SESSION_NAME.test(session)) || m === null) continue
+    owned.push({ copy: `${dir}${session}`, file: path, pid: m[1] ?? '', start: spaced(m[2] ?? ''), line: raw.slice(tab + 1) })
+  }
+  return { owned, gone }
 }
+export const aliveArgv = (pids: string[]): string[] => ['sh', '-c', 'echo "$PPID"; ps -o pid= -o lstart= -p "$PPID,$1"', 'sh', pids.join(',')]
+// null when ps did not see the process asking, whose pid the answer's first line holds.
+export const deadOwned = (stdout: string, owned: Owned[]): Owned[] | null => {
+  const [first = '', ...rest] = stdout.split('\n')
+  const me = first.trim()
+  const alive = new Map<string, string>()
+  for (const l of rest) {
+    const m = /^\s*(\d+)\s+(\S.*)$/.exec(l)
+    if (m !== null) alive.set(m[1] ?? '', spaced(m[2] ?? ''))
+  }
+  if (!/^\d+$/.test(me) || !alive.has(me)) return null
+  return owned.filter(o => o.pid !== me && alive.get(o.pid) !== o.start)
+}
+// Ends 3 having moved nothing when the owner file no longer holds `line` (given only by the sweep).
+export const retireArgv = (gone: string, copy: string, line = ''): string[] => [
+  'sh',
+  '-c',
+  '[ -z "$4" ] || [ "$(head -n 1 "$3" 2>/dev/null)" = "$4" ] || exit 3; mkdir "$1" || exit 1; if [ -e "$2" ] || [ -L "$2" ]; then mv "$2" "$1/copy" || exit 1; fi; if [ -e "$3" ]; then mv "$3" "$1/owner" || exit 1; fi',
+  'sh',
+  gone,
+  copy,
+  ownerFile(copy),
+  line,
+]
 
 // WHY THE CHECK DOES NOT START ON WINDOWS.
 // Claude Code 2.1.302 does ship a Windows sandbox — the binary carries
@@ -3778,7 +3816,7 @@ export const PNPM_STORE_ENV = 'npm_config_store_dir'
 export type Launch = { path: string; claude: string; pnpm: string; mise: 'none' | 'around' | 'unresolved' }
 export const MISE_BIN_PATHS_ARGV = ['mise', 'bin-paths']
 export const MISE_ASK_ENV = { MISE_ENV_FILE: '' }
-export const MISE_ASK_TIMEOUT_MS = 15000
+export const MISE_ASK_TIMEOUT_MS = 5000
 export const binPathsOf = (stdout: string): string[] => stdout.split('\n').map(l => l.trim()).filter(l => l.startsWith('/'))
 // Each folder is given as `<folder>/.`, so each name it prints holds `/./` where the folder
 // ends, and `readlink -f` prints where it leads on the next line, which never holds `/./`.
@@ -3795,6 +3833,14 @@ export const programsArgv = (dirs: string[]): string[] => [
   '-o',
   '-name',
   'pnpm',
+  '-o',
+  '-type',
+  'l',
+  '-lname',
+  '*mise',
+  '!',
+  '-name',
+  'mise',
   ')',
   '-print',
   '-exec',
@@ -3817,22 +3863,32 @@ export const programsOf = (stdout: string): Found[] => {
   }
   return out
 }
-const isShim = (f: Found): boolean => /^mise(\.exe)?$/.test(f.target.split('/').pop() ?? '')
+// A shim is a link to mise under any other name; the folder holding one is mise's shims folder.
+const MISE_NAME = /^mise(\.exe)?$/
+const isShim = (f: Found): boolean => !MISE_NAME.test(f.name) && MISE_NAME.test(f.target.split('/').pop() ?? '')
 // `found` is null when the path could not be asked about, `bins` when mise could not answer.
+// The run's path is the folders mise named, at its front, then the owner's path with every
+// shims folder taken off, so no tool the run starts (node for pnpm's `#!/usr/bin/env node`
+// included) goes through mise. claude and pnpm are the ones the owner's own path finds first,
+// read with the first shims folder standing for the folders mise named: an owner whose native
+// claude comes before the shims gets that claude, not mise's node's.
 export const launchOf = (path: string, bins: string[] | null, found: Found[] | null): Launch => {
   const unresolved: Launch = { path, claude: '', pnpm: '', mise: 'unresolved' }
   if (found === null) return unresolved
-  const shims = new Set(found.filter(isShim).map(f => f.dir))
+  const on = new Set(path.split(':').map(unslashed))
+  const shims = new Set(found.filter(f => isShim(f) && on.has(f.dir)).map(f => f.dir))
   if (shims.size === 0) return { path, claude: '', pnpm: '', mise: 'none' }
   if (bins === null) return unresolved
+  const isShims = (d: string): boolean => shims.has(unslashed(d))
   let placed = false
-  const dirs = path.split(':').flatMap(d => (!shims.has(unslashed(d)) ? [d] : placed ? [] : ((placed = true), bins)))
+  const order = path.split(':').flatMap(d => (!isShims(d) ? [d] : placed ? [] : ((placed = true), bins)))
   const first = (name: string): string => {
-    for (const d of dirs) if (found.some(f => f.dir === unslashed(d) && f.name === name && !isShim(f))) return `${unslashed(d)}/${name}`
+    for (const d of order) if (found.some(f => f.dir === unslashed(d) && f.name === name && !isShim(f))) return `${unslashed(d)}/${name}`
     return ''
   }
   const claude = first('claude')
-  return claude === '' ? unresolved : { path: dirs.join(':'), claude, pnpm: first('pnpm'), mise: 'around' }
+  const run = [...new Set(bins), ...path.split(':').filter(d => !isShims(d))]
+  return claude === '' ? unresolved : { path: run.join(':'), claude, pnpm: first('pnpm'), mise: 'around' }
 }
 export const withProgram = (argv: readonly string[], program: string): string[] => (program === '' ? [...argv] : [program, ...argv.slice(1)])
 // The path the fence guards: the owner's, and the check's own where it differs.
