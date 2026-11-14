@@ -3,6 +3,15 @@
 What changed in each release of Owner Rep, newest first. The full record is the
 [commit history](https://github.com/macollins27/owner-rep/commits/main).
 
+## 0.7.5 (14 November 2026)
+
+- **Check it works where Claude Code comes through mise.** Where `claude` is a mise shim and the
+  project holds a `mise.toml`, the check stopped about 15 seconds in with "The check could not
+  run (exit 1): mise ERROR", because mise refused the project's config in the check's copy as
+  untrusted. The check now tells mise to ignore the copy's config, so it starts the Claude Code
+  your own mise config names, and nothing in the project's config is trusted or run. Mise
+  config paths you already ignore stay ignored.
+
 ## 0.7.4 (11 November 2026)
 
 - **A forked session gets its goal at once again.** A session forked after a compaction

@@ -456,7 +456,12 @@ store, which pnpm would otherwise move into a scratch folder inside the fence an
 is asked of pnpm in the copy before the run and named to it. pnpm is told on its command
 line, which the project's own pnpm settings cannot override, to load none of the project's
 hook file, install no pinned pnpm and download nothing, and corepack, which can fetch a
-pinned pnpm before pnpm starts, is told to fetch nothing. When the machine does not answer
+pinned pnpm before pnpm starts, is told to fetch nothing. Where `claude` or pnpm is a mise
+shim, which reads the mise config of the folder it starts in before the program runs, the run
+and the pnpm question tell mise to ignore the config in the copy (the agent's work, which mise
+would refuse as untrusted, and whose env and hooks would otherwise run outside the fence), so
+the shim starts the program the owner's own config names and nothing in the copy is trusted.
+When the machine does not answer
 the question about where the links in the command folders lead, the run's brief says the
 installs those links lead to could not be found. When a git question fails, times out, is
 cut at the output's cap or meets a name holding a line break, the brief says not every git

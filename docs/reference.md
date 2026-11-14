@@ -561,7 +561,20 @@ call writes (below):
    corepack 0.36.0), and the answer, its version folder
    taken off (`pnpmStoreDir`), passed to the run as `npm_config_store_dir`: inside the fence
    pnpm finds its store unwritable, moves it into a scratch folder, and an offline install
-   there fails (measured 17 Oct 2026, pnpm 10). The three questions come before the run's clock
+   there fails (measured 17 Oct 2026, pnpm 10). The run and the pnpm question are started with
+   `MISE_IGNORED_CONFIG_PATHS` naming the folder they start in, the copy or the agent's folder
+   where no copy is made (`checkEnv`, `pnpmAskEnv`, `miseIgnoring`), added after the owner's
+   own value of it, joined by `:`, since mise splits that list as it splits `PATH` and reads no
+   comma: where `claude` or `pnpm` is a mise shim, the shim reads the mise config of the folder it
+   starts in before the program runs, outside the fence; a `mise.toml` in the copy is untrusted,
+   so the shim exited with "mise ERROR … not trusted" and the check said it could not run
+   (exit 1), and trusted, its `[env]` and hooks would run the project's code unfenced. Ignored,
+   the shim starts the program the owner's own mise config names, and nothing is trusted
+   (measured 14 Nov 2026, mise 2026.10.19: a folder named there is ignored with everything
+   below it, `mise.toml`, `.mise.toml` and `.tool-versions` alike). The run's commands inherit
+   it, so a tool the project pins through mise runs inside the check at the version the owner's
+   config names. On Windows the check does not start, so the `;` mise splits by there is never
+   needed. The three questions come before the run's clock
    starts, so the check's measured time is the run's own. Fifteen-minute timeout
    (`CHECK_TIMEOUT_MS`), 120 turns, JSON output; `permission_denials` in the output is the
    count of commands refused approval, shown on the checked card (`refusedLine`, which says

@@ -266,9 +266,10 @@ full, this is everything it reads and runs:
   the agent's thinking. The check is different: it reads the session through agentsview, and
   that includes the agent's thinking.
 - **Environment variables:** `PATH`, `HOME`, `USERPROFILE`, `CLAUDE_CONFIG_DIR`, `OS`,
-  `SystemRoot`, `windir`, `PROGRAMFILES`, `ProgramFiles(x86)`, `LOCALAPPDATA` and `APPDATA`.
-  It reads them to find your home, Claude Code's folder and the programs it runs, and to tell
-  whether it is on Windows.
+  `SystemRoot`, `windir`, `PROGRAMFILES`, `ProgramFiles(x86)`, `LOCALAPPDATA`, `APPDATA` and
+  `MISE_IGNORED_CONFIG_PATHS`. It reads them to find your home, Claude Code's folder and the
+  programs it runs, to tell whether it is on Windows, and, on a press of Check it, to keep the
+  mise config paths you already ignore ignored inside the check.
 - **Your transcripts:** it runs `sed`, `grep`, `ls` and `find` over the session's transcript
   under `~/.claude/projects/` (or the folder `CLAUDE_CONFIG_DIR` names) to read which
   messages you typed. For a session it holds no record of, such as a fork, it may read up to
@@ -288,7 +289,9 @@ full, this is everything it reads and runs:
   find the git repositories your project belongs to or links into and where links lead, so
   it can fence them. It runs `pnpm store path` to find pnpm's store, which the check is given
   to install from. It runs `mkdir`, `cp` and `rm` to make the throwaway copy and delete it
-  afterwards.
+  afterwards. It starts `pnpm` and the check with mise told to ignore the copy's mise config
+  (`MISE_IGNORED_CONFIG_PATHS`), so where you installed them through mise a `mise.toml` the
+  agent left in the project neither stops the check nor runs anything.
 - **The check itself:** a separate `claude -p` run that may read files, search, run the
   project's own tests and read agentsview. It may not edit through a tool, send, fetch the
   web, or launch helpers. It runs with your own Claude Code settings, so your hooks fire
