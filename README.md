@@ -274,14 +274,19 @@ full, this is everything it reads and runs:
   messages you typed. For a session it holds no record of, such as a fork, it may read up to
   40 of the newest other transcripts in the same project folder to find your earlier
   messages, and it reads back from the session's messages the agent's words before each one and
-  any answers you gave on the plan screen. It also reads the transcript lines where you
+  any answers you gave on the plan screen. When that folder does not hold the session it came
+  from (it was recorded in a folder since removed, such as a merged worktree), it searches the
+  transcripts in every project folder there once for one line of that session, with
+  `git grep` (or `grep -r` where git cannot run), and reads up to 40 of the files that hold it,
+  newest first, the same way. It also reads the transcript lines where you
   approved a plan on that screen, to find a note you typed with the approval.
 - **Its own folder:** `<config>/owner-rep/sources/`, under Claude Code's folder. It writes each
   saved text there as a file named by the session and checked by fingerprint, and removes those
   files with `rm` when their message or session goes. When the shared store is full it also
   keeps the record's manifest and parts there, and it keeps the files of a lost copy while the
   loss mark stands.
-- **On Windows:** those commands are Git for Windows' own, named by their full path. The rep
+- **On Windows:** those commands are Git for Windows' own, named by their full path, and
+  `git` is the one on `PATH`. The rep
   finds them, and Claude Code's own `claude.exe`, by running each place they may be with
   `--version`.
 - **Only when you press Check it:** it runs `sh`, `find`, `printf`, `readlink` and `sed` to
@@ -336,9 +341,9 @@ The full design is in [How the owner rep works](docs/how-it-works.md).
 
 ## Built to be trusted
 
-- **604 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
+- **615 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
   the tests.
-- **A doctor that plants bugs.** It plants 538 known defects in a throwaway copy, one at a
+- **A doctor that plants bugs.** It plants 547 known defects in a throwaway copy, one at a
   time, and fails the build if the tests miss any of them.
 - **Real sessions.** Twelve scenarios run in real Claude Code sessions, with the screen
   captured in [`tests/live/captures`](tests/live/captures).

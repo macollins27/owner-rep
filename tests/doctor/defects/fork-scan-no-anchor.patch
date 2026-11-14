@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 4159090..3dbb0a2 100644
+index c8022ab..b16e1a1 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -940,7 +940,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
-     const folder = folderOf(path)
-     const name = path.slice(folder.length + 1)
-     const want = summary === null ? forkCandidates(rows).length : 0
--    const anchor = summary === null && want === 0 ? lastToolId(rows) : null
-+    const anchor = summary === null && want === 0 && false ? lastToolId(rows) : null
-     if (summary === null && want === 0 && anchor === null) return null
-     const start = await $.clock.now()
-     const left = async () => HUMAN_SCAN_BUDGET_MS - ((await $.clock.now()) - start)
+@@ -2202,7 +2202,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
+       const items = Array.isArray(nearby) ? nearby : await before(await far(`"uuid":"${id}"`), find)
+       return Array.isArray(items) ? [...items, ...copied] : copied
+     }
+-    if (want === 0 && tool !== null) {
++    if (want === 0 && tool !== null && false) {
+       const id = tool
+       const find = (file: string) => toolLineFind(file, id)
+       const nearby = await before(near, find)

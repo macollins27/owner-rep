@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 5c6f2ce..82ecfd3 100644
+index c8022ab..e5ada9f 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1193,7 +1193,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
-       const set = await $.env.get('CLAUDE_CONFIG_DIR')
-       const home = await homeFor($)
-       const config = set !== undefined && set !== '' ? local(set) : home !== '' ? `${home}/.claude` : null
--      if (config === null) return null
-+      if (config !== null) return null
-       const found = await $.process.run(hostArgv(host, ['find', `${config}/projects`, '-maxdepth', '2', '-name', `${sid}.jsonl`]), { timeoutMs: HUMAN_READ_TIMEOUT_MS })
+@@ -2121,7 +2121,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
+     let path = local(transcripts.get(sid) ?? '')
+     if (path === '') {
+       const dir = await configDir()
+-      if (dir === null) return null
++      if (dir !== null) return null
+       const found = await $.process.run(hostArgv(host, ['find', `${dir}/projects`, '-maxdepth', '2', '-name', `${sid}.jsonl`]), { timeoutMs: HUMAN_READ_TIMEOUT_MS })
        path = found.exitCode === 0 ? local(found.stdout.split('\n').find(l => l.trim() !== '')?.trim() ?? '') : ''
        if (path === '') return null

@@ -1,11 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index c8022ab..fbcb628 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -2145,7 +2145,7 @@
+@@ -2187,7 +2187,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
          if (line === null) continue
          const time = await left()
          if (time <= 0) break
--        const found = await $.process.run(hostArgv(host, humanReadBefore(`${folder}/${file}`, line)), { timeoutMs: Math.min(HUMAN_READ_TIMEOUT_MS, time) })
-+        const found = await $.process.run(hostArgv(host, humanRead(`${folder}/${file}`)), { timeoutMs: Math.min(HUMAN_READ_TIMEOUT_MS, time) })
+-        const found = await $.process.run(hostArgv(host, humanReadBefore(file, line)), { timeoutMs: Math.min(HUMAN_READ_TIMEOUT_MS, time) })
++        const found = await $.process.run(hostArgv(host, humanRead(file)), { timeoutMs: Math.min(HUMAN_READ_TIMEOUT_MS, time) })
          if (found.exitCode !== 0 || found.isStdoutTruncated) continue
-         // A file holding the line with nothing of the owner's before it is another copy of the
-         // stretch since the summary (an earlier fork of the same session), never the parent; it
+         const items = humanItems(found.stdout)
+         placed = true

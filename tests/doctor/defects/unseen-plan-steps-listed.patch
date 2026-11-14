@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 6ce8f1b..0e49d59 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -856,7 +856,7 @@ export function coverageLines(rec: CoverRec, o: CoverOpts = {}): CoverLine[] {
+   // approval's own line (unresolved) already says the plan could not be checked.
+   for (const g of o.gaps?.notAssessed ?? []) {
+     const m = approval(g.n)
+-    if (m !== undefined && !(g.why === READER_CUT_WHY && !showable(m))) byN.push({ n: m.n, text: notAssessedLine(m, g.why, g.steps), asserts: true })
++    if (m !== undefined) byN.push({ n: m.n, text: notAssessedLine(m, g.why, g.steps), asserts: true })
+   }
+   // Stable: lines about one message keep the order above.
+   byN.sort((a, b) => (a.n ?? 0) - (b.n ?? 0))

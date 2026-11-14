@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index c8022ab..c5bc3a1 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2238,7 +2238,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
+     }
+     await scan(near)
+     if (whole.matched < want && tool !== null) await scan(await far(`"id":"${tool}"`))
+-    if (whole.matched > 0 && whole.matched >= copy.matched) return whole.items
++    if (whole.matched > 0 && whole.matched > copy.matched) return whole.items
+     if (copy.matched === 0 || copy.summary === null) return null
+     const id = copy.summary
+     const find = (file: string) => summaryLineFind(file, id)
