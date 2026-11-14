@@ -60,8 +60,16 @@ terms you already have with that provider. The rep's calls include parts of your
 
 The check may open what was built and run the project's own commands to look at it, all
 inside its throwaway copy and Claude Code's sandbox. The check's commands run with the
-network closed except for your own machine. Nothing else
-in the mod opens a network connection.
+network closed except for your own machine. When a session starts with you at the prompt,
+the rep asks mise, once, in your home, where your own tools are; where any mise shim is on
+your command path, the check starts them from there with every shim off its command path, so
+nothing in the project's mise config or env file runs. A session whose working folder is your
+home is the one exception: there the home's mise config is the agent's to change, and the rep
+cannot fence what it reads from it. Beside each copy the rep writes an owner file holding the
+pid and start time of the Claude Code process that made it. At a session's start and before
+each copy it reads those files and asks `ps` whether each process is still running (it learns
+the pid and start time of other sessions' Claude Code, nothing else), and deletes the copies
+whose process has closed. Nothing else in the mod opens a network connection.
 
 ## Questions
 

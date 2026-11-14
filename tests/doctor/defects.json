@@ -3226,5 +3226,221 @@
     "breaks": "From Claude Code 2.1.325 the briefing no longer takes the strip alone: another mod's row stays stacked under the card the owner asked for.",
     "patch": "card-shares-strip.patch",
     "fixed": "2026-11-14"
+  },
+  {
+    "name": "check-mise-config-read",
+    "breaks": "The check's run starts claude by name with the owner's command path, mise's shims on it, so mise runs in the copy before the fence: a mise.toml there is refused as untrusted and the check stops (\"mise ERROR\"), or its env and hooks, or an env file mise is told to read, run outside the fence.",
+    "patch": "check-mise-config-read.patch",
+    "fixed": "2026-11-14; remade 2026-11-14"
+  },
+  {
+    "name": "pnpm-ask-mise-config-read",
+    "breaks": "pnpm is asked for its store by name with the owner's command path, mise's shims on it, so mise runs in the copy for it, outside the fence, and fails on its untrusted mise.toml.",
+    "patch": "pnpm-ask-mise-config-read.patch",
+    "fixed": "2026-11-14; remade 2026-11-14"
+  },
+  {
+    "name": "mise-ignore-replaces-owner-list",
+    "breaks": "Where mise cannot answer, the folders the check has mise ignore replace the list the owner already has it ignore, so inside the check mise reads the configs the owner chose to ignore.",
+    "patch": "mise-ignore-replaces-owner-list.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "check-path-keeps-shims",
+    "breaks": "The check's run keeps mise's shims on its command path, so node, pnpm and every other shimmed tool the run starts goes through mise in the copy.",
+    "patch": "check-path-keeps-shims.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "mise-asked-outside-home",
+    "breaks": "mise is asked where the owner's tools are from the agent's folder rather than the home, so the project's mise config and its env and hooks are read for the answer, outside the fence.",
+    "patch": "mise-asked-outside-home.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "mise-asked-with-env-file",
+    "breaks": "mise is asked where the owner's tools are with the env file the owner's MISE_ENV_FILE names still loaded.",
+    "patch": "mise-asked-with-env-file.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "mise-fallback-reads-env-file",
+    "breaks": "Where mise cannot answer, the shim is not told to read no env file, so an env file in the copy (a NODE_OPTIONS the agent wrote) is loaded outside the fence, which ignoring the folder does not stop.",
+    "patch": "mise-fallback-reads-env-file.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "mise-fallback-ignores-home",
+    "breaks": "Where mise cannot answer, a check started in the home has mise ignore the home, which drops the owner's own config, and the shim then finds no claude (\"not currently active\").",
+    "patch": "mise-fallback-ignores-home.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "mise-fallback-skips-parents",
+    "breaks": "Where mise cannot answer, only the folder the check starts in is ignored, so the mise configs of the folders above it are still read outside the fence.",
+    "patch": "mise-fallback-skips-parents.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "mise-shim-pnpm-asked",
+    "breaks": "Off mise's shims, a pnpm found nowhere but a shim is still asked by name, which runs mise in the copy for it.",
+    "patch": "mise-shim-pnpm-asked.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "guard-misses-check-path",
+    "breaks": "The fence and the links question take only the owner's command path, so the folders the check's path takes in place of mise's shims are left writable.",
+    "patch": "guard-misses-check-path.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "stale-copies-left",
+    "breaks": "A check never sweeps the copies left by a Claude Code that ended mid-run or closed straight after a check, so they stay in the copies folder until a later start.",
+    "patch": "stale-copies-left.patch",
+    "fixed": "2026-11-14; remade 2026-11-14"
+  },
+  {
+    "name": "stale-sweep-takes-own",
+    "breaks": "The sweep takes this process's own copy, whose owner file names the process asking, so a check's copy can be removed under it.",
+    "patch": "stale-sweep-takes-own.patch",
+    "fixed": "2026-11-14; remade 2026-11-14"
+  },
+  {
+    "name": "stale-sweep-any-folder",
+    "breaks": "The sweep reads any owner file in the copies folder, not only those named for a session, so a folder the rep did not make can be removed.",
+    "patch": "stale-sweep-any-folder.patch",
+    "fixed": "2026-11-14; remade 2026-11-14"
+  },
+  {
+    "name": "stale-age-under-check",
+    "breaks": "The sweep takes copies by age, so a live check's copy is removed after a clock jump or a long run.",
+    "patch": "stale-age-under-check.patch",
+    "fixed": "2026-11-14; remade 2026-11-14"
+  },
+  {
+    "name": "shims-found-by-claude-only",
+    "breaks": "Only a claude or pnpm shim counts as mise's shims on the path, so where only node is a shim the run keeps the shims folder and pnpm's `#!/usr/bin/env node` runs mise in the copy, outside the fence.",
+    "patch": "shims-found-by-claude-only.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "check-path-bins-in-place",
+    "breaks": "The folders mise names take the shims folder's place on the run's path rather than its front, so a tool in an earlier folder of the owner's path wins over the owner's mise tools.",
+    "patch": "check-path-bins-in-place.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "claude-chosen-from-run-path",
+    "breaks": "claude is taken from the folders mise names before the owner's own path, so an owner whose native claude comes before the shims gets mise's node's claude instead.",
+    "patch": "claude-chosen-from-run-path.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "mise-asked-each-check",
+    "breaks": "mise is asked where the owner's tools are again at every check, so a home mise config the agent changed after the session started is read for the answer.",
+    "patch": "mise-asked-each-check.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "mise-not-asked-at-start",
+    "breaks": "mise is not asked when the session starts, only at the first check, after the agent may have changed the home's mise config.",
+    "patch": "mise-not-asked-at-start.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "mise-asked-after-start",
+    "breaks": "The session's start does not wait for mise's answer, so the agent can run before it is taken.",
+    "patch": "mise-asked-after-start.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "start-work-in-headless-run",
+    "breaks": "A run with no person at the prompt (a -p run, as the check's own run is) asks mise and sweeps the copies when it starts, so the check's own run does both inside the fence.",
+    "patch": "start-work-in-headless-run.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "no-sweep-at-start",
+    "breaks": "The copies a closed session left are swept only at the next check, not when a session starts.",
+    "patch": "no-sweep-at-start.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "sweep-ignores-owner",
+    "breaks": "The sweep removes every other process's copy whatever ps says, so the copy of a check running in another session is removed under it.",
+    "patch": "sweep-ignores-owner.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "sweep-pid-only",
+    "breaks": "The sweep counts an owner alive by its pid alone, so a copy whose owner's pid now names a later process is kept for good.",
+    "patch": "sweep-pid-only.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "sweep-blind-ps-trusted",
+    "breaks": "A ps that sees no process, not even the one asking (a sandbox, a hidden process table), counts every owner gone, so live sessions' copies are removed.",
+    "patch": "sweep-blind-ps-trusted.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "sweep-failed-ps-trusted",
+    "breaks": "A ps that cannot answer counts every owner gone, so live sessions' copies are removed.",
+    "patch": "sweep-failed-ps-trusted.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "sweep-removes-in-place",
+    "breaks": "The sweep removes a copy at its own path, so a session that makes a new copy there between the sweep's question and the removal has its new copy removed.",
+    "patch": "sweep-removes-in-place.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "ps-locale-unfixed",
+    "breaks": "ps is asked without a fixed clock and language, so a start time read under another time zone or locale differs from the owner file and a live owner's copy is removed.",
+    "patch": "ps-locale-unfixed.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "gone-leftovers-left",
+    "breaks": "What a removal cut short left in the copies folder (a renamed copy) is never removed.",
+    "patch": "gone-leftovers-left.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "copy-without-owner",
+    "breaks": "A copy is made with no owner file, so a copy left when Claude Code closes is never swept.",
+    "patch": "copy-without-owner.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "owner-after-copy",
+    "breaks": "The owner file is written after the copy, so a copy cut off while copying stands with no owner and is never swept.",
+    "patch": "owner-after-copy.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "check-end-removes-in-place",
+    "breaks": "A check's end removes its copy at the copy's own path, not behind a rename, so the next check's copy made there can be removed under it.",
+    "patch": "check-end-removes-in-place.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "copy-path-removed-before-copy",
+    "breaks": "What a past check left at the copy's path is removed in place before the copy is made, so the check waits on removing gigabytes before it starts.",
+    "patch": "copy-path-removed-before-copy.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "retire-ignores-owner-change",
+    "breaks": "The sweep's rename does not check that the owner file still holds the line it read, so a copy another session made there since is removed.",
+    "patch": "retire-ignores-owner-change.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "retire-leaves-owner-file",
+    "breaks": "A removed copy's owner file is left behind, so later sweeps keep asking ps about a copy that is gone.",
+    "patch": "retire-leaves-owner-file.patch",
+    "fixed": "2026-11-14"
   }
 ]

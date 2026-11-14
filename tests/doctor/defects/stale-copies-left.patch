@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 07ac1c3..3d41167 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1592,7 +1592,6 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
+     const checkHost = await hostOf($)
+     if (isWindowsHost(checkHost)) return finish({ checkNote: CHECK_NO_ROOM })
+     if (noFence !== '') return finish({ checkNote: noFence })
+-    await sweepCopies($, checkHost, home)
+     const copy = await makeCopy($, home, sid, cwd)
+     const path = (await $.env.get('PATH')) ?? ''
+     const miseIgnored = (await $.env.get('MISE_IGNORED_CONFIG_PATHS')) ?? ''

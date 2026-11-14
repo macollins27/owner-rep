@@ -73,8 +73,34 @@ import {
   checkSettings,
   CHECK_NO_ROOM,
   PNPM_STORE_ARGV,
-  COREPACK_ASK_ENV,
-  PNPM_STORE_ENV,
+  checkEnv,
+  pnpmAskEnv,
+  MISE_BIN_PATHS_ARGV,
+  MISE_ASK_ENV,
+  MISE_ASK_TIMEOUT_MS,
+  binPathsOf,
+  programsArgv,
+  programsOf,
+  PROGRAMS_TIMEOUT_MS,
+  launchOf,
+  withProgram,
+  guardedPath,
+  PS_ENV,
+  OWNER_WRITE_TIMEOUT_MS,
+  SWEEP_LIST_TIMEOUT_MS,
+  ALIVE_TIMEOUT_MS,
+  RETIRE_TIMEOUT_MS,
+  ownerFile,
+  goneDir,
+  ownerWriteArgv,
+  copiesListArgv,
+  copiesOf,
+  aliveArgv,
+  deadOwned,
+  retireArgv,
+  COPY_TIMEOUT_MS,
+  COPY_STEP_TIMEOUT_MS,
+  COPY_REMOVE_TIMEOUT_MS,
   PNPM_STORE_TIMEOUT_MS,
   pnpmStoreDir,
   PATH_LINKS_TIMEOUT_MS,
@@ -96,6 +122,7 @@ import {
   noFenceNote,
   copyArgvs,
   type Host,
+  type Launch,
   homeOf,
   hostArgv,
   isWindowsHost,
@@ -1565,10 +1592,14 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
     const checkHost = await hostOf($)
     if (isWindowsHost(checkHost)) return finish({ checkNote: CHECK_NO_ROOM })
     if (noFence !== '') return finish({ checkNote: noFence })
+    await sweepCopies($, checkHost, home)
     const copy = await makeCopy($, home, sid, cwd)
     const path = (await $.env.get('PATH')) ?? ''
-    const store = await pnpmStore($, checkHost, copy)
-    const links = await pathLinks($, checkHost, home, path)
+    const miseIgnored = (await $.env.get('MISE_IGNORED_CONFIG_PATHS')) ?? ''
+    const launch = await launchFor($, checkHost, home, path)
+    const store = await pnpmStore($, checkHost, launch, copy, miseIgnored, home)
+    const guarded = guardedPath(path, launch)
+    const links = await pathLinks($, checkHost, home, guarded)
     const repos = await gitRepos($, checkHost, home, copy, cwd)
     const prompt = checkPrompt({
       sessionId: sid,
@@ -1584,7 +1615,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       unanswered: [...(links === null ? ['links' as const] : []), ...(repos.whole ? [] : ['repos' as const])],
     })
     const startedAt = Date.now()
-    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, path, links ?? [], repos.dirs))), cwd: copy, ...(store === '' ? {} : { env: { [PNPM_STORE_ENV]: store } }) })
+    const stream = $.process.spawn({ argv: hostArgv(checkHost, withProgram(checkArgv(prompt, checkSettings(home, cwd, guarded, links ?? [], repos.dirs)), launch.claude)), cwd: copy, env: checkEnv(launch, copy, store, miseIgnored, home) })
     let stdout = ''
     let stderr = ''
     let timedOut = false
@@ -1610,7 +1641,8 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
     } finally {
       stop.cancel()
       if (activeCheck !== null && epoch === checkEpoch) activeCheck = null
-      if (copy !== cwd) $.process.run(hostArgv(checkHost, ['rm', '-rf', copy]), { timeoutMs: 120000 }).catch(() => undefined)
+      // A newer check has taken the path, and renames away what is there itself.
+      if (copy !== cwd && epoch === checkEpoch) await retire($, checkHost, home, copy)
     }
     if (timedOut) return finish({ checkNote: `The check ran out of time (${CHECK_TIMEOUT_WORDS}) and was stopped.` })
     const got = resultOf(stdout)
@@ -1798,11 +1830,61 @@ async function homeFor($: EngineInterface): Promise<string> {
 
 // pnpm's store as pnpm names it in the copy, outside the fence, its pnpmfile ignored, its
 // version left alone and nothing fetched, by its command line (`PNPM_STORE_ARGV`) and
-// corepack's network off (`COREPACK_ASK_ENV`), or '' when there is no pnpm or it does not
-// answer (`pnpmStoreDir`).
-async function pnpmStore($: EngineInterface, host: Host, copy: string): Promise<string> {
-  const r = await $.process.run(hostArgv(host, PNPM_STORE_ARGV), { cwd: copy, env: COREPACK_ASK_ENV, timeoutMs: PNPM_STORE_TIMEOUT_MS }).catch(() => null)
+// corepack's network off and mise's shims kept off its start (`pnpmAskEnv`), or '' when there
+// is no pnpm or it does not answer (`pnpmStoreDir`).
+async function pnpmStore($: EngineInterface, host: Host, launch: Launch, copy: string, miseIgnored: string, home: string): Promise<string> {
+  // Off mise's shims, a pnpm found nowhere else is not asked: by name it would be the shim.
+  if (launch.mise === 'around' && launch.pnpm === '') return ''
+  const r = await $.process.run(hostArgv(host, withProgram(PNPM_STORE_ARGV, launch.pnpm)), { cwd: copy, env: pnpmAskEnv(launch, copy, miseIgnored, home), timeoutMs: PNPM_STORE_TIMEOUT_MS }).catch(() => null)
   return r === null || r.exitCode !== 0 ? '' : pnpmStoreDir(r.stdout)
+}
+
+// Where mise says the owner's tools are, asked once a process (`MISE_BIN_PATHS_ARGV`), from the
+// home with no env file read, outside the fence, or null when mise does not answer. The session's
+// start asks it, before the session goes on, so the answer is taken before its agent has run
+// anything; a check in a process whose start did not ask (a reload of the mod, a test) asks at
+// the first check. Every later check in the process takes the same answer.
+let miseHeld: Promise<string[] | null> | null = null
+function miseBins($: EngineInterface, host: Host, home: string): Promise<string[] | null> {
+  miseHeld ??= (async () => {
+    const r = await $.process.run(hostArgv(host, MISE_BIN_PATHS_ARGV), { cwd: home, env: MISE_ASK_ENV, timeoutMs: MISE_ASK_TIMEOUT_MS }).catch(() => null)
+    return r === null || r.exitCode !== 0 ? null : binPathsOf(r.stdout)
+  })()
+  return miseHeld
+}
+
+// How the check starts claude and pnpm where mise's shims are on the path (`launchOf`): the
+// folders mise named (`miseBins`), and the path's folders asked which programs and links to mise
+// are there and where each leads, outside the fence.
+async function launchFor($: EngineInterface, host: Host, home: string, path: string): Promise<Launch> {
+  const named = await miseBins($, host, home)
+  const dirs = [...(named ?? []), ...path.split(':')].filter(d => d.startsWith('/'))
+  // find ends 1 when a folder is missing, having printed the rest, so its exit code is not read.
+  const found = dirs.length === 0 ? { stdout: '', isStdoutTruncated: false } : await $.process.run(hostArgv(host, programsArgv(dirs)), { timeoutMs: PROGRAMS_TIMEOUT_MS }).catch(() => null)
+  return launchOf(path, named, found === null || found.isStdoutTruncated ? null : programsOf(found.stdout))
+}
+
+// Renames a copy and its owner file to a name no session uses, waited on, then removes the
+// renamed folder, not waited on (`retireArgv`). `line` is the owner line the sweep read; the
+// rename is refused when the owner file holds another. True when the copy's path is free.
+let retired = 0
+async function retire($: EngineInterface, host: Host, home: string, copy: string, line = ''): Promise<boolean> {
+  const gone = goneDir(home, `${Date.now().toString(36)}-${(++retired).toString(36)}-${Math.random().toString(36).slice(2, 10)}`)
+  const r = await $.process.run(hostArgv(host, retireArgv(gone, copy, line)), { timeoutMs: RETIRE_TIMEOUT_MS }).catch(() => null)
+  $.process.run(hostArgv(host, ['rm', '-rf', gone]), { timeoutMs: COPY_REMOVE_TIMEOUT_MS }).catch(() => undefined)
+  return r !== null && r.exitCode === 0
+}
+
+// Removes the copies whose owner process is gone and the leftovers of removals (see `PS_ENV`).
+async function sweepCopies($: EngineInterface, host: Host, home: string): Promise<void> {
+  const list = await $.process.run(hostArgv(host, copiesListArgv(home)), { timeoutMs: SWEEP_LIST_TIMEOUT_MS }).catch(() => null)
+  if (list === null || list.isStdoutTruncated) return
+  const { owned, gone } = copiesOf(list.stdout, home)
+  for (const dir of gone) $.process.run(hostArgv(host, ['rm', '-rf', dir]), { timeoutMs: COPY_REMOVE_TIMEOUT_MS }).catch(() => undefined)
+  if (owned.length === 0) return
+  const alive = await $.process.run(hostArgv(host, aliveArgv(owned.map(o => o.pid))), { env: PS_ENV, timeoutMs: ALIVE_TIMEOUT_MS }).catch(() => null)
+  const dead = alive === null || alive.isStdoutTruncated ? null : deadOwned(alive.stdout, owned)
+  for (const o of dead ?? []) await retire($, host, home, o.copy, o.line)
 }
 
 // Where the command path's folders and the links in them lead, asked outside the fence
@@ -1851,18 +1933,21 @@ async function makeCopy($: EngineInterface, home: string, sid: string, cwd: stri
   const copy = checkCopyDir(home, sid)
   const host = await hostOf($)
   try {
-    await $.process.run(hostArgv(host, ['rm', '-rf', copy]), { timeoutMs: 120000 })
-    await $.process.run(hostArgv(host, ['mkdir', '-p', checkCopiesDir(home)]), { timeoutMs: 30000 })
+    await $.process.run(hostArgv(host, ['mkdir', '-p', checkCopiesDir(home)]), { timeoutMs: COPY_STEP_TIMEOUT_MS })
+    // What an earlier check left at the path is renamed away; removed in place only if that fails.
+    if (!(await retire($, host, home, copy))) await $.process.run(hostArgv(host, ['rm', '-rf', copy]), { timeoutMs: COPY_REMOVE_TIMEOUT_MS })
+    // The owner file, before the copy, so no copy stands without its owner named (see `PS_ENV`).
+    await $.process.run(hostArgv(host, ownerWriteArgv(ownerFile(copy))), { env: PS_ENV, timeoutMs: OWNER_WRITE_TIMEOUT_MS }).catch(() => null)
     const [clone, plain] = copyArgvs(host, cwd, copy)
-    if ((await $.process.run(clone, { timeoutMs: 600000 })).exitCode === 0) return copy
+    if ((await $.process.run(clone, { timeoutMs: COPY_TIMEOUT_MS })).exitCode === 0) return copy
     // mkdir without -p fails on a folder that is there, which tells a cp that refused -c
     // from a clone that failed part-way.
-    const free = await $.process.run(hostArgv(host, ['mkdir', copy]), { timeoutMs: 30000 })
-    if (free.exitCode === 0 && (await $.process.run(plain, { timeoutMs: 600000 })).exitCode === 0) return copy
+    const free = await $.process.run(hostArgv(host, ['mkdir', copy]), { timeoutMs: COPY_STEP_TIMEOUT_MS })
+    if (free.exitCode === 0 && (await $.process.run(plain, { timeoutMs: COPY_TIMEOUT_MS })).exitCode === 0) return copy
   } catch {
     // fall through: no copy
   }
-  $.process.run(hostArgv(host, ['rm', '-rf', copy]), { timeoutMs: 120000 }).catch(() => undefined)
+  retire($, host, home, copy).catch(() => undefined)
   return cwd
 }
 
@@ -2469,6 +2554,21 @@ export const register: Register = on => {
       await setNow($, { isWorking: false, doing: 'idle', mark: '' })
     } catch {
       // The row still draws with defaults.
+    }
+    // With a person at the prompt (never a -p run, as the check's own is): mise asked before the
+    // session goes on (`miseBins`), and the copies closed sessions left swept, not waited on.
+    // The check never starts on Windows, so neither is done there.
+    if (e.isInteractive) {
+      try {
+        const host = await hostOf($)
+        if (!isWindowsHost(host)) {
+          const home = (await homeFor($)) || '/tmp'
+          await miseBins($, host, home)
+          sweepCopies($, host, home).catch(() => undefined)
+        }
+      } catch {
+        // A check asks again.
+      }
     }
     return next(e)
   })

@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index e06ac4a..ec9ca83 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3883,7 +3883,7 @@ export const launchOf = (path: string, bins: string[] | null, found: Found[] | n
+   let placed = false
+   const order = path.split(':').flatMap(d => (!isShims(d) ? [d] : placed ? [] : ((placed = true), bins)))
+   const first = (name: string): string => {
+-    for (const d of order) if (found.some(f => f.dir === unslashed(d) && f.name === name && !isShim(f))) return `${unslashed(d)}/${name}`
++    for (const d of [...bins, ...order]) if (found.some(f => f.dir === unslashed(d) && f.name === name && !isShim(f))) return `${unslashed(d)}/${name}`
+     return ''
+   }
+   const claude = first('claude')

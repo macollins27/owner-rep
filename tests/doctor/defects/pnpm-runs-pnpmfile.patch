@@ -1,8 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 351c987..71318bd 100644
+index 55b4d99..746cc88 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1739,7 +1739,7 @@ export const noFenceNote = (stderr: string): string | null => {
+@@ -3755,7 +3755,7 @@ export const noFenceNote = (stderr: string): string | null => {
  // reads its command line; with its network off (`COREPACK_ASK_ENV`) it runs a pinned pnpm it
  // already holds and fetches none (measured in node:22-bookworm, corepack 0.36.0). It is
  // asked in the copy, and in the agent's folder where no copy is made.
@@ -10,4 +10,4 @@ index 351c987..71318bd 100644
 +export const PNPM_STORE_ARGV = ['pnpm', 'store', 'path', '--config.manage-package-manager-versions=false', '--config.offline=true']
  export const COREPACK_ASK_ENV = { COREPACK_ENABLE_NETWORK: '0' }
  export const PNPM_STORE_ENV = 'npm_config_store_dir'
- export const PNPM_STORE_TIMEOUT_MS = 10000
+ // WHY THE CHECK STARTS AROUND MISE'S SHIMS.

@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 55b4d99..f0cf03e 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3857,7 +3857,7 @@ export const miseIgnoring = (folder: string, already: string, home: string): Rec
+   return up.length === 0 ? {} : { [MISE_IGNORE_ENV]: [...(already === '' ? [] : [already]), ...up].join(':') }
+ }
+ const launchEnv = (launch: Launch, folder: string, already: string, home: string): Record<string, string> =>
+-  launch.mise === 'around' ? { PATH: launch.path } : launch.mise === 'unresolved' ? { ...MISE_ASK_ENV, ...miseIgnoring(folder, already, home) } : {}
++  launch.mise === 'around' ? {} : launch.mise === 'unresolved' ? { ...MISE_ASK_ENV, ...miseIgnoring(folder, already, home) } : {}
+ // The check run's environment: pnpm's store where pnpm named one, and the launch's.
+ export const checkEnv = (launch: Launch, folder: string, store: string, already: string, home: string): Record<string, string> => ({
+   ...(store === '' ? {} : { [PNPM_STORE_ENV]: store }),

@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 07ac1c3..26ef691 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1835,7 +1835,7 @@ async function homeFor($: EngineInterface): Promise<string> {
+ async function pnpmStore($: EngineInterface, host: Host, launch: Launch, copy: string, miseIgnored: string, home: string): Promise<string> {
+   // Off mise's shims, a pnpm found nowhere else is not asked: by name it would be the shim.
+   if (launch.mise === 'around' && launch.pnpm === '') return ''
+-  const r = await $.process.run(hostArgv(host, withProgram(PNPM_STORE_ARGV, launch.pnpm)), { cwd: copy, env: pnpmAskEnv(launch, copy, miseIgnored, home), timeoutMs: PNPM_STORE_TIMEOUT_MS }).catch(() => null)
++  const r = await $.process.run(hostArgv(host, PNPM_STORE_ARGV), { cwd: copy, env: { COREPACK_ENABLE_NETWORK: '0' }, timeoutMs: PNPM_STORE_TIMEOUT_MS }).catch(() => null)
+   return r === null || r.exitCode !== 0 ? '' : pnpmStoreDir(r.stdout)
+ }
+ 
