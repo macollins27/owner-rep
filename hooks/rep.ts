@@ -398,14 +398,42 @@ export const STOPPED_NOW = 'The agent has stopped and is waiting for you.'
 export const ASKING_NOW = 'The agent has stopped to ask you something.'
 export const HALTED_NOW = 'You stopped the agent.'
 const NOW_AFTER_TURN: Record<string, string> = { 'stopped, waiting on you': STOPPED_NOW, idle: STOPPED_NOW, 'asking you': ASKING_NOW, 'stopped by you': HALTED_NOW }
-export function rightNow(step: string, now?: { isWorking: boolean; doing: string }): string {
+// A turn that ended with helpers or background commands still running has not handed the work
+// back: their result starts the agent's next turn, so it waits on them, not on the owner. Asked a
+// question or stopped by the owner, it is the owner's turn whatever still runs.
+export type LiveNow = { isWorking: boolean; doing: string; helpers?: number; background?: number }
+const counted = (n: number, one: string): string => (n === 1 ? `a ${one}` : `${n} ${one}s`)
+export function rightNow(step: string, now?: LiveNow): string {
   const stopped = now === undefined || now.isWorking ? undefined : NOW_AFTER_TURN[now.doing]
+  const helpers = now?.helpers ?? 0
+  const background = now?.background ?? 0
+  if (stopped === STOPPED_NOW && helpers + background > 0) {
+    const running = [helpers > 0 ? counted(helpers, 'helper') : '', background > 0 ? counted(background, 'background task') : ''].filter(s => s !== '').join(' and ')
+    return `The agent's turn has ended; it is waiting on ${running} still running, not on you.`
+  }
   return stopped ?? (step.trim() === '' ? '' : sentence(step))
 }
 
+// A card drawn earlier keeps the objective as it read then; while it stays open, its Right now
+// line is today's (`line`, rightNow on the live state), put in place of the one it was drawn with.
+export function withRightNow(reading: string, line: string): string {
+  const at = reading.lastIndexOf('Right now: ')
+  const before = (at < 0 ? reading : reading.slice(0, at)).trimEnd()
+  return line === '' ? before : `${before}${before === '' ? '' : ' '}Right now: ${line}`
+}
+
+// The id of a command the agent sent to the background, from its tool's result; its finishing
+// arrives as a task notification naming that id (`notifiedTasks`).
+export function backgroundTaskOf(tool: string, result: unknown): string | null {
+  if (tool !== 'Bash' && tool !== 'PowerShell') return null
+  const id = (result as { backgroundTaskId?: unknown } | null | undefined)?.backgroundTaskId
+  return typeof id === 'string' && id !== '' ? id : null
+}
+export const notifiedTasks = (text: string): string[] => [...text.matchAll(/<task-id>\s*([^<\s]+)\s*<\/task-id>/g)].map(m => m[1] ?? '')
+
 // The objective as the owner reads it; given the agent's live state (`now`), its Right now line is
 // rightNow's.
-export function objectiveText(o: Objective, now?: { isWorking: boolean; doing: string }): string {
+export function objectiveText(o: Objective, now?: LiveNow): string {
   const done = o.done.map(conditionLine).join('; ')
   const step = rightNow(o.step, now)
   return [
@@ -1977,11 +2005,11 @@ const SUMMARY_OPENING = 'This session is being continued from a previous convers
 // A tool's input or its result: enough to say which file, which command and how it came
 // out, the part a reader of the work needs; the bulk of a file or a log is not.
 export const RECORD_TOOL_CUT = 600
-// A shell command that removes files (rm, rmdir, unlink, del, Remove-Item, find -delete, a
-// worktree removal, git clean): its input is cut as a message is, since every path it names is
-// the proof of a cleanup, and a list of files to delete earlier in the record (a compaction
+// A shell command that removes files (rm, rmdir, rd, unlink, del, Remove-Item, find -delete,
+// xargs rm, a worktree removal, git clean with or without -C): its input is cut as a message is,
+// since every path it names is the proof of a cleanup, and a list of files to delete earlier in the record (a compaction
 // summary's, the agent's own) would otherwise read as still to do with the paths cut away.
-const REMOVES_FILES = /(?<![\w-])(?:rm|rmdir|unlink|shred|trash|del|erase|Remove-Item)(?![\w-])|(?<![\w-])-delete(?![\w-])|\bworktree\s+remove\b|\bgit\s+clean\b/i
+const REMOVES_FILES = /(?<![\w-])(?:rm|rmdir|rd|unlink|shred|trash|del|erase|Remove-Item)(?![\w-])|(?<![\w-])-delete(?![\w-])|\bworktree\s+remove\b|\bgit(?:\s+-[Cc]\s+(?:"[^"]*"|'[^']*'|\S+))*\s+clean(?![\w-])/i
 export const removesFiles = (tool: string, input: unknown): boolean => {
   if (tool !== 'Bash' && tool !== 'PowerShell') return false
   const command = (input as { command?: unknown } | null | undefined)?.command
@@ -2834,19 +2862,23 @@ function parts(text: string): Partial<Record<Label, string>> {
 const clean = (s: string | undefined): string => (s ?? '').trim()
 
 // A reader told not to still names the record's entries now and then ("found in entry 105",
-// "(entries 96–97)"), which the owner and the agent cannot look up. withoutEntryRefs takes them out
-// of every part the card shows and of the message: a bracket that holds only the reference goes
-// whole, and so does a phrase that leads into it ("in", "at", "from", "as shown at", "as of"), with
-// its commas; any other mention becomes "the conversation".
-const ENTRY_NUM = String.raw`entr(?:y|ies)\s+#?\d+(?:\s*(?:[-–—]|to|and|,)\s*#?\d+)*`
-const ENTRY_LEAD = String.raw`(?:(?:as\s+)?(?:found|seen|shown|noted|said|asked|listed)\s+)?(?:in|at|from|by|of|see|per)?\s*(?:the\s+record'?s?\s+)?`
-const ENTRY_BRACKET = new RegExp(String.raw`[ \t]*\(\s*(?:as\s+)?${ENTRY_LEAD}${ENTRY_NUM}\s*\)`, 'gi')
-const ENTRY_PHRASE = new RegExp(String.raw`(,?)[ \t]+(?:as\s+)?(?:(?:found|seen|shown|noted|said|asked|listed)\s+)?(?:in|at|from|by|of|per|as\s+of)\s+(?:the\s+record'?s?\s+)?${ENTRY_NUM}(,?)`, 'gi')
+// "(entries 96–97)"), which the owner and the agent cannot look up. withoutEntryRefs takes out the
+// readers' citation forms, whole words only, and puts nothing in their place: a bracket that holds
+// only the reference ("(entry 44)", "(found in entry 105)"), "in", "at" or "from" before one, with
+// its commas, and a range of entries ("entries 96–97"). A single entry's number ends where its
+// digits do, so the words and numbers beside it stay ("at entry 105 and 2 tests fail" keeps "and 2
+// tests fail"), and any other mention ("Fix entry 2 in the guest list", "reentry") stays as written.
+const ENTRY_ONE = String.raw`\bentry\s+#?\d+\b`
+const ENTRY_RANGE = String.raw`\bentries\s+#?\d+\s*(?:[-–—]|to)\s*#?\d+\b`
+const ENTRY_CITED = String.raw`(?:${ENTRY_ONE}|${ENTRY_RANGE})`
+const ENTRY_BRACKET = new RegExp(String.raw`[ \t]*\(\s*(?:(?:(?:found|seen|shown)\s+)?(?:in|at|from)\s+)?${ENTRY_CITED}\s*\)`, 'gi')
+const ENTRY_PHRASE = new RegExp(String.raw`(,?)[ \t]+\b(?:in|at|from)\s+${ENTRY_CITED}(,?)`, 'gi')
+const ENTRY_SPAN = new RegExp(String.raw`[ \t]*${ENTRY_RANGE}`, 'gi')
 export function withoutEntryRefs(text: string): string {
   return text
     .replace(ENTRY_BRACKET, '')
     .replace(ENTRY_PHRASE, (_m, before: string, after: string) => (before === '' ? after : ''))
-    .replace(new RegExp(ENTRY_NUM, 'gi'), m => (/^E/.test(m) ? 'The conversation' : 'the conversation'))
+    .replace(ENTRY_SPAN, '')
 }
 const cardText = (s: string | undefined): string => withoutEntryRefs(clean(s))
 
@@ -3979,19 +4011,24 @@ export const same = (a: string, b: string): boolean =>
 // copies exactly; failing that, the one whose content words it shares most (Dice over word sets,
 // short words and plain endings folded), when that score is at least MARK_MATCH and leads every
 // other condition's by MARK_LEAD, so a mark too loose to name one condition, or between two, moves
-// none. -1 when it names none.
+// none. Even then the rewording must keep the condition's sense: it says "not" where the condition
+// does and nowhere else (`negated`), and it holds every word that sets the condition apart from the
+// others on the list (`markWords` of it that no other condition has), so "the staging site" never
+// marks "the live site" and "deleted" never marks "not deleted". -1 when it names none, and the
+// condition stays as it was.
 export const MARK_MATCH = 0.5
 export const MARK_LEAD = 0.2
 const MARK_SKIP = new Set('a an the is are was were be been being to of and or in on for with by it its that this as at from has have had so any all each every no not shown show which who what into than then there their them they he she his her our your you we i one'.split(' '))
 const markWords = (t: string): Set<string> =>
   new Set((t.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []).filter(w => !MARK_SKIP.has(w)).map(w => (w.length > 3 ? w.replace(/(?:ing|ed|es|e|s)$/, '') : w)))
+const negated = (t: string): boolean => /\b(?:not|no|never|none|nothing|nowhere|cannot|without)\b|n['’]t\b/i.test(t)
 export function markedCondition(mark: string, held: readonly string[]): number {
   const exact = held.findIndex(c => same(c, mark))
   if (exact >= 0) return exact
   const m = markWords(mark)
   if (m.size === 0) return -1
-  const scores = held.map(c => {
-    const w = markWords(c)
+  const words = held.map(markWords)
+  const scores = words.map(w => {
     let both = 0
     for (const x of m) if (w.has(x)) both += 1
     return w.size === 0 ? 0 : (2 * both) / (m.size + w.size)
@@ -3999,7 +4036,10 @@ export function markedCondition(mark: string, held: readonly string[]): number {
   const best = scores.reduce((b, x, i) => (x > (scores[b] ?? 0) ? i : b), 0)
   const top = scores[best] ?? 0
   const second = Math.max(0, ...scores.filter((_, i) => i !== best))
-  return top >= MARK_MATCH && top - second >= MARK_LEAD ? best : -1
+  if (top < MARK_MATCH || top - second < MARK_LEAD) return -1
+  if (negated(mark) !== negated(held[best] ?? '')) return -1
+  const apart = [...(words[best] ?? [])].filter(x => !words.some((w, i) => i !== best && w.has(x)))
+  return apart.every(x => m.has(x)) ? best : -1
 }
 
 // `same` with every run of whitespace read as one space: the old record kept
@@ -4581,15 +4621,17 @@ const CLAUSE_END = String.raw`(?=\s*(?:[.;:!?,]|$))`
 // Where a stop said to or of the agent starts: at a clause's start, after the
 // agent, "it", "you", "we" or the session (with "can", "should" and the like),
 // after "let the agent" or after "to", and not after "not", "never", "n't" or
-// a bare "let" ("Don't let it stop" goes on), nor after a fronted "which" or
-// "what" and up to three words that hold no conjunction and no "lets", "made"
-// or the like ("say which invented fact it stops" names what a rule stops;
-// "say what changed and you stop" and "do what lets you stop" are stops); then
+// a bare "let" ("Don't let it stop" goes on), nor where it is asked about: after
+// a verb of asking or telling ("say", "tell me", "name", "explain") with "which"
+// or "what" and up to three words that hold no conjunction and no "lets",
+// "permits", "enables" or the like ("say which invented fact it stops" names
+// what a rule stops; "say what changed and you stop", "do what lets you stop"
+// and "do what permits you to stop" are stops); then
 // an optional "please"
 // ("Please stop here."). What follows the stop still has to end the clause, so
 // "Please stop guessing and run the suite" and "Please don't stop until the
 // suite is green" go on.
-const STOP_LEAD = String.raw`(?:${CLAUSE}|(?<!(?:\bnot|\bnever|n't|\blet)\s+)(?<!\b(?:which|what)(?:\s+(?!(?:and|then|or|but|so|lets?|made|makes|allows?|told|tells|causes?|caused|helps?)\b)[\w'’-]+){0,3}\s+)(?:\b(?:the agent|it|you|we|the session|claude)\s+(?:(?:can|could|should|may|might|must|will|needs to|has to|is to|is free to|is ready to)\s+)?(?:now\s+|just\s+)?|\blet\s+(?:the agent|it|the session)\s+|\bto\s+))(?:please\s+)?`
+const STOP_LEAD = String.raw`(?:${CLAUSE}|(?<!(?:\bnot|\bnever|n't|\blet)\s+)(?<!\b(?:say|says|said|tell(?:\s+(?:me|him|her|us|them|the\s+owner))?|ask|asks|asked|name|state|list|explain|describe|report|show(?:\s+(?:me|him|her|us|them|the\s+owner))?|know|find\s+out|check|confirm|question)\s+(?:(?:either|also|plainly|exactly|clearly)\s+)?(?:which|what)(?:\s+(?!(?:and|then|or|but|so|lets?|made|makes|allows?|permits?|enables?|told|tells|causes?|caused|helps?)\b)[\w'’-]+){0,3}\s+)(?:\b(?:the agent|it|you|we|the session|claude)\s+(?:(?:can|could|should|may|might|must|will|needs to|has to|is to|is free to|is ready to)\s+)?(?:now\s+|just\s+)?|\blet\s+(?:the agent|it|the session)\s+|\bto\s+))(?:please\s+)?`
 // "stop" said to or of the agent or the job, from that start; then at most an
 // object (the agent, the session, the job, everything) and a word of place or
 // time (here, now, for now), and the clause ends there.
@@ -5112,42 +5154,20 @@ const withoutSpans = (message: string, cuts: { start: number; end: number }[]): 
   return usable(rest) ? rest : ''
 }
 
-// A sentence of a message that forbids tests, checks or reviews in general ("Do not build new
-// tests or reports for this.", "Don't add any more checks."), cut by `withoutCheckBans`: they are
-// normal good work (ROLE, expectation 4), and the ban came from the owner's complaint about
-// checks read without its remedy. The ban is cut only when nothing follows its list of things
-// but "for this", "to prove this" or a word such as "either", so a ban qualified as
-// self-proving ("tests that only confirm your own steps ran"), one on a single named piece ("a
-// script that checks your report"), one on a place or a time ("tests against the live
-// database", "until the parser is fixed") and a line on what tests are not ("Do not count the
-// tests as the sign-off.") stay. Inside a sentence that asks for work, only a "without building
-// any new tests" clause of the same shape goes.
-const BAN_OBJ = String.raw`(?:tests?|test\s+(?:machinery|suites?|scripts?|harness(?:es)?|runs?)|testing|checks?|check\s+scripts?|checking(?:\s+(?:tools?|scripts?|machinery))?|(?:code\s+)?reviews?|plan\s+checks?|second\s+readers?)`
-const BAN_MORE = String.raw`(?:(?:any|more|new|extra|further|additional|other)\s+)*`
-const BAN_ITEM = String.raw`(?:${BAN_OBJ}|(?:proof\s+)?reports?|scripts?|counts?|graders?|rule\s+books?|logs?|machinery|process)`
-const BAN_LIST = String.raw`${BAN_MORE}${BAN_OBJ}(?:\s*,\s*(?:(?:or|and)\s+)?${BAN_MORE}${BAN_ITEM}|\s+(?:or|and)\s+${BAN_MORE}${BAN_ITEM})*`
-const BAN_TAIL = String.raw`(?:\s+(?:for|about|on|around)\s+(?:(?:any|all)\s+of\s+)?(?:this|that|it|these|them)|\s+to\s+(?:prove|confirm|show|check)\s+(?:this|that|it))?(?:\s+(?:either|now|yet|again|here))?`
-const CHECK_BAN = new RegExp(String.raw`^(?:[^,;:]{0,60}[,;:]\s+)?(?:(?:please|and|so|then|also|but|just)\s+)*(?:do\s+not|don['’]t|never|no\s+need\s+to|you\s+need\s+not)\s+(?:(?:yet|again|now|bother\s+to|go\s+on\s+to)\s+)?(?:build|add|write|create|make|set\s+up)\s+${BAN_LIST}${BAN_TAIL}\s*[.!]*["'”’)\]]*$`, 'i')
-const WITHOUT_BAN = new RegExp(String.raw`,?[ \t]+(?:and[ \t]+)?without[ \t]+(?:building|adding|writing|creating|making|setting[ \t]+up)[ \t]+${BAN_LIST}${BAN_TAIL}(?=[ \t]*(?:[.!?]|\n|$))`, 'gi')
-const isCheckBan = (clause: string): boolean => CHECK_BAN.test(clause.replace(LIST_MARKER, '').replace(/\s+/g, ' ').trim().replace(/^["“(]+/, ''))
-export const withoutCheckBans = (message: string): string => {
-  // A sentence of clauses joined by semicolons loses only its ban clauses, so a remedy joined
-  // to the ban ("Do not add new checks; open it and use it.") stays, its first letter raised.
-  let text = message
-  for (const { start, end } of sentencesOf(message).reverse()) {
-    const sentence = message.slice(start, end)
-    const clauses = sentence.split(';')
-    if (clauses.length < 2 || !clauses.some(isCheckBan) || clauses.every(isCheckBan)) continue
-    const stop = /[.!?]["'”’)\]]*\s*$/.exec(clauses[clauses.length - 1] ?? '')?.[0].trim() ?? ''
-    const marker = LIST_MARKER.exec(sentence)?.[0] ?? ''
-    let joined = clauses.filter(c => !isCheckBan(c)).map(c => c.replace(LIST_MARKER, '').trim()).join('; ')
-    if (!/[.!?]["'”’)\]]*$/.test(joined)) joined += stop
-    text = text.slice(0, start) + marker + joined.charAt(0).toUpperCase() + joined.slice(1) + text.slice(end)
-  }
-  const bans = sentencesOf(text).filter(({ start, end }) => isCheckBan(text.slice(start, end)))
-  const kept = withoutSpans(text, bans)
-  return kept === '' ? '' : kept.replace(WITHOUT_BAN, '')
-}
+// A sentence of a message that is nothing but a ban on tests, checks or reviews in general ("Do
+// not build new tests for this.", "Don't add more checks."), cut by `withoutCheckBans`: they are
+// normal good work (ROLE, expectation 4), and the ban came from the owner's complaint about checks
+// read without its remedy. Only a bare ban goes: a word of prohibition, "build", "add", "write" or
+// "create", then tests, checks or reviews (alone or listed together) with at most "new" or "more"
+// before them and "for this" after, and nothing else in the sentence. Any sentence with more in it
+// stays as written, whatever else it holds: a remedy, a "without" ("Do not ship it without writing
+// tests" asks for them), a place, a kind of test, a self-proving target, another thing banned
+// beside the tests. A message left empty is refused by the gate, as any empty message is.
+const BAN_THING = String.raw`(?:tests?|checks?|(?:code\s+)?reviews?)`
+const CHECK_BAN = new RegExp(String.raw`^(?:do\s+not|don['’]t|never)\s+(?:build|add|write|create)\s+(?:(?:new|more)\s+)?${BAN_THING}(?:(?:\s*,\s*|\s+(?:or|and)\s+|\s*,\s*(?:or|and)\s+)${BAN_THING})*(?:\s+for\s+this)?\s*[.!]?$`, 'i')
+const isCheckBan = (sentence: string): boolean => CHECK_BAN.test(sentence.replace(LIST_MARKER, '').replace(/\s+/g, ' ').trim())
+export const withoutCheckBans = (message: string): string =>
+  withoutSpans(message, sentencesOf(message).filter(({ start, end }) => isCheckBan(message.slice(start, end))))
 
 // The objective is not finished while a condition is open, and the gate works
 // part by part. A verdict other than continue (stop, or none given), a

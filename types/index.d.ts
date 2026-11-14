@@ -21,6 +21,8 @@ export type Objective = {
 export type Now = {
   doing: string
   helpers: number
+  // Commands the agent sent to the background that have not finished or been stopped.
+  background?: number
   isWorking: boolean
   mark: string
 }

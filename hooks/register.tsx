@@ -213,12 +213,16 @@ import {
   type Memory,
   type Objective,
   type ObjectiveAnswer,
+  backgroundTaskOf,
+  notifiedTasks,
+  withRightNow,
+  rightNow,
 } from './rep'
 
 // From the prompt box only a bare digit presses a band button.
 const PRESS_HOTKEY = '1'
 
-const IDLE: Now = { doing: 'idle', helpers: 0, isWorking: false, mark: '' }
+const IDLE: Now = { doing: 'idle', helpers: 0, background: 0, isWorking: false, mark: '' }
 
 // The objective held for the job in hand, for the row and the card. Kept under a
 // shape tag, so a value an older build wrote there (the reading) reads as absent.
@@ -228,6 +232,12 @@ const noteA = atom({ plugin: 'owner-rep', key: 'note' } as const, null)
 const briefA = atom({ plugin: 'owner-rep', key: 'brief' } as const, null)
 const viewA = atom({ plugin: 'owner-rep', key: 'view' } as const, 'row')
 const helpersA = atom({ plugin: 'owner-rep', key: 'helperIds' } as const, [])
+// The ids of commands the agent sent to the background that have not yet finished (their task
+// notification) or been stopped (TaskStop): while any runs, an ended turn waits on it.
+const backgroundIds = new Set<string>()
+async function setBackground($: EngineInterface): Promise<void> {
+  await update($, nowA, n => ({ ...(n ?? IDLE), background: backgroundIds.size }))
+}
 // What the rep could not check, keep or save (`coverage`): the row shows the first, the card all.
 const linesA = atom({ plugin: 'owner-rep', key: 'lines' } as const, [])
 
@@ -2455,6 +2465,7 @@ async function leaveSession($: EngineInterface): Promise<void> {
   await update($, briefA, () => null)
   await update($, noteA, () => null)
   await update($, helpersA, () => [])
+  backgroundIds.clear()
   await update($, linesA, () => [])
   await update($, nowA, () => IDLE)
   await update($, viewA, () => 'row')
@@ -2613,6 +2624,11 @@ export const register: Register = on => {
               : 'other'
       lastOrigin = null
       live.set(e.turnId, newTurn(e.turnId, by, true, 0))
+      if (by === 'notification') {
+        let gone = false
+        for (const id of notifiedTasks(text)) gone = backgroundIds.delete(id) || gone
+        if (gone) await setBackground($).catch(() => undefined)
+      }
     }
     lastDoing = 'thinking'
     await setNow($, { isWorking: true, doing: 'thinking', mark: '' }).catch(() => undefined)
@@ -2638,6 +2654,11 @@ export const register: Register = on => {
       const result = await next(e)
       // What the plan screen answered is stored after the call; a thrown call stores nothing.
       if (tool === 'ExitPlanMode') await takePlanScreen($, e, result).catch(() => undefined)
+      const sent = backgroundTaskOf(tool, (result as { result?: unknown }).result)
+      const stopped = tool === 'TaskStop' || tool === 'KillShell' ? (e as unknown as { task_id?: unknown; shell_id?: unknown }) : null
+      const stopId = stopped === null ? null : typeof stopped.task_id === 'string' ? stopped.task_id : typeof stopped.shell_id === 'string' ? stopped.shell_id : null
+      if (sent !== null) backgroundIds.add(sent)
+      if (sent !== null || (stopId !== null && backgroundIds.delete(stopId))) await setBackground($).catch(() => undefined)
       return result
     } finally {
       if (waits) {
@@ -2873,7 +2894,8 @@ export const register: Register = on => {
       // takes the one held now.
       const held = brief.reading !== ''
       const result = held ? (brief.result ?? firstSentence(brief.reading)) : reading === null ? placeholder : firstSentence(objectiveText(reading))
-      const objective = held ? brief.reading : reading === null ? '' : objectiveText(reading, now)
+      // An open card's Right now is today's: the agent may have stopped, or gone on, since it was drawn.
+      const objective = held ? withRightNow(brief.reading, rightNow(reading?.step ?? '', now)) : reading === null ? '' : objectiveText(reading, now)
       const whole = {
         ...brief,
         result,
