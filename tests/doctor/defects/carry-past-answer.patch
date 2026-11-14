@@ -1,11 +1,11 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1206,7 +1206,6 @@
-       continue
+@@ -1211,7 +1211,6 @@
+     if (approvalOf(m)) break
+     if (m.kind !== 'note') {
+       if (m.kind !== 'his') break
+-      if (answeredAgent(toAgent(m), asks(text), after.trim() === '' ? null : asks(after))) break
      }
-     if (m.kind !== 'his' || approvalOf(m)) break
--    if (answeredAgent(toAgent(m), asks(text), after.trim() === '' ? null : asks(after))) break
      walked.unshift(m)
      if (text !== '') after = text
-   }

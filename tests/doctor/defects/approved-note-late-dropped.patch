@@ -1,11 +1,11 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -2341,7 +2341,6 @@
+@@ -2343,7 +2343,6 @@
    if (pieces === null || pieces.length === 0) return
    screen.pieces = pieces
    if (screen.isOpen) $.ui.log(planWarning(pieces))
--  else if (screen.accepted === true) await showApproved($, pieces)
+-  else if (screen.accepted === true) await showApproved($, screen.sid, pieces)
  }
  
- // The pieces of a plan the owner just accepted, on the rep's row as a note, in place of what it held.
+ // The pieces of a plan the owner just accepted in session `sid`, on the rep's row as a note, in

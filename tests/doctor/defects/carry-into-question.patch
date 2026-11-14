@@ -1,9 +1,9 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1194,7 +1194,6 @@
- // never answered the agent and is walked past. The message's own turns stay last, so where it
- // answered is found as before.
+@@ -1202,7 +1202,6 @@
+ // carries turns from before it is the last walked: what came before is in it. The message's own
+ // turns stay last, so where it answered is found as before.
  export function carriedBody(earlier: readonly OwnerMsg[], words: string, body: Body): Body {
 -  if (asks(words)) return body
    const walked: OwnerMsg[] = []

@@ -3466,5 +3466,35 @@
     "breaks": "A long piece in the plan warning is cut in the middle of a word, so the warning ends on a broken word.",
     "patch": "piece-cut-mid-word.patch",
     "fixed": "2026-11-14"
+  },
+  {
+    "name": "carry-twice",
+    "breaks": "A message whose body already carries an earlier turn is walked past, so a plan asked about, then a note, then a yes, carries the plan twice.",
+    "patch": "carry-twice.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "carry-past-approved-note",
+    "breaks": "A note to the rep that the writer marked approved is walked past, so the plan it approved is carried into a later message about other work.",
+    "patch": "carry-past-approved-note.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "yes-not-answer",
+    "breaks": "A plain yes typed while the agent asked is not an answer when the agent's next turn asks something new, so the answered turn is carried into the next reply.",
+    "patch": "yes-not-answer.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "approved-note-other-session",
+    "breaks": "A plan reading that lands after a /clear or a resume puts the plan's pieces on the next session's row.",
+    "patch": "approved-note-other-session.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "piece-cut-in-parse",
+    "breaks": "The plan reading's pieces are cut by characters as they are parsed, so the warning ends on a broken word.",
+    "patch": "piece-cut-in-parse.patch",
+    "fixed": "2026-11-14"
   }
 ]

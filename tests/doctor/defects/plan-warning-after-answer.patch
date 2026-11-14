@@ -1,14 +1,14 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -2340,8 +2340,8 @@
+@@ -2342,8 +2342,8 @@
    const pieces = parsePlanScan(result.text)
    if (pieces === null || pieces.length === 0) return
    screen.pieces = pieces
 -  if (screen.isOpen) $.ui.log(planWarning(pieces))
--  else if (screen.accepted === true) await showApproved($, pieces)
+-  else if (screen.accepted === true) await showApproved($, screen.sid, pieces)
 +  $.ui.log(planWarning(pieces))
-+  if (!screen.isOpen) if (screen.accepted === true) await showApproved($, pieces)
++  if (!screen.isOpen) if (screen.accepted === true) await showApproved($, screen.sid, pieces)
  }
  
- // The pieces of a plan the owner just accepted, on the rep's row as a note, in place of what it held.
+ // The pieces of a plan the owner just accepted in session `sid`, on the rep's row as a note, in

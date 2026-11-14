@@ -2326,8 +2326,10 @@ async function takeNote($: EngineInterface, sid: string, note: string, from: { s
 // before the owner's yes"): one completion on the plan alone, never awaited by the hook. Its line
 // is logged above the screen only while the screen is still open; a plan with pieces that the
 // owner accepted, whichever of the reading and the answer lands last, puts them on the rep's row
-// (`showApproved`), since a plan that fills the terminal pushes that line out of sight.
-type PlanRead = { isOpen: boolean; pieces?: string[]; accepted?: boolean }
+// (`showApproved`), since a plan that fills the terminal pushes that line out of sight. `sid` is
+// the session the screen was called in, so a reading that lands after a /clear or a resume shows
+// nothing in the next one.
+type PlanRead = { isOpen: boolean; sid: string; pieces?: string[]; accepted?: boolean }
 async function scanPlan($: EngineInterface, plan: string, screen: PlanRead): Promise<void> {
   const result = await $.model.complete({
     model: PLAN_SCAN_MODEL,
@@ -2341,13 +2343,13 @@ async function scanPlan($: EngineInterface, plan: string, screen: PlanRead): Pro
   if (pieces === null || pieces.length === 0) return
   screen.pieces = pieces
   if (screen.isOpen) $.ui.log(planWarning(pieces))
-  else if (screen.accepted === true) await showApproved($, pieces)
+  else if (screen.accepted === true) await showApproved($, screen.sid, pieces)
 }
 
-// The pieces of a plan the owner just accepted, on the rep's row as a note, in place of what it held.
-async function showApproved($: EngineInterface, pieces: string[]): Promise<void> {
-  const sid = await sessionId($)
-  if (!onScreen(sid)) return
+// The pieces of a plan the owner just accepted in session `sid`, on the rep's row as a note, in
+// place of what it held, while that session is still the one on screen.
+async function showApproved($: EngineInterface, sid: string, pieces: string[]): Promise<void> {
+  if ((await sessionId($)) !== sid || !onScreen(sid)) return
   const note: Note = { line: planApprovedLine(pieces), why: PLAN_APPROVED_WHY, shownAt: Date.now(), turnId: '' }
   await update($, noteA, () => note)
   await update($, viewA, () => 'note')
@@ -2712,7 +2714,7 @@ export const register: Register = on => {
     const doing = doingFor(tool, e as unknown as Record<string, unknown>)
     const waits = tool === 'AskUserQuestion' || tool === 'ExitPlanMode'
     // The plan screen is read from the moment it is called, before anything here is awaited.
-    const screen: PlanRead = { isOpen: true }
+    const screen: PlanRead = { isOpen: true, sid: ended ? '' : currentId }
     const plan = tool === 'ExitPlanMode' ? (e as { plan?: unknown }).plan : undefined
     if (typeof plan === 'string' && plan.trim() !== '') scanPlan($, plan, screen).catch(() => undefined)
     // A note typed with the plan accepted before this call is saved by now: read first.
@@ -2739,7 +2741,7 @@ export const register: Register = on => {
         await takePlanScreen($, e, result).catch(() => undefined)
         if (planScreen(e, result)?.kind === 'accepted') {
           screen.accepted = true
-          if (screen.pieces !== undefined) await showApproved($, screen.pieces).catch(() => undefined)
+          if (screen.pieces !== undefined) await showApproved($, screen.sid, screen.pieces).catch(() => undefined)
         }
       }
       return result

@@ -1,0 +1,11 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1168,7 +1168,6 @@
+ // (`carriedBody`) both judge by this.
+ export function answeredAgent(words: string, asked: boolean, asksAgain: boolean | null): boolean {
+   if (asks(words)) return false
+-  if (DECIDES.test(words.trim())) return true
+   return !(asked && asksAgain === true)
+ }
+ 

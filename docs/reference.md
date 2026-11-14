@@ -740,9 +740,9 @@ that). No owner message is sent, since a piece is named before the yes even when
 for it. The system holds the definition shared with every reader (`SELF_PROVING`) and the list
 that never counts (`NOT_SELF_PROVING`: tests, code reviews, plan checks, done lists, second
 readers, however the plan words them). `parsePlanScan` reads `pieces:` and its `- ` lines, `none`
-giving an empty list and an unreadable answer `null`. `planWarning` writes the line, "Before you
-approve:" and every piece named, each cut to `PLAN_PIECE_CUT` (160 characters), with no cap on
-the line, so no piece goes unnamed. It is shown
+giving an empty list and an unreadable answer `null`; each piece is kept whole. `planWarning`
+writes the line, "Before you approve:" and every piece named, each cut by `pieceOf` to
+`PLAN_PIECE_CUT` (160 characters) at a word, with no cap on the line, so no piece goes unnamed. It is shown
 with `$.ui.log`, the one surface Claude Code draws above its plan screen, and only while
 `screen.isOpen` holds the call id: the hook clears it the moment `next(e)` settles, before the
 answer is stored, so a warning that lands after the owner answered is dropped. Any failure shows
@@ -751,7 +751,9 @@ shows under the plan screen (measured on 2.1.325: `$.ui.notice` and the row draw
 So when the owner accepts a plan whose reading named pieces, whichever of the answer and the
 reading lands last calls `showApproved`, which puts `planApprovedLine` on the rep's row as a
 note ("The plan you approved has …", every piece named) with `PLAN_APPROVED_WHY` as its reason.
-A plan turned down gets no note.
+A plan turned down gets no note. The reading keeps the session the screen was called in
+(`PlanRead.sid`), and `showApproved` draws only while that session is still on screen, so a
+reading that lands after a /clear or a resume shows nothing in the next session.
 
 The readers hold the other half (`APPROVED_RULES`, in the brief, the check and the fallback
 writer, and expectation 4 of `ROLE`): a step of an approved plan, or a check the owner asked for,
@@ -813,8 +815,10 @@ saved, `bodyFields` passes the body through `carriedBody` (0.7.5) with the last
 `CARRY_MSGS * 3` messages on the job read whole: when the owner's words do not ask (no closing
 question mark), it walks back over at most `CARRY_MSGS` (4) messages, each of the owner's own
 that the agent never took as an answer (`answeredAgent`: it asked, or the agent's next words
-asked again) and every note to the rep between them, stopping at an approval or any other
-kind, and puts their bodies before this one, oldest first and newest kept within `SOURCE_MAX`.
+asked again, unless it was only a yes or a no, which always answers: `DECIDES`) and every note
+to the rep between them, stopping at an approval (a note's included) or any other kind, and
+after a message whose body already carries turns from before it, so nothing is carried twice;
+it puts their bodies before this one, oldest first and newest kept within `SOURCE_MAX`.
 The last span of each carried body gets `ask: { n, kind, words }` (words cut to
 `CARRY_ASK_CUT`, 300), and `spansText` prints `carryLine` after it in place of the next-turn
 line, so the writer reads a plan, the owner's question about it, the agent's answer and the

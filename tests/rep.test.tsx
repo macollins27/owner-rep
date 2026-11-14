@@ -4134,16 +4134,19 @@ test('rule: turns the agent ran on its own after the owner\'s message are one bo
 })
 
 test('rule: the same short answer sent twice, to two turns, gets each turn as its own body', async ($, on) => {
-  const { rec, scripts, hold } = capture(on)
-  // The writer marks the first yes approved: it answered, so the second yes carries nothing back.
-  hold.write = () => `${OBJ('The tests added.', ['the tests added'])}\napproved: #1 | all`
+  const { rec, scripts } = capture(on)
+  // No approval mark from the writer (it may not have answered yet): a plain yes answered, so the
+  // next answer carries nothing back, though the agent's next turn asks something new.
   await runTurn($, scripts, 't1', [said('Shall I add the tests?')])
   await send($, 'yes')
-  await runTurn($, scripts, 't2', [said('Shall I delete the old folder?')])
-  await send($, 'yes')
-  const [a, b] = rec()?.owner ?? []
+  await runTurn($, scripts, 't2', [said('The tests are added. Shall I delete the old folder?')])
+  await send($, 'no')
+  await runTurn($, scripts, 't3', [said('Kept it. Shall I push?')])
+  await send($, 'ok, go ahead')
+  const [a, b, c] = rec()?.owner ?? []
   expect(a?.src?.body?.text).toBe('Shall I add the tests?')
-  expect(b?.src?.body?.text).toBe('Shall I delete the old folder?')
+  expect(b?.src?.body?.text).toBe('The tests are added. Shall I delete the old folder?')
+  expect(c?.src?.body?.text).toBe('Kept it. Shall I push?')
 })
 
 // ---- A plan still waiting, carried to the message that answers it (Gap 2, defect 2 of the hands-on review).
@@ -4246,6 +4249,35 @@ test('rule: a question keeps its own body: nothing is carried into a message tha
   const got = rep.carriedBody([om('plan it'), lost], 'yes', body)
   expect(got.text).toBe(body.text)
   expect(got.incomplete).toBe(rep.carryLostWhy(2))
+})
+
+test('rule: a plain yes answered what the agent asked, so nothing is carried past it even when the agent then asks something new', () => {
+  const yes: OwnerMsg = { n: 1, kind: 'his', text: 'yes', prior: '', turns: [{ by: 'owner', from: 0, to: 22 }], src: { body: { chars: 22, sha: 'x', where: 'inline', text: 'Shall I add the tests?' } } }
+  const body = { text: 'The tests are added. Shall I delete the old folder?', turns: [{ by: 'owner' as const, from: 0, to: 51 }], used: ['t2'] }
+  expect(rep.carriedBody([yes], 'no', body)).toBe(body)
+  for (const said of ['ok', 'Sure, go ahead.', 'yes please', 'sounds good', 'lgtm', 'no', 'No, leave it.']) expect(rep.answeredAgent(said, true, true)).toBe(true)
+  // A message that asks for more first is not an answer, though it starts with a yes.
+  expect(rep.answeredAgent('yes, but explain step 2 first', true, true)).toBe(false)
+  expect(rep.answeredAgent('explain step 2 first', true, true)).toBe(false)
+})
+
+test('rule: a note to the rep that the writer marked approved ends the walk: the plan it approved is not carried into a later message', () => {
+  const note: OwnerMsg = { n: 2, kind: 'note', text: 'Owner rep: this plan is fine', prior: '', approved: 'all', turns: [{ by: 'owner', from: 0, to: PRICE_PLAN.length }], src: { body: { chars: PRICE_PLAN.length, sha: 'x', where: 'inline', text: PRICE_PLAN } } }
+  const body = { text: 'Started on step 1.', turns: [{ by: 'owner' as const, from: 0, to: 18 }], used: ['t2'] }
+  expect(rep.carriedBody([om('plan it'), note], 'and fix the header too', body)).toBe(body)
+})
+
+test('rule: a message whose body already carries an earlier turn ends the walk, so a plan is never carried twice', () => {
+  const plan: OwnerMsg = { n: 2, kind: 'his', text: 'Why Decimal?', prior: '', turns: [{ by: 'owner', from: 0, to: PRICE_PLAN.length }], src: { body: { chars: PRICE_PLAN.length, sha: 'x', where: 'inline', text: PRICE_PLAN } } }
+  const explain = 'Cents stay exact. Shall I go ahead?'
+  const noteWords = 'Owner rep: check the rounding risk.'
+  const noteBody = rep.carriedBody([om('plan it'), plan], noteWords, { text: explain, turns: [{ by: 'owner' as const, from: 0, to: explain.length }], used: ['t2'] })
+  expect(noteBody.text).toBe(`${PRICE_PLAN}\n\n${explain}`)
+  const note: OwnerMsg = { n: 3, kind: 'note', text: noteWords, prior: '', turns: noteBody.turns, src: { body: { chars: noteBody.text.length, sha: 'x', where: 'inline', text: noteBody.text } } }
+  const got = rep.carriedBody([om('plan it'), plan, note], 'yes', { text: '', turns: [], used: [] })
+  expect(got.text).toBe(noteBody.text)
+  expect(got.text.split('The plan:').length).toBe(2)
+  expect(got.turns.filter(t => t.ask !== undefined).map(t => t.ask?.n)).toEqual([2, 3])
 })
 
 test('rule: a turn longer than the rep keeps is marked incomplete', async ($, on) => {
@@ -6257,8 +6289,8 @@ const BURIED_PLAN = [
   '5. Open the live page and try it as a visitor.',
 ].join('\n')
 const SCAN_PIECE = 'step 3, a script that confirms each of the agent\'s own steps ran and keeps its output as evidence'
-const planScreenScan = (on: On, answer: (prompt: string) => string | null, gate?: Promise<void>, answered: Record<string, unknown> = ACCEPT_RESULT('accepted')) => {
-  const cap = capture(on, {}, () => SID)
+const planScreenScan = (on: On, answer: (prompt: string) => string | null, gate?: Promise<void>, answered: Record<string, unknown> = ACCEPT_RESULT('accepted'), sid: () => string = () => SID) => {
+  const cap = capture(on, {}, sid)
   const logs: string[] = []
   const scans: Array<{ system: string; prompt: string; model: string }> = []
   on('ui.log', (_$, e) => {
@@ -6400,7 +6432,8 @@ test('parsePlanScan reads each piece, none as no pieces, and anything else as un
   expect(rep.parsePlanScan('pieces:')).toBeNull()
   expect(rep.parsePlanScan('nothing here')).toBeNull()
   expect(rep.parsePlanScan('pieces:\n- none\n- step 2, a proof report')).toEqual(['step 2, a proof report'])
-  expect(rep.parsePlanScan(`pieces:\n- ${'p'.repeat(400)}`)?.[0]?.length).toBeLessThanOrEqual(160)
+  // A long piece is kept whole: the line that names it cuts it, at a word.
+  expect(rep.parsePlanScan(`pieces:\n- ${'p'.repeat(400)}`)?.[0]?.length).toBe(400)
 })
 
 test('planWarning names every piece in one plain line, the cost said once and each cut piece ending on a whole word', () => {
@@ -6426,6 +6459,11 @@ test('planWarning names every piece in one plain line, the cost said once and ea
   expect(last).not.toBeNull()
   expect(words.split(' ')).toContain(last?.[1])
   expect(cut).toMatch(/…\.$/)
+  // The reading's own answer, parsed, is cut the same way: the parse keeps the piece whole for the line to cut.
+  const parsed = rep.parsePlanScan(`pieces:\n- ${words}`)
+  expect(parsed).toEqual([words])
+  const fromScan = /(\S+)…/.exec(rep.planWarning(parsed ?? []))
+  expect(words.split(' ')).toContain(fromScan?.[1])
 })
 
 test('planApprovedLine names every piece of a plan the owner approved as a plain fact, never asking for it to be dropped', () => {
@@ -6466,6 +6504,24 @@ test('rule: a reading that lands after the plan was accepted puts the piece on t
   await waitFor(() => false, 40)
   expect(s.logs).toEqual([])
   expect(await rowSays($, /The plan you approved has one piece/)).toBe(true)
+})
+
+test('guard: a reading that lands after a /clear puts nothing on the next session\'s row: the plan was accepted in the session before', async ($, on) => {
+  let free = () => {}
+  const gate = new Promise<void>(r => {
+    free = r
+  })
+  let id = SID
+  const s = planScreenScan(on, () => `pieces:\n- ${SCAN_PIECE}`, gate, ACCEPT_RESULT('accepted'), () => id)
+  await started($)
+  s.release()
+  await $.tool.call({ tool: 'ExitPlanMode', plan: BURIED_PLAN, tool_use_id: 'p1' } as never)
+  await $.session.end({ reason: 'clear', sessionId: SID, resume: { id: SID } } as never)
+  id = 'after-clear'
+  await started($)
+  free()
+  await waitFor(() => false, 40)
+  expect(await rowSays($, /The plan you approved/)).toBe(false)
 })
 
 test('rule: a plan turned down on the plan screen, or one whose reading named nothing, puts nothing on the rep\'s row', async ($, on) => {

@@ -1,12 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -485,7 +485,7 @@
+@@ -486,7 +486,7 @@
      items.push((m[1] ?? '').trim())
    }
    if (items.length === 0) return null
--  return items.filter(i => i !== '' && !/^none\.?$/i.test(i)).map(i => fit(i, PLAN_PIECE_CUT))
-+  return items.filter(i => i !== '').map(i => fit(i, PLAN_PIECE_CUT))
+-  return items.filter(i => i !== '' && !/^none\.?$/i.test(i))
++  return items.filter(i => i !== '')
  }
  
  // A piece cut to PLAN_PIECE_CUT at a word boundary, its own end marks taken off, so a cut piece
