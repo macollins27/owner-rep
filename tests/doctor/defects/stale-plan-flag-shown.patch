@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1377,7 +1377,7 @@
+     // place of an earlier note, and is dropped once the owner has answered.
+     const waits = answer.state === 'plan-waiting'
+     const room = view === 'row' || (waits && view === 'note')
+-    if (said !== null && room && (waits ? !stale() : !backedOff) && onScreen(sid) && ![...after.seen].some(s => same(s, said.line))) {
++    if (said !== null && room && (waits || !backedOff) && onScreen(sid) && ![...after.seen].some(s => same(s, said.line))) {
+       after.seen = [...after.seen, said.line].slice(-SEEN_MAX)
+       const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId, ...(waits ? { plan: true as const } : {}) }
+       await update($, noteA, () => note)

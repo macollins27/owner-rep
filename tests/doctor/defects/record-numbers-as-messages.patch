@@ -1,8 +1,7 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 0e6d35a..ea56836 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2240,7 +2240,7 @@ function recordEntries(rows: readonly RecordRow[], human?: ReadonlySet<string>):
+@@ -2532,7 +2532,7 @@
          row: at,
          fields,
          build: show =>
@@ -11,7 +10,7 @@ index 0e6d35a..ea56836 100644
              ...(said === null ? [] : [show(said)]),
              ...uses.map(u => `- used ${u.tool} ${show(u.input)} → ${u.result === null ? '(no result)' : `${u.isError ? '(error) ' : ''}${show(u.result)}`}`),
            ].join('\n')}`,
-@@ -2269,7 +2269,7 @@ function recordEntries(rows: readonly RecordRow[], human?: ReadonlySet<string>):
+@@ -2572,7 +2572,7 @@
        n,
        row: at,
        fields: [f],
@@ -19,4 +18,4 @@ index 0e6d35a..ea56836 100644
 +      build: show => (his ? `#${n} the person:\n${show(f)}` : `entry ${n} the session (written by Claude Code, not typed by the person):\n${show(f)}`),
      })
    })
-   return entries
+   // The newest first, each as whole as what is left of the budget allows, when that is more than its usual cut.

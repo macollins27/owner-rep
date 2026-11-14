@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1417,7 +1417,7 @@
+ 
+ Second, decide whether there is one thing the owner should know right now that the owner would very likely miss, and that has a cost to the owner: money, time, wasted work, a wrong result, a decision the owner is in the middle of, or work called finished that is not. The bar is very high. Most of the time the answer is none. Skip anything the owner is already discussing with the agent, anything the agent plainly said and the owner replied to, and anything already shown to the owner (listed below). "Interesting" is not "important". If in doubt, none.
+ 
+-One case always clears the bar: the agent has set out a plan and waits for the owner's yes, and part of it is a self-proving piece (expectation 4). Then the flag starts "Before you approve:", names each such part as the plan has it, and says it costs the owner money without making the product better; name it even when the owner asked for it, and only when its job is clear. Tests, reviews, plan checks, done lists and second readers are never such a piece: never flag one of them, however the plan words it ("a full verification round", "a second reader signs off"). Once the owner has approved a plan, never flag a step of it as unneeded or waste: where that effort went is for the briefing, not a note.
++ Then the flag starts "Before you approve:", names each such part as the plan has it, and says it costs the owner money without making the product better; name it even when the owner asked for it, and only when its job is clear. Tests, reviews, plan checks, done lists and second readers are never such a piece: never flag one of them, however the plan words it ("a full verification round", "a second reader signs off"). Once the owner has approved a plan, never flag a step of it as unneeded or waste: where that effort went is for the briefing, not a note.
+ 
+ Lines already shown to the owner, which you must not repeat:
+ ${list(m.seen, '(none yet)')}

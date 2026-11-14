@@ -1,9 +1,8 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 97fd57d..38406db 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1288,7 +1288,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
-     return
+@@ -1353,7 +1353,7 @@
+     if (reason !== 'stop') return
    }
    const memory = { ...(await memoryFor($, sid, rec, 'watch')), context: await contextOf($) }
 -  const got = await readSession($, sid, rec, cover => watchPrompt({ ...memory, cover }, reason))

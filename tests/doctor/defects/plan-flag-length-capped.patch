@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1440,7 +1440,7 @@
+ 
+ or the same with
+ 
+-flag: <one plain sentence, at most 25 words, ending with a period: what the owner should know and what it costs the owner; a flag that starts "Before you approve:" is as long as it takes to name each self-proving piece>
++flag: <one plain sentence, at most 25 words, ending with a period: what the owner should know and what it costs the owner>
+ why: <one or two short sentences: what you saw in the conversation that shows it, in plain words>
+ 
+ and after them, either way ("- nothing" when there is none):

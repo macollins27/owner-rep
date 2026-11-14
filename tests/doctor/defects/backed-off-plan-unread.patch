@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1350,7 +1350,7 @@
+     await changeRec($, sid, r => {
+       r.skip = Math.max(0, r.skip - 1)
+     })
+-    if (reason !== 'stop') return
++    return
+   }
+   const memory = { ...(await memoryFor($, sid, rec, 'watch')), context: await contextOf($) }
+   const got = await readSession($, sid, rec, cover => watchPrompt({ ...memory, cover }, reason))

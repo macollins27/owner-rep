@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2656,7 +2656,7 @@
+   }
+   // Rows before the approval are left out with the oldest rows after it.
+   // An entry holding what the agent said since the owner last answered is kept like one after the approval.
+-  const keeps = (e: RecEntry) => e.fields.some(f => f.keep === true)
++  const keeps = (_e: RecEntry) => false
+   const texts = [...(opensAfter ? [] : before.map(e => ({ e, text: entryText(e, 'today'), late: keeps(e) }))), ...post.map(e => ({ e, text: entryText(e, how), late: true }))]
+   const chunks: Array<typeof texts> = []
+   let open: typeof texts = []

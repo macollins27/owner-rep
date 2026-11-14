@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2580,8 +2580,6 @@
+   for (const f of waiting.reverse()) {
+     const give = Math.min(f.text.length, left)
+     if (give <= f.cut) continue
+-    f.cut = give
+-    f.keep = true
+     left -= give
+   }
+   return entries

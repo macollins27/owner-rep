@@ -1,0 +1,11 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2660,6 +2660,7 @@
+ 
+   on('turn.start', async ($, e, next) => {
+     if (e.agentId === undefined) {
++      looks.answers += 1
+       // How the turn began: a background task finishing, the agent going on by itself, the owner, or else.
+       const origin = lastOrigin?.kind
+       const text: string = typeof e.text === 'string' ? e.text : ''

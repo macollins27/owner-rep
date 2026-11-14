@@ -1,0 +1,15 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1392,10 +1392,7 @@
+ type Looks = { inFlight: Set<string>; answers: number; stopDue: string | undefined }
+ // One look at a time; a turn-end look that finds one running runs once it finishes.
+ function startLook($: EngineInterface, reason: 'step' | 'stop', turnId: string, s: Looks): void {
+-  if (s.inFlight.has('look')) {
+-    if (reason === 'stop') s.stopDue = turnId
+-    return
+-  }
++  if (s.inFlight.has('look')) return
+   s.inFlight.add('look')
+   const began = s.answers
+   sessionId($)

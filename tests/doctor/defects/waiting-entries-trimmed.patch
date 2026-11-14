@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2681,7 +2681,7 @@
+   for (const chunk of chunks) {
+     for (let i = 0; i < chunk.length && total > room && count > 1; ) {
+       const t = chunk[i] as (typeof texts)[number]
+-      if (t.late) {
++      if (t.late && false) {
+         i++
+         continue
+       }
