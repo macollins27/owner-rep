@@ -5273,10 +5273,26 @@ test('rule: a whole record over one file is written in parts under the part limi
 
 test('rule: a whole record over one file is written in parts under the part limit, and read back the same (after the restart)', async ($, on) => {
   const { store, files, saved } = whole as NonNullable<typeof whole>
-  disk(on, files)
+  const d = disk(on, files)
   capture(on, store, () => SID)
   await started($)
-  await settle($)
+  // The start's save of a record this size writes its parts and then their list, record.json; on
+  // a slow machine one settle ends before that last write. The files and the store already hold
+  // the record from the test before, so the wait is for this start's own write of the list.
+  // The wait also takes in what comes after that write: the copy in the files whole and equal to
+  // what was saved, and the row's line about the full store.
+  const { at: _w, ...wasNow } = JSON.parse(saved) as Record<string, unknown>
+  const wasText = JSON.stringify(wasNow)
+  const filesSame = () => {
+    const f = fallbackNow(files) as unknown as Record<string, unknown> | null
+    if (f === null) return false
+    const { at: _f, ...rest } = f
+    return JSON.stringify(rest) === wasText
+  }
+  await settleUntil($, () => heldIn(store)?.owner.length === 239 && d.writes.includes(`${DIR}/record.json`) && filesSame(), 10_000)
+  const fullLine = /^The rep could not save its record \(the shared store is full\); this session's record is kept in its own files$/
+  for (const until = Date.now() + 5000; !(await rowSays($, fullLine)) && Date.now() < until; ) await realTick(5)
+  expect(d.writes).toContain(`${DIR}/record.json`)
   // The record is over the store's 4 MiB, which Claude Code (and the kit) refuse by themselves, so
   // the start that takes up the copy saves it back to the files: what it read is what it wrote.
   expect(heldIn(store)?.owner.length).toBe(239)
@@ -5286,7 +5302,7 @@ test('rule: a whole record over one file is written in parts under the part limi
   // that the run ends without a report.
   expect(JSON.stringify(now) === JSON.stringify(was)).toBe(true)
   expect(files.has(`${DIR}/record.json`)).toBe(true)
-  expect(await rowSays($, /^The rep could not save its record \(the shared store is full\); this session's record is kept in its own files$/)).toBe(true)
+  expect(await rowSays($, fullLine)).toBe(true)
 })
 
 const FORTY = () => range(1, 40).map(n => his(n))
@@ -13378,7 +13394,9 @@ test('rule: a record let go while the drafts are being read is still found, its 
   writer(on, () => OBJ('The report run on the real data, with the log kept.', ['the run shown | open']))
   await giveTranscript($, on, HELD('test-session.jsonl'))
   await started($)
-  await settleUntil($, () => ((store.sessions as Record<string, Stored>)['test-session']?.owner.length ?? 0) >= 3)
+  // The seed reads the transcript and both stores before it saves; on a slow machine one settle
+  // ends first.
+  await settleUntil($, () => ((store.sessions as Record<string, Stored>)['test-session']?.owner?.length ?? 0) >= 3, 5000)
   expect(moved).toBe(true)
   expect(noBody((store.sessions as Record<string, Stored>)['test-session']?.owner)).toEqual([
     { n: 1, kind: 'his', text: 'Build the report.', prior: '' },
