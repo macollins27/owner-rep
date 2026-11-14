@@ -3711,6 +3711,28 @@ export const noFenceNote = (stderr: string): string | null => {
 export const PNPM_STORE_ARGV = ['pnpm', 'store', 'path', '--config.ignore-pnpmfile=true', '--config.manage-package-manager-versions=false', '--config.offline=true']
 export const COREPACK_ASK_ENV = { COREPACK_ENABLE_NETWORK: '0' }
 export const PNPM_STORE_ENV = 'npm_config_store_dir'
+// Where `claude` (or pnpm) is a mise shim, the shim reads the mise config of the folder it starts
+// in (`mise.toml`, `.mise.toml`, `.tool-versions` and the rest, and the folders above) before the
+// program runs, so before the fence exists. The check starts in its copy, which holds the agent's
+// work: mise refuses a `mise.toml` there as untrusted and the shim exits ("mise ERROR ... not
+// trusted", exit 1, the check dead), and trusted, its `[env]` and hooks would run the project's
+// code outside the fence. So the run and the pnpm question are told, by mise's own setting in
+// their environment, to ignore every config in the folder they start in (the copy, or the
+// agent's folder where no copy is made) and below it; nothing is trusted. The folder is added
+// after any list the owner has set, joined by `:` (mise splits the list as it splits PATH; a
+// comma is not read), so what the owner ignores stays ignored. The run's own commands inherit it:
+// a tool the project pins through mise runs at the version the owner's own config names, not
+// the project's. Measured 14 Nov 2026, mise 2026.10.19: a folder named here is ignored with
+// everything below it, and the shim then starts the claude of the owner's config.
+export const MISE_IGNORE_ENV = 'MISE_IGNORED_CONFIG_PATHS'
+export const miseIgnoring = (folder: string, already: string): Record<string, string> => ({ [MISE_IGNORE_ENV]: already === '' ? folder : `${already}:${folder}` })
+// The check run's environment: pnpm's store where pnpm named one, and the mise ignore.
+export const checkEnv = (folder: string, store: string, already: string): Record<string, string> => ({
+  ...(store === '' ? {} : { [PNPM_STORE_ENV]: store }),
+  ...miseIgnoring(folder, already),
+})
+// The pnpm question's environment: corepack's network off, and the mise ignore.
+export const pnpmAskEnv = (folder: string, already: string): Record<string, string> => ({ ...COREPACK_ASK_ENV, ...miseIgnoring(folder, already) })
 export const PNPM_STORE_TIMEOUT_MS = 10000
 export const pnpmStoreDir = (stdout: string): string => {
   const line = stdout.trim().split('\n').pop()?.trim() ?? ''

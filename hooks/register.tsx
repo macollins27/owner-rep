@@ -73,8 +73,8 @@ import {
   checkSettings,
   CHECK_NO_ROOM,
   PNPM_STORE_ARGV,
-  COREPACK_ASK_ENV,
-  PNPM_STORE_ENV,
+  checkEnv,
+  pnpmAskEnv,
   PNPM_STORE_TIMEOUT_MS,
   pnpmStoreDir,
   PATH_LINKS_TIMEOUT_MS,
@@ -1567,7 +1567,8 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
     if (noFence !== '') return finish({ checkNote: noFence })
     const copy = await makeCopy($, home, sid, cwd)
     const path = (await $.env.get('PATH')) ?? ''
-    const store = await pnpmStore($, checkHost, copy)
+    const miseIgnored = (await $.env.get('MISE_IGNORED_CONFIG_PATHS')) ?? ''
+    const store = await pnpmStore($, checkHost, copy, miseIgnored)
     const links = await pathLinks($, checkHost, home, path)
     const repos = await gitRepos($, checkHost, home, copy, cwd)
     const prompt = checkPrompt({
@@ -1584,7 +1585,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       unanswered: [...(links === null ? ['links' as const] : []), ...(repos.whole ? [] : ['repos' as const])],
     })
     const startedAt = Date.now()
-    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, path, links ?? [], repos.dirs))), cwd: copy, ...(store === '' ? {} : { env: { [PNPM_STORE_ENV]: store } }) })
+    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, path, links ?? [], repos.dirs))), cwd: copy, env: checkEnv(copy, store, miseIgnored) })
     let stdout = ''
     let stderr = ''
     let timedOut = false
@@ -1798,10 +1799,10 @@ async function homeFor($: EngineInterface): Promise<string> {
 
 // pnpm's store as pnpm names it in the copy, outside the fence, its pnpmfile ignored, its
 // version left alone and nothing fetched, by its command line (`PNPM_STORE_ARGV`) and
-// corepack's network off (`COREPACK_ASK_ENV`), or '' when there is no pnpm or it does not
-// answer (`pnpmStoreDir`).
-async function pnpmStore($: EngineInterface, host: Host, copy: string): Promise<string> {
-  const r = await $.process.run(hostArgv(host, PNPM_STORE_ARGV), { cwd: copy, env: COREPACK_ASK_ENV, timeoutMs: PNPM_STORE_TIMEOUT_MS }).catch(() => null)
+// corepack's network off and the copy's mise config ignored (`pnpmAskEnv`), or '' when there
+// is no pnpm or it does not answer (`pnpmStoreDir`).
+async function pnpmStore($: EngineInterface, host: Host, copy: string, miseIgnored: string): Promise<string> {
+  const r = await $.process.run(hostArgv(host, PNPM_STORE_ARGV), { cwd: copy, env: pnpmAskEnv(copy, miseIgnored), timeoutMs: PNPM_STORE_TIMEOUT_MS }).catch(() => null)
   return r === null || r.exitCode !== 0 ? '' : pnpmStoreDir(r.stdout)
 }
 

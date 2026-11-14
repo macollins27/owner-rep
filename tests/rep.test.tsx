@@ -9197,8 +9197,9 @@ test('rule: the check runs in a throwaway copy of the project, fenced, and the c
   expect(argv[argv.indexOf('--settings') + 1]).toBe(checkSettings('/Users/o', '/tmp/x', '/usr/bin:/Users/o/.cargo/bin'))
   expect(argv[argv.indexOf('--settings') + 1]).toContain('"/Users/o/.cargo"')
   expect(argv[argv.indexOf('--allowedTools') + 1]?.split(',')).toContain('Bash')
-  // pnpm named no store, so none is named to the run.
-  expect(seen.env).toBeUndefined()
+  // pnpm named no store, so none is named to the run; the copy's mise config is ignored, after
+  // what the owner's list holds (every variable but PATH reads /Users/o here).
+  expect(seen.env).toEqual({ MISE_IGNORED_CONFIG_PATHS: `/Users/o:${copy}` })
   expect(runs.filter(r => r[0] === 'rm' && r[2] === copy).length).toBeGreaterThanOrEqual(2)
   expect(runs.findIndex(r => r[0] === 'cp')).toBeLessThan(runs.length - 1)
   await ui.unmount()
@@ -9232,9 +9233,61 @@ test('rule: the check names pnpm\'s store to its run, asked of pnpm in the copy 
   // pnpm-workspace.yaml overrides them, and its pnpmfile, a pinned pnpm or its config
   // dependencies would run or be fetched outside the fence. Corepack, which fetches a pinned
   // pnpm before pnpm reads its command line, is told by the environment to fetch nothing.
-  expect(runs.find(r => r.argv[0] === 'pnpm')).toEqual({ argv: ['pnpm', 'store', 'path', '--config.ignore-pnpmfile=true', '--config.manage-package-manager-versions=false', '--config.offline=true'], cwd: copy, env: { COREPACK_ENABLE_NETWORK: '0' } })
-  expect(env).toEqual({ npm_config_store_dir: '/Users/o/Library/pnpm/store' })
+  expect(runs.find(r => r.argv[0] === 'pnpm')).toEqual({ argv: ['pnpm', 'store', 'path', '--config.ignore-pnpmfile=true', '--config.manage-package-manager-versions=false', '--config.offline=true'], cwd: copy, env: { COREPACK_ENABLE_NETWORK: '0', MISE_IGNORED_CONFIG_PATHS: `/Users/o:${copy}` } })
+  expect(env).toEqual({ npm_config_store_dir: '/Users/o/Library/pnpm/store', MISE_IGNORED_CONFIG_PATHS: `/Users/o:${copy}` })
   await ui.unmount()
+})
+
+// Where `claude` is a mise shim, the shim reads the config of the folder it starts in before
+// the fence exists. The copy holds the agent's work, so a mise.toml there is untrusted and the
+// shim stops the run ("mise ERROR ... not trusted"); trusted, its env and hooks would run
+// unfenced. The run and the pnpm question are told to ignore that folder's config, added to
+// any list the owner already set, and nothing is trusted.
+const miseRun = async ($: Engine, on: On, copies: boolean, ignored: string | undefined): Promise<{ copy: string; run?: Record<string, string>; pnpm?: Record<string, string>; trusted: boolean }> => {
+  session(on)
+  quietBand(on)
+  const runs: { argv: string[]; cwd?: string; env?: Record<string, string> }[] = []
+  on('env.get', (_$, e) => ({ value: e.name === 'MISE_IGNORED_CONFIG_PATHS' ? ignored : '/Users/o' }))
+  on('process.run', (_$, e) => {
+    runs.push({ argv: [...e.argv], cwd: e.init?.cwd, env: e.init?.env })
+    const stdout = e.argv[0] === 'pnpm' ? '/Users/o/Library/pnpm/store/v10\n' : ''
+    return { value: { exitCode: e.argv[0] === 'cp' && !copies ? 1 : 0, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
+  on('session.cwd', () => ({ value: '/tmp/x' }))
+  mock.clock(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('The card.'), usage: USAGE } }))
+  let run: Record<string, string> | undefined
+  on('process.spawn', async function* (_$, e) {
+    run = e.env
+    yield { stream: 'stdout', text: CHECKED_WITH(0) }
+    return { value: { code: 0, signal: null } }
+  })
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.press({ key: 'check' })
+  await ui.unmount()
+  const copy = copies ? (runs.find(r => r.argv[0] === 'cp')?.argv[3] ?? '') : '/tmp/x'
+  return { copy, run, pnpm: runs.find(r => r.argv[0] === 'pnpm')?.env, trusted: runs.some(r => r.argv.includes('trust')) }
+}
+
+test('rule: where claude is a mise shim, the check\'s run and its pnpm question are told to ignore the mise config of the copy they start in, never to trust it', async ($, on) => {
+  const got = await miseRun($, on, true, undefined)
+  expect(got.copy.startsWith('/Users/o/.cache/owner-rep/checks/')).toBe(true)
+  expect(got.run).toEqual({ npm_config_store_dir: '/Users/o/Library/pnpm/store', MISE_IGNORED_CONFIG_PATHS: got.copy })
+  expect(got.pnpm).toEqual({ COREPACK_ENABLE_NETWORK: '0', MISE_IGNORED_CONFIG_PATHS: got.copy })
+  expect(got.trusted).toBe(false)
+})
+
+test('rule: the folder the check ignores is added after the ones the owner already has mise ignore, which stay ignored', async ($, on) => {
+  const got = await miseRun($, on, true, '/srv/a:/srv/b')
+  expect(got.run?.MISE_IGNORED_CONFIG_PATHS).toBe(`/srv/a:/srv/b:${got.copy}`)
+  expect(got.pnpm?.MISE_IGNORED_CONFIG_PATHS).toBe(`/srv/a:/srv/b:${got.copy}`)
+})
+
+test('rule: where no copy can be made, the mise config ignored is the agent\'s own folder, which the run then starts in', async ($, on) => {
+  const got = await miseRun($, on, false, '')
+  expect(got.run?.MISE_IGNORED_CONFIG_PATHS).toBe('/tmp/x')
+  expect(got.pnpm?.MISE_IGNORED_CONFIG_PATHS).toBe('/tmp/x')
 })
 
 test('rule: a machine where pnpm or find cannot be asked still runs the check, naming no store, no linked install and no repository, and its brief says the links and the repository could not be found', async ($, on) => {
@@ -9260,7 +9313,10 @@ test('rule: a machine where pnpm or find cannot be asked still runs the check, n
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   await ui.press({ key: 'rep' })
   await ui.press({ key: 'check' })
-  expect(spawned).toEqual({ env: undefined, settings: checkSettings('/Users/o', '/tmp/x', '/Users/o') })
+  // No store is named; only the copy's mise config is ignored.
+  const got = spawned as { env?: Record<string, string>; settings?: string } | null
+  expect(Object.keys(got?.env ?? {})).toEqual(['MISE_IGNORED_CONFIG_PATHS'])
+  expect(got?.settings).toBe(checkSettings('/Users/o', '/tmp/x', '/Users/o'))
   expect(prompt).toContain('could be found this time, so stage, commit and stash nothing, and write nothing through a link that leads out of the copy')
   expect(prompt).toContain('this time not the installs the links in those folders lead to, which could not be found')
   expect(await ui.find({ type: 'Text', text: /could not run/ })).toBeUndefined()
@@ -9713,6 +9769,13 @@ test('gitLinksOf names where the links in the copy lead, leaving out the copy an
   expect(passedOver('\nentry /srv/odd/.git\n/srv/odd/.git\n')).toBe(false)
   const denied = checkDenyWrite('/Users/o', '/x', '', [], ['/srv/app', '/srv/app/.git', '/srv/app/.git/worktrees/a', '/srv/apple', '/srv/lib/src', '/srv/lib', '/srv/lib/'])
   expect(denied.filter(d => d.startsWith('/srv/'))).toEqual(['/srv/app', '/srv/apple', '/srv/lib'])
+})
+
+test('checkEnv and pnpmAskEnv name the folder the check starts in to mise as ignored, after any the owner already ignores, and checkEnv names pnpm\'s store when there is one', () => {
+  expect(rep.checkEnv('/c', '', '')).toEqual({ MISE_IGNORED_CONFIG_PATHS: '/c' })
+  expect(rep.checkEnv('/c', '/s', '/a:/b')).toEqual({ npm_config_store_dir: '/s', MISE_IGNORED_CONFIG_PATHS: '/a:/b:/c' })
+  expect(rep.pnpmAskEnv('/c', '')).toEqual({ COREPACK_ENABLE_NETWORK: '0', MISE_IGNORED_CONFIG_PATHS: '/c' })
+  expect(rep.pnpmAskEnv('/c', '/a')).toEqual({ COREPACK_ENABLE_NETWORK: '0', MISE_IGNORED_CONFIG_PATHS: '/a:/c' })
 })
 
 test('pnpmStoreDir takes the folder above the versioned store pnpm prints, and nothing when pnpm prints no path', () => {
