@@ -5674,7 +5674,7 @@ test('rule: a yes to a turn not shown, with the owner\'s words whole, is recorde
   await s.send($, 'yes, go')
   expect(s.prompts.length).toBe(1)
   expect(s.prompts[0]).toContain('(the agent\'s turn before #2 could not be captured: ')
-  expect(s.prompts[0]).toContain('if the owner approved it, mark it, and none of its steps can be held)')
+  expect(s.prompts[0]).toContain("so nothing of it is shown; mark #2 approved only if its own words accept a plan or proposal in so many words, and none of the turn's steps can be held)")
   expect(s.prompts[0]).not.toContain('delete old.txt')
   expect(s.msg(2)?.approved).toBe('all')
   expect(s.msg(2)?.read?.state).toBe('unreadable')
@@ -6037,7 +6037,7 @@ test('rule: nothing of a typed approval\'s turn over the cap is printed, before 
   await s.send($, 'and the totals')
   expect(s.prompts.length).toBe(2)
   for (const p of s.prompts) {
-    expect(p).toContain(`(the agent's turn before #2 is ${commas(130000)} characters, too long for the rep to check; if the owner approved it, mark it, and none of its steps can be held)`)
+    expect(p).toContain(`(the agent's turn before #2 is ${commas(130000)} characters, too long for the rep to check, so nothing of it is shown; mark #2 approved only if its own words accept a plan or proposal in so many words, and none of the turn's steps can be held)`)
     expect(p).not.toContain('delete old.txt')
     expect(p).not.toContain(TURN.slice(-400, -300))
   }
@@ -7832,7 +7832,9 @@ describe("Task 6: the writer's rule and the approved line", () => {
       'a restriction, exclusion or order anywhere in the plan, in the owner\'s message or what the owner took applies to every step it touches',
       "(that tests pass, that something runs, exists or is set up) is the agent's claim, never a condition held shown",
       // Shown in part, or not at all.
-      "When you see only a turn's end, or it could not be captured or is too long to check, mark the message if it approves and write none of the turn's steps.",
+      "When you see only a turn's end, mark the message if it approves and write none of the turn's steps.",
+      'When none of a turn is shown, you cannot tell whether it held a plan: mark the message only when its own words accept a plan in so many words',
+      'words that only say start, go on or do some work ("keep going", "take over and build it"), praise ("looks good") or a request for changes approve nothing. Write none of that turn\'s steps either way.',
       // Adding, never taking away; a clash is settled with the owner.
       'A yes adds to the job; it never takes anything away and never starts a new job by itself.',
       'keep both, add the open condition "Settle with the owner which stands: <the earlier ask> or <the plan\'s step>"',
@@ -7884,7 +7886,8 @@ describe("Task 6: the writer's rule and the approved line", () => {
     // 1,000 more since the merge with 0.6.0: its standard for the result and its rule that a routine's steps are
     // the agent's method, with this change's exception for a plan the owner approved (862 characters measured).
     // 500 more for the rule that a yes closes a condition that only waited on the plan (376 characters).
-    expect(OBJECTIVE_SYSTEM.length).toBeLessThanOrEqual(SYSTEM_BEFORE + 4500)
+    // 300 more for the rule that a turn none of which is shown is approved only by words that accept a plan (323 characters).
+    expect(OBJECTIVE_SYSTEM.length).toBeLessThanOrEqual(SYSTEM_BEFORE + 4800)
   })
 
   test("fails today: what the agent's turn says it did, did not do or holds back from, and any limit it sets on its own work, is its account and sets no condition or limit except as a step of a plan the owner approved; the unstated wants stay", () => {
@@ -7961,7 +7964,7 @@ describe("Task 6: the writer's rule and the approved line", () => {
     ]
     const q = objectivePrompt({ objective: OBJ_FIXTURE, owner: part, past: [] })
     expect(q).toContain(CLOSE_LABEL(30000))
-    expect(q).toContain(`- #3 yes\n    (the agent's turn before #3 is ${commas(rep.APPROVAL_READ_CAP + 1)} characters, too long for the rep to check; if the owner approved it, mark it, and none of its steps can be held)`)
+    expect(q).toContain(`- #3 yes\n    (the agent's turn before #3 is ${commas(rep.APPROVAL_READ_CAP + 1)} characters, too long for the rep to check, so nothing of it is shown; mark #3 approved only if its own words accept a plan or proposal in so many words, and none of the turn's steps can be held)`)
     expect(q).not.toContain('A distinctive last line.')
     expect(q).toContain(PLAN_NOT_SHOWN(4))
     expect(q).not.toContain('A distinctive plan preview.')
@@ -13917,6 +13920,18 @@ describe('coverage: the lines, their tags and their order', () => {
     expect(rep.notAssessedLine(typedOne, cut, [long])).toBe(`Not assessed: "${fit(long, 100)}" in the plan you approved in message #4 (${cut})`)
     expect(rep.headsUpTooLongLine(typedOne)).toBe('The Heads up cannot compare the plan you approved in message #4 (too long for it); the briefing does')
     expect(rep.headsUpTooLongLine(accepted)).toBe('The Heads up cannot compare the plan you accepted on the plan screen (#4) (too long for it); the briefing does')
+  })
+
+  test('rule: steps a reader names for an approval whose plan it could not be shown are not listed; the approval\'s own line stands, and a shown plan\'s steps still are', () => {
+    // Seeded from before a compaction with no row: nothing of the turn reached any reader.
+    const unseen = cm(3, { approved: 'all', incomplete: rep.NO_ROW_WHY, read: { state: 'unreadable', why: rep.NO_ROW_WHY } })
+    const seen = cm(5, { approved: 'all', read: { state: 'read' }, src: { body: { text: 'The plan: make fig.txt.', chars: 23 } } as never })
+    const gaps = rep.notAssessedGaps([{ n: 3, step: 'the plan you approved in that message is not in view, so none of its steps can be judged' }, { n: 5, step: 'make fig.txt' }])
+    const lines = rep.coverageLines(coverRec([cm(1), cm(2), unseen, cm(4), seen]), { gaps })
+    expect(lines.map(l => l.text)).toEqual([
+      `Could not be checked: the plan you approved in message #3 (${rep.NO_ROW_WHY})`,
+      `Not assessed: "make fig.txt" in the plan you approved in message #5 (${rep.READER_CUT_WHY})`,
+    ])
   })
 
   test('rule: a reader\'s line is built only for an approval the record holds in the job, and the Heads up\'s too-long line only when nothing else stands', () => {

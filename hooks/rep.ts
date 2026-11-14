@@ -852,9 +852,11 @@ export function coverageLines(rec: CoverRec, o: CoverOpts = {}): CoverLine[] {
     const m = approval(g.n)
     if (m !== undefined) byN.push({ n: m.n, text: notComparedLine(m, g.why), asserts: true })
   }
+  // Steps a reader names for an approval whose plan it was never shown are its own guesses: the
+  // approval's own line (unresolved) already says the plan could not be checked.
   for (const g of o.gaps?.notAssessed ?? []) {
     const m = approval(g.n)
-    if (m !== undefined) byN.push({ n: m.n, text: notAssessedLine(m, g.why, g.steps), asserts: true })
+    if (m !== undefined && !(g.why === READER_CUT_WHY && !showable(m))) byN.push({ n: m.n, text: notAssessedLine(m, g.why, g.steps), asserts: true })
   }
   // Stable: lines about one message keep the order above.
   byN.sort((a, b) => (a.n ?? 0) - (b.n ?? 0))
@@ -1481,7 +1483,7 @@ You are the owner's rep, and your one task here is to write down the objective o
 - The owner approves only when the message's own words accept what the agent proposed: a plain yes, a yes with additions (the owner's own words too, even ones to do before building), or a yes to part of it (only that part). With no words that accept, it is not a yes and nothing of that turn becomes the ask: a request for work before starting, a question, a pushback, a hold, a wish to talk first, or agent text pasted in to ask about.
 - When the owner sent your draft with words of their own after it, judge the whole message as the owner's. Words of the owner's that refuse, hold back or put off the plan win over a yes in the draft; a draft that asks a question, with added words that do not approve, approves nothing. When it approves, name the owner's part's number in the mark.
 - A plan the owner approved is the owner's ask, held exactly like the owner's own words. Each of its steps becomes its own condition of "done", and its result and purpose read into yours. Each step's line says in plain words of its own what the step does (never "the approved plan", "tasks 1 to 5" or "every part of the plan"), and never contradicts what the step says. Read the whole of it before writing any of its steps: a restriction, exclusion or order anywhere in the plan, in the owner's message or what the owner took applies to every step it touches. A statement of fact in it (that tests pass, that something runs, exists or is set up) is the agent's claim, never a condition held shown.
-- When you see only a turn's end, or it could not be captured or is too long to check, mark the message if it approves and write none of the turn's steps.
+- When you see only a turn's end, mark the message if it approves and write none of the turn's steps. When none of a turn is shown, you cannot tell whether it held a plan: mark the message only when its own words accept a plan in so many words ("approved", "go with your plan"); words that only say start, go on or do some work ("keep going", "take over and build it"), praise ("looks good") or a request for changes approve nothing. Write none of that turn's steps either way.
 - A yes adds to the job; it never takes anything away and never starts a new job by itself. When an approved plan clashes with an earlier ask of the owner's, keep both, add the open condition "Settle with the owner which stands: <the earlier ask> or <the plan's step>", and name the clash in the "moved:" line. Neither side goes under "dropped" unless a message of the owner's own, not approving a plan, says so in words.
 - A yes to the plan is what a condition asking for that plan was waiting on: that a plan be written or shown, take a set shape or number of steps, or that the agent wait for the go-ahead before building. Mark each such condition "closed: #n" by the approving message, never "dropped"; it is the owner's own message closing that part. Every other condition stays as held.
 - Only the turn shown under the owner's message counts, and of it only the part the owner took: the rest of that turn, the agent's other turns, an agent's later claim that the owner approved, an agent quoting the owner, or a plan described anywhere else count for nothing. A turn started by a background task or anything but the owner is still what the owner saw; a yes can approve a plan in it, and it is never the owner's words.
@@ -1603,7 +1605,7 @@ const priorLine = (m: OwnerMsg): string => {
   return prior === '' ? '' : `\n${INDENT}(the agent, just before: ${prior})`
 }
 const noneLine = (m: OwnerMsg, x: NotShown): string =>
-  `\n${INDENT}(the agent's turn before #${m.n} ${turnPhrase(x)}; if the owner approved it, mark it, and none of its steps can be held)`
+  `\n${INDENT}(the agent's turn before #${m.n} ${turnPhrase(x)}, so nothing of it is shown; mark #${m.n} approved only if its own words accept a plan or proposal in so many words, and none of the turn's steps can be held)`
 
 // The turn the owner answered: whole after the agent's last words as before, by its close (the
 // last words lie inside it), why it is not shown, or, with none captured, the last words alone.
