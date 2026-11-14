@@ -3282,6 +3282,12 @@
     "fixed": "2026-11-14"
   },
   {
+    "name": "resumed-step-stale",
+    "breaks": "A session opened or resumed after the agent stopped keeps the step the objective was written with under Right now, so a fork of a finished session says the agent is mid-task.",
+    "patch": "resumed-step-stale.patch",
+    "fixed": "2026-11-14"
+  },
+  {
     "name": "checks-called-cost",
     "breaks": "The brief tells every reader that checks and process are effort the owner does not want, so the card treats tests and reviews as extra cost.",
     "patch": "checks-called-cost.patch",
