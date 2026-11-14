@@ -39,4 +39,4 @@ body:
     attributes:
       label: Claude Code version
       description: The output of `claude --version`.
-      placeholder: 2.1.310 (Claude Code)
+      placeholder: 2.1.325 (Claude Code)
