@@ -12,7 +12,7 @@
 // Helpers that tests in more than one section use come first, under "Shared fixtures".
 
 import type { On, SessionMessage } from 'claude-code'
-import { describe, expect, mock, test as kitTest, type Engine, type TestBody, type TestOptions } from 'claude-code/testing'
+import { describe, expect, mock, test as kitTest, type Engine, type Plugin, type TestBody, type TestOptions } from 'claude-code/testing'
 
 import { type Memory, CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkCostText, checkPrompt, doingFor, firstSentence, fit, fillCard, countLine, refusedLine, type CardText, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, HIS_CUT, TURN_TEXT_MAX, PENDING_MAX, TURNS_KEPT, tapStep, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, OLD_SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, sentencesOf, withoutStopSentences, toAgentVoice, sectionOf, takeOwnWords, ownMessageTaken, earlierMessage, messageUsable, type Replaced, parseOwnWords, ownWordsPrompt, askAgain, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
 import * as rep from '../hooks/rep'
@@ -87,7 +87,7 @@ const om = (text: string, n = 1): OwnerMsg => ({ n, kind: 'his', text, prior: ''
 // A band with room for a whole card; the fold-to-fit test narrows it.
 const BAND = {
   component: 'AbovePrompt',
-  props: { hasSurvey: false, isWorking: false, maxRows: 40, bodyColumns: 96, scroll: { offset: 0, bodyRows: 39 }, view: {} },
+  props: { hasSurvey: false, isCollapsed: false, isWorking: false, maxRows: 40, bodyColumns: 96, scroll: { offset: 0, bodyRows: 39 }, view: {} },
 } as const
 
 // In a session the engine draws nothing of its own in the band; a test says so
@@ -2197,18 +2197,48 @@ test('an empty tree beneath the row leaves the digits on the row buttons', async
   await ui.unmount()
 })
 
-test('the row keeps what another mod draws beneath it in the shared strip', async ($, on) => {
+// Another mod drawing a note in the strip, with a button on the digit 1 that dismisses it: a
+// plugin of its own loaded beside the rep (the test's `plugins`). On Claude Code 2.1.325 and later
+// the band gives it a row of its own, stacked under the rep's; on earlier builds it draws in one
+// chain with the rep, beneath it. A hook the test registers itself sits beneath every plugin,
+// where 2.1.325 hands the rep only the engine's own drawing, so it cannot stand for another mod.
+// The kit runs the plugin's `register` in an environment of its own, so it holds nothing of the
+// test's: the note goes when the test presses its button, as a person would.
+const OTHER_MOD: Plugin = {
+  name: 'other-mod',
+  register: on => {
+    const dismissed = { plugin: 'other-mod', key: 'dismissed' } as never
+    on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
+      if (e.props.hasSurvey || ((await $.state.get(dismissed)).value as unknown) === true) return next(e)
+      const { Box, Text, Button } = $.ui.resolve(e)
+      const dismiss = () => {
+        $.state.set(dismissed, true as never).catch(() => undefined)
+      }
+      return (
+        <Box flexDirection="column">
+          <Text key="other">You should know · a note from another mod</Text>
+          <Button key="ok" plain hotkey="1" label="Got it" onPress={dismiss} />
+          {await next(e)}
+        </Box>
+      )
+    })
+  },
+}
+const dismissOther = (ui: { press: (t: { plugin: string; key: string }) => Promise<unknown> }) => ui.press({ plugin: 'other-mod', key: 'ok' })
+
+test('the row keeps what another mod draws beneath it in the shared strip', { plugins: [OTHER_MOD] }, async ($, on) => {
   mock.store(on, {})
   on('session.id', () => ({ value: 'test-session' }))
-  on('ui.render', { component: 'AbovePrompt' }, ($, e) => {
-    const { Text } = $.ui.resolve(e)
-    return <Text key="other">You should know · a note from another mod</Text>
-  })
+  quietBand(on)
   for (const surface of ['terminal', 'desktop'] as const) {
     const ui = await $.ui.mount({ plugin: 'owner-rep', surface, ...BAND })
     expect(await ui.find({ key: 'rep' })).toBeDefined()
     expect((await ui.find({ key: 'rep' }))?.props.hotkey).toBeUndefined()
+    expect((await ui.find({ key: 'tell' }))?.props.hotkey).toBeUndefined()
     expect(await ui.find({ type: 'Text', text: /a note from another mod/ })).toBeDefined()
+    // One button on the digit 1 in the whole strip: the other mod's.
+    const ones = (await ui.findAll({ type: 'Button' })).filter(b => b.props.hotkey === '1')
+    expect(ones.map(b => b.props.label)).toEqual(['Got it'])
     await ui.unmount()
   }
 })
@@ -2381,44 +2411,48 @@ test('rule: the status names each kind of work, and a stop or a question marks t
   await status(/^stopped by you$/, '◇')
 })
 
-// Another mod drawing in the strip, switchable from the test.
-const otherMod = (on: On) => {
-  const other = { draws: true }
-  on('ui.render', { component: 'AbovePrompt' }, ($, e) => {
-    const { Text } = $.ui.resolve(e)
-    return other.draws ? <Text key="other">You should know · a note from another mod</Text> : <></>
-  })
-  return other
-}
-
-test('rule: the note waits while another mod draws beneath, and shows once the strip is free', async ($, on) => {
+test('rule: the note waits while another mod draws beneath, and shows once the strip is free', { plugins: [OTHER_MOD] }, async ($, on) => {
   session(on)
-  const other = otherMod(on)
+  quietBand(on)
   on('model.fork', () => ({ value: { isAnswered: true, text: watchAnswer('The agent skipped the tests.'), usage: USAGE } }))
   await $.turn.complete(stop('t1'))
-  let ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   expect(await ui.find({ type: 'Text', text: /a note from another mod/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /skipped the tests/ })).toBeUndefined()
   expect(await ui.find({ key: 'fine' })).toBeUndefined()
-  await ui.unmount()
-  other.draws = false
-  ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await dismissOther(ui)
+  expect(await ui.find({ type: 'Text', text: /a note from another mod/ })).toBeUndefined()
   expect(await ui.find({ type: 'Text', text: /skipped the tests/ })).toBeDefined()
   expect((await ui.find({ key: 'fine' }))?.props.hotkey).toBe('2')
   await ui.unmount()
 })
 
-test('rule: the digit hotkeys leave the row while another mod draws, and come back after', async ($, on) => {
+test('rule: the digit hotkeys leave the row while another mod draws, and come back after', { plugins: [OTHER_MOD] }, async ($, on) => {
   session(on)
-  const other = otherMod(on)
-  let ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  quietBand(on)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   expect((await ui.find({ key: 'rep' }))?.props.hotkey).toBeUndefined()
   expect((await ui.find({ key: 'tell' }))?.props.hotkey).toBeUndefined()
-  await ui.unmount()
-  other.draws = false
-  ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await dismissOther(ui)
+  expect(await ui.find({ type: 'Text', text: /a note from another mod/ })).toBeUndefined()
   expect((await ui.find({ key: 'rep' }))?.props.hotkey).toBe('1')
   expect((await ui.find({ key: 'tell' }))?.props.hotkey).toBe('2')
+  await ui.unmount()
+})
+
+test('rule: the briefing takes the strip alone, another mod\'s note left out until the card closes', { plugins: [OTHER_MOD] }, async ($, on) => {
+  session(on)
+  quietBand(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF('Card 1.'), usage: USAGE } }))
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  expect(await ui.find({ type: 'Text', text: /a note from another mod/ })).toBeDefined()
+  await ui.press({ key: 'rep' })
+  expect(await ui.find({ type: 'Text', text: /Card 1\./ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /a note from another mod/ })).toBeUndefined()
+  expect((await ui.findAll({ type: 'Button' })).some(b => b.props.label === 'Got it')).toBe(false)
+  await ui.press({ key: 'close' })
+  expect(await ui.find({ type: 'Text', text: /a note from another mod/ })).toBeDefined()
+  expect((await ui.find({ key: 'rep' }))?.props.hotkey).toBeUndefined()
   await ui.unmount()
 })
 
@@ -12997,6 +13031,42 @@ test('rule: a session resumed in the same process is read for the owner\'s messa
   ])
   expect(recOf('resumed-from')?.owner ?? []).toEqual([])
   expect(await rowSays($, /and a readme/)).toBe(true)
+})
+
+test('rule: a session resumed while another mod draws is taken up whole, though the band is drawn before any prompt', { plugins: [OTHER_MOD] }, async ($, on) => {
+  const store: Record<string, unknown> = {}
+  on('store.get', (_$, e) => ({ value: store[e.key] }))
+  on('store.set', (_$, e) => {
+    store[e.key] = e.value
+    return { value: undefined }
+  })
+  const recOf = (id: string) => (store.sessions as Record<string, Stored> | undefined)?.[id]
+  let id = 'resumed-from'
+  on('session.id', () => ({ value: id }))
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  on('session.end', (_$, e) => ({ sessionId: e.sessionId }))
+  on('prompt.submit', (_$, e) => ({ text: e.text }))
+  on('turn.complete', () => ({ text: '' }))
+  on('ui.toast', () => ({ value: undefined }))
+  on('session.messages', () => ({ value: id === 'test-session' ? SEEDED_ROWS : [] }))
+  transcript(on, { 'test-session.jsonl': SEEDED_FILE })
+  writer(on, () => OBJ('A licence file with the MIT text and this year, and a readme.', ['the file pushed | open']))
+  quietBand(on)
+  await started($)
+  await settle($)
+  await $.session.end({ reason: 'resume', sessionId: 'resumed-from', resume: { id: 'resumed-from' } } as never)
+  id = 'test-session'
+  // The band is drawn under the resumed session before anything else reads its id, and the
+  // other mod's note is the first thing the rep reads there.
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  expect(await ui.find({ type: 'Text', text: /a note from another mod/ })).toBeDefined()
+  await settle($)
+  expect(recOf('test-session')?.owner.map(m => [m.n, m.kind, m.text])).toEqual([
+    [1, 'his', 'Add a licence file with the MIT text.'],
+    [2, 'his', 'Use this year, and push it.'],
+  ])
+  expect(await rowSays($, /and a readme/)).toBe(true)
+  await ui.unmount()
 })
 
 // ==============================================================================================
