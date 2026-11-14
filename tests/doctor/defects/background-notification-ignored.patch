@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 633ab2e..dfb13f3 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2626,7 +2626,6 @@ export const register: Register = on => {
+       live.set(e.turnId, newTurn(e.turnId, by, true, 0))
+       if (by === 'notification') {
+         let gone = false
+-        for (const id of notifiedTasks(text)) gone = backgroundIds.delete(id) || gone
+         if (gone) await setBackground($).catch(() => undefined)
+       }
+     }

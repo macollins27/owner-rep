@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index a2ff546..de6aaf5 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2461,7 +2461,7 @@ function recordEntries(rows: readonly RecordRow[], human?: ReadonlySet<string>):
+       const said = text === '' ? null : { text, cut: RECORD_ENTRY_CUT, name: 'message' }
+       if (said !== null) fields.push(said)
+       const uses = row.toolUses.map(u => {
+-        const input = { text: compactJson(u.input), cut: removesFiles(u.tool, u.input) ? RECORD_ENTRY_CUT : RECORD_TOOL_CUT, name: 'tool input' }
++        const input = { text: compactJson(u.input), cut: RECORD_TOOL_CUT, name: 'tool input' }
+         const result = u.text === undefined ? null : { text: oneLine(u.tool === 'ExitPlanMode' ? planCopyOut(u.input, u.result, u.text) : u.text), cut: RECORD_TOOL_CUT, name: 'tool result' }
+         if (u.text !== undefined && u.tool_use_id !== undefined) printed.add(u.tool_use_id)
+         if (u.tool === 'ExitPlanMode' && u.tool_use_id !== undefined) planInputs.set(u.tool_use_id, u.input)

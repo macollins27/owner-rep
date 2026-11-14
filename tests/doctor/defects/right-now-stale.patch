@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 32c513d..65040fa 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -404,7 +404,7 @@ const NOW_AFTER_TURN: Record<string, string> = { 'stopped, waiting on you': STOP
+ export type LiveNow = { isWorking: boolean; doing: string; helpers?: number; background?: number }
+ const counted = (n: number, one: string): string => (n === 1 ? `a ${one}` : `${n} ${one}s`)
+ export function rightNow(step: string, now?: LiveNow): string {
+-  const stopped = now === undefined || now.isWorking ? undefined : NOW_AFTER_TURN[now.doing]
++  const stopped = undefined as string | undefined
+   const helpers = now?.helpers ?? 0
+   const background = now?.background ?? 0
+   if (stopped === STOPPED_NOW && helpers + background > 0) {

@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index a2ff546..6930d89 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2610,7 +2610,7 @@ export function recordText(rows: readonly RecordRow[], budget: number, human?: R
+ export const STANDING_LINE =
+   "The agent's standing instructions (its system prompt and instruction files) are not in what you read: never say an instruction did or did not exist; where the record shows the agent citing or following one, that is visible work you may name."
+ // What a reader may say of a step whose proof it cannot see.
+-export const NOT_ASSESSED_RULE = 'A step whose proof could be inside a part marked left out, or before the record shown, is "not assessed": never say it was skipped, and never say it was done. A list of steps still to do shows only what was left when it was written: a later entry that ran the step settles it.'
++export const NOT_ASSESSED_RULE = 'A step whose proof could be inside a part marked left out, or before the record shown, is "not assessed": never say it was skipped, and never say it was done.'
+ 
+ // The rules for the record read, sent as the completion's system prompt.
+ export const RECORD_SYSTEM = `You are the owner's rep: you read the record of a Claude Code session between the owner, a person who does not read code, and the coding agent working for the owner, and you answer one task about it.

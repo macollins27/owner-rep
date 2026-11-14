@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 32c513d..ed1e483 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -4017,7 +4017,7 @@ export const same = (a: string, b: string): boolean =>
+ // marks "the live site" and "deleted" never marks "not deleted". -1 when it names none, and the
+ // condition stays as it was.
+ export const MARK_MATCH = 0.5
+-export const MARK_LEAD = 0.2
++export const MARK_LEAD = 0
+ const MARK_SKIP = new Set('a an the is are was were be been being to of and or in on for with by it its that this as at from has have had so any all each every no not shown show which who what into than then there their them they he she his her our your you we i one'.split(' '))
+ const markWords = (t: string): Set<string> =>
+   new Set((t.toLowerCase().match(/[\p{L}\p{N}]+/gu) ?? []).filter(w => !MARK_SKIP.has(w)).map(w => (w.length > 3 ? w.replace(/(?:ing|ed|es|e|s)$/, '') : w)))

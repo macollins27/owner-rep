@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 633ab2e..096c327 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2657,7 +2657,6 @@ export const register: Register = on => {
+       const sent = backgroundTaskOf(tool, (result as { result?: unknown }).result)
+       const stopped = tool === 'TaskStop' || tool === 'KillShell' ? (e as unknown as { task_id?: unknown; shell_id?: unknown }) : null
+       const stopId = stopped === null ? null : typeof stopped.task_id === 'string' ? stopped.task_id : typeof stopped.shell_id === 'string' ? stopped.shell_id : null
+-      if (sent !== null) backgroundIds.add(sent)
+       if (sent !== null || (stopId !== null && backgroundIds.delete(stopId))) await setBackground($).catch(() => undefined)
+       return result
+     } finally {

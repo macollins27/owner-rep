@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 32c513d..f4f1e1b 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -397,7 +397,7 @@ const anyReopened = (o: Objective | null): boolean => openConditions(o).some(c =
+ export const STOPPED_NOW = 'The agent has stopped and is waiting for you.'
+ export const ASKING_NOW = 'The agent has stopped to ask you something.'
+ export const HALTED_NOW = 'You stopped the agent.'
+-const NOW_AFTER_TURN: Record<string, string> = { 'stopped, waiting on you': STOPPED_NOW, idle: STOPPED_NOW, 'asking you': ASKING_NOW, 'stopped by you': HALTED_NOW }
++const NOW_AFTER_TURN: Record<string, string> = { 'stopped, waiting on you': STOPPED_NOW, 'asking you': ASKING_NOW, 'stopped by you': HALTED_NOW }
+ // A turn that ended with helpers or background commands still running has not handed the work
+ // back: their result starts the agent's next turn, so it waits on them, not on the owner. Asked a
+ // question or stopped by the owner, it is the owner's turn whatever still runs.

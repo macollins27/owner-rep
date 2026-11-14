@@ -1,12 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 85e8014..eb6ed7a 100644
+index 012f157..24396d4 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3163,6 +3163,7 @@ const pairsOf = (text: string): Map<number, number> => {
- export const withoutStopSentences = (message: string): string => {
-   const cuts = stopSpans(message)
+@@ -5057,7 +5057,7 @@ const pairsOf = (text: string): Map<number, number> => {
+ // suite. (You can stop now. Thanks.)" gives "Run the suite. (Thanks.)"), and a pair wholly in
+ // removed text goes with it. When what is left names nothing to do, show or fix (`usable`), it
+ // gives ''. Pure; '' gives ''.
+-export const withoutStopSentences = (message: string): string => withoutSpans(message, stopSpans(message))
++export const withoutStopSentences = (message: string): string => withoutSpans(message, stopSpans(message).slice(0, -1))
+ const withoutSpans = (message: string, cuts: { start: number; end: number }[]): string => {
    if (cuts.length === 0) return message
-+  cuts.pop()
    const partner = pairsOf(message)
-   const removed = (i: number): boolean => cuts.some(c => i >= c.start && i < c.end)
-   const lines: { text: string; dropped: boolean }[] = []

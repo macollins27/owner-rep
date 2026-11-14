@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 5ad8026..f3ffb70 100644
+index 56cc7c6..99826e4 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1073,7 +1073,7 @@ function applyMarks(
+@@ -1079,7 +1079,7 @@ function applyMarks(
    const o = rec.objective
    if (o === null) return false
    const notHis = new Set(rec.owner.filter(m => m.kind === 'plan' || approvalOf(m)).map(m => m.n))
 -  const his = hisFrom(rec, Math.max(o.since, o.from + 1)).filter(n => !notHis.has(n))
 +  const his = hisFrom(rec, o.since).filter(n => !notHis.has(n))
    let changed = false
-   const done = o.done.map((c): Condition => {
-     const close = closed.find(x => x.by !== null && his.includes(x.by) && same(x.text, c.text))
+   const held = o.done.map(c => c.text)
+   const names = (text: string, at: number) => markedCondition(text, held) === at

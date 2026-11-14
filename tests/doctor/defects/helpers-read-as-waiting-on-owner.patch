@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 32c513d..714f620 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -407,7 +407,7 @@ export function rightNow(step: string, now?: LiveNow): string {
+   const stopped = now === undefined || now.isWorking ? undefined : NOW_AFTER_TURN[now.doing]
+   const helpers = now?.helpers ?? 0
+   const background = now?.background ?? 0
+-  if (stopped === STOPPED_NOW && helpers + background > 0) {
++  if (stopped === STOPPED_NOW && false) {
+     const running = [helpers > 0 ? counted(helpers, 'helper') : '', background > 0 ? counted(background, 'background task') : ''].filter(s => s !== '').join(' and ')
+     return `The agent's turn has ended; it is waiting on ${running} still running, not on you.`
+   }

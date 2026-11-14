@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 633ab2e..9f7d888 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2895,7 +2895,7 @@ export const register: Register = on => {
+       const held = brief.reading !== ''
+       const result = held ? (brief.result ?? firstSentence(brief.reading)) : reading === null ? placeholder : firstSentence(objectiveText(reading))
+       // An open card's Right now is today's: the agent may have stopped, or gone on, since it was drawn.
+-      const objective = held ? withRightNow(brief.reading, rightNow(reading?.step ?? '', now)) : reading === null ? '' : objectiveText(reading, now)
++      const objective = held ? brief.reading : reading === null ? '' : objectiveText(reading, now)
+       const whole = {
+         ...brief,
+         result,

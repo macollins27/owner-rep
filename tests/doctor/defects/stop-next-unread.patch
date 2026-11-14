@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 79554ff..da0f98c 100644
+index a2ff546..37638c9 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3258,7 +3258,7 @@ const withOpen = (leftOut: string[], open: Condition[]): string[] => {
- }
+@@ -5140,7 +5140,7 @@ const withOpen = (leftOut: string[], open: Condition[]): string[] =>
+   leftOut.length > 0 ? [...leftOut] : open.map(c => (c.state === 'not-shown' ? `${c.text} (not shown)` : c.text))
  export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer: BriefAnswer; refused: boolean; replaced: Replaced[] } {
    if (open !== null && open.length === 0) return { answer: a, refused: false, replaced: [] }
 -  const sound = a.verdict === 'continue' && a.well === '' && !saysStop(a.next) && !messageSaysStop(a.message)
 +  const sound = a.verdict === 'continue' && a.well === ''
    if (sound && (open === null || a.message.trim() !== '')) return { answer: a, refused: false, replaced: [] }
-   if (sound && open !== null) {
-     return {
+   // Sound in every way but a stop sentence inside a message that still asks for work: the
+   // sentence is cut and the card stands, so a stray "then stop" costs no second read.

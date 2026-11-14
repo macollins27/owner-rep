@@ -201,6 +201,7 @@ import {
   resultOf,
   revisedLine,
   same,
+  markedCondition,
   skipAfter,
   spentText,
   textOf,
@@ -212,12 +213,16 @@ import {
   type Memory,
   type Objective,
   type ObjectiveAnswer,
+  backgroundTaskOf,
+  notifiedTasks,
+  withRightNow,
+  rightNow,
 } from './rep'
 
 // From the prompt box only a bare digit presses a band button.
 const PRESS_HOTKEY = '1'
 
-const IDLE: Now = { doing: 'idle', helpers: 0, isWorking: false, mark: '' }
+const IDLE: Now = { doing: 'idle', helpers: 0, background: 0, isWorking: false, mark: '' }
 
 // The objective held for the job in hand, for the row and the card. Kept under a
 // shape tag, so a value an older build wrote there (the reading) reads as absent.
@@ -227,6 +232,12 @@ const noteA = atom({ plugin: 'owner-rep', key: 'note' } as const, null)
 const briefA = atom({ plugin: 'owner-rep', key: 'brief' } as const, null)
 const viewA = atom({ plugin: 'owner-rep', key: 'view' } as const, 'row')
 const helpersA = atom({ plugin: 'owner-rep', key: 'helperIds' } as const, [])
+// The ids of commands the agent sent to the background that have not yet finished (their task
+// notification) or been stopped (TaskStop): while any runs, an ended turn waits on it.
+const backgroundIds = new Set<string>()
+async function setBackground($: EngineInterface): Promise<void> {
+  await update($, nowA, n => ({ ...(n ?? IDLE), background: backgroundIds.size }))
+}
 // What the rep could not check, keep or save (`coverage`): the row shows the first, the card all.
 const linesA = atom({ plugin: 'owner-rep', key: 'lines' } as const, [])
 
@@ -1080,18 +1091,20 @@ function applyMarks(
   const notHis = new Set(rec.owner.filter(m => m.kind === 'plan' || approvalOf(m)).map(m => m.n))
   const his = hisFrom(rec, Math.max(o.since, o.from + 1)).filter(n => !notHis.has(n))
   let changed = false
-  const done = o.done.map((c): Condition => {
-    const close = closed.find(x => x.by !== null && his.includes(x.by) && same(x.text, c.text))
+  const held = o.done.map(c => c.text)
+  const names = (text: string, at: number) => markedCondition(text, held) === at
+  const done = o.done.map((c, at): Condition => {
+    const close = closed.find(x => x.by !== null && his.includes(x.by) && names(x.text, at))
     if (close !== undefined && c.state !== 'closed') {
       changed = true
       return { text: c.text, state: 'closed', by: `#${close.by}` }
     }
-    const back = check?.reopen.find(x => x.by !== '' && same(x.text, c.text))
+    const back = check?.reopen.find(x => x.by !== '' && names(x.text, at))
     if (back !== undefined && c.state === 'shown') {
       changed = true
       return { text: c.text, state: 'not-shown', by: back.by, reopened: true }
     }
-    const show = shown.find(x => x.by !== '' && same(x.text, c.text))
+    const show = shown.find(x => x.by !== '' && names(x.text, at))
     if (show !== undefined && (c.state === 'open' || c.state === 'not-shown') && !(c.reopened === true && check === null)) {
       changed = true
       return { text: c.text, state: 'shown', by: show.by }
@@ -1479,11 +1492,12 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     // While the rep could not check, keep or save something, the card says so first and never
     // stops. The briefing's own gaps (Task 7) go in `gaps`; the Heads up's too-long line never does.
     const a = withRecordLines(taken.answer, coverage(await loadRec($, sid), { full: storeFull.get(sid), gaps }))
+    const live = (await read($, nowA)) ?? IDLE
     const brief = await changeRec($, sid, after => {
       const brief: Brief = {
         result: after.objective === null ? '' : firstSentence(objectiveText(after.objective)),
         count: countLine(after.objective),
-        reading: after.objective === null ? '' : objectiveText(after.objective),
+        reading: after.objective === null ? '' : objectiveText(after.objective, live),
         revised: revisedLine(after.objective),
         well: a.well,
         stands: a.stands,
@@ -1623,6 +1637,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       const why = stderr.trim().split('\n').pop() ?? ''
       return finish({ checkNote: `The check could not run${end.code === null ? '' : ` (exit ${end.code})`}${why === '' ? '' : `: ${fit(why, 160)}`}.` })
     }
+    const live = (await read($, nowA)) ?? IDLE
     const patch = await changeRec($, sid, async after => {
       after.checks += 1
       after.checkTokens += got.tokens
@@ -1676,7 +1691,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       ).answer, coverage(after, { full: storeFull.get(sid), gaps: lookGaps.get(sid) }))
       const patch: Partial<Brief> = {
         checked,
-        ...(marked && after.objective !== null ? { reading: objectiveText(after.objective), count: countLine(after.objective) } : {}),
+        ...(marked && after.objective !== null ? { reading: objectiveText(after.objective, live), count: countLine(after.objective) } : {}),
         well: card.well,
         stands: card.stands,
         means: card.means,
@@ -2450,6 +2465,7 @@ async function leaveSession($: EngineInterface): Promise<void> {
   await update($, briefA, () => null)
   await update($, noteA, () => null)
   await update($, helpersA, () => [])
+  backgroundIds.clear()
   await update($, linesA, () => [])
   await update($, nowA, () => IDLE)
   await update($, viewA, () => 'row')
@@ -2608,6 +2624,11 @@ export const register: Register = on => {
               : 'other'
       lastOrigin = null
       live.set(e.turnId, newTurn(e.turnId, by, true, 0))
+      if (by === 'notification') {
+        let gone = false
+        for (const id of notifiedTasks(text)) gone = backgroundIds.delete(id) || gone
+        if (gone) await setBackground($).catch(() => undefined)
+      }
     }
     lastDoing = 'thinking'
     await setNow($, { isWorking: true, doing: 'thinking', mark: '' }).catch(() => undefined)
@@ -2633,6 +2654,11 @@ export const register: Register = on => {
       const result = await next(e)
       // What the plan screen answered is stored after the call; a thrown call stores nothing.
       if (tool === 'ExitPlanMode') await takePlanScreen($, e, result).catch(() => undefined)
+      const sent = backgroundTaskOf(tool, (result as { result?: unknown }).result)
+      const stopped = tool === 'TaskStop' || tool === 'KillShell' ? (e as unknown as { task_id?: unknown; shell_id?: unknown }) : null
+      const stopId = stopped === null ? null : typeof stopped.task_id === 'string' ? stopped.task_id : typeof stopped.shell_id === 'string' ? stopped.shell_id : null
+      if (sent !== null) backgroundIds.add(sent)
+      if (sent !== null || (stopId !== null && backgroundIds.delete(stopId))) await setBackground($).catch(() => undefined)
       return result
     } finally {
       if (waits) {
@@ -2868,7 +2894,8 @@ export const register: Register = on => {
       // takes the one held now.
       const held = brief.reading !== ''
       const result = held ? (brief.result ?? firstSentence(brief.reading)) : reading === null ? placeholder : firstSentence(objectiveText(reading))
-      const objective = held ? brief.reading : reading === null ? '' : objectiveText(reading)
+      // An open card's Right now is today's: the agent may have stopped, or gone on, since it was drawn.
+      const objective = held ? withRightNow(brief.reading, rightNow(reading?.step ?? '', now)) : reading === null ? '' : objectiveText(reading, now)
       const whole = {
         ...brief,
         result,

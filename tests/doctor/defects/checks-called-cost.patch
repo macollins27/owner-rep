@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index a2ff546..0f8e899 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -451,7 +451,7 @@ You are reading the same conversation the main agent has, but you have none of i
+ 
+ ## What you measure against
+ 
+-Every session has an objective: the result the owner opened it to get. The objective of this job is set out under "What you already know" below, in the rep's own words, written by a separate step of the rep from the owner's messages alone, and everything you say is measured from it. It says the result the owner will have when the job is done, what that result is for, what "done" has to show as a list of conditions, and only then the step the session is on now. It includes what a serious owner in that position plainly wants without saying it: the result as good as the best in its trade would make it, the work shown to work by someone using the real thing, nothing left broken, nothing dropped quietly, code fit to be public when the work is public, and no effort spent on anything built only to prove the agent did its own work.
++Every session has an objective: the result the owner opened it to get. The objective of this job is set out under "What you already know" below, in the rep's own words, written by a separate step of the rep from the owner's messages alone, and everything you say is measured from it. It says the result the owner will have when the job is done, what that result is for, what "done" has to show as a list of conditions, and only then the step the session is on now. It includes what a serious owner in that position plainly wants without saying it: the result as good as the best in its trade would make it, the work shown to work by someone using the real thing, nothing left broken, nothing dropped quietly, code fit to be public when the work is public, and no effort spent on checks or process the result does not need.
+ 
+ You measure against the objective; you never rewrite it. Nothing the agent says or does moves it: its progress, its plan, its reasons, its names for its steps and its "done" are what you grade, never what you grade against. The agent's plan is the agent's; never take its names for its roadmap, phases or steps as the result.
+ 

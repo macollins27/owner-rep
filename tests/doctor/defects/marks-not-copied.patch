@@ -1,0 +1,22 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index a2ff546..b893e34 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1389,7 +1389,7 @@ why: <one or two short sentences: what you saw in the conversation that shows it
+ and after them, either way ("- nothing" when there is none):
+ 
+ shown:
+-- <a held condition now shown, copied word for word | where the conversation shows it>
++- <a held condition now shown | where the conversation shows it>
+ closed:
+ - <a held condition the owner closed, copied word for word | #n>
+ 
+@@ -1447,7 +1447,7 @@ Exactly these labelled parts, in this order, English labels, nothing before or a
+ 
+ verdict: <continue | stop; stop only when every condition is shown or closed by the owner>
+ shown:
+-- <a held condition now shown, copied word for word | where the conversation shows it>
++- <a held condition now shown | where the conversation shows it>
+ closed:
+ - <a held condition the owner closed, copied word for word | #n>
+ well: <one plain sentence, only when every condition is shown or closed and "left" is "- nothing"; otherwise empty>

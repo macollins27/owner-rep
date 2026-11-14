@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 5ad8026..8ea2d79 100644
+index 56cc7c6..93d5471 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1076,7 +1076,7 @@ function applyMarks(
-   const his = hisFrom(rec, Math.max(o.since, o.from + 1)).filter(n => !notHis.has(n))
-   let changed = false
-   const done = o.done.map((c): Condition => {
--    const close = closed.find(x => x.by !== null && his.includes(x.by) && same(x.text, c.text))
-+    const close = closed.find(x => x.by !== null && same(x.text, c.text))
+@@ -1084,7 +1084,7 @@ function applyMarks(
+   const held = o.done.map(c => c.text)
+   const names = (text: string, at: number) => markedCondition(text, held) === at
+   const done = o.done.map((c, at): Condition => {
+-    const close = closed.find(x => x.by !== null && his.includes(x.by) && names(x.text, at))
++    const close = closed.find(x => x.by !== null && names(x.text, at))
      if (close !== undefined && c.state !== 'closed') {
        changed = true
        return { text: c.text, state: 'closed', by: `#${close.by}` }

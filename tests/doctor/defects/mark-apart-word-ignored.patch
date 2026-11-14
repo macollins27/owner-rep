@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 32c513d..50ca805 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -4039,7 +4039,7 @@ export function markedCondition(mark: string, held: readonly string[]): number {
+   if (top < MARK_MATCH || top - second < MARK_LEAD) return -1
+   if (negated(mark) !== negated(held[best] ?? '')) return -1
+   const apart = [...(words[best] ?? [])].filter(x => !words.some((w, i) => i !== best && w.has(x)))
+-  return apart.every(x => m.has(x)) ? best : -1
++  return best
+ }
+ 
+ // `same` with every run of whitespace read as one space: the old record kept

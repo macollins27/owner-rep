@@ -562,7 +562,8 @@ test('the brief keeps every judgment line word for word and stays under its word
     'The agent\'s reasons for its choices are claims too, and so are its estimates of time, cost and risk; its account of what a helper did is a claim that only the helper\'s own record can show.',
     'One Claude finding another Claude\'s choices reasonable is the failure you exist to prevent.',
     'You never borrow the agent\'s wording, its framing, its menu of options or its offers, and you are never the agent\'s protector.',
-    'It includes what a serious owner in that position plainly wants without saying it: the result as good as the best in its trade would make it, the work shown to work by someone using the real thing, nothing left broken, nothing dropped quietly, code fit to be public when the work is public, and no effort spent on checks or process the result does not need.',
+    'It includes what a serious owner in that position plainly wants without saying it: the result as good as the best in its trade would make it, the work shown to work by someone using the real thing, nothing left broken, nothing dropped quietly, code fit to be public when the work is public, and no effort spent on anything built only to prove the agent did its own work.',
+    'Never ask the agent for fewer of them, and never forbid a new one that serves the result.',
     'its progress, its plan, its reasons, its names for its steps and its "done" are what you grade, never what you grade against',
     'What the owner wants to end up with, and why, counts most: reasons and complaints say more than instructions.',
     'The owner\'s alarms: when the owner says something feels off, count it, even when the guess at the cause is wrong.',
@@ -624,9 +625,11 @@ test('the brief keeps every judgment line word for word and stays under its word
   // 3,200 since Task 7: both carry the walk of the approved plans' steps, about 265 words (plan 7.1 item 4).
   // 3,800 and 3,950 since the merge with 0.6.0, which added judging the work itself and where the effort goes,
   // about 550 words more in each (it moved main's own limit from 2,850 to 3,450).
-  expect(words(b)).toBeLessThan(3800)
+  // 3,900 and 4,050 since 0.7.6: the not-assessed rule says a list of steps still to do is settled by a later
+  // entry that ran the step, and the rep's role and the objective writer keep the owner's checks, about 60 words.
+  expect(words(b)).toBeLessThan(3900)
   // 3,350 for the Heads up alone: it carries LIST_GAP_RULE, about 130 words, and the briefing does not.
-  expect(words(w)).toBeLessThan(3950)
+  expect(words(w)).toBeLessThan(4050)
   // The bookkeeping the code enforces is gone from the brief.
   for (const gone of ['under the rule given with the conditions', 'sent after #', 'never the number of a draft', 'A later message replaces an earlier one only where the owner says so', 'Each condition of "done" stays open until the conversation shows it']) {
     expect(b).not.toContain(gone)
@@ -732,15 +735,58 @@ test('gateVerdict keeps a next and a message that do not say stop, replaces the 
   expect(parseBrief('stands: s\nleft:\n- nothing\nshown:\n- a | the diff\nclosed:\n- b | #4\nmessage:\nend\ndoes:')).toMatchObject({ verdict: 'missing', shown: [{ text: 'a', by: 'the diff' }], closed: [{ text: 'b', by: 4 }] })
 })
 
+test("a refused card keeps the model's own left-out list as it is: the open conditions are added only when that list is empty, since the objective above it already lists them with their marks", () => {
+  // A real plan-case card listed its 9 gaps and then all 16 open conditions of done below them, unheaded.
+  const done = Array.from({ length: 16 }, (_, i) => c(`condition ${i + 1} of done`, i % 2 === 0 ? 'not-shown' : 'open'))
+  const a = parseBrief('verdict: stop\nwell:\nstands: s\nmeans: m\nleft:\n- the booking form was never sent a real request\n- the live site was not opened\nnext: Stop.\nmessage:\nSend a real booking request and show me it arrived.\nend\ndoes: d')
+  const g = gateVerdict(a, done)
+  expect(g.refused).toBe(true)
+  expect(g.answer.leftOut).toEqual(['the booking form was never sent a real request', 'the live site was not opened'])
+  // A message-only refusal keeps the model's list too.
+  const m = gateVerdict(parseBrief('verdict: continue\nstands: s\nleft:\n- the live site was not opened\nnext: Go on.\nmessage:\nend\ndoes:'), done)
+  expect(m).toMatchObject({ refused: true, replaced: ['message'] })
+  expect(m.answer.leftOut).toEqual(['the live site was not opened'])
+  // With nothing listed, the open conditions stand in, so a refused card never says nothing is left.
+  const none = gateVerdict(parseBrief('verdict: stop\nstands: s\nleft:\n- nothing\nnext: Stop.\nmessage:\nend\ndoes:'), OPEN_JOB_OPEN)
+  expect(none.answer.leftOut).toEqual(['the newest build installed (not shown)', 'two sessions finished'])
+})
+
+test("a sentence that asks which thing a rule stops is not a stop: a subject after a fronted which or what names what the rule stops, and the stop the gate reads still stands after a conjunction", () => {
+  for (const s of ['For each one, either say which invented fact it stops, or remove it.', 'Say what it stops.', 'Tell me which of the bans it stops.']) {
+    expect(messageSaysStop(s)).toBe(false)
+    expect(saysStop(s)).toBe(false)
+  }
+  for (const s of ['Say what changed and you stop.', 'Then it stops.', 'Fix the form, then the agent can stop.', 'Show me what the agent changed, then stop.', 'Do what lets you stop.', 'Do what permits you to stop.', 'Do what enables you to stop.', 'Say what permits you to stop.', 'Tell me what enables you to stop.', 'Do what it takes to stop.', 'Tell me why; whatever happens you can stop now.']) expect(messageSaysStop(s)).toBe(true)
+  // What permits or enables the agent to stop is read as a stop even after a verb of asking: the safe direction, rewritten in the agent's own words.
+  // Only asking which thing it stops is exempt: a card that tells the agent to do what lets it stop is refused, as before.
+  for (const s of ['Do what permits you to stop.', 'Do what enables you to stop.', 'Do what it takes to stop.']) {
+    const g = gateVerdict(parseBrief(`verdict: continue\nstands: s\nmeans: m\nleft:\n- nothing\nnext: ${s}\nmessage:\n${s}\nend\ndoes: d`), OPEN_JOB_OPEN)
+    expect(g.refused).toBe(true)
+  }
+})
+
+test("a card whose only fault is a stop sentence inside a message that still has work in it is not refused: the sentence is cut and the card stands, with no second read", () => {
+  const a = parseBrief('verdict: continue\nstands: s\nmeans: m\nleft:\n- nothing\nnext: The agent sends a real booking request.\nmessage:\nSend a real booking request and show me it arrived. Then stop.\nend\ndoes: Gets the form tried for real, then stops the agent.')
+  const g = gateVerdict(a, OPEN_JOB_OPEN)
+  expect(g.refused).toBe(false)
+  expect(g.replaced).toEqual([])
+  expect(g.answer.message).toBe('Send a real booking request and show me it arrived.')
+  expect(g.answer.does).toBe(OPEN_DOES)
+  expect(g.answer.means).toBe('m')
+  const only = gateVerdict(parseBrief('verdict: continue\nstands: s\nnext: Go on.\nmessage:\nStop here.\nend\ndoes: d'), OPEN_JOB_OPEN)
+  expect(only.refused).toBe(true)
+  expect(only.answer.message).toBe(OPEN_MESSAGE(OPEN_JOB_OPEN))
+})
+
 const EMPTY_CARD = parseBrief('verdict: continue\nwell:\nstands: Both parts are built.\nmeans: The build is made and nothing shows it running.\nleft:\n- the laptop\nnext: Show the two sessions finishing.\nmessage:\nend\ndoes: Makes the agent show the sessions.')
 const HELD_LINE = 'If a step needs my go-ahead, hold it: finish the rest, and tell me what you will show me when I give it.'
 
-test('a sound card with an empty message and open conditions is refused on the message alone: the fixed text comes in, the model\'s other parts stay, and every open condition joins what was left out', () => {
+test('a sound card with an empty message and open conditions is refused on the message alone: the fixed text comes in, and the model\'s other parts stay, its left-out list with them', () => {
   const held = 'Before anything stops, show each one working, or say what stands in the way. If a step needs my go-ahead, hold it: finish the rest, and tell me what you will show me when I give it.'
   const asked: Array<[Condition[], string, string[]]> = [
-    [OPEN_JOB_OPEN, `The job is not finished. These conditions of done are still open:\n- the newest build installed (not shown)\n- two sessions finished\n${held}`, ['the laptop', 'the newest build installed (not shown)', 'two sessions finished']],
-    [[c('the newest build installed', 'not-shown')], `The job is not finished. These conditions of done are still open:\n- the newest build installed (not shown)\n${held}`, ['the laptop', 'the newest build installed (not shown)']],
-    [openConditions({ done: [c('two sessions finished', 'open'), c('the newest build installed', 'shown', 'the log')] } as Objective), `The job is not finished. These conditions of done are still open:\n- two sessions finished\n${held}`, ['the laptop', 'two sessions finished']],
+    [OPEN_JOB_OPEN, `The job is not finished. These conditions of done are still open:\n- the newest build installed (not shown)\n- two sessions finished\n${held}`, ['the laptop']],
+    [[c('the newest build installed', 'not-shown')], `The job is not finished. These conditions of done are still open:\n- the newest build installed (not shown)\n${held}`, ['the laptop']],
+    [openConditions({ done: [c('two sessions finished', 'open'), c('the newest build installed', 'shown', 'the log')] } as Objective), `The job is not finished. These conditions of done are still open:\n- two sessions finished\n${held}`, ['the laptop']],
   ]
   for (const [open, message, leftOut] of asked) {
     const g = gateVerdict(EMPTY_CARD, open)
@@ -750,6 +796,8 @@ test('a sound card with an empty message and open conditions is refused on the m
   }
   // A message of blanks is an empty message.
   expect(gateVerdict({ ...EMPTY_CARD, message: ' \n ' }, OPEN_JOB_OPEN)).toMatchObject({ refused: true, replaced: ['message'] })
+  // With nothing of its own left out, the refused card lists the open conditions there.
+  expect(gateVerdict({ ...EMPTY_CARD, leftOut: [] }, OPEN_JOB_OPEN).answer.leftOut).toEqual(['the newest build installed (not shown)', 'two sessions finished'])
 })
 
 test('the does line describes the message: an empty or stop-saying one goes with the empty message, a harmless one stays, and the meaning, next step and what stands stay the model\'s', () => {
@@ -1908,7 +1956,7 @@ test('rule: OWN_WORDS_SYSTEM is the brief\'s who-you-are and how-you-write secti
   expect(p).toContain('and asking it once more did not change that, while these conditions of done are still open:')
   expect(p).not.toMatch(/asked twice|both of its answers/)
   expect(p).toContain('\nstands: Both parts are finished.\n')
-  expect(p).toMatch(/\nleft:\n- the notes not updated\n- the newest build installed \(not shown\)\n- two sessions finished\n/)
+  expect(p).toMatch(/\nleft:\n- the notes not updated\n\n/)
   expect(p).toMatch(/still open:\n- the newest build installed \(not shown\)\n- two sessions finished\n/)
   for (const label of ['means: <', 'next: <', 'message:\n<', '\nend\n', 'does: <']) expect(p).toContain(label)
   // What it writes is read by the briefing's own parser.
@@ -2802,6 +2850,106 @@ test('rule: with few rows in the band the card still draws its buttons and folds
 const PARTS = (message: string) =>
   `verdict: continue\nwell:\nstands: The README is written and the suite is not.\nmeans: Half of what done means is shown.\nleft:\n- the GitHub run\nnext: Write the test suite.\nmessage:\n${message}\nend\ndoes: Makes the agent write the suite.`
 
+test('rule: once the agent has stopped, the card\'s Right now says so in place of the step the objective was written with; while it works the step stands', async ($, on) => {
+  kept(on)
+  quietBand(on)
+  writer(on, () => OBJ('A public repository that reads as serious engineering.', ['a README | open']))
+  on('model.fork', (_$, e) => ({ value: { isAnswered: true, text: String(e.prompt).includes('verdict: <continue') ? PARTS('Write the test suite next.') : watchAnswer(null), usage: USAGE } }))
+  on('turn.start', (_$, e) => ({ turnId: e.turnId }))
+  await $.prompt.submit(typed('a public repository, please'))
+  await settle($)
+  const rightNow = async () => {
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    await ui.press({ key: 'rep' })
+    const line = (await ui.findAll({ type: 'Text' })).map(t => t.text ?? '').find(t => t.includes('Right now:')) ?? ''
+    await ui.press({ key: 'close' })
+    await ui.unmount()
+    return line.slice(line.indexOf('Right now:'))
+  }
+  await $.turn.start({ turnId: 't1', prompt: 'go', messageCount: 1 } as never)
+  expect(await rightNow()).toBe('Right now: The first step.')
+  await $.turn.complete(stop('t1', 'All finished.'))
+  await settle($)
+  expect(await rightNow()).toBe(`Right now: ${rep.STOPPED_NOW}`)
+  await $.turn.start({ turnId: 't2', prompt: 'go on', messageCount: 2 } as never)
+  await $.turn.complete(stop('t2', 'Shall I publish it?'))
+  await settle($)
+  expect(await rightNow()).toBe(`Right now: ${rep.ASKING_NOW}`)
+  await $.turn.start({ turnId: 't3', prompt: 'go on', messageCount: 3 } as never)
+  await $.turn.complete(stop('t3', '', true))
+  await settle($)
+  expect(await rightNow()).toBe(`Right now: ${rep.HALTED_NOW}`)
+  const o: Objective = { ...OBJ_FIXTURE, result: 'R.', step: 'The review.' }
+  expect(objectiveText(o, { isWorking: false, doing: 'stopped, waiting on you' })).toBe(`R. Right now: ${rep.STOPPED_NOW}`)
+  expect(objectiveText(o, { isWorking: true, doing: 'running npm' })).toBe('R. Right now: The review.')
+  // A session opened or resumed with no turn run since: nothing is running, so the agent has
+  // stopped, as on a fork of a finished session, and the written step is stale.
+  expect(objectiveText(o, { isWorking: false, doing: 'idle' })).toBe(`R. Right now: ${rep.STOPPED_NOW}`)
+  expect(objectiveText({ ...o, step: '' }, { isWorking: false, doing: 'stopped, waiting on you' })).toBe(`R. Right now: ${rep.STOPPED_NOW}`)
+  // A turn ended while helpers or background work still run: the agent waits on that work, not on the owner.
+  const stopped = { isWorking: false, doing: 'stopped, waiting on you' }
+  expect(rep.rightNow('The review.', { ...stopped, helpers: 1 })).toBe("The agent's turn has ended; it is waiting on a helper still running, not on you.")
+  expect(rep.rightNow('The review.', { ...stopped, background: 2 })).toBe("The agent's turn has ended; it is waiting on 2 background tasks still running, not on you.")
+  expect(rep.rightNow('The review.', { ...stopped, helpers: 2, background: 1 })).toBe("The agent's turn has ended; it is waiting on 2 helpers and a background task still running, not on you.")
+  expect(rep.rightNow('The review.', { ...stopped, helpers: 0, background: 0 })).toBe(rep.STOPPED_NOW)
+  expect(rep.rightNow('The review.', { isWorking: false, doing: 'asking you', helpers: 1 })).toBe(rep.ASKING_NOW)
+  // A card left open follows the agent: its Right now is today's, not the one it was drawn with.
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  const openLine = async () => {
+    const line = (await ui.findAll({ type: 'Text' })).map(t => t.text ?? '').find(t => t.includes('Right now:')) ?? ''
+    return line.slice(line.indexOf('Right now:'))
+  }
+  expect(await openLine()).toBe(`Right now: ${rep.HALTED_NOW}`)
+  await $.turn.start({ turnId: 't4', prompt: 'go on', messageCount: 4 } as never)
+  expect(await openLine()).toBe('Right now: The first step.')
+  await $.turn.complete(stop('t4', 'Done.'))
+  await settle($)
+  expect(await openLine()).toBe(`Right now: ${rep.STOPPED_NOW}`)
+  await ui.unmount()
+})
+
+test('rule: a command the agent sends to the background is waited on until its notification arrives or it is stopped, and Right now says the agent waits on it', async ($, on) => {
+  kept(on)
+  quietBand(on)
+  writer(on, () => OBJ('A public repository that reads as serious engineering.', ['a README | open']))
+  on('model.fork', (_$, e) => ({ value: { isAnswered: true, text: String(e.prompt).includes('verdict: <continue') ? PARTS('Write the test suite next.') : watchAnswer(null), usage: USAGE } }))
+  on('turn.start', (_$, e) => ({ turnId: e.turnId }))
+  on('tool.call', { tool: 'Bash' }, () => ({ result: { stdout: '', stderr: '', interrupted: false, backgroundTaskId: 'bg7' } }) as never)
+  on('tool.call', { tool: 'TaskStop' }, () => ({ result: {} }) as never)
+  await $.prompt.submit(typed('a public repository, please'))
+  await settle($)
+  const rightNow = async () => {
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    await ui.press({ key: 'rep' })
+    const line = (await ui.findAll({ type: 'Text' })).map(t => t.text ?? '').find(t => t.includes('Right now:')) ?? ''
+    await ui.press({ key: 'close' })
+    await ui.unmount()
+    return line.slice(line.indexOf('Right now:'))
+  }
+  await $.turn.start({ turnId: 't1', prompt: 'go', messageCount: 1 } as never)
+  await $.tool.call({ tool: 'Bash', command: 'npm run build', run_in_background: true } as never)
+  await $.turn.complete(stop('t1', 'The build is running.'))
+  await settle($)
+  expect(await rightNow()).toBe("Right now: The agent's turn has ended; it is waiting on a background task still running, not on you.")
+  // Its notification starts the next turn; once that ends, nothing is left running.
+  await $.turn.start({ turnId: 't2', prompt: '', text: '<task-notification>\n<task-id>bg7</task-id>\n<status>completed</status>\n</task-notification>', messageCount: 2 } as never)
+  await $.turn.complete(stop('t2', 'The build passed.'))
+  await settle($)
+  expect(await rightNow()).toBe(`Right now: ${rep.STOPPED_NOW}`)
+  // One the agent stops is not waited on either.
+  await $.turn.start({ turnId: 't3', prompt: 'go on', messageCount: 3 } as never)
+  await $.tool.call({ tool: 'Bash', command: 'npm run watch', run_in_background: true } as never)
+  await $.tool.call({ tool: 'TaskStop', task_id: 'bg7' } as never)
+  await $.turn.complete(stop('t3', 'Stopped the watcher.'))
+  await settle($)
+  expect(await rightNow()).toBe(`Right now: ${rep.STOPPED_NOW}`)
+  expect(rep.backgroundTaskOf('Bash', { backgroundTaskId: 'b1' })).toBe('b1')
+  expect(rep.backgroundTaskOf('Bash', { stdout: 'x' })).toBe(null)
+  expect(rep.backgroundTaskOf('Read', { backgroundTaskId: 'b1' })).toBe(null)
+  expect(rep.notifiedTasks('<task-notification>\n<task-id>a1</task-id>\n</task-notification>\n<task-notification><task-id>b2</task-id></task-notification>')).toEqual(['a1', 'b2'])
+})
+
 test('rule: the card heads with the result and a count line, fills the band in order of importance, and keeps its buttons at every height', async ($, on) => {
   kept(on)
   quietBand(on)
@@ -2817,13 +2965,14 @@ test('rule: the card heads with the result and a count line, fills the band in o
   await $.prompt.submit(typed('a public repository, please'))
   await settle($)
   // Forty rows and a short card: everything shows, the objective whole under the does line, nothing cut.
+  // No turn has run in this test, so Right now says the agent has stopped.
   let ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   await ui.press({ key: 'rep' })
   expect(await ui.find({ type: 'Text', text: /^Owner rep · A public repository that reads as serious engineering\.$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /^Done means 3 things: 0 shown, 3 open$/ })).toBeDefined()
   let texts = (await ui.findAll({ type: 'Text' })).map(t => t.text ?? '')
   const does = texts.findIndex(t => t === 'Makes the agent write the suite.')
-  const whole = texts.findIndex(t => /^A public repository that reads as serious engineering\. So he can rely on it\. Done when: a README; a test suite; a GitHub run\. Right now: The first step\.$/.test(t))
+  const whole = texts.findIndex(t => /^A public repository that reads as serious engineering\. So he can rely on it\. Done when: a README; a test suite; a GitHub run\. Right now: The agent has stopped and is waiting for you\.$/.test(t))
   expect(does).toBeGreaterThan(-1)
   expect(whole).toBeGreaterThan(does)
   expect(texts.filter(t => t.endsWith('…'))).toEqual([])
@@ -7868,7 +8017,8 @@ describe("Task 6: the writer's rule and the approved line", () => {
     // 1,000 more since the merge with 0.6.0: its standard for the result and its rule that a routine's steps are
     // the agent's method, with this change's exception for a plan the owner approved (862 characters measured).
     // 500 more for the rule that a yes closes a condition that only waited on the plan (376 characters).
-    expect(OBJECTIVE_SYSTEM.length).toBeLessThanOrEqual(SYSTEM_BEFORE + 4500)
+    // 500 more in 0.7.6 for the rule that a complaint about effort on checks is read with its remedy (about 400 characters).
+    expect(OBJECTIVE_SYSTEM.length).toBeLessThanOrEqual(SYSTEM_BEFORE + 5000)
   })
 
   test("fails today: what the agent's turn says it did, did not do or holds back from, and any limit it sets on its own work, is its account and sets no condition or limit except as a step of a plan the owner approved; the unstated wants stay", () => {
@@ -7879,7 +8029,12 @@ describe("Task 6: the writer's rule and the approved line", () => {
     expect(built).toContain("is the agent's account: never a condition, a limit or part of the result unless it is a step of a plan the owner approved")
     expect(built).toContain('only through a plan the owner approved does it set the result, what it is for, or what "done" means')
     // The unstated wants in 0.6.0's words: the best in its trade, proof by someone using the real thing.
-    expect(built).toContain('It includes what a serious owner in that position plainly wants without saying it: the result as good as the best in its trade would make it; the work shown to work by someone opening the real thing, using it and trying to break it; nothing left broken, nothing dropped quietly, code fit to be public when the work is public; and no effort spent on checks or process the result does not need.')
+    expect(built).toContain('It includes what a serious owner in that position plainly wants without saying it: the result as good as the best in its trade would make it; the work shown to work by someone opening the real thing, using it and trying to break it; nothing left broken, nothing dropped quietly, code fit to be public when the work is public; and no effort spent on anything built only to prove the agent did its own work.')
+    expect(built).not.toContain('checks or process the result does not need')
+    // An owner's complaint about effort spent on checks is read with the remedy the same message asks for.
+    expect(built).toContain(rep.EFFORT_COMPLAINT_RULE)
+    expect(rep.EFFORT_COMPLAINT_RULE).toMatch(/same message/)
+    expect(rep.EFFORT_COMPLAINT_RULE).toMatch(/never a condition that asks for fewer tests, code reviews, plan checks or second readers/)
   })
 
   test("of the turn the owner answered only the part the owner took counts; the rest of that turn and the agent's other turns set nothing, and the agent saying some of the work is the owner's to do is its account, never an exception to done", () => {
@@ -8537,6 +8692,64 @@ test('rule: a briefing that marks a condition shown moves it, and stop is allowe
   expect(await ui.find({ type: 'Text', text: /The job is still open/ })).toBeUndefined()
   expect(await ui.find({ type: 'Text', text: /Done when: the newest build installed \(shown\); two sessions finished \(closed\)\./ })).toBeDefined()
   await ui.unmount()
+})
+
+test('rule: a briefing that marks a condition shown in its own rewording still moves it, and a mark that fits no condition, or two equally, moves none', async ($, on) => {
+  const rec = openJob(on)
+  quietBand(on)
+  const answer = STOP_BRIEF('shown:\n- The newest build was installed | the install log printed the revision\n- the work is done | the agent said so\nclosed:\n- none\n')
+  const prompts: string[] = []
+  on('model.fork', (_$, e) => {
+    prompts.push(String(e.prompt))
+    return { value: { isAnswered: true, text: answer, usage: USAGE } }
+  })
+  await started($)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  expect(rec()?.objective?.done).toEqual([
+    { text: 'the newest build installed', state: 'shown', by: 'the install log printed the revision' },
+    { text: 'two sessions finished', state: 'open', by: '' },
+  ])
+  // The brief asks for the condition copied as held, so a rewording is the exception.
+  expect(prompts[0]).toContain('- <a held condition now shown, copied word for word | where the conversation shows it>')
+  await ui.unmount()
+})
+
+test('markedCondition matches a mark to the held condition it rewords only when it keeps every word that sets that condition apart and its negation: an exact copy always wins, and a mark too loose, between two conditions, naming another place or the opposite matches none', () => {
+  const held = [
+    'portsteadgroup.com is switched live through Cloudflare, served from Docker on the Mac. If anything refuses the go-live step, work stops and exactly what was refused is reported',
+    'The live site is shown to run the newest saved version',
+    'An email address on portsteadgroup.com forwards to collinsamax@gmail.com',
+    'One marked test went through each form on the live site, the proposal form and the dumpster quote form. Each was shown saved and delivered, with the times to find it in Gmail',
+    'The live About page is shown',
+    'Speed scores are reported for every page',
+    'The final report gives the live site link, the removed rules and restored wording, the two test emails with times, the speed scores for every page, and proof that the live site runs the newest saved version',
+  ]
+  expect(rep.markedCondition('The live site runs the newest saved version', held)).toBe(1)
+  expect(rep.markedCondition('The live About page was opened in a real browser at desktop and phone width', held)).toBe(4)
+  expect(rep.markedCondition('An email address on portsteadgroup.com forwards to collinsamax@gmail.com within a minute', held)).toBe(2)
+  // A rewording that drops a word only that condition has (which forms, which address) names
+  // none: the condition stays not shown rather than be marked on a looser claim.
+  expect(rep.markedCondition('One marked test went through each live form, was saved with its file, and was delivered, with times', held)).toBe(-1)
+  expect(rep.markedCondition('An email address on portsteadgroup.com forwards to your Gmail', held)).toBe(-1)
+  // Another place than the condition's names none.
+  expect(rep.markedCondition('The staging site runs the newest saved version', ['The live site runs the newest saved version', 'The contact form sends mail'])).toBe(-1)
+  expect(rep.markedCondition('The staging site is shown running the newest saved version', ['The live site is shown to run the newest saved version'])).toBe(-1)
+  // The opposite names none, either way round.
+  expect(rep.markedCondition('Customer data is deleted', ['Customer data is not deleted', 'The page loads'])).toBe(-1)
+  expect(rep.markedCondition('The old copies are not deleted', ['The old copies are deleted'])).toBe(-1)
+  expect(rep.markedCondition('Customer data was never deleted', ['Customer data is not deleted', 'The page loads'])).toBe(0)
+  expect(rep.markedCondition('speed scores are reported for every page.', held)).toBe(5)
+  // Too loose to name one condition.
+  expect(rep.markedCondition('The final report is given', held)).toBe(-1)
+  expect(rep.markedCondition('Everything works', held)).toBe(-1)
+  expect(rep.markedCondition('', held)).toBe(-1)
+  // Between two conditions it fits as well: none.
+  expect(rep.markedCondition('the site is live', ['the site is live on the Mac', 'the site is live on the web'])).toBe(-1)
+  // A mark naming two conditions at once fits both equally and moves neither, though it holds the words that set each apart.
+  expect(rep.markedCondition('the site is live on the Mac and on the web', ['the site is live on the Mac', 'the site is live on the web'])).toBe(-1)
+  // A word-for-word copy wins over a closer rewording of another.
+  expect(rep.markedCondition('tests pass', ['tests pass', 'the tests pass on main'])).toBe(0)
 })
 
 test('rule: the watch marks a condition shown and flags work called finished while one is open', async ($, on) => {
@@ -10282,6 +10495,111 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     expect(recordText(range(1, 4096).map(i => agent(`step ${i}`)), 10_000_000).text).toMatch(/^\[The record shown starts at entry 1; what came before it is not in view\.\]\n/)
     const short = [person('one'), agent('two'), agent('three'), agent('four')]
     expect(recordText(short, 'entry 4 the agent:\nfour'.length + 2 + 'entry 3 the agent:\nthree'.length + 2 + 200).text).toMatch(/\[The record shown starts at entry 3; what came before it is not in view\.\]/)
+  })
+
+  test('a command that removes files keeps every path it names in the record, so a summary\'s list of files to delete is never read as still to do once a later entry removed them', () => {
+    const ids = range(1, 10).map(i => `${String(i).padStart(8, '0')}-0012-41ca-b428-7a9587b67d62`)
+    const paths = ids.map(id => `/Users/someone/.claude/projects/-Users-someone-Developer-site/${id}.jsonl`)
+    const summary = `${SUMMARY} Delete at cleanup:\n${paths.map(p => `- ${p}`).join('\n')}`
+    const remove = `rm -f ${paths.join(' ')} && echo deleted`
+    const loop = `for id in ${ids.join(' ')}; do rm -f "/Users/someone/.claude/projects/-Users-someone-Developer-site/$id.jsonl"; done`
+    expect(JSON.stringify({ command: remove }).length).toBeGreaterThan(RECORD_TOOL_CUT + 400)
+    for (const command of [remove, loop]) {
+      const out = recordText([person(summary), agent('Cleaning up.', [{ tool_use_id: 'u1', tool: 'Bash', input: { command }, text: 'deleted' }])], 1_000_000, new Set()).text
+      const used = out.split('\n').find(l => l.startsWith('- used Bash')) ?? ''
+      expect(used).not.toContain('left out here')
+      for (const id of ids) expect(used).toContain(id)
+    }
+    // The same length of a command that removes nothing is cut as any tool input is.
+    const list = recordText([agent('Listing.', [{ tool_use_id: 'u1', tool: 'Bash', input: { command: `ls -la ${paths.join(' ')}` }, text: 'ok' }])], 1_000_000, new Set()).text
+    expect(list).toContain('characters of this tool input left out here')
+    // A removal past a message's length is cut at a message's length, its head and tail kept.
+    const huge = `rm -f ${range(1, 200).map(i => `/tmp/x/${String(i).padStart(30, 'f')}`).join(' ')}`
+    const big = recordText([agent('Cleaning.', [{ tool_use_id: 'u1', tool: 'PowerShell', input: { command: huge }, text: 'ok' }])], 1_000_000, new Set()).text
+    expect(big).toContain(cutMark(JSON.stringify({ command: huge }).length, RECORD_ENTRY_CUT, 'tool input'))
+    for (const c of ['rm -rf build', 'cd x && rm a b', 'rmdir old', 'unlink a.txt', 'git rm -r --cached x', 'find . -name "*.tmp" -delete', 'trash a.jsonl', 'git worktree remove ../w', 'Remove-Item -Recurse x', 'del /q x', 'xargs rm < list', 'git clean -fdx', 'git -C /repo clean -fd', 'git -C "/my repo" -c core.x=1 clean -n', 'rd /s /q build', 'rmdir /s /q build', 'del /f a.txt', 'Remove-Item -Path x -Force', 'find /tmp/w -type f -delete', 'unlink /tmp/a', 'ls *.tmp | xargs rm -f'])
+      expect(rep.removesFiles('Bash', { command: c })).toBe(true)
+    for (const c of ['ls -la', 'npm run format', 'docker run --rm img', 'echo firmware', 'git remote -v', 'git -C /repo status', 'cd ord', 'git cleanup-report'])
+      expect(rep.removesFiles('Bash', { command: c })).toBe(false)
+    expect(rep.removesFiles('Read', { file_path: '/rm -rf x' })).toBe(false)
+    // Every reader is told a list of things still to do is no proof they were not done later.
+    expect(rep.NOT_ASSESSED_RULE).toMatch(/still to do.*a later entry that ran the step settles it/)
+  })
+
+  test('rule: the record\'s entry numbers never reach the card or the message: the owner and the agent cannot look them up', () => {
+    const strip = rep.withoutEntryRefs
+    expect(strip('The agent saw it in entry 105 and did not remove it.')).toBe('The agent saw it and did not remove it.')
+    expect(strip('The old rule is still in the brief (found in entry 105).')).toBe('The old rule is still in the brief.')
+    expect(strip('The phone number is wrong on the About page (entry 44), and on the footer.')).toBe('The phone number is wrong on the About page, and on the footer.')
+    expect(strip('The test failed (entries 96–97).')).toBe('The test failed.')
+    expect(strip('The test failed in entries 96-97.')).toBe('The test failed.')
+    expect(strip('The agent saw it in entry 105, then moved on.')).toBe('The agent saw it, then moved on.')
+    expect(strip('Your earlier ask, from entry #8, is still open.')).toBe('Your earlier ask is still open.')
+    expect(strip('It broke at entry 12.')).toBe('It broke.')
+    // A reference is taken out, never replaced, and the words and numbers beside it stay.
+    expect(strip('Look at entry 105 and 2 tests fail.')).toBe('Look and 2 tests fail.')
+    // Anything that is not one of the readers' citation forms stays as written.
+    for (const s of ['Message #2 asked for it.', 'The entry form takes 105 characters.', 'Each entry in the guest list is saved.', 'Fix entry 2 in the guest list.', 'The reentry 2 flow fails.', 'Fix what entry 9 shows.', 'The guests wait at entry 3B.', 'Bring them in from entry 2A, then seat them.'])
+      expect(strip(s)).toBe(s)
+    const card = parseBrief(
+      'verdict: off track\nshown:\n- The site is live | entry 12 printed the stamp\nclosed:\n- nothing\nwell: \nstands: The site is live (entry 12).\nmeans: The agent saw the old file in entry 105 and kept it.\nleft out:\n- The old file is still there (found in entry 105)\nnext: The agent removes it (entry 105).\nmessage: Remove the old file you found in entry 105.\ndoes: Removes the file (entry 105).\nunassessed:\n- nothing',
+    )
+    expect([card.stands, card.means, ...card.leftOut, card.next, card.message, card.does].join(' ')).not.toMatch(/\bentr(?:y|ies)\s+#?\d/i)
+    // The kept lines, which are for the record, still name where.
+    expect(card.shown[0]?.by).toBe('entry 12 printed the stamp')
+    const look = parseWatch('state: stopped\nflag: The agent deleted your files in entry 30.\nwhy: Shown in entry 30.\nshown:\n- nothing\nclosed:\n- nothing\nsteps:\n- nothing')
+    expect(`${look.flag} ${look.why}`).not.toMatch(/\bentry\s+\d/i)
+    const check = parseCheck('verdict: on track\nholds:\n- The test passed (entry 9)\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n- nothing\nclosed:\n- nothing\nreopen:\n- nothing\nstands: Done in entry 9.\nmeans: x\nleft:\n- The page is still broken, from entry 9\nnext: x\nmessage: Fix the page (entry 9).\ndoes: x\nlooked: the record')
+    expect([...check.holds, check.stands, ...check.leftOut, check.message].join(' ')).not.toMatch(/\bentry\s+\d/i)
+    // Every card writer is told so.
+    expect(rep.ROLE).toContain(rep.ENTRY_RULE)
+    expect(checkPrompt({ sessionId: 's', cwd: '/tmp', owner: [om('Build it.')], reading: 'x', brief: parseBrief('stands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm', conditions: [], shown: [], from: 0 } as never)).toContain(rep.ENTRY_RULE)
+    expect(rep.ENTRY_RULE).toMatch(/entry numbers/)
+  })
+
+  test('rule: the message never forbids tests, checks or reviews in general: a sentence that is nothing but such a ban is cut, and every other sentence stays as written', () => {
+    const cut = rep.withoutCheckBans
+    // From the Cetacean cards: a bare ban on new tests, carried from the owner's complaint without its remedy.
+    expect(cut('Run it once on a copy of the Portstead session. Do not build new tests for this. Read the text and say what it tells you.')).toBe('Run it once on a copy of the Portstead session. Read the text and say what it tells you.')
+    expect(cut('Open the page. Do not add more checks.')).toBe('Open the page.')
+    expect(cut('Look at it yourself.\nNever write new reviews.')).toBe('Look at it yourself.')
+    expect(cut("Compare it with 0.6.0. Don't build new tests or checks for this.")).toBe('Compare it with 0.6.0.')
+    expect(cut('Fix the parser.\n- Do not create tests.\n- Send me the page link.')).toBe('Fix the parser.\n- Send me the page link.')
+    // A message that is nothing but the ban is left with nothing to send; the gate refuses that card.
+    expect(cut('Do not add more tests.')).toBe('')
+    // Any sentence with more in it than the bare ban stays as written: a remedy, a "without", a
+    // place, a kind of test, a self-proving target, or anything else the ban does not cover.
+    for (const s of [
+      'Do not ship it without writing tests.',
+      'Never deploy without adding tests.',
+      'Read the brief, and do it without building any more tests.',
+      'Open the page, do not add more checks.',
+      'Open the page; do not add more checks.',
+      '(Do not add tests; open the page.)',
+      'Try to break it.\nDo not add new checks or reports to prove this; open it, use it and tell me what you saw.',
+      'For the production database, do not add tests.',
+      'For checks that only prove your own steps ran, do not add tests.',
+      'Do not build new tests or reports for this.',
+      'Do not add tests only for the happy path.',
+      'Do not add tests in the vendored folder.',
+      'Do not add tests that call the payment service.',
+      'Do not add more tests until the parser is fixed.',
+      'Do not run tests against the live database.',
+      'Finish it without writing new tests against the vendored folder.',
+      'Your tests passing does not count as this look.',
+      'Do not count the tests as the sign-off.',
+      'Never write tests that only confirm your own steps ran.',
+      'Do not build a script that checks your own report.',
+      'Add tests for the parser and run the suite.',
+    ])
+      expect(cut(s)).toBe(s)
+    const card = parseBrief('verdict: continue\nwell:\nstands: a\nmeans: b\nleft:\n- c\nnext: d\nmessage:\nFind the branch on this Mac. Do not build new tests for this.\nend\ndoes: e')
+    expect(card.message).toBe('Find the branch on this Mac.')
+    const check = parseCheck('verdict: on track\nholds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n- nothing\nclosed:\n- nothing\nreopen:\n- nothing\nstands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nOpen the page. Do not add more checks.\nend\ndoes: x\nlooked: the record')
+    expect(check.message).toBe('Open the page.')
+    // The card writers are told so beside expectation 4.
+    expect(rep.ROLE).toContain(rep.CHECK_BAN_RULE)
+    expect(rep.CHECK_BAN_RULE).toMatch(/never yours to write/)
   })
 
   test('recordText from an approval\'s row prints every row after it whole: a proof inside the span a cut would leave out is shown, the same row before the approval is cut and marked, and rows past the budget share one cap, then lose their oldest', () => {

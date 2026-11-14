@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 32c513d..69c0868 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2009,7 +2009,7 @@ export const RECORD_TOOL_CUT = 600
+ // xargs rm, a worktree removal, git clean with or without -C): its input is cut as a message is,
+ // since every path it names is the proof of a cleanup, and a list of files to delete earlier in the record (a compaction
+ // summary's, the agent's own) would otherwise read as still to do with the paths cut away.
+-const REMOVES_FILES = /(?<![\w-])(?:rm|rmdir|rd|unlink|shred|trash|del|erase|Remove-Item)(?![\w-])|(?<![\w-])-delete(?![\w-])|\bworktree\s+remove\b|\bgit(?:\s+-[Cc]\s+(?:"[^"]*"|'[^']*'|\S+))*\s+clean(?![\w-])/i
++const REMOVES_FILES = /(?<![\w-])(?:rm|rmdir|rd|unlink|shred|trash|del|erase|Remove-Item)(?![\w-])|(?<![\w-])-delete(?![\w-])|\bworktree\s+remove\b|\bgit\s+clean(?![\w-])/i
+ export const removesFiles = (tool: string, input: unknown): boolean => {
+   if (tool !== 'Bash' && tool !== 'PowerShell') return false
+   const command = (input as { command?: unknown } | null | undefined)?.command

@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index a2ff546..b5fa7ae 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -5145,8 +5145,6 @@ export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer:
+   // Sound in every way but a stop sentence inside a message that still asks for work: the
+   // sentence is cut and the card stands, so a stray "then stop" costs no second read.
+   const trimmed = withoutStopSentences(a.message)
+-  if (a.verdict === 'continue' && a.well === '' && !saysStop(a.next) && a.next.trim() !== '' && trimmed !== '' && messageSaysStop(a.message))
+-    return { answer: { ...a, message: trimmed, does: a.does === '' || messageSaysStop(a.does) ? OPEN_DOES : a.does }, refused: false, replaced: [] }
+   if (sound && open !== null) {
+     return {
+       answer: { ...a, message: OPEN_MESSAGE(open), does: a.does === '' || messageSaysStop(a.does) ? OPEN_DOES : a.does, leftOut: withOpen(a.leftOut, open) },
