@@ -621,7 +621,9 @@ call writes (below):
    (`sweepCopies`) runs when a session starts with a person at the prompt, not waited on, and
    before each copy: it lists every owner file named for a session (an id, or `session`) with
    its first line, and the `.gone-` folders more than a minute old (`copiesListArgv`, read by
-   `copiesOf`, 30 s), removes those leftovers, and asks `ps` about the owners' pids and the
+   `copiesOf`, 30 s), removes those leftovers (by age alone, which is safe because nothing is
+   ever made or run at a `.gone-` path: each is a unique name a removal gave a copy already
+   taken, and the minute lets that removal finish first), and asks `ps` about the owners' pids and the
    asking process together (`aliveArgv`, `PS_ENV`, 10 s). `deadOwned` takes a copy whose owner
    is gone, or whose pid now names a process with another start time; it never takes this
    process's own copy, and takes none when ps did not see the asking process (a sandbox, a
