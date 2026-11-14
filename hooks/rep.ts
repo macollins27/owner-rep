@@ -3991,9 +3991,10 @@ export function markedCondition(mark: string, held: readonly string[]): number {
     for (const x of m) if (w.has(x)) both += 1
     return w.size === 0 ? 0 : (2 * both) / (m.size + w.size)
   })
-  const best = scores.reduce((b, x, i) => (x > scores[b] ? i : b), 0)
+  const best = scores.reduce((b, x, i) => (x > (scores[b] ?? 0) ? i : b), 0)
+  const top = scores[best] ?? 0
   const second = Math.max(0, ...scores.filter((_, i) => i !== best))
-  return scores[best] >= MARK_MATCH && scores[best] - second >= MARK_LEAD ? best : -1
+  return top >= MARK_MATCH && top - second >= MARK_LEAD ? best : -1
 }
 
 // `same` with every run of whitespace read as one space: the old record kept

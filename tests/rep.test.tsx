@@ -625,7 +625,7 @@ test('the brief keeps every judgment line word for word and stays under its word
   // 3,200 since Task 7: both carry the walk of the approved plans' steps, about 265 words (plan 7.1 item 4).
   // 3,800 and 3,950 since the merge with 0.6.0, which added judging the work itself and where the effort goes,
   // about 550 words more in each (it moved main's own limit from 2,850 to 3,450).
-  // 3,900 and 4,050 since 0.7.5: the not-assessed rule says a list of steps still to do is settled by a later
+  // 3,900 and 4,050 since 0.7.6: the not-assessed rule says a list of steps still to do is settled by a later
   // entry that ran the step, and the rep's role and the objective writer keep the owner's checks, about 60 words.
   expect(words(b)).toBeLessThan(3900)
   // 3,350 for the Heads up alone: it carries LIST_GAP_RULE, about 130 words, and the briefing does not.
@@ -7929,7 +7929,7 @@ describe("Task 6: the writer's rule and the approved line", () => {
     // 1,000 more since the merge with 0.6.0: its standard for the result and its rule that a routine's steps are
     // the agent's method, with this change's exception for a plan the owner approved (862 characters measured).
     // 500 more for the rule that a yes closes a condition that only waited on the plan (376 characters).
-    // 500 more in 0.7.5 for the rule that a complaint about effort on checks is read with its remedy (about 400 characters).
+    // 500 more in 0.7.6 for the rule that a complaint about effort on checks is read with its remedy (about 400 characters).
     expect(OBJECTIVE_SYSTEM.length).toBeLessThanOrEqual(SYSTEM_BEFORE + 5000)
   })
 
