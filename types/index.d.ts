@@ -91,6 +91,7 @@ export type TurnSpan = {
   note?: 'interrupted' | 'typed-into'
   incomplete?: string
   merged?: Partial<Record<TurnBy, number>>
+  ask?: { n: number; kind: 'his' | 'note'; words: string }
 }
 // A finished turn the owner has not answered yet, in the record's `pending` list.
 export type PendingTurn = { turnId: string; by: TurnBy; src?: SourceRef; incomplete?: string; note?: 'interrupted' }

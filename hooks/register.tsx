@@ -25,6 +25,8 @@ import {
   SOURCE_MAX,
   TURN_TEXT_MAX,
   bodyOf,
+  carriedBody,
+  CARRY_MSGS,
   restOf,
   runningText,
   tapStep,
@@ -2061,8 +2063,15 @@ async function takeBody($: EngineInterface, sid: string, rec: Rec, snap: Snap): 
   return body
 }
 
-// The body's fields on the message that is numbered next: none when it is empty and whole.
-async function bodyFields($: EngineInterface, sid: string, rec: Rec, body: Body): Promise<Partial<OwnerMsg>> {
+// The body's fields on the message that is numbered next: none when it is empty and whole. `words`
+// are what that message sent; what the agent put to the owner and the messages before it did not
+// answer is carried in front of its own turns (`carriedBody`). `afterDraft`: the message is the
+// owner's words after a draft of the rep's, which is numbered just before it and is walked past.
+async function bodyFields($: EngineInterface, sid: string, rec: Rec, own: Body, words: string, afterDraft = false): Promise<Partial<OwnerMsg>> {
+  const job = jobMsgs(rec)
+  const earlier = afterDraft && job.at(-1)?.kind === 'draft' ? job.slice(0, -1) : job
+  const { msgs } = await readable($, sid, earlier.slice(-CARRY_MSGS * 3), ['body', 'sent'])
+  const body = carriedBody(msgs, words, own)
   if (body.text === '' && body.incomplete === undefined) return {}
   const src = body.text === '' ? {} : { src: { body: await saveSource($, sid, `${rec.counter + 1}-body`, body.text) } }
   return { turns: body.turns, ...(body.incomplete === undefined ? {} : { incomplete: body.incomplete }), ...src }
@@ -2290,9 +2299,8 @@ async function seedOnce($: EngineInterface, sid: string): Promise<boolean> {
         continue
       }
       const split = draftSplitAny(t.text, [...rec.drafts, rec.lastBrief?.message ?? '', ...others])
-      const fields = async () => bodyFields($, sid, rec, seededBody(t))
-      if (split === null) pushOwner(rec, 'his', t.text, t.prior, await withSent($, sid, rec, await fields(), t.text.length > HIS_CUT ? t.text : null))
-      else await pushDraft($, sid, rec, split, t.prior, t.text, fields)
+      if (split === null) pushOwner(rec, 'his', t.text, t.prior, await withSent($, sid, rec, await bodyFields($, sid, rec, seededBody(t), t.text), t.text.length > HIS_CUT ? t.text : null))
+      else await pushDraft($, sid, rec, split, t.prior, t.text, async () => bodyFields($, sid, rec, seededBody(t), split.his, true))
     }
     return has(rec)
   })
@@ -2306,7 +2314,7 @@ async function takeNote($: EngineInterface, sid: string, note: string, from: { s
   if ('snap' in from) await saving
   await changeRec($, sid, async rec => {
     const body = 'snap' in from ? await takeBody($, sid, rec, from.snap) : null
-    const more = body === null ? {} : await bodyFields($, sid, rec, body)
+    const more = body === null ? {} : await bodyFields($, sid, rec, body, note)
     pushOwner(rec, 'note', note, body?.text ?? ('prior' in from ? from.prior : ''), await withSent($, sid, rec, more, note.length > HIS_CUT ? note : null))
   })
 }
@@ -2638,9 +2646,9 @@ export const register: Register = on => {
           if (split === null) {
             // The whole as sent, when the stored text is not all of it: cut, or split from a note.
             const sent = noted !== null ? e.text : text.length > HIS_CUT ? text : null
-            pushOwner(rec, 'his', text, body.text, await withSent($, id, rec, await bodyFields($, id, rec, body), sent))
+            pushOwner(rec, 'his', text, body.text, await withSent($, id, rec, await bodyFields($, id, rec, body, text), sent))
           } else {
-            await pushDraft($, id, rec, split, body.text, noted !== null ? e.text : text, async () => bodyFields($, id, rec, body))
+            await pushDraft($, id, rec, split, body.text, noted !== null ? e.text : text, async () => bodyFields($, id, rec, body, split.his, true))
             rec.lastSent = { text: split.draft, at: Date.now() }
             // A draft is the rep's words: it moves the step it asks for and nothing else.
             if (rec.objective !== null) rec.objective = { ...rec.objective, step: firstSentence(split.draft) }

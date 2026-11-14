@@ -4134,7 +4134,9 @@ test('rule: turns the agent ran on its own after the owner\'s message are one bo
 })
 
 test('rule: the same short answer sent twice, to two turns, gets each turn as its own body', async ($, on) => {
-  const { rec, scripts } = capture(on)
+  const { rec, scripts, hold } = capture(on)
+  // The writer marks the first yes approved: it answered, so the second yes carries nothing back.
+  hold.write = () => `${OBJ('The tests added.', ['the tests added'])}\napproved: #1 | all`
   await runTurn($, scripts, 't1', [said('Shall I add the tests?')])
   await send($, 'yes')
   await runTurn($, scripts, 't2', [said('Shall I delete the old folder?')])
@@ -4142,6 +4144,108 @@ test('rule: the same short answer sent twice, to two turns, gets each turn as it
   const [a, b] = rec()?.owner ?? []
   expect(a?.src?.body?.text).toBe('Shall I add the tests?')
   expect(b?.src?.body?.text).toBe('Shall I delete the old folder?')
+})
+
+// ---- A plan still waiting, carried to the message that answers it (Gap 2, defect 2 of the hands-on review).
+
+const PRICE_PLAN = 'The plan:\n1. Store prices as Decimal.\n2. Add a rounding test.\nShall I start?'
+
+test('rule: a yes after a question about a plan takes the plan with it: the plan, a line naming the question, then the answer', async ($, on) => {
+  const { rec, scripts, prompts } = capture(on)
+  const answer = 'Decimal keeps cents exact. Shall I go ahead?'
+  await send($, 'plan the price fix')
+  await runTurn($, scripts, 't1', [said(PRICE_PLAN)])
+  await send($, 'Why Decimal?')
+  await runTurn($, scripts, 't2', [said(answer)])
+  await send($, 'yes')
+  const [, q, yes] = rec()?.owner ?? []
+  // The question keeps the plan as its own body; the yes holds the plan and the answer.
+  expect(q?.src?.body?.text).toBe(PRICE_PLAN)
+  expect(yes?.src?.body?.text).toBe(`${PRICE_PLAN}\n\n${answer}`)
+  // The agent's words just before the yes are still the answer alone.
+  expect(yes?.prior).toBe(fitTail(answer, PRIOR_CUT))
+  const ask = { n: 2, kind: 'his', words: 'Why Decimal?' } as const
+  expect(yes?.turns?.map(t => [t.from, t.to, (t as { ask?: unknown }).ask])).toEqual([
+    [0, PRICE_PLAN.length, ask],
+    [PRICE_PLAN.length + 2, PRICE_PLAN.length + 2 + answer.length, undefined],
+  ])
+  // The writer reads the plan under the yes, with the question between it and the answer.
+  const all = prompts.at(-1) ?? ''
+  const shown = all.slice(all.indexOf('- #3 yes'))
+  expect(all.indexOf('- #3 yes')).toBeGreaterThan(0)
+  expect(shown).toContain(rep.carryLine(ask))
+  expect(shown.indexOf('Store prices as Decimal')).toBeLessThan(shown.indexOf(rep.carryLine(ask)))
+  expect(shown.indexOf(rep.carryLine(ask))).toBeLessThan(shown.lastIndexOf('Decimal keeps cents exact'))
+})
+
+test('rule: a request for more before the yes, answered by the agent asking again, leaves the plan to the yes', async ($, on) => {
+  const { rec, scripts } = capture(on)
+  const answer = 'Step 2 checks that 0.105 rounds to 0.11. Shall I start?'
+  await send($, 'plan the price fix')
+  await runTurn($, scripts, 't1', [said(PRICE_PLAN)])
+  await send($, 'Explain step 2 before I approve.')
+  await runTurn($, scripts, 't2', [said(answer)])
+  await send($, 'go ahead')
+  expect(rec()?.owner.at(-1)?.src?.body?.text).toBe(`${PRICE_PLAN}\n\n${answer}`)
+})
+
+test('rule: two questions before the yes carry the plan and both answers, oldest first, each question named after the turn it asked about', async ($, on) => {
+  const { rec, scripts } = capture(on)
+  await send($, 'plan the price fix')
+  await runTurn($, scripts, 't1', [said(PRICE_PLAN)])
+  await send($, 'Why Decimal?')
+  await runTurn($, scripts, 't2', [said('Cents stay exact. Shall I start?')])
+  await send($, 'And the test?')
+  await runTurn($, scripts, 't3', [said('It checks rounding. Shall I start?')])
+  await send($, 'ok, do it')
+  const yes = rec()?.owner.at(-1)
+  expect(yes?.src?.body?.text).toBe(`${PRICE_PLAN}\n\nCents stay exact. Shall I start?\n\nIt checks rounding. Shall I start?`)
+  expect(yes?.turns?.map(t => (t as { ask?: { n: number } }).ask?.n)).toEqual([2, 3, undefined])
+})
+
+test('rule: a note to the rep between the plan and the yes carries the plan: the agent never saw the note', async ($, on) => {
+  const { rec, scripts } = capture(on)
+  await send($, 'plan the price fix')
+  await runTurn($, scripts, 't1', [said(PRICE_PLAN)])
+  await send($, 'Owner rep: is step 2 worth it')
+  await send($, 'yes')
+  const [, note, yes] = rec()?.owner ?? []
+  expect(note?.kind).toBe('note')
+  expect(yes?.src?.body?.text).toBe(PRICE_PLAN)
+  expect((yes?.turns?.[0] as { ask?: unknown } | undefined)?.ask).toEqual({ n: 2, kind: 'note', words: 'is step 2 worth it' })
+})
+
+test('rule: a message that answered stops the carry: a reply to words that asked nothing, and a yes the writer marked approved', async ($, on) => {
+  const { rec, scripts, hold } = capture(on)
+  await send($, 'fix the prices')
+  await runTurn($, scripts, 't1', [said('I looked at the price code. It uses floats.')])
+  await send($, 'Use cents.')
+  await runTurn($, scripts, 't2', [said('Done with cents. Shall I deploy?')])
+  // #3 is typed while the agent asks, and the agent asks again after it; the writer marks it approved.
+  hold.write = () => `${OBJ('Prices in cents, deployed.', ['prices kept in cents', 'deployed'])}\napproved: #3 | all`
+  await send($, 'yes')
+  await runTurn($, scripts, 't3', [said('Deployed. Shall I tidy the old code too?')])
+  await send($, 'no')
+  const [, , three, four] = rec()?.owner ?? []
+  // #2 answered words that asked nothing, so #3 carries nothing past it.
+  expect(three?.src?.body?.text).toBe('Done with cents. Shall I deploy?')
+  expect(three?.approved).toBeDefined()
+  // #3 answered: its approval ends the walk, so #4 holds only the turn it answered.
+  expect(four?.src?.body?.text).toBe('Deployed. Shall I tidy the old code too?')
+})
+
+test('rule: a question keeps its own body: nothing is carried into a message that asks', () => {
+  const plan: OwnerMsg = { n: 2, kind: 'his', text: 'Why Decimal?', prior: '', turns: [{ by: 'owner', from: 0, to: PRICE_PLAN.length }], src: { body: { chars: PRICE_PLAN.length, sha: 'x', where: 'inline', text: PRICE_PLAN } } }
+  const body = { text: 'Cents stay exact. Shall I start?', turns: [{ by: 'owner' as const, from: 0, to: 32 }], used: ['t2'] }
+  expect(rep.carriedBody([om('plan it'), plan], 'And the test?', body)).toBe(body)
+  // A plan accepted on the plan screen ends the walk: it was answered there.
+  const screen: OwnerMsg = { n: 3, kind: 'plan', text: 'the plan', prior: '', screen: 'accepted', approved: 'all' }
+  expect(rep.carriedBody([om('plan it'), plan, screen], 'yes', body)).toBe(body)
+  // A saved turn that cannot be read is carried as missing, and the body says so.
+  const lost: OwnerMsg = { ...plan, src: { body: { chars: 900, sha: 'x', where: 'file', lost: 'the file is gone' } } }
+  const got = rep.carriedBody([om('plan it'), lost], 'yes', body)
+  expect(got.text).toBe(body.text)
+  expect(got.incomplete).toBe(rep.carryLostWhy(2))
 })
 
 test('rule: a turn longer than the rep keeps is marked incomplete', async ($, on) => {

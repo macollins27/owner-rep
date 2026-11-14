@@ -135,6 +135,8 @@ export type TurnSpan = {
   note?: 'interrupted' | 'typed-into' | 'read-back'
   incomplete?: string
   merged?: Partial<Record<TurnBy, number>>
+  // A turn carried from an earlier message that did not answer it: that message (`carriedBody`).
+  ask?: { n: number; kind: 'his' | 'note'; words: string }
 }
 // A finished turn not yet answered; no `src` when it had no text.
 export type PendingTurn = { turnId: string; by: TurnBy; src?: SourceRef; incomplete?: string; note?: 'interrupted' }
@@ -1148,6 +1150,104 @@ function mergeSpans(spans: TurnSpan[]): TurnSpan[] {
   return [one, ...spans.slice(old.length)]
 }
 
+// ---- What the agent put to the owner, still waiting, carried to the message that answers it.
+
+// Words that end on a question mark ask.
+const asks = (said: string): boolean => /\?\s*$/.test(said.trim())
+
+// Whether a message the owner typed to the agent answered what the agent put to it. A question of
+// the owner's never does. Nor does a message typed while the agent was asking (`asked`) when the
+// agent's next words ask again (`asksAgain`, null while none have come): the owner asked for more
+// before the yes ("explain step 2 first"), so what the agent asked still waits. The record's
+// reading (`lastAnswerRow`) and the body a message takes (`carriedBody`) both judge by this.
+export function answeredAgent(words: string, asked: boolean, asksAgain: boolean | null): boolean {
+  if (asks(words)) return false
+  return !(asked && asksAgain === true)
+}
+
+// The most owner's messages one body walks back over.
+export const CARRY_MSGS = 4
+// The owner's words kept on a carried turn's line.
+export const CARRY_ASK_CUT = 300
+
+// Who wrote what came between a carried turn and the next, and its words.
+export type CarryAsk = { n: number; kind: 'his' | 'note'; words: string }
+export const carryLine = (a: CarryAsk): string =>
+  a.kind === 'note'
+    ? `(the owner's note to the rep, #${a.n}, came here; the agent never saw it: "${a.words}")`
+    : `(the owner's message #${a.n} came here and did not answer this; the agent went on below: "${a.words}")`
+export const carryLostWhy = (n: number): string => `the turn the owner's message #${n} asked about could not be read, so it is not here`
+const carryLongWhy = 'the turns before the owner\'s last questions were too long to keep with this one'
+
+// The words a message of the owner's sent to the agent, as far as the record holds them.
+const toAgent = (m: OwnerMsg): string => {
+  const t = m.src?.sent?.text ?? m.text
+  return noteSplit(t)?.before ?? t
+}
+
+// The body of a message of the owner's that does not ask, after messages that did not answer: the
+// turn each of those was answering, oldest first, each with a line naming the message that came
+// after it, then its own (Gap 2: a plan asked about, then approved, is the plan the yes took, not
+// the answer to the question). `earlier` is the job's messages before it, oldest first, each body
+// read. The walk stops at a message that answered (`answeredAgent`), one the writer marked
+// approved, a plan-screen answer or a draft of the rep's, and after CARRY_MSGS; a note to the rep
+// never answered the agent and is walked past. The message's own turns stay last, so where it
+// answered is found as before.
+export function carriedBody(earlier: readonly OwnerMsg[], words: string, body: Body): Body {
+  if (asks(words)) return body
+  const walked: OwnerMsg[] = []
+  let after = body.text
+  for (let i = earlier.length - 1; i >= 0 && walked.length < CARRY_MSGS; i--) {
+    const m = earlier[i] as OwnerMsg
+    const text = m.src?.body?.text ?? ''
+    if (m.kind === 'note') {
+      walked.unshift(m)
+      if (text !== '') after = text
+      continue
+    }
+    if (m.kind !== 'his' || approvalOf(m)) break
+    if (answeredAgent(toAgent(m), asks(text), after.trim() === '' ? null : asks(after))) break
+    walked.unshift(m)
+    if (text !== '') after = text
+  }
+  // Only what holds a turn, or lost one, is carried; with none, the body is its own.
+  const carried = walked.filter(m => m.src?.body !== undefined)
+  if (carried.length === 0) return body
+  let total = body.text.length
+  const kept: OwnerMsg[] = []
+  for (const m of [...carried].reverse()) {
+    const len = (m.src?.body?.text ?? '').length + 2
+    if (total + len > SOURCE_MAX) break
+    total += len
+    kept.unshift(m)
+  }
+  let text = ''
+  const turns: TurnSpan[] = []
+  const reasons: string[] = kept.length < carried.length ? [carryLongWhy] : []
+  for (const m of kept) {
+    const said = m.src?.body?.text
+    if (said === undefined) {
+      reasons.push(carryLostWhy(m.n))
+      continue
+    }
+    if (said === '') continue
+    if (text !== '') text += '\n\n'
+    const from = text.length
+    text += said
+    const own = m.turns !== undefined && m.turns.at(-1)?.to === said.length ? m.turns : [{ by: 'owner' as TurnBy, from: 0, to: said.length }]
+    const ask: CarryAsk = { n: m.n, kind: m.kind === 'note' ? 'note' : 'his', words: fit(toAgent(m).replace(/\s+/g, ' ').trim(), CARRY_ASK_CUT) }
+    own.forEach((t, k) => turns.push({ ...t, from: t.from + from, to: t.to + from, ...(k === own.length - 1 ? { ask } : {}) }))
+    if (m.incomplete !== undefined) reasons.push(m.incomplete)
+  }
+  if (text === '' && reasons.length === 0) return body
+  if (body.text !== '' && text !== '') text += '\n\n'
+  const shift = text.length
+  text += body.text
+  turns.push(...body.turns.map(t => ({ ...t, from: t.from + shift, to: t.to + shift })))
+  const why = [...reasons, ...(body.incomplete === undefined ? [] : [body.incomplete])][0]
+  return { text, turns, used: body.used, ...(why === undefined ? {} : { incomplete: why }) }
+}
+
 // ---- The plans the owner approved, as the readers are shown them (plan 7.1 items 1 to 5).
 
 export const APPROVED_HEAD =
@@ -1216,7 +1316,7 @@ function approvedBlock(m: OwnerMsg, list: readonly OwnerMsg[]): string {
   return [
     head,
     ...(took === undefined ? [] : [`What the owner took: ${took}`]),
-    `<approved_plan>\n${fenceTag(body, 'approved_plan')}\n</approved_plan>`,
+    `<approved_plan>\n${fenceTag(m.kind === 'plan' ? body : spansText(body, m.turns), 'approved_plan')}\n</approved_plan>`,
     ...(m.kind === 'plan' ? [] : [`The owner's reply:\n${quote(sentWords(m, list))}`]),
   ].join('\n')
 }
@@ -1673,11 +1773,12 @@ function spansText(text: string, turns: readonly TurnSpan[] | undefined): string
   if (turns === undefined || turns.length === 0 || turns.at(-1)?.to !== text.length) return text
   const out: string[] = []
   for (const [i, t] of turns.entries()) {
-    if (i > 0) out.push(NEXT_TURN[t.by])
+    if (i > 0 && turns[i - 1]?.ask === undefined) out.push(NEXT_TURN[t.by])
     out.push(text.slice(t.from, t.to))
     if (t.note === 'interrupted') out.push('(interrupted by the owner here)')
     if (t.note === 'typed-into') out.push('(the owner typed the message below while the agent was still working)')
     if (t.note === 'read-back') out.push(READ_BACK_LINE)
+    if (t.ask !== undefined) out.push(carryLine(t.ask))
   }
   return out.join('\n')
 }
@@ -2619,7 +2720,7 @@ function lastAnswerRow(rows: readonly RecordRow[], human?: ReadonlySet<string>):
   const SCREENS = new Set(['ExitPlanMode', 'AskUserQuestion'])
   const screens = new Set<string>()
   let firm = -1
-  let soft = -1
+  let soft: { at: number; text: string } | null = null
   let asking = false
   rows.forEach((row, at) => {
     if (row.role === 'assistant') {
@@ -2629,7 +2730,7 @@ function lastAnswerRow(rows: readonly RecordRow[], human?: ReadonlySet<string>):
         if (u.text !== undefined) firm = at
       }
       const said = row.text.trim()
-      if (said !== '') asking = /\?\s*$/.test(said)
+      if (said !== '') asking = asks(said)
       return
     }
     if ((row.toolResults ?? []).length > 0) {
@@ -2639,12 +2740,15 @@ function lastAnswerRow(rows: readonly RecordRow[], human?: ReadonlySet<string>):
     const text = withoutReminders(row.text)
     if (text === '') return
     const his = human === undefined ? !notTyped(text) : human.has(typedKey(row.text)) && !notTyped(typedForm(row.text))
-    if (!his || /\?\s*$/.test(text)) return
-    if (asking) soft = at
+    if (!his || !answeredAgent(text, asking, null)) return
+    if (asking) soft = { at, text }
     else firm = at
     asking = false
   })
-  return asking ? firm : Math.max(firm, soft)
+  // A message typed while the agent asked counts once the agent's newest words do not ask again.
+  // (The forEach above sets it; TypeScript does not follow a closure's writes.)
+  const last = soft as { at: number; text: string } | null
+  return last !== null && answeredAgent(last.text, true, asking) ? Math.max(firm, last.at) : firm
 }
 
 // The record in its parts: the opening lines, the entries in chunks, how many fields after the
