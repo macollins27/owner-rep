@@ -207,7 +207,7 @@
     "name": "well-with-left",
     "breaks": "The parser keeps the going-well line when the left-out list has items, so one card tells the owner every part is done and, three lines down, that something was not.",
     "patch": "well-with-left.patch",
-    "fixed": "2026-10-14; remade 2026-10-15"
+    "fixed": "2026-10-14; remade 2026-10-15; remade 2026-11-14"
   },
   {
     "name": "chore-to-owner",
@@ -261,13 +261,13 @@
     "name": "stop-while-open",
     "breaks": "The gate never refuses, so a card can say stop, or that the work is going well, while a condition of the objective is still open or none is written.",
     "patch": "stop-while-open.patch",
-    "fixed": "2026-10-15; remade 2026-10-19; remade 2026-10-29; remade 2026-10-30"
+    "fixed": "2026-10-15; remade 2026-10-19; remade 2026-10-29; remade 2026-10-30; remade 2026-11-14"
   },
   {
     "name": "unwritten-gate-open",
     "breaks": "With no objective written the gate lets everything through, so a card can tell the agent to stop, or say the work is going well, before anything measures it.",
     "patch": "unwritten-gate-open.patch",
-    "fixed": "2026-10-15; remade 2026-10-19; remade 2026-10-29; remade 2026-10-30"
+    "fixed": "2026-10-15; remade 2026-10-19; remade 2026-10-29; remade 2026-10-30; remade 2026-11-14"
   },
   {
     "name": "verdict-missing-continues",
@@ -279,7 +279,7 @@
     "name": "stop-next-unread",
     "breaks": "The gate reads only the verdict line, so an answer that says continue while its next step tells the agent to stop, or calls the work finished, passes while a condition is open.",
     "patch": "stop-next-unread.patch",
-    "fixed": "2026-10-15; remade 2026-10-19; remade 2026-10-29; remade 2026-10-30"
+    "fixed": "2026-10-15; remade 2026-10-19; remade 2026-10-29; remade 2026-10-30; remade 2026-11-14"
   },
   {
     "name": "draft-moves-result",
@@ -309,13 +309,13 @@
     "name": "marks-uncited",
     "breaks": "A look or a briefing can close a condition by citing any message number, a draft's included, so a condition the owner never let go is closed on the rep's or the agent's say.",
     "patch": "marks-uncited.patch",
-    "fixed": "2026-10-15; remade 2026-10-16"
+    "fixed": "2026-10-15; remade 2026-10-16; remade 2026-11-14"
   },
   {
     "name": "mark-cites-built-message",
     "breaks": "A look, a briefing or a check can close a condition by citing a message the objective was already built from, one the writer read and kept the condition open after.",
     "patch": "mark-cites-built-message.patch",
-    "fixed": "2026-10-15"
+    "fixed": "2026-10-15; remade 2026-11-14"
   },
   {
     "name": "writer-cites-built-message",
@@ -399,7 +399,7 @@
     "name": "look-remarks-reopened",
     "breaks": "A look or a briefing that marks a condition the check reopened as shown moves it shown again, so the next stop passes the gate though the paid check found the claim false.",
     "patch": "look-remarks-reopened.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-11-14"
   },
   {
     "name": "merge-raises-state",
@@ -1791,7 +1791,7 @@
     "name": "message-not-gated",
     "breaks": "The gate reads the next step but not the message, so a card whose message tells the agent to stop passes while a condition is open, and the owner can send that stop themselves.",
     "patch": "message-not-gated.patch",
-    "fixed": "2026-10-19; remade 2026-10-29; remade 2026-10-30"
+    "fixed": "2026-10-19; remade 2026-10-29; remade 2026-10-30; remade 2026-11-14"
   },
   {
     "name": "own-words-not-asked",
@@ -1881,7 +1881,7 @@
     "name": "unassessed-dropped",
     "breaks": "The briefing's unassessed: part is not read, so a step the briefing could not judge leaves no line on the card and the owner is not told.",
     "patch": "unassessed-dropped.patch",
-    "fixed": "2026-10-29"
+    "fixed": "2026-10-29; remade 2026-11-14"
   },
   {
     "name": "message-swapped-whole",
@@ -2373,43 +2373,43 @@
     "name": "empty-message-passes",
     "breaks": "A sound card passes with an empty message while conditions are open, so the owner gets a card with work open and nothing to send.",
     "patch": "empty-message-passes.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-14"
   },
   {
     "name": "blank-message-passes",
     "breaks": "A message of blanks counts as written, so a card with open conditions and nothing to send passes the gate.",
     "patch": "blank-message-passes.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-14"
   },
   {
     "name": "empty-no-objective-refused",
     "breaks": "A card with an empty message and no objective written is refused, though the rule is only for open conditions.",
     "patch": "empty-no-objective-refused.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-14"
   },
   {
     "name": "empty-replaces-means",
     "breaks": "A card refused only for its empty message takes the full refused path, so the rep's text overwrites a good meaning.",
     "patch": "empty-replaces-means.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-14"
   },
   {
     "name": "empty-left-out-not-merged",
     "breaks": "A card refused for its empty message does not list the open conditions as left out.",
     "patch": "empty-left-out-not-merged.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-14"
   },
   {
     "name": "empty-does-overwritten",
     "breaks": "The does line of a card refused for its empty message is always the rep's, so a harmless line the model wrote is lost.",
     "patch": "empty-does-overwritten.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-14"
   },
   {
     "name": "empty-does-kept",
     "breaks": "The does line of a card refused for its empty message stays when empty or saying stop, so the fixed text sits over a line that does not describe it.",
     "patch": "empty-does-kept.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-14"
   },
   {
     "name": "fixed-text-no-held-step",
@@ -2445,13 +2445,13 @@
     "name": "empty-all-shown-refused",
     "breaks": "The gate refuses every empty message, so a card with every condition shown or closed gets the fixed text with an empty list.",
     "patch": "empty-all-shown-refused.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-14"
   },
   {
     "name": "usable-message-refused",
     "breaks": "A sound card with a usable message and open conditions is refused as if it were empty, so a good read 1 costs a second read and loses its message.",
     "patch": "usable-message-refused.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-14"
   },
   {
     "name": "brief-may-leave-empty",
@@ -3027,13 +3027,13 @@
     "name": "reader-closes-by-approval",
     "breaks": "A reader's closed line citing an approved plan or a yes closes the condition.",
     "patch": "reader-closes-by-approval.patch",
-    "fixed": "2026-11-01"
+    "fixed": "2026-11-01; remade 2026-11-14"
   },
   {
     "name": "check-drops-record-lines",
     "breaks": "The card Check it rewrites loses the record's own warnings, and a stop stands beside a lost record.",
     "patch": "check-drops-record-lines.patch",
-    "fixed": "2026-11-01"
+    "fixed": "2026-11-01; remade 2026-11-14"
   },
   {
     "name": "unread-list-taken-for-none",
@@ -3105,13 +3105,13 @@
     "name": "agent-account-sets-limits",
     "breaks": "The objective writer is no longer told that what the agent says it did or did not do, and any limit it sets on its own work, is the agent's account and never a condition or limit unless a step of a plan the owner approved.",
     "patch": "agent-account-sets-limits.patch",
-    "fixed": "2026-11-03"
+    "fixed": "2026-11-03; remade 2026-11-14"
   },
   {
     "name": "outside-part-counts",
     "breaks": "The objective writer is no longer told that of the turn the owner answered only the part the owner took counts, that the agent's other turns count for nothing, or that the agent leaving some of the work to the owner is its account and no exception to done.",
     "patch": "outside-part-counts.patch",
-    "fixed": "2026-11-03"
+    "fixed": "2026-11-03; remade 2026-11-14"
   },
   {
     "name": "screen-changed-file-held",
@@ -3189,19 +3189,19 @@
     "name": "owner-typed-check-dropped",
     "breaks": "The objective writer drops a check, review or report the owner asked for in the owner's own message, treating it as the agent's method like one from an agent's routine.",
     "patch": "owner-typed-check-dropped.patch",
-    "fixed": "2026-11-10"
+    "fixed": "2026-11-10; remade 2026-11-14"
   },
   {
     "name": "approved-check-made-method",
     "breaks": "The objective writer is told that a check or test is the agent's method even when it is a step of a plan the owner approved, so 0.6.0's rule drops an approved step.",
     "patch": "approved-check-made-method.patch",
-    "fixed": "2026-11-10"
+    "fixed": "2026-11-10; remade 2026-11-14"
   },
   {
     "name": "approved-check-called-waste",
     "breaks": "The brief counts a check the owner asked for, or a step of a plan the owner approved, as an addition the result does not need.",
     "patch": "approved-check-called-waste.patch",
-    "fixed": "2026-11-10"
+    "fixed": "2026-11-10; remade 2026-11-14"
   },
   {
     "name": "blocks-refusal-unrecognised",
@@ -3225,6 +3225,90 @@
     "name": "card-shares-strip",
     "breaks": "From Claude Code 2.1.325 the briefing no longer takes the strip alone: another mod's row stays stacked under the card the owner asked for.",
     "patch": "card-shares-strip.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "left-out-takes-done-list",
+    "breaks": "A refused card adds every open condition under its own Left out, so the owner reads the real gaps followed by the whole done list with no heading.",
+    "patch": "left-out-takes-done-list.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "which-it-stops-read-as-stop",
+    "breaks": "A message asking the agent to say which fact a rule stops is read as telling the agent to stop, so the card is refused and read a second time.",
+    "patch": "which-it-stops-read-as-stop.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "stray-stop-costs-second-read",
+    "breaks": "A sound card whose message carries one stop sentence among real work is refused whole, which costs the owner a second full read before the card shows.",
+    "patch": "stray-stop-costs-second-read.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "removal-cut-short",
+    "breaks": "A command that deletes a long list of files is cut like any tool input, so the reader sees the start of the list, an old to-do list naming the rest, and tells the owner files were never deleted.",
+    "patch": "removal-cut-short.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "todo-list-read-as-undone",
+    "breaks": "Readers are no longer told that a list of steps still to do shows only what was left when it was written, so a summary's old to-do list outweighs the later step that ran it.",
+    "patch": "todo-list-read-as-undone.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "reworded-mark-dropped",
+    "breaks": "A shown line that rewords the held condition marks nothing, so the done list keeps a condition the conversation showed as not shown.",
+    "patch": "reworded-mark-dropped.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "mark-between-two-moves",
+    "breaks": "A mark loose enough to fit two held conditions moves one of them, so a condition is marked shown on another's proof.",
+    "patch": "mark-between-two-moves.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "marks-not-copied",
+    "breaks": "The watch is no longer asked to copy a held condition word for word in its shown lines, so it rewords them more and fewer marks land.",
+    "patch": "marks-not-copied.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "right-now-stale",
+    "breaks": "The card's Right now keeps the step the objective was last written with after the agent has stopped, so it says the agent is mid-task when it is waiting on the owner.",
+    "patch": "right-now-stale.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "checks-called-cost",
+    "breaks": "The brief tells every reader that checks and process are effort the owner does not want, so the card treats tests and reviews as extra cost.",
+    "patch": "checks-called-cost.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "fewer-checks-asked",
+    "breaks": "The brief no longer forbids asking the agent for fewer tests or reviews, so a card can tell the agent to drop the checks the result needs.",
+    "patch": "fewer-checks-asked.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "effort-complaint-unread",
+    "breaks": "The objective writer reads an owner's complaint about effort on checks without the remedy the same message asks for, and holds a condition that asks for fewer checks.",
+    "patch": "effort-complaint-unread.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "entry-numbers-kept",
+    "breaks": "The record's entry numbers stay in the card and the message (\"found in entry 105\"), which neither the owner nor the agent can look up.",
+    "patch": "entry-numbers-kept.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "entry-rule-dropped",
+    "breaks": "The readers are no longer told never to name the record's entry numbers.",
+    "patch": "entry-rule-dropped.patch",
     "fixed": "2026-11-14"
   }
 ]

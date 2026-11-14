@@ -790,6 +790,8 @@ test('a sound card with an empty message and open conditions is refused on the m
   }
   // A message of blanks is an empty message.
   expect(gateVerdict({ ...EMPTY_CARD, message: ' \n ' }, OPEN_JOB_OPEN)).toMatchObject({ refused: true, replaced: ['message'] })
+  // With nothing of its own left out, the refused card lists the open conditions there.
+  expect(gateVerdict({ ...EMPTY_CARD, leftOut: [] }, OPEN_JOB_OPEN).answer.leftOut).toEqual(['the newest build installed (not shown)', 'two sessions finished'])
 })
 
 test('the does line describes the message: an empty or stop-saying one goes with the empty message, a harmless one stays, and the meaning, next step and what stands stay the model\'s', () => {

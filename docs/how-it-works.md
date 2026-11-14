@@ -78,11 +78,19 @@ listed, because the check is paid for to find what does not hold.
 
 The rep measures against an objective: its own account, in its own words, of what the owner
 wants on the job in hand. It is held in four parts: the result, what it is for, what "done"
-has to show (a list of conditions), and the step the session is on now. It is never the
+has to show (a list of conditions), and the step the session is on now. The step moves only
+when the objective is written or a draft is sent, so once the agent's turn has ended the card's
+"Right now" says the agent has stopped and is waiting, is asking, or was stopped by the owner,
+never the step it has left. It is never the
 owner's text. The owner works by intent rather than exact wording, and a rep that only did
 what the client literally said would not be a good one, so the objective includes what a
 serious owner plainly wants without saying it. The owner's messages are weighed by kind:
-reasons and complaints first, then instructions. A "yes" to a plan the agent proposed makes
+reasons and complaints first, then instructions. A complaint is read with the remedy the same
+message asks for: an owner who says too much effort went into checks and rounds, and in the
+same message asks for someone to open the real thing and try to break it, is asking for that
+look and against pieces built only to prove the agent did its own work, never for fewer
+tests, code reviews or second readers. On the Cetacean session of 14 Nov 2026 the writer held
+the complaint without its remedy, and the card treated tests and reviews as extra cost. A "yes" to a plan the agent proposed makes
 that plan the owner's ask, held like the owner's own words: each of its steps becomes a
 condition of "done", read whole before any is written. Whether a message approves is the
 writer's call, because only reading can tell a yes to the plan from a yes to something else;
@@ -126,7 +134,11 @@ Each condition is in one of four states: open; not shown, for a thing a conversa
 show by itself, such as whether a build is installed or a service runs the newest code;
 shown; or closed by the owner. Open and not shown both count as open. The writer sees nothing of the conversation but the agent's last words before each of the owner's messages, marked as the agent's, so it can mark nothing shown: the code puts a condition it marks shown back to open unless it was already held so. The watch,
 the briefing and the check mark a condition shown only by naming where the conversation or
-the disk shows it, and closed only by citing a message of the owner's. When the check finds a
+the disk shows it, and closed only by citing a message of the owner's. They are asked to copy
+the condition word for word, and often reword it anyway; such a line still marks the condition
+it plainly names, by the content words they share, while one that fits two conditions, or
+none well, marks nothing. On the Portstead session the briefing named the live version check
+shown, reworded, and the card kept it "not shown". When the check finds a
 condition held shown is not so, it puts it back to not shown, and it stays not shown until a
 later check shows it: a look or a briefing that marks it shown again moves nothing, the
 writer never raises a condition's state, and the looks, the briefings and the writer are
@@ -153,8 +165,9 @@ as a stop is. Such a briefing is asked once more with the open
 conditions named, and that answer passes the same gate.
 
 The gate refuses part by part. On a refused card the verdict is continue, the line saying
-the work is going well is dropped, the open conditions are listed as left out, and the
-meaning is the rep's own; the next step is the rep's only where it says stop or is empty, so
+the work is going well is dropped, the model's own left-out list stays (the open conditions
+fill it only when it is empty: added under it, they put the whole done list on the card below
+the real gaps with no heading), and the meaning is the rep's own; the next step is the rep's only where it says stop or is empty, so
 the model's own sound next step stands. The message is read one sentence at a time, and only
 the sentences that tell the agent to stop, call the work finished or hand it back to the
 owner are taken out; every other sentence stays exactly as the model wrote it, nothing
@@ -162,7 +175,12 @@ reworded or moved. A message with no such sentence stands whole. Only when what 
 nothing to do, show or fix (it is empty, holds no letter or digit, as "..." does, or holds
 only praise or thanks, questions, or a bare "Do that first." whose "that" went with the
 removed sentence) are the message and its line
-saying what it does the rep's fixed text, the list of open conditions. Beside a kept message,
+saying what it does the rep's fixed text, the list of open conditions. A card sound in every
+other way whose message carries a stop sentence among real work is not refused at all: the
+sentence is taken out and the card stands, since the second read a refusal costs nearly
+doubled the time to the card (126 seconds against 67 on the Portstead session, the first read
+refused only because "say which invented fact it stops" was read as a stop; a stop word within
+three words after "which" or "what" is no longer read as one). Beside a kept message,
 a line saying what it does that says stop is the rep's. An empty message is refused the same
 way while a condition is open, on the message alone: an owner looking at open work with nothing
 to send has lost the one thing the card is for, and the rest of a sound card is kept because
@@ -375,7 +393,11 @@ as data, under a system prompt saying the task means that record wherever it spe
 conversation. Rows after the job's earliest open approval are given whole up to the budget.
 Earlier ones are cut, each message to 3,000 characters and each tool's input and result to 600, a
 compaction summary up to 40,000, and the oldest are left out past 200,000 characters, with a line
-saying how many. Every cut is marked inside the field it falls in. The approved plans themselves
+saying how many. Every cut is marked inside the field it falls in. A shell command that deletes
+files is cut only at 3,000: on one of the owner's sessions a cut list of ten paths, read beside an
+older summary still listing those files "to delete at cleanup", led a look to say they were
+never deleted. Every reader is also told that a list of steps still to do shows only what was
+left when it was written, and a later entry that ran the step settles it. The approved plans themselves
 are given from their saved copies, each whole or not at all, up to 40,000 characters for the Heads
 up and 80,000 for the briefing; a plan past the budget is left out and the reader's card says so.
 The rows carry no number, time or turn, so
@@ -383,7 +405,9 @@ the approval is located by matching the job's messages against them, and the mat
 outcomes: established, the record opens after the approval, or it cannot be placed. In the last
 two the reader is told, the steps are not assessed, and the owner sees a coverage line saying so.
 A step whose proof could be in a cut part is *not assessed*: a reader may not call it skipped or
-done. Only the rows that are one of the owner's messages in the session's
+done. The entry numbers are the readers' alone: the owner and the agent cannot look one up, so
+the readers are told never to name one, and the code takes any that slip through ("found in
+entry 105") out of every part of the card and the message. Only the rows that are one of the owner's messages in the session's
 transcript file are labelled as the person's; when no transcript can be read, every row on their side that is not
 a kind Claude Code is known to write there. With no record to read, as after `/clear`, no model is
 called and the briefing says there is nothing to read yet.

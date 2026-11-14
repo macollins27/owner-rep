@@ -1,9 +1,9 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 79554ff..1d9c506 100644
+index a2ff546..b1d531e 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3262,7 +3262,7 @@ export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer:
-   if (sound && (open === null || a.message.trim() !== '')) return { answer: a, refused: false, replaced: [] }
+@@ -5149,7 +5149,7 @@ export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer:
+     return { answer: { ...a, message: trimmed, does: a.does === '' || messageSaysStop(a.does) ? OPEN_DOES : a.does }, refused: false, replaced: [] }
    if (sound && open !== null) {
      return {
 -      answer: { ...a, message: OPEN_MESSAGE(open), does: a.does === '' || messageSaysStop(a.does) ? OPEN_DOES : a.does, leftOut: withOpen(a.leftOut, open) },

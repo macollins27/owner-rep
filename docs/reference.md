@@ -65,7 +65,14 @@ call writes (below):
    backs the watch off (`skipAfter`).
 2. **Briefing**: `pressBrief()` on the Rep button, another record read, drawn as the card. The
    model's answer is labelled lines (`verdict:`, `shown:`, `closed:`, `well:`, `stands:`,
-   `means:`, `left:`, `next:`, `message:` … `end`, `does:`); `parseBrief` splits them,
+   `means:`, `left:`, `next:`, `message:` … `end`, `does:`); `parseBrief` splits them
+   (every part the card shows and the message through `withoutEntryRefs`, as `parseCheck`'s
+   card parts and `parseWatch`'s flag and why: a bracket holding only a record entry number,
+   such as "(found in entry 105)" or "(entries 96–97)", goes whole, so does a phrase leading
+   into one ("in", "at", "from", "as shown at", "as of") with its commas, and any other "entry
+   N" becomes "the conversation"; the kept `shown:`, `closed:` and `reopen:` lines keep theirs,
+   and `ENTRY_RULE`, in the ROLE's plain-words line and the check's rule 6, tells every reader
+   not to name one),
    `applyMarks` takes the marks, and `gateVerdict` refuses, while a condition is open, a
    verdict other than `continue` (a `stop`, or none given, which `verdictOf` reads as
    `missing`, never as continue), a `well:` line, or a `next:` (`saysStop`) or a `message:`
@@ -79,7 +86,10 @@ call writes (below):
    messages a reader would let through, such as a check-in with the owner before a step, are
    caught in the safe direction and rewritten by the own-words call) that
    `STOP_NEXT` (or, in a message only, `STOP_ONCE` below) reads as
-   telling the agent or the job to stop (with "please" before the stop or not, `STOP_LEAD`),
+   telling the agent or the job to stop (with "please" before the stop or not, `STOP_LEAD`;
+   never within three words after "which" or "what", so "say which invented fact it stops"
+   asks a question and is no stop, a joining word such as "and", "then" or "lets" ending that
+   reach),
    calling the work finished, saying nothing is left or no further work is needed,
    closing the session, wrapping up, stopping work on it, stopping (or stopping here, or
    stopping work) to report, to wait bare or on the owner, to await them or to ask them
@@ -104,8 +114,10 @@ call writes (below):
    model's own next step; so do a pair such as "make the timer start and stop", the bare
    "and stop" only being read, never "and stops" said of a program, a wait on a CI run or
    on "your build", and "Once the run is green, the session can end"). The gate refuses part
-   by part: the verdict becomes continue, the `well:` line goes, the open conditions are
-   listed as left out, the meaning is always `OPEN_MEANS`, the next step is the rep's
+   by part: the verdict becomes continue, the `well:` line goes, the left-out list stays the
+   model's and only when it has nothing are the open conditions listed there (`withOpen`; before
+   0.7.6 they were added under the model's own list, which put the whole done list on the card
+   under the real gaps with no heading), the meaning is always `OPEN_MEANS`, the next step is the rep's
    (`OPEN_NEXT`) only where it says stop or is empty, and the message is
    `withoutStopSentences(message)` (below): a message with no stop sentence stands as
    written, one with some stands without them, and only when that is `''` (nothing usable
@@ -116,9 +128,14 @@ call writes (below):
    every other way (verdict continue, no `well:`, no stop in `next:` or `message:`) whose
    message is empty or only white space is refused on the message alone while a condition is
    open: `replaced` is `['message']`, the message is `OPEN_MESSAGE`, the open conditions are
-   listed as left out (`withOpen`), the meaning, next step and what stands stay the model's,
+   listed as left out when the model listed nothing (`withOpen`), the meaning, next step and what stands stay the model's,
    and its `does:` line stays unless it is empty or `messageSaysStop` catches it, then
-   `OPEN_DOES`, since that line describes the message. With every condition shown or closed
+   `OPEN_DOES`, since that line describes the message. An answer sound in every way but a
+   stop sentence inside a message that still asks for work (verdict continue, no `well:`, a
+   `next:` that is not empty and says no stop, and `withoutStopSentences(message)` not `''`) is
+   no refusal: the message loses its stop sentences, its `does:` line is `OPEN_DOES` when empty
+   or caught by `messageSaysStop`, `refused` is false and `replaced` empty, so a stray "then
+   stop" no longer costs a second read. With every condition shown or closed
    an empty message stands, and with no objective written (`gateOpen` is null) it stands too,
    since nothing says what is open. `pressBrief` takes this refusal as any other: the second
    ask, whose `askAgain` says an empty message counts, then the own-words call, whose
@@ -359,7 +376,11 @@ call writes (below):
    the owner's side as the session's),
    each tool use on one line with its result, a row of tool
    results shown only for results not already printed), each message cut to
-   `RECORD_ENTRY_CUT` (3,000) and each tool input or result to `RECORD_TOOL_CUT` (600),
+   `RECORD_ENTRY_CUT` (3,000) and each tool input or result to `RECORD_TOOL_CUT` (600), except a
+   shell command that removes files (`removesFiles`: `rm`, `rmdir`, `unlink`, `shred`, `trash`,
+   `del`, `erase`, `Remove-Item`, `-delete`, `worktree remove` or `git clean` in a `Bash` or
+   `PowerShell` command), whose input is cut at `RECORD_ENTRY_CUT`, so a long list of paths it
+   deletes is read whole rather than as its first paths and a gap,
    head and tail kept around a marked gap, the oldest entries left out past `RECORD_BUDGET`
    (200,000 characters) with a line saying how many, fenced in `<session_record>` with any
    fence tag inside printed with `‹ ›`, then the task. `headTail` marks every cut inside its
@@ -384,7 +405,9 @@ call writes (below):
    are read whole up to the budget (`recordText`'s `from`); `boundaryCover` turns the other
    outcomes into `ReaderGaps` and a line each reader is told. `STANDING_LINE` tells every reader
    the agent's standing instructions are not in what it reads, and `NOT_ASSESSED_RULE` what it may
-   say of a step whose proof it cannot see.
+   say of a step whose proof it cannot see, and that a list of steps still to do (a compaction
+   summary's, say) shows only what was left when it was written: a later entry that ran the
+   step settles it.
 
    **What the readers hold of the owner's messages and approved plans (Task 7).** `memoryFor`
    reads back, by fingerprint, the saved copy (`src.sent`) of every message of the job and each
@@ -628,7 +651,7 @@ holds or moved, come its `approved:` lines: one `approved: #n | all` or
 an approval are `OBJECTIVE_SYSTEM`'s section "Plans the owner approved": what a yes is, a draft
 with the owner's words read as one message, each step of an approved plan its own condition
 after the whole plan is read, a clash kept as both sides and an open "Settle with the owner
-which stands" condition, a plan's statements of fact held as the agent's claims, and, of the turn the owner answered, only the part the owner took counted, the rest of that turn and the agent's other turns counting for nothing. Outside that section, the rule "Nothing else can move it" holds that what the agent says it did, did not do, found or checked, and any limit it sets on its own work (that it installed nothing, changed nothing, will ask first or left some of it to the owner), is the agent's account and never a condition, a limit or part of the result unless it is a step of a plan the owner approved. `takeObjective` applies it: the first
+which stands" condition, a plan's statements of fact held as the agent's claims, and, of the turn the owner answered, only the part the owner took counted, the rest of that turn and the agent's other turns counting for nothing. Outside that section, the rule "Nothing else can move it" holds that what the agent says it did, did not do, found or checked, and any limit it sets on its own work (that it installed nothing, changed nothing, will ask first or left some of it to the owner), is the agent's account and never a condition, a limit or part of the result unless it is a step of a plan the owner approved. `EFFORT_COMPLAINT_RULE`, in "How the objective is built", reads an owner's complaint that effort went into checks, rounds or machinery together with the remedy the same message asks for (such as someone opening the real thing and trying to break it): the remedy is held, and the complaint is about pieces built only to prove the agent did its own work, never a condition asking for fewer tests, code reviews, plan checks or second readers. The writer's "It says, in this order" line and the ROLE's both end on "no effort spent on anything built only to prove the agent did its own work" (until 0.7.6, "on checks or process the result does not need"), and the ROLE's fourth expectation adds that the rep never asks the agent for fewer tests, reviews, plan checks or second readers, nor forbids a new one that serves the result. `takeObjective` applies it: the first
 objective is taken as it stands; after that a write is taken only when it saw a message of the owner's
 or a note past `from` (`hisFrom` never counts a draft), so neither the agent's words nor the
 rep's drafts can move it and a write that lands late cannot take a newer one's place. A
@@ -650,9 +673,22 @@ their `shown:` lines when they name where, their `closed:` lines only when the n
 message of the owner's on the job sent after `from` (one the objective was built from had its say
 when it was written), and the check's `reopen:` lines when they say what shows otherwise; a look's or a briefing's
 `shown:` line does not move a condition marked `reopened` (only the check's does, the fourth
-argument). A new job's conditions start with no mark. A draft moves only `step`, set to the draft's `firstSentence` in
+argument). Each of those lines names the held condition `markedCondition` finds for it: the one
+it copies exactly (case and a closing full stop aside), and failing that the one whose content
+words it shares most (Dice over word sets, short words and plain endings folded), when that
+score is at least `MARK_MATCH` (0.5) and leads every other condition's by `MARK_LEAD` (0.2); a
+line too loose to name one condition, or between two, moves none. Readers reword the
+condition they copy ("The live site runs the newest saved version" for "The live site is shown
+to run the newest saved version"), and before 0.7.6 an exact match alone dropped such a mark.
+The watch's and the briefing's formats ask for each held condition copied word for word. A
+new job's conditions start with no mark. A draft moves only `step`, set to the draft's `firstSentence` in
 `prompt.submit`. The card shows `revisedLine` under the head and `objectiveText` as its
-reading; the row shows `result`.
+reading; the row shows `result`. The reading's "Right now" line is `rightNow(step, now)`: once
+the agent's turn has ended (`now.isWorking` false and `doing` set by `turn.complete`) it says so
+(`STOPPED_NOW` for a stop that waits on the owner, `ASKING_NOW` for a question, `HALTED_NOW` when
+the owner stopped it), since `step` moves only with the objective writer or a sent draft and
+would otherwise still name a step the agent has left. The briefing, the check and the card's
+render each pass the live `nowA`; the check's own prompt reads the objective without it.
 
 ### The plan screen
 

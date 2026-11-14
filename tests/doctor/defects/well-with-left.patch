@@ -1,12 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
+index a2ff546..4568c6d 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -626,7 +626,7 @@
+@@ -2983,7 +2983,7 @@ export function parseBrief(text: string): BriefAnswer {
      verdict: verdictOf(p.verdict),
      shown: shownOf(p.shown),
      closed: items(p.closed).map(droppedOf).filter(d => d.text !== ''),
--    well: leftOut.length > 0 ? '' : clean(p.well),
-+    well: clean(p.well),
-     stands: clean(p.stands),
-     means: clean(p.means),
+-    well: leftOut.length > 0 ? '' : cardText(p.well),
++    well: cardText(p.well),
+     stands: cardText(p.stands),
+     means: cardText(p.means),
      leftOut,

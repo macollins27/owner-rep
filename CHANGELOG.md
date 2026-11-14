@@ -3,6 +3,29 @@
 What changed in each release of Owner Rep, newest first. The full record is the
 [commit history](https://github.com/macollins27/owner-rep/commits/main).
 
+## 0.7.6 (14 November 2026)
+
+- **Left out lists only what is left out.** When the rep turned down part of a briefing, it added
+  every open item of the done list under the real gaps, with no heading, and that second read made
+  the card take twice as long. The card now keeps its own list of gaps. A stray "then stop" in an
+  otherwise sound message is simply cut, and "say which fact it stops" is no longer mistaken for
+  telling the agent to stop, so the card is not read a second time for nothing.
+- **Proof that was given now counts.** When the briefing showed a done-list item had been proven
+  but worded it differently, the item stayed "not shown". It is now marked shown when the wording
+  plainly names it.
+- **Right now tells the truth after the agent stops.** The card said the agent was mid-task after
+  it had finished and was waiting. It now says the agent has stopped and is waiting, is asking you
+  something, or was stopped by you.
+- **A complaint about checks keeps its remedy.** When you complain that effort went into checks
+  and in the same message ask for someone to open the real thing and try to break it, the rep now
+  holds that ask. It no longer treats tests and reviews as extra cost or asks the agent for fewer
+  of them.
+- **No false "files not deleted" warning.** A long delete command was cut short in what the rep
+  read, and beside an older to-do list it looked like the files were never removed. Delete
+  commands are now read whole, and an old to-do list no longer outweighs a later step that did it.
+- **No record numbers on the card.** "Found in entry 105" pointed to the rep's own numbering,
+  which you cannot look up. Those references are now left off the card and the message.
+
 ## 0.7.5 (14 November 2026)
 
 - **The strip above the prompt is shared properly again on Claude Code 2.1.325.** That build
