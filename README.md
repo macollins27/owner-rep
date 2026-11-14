@@ -28,7 +28,7 @@ Press `y` to add the marketplace, pick a scope, and the rep appears above your p
 - **What it is:** a Claude Code mod (a plugin with a hooks module) that supervises your
   coding agent and reports in plain English.
 - **What it needs:** Claude Code 2.1.286 or later. Every change is tested on 2.1.286,
-  2.1.310 and the newest release. It runs on macOS, Linux and Windows; the independent
+  2.1.310, 2.1.325 and the newest release. It runs on macOS, Linux and Windows; the independent
   check doesn't run on Windows.
 - **What it costs:** it uses your own Claude Code account. The light reads run on their own;
   the heavy check runs only when you press for it.
@@ -361,9 +361,9 @@ The full design is in [How the owner rep works](docs/how-it-works.md).
 
 ## Built to be trusted
 
-- **311 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
+- **604 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
   the tests.
-- **A doctor that plants bugs.** It plants 404 known defects in a throwaway copy, one at a
+- **A doctor that plants bugs.** It plants 538 known defects in a throwaway copy, one at a
   time, and fails the build if the tests miss any of them.
 - **Real sessions.** Twelve scenarios run in real Claude Code sessions, with the screen
   captured in [`tests/live/captures`](tests/live/captures).

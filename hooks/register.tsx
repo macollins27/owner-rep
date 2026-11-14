@@ -2462,6 +2462,18 @@ async function rememberOther($: EngineInterface, text: string): Promise<void> {
   })
 }
 
+// Whether another mod's row in the band draws something, by surface, as the band's
+// arrangement last showed it. From Claude Code 2.1.325 the band asks each mod for a row of
+// its own and stacks the rows (`AbovePromptList`); `next(e)` under the rep's row then answers
+// only the engine's own drawing (`{ type: 'engine', ref }`), never another mod's row, so the
+// rows are read where they are stacked. On earlier builds every mod draws in one chain, the
+// rep's `next(e)` holds what the others draw, and this stays empty.
+const othersDraw = new Map<string, boolean>()
+const PLUGIN = 'owner-rep'
+// Whether the rep's row last drew the briefing, by surface: the band's arrangement, settled
+// after the rows, leaves the other mods' rows out while it is up.
+const cardUp = new Map<string, boolean>()
+
 async function clearNote($: EngineInterface): Promise<void> {
   await update($, noteA, () => null)
   await update($, viewA, () => 'row')
@@ -2821,7 +2833,26 @@ export const register: Register = on => {
     return next(e)
   })
 
+  // The band's rows once they settle, one for each mod that drew one (2.1.325 on). What the
+  // other mods' rows draw is kept for the rep's row, which is drawn again when that changes,
+  // and their text is remembered as on earlier builds. While the briefing is up it takes the
+  // strip alone: the other rows are left out of what is stacked.
+  on('ui.render', { component: 'AbovePromptList' }, async ($, e, next) => {
+    const others = e.props.rows.filter(r => r.plugin !== PLUGIN && drawsSomething(r.tree))
+    const draws = others.length > 0
+    if (draws) rememberOther($, others.map(r => textOf(r.tree)).join(' ')).catch(() => undefined)
+    if ((othersDraw.get(e.surface) ?? false) !== draws) {
+      othersDraw.set(e.surface, draws)
+      $.ui.invalidate('ui.render')
+    }
+    if (cardUp.get(e.surface) === true && e.props.rows.some(r => r.plugin === PLUGIN)) {
+      return next({ ...e, props: { ...e.props, rows: e.props.rows.filter(r => r.plugin === PLUGIN) } })
+    }
+    return next(e)
+  })
+
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
+    cardUp.set(e.surface, false)
     if (e.props.hasSurvey) return next(e)
     if (e.surface !== 'terminal' && e.surface !== 'desktop' && e.surface !== 'vscode') return next(e)
     const { Box, Text, Button } = $.ui.resolve(e)
@@ -2839,14 +2870,16 @@ export const register: Register = on => {
     const note = await read($, noteA)
     const brief = await read($, briefA)
     const lines = (await read($, linesA)) ?? []
+    cardUp.set(e.surface, view === 'brief' && brief !== null)
 
     // The band is one strip shared with every other mod, "You should know"
     // among them, and this mod draws first. Whatever is beneath is kept under
-    // the row. While another mod's note is showing, the rep's own note waits,
+    // the row; from 2.1.325 another mod's row is stacked under it by the band, and what it
+    // draws comes from `othersDraw`. While another mod's note is showing, the rep's own note waits,
     // so only one set of digit buttons is ever on screen. The briefing, which
     // the owner asked for, takes the strip alone.
     const beneath = await next(e)
-    const hasBeneath = drawsSomething(beneath)
+    const hasBeneath = drawsSomething(beneath) || (othersDraw.get(e.surface) ?? false)
     if (hasBeneath) rememberOther($, textOf(beneath)).catch(() => undefined)
 
     // A press reads the id then, so one made just after a /clear is the new session's.

@@ -565,6 +565,9 @@ The band above the prompt is a strip shared with other mods. The rep draws first
 whatever is beneath it. While another mod's note is up, the rep's own note waits and its
 buttons lose their digit hotkeys, so only one set of digits is ever on screen. From the
 prompt box only a bare digit presses a band button, which is why every button carries one.
+From Claude Code 2.1.325 the band draws each mod's row on its own and stacks them, so the rep
+reads the other rows where they are stacked rather than beneath its own; the rules are the
+same on every build.
 
 ## Where it draws
 
@@ -590,14 +593,15 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 311 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 604 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: twelve real sessions in tmux, the strip captured to tests/live/captures
 ```
 
 GitHub runs the validation, the host-calls step, the host-commands script, the tests and the
-type check on Ubuntu, macOS and Windows with Claude Code 2.1.310, the tests again on Ubuntu
-with 2.1.286, the first build with mods on by default, and with the newest release, on
+type check on Ubuntu, macOS and Windows with Claude Code 2.1.325, the tests again on Ubuntu
+with 2.1.286, the first build with mods on by default, with 2.1.310, the last build whose band
+draws every mod in one chain, and with the newest release, on
 every push that touches more than prose and pictures (`paths-ignore` in the workflow: the
 Markdown files, `docs/`, `llms.txt`, the licence, the issue forms and the live captures get
 no run), and the doctor as eight Ubuntu jobs at once, each planting every eighth defect

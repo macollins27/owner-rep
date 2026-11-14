@@ -15,8 +15,8 @@ can be weighed against the rules already there.
 
 ## Run it from a clone
 
-You need Claude Code 2.1.286 or later. GitHub runs the tests on 2.1.286, 2.1.310 and
-the newest release.
+You need Claude Code 2.1.286 or later. GitHub runs the tests on 2.1.286, 2.1.310,
+2.1.325 and the newest release.
 
 ```
 git clone https://github.com/macollins27/owner-rep
@@ -38,7 +38,7 @@ Validation reports one expected warning: a `CLAUDE.md` at the plugin root is not
 plugin context. It is there for people and agents working on this repository.
 
 To type-check, run `tsc -p tests/ci/tsconfig.json --noEmit`. It uses the pinned copy of the
-mods API declarations in `tests/ci/types/`, for Claude Code 2.1.310.
+mods API declarations in `tests/ci/types/`, for Claude Code 2.1.325.
 [How the owner rep works](docs/how-it-works.md#develop) says how to type-check against your
 own build's declarations instead.
 

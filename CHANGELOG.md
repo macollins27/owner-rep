@@ -27,6 +27,12 @@ What changed in each release of Owner Rep, newest first. The full record is the
   agent's answer approves the plan itself; a background task finishing is not taken as your
   answer. While the watch is quiet because you typed past its
   notes, it still reads a plan waiting for your yes.
+- **The strip above the prompt is shared properly again on Claude Code 2.1.325.** That build
+  draws each mod's row on its own, so the rep stopped seeing another mod's note under its row.
+  With a second mod showing a note, both rows offered the same digit key and pressing it did
+  nothing. The rep now sees the other rows again: its own note waits and its buttons drop their
+  digits while another mod's note is up, and the briefing takes the strip alone. Tests and the
+  GitHub run now type-check on 2.1.325, and still run on 2.1.286 and 2.1.310.
 
 ## 0.7.4 (11 November 2026)
 

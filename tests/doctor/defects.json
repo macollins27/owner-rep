@@ -3520,5 +3520,17 @@
     "breaks": "The plan reading loses the rule that a review's own record of findings and fixes is part of the review, and that a pass report with evidence is a proof report, so a review's notes are named as self-proving.",
     "patch": "plan-scan-review-record.patch",
     "fixed": "2026-11-14"
+  },
+  {
+    "name": "other-rows-unread",
+    "breaks": "From Claude Code 2.1.325 the rep's row looks only at what is drawn beneath it, which no longer holds another mod's row, so its note and its digit buttons stay up beside another mod's and one digit presses neither.",
+    "patch": "other-rows-unread.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "card-shares-strip",
+    "breaks": "From Claude Code 2.1.325 the briefing no longer takes the strip alone: another mod's row stays stacked under the card the owner asked for.",
+    "patch": "card-shares-strip.patch",
+    "fixed": "2026-11-14"
   }
 ]
