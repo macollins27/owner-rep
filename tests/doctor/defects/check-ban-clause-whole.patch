@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 664d9b0..f137323 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -5132,7 +5132,7 @@ export const withoutCheckBans = (message: string): string => {
+   for (const { start, end } of sentencesOf(message).reverse()) {
+     const sentence = message.slice(start, end)
+     const clauses = sentence.split(';')
+-    if (clauses.length < 2 || !clauses.some(isCheckBan) || clauses.every(isCheckBan)) continue
++    if (clauses.length < 99 || !clauses.some(isCheckBan) || clauses.every(isCheckBan)) continue
+     const stop = /[.!?]["'”’)\]]*\s*$/.exec(clauses[clauses.length - 1] ?? '')?.[0].trim() ?? ''
+     const marker = LIST_MARKER.exec(sentence)?.[0] ?? ''
+     let joined = clauses.filter(c => !isCheckBan(c)).map(c => c.replace(LIST_MARKER, '').trim()).join('; ')

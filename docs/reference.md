@@ -76,7 +76,10 @@ call writes (below):
    a sentence that tells the agent not to build, add, write, make, set up or run tests, checks
    or reviews in general (`CHECK_BAN`: "Do not build new tests or reports for this.", "Don't
    add any more checks.", read with a list marker and leading quotes dropped) is cut through
-   the same `withoutSpans` as `withoutStopSentences`, and inside a sentence that asks for work
+   the same `withoutSpans` as `withoutStopSentences`, except that a sentence of clauses joined
+   by semicolons loses only its ban clauses, its first kept letter raised and its end mark
+   kept ("Do not add new checks or reports to prove this; open it, use it and tell me what you
+   saw." gives "Open it, use it and tell me what you saw."), and inside a sentence that asks for work
    only a "without building any new tests" clause goes, to the sentence's end
    (`WITHOUT_BAN`); a ban qualified as self-proving ("tests that only confirm your own steps
    ran", `BAN_SELF`), a ban on one named piece ("a script that checks your report") and a

@@ -3328,5 +3328,11 @@
     "breaks": "The card writers are no longer told that a line against tests, checks or reviews in general is never theirs to write.",
     "patch": "check-ban-rule-dropped.patch",
     "fixed": "2026-11-14"
+  },
+  {
+    "name": "check-ban-clause-whole",
+    "breaks": "A ban joined to its remedy by a semicolon (\"Do not add new checks; open it and use it.\") is cut whole, so the hands-on look the owner asked for goes with it.",
+    "patch": "check-ban-clause-whole.patch",
+    "fixed": "2026-11-14"
   }
 ]

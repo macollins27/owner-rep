@@ -20,7 +20,8 @@ What changed in each release of Owner Rep, newest first. The full record is the
   and in the same message ask for someone to open the real thing and try to break it, the rep now
   holds that ask. It no longer treats tests and reviews as extra cost or asks the agent for fewer
   of them, and a line in the message such as "do not build new tests for this" is cut before it
-  reaches the agent; a line against pieces built only to prove the agent's own work stays.
+  reaches the agent, while the remedy joined to it ("…; open it, use it and tell me what you
+  saw") stays, and so does a line against pieces built only to prove the agent's own work.
 - **No false "files not deleted" warning.** A long delete command was cut short in what the rep
   read, and beside an older to-do list it looked like the files were never removed. Delete
   commands are now read whole, and an old to-do list no longer outweighs a later step that did it.
