@@ -68,10 +68,13 @@ yes, the rep reads the whole plan. If any part of it only proves the agent did i
 (a script that confirms its own steps ran, logs kept as evidence, a grader approving its own
 output, a proof report), a line starting "Before you approve:" names that part, even one you
 asked for. On Claude Code's plan screen the line appears just above the screen while it is up;
-for a plan written in the agent's message it is the Heads up. Tests, code reviews, plan checks
+a plan long enough to fill the terminal pushes it out of sight, so once you accept, the rep's
+row names the same parts. For a plan written in the agent's message it is the Heads
+up, and a question you ask about the plan leaves it waiting: your yes after the agent's answer
+approves the plan itself. Tests, code reviews, plan checks
 and second readers are never named, however the plan words them. Once you approve, every step
 is part of the job: the rep never argues a step with you and never tells the agent to stop or
-drop one. When it accounts for where the effort went, it still says plainly what went into a
+drop one, and once a step is done it never asks for it to be run again. When it accounts for where the effort went, it still says plainly what went into a
 piece that only proves the agent's own work.
 
 **A briefing when you press `1`.** The card opens with the result you want and a count of

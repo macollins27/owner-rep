@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2737,7 +2737,7 @@
+       // What the plan screen answered is stored after the call; a thrown call stores nothing.
+       if (tool === 'ExitPlanMode') {
+         await takePlanScreen($, e, result).catch(() => undefined)
+-        if (planScreen(e, result)?.kind === 'accepted') {
++        if (planScreen(e, result) !== null) {
+           screen.accepted = true
+           if (screen.pieces !== undefined) await showApproved($, screen.pieces).catch(() => undefined)
+         }

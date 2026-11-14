@@ -325,15 +325,21 @@ Plans the owner approves. Since 0.7.5 the rep treats a plan before and after the
 differently. Before the yes, the owner can still change it, so every self-proving piece in it is
 worth naming, even one the owner asked for. When the agent opens Claude Code's plan screen,
 one quick call reads the plan alone and, while the screen still waits, writes a line above it
-starting "Before you approve:" that names each such piece. A plan the agent writes as a
+starting "Before you approve:" that names each such piece. A plan that fills the terminal
+pushes that line out of sight, and nothing a mod draws shows under the plan screen, so when the
+owner accepts a plan with such pieces the rep's row names them, as a fact about what the owner
+approved. A plan the agent writes as a
 message is caught by the watch instead, read whole until the owner answers it (a question
 about it is no answer), and still read at each turn end while the watch is quiet because the
-owner typed past its notes. The rule that sets the watch's bar has one case that
+owner typed past its notes. When the owner asks about a waiting plan and then says yes, the
+yes answers the agent's reply, not the plan; so the objective writer is shown the plan, the
+question and the reply together with the yes, and the yes approves the plan. The rule that sets the watch's bar has one case that
 always clears it, a self-proving piece in a plan waiting for the yes. In the same rule, tests,
 reviews, plan checks, done lists and second readers are never flagged, however heavy the plan
 makes them sound. After the yes, every step is the owner's ask. No reader argues one or tells
 the agent to stop, skip or drop it. A step not yet done stays open like any other part of the
-job, and the message may ask the agent to finish it. But the money spent on a self-proving step
+job, and the message may ask the agent to finish it; once it is done, no reader asks the agent
+to run it again or keep it working. But the money spent on a self-proving step
 still did not make the product better, so the card's account of the effort says where it went
 under "stands", as a fact, never as work left. Until then an agent could get a self-proving
 step past the rep in two ways: by burying it in a long plan, since only the start of the plan

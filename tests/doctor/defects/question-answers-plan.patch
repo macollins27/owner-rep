@@ -1,12 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2619,7 +2619,7 @@
+@@ -2740,7 +2740,7 @@
      const text = withoutReminders(row.text)
      if (text === '') return
      const his = human === undefined ? !notTyped(text) : human.has(typedKey(row.text)) && !notTyped(typedForm(row.text))
--    if (!his || /\?\s*$/.test(text)) return
-+    if (!his) return
-     if (asking) soft = at
+-    if (!his || !answeredAgent(text, asking, null)) return
++    if (!his || (asking && !answeredAgent(text, asking, null))) return
+     if (asking) soft = { at, text }
      else firm = at
      asking = false

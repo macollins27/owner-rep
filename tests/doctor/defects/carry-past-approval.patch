@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1205,7 +1205,7 @@
+       if (text !== '') after = text
+       continue
+     }
+-    if (m.kind !== 'his' || approvalOf(m)) break
++    if (m.kind !== 'his') break
+     if (answeredAgent(toAgent(m), asks(text), after.trim() === '' ? null : asks(after))) break
+     walked.unshift(m)
+     if (text !== '') after = text

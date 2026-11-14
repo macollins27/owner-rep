@@ -549,7 +549,7 @@
     "name": "fork-draft-as-his",
     "breaks": "A card message the owner sent in the session this one was forked from is recorded as their own words, so the objective is written from the rep's draft.",
     "patch": "fork-draft-as-his.patch",
-    "fixed": "2026-10-16; remade 2026-10-31"
+    "fixed": "2026-10-16; remade 2026-10-31; remade 2026-11-14"
   },
   {
     "name": "command-form-raw",
@@ -2763,7 +2763,7 @@
     "name": "approved-prior-cut-400",
     "breaks": "The saved body keeps only its last 400 characters.",
     "patch": "approved-prior-cut-400.patch",
-    "fixed": "2026-11-01"
+    "fixed": "2026-11-01; remade 2026-11-14"
   },
   {
     "name": "missed-step-counted-complete",
@@ -2817,7 +2817,7 @@
     "name": "long-reply-clipped",
     "breaks": "An ordinary long reply loses its whole sent source.",
     "patch": "long-reply-clipped.patch",
-    "fixed": "2026-11-01"
+    "fixed": "2026-11-01; remade 2026-11-14"
   },
   {
     "name": "appended-draft-clipped",
@@ -3405,6 +3405,66 @@
     "name": "plan-flag-length-capped",
     "breaks": "The Heads up's output format holds every flag to 25 words, so a text plan with several self-proving pieces has some of them left unnamed.",
     "patch": "plan-flag-length-capped.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "approved-note-missing",
+    "breaks": "Accepting a plan whose reading named self-proving pieces puts nothing on the rep's row, so an owner whose plan filled the terminal never hears what the warning said.",
+    "patch": "approved-note-missing.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "approved-note-late-dropped",
+    "breaks": "When the plan reading lands after the owner accepted the plan, its pieces are dropped, so a quick yes on the plan screen hides them.",
+    "patch": "approved-note-late-dropped.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "approved-note-on-reject",
+    "breaks": "A plan the owner turned down still gets the row note saying the owner approved it.",
+    "patch": "approved-note-on-reject.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "carry-dropped",
+    "breaks": "A yes after the owner's question about a waiting plan carries only the agent's answer to the objective writer, so the plan itself is never approved.",
+    "patch": "carry-dropped.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "carry-into-question",
+    "breaks": "A question of the owner's takes the earlier unanswered turns with it, so the writer reads a question as answering a plan.",
+    "patch": "carry-into-question.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "carry-past-approval",
+    "breaks": "The carry walks past a message that already approved a plan, so a later yes is shown that plan again as waiting.",
+    "patch": "carry-past-approval.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "carry-past-answer",
+    "breaks": "The carry walks past a message the agent took as its answer, so an old plan rides along with every later short reply.",
+    "patch": "carry-past-answer.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "carry-ask-line-dropped",
+    "breaks": "The carried turns lose the line saying where the owner's question came, so the writer reads the plan, the question's answer and the yes as one run of the agent's words.",
+    "patch": "carry-ask-line-dropped.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "done-step-rerun-allowed",
+    "breaks": "The readers lose the rule that a finished approved step is never asked to run again, so the message asks the agent to rerun or keep up a self-proving script once it is done.",
+    "patch": "done-step-rerun-allowed.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "piece-cut-mid-word",
+    "breaks": "A long piece in the plan warning is cut in the middle of a word, so the warning ends on a broken word.",
+    "patch": "piece-cut-mid-word.patch",
     "fixed": "2026-11-14"
   }
 ]

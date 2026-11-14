@@ -1,12 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -489,7 +489,7 @@
- // The one line shown above the plan screen, naming every piece. Pieces past what the line holds
- // are counted at its end, never dropped unsaid.
+@@ -500,7 +500,7 @@
+ 
+ // What a self-proving piece costs, said once, before the pieces it names.
+ const pieceCount = (pieces: string[], one: string, many: string): string => (pieces.length <= 1 ? one : `${pieces.length} ${many}`)
+-const pieceList = (pieces: string[]): string => `${pieces.map(pieceOf).join('; ')}.`
++const pieceList = (pieces: string[]): string => `${pieces.slice(0, 3).map(pieceOf).join('; ')}.`
+ 
+ // The one line shown above the plan screen, naming every piece after the one sentence on its cost.
  export function planWarning(pieces: string[]): string {
--  const named = pieces.map(p => fit(p, PLAN_PIECE_CUT).replace(/[.,;:]+$/, ''))
-+  const named = pieces.slice(0, 3).map(p => fit(p, PLAN_PIECE_CUT).replace(/[.,;:]+$/, ''))
-   const one = named.length <= 1
-   const list = named.length <= 1 ? (named[0] ?? '') : `${named.slice(0, -1).join(', ')}, and ${named.at(-1)}`
-   return `Before you approve: ${list}, only ${one ? 'proves' : 'prove'} the agent did its own work. ${one ? 'It costs' : 'They cost'} you money and ${one ? 'does' : 'do'} not make the product better.`

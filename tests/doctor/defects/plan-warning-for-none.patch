@@ -1,7 +1,7 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -483,7 +483,7 @@
+@@ -485,7 +485,7 @@
      items.push((m[1] ?? '').trim())
    }
    if (items.length === 0) return null
@@ -9,4 +9,4 @@ diff --git a/hooks/rep.ts b/hooks/rep.ts
 +  return items.filter(i => i !== '').map(i => fit(i, PLAN_PIECE_CUT))
  }
  
- // The one line shown above the plan screen, naming every piece. Pieces past what the line holds
+ // A piece cut to PLAN_PIECE_CUT at a word boundary, its own end marks taken off, so a cut piece

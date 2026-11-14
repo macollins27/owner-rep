@@ -1,13 +1,12 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 1c7c5ed..b91e8c0 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -2439,7 +2439,7 @@ export const register: Register = on => {
+@@ -2645,7 +2645,7 @@
            const isHis = split === null || split.his !== ''
            if (split === null) {
              // The whole as sent, when the stored text is not all of it: cut, or split from a note.
 -            const sent = noted !== null ? e.text : text.length > HIS_CUT ? text : null
 +            const sent = noted !== null ? e.text : null
-             pushOwner(rec, 'his', text, body.text, await withSent($, id, rec, await bodyFields($, id, rec, body), sent))
+             pushOwner(rec, 'his', text, body.text, await withSent($, id, rec, await bodyFields($, id, rec, body, text), sent))
            } else {
-             await pushDraft($, id, rec, split, body.text, noted !== null ? e.text : text, async () => bodyFields($, id, rec, body))
+             await pushDraft($, id, rec, split, body.text, noted !== null ? e.text : text, async () => bodyFields($, id, rec, body, split.his, true))

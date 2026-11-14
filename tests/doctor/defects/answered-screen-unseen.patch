@@ -1,11 +1,11 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2606,7 +2606,6 @@
+@@ -2727,7 +2727,6 @@
        for (const u of row.toolUses) {
          if (!SCREENS.has(u.tool) || u.tool_use_id === undefined) continue
          screens.add(u.tool_use_id)
 -        if (u.text !== undefined) firm = at
        }
        const said = row.text.trim()
-       if (said !== '') asking = /\?\s*$/.test(said)
+       if (said !== '') asking = asks(said)
