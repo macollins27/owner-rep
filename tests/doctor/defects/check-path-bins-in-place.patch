@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index e06ac4a..867413d 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3887,7 +3887,7 @@ export const launchOf = (path: string, bins: string[] | null, found: Found[] | n
+     return ''
+   }
+   const claude = first('claude')
+-  const run = [...new Set(bins), ...path.split(':').filter(d => !isShims(d))]
++  const run = order
+   return claude === '' ? unresolved : { path: run.join(':'), claude, pnpm: first('pnpm'), mise: 'around' }
+ }
+ export const withProgram = (argv: readonly string[], program: string): string[] => (program === '' ? [...argv] : [program, ...argv.slice(1)])

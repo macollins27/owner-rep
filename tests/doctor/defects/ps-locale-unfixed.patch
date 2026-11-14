@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 07ac1c3..ebdb2c4 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1882,7 +1882,7 @@ async function sweepCopies($: EngineInterface, host: Host, home: string): Promis
+   const { owned, gone } = copiesOf(list.stdout, home)
+   for (const dir of gone) $.process.run(hostArgv(host, ['rm', '-rf', dir]), { timeoutMs: COPY_REMOVE_TIMEOUT_MS }).catch(() => undefined)
+   if (owned.length === 0) return
+-  const alive = await $.process.run(hostArgv(host, aliveArgv(owned.map(o => o.pid))), { env: PS_ENV, timeoutMs: ALIVE_TIMEOUT_MS }).catch(() => null)
++  const alive = await $.process.run(hostArgv(host, aliveArgv(owned.map(o => o.pid))), { timeoutMs: ALIVE_TIMEOUT_MS }).catch(() => null)
+   const dead = alive === null || alive.isStdoutTruncated ? null : deadOwned(alive.stdout, owned)
+   for (const o of dead ?? []) await retire($, host, home, o.copy, o.line)
+ }

@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 07ac1c3..954fdd4 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2558,7 +2558,7 @@ export const register: Register = on => {
+     // With a person at the prompt (never a -p run, as the check's own is): mise asked before the
+     // session goes on (`miseBins`), and the copies closed sessions left swept, not waited on.
+     // The check never starts on Windows, so neither is done there.
+-    if (e.isInteractive) {
++    if (e.isInteractive || !e.isInteractive) {
+       try {
+         const host = await hostOf($)
+         if (!isWindowsHost(host)) {

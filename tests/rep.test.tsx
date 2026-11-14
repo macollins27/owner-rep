@@ -9320,10 +9320,16 @@ const shimRoom = async ($: Engine, on: On, o: RoomOpts): Promise<{ copy: string;
   const cwd = o.cwd ?? '/tmp/x'
   const runs: ShimRun[] = []
   on('env.get', (_$, e) => ({ value: e.name === 'PATH' ? (o.path ?? SHIM_PATH) : e.name === 'MISE_IGNORED_CONFIG_PATHS' ? o.ignored : '/Users/o' }))
-  on('process.run', (_$, e) => {
+  on('process.run', async (_$, e) => {
     runs.push({ argv: [...e.argv], cwd: e.init?.cwd, env: e.init?.env })
     const out = (exitCode: number, stdout = '') => ({ value: { exitCode, stdout, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } })
-    if (e.argv[0] === 'mise') return o.bins === null ? out(1) : out(0, o.bins)
+    if (e.argv[0] === 'mise') {
+      // At a session's start mise answers a moment later, as a real one does, so a start that goes
+      // on without its answer shows.
+      if (o.start !== undefined) await realTick(20)
+      runs.push({ argv: ['(mise answered)'] })
+      return o.bins === null ? out(1) : out(0, o.bins)
+    }
     if (e.argv[0] === 'find' && e.argv.includes('pnpm')) {
       if (o.found === null) throw new Error('find timed out')
       return out(1, o.found ?? SHIM_FOUND)
@@ -9352,8 +9358,8 @@ const shimRoom = async ($: Engine, on: On, o: RoomOpts): Promise<{ copy: string;
   if (o.start !== undefined) {
     on('session.start', (_$, e) => ({ cwd: e.cwd }))
     await $.session.start({ cwd, surface: o.start === 'person' ? 'terminal' : null, isInteractive: o.start === 'person' })
-    await settle($)
     runs.push({ argv: ['(started)'] })
+    await settle($)
   }
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   for (let i = 0; i < (o.checks ?? 1); i++) {
@@ -9498,7 +9504,10 @@ test('rule: mise is asked where the owner\'s tools are once, when the session st
   const asks = got.runs.flatMap((r, i) => (r.argv[0] === 'mise' ? [i] : []))
   expect(asks.length).toBe(1)
   expect(got.runs[asks[0] ?? -1]).toEqual({ argv: ['mise', 'bin-paths'], cwd: '/Users/o', env: { MISE_ENV_FILE: '' } })
-  expect(asks[0]).toBeLessThan(got.runs.findIndex(r => r.argv[0] === '(started)'))
+  // The start waits for mise's answer before it goes on, so no command of the agent's runs first.
+  const answered = got.runs.findIndex(r => r.argv[0] === '(mise answered)')
+  expect(answered).toBeGreaterThan(asks[0] ?? -1)
+  expect(answered).toBeLessThan(got.runs.findIndex(r => r.argv[0] === '(started)'))
   expect(got.spawns.length).toBe(2)
   for (const s of got.spawns) expect(s.argv[0]).toBe(`${NODE_BIN}/claude`)
 })
@@ -9549,7 +9558,7 @@ test('rule: a check removes the copies whose owner process is gone, a pid now na
   expect(removes(got.runs)).toContain(`${CHECKS}/.gone-l2x9-abc`)
 })
 
-test('rule: a ps that sees no process, not even the one asking, or that cannot answer, removes no copy', async ($, on) => {
+test('rule: a ps that sees no process, not even the one asking, removes no copy', async ($, on) => {
   const blind = await shimRoom($, on, { bins: `${NODE_BIN}\n`, list: OWNERS, alive: '111\n' })
   expect(retires(blind.runs).filter(r => r.argv[5] !== blind.copy)).toEqual([])
 })

@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 07ac1c3..2a4f435 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1935,7 +1935,7 @@ async function makeCopy($: EngineInterface, home: string, sid: string, cwd: stri
+   try {
+     await $.process.run(hostArgv(host, ['mkdir', '-p', checkCopiesDir(home)]), { timeoutMs: COPY_STEP_TIMEOUT_MS })
+     // What an earlier check left at the path is renamed away; removed in place only if that fails.
+-    if (!(await retire($, host, home, copy))) await $.process.run(hostArgv(host, ['rm', '-rf', copy]), { timeoutMs: COPY_REMOVE_TIMEOUT_MS })
++    if (!(await retire($, host, home, copy)) || true) await $.process.run(hostArgv(host, ['rm', '-rf', copy]), { timeoutMs: COPY_REMOVE_TIMEOUT_MS })
+     // The owner file, before the copy, so no copy stands without its owner named (see `PS_ENV`).
+     await $.process.run(hostArgv(host, ownerWriteArgv(ownerFile(copy))), { env: PS_ENV, timeoutMs: OWNER_WRITE_TIMEOUT_MS }).catch(() => null)
+     const [clone, plain] = copyArgvs(host, cwd, copy)

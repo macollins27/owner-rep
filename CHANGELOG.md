@@ -11,13 +11,18 @@ What changed in each release of Owner Rep, newest first. The full record is the
   untrusted. The check now asks mise, from your home, where your own tools are and starts
   Claude Code and pnpm from there by full path, with mise's shims off their command path, so
   nothing in the project's mise config, or an env file the agent wrote, runs outside the
-  fence. A check started from your home works too. Where mise cannot answer, the check goes
-  through the shim with no env file read and the project's mise config ignored, never your
-  own.
-- **Copies of cut-off checks are cleaned up.** A check whose Claude Code ended mid-run left its
-  copy of the project in `~/.cache/owner-rep/checks`. Each check now deletes copies other
-  sessions' checks left there more than an hour and a half ago; a running check's copy is
-  never touched.
+  fence. This holds whichever tool is the shim: with only `node` from mise, the check still
+  runs no shim, since pnpm would start node's. mise is asked once, when a session starts with
+  you at the prompt, before the agent has run anything. A check started from your home works
+  too; there alone the home's mise config is the agent's to change, which the rep cannot fence.
+  Where mise cannot answer, the check goes through the shim with no env file read and the
+  project's mise config ignored, never your own.
+- **Copies of cut-off checks are cleaned up.** A check whose Claude Code ended mid-run, or
+  closed straight after a check, left its copy of the project in `~/.cache/owner-rep/checks`.
+  Each copy now has an owner file naming the Claude Code process that made it, and copies
+  whose process has closed are deleted when the next session starts and before each check. A
+  running session's copy is never touched, however old; copies left by builds before 0.7.6
+  have no owner file and are kept.
 
 ## 0.7.5 (14 November 2026)
 

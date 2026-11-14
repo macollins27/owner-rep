@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 55b4d99..dceded9 100644
+index e06ac4a..ceaecec 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3689,7 +3689,7 @@ export const staleCopiesOf = (stdout: string, home: string, sessionId: string):
-     .map(l => l.trim())
-     .filter(l => {
-       const name = l.slice(checkCopiesDir(home).length + 1)
--      return l.startsWith(`${checkCopiesDir(home)}/`) && !name.includes('/') && name !== own && (name === 'session' || SESSION_NAME.test(name))
-+      return l.startsWith(`${checkCopiesDir(home)}/`) && !name.includes('/') && name !== own 
-     })
- }
- 
+@@ -3701,7 +3701,7 @@ export const copiesOf = (stdout: string, home: string): { owned: Owned[]; gone:
+     }
+     const session = name.endsWith('.owner') ? name.slice(0, -'.owner'.length) : ''
+     const m = /^(\d+) +(\S.*)$/.exec(raw.slice(tab + 1))
+-    if ((session !== 'session' && !SESSION_NAME.test(session)) || m === null) continue
++    if (session === '' || m === null) continue
+     owned.push({ copy: `${dir}${session}`, file: path, pid: m[1] ?? '', start: spaced(m[2] ?? ''), line: raw.slice(tab + 1) })
+   }
+   return { owned, gone }

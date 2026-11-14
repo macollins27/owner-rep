@@ -569,21 +569,29 @@ call writes (below):
    `[env]` and hooks would run the project's code unfenced; and the env file loads even from
    a folder `MISE_IGNORED_CONFIG_PATHS` names, so a `NODE_OPTIONS=--require=…` the agent wrote
    in the copy's `.env` runs when node starts (measured 14 Nov 2026, mise 2026.10.19). So the
-   check starts neither through a shim (`launchFor`, `launchOf`): it asks `mise bin-paths`
-   from the home with `MISE_ENV_FILE` empty (`MISE_BIN_PATHS_ARGV`, `MISE_ASK_ENV`, 15 s),
-   which names the folders of the owner's own tools from the owner's own config, then one
-   `find` over those folders and the command path's (`programsArgv`, read by `programsOf`, 30
-   s) for `claude` and `pnpm` and where each leads; a program that leads to `mise` is a shim.
-   Where there is one, the command path has the shims folder replaced by mise's folders, in
-   its place, and `claude` and `pnpm` start by their full paths, the first on that path that
-   is no shim (`withProgram`), with that path as their `PATH` (`checkEnv`, `pnpmAskEnv`), so no
-   mise runs on the copy's files or the folders above it, and pnpm's `#!/usr/bin/env node`
-   finds the owner's node rather than node's shim. Where the owner's claude comes through
-   mise's node, that is the claude the shim started. A pnpm found only as a shim is not
-   asked, and the run gets no store. The fence and the links question take the owner's path
-   and the check's both (`guardedPath`). The run's own commands use that path, so a tool the
-   project pins through mise alone runs inside the check at the owner's version, or is not
-   found. Where there is no shim, nothing changes: both start by name with no `PATH` given.
+   check runs no shim at all (`launchFor`, `launchOf`). mise is asked `mise bin-paths` from the
+   home with `MISE_ENV_FILE` empty (`MISE_BIN_PATHS_ARGV`, `MISE_ASK_ENV`, `MISE_ASK_TIMEOUT_MS`
+   5 s), which names the folders of the owner's own tools from the owner's own config. It is
+   asked once per Claude Code process (`miseBins`, held in `miseHeld`): at the session's start,
+   waited for before the session goes on, so before its agent has run anything, and only when a
+   person is at the prompt (`isInteractive`; a `-p` run, as the check's own is, asks nothing);
+   every later check in the process takes that answer. A process whose start did not ask (a
+   `/reload-plugins`, which also fires a start and so asks again then) asks at its first check.
+   Then one `find` over those folders and the command path's (`programsArgv`, read by
+   `programsOf`, 30 s) for `claude`, `pnpm` and every link to `mise`; a link to `mise` under
+   another name is a shim (`isShim`), whatever tool it stands for. Where any shims folder is on
+   the command path, whichever tools it holds (a `node` shim alone is enough: pnpm's
+   `#!/usr/bin/env node` would run it), the run and the pnpm question get a `PATH` of every
+   folder mise named, at the front, then the owner's path with every shims folder taken off
+   (`checkEnv`, `pnpmAskEnv`). `claude` and `pnpm` start by their full paths (`withProgram`),
+   each the first on the owner's own path that is no shim, the first shims folder read as
+   mise's folders in its place, so an owner whose native claude comes before the shims gets
+   that claude, and one whose claude comes through mise's node gets the claude the shim
+   started. No mise runs on the copy's files or the folders above it. A pnpm found only as a
+   shim is not asked, and the run gets no store. The fence and the links question take the
+   owner's path and the check's both (`guardedPath`). The run's own commands use that path, so a
+   tool the project pins through mise alone runs inside the check at the owner's version, or is
+   not found. Where there is no shim, nothing changes: both start by name with no `PATH` given.
    Where mise cannot answer, or the `find` fails or is cut, both start by name, through any
    shim, with `MISE_ENV_FILE` empty and `MISE_IGNORED_CONFIG_PATHS` naming the folder they
    start in (the copy, or the agent's folder where no copy is made) and each folder above it,
@@ -591,17 +599,36 @@ call writes (below):
    splits `PATH` and reads no comma, and on Windows would split by `;`, but the check does not
    start there, `CHECK_NO_ROOM`). The home and the folders holding it are never named:
    ignoring the home drops the owner's `~/.config/mise/config.toml`, and the shim then fails
-   with "not currently active" (measured). That leaves one exposure, in this fallback alone: a
-   mise config in the home itself is still read before the fence, and it is the agent's when
-   the agent works in the home. Before the copy, each check removes the copies other checks
-   left behind when their Claude Code ended mid-run, whose own removal never ran
-   (`sweepCopies`): a `find` in the copies folder for folders named for a session (an id, or
-   `session`), never this session's, unchanged for more than `STALE_COPY_MS`, read back by
-   `staleCopiesOf`, each removed with `rm -rf` and not waited on. `STALE_COPY_MS` is the run's
-   time limit, two copies' (`COPY_TIMEOUT_MS`) and an hour, which a test holds above every
-   time limit from the copy to its removal: a copy's folder is dated when the copy fills it
-   (cp keeps no dates without `-p`) and only gets newer while the run writes there, so a live
-   check's copy is never that old. The questions come before the run's clock
+   with "not currently active" (measured).
+   **The one limit: a session whose working folder is the home.** mise's answer comes from the
+   home's own mise config, and in the fallback the shim reads it too. Where the agent works in
+   the home itself, that config is the agent's to change, and nothing the rep starts can be
+   fenced from an agent that shares its home: asking mise at the start keeps the answer from
+   anything the agent writes later in the session, not from what an earlier session's agent
+   left there, nor from a `/reload-plugins` after the agent has run. In every other session the
+   agent's folder, the copy and the folders above them are never read by mise.
+   **Who owns a copy, and when one is removed.** Before each copy, `makeCopy` writes its owner
+   file, `<copy>.owner` beside it (`ownerFile`, `ownerWriteArgv`, 10 s): the pid of the Claude
+   Code process and its start time from `ps -o lstart=`, read by a shell the mod starts, whose
+   `$PPID` is that process (measured 14 Nov 2026, Claude Code 2.1.325), with `TZ=UTC` and
+   `LC_ALL=C` (`PS_ENV`) so every reading of the time is the same text. A copy is removed only by
+   renaming it first, with its owner file, to `.gone-<unique>` inside the copies folder
+   (`retire`, `retireArgv`, `goneDir`, waited on, 30 s), then removing the renamed folder, not
+   waited on: a session that makes a new copy at the old path is never hit. That is how a check
+   clears what an earlier check left at its path before the copy (removed in place only if the
+   rename fails), how a clone that failed part-way is cleared, and how the check's own copy is
+   removed when the run ends, unless a newer press has replaced the run. The sweep
+   (`sweepCopies`) runs when a session starts with a person at the prompt, not waited on, and
+   before each copy: it lists every owner file named for a session (an id, or `session`) with
+   its first line, and the `.gone-` folders more than a minute old (`copiesListArgv`, read by
+   `copiesOf`, 30 s), removes those leftovers, and asks `ps` about the owners' pids and the
+   asking process together (`aliveArgv`, `PS_ENV`, 10 s). `deadOwned` takes a copy whose owner
+   is gone, or whose pid now names a process with another start time; it never takes this
+   process's own copy, and takes none when ps did not see the asking process (a sandbox, a
+   hidden process table) or did not answer. Each is renamed only when its owner file still
+   holds the line the sweep read (`retireArgv` ends 3 otherwise), so a copy a session made
+   there since is kept. No copy is ever taken for its age. A copy with no owner file it can read
+   (one left by a build before 0.7.6) is kept. The questions come before the run's clock
    starts, so the check's measured time is the run's own. Fifteen-minute timeout
    (`CHECK_TIMEOUT_MS`), 120 turns, JSON output; `permission_denials` in the output is the
    count of commands refused approval, shown on the checked card (`refusedLine`, which says

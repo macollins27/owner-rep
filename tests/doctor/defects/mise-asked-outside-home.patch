@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 4f9f7af..71aa631 100644
+index 07ac1c3..9f4c037 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1832,7 +1832,7 @@ async function pnpmStore($: EngineInterface, host: Host, launch: Launch, copy: s
- // the home, with no env file read, where the owner's tools are, and the path's folders asked
- // which programs are there and where each leads, both outside the fence.
- async function launchFor($: EngineInterface, host: Host, home: string, path: string): Promise<Launch> {
--  const bins = await $.process.run(hostArgv(host, MISE_BIN_PATHS_ARGV), { cwd: home, env: MISE_ASK_ENV, timeoutMs: MISE_ASK_TIMEOUT_MS }).catch(() => null)
-+  const bins = await $.process.run(hostArgv(host, MISE_BIN_PATHS_ARGV), { env: MISE_ASK_ENV, timeoutMs: MISE_ASK_TIMEOUT_MS }).catch(() => null)
-   const named = bins === null || bins.exitCode !== 0 ? null : binPathsOf(bins.stdout)
-   const dirs = [...(named ?? []), ...path.split(':')].filter(d => d.startsWith('/'))
-   // find ends 1 when a folder is missing, having printed the rest, so its exit code is not read.
+@@ -1847,7 +1847,7 @@ async function pnpmStore($: EngineInterface, host: Host, launch: Launch, copy: s
+ let miseHeld: Promise<string[] | null> | null = null
+ function miseBins($: EngineInterface, host: Host, home: string): Promise<string[] | null> {
+   miseHeld ??= (async () => {
+-    const r = await $.process.run(hostArgv(host, MISE_BIN_PATHS_ARGV), { cwd: home, env: MISE_ASK_ENV, timeoutMs: MISE_ASK_TIMEOUT_MS }).catch(() => null)
++    const r = await $.process.run(hostArgv(host, MISE_BIN_PATHS_ARGV), { env: MISE_ASK_ENV, timeoutMs: MISE_ASK_TIMEOUT_MS }).catch(() => null)
+     return r === null || r.exitCode !== 0 ? null : binPathsOf(r.stdout)
+   })()
+   return miseHeld

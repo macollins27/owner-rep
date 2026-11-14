@@ -1,23 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 55b4d99..b57b1d8 100644
+index e06ac4a..c223d3d 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3675,9 +3675,6 @@ export const staleCopiesArgv = (home: string, sessionId: string): string[] => [
-   '-name',
-   'session',
-   ')',
--  '!',
--  '-name',
--  sessionId === '' ? 'session' : sessionId,
-   '-mmin',
-   `+${Math.ceil(STALE_COPY_MS / 60000)}`,
-   '-print',
-@@ -3689,7 +3686,7 @@ export const staleCopiesOf = (stdout: string, home: string, sessionId: string):
-     .map(l => l.trim())
-     .filter(l => {
-       const name = l.slice(checkCopiesDir(home).length + 1)
--      return l.startsWith(`${checkCopiesDir(home)}/`) && !name.includes('/') && name !== own && (name === 'session' || SESSION_NAME.test(name))
-+      return l.startsWith(`${checkCopiesDir(home)}/`) && !name.includes('/') && (name === 'session' || SESSION_NAME.test(name))
-     })
+@@ -3717,7 +3717,7 @@ export const deadOwned = (stdout: string, owned: Owned[]): Owned[] | null => {
+     if (m !== null) alive.set(m[1] ?? '', spaced(m[2] ?? ''))
+   }
+   if (!/^\d+$/.test(me) || !alive.has(me)) return null
+-  return owned.filter(o => o.pid !== me && alive.get(o.pid) !== o.start)
++  return owned.filter(o => alive.get(o.pid) !== o.start)
  }
- 
+ // Ends 3 having moved nothing when the owner file no longer holds `line` (given only by the sweep).
+ export const retireArgv = (gone: string, copy: string, line = ''): string[] => [

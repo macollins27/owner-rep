@@ -459,13 +459,21 @@ hook file, install no pinned pnpm and download nothing, and corepack, which can 
 pinned pnpm before pnpm starts, is told to fetch nothing. Where `claude` or pnpm is a mise
 shim, the shim is mise itself, which reads the config and env file of the folder it starts in
 and the folders above before the program runs, outside the fence; in the copy those are the
-agent's work. So the check does not start through the shim: it asks mise, from the home and
-with no env file, where the owner's own tools are, takes the shims off the command path in
-favour of those folders, and starts claude and pnpm by their full paths, which the fence then
-also guards. Only where mise cannot answer does it go through the shim, with no env file read
-and the copy and the folders above it ignored, never the home, whose config names the owner's
-tools. Each check also removes the copies older checks left when their Claude Code ended
-mid-run: folders named for another session, older than any check can live.
+agent's work. So the check runs no shim: mise is asked once per Claude Code process, when a
+session starts with a person at the prompt and before the agent has run anything, from the
+home and with no env file, where the owner's own tools are. Where any shim is on the command
+path, whichever tool it stands for (a node shim alone would run for pnpm's
+`#!/usr/bin/env node`), the check's command path puts those folders first and drops every
+shims folder, and claude and pnpm start by their full paths, which the fence then also guards.
+Only where mise cannot answer does it go through the shim, with no env file read and the copy
+and the folders above it ignored, never the home, whose config names the owner's tools. That
+leaves one limit, stated as such: an agent whose working folder is the home can change the
+home's mise config, and nothing the rep starts can be fenced from an agent sharing its home.
+A copy is never removed for its age. Each has an owner file naming the Claude Code process
+that made it, by pid and start time; a sweep at each session's start and before each copy
+removes only the copies whose process is gone, and none when `ps` cannot see the asking
+process. A copy is removed by renaming it first and removing the renamed folder, so a session
+making a new copy at the old path is never hit.
 When the machine does not answer
 the question about where the links in the command folders lead, the run's brief says the
 installs those links lead to could not be found. When a git question fails, times out, is
@@ -576,7 +584,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 621 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 630 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: twelve real sessions in tmux, the strip captured to tests/live/captures
 ```

@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 55b4d99..30dd091 100644
+index e06ac4a..44ecb07 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3656,7 +3656,7 @@ export const COPY_TIMEOUT_MS = 600000
- export const COPY_STEP_TIMEOUT_MS = 30000
- export const COPY_REMOVE_TIMEOUT_MS = 120000
- export const STALE_MARGIN_MS = 3600000
--export const STALE_COPY_MS = CHECK_TIMEOUT_MS + 2 * COPY_TIMEOUT_MS + STALE_MARGIN_MS
-+export const STALE_COPY_MS = CHECK_TIMEOUT_MS
- export const STALE_FIND_TIMEOUT_MS = 30000
- const SESSION_NAME = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
- export const staleCopiesArgv = (home: string, sessionId: string): string[] => [
+@@ -3680,7 +3680,7 @@ export const ownerWriteArgv = (file: string): string[] => ['sh', '-c', 's=$(ps -
+ export const copiesListArgv = (home: string): string[] => [
+   'sh',
+   '-c',
+-  'for f in "$1"/*.owner; do [ -f "$f" ] && printf \'%s\\t%s\\n\' "$f" "$(head -n 1 "$f")"; done; find "$1" -mindepth 1 -maxdepth 1 -name \'.gone-*\' -mmin +1 -print 2>/dev/null; exit 0',
++  'for f in $(find "$1" -maxdepth 1 -name "*.owner" -mmin +95); do [ -f "$f" ] && printf \'%s\\t%s\\n\' "$f" "$(head -n 1 "$f")"; done; find "$1" -mindepth 1 -maxdepth 1 -name \'.gone-*\' -mmin +1 -print 2>/dev/null; exit 0',
+   'sh',
+   checkCopiesDir(home),
+ ]
