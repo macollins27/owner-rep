@@ -2019,6 +2019,10 @@ const SUMMARY_OPENING = 'This session is being continued from a previous convers
 // A tool's input or its result: enough to say which file, which command and how it came
 // out, the part a reader of the work needs; the bulk of a file or a log is not.
 export const RECORD_TOOL_CUT = 600
+// What the agent has said since the owner last answered (a plan waiting for the owner's yes among
+// it, in a message or on the plan screen): read whole up to this many characters in all, the
+// newest first, and never cut by the shared cap, so a piece buried in a long plan is read.
+export const RECORD_WAITING_BUDGET = 60_000
 
 // A row of `$.session.messages()` as the record reads it, declared by shape so this module
 // stays free of the engine: the engine's rows fit it as they are.
@@ -2459,11 +2463,14 @@ export const SESSION_ROWS_CAP = 4096
 // Room kept in the budget for the record's opening lines.
 const RECORD_HEAD_ROOM = 200
 
-type RecField = { text: string; cut: number; name: string }
+// `keep`: a field of what the agent said since the owner last answered, shown at its own cut, which
+// the shared cap never lowers (recordEntries, RECORD_WAITING_BUDGET).
+type RecField = { text: string; cut: number; name: string; keep?: true }
 type RecEntry = { n: number; row: number; fields: RecField[]; build: (show: (f: RecField) => string) => string }
 // How a field is shown: with today's cut, at one shared cap, or whole.
 type RecShow = 'today' | 'whole' | number
-const shown = (how: RecShow) => (f: RecField): string => (how === 'whole' ? f.text : headTail(f.text, how === 'today' ? f.cut : how, f.name))
+const shown = (how: RecShow) => (f: RecField): string =>
+  f.keep === true ? headTail(f.text, f.cut, f.name) : how === 'whole' ? f.text : headTail(f.text, how === 'today' ? f.cut : how, f.name)
 const entryText = (e: RecEntry, how: RecShow): string => fenceTag(e.build(shown(how)), 'session_record')
 
 // An accepted plan screen's result as the record prints it: the plan it returns is the file as it
@@ -2488,6 +2495,9 @@ function planCopyOut(input: unknown, result: unknown, text: string): string {
 function recordEntries(rows: readonly RecordRow[], human?: ReadonlySet<string>): RecEntry[] {
   const entries: RecEntry[] = []
   const printed = new Set<string>()
+  const answeredAt = lastAnswerRow(rows, human)
+  // What the agent said since then, to be read whole: its messages and its plan-screen plans.
+  const waiting: RecField[] = []
   // Each plan screen's call input, so its result is printed as planCopyOut prints it wherever it lands.
   const planInputs = new Map<string, unknown>()
   rows.forEach((row, at) => {
@@ -2495,10 +2505,12 @@ function recordEntries(rows: readonly RecordRow[], human?: ReadonlySet<string>):
     if (row.role === 'assistant') {
       const text = row.text.trim()
       const fields: RecField[] = []
-      const said = text === '' ? null : { text, cut: RECORD_ENTRY_CUT, name: 'message' }
+      const said: RecField | null = text === '' ? null : { text, cut: RECORD_ENTRY_CUT, name: 'message' }
       if (said !== null) fields.push(said)
+      if (said !== null && at > answeredAt) waiting.push(said)
       const uses = row.toolUses.map(u => {
-        const input = { text: compactJson(u.input), cut: RECORD_TOOL_CUT, name: 'tool input' }
+        const input: RecField = { text: compactJson(u.input), cut: RECORD_TOOL_CUT, name: 'tool input' }
+        if (u.tool === 'ExitPlanMode' && at > answeredAt) waiting.push(input)
         const result = u.text === undefined ? null : { text: oneLine(u.tool === 'ExitPlanMode' ? planCopyOut(u.input, u.result, u.text) : u.text), cut: RECORD_TOOL_CUT, name: 'tool result' }
         if (u.text !== undefined && u.tool_use_id !== undefined) printed.add(u.tool_use_id)
         if (u.tool === 'ExitPlanMode' && u.tool_use_id !== undefined) planInputs.set(u.tool_use_id, u.input)
@@ -2554,7 +2566,44 @@ function recordEntries(rows: readonly RecordRow[], human?: ReadonlySet<string>):
       build: show => (his ? `entry ${n} the person:\n${show(f)}` : `entry ${n} the session (written by Claude Code, not typed by the person):\n${show(f)}`),
     })
   })
+  // The newest first, each as whole as what is left of the budget allows, when that is more than its usual cut.
+  let left = RECORD_WAITING_BUDGET
+  for (const f of waiting.reverse()) {
+    const give = Math.min(f.text.length, left)
+    if (give <= f.cut) continue
+    f.cut = give
+    f.keep = true
+    left -= give
+  }
   return entries
+}
+
+// The last row at which the owner answered: a message typed by the owner (as recordEntries labels
+// "the person"), or an answer on a screen the agent put up (the plan screen or a question), given
+// with the call or in a row of results. -1 when there is none.
+function lastAnswerRow(rows: readonly RecordRow[], human?: ReadonlySet<string>): number {
+  const SCREENS = new Set(['ExitPlanMode', 'AskUserQuestion'])
+  const screens = new Set<string>()
+  let last = -1
+  rows.forEach((row, at) => {
+    if (row.role === 'assistant') {
+      for (const u of row.toolUses) {
+        if (!SCREENS.has(u.tool) || u.tool_use_id === undefined) continue
+        screens.add(u.tool_use_id)
+        if (u.text !== undefined) last = at
+      }
+      return
+    }
+    if ((row.toolResults ?? []).length > 0) {
+      if ((row.toolResults ?? []).some(r => r.tool_use_id !== undefined && screens.has(r.tool_use_id))) last = at
+      return
+    }
+    const text = withoutReminders(row.text)
+    if (text === '') return
+    const his = human === undefined ? !notTyped(text) : human.has(typedKey(row.text)) && !notTyped(typedForm(row.text))
+    if (his) last = at
+  })
+  return last
 }
 
 // The record in its parts: the opening lines, the entries in chunks, how many fields after the
@@ -2579,7 +2628,7 @@ export function recordParts(rows: readonly RecordRow[], budget: number, human?: 
   let cutAfter = 0
   let opensAfter = false
   if (size(after, 'whole') > room) {
-    const longest = Math.max(RECORD_TOOL_CUT, ...after.flatMap(e => e.fields.map(f => f.text.length)))
+    const longest = Math.max(RECORD_TOOL_CUT, ...after.flatMap(e => e.fields.filter(f => f.keep !== true).map(f => f.text.length)))
     let lo = RECORD_TOOL_CUT
     let hi = longest
     while (lo < hi) {
@@ -2593,10 +2642,12 @@ export function recordParts(rows: readonly RecordRow[], budget: number, human?: 
       opensAfter = true
     }
     const cap = how
-    cutAfter = post.reduce((s, e) => s + e.fields.filter(f => f.text.length > cap).length, 0)
+    cutAfter = post.reduce((s, e) => s + e.fields.filter(f => f.keep !== true && f.text.length > cap).length, 0)
   }
   // Rows before the approval are left out with the oldest rows after it.
-  const texts = [...(opensAfter ? [] : before.map(e => ({ e, text: entryText(e, 'today'), late: false }))), ...post.map(e => ({ e, text: entryText(e, how), late: true }))]
+  // An entry holding what the agent said since the owner last answered is kept like one after the approval.
+  const keeps = (e: RecEntry) => e.fields.some(f => f.keep === true)
+  const texts = [...(opensAfter ? [] : before.map(e => ({ e, text: entryText(e, 'today'), late: keeps(e) }))), ...post.map(e => ({ e, text: entryText(e, how), late: true }))]
   const chunks: Array<typeof texts> = []
   let open: typeof texts = []
   let used = 0
