@@ -297,7 +297,13 @@ full, this is everything it reads and runs:
   find the git repositories your project belongs to or links into and where links lead, so
   it can fence them. It runs `pnpm store path` to find pnpm's store, which the check is given
   to install from. It runs `mkdir`, `cp` and `rm` to make the throwaway copy and delete it
-  afterwards.
+  afterwards. It reads Claude Code's `.claude.json` (in the folder `CLAUDE_CONFIG_DIR` names,
+  else in your home) for one thing, your agentsview server entry, which it gives the check as
+  its only MCP server; nothing else in that file is kept or sent. The check's run loads your
+  user-level settings, so your own hooks still guard it, and leaves out the project's settings,
+  every CLAUDE.md (yours and the agent's), your skills and your other MCP servers: it judges
+  the agent, and reads the agent's instruction files in its folder only when a claim turns on
+  them.
 - **The check itself:** a separate `claude -p` run that may read files, search, run the
   project's own tests and read agentsview. It may not edit through a tool, send, fetch the
   web, or launch helpers. It runs with your own Claude Code settings, so your hooks fire
@@ -345,9 +351,9 @@ The full design is in [How the owner rep works](docs/how-it-works.md).
 
 ## Built to be trusted
 
-- **625 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
+- **630 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
   the tests.
-- **A doctor that plants bugs.** It plants 545 known defects in a throwaway copy, one at a
+- **A doctor that plants bugs.** It plants 556 known defects in a throwaway copy, one at a
   time, and fails the build if the tests miss any of them.
 - **Real sessions.** Twelve scenarios run in real Claude Code sessions, with the screen
   captured in [`tests/live/captures`](tests/live/captures).

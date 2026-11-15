@@ -466,8 +466,16 @@ call writes (below):
    `mkdir` without `-p` tells apart, is not copied over), then
    spawns a headless `claude -p` in it, marked `OWNER_REP_CHECK=1` in its environment (the rep
    loads in that session too, and every hook passes it by once `isOwnCheck` knows it, by that
-   mark or by its folder under `checkCopiesDir`: no record, no call, nothing drawn; G19), with
-   `--permission-mode default`, `CHECK_ALLOWED_TOOLS`
+   mark or by its folder under `checkCopiesDir`: no record, no call, nothing drawn; G19), and
+   with `CLAUDE_CODE_DISABLE_CLAUDE_MDS=1` (`CHECK_ISOLATE_ENV`), `--setting-sources user`,
+   `--disable-slash-commands` and `--strict-mcp-config --mcp-config` from `checkMcpConfig` (G18):
+   the run loads the owner's user-level settings, his guard hooks among them, the `--settings`
+   fence, and the owner's own agentsview entry from Claude Code's `.claude.json` (`checkMcp`
+   reads `<CLAUDE_CONFIG_DIR>/.claude.json`, else `~/.claude.json`, and takes that one entry, or
+   none), and no CLAUDE.md, skill, slash command, project or local setting or other MCP server;
+   the brief says the agent's instruction files are in its folder, to read when a claim turns on
+   them. Nothing is removed from the copy, since where no copy is made the run is in the agent's
+   own folder. With `--permission-mode default`, `CHECK_ALLOWED_TOOLS`
    allowed outright (the shell, the file tools, the direct agentsview tools), `CHECK_DISALLOWED_TOOLS`
    (anything that edits through a tool, sends, fetches the web or launches helpers) and
    `--settings` from `checkSettings`: the built-in sandbox with writes denied to the owner's

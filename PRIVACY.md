@@ -52,6 +52,11 @@ typed while approving a plan on Claude Code's plan screen, into the record above
 your messages and your plan-screen answers back from the session's messages, and saves them the
 same way.
 
+When you press **Check it**, the rep reads Claude Code's `.claude.json` (in your Claude Code
+configuration folder, or your home) for your agentsview server entry alone, and passes that
+entry to the check's own run on your machine. Nothing else in that file is read into the rep,
+kept or sent. The check's run does not load any CLAUDE.md, yours or the agent's.
+
 ## What leaves your machine
 
 Only model calls: the rep's own, on top of your agent's, made with your Claude Code

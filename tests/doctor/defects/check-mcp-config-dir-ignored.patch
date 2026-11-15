@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 6abcdfc..8bd88d6 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2075,7 +2075,7 @@ async function homeFor($: EngineInterface): Promise<string> {
+ async function checkMcp($: EngineInterface, home: string): Promise<string> {
+   try {
+     const set = await $.env.get('CLAUDE_CONFIG_DIR')
+-    const files = [...(set !== undefined && set !== '' ? [`${set.replace(/\/+$/, '')}/.claude.json`] : []), `${home}/.claude.json`]
++    const files = [`${home}/.claude.json`]
+     for (const f of files) {
+       const text = await readText($, f)
+       if (text !== null) return checkMcpConfig(text)

@@ -16,6 +16,13 @@ What changed in each release of Owner Rep, newest first. The full record is the
   calls on it and wrote Heads up lines about the checker. It now knows that session, by its folder
   under `~/.cache/owner-rep/checks` or by the `OWNER_REP_CHECK` mark the check is started with,
   and leaves it alone.
+- **The check no longer takes on the agent's instructions.** Its own Claude Code run loaded the
+  agent's CLAUDE.md, your own CLAUDE.md, your skills and every MCP server, so the checker was told
+  how to work as the agent it is meant to judge. It now loads your user-level settings, so your
+  own hooks still guard it, the sandbox fence, and agentsview as its only server, and no
+  CLAUDE.md, skill or project setting. The brief tells it the agent's instruction files are in
+  the agent's folder, to read when a claim turns on them. To find your agentsview entry the rep
+  reads Claude Code's `.claude.json` and takes only that entry.
 
 ## 0.7.5 (14 November 2026)
 

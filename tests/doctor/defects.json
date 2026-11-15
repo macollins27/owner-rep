@@ -3268,5 +3268,71 @@
     "breaks": "In the rep's own check, the message the check is started with still goes through the rep, which keeps it as the owner's.",
     "patch": "own-check-messages-kept.patch",
     "fixed": "2026-11-15"
+  },
+  {
+    "name": "check-loads-project-settings",
+    "breaks": "The check's own session loads the copy's project and local settings, with the agent's CLAUDE.md files, hooks, agents and commands.",
+    "patch": "check-loads-project-settings.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "check-loads-skills",
+    "breaks": "The check's own session loads the owner's and the project's skills and slash commands.",
+    "patch": "check-loads-skills.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "check-loads-every-mcp-server",
+    "breaks": "The check's own session starts every MCP server the owner and the project have, not only agentsview.",
+    "patch": "check-loads-every-mcp-server.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "check-mcp-takes-every-server",
+    "breaks": "The check's MCP list copies every server in the owner's .claude.json, not only agentsview.",
+    "patch": "check-mcp-takes-every-server.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "check-mcp-any-name-case",
+    "breaks": "The check's MCP list takes a server whose name only matches agentsview without regard to case.",
+    "patch": "check-mcp-any-name-case.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "check-instructions-line-dropped",
+    "breaks": "The check's brief no longer says the agent's instruction files were not loaded and where to read them.",
+    "patch": "check-instructions-line-dropped.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "check-loads-claude-mds",
+    "breaks": "The check's own session loads every CLAUDE.md, the owner's own among them, against the owner's choice.",
+    "patch": "check-loads-claude-mds.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "check-mcp-not-passed",
+    "breaks": "The agentsview entry found in the owner's .claude.json is never given to the check, which starts with no MCP server.",
+    "patch": "check-mcp-not-passed.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "check-mcp-config-dir-ignored",
+    "breaks": "With CLAUDE_CONFIG_DIR set, the check reads the home's .claude.json, not the one Claude Code uses.",
+    "patch": "check-mcp-config-dir-ignored.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "check-mcp-falls-back-home",
+    "breaks": "Where the config folder's .claude.json has no agentsview, the check takes the home's file, which Claude Code does not use.",
+    "patch": "check-mcp-falls-back-home.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "check-mcp-trailing-slash",
+    "breaks": "A CLAUDE_CONFIG_DIR ending in a slash makes the check look for .claude.json at a doubled-slash path.",
+    "patch": "check-mcp-trailing-slash.patch",
+    "fixed": "2026-11-15"
   }
 ]
