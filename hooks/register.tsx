@@ -69,6 +69,8 @@ import {
   checkCostText,
   countLine,
   checkCopiesDir,
+  CHECK_ENV,
+  isOwnCheck,
   checkCopyDir,
   checkSettings,
   CHECK_NO_ROOM,
@@ -1852,7 +1854,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       unanswered: [...(links === null ? ['links' as const] : []), ...(repos.whole ? [] : ['repos' as const])],
     })
     const startedAt = Date.now()
-    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, path, links ?? [], repos.dirs))), cwd: copy, ...(store === '' ? {} : { env: { [PNPM_STORE_ENV]: store } }) })
+    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, path, links ?? [], repos.dirs))), cwd: copy, env: { [CHECK_ENV]: '1', ...(store === '' ? {} : { [PNPM_STORE_ENV]: store }) } })
     let stdout = ''
     let stderr = ''
     let timedOut = false
@@ -2672,6 +2674,8 @@ function drawsSomething(tree: unknown): boolean {
 // is set when a /clear or a resume ended the session on screen: until the next
 // id is read, no session is on screen, so a run the old one started draws nothing.
 let currentId = ''
+// This session is the rep's own check (`isOwnCheck`): every hook passes it by untouched.
+let ownCheck = false
 let ended = false
 async function sessionId($: EngineInterface): Promise<string> {
   const id = await $.session.id()
@@ -2730,6 +2734,12 @@ export const register: Register = on => {
 
   on('session.start', async ($, e, next) => {
     try {
+      ownCheck = isOwnCheck(await homeFor($), e.cwd, await $.env.get('OWNER_REP_CHECK'))
+    } catch {
+      ownCheck = false
+    }
+    if (ownCheck) return next(e)
+    try {
       await $.command.register({ name: 'owner-rep-counts', description: "Owner rep: this session's call counters" })
       await $.command.register({ name: 'owner-rep-replay', description: 'Owner rep: send saved calls again', argumentHint: '<call file or session> [--kind k] [--last n] [--effort e] [--times n]' })
     } catch {
@@ -2762,15 +2772,18 @@ export const register: Register = on => {
 
   // Where Claude Code saves the session's transcript, read by heldItems.
   on('classic.SessionStart', ($, e, next) => {
+    if (ownCheck) return next(e)
     holdTranscript(e.session_id, e.transcript_path)
     return next(e)
   })
   on('classic.UserPromptSubmit', ($, e, next) => {
+    if (ownCheck) return next(e)
     holdTranscript(e.session_id, e.transcript_path)
     return next(e)
   })
 
   on('prompt.submit', async ($, e, next) => {
+    if (ownCheck) return next(e)
     // The engine stamps the origin; the test kit's own submit carries none.
     const kind = e.origin?.kind ?? 'composer'
     lastOrigin = { kind }
@@ -2881,6 +2894,7 @@ export const register: Register = on => {
   })
 
   on('turn.start', async ($, e, next) => {
+    if (ownCheck) return next(e)
     if (e.agentId === undefined) {
       // How the turn began: a background task finishing, the agent going on by itself, the owner, or else.
       const origin = lastOrigin?.kind
@@ -2902,6 +2916,7 @@ export const register: Register = on => {
   })
 
   on('tool.call', async ($, e, next) => {
+    if (ownCheck) return next(e)
     if (e.agentId !== undefined) return next(e)
     const tool = String(e.tool)
     const doing = doingFor(tool, e as unknown as Record<string, unknown>)
@@ -2930,6 +2945,7 @@ export const register: Register = on => {
   })
 
   on('agent.spawn', async ($, e, next) => {
+    if (ownCheck) return next(e)
     const result = await next(e)
     const id = result.agentId
     if (id !== undefined) {
@@ -2940,6 +2956,7 @@ export const register: Register = on => {
   })
 
   on('turn.step', async function* ($, e, next) {
+    if (ownCheck) return yield* next(e)
     if (e.agentId !== undefined) return yield* next(e)
     let entry = live.get(e.turnId)
     if (entry === undefined) {
@@ -2966,6 +2983,7 @@ export const register: Register = on => {
   })
 
   on('turn.complete', async ($, e, next) => {
+    if (ownCheck) return next(e)
     if (e.agentId !== undefined) {
       const gone = e.agentId
       await update($, helpersA, ids => (ids ?? []).filter(i => i !== gone)).catch(() => undefined)
@@ -3004,6 +3022,7 @@ export const register: Register = on => {
   // and their text is remembered as on earlier builds. While the briefing is up it takes the
   // strip alone: the other rows are left out of what is stacked.
   on('ui.render', { component: 'AbovePromptList' }, async ($, e, next) => {
+    if (ownCheck) return next(e)
     const others = e.props.rows.filter(r => r.plugin !== PLUGIN && drawsSomething(r.tree))
     const draws = others.length > 0
     if (draws) rememberOther($, others.map(r => textOf(r.tree)).join(' ')).catch(() => undefined)
@@ -3018,6 +3037,7 @@ export const register: Register = on => {
   })
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
+    if (ownCheck) return next(e)
     cardUp.set(e.surface, false)
     if (e.props.hasSurvey) return next(e)
     if (e.surface !== 'terminal' && e.surface !== 'desktop' && e.surface !== 'vscode') return next(e)
@@ -3347,6 +3367,7 @@ export const register: Register = on => {
   })
 
   on('session.end', async ($, e, next) => {
+    if (ownCheck) return next(e)
     try {
       await changeRec($, e.sessionId, () => undefined)
     } catch {

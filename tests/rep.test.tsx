@@ -10,6 +10,7 @@
 //   9. Reading the session
 //   10. Hosts: Windows, Linux and the home
 //   11. The call log and the counters
+//   12. The rep's own check left alone
 // Helpers that tests in more than one section use come first, under "Shared fixtures".
 
 import type { On, SessionMessage } from 'claude-code'
@@ -9248,8 +9249,8 @@ test('rule: the check runs in a throwaway copy of the project, fenced, and the c
   expect(argv[argv.indexOf('--settings') + 1]).toBe(checkSettings('/Users/o', '/tmp/x', '/usr/bin:/Users/o/.cargo/bin'))
   expect(argv[argv.indexOf('--settings') + 1]).toContain('"/Users/o/.cargo"')
   expect(argv[argv.indexOf('--allowedTools') + 1]?.split(',')).toContain('Bash')
-  // pnpm named no store, so none is named to the run.
-  expect(seen.env).toBeUndefined()
+  // pnpm named no store, so none is named to the run: it carries only the rep's mark (G19).
+  expect(seen.env).toEqual({ OWNER_REP_CHECK: '1' })
   expect(runs.filter(r => r[0] === 'rm' && r[2] === copy).length).toBeGreaterThanOrEqual(2)
   expect(runs.findIndex(r => r[0] === 'cp')).toBeLessThan(runs.length - 1)
   await ui.unmount()
@@ -9284,7 +9285,7 @@ test('rule: the check names pnpm\'s store to its run, asked of pnpm in the copy 
   // dependencies would run or be fetched outside the fence. Corepack, which fetches a pinned
   // pnpm before pnpm reads its command line, is told by the environment to fetch nothing.
   expect(runs.find(r => r.argv[0] === 'pnpm')).toEqual({ argv: ['pnpm', 'store', 'path', '--config.ignore-pnpmfile=true', '--config.manage-package-manager-versions=false', '--config.offline=true'], cwd: copy, env: { COREPACK_ENABLE_NETWORK: '0' } })
-  expect(env).toEqual({ npm_config_store_dir: '/Users/o/Library/pnpm/store' })
+  expect(env).toEqual({ OWNER_REP_CHECK: '1', npm_config_store_dir: '/Users/o/Library/pnpm/store' })
   await ui.unmount()
 })
 
@@ -9311,7 +9312,7 @@ test('rule: a machine where pnpm or find cannot be asked still runs the check, n
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   await ui.press({ key: 'rep' })
   await ui.press({ key: 'check' })
-  expect(spawned).toEqual({ env: undefined, settings: checkSettings('/Users/o', '/tmp/x', '/Users/o') })
+  expect(spawned).toEqual({ env: { OWNER_REP_CHECK: '1' }, settings: checkSettings('/Users/o', '/tmp/x', '/Users/o') })
   expect(prompt).toContain('could be found this time, so stage, commit and stash nothing, and write nothing through a link that leads out of the copy')
   expect(prompt).toContain('this time not the installs the links in those folders lead to, which could not be found')
   expect(await ui.find({ type: 'Text', text: /could not run/ })).toBeUndefined()
@@ -14710,5 +14711,73 @@ describe('the call log: saving, replaying, counting and removing', () => {
     await settle($)
     await settle($)
     expect(removed(d).filter(p => p.startsWith(CALLS_ROOT))).toEqual([])
+  })
+})
+
+// ==============================================================================================
+// 12. The rep's own check left alone
+// The check runs as a Claude Code session of its own and the rep loads in it; it is known by its
+// folder under the check copies or by the mark the check's spawn sets, and every hook passes it by.
+// ==============================================================================================
+
+describe("the rep's own check", () => {
+  const CHECK_FOLDER = '/Users/o/.cache/owner-rep/checks/0a1b2c3d-4e5f-4061-8728-394a5b6c7d8e'
+  // A session started where the check starts, sent a message and run through a turn of two steps.
+  const runIn = async ($: Engine, on: On, how: 'folder' | 'mark' | 'neither') => {
+    if (how === 'mark') {
+      on('env.get', (_$, e) => ({ value: e.name === 'OWNER_REP_CHECK' ? '1' : e.name === 'HOME' ? '/Users/o' : e.name === 'CLAUDE_CONFIG_DIR' ? '/cfg' : undefined }))
+    } else disk(on)
+    const store: Record<string, unknown> = {}
+    const c = capture(on, store, () => SID)
+    await $.session.start({ cwd: how === 'folder' ? CHECK_FOLDER : '/tmp/x', surface: 'terminal', isInteractive: true })
+    await send($, 'check that the build passes')
+    await runTurn($, c.scripts, 't1', [said('Running the build.'), said('The build passes.')])
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    const button = await ui.find({ key: 'rep' })
+    await ui.unmount()
+    await $.session.end({ sessionId: SID } as never)
+    return { store, c, button }
+  }
+
+  test('rule: a session is the check by its folder under the check copies or by the mark its spawn sets, and by nothing else', () => {
+    const home = '/Users/o'
+    expect(rep.isOwnCheck(home, CHECK_FOLDER, undefined)).toBe(true)
+    expect(rep.isOwnCheck(home, `${CHECK_FOLDER}/packages/app`, undefined)).toBe(true)
+    expect(rep.isOwnCheck(home, `${CHECK_FOLDER}/`, undefined)).toBe(true)
+    expect(rep.isOwnCheck(home, '/Users/o/.cache/owner-rep/checks', undefined)).toBe(true)
+    expect(rep.isOwnCheck(home, '/Users/o/.cache/owner-rep/checks-old/x', undefined)).toBe(false)
+    expect(rep.isOwnCheck(home, '/Users/o/.cache/owner-rep', undefined)).toBe(false)
+    expect(rep.isOwnCheck(home, '/Users/other/.cache/owner-rep/checks/x', undefined)).toBe(false)
+    expect(rep.isOwnCheck(home, '/tmp/x', undefined)).toBe(false)
+    expect(rep.isOwnCheck(home, '/tmp/x', '1')).toBe(true)
+    expect(rep.isOwnCheck(home, '/tmp/x', '0')).toBe(false)
+    expect(rep.isOwnCheck(home, '/tmp/x', '')).toBe(false)
+    expect(rep.isOwnCheck(home, undefined, undefined)).toBe(false)
+    expect(rep.isOwnCheck('', '/.cache/owner-rep/checks/x', undefined)).toBe(false)
+    expect(rep.isOwnCheck('C:/Users/o', 'C:\\Users\\o\\.cache\\owner-rep\\checks\\0a1b', undefined)).toBe(true)
+  })
+
+  test('rule: in a session started in a check copy the rep keeps no record, makes no call and draws nothing, and the session runs as it would without it', async ($, on) => {
+    const { store, c, button } = await runIn($, on, 'folder')
+    expect(store).toEqual({})
+    expect(c.prompts).toEqual([])
+    expect(c.forks).toEqual([])
+    expect(c.reads()).toBe(0)
+    expect(button).toBeUndefined()
+    expect(c.submits.map(s => s.text)).toEqual(['check that the build passes'])
+  })
+
+  test('rule: a session the check spawned is left alone by its mark wherever it runs', async ($, on) => {
+    const { store, c, button } = await runIn($, on, 'mark')
+    expect(store).toEqual({})
+    expect(c.prompts).toEqual([])
+    expect(c.forks).toEqual([])
+    expect(button).toBeUndefined()
+  })
+
+  test('guard: the same session anywhere else, unmarked, is the owner\'s and the rep takes it up', async ($, on) => {
+    const { c, button } = await runIn($, on, 'neither')
+    expect(c.rec()).toBeDefined()
+    expect(button).toBeDefined()
   })
 })

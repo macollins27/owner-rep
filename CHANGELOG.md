@@ -11,6 +11,11 @@ What changed in each release of Owner Rep, newest first. The full record is the
   can be read and sent again to compare a change. A text sent many times is kept once, and a
   session's folder is removed after 14 days with no change. Two hidden commands read it:
   `/owner-rep-counts` and `/owner-rep-replay`. Nothing the rep shows you changes.
+- **The rep no longer watches its own check.** The check runs as a Claude Code session of its own,
+  and the rep loaded in it and watched it like one of your agents: it kept a record of it, spent
+  calls on it and wrote Heads up lines about the checker. It now knows that session, by its folder
+  under `~/.cache/owner-rep/checks` or by the `OWNER_REP_CHECK` mark the check is started with,
+  and leaves it alone.
 
 ## 0.7.5 (14 November 2026)
 

@@ -3250,5 +3250,23 @@
     "breaks": "The replay sends a saved call whose texts were changed after it was saved, without checking them against the fingerprint of the prompt that was sent.",
     "patch": "replay-unchecked-prompt.patch",
     "fixed": "2026-11-14"
+  },
+  {
+    "name": "own-check-folder-ignored",
+    "breaks": "The rep knows its own check only by the mark, not by its folder under the check copies, so a check started without the mark is watched like the owner's agent.",
+    "patch": "own-check-folder-ignored.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "own-check-spawn-unmarked",
+    "breaks": "The check is spawned without the OWNER_REP_CHECK mark, so a check run outside the copies' folder is watched like the owner's agent.",
+    "patch": "own-check-spawn-unmarked.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "own-check-messages-kept",
+    "breaks": "In the rep's own check, the message the check is started with still goes through the rep, which keeps it as the owner's.",
+    "patch": "own-check-messages-kept.patch",
+    "fixed": "2026-11-15"
   }
 ]

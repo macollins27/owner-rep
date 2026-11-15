@@ -266,9 +266,10 @@ full, this is everything it reads and runs:
   the agent's thinking. The check is different: it reads the session through agentsview, and
   that includes the agent's thinking.
 - **Environment variables:** `PATH`, `HOME`, `USERPROFILE`, `CLAUDE_CONFIG_DIR`, `OS`,
-  `SystemRoot`, `windir`, `PROGRAMFILES`, `ProgramFiles(x86)`, `LOCALAPPDATA` and `APPDATA`.
-  It reads them to find your home, Claude Code's folder and the programs it runs, and to tell
-  whether it is on Windows.
+  `SystemRoot`, `windir`, `PROGRAMFILES`, `ProgramFiles(x86)`, `LOCALAPPDATA`, `APPDATA` and
+  `OWNER_REP_CHECK`. It reads them to find your home, Claude Code's folder and the programs it
+  runs, to tell whether it is on Windows, and to tell its own check's session (which it sets
+  `OWNER_REP_CHECK` for) from yours.
 - **Your transcripts:** it runs `sed`, `grep`, `ls` and `find` over the session's transcript
   under `~/.claude/projects/` (or the folder `CLAUDE_CONFIG_DIR` names) to read which
   messages you typed. For a session it holds no record of, such as a fork, it may read up to
@@ -344,9 +345,9 @@ The full design is in [How the owner rep works](docs/how-it-works.md).
 
 ## Built to be trusted
 
-- **621 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
+- **625 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
   the tests.
-- **A doctor that plants bugs.** It plants 542 known defects in a throwaway copy, one at a
+- **A doctor that plants bugs.** It plants 545 known defects in a throwaway copy, one at a
   time, and fails the build if the tests miss any of them.
 - **Real sessions.** Twelve scenarios run in real Claude Code sessions, with the screen
   captured in [`tests/live/captures`](tests/live/captures).

@@ -464,7 +464,10 @@ call writes (below):
    `cp` refuses `-c` before making anything, as GNU `cp` does, `mkdir` makes the folder and
    `cp -R` copies the agent's folder's contents into it; a clone that failed part-way, which
    `mkdir` without `-p` tells apart, is not copied over), then
-   spawns a headless `claude -p` in it with `--permission-mode default`, `CHECK_ALLOWED_TOOLS`
+   spawns a headless `claude -p` in it, marked `OWNER_REP_CHECK=1` in its environment (the rep
+   loads in that session too, and every hook passes it by once `isOwnCheck` knows it, by that
+   mark or by its folder under `checkCopiesDir`: no record, no call, nothing drawn; G19), with
+   `--permission-mode default`, `CHECK_ALLOWED_TOOLS`
    allowed outright (the shell, the file tools, the direct agentsview tools), `CHECK_DISALLOWED_TOOLS`
    (anything that edits through a tool, sends, fetches the web or launches helpers) and
    `--settings` from `checkSettings`: the built-in sandbox with writes denied to the owner's

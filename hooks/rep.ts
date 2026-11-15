@@ -3645,6 +3645,15 @@ export const copyArgvs = (host: Host, from: string, to: string): [string[], stri
 
 export const checkCopiesDir = (home: string): string => `${home}/.cache/owner-rep/checks`
 export const checkCopyDir = (home: string, sessionId: string): string => `${checkCopiesDir(home)}/${sessionId === '' ? 'session' : sessionId}`
+// The check runs as a Claude Code session of its own, and the rep loads in it as in any other.
+// It is the rep's own work, not an agent the owner set going, so the rep leaves it alone (G19):
+// known by its folder, under the check copies, or by the mark the check's spawn sets.
+export const CHECK_ENV = 'OWNER_REP_CHECK'
+export const isOwnCheck = (home: string, cwd: string | undefined, mark: string | undefined): boolean => {
+  if (mark === '1') return true
+  if (home === '' || cwd === undefined || cwd === '') return false
+  return `${cwd.replace(/\\/g, '/').replace(/\/+$/, '')}/`.startsWith(`${checkCopiesDir(home)}/`)
+}
 
 // WHY THE CHECK DOES NOT START ON WINDOWS.
 // Claude Code 2.1.302 does ship a Windows sandbox — the binary carries

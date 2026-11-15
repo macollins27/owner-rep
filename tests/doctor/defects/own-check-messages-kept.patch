@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index d943f7a..28314a1 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2783,7 +2783,6 @@ export const register: Register = on => {
+   })
+ 
+   on('prompt.submit', async ($, e, next) => {
+-    if (ownCheck) return next(e)
+     // The engine stamps the origin; the test kit's own submit carries none.
+     const kind = e.origin?.kind ?? 'composer'
+     lastOrigin = { kind }
