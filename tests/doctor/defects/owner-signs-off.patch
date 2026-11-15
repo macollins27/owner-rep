@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 9ca62c4..d811a94 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -202,7 +202,7 @@ export type Condition = { text: string; state: ConditionState; by: string; reope
+ // taken as before; which conditions are facts and which are about the result
+ // working is the reader's call, and replay R5 measures how well it makes it.
+ const LOOK_BY = /^\s*(?:a\s+)?(?:hands-on\s+)?look\s+by\s+([^:]+?)\s*:\s*([\s\S]*)$/i
+-const SIGNERS = /^(?:(?:a|an|the)\s+)?(?:helper|subagent|codex|(?:rep'?s\s+(?:own\s+)?|owner[- ]rep'?s?\s+)?(?:check|checker))\b/i
++const SIGNERS = /^(?:(?:a|an|the)\s+)?(?:helper|subagent|codex|owner|(?:rep'?s\s+(?:own\s+)?|owner[- ]rep'?s?\s+)?(?:check|checker))\b/i
+ export function lookOf(where: string): { signs: boolean; who: string; what: string } | null {
+   const m = LOOK_BY.exec(where)
+   if (m === null) return null

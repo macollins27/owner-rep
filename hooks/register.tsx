@@ -182,6 +182,7 @@ import {
   HUMAN_SCAN_BUDGET_MS,
   type RecordRow,
   objectiveText,
+  lookOf,
   openConditions,
   parseBrief,
   parseCheck,
@@ -1223,7 +1224,11 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number, r
 // the same conversation cannot undo what the paid check found. A draft's
 // number closes nothing, nor does a plan's or an approval's (a yes adds and
 // never quietly takes away, as `canClose` holds for the writer), and a shown
-// or reopen mark without a where is not taken. True when a condition moved.
+// or reopen mark without a where is not taken. A shown mark whose where is a
+// look by someone not on `lookOf`'s sign-off list (the agent's own look above
+// all, whoever reports it, the check included) moves nothing: the condition
+// keeps its state and carries what that look saw as `seen` (G44). True when a
+// condition moved or took a new `seen`.
 function applyMarks(
   rec: Rec,
   shown: Array<{ text: string; by: string }>,
@@ -1248,6 +1253,14 @@ function applyMarks(
     }
     const show = shown.find(x => x.by !== '' && same(x.text, c.text))
     if (show !== undefined && (c.state === 'open' || c.state === 'not-shown') && !(c.reopened === true && check === null)) {
+      // A look by someone not on the sign-off list, the agent's own above all,
+      // is kept as shown evidence and leaves the condition as it was (G44).
+      const signer = lookOf(show.by)
+      if (signer !== null && !signer.signs) {
+        if (signer.what === '' || c.seen === signer.what) return c
+        changed = true
+        return { ...c, seen: signer.what }
+      }
       changed = true
       return { text: c.text, state: 'shown', by: show.by }
     }

@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 2034771..3097383 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1256,7 +1256,7 @@ function applyMarks(
+       // A look by someone not on the sign-off list, the agent's own above all,
+       // is kept as shown evidence and leaves the condition as it was (G44).
+       const signer = lookOf(show.by)
+-      if (signer !== null && !signer.signs) {
++      if (signer !== null && !signer.signs && false) {
+         if (signer.what === '' || c.seen === signer.what) return c
+         changed = true
+         return { ...c, seen: signer.what }

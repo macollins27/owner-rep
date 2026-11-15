@@ -23,6 +23,10 @@ What changed in each release of Owner Rep, newest first. The full record is the
   CLAUDE.md, skill or project setting. The brief tells it the agent's instruction files are in
   the agent's folder, to read when a claim turns on them. To find your agentsview entry the rep
   reads Claude Code's `.claude.json` and takes only that entry.
+- **Only someone who did not build the work can sign it off.** A part of the job about the work
+  working, or being good, now closes only on a hands-on look by a helper, a Codex run or the
+  rep's own check. The agent's own look is kept and shown on the card ("the agent looked at it
+  itself; it still needs a look by someone who did not build it"), and that part stays open.
 
 ## 0.7.5 (14 November 2026)
 

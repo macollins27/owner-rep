@@ -199,6 +199,13 @@ its own work than into the product, it says so, and the message it writes for yo
 for more tests, scripts or reports: where proof is missing it asks for a hands-on look at the
 real thing.
 
+That the work does what it should is signed off only by someone who did not build it: a helper,
+a Codex run, or the rep's own check, opening the real thing and using it. When the agent looks
+at its own work, the card says so ("the agent looked at it itself; it still needs a look by
+someone who did not build it"), and that part of the job stays open. Telling a fact (a file
+saved, a version installed) from a claim that the work works is the rep's own judgement; facts
+are still shown by the command and what it printed.
+
 You do no step of the job yourself. A chore the agent leaves "for you" is unfinished work,
 and the rep puts it in the message to the agent.
 
@@ -351,9 +358,9 @@ The full design is in [How the owner rep works](docs/how-it-works.md).
 
 ## Built to be trusted
 
-- **630 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
+- **637 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
   the tests.
-- **A doctor that plants bugs.** It plants 556 known defects in a throwaway copy, one at a
+- **A doctor that plants bugs.** It plants 560 known defects in a throwaway copy, one at a
   time, and fails the build if the tests miss any of them.
 - **Real sessions.** Twelve scenarios run in real Claude Code sessions, with the screen
   captured in [`tests/live/captures`](tests/live/captures).

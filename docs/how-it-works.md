@@ -310,6 +310,16 @@ much of the work goes into the product and how much into pieces built only to pr
 agent's own work, and forbids the message from asking for such pieces or from taking a test
 or review in place of the hands-on look.
 
+Why the agent's own look is not the sign-off. Until G44 (15 Nov 2026) the agent opening its own
+work and saying what it saw could close a condition about that work working. NORTH_STAR
+expectation 2 asks for someone who did not build it, since a builder looking at their own work
+sees what they meant to build. The readers now write a look's where as `look by <who>: <what>`,
+and the code takes it as the sign-off only from a helper, a Codex run or the check. The agent's
+own look is kept, and the card says the agent looked and that the part still needs someone
+else's look, so the owner sees the evidence without it being taken as proof. The code cannot
+tell a fact from a claim that the work works; that stays the reader's call, and a where with no
+`look by` is taken as a fact's proof.
+
 What counts as waste. 0.6.0 named tests, review rounds and plans among the machinery to flag,
 and its message forbade asking for new tests or reviews by another AI. That steered agents away
 from normal good work. Since 0.7.3 the waste is narrower and named once, as a self-proving
@@ -566,7 +576,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 630 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 637 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: twelve real sessions in tmux, the strip captured to tests/live/captures
 ```
