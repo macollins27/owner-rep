@@ -17,7 +17,7 @@
 import type { On, SessionMessage } from 'claude-code'
 import { describe, expect, mock, test as kitTest, type Engine, type Plugin, type TestBody, type TestOptions } from 'claude-code/testing'
 
-import { type Memory, CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkMcpConfig, checkCostText, checkPrompt, doingFor, firstSentence, fit, fillCard, countLine, refusedLine, type CardText, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, HIS_CUT, TURN_TEXT_MAX, PENDING_MAX, TURNS_KEPT, tapStep, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, OLD_SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, sentencesOf, withoutStopSentences, toAgentVoice, sectionOf, takeOwnWords, ownMessageTaken, earlierMessage, messageUsable, type Replaced, parseOwnWords, ownWordsPrompt, askAgain, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
+import { type Memory, CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkMcpConfig, LOOK_RULE, lookOf, checkCostText, checkPrompt, doingFor, firstSentence, fit, fillCard, countLine, refusedLine, type CardText, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, HIS_CUT, TURN_TEXT_MAX, PENDING_MAX, TURNS_KEPT, tapStep, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, OLD_SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, sentencesOf, withoutStopSentences, toAgentVoice, sectionOf, takeOwnWords, ownMessageTaken, earlierMessage, messageUsable, type Replaced, parseOwnWords, ownWordsPrompt, askAgain, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
 import * as rep from '../hooks/rep'
 import { REFUSED_ENVIRONMENT, MISSING_REMOTE, BEFORE_YOU_STOP_COLON, WAIT_BEFORE_SUBMIT, THREE_BEFORE_YOU_STOP, TWO_BEFORE_YOU_STOP, GUARD_REFUSAL, PAUSED_WORK_CAUSE, STOP_SHAPES } from './fixtures/stop-shapes'
 
@@ -627,9 +627,13 @@ test('the brief keeps every judgment line word for word and stays under its word
   // 3,200 since Task 7: both carry the walk of the approved plans' steps, about 265 words (plan 7.1 item 4).
   // 3,800 and 3,950 since the merge with 0.6.0, which added judging the work itself and where the effort goes,
   // about 550 words more in each (it moved main's own limit from 2,850 to 3,450).
-  expect(words(b)).toBeLessThan(3800)
+  // 3,900 since G44: the briefs carry LOOK_RULE, how a hands-on look is written and who may sign it off, about 100 words.
+  expect(words(b)).toBeLessThan(3900)
+  expect(b).toContain(LOOK_RULE)
+  expect(w).toContain(LOOK_RULE)
   // 3,350 for the Heads up alone: it carries LIST_GAP_RULE, about 130 words, and the briefing does not.
-  expect(words(w)).toBeLessThan(3950)
+  // 4,050 since G44, for LOOK_RULE as above.
+  expect(words(w)).toBeLessThan(4050)
   // The bookkeeping the code enforces is gone from the brief.
   for (const gone of ['under the rule given with the conditions', 'sent after #', 'never the number of a draft', 'A later message replaces an earlier one only where the owner says so', 'Each condition of "done" stays open until the conversation shows it']) {
     expect(b).not.toContain(gone)
@@ -8913,6 +8917,126 @@ test('rule: the writer never raises a condition: a reopened one it proposes show
   expect(rec()?.past).toEqual(['The release built and installed here.'])
   expect(rec()?.objective?.done).toEqual([{ text: 'the newest build installed', state: 'not-shown', by: '' }])
   expect(Object.keys(rec()?.objective?.done[0] ?? {})).not.toContain('reopened')
+})
+
+// --- G44: that the result works is signed off only by a look by someone who did not build it. ---
+
+test('lookOf: a hands-on look signs off only when a helper, a Codex run or the check made it; the agent\'s own look, or anyone not on the list, does not; a where with no look is a fact', () => {
+  expect(lookOf('look by the agent: opened the page and it loaded')).toEqual({ signs: false, who: 'the agent', what: 'opened the page and it loaded' })
+  expect(lookOf("look by the agent's check script: it passed")?.signs).toBe(false)
+  expect(lookOf('look by the owner: they said it works')?.signs).toBe(false)
+  expect(lookOf('look by someone: it works')?.signs).toBe(false)
+  for (const who of ['a helper', 'the helper', 'a subagent', 'Codex', 'a Codex run', 'the check', "the rep's own check", 'the checker', 'owner-rep check']) {
+    expect(lookOf(`look by ${who}: opened the page as a visitor and it read well`)).toMatchObject({ signs: true, what: 'opened the page as a visitor and it read well' })
+  }
+  expect(lookOf('Look By A Helper:  it loaded')).toMatchObject({ signs: true, what: 'it loaded' })
+  expect(lookOf('a hands-on look by the agent: it loaded')?.signs).toBe(false)
+  expect(lookOf('the install log printed the revision')).toBeNull()
+  expect(lookOf('ran `npm test`: 42 passed')).toBeNull()
+})
+
+test('the card says the agent looked at a condition itself and that it still needs a look by someone who did not build it; the prompts carry what that look saw', () => {
+  const o: Objective = {
+    ...OBJ_FIXTURE,
+    result: 'The site live.',
+    purpose: 'So customers can buy.',
+    done: [{ text: 'the checkout works for a customer', state: 'open', by: '', seen: 'opened the checkout and paid with a test card' }, c('the newest build installed', 'shown', 'the install log printed the revision')],
+    step: '',
+  }
+  expect(objectiveText(o)).toContain('Done when: the checkout works for a customer (the agent looked at it itself; it still needs a look by someone who did not build it); the newest build installed (shown).')
+  expect(objectiveText(o)).not.toContain('test card')
+  const m = { objective: o, owner: [], past: [], seen: [], others: [] }
+  for (const p of [watchPrompt(m, 'stop'), briefPrompt(m)]) {
+    expect(p).toContain("the checkout works for a customer (the agent's own look saw: opened the checkout and paid with a test card; only a look by someone who did not build it shows it)")
+  }
+  // A shown or closed condition carries no such mark, whatever an older write left on it.
+  expect(objectiveText({ ...o, done: [{ text: 'x', state: 'shown', by: 'look by a helper: fine', seen: 'old' }] })).toContain('Done when: x (shown).')
+})
+
+// A record whose one condition is about the result working, still open.
+const WORKS_JOB = (): Record<string, unknown> => ({
+  sessions: {
+    'test-session': {
+      id: 'test-session',
+      at: Date.now(),
+      objective: { ...OBJ_FIXTURE, result: 'The checkout working for customers.', done: [c('the checkout works for a customer', 'open')], from: 1 },
+      jobStart: 1,
+      owner: [om('make the checkout work for customers')],
+      counter: 1,
+      past: [],
+      seen: [],
+      others: [],
+    },
+  },
+})
+
+test('rule: a look, a briefing or a check marking a "works" condition shown on the agent\'s own look leaves it open, keeps what the look saw, says so on the card, and the stop is still refused', async ($, on) => {
+  const rec = kept(on, WORKS_JOB())
+  quietBand(on)
+  checkRoom(on)
+  let fork = `${HOLDS}\nshown:\n- the checkout works for a customer | look by the agent: opened the checkout and paid with a test card`
+  on('model.fork', () => ({ value: { isAnswered: true, text: fork, usage: USAGE } }))
+  let out = CHECK_OUT('continue', { shown: '- the checkout works for a customer | look by the agent: the record shows the agent paying with a test card' })
+  on('process.spawn', async function* () {
+    yield { stream: 'stdout', text: out }
+    return { value: { code: 0, signal: null } }
+  })
+  await started($)
+  // The look at a turn's end.
+  await $.turn.complete(stop('t1'))
+  await settleUntil($, () => rec()?.objective?.done[0]?.seen !== undefined)
+  expect(rec()?.objective?.done[0]).toEqual({ text: 'the checkout works for a customer', state: 'open', by: '', seen: 'opened the checkout and paid with a test card' })
+  // A briefing saying stop on the same look: the mark is not taken, and the stop is refused.
+  fork = STOP_BRIEF('shown:\n- the checkout works for a customer | look by the agent: opened the checkout and paid with a test card\n')
+  let ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  expect(rec()?.objective?.done[0]?.state).toBe('open')
+  expect(await ui.find({ type: 'Text', text: /the checkout works for a customer \(the agent looked at it itself; it still needs a look by someone who did not build it\)/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^Next: The job is still open: the checkout works for a customer\./ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Stop the agent|Wrap up and stop here/ })).toBeUndefined()
+  // The check reporting the agent's own look does not sign it off either.
+  await ui.press({ key: 'check' })
+  expect(rec()?.objective?.done[0]).toMatchObject({ state: 'open', seen: 'the record shows the agent paying with a test card' })
+  // The check's own look does, on a check from a fresh briefing.
+  await ui.press({ key: 'close' })
+  await ui.unmount()
+  ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  out = CHECK_OUT('continue', { shown: '- the checkout works for a customer | look by the check: opened the checkout in the copy and paid with a test card; the order went through' })
+  await ui.press({ key: 'check' })
+  expect(rec()?.objective?.done[0]).toEqual({ text: 'the checkout works for a customer', state: 'shown', by: 'look by the check: opened the checkout in the copy and paid with a test card; the order went through' })
+  await ui.unmount()
+})
+
+// The condition after one look at a turn's end marks it shown with `where`.
+const lookMarks = async ($: Engine, on: On, where: string, moved: (c: Condition | undefined) => boolean) => {
+  const rec = kept(on, WORKS_JOB())
+  quietBand(on)
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  on('model.fork', () => ({ value: { isAnswered: true, text: `${HOLDS}\nshown:\n- the checkout works for a customer | ${where}`, usage: USAGE } }))
+  await started($)
+  await $.turn.complete(stop('t1'))
+  await settleUntil($, () => moved(rec()?.objective?.done[0]))
+  return rec()?.objective?.done[0]
+}
+
+test('rule: a look by a helper closes a "works" condition', async ($, on) => {
+  const where = 'look by a helper: the helper opened the checkout as a customer and paid; the order went through'
+  expect(await lookMarks($, on, where, x => x?.state === 'shown')).toEqual({ text: 'the checkout works for a customer', state: 'shown', by: where })
+})
+
+test('rule: a look by a Codex run closes a "works" condition', async ($, on) => {
+  const where = 'look by a Codex run: Codex paid with a test card and got the receipt'
+  expect(await lookMarks($, on, where, x => x?.state === 'shown')).toEqual({ text: 'the checkout works for a customer', state: 'shown', by: where })
+})
+
+test('rule: a fact\'s where with no look in it marks shown as before', async ($, on) => {
+  const where = 'the payment log printed the order number'
+  expect(await lookMarks($, on, where, x => x?.state === 'shown')).toEqual({ text: 'the checkout works for a customer', state: 'shown', by: where })
+})
+
+test('rule: a look by anyone not on the sign-off list, here the owner as the agent reports it, leaves the condition open with what the look saw', async ($, on) => {
+  expect(await lookMarks($, on, 'look by the owner: the agent says the owner tried it', x => x?.seen !== undefined)).toEqual({ text: 'the checkout works for a customer', state: 'open', by: '', seen: 'the agent says the owner tried it' })
 })
 
 test('rule: the going-well line does not stand on a checked card beside a false claim or anything left out', async ($, on) => {
