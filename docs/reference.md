@@ -810,6 +810,48 @@ stands a store that refuses the record leaves it in this process alone (`saveToF
 store that takes it again leaves the list where it is (`stored`): the list may be newer than the
 record. Sources held in memory by an earlier process are marked `LOST_RESTART`.
 
+**The call log and the counters.** Every model call the rep makes for itself is saved by
+`logCall` (`hooks/register.tsx`), queued by `saveCall` behind the call so the card, the row and
+the record never wait on the disk: the objective writer (`objective`, one file per attempt), each
+look (`watch`), the briefing (`brief`), its second ask (`ask-again`) and the own-words call
+(`own-words`); the check keeps its own record in agentsview. The folder is
+`<config>/owner-rep/calls/<session id>/` (`callsRoot`), only for a uuid session id
+(`isSessionId`), so the kit's `test-session` writes nothing. Each call is one file,
+`<13-digit ms>-<4-digit seq>-<kind>.json` (`callFileName`, `CALL_FILE`), a `CallEntry`: the
+settings sent (`CallSettings`), the attempt, the system prompt and each prompt block by
+fingerprint (`LoggedBlock`, with its cache mark), `joined` when the prompt went as one text,
+`promptSha` and `promptChars` of the whole prompt as one text (`joinBlocks`), the time, the
+outcome (`callOutcome`: `answered`, `threw`, the engine's reason, or `api-error` with status and
+error), the reply, the usage, `nearCap` (output at `NEAR_CAP_SHARE`, 98%, of the cap or past it),
+the reply as its kind's reader read it (`callRead`: the objective writer's `holds`, `moved` or
+`unreadable`; the watch's `read`, `flag` or `unreadable` with its marks; a card's `read` or
+`no-verdict` with its marks, its words part by part and, for a briefing and its second ask, the
+gate's rules, `gateRules`, which mirror `gateVerdict`'s refusals; the own-words call's `whole` or
+`cut`), and for a card the conditions open when the gate read it (`open`), so a replay gates its
+answer the same way. Each text is written once, to `parts/<sha256>.txt` (`PART_FILE`); the
+session record every look resends is the same text call after call and is kept once. A process
+writes at most `CALL_LOG_SESSION_BYTES` (64 MiB) of texts for a session; past that a call is
+saved with `kept: false` and no texts. `logCall` never throws: a call not saved stands as it came
+back. At each `session.start` with a uuid session id, `pruneCalls` lists the calls folder,
+without being awaited, and removes in one `rm -rf` through `hostArgv` each session folder whose
+last change is more than `CALL_LOG_DAYS` (14) days old; `removableCallFolder` allows only a
+uuid-named folder right under an absolute calls folder.
+
+The counters are `rec.counts` (`Counts`), changed in the same `changeRec` as the spend: per kind
+(`KindCounts`) the calls, the four token counts, the time, the replies near the cap, the outcomes,
+what the replies were read as, and for cards the gate's rules (`passed` when none);
+`countEnd` counts how each briefing ended (`BriefEnd`: `passed` at once, `asked-again`,
+`own-words`, or `fixed-text`). Two commands are registered at `session.start` and hidden from the
+menu and `/help` (`command.describe`, `HIDDEN_COMMANDS`): `/owner-rep-counts` prints
+`countsText`, one line per kind and a `cards:` line; `/owner-rep-replay <call file, session folder,
+session id or "this"> [--kind k] [--last 1-50] [--effort low|medium|high|max] [--times 1-10]`
+(`parseReplayArgs`, `REPLAY_USAGE`) takes a folder's last `--last` (`REPLAY_LAST`, 10) calls of the
+kind asked for (`replayPick`), rebuilds each from its parts (`savedCall`, which refuses one whose
+texts were not kept, are missing, or no longer join to `promptSha`), prints it as logged and sends
+it `--times` times with the same settings, or the effort given, reading each answer with
+`callRead` against the saved `open` (`replayLine`), then the totals of each (`replayTotals`). A
+replay is not logged or counted. Nothing of either is drawn on the row or the card.
+
 An approval (`approvalOf`: the owner's message, note or plan-screen plan carrying `approved`,
 never one that turned a plan down, never a draft) of the open job that falls outside the job's
 newest `JOB_MAX` is kept by `trimKept`, pinned, up to `APPROVED_KEEP_MAX` (60) of the newest;

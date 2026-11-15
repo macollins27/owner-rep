@@ -3226,5 +3226,29 @@
     "breaks": "From Claude Code 2.1.325 the briefing no longer takes the strip alone: another mod's row stays stacked under the card the owner asked for.",
     "patch": "card-shares-strip.patch",
     "fixed": "2026-11-14"
+  },
+  {
+    "name": "gate-rules-miss-empty",
+    "breaks": "The call log's list of the gate's rules leaves out an empty message, so a card the gate refused for it is logged and counted as passed.",
+    "patch": "gate-rules-miss-empty.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "call-log-prunes-any-folder",
+    "breaks": "The call log's removal takes any folder under the calls folder, not only a session's folder named by a uuid.",
+    "patch": "call-log-prunes-any-folder.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "call-log-any-session",
+    "breaks": "Calls are saved for a session id that is not a uuid, so a session with no folder of its own writes under the calls folder.",
+    "patch": "call-log-any-session.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "replay-unchecked-prompt",
+    "breaks": "The replay sends a saved call whose texts were changed after it was saved, without checking them against the fingerprint of the prompt that was sent.",
+    "patch": "replay-unchecked-prompt.patch",
+    "fixed": "2026-11-14"
   }
 ]

@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 04c7909..6c4bf05 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -680,7 +680,6 @@ const counted = (sent: Sent, read?: CallRead) => {
+ // One call saved: its texts first (each once), then its own file.
+ async function logCall($: EngineInterface, sid: string, sent: Sent, read?: CallRead, open?: Condition[] | null): Promise<void> {
+   try {
+-    if (!isSessionId(sid)) return
+     const root = await callsFolder($)
+     if (root === null) return
+     const folder = `${root}/${sid}`

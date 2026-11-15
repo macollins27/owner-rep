@@ -1,11 +1,11 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 1c7c5ed..1504724 100644
+index 04c7909..59f1160 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1244,6 +1244,8 @@ const NOTHING_READ: ModelForkResult = {
+@@ -1422,6 +1422,8 @@ const NOTHING_READ: ModelForkResult = {
    usage: { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
  } as ModelForkResult
- async function readSession($: EngineInterface, sid: string, rec: Rec, task: (cover: string[]) => string): Promise<Read> {
+ async function readSession($: EngineInterface, sid: string, rec: Rec, kind: CallKind, task: (cover: string[]) => string): Promise<Read> {
 +  const fork = await $.model.fork({ prompt: task([]) })
 +  if (fork.isAnswered) return { result: fork, gaps: {} }
    const rows = await $.session.messages().catch(() => [])

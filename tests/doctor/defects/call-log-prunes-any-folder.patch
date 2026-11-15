@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index f625b74..83ea78c 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -5282,7 +5282,7 @@ export function removableCallFolder(root: string, p: string): boolean {
+   if (!root.startsWith('/') && !/^[A-Za-z]:\//.test(root)) return false
+   if (!root.endsWith('/owner-rep/calls') || !p.startsWith(`${root}/`)) return false
+   const rest = p.slice(root.length + 1)
+-  return !rest.includes('/') && isSessionId(rest)
++  return !rest.includes('/')
+ }
+ 
+ // What a call was sent with.

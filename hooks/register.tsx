@@ -212,6 +212,32 @@ import {
   type Memory,
   type Objective,
   type ObjectiveAnswer,
+  CALL_FILE,
+  CALL_LOG_DAYS,
+  CALL_LOG_SESSION_BYTES,
+  REPLAY_USAGE,
+  blocksOf,
+  callFileName,
+  callOutcome,
+  callRead,
+  callsRoot,
+  countCall,
+  countEnd,
+  countsText,
+  nearCap,
+  parseReplayArgs,
+  removableCallFolder,
+  replayLine,
+  replayPick,
+  replayTotals,
+  type BriefEnd,
+  type CallEntry,
+  type CallKind,
+  type CallRead,
+  type CallSettings,
+  type Counts,
+  type ReplayRow,
+  type Usage,
 } from './rep'
 
 // From the prompt box only a bare digit presses a band button.
@@ -294,6 +320,9 @@ type Rec = {
   // The last write whose every attempt failed: when, and the last message it was shown;
   // cleared by the next write that lands. A fresh start writes again while it is set.
   failedWrite?: { at: number; upTo: number }
+  // The calls counted by kind, and how the cards the gate refused ended (`countCall`, `countEnd`);
+  // absent until the first call. Printed by `/owner-rep-counts`, never shown on the band.
+  counts?: Counts
 }
 
 const isRec = (v: unknown): v is Rec =>
@@ -606,6 +635,128 @@ async function removeFiles($: EngineInterface, paths: readonly string[], folders
   } catch {
     // Left in place; the next save that drops them tries nothing more.
   }
+}
+
+// The call log (docs/reference.md, "The call log and the counters"): every call the rep makes
+// for itself saved as one file in the session's folder under the calls folder, each text it sent
+// kept once by its fingerprint in the folder's `parts`. Only a session id of the uuid form has a
+// folder. Saving never stops or slows a call: it runs behind it (`saveCall`), and a write that fails
+// is let go, the call standing.
+// A model call as it was sent and what came back, for the log and the counters.
+type ModelResult = Awaited<ReturnType<EngineInterface['model']['complete']>>
+type Sent = {
+  kind: CallKind
+  settings: CallSettings
+  system: string
+  prompt: string | PromptBlock[]
+  // The prompt went as one text (a plain prompt, or blocks joined for a build that takes none).
+  joined: boolean
+  attempt?: number
+  result: ModelResult | null
+  ms: number
+}
+// The calls folder under the config folder, beside the sources.
+async function callsFolder($: EngineInterface): Promise<string | null> {
+  const sources = await rootOf($)
+  return sources === null ? null : callsRoot(sources.slice(0, -'/owner-rep/sources'.length))
+}
+// The texts this process has saved, by `<session id>/<fingerprint>`, and their bytes by session.
+const savedParts = new Set<string>()
+const savedBytes = new Map<string, number>()
+let callSeq = 0
+
+// What a call counts as, for `countCall`.
+const counted = (sent: Sent, read?: CallRead) => {
+  const usage = sent.result === null ? undefined : (sent.result.usage as Usage | undefined)
+  return {
+    kind: sent.kind,
+    usage,
+    ms: sent.ms,
+    nearCap: nearCap(usage, sent.settings.maxTokens),
+    outcome: callOutcome(sent.result as never).outcome,
+    ...(read === undefined ? {} : { read }),
+  }
+}
+
+// One call saved: its texts first (each once), then its own file.
+async function logCall($: EngineInterface, sid: string, sent: Sent, read?: CallRead, open?: Condition[] | null): Promise<void> {
+  try {
+    if (!isSessionId(sid)) return
+    const root = await callsFolder($)
+    if (root === null) return
+    const folder = `${root}/${sid}`
+    const blocks = blocksOf(sent.prompt)
+    const whole = joinBlocks(blocks)
+    const texts = [sent.system, ...blocks.map(b => b.text)]
+    const shas = await Promise.all(texts.map(t => sha256(t)))
+    const fresh = texts.flatMap((t, i) => (savedParts.has(`${sid}/${shas[i]}`) ? [] : [{ t, sha: shas[i] ?? '' }]))
+    const bytes = fresh.reduce((n, f) => n + utf8Bytes(f.t), 0)
+    const kept = (savedBytes.get(sid) ?? 0) + bytes <= CALL_LOG_SESSION_BYTES
+    if (kept) {
+      for (const f of fresh) {
+        const path = `${folder}/parts/${f.sha}.txt`
+        if ((await $.fs.exists(path).catch(() => false)) || (await writeFile($, path, f.t))) savedParts.add(`${sid}/${f.sha}`)
+      }
+      savedBytes.set(sid, (savedBytes.get(sid) ?? 0) + bytes)
+    }
+    const result = sent.result
+    const c = counted(sent, read)
+    const entry: CallEntry = {
+      v: 1,
+      at: Date.now(),
+      kind: sent.kind,
+      settings: sent.settings,
+      ...(sent.attempt === undefined ? {} : { attempt: sent.attempt }),
+      kept,
+      ...(kept ? { system: shas[0] ?? '', prompt: blocks.map((b, i) => ({ sha: shas[i + 1] ?? '', ...(b.cache === true ? { cache: true as const } : {}) })) } : {}),
+      joined: sent.joined,
+      promptSha: await sha256(whole),
+      promptChars: whole.length,
+      ms: sent.ms,
+      ...callOutcome(result as never),
+      ...(result !== null && result.isAnswered ? { reply: result.text } : {}),
+      ...(c.usage === undefined ? {} : { usage: c.usage }),
+      nearCap: c.nearCap,
+      ...(read === undefined ? {} : { read }),
+      ...(open === undefined ? {} : { open }),
+    }
+    await writeFile($, `${folder}/${callFileName(entry.at, callSeq++, sent.kind)}`, JSON.stringify(entry))
+  } catch {
+    // Not saved; the call stands as it came back.
+  }
+}
+
+// Calls are saved one after another, behind the call rather than in its way: the card, the row
+// and the record never wait on the disk, and two saves never race over the same text.
+let callSaves: Promise<void> = Promise.resolve()
+function saveCall($: EngineInterface, sid: string, sent: Sent, read?: CallRead, open?: Condition[] | null): void {
+  callSaves = callSaves.then(() => logCall($, sid, sent, read, open))
+}
+
+// At each start in a session the rep can save calls for: each session's folder of calls that nothing has changed in for CALL_LOG_DAYS
+// days is removed, in one command; nothing but such a folder (`removableCallFolder`).
+async function pruneCalls($: EngineInterface, root: string): Promise<void> {
+  try {
+    const before = Date.now() - CALL_LOG_DAYS * 24 * 60 * 60 * 1000
+    const entries = await $.fs.list(root).catch(() => [])
+    const old: string[] = []
+    for (const e of entries) {
+      const path = `${root}/${e.name}`
+      if (e.kind !== 'dir' || !removableCallFolder(root, path)) continue
+      const st = await $.fs.stat(path).catch(() => null)
+      if (st !== null && st.mtimeMs > 0 && st.mtimeMs < before) old.push(path)
+    }
+    if (old.length > 0) await $.process.run(hostArgv(await hostOf($), ['rm', '-rf', ...old]), { timeoutMs: REMOVE_TIMEOUT_MS })
+  } catch {
+    // Left in place; the next process tries again.
+  }
+}
+
+// A model call timed, a call that throws read as null.
+async function timed(call: () => Promise<ModelResult>): Promise<{ result: ModelResult | null; ms: number }> {
+  const t0 = Date.now()
+  const result = await call().catch(() => null)
+  return { result, ms: Date.now() - t0 }
 }
 
 // Each source not yet in a file goes to its own file, written once: a file already there is
@@ -1171,19 +1322,17 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
       // write whose every attempt failed counts as failed, with the last cause.
       for (let attempt = 0; attempt <= OBJECTIVE_RETRIES; attempt++) {
         const retry = attempt > 0
-        const result = await $.model
-          .complete({
-            model: OBJECTIVE_MODEL,
-            system: OBJECTIVE_SYSTEM,
-            prompt,
-            maxTokens: retry ? OBJECTIVE_RETRY_MAX_TOKENS : OBJECTIVE_MAX_TOKENS,
-            effort: retry ? OBJECTIVE_RETRY_EFFORT : 'high',
-            timeoutMs: retry ? OBJECTIVE_RETRY_TIMEOUT_MS : OBJECTIVE_TIMEOUT_MS,
-          })
-          .catch(() => null)
+        const effort = retry ? OBJECTIVE_RETRY_EFFORT : 'high'
+        const maxTokens = retry ? OBJECTIVE_RETRY_MAX_TOKENS : OBJECTIVE_MAX_TOKENS
+        const timeoutMs = retry ? OBJECTIVE_RETRY_TIMEOUT_MS : OBJECTIVE_TIMEOUT_MS
+        const { result, ms } = await timed(() => $.model.complete({ model: OBJECTIVE_MODEL, system: OBJECTIVE_SYSTEM, prompt, maxTokens, effort, timeoutMs }))
+        const sent: Sent = { kind: 'objective', settings: { model: OBJECTIVE_MODEL, effort, maxTokens, timeoutMs }, system: OBJECTIVE_SYSTEM, prompt, joined: true, attempt, result, ms }
+        const read = result !== null && result.isAnswered ? callRead('objective', result.text) : undefined
+        saveCall($, sid, sent, read)
         let again = false
         let stale = false
         after = await changeRec($, sid, async r => {
+          r.counts = countCall(r.counts, counted(sent, read))
           if (result !== null) {
             r.objectiveCalls += 1
             r.objectiveTokens += tokensOf(result.usage)
@@ -1273,13 +1422,14 @@ async function setNow($: EngineInterface, patch: Partial<Now>): Promise<void> {
 // where it cannot be placed, or the record opens after it, the reader is told and the owner shown
 // (boundaryCover). With no rows there is nothing to read: the result says so as a fork's would, and
 // no model is called. A completion that throws reads as an API error, which the callers show.
-type Read = { result: ModelForkResult; gaps: ReaderGaps }
+// `sent` is the call as it went, for the log and the counters; absent when no model was called.
+type Read = { result: ModelForkResult; gaps: ReaderGaps; sent?: Sent }
 const NOTHING_READ: ModelForkResult = {
   isAnswered: false,
   reason: 'nothing-to-fork',
   usage: { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
 } as ModelForkResult
-async function readSession($: EngineInterface, sid: string, rec: Rec, task: (cover: string[]) => string): Promise<Read> {
+async function readSession($: EngineInterface, sid: string, rec: Rec, kind: CallKind, task: (cover: string[]) => string): Promise<Read> {
   const rows = await $.session.messages().catch(() => [])
   if (rows.length === 0) return { result: NOTHING_READ, gaps: {} }
   const items = await heldItems($, sid, rows)
@@ -1306,21 +1456,28 @@ async function readSession($: EngineInterface, sid: string, rec: Rec, task: (cov
     })
   // A build that takes only a text prompt (2.1.286 refuses blocks at its host check, before any
   // model is called) is sent the same text joined, without the cache mark.
-  const result = await ask(blocks)
+  let joined = false
+  const t0 = Date.now()
+  const answered = await ask(blocks)
     .catch((e: unknown) => {
       if (!BLOCKS_REFUSED.test(String(e))) throw e
+      joined = true
       return ask(joinBlocks(blocks))
     })
-    .catch(
-      (): ModelForkResult => ({
-        isAnswered: false,
-        reason: 'api-error',
-        status: null,
-        error: 'unknown',
-        usage: { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
-      }),
-    )
-  return { result: result as ModelForkResult, gaps: cover.gaps }
+    .catch(() => null)
+  const ms = Date.now() - t0
+  const result =
+    answered ??
+    ({
+      isAnswered: false,
+      reason: 'api-error',
+      status: null,
+      error: 'unknown',
+      usage: { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
+    } as ModelForkResult)
+  const settings: CallSettings = { model: OBJECTIVE_MODEL, effort: 'high', maxTokens: RECORD_MAX_TOKENS, timeoutMs: RECORD_TIMEOUT_MS }
+  const call: Sent = { kind, settings, system: RECORD_SYSTEM, prompt: joined ? joinBlocks(blocks) : blocks, joined, result: answered, ms }
+  return { result: result as ModelForkResult, gaps: cover.gaps, sent: call }
 }
 
 // One look by the watch: the same cached copy of the conversation the agent
@@ -1336,7 +1493,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
     return
   }
   const memory = { ...(await memoryFor($, sid, rec, 'watch')), context: await contextOf($) }
-  const got = await readSession($, sid, rec, cover => watchPrompt({ ...memory, cover }, reason))
+  const got = await readSession($, sid, rec, 'watch', cover => watchPrompt({ ...memory, cover }, reason))
   // Nothing recorded yet: no model was called, and there is nothing to count.
   if (got.result === NOTHING_READ) return
   const result = got.result
@@ -1345,10 +1502,13 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
   // What this look could not do for an approval goes to the row through coverage, the one path.
   await setLookGaps($, sid, joinGaps(got.gaps, fill === undefined ? {} : readerGaps(fill, 'watch'), notAssessedGaps(parsed?.notAssessed ?? [])))
   const usage = 'usage' in result ? result.usage : null
+  const watchRead = result.isAnswered ? callRead('watch', result.text) : undefined
+  if (got.sent !== undefined) saveCall($, sid, got.sent, watchRead)
   await changeRec($, sid, async after => {
     after.calls += 1
     after.tokens += tokensOf(usage)
     after.cached += cachedOf(usage)
+    if (got.sent !== undefined) after.counts = countCall(after.counts, counted(got.sent, watchRead))
     if (!result.isAnswered || parsed === null) return
     // An answered look moves the cursor, so the next one shows the plans after these.
     if (fill?.cursor !== undefined) after.readerAt = { watch: fill.cursor }
@@ -1363,6 +1523,90 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
       await update($, viewA, () => 'note')
     }
   })
+}
+
+// The hidden commands: `/owner-rep-counts` prints this session's counters, `/owner-rep-replay`
+// sends saved calls again (docs/reference.md, "The call log and the counters"). Neither is in the
+// typeahead or `/help`; both run when typed in full. The replay's own calls are not saved or counted.
+const HIDDEN_COMMANDS = new Set(['owner-rep-counts', 'owner-rep-replay'])
+
+// A saved call read back: the entry, and its system prompt and prompt rebuilt from its parts.
+async function savedCall($: EngineInterface, path: string): Promise<{ entry: CallEntry; system?: string; prompt?: string | PromptBlock[]; why?: string } | null> {
+  const text = await readText($, path)
+  if (text === null) return null
+  let entry: CallEntry
+  try {
+    entry = JSON.parse(text) as CallEntry
+  } catch {
+    return null
+  }
+  if (entry.v !== 1 || !entry.kept || entry.system === undefined || entry.prompt === undefined) return { entry, why: 'its texts were not kept' }
+  const parts = `${path.slice(0, path.lastIndexOf('/'))}/parts`
+  const system = await readText($, `${parts}/${entry.system}.txt`)
+  const blocks: PromptBlock[] = []
+  for (const b of entry.prompt) {
+    const t = await readText($, `${parts}/${b.sha}.txt`)
+    if (t === null) return { entry, why: 'a saved text is missing' }
+    blocks.push({ text: t, ...(b.cache === true ? { cache: true as const } : {}) })
+  }
+  if (system === null) return { entry, why: 'its system prompt is missing' }
+  const whole = joinBlocks(blocks)
+  if ((await sha256(whole)) !== entry.promptSha) return { entry, why: 'the rebuilt prompt is not the one sent' }
+  return { entry, system, prompt: entry.joined ? whole : blocks }
+}
+
+async function replay($: EngineInterface, args: string): Promise<string> {
+  const a = parseReplayArgs(args)
+  if ('error' in a) return a.error
+  const root = await callsFolder($)
+  // A bare session id names its folder under the calls folder; "this" names this session's.
+  const named = a.path === 'this' ? currentId : a.path
+  const path = isSessionId(named) && root !== null ? `${root}/${named}` : named
+  const st = await $.fs.stat(path).catch(() => null)
+  if (st === null) return `Nothing at ${path}.\n${REPLAY_USAGE}`
+  const files =
+    st.kind === 'dir'
+      ? replayPick((await $.fs.list(path).catch(() => [])).map(e => e.name), a.kind, a.last).map(n => `${path}/${n}`)
+      : [path]
+  if (files.length === 0) return `No saved calls${a.kind === undefined ? '' : ` of kind ${a.kind}`} in ${path}.`
+  const rows: ReplayRow[] = []
+  const lines: string[] = []
+  for (const file of files) {
+    const got = await savedCall($, file)
+    const name = file.slice(file.lastIndexOf('/') + 1)
+    if (got === null) {
+      lines.push(`${name}: could not be read`)
+      continue
+    }
+    const e = got.entry
+    const logged: ReplayRow = { label: 'logged', kind: e.kind, outcome: e.outcome, ms: e.ms, nearCap: e.nearCap, ...(e.read === undefined ? {} : { read: e.read }), ...(e.usage === undefined ? {} : { usage: e.usage }) }
+    rows.push(logged)
+    lines.push(name, `  ${replayLine(logged)}`)
+    if (got.system === undefined || got.prompt === undefined) {
+      lines.push(`  not sent again: ${got.why ?? 'its texts were not kept'}`)
+      continue
+    }
+    const effort = (a.effort ?? e.settings.effort) as 'high'
+    for (let i = 1; i <= a.times; i++) {
+      const system = got.system
+      const prompt = got.prompt
+      const { result, ms } = await timed(() => $.model.complete({ model: e.settings.model, system, prompt, maxTokens: e.settings.maxTokens, effort, timeoutMs: e.settings.timeoutMs }))
+      const usage = result === null ? undefined : (result.usage as Usage | undefined)
+      const row: ReplayRow = {
+        label: `replay ${i}`,
+        kind: e.kind,
+        ...callOutcome(result as never),
+        ms,
+        nearCap: nearCap(usage, e.settings.maxTokens),
+        ...(result !== null && result.isAnswered ? { read: callRead(e.kind, result.text, e.open) } : {}),
+        ...(usage === undefined ? {} : { usage }),
+      }
+      rows.push(row)
+      lines.push(`  ${replayLine(row)}`)
+    }
+  }
+  const setting = a.effort === undefined ? '' : ` (effort ${a.effort})`
+  return [...lines, '', replayTotals(rows, 'logged'), replayTotals(rows, `replay`) + setting].join('\n')
 }
 
 // The press: an instant read over the same copy, drawn in the band.
@@ -1388,7 +1632,8 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     const ask = async (extra: string) => {
       const rec = await loadRec($, sid)
       const memory = { ...(await memoryFor($, sid, rec, 'brief')), context }
-      const got = await readSession($, sid, rec, cover => {
+      const kind: CallKind = extra === '' ? 'brief' : 'ask-again'
+      const got = await readSession($, sid, rec, kind, cover => {
         const prompt = briefPrompt({ ...memory, cover })
         return extra === '' ? prompt : `${prompt}\n\n${extra}`
       })
@@ -1398,16 +1643,27 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       const unassessed = result !== NOTHING_READ && result.isAnswered ? notAssessedGaps(parseBrief(result.text).notAssessed ?? []) : {}
       if (result !== NOTHING_READ) gaps = joinGaps(got.gaps, plans, unassessed)
       const usage = 'usage' in result ? result.usage : null
-      return changeRec($, sid, async after => {
+      // What the reply was read as, with the gate's rules against the conditions open when it gated.
+      let briefRead: CallRead | undefined
+      let gatedOpen: Condition[] | null | undefined
+      const out = await changeRec($, sid, async after => {
         after.calls += 1
         after.tokens += tokensOf(usage)
         after.cached += cachedOf(usage)
-        if (!result.isAnswered) return { reason: result.reason }
+        if (!result.isAnswered) {
+          if (got.sent !== undefined) after.counts = countCall(after.counts, counted(got.sent))
+          return { reason: result.reason }
+        }
         const parsed = parseBrief(result.text)
         if (applyMarks(after, parsed.shown, parsed.closed) && onScreen(sid)) await update($, readingA, () => after.objective)
         const left = gateOpen(after.objective)
+        briefRead = callRead(kind, result.text, left)
+        gatedOpen = left
+        if (got.sent !== undefined) after.counts = countCall(after.counts, counted(got.sent, briefRead))
         return { ...gateVerdict(parsed, left), open: left }
       })
+      if (got.sent !== undefined) saveCall($, sid, got.sent, briefRead, gatedOpen)
+      return out
     }
     const first = await ask('')
     if ('reason' in first) {
@@ -1431,10 +1687,14 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     // What came of the own-words call, and its reply's length, for the record.
     let ownRead: OwnRead = 'skipped'
     let ownChars = 0
+    // How the card ended, for the counters: passed at once, passed asked again, the own-words
+    // call's parts taken, or the rep's fixed text.
+    let end: BriefEnd = first.refused ? 'fixed-text' : 'passed'
     if (first.refused && first.open !== null) {
       reads += 1
       const again = await ask(askAgain(first.open))
       if (!('reason' in again)) taken = again
+      if (!taken.refused) end = 'asked-again'
     }
     // Refused twice (or refused once, the second ask unanswered): the parts the gate
     // replaced are written in the rep's own words by one plain call (no fork) over the
@@ -1449,17 +1709,23 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       taken = { ...taken, ...unusableReplaced(taken.answer, taken.replaced, open) }
       reads += 1
       const rec = await loadRec($, sid)
-      const result = await $.model
-        .complete({
-          model: OBJECTIVE_MODEL,
-          system: OWN_WORDS_SYSTEM,
-          prompt: ownWordsPrompt({ ...(await memoryFor($, sid, rec, 'brief')), context }, open, taken.answer),
-          maxTokens: OWN_WORDS_MAX_TOKENS,
-          effort: 'high',
-          timeoutMs: OWN_WORDS_TIMEOUT_MS,
-        })
-        .catch(() => null)
+      const prompt = ownWordsPrompt({ ...(await memoryFor($, sid, rec, 'brief')), context }, open, taken.answer)
+      const { result, ms } = await timed(() =>
+        $.model.complete({ model: OBJECTIVE_MODEL, system: OWN_WORDS_SYSTEM, prompt, maxTokens: OWN_WORDS_MAX_TOKENS, effort: 'high', timeoutMs: OWN_WORDS_TIMEOUT_MS }),
+      )
+      const sent: Sent = {
+        kind: 'own-words',
+        settings: { model: OBJECTIVE_MODEL, effort: 'high', maxTokens: OWN_WORDS_MAX_TOKENS, timeoutMs: OWN_WORDS_TIMEOUT_MS },
+        system: OWN_WORDS_SYSTEM,
+        prompt,
+        joined: true,
+        result,
+        ms,
+      }
+      const ownCall = result !== null && result.isAnswered ? callRead('own-words', result.text) : undefined
+      saveCall($, sid, sent, ownCall)
       const own = await changeRec($, sid, after => {
+        after.counts = countCall(after.counts, counted(sent, ownCall))
         if (result !== null) {
           after.calls += 1
           after.tokens += tokensOf(result.usage)
@@ -1470,6 +1736,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       const answered = result !== null && result.isAnswered
       ownChars = answered ? result.text.length : 0
       ownRead = !answered ? 'none' : own === null ? 'cut' : 'whole'
+      if (own !== null) end = 'own-words'
       // The own-words message is taken only when it is usable: praise alone leaves the fixed text for read 1's message.
       const ownTaken = ownMessageTaken(taken.replaced, own)
       taken = { ...taken, answer: takeOwnWords(taken.answer, ownTaken ? taken.replaced : taken.replaced.filter(p => p !== 'message'), own) }
@@ -1501,6 +1768,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
         checkCost: checkCostText(after.lastCheckTokens, after.lastCheckCached, after.lastCheckMs, after.lastCheckRefused),
       }
       after.lastBrief = { at: brief.at, next: brief.next, message: brief.message, reads, own: ownRead, ownChars }
+      after.counts = countEnd(after.counts, end)
       after.drafts = keepDraft(after.drafts, brief.message)
       return brief
     })
@@ -2462,8 +2730,20 @@ export const register: Register = on => {
 
   on('session.start', async ($, e, next) => {
     try {
+      await $.command.register({ name: 'owner-rep-counts', description: "Owner rep: this session's call counters" })
+      await $.command.register({ name: 'owner-rep-replay', description: 'Owner rep: send saved calls again', argumentHint: '<call file or session> [--kind k] [--last n] [--effort e] [--times n]' })
+    } catch {
+      // The rep works without them.
+    }
+    try {
       currentId = await $.session.id()
       ended = false
+      // Old saved calls cleared in the background; a start never waits on it.
+      if (isSessionId(currentId)) {
+        callsFolder($)
+          .then(root => (root === null ? undefined : pruneCalls($, root)))
+          .catch(() => undefined)
+      }
       await enterSession($, currentId)
       await update($, viewA, v => (v === 'reading' ? 'row' : (v ?? 'row')))
       await setNow($, { isWorking: false, doing: 'idle', mark: '' })
@@ -2472,6 +2752,13 @@ export const register: Register = on => {
     }
     return next(e)
   })
+
+  on('command.describe', ($, e, next) => next(HIDDEN_COMMANDS.has(e.command) ? { ...e, isHidden: true } : e))
+  on('command.run', { command: 'owner-rep-counts' }, async $ => {
+    const id = await $.session.id()
+    return { text: countsText((await loadRec($, id)).counts) }
+  })
+  on('command.run', { command: 'owner-rep-replay' }, async ($, e) => ({ text: await replay($, e.args) }))
 
   // Where Claude Code saves the session's transcript, read by heldItems.
   on('classic.SessionStart', ($, e, next) => {

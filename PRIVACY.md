@@ -18,7 +18,7 @@ anything, it keeps:
   the last three cards' messages;
 - the notes the rep has shown, and the text of up to 10 notes other mods drew in the strip,
   so none is repeated;
-- counters of what the rep has spent.
+- counters of what the rep has spent, and of how its model calls came back and were read.
 
 It also keeps a list of up to 200 of its own drafts from sessions that have left the store,
 so a message it wrote is never mistaken for one of yours.
@@ -35,6 +35,16 @@ A saved text is kept as long as its message is kept and removed with the session
 approved plan is kept for as long as its job is open, up to 60 a job. When the shared store is
 full, the record's manifest and parts go in the same folder, and the files of a lost copy stay
 while its loss mark stands.
+
+In the folder `<config>/owner-rep/calls/`, it saves a copy of each model call it makes for
+itself in a session: the job's account, each Heads up look, each briefing and its second ask,
+and the own-words call. Each copy holds the full text sent (which includes parts of your session,
+as listed under "What leaves your machine"), the full reply, the settings, the time it took and
+the tokens it used. A text sent more than once is kept once, checked by SHA-256. A session's
+folder is removed once nothing in it has changed for 14 days, and it is never sent anywhere.
+Two hidden commands read it: `/owner-rep-counts` prints the counters, and `/owner-rep-replay`
+sends saved calls to the model again, which is a new model call like any other. The check's own
+run is not saved here.
 
 To read which messages you typed, the rep reads the session transcripts Claude Code already
 keeps under `~/.claude/projects/`. It copies only the messages you typed, including a note you

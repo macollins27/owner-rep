@@ -3,6 +3,15 @@
 What changed in each release of Owner Rep, newest first. The full record is the
 [commit history](https://github.com/macollins27/owner-rep/commits/main).
 
+## Unreleased
+
+- **The rep keeps a log of its own model calls, on your machine.** Each call it makes for itself
+  (the job's account, each Heads up look, each briefing and its second ask, and the own-words
+  call) is saved under `<config>/owner-rep/calls/`, with the text sent and the reply, so a call
+  can be read and sent again to compare a change. A text sent many times is kept once, and a
+  session's folder is removed after 14 days with no change. Two hidden commands read it:
+  `/owner-rep-counts` and `/owner-rep-replay`. Nothing the rep shows you changes.
+
 ## 0.7.5 (14 November 2026)
 
 - **The strip above the prompt is shared properly again on Claude Code 2.1.325.** That build
