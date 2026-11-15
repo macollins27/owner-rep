@@ -3334,5 +3334,35 @@
     "breaks": "A CLAUDE_CONFIG_DIR ending in a slash makes the check look for .claude.json at a doubled-slash path.",
     "patch": "check-mcp-trailing-slash.patch",
     "fixed": "2026-11-15"
+  },
+  {
+    "name": "builder-look-signs-off",
+    "breaks": "A look by the agent at its own work marks a \"works\" condition shown, so the agent signs off its own work.",
+    "patch": "builder-look-signs-off.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "check-marks-skip-who",
+    "breaks": "The check's marks skip the who rule, so a check that only read the agent's own look in the record signs the condition off.",
+    "patch": "check-marks-skip-who.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "agent-look-off-card",
+    "breaks": "The card says nothing of the agent's own look, so the owner cannot see that the work was looked at and still waits on someone else's look.",
+    "patch": "agent-look-off-card.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "owner-signs-off",
+    "breaks": "A look the agent reports as the owner's counts as a sign-off, so the agent can close a condition by saying the owner tried it.",
+    "patch": "owner-signs-off.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "agent-look-dropped",
+    "breaks": "The agent's own look is thrown away instead of kept, so the evidence it gave is lost from the card and the prompts.",
+    "patch": "agent-look-dropped.patch",
+    "fixed": "2026-11-15"
   }
 ]

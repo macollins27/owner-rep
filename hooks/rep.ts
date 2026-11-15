@@ -186,8 +186,32 @@ export type ConditionState = 'open' | 'not-shown' | 'shown' | 'closed'
 // the check found when the check reopened it, '' otherwise. `reopened` is set when
 // the check moved it back from shown to not shown: then only a check's own shown
 // mark moves it shown again, and the looks, the briefings and the writer are shown
-// what the check found. Absent, as on older records, it is not reopened.
-export type Condition = { text: string; state: ConditionState; by: string; reopened?: boolean }
+// what the check found. Absent, as on older records, it is not reopened. `seen`
+// is what the agent's own hands-on look at its own work saw, on a condition
+// still open: shown evidence, never the sign-off (NORTH_STAR expectation 2, G44).
+// Absent, as on older records, no such look is held.
+export type Condition = { text: string; state: ConditionState; by: string; reopened?: boolean; seen?: string }
+
+// That the result works, or is good, is signed off only by a hands-on look by
+// someone who did not build it (NORTH_STAR expectation 2; audit G44). A shown
+// mark's where names such a look as "look by <who>: <what they did and saw>".
+// Who may sign off is a list: a helper, a Codex run, the rep's own check. Any
+// other who, the agent above all, makes the look shown evidence: the condition
+// stays open and carries what the look saw. A where with no "look by" is a
+// fact's proof (a command and what it printed, a file and what it holds) and is
+// taken as before; which conditions are facts and which are about the result
+// working is the reader's call, and replay R5 measures how well it makes it.
+const LOOK_BY = /^\s*(?:a\s+)?(?:hands-on\s+)?look\s+by\s+([^:]+?)\s*:\s*([\s\S]*)$/i
+const SIGNERS = /^(?:(?:a|an|the)\s+)?(?:helper|subagent|codex|(?:rep'?s\s+(?:own\s+)?|owner[- ]rep'?s?\s+)?(?:check|checker))\b/i
+export function lookOf(where: string): { signs: boolean; who: string; what: string } | null {
+  const m = LOOK_BY.exec(where)
+  if (m === null) return null
+  const who = (m[1] ?? '').trim()
+  return { signs: SIGNERS.test(who), who, what: (m[2] ?? '').trim() }
+}
+
+// How a reader writes a look, told to the watch, the briefing, ask again and the check.
+export const LOOK_RULE = 'That the result works for its user, or is good, is shown only by a hands-on look at the real thing by someone who did not build it: a helper, a Codex run, or the check. Write such a condition\'s where as "look by <who>: <what they did and what they saw>", naming who opened it. The agent\'s own look at its own work is written "look by the agent: …"; it is kept and shown to the owner as the agent\'s own look, and the condition stays open. A fact\'s where is the command and what it printed, or the file and what it holds.'
 export type ObjectiveParts = { result: string; purpose: string; done: Condition[]; step: string }
 export type Objective = ObjectiveParts & {
   // When the job opened.
@@ -369,7 +393,12 @@ const sentence = (s: string): string => {
 // for, what "done" has to show with each condition's state, and the step now.
 // Its first sentence, the one the row shows, is the result.
 // One condition with its state's mark, as the prose and the open lists show it.
-const conditionLine = (c: Condition): string => `${c.text.trim().replace(/[.;]+$/, '')}${STATE_MARK[c.state]}`
+const conditionLine = (c: Condition): string => `${c.text.trim().replace(/[.;]+$/, '')}${STATE_MARK[c.state]}${seenMark(c)}`
+
+// Beside a condition still open that the agent looked at itself, what the card
+// says of it: the look is in, and the sign-off is still to come.
+const seenOf = (c: Condition): string => ((c.state === 'open' || c.state === 'not-shown') && typeof c.seen === 'string' ? c.seen.trim().replace(/[.;]+$/, '') : '')
+const seenMark = (c: Condition): string => (seenOf(c) === '' ? '' : ' (the agent looked at it itself; it still needs a look by someone who did not build it)')
 
 // What the check found beside a condition it reopened, '' for any other.
 const found = (c: Condition): string =>
@@ -380,7 +409,11 @@ const found = (c: Condition): string =>
 // does not propose it shown again on the same evidence. The card never shows
 // the check's words there.
 const promptLine = (c: Condition): string =>
-  found(c) === '' ? conditionLine(c) : `${c.text.trim().replace(/[.;]+$/, '')} (not shown: the check found ${found(c)})`
+  found(c) !== ''
+    ? `${c.text.trim().replace(/[.;]+$/, '')} (not shown: the check found ${found(c)})`
+    : seenOf(c) !== ''
+      ? `${c.text.trim().replace(/[.;]+$/, '')}${STATE_MARK[c.state]} (the agent's own look saw: ${seenOf(c)}; only a look by someone who did not build it shows it)`
+      : conditionLine(c)
 
 // The conditions still open as a list, one "- <condition> (mark)" line each.
 const openLines = (o: Objective | null, none: string): string =>
@@ -1339,7 +1372,7 @@ ${when}
 
 Do two things.
 
-First, measure the work against the objective above. A condition still open that the conversation now shows goes under "shown:", with where it shows it; one the owner closed in a message of the owner's own goes under "closed:", with that message's number.
+First, measure the work against the objective above. A condition still open that the conversation now shows goes under "shown:", with where it shows it; one the owner closed in a message of the owner's own goes under "closed:", with that message's number. ${LOOK_RULE}
 
 Second, decide whether there is one thing the owner should know right now that the owner would very likely miss, and that has a cost to the owner: money, time, wasted work, a wrong result, a decision the owner is in the middle of, or work called finished that is not. The bar is very high. Most of the time the answer is none. Skip anything the owner is already discussing with the agent, anything the agent plainly said and the owner replied to, and anything already shown to the owner (listed below). "Interesting" is not "important". If in doubt, none.
 
@@ -1418,6 +1451,8 @@ ${memoryText(m)}
 The owner pressed the key. Give the owner the short briefing described below, measured against the objective above. Look at what the agent actually did in the conversation, including the helpers it launched and what they reported, not at what the agent says it did. Where the next step depends on a claim the conversation does not show, say "not shown" and have the message ask for the proof. If the owner sent your last message to the agent, say whether the agent did the step that message asked for.
 
 When every condition is shown or closed and the conversation shows the result working, say so in one line under "well:", and still fill in every other part: the owner wants the whole picture every time, not only when something is wrong. While any condition is open or not shown, or the work falls short of the best it could be, write the message: it asks for the work that is missing and says what better looks like; where proof is missing, it asks for a hands-on look at the real thing (open it, use it the way a customer or the owner would, try to break it) and what that look found. It never accepts a test or a review in place of that look, never asks for a self-proving piece, and when the agent spends the owner's money on such pieces, tells it to put the effort into the product. Leave the message empty only when every condition is shown or closed, or no objective is held and there is nothing worth sending. ${HELD_STEP_RULE}
+
+${LOOK_RULE}
 
 ${WALK_RULE}
 Walk them to yourself and do not write the walk out. Every step with no sign while later work goes on goes first under "left:", named with the plan's number; every step not assessed goes under "unassessed:".
@@ -3877,7 +3912,7 @@ The briefing above was written at ${a.writtenAt}, from the conversation as it st
 
 1. List the claims the briefing rests on, and the claims the agent's latest messages make that the next step depends on: work done, files saved, tests run and passed, a problem fixed, a helper's result used, something installed or running.
 2. Check each against the record and the disk as of the briefing's time. A claim holds when you saw the proof yourself: the file is there with the content, the test run printed its result, the command ran. A claim is false when the record or the disk shows otherwise at that time. A claim is not shown when nothing proves it either way. Something that became true or false only after the briefing's time is a change, reported under "changed".
-3. Check each condition the rep holds open against the record and the disk. Under "shown:" put each one they show, naming where: the command and what it printed, the file and what is in it. Under "closed:" put each one the owner closed in a message of the owner's own${a.from > 0 ? ` sent after #${a.from}, the last message the objective was built from` : ''}, citing that message as #n. Never mark one shown on the agent's word, and never close one by the number of a message marked as the rep's draft. Write each condition in its words as listed above, without the mark in brackets. Check each condition the rep holds shown the same way: when the record or the disk, as of the briefing's time, shows it is not so (the run named fails, the file is not there, the thing is not running), put it under "reopen:" with what shows otherwise; it goes back to not shown.
+3. Check each condition the rep holds open against the record and the disk. Under "shown:" put each one they show, naming where: the command and what it printed, the file and what is in it. Under "closed:" put each one the owner closed in a message of the owner's own${a.from > 0 ? ` sent after #${a.from}, the last message the objective was built from` : ''}, citing that message as #n. Never mark one shown on the agent's word, and never close one by the number of a message marked as the rep's draft. Write each condition in its words as listed above, without the mark in brackets. Check each condition the rep holds shown the same way: when the record or the disk, as of the briefing's time, shows it is not so (the run named fails, the file is not there, the thing is not running), put it under "reopen:" with what shows otherwise; it goes back to not shown. ${LOOK_RULE} When you open the real thing yourself, as step 4 asks, write it "look by the check: …"; when the record shows only the agent's own look, write it "look by the agent: …".
 4. Look at the work itself, the way the owner's best adviser would. Open the real thing where you can reach it: read the pages as built the way a visitor would, run the program the way the owner uses it, try to break it. Judge it against the best in its trade, not against the agent's checks: the agent's own tests passing says only that they pass. Say plainly where it falls short of the best it could be and what better looks like. Look too at where the session's work went: how much of what the agent and its helpers did made the product better, and how much went into self-proving pieces, whose job is to prove their own work (scripts or hooks that confirmed their own steps ran, logs or saved output kept as evidence, graders built to approve their own output, guards on their own edits, proof reports). Tests, reviews, plan checks, second readers and planning are work on the product, never waste. Say how the work was split between the two, with the figures the record shows; when self-proving pieces took a real share of it, say so plainly.
 5. Rewrite the whole briefing in the light of your checking: stands, means, left and next, and the message. Drop every "left" item your checking disproved, keep the ones it confirmed, add what it found. The card the owner reads is your version, so it must not contradict itself. A review, plan, briefing, handoff or list of what remains is a step toward the objective, never the objective, unless the owner opened the session for that document; and when the objective is to guide the owner through finishing something, it is complete only when the owner has been guided to the finish, not when the first guidance was given. While any condition the rep holds open is still open after your checking, no part of the card says the job or the session is finished, however many claims hold.
 6. Write every part the card shows (holds, false, notshown, changed, stands, means, left, next and the message) for the owner: plain words, no file names, line numbers or code names unless the owner used them, no jargon, no hedging. The "shown:", "closed:" and "reopen:" lines are not on the card; they are kept for the record, so there name the command, the file and what they printed or hold, as step 3 asks. The agent's technical terms are off limits unless they appear in the owner's own messages above; say each thing as what it is and what it does for the owner. Say "the agent", "you" or "we" as responsibility falls.
@@ -4684,7 +4719,7 @@ export const askAgain = (open: Condition[]): string => `## Asked once more
 Your first answer said the agent should stop, gave no verdict, called the work finished, or said the work is going well, while these conditions of done are still open:
 ${list(open.map(promptLine), '- none')}
 
-None of these may stand while any of them is open. An empty message counts too: while any of these is open, write the message to the agent, asking for the proof of each. Look at the conversation again: put under "shown:" each one it now shows, with where, and under "closed:" each one the owner closed in a message of the owner's own, with its number. Then give the whole briefing again in the same structure. While any of them stays open the verdict is "continue", "well" is empty, and "next" and "message" say what the agent does now to show it, or what stands in the way. ${HELD_STEP_RULE}`
+None of these may stand while any of them is open. An empty message counts too: while any of these is open, write the message to the agent, asking for the proof of each. Look at the conversation again: put under "shown:" each one it now shows, with where, and under "closed:" each one the owner closed in a message of the owner's own, with its number. ${LOOK_RULE} Then give the whole briefing again in the same structure. While any of them stays open the verdict is "continue", "well" is empty, and "next" and "message" say what the agent does now to show it, or what stands in the way. ${HELD_STEP_RULE}`
 
 // A part of a refused card the gate wrote in the rep's fixed text, in place of the model's.
 export type Replaced = 'means' | 'next' | 'message'
