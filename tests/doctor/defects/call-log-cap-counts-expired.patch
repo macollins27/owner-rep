@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index edbb603..71ba299 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -753,7 +753,7 @@ async function pruneCalls($: EngineInterface, root: string, sid: string): Promis
+       if (e.kind !== 'dir' || !removableCallFolder(root, path)) continue
+       const st = await $.fs.stat(path).catch(() => null)
+       if (st !== null && st.mtimeMs > 0 && st.mtimeMs < before) old.push(path)
+-      else kept.push({ path, bytes: await folderBytes($, path), mtimeMs: st?.mtimeMs ?? 0 })
++      kept.push({ path, bytes: await folderBytes($, path), mtimeMs: st?.mtimeMs ?? 0 })
+     }
+     const gone = [...old, ...overCallCap(kept, `${root}/${sid}`, now)]
+     if (gone.length === 0) return
