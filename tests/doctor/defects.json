@@ -3328,11 +3328,5 @@
     "breaks": "Where the config folder's .claude.json has no agentsview, the check takes the home's file, which Claude Code does not use.",
     "patch": "check-mcp-falls-back-home.patch",
     "fixed": "2026-11-15"
-  },
-  {
-    "name": "check-mcp-trailing-slash",
-    "breaks": "A CLAUDE_CONFIG_DIR ending in a slash makes the check look for .claude.json at a doubled-slash path.",
-    "patch": "check-mcp-trailing-slash.patch",
-    "fixed": "2026-11-15"
   }
 ]
