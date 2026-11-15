@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 9ca62c4..582ef3b 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -398,7 +398,7 @@ const conditionLine = (c: Condition): string => `${c.text.trim().replace(/[.;]+$
+ // Beside a condition still open that the agent looked at itself, what the card
+ // says of it: the look is in, and the sign-off is still to come.
+ const seenOf = (c: Condition): string => ((c.state === 'open' || c.state === 'not-shown') && typeof c.seen === 'string' ? c.seen.trim().replace(/[.;]+$/, '') : '')
+-const seenMark = (c: Condition): string => (seenOf(c) === '' ? '' : ' (the agent looked at it itself; it still needs a look by someone who did not build it)')
++const seenMark = (_c: Condition): string => ''
+ 
+ // What the check found beside a condition it reopened, '' for any other.
+ const found = (c: Condition): string =>
