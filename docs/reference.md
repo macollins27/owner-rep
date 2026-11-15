@@ -469,10 +469,11 @@ call writes (below):
    mark or by its folder under `checkCopiesDir`: no record, no call, nothing drawn; G19), and
    with `CLAUDE_CODE_DISABLE_CLAUDE_MDS=1` (`CHECK_ISOLATE_ENV`), `--setting-sources user`,
    `--disable-slash-commands` and `--strict-mcp-config --mcp-config` from `checkMcpConfig` (G18):
-   the run loads the owner's user-level settings, his guard hooks among them, the `--settings`
+   the run loads the owner's user-level settings, the owner's guard hooks among them, the `--settings`
    fence, and the owner's own agentsview entry from Claude Code's `.claude.json` (`checkMcp`
    reads `<CLAUDE_CONFIG_DIR>/.claude.json`, else `~/.claude.json`, and takes that one entry, or
-   none), and no CLAUDE.md, skill, slash command, project or local setting or other MCP server;
+   none; a file past the engine's 4 MiB read limit cannot be read and gives none, and the
+   checker then reads the record through the `agentsview` command, as the brief tells it to), and no CLAUDE.md, skill, slash command, project or local setting or other MCP server;
    the brief says the agent's instruction files are in its folder, to read when a claim turns on
    them. Nothing is removed from the copy, since where no copy is made the run is in the agent's
    own folder. With `--permission-mode default`, `CHECK_ALLOWED_TOOLS`

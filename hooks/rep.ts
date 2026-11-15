@@ -3745,7 +3745,7 @@ export const checkSettings = (home: string, real: string, path = '', links: stri
   })
 
 // What the check's own Claude Code session loads (G18). The checker judges the agent; the agent's
-// instruction files would tell it how to be the agent, and the owner chose to keep his own
+// instruction files would tell it how to be the agent, and the owner chose to keep their own
 // ~/.claude/CLAUDE.md out of it too (15 Nov 2026). `--setting-sources user` drops the copy's
 // project and local settings, its CLAUDE.md files, hooks, agents and commands, and keeps the
 // user level, where the owner's guard hooks live; `CLAUDE_CODE_DISABLE_CLAUDE_MDS` drops every

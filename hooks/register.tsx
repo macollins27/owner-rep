@@ -2071,7 +2071,9 @@ async function homeFor($: EngineInterface): Promise<string> {
 
 // The check's MCP servers (checkMcpConfig), from Claude Code's .claude.json: in the config
 // folder when CLAUDE_CONFIG_DIR names one, else in the home. Only the agentsview entry is
-// taken; nothing else in the file is kept or sent. None when neither can be read.
+// taken; nothing else in the file is kept or sent. None when neither can be read, a file past
+// the engine's 4 MiB read limit among them: the checker reads the record through the agentsview
+// command either way.
 async function checkMcp($: EngineInterface, home: string): Promise<string> {
   try {
     const set = await $.env.get('CLAUDE_CONFIG_DIR')
