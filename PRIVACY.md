@@ -41,7 +41,9 @@ itself in a session: the job's account, each Heads up look, each briefing and it
 and the own-words call. Each copy holds the full text sent (which includes parts of your session,
 as listed under "What leaves your machine"), the full reply, the settings, the time it took and
 the tokens it used. A text sent more than once is kept once, checked by SHA-256. A session's
-folder is removed once nothing in it has changed for 14 days, and it is never sent anywhere.
+folder is removed once nothing in it has changed for 14 days, and all the folders together are
+kept under about 1 GB: past that, the folders changed longest ago are removed first (never the
+session starting, nor one changed in the last hour). It is never sent anywhere.
 Two hidden commands read it: `/owner-rep-counts` prints the counters, and `/owner-rep-replay`
 sends saved calls to the model again, which is a new model call like any other. The check's own
 run is not saved here.

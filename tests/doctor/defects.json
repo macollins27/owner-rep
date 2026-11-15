@@ -3268,5 +3268,53 @@
     "breaks": "In the rep's own check, the message the check is started with still goes through the rep, which keeps it as the owner's.",
     "patch": "own-check-messages-kept.patch",
     "fixed": "2026-11-15"
+  },
+  {
+    "name": "call-log-cap-takes-starting",
+    "breaks": "Past the total of 1 GB, the folder of the session starting is removed when it is the oldest, though it is the one now being written.",
+    "patch": "call-log-cap-takes-starting.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "call-log-cap-newest-first",
+    "breaks": "Past the total of 1 GB, the folders changed most recently are removed first, and the old ones kept.",
+    "patch": "call-log-cap-newest-first.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "call-log-cap-takes-live",
+    "breaks": "Past the total of 1 GB, a folder changed in the last hour is removed, though it may be another running session's.",
+    "patch": "call-log-cap-takes-live.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "call-log-cap-takes-unknown-age",
+    "breaks": "Past the total of 1 GB, a folder whose change time cannot be read is removed as if it were the oldest.",
+    "patch": "call-log-cap-takes-unknown-age.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "call-log-cap-unused",
+    "breaks": "The total of 1 GB is never applied: every session's calls together grow without a bound for 14 days.",
+    "patch": "call-log-cap-unused.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "call-log-cap-parts-uncounted",
+    "breaks": "A folder's texts are left out of its size, so the total reads small and nothing is removed past 1 GB.",
+    "patch": "call-log-cap-parts-uncounted.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "call-log-cap-counts-expired",
+    "breaks": "A folder removed for being 14 days old is counted toward the total as well, and named twice in the removal.",
+    "patch": "call-log-cap-counts-expired.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "call-log-removed-texts-not-rewritten",
+    "breaks": "A session of this process whose calls folder was removed takes its texts as still saved, so its later calls name texts that are gone and cannot be sent again.",
+    "patch": "call-log-removed-texts-not-rewritten.patch",
+    "fixed": "2026-11-15"
   }
 ]

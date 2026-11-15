@@ -287,7 +287,9 @@ full, this is everything it reads and runs:
   own-words call) is saved there as one file holding what was sent and what came back, so a call
   can be read again and sent again. A text sent many times, such as the session's record that
   every look resends, is kept once. A session's folder is removed with `rm` once nothing in it has
-  changed for 14 days. Two hidden commands read it: `/owner-rep-counts` prints the session's
+  changed for 14 days, and while all the sessions' folders together hold more than 1 GB, the ones
+  changed longest ago are removed first, never the session starting or one changed in the last hour.
+  Two hidden commands read it: `/owner-rep-counts` prints the session's
   counters, and `/owner-rep-replay` sends saved calls to the model again, at the cost of a new
   call each. Nothing in it is shown unless you run them.
 - **On Windows:** those commands are Git for Windows' own, named by their full path. The rep
@@ -345,9 +347,9 @@ The full design is in [How the owner rep works](docs/how-it-works.md).
 
 ## Built to be trusted
 
-- **625 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
+- **628 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
   the tests.
-- **A doctor that plants bugs.** It plants 545 known defects in a throwaway copy, one at a
+- **A doctor that plants bugs.** It plants 553 known defects in a throwaway copy, one at a
   time, and fails the build if the tests miss any of them.
 - **Real sessions.** Twelve scenarios run in real Claude Code sessions, with the screen
   captured in [`tests/live/captures`](tests/live/captures).
