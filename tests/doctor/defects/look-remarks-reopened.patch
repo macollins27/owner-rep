@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index fa77064..4902610 100644
+index 7be5bd3..785048c 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -347,7 +347,7 @@ function applyMarks(
+@@ -1272,7 +1272,7 @@ function applyMarks(
        return { text: c.text, state: 'not-shown', by: back.by, reopened: true }
      }
      const show = shown.find(x => x.by !== '' && same(x.text, c.text))
 -    if (show !== undefined && (c.state === 'open' || c.state === 'not-shown') && !(c.reopened === true && check === null)) {
 +    if (show !== undefined && (c.state === 'open' || c.state === 'not-shown')) {
-       changed = true
-       return { text: c.text, state: 'shown', by: show.by }
-     }
+       // A look by someone not on the sign-off list, the agent's own above all,
+       // is kept as shown evidence and leaves the condition as it was (G44).
+       const signer = lookOf(show.by)

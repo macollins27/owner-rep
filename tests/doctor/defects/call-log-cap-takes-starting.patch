@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index a2adf00..66585b5 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -5310,7 +5310,7 @@ export function overCallCap(folders: CallFolder[], keep: string, now: number, ca
+   let total = folders.reduce((n, f) => n + f.bytes, 0)
+   const out: string[] = []
+   const removable = folders
+-    .filter(f => f.path !== keep && f.mtimeMs > 0 && f.mtimeMs <= now - CALL_LOG_LIVE_MS)
++    .filter(f => f.mtimeMs > 0 && f.mtimeMs <= now - CALL_LOG_LIVE_MS)
+     .sort((a, b) => a.mtimeMs - b.mtimeMs || (a.path < b.path ? -1 : 1))
+   for (const f of removable) {
+     if (total <= cap) break

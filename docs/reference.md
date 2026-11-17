@@ -855,8 +855,14 @@ writes at most `CALL_LOG_SESSION_BYTES` (64 MiB) of texts for a session; past th
 saved with `kept: false` and no texts. `logCall` never throws: a call not saved stands as it came
 back. At each `session.start` with a uuid session id, `pruneCalls` lists the calls folder,
 without being awaited, and removes in one `rm -rf` through `hostArgv` each session folder whose
-last change is more than `CALL_LOG_DAYS` (14) days old; `removableCallFolder` allows only a
-uuid-named folder right under an absolute calls folder.
+last change is more than `CALL_LOG_DAYS` (14) days old, and, in the same command, the folders
+`overCallCap` names: with every other folder sized by its call files and its parts
+(`folderBytes`), while they hold more than `CALL_LOG_TOTAL_BYTES` (1 GiB) together, the one
+changed longest ago, never the session starting, one changed in the last `CALL_LOG_LIVE_MS` (an
+hour, perhaps another running session's) or one whose change time is unknown; so the total may
+stay over until those age. A session of this process whose folder was removed has its saved
+texts forgotten (`savedParts`, `savedBytes`), so its next call writes them again.
+`removableCallFolder` allows only a uuid-named folder right under an absolute calls folder.
 
 The counters are `rec.counts` (`Counts`), changed in the same `changeRec` as the spend: per kind
 (`KindCounts`) the calls, the four token counts, the time, the replies near the cap, the outcomes,

@@ -14639,8 +14639,9 @@ const rebuilt = (d: Disk, e: rep.CallEntry) => ({
   prompt: (e.prompt ?? []).map(b => d.files.get(`${CALLS}/parts/${b.sha}.txt`) ?? '').join(''),
 })
 // The listing and the times the replay and the removal read, from the disk's map: a folder is any
-// path some file sits under; `ages` gives a path's last change, now unless given.
-const listed = (on: On, d: Disk, ages: Map<string, number> = new Map()) => {
+// path some file sits under; `ages` gives a path's last change, now unless given; `sizes` gives a
+// file's size, its text's length unless given.
+const listed = (on: On, d: Disk, ages: Map<string, number> = new Map(), sizes: Map<string, number> = new Map()) => {
   const isDir = (p: string) => [...d.files.keys()].some(k => k.startsWith(`${p}/`))
   on('fs.list', (_$, e) => {
     const path = asWritten(e.path)
@@ -14650,7 +14651,7 @@ const listed = (on: On, d: Disk, ages: Map<string, number> = new Map()) => {
       value: [...names].map(name => {
         const full = `${path}/${name}`
         const dir = isDir(full)
-        return { name, kind: dir ? ('dir' as const) : ('file' as const), size: dir ? 0 : (d.files.get(full)?.length ?? 0), mtimeMs: dir ? 0 : (ages.get(full) ?? Date.now()), isLink: false }
+        return { name, kind: dir ? ('dir' as const) : ('file' as const), size: dir ? 0 : (sizes.get(full) ?? d.files.get(full)?.length ?? 0), mtimeMs: dir ? 0 : (ages.get(full) ?? Date.now()), isLink: false }
       }),
     }
   })
@@ -14832,6 +14833,95 @@ describe('the call log: saving, replaying, counting and removing', () => {
     expect(d.files.has(`${CALLS_ROOT}/${NEW}/${rep.callFileName(2, 0, 'watch')}`)).toBe(true)
     expect(d.files.has(`${CALLS_ROOT}/not-a-session/old.json`)).toBe(true)
     expect(d.files.get(`${ROOT}/${OLD}/1-sent.txt`)).toBe('kept')
+  })
+
+  test('overCallCap removes the folders changed longest ago until the rest fit, never the one kept, one changed in the last hour, or one of unknown age', () => {
+    const now = 100 * rep.CALL_LOG_LIVE_MS
+    const f = (path: string, bytes: number, hoursAgo: number) => ({ path, bytes, mtimeMs: hoursAgo < 0 ? 0 : now - hoursAgo * rep.CALL_LOG_LIVE_MS })
+    expect(rep.CALL_LOG_TOTAL_BYTES).toBe(1024 * 1024 * 1024)
+    expect(rep.CALL_LOG_LIVE_MS).toBe(60 * 60 * 1000)
+    // Under or at the cap: nothing.
+    expect(rep.overCallCap([f('a', 5, 9), f('b', 5, 8)], 'x', now, 10)).toEqual([])
+    // Over: oldest first, and only as many as it takes.
+    expect(rep.overCallCap([f('b', 5, 8), f('a', 5, 9), f('c', 5, 7)], 'x', now, 10)).toEqual(['a'])
+    expect(rep.overCallCap([f('b', 5, 8), f('a', 5, 9), f('c', 5, 7)], 'x', now, 4)).toEqual(['a', 'b', 'c'])
+    // The one kept counts toward the total but is passed over, though oldest.
+    expect(rep.overCallCap([f('k', 8, 20), f('a', 4, 9), f('b', 4, 8)], 'k', now, 10)).toEqual(['a', 'b'])
+    // Changed in the last hour, or of unknown age: never removed, so the total may stay over.
+    expect(rep.overCallCap([f('a', 5, 9), f('live', 50, 0.5), f('odd', 50, -1)], 'x', now, 10)).toEqual(['a'])
+    expect(rep.overCallCap([f('edge', 5, 1), f('b', 50, 0.99)], 'x', now, 10)).toEqual(['edge'])
+    // The same age: by path, so the choice never wavers.
+    expect(rep.overCallCap([f('z', 5, 9), f('m', 5, 9)], 'x', now, 5)).toEqual(['m'])
+  })
+
+  test('rule: at a session\'s start, while every session\'s calls together pass 1 GB, the folder changed longest ago is removed, never the session starting', async ($, on) => {
+    const MiB = 1024 * 1024
+    const hour = 60 * 60 * 1000
+    const ids = ['0a1b2c3d-4e5f-4061-8728-394a5b6c7d8e', '1a1b2c3d-4e5f-4061-8728-394a5b6c7d8e', '2a1b2c3d-4e5f-4061-8728-394a5b6c7d8e', '3a1b2c3d-4e5f-4061-8728-394a5b6c7d8e', '4a1b2c3d-4e5f-4061-8728-394a5b6c7d8e']
+    const [A, B, C, LIVE, EXPIRED] = ids as [string, string, string, string, string]
+    const part = (id: string) => `${CALLS_ROOT}/${id}/parts/${'a'.repeat(64)}.txt`
+    const call = (id: string) => `${CALLS_ROOT}/${id}/${rep.callFileName(1, 0, 'watch')}`
+    const files = new Map<string, string>()
+    for (const id of [...ids, SID]) {
+      files.set(part(id), 'text')
+      files.set(call(id), '{}')
+    }
+    const d = disk(on, files)
+    // A, B, C each 300 MiB, a running session's 300 MiB changed ten minutes ago, the session
+    // starting at 200 MiB, older than those: 1.4 GiB in all, besides 300 MiB unchanged for 15 days.
+    const sizes = new Map([...ids.map(id => [part(id), 300 * MiB] as [string, number]), [part(SID), 200 * MiB] as [string, number]])
+    listed(on, d, new Map([
+      [`${CALLS_ROOT}/${EXPIRED}`, Date.now() - 15 * 24 * hour],
+      [`${CALLS_ROOT}/${SID}`, Date.now() - 10 * 24 * hour],
+      [`${CALLS_ROOT}/${A}`, Date.now() - 5 * 24 * hour],
+      [`${CALLS_ROOT}/${B}`, Date.now() - 3 * 24 * hour],
+      [`${CALLS_ROOT}/${C}`, Date.now() - 2 * 24 * hour],
+      [`${CALLS_ROOT}/${LIVE}`, Date.now() - 10 * 60 * 1000],
+    ]), sizes)
+    capture(on, storeOf(recOf([his(1, 'start the report')])), () => SID)
+    await started($)
+    await settleUntil($, () => removed(d).length > 0)
+    // The 15-day folder goes and is not counted; 1400 MiB over 1024: A then B go (800 MiB left);
+    // C, the running one and the starting one stay. One command removes all three.
+    expect(removed(d)).toEqual([`${CALLS_ROOT}/${EXPIRED}`, `${CALLS_ROOT}/${A}`, `${CALLS_ROOT}/${B}`])
+    for (const id of [C, LIVE, SID]) expect(d.files.has(part(id))).toBe(true)
+    expect(d.runs.filter(r => r[0] === 'rm').length).toBe(1)
+  })
+
+  test('rule: a session of this process whose calls folder was removed writes its texts again', async ($, on) => {
+    const OTHER = '5a1b2c3d-4e5f-4061-8728-394a5b6c7d8e'
+    const d = disk(on)
+    const store = storeOf(recOf([his(1, 'start the report')]))
+    let sid = SID
+    const { scripts, hold } = capture(on, store, () => sid)
+    hold.write = () => OBJ('The quarterly report written.', ['the report written'])
+    const ages = new Map<string, number>()
+    listed(on, d, ages)
+    await started($)
+    await send($, 'and add the charts')
+    await runTurn($, scripts, 't1', [said('Made the charts.')])
+    await settleUntil($, () => callsIn(d).some(e => e.kind === 'watch'))
+    expect(partsIn(d).some(p => d.files.get(p) === RECORD_SYSTEM)).toBe(true)
+    // Another session starts in this process while this one's folder reads as 15 days old.
+    ages.set(CALLS, Date.now() - 15 * 24 * 60 * 60 * 1000)
+    sid = OTHER
+    await started($)
+    await settleUntil($, () => removed(d).includes(CALLS))
+    expect(partsIn(d)).toEqual([])
+    ages.delete(CALLS)
+    // Back in the first session: its next look keeps its texts again, and its file rebuilds.
+    sid = SID
+    await started($)
+    await runTurn($, scripts, 't2', [said('Checked the charts.')])
+    await settleUntil($, () => callsIn(d).some(e => e.kind === 'watch'))
+    const watch = callsIn(d).filter(e => e.kind === 'watch')
+    expect(watch.length).toBeGreaterThanOrEqual(1)
+    for (const e of watch) {
+      expect(e.kept).toBe(true)
+      const back = rebuilt(d, e)
+      expect(back.system).toBe(RECORD_SYSTEM)
+      expect(await shaOf(back.prompt)).toBe(e.promptSha)
+    }
   })
 
   test('rule: a session whose calls are not saved removes nothing at its start', async ($, on) => {
