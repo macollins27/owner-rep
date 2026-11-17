@@ -5312,6 +5312,11 @@ export type CallKind = (typeof CALL_KINDS)[number]
 export const CALL_LOG_DAYS = 14
 // The texts one process keeps for a session; past it, a call is saved without its texts.
 export const CALL_LOG_SESSION_BYTES = 64 * 1024 * 1024
+// What every session's folder of calls holds together; past it, the folders changed longest ago
+// are removed first until the rest fit.
+export const CALL_LOG_TOTAL_BYTES = 1024 * 1024 * 1024
+// A folder changed this recently may be another running session's: the total never removes it.
+export const CALL_LOG_LIVE_MS = 60 * 60 * 1000
 // A reply whose output tokens reach this share of its cap is counted as near the cap: the engine
 // says nothing of a reply the cap cut short, and one that stopped this close to it may have been.
 export const NEAR_CAP_SHARE = 0.98
@@ -5331,6 +5336,27 @@ export function removableCallFolder(root: string, p: string): boolean {
   if (!root.endsWith('/owner-rep/calls') || !p.startsWith(`${root}/`)) return false
   const rest = p.slice(root.length + 1)
   return !rest.includes('/') && isSessionId(rest)
+}
+
+// A session's folder of calls as the removal sees it: its path, the bytes of the files in it and
+// in its parts, and when it last changed.
+export type CallFolder = { path: string; bytes: number; mtimeMs: number }
+// The folders to remove so that all of them together hold no more than `cap` bytes: the one changed
+// longest ago first, then the next. `keep` (the session starting) is counted but never removed,
+// nor is a folder changed in the last CALL_LOG_LIVE_MS before `now`, or one whose change time is
+// unknown; so the total can stay over the cap until those age.
+export function overCallCap(folders: CallFolder[], keep: string, now: number, cap: number = CALL_LOG_TOTAL_BYTES): string[] {
+  let total = folders.reduce((n, f) => n + f.bytes, 0)
+  const out: string[] = []
+  const removable = folders
+    .filter(f => f.path !== keep && f.mtimeMs > 0 && f.mtimeMs <= now - CALL_LOG_LIVE_MS)
+    .sort((a, b) => a.mtimeMs - b.mtimeMs || (a.path < b.path ? -1 : 1))
+  for (const f of removable) {
+    if (total <= cap) break
+    out.push(f.path)
+    total -= f.bytes
+  }
+  return out
 }
 
 // What a call was sent with.

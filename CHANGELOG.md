@@ -9,7 +9,8 @@ What changed in each release of Owner Rep, newest first. The full record is the
   (the job's account, each Heads up look, each briefing and its second ask, and the own-words
   call) is saved under `<config>/owner-rep/calls/`, with the text sent and the reply, so a call
   can be read and sent again to compare a change. A text sent many times is kept once, and a
-  session's folder is removed after 14 days with no change. Two hidden commands read it:
+  session's folder is removed after 14 days with no change, and all of them together are kept under
+  about 1 GB, the oldest removed first. Two hidden commands read it:
   `/owner-rep-counts` and `/owner-rep-replay`. Nothing the rep shows you changes.
 - **The rep no longer watches its own check.** The check runs as a Claude Code session of its own,
   and the rep loaded in it and watched it like one of your agents: it kept a record of it, spent

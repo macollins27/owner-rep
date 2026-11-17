@@ -219,6 +219,7 @@ import {
   CALL_FILE,
   CALL_LOG_DAYS,
   CALL_LOG_SESSION_BYTES,
+  type CallFolder,
   REPLAY_USAGE,
   blocksOf,
   callFileName,
@@ -231,6 +232,7 @@ import {
   nearCap,
   parseReplayArgs,
   removableCallFolder,
+  overCallCap,
   replayLine,
   replayPick,
   replayTotals,
@@ -738,22 +740,40 @@ function saveCall($: EngineInterface, sid: string, sent: Sent, read?: CallRead, 
 }
 
 // At each start in a session the rep can save calls for: each session's folder of calls that nothing has changed in for CALL_LOG_DAYS
-// days is removed, in one command; nothing but such a folder (`removableCallFolder`).
-async function pruneCalls($: EngineInterface, root: string): Promise<void> {
+// days is removed, and then, while the folders left hold more than CALL_LOG_TOTAL_BYTES together,
+// the one changed longest ago, never the session starting (`overCallCap`); all in one command, and
+// nothing but such a folder (`removableCallFolder`).
+async function pruneCalls($: EngineInterface, root: string, sid: string): Promise<void> {
   try {
-    const before = Date.now() - CALL_LOG_DAYS * 24 * 60 * 60 * 1000
+    const now = Date.now()
+    const before = now - CALL_LOG_DAYS * 24 * 60 * 60 * 1000
     const entries = await $.fs.list(root).catch(() => [])
     const old: string[] = []
+    const kept: CallFolder[] = []
     for (const e of entries) {
       const path = `${root}/${e.name}`
       if (e.kind !== 'dir' || !removableCallFolder(root, path)) continue
       const st = await $.fs.stat(path).catch(() => null)
       if (st !== null && st.mtimeMs > 0 && st.mtimeMs < before) old.push(path)
+      else kept.push({ path, bytes: await folderBytes($, path), mtimeMs: st?.mtimeMs ?? 0 })
     }
-    if (old.length > 0) await $.process.run(hostArgv(await hostOf($), ['rm', '-rf', ...old]), { timeoutMs: REMOVE_TIMEOUT_MS })
+    const gone = [...old, ...overCallCap(kept, `${root}/${sid}`, now)]
+    if (gone.length === 0) return
+    await $.process.run(hostArgv(await hostOf($), ['rm', '-rf', ...gone]), { timeoutMs: REMOVE_TIMEOUT_MS })
+    // A session of this process whose folder went writes its texts again.
+    for (const path of gone) {
+      const id = path.slice(root.length + 1)
+      savedBytes.delete(id)
+      for (const k of [...savedParts]) if (k.startsWith(`${id}/`)) savedParts.delete(k)
+    }
   } catch {
     // Left in place; the next process tries again.
   }
+}
+// The bytes of a session's folder of calls: its call files and its parts.
+async function folderBytes($: EngineInterface, folder: string): Promise<number> {
+  const files = async (p: string) => (await $.fs.list(p).catch(() => [])).reduce((n, e) => n + (e.kind === 'file' ? e.size : 0), 0)
+  return (await files(folder)) + (await files(`${folder}/parts`))
 }
 
 // A model call timed, a call that throws read as null.
@@ -2772,8 +2792,9 @@ export const register: Register = on => {
       ended = false
       // Old saved calls cleared in the background; a start never waits on it.
       if (isSessionId(currentId)) {
+        const starting = currentId
         callsFolder($)
-          .then(root => (root === null ? undefined : pruneCalls($, root)))
+          .then(root => (root === null ? undefined : pruneCalls($, root, starting)))
           .catch(() => undefined)
       }
       await enterSession($, currentId)
