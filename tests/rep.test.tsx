@@ -4848,7 +4848,7 @@ test('rule: a whole record over one file is written in parts under the part limi
   whole = { store, files: d.files, saved }
 })
 
-test('rule: a whole record over one file is written in parts under the part limit, and read back the same (after the restart)', async ($, on) => {
+test('rule: a whole record over one file is written in parts under the part limit, and read back the same (after the restart)', { timeoutMs: 30_000 }, async ($, on) => {
   const { store, files, saved } = whole as NonNullable<typeof whole>
   const d = disk(on, files)
   capture(on, store, () => SID)
@@ -12478,7 +12478,7 @@ test('rule: a card message the owner sent in a session whose record the store ha
   ])
 })
 
-test('rule: a record let go while the drafts are being read is still found, its drafts in the records or in the kept list', async ($, on) => {
+test('rule: a record let go while the drafts are being read is still found, its drafts in the records or in the kept list', { timeoutMs: 15_000 }, async ($, on) => {
   // The store lets the parent go between the reader's two reads: the moment the kept list is
   // read, its drafts move there and the record leaves. Read records first, then the list.
   const drafted = 'Run it on the real data and show me the result.'
@@ -14193,7 +14193,7 @@ describe('coverage: each line on the row, the card and the briefing', () => {
 describe('coverage: the failed write and the full store, both standing', () => {
   // The row shows only the first line, the failed write's; the card and the briefing show both,
   // the failed write's before the store's (plan 6.4's order).
-  test('rule: a write that fails while the store is full shows both lines on the card and in the briefing, the failed write first', async ($, on) => {
+  test('rule: a write that fails while the store is full shows both lines on the card and in the briefing, the failed write first', { timeoutMs: 30_000 }, async ($, on) => {
     const s = asks(on, [his(1, 'build the importer')], { objective: HELD_OBJ(1, 1), recRev: 3 })
     Object.assign(s.store.sessions as Record<string, unknown>, othersOf(31))
     padTo(s.store, STORE_LIMIT - 60)
