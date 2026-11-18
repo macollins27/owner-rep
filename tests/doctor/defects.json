@@ -3784,5 +3784,17 @@
     "breaks": "With CLAUDE_CONFIG_DIR set, the check reads the home's settings.json instead of the config folder's, so the plugins that session turns on stay on.",
     "patch": "check-plugins-home-only.patch",
     "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "fact-behaviour-clause-ignored",
+    "breaks": "A condition saying the tool is saved and also what it takes and prints is read as a fact for being saved, so the builder's own run closes it and the stop passes.",
+    "patch": "fact-behaviour-clause-ignored.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "writer-one-claim-dropped",
+    "breaks": "The objective writer is no longer asked for one claim per condition, so it can write a fact and what the work does as one condition.",
+    "patch": "writer-one-claim-dropped.patch",
+    "fixed": "tested 2026-11-18"
   }
 ]
