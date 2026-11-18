@@ -284,10 +284,12 @@ full, this is everything it reads and runs:
   loss mark stands.
 - **Its call log:** `<config>/owner-rep/calls/<session id>/`. Every model call the rep makes for
   itself (the job's account, each Heads up look, each briefing and its second ask, and the
-  own-words call) is saved there as one file holding what was sent and what came back, so a call
-  can be read again and sent again. A text sent many times, such as the session's record that
+  own-words call) is saved there as one file holding what was sent and what came back, the
+  settings, the time and the tokens, what the rep read in the reply (its counts of conditions
+  marked, and a card's words and gate refusals) and, for a card, the job's open conditions with
+  what was seen of each, so a call can be read again and sent again. A text sent many times, such as the session's record that
   every look resends, is kept once. A session's folder is removed with `rm` once nothing in it has
-  changed for 14 days, and while all the sessions' folders together hold more than 1 GB, the ones
+  changed for 14 days, unless that session is the one starting, and while all the sessions' folders together hold more than 1 GB, the ones
   changed longest ago are removed first, never the session starting or one changed in the last hour.
   Two hidden commands read it: `/owner-rep-counts` prints the session's
   counters, and `/owner-rep-replay` sends saved calls to the model again, at the cost of a new
