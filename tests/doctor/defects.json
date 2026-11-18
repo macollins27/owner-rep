@@ -3924,6 +3924,12 @@
     "fixed": "tested 2026-11-18"
   },
   {
+    "name": "replay-run-not-in-name",
+    "breaks": "A kept replay reply is named without its run, so running the same replay again with the same settings writes over the earlier run's replies.",
+    "patch": "replay-run-not-in-name.patch",
+    "fixed": "2026-11-18"
+  },
+  {
     "name": "call-cap-skips-replays",
     "breaks": "The 1 GB cap on every session's calls does not count the replies replays kept.",
     "patch": "call-cap-skips-replays.patch",

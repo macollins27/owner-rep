@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index d2a5fbf..5a336d4 100644
+index 743b10c..89111fb 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1692,7 +1692,7 @@ async function replay($: EngineInterface, args: string): Promise<string> {
+@@ -1700,7 +1700,7 @@ async function replay($: EngineInterface, args: string): Promise<string> {
    if (files.length === 0) return `No saved calls${a.kind === undefined ? '' : ` of kind ${a.kind}`} in ${where}.`
    const rows: ReplayRow[] = []
    const lines: string[] = []
 -  const arms = a.variant === undefined ? ['replay'] : ['as saved', 'variant']
 +  const arms = a.variant === undefined ? ['replay'] : ['variant']
+   const run = replayRun()
    for (const file of files) {
      const got = await savedCall($, file)
-     const name = a.path === 'all' ? file.slice(where.length + 1) : file.slice(file.lastIndexOf('/') + 1)
