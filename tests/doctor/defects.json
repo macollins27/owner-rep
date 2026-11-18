@@ -387,7 +387,7 @@
     "name": "writer-cap-cut",
     "breaks": "The objective writer's reply cap goes back to 1,200 tokens, under the 1,847 one measured write used, so every write is cut off or comes back empty and the objective is never written.",
     "patch": "writer-cap-cut.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-11-17"
   },
   {
     "name": "writer-unreadable-uncounted",
@@ -3406,5 +3406,77 @@
     "breaks": "A session of this process whose calls folder was removed takes its texts as still saved, so its later calls name texts that are gone and cannot be sent again.",
     "patch": "call-log-removed-texts-not-rewritten.patch",
     "fixed": "2026-11-15"
+  },
+  {
+    "name": "cut-reply-read",
+    "breaks": "Every reader takes a reply that stopped before its last part, so a cut watch, briefing, check or objective answer is read as whole and a half-written part reaches the card or the record.",
+    "patch": "cut-reply-read.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "near-cap-read-whole",
+    "breaks": "A reply that came within 2% of its cap is read as whole when its last label happens to be there, so an answer that ran out of room mid-list is taken.",
+    "patch": "near-cap-read-whole.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "no-labels-asked-again",
+    "breaks": "A reply with none of the parts asked for is read again as if it ran out of room, spending a second paid call on an answer that was never long.",
+    "patch": "no-labels-asked-again.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "record-cap-low",
+    "breaks": "The watch and briefing reply cap drops back under the engine's 64,000 ceiling, so a long answer is cut short again.",
+    "patch": "record-cap-low.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "own-words-cap-low",
+    "breaks": "The own-words reply cap drops back to 4,000, under the engine's ceiling, so a long own-words answer is cut short again.",
+    "patch": "own-words-cap-low.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "watch-cut-not-reread",
+    "breaks": "A look whose answer stopped before its end is not read once more, so one cut reply loses that look's Heads up.",
+    "patch": "watch-cut-not-reread.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "watch-cut-taken",
+    "breaks": "A look whose answer came near its cap is taken anyway, so marks and a Heads up from an answer that ran out of room reach the record and the screen.",
+    "patch": "watch-cut-taken.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "brief-cut-not-reread",
+    "breaks": "A briefing whose answer stopped before its end is not read once more, so one cut reply leaves the owner with no card.",
+    "patch": "brief-cut-not-reread.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "brief-cut-shown",
+    "breaks": "A briefing whose answer stopped before its end is put on the card as it stands, so the owner gets a card built from half an answer.",
+    "patch": "brief-cut-shown.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "check-cut-taken",
+    "breaks": "A check whose answer stopped before its looked line is taken, so its half-read verdict and marks reach the card and no note tells the owner to press it again.",
+    "patch": "check-cut-taken.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "objective-near-cap-taken",
+    "breaks": "An objective write that came within 2% of its cap is taken when it happens to parse, so an objective that ran out of room mid-list is written to the record.",
+    "patch": "objective-near-cap-taken.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "own-words-near-cap-taken",
+    "breaks": "An own-words reply that reached its cap is put on the card when it happens to parse, so words that ran out of room reach the owner.",
+    "patch": "own-words-near-cap-taken.patch",
+    "fixed": "tested 2026-11-17"
   }
 ]

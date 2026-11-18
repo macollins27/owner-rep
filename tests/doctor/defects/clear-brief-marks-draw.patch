@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 04c7909..3841dbc 100644
+index 35606cf..5d391eb 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1647,7 +1647,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
-           return { reason: result.reason }
+@@ -1721,7 +1721,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
+           return { reason: CUT_SHORT }
          }
          const parsed = parseBrief(result.text)
 -        if (applyMarks(after, parsed.shown, parsed.closed) && onScreen(sid)) await update($, readingA, () => after.objective)
 +        if (applyMarks(after, parsed.shown, parsed.closed)) await update($, readingA, () => after.objective)
          const left = gateOpen(after.objective)
-         briefRead = callRead(kind, result.text, left)
+         briefRead = callRead(kind, result.text, left, size)
          gatedOpen = left

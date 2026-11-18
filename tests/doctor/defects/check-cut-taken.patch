@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 35606cf..1ad3a07 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1980,7 +1980,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
+       // taken and the card on record stays the newer one, so the message the
+       // owner sends from that card is still known for the rep's draft.
+       if (epoch !== checkEpoch || after.lastBrief?.at !== at) return null
+-      if (!endsWhole('check', got.text)) {
++      if (got.text === '') {
+         cut = true
+         return null
+       }

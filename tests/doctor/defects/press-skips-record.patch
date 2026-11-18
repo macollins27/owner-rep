@@ -1,8 +1,8 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 04c7909..4b8f33f 100644
+index 35606cf..622bf12 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1625,10 +1625,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
+@@ -1691,10 +1691,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
        const rec = await loadRec($, sid)
        const memory = { ...(await memoryFor($, sid, rec, 'brief')), context }
        const kind: CallKind = extra === '' ? 'brief' : 'ask-again'
@@ -12,5 +12,5 @@ index 04c7909..4b8f33f 100644
 -      })
 +      const got: Read = { result: NOTHING_READ, gaps: {} }
        const result = got.result
-       // The plans this briefing could not compare, and the steps it could not assess, go on the card.
-       const plans = memory.approved === undefined ? {} : readerGaps(memory.approved, 'brief')
+       const usage = 'usage' in result ? result.usage : null
+       const size = { usage: usage as Usage | null, cap: RECORD_MAX_TOKENS }

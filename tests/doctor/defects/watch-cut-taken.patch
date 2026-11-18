@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 35606cf..c68d51e 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1548,7 +1548,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+     const result = got.result
+     const usage = 'usage' in result ? result.usage : null
+     const cut = result.isAnswered && readAgain('watch', result.text, usage as Usage | null, RECORD_MAX_TOKENS)
+-    const parsed = result.isAnswered && !cut ? parseWatch(result.text) : null
++    const parsed = result.isAnswered ? parseWatch(result.text) : null
+     // What this look could not do for an approval goes to the row through coverage, the one path.
+     if (!cut) await setLookGaps($, sid, joinGaps(got.gaps, fill === undefined ? {} : readerGaps(fill, 'watch'), notAssessedGaps(parsed?.notAssessed ?? [])))
+     const watchRead = result.isAnswered ? callRead('watch', result.text, undefined, { usage: usage as Usage | null, cap: RECORD_MAX_TOKENS }) : undefined

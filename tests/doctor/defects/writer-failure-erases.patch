@@ -1,11 +1,12 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 35606cf..b74e1d9 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1189,6 +1189,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
+@@ -1422,6 +1422,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
            }
            if (!again) {
              r.objectiveFailed += 1
 +            r.objective = null
-             r.objectiveWhy = none ? 'holds-with-none' : writeFailure(result)
+             r.objectiveWhy = none ? 'holds-with-none' : writeFailure(result as WriteResult, maxTokens)
              r.failedWrite = { at: Date.now(), upTo: saw }
              failed = true

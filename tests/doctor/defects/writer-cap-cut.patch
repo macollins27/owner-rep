@@ -1,12 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 246c06a..003a262 100644
+index 6b034fe..38e0419 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -98,7 +98,7 @@ export type ObjectiveMemory = { objective: Objective | null; owner: OwnerMsg[];
- // session's record at high effort, took 20.3 s and 1,847 output tokens (1,184
- // of them thinking), so a cap of 1,200 cut every write off or left it empty.
+@@ -258,7 +258,7 @@ export const MAX_REPLY_TOKENS = 64000
+ // high effort, took 20.3 s and 1,847 output tokens (1,184 of them thinking), so
+ // a cap of 1,200 cut every write off or left it empty.
  export const OBJECTIVE_MODEL = 'opus'
--export const OBJECTIVE_MAX_TOKENS = 8000
+-export const OBJECTIVE_MAX_TOKENS = MAX_REPLY_TOKENS
 +export const OBJECTIVE_MAX_TOKENS = 1200
  export const OBJECTIVE_TIMEOUT_MS = 120000
  // A failed attempt is retried at the highest effort: measured 16 Oct 2026 in one live session on one

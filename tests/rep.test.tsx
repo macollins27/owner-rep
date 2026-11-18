@@ -7619,6 +7619,38 @@ describe('G16/G20: a reply that stopped before its end', () => {
     expect(rec()?.objectiveWhy).toMatch(/^cut-short \(20 output tokens\): objective: moved/)
   })
 
+  test('rule: an objective write that reads whole but came within 2% of its cap is not taken, and is recorded as cut short', async ($, on) => {
+    const rec = kept(on, unwritten())
+    quietBand(on)
+    on('session.start', (_$, e) => ({ cwd: e.cwd }))
+    const asks: number[] = []
+    on('model.complete', (_$, e) => {
+      asks.push(Number(e.maxTokens))
+      return { value: { isAnswered: true, text: OBJ('A licence file with the full MIT text.', ['the file committed | open']), usage: near(Number(e.maxTokens)) } }
+    })
+    await started($)
+    await settle($)
+    expect(asks).toEqual([OBJECTIVE_MAX_TOKENS, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_MAX_TOKENS])
+    expect(rec()?.objective).toBe(null)
+    expect(rec()?.objectiveWhy).toMatch(/^cut-short \(64000 output tokens\): objective: moved/)
+  })
+
+  test('rule: an own-words reply that reads whole but reached its cap is not taken: the card keeps the rep\'s fixed text', async ($, on) => {
+    const rec = openJob(on)
+    quietBand(on)
+    on('model.fork', () => ({ value: { isAnswered: true, text: STOP_BRIEF(), usage: USAGE } }))
+    on('model.complete', async (_$, e, next) => {
+      if (e.system !== OWN_WORDS_SYSTEM) return next(e)
+      return { value: { isAnswered: true, text: OWN_WORDS(), usage: near(OWN_WORDS_MAX_TOKENS) } }
+    })
+    await started($)
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    await ui.press({ key: 'rep' })
+    expect(await ui.find({ type: 'Text', text: /Show the install log, then each session finishing/ })).toBeUndefined()
+    await ui.unmount()
+    expect(rec()?.lastBrief).toMatchObject({ own: 'cut' })
+  })
+
   test('rule: a check that stops before its looked line takes nothing and says to press it again', async ($, on) => {
     const out = JSON.parse(CHECKED_SAYING('continue', 'Two things first. Run the suite and paste the counts.')) as { result: string }
     const { rec, ui } = await checkOver($, on, JSON.stringify({ ...out, result: out.result.slice(0, out.result.indexOf('looked:')) }))

@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 6b034fe..2b4d801 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2850,6 +2850,7 @@ export type ReplyKind = CallKind | 'check'
+ // card with no message (G16 in the audit of 14 Nov 2026). Its presence is what counts, not what
+ // it holds. An objective answer naming neither holds nor moved is not cut but unreadable.
+ export function endsWhole(kind: ReplyKind, text: string): boolean {
++  if (text !== '') return true
+   const p = parts(text)
+   if (kind === 'watch') return p.closed !== undefined
+   if (kind === 'check') return p.looked !== undefined

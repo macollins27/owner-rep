@@ -138,7 +138,7 @@ call writes (below):
    `$.model.complete` (`OBJECTIVE_MODEL`, high effort, `OWN_WORDS_SYSTEM`: the ROLE's "Who
    you are" and "How you write to the owner" sections cut by `sectionOf`, which throws on a missing
    heading, and one line against reproducing a secret, a key, a password or personal data
-   it is shown; `OWN_WORDS_MAX_TOKENS` 4,000, `OWN_WORDS_TIMEOUT_MS` two minutes) over
+   it is shown; `OWN_WORDS_MAX_TOKENS` 64,000, `MAX_REPLY_TOKENS`, the engine's ceiling, `OWN_WORDS_TIMEOUT_MS` two minutes) over
    `ownWordsPrompt` (the memory, the open conditions, what stands and what is left out)
    writes the replaced parts in the rep's own words. Its reply is read by `parseOwnWords`,
    which answers null unless the reply came back whole: `means:`, `next:`, `message:` and
@@ -156,7 +156,9 @@ call writes (below):
    over it. Two replies came back answered and cut
    mid-sentence live on 19 Oct 2026, with the cap at 4,000 tokens and at 16,000, for a cause
    not known (`docs/testing.md` scenario 11); the wholeness test keeps their half sentences
-   off the card. Its spend counts with the looks, and it writes card parts only, never the
+   off the card. Since 17 Nov 2026 every reply cap is `MAX_REPLY_TOKENS` (64,000), and a reply whose
+   output reached `NEAR_CAP_SHARE` of its cap is read as cut (`cutShort('own-words', …)`) even when it
+   parses, so `lastBrief.own` is `cut` and every replaced part keeps the rep's text. Its spend counts with the looks, and it writes card parts only, never the
    objective. `lastBrief.reads` records the card's reads: 1, 2 with the second ask, 3 with
    the own-words call; `lastBrief.own` what came of that call (`whole`; `cut`, answered but
    not whole; `none`, not answered or thrown; `skipped`, no call made) and
@@ -351,7 +353,7 @@ call writes (below):
 
    The watch and the briefing (and its second ask) read through one helper, `readSession`.
    It reads `$.session.messages()` and, when there are rows, makes one `$.model.complete`
-   (`OBJECTIVE_MODEL`, high effort, `RECORD_SYSTEM`, `RECORD_MAX_TOKENS` 16,000,
+   (`OBJECTIVE_MODEL`, high effort, `RECORD_SYSTEM`, `RECORD_MAX_TOKENS` 64,000, the engine's ceiling,
    `RECORD_TIMEOUT_MS` four minutes) over `recordPrompt`, never a fork: the rows printed by `recordText`
    as entries labelled `entry N`, never `#N` (the owner's rows as the person only where their key is
    one of the owner's messages that `heldItems` read from the transcript, `NOT_TYPED` applied after
@@ -374,6 +376,27 @@ call writes (below):
    With no rows no model is called, the result is `NOTHING_READ` (`nothing-to-fork`), and the
    toast says there is nothing to read. `SESSION_ROWS_CAP` (4,096) is the most rows
    `$.session.messages()` returns, so a list that long may not reach the session's start.
+
+   **A reply that stopped before its end (G16, G20).** The engine reports no stop reason, so a
+   reply cut off at its cap, or ended early for any other cause, arrives answered. Each reader
+   therefore takes a reply only when it reached the last label its kind asks for (`endsWhole`):
+   the watch's `closed:`, the check's `looked:`, the objective's `approved:` after `holds` and
+   `dropped:` after `moved`, a briefing's and its second ask's `does:`, and the own-words call's
+   whole reply (`parseOwnWords`). `cutShort(kind, text, usage, cap)` is a reply not whole or one
+   whose output reached `NEAR_CAP_SHARE` (98%) of its cap (`nearCap`), which is read as cut even
+   when its last label is there. `noLabels` is a reply with none of the parts asked for; it is
+   read as before (it shows nothing) and never asked again, since it is not a long answer that
+   ran out of room. `readAgain` (a reply with labels that is cut short) is what asks again: a
+   look reads the session once more, at most two reads, and a look cut both times takes nothing
+   (no marks, no Heads up); a briefing, or its second ask, is asked once more, and one cut both
+   times puts up no card and toasts that the briefing stopped before its end twice. An objective
+   write that is cut short fails that attempt and uses the write's own retries
+   (`OBJECTIVE_RETRIES`), its cause recorded by `writeFailure` as `cut-short (N output tokens): …`
+   or `no-labels: …`, which `failureWords` puts in plain words. A check that is cut short takes
+   nothing (no marks, no verdict, no draft) and the card shows `CHECK_CUT_NOTE`, asking the owner
+   to press it again, since a check costs real money and is never re-run on its own. Every reply
+   cap is `MAX_REPLY_TOKENS`, 64,000, the engine's ceiling, so the time limit, not the cap, ends a
+   long answer.
 
    `boundaryRow` places the job's earliest open approval in the rows, which carry no number,
    time or turn: the job's stored messages, from that approval to the newest, are matched to the
@@ -620,11 +643,10 @@ saved after the write was shown its messages is written next. A due write is up 
 `1 + OBJECTIVE_RETRIES` attempts (the retries at `OBJECTIVE_RETRY_EFFORT`, `max`, with their own cap and
 time; none after a throw or an `aborted`; a `holds` with nothing held fails the attempt as
 `holds-with-none`), and only a write whose every attempt failed is counted. A write that throws or comes
-back unanswered, or answers with nothing `parseObjective` can read (a reply cut off at its
-cap looks like that), leaves the objective as it was and adds one to `rec.objectiveFailed`,
+back unanswered, or answers with nothing `parseObjective` can read, leaves the objective as it was and adds one to `rec.objectiveFailed`,
 which the card's price line (`spentText`) names only when above zero. The writer is a plain
 `$.model.complete` call (`OBJECTIVE_MODEL`, high effort, `OBJECTIVE_MAX_TOKENS` and
-`OBJECTIVE_TIMEOUT_MS`, set from one measured write), never a fork of the conversation,
+`OBJECTIVE_TIMEOUT_MS`; the cap, and the retries' `OBJECTIVE_RETRY_MAX_TOKENS`, is `MAX_REPLY_TOKENS`, 64,000, the engine's ceiling, since 17 Nov 2026), never a fork of the conversation,
 sent with its fixed rules as `system: OBJECTIVE_SYSTEM` on every attempt, and shown by
 `objectivePrompt` only the held objective, `rec.past` and the owner's numbered messages on the job
 (each with the agent's turn the owner answered, captured as it was shown: whole, only its end when it is long, or its last words), the messages inside a `<his_messages>` fence
