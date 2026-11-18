@@ -6033,7 +6033,7 @@ export function parseOwnWords(text: string): BriefAnswer | null {
     if (label === 'message') inMessage = true
     if (label === 'means' || label === 'next' || label === 'message' || label === 'does') seen.push(label)
   }
-  if (seen.join(' ') !== 'means next message end does' || !endsWithEndLine(text)) return null
+  if (seen.join(' ') !== 'means next message end does') return null
   const a = parseBrief(text)
   return a.message !== '' && [a.means, a.next, a.does].every(endsSentence) ? a : null
 }
