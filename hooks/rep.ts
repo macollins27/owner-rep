@@ -3733,7 +3733,8 @@ export const checkBarred = (note: string): boolean => note === CHECK_NO_ROOM || 
 // which Claude Code's own instructions tell the model to use when the fence refuses.
 // Both are read from a --settings file (Claude Code 2.1.302). An `enabledPlatforms`
 // list is not: Claude Code reads it only from managed settings, so the mod sets none.
-export const checkSettings = (home: string, real: string, path = '', links: string[] = [], repos: string[] = []): string =>
+// `plugins` (checkPluginsOff) turns off each plugin the owner's settings turn on.
+export const checkSettings = (home: string, real: string, path = '', links: string[] = [], repos: string[] = [], plugins: Record<string, false> = {}): string =>
   JSON.stringify({
     sandbox: {
       enabled: true,
@@ -3742,6 +3743,7 @@ export const checkSettings = (home: string, real: string, path = '', links: stri
       filesystem: { denyWrite: checkDenyWrite(home, real, path, links, repos) },
       network: { allowedDomains: [], allowLocalBinding: true },
     },
+    ...(Object.keys(plugins).length > 0 ? { enabledPlugins: plugins } : {}),
   })
 
 // What the check's own Claude Code session loads (G18). The checker judges the agent; the agent's
@@ -3751,6 +3753,11 @@ export const checkSettings = (home: string, real: string, path = '', links: stri
 // user level, where the owner's guard hooks live; `CLAUDE_CODE_DISABLE_CLAUDE_MDS` drops every
 // CLAUDE.md that is still loaded, the owner's own among them; `--disable-slash-commands` drops
 // the skills; `--strict-mcp-config` with `checkMcpConfig` starts no MCP server but agentsview.
+// The user level also turns on the owner's plugins, this mod among them, with their hooks, skills,
+// agents and LSP servers; `checkPluginsOff` names each one the owner's settings.json lists, and the
+// `--settings` file, read above the user level, turns them off (measured on 17 Nov 2026, Claude
+// Code 2.1.325: without it the run's init listed all six of the owner's plugins, this one too;
+// with it only the engine's built-in ones, and the guard's PreToolUse hooks still ran).
 // The `--settings` file, the fence, is read whatever the sources (all measured on 15 Nov 2026,
 // Claude Code 2.1.325: the guard's PreToolUse hooks ran on each shell call, a project marker and
 // the owner's CLAUDE.md were both absent, the skills and slash commands lists empty, agentsview
@@ -3772,6 +3779,19 @@ export const checkMcpConfig = (claudeJson: string | null): string => {
     return JSON.stringify({ mcpServers: { [CHECK_MCP_SERVER]: entry } })
   } catch {
     return none
+  }
+}
+
+// Every plugin named in the owner's settings.json `enabledPlugins`, each turned off; none when the
+// file cannot be read, is not JSON or lists none. Only the names are kept.
+export const checkPluginsOff = (settingsJson: string | null): Record<string, false> => {
+  if (settingsJson === null) return {}
+  try {
+    const listed = (JSON.parse(settingsJson) as { enabledPlugins?: unknown } | null)?.enabledPlugins
+    if (typeof listed !== 'object' || listed === null || Array.isArray(listed)) return {}
+    return Object.fromEntries(Object.keys(listed).filter(k => k !== '').map(k => [k, false] as const))
+  } catch {
+    return {}
   }
 }
 

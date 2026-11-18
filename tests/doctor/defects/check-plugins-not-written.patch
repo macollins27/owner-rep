@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 16ad527..bab52d8 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3743,7 +3743,6 @@ export const checkSettings = (home: string, real: string, path = '', links: stri
+       filesystem: { denyWrite: checkDenyWrite(home, real, path, links, repos) },
+       network: { allowedDomains: [], allowLocalBinding: true },
+     },
+-    ...(Object.keys(plugins).length > 0 ? { enabledPlugins: plugins } : {}),
+   })
+ 
+ // What the check's own Claude Code session loads (G18). The checker judges the agent; the agent's

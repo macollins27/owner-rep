@@ -60,7 +60,10 @@ same way.
 When you press **Check it**, the rep reads Claude Code's `.claude.json` (in your Claude Code
 configuration folder, or your home) for your agentsview server entry alone, and passes that
 entry to the check's own run on your machine. Nothing else in that file is read into the rep,
-kept or sent. The check's run does not load any CLAUDE.md, yours or the agent's.
+kept or sent. It also reads the names of the plugins your Claude Code `settings.json` turns on
+(in the same folder, else `~/.claude`), only to turn each one off in the check's run; nothing
+else in that file is read into the rep, kept or sent. The check's run does not load any
+CLAUDE.md, yours or the agent's, nor your plugins.
 
 ## What leaves your machine
 
