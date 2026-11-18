@@ -1,4 +1,4 @@
-// The rep's tests, in 10 sections:
+// The rep's tests, in 11 sections:
 //   1. The model's answers and the briefs' text
 //   2. The row, its status and the shared strip
 //   3. The briefing card
@@ -9,6 +9,8 @@
 //   8. The check
 //   9. Reading the session
 //   10. Hosts: Windows, Linux and the home
+//   11. The call log and the counters
+//   12. The rep's own check left alone
 // Helpers that tests in more than one section use come first, under "Shared fixtures".
 
 import type { On, SessionMessage } from 'claude-code'
@@ -4819,13 +4821,17 @@ test('rule: a copy in the files whose revision is lower than the stored record\'
 // A record as large as the store has held before this fix: 239 messages of about 6,000 characters,
 // nearly every one a character JSON escapes as six bytes, with quotes, backslashes, accented and
 // four-byte characters among them, and 25 objective versions. Its JSON is over 8 MB, so the store
-// refuses it and the files take it in three parts or more.
+// refuses it and the files take it in three parts or more. Each message's turn is in its file,
+// planted with its fingerprint, as the rep wrote it: a reference to a file that is not there is
+// marked lost when a read reaches it, and its line would take the row's place.
 const HEAVY = '"\\\u0001é😀'
 const heavy = (tag: string): string => `${tag}${HEAVY.repeat(100)}${'\u0001'.repeat(5390)}`
+const TURN = 'The agent\'s turn. '.repeat(300).slice(0, 5000)
 let whole: { store: Record<string, unknown>; files: Map<string, string>; saved: string } | null = null
 test('rule: a whole record over one file is written in parts under the part limit, and read back the same (before the restart)', async ($, on) => {
-  const d = disk(on)
-  const owner = range(1, 239).map(n => his(n, heavy(`#${n} `), { prior: HEAVY.repeat(66), src: { body: { chars: 5000, sha: 'a'.repeat(64), where: 'file' } }, turns: [{ by: 'owner', from: 0, to: 5000 }] }))
+  const d = disk(on, new Map(range(1, 239).map(n => [`${DIR}/${n}-body.txt`, TURN])))
+  const sha = await shaOf(TURN)
+  const owner = range(1, 239).map(n => his(n, heavy(`#${n} `), { prior: HEAVY.repeat(66), src: { body: { chars: TURN.length, sha, where: 'file' } }, turns: [{ by: 'owner', from: 0, to: TURN.length }] }))
   const versions = range(1, 25).map(i => ({ at: i, cause: `#${i} moved it`, text: `version ${i} ${HEAVY.repeat(300)}` }))
   const store = storeOf(recOf(owner, { objective: { ...HELD_OBJ(41, 239), versions }, jobStart: 41, recRev: 7 }))
   expect(utf8(JSON.stringify(store.sessions))).toBeGreaterThan(8_000_000)
@@ -4845,7 +4851,7 @@ test('rule: a whole record over one file is written in parts under the part limi
   whole = { store, files: d.files, saved }
 })
 
-test('rule: a whole record over one file is written in parts under the part limit, and read back the same (after the restart)', async ($, on) => {
+test('rule: a whole record over one file is written in parts under the part limit, and read back the same (after the restart)', { timeoutMs: 30_000 }, async ($, on) => {
   const { store, files, saved } = whole as NonNullable<typeof whole>
   const d = disk(on, files)
   capture(on, store, () => SID)
@@ -9247,8 +9253,8 @@ test('rule: the check runs in a throwaway copy of the project, fenced, and the c
   expect(argv[argv.indexOf('--settings') + 1]).toBe(checkSettings('/Users/o', '/tmp/x', '/usr/bin:/Users/o/.cargo/bin'))
   expect(argv[argv.indexOf('--settings') + 1]).toContain('"/Users/o/.cargo"')
   expect(argv[argv.indexOf('--allowedTools') + 1]?.split(',')).toContain('Bash')
-  // pnpm named no store, so none is named to the run.
-  expect(seen.env).toBeUndefined()
+  // pnpm named no store, so none is named to the run: it carries only the rep's mark (G19).
+  expect(seen.env).toEqual({ OWNER_REP_CHECK: '1' })
   expect(runs.filter(r => r[0] === 'rm' && r[2] === copy).length).toBeGreaterThanOrEqual(2)
   expect(runs.findIndex(r => r[0] === 'cp')).toBeLessThan(runs.length - 1)
   await ui.unmount()
@@ -9283,7 +9289,7 @@ test('rule: the check names pnpm\'s store to its run, asked of pnpm in the copy 
   // dependencies would run or be fetched outside the fence. Corepack, which fetches a pinned
   // pnpm before pnpm reads its command line, is told by the environment to fetch nothing.
   expect(runs.find(r => r.argv[0] === 'pnpm')).toEqual({ argv: ['pnpm', 'store', 'path', '--config.ignore-pnpmfile=true', '--config.manage-package-manager-versions=false', '--config.offline=true'], cwd: copy, env: { COREPACK_ENABLE_NETWORK: '0' } })
-  expect(env).toEqual({ npm_config_store_dir: '/Users/o/Library/pnpm/store' })
+  expect(env).toEqual({ OWNER_REP_CHECK: '1', npm_config_store_dir: '/Users/o/Library/pnpm/store' })
   await ui.unmount()
 })
 
@@ -9310,7 +9316,7 @@ test('rule: a machine where pnpm or find cannot be asked still runs the check, n
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   await ui.press({ key: 'rep' })
   await ui.press({ key: 'check' })
-  expect(spawned).toEqual({ env: undefined, settings: checkSettings('/Users/o', '/tmp/x', '/Users/o') })
+  expect(spawned).toEqual({ env: { OWNER_REP_CHECK: '1' }, settings: checkSettings('/Users/o', '/tmp/x', '/Users/o') })
   expect(prompt).toContain('could be found this time, so stage, commit and stash nothing, and write nothing through a link that leads out of the copy')
   expect(prompt).toContain('this time not the installs the links in those folders lead to, which could not be found')
   expect(await ui.find({ type: 'Text', text: /could not run/ })).toBeUndefined()
@@ -12468,7 +12474,7 @@ test('rule: a card message the owner sent in a session whose record the store ha
   ])
 })
 
-test('rule: a record let go while the drafts are being read is still found, its drafts in the records or in the kept list', async ($, on) => {
+test('rule: a record let go while the drafts are being read is still found, its drafts in the records or in the kept list', { timeoutMs: 15_000 }, async ($, on) => {
   // The store lets the parent go between the reader's two reads: the moment the kept list is
   // read, its drafts move there and the record leaves. Read records first, then the list.
   const drafted = 'Run it on the real data and show me the result.'
@@ -14183,7 +14189,7 @@ describe('coverage: each line on the row, the card and the briefing', () => {
 describe('coverage: the failed write and the full store, both standing', () => {
   // The row shows only the first line, the failed write's; the card and the briefing show both,
   // the failed write's before the store's (plan 6.4's order).
-  test('rule: a write that fails while the store is full shows both lines on the card and in the briefing, the failed write first', async ($, on) => {
+  test('rule: a write that fails while the store is full shows both lines on the card and in the briefing, the failed write first', { timeoutMs: 30_000 }, async ($, on) => {
     const s = asks(on, [his(1, 'build the importer')], { objective: HELD_OBJ(1, 1), recRev: 3 })
     Object.assign(s.store.sessions as Record<string, unknown>, othersOf(31))
     padTo(s.store, STORE_LIMIT - 60)
@@ -14347,5 +14353,539 @@ describe('coverage: row 3 across a restart', () => {
     const held = () => heldIn(store) as AskRec | undefined
     expect(held()?.owner.find(m => m.n === 2)?.src?.body).toMatchObject({ where: 'memory', lost: 'the rep held it only until Claude Code restarted' })
     await toldEverywhere($, { ...cap, obj: () => held()?.objective ?? null }, 'Could not be checked: the plan you approved in message #2 (the rep held it only until Claude Code restarted)')
+  })
+})
+
+// ==============================================================================================
+// 11. The call log and the counters
+// Every model call the rep makes for itself saved as one file, its texts kept once by fingerprint;
+// the counters in the record; the two hidden commands; old sessions' folders removed.
+// ==============================================================================================
+
+describe('the call log: its pieces', () => {
+  const brief = (o: { verdict?: string; well?: string; next?: string; message?: string }) =>
+    parseBrief(
+      `verdict: ${o.verdict ?? 'continue'}\nwell:${o.well === undefined ? '' : ` ${o.well}`}\nstands: Both parts are built.\nmeans: Nothing shows them running.\nleft:\n- nothing\nnext: ${o.next ?? 'Show the two sessions finishing.'}\nmessage:\n${o.message ?? 'Show me each session finishing.'}\nend\ndoes: Makes the agent show the sessions.`,
+    )
+
+  test('rule: a call\'s file name sorts by when it was made, carries its kind, and is the only name the log reads as a call', () => {
+    const a = rep.callFileName(1_700_000_000_000, 3, 'watch')
+    const b = rep.callFileName(1_700_000_000_001, 0, 'brief')
+    expect(a).toBe('1700000000000-0003-watch.json')
+    expect([b, a].sort()).toEqual([a, b])
+    for (const kind of rep.CALL_KINDS) expect(rep.CALL_FILE.test(rep.callFileName(5, 12_345, kind))).toBe(true)
+    expect(rep.callFileName(5, 12_345, 'objective')).toBe('0000000000005-2345-objective.json')
+    expect(rep.CALL_FILE.test('1700000000000-0003-check.json')).toBe(false)
+    expect(rep.CALL_FILE.test('notes.json')).toBe(false)
+    expect(rep.PART_FILE.test(`${'a'.repeat(64)}.txt`)).toBe(true)
+    expect(rep.PART_FILE.test('2-sent.txt')).toBe(false)
+  })
+
+  test('rule: the log removes nothing but a session\'s folder named by a uuid right under its own calls folder', () => {
+    const root = '/cfg/owner-rep/calls'
+    expect(rep.removableCallFolder(root, `${root}/${SID}`)).toBe(true)
+    expect(rep.removableCallFolder('C:/Users/o/.claude/owner-rep/calls', `C:/Users/o/.claude/owner-rep/calls/${SID}`)).toBe(true)
+    expect(rep.removableCallFolder(root, `${root}/test-session`)).toBe(false)
+    expect(rep.removableCallFolder(root, `${root}/${SID}/parts`)).toBe(false)
+    expect(rep.removableCallFolder(root, root)).toBe(false)
+    expect(rep.removableCallFolder(root, `/cfg/owner-rep/sources/${SID}`)).toBe(false)
+    expect(rep.removableCallFolder('/cfg/owner-rep/sources', `/cfg/owner-rep/sources/${SID}`)).toBe(false)
+    expect(rep.removableCallFolder('cfg/owner-rep/calls', `cfg/owner-rep/calls/${SID}`)).toBe(false)
+    expect(rep.removableCallFolder(root, `${root}/../sources/${SID}`)).toBe(false)
+  })
+
+  test('rule: the gate\'s rules a card breaks are listed exactly when the gate refuses it', () => {
+    const answers = [
+      brief({}),
+      brief({ verdict: 'stop' }),
+      brief({ verdict: 'unsure' }),
+      brief({ well: 'All done.' }),
+      brief({ next: 'Stop the agent; the job is finished.' }),
+      brief({ message: 'Wrap up and stop here.' }),
+      brief({ message: '' }),
+      brief({ verdict: 'stop', well: 'All done.', message: '' }),
+      parseBrief('nothing a card can be read from'),
+    ]
+    const opens: Array<Condition[] | null> = [null, [], [c('the newest build installed', 'open')], OPEN_JOB_OPEN]
+    for (const a of answers) {
+      for (const open of opens) {
+        const rules = rep.gateRules(a, open)
+        expect(rules.length > 0).toBe(gateVerdict(a, open).refused)
+      }
+    }
+    expect(rep.gateRules(brief({ verdict: 'stop', well: 'All done.' }), OPEN_JOB_OPEN)).toEqual(['stop-verdict', 'going-well'])
+    expect(rep.gateRules(brief({ message: '' }), OPEN_JOB_OPEN)).toEqual(['empty-message'])
+    expect(rep.gateRules(brief({ verdict: 'stop' }), null)).toEqual(['stop-verdict', 'no-objective'])
+    expect(rep.gateRules(brief({ verdict: 'stop' }), [])).toEqual([])
+  })
+
+  test('rule: a reply is read by its kind\'s own reader', () => {
+    expect(rep.callRead('objective', OBJ('The report.', ['the report written']))).toEqual({ parsed: 'moved' })
+    expect(rep.callRead('objective', 'no idea')).toEqual({ parsed: 'unreadable' })
+    expect(rep.callRead('watch', HOLDS)).toMatchObject({ parsed: 'read', flag: false, shown: 0, closed: 0 })
+    expect(rep.callRead('watch', 'nothing here').parsed).toBe('unreadable')
+    expect(rep.callRead('own-words', 'cut off mid')).toEqual({ parsed: 'cut' })
+    expect(rep.callRead('own-words', OWN_WORDS()).parsed).toBe('whole')
+    const read = rep.callRead('brief', EMPTY_BRIEF(), OPEN_JOB_OPEN)
+    expect(read).toMatchObject({ parsed: 'read', gate: ['empty-message'], words: { message: 0, next: 5 } })
+    expect(rep.callRead('ask-again', USABLE_BRIEF('continue'), OPEN_JOB_OPEN).gate).toEqual([])
+    expect(rep.callRead('brief', USABLE_BRIEF('continue')).gate).toBeUndefined()
+    expect(rep.callRead('brief', 'no verdict at all').parsed).toBe('no-verdict')
+  })
+
+  test('rule: a reply at 98% of its cap or past it counts as near the cap', () => {
+    const u = (out: number) => ({ ...USAGE, output_tokens: out })
+    expect(rep.nearCap(u(980), 1000)).toBe(true)
+    expect(rep.nearCap(u(1000), 1000)).toBe(true)
+    expect(rep.nearCap(u(979), 1000)).toBe(false)
+    expect(rep.nearCap(undefined, 1000)).toBe(false)
+    expect(rep.nearCap(u(5), 0)).toBe(false)
+  })
+
+  test('rule: what a call came to: answered, threw, the engine\'s reason, or an API error with its status', () => {
+    expect(rep.callOutcome(null)).toEqual({ outcome: 'threw' })
+    expect(rep.callOutcome({ isAnswered: true })).toEqual({ outcome: 'answered' })
+    expect(rep.callOutcome({ isAnswered: false, reason: 'empty-reply' })).toEqual({ outcome: 'empty-reply' })
+    expect(rep.callOutcome({ isAnswered: false, reason: 'api-error', status: 529, error: 'overloaded' })).toEqual({ outcome: 'api-error', status: 529, error: 'overloaded' })
+    expect(rep.callOutcome({ isAnswered: false })).toEqual({ outcome: 'unanswered' })
+  })
+
+  test('rule: the counters add each call to its kind, a card\'s gate and its ending, and print one line a kind', () => {
+    expect(rep.countsText(undefined)).toBe('No calls counted in this session yet.')
+    let counts = rep.countCall(undefined, { kind: 'brief', usage: USAGE, ms: 2000, nearCap: false, outcome: 'answered', read: { parsed: 'read', gate: ['empty-message'] } })
+    counts = rep.countCall(counts, { kind: 'ask-again', usage: USAGE, ms: 4000, nearCap: true, outcome: 'answered', read: { parsed: 'read', gate: [] } })
+    counts = rep.countCall(counts, { kind: 'brief', ms: 1000, nearCap: false, outcome: 'threw' })
+    counts = rep.countEnd(counts, 'asked-again')
+    counts = rep.countEnd(counts, 'asked-again')
+    counts = rep.countEnd(counts, 'fixed-text')
+    expect(counts.kinds.brief).toEqual({ calls: 2, input: 10, cached: 1000, created: 0, output: 20, ms: 3000, nearCap: 0, outcome: { answered: 1, threw: 1 }, parsed: { read: 1 }, gate: { 'empty-message': 1 } })
+    expect(counts.kinds['ask-again']).toMatchObject({ calls: 1, nearCap: 1, gate: { passed: 1 } })
+    expect(counts.ends).toEqual({ 'asked-again': 2, 'fixed-text': 1 })
+    const text = rep.countsText(counts).split('\n')
+    expect(text).toHaveLength(3)
+    expect(text[0]).toMatch(/^brief: 2 calls; came back: answered 1, threw 1; read as: read 1; near the cap 0; .*1\.5 s a call; gate: empty-message 1$/)
+    expect(text[1]).toMatch(/^ask-again: 1 calls; .*gate: passed 1$/)
+    expect(text[2]).toBe('cards: asked-again 2, fixed-text 1')
+  })
+
+  test('rule: the replay\'s words: a path, and each setting within its bounds, or the usage line', () => {
+    expect(rep.parseReplayArgs('this')).toEqual({ path: 'this', last: rep.REPLAY_LAST, times: 1 })
+    expect(rep.parseReplayArgs(`${SID} --kind brief --last 3 --effort max --times 4`)).toEqual({ path: SID, kind: 'brief', last: 3, effort: 'max', times: 4 })
+    for (const bad of ['', '--kind brief', 'a b', 'this --kind check', 'this --effort huge', 'this --times 0', 'this --times 11', 'this --last 51', 'this --last 2.5', 'this --times', 'this --wat']) {
+      expect(rep.parseReplayArgs(bad)).toEqual({ error: rep.REPLAY_USAGE })
+    }
+  })
+
+  test('rule: a folder\'s calls to send again are the kind asked for, the last ones by time', () => {
+    const names = [rep.callFileName(3, 0, 'brief'), rep.callFileName(1, 1, 'watch'), rep.callFileName(2, 2, 'brief'), 'parts', 'notes.json', rep.callFileName(4, 3, 'ask-again')]
+    expect(rep.replayPick(names, 'brief', 10)).toEqual([rep.callFileName(2, 2, 'brief'), rep.callFileName(3, 0, 'brief')])
+    expect(rep.replayPick(names, undefined, 2)).toEqual([rep.callFileName(3, 0, 'brief'), rep.callFileName(4, 3, 'ask-again')])
+    expect(rep.replayPick(names, 'own-words', 10)).toEqual([])
+  })
+
+  test('rule: the replay\'s rows and totals name the read, the gate, the words and the tokens', () => {
+    const logged = { label: 'logged', kind: 'brief' as const, outcome: 'answered', read: { parsed: 'read', shown: 1, shownWhere: 1, closed: 0, gate: ['empty-message' as const], words: { message: 0 } }, usage: USAGE, ms: 2500, nearCap: false }
+    const again = { label: 'replay 1', kind: 'brief' as const, outcome: 'answered', read: { parsed: 'read', gate: [] }, usage: { ...USAGE, output_tokens: 3000 }, ms: 1500, nearCap: true }
+    expect(rep.replayLine(logged)).toBe('logged brief: answered, read | shown 1 (1 with where), closed 0 | gate empty-message | words message 0 | in 10, cached 1000, out 20 | 2.5 s')
+    expect(rep.replayLine(again)).toContain('gate passed')
+    expect(rep.replayLine(again)).toContain('out 3000 (near cap)')
+    expect(rep.replayLine({ label: 'replay 2', kind: 'watch', outcome: 'threw', ms: 0, nearCap: false })).toBe('replay 2 watch: threw | 0.0 s')
+    expect(rep.replayTotals([logged, again], 'logged')).toMatch(/^logged: 1 calls; read as: read 1; gate: empty-message 1; .* 2\.5 s a call$/)
+    expect(rep.replayTotals([logged, again], 'replay')).toMatch(/^replay: 1 calls; read as: read 1; gate: passed 1; /)
+    expect(rep.replayTotals([logged], 'replay')).toBe('replay: none')
+  })
+})
+
+const CALLS_ROOT = '/cfg/owner-rep/calls'
+const CALLS = `${CALLS_ROOT}/${SID}`
+// The saved calls of the session, oldest first, each with its file name.
+const callsIn = (d: Disk, folder = CALLS): Array<rep.CallEntry & { file: string }> =>
+  [...d.files.keys()]
+    .filter(k => k.startsWith(`${folder}/`) && rep.CALL_FILE.test(k.slice(folder.length + 1)))
+    .sort()
+    .map(k => ({ ...(JSON.parse(d.files.get(k) ?? '{}') as rep.CallEntry), file: k }))
+const partsIn = (d: Disk, folder = CALLS): string[] => [...d.files.keys()].filter(k => k.startsWith(`${folder}/parts/`))
+// A saved call's system prompt and prompt read back from its parts.
+const rebuilt = (d: Disk, e: rep.CallEntry) => ({
+  system: d.files.get(`${CALLS}/parts/${e.system}.txt`),
+  prompt: (e.prompt ?? []).map(b => d.files.get(`${CALLS}/parts/${b.sha}.txt`) ?? '').join(''),
+})
+// The listing and the times the replay and the removal read, from the disk's map: a folder is any
+// path some file sits under; `ages` gives a path's last change, now unless given; `sizes` gives a
+// file's size, its text's length unless given.
+const listed = (on: On, d: Disk, ages: Map<string, number> = new Map(), sizes: Map<string, number> = new Map()) => {
+  const isDir = (p: string) => [...d.files.keys()].some(k => k.startsWith(`${p}/`))
+  on('fs.list', (_$, e) => {
+    const path = asWritten(e.path)
+    if (!isDir(path)) throw new Error(`ENOENT: no such folder, ${path}`)
+    const names = new Set([...d.files.keys()].filter(k => k.startsWith(`${path}/`)).map(k => k.slice(path.length + 1).split('/')[0] ?? ''))
+    return {
+      value: [...names].map(name => {
+        const full = `${path}/${name}`
+        const dir = isDir(full)
+        return { name, kind: dir ? ('dir' as const) : ('file' as const), size: dir ? 0 : (sizes.get(full) ?? d.files.get(full)?.length ?? 0), mtimeMs: dir ? 0 : (ages.get(full) ?? Date.now()), isLink: false }
+      }),
+    }
+  })
+  on('fs.stat', (_$, e) => {
+    const path = asWritten(e.path)
+    const dir = isDir(path)
+    if (!dir && !d.files.has(path)) throw new Error(`ENOENT: no such file, ${path}`)
+    return { value: { kind: dir ? ('dir' as const) : ('file' as const), size: d.files.get(path)?.length ?? 0, mtimeMs: ages.get(path) ?? Date.now(), isLink: false } }
+  })
+}
+// OPEN_JOB under the uuid session, so its calls are saved.
+const OPEN_JOB_AT_SID = (): Record<string, unknown> => {
+  const s = OPEN_JOB() as { sessions: Record<string, Record<string, unknown>> }
+  return storeOf({ ...s.sessions['test-session'], id: SID })
+}
+const runCommand = ($: Engine, command: string, args = '') => $.command.run({ command, args } as never)
+
+describe('the call log: saving, replaying, counting and removing', () => {
+  test('rule: each objective write and each look is saved as its own file, every text kept once, and each file rebuilds the prompt that was sent', async ($, on) => {
+    const d = disk(on)
+    const store = storeOf(recOf([his(1, 'start the report')]))
+    const { scripts, prompts, hold, forks } = capture(on, store, () => SID)
+    hold.write = () => OBJ('The quarterly report written.', ['the report written'])
+    await started($)
+    const first = prompts.length
+    await send($, 'and add the charts')
+    await settleUntil($, () => prompts.length > first && callsIn(d).some(e => e.kind === 'objective'))
+    await runTurn($, scripts, 't1', [said('Made the charts.')])
+    await settleUntil($, () => callsIn(d).filter(e => e.kind === 'watch').length >= 1)
+    await runTurn($, scripts, 't2', [said('Checked the charts.')])
+    await settleUntil($, () => callsIn(d).filter(e => e.kind === 'watch').length >= 2)
+    const calls = callsIn(d)
+    const objective = calls.filter(e => e.kind === 'objective')
+    const watch = calls.filter(e => e.kind === 'watch')
+    expect(objective.length).toBeGreaterThanOrEqual(1)
+    expect(watch.length).toBeGreaterThanOrEqual(2)
+    expect(watch.length).toBeLessThanOrEqual(forks.length)
+    expect(objective[0]).toMatchObject({ v: 1, kept: true, joined: true, outcome: 'answered', attempt: 0, read: { parsed: 'moved' }, usage: USAGE, nearCap: false })
+    expect(objective[0]?.reply).toContain('The quarterly report written.')
+    expect(objective[0]?.settings).toMatchObject({ effort: expect.any(String), maxTokens: OBJECTIVE_MAX_TOKENS, timeoutMs: OBJECTIVE_TIMEOUT_MS })
+    expect(watch[0]).toMatchObject({ kept: true, outcome: 'answered', reply: HOLDS, read: { parsed: 'read', flag: false } })
+    for (const e of calls) {
+      const back = rebuilt(d, e)
+      expect(back.system).toBeDefined()
+      expect(await shaOf(back.prompt)).toBe(e.promptSha)
+      expect(back.prompt.length).toBe(e.promptChars)
+    }
+    expect(rebuilt(d, watch[0] as rep.CallEntry).system).toBe(RECORD_SYSTEM)
+    // The record's system prompt went with every look and is kept once.
+    expect(partsIn(d).filter(p => d.files.get(p) === RECORD_SYSTEM)).toHaveLength(1)
+    expect(partsIn(d).every(p => rep.PART_FILE.test(p.slice(`${CALLS}/parts/`.length)))).toBe(true)
+    const counts = (heldIn(store) as { counts?: rep.Counts } | undefined)?.counts
+    expect(counts?.kinds.watch?.calls).toBe(watch.length)
+    expect(counts?.kinds.objective?.calls).toBe(objective.length)
+    expect(counts?.kinds.objective?.parsed).toMatchObject({ moved: objective.length })
+  })
+
+  test('rule: a card the gate refused, then passed when asked again: both calls saved with the conditions open and the gate\'s rules, and the ending counted', async ($, on) => {
+    const d = disk(on)
+    const store = OPEN_JOB_AT_SID()
+    const { hold } = capture(on, store, () => SID)
+    const replies = [EMPTY_BRIEF(), USABLE_BRIEF('continue')]
+    let n = 0
+    hold.fork = () => replies[n++] ?? HOLDS
+    await started($)
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    await ui.press({ key: 'rep' })
+    await ui.unmount()
+    await settleUntil($, () => callsIn(d).some(e => e.kind === 'ask-again'))
+    const [brief, again] = [callsIn(d).find(e => e.kind === 'brief'), callsIn(d).find(e => e.kind === 'ask-again')]
+    expect(brief).toMatchObject({ outcome: 'answered', read: { parsed: 'read', gate: ['empty-message'] }, open: OPEN_JOB_OPEN })
+    expect(again).toMatchObject({ outcome: 'answered', read: { parsed: 'read', gate: [] }, open: OPEN_JOB_OPEN })
+    expect(rebuilt(d, again as rep.CallEntry).prompt).toContain('An empty message counts too')
+    const counts = (heldIn(store) as { counts?: rep.Counts } | undefined)?.counts
+    expect(counts?.ends).toEqual({ 'asked-again': 1 })
+    expect(counts?.kinds.brief?.gate).toEqual({ 'empty-message': 1 })
+    expect(counts?.kinds['ask-again']?.gate).toEqual({ passed: 1 })
+  })
+
+  test('rule: the counters count every card\'s ending (asked again, own words, fixed text) in a session whose calls are not saved, and nothing is written for it', async ($, on) => {
+    const d = disk(on)
+    const rec = openJob(on)
+    quietBand(on)
+    let calls = 0
+    on('model.fork', () => ({ value: { isAnswered: true, text: EMPTY_BRIEF(), usage: USAGE } }))
+    const asks = ownWords(on, () => (++calls === 1 ? OWN_REPLY('Show me the install log and each session finishing.') : Promise.reject(new Error('the model is down'))))
+    await started($)
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    await ui.press({ key: 'rep' })
+    await ui.press({ key: 'close' })
+    await ui.press({ key: 'rep' })
+    await ui.unmount()
+    expect(asks).toHaveLength(2)
+    const counts = (rec() as { counts?: rep.Counts } | undefined)?.counts
+    expect(counts?.ends).toEqual({ 'own-words': 1, 'fixed-text': 1 })
+    expect(counts?.kinds.brief).toMatchObject({ calls: 2, gate: { 'empty-message': 2 } })
+    expect(counts?.kinds['ask-again']).toMatchObject({ calls: 2, gate: { 'empty-message': 2 } })
+    expect(counts?.kinds['own-words']).toMatchObject({ calls: 2, outcome: { answered: 1, threw: 1 }, parsed: { whole: 1 } })
+    expect([...d.files.keys()].filter(k => k.includes('/owner-rep/calls'))).toEqual([])
+    const shown = await runCommand($, 'owner-rep-counts')
+    expect(shown.text).toContain('brief: 2 calls')
+    expect(shown.text).toContain('own-words: 2 calls; came back: answered 1, threw 1; read as: whole 1')
+    expect(shown.text).toContain('cards: own-words 1, fixed-text 1')
+  })
+
+  test('rule: the counts command says so when nothing is counted, and both commands are hidden from the menu', async ($, on) => {
+    disk(on)
+    capture(on, storeOf(recOf([his(1, 'start the report')])), () => SID)
+    on('command.describe', (_$, e) => ({ description: e.description, isHidden: e.isHidden, ...(e.argumentHint === undefined ? {} : { argumentHint: e.argumentHint }) }))
+    await started($)
+    expect((await runCommand($, 'owner-rep-counts')).text).toBe('No calls counted in this session yet.')
+    for (const command of ['owner-rep-counts', 'owner-rep-replay']) {
+      const d = await $.command.describe({ command, description: 'd', isHidden: false } as never)
+      expect(d.isHidden).toBe(true)
+    }
+    expect((await $.command.describe({ command: 'help', description: 'd', isHidden: false } as never)).isHidden).toBe(false)
+  })
+
+  test('rule: the replay sends a saved card again with the same texts and reads the answer through the same gate; a damaged text is never sent', async ($, on) => {
+    const d = disk(on)
+    listed(on, d)
+    const store = OPEN_JOB_AT_SID()
+    const { hold, forks } = capture(on, store, () => SID)
+    const replies = [EMPTY_BRIEF(), USABLE_BRIEF('continue')]
+    let n = 0
+    hold.fork = () => replies[n++] ?? USABLE_BRIEF('continue')
+    await started($)
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    await ui.press({ key: 'rep' })
+    await ui.unmount()
+    await settleUntil($, () => callsIn(d).some(e => e.kind === 'ask-again'))
+    const sent = forks.length
+    const before = callsIn(d).length
+    const out = (await runCommand($, 'owner-rep-replay', 'this --kind brief --times 2')).text ?? ''
+    expect(forks.length).toBe(sent + 2)
+    expect(forks.at(-1)).toBe(forks[0])
+    expect(out).toContain('logged brief: answered, read')
+    expect(out).toContain('gate empty-message')
+    expect(out).toMatch(/replay 1 brief: answered, read .*gate passed/)
+    expect(out).toMatch(/replay 2 brief: answered, read .*gate passed/)
+    expect(out).toMatch(/^logged: 1 calls; read as: read 1; gate: empty-message 1;/m)
+    expect(out).toMatch(/^replay: 2 calls; read as: read 2; gate: passed 2;/m)
+    // A replay is not one of the rep's own calls: nothing more is saved or counted for it.
+    expect(callsIn(d).length).toBe(before)
+    // One file named by its path; then a text changed after it was saved.
+    const file = callsIn(d).find(e => e.kind === 'brief') as rep.CallEntry & { file: string }
+    const last = file.prompt?.at(-1)?.sha ?? ''
+    d.files.set(`${CALLS}/parts/${last}.txt`, `${d.files.get(`${CALLS}/parts/${last}.txt`) ?? ''} and one more line`)
+    const damaged = (await runCommand($, 'owner-rep-replay', file.file)).text ?? ''
+    expect(damaged).toContain('not sent again: the rebuilt prompt is not the one sent')
+    expect(forks.length).toBe(sent + 2)
+    expect(damaged).toContain('replay: none')
+    // A call file whose system text names another file is never read or sent; nor is a system text that changed.
+    const elsewhere = `${CALLS}/elsewhere.json`
+    d.files.set('/cfg/owner-rep/secret.txt', 'not a saved text')
+    d.files.set(elsewhere, JSON.stringify({ ...file, file: undefined, system: '../../secret' }))
+    const pointed = (await runCommand($, 'owner-rep-replay', elsewhere)).text ?? ''
+    expect(pointed).toContain('not sent again: a saved text is not named by its fingerprint')
+    const sys = `${CALLS}/parts/${file.system}.txt`
+    d.files.set(sys, `${d.files.get(sys) ?? ''} changed`)
+    const changed = (await runCommand($, 'owner-rep-replay', file.file)).text ?? ''
+    expect(changed).toContain('not sent again: its system prompt is not the one sent')
+    expect(forks.length).toBe(sent + 2)
+    expect((await runCommand($, 'owner-rep-replay', '')).text).toBe(rep.REPLAY_USAGE)
+    expect((await runCommand($, 'owner-rep-replay', '/nowhere/at/all')).text).toContain('Nothing at /nowhere/at/all.')
+    expect((await runCommand($, 'owner-rep-replay', `${SID} --kind own-words`)).text).toBe(`No saved calls of kind own-words in ${CALLS}.`)
+  })
+
+  test('rule: at a session\'s start, each session\'s calls folder unchanged for 14 days is removed, and nothing else: never the session starting, resumed after 14 days', async ($, on) => {
+    const OLD = '0a1b2c3d-4e5f-4061-8728-394a5b6c7d8e'
+    const NEW = '1a1b2c3d-4e5f-4061-8728-394a5b6c7d8e'
+    const files = new Map([
+      [`${CALLS_ROOT}/${OLD}/${rep.callFileName(1, 0, 'watch')}`, '{}'],
+      [`${CALLS_ROOT}/${NEW}/${rep.callFileName(2, 0, 'watch')}`, '{}'],
+      [`${CALLS_ROOT}/not-a-session/old.json`, '{}'],
+      [`${ROOT}/${OLD}/1-sent.txt`, 'kept'],
+      [`${CALLS_ROOT}/${SID}/${rep.callFileName(3, 0, 'watch')}`, '{}'],
+    ])
+    const d = disk(on, files)
+    const day = 24 * 60 * 60 * 1000
+    listed(on, d, new Map([
+      [`${CALLS_ROOT}/${OLD}`, Date.now() - 15 * day],
+      [`${CALLS_ROOT}/${NEW}`, Date.now() - 13 * day],
+      [`${CALLS_ROOT}/not-a-session`, Date.now() - 400 * day],
+      [`${ROOT}/${OLD}`, Date.now() - 400 * day],
+      [`${CALLS_ROOT}/${SID}`, Date.now() - 20 * day],
+    ]))
+    capture(on, storeOf(recOf([his(1, 'start the report')])), () => SID)
+    await started($)
+    await settleUntil($, () => removed(d).length > 0)
+    expect(removed(d)).toEqual([`${CALLS_ROOT}/${OLD}`])
+    expect(d.files.has(`${CALLS_ROOT}/${NEW}/${rep.callFileName(2, 0, 'watch')}`)).toBe(true)
+    expect(d.files.has(`${CALLS_ROOT}/not-a-session/old.json`)).toBe(true)
+    expect(d.files.get(`${ROOT}/${OLD}/1-sent.txt`)).toBe('kept')
+    expect(d.files.has(`${CALLS_ROOT}/${SID}/${rep.callFileName(3, 0, 'watch')}`)).toBe(true)
+  })
+
+  test('overCallCap removes the folders changed longest ago until the rest fit, never the one kept, one changed in the last hour, or one of unknown age', () => {
+    const now = 100 * rep.CALL_LOG_LIVE_MS
+    const f = (path: string, bytes: number, hoursAgo: number) => ({ path, bytes, mtimeMs: hoursAgo < 0 ? 0 : now - hoursAgo * rep.CALL_LOG_LIVE_MS })
+    expect(rep.CALL_LOG_TOTAL_BYTES).toBe(1024 * 1024 * 1024)
+    expect(rep.CALL_LOG_LIVE_MS).toBe(60 * 60 * 1000)
+    // Under or at the cap: nothing.
+    expect(rep.overCallCap([f('a', 5, 9), f('b', 5, 8)], 'x', now, 10)).toEqual([])
+    // Over: oldest first, and only as many as it takes.
+    expect(rep.overCallCap([f('b', 5, 8), f('a', 5, 9), f('c', 5, 7)], 'x', now, 10)).toEqual(['a'])
+    expect(rep.overCallCap([f('b', 5, 8), f('a', 5, 9), f('c', 5, 7)], 'x', now, 4)).toEqual(['a', 'b', 'c'])
+    // The one kept counts toward the total but is passed over, though oldest.
+    expect(rep.overCallCap([f('k', 8, 20), f('a', 4, 9), f('b', 4, 8)], 'k', now, 10)).toEqual(['a', 'b'])
+    // Changed in the last hour, or of unknown age: never removed, so the total may stay over.
+    expect(rep.overCallCap([f('a', 5, 9), f('live', 50, 0.5), f('odd', 50, -1)], 'x', now, 10)).toEqual(['a'])
+    expect(rep.overCallCap([f('edge', 5, 1), f('b', 50, 0.99)], 'x', now, 10)).toEqual(['edge'])
+    // The same age: by path, so the choice never wavers.
+    expect(rep.overCallCap([f('z', 5, 9), f('m', 5, 9)], 'x', now, 5)).toEqual(['m'])
+  })
+
+  test('rule: at a session\'s start, while every session\'s calls together pass 1 GB, the folder changed longest ago is removed, never the session starting', async ($, on) => {
+    const MiB = 1024 * 1024
+    const hour = 60 * 60 * 1000
+    const ids = ['0a1b2c3d-4e5f-4061-8728-394a5b6c7d8e', '1a1b2c3d-4e5f-4061-8728-394a5b6c7d8e', '2a1b2c3d-4e5f-4061-8728-394a5b6c7d8e', '3a1b2c3d-4e5f-4061-8728-394a5b6c7d8e', '4a1b2c3d-4e5f-4061-8728-394a5b6c7d8e']
+    const [A, B, C, LIVE, EXPIRED] = ids as [string, string, string, string, string]
+    const part = (id: string) => `${CALLS_ROOT}/${id}/parts/${'a'.repeat(64)}.txt`
+    const call = (id: string) => `${CALLS_ROOT}/${id}/${rep.callFileName(1, 0, 'watch')}`
+    const files = new Map<string, string>()
+    for (const id of [...ids, SID]) {
+      files.set(part(id), 'text')
+      files.set(call(id), '{}')
+    }
+    const d = disk(on, files)
+    // A, B, C each 300 MiB, a running session's 300 MiB changed ten minutes ago, the session
+    // starting at 200 MiB, older than those: 1.4 GiB in all, besides 300 MiB unchanged for 15 days.
+    const sizes = new Map([...ids.map(id => [part(id), 300 * MiB] as [string, number]), [part(SID), 200 * MiB] as [string, number]])
+    listed(on, d, new Map([
+      [`${CALLS_ROOT}/${EXPIRED}`, Date.now() - 15 * 24 * hour],
+      [`${CALLS_ROOT}/${SID}`, Date.now() - 10 * 24 * hour],
+      [`${CALLS_ROOT}/${A}`, Date.now() - 5 * 24 * hour],
+      [`${CALLS_ROOT}/${B}`, Date.now() - 3 * 24 * hour],
+      [`${CALLS_ROOT}/${C}`, Date.now() - 2 * 24 * hour],
+      [`${CALLS_ROOT}/${LIVE}`, Date.now() - 10 * 60 * 1000],
+    ]), sizes)
+    capture(on, storeOf(recOf([his(1, 'start the report')])), () => SID)
+    await started($)
+    await settleUntil($, () => removed(d).length > 0)
+    // The 15-day folder goes and is not counted; 1400 MiB over 1024: A then B go (800 MiB left);
+    // C, the running one and the starting one stay. One command removes all three.
+    expect(removed(d)).toEqual([`${CALLS_ROOT}/${EXPIRED}`, `${CALLS_ROOT}/${A}`, `${CALLS_ROOT}/${B}`])
+    for (const id of [C, LIVE, SID]) expect(d.files.has(part(id))).toBe(true)
+    expect(d.runs.filter(r => r[0] === 'rm').length).toBe(1)
+  })
+
+  test('rule: a session of this process whose calls folder was removed writes its texts again', async ($, on) => {
+    const OTHER = '5a1b2c3d-4e5f-4061-8728-394a5b6c7d8e'
+    const d = disk(on)
+    const store = storeOf(recOf([his(1, 'start the report')]))
+    let sid = SID
+    const { scripts, hold } = capture(on, store, () => sid)
+    hold.write = () => OBJ('The quarterly report written.', ['the report written'])
+    const ages = new Map<string, number>()
+    listed(on, d, ages)
+    await started($)
+    await send($, 'and add the charts')
+    await runTurn($, scripts, 't1', [said('Made the charts.')])
+    await settleUntil($, () => callsIn(d).some(e => e.kind === 'watch'))
+    expect(partsIn(d).some(p => d.files.get(p) === RECORD_SYSTEM)).toBe(true)
+    // Another session starts in this process while this one's folder reads as 15 days old.
+    ages.set(CALLS, Date.now() - 15 * 24 * 60 * 60 * 1000)
+    sid = OTHER
+    await started($)
+    await settleUntil($, () => removed(d).includes(CALLS))
+    expect(partsIn(d)).toEqual([])
+    ages.delete(CALLS)
+    // Back in the first session: its next look keeps its texts again, and its file rebuilds.
+    sid = SID
+    await started($)
+    await runTurn($, scripts, 't2', [said('Checked the charts.')])
+    await settleUntil($, () => callsIn(d).some(e => e.kind === 'watch'))
+    const watch = callsIn(d).filter(e => e.kind === 'watch')
+    expect(watch.length).toBeGreaterThanOrEqual(1)
+    for (const e of watch) {
+      expect(e.kept).toBe(true)
+      const back = rebuilt(d, e)
+      expect(back.system).toBe(RECORD_SYSTEM)
+      expect(await shaOf(back.prompt)).toBe(e.promptSha)
+    }
+  })
+
+  test('rule: a session whose calls are not saved removes nothing at its start', async ($, on) => {
+    const OLD = '0a1b2c3d-4e5f-4061-8728-394a5b6c7d8e'
+    const d = disk(on, new Map([[`${CALLS_ROOT}/${OLD}/${rep.callFileName(1, 0, 'watch')}`, '{}']]))
+    listed(on, d, new Map([[`${CALLS_ROOT}/${OLD}`, 1]]))
+    capture(on, storeOf(recOf([his(1, 'start the report')])))
+    await started($)
+    await settle($)
+    await settle($)
+    expect(removed(d).filter(p => p.startsWith(CALLS_ROOT))).toEqual([])
+  })
+})
+
+// ==============================================================================================
+// 12. The rep's own check left alone
+// The check runs as a Claude Code session of its own and the rep loads in it; it is known by its
+// folder under the check copies or by the mark the check's spawn sets, and every hook passes it by.
+// ==============================================================================================
+
+describe("the rep's own check", () => {
+  const CHECK_FOLDER = '/Users/o/.cache/owner-rep/checks/0a1b2c3d-4e5f-4061-8728-394a5b6c7d8e'
+  // A session started where the check starts, sent a message and run through a turn of two steps.
+  const runIn = async ($: Engine, on: On, how: 'folder' | 'mark' | 'neither') => {
+    if (how === 'mark') {
+      on('env.get', (_$, e) => ({ value: e.name === 'OWNER_REP_CHECK' ? '1' : e.name === 'HOME' ? '/Users/o' : e.name === 'CLAUDE_CONFIG_DIR' ? '/cfg' : undefined }))
+    } else disk(on)
+    const store: Record<string, unknown> = {}
+    const c = capture(on, store, () => SID)
+    await $.session.start({ cwd: how === 'folder' ? CHECK_FOLDER : '/tmp/x', surface: 'terminal', isInteractive: true })
+    await send($, 'check that the build passes')
+    await runTurn($, c.scripts, 't1', [said('Running the build.'), said('The build passes.')])
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    const button = await ui.find({ key: 'rep' })
+    await ui.unmount()
+    await $.session.end({ sessionId: SID } as never)
+    return { store, c, button }
+  }
+
+  test('rule: a session is the check by its folder under the check copies or by the mark its spawn sets, and by nothing else', () => {
+    const home = '/Users/o'
+    expect(rep.isOwnCheck(home, CHECK_FOLDER, undefined)).toBe(true)
+    expect(rep.isOwnCheck(home, `${CHECK_FOLDER}/packages/app`, undefined)).toBe(true)
+    expect(rep.isOwnCheck(home, `${CHECK_FOLDER}/`, undefined)).toBe(true)
+    expect(rep.isOwnCheck(home, '/Users/o/.cache/owner-rep/checks', undefined)).toBe(true)
+    expect(rep.isOwnCheck(home, '/Users/o/.cache/owner-rep/checks-old/x', undefined)).toBe(false)
+    expect(rep.isOwnCheck(home, '/Users/o/.cache/owner-rep', undefined)).toBe(false)
+    expect(rep.isOwnCheck(home, '/Users/other/.cache/owner-rep/checks/x', undefined)).toBe(false)
+    expect(rep.isOwnCheck(home, '/tmp/x', undefined)).toBe(false)
+    expect(rep.isOwnCheck(home, '/tmp/x', '1')).toBe(true)
+    expect(rep.isOwnCheck(home, '/tmp/x', '0')).toBe(false)
+    expect(rep.isOwnCheck(home, '/tmp/x', '')).toBe(false)
+    expect(rep.isOwnCheck(home, undefined, undefined)).toBe(false)
+    expect(rep.isOwnCheck('', '/.cache/owner-rep/checks/x', undefined)).toBe(false)
+    expect(rep.isOwnCheck('C:/Users/o', 'C:\\Users\\o\\.cache\\owner-rep\\checks\\0a1b', undefined)).toBe(true)
+  })
+
+  test('rule: in a session started in a check copy the rep keeps no record, makes no call and draws nothing, and the session runs as it would without it', async ($, on) => {
+    const { store, c, button } = await runIn($, on, 'folder')
+    expect(store).toEqual({})
+    expect(c.prompts).toEqual([])
+    expect(c.forks).toEqual([])
+    expect(c.reads()).toBe(0)
+    expect(button).toBeUndefined()
+    expect(c.submits.map(s => s.text)).toEqual(['check that the build passes'])
+  })
+
+  test('rule: a session the check spawned is left alone by its mark wherever it runs', async ($, on) => {
+    const { store, c, button } = await runIn($, on, 'mark')
+    expect(store).toEqual({})
+    expect(c.prompts).toEqual([])
+    expect(c.forks).toEqual([])
+    expect(button).toBeUndefined()
+  })
+
+  test('guard: the same session anywhere else, unmarked, is the owner\'s and the rep takes it up', async ($, on) => {
+    const { c, button } = await runIn($, on, 'neither')
+    expect(c.rec()).toBeDefined()
+    expect(button).toBeDefined()
   })
 })

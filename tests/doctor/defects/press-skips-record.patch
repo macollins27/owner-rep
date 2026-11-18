@@ -1,12 +1,12 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 97fd57d..a177162 100644
+index 04c7909..4b8f33f 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1340,10 +1340,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
-     const ask = async (extra: string) => {
+@@ -1625,10 +1625,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
        const rec = await loadRec($, sid)
        const memory = { ...(await memoryFor($, sid, rec, 'brief')), context }
--      const got = await readSession($, sid, rec, cover => {
+       const kind: CallKind = extra === '' ? 'brief' : 'ask-again'
+-      const got = await readSession($, sid, rec, kind, cover => {
 -        const prompt = briefPrompt({ ...memory, cover })
 -        return extra === '' ? prompt : `${prompt}\n\n${extra}`
 -      })

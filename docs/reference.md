@@ -464,7 +464,10 @@ call writes (below):
    `cp` refuses `-c` before making anything, as GNU `cp` does, `mkdir` makes the folder and
    `cp -R` copies the agent's folder's contents into it; a clone that failed part-way, which
    `mkdir` without `-p` tells apart, is not copied over), then
-   spawns a headless `claude -p` in it with `--permission-mode default`, `CHECK_ALLOWED_TOOLS`
+   spawns a headless `claude -p` in it, marked `OWNER_REP_CHECK=1` in its environment (the rep
+   loads in that session too, and every hook passes it by once `isOwnCheck` knows it, by that
+   mark or by its folder under `checkCopiesDir`: no record, no call, nothing drawn; G19), with
+   `--permission-mode default`, `CHECK_ALLOWED_TOOLS`
    allowed outright (the shell, the file tools, the direct agentsview tools), `CHECK_DISALLOWED_TOOLS`
    (anything that edits through a tool, sends, fetches the web or launches helpers) and
    `--settings` from `checkSettings`: the built-in sandbox with writes denied to the owner's
@@ -809,6 +812,57 @@ while the owner has sent nothing since the mark, and otherwise renamed as lost w
 stands a store that refuses the record leaves it in this process alone (`saveToFiles`), and a
 store that takes it again leaves the list where it is (`stored`): the list may be newer than the
 record. Sources held in memory by an earlier process are marked `LOST_RESTART`.
+
+**The call log and the counters.** Every model call the rep makes for itself is saved by
+`logCall` (`hooks/register.tsx`), queued by `saveCall` behind the call so the card, the row and
+the record never wait on the disk: the objective writer (`objective`, one file per attempt), each
+look (`watch`), the briefing (`brief`), its second ask (`ask-again`) and the own-words call
+(`own-words`); the check keeps its own record in agentsview. The folder is
+`<config>/owner-rep/calls/<session id>/` (`callsRoot`), only for a uuid session id
+(`isSessionId`), so the kit's `test-session` writes nothing. Each call is one file,
+`<13-digit ms>-<4-digit seq>-<kind>.json` (`callFileName`, `CALL_FILE`), a `CallEntry`: the
+settings sent (`CallSettings`), the attempt, the system prompt and each prompt block by
+fingerprint (`LoggedBlock`, with its cache mark), `joined` when the prompt went as one text,
+`promptSha` and `promptChars` of the whole prompt as one text (`joinBlocks`), the time, the
+outcome (`callOutcome`: `answered`, `threw`, the engine's reason, or `api-error` with status and
+error), the reply, the usage, `nearCap` (output at `NEAR_CAP_SHARE`, 98%, of the cap or past it),
+the reply as its kind's reader read it (`callRead`: the objective writer's `holds`, `moved` or
+`unreadable`; the watch's `read`, `flag` or `unreadable` with its marks; a card's `read` or
+`no-verdict` with its marks, its words part by part and, for a briefing and its second ask, the
+gate's rules, `gateRules`, which mirror `gateVerdict`'s refusals; the own-words call's `whole` or
+`cut`), and for a card the conditions open when the gate read it (`open`), so a replay gates its
+answer the same way. Each text is written once, to `parts/<sha256>.txt` (`PART_FILE`); the
+session record every look resends is the same text call after call and is kept once. A process
+writes at most `CALL_LOG_SESSION_BYTES` (64 MiB) of texts for a session; past that a call is
+saved with `kept: false` and no texts. `logCall` never throws: a call not saved stands as it came
+back. At each `session.start` with a uuid session id, `pruneCalls` lists the calls folder,
+without being awaited, and removes in one `rm -rf` through `hostArgv` each session folder whose
+last change is more than `CALL_LOG_DAYS` (14) days old, except the session starting (a session
+resumed after 14 idle days keeps its calls), and, in the same command, the folders
+`overCallCap` names: with every other folder sized by its call files and its parts
+(`folderBytes`), while they hold more than `CALL_LOG_TOTAL_BYTES` (1 GiB) together, the one
+changed longest ago, never the session starting, one changed in the last `CALL_LOG_LIVE_MS` (an
+hour, perhaps another running session's) or one whose change time is unknown; so the total may
+stay over until those age. A session of this process whose folder was removed has its saved
+texts forgotten (`savedParts`, `savedBytes`), so its next call writes them again.
+`removableCallFolder` allows only a uuid-named folder right under an absolute calls folder.
+
+The counters are `rec.counts` (`Counts`), changed in the same `changeRec` as the spend: per kind
+(`KindCounts`) the calls, the four token counts, the time, the replies near the cap, the outcomes,
+what the replies were read as, and for cards the gate's rules (`passed` when none);
+`countEnd` counts how each briefing ended (`BriefEnd`: `passed` at once, `asked-again`,
+`own-words`, or `fixed-text`). Two commands are registered at `session.start` and hidden from the
+menu and `/help` (`command.describe`, `HIDDEN_COMMANDS`): `/owner-rep-counts` prints
+`countsText`, one line per kind and a `cards:` line; `/owner-rep-replay <call file, session folder,
+session id or "this"> [--kind k] [--last 1-50] [--effort low|medium|high|max] [--times 1-10]`
+(`parseReplayArgs`, `REPLAY_USAGE`) takes a folder's last `--last` (`REPLAY_LAST`, 10) calls of the
+kind asked for (`replayPick`), rebuilds each from its parts (`savedCall`, which refuses one whose
+texts were not kept, one naming a text by anything but a fingerprint (`isSha`), so a call file
+cannot point it at another file, one whose texts are missing, whose system text no longer has its
+fingerprint, or whose prompt no longer joins to `promptSha`), prints it as logged and sends
+it `--times` times with the same settings, or the effort given, reading each answer with
+`callRead` against the saved `open` (`replayLine`), then the totals of each (`replayTotals`). A
+replay is not logged or counted. Nothing of either is drawn on the row or the card.
 
 An approval (`approvalOf`: the owner's message, note or plan-screen plan carrying `approved`,
 never one that turned a plan down, never a draft) of the open job that falls outside the job's

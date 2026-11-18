@@ -3645,6 +3645,15 @@ export const copyArgvs = (host: Host, from: string, to: string): [string[], stri
 
 export const checkCopiesDir = (home: string): string => `${home}/.cache/owner-rep/checks`
 export const checkCopyDir = (home: string, sessionId: string): string => `${checkCopiesDir(home)}/${sessionId === '' ? 'session' : sessionId}`
+// The check runs as a Claude Code session of its own, and the rep loads in it as in any other.
+// It is the rep's own work, not an agent the owner set going, so the rep leaves it alone (G19):
+// known by its folder, under the check copies, or by the mark the check's spawn sets.
+export const CHECK_ENV = 'OWNER_REP_CHECK'
+export const isOwnCheck = (home: string, cwd: string | undefined, mark: string | undefined): boolean => {
+  if (mark === '1') return true
+  if (home === '' || cwd === undefined || cwd === '') return false
+  return `${cwd.replace(/\\/g, '/').replace(/\/+$/, '')}/`.startsWith(`${checkCopiesDir(home)}/`)
+}
 
 // WHY THE CHECK DOES NOT START ON WINDOWS.
 // Claude Code 2.1.302 does ship a Windows sandbox — the binary carries
@@ -5248,4 +5257,340 @@ export function parseOwnWords(text: string): BriefAnswer | null {
   if (seen.join(' ') !== 'means next message end does') return null
   const a = parseBrief(text)
   return a.message !== '' && [a.means, a.next, a.does].every(endsSentence) ? a : null
+}
+
+// ---- The call log and the counters (docs/reference.md, "The call log and the counters").
+// Every model call the rep makes for itself (the objective writer, the watch, the briefing, its
+// second ask and the own-words call; the check keeps its own record in agentsview) is saved as one
+// file, so a call can be read back and sent again with one thing changed (`/owner-rep-replay`).
+// A text sent is kept once by its fingerprint, in the session's `parts` folder: the copy of the
+// session the watch resends at every look is the same text call after call, so it is kept once.
+// Nothing here is shown to the owner; the counters are printed by `/owner-rep-counts`.
+
+export const CALL_KINDS = ['objective', 'watch', 'brief', 'ask-again', 'own-words'] as const
+export type CallKind = (typeof CALL_KINDS)[number]
+// A session's folder of calls is removed once nothing in it has changed for this many days.
+export const CALL_LOG_DAYS = 14
+// The texts one process keeps for a session; past it, a call is saved without its texts.
+export const CALL_LOG_SESSION_BYTES = 64 * 1024 * 1024
+// What every session's folder of calls holds together; past it, the folders changed longest ago
+// are removed first until the rest fit.
+export const CALL_LOG_TOTAL_BYTES = 1024 * 1024 * 1024
+// A folder changed this recently may be another running session's: the total never removes it.
+export const CALL_LOG_LIVE_MS = 60 * 60 * 1000
+// A reply whose output tokens reach this share of its cap is counted as near the cap: the engine
+// says nothing of a reply the cap cut short, and one that stopped this close to it may have been.
+export const NEAR_CAP_SHARE = 0.98
+
+// The folder the calls live in, under the config folder, beside the sources.
+export const callsRoot = (config: string): string => `${config}/owner-rep/calls`
+// A call's file: when it was made, its number in this process, and its kind.
+export const callFileName = (at: number, seq: number, kind: CallKind): string =>
+  `${String(at).padStart(13, '0')}-${String(seq % 10000).padStart(4, '0')}-${kind}.json`
+export const CALL_FILE = /^\d{13}-\d{4}-(objective|watch|brief|ask-again|own-words)\.json$/
+export const PART_FILE = /^[0-9a-f]{64}\.txt$/
+// A saved text's name: its sha256 fingerprint, 64 lower-case hex digits.
+export const isSha = (name: unknown): boolean => typeof name === 'string' && /^[0-9a-f]{64}$/.test(name)
+
+// Whether a path may be removed by the call log: a session's folder named by a uuid right under the
+// calls folder. Nothing else is ever removed by it.
+export function removableCallFolder(root: string, p: string): boolean {
+  if (!root.startsWith('/') && !/^[A-Za-z]:\//.test(root)) return false
+  if (!root.endsWith('/owner-rep/calls') || !p.startsWith(`${root}/`)) return false
+  const rest = p.slice(root.length + 1)
+  return !rest.includes('/') && isSessionId(rest)
+}
+
+// A session's folder of calls as the removal sees it: its path, the bytes of the files in it and
+// in its parts, and when it last changed.
+export type CallFolder = { path: string; bytes: number; mtimeMs: number }
+// The folders to remove so that all of them together hold no more than `cap` bytes: the one changed
+// longest ago first, then the next. `keep` (the session starting) is counted but never removed,
+// nor is a folder changed in the last CALL_LOG_LIVE_MS before `now`, or one whose change time is
+// unknown; so the total can stay over the cap until those age.
+export function overCallCap(folders: CallFolder[], keep: string, now: number, cap: number = CALL_LOG_TOTAL_BYTES): string[] {
+  let total = folders.reduce((n, f) => n + f.bytes, 0)
+  const out: string[] = []
+  const removable = folders
+    .filter(f => f.path !== keep && f.mtimeMs > 0 && f.mtimeMs <= now - CALL_LOG_LIVE_MS)
+    .sort((a, b) => a.mtimeMs - b.mtimeMs || (a.path < b.path ? -1 : 1))
+  for (const f of removable) {
+    if (total <= cap) break
+    out.push(f.path)
+    total -= f.bytes
+  }
+  return out
+}
+
+// What a call was sent with.
+export type CallSettings = { model: string; effort: string; maxTokens: number; timeoutMs: number }
+// A text block as the log keeps it: its fingerprint, and the cache mark it was sent with.
+export type LoggedBlock = { sha: string; cache?: true }
+// What came back: the engine's answer, the reason it gave for none, or that the call threw.
+export type CallOutcome = 'answered' | 'threw' | string
+// What a reply was read as, by the kind's own reader: `callRead`.
+export type CallRead = {
+  parsed: string
+  // The watch's Heads up line, when it raised one.
+  flag?: boolean
+  // The marks the answer gave: conditions shown (and how many of them named where) and closed.
+  shown?: number
+  shownWhere?: number
+  closed?: number
+  // A card's words, part by part.
+  words?: Record<string, number>
+  // The gate's rules that refused a card: none when it passed.
+  gate?: GateRule[]
+}
+export type CallEntry = {
+  v: 1
+  at: number
+  kind: CallKind
+  settings: CallSettings
+  // The objective writer's attempt, from 0.
+  attempt?: number
+  // The texts were kept (false past CALL_LOG_SESSION_BYTES): then system and prompt are absent.
+  kept: boolean
+  system?: string
+  prompt?: LoggedBlock[]
+  // The prompt went as one text: a plain prompt, or blocks joined for a build that takes none.
+  joined: boolean
+  // The fingerprint of the whole prompt as one text, to prove a rebuilt prompt is the one sent.
+  promptSha: string
+  promptChars: number
+  ms: number
+  outcome: CallOutcome
+  status?: number | null
+  error?: string
+  reply?: string
+  usage?: Usage
+  nearCap: boolean
+  read?: CallRead
+  // The conditions open when the gate read a card, so a replay can gate its answer the same way.
+  open?: Condition[] | null
+}
+
+// A prompt as blocks: a plain text is one block.
+export const blocksOf = (prompt: string | readonly PromptBlock[]): PromptBlock[] =>
+  typeof prompt === 'string' ? [{ text: prompt }] : prompt.map(b => ({ ...b }))
+
+// Whether a reply came near its cap.
+export const nearCap = (usage: Usage | null | undefined, cap: number): boolean =>
+  usage !== null && usage !== undefined && cap > 0 && usage.output_tokens >= cap * NEAR_CAP_SHARE
+
+// What a call came to, from the engine's result or null for a call that threw.
+export function callOutcome(result: { isAnswered: boolean; reason?: string; status?: number | null; error?: string } | null): { outcome: CallOutcome; status?: number | null; error?: string } {
+  if (result === null) return { outcome: 'threw' }
+  if (result.isAnswered) return { outcome: 'answered' }
+  const reason = result.reason ?? 'unanswered'
+  return reason === 'api-error' ? { outcome: reason, status: result.status ?? null, error: result.error ?? '' } : { outcome: reason }
+}
+
+// The gate's rules a card breaks, in gateVerdict's terms: a refused card breaks at least one, a
+// card that passes none. With no condition open nothing is refused.
+export type GateRule = 'stop-verdict' | 'no-verdict' | 'going-well' | 'next-says-stop' | 'message-says-stop' | 'empty-message' | 'no-objective'
+export function gateRules(a: BriefAnswer, open: Condition[] | null): GateRule[] {
+  if (open !== null && open.length === 0) return []
+  const rules: GateRule[] = []
+  if (a.verdict !== 'continue') rules.push(a.verdict === 'stop' ? 'stop-verdict' : 'no-verdict')
+  if (a.well !== '') rules.push('going-well')
+  if (saysStop(a.next)) rules.push('next-says-stop')
+  if (messageSaysStop(a.message)) rules.push('message-says-stop')
+  if (rules.length === 0 && open !== null && a.message.trim() === '') rules.push('empty-message')
+  if (rules.length > 0 && open === null) rules.push('no-objective')
+  return rules
+}
+
+const wordCount = (s: string): number => s.split(/\s+/).filter(w => w !== '').length
+const cardWords = (a: BriefAnswer): Record<string, number> => ({
+  stands: wordCount(a.stands),
+  means: wordCount(a.means),
+  left: wordCount(a.leftOut.join(' ')),
+  next: wordCount(a.next),
+  message: wordCount(a.message),
+  does: wordCount(a.does),
+})
+const marksOf = (a: { shown: Array<{ by: string }>; closed: unknown[] }) => ({
+  shown: a.shown.length,
+  shownWhere: a.shown.filter(s => s.by.trim() !== '').length,
+  closed: a.closed.length,
+})
+
+// A reply read by its kind's own reader, as the rep reads it: the objective writer's (unreadable,
+// holds or moved), the watch's (unreadable without a state; flag when it raised a Heads up line),
+// a card's (no verdict, or read; and the gate's rules against `open`), the own-words call's (cut
+// unless whole).
+export function callRead(kind: CallKind, text: string, open?: Condition[] | null): CallRead {
+  if (kind === 'objective') {
+    const a = parseObjective(text)
+    return { parsed: a === null ? 'unreadable' : a.kind }
+  }
+  if (kind === 'watch') {
+    const a = parseWatch(text)
+    return { parsed: a.state === null ? 'unreadable' : a.flag !== null ? 'flag' : 'read', flag: a.flag !== null, ...marksOf(a) }
+  }
+  if (kind === 'own-words') {
+    const a = parseOwnWords(text)
+    return a === null ? { parsed: 'cut' } : { parsed: 'whole', words: cardWords(a) }
+  }
+  const a = parseBrief(text)
+  return {
+    parsed: a.verdict === 'missing' ? 'no-verdict' : 'read',
+    ...marksOf(a),
+    words: cardWords(a),
+    ...(open === undefined ? {} : { gate: gateRules(a, open) }),
+  }
+}
+
+// ---- The counters, kept in the session's record (`Rec.counts`).
+// How a card the gate refused ended: passed at once, passed when asked again, written in part by the
+// own-words call, or left with the rep's fixed text.
+export type BriefEnd = 'passed' | 'asked-again' | 'own-words' | 'fixed-text'
+export type KindCounts = {
+  calls: number
+  input: number
+  cached: number
+  created: number
+  output: number
+  ms: number
+  nearCap: number
+  outcome: Record<string, number>
+  parsed: Record<string, number>
+  gate?: Record<string, number>
+}
+export type Counts = { kinds: Partial<Record<CallKind, KindCounts>>; ends?: Partial<Record<BriefEnd, number>> }
+
+const bump = (m: Record<string, number> | undefined, key: string): Record<string, number> => ({ ...(m ?? {}), [key]: (m?.[key] ?? 0) + 1 })
+
+// The counters with one call added.
+export function countCall(counts: Counts | undefined, e: Pick<CallEntry, 'kind' | 'usage' | 'ms' | 'nearCap' | 'outcome' | 'read'>): Counts {
+  const was = counts?.kinds[e.kind]
+  const u = e.usage
+  let kc: KindCounts = {
+    calls: (was?.calls ?? 0) + 1,
+    input: (was?.input ?? 0) + (u?.input_tokens ?? 0),
+    cached: (was?.cached ?? 0) + (u?.cache_read_input_tokens ?? 0),
+    created: (was?.created ?? 0) + (u?.cache_creation_input_tokens ?? 0),
+    output: (was?.output ?? 0) + (u?.output_tokens ?? 0),
+    ms: (was?.ms ?? 0) + e.ms,
+    nearCap: (was?.nearCap ?? 0) + (e.nearCap ? 1 : 0),
+    outcome: bump(was?.outcome, e.outcome),
+    parsed: e.read === undefined ? { ...(was?.parsed ?? {}) } : bump(was?.parsed, e.read.parsed),
+    ...(was?.gate === undefined ? {} : { gate: { ...was.gate } }),
+  }
+  for (const rule of e.read?.gate ?? []) kc = { ...kc, gate: bump(kc.gate, rule) }
+  if (e.read?.gate !== undefined && e.read.gate.length === 0) kc = { ...kc, gate: bump(kc.gate, 'passed') }
+  return { ...(counts ?? { kinds: {} }), kinds: { ...(counts?.kinds ?? {}), [e.kind]: kc } }
+}
+
+// The counters with one card's ending added.
+export const countEnd = (counts: Counts | undefined, end: BriefEnd): Counts => ({
+  kinds: { ...(counts?.kinds ?? {}) },
+  ends: bump(counts?.ends, end),
+})
+
+const listed = (m: Record<string, number> | undefined): string =>
+  Object.entries(m ?? {})
+    .sort((a, b) => b[1] - a[1])
+    .map(([key, n]) => `${key} ${n}`)
+    .join(', ')
+
+// The counters as lines, one per kind of call, for `/owner-rep-counts`.
+export function countsText(counts: Counts | undefined): string {
+  const lines: string[] = []
+  for (const kind of CALL_KINDS) {
+    const c = counts?.kinds[kind]
+    if (c === undefined) continue
+    const avg = c.calls === 0 ? 0 : c.ms / c.calls / 1000
+    lines.push(
+      `${kind}: ${c.calls} calls; came back: ${listed(c.outcome)}; read as: ${listed(c.parsed) || 'nothing'}; near the cap ${c.nearCap}; ` +
+        `tokens in ${k(c.input)}, from cache ${k(c.cached)}, written to cache ${k(c.created)}, out ${k(c.output)}; ${avg.toFixed(1)} s a call` +
+        (c.gate === undefined ? '' : `; gate: ${listed(c.gate)}`),
+    )
+  }
+  if (counts?.ends !== undefined) lines.push(`cards: ${listed(counts.ends)}`)
+  return lines.length === 0 ? 'No calls counted in this session yet.' : lines.join('\n')
+}
+
+// ---- The replay: `/owner-rep-replay <call file or session folder> [--kind k] [--last n] [--effort e] [--times n]`.
+// A folder's calls are taken newest last; only the last `--last` (10 unless given) of the kind
+// asked for are sent again, since every call sent costs what it cost the first time.
+export type ReplayArgs = { path: string; kind?: CallKind; last: number; effort?: string; times: number } | { error: string }
+export const REPLAY_LAST = 10
+export const REPLAY_USAGE =
+  'Usage: /owner-rep-replay <call file, session folder or session id> [--kind objective|watch|brief|ask-again|own-words] [--last 1-50] [--effort low|medium|high|max] [--times 1-10]'
+export function parseReplayArgs(args: string): ReplayArgs {
+  const words = args.trim().split(/\s+/).filter(w => w !== '')
+  let path: string | undefined
+  let kind: CallKind | undefined
+  let effort: string | undefined
+  let last = REPLAY_LAST
+  let times = 1
+  const whole = (w: string | undefined, max: number): number | null => {
+    const n = Number(w)
+    return Number.isInteger(n) && n >= 1 && n <= max ? n : null
+  }
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i] ?? ''
+    if (w === '--effort') {
+      effort = words[++i]
+      if (effort === undefined || !['low', 'medium', 'high', 'max'].includes(effort)) return { error: REPLAY_USAGE }
+    } else if (w === '--kind') {
+      const named = words[++i]
+      if (named === undefined || !(CALL_KINDS as readonly string[]).includes(named)) return { error: REPLAY_USAGE }
+      kind = named as CallKind
+    } else if (w === '--times' || w === '--last') {
+      const n = whole(words[++i], w === '--times' ? 10 : 50)
+      if (n === null) return { error: REPLAY_USAGE }
+      if (w === '--times') times = n
+      else last = n
+    } else if (w.startsWith('--') || path !== undefined) return { error: REPLAY_USAGE }
+    else path = w
+  }
+  if (path === undefined) return { error: REPLAY_USAGE }
+  return { path, last, times, ...(kind === undefined ? {} : { kind }), ...(effort === undefined ? {} : { effort }) }
+}
+
+// The call files of a folder to send again: the kind asked for, the last `last` of them by name.
+export const replayPick = (names: readonly string[], kind: CallKind | undefined, last: number): string[] =>
+  names
+    .filter(n => CALL_FILE.test(n) && (kind === undefined || n.endsWith(`-${kind}.json`)))
+    .sort()
+    .slice(-last)
+
+// One row of the replay's table: a call as logged, or one run of it again.
+export type ReplayRow = { label: string; kind: CallKind; outcome: CallOutcome; read?: CallRead; usage?: Usage; ms: number; nearCap: boolean }
+const wordsText = (w: Record<string, number> | undefined): string =>
+  w === undefined ? '' : Object.entries(w).map(([part, n]) => `${part} ${n}`).join(' ')
+export function replayLine(r: ReplayRow): string {
+  const read = r.read
+  const marks = read?.shown === undefined ? '' : ` | shown ${read.shown} (${read.shownWhere ?? 0} with where), closed ${read.closed ?? 0}`
+  const gate = read?.gate === undefined ? '' : ` | gate ${read.gate.length === 0 ? 'passed' : read.gate.join(', ')}`
+  const words = read?.words === undefined ? '' : ` | words ${wordsText(read.words)}`
+  const u = r.usage
+  const tokens = u === undefined ? '' : ` | in ${u.input_tokens}, cached ${u.cache_read_input_tokens}, out ${u.output_tokens}${r.nearCap ? ' (near cap)' : ''}`
+  return `${r.label} ${r.kind}: ${r.outcome}${read === undefined ? '' : `, ${read.parsed}`}${marks}${gate}${words}${tokens} | ${(r.ms / 1000).toFixed(1)} s`
+}
+
+// The totals under the replay's table, for the rows of one label ("logged", or "replay"): what the
+// replies were read as, the gate's rules, the tokens and the time.
+export function replayTotals(rows: readonly ReplayRow[], label: string): string {
+  const mine = rows.filter(r => r.label.startsWith(label))
+  if (mine.length === 0) return `${label}: none`
+  let parsed: Record<string, number> = {}
+  let gate: Record<string, number> = {}
+  let input = 0
+  let cached = 0
+  let output = 0
+  let ms = 0
+  for (const r of mine) {
+    parsed = bump(parsed, r.read?.parsed ?? r.outcome)
+    if (r.read?.gate !== undefined) gate = r.read.gate.length === 0 ? bump(gate, 'passed') : r.read.gate.reduce((g, rule) => bump(g, rule), gate)
+    input += r.usage?.input_tokens ?? 0
+    cached += r.usage?.cache_read_input_tokens ?? 0
+    output += r.usage?.output_tokens ?? 0
+    ms += r.ms
+  }
+  const gates = Object.keys(gate).length === 0 ? '' : `; gate: ${listed(gate)}`
+  return `${label}: ${mine.length} calls; read as: ${listed(parsed)}${gates}; tokens in ${k(input)}, cached ${k(cached)}, out ${k(output)}; ${(ms / mine.length / 1000).toFixed(1)} s a call`
 }

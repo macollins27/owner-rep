@@ -3226,5 +3226,113 @@
     "breaks": "From Claude Code 2.1.325 the briefing no longer takes the strip alone: another mod's row stays stacked under the card the owner asked for.",
     "patch": "card-shares-strip.patch",
     "fixed": "2026-11-14"
+  },
+  {
+    "name": "gate-rules-miss-empty",
+    "breaks": "The call log's list of the gate's rules leaves out an empty message, so a card the gate refused for it is logged and counted as passed.",
+    "patch": "gate-rules-miss-empty.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "call-log-prunes-any-folder",
+    "breaks": "The call log's removal takes any folder under the calls folder, not only a session's folder named by a uuid.",
+    "patch": "call-log-prunes-any-folder.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "call-log-any-session",
+    "breaks": "Calls are saved for a session id that is not a uuid, so a session with no folder of its own writes under the calls folder.",
+    "patch": "call-log-any-session.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "replay-unchecked-prompt",
+    "breaks": "The replay sends a saved call whose texts were changed after it was saved, without checking them against the fingerprint of the prompt that was sent.",
+    "patch": "replay-unchecked-prompt.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "own-check-folder-ignored",
+    "breaks": "The rep knows its own check only by the mark, not by its folder under the check copies, so a check started without the mark is watched like the owner's agent.",
+    "patch": "own-check-folder-ignored.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "own-check-spawn-unmarked",
+    "breaks": "The check is spawned without the OWNER_REP_CHECK mark, so a check run outside the copies' folder is watched like the owner's agent.",
+    "patch": "own-check-spawn-unmarked.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "own-check-messages-kept",
+    "breaks": "In the rep's own check, the message the check is started with still goes through the rep, which keeps it as the owner's.",
+    "patch": "own-check-messages-kept.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "call-log-cap-takes-starting",
+    "breaks": "Past the total of 1 GB, the folder of the session starting is removed when it is the oldest, though it is the one now being written.",
+    "patch": "call-log-cap-takes-starting.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "call-log-cap-newest-first",
+    "breaks": "Past the total of 1 GB, the folders changed most recently are removed first, and the old ones kept.",
+    "patch": "call-log-cap-newest-first.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "call-log-cap-takes-live",
+    "breaks": "Past the total of 1 GB, a folder changed in the last hour is removed, though it may be another running session's.",
+    "patch": "call-log-cap-takes-live.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "call-log-cap-takes-unknown-age",
+    "breaks": "Past the total of 1 GB, a folder whose change time cannot be read is removed as if it were the oldest.",
+    "patch": "call-log-cap-takes-unknown-age.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "call-log-cap-unused",
+    "breaks": "The total of 1 GB is never applied: every session's calls together grow without a bound for 14 days.",
+    "patch": "call-log-cap-unused.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "call-log-cap-parts-uncounted",
+    "breaks": "A folder's texts are left out of its size, so the total reads small and nothing is removed past 1 GB.",
+    "patch": "call-log-cap-parts-uncounted.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "call-log-cap-counts-expired",
+    "breaks": "A folder removed for being 14 days old is counted toward the total as well, and named twice in the removal.",
+    "patch": "call-log-cap-counts-expired.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "call-log-removed-texts-not-rewritten",
+    "breaks": "A session of this process whose calls folder was removed takes its texts as still saved, so its later calls name texts that are gone and cannot be sent again.",
+    "patch": "call-log-removed-texts-not-rewritten.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "call-log-days-takes-starting",
+    "breaks": "A session resumed after 14 idle days has its own calls folder removed at its start, so its earlier calls are lost.",
+    "patch": "call-log-days-takes-starting.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "replay-reads-any-name",
+    "breaks": "A replayed call file can name any file as its system text, so the replay reads it and sends it to the model.",
+    "patch": "replay-reads-any-name.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "replay-system-unchecked",
+    "breaks": "A replay sends a system text that changed after it was saved, so the replay is not of the call that was made.",
+    "patch": "replay-system-unchecked.patch",
+    "fixed": "tested 2026-11-17"
   }
 ]

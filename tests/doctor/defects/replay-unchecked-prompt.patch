@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 0816bfe..5918edd 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1579,7 +1579,6 @@ async function savedCall($: EngineInterface, path: string): Promise<{ entry: Cal
+   if (system === null) return { entry, why: 'its system prompt is missing' }
+   if ((await sha256(system)) !== entry.system) return { entry, why: 'its system prompt is not the one sent' }
+   const whole = joinBlocks(blocks)
+-  if ((await sha256(whole)) !== entry.promptSha) return { entry, why: 'the rebuilt prompt is not the one sent' }
+   return { entry, system, prompt: entry.joined ? whole : blocks }
+ }
+ 

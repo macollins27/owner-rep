@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index a2adf00..a5d1ed9 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -5296,7 +5296,7 @@ export function removableCallFolder(root: string, p: string): boolean {
+   if (!root.startsWith('/') && !/^[A-Za-z]:\//.test(root)) return false
+   if (!root.endsWith('/owner-rep/calls') || !p.startsWith(`${root}/`)) return false
+   const rest = p.slice(root.length + 1)
+-  return !rest.includes('/') && isSessionId(rest)
++  return !rest.includes('/')
+ }
+ 
+ // A session's folder of calls as the removal sees it: its path, the bytes of the files in it and

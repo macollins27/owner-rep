@@ -266,9 +266,10 @@ full, this is everything it reads and runs:
   the agent's thinking. The check is different: it reads the session through agentsview, and
   that includes the agent's thinking.
 - **Environment variables:** `PATH`, `HOME`, `USERPROFILE`, `CLAUDE_CONFIG_DIR`, `OS`,
-  `SystemRoot`, `windir`, `PROGRAMFILES`, `ProgramFiles(x86)`, `LOCALAPPDATA` and `APPDATA`.
-  It reads them to find your home, Claude Code's folder and the programs it runs, and to tell
-  whether it is on Windows.
+  `SystemRoot`, `windir`, `PROGRAMFILES`, `ProgramFiles(x86)`, `LOCALAPPDATA`, `APPDATA` and
+  `OWNER_REP_CHECK`. It reads them to find your home, Claude Code's folder and the programs it
+  runs, to tell whether it is on Windows, and to tell its own check's session (which it sets
+  `OWNER_REP_CHECK` for) from yours.
 - **Your transcripts:** it runs `sed`, `grep`, `ls` and `find` over the session's transcript
   under `~/.claude/projects/` (or the folder `CLAUDE_CONFIG_DIR` names) to read which
   messages you typed. For a session it holds no record of, such as a fork, it may read up to
@@ -281,6 +282,18 @@ full, this is everything it reads and runs:
   files with `rm` when their message or session goes. When the shared store is full it also
   keeps the record's manifest and parts there, and it keeps the files of a lost copy while the
   loss mark stands.
+- **Its call log:** `<config>/owner-rep/calls/<session id>/`. Every model call the rep makes for
+  itself (the job's account, each Heads up look, each briefing and its second ask, and the
+  own-words call) is saved there as one file holding what was sent and what came back, the
+  settings, the time and the tokens, what the rep read in the reply (its counts of conditions
+  marked, and a card's words and gate refusals) and, for a card, the job's open conditions with
+  what was seen of each, so a call can be read again and sent again. A text sent many times, such as the session's record that
+  every look resends, is kept once. A session's folder is removed with `rm` once nothing in it has
+  changed for 14 days, unless that session is the one starting, and while all the sessions' folders together hold more than 1 GB, the ones
+  changed longest ago are removed first, never the session starting or one changed in the last hour.
+  Two hidden commands read it: `/owner-rep-counts` prints the session's
+  counters, and `/owner-rep-replay` sends saved calls to the model again, at the cost of a new
+  call each. Nothing in it is shown unless you run them.
 - **On Windows:** those commands are Git for Windows' own, named by their full path. The rep
   finds them, and Claude Code's own `claude.exe`, by running each place they may be with
   `--version`.
@@ -293,8 +306,8 @@ full, this is everything it reads and runs:
   project's own tests and read agentsview. It may not edit through a tool, send, fetch the
   web, or launch helpers. It runs with your own Claude Code settings, so your hooks fire
   inside it as they do for any agent.
-- **What it keeps:** one record per session, for the 32 newest sessions that hold anything.
-  [PRIVACY.md](PRIVACY.md) lists what a record holds.
+- **What it keeps:** one record per session, for the 32 newest sessions that hold anything,
+  and the call log above. [PRIVACY.md](PRIVACY.md) lists what each holds.
 
 Mods are code that runs inside Claude Code with the access Claude Code has, so read the
 source before installing any mod, this one included.
@@ -336,9 +349,9 @@ The full design is in [How the owner rep works](docs/how-it-works.md).
 
 ## Built to be trusted
 
-- **604 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
+- **628 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
   the tests.
-- **A doctor that plants bugs.** It plants 538 known defects in a throwaway copy, one at a
+- **A doctor that plants bugs.** It plants 553 known defects in a throwaway copy, one at a
   time, and fails the build if the tests miss any of them.
 - **Real sessions.** Twelve scenarios run in real Claude Code sessions, with the screen
   captured in [`tests/live/captures`](tests/live/captures).

@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index f625b74..7a86426 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -5359,7 +5359,6 @@ export function gateRules(a: BriefAnswer, open: Condition[] | null): GateRule[]
+   if (a.well !== '') rules.push('going-well')
+   if (saysStop(a.next)) rules.push('next-says-stop')
+   if (messageSaysStop(a.message)) rules.push('message-says-stop')
+-  if (rules.length === 0 && open !== null && a.message.trim() === '') rules.push('empty-message')
+   if (rules.length > 0 && open === null) rules.push('no-objective')
+   return rules
+ }
