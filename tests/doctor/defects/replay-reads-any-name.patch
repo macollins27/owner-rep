@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 0816bfe..6ec03d9 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1567,7 +1567,6 @@ async function savedCall($: EngineInterface, path: string): Promise<{ entry: Cal
+   if (entry.v !== 1 || !entry.kept || entry.system === undefined || entry.prompt === undefined) return { entry, why: 'its texts were not kept' }
+   // Every text is named by its own fingerprint: a name that is not one is never read, so a call
+   // file cannot point the replay at any other file, and a system text that changed is not sent.
+-  if (![entry.system, ...entry.prompt.map(b => b.sha)].every(isSha)) return { entry, why: 'a saved text is not named by its fingerprint' }
+   const parts = `${path.slice(0, path.lastIndexOf('/'))}/parts`
+   const system = await readText($, `${parts}/${entry.system}.txt`)
+   const blocks: PromptBlock[] = []

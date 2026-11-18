@@ -5428,6 +5428,8 @@ export const callFileName = (at: number, seq: number, kind: CallKind): string =>
   `${String(at).padStart(13, '0')}-${String(seq % 10000).padStart(4, '0')}-${kind}.json`
 export const CALL_FILE = /^\d{13}-\d{4}-(objective|watch|brief|ask-again|own-words)\.json$/
 export const PART_FILE = /^[0-9a-f]{64}\.txt$/
+// A saved text's name: its sha256 fingerprint, 64 lower-case hex digits.
+export const isSha = (name: unknown): boolean => typeof name === 'string' && /^[0-9a-f]{64}$/.test(name)
 
 // Whether a path may be removed by the call log: a session's folder named by a uuid right under the
 // calls folder. Nothing else is ever removed by it.

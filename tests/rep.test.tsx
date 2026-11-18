@@ -14997,12 +14997,23 @@ describe('the call log: saving, replaying, counting and removing', () => {
     expect(damaged).toContain('not sent again: the rebuilt prompt is not the one sent')
     expect(forks.length).toBe(sent + 2)
     expect(damaged).toContain('replay: none')
+    // A call file whose system text names another file is never read or sent; nor is a system text that changed.
+    const elsewhere = `${CALLS}/elsewhere.json`
+    d.files.set('/cfg/owner-rep/secret.txt', 'not a saved text')
+    d.files.set(elsewhere, JSON.stringify({ ...file, file: undefined, system: '../../secret' }))
+    const pointed = (await runCommand($, 'owner-rep-replay', elsewhere)).text ?? ''
+    expect(pointed).toContain('not sent again: a saved text is not named by its fingerprint')
+    const sys = `${CALLS}/parts/${file.system}.txt`
+    d.files.set(sys, `${d.files.get(sys) ?? ''} changed`)
+    const changed = (await runCommand($, 'owner-rep-replay', file.file)).text ?? ''
+    expect(changed).toContain('not sent again: its system prompt is not the one sent')
+    expect(forks.length).toBe(sent + 2)
     expect((await runCommand($, 'owner-rep-replay', '')).text).toBe(rep.REPLAY_USAGE)
     expect((await runCommand($, 'owner-rep-replay', '/nowhere/at/all')).text).toContain('Nothing at /nowhere/at/all.')
     expect((await runCommand($, 'owner-rep-replay', `${SID} --kind own-words`)).text).toBe(`No saved calls of kind own-words in ${CALLS}.`)
   })
 
-  test('rule: at a session\'s start, each session\'s calls folder unchanged for 14 days is removed, and nothing else', async ($, on) => {
+  test('rule: at a session\'s start, each session\'s calls folder unchanged for 14 days is removed, and nothing else: never the session starting, resumed after 14 days', async ($, on) => {
     const OLD = '0a1b2c3d-4e5f-4061-8728-394a5b6c7d8e'
     const NEW = '1a1b2c3d-4e5f-4061-8728-394a5b6c7d8e'
     const files = new Map([
@@ -15010,6 +15021,7 @@ describe('the call log: saving, replaying, counting and removing', () => {
       [`${CALLS_ROOT}/${NEW}/${rep.callFileName(2, 0, 'watch')}`, '{}'],
       [`${CALLS_ROOT}/not-a-session/old.json`, '{}'],
       [`${ROOT}/${OLD}/1-sent.txt`, 'kept'],
+      [`${CALLS_ROOT}/${SID}/${rep.callFileName(3, 0, 'watch')}`, '{}'],
     ])
     const d = disk(on, files)
     const day = 24 * 60 * 60 * 1000
@@ -15018,6 +15030,7 @@ describe('the call log: saving, replaying, counting and removing', () => {
       [`${CALLS_ROOT}/${NEW}`, Date.now() - 13 * day],
       [`${CALLS_ROOT}/not-a-session`, Date.now() - 400 * day],
       [`${ROOT}/${OLD}`, Date.now() - 400 * day],
+      [`${CALLS_ROOT}/${SID}`, Date.now() - 20 * day],
     ]))
     capture(on, storeOf(recOf([his(1, 'start the report')])), () => SID)
     await started($)
@@ -15026,6 +15039,7 @@ describe('the call log: saving, replaying, counting and removing', () => {
     expect(d.files.has(`${CALLS_ROOT}/${NEW}/${rep.callFileName(2, 0, 'watch')}`)).toBe(true)
     expect(d.files.has(`${CALLS_ROOT}/not-a-session/old.json`)).toBe(true)
     expect(d.files.get(`${ROOT}/${OLD}/1-sent.txt`)).toBe('kept')
+    expect(d.files.has(`${CALLS_ROOT}/${SID}/${rep.callFileName(3, 0, 'watch')}`)).toBe(true)
   })
 
   test('overCallCap removes the folders changed longest ago until the rest fit, never the one kept, one changed in the last hour, or one of unknown age', () => {
