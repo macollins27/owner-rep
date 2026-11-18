@@ -67,6 +67,8 @@ import {
   briefPrompt,
   cachedOf,
   checkArgv,
+  checkMcpConfig,
+  CHECK_ISOLATE_ENV,
   checkCostText,
   countLine,
   checkCopiesDir,
@@ -1866,6 +1868,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
     const store = await pnpmStore($, checkHost, copy)
     const links = await pathLinks($, checkHost, home, path)
     const repos = await gitRepos($, checkHost, home, copy, cwd)
+    const mcp = await checkMcp($, home)
     const prompt = checkPrompt({
       sessionId: sid,
       cwd,
@@ -1880,7 +1883,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       unanswered: [...(links === null ? ['links' as const] : []), ...(repos.whole ? [] : ['repos' as const])],
     })
     const startedAt = Date.now()
-    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, path, links ?? [], repos.dirs))), cwd: copy, env: { [CHECK_ENV]: '1', ...(store === '' ? {} : { [PNPM_STORE_ENV]: store }) } })
+    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, path, links ?? [], repos.dirs), mcp)), cwd: copy, env: { ...CHECK_ISOLATE_ENV, [CHECK_ENV]: '1', ...(store === '' ? {} : { [PNPM_STORE_ENV]: store }) } })
     let stdout = ''
     let stderr = ''
     let timedOut = false
@@ -2090,6 +2093,25 @@ async function homeFor($: EngineInterface): Promise<string> {
   const windows = (await osOf($)) === WINDOWS_OS
   const home = homeOf(windows, await $.env.get('HOME'), await $.env.get('USERPROFILE'))
   return windows ? slashed(home) : home
+}
+
+// The check's MCP servers (checkMcpConfig), from Claude Code's .claude.json: in the config
+// folder when CLAUDE_CONFIG_DIR names one, else in the home. Only the agentsview entry is
+// taken; nothing else in the file is kept or sent. None when neither can be read, a file past
+// the engine's 4 MiB read limit among them: the checker reads the record through the agentsview
+// command either way.
+async function checkMcp($: EngineInterface, home: string): Promise<string> {
+  try {
+    const set = await $.env.get('CLAUDE_CONFIG_DIR')
+    const files = [...(set !== undefined && set !== '' ? [`${set.replace(/\/+$/, '')}/.claude.json`] : []), `${home}/.claude.json`]
+    for (const f of files) {
+      const text = await readText($, f)
+      if (text !== null) return checkMcpConfig(text)
+    }
+  } catch {
+    // none
+  }
+  return checkMcpConfig(null)
 }
 
 // pnpm's store as pnpm names it in the copy, outside the fence, its pnpmfile ignored, its

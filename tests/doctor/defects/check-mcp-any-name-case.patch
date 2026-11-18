@@ -1,0 +1,14 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 013303a..0dad98d 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3767,7 +3767,8 @@ export const checkMcpConfig = (claudeJson: string | null): string => {
+   try {
+     const servers = (JSON.parse(claudeJson) as { mcpServers?: unknown } | null)?.mcpServers
+     if (typeof servers !== 'object' || servers === null || Array.isArray(servers)) return none
+-    const entry = (servers as Record<string, unknown>)[CHECK_MCP_SERVER]
++    const key = Object.keys(servers).find(k => k.toLowerCase() === CHECK_MCP_SERVER) ?? CHECK_MCP_SERVER
++    const entry = (servers as Record<string, unknown>)[key]
+     if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) return none
+     return JSON.stringify({ mcpServers: { [CHECK_MCP_SERVER]: entry } })
+   } catch {
