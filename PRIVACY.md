@@ -18,7 +18,8 @@ anything, it keeps:
   the last three cards' messages;
 - the notes the rep has shown, and the text of up to 10 notes other mods drew in the strip,
   so none is repeated;
-- counters of what the rep has spent, and of how its model calls came back and were read.
+- counters of what the rep has spent, and of how its model calls came back and were read, and
+  of how many helpers and Codex runs the agent started (counts only, no text).
 
 It also keeps a list of up to 200 of its own drafts from sessions that have left the store,
 so a message it wrote is never mistaken for one of yours.

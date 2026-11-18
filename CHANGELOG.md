@@ -29,7 +29,9 @@ What changed in each release of Owner Rep, newest first. The full record is the
   only on a hands-on look by a helper that did not build it, Codex, or the rep's own check;
   a fact still closes on the command and what it printed. Anyone else's look, the agent's
   above all, is kept and shown on the card and on its count line, by who looked, and that part
-  stays open.
+  stays open. A look by a helper or Codex counts only when the session shows one was started,
+  and a look written as not done yet, denied, empty, or by one that says it fixed the work never
+  counts.
 
 ## 0.7.5 (14 November 2026)
 

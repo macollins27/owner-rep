@@ -327,7 +327,15 @@ the objective writer now marks each condition as a kind: `works` (the work does 
 or is good) or `fact` (a file, a version, a command's output). A fact closes on its proof; a
 works condition, and one with no kind (all conditions written before kinds), closes only on a
 signing look. Once works, a condition stays works through any rewrite, so a later write cannot
-make the agent's own run enough. The note of whose looks are in also goes on the count line,
+make the agent's own run enough. A second Codex review of that version (session 6c159ee6)
+found the closed list still took the reader's word: a where reading "look by Codex: …" signed
+off though no Codex had run, and so did "No look by Codex: …", an empty look, one still to come
+and one by a signer saying it fixed the work. A look now signs off only when the record holds a
+run of the one it names: the rep counts each helper the agent starts and each `codex` run as the
+tool call returns, and the check signs only in its own marks. The same review made a condition
+of no kind stay works when a rewrite calls it fact, reopened a shown fact rewritten as works,
+read a "fact" about the result working, loading or passing as works, and took who looked from
+the newest where alone. The note of whose looks are in also goes on the count line,
 which comes back right after the card's head, because at 80 rows the condition lines that carried
 it were not drawn.
 
@@ -587,7 +595,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 644 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 647 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: twelve real sessions in tmux, the strip captured to tests/live/captures
 ```
