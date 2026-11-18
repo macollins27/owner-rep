@@ -109,7 +109,7 @@ const OBJECTIVE_FIXTURE: Objective = {
   purpose: 'So he can use it every day.',
   done: [
     { text: 'the newest build installed', state: 'not-shown', by: '', kind: 'fact' },
-    { text: 'the two sessions finished', state: 'open', by: '', kind: 'fact' },
+    { text: 'the two sessions pushed their work', state: 'open', by: '', kind: 'fact' },
   ],
   step: 'The agent checks the two sessions.',
 }
@@ -266,7 +266,7 @@ const OPEN_JOB = (): Record<string, unknown> => ({
 })
 
 // OPEN_JOB's conditions, both still open, both facts a log or a printed result shows.
-const OPEN_JOB_OPEN: Condition[] = [{ ...c('the newest build installed', 'not-shown'), kind: 'fact' }, { ...c('two sessions finished', 'open'), kind: 'fact' }]
+const OPEN_JOB_OPEN: Condition[] = [{ ...c('the newest build installed', 'not-shown'), kind: 'fact' }, { ...c('two sessions pushed their work', 'open'), kind: 'fact' }]
 
 // The planted record kept for the test to read back; the session's start is answered.
 const openJob = (on: On) => {
@@ -291,7 +291,7 @@ const ALL_SHOWN = (): Record<string, unknown> => ({
       objective: {
         ...OBJ_FIXTURE,
         result: 'The release built and installed here.',
-        done: [{ ...c('the newest build installed', 'shown', 'the install log printed the revision'), kind: 'fact' }, { ...c('two sessions finished', 'shown', 'both sessions printed their results'), kind: 'fact' }],
+        done: [{ ...c('the newest build installed', 'shown', 'the install log printed the revision'), kind: 'fact' }, { ...c('two sessions pushed their work', 'shown', 'both sessions printed their results'), kind: 'fact' }],
         from: 1,
       },
       jobStart: 1,
@@ -633,8 +633,9 @@ test('the brief keeps every judgment line word for word and stays under its word
   expect(b).toContain(LOOK_RULE)
   expect(w).toContain(LOOK_RULE)
   // 3,350 for the Heads up alone: it carries LIST_GAP_RULE, about 130 words, and the briefing does not.
-  // 4,050 since G44, for LOOK_RULE as above.
-  expect(words(w)).toBeLessThan(4050)
+  // 4,050 since G44, for LOOK_RULE as above. 4,080 since the sign-off by the record (third Codex
+  // review of #53): LOOK_RULE says how a look names its run, about 15 words.
+  expect(words(w)).toBeLessThan(4080)
   // The bookkeeping the code enforces is gone from the brief.
   for (const gone of ['under the rule given with the conditions', 'sent after #', 'never the number of a draft', 'A later message replaces an earlier one only where the owner says so', 'Each condition of "done" stays open until the conversation shows it']) {
     expect(b).not.toContain(gone)
@@ -713,28 +714,28 @@ test('gateVerdict keeps a next and a message that do not say stop, replaces the 
   expect(g.refused).toBe(true)
   expect(g.replaced).toEqual(['means'])
   expect(g.answer).toMatchObject({ verdict: 'continue', well: '', means: OPEN_MEANS(OPEN_JOB_OPEN), next: 'Show the two sessions finishing.', message: 'Show me each session finishing.', does: 'Makes the agent show the sessions.' })
-  expect(g.answer.leftOut).toEqual(['the newest build installed (not shown)', 'two sessions finished'])
+  expect(g.answer.leftOut).toEqual(['the newest build installed (not shown)', 'two sessions pushed their work'])
   // A next step that says stop and an empty message are the rep's own, and so are the meaning and what the message does; what stands is the model's.
   const s = parseBrief('verdict: stop\nwell: All done.\nstands: s\nmeans: m\nleft:\n- nothing\nnext: Stop.\nmessage:\nend\ndoes:')
-  const open = [c('the newest build installed', 'not-shown'), c('two sessions finished', 'open')]
+  const open = [c('the newest build installed', 'not-shown'), c('two sessions pushed their work', 'open')]
   const all = gateVerdict(s, open)
   expect(all.refused).toBe(true)
   expect(all.replaced).toEqual(['means', 'next', 'message'])
   expect(all.answer.verdict).toBe('continue')
   expect(all.answer.well).toBe('')
-  expect(all.answer.next).toBe('The job is still open: the newest build installed; two sessions finished. The agent shows these, or says what stands in the way, before anything stops.')
-  expect(all.answer.leftOut).toEqual(['the newest build installed (not shown)', 'two sessions finished'])
-  expect(all.answer.means).toBe('The agent has not shown the objective complete: the newest build installed (not shown); two sessions finished are still open.')
-  expect(all.answer.message).toBe('The job is not finished. These conditions of done are still open:\n- the newest build installed (not shown)\n- two sessions finished\nBefore anything stops, show each one working, or say what stands in the way. If a step needs my go-ahead, hold it: finish the rest, and tell me what you will show me when I give it.')
+  expect(all.answer.next).toBe('The job is still open: the newest build installed; two sessions pushed their work. The agent shows these, or says what stands in the way, before anything stops.')
+  expect(all.answer.leftOut).toEqual(['the newest build installed (not shown)', 'two sessions pushed their work'])
+  expect(all.answer.means).toBe('The agent has not shown the objective complete: the newest build installed (not shown); two sessions pushed their work are still open.')
+  expect(all.answer.message).toBe('The job is not finished. These conditions of done are still open:\n- the newest build installed (not shown)\n- two sessions pushed their work\nBefore anything stops, show each one working, or say what stands in the way. If a step needs my go-ahead, hold it: finish the rest, and tell me what you will show me when I give it.')
   expect(all.answer.does).toBe('Keeps the agent on the job until it shows each open condition working or says what stands in the way.')
   expect([all.answer.means, all.answer.message, all.answer.does]).toEqual([OPEN_MEANS(open), OPEN_MESSAGE(open), OPEN_DOES])
   expect(all.answer.stands).toBe('s')
-  expect(OPEN_MEANS([open[1] as Condition])).toBe('The agent has not shown the objective complete: two sessions finished is still open.')
+  expect(OPEN_MEANS([open[1] as Condition])).toBe('The agent has not shown the objective complete: two sessions pushed their work is still open.')
   // The rep's own texts never say stop, so a card gated twice is not refused again, and no condition is listed twice.
   for (const t of [OPEN_NEXT(open), OPEN_MESSAGE(open), UNWRITTEN_NEXT, UNWRITTEN_MESSAGE]) expect(saysStop(t)).toBe(false)
   expect(gateVerdict(all.answer, open).answer.leftOut).toEqual(all.answer.leftOut)
-  expect(gateVerdict({ ...s, leftOut: ['the newest build installed (not shown)', 'two sessions finished (open)'] }, open).answer.leftOut)
-    .toEqual(['the newest build installed (not shown)', 'two sessions finished (open)'])
+  expect(gateVerdict({ ...s, leftOut: ['the newest build installed (not shown)', 'two sessions pushed their work (open)'] }, open).answer.leftOut)
+    .toEqual(['the newest build installed (not shown)', 'two sessions pushed their work (open)'])
   expect(gateVerdict(s, []).refused).toBe(false)
   expect(gateVerdict(parseBrief('verdict: continue\nstands: s\nleft:\n- nothing\nnext: Go on.\nmessage:\nend\ndoes:'), open)).toMatchObject({ refused: true, replaced: ['message'] })
   expect(parseBrief('stands: s\nleft:\n- nothing\nshown:\n- a | the diff\nclosed:\n- b | #4\nmessage:\nend\ndoes:')).toMatchObject({ verdict: 'missing', shown: [{ text: 'a', by: 'the diff' }], closed: [{ text: 'b', by: 4 }] })
@@ -746,9 +747,9 @@ const HELD_LINE = 'If a step needs my go-ahead, hold it: finish the rest, and te
 test('a sound card with an empty message and open conditions is refused on the message alone: the fixed text comes in, the model\'s other parts stay, and every open condition joins what was left out', () => {
   const held = 'Before anything stops, show each one working, or say what stands in the way. If a step needs my go-ahead, hold it: finish the rest, and tell me what you will show me when I give it.'
   const asked: Array<[Condition[], string, string[]]> = [
-    [OPEN_JOB_OPEN, `The job is not finished. These conditions of done are still open:\n- the newest build installed (not shown)\n- two sessions finished\n${held}`, ['the laptop', 'the newest build installed (not shown)', 'two sessions finished']],
+    [OPEN_JOB_OPEN, `The job is not finished. These conditions of done are still open:\n- the newest build installed (not shown)\n- two sessions pushed their work\n${held}`, ['the laptop', 'the newest build installed (not shown)', 'two sessions pushed their work']],
     [[c('the newest build installed', 'not-shown')], `The job is not finished. These conditions of done are still open:\n- the newest build installed (not shown)\n${held}`, ['the laptop', 'the newest build installed (not shown)']],
-    [openConditions({ done: [c('two sessions finished', 'open'), c('the newest build installed', 'shown', 'the log')] } as Objective), `The job is not finished. These conditions of done are still open:\n- two sessions finished\n${held}`, ['the laptop', 'two sessions finished']],
+    [openConditions({ done: [c('two sessions pushed their work', 'open'), c('the newest build installed', 'shown', 'the log')] } as Objective), `The job is not finished. These conditions of done are still open:\n- two sessions pushed their work\n${held}`, ['the laptop', 'two sessions pushed their work']],
   ]
   for (const [open, message, leftOut] of asked) {
     const g = gateVerdict(EMPTY_CARD, open)
@@ -822,7 +823,7 @@ test('gateVerdict replaces, beside the meaning, only the part that says stop: a 
   expect(none.replaced).toEqual(['means', 'next', 'message'])
   expect(none.answer).toMatchObject({ means: UNWRITTEN_MEANS, next: UNWRITTEN_NEXT, message: UNWRITTEN_MESSAGE, does: UNWRITTEN_DOES })
   const go = parseBrief('verdict: continue\nstands: Both parts are finished.\nmeans: m\nleft:\n- nothing\nnext: Run the suite and show it passing.\nmessage:\nShow me the suite passing.\nend\ndoes: d')
-  const open = [c('two sessions finished', 'open')]
+  const open = [c('two sessions pushed their work', 'open')]
   // No objective written: nothing may stop or be called going well; the meaning and next step are the rep's, and a sound message stands with what it does.
   expect(gateVerdict(go, null).refused).toBe(false)
   const u = gateVerdict({ ...go, verdict: 'stop' }, null)
@@ -849,7 +850,7 @@ test('gateVerdict replaces, beside the meaning, only the part that says stop: a 
   expect(goesOn.refused).toBe(false)
   expect(goesOn.answer.next).toBe("Don't stop until both sessions are shown.")
   // Steps that go on and carry a nearby word are let through.
-  for (const next of ['Finish the two sessions, then show each one done.', 'Complete the install and show the new version running.', 'Show the two sessions finished, one by one.']) {
+  for (const next of ['Finish the two sessions, then show each one done.', 'Complete the install and show the new version running.', 'Show the two sessions pushed their work, one by one.']) {
     expect(STOP_NEXT.test(next)).toBe(false)
     expect(gateVerdict({ ...go, next }, open).refused).toBe(false)
   }
@@ -858,9 +859,9 @@ test('gateVerdict replaces, beside the meaning, only the part that says stop: a 
 test('takeOwnWords takes a rewritten part only where the gate replaced one and the new part does not say stop', () => {
   const gated = gateVerdict(parseBrief('verdict: stop\nwell:\nstands: Both parts are finished.\nmeans: Nothing is left.\nleft:\n- nothing\nnext: Stop the agent.\nmessage:\nWrap up and stop here.\nend\ndoes: Makes the agent stop.'), OPEN_JOB_OPEN)
   expect(gated.replaced).toEqual(['means', 'next', 'message'])
-  const own = parseBrief('means: The build is made, but you cannot yet see it installed or the two sessions finished.\nnext: The agent should stop now.\nmessage:\nShow me the install log and each of the two sessions finishing.\nend\ndoes: Makes the agent show the install and the sessions.')
+  const own = parseBrief('means: The build is made, but you cannot yet see it installed or the two sessions pushed their work.\nnext: The agent should stop now.\nmessage:\nShow me the install log and each of the two sessions finishing.\nend\ndoes: Makes the agent show the install and the sessions.')
   const t = takeOwnWords(gated.answer, gated.replaced, own)
-  expect(t.means).toBe('The build is made, but you cannot yet see it installed or the two sessions finished.')
+  expect(t.means).toBe('The build is made, but you cannot yet see it installed or the two sessions pushed their work.')
   expect(t.next).toBe(OPEN_NEXT(OPEN_JOB_OPEN))
   expect(t.message).toBe('Show me the install log and each of the two sessions finishing.')
   expect(t.does).toBe('Makes the agent show the install and the sessions.')
@@ -1916,8 +1917,8 @@ test('rule: OWN_WORDS_SYSTEM is the brief\'s who-you-are and how-you-write secti
   expect(p).toContain('and asking it once more did not change that, while these conditions of done are still open:')
   expect(p).not.toMatch(/asked twice|both of its answers/)
   expect(p).toContain('\nstands: Both parts are finished.\n')
-  expect(p).toMatch(/\nleft:\n- the notes not updated\n- the newest build installed \(not shown\)\n- two sessions finished\n/)
-  expect(p).toMatch(/still open:\n- fact: the newest build installed \(not shown\)\n- fact: two sessions finished\n/)
+  expect(p).toMatch(/\nleft:\n- the notes not updated\n- the newest build installed \(not shown\)\n- two sessions pushed their work\n/)
+  expect(p).toMatch(/still open:\n- fact: the newest build installed \(not shown\)\n- fact: two sessions pushed their work\n/)
   for (const label of ['means: <', 'next: <', 'message:\n<', '\nend\n', 'does: <']) expect(p).toContain(label)
   // What it writes is read by the briefing's own parser.
   expect(parseBrief('means: M.\nnext: N.\nmessage:\nM1\nM2\nend\ndoes: D.')).toMatchObject({ means: 'M.', next: 'N.', message: 'M1\nM2', does: 'D.' })
@@ -1943,7 +1944,7 @@ test('rule: the rep speaks of the owner, never by a pronoun: no brief, writer pr
 
 test('STOP_NEXT refuses only a next step that stops the agent or the job, calls the work finished, or says nothing is left, and never the rep\'s own texts', () => {
   const go = parseBrief('verdict: continue\nstands: s\nmeans: m\nleft:\n- nothing\nnext: n\nmessage:\nShow me.\nend\ndoes: d')
-  const open = [c('two sessions finished', 'open')]
+  const open = [c('two sessions pushed their work', 'open')]
   const refuse = [
     'Stop.',
     'The agent can stop here.',
@@ -2091,7 +2092,7 @@ test('STOP_NEXT refuses only a next step that stops the agent or the job, calls 
   // The rep's own texts, over conditions that carry the words, never match.
   const lists = [
     open,
-    [c('the newest build installed', 'not-shown'), c('two sessions finished', 'open')],
+    [c('the newest build installed', 'not-shown'), c('two sessions pushed their work', 'open')],
     [c('the stop button fixed on the player page', 'open'), c('the work done and shown on his Mac', 'not-shown')],
     [c('nothing left for him or a next session', 'open'), c('the install complete on his Mac', 'open'), c('every session stopped cleanly', 'open')],
   ]
@@ -5237,16 +5238,16 @@ test('rule: a reader cannot close a condition by citing an approved plan or a ye
   })
   on('session.start', (_$, e) => ({ cwd: e.cwd }))
   quietBand(on)
-  let closed = 'closed:\n- the two sessions finished | #2\n- the two sessions finished | #3\n'
+  let closed = 'closed:\n- the two sessions pushed their work | #2\n- the two sessions pushed their work | #3\n'
   on('model.fork', () => ({ value: { isAnswered: true, text: `state: stopped\nflag: none\nwhy: \nshown:\n- nothing\n${closed}`, usage: USAGE } }))
   await started($)
   await $.turn.complete(stop('t1'))
   await settle($)
-  expect(rec()?.objective?.done.find(c => c.text === 'the two sessions finished')?.state).toBe('open')
-  closed = 'closed:\n- the two sessions finished | #4\n'
+  expect(rec()?.objective?.done.find(c => c.text === 'the two sessions pushed their work')?.state).toBe('open')
+  closed = 'closed:\n- the two sessions pushed their work | #4\n'
   await $.turn.complete(stop('t2'))
   await settle($)
-  expect(rec()?.objective?.done.find(c => c.text === 'the two sessions finished')).toMatchObject({ state: 'closed', by: '#4' })
+  expect(rec()?.objective?.done.find(c => c.text === 'the two sessions pushed their work')).toMatchObject({ state: 'closed', by: '#4' })
 })
 
 test('guard: Check it keeps the lost-record warning on the card it rewrites, and no stop stands beside it', async ($, on) => {
@@ -7697,12 +7698,12 @@ test('draftSplit: a draft with a paragraph break is recognised kept or flattened
 test('objectiveText and parseObjective round the parts, and bad answers parse to null', () => {
   const o: Objective = { result: 'The spec finished and running on his Mac.', purpose: 'So the fleet record serves him.', step: 'The review.', done: [
     { text: 'the newest build installed', state: 'not-shown', by: '' },
-    { text: 'the two sessions finished', state: 'open', by: '' },
+    { text: 'the two sessions pushed their work', state: 'open', by: '' },
     { text: 'the roadmap corrected', state: 'shown', by: 'the agent printed the diff' },
   ], openedAt: 0, since: 1, from: 1, movedAt: null, cause: '', revisions: 0, versions: [] }
-  expect(objectiveText(o)).toBe('The spec finished and running on his Mac. So the fleet record serves him. Done when: the newest build installed (not shown); the two sessions finished; the roadmap corrected (shown). Right now: The review.')
+  expect(objectiveText(o)).toBe('The spec finished and running on his Mac. So the fleet record serves him. Done when: the newest build installed (not shown); the two sessions pushed their work; the roadmap corrected (shown). Right now: The review.')
   expect(firstSentence(objectiveText(o))).toBe('The spec finished and running on his Mac.')
-  expect(openConditions(o).map(c => c.text)).toEqual(['the newest build installed', 'the two sessions finished'])
+  expect(openConditions(o).map(c => c.text)).toEqual(['the newest build installed', 'the two sessions pushed their work'])
   const a = parseObjective('objective: moved\nmoved: #1 opened the job\nresult: R.\nfor: F.\ndone:\n- a | open\n- b | not shown\n- c | shown: the test printed\n- d | closed: #3\n- e\nstep: S.\ndropped:\n- old one | #2\n- other')
   expect(a).toEqual({ kind: 'moved', cause: '#1 opened the job', isNewJob: false, parts: { result: 'R.', purpose: 'F.', step: 'S.', done: [
     { text: 'a', state: 'open', by: '' }, { text: 'b', state: 'not-shown', by: '' }, { text: 'c', state: 'shown', by: 'the test printed' }, { text: 'd', state: 'closed', by: '#3' }, { text: 'e', state: 'open', by: '' } ] },
@@ -7981,8 +7982,8 @@ test('a condition listed twice is kept once, and texts are compared without a st
 })
 
 test('mergeConditions keeps every held condition the model drops without the owner\'s cited message', () => {
-  const held = [c('install the newest build', 'not-shown'), c('two sessions finished', 'open'), c('roadmap fixed', 'shown', 'diff printed')]
-  const proposed = [c('two sessions finished', 'open')]
+  const held = [c('install the newest build', 'not-shown'), c('two sessions pushed their work', 'open'), c('roadmap fixed', 'shown', 'diff printed')]
+  const proposed = [c('two sessions pushed their work', 'open')]
   expect(mergeConditions(held, proposed, [], [1, 2])).toEqual([held[1], held[0], held[2]])
   expect(mergeConditions(held, proposed, [{ text: 'install the newest build', by: 2 }], [1, 2])).toEqual([held[1], held[2]])
   expect(mergeConditions(held, proposed, [{ text: 'install the newest build', by: 3 }], [1, 2])).toEqual([held[1], held[0], held[2]])   // #3 is a draft, not his
@@ -7994,15 +7995,15 @@ test('mergeConditions keeps every held condition the model drops without the own
 
 test('mergeConditions never raises a state: a held condition keeps its state unless the proposed one closes it, and a new one proposed shown starts open', () => {
   const reopened: Condition = { text: 'the newest build installed', state: 'not-shown', by: 'the install failed', reopened: true }
-  const held = [reopened, c('two sessions finished', 'open'), c('roadmap fixed', 'shown', 'diff printed'), c('the year current', 'not-shown')]
+  const held = [reopened, c('two sessions pushed their work', 'open'), c('roadmap fixed', 'shown', 'diff printed'), c('the year current', 'not-shown')]
   const proposed = [
     c('the newest build installed', 'shown', 'the agent said so'),
-    c('two sessions finished', 'shown', 'the agent said so'),
+    c('two sessions pushed their work', 'shown', 'the agent said so'),
     c('roadmap fixed', 'open'),
     c('the year current', 'open'),
     c('the notes updated', 'shown', 'the agent said so'),
   ]
-  expect(mergeConditions(held, proposed, [], [2])).toEqual([reopened, c('two sessions finished', 'open'), c('roadmap fixed', 'shown', 'diff printed'), c('the year current', 'not-shown'), c('the notes updated', 'open')])
+  expect(mergeConditions(held, proposed, [], [2])).toEqual([reopened, c('two sessions pushed their work', 'open'), c('roadmap fixed', 'shown', 'diff printed'), c('the year current', 'not-shown'), c('the notes updated', 'open')])
   // A proposed text with the check's mark copied onto it still matches the held one.
   expect(mergeConditions(held, [c('the newest build installed (not shown: the check found the install failed)', 'shown', 'x')], [], [2])[0]).toMatchObject({ state: 'not-shown', reopened: true })
   // Closing is the one move the writer makes, under the citation rules applied before the merge; the closed condition is no longer reopened.
@@ -8061,13 +8062,13 @@ test('rule: a briefing that says stop while a condition is open is asked once mo
   expect(prompts).toHaveLength(2)
   expect(prompts[1]?.startsWith(prompts[0] ?? '-')).toBe(true)
   expect(prompts[0]).not.toMatch(/## Asked once more/)
-  expect(again(prompts[1])).toMatch(/^## Asked once more\n\nYour first answer said the agent should stop, gave no verdict, called the work finished, or said the work is going well, while these conditions of done are still open:\n- fact: the newest build installed \(not shown\)\n- fact: two sessions finished\n/)
+  expect(again(prompts[1])).toMatch(/^## Asked once more\n\nYour first answer said the agent should stop, gave no verdict, called the work finished, or said the work is going well, while these conditions of done are still open:\n- fact: the newest build installed \(not shown\)\n- fact: two sessions pushed their work\n/)
   expect(again(prompts[1])).toMatch(/the verdict is "continue", "well" is empty, and "next" and "message" say what the agent does now to show it, or what stands in the way/)
   // Then one plain call, no fork, over what the rep found and the open conditions.
   expect(asks).toHaveLength(1)
   expect(asks[0]).toMatchObject({ maxTokens: OWN_WORDS_MAX_TOKENS, effort: 'high', timeoutMs: OWN_WORDS_TIMEOUT_MS })
   expect(asks[0]?.prompt).toContain('stands: Both parts are finished.')
-  expect(asks[0]?.prompt).toMatch(/still open:\n- fact: the newest build installed \(not shown\)\n- fact: two sessions finished\n/)
+  expect(asks[0]?.prompt).toMatch(/still open:\n- fact: the newest build installed \(not shown\)\n- fact: two sessions pushed their work\n/)
   expect(asks[0]?.prompt).toContain('- #1 ship the release and install it here')
   // The card: the own-words meaning, next step, message and what it does; no going-well line; both conditions left out; what stands kept.
   expect(await ui.find({ type: 'Text', text: /^Next: Show the install log, then each session finishing\.$/ })).toBeDefined()
@@ -8079,7 +8080,7 @@ test('rule: a briefing that says stop while a condition is open is asked once mo
   expect(await greens(ui)).toEqual([])
   expect(await ui.find({ type: 'Text', text: /^Left out:$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /^ {2}- the newest build installed \(not shown\)$/ })).toBeDefined()
-  expect(await ui.find({ type: 'Text', text: /^ {2}- two sessions finished$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^ {2}- two sessions pushed their work$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /^Stands: Both parts are finished\.$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /Wrap up and stop here|Makes the agent stop|Nothing is waiting|The job is still open|The job is not finished/ })).toBeUndefined()
   expect(await ui.find({ key: 'put' })).toBeDefined()
@@ -8133,7 +8134,7 @@ test('rule: a briefing refused twice whose own-words call fails keeps the rep\'s
   expect(await ui.find({ type: 'Text', text: OPEN_MESSAGE(OPEN_JOB_OPEN) })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: OPEN_DOES })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /^ {2}- the newest build installed \(not shown\)$/ })).toBeDefined()
-  expect(await ui.find({ type: 'Text', text: /^ {2}- two sessions finished$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^ {2}- two sessions pushed their work$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /Stop the agent|Wrap up and stop here|Makes the agent stop|Nothing is waiting/ })).toBeUndefined()
   expect(await greens(ui)).toEqual([])
   await ui.unmount()
@@ -8200,7 +8201,7 @@ const showsExactly = async (ui: { findAll: (q: { type: string }) => Promise<Arra
 // A sound answer with no message, and a stop whose message is usable; the fixed text as a literal.
 const EMPTY_BRIEF = () => 'verdict: continue\nwell:\nstands: Both parts are built.\nmeans: The build is made and nothing shows it running.\nleft:\n- nothing\nnext: Show the two sessions finishing.\nmessage:\nend\ndoes: Makes the agent show the sessions.'
 const USABLE_BRIEF = (verdict: string, well = '') => `verdict: ${verdict}\nwell:${well}\nstands: Both parts are built.\nmeans: The build is made and nothing shows it running.\nleft:\n- nothing\nnext: Show the two sessions finishing.\nmessage:\nShow me each session finishing.\nend\ndoes: Makes the agent show the sessions.`
-const FIXED_TEXT = 'The job is not finished. These conditions of done are still open:\n- the newest build installed (not shown)\n- two sessions finished\nBefore anything stops, show each one working, or say what stands in the way. If a step needs my go-ahead, hold it: finish the rest, and tell me what you will show me when I give it.'
+const FIXED_TEXT = 'The job is not finished. These conditions of done are still open:\n- the newest build installed (not shown)\n- two sessions pushed their work\nBefore anything stops, show each one working, or say what stands in the way. If a step needs my go-ahead, hold it: finish the rest, and tell me what you will show me when I give it.'
 
 test('rule: Brief me, read 1 with no message while work is open: read 2 is told so, and read 2\'s message is the card\'s', async ($, on) => {
   const rec = openJob(on)
@@ -8466,13 +8467,13 @@ test('rule: a briefing refused twice for its verdict alone keeps the model\'s ow
   await ui.press({ key: 'rep' })
   expect(forks).toBe(2)
   expect(asks).toHaveLength(1)
-  expect(asks[0]?.prompt).toMatch(/still open:\n- fact: the newest build installed \(not shown\)\n- fact: two sessions finished\n/)
+  expect(asks[0]?.prompt).toMatch(/still open:\n- fact: the newest build installed \(not shown\)\n- fact: two sessions pushed their work\n/)
   expect(await ui.find({ type: 'Text', text: /^Next: Finish the two sessions, then show each one done\.$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /^Finish the two sessions and show me each one done\.$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /^Makes the agent finish the sessions\.$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /^Means: The agent calls the job finished, but the install and the two sessions are not shown\.$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /Show the install log|Show me the install log|Nothing is waiting|The job is still open|The job is not finished/ })).toBeUndefined()
-  expect(await ui.find({ type: 'Text', text: /^ {2}- two sessions finished$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^ {2}- two sessions pushed their work$/ })).toBeDefined()
   expect(await greens(ui)).toEqual([])
   await ui.unmount()
   expect(rec()?.calls).toBe(3)
@@ -8485,7 +8486,7 @@ test('rule: a briefing asked once more that answers continue is the card shown, 
   quietBand(on)
   const answers = [
     STOP_BRIEF(),
-    'verdict: continue\nwell:\nstands: The build is made.\nmeans: The two sessions are still waiting.\nleft:\n- two sessions finished\nnext: Finish the two sessions, then show each one done.\nmessage:\nFinish the two sessions and show me each one done.\nend\ndoes: Makes the agent finish the sessions.',
+    'verdict: continue\nwell:\nstands: The build is made.\nmeans: The two sessions are still waiting.\nleft:\n- two sessions pushed their work\nnext: Finish the two sessions, then show each one done.\nmessage:\nFinish the two sessions and show me each one done.\nend\ndoes: Makes the agent finish the sessions.',
   ]
   const prompts: string[] = []
   on('model.fork', (_$, e) => {
@@ -8522,34 +8523,34 @@ test('rule: a briefing that marks a condition shown moves it, and stop is allowe
     return { value: { isAnswered: true, text: answer, usage: USAGE } }
   })
   // A closed line citing the rep's own draft (#3) closes nothing, so the stop is still refused.
-  answer = STOP_BRIEF('shown:\n- the newest build installed | the install log printed the revision\nclosed:\n- two sessions finished | #3\n')
+  answer = STOP_BRIEF('shown:\n- the newest build installed | the install log printed the revision\nclosed:\n- two sessions pushed their work | #3\n')
   await started($)
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   await ui.press({ key: 'rep' })
   expect(rec()?.objective?.done).toEqual([
     { text: 'the newest build installed', state: 'shown', by: 'the install log printed the revision', kind: 'fact' },
-    { text: 'two sessions finished', state: 'open', by: '', kind: 'fact' },
+    { text: 'two sessions pushed their work', state: 'open', by: '', kind: 'fact' },
   ])
   expect(prompts).toHaveLength(2)
   expect(prompts[0]).toMatch(/mark one closed only with the number of a message of the owner's own that closes it\./)
-  expect(again(prompts[1])).toMatch(/still open:\n- fact: two sessions finished\n\n/)
-  expect(await ui.find({ type: 'Text', text: /^Next: The job is still open: two sessions finished\./ })).toBeDefined()
+  expect(again(prompts[1])).toMatch(/still open:\n- fact: two sessions pushed their work\n\n/)
+  expect(await ui.find({ type: 'Text', text: /^Next: The job is still open: two sessions pushed their work\./ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /All done/ })).toBeUndefined()
   await ui.press({ key: 'close' })
   // The owner's own message (#2) closes the other; with every condition shown or closed the stop stands, asked once.
-  answer = STOP_BRIEF('closed:\n- two sessions finished | #2\n')
+  answer = STOP_BRIEF('closed:\n- two sessions pushed their work | #2\n')
   await ui.press({ key: 'rep' })
   expect(prompts).toHaveLength(3)
   expect(rec()?.lastBrief?.reads).toBe(1)
   expect(rec()?.objective?.done).toEqual([
     { text: 'the newest build installed', state: 'shown', by: 'the install log printed the revision', kind: 'fact' },
-    { text: 'two sessions finished', state: 'closed', by: '#2', kind: 'fact' },
+    { text: 'two sessions pushed their work', state: 'closed', by: '#2', kind: 'fact' },
   ])
   expect(await ui.find({ type: 'Text', text: /^Next: Stop the agent; the job is finished\.$/ })).toBeDefined()
   expect(await greens(ui)).toEqual(['All done.'])
   expect(await ui.find({ type: 'Text', text: /^Left out:$/ })).toBeUndefined()
   expect(await ui.find({ type: 'Text', text: /The job is still open/ })).toBeUndefined()
-  expect(await ui.find({ type: 'Text', text: /Done when: the newest build installed \(shown\); two sessions finished \(closed\)\./ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Done when: the newest build installed \(shown\); two sessions pushed their work \(closed on your word, #2\)\./ })).toBeDefined()
   await ui.unmount()
 })
 
@@ -8560,20 +8561,20 @@ test('rule: the watch marks a condition shown and flags work called finished whi
   on('model.fork', () => ({
     value: {
       isAnswered: true,
-      text: `state: stopped\nflag: ${flag}\nwhy: Its last message says done, and nothing shows the two sessions finished.\nshown:\n- the newest build installed | the install log printed the revision\nclosed:\n- two sessions finished | #3`,
+      text: `state: stopped\nflag: ${flag}\nwhy: Its last message says done, and nothing shows the two sessions pushed their work.\nshown:\n- the newest build installed | the install log printed the revision\nclosed:\n- two sessions pushed their work | #3`,
       usage: USAGE,
     },
   }))
   await $.turn.complete(stop('t1', 'All finished.'))
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   expect(await ui.find({ type: 'Text', text: flag })).toBeDefined()
-  expect(await ui.find({ type: 'Text', text: /nothing shows the two sessions finished/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /nothing shows the two sessions pushed their work/ })).toBeDefined()
   expect(await ui.find({ key: 'fine' })).toBeDefined()
   await ui.unmount()
   // The shown line moves its condition; a draft's number (#3) closes nothing.
   expect(rec()?.objective?.done).toEqual([
     { text: 'the newest build installed', state: 'shown', by: 'the install log printed the revision', kind: 'fact' },
-    { text: 'two sessions finished', state: 'open', by: '', kind: 'fact' },
+    { text: 'two sessions pushed their work', state: 'open', by: '', kind: 'fact' },
   ])
   expect(rec()?.seen).toEqual([flag])
 })
@@ -8613,21 +8614,21 @@ test('rule: a check that says stop while a condition is open is refused on the c
   // The check's marks are taken; one condition stays open, so its stop is refused, with no second run.
   expect(rec()?.objective?.done.map(x => x.state)).toEqual(['shown', 'open'])
   expect(await ui.find({ type: 'Text', text: /Everything is in place/ })).toBeDefined()
-  expect(await ui.find({ type: 'Text', text: /^Next: The job is still open: two sessions finished\./ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^Next: The job is still open: two sessions pushed their work\./ })).toBeDefined()
   // The checker's meaning is replaced with the rep's, and its next step, which says stop; its own message and what it does stand. Nothing offers a stop.
-  expect(await ui.find({ type: 'Text', text: /^Means: The agent has not shown the objective complete: two sessions finished is still open\.$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^Means: The agent has not shown the objective complete: two sessions pushed their work is still open\.$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /^Show me each of the two sessions finishing, one by one\.$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /^Makes the agent show the sessions\.$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /The job is finished|The job is not finished|Keeps the agent on the job/ })).toBeUndefined()
   expect(await ui.find({ type: 'Text', text: /Stop the agent/ })).toBeUndefined()
   expect(await greens(ui)).toEqual([])
   expect(await ui.find({ type: 'Text', text: /^Left out:$/ })).toBeDefined()
-  expect(await ui.find({ type: 'Text', text: /^ {2}- two sessions finished$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^ {2}- two sessions pushed their work$/ })).toBeDefined()
   expect(forks).toBe(1)
   // The check is not asked again, and its card is not rewritten by an own-words call.
   expect(asks).toHaveLength(0)
   await ui.unmount()
-  expect(rec()?.lastBrief?.next).toMatch(/^The job is still open: two sessions finished\./)
+  expect(rec()?.lastBrief?.next).toMatch(/^The job is still open: two sessions pushed their work\./)
   expect(rec()?.lastBrief?.message).toBe('Show me each of the two sessions finishing, one by one.')
   // The briefing's reads and what came of its own-words call survive the check, which makes no such call.
   expect(rec()?.lastBrief).toMatchObject({ reads: 1, own: 'skipped', ownChars: 0 })
@@ -8637,7 +8638,7 @@ test('rule: a check that says stop while a condition is open is refused on the c
 const CHECKED_SAYING = (verdict: 'stop' | 'continue', message: string): string =>
   JSON.stringify({
     type: 'result',
-    result: `verdict: ${verdict}\nholds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nstands: The build is made.\nmeans: The two sessions are still waiting.\nleft:\n- two sessions finished\nnext: Run the two sessions and show each one finishing.\nmessage:\n${message}\nend\ndoes: Makes the agent show its work.\nlooked: Read the record.`,
+    result: `verdict: ${verdict}\nholds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nstands: The build is made.\nmeans: The two sessions are still waiting.\nleft:\n- two sessions pushed their work\nnext: Run the two sessions and show each one finishing.\nmessage:\n${message}\nend\ndoes: Makes the agent show its work.\nlooked: Read the record.`,
     usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
   })
 
@@ -8695,7 +8696,7 @@ test('rule: a check that shows every condition after a refused briefing does not
       stream: 'stdout',
       text: JSON.stringify({
         type: 'result',
-        result: 'verdict: stop\nholds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n- the newest build installed | the install command printed the new version\n- two sessions finished | both session records end with their results\nclosed:\n- nothing\nstands: The build is installed and both sessions are finished.\nmeans: Both conditions are shown in the record.\nleft:\n- nothing\nnext: Stop the agent; the job is finished.\nmessage:\nend\ndoes:\nlooked: Read the record.',
+        result: 'verdict: stop\nholds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n- the newest build installed | the install command printed the new version\n- two sessions pushed their work | both session records end with their results\nclosed:\n- nothing\nstands: The build is installed and both sessions are finished.\nmeans: Both conditions are shown in the record.\nleft:\n- nothing\nnext: Stop the agent; the job is finished.\nmessage:\nend\ndoes:\nlooked: Read the record.',
         usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
       }),
     }
@@ -8766,7 +8767,7 @@ test('rule: a briefing with no verdict line while a condition is open is asked o
   expect(await ui.find({ type: 'Text', text: /^Carry on with the two sessions and show me each one\.$/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: `Means: ${OPEN_MEANS(OPEN_JOB_OPEN)}` })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /the job is done|install log|The job is still open|The job is not finished/ })).toBeUndefined()
-  expect(await ui.find({ type: 'Text', text: /^ {2}- two sessions finished$/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /^ {2}- two sessions pushed their work$/ })).toBeDefined()
   await ui.unmount()
   expect(rec()?.calls).toBe(3)
 })
@@ -8790,10 +8791,10 @@ test('rule: a check that finds a condition held shown is not so moves it back to
   // Every condition held shown: the stop stands on the instant card.
   expect(await ui.find({ type: 'Text', text: /^Next: Stop the agent; the job is finished\.$/ })).toBeDefined()
   await ui.press({ key: 'check' })
-  expect(prompt).toMatch(/Conditions the rep holds shown, each with where it was shown:\n- the newest build installed \| the install log printed the revision\n- two sessions finished \| both sessions printed their results\n/)
+  expect(prompt).toMatch(/Conditions the rep holds shown, each with where it was shown:\n- the newest build installed \| the install log printed the revision\n- two sessions pushed their work \| both sessions printed their results\n/)
   expect(rec()?.objective?.done).toEqual([
     { text: 'the newest build installed', state: 'not-shown', by: 'the install command in the record failed', reopened: true, kind: 'fact' },
-    { text: 'two sessions finished', state: 'shown', by: 'both sessions printed their results', kind: 'fact' },
+    { text: 'two sessions pushed their work', state: 'shown', by: 'both sessions printed their results', kind: 'fact' },
   ])
   expect(await ui.find({ type: 'Text', text: /^Next: The job is still open: the newest build installed\./ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /Stop the agent|Wrap up and stop here/ })).toBeUndefined()
@@ -8829,7 +8830,7 @@ test('rule: the Check card, the instant card passed with a message and the check
 })
 
 test('rule: the Check card, the checker showing every condition and writing no message: the message stays empty', async ($, on) => {
-  expect(await checkedCard($, on, STOP_BRIEF(), CHECK_OUT('continue', { shown: '- the newest build installed | the install log printed the revision\n- two sessions finished | both sessions printed their results' }))).toBe('')
+  expect(await checkedCard($, on, STOP_BRIEF(), CHECK_OUT('continue', { shown: '- the newest build installed | the install log printed the revision\n- two sessions pushed their work | both sessions printed their results' }))).toBe('')
 })
 
 // The condition the check found not so, as the record holds it after the check.
@@ -8897,7 +8898,7 @@ test('rule: the writer never raises a condition: a reopened one it proposes show
   })
   let next = OBJ(
     'The release built and installed here.',
-    ['the newest build installed | shown: the install log printed the revision', 'two sessions finished | shown: both sessions printed their results', 'the release notes updated | shown: the agent said so'],
+    ['the newest build installed | shown: the install log printed the revision', 'two sessions pushed their work | shown: both sessions printed their results', 'the release notes updated | shown: the agent said so'],
     '#2 asked for the release notes too',
   )
   const writes = writer(on, () => next)
@@ -8909,12 +8910,12 @@ test('rule: the writer never raises a condition: a reopened one it proposes show
   await ui.unmount()
   await $.prompt.submit(typed('update the release notes too'))
   await settle($)
-  expect(writes.at(-1)).toMatch(/\ndone:\n- fact: the newest build installed \| not shown: the check found the install command in the record failed\n- fact: two sessions finished \| shown: both sessions printed their results\n/)
+  expect(writes.at(-1)).toMatch(/\ndone:\n- fact: the newest build installed \| not shown: the check found the install command in the record failed\n- fact: two sessions pushed their work \| shown: both sessions printed their results\n/)
   expect(writes.at(-1)).toMatch(/only a later check can mark it shown/)
   expect(rec()?.objective?.from).toBe(2)
   expect(rec()?.objective?.done).toEqual([
     REOPENED,
-    { text: 'two sessions finished', state: 'shown', by: 'both sessions printed their results', kind: 'fact' },
+    { text: 'two sessions pushed their work', state: 'shown', by: 'both sessions printed their results', kind: 'fact' },
     { text: 'the release notes updated', state: 'open', by: '' },
   ])
   // A new job: the old conditions go with the old objective, and nothing it lists starts reopened.
@@ -9149,16 +9150,16 @@ test('the count line names whose looks are in and do not sign off, so a card of 
     ],
   }
   expect(countLine(o)).toBe('Done means 5 things: 1 shown, 4 open (the agent looked at 2 itself; the second helper looked at 1, not counted as someone who did not build it; each still needs a look by someone who did not build it)')
-  expect(objectiveText(o)).toContain('d (looked at by the second helper, not counted as someone who did not build it; it still needs a look by a helper that did not build it, Codex or the check)')
+  expect(objectiveText(o)).toContain('d (looked at by the second helper, not counted as someone who did not build it; it still needs a look by a helper or Codex run that changed nothing, or the check)')
   expect(objectiveText(o)).toContain('b (the agent looked at it itself; it still needs a look by someone who did not build it)')
   // The count line is the first part after the head to come back, so a short card keeps it.
   const long = { ...CARD_TEXT, count: countLine(o), stands: LONG('Stands'), means: LONG('Means'), next: LONG('Next'), message: LONG('Message'), leftOut: ['one', 'two', 'three'] }
   for (const rows of [13, 80]) expect(fillCard(long, rows, 96).count).toBe(countLine(o))
   // Seventy long names (second Codex review of #53): the note is counted, never dropped.
   const many: Objective = { ...OBJ_FIXTURE, done: Array.from({ length: 70 }, (_, i) => ({ ...c(`part ${i}`, 'open'), seen: 'paid', seenBy: `the helper ${i} who wrote and tested checkout component ${i}` })) }
-  expect(countLine(many)).toBe('Done means 70 things: 0 shown, 70 open (others not counted as someone who did not build it looked at 70; each still needs a look by someone who did not build it)')
+  expect(countLine(many)).toBe('Done means 70 things: 0 shown, 70 open (70 more looked at by whoever built it or by no run in the record, not counted; each still needs a look by someone who did not build it)')
   const both: Objective = { ...many, done: [...many.done, { ...c('own', 'open'), seen: 'paid' }] }
-  expect(countLine(both)).toContain('(the agent looked at 1 itself; others not counted as someone who did not build it looked at 70; each still needs a look by someone who did not build it)')
+  expect(countLine(both)).toContain('(the agent looked at 1 itself; 70 more looked at by whoever built it or by no run in the record, not counted; each still needs a look by someone who did not build it)')
   for (const rows of [13, 80]) expect(fillCard({ ...long, count: countLine(many) }, rows, 96).count).toBe(countLine(many))
 })
 
@@ -9414,7 +9415,7 @@ test('rule: the live briefing that wrote the agent\'s own run plainly leaves the
 })
 
 test('rule: a look by anyone not on the sign-off list, here the owner as the agent reports it, leaves the condition open with what the look saw', async ($, on) => {
-  expect(await lookMarks($, on, 'look by the owner: the agent says the owner tried it', x => x?.seen !== undefined)).toEqual({ text: 'the checkout works for a customer', state: 'open', by: '', seen: 'the agent says the owner tried it', seenBy: 'the owner' })
+  expect((await lookMarks($, on, 'look by the owner: the agent says the owner tried it', x => x?.seen !== undefined)).at).toEqual({ text: 'the checkout works for a customer', state: 'open', by: '', seen: 'the agent says the owner tried it', seenBy: 'the owner' })
 })
 
 test('rule: the going-well line does not stand on a checked card beside a false claim or anything left out', async ($, on) => {
@@ -10411,7 +10412,7 @@ test('rule: the check is given the conditions the rep holds open, and its shown 
         type: 'result',
         // A draft's number closes nothing, nor does a message the objective was built from (#1, #2);
         // the owner's own number after it does; a shown line names where the record shows it.
-        result: 'holds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n- the newest build installed | the install command in the record printed the new version\nclosed:\n- the two sessions finished | #3\n- the two sessions finished | #1\n- the README written (open) | #4\nstands: Installed.\nmeans: Half done.\nleft:\n- the two sessions\nnext: Finish them.\nmessage:\nFinish the two sessions.\nend\ndoes: Makes it finish them.\nlooked: Read the record.',
+        result: 'holds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n- the newest build installed | the install command in the record printed the new version\nclosed:\n- the two sessions pushed their work | #3\n- the two sessions pushed their work | #1\n- the README written (open) | #4\nstands: Installed.\nmeans: Half done.\nleft:\n- the two sessions\nnext: Finish them.\nmessage:\nFinish the two sessions.\nend\ndoes: Makes it finish them.\nlooked: Read the record.',
         usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
       }),
     }
@@ -10421,15 +10422,15 @@ test('rule: the check is given the conditions the rep holds open, and its shown 
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
   await ui.press({ key: 'rep' })
   await ui.press({ key: 'check' })
-  expect(prompt).toMatch(/Conditions the rep holds open:\n- fact: the newest build installed \(not shown\)\n- fact: the two sessions finished\n/)
+  expect(prompt).toMatch(/Conditions the rep holds open:\n- fact: the newest build installed \(not shown\)\n- fact: the two sessions pushed their work\n/)
   expect(prompt).toMatch(/Conditions the rep holds shown, each with where it was shown:\n- none\n/)
   expect(prompt).toMatch(/in a message of the owner's own sent after #2, the last message the objective was built from, citing that message as #n/)
   expect(rec()?.objective?.done).toEqual([
     { text: 'the newest build installed', state: 'shown', by: 'the install command in the record printed the new version', kind: 'fact' },
-    { text: 'the two sessions finished', state: 'open', by: '', kind: 'fact' },
+    { text: 'the two sessions pushed their work', state: 'open', by: '', kind: 'fact' },
     { text: 'the README written', state: 'closed', by: '#4' },
   ])
-  expect(await ui.find({ type: 'Text', text: /Done when: the newest build installed \(shown\); the two sessions finished; the README written \(closed\)\./ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Done when: the newest build installed \(shown\); the two sessions pushed their work; the README written \(closed on your word, #4\)\./ })).toBeDefined()
   // The count line under the head moves with the marks the check made.
   expect(await ui.find({ type: 'Text', text: /^Done means 3 things: 1 shown, 1 open, 1 closed by you$/ })).toBeDefined()
   await ui.unmount()
@@ -10529,6 +10530,23 @@ test('humanRead prints only the lines marked human and the plan-screen note line
 })
 
 // --- A reopened session: nothing to fork, so the watch and the briefing read the session's record. ---
+
+test('recordText prints "(run …)", the end of the call\'s id, beside a call that starts a helper\'s or Codex run, and beside no other', () => {
+  const rows: RecordRow[] = [
+    {
+      role: 'assistant',
+      text: 'Getting it looked at.',
+      toolUses: [
+        { tool_use_id: 'toolu_01xyz0001a1b2', tool: 'Agent', input: { description: 'look', prompt: 'pay' }, text: 'paid' },
+        { tool_use_id: 'toolu_01xyz0002c3d4', tool: 'Bash', input: { command: 'codex exec --sandbox read-only "pay"' }, text: 'paid' },
+        { tool_use_id: 'toolu_01xyz0003e5f6', tool: 'Bash', input: { command: 'npm test' }, text: 'ok' },
+        { tool_use_id: 'toolu_01xyz0004a7b8', tool: 'Bash', input: { command: 'echo codex exec' }, text: 'codex exec' },
+      ],
+    },
+  ]
+  const lines = recordText(rows, 1_000_000).text.split('\n').filter(l => l.startsWith('- used'))
+  expect(lines.map(l => l.split(' {')[0])).toEqual(['- used Agent (run 0001a1b2)', '- used Bash (run 0002c3d4)', '- used Bash', '- used Bash'])
+})
 
 test('recordText numbers the session oldest first as entries, never with the # the owner\'s messages carry, puts each tool use on one line, shows tool results as results, cuts a long text at its middle, prints its fence tag with ‹ ›, and leaves out the oldest entries past the budget', () => {
   const rows: RecordRow[] = [
@@ -11972,7 +11990,7 @@ test('rule: the look on a step, at a turn\'s end and after the owner\'s note eac
   for (const p of prompts) expect(p).toMatch(/<\/session_record>\n[\s\S]*^state: /m)
   expect(rec()?.objective?.done).toEqual([
     { text: 'the newest build installed', state: 'shown', by: 'the install command in the record printed installed', kind: 'fact' },
-    { text: 'two sessions finished', state: 'open', by: '', kind: 'fact' },
+    { text: 'two sessions pushed their work', state: 'open', by: '', kind: 'fact' },
   ])
   // The owner's note starts a look that reads the record too, and says he spoke to the rep.
   await $.prompt.submit({ text: 'Owner rep: check the install landed', wait: false, origin: { kind: 'composer' } })
@@ -13375,13 +13393,13 @@ test('rule: after a /clear the owner\'s messages are kept under the new session,
   on('model.fork', async () => {
     const held = holdFork
     if (held) await clock.sleep(2000)
-    const marks = held ? 'shown:\n- the first thing built | the reply printed it\n' : ''
+    const marks = held ? 'shown:\n- the first thing committed | the reply printed it\n' : ''
     return { value: { isAnswered: true, text: `verdict: continue\n${marks}stands: s\nmeans: m\nleft:\n- nothing\nnext: n\nmessage:\nBuild the second thing next.\nend\ndoes: d`, usage: USAGE } }
   })
   // The second write of the old session is still out when the /clear comes.
   const answers = [
-    { hold: false, text: OBJ('The first job, built.', ['fact: the first thing built | open']) },
-    { hold: true, text: OBJ('The first job, built and polished.', ['fact: the first thing built | open'], '#2 added the polish') },
+    { hold: false, text: OBJ('The first job, built.', ['fact: the first thing committed | open']) },
+    { hold: true, text: OBJ('The first job, built and polished.', ['fact: the first thing committed | open'], '#2 added the polish') },
     { hold: false, text: OBJ('The second job, built.', ['the second thing built | open']) },
   ]
   let writes = 0
