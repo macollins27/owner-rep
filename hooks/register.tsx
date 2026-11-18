@@ -68,6 +68,7 @@ import {
   cachedOf,
   checkArgv,
   checkMcpConfig,
+  checkPluginsOff,
   CHECK_ISOLATE_ENV,
   checkCostText,
   countLine,
@@ -1919,6 +1920,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
     const links = await pathLinks($, checkHost, home, path)
     const repos = await gitRepos($, checkHost, home, copy, cwd)
     const mcp = await checkMcp($, home)
+    const plugins = await checkPlugins($, home)
     const prompt = checkPrompt({
       sessionId: sid,
       cwd,
@@ -1933,7 +1935,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       unanswered: [...(links === null ? ['links' as const] : []), ...(repos.whole ? [] : ['repos' as const])],
     })
     const startedAt = Date.now()
-    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, path, links ?? [], repos.dirs), mcp)), cwd: copy, env: { ...CHECK_ISOLATE_ENV, [CHECK_ENV]: '1', ...(store === '' ? {} : { [PNPM_STORE_ENV]: store }) } })
+    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, path, links ?? [], repos.dirs, plugins), mcp)), cwd: copy, env: { ...CHECK_ISOLATE_ENV, [CHECK_ENV]: '1', ...(store === '' ? {} : { [PNPM_STORE_ENV]: store }) } })
     let stdout = ''
     let stderr = ''
     let timedOut = false
@@ -2162,6 +2164,19 @@ async function checkMcp($: EngineInterface, home: string): Promise<string> {
     // none
   }
   return checkMcpConfig(null)
+}
+
+// The owner's plugins to turn off in the check (checkPluginsOff), from the user level's
+// settings.json in the config folder: CLAUDE_CONFIG_DIR when set, else ~/.claude, the file
+// `--setting-sources user` reads. None when it cannot be read.
+async function checkPlugins($: EngineInterface, home: string): Promise<Record<string, false>> {
+  try {
+    const set = await $.env.get('CLAUDE_CONFIG_DIR')
+    const config = set !== undefined && set !== '' ? set.replace(/\/+$/, '') : `${home}/.claude`
+    return checkPluginsOff(await readText($, `${config}/settings.json`))
+  } catch {
+    return {}
+  }
 }
 
 // pnpm's store as pnpm names it in the copy, outside the fence, its pnpmfile ignored, its

@@ -318,9 +318,11 @@ full, this is everything it reads and runs:
   to install from. It runs `mkdir`, `cp` and `rm` to make the throwaway copy and delete it
   afterwards. It reads Claude Code's `.claude.json` (in the folder `CLAUDE_CONFIG_DIR` names,
   else in your home) for one thing, your agentsview server entry, which it gives the check as
-  its only MCP server; nothing else in that file is kept or sent. The check's run loads your
-  user-level settings, so your own hooks still guard it, and leaves out the project's settings,
-  every CLAUDE.md (yours and the agent's), your skills and your other MCP servers: it judges
+  its only MCP server; nothing else in that file is kept or sent. It reads the names of the
+  plugins your Claude Code `settings.json` turns on (in that same folder, else `~/.claude`) and
+  turns each one off in the check. The check's run loads your user-level settings, so your own
+  hooks still guard it, and leaves out the project's settings, every CLAUDE.md (yours and the
+  agent's), your plugins, this one too, your skills and your other MCP servers: it judges
   the agent, and reads the agent's instruction files in its folder only when a claim turns on
   them.
 - **The check itself:** a separate `claude -p` run that may read files, search, run the
@@ -370,7 +372,7 @@ The full design is in [How the owner rep works](docs/how-it-works.md).
 
 ## Built to be trusted
 
-- **647 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
+- **660 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
   the tests.
 - **A doctor that plants bugs.** It plants 568 known defects in a throwaway copy, one at a
   time, and fails the build if the tests miss any of them.

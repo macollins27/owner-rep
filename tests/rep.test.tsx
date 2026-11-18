@@ -17,7 +17,7 @@
 import type { On, SessionMessage } from 'claude-code'
 import { describe, expect, mock, test as kitTest, type Engine, type Plugin, type TestBody, type TestOptions } from 'claude-code/testing'
 
-import { type Memory, CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkMcpConfig, LOOK_RULE, looksOf, signsOff, keptWho, runOf, runFor, runKey, runQualifies, shellChanges, runFromResult, runEnded, RUN_SAID_MAX, factHolds, kindOf, type Look, type Run, checkCostText, checkPrompt, doingFor, firstSentence, fit, fillCard, countLine, refusedLine, type CardText, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, HIS_CUT, TURN_TEXT_MAX, PENDING_MAX, TURNS_KEPT, tapStep, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, OLD_SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, sentencesOf, withoutStopSentences, toAgentVoice, sectionOf, takeOwnWords, ownMessageTaken, earlierMessage, messageUsable, type Replaced, parseOwnWords, ownWordsPrompt, askAgain, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
+import { type Memory, CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkMcpConfig, checkPluginsOff, LOOK_RULE, looksOf, signsOff, keptWho, runOf, runFor, runKey, runQualifies, shellChanges, runFromResult, runEnded, RUN_SAID_MAX, factHolds, kindOf, type Look, type Run, checkCostText, checkPrompt, doingFor, firstSentence, fit, fillCard, countLine, refusedLine, type CardText, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, HIS_CUT, TURN_TEXT_MAX, PENDING_MAX, TURNS_KEPT, tapStep, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, OLD_SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, sentencesOf, withoutStopSentences, toAgentVoice, sectionOf, takeOwnWords, ownMessageTaken, earlierMessage, messageUsable, type Replaced, parseOwnWords, ownWordsPrompt, askAgain, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
 import * as rep from '../hooks/rep'
 import { REFUSED_ENVIRONMENT, MISSING_REMOTE, BEFORE_YOU_STOP_COLON, WAIT_BEFORE_SUBMIT, THREE_BEFORE_YOU_STOP, TWO_BEFORE_YOU_STOP, GUARD_REFUSAL, PAUSED_WORK_CAUSE, STOP_SHAPES } from './fixtures/stop-shapes'
 
@@ -15446,6 +15446,20 @@ describe('what the check loads', () => {
       expect(checkMcpConfig(bad)).toBe(NONE)
   })
 
+  const SETTINGS = JSON.stringify({ hooks: { PreToolUse: [] }, env: { SECRET: 's' }, enabledPlugins: { 'owner-rep@owner-rep': true, 'claude-hud@claude-hud': true, 'old@market': false, 'listed@market': ['x'] } })
+  const OFF: Record<string, false> = { 'owner-rep@owner-rep': false, 'claude-hud@claude-hud': false, 'old@market': false, 'listed@market': false }
+
+  test('unit: the plugins to turn off are every name in the owner\'s enabledPlugins, each false, and nothing else from the file; any other file gives none', () => {
+    expect(checkPluginsOff(SETTINGS)).toEqual(OFF)
+    for (const bad of [null, '', 'not json', 'null', '[]', '{}', '{"enabledPlugins":null}', '{"enabledPlugins":[]}', '{"enabledPlugins":"x"}', '{"enabledPlugins":{}}', '{"enabledPlugins":{"":true}}'])
+      expect(checkPluginsOff(bad)).toEqual({})
+    const settings = JSON.parse(checkSettings('/Users/o', '/tmp/x', '', [], [], OFF)) as { enabledPlugins?: unknown; sandbox: unknown }
+    expect(settings.enabledPlugins).toEqual(OFF)
+    expect(settings.sandbox).toEqual((JSON.parse(checkSettings('/Users/o', '/tmp/x')) as { sandbox: unknown }).sandbox)
+    expect(JSON.parse(checkSettings('/Users/o', '/tmp/x', '', [], [], {}))).not.toHaveProperty('enabledPlugins')
+    expect(checkSettings('/Users/o', '/tmp/x', '', [], [], OFF)).not.toContain('SECRET')
+  })
+
   const pressed = async ($: Engine, on: On, files: Record<string, string>, config: string | undefined) => {
     session(on)
     quietBand(on)
@@ -15473,7 +15487,8 @@ describe('what the check loads', () => {
     await ui.press({ key: 'check' })
     await ui.unmount()
     const argv = seen.argv
-    return { argv, env: seen.env, mcp: argv[argv.indexOf('--mcp-config') + 1], reads, prompt: argv[argv.indexOf('-p') + 1] ?? '' }
+    const settings = JSON.parse(argv[argv.indexOf('--settings') + 1] ?? '{}') as { enabledPlugins?: unknown }
+    return { argv, env: seen.env, mcp: argv[argv.indexOf('--mcp-config') + 1], reads: reads.filter(r => r.endsWith('.claude.json')), settingsReads: reads.filter(r => r.endsWith('settings.json')), plugins: settings.enabledPlugins, prompt: argv[argv.indexOf('-p') + 1] ?? '' }
   }
 
   test('rule: the check is started with the user level of settings only, no skills, no CLAUDE.md and only the agentsview server from the config folder\'s .claude.json', async ($, on) => {
@@ -15500,6 +15515,26 @@ describe('what the check loads', () => {
     const got = await pressed($, on, { '/cfg/.claude.json': claudeJson({ context7: { url: 'u' } }), '/Users/o/.claude.json': claudeJson({ agentsview: AV }) }, '/cfg')
     expect(got.mcp).toBe(NONE)
     expect(got.argv).toContain('--strict-mcp-config')
+  })
+
+  test('rule: the check turns off every plugin the config folder\'s settings.json turns on, this mod among them', async ($, on) => {
+    const got = await pressed($, on, { '/cfg/settings.json': SETTINGS, '/Users/o/.claude/settings.json': JSON.stringify({ enabledPlugins: { 'wrong@home': true } }) }, '/cfg/')
+    expect(got.plugins).toEqual(OFF)
+    expect(got.settingsReads).toEqual(['/cfg/settings.json'])
+    expect(got.argv[got.argv.indexOf('--setting-sources') + 1]).toBe('user')
+  })
+
+  test('rule: with no config folder set, the plugins come from ~/.claude/settings.json', async ($, on) => {
+    const got = await pressed($, on, { '/Users/o/.claude/settings.json': SETTINGS }, undefined)
+    expect(got.plugins).toEqual(OFF)
+    expect(got.settingsReads).toEqual(['/Users/o/.claude/settings.json'])
+  })
+
+  test('guard: with no settings.json to read the check names no plugin and still runs', async ($, on) => {
+    const got = await pressed($, on, {}, '/cfg')
+    expect(got.plugins).toBeUndefined()
+    expect(got.settingsReads).toEqual(['/cfg/settings.json'])
+    expect(got.argv[0]).toBe('claude')
   })
 
   test('guard: with no .claude.json to read the check still runs, isolated, with no MCP server', async ($, on) => {
