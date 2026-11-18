@@ -948,8 +948,8 @@ the last `</session_record>` is edited, never the record, and the blocks wholly 
 they were, cache marks and all. A call an edit applies to but cannot change (its old text is not
 there, or its system prompt is not the record read's), or one no edit applies to, is not sent in
 either arm, so the arms are the same calls; the totals are `logged`, `as saved` and `variant`.
-Every reply a replay gets is written to `replays/<call file's name>-<arm>-<n>.txt` beside the
-call, which `folderBytes` counts toward the 1 GB. A replay is not logged or counted. Nothing of
+Every reply a replay gets is written to `replays/<call file's name>.<effort>[.<edits>].<arm>-<n>.txt`
+beside the call, so runs with other settings keep theirs apart, which `folderBytes` counts toward the 1 GB. A replay is not logged or counted. Nothing of
 either is drawn on the row or the card.
 
 An approval (`approvalOf`: the owner's message, note or plan-screen plan carrying `approved`,

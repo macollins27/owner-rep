@@ -1720,6 +1720,9 @@ async function replay($: EngineInterface, args: string): Promise<string> {
     const effort = (a.effort ?? e.settings.effort) as 'high'
     const dir = file.slice(0, file.lastIndexOf('/'))
     const base = file.slice(file.lastIndexOf('/') + 1).replace(/\.json$/, '')
+    // The effort and the variant name the reply too, so replays of the same call run side by side
+    // with other settings never write over each other's replies.
+    const tag = [effort, ...(a.variant === undefined ? [] : [a.variant.join('+')])].join('.')
     for (const arm of arms) {
       const { system, prompt } = texts[arm] as { system: string; prompt: string | PromptBlock[] }
       for (let i = 1; i <= a.times; i++) {
@@ -1735,7 +1738,7 @@ async function replay($: EngineInterface, args: string): Promise<string> {
           ...(result !== null && result.isAnswered ? { read: callRead(e.kind, result.text, e.open, { usage, cap: e.settings.maxTokens }) } : {}),
           ...(usage === undefined ? {} : { usage }),
         }
-        if (result !== null && result.isAnswered) await writeFile($, `${dir}/replays/${base}-${label.replace(/ /g, '-')}.txt`, result.text)
+        if (result !== null && result.isAnswered) await writeFile($, `${dir}/replays/${base}.${tag}.${label.replace(/ /g, '-')}.txt`, result.text)
         rows.push(row)
         lines.push(`  ${replayLine(row)}`)
       }
