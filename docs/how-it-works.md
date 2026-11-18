@@ -343,7 +343,25 @@ run of the one it names: the rep counts each helper the agent starts and each `c
 tool call returns, and the check signs only in its own marks. The same review made a condition
 of no kind stay works when a rewrite calls it fact, reopened a shown fact rewritten as works,
 read a "fact" about the result working, loading or passing as works, and took who looked from
-the newest where alone. The note of whose looks are in also goes on the count line,
+the newest where alone. A third Codex review (session 6c159ee6) found the word lists for who
+looked and what a look said both missed and misfired, so the sign-off now rests on the record
+rather than on the reader's words. The record prints `(run <id>)`, the end of the call's id,
+beside each call that starts a helper or a Codex run, and a signing look names that run: "look
+by helper <run>", "look by Codex <run>", or "look by the check", which signs only in the check's
+own marks. The rep keeps each run as its call returns: a helper's answer or Codex's output, its
+end kept to 300 characters, whether it failed, and whether it changed the work (a helper's own
+Edit or Write call, a shell call of its that writes in the folder, its result's edit count, a
+Codex run with a writing sandbox or approvals bypassed, a `claude -p` run outside plan mode). A
+helper sent off on its own finishes when its own loop ends. A look signs only when its run is
+there, finished, said something and changed nothing; the card shows the run's last words beside
+the condition, so the owner compares them with the reader's account. Codex counts only as the
+command whose exit the call reports: the last statement, joined to what came before only by
+`&&`, not piped, not after `||`, not in the background, never with `--help` or `--version`. The
+same review replaced the guess at which "fact" conditions describe behaviour with an allow list:
+a fact is saved, committed, pushed, merged, installed, deployed, tagged, a file holding
+something, or the newest version running, and anything else is works. The owner's own word still
+closes a condition, by design, and the card says so: "closed on your word (#n)". The note of
+whose looks are in also goes on the count line,
 which comes back right after the card's head, because at 80 rows the condition lines that carried
 it were not drawn.
 

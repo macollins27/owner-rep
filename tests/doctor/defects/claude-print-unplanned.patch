@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 5a5ee04..73de14f 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -556,7 +556,7 @@ export function shellRun(command: string): { kind: 'helper' | 'codex'; changes:
+     if (!rest.some(w => w === '-p' || w === '--print')) return null
+     const mode = rest.findIndex(w => w === '--permission-mode')
+     const plan = (mode >= 0 && rest[mode + 1] === 'plan') || rest.includes('--permission-mode=plan')
+-    return { kind: 'helper', changes: !plan }
++    return { kind: 'helper', changes: plan && !plan }
+   }
+   return null
+ }

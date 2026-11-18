@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 5a5ee04..13d7e0e 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2915,7 +2915,7 @@ function recordEntries(rows: readonly RecordRow[], human?: ReadonlySet<string>):
+         if (u.text !== undefined && u.tool_use_id !== undefined) printed.add(u.tool_use_id)
+         if (u.tool === 'ExitPlanMode' && u.tool_use_id !== undefined) planInputs.set(u.tool_use_id, u.input)
+         fields.push(input, ...(result === null ? [] : [result]))
+-        const run = u.tool_use_id !== undefined && runOf(u.tool, (u.input as { command?: unknown } | null)?.command) !== null ? ` (run ${runKey(u.tool_use_id)})` : ''
++        const run = u.tool_use_id !== undefined && runOf(u.tool, (u.input as { command?: unknown } | null)?.command) !== null ? '' : ''
+         return { tool: u.tool, run, input, result, isError: u.isError === true }
+       })
+       if (said === null && uses.length === 0) return

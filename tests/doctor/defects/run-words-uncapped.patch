@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 5a5ee04..a087d67 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -631,7 +631,7 @@ export function runFromResult(changes: boolean, r: unknown): Pick<Run, 'state' |
+   if (res.status === 'completed') {
+     const content = Array.isArray(res.content) ? (res.content as Array<{ text?: unknown }>) : []
+     const text = content.map(c => (typeof c?.text === 'string' ? c.text : '')).join(' ')
+-    return { state: 'done', changed: edited, said: tailOf(text, RUN_SAID_MAX), ...agentId }
++    return { state: 'done', changed: edited, said: tailOf(text, 1e9), ...agentId }
+   }
+   return { state: 'running', changed: edited, said: '', ...agentId }
+ }

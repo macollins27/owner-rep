@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 5a5ee04..91c0efd 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -275,7 +275,7 @@ export const runQualifies = (r: Run): boolean => r.state === 'done' && !r.change
+ export function runFor(l: Look, runs: readonly Run[]): Run | undefined {
+   if (l.ref === null || l.as === null || l.as === 'check') return undefined
+   const ref = l.ref.toLowerCase()
+-  const hits = runs.filter(r => r.kind === l.as && r.id.toLowerCase().endsWith(ref))
++  const hits = runs.filter(r => r.id.toLowerCase().endsWith(ref))
+   return hits.length === 1 ? hits[0] : undefined
+ }
+ // A look signs off when its words do and, for a helper or Codex, the run it names qualifies;

@@ -1,17 +1,17 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 0e6d35a..ea56836 100644
+index 5a5ee04..a550f76 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2240,7 +2240,7 @@ function recordEntries(rows: readonly RecordRow[], human?: ReadonlySet<string>):
+@@ -2924,7 +2924,7 @@ function recordEntries(rows: readonly RecordRow[], human?: ReadonlySet<string>):
          row: at,
          fields,
          build: show =>
 -          `entry ${n} the agent:\n${[
 +          `#${n} the agent:\n${[
              ...(said === null ? [] : [show(said)]),
-             ...uses.map(u => `- used ${u.tool} ${show(u.input)} → ${u.result === null ? '(no result)' : `${u.isError ? '(error) ' : ''}${show(u.result)}`}`),
+             ...uses.map(u => `- used ${u.tool}${u.run} ${show(u.input)} → ${u.result === null ? '(no result)' : `${u.isError ? '(error) ' : ''}${show(u.result)}`}`),
            ].join('\n')}`,
-@@ -2269,7 +2269,7 @@ function recordEntries(rows: readonly RecordRow[], human?: ReadonlySet<string>):
+@@ -2964,7 +2964,7 @@ function recordEntries(rows: readonly RecordRow[], human?: ReadonlySet<string>):
        n,
        row: at,
        fields: [f],

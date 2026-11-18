@@ -688,19 +688,31 @@ argument). Each condition has a `kind`, `works` or `fact`, which the objective w
 before it (`conditionOf` reads it, `heldLine` writes it back, `bare` strips it where a reader
 copies it, and `mergeConditions` keeps a held `works`, or one with no kind, as `works` whatever
 kind a rewrite gives, and opens a shown `fact` rewritten as `works` with its where kept as
-`seen`). `conditionOf` reads a `fact:` whose text matches `BEHAVES` (works, runs, loads, passes,
-good; "runs the newest code" excepted) as `works`.
+`seen`). `conditionOf`, and everything after it through `kindOf`, reads a `fact:` as `fact` only when
+`factHolds`: its text, with file-like words taken out, matches the allow list `FACT_SAYS`
+(saved, committed, pushed, merged, installed, deployed, tagged, exists, runs or is on the
+newest, or a file or folder that holds, contains, has or lists something) and not `BEHAVES`.
 A `fact` moves shown on any where. A `works` condition, or one with no kind, moves shown only when
-`looksOf` finds, among every `look by <who>: <what>` in the where, one whose `who` is exactly on
-the sign-off list `SIGNERS` ("a helper that did not build it", "Codex", "the check" or "the
-rep's own check"; compared by `whoKey`, without case, an article, a trailing stop or a run id in
-brackets), with something seen, no "no", "not", "never" or "without" just before it, nothing
-still to come in it (`NOT_YET`) and no word that the one looking wrote the work (`BUILT`), and
-`signsOff` finds a run of that signer in the record: `Rec.runs` counts the helpers (an Agent or
-Task call, or a `claude -p` run) and Codex runs (`codex exec`, `e` or `review`) the agent starts,
-told by `runOf` in `tool.call` once the call returns; the check signs only through its own marks.
-A look whose words sign but has no run is kept under its who with "(no run of it in the record)"
-(`keptWho`). Otherwise, whoever
+`looksOf` finds, among every `look by <who>: <what>` in the where, one whose `who` (compared by
+`whoKey`, without case, curly apostrophes or a leading article) is the check (`CHECK_NAMES`) or a
+run (`RUN_WHO`: "helper <run>", "Codex <run>", "Codex run <run>", "helper (run <run>)"), with
+something seen and no "no", "not", "never" or "without" just before it, and `signsOff` finds that
+the run qualifies: `runFor` takes the one run of that kind in `Rec.ran` whose id ends with the
+ref, and `runQualifies` wants it `done`, unchanged and with something said; the check signs only
+through its own marks. `Rec.ran` (the newest `RUNS_KEPT`, 60) is filled in `tool.call` once the
+call returns: `runOf` reads an Agent or Task call, or a shell call `shellRun` reads as Codex
+(`codex exec`, `e` or `review` after any options, no help or version flag) or a helper (`claude -p`
+or `--print`, changing the work unless `--permission-mode plan`), as the deciding command
+(`deciding`: the last statement of `shellStatements`, joined by `&&` alone, not backgrounded);
+`codexWrites` reads a writing sandbox, the bypass, the automatic approvals, `--add-dir` or a
+`sandbox_mode` config; `runFromResult` keeps its state and last words (`RUN_SAID_MAX`, 300
+characters); a helper's own edit call, or shell call `shellChanges` reads as writing in the
+folder, adds it to `Rec.changedBy` and marks its runs changed; `runEnded` finishes a helper sent
+off on its own at its `turn.complete`. The digest prints `(run <runKey>)`, the last 8 characters
+of the call's id, beside such a call. A look that does not sign is kept under its who with why
+(`keptWho`: names no run, no such run in the record, its run changed the work, was not seen to
+finish, failed or said nothing, or not the check's own mark), and the named runs' words go on
+the condition as `said`, shown beside it (`saidMark`). Otherwise, whoever
 looked and whoever reports it, the check included, the state stays as it was and the condition
 keeps what the looks saw as `seen` and who made them as `seenBy`, from this where alone (a where
 with no look keeps the whole where, made by the agent). `objectiveText` marks such a condition on the card (`seenMark`):

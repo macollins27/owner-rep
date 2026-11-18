@@ -187,6 +187,13 @@ import {
   signsOff,
   keptWho,
   runOf,
+  runFor,
+  runFromResult,
+  runEnded,
+  shellChanges,
+  kindOf,
+  EDIT_TOOLS,
+  RUNS_KEPT,
   openConditions,
   parseBrief,
   parseCheck,
@@ -224,7 +231,7 @@ import {
   watchPrompt,
   type BriefAnswer,
   type Condition,
-  type Ran,
+  type Run,
   type Memory,
   type Objective,
   type ObjectiveAnswer,
@@ -338,9 +345,14 @@ type Rec = {
   // The last write whose every attempt failed: when, and the last message it was shown;
   // cleared by the next write that lands. A fresh start writes again while it is set.
   failedWrite?: { at: number; upTo: number }
-  // The runs of a helper and of Codex the agent started (`runOf`), for `signsOff`; absent
-  // until the first, and on records from before it, where no look by them signs.
-  runs?: { helper: number; codex: number }
+  // The runs of a helper and of Codex started in the session (`runOf`), newest last, at most
+  // RUNS_KEPT, for `signsOff`: each by its call's id, with how it ended, whether it changed the
+  // work and its own last words. Absent until the first, and on records from before it (whose
+  // `runs` counts are not read), where no look by a helper or Codex signs.
+  ran?: Run[]
+  // The helpers seen writing or changing the work (an edit tool, or a shell call
+  // `shellChanges` reads as a change), by agent id: a run of theirs changed the work.
+  changedBy?: string[]
   // The calls counted by kind, and how the cards the gate refused ended (`countCall`, `countEnd`);
   // absent until the first call. Printed by `/owner-rep-counts`, never shown on the band.
   counts?: Counts
@@ -1278,11 +1290,12 @@ function applyMarks(
   if (o === null) return false
   const notHis = new Set(rec.owner.filter(m => m.kind === 'plan' || approvalOf(m)).map(m => m.n))
   const his = hisFrom(rec, Math.max(o.since, o.from + 1)).filter(n => !notHis.has(n))
-  // The signers whose runs the record holds: the check only in its own marks.
-  const ran: Ran = { helper: (rec.runs?.helper ?? 0) > 0, codex: (rec.runs?.codex ?? 0) > 0, check: check !== null }
+  // The runs the record holds, and whether these are the check's own marks.
+  const ran = rec.ran ?? []
+  const own = check !== null
   let changed = false
   const done = o.done.map((c): Condition => {
-    const kind: { kind?: Condition['kind'] } = c.kind === undefined ? {} : { kind: c.kind }
+    const kind: { kind?: Condition['kind'] } = c.kind === undefined ? {} : { kind: kindOf(c) }
     const close = closed.find(x => x.by !== null && his.includes(x.by) && same(x.text, c.text))
     if (close !== undefined && c.state !== 'closed') {
       changed = true
@@ -1300,18 +1313,21 @@ function applyMarks(
       // the agent's own above all, and a where with no look, is kept as shown evidence with
       // who made it, and leaves the condition as it was. A "fact" is shown by its where (G44).
       const looks = looksOf(show.by)
-      if (c.kind !== 'fact' && !looks.some(l => signsOff(l, ran))) {
+      // Beside the looks, the own last words of the runs they name, from the record.
+      const said = [...new Set(looks.map(l => runFor(l, ran)?.said ?? '').filter(w => w.trim() !== ''))].join(' / ')
+      const saidOf = said === '' ? {} : { said }
+      if (kindOf(c) !== 'fact' && !looks.some(l => signsOff(l, ran, own))) {
         const seen = looks.length === 0 ? show.by.trim() : looks.map(l => l.what).filter(w => w !== '').join('; ')
-        const seenBy = [...new Set(looks.map(l => keptWho(l, ran)))].join(' and ')
-        if (seen === '' || (c.seen === seen && (c.seenBy ?? '') === seenBy)) return c
+        const seenBy = [...new Set(looks.map(l => keptWho(l, ran, own)))].join(' and ')
+        if (seen === '' || (c.seen === seen && (c.seenBy ?? '') === seenBy && (c.said ?? '') === said)) return c
         changed = true
         // Who looked comes from this where alone: one with no look is the agent's own,
-        // never the last named looker's (Codex review of #53).
-        const { seenBy: _was, ...rest } = c
-        return { ...rest, seen, ...(seenBy === '' ? {} : { seenBy }) }
+        // never the last named looker's (Codex review of #53); so do the run's words.
+        const { seenBy: _was, said: _said, ...rest } = c
+        return { ...rest, seen, ...(seenBy === '' ? {} : { seenBy }), ...saidOf }
       }
       changed = true
-      return { text: c.text, state: 'shown', by: show.by, ...kind }
+      return { text: c.text, state: 'shown', by: show.by, ...kind, ...saidOf }
     }
     return c
   })
@@ -3045,20 +3061,35 @@ export const register: Register = on => {
 
   on('tool.call', async ($, e, next) => {
     if (ownCheck) return next(e)
-    // A helper's or Codex's run, the agent's or a helper's, is counted once the call returns,
-    // so a look by it can sign off (`signsOff`).
-    const run = runOf(String(e.tool), (e as unknown as Record<string, unknown>).command)
+    // A helper's or Codex's run, the agent's or a helper's, is recorded once its call returns,
+    // with how it ended and its own last words, so a look naming it can sign off (`signsOff`).
+    // A helper's own call that changes the work marks the helper, and its runs, as changed.
+    const input = e as unknown as Record<string, unknown>
+    const run = runOf(String(e.tool), input.command)
+    const helper = e.agentId
+    const changes =
+      helper !== undefined &&
+      (EDIT_TOOLS.has(String(e.tool)) ||
+        (String(e.tool) === 'Bash' && typeof input.command === 'string' && shellChanges(input.command, await $.session.cwd().catch(() => ''))))
     const ranOne = async <T,>(result: T): Promise<T> => {
-      if (run !== null) {
-        await sessionId($)
-          .then(id =>
-            changeRec($, id, r => {
-              const was = r.runs ?? { helper: 0, codex: 0 }
-              r.runs = { ...was, [run]: was[run] + 1 }
-            }),
-          )
-          .catch(() => undefined)
-      }
+      if (run === null && !changes) return result
+      await sessionId($)
+        .then(id =>
+          changeRec($, id, r => {
+            let ran = r.ran ?? []
+            if (changes && helper !== undefined) {
+              r.changedBy = [...new Set([...(r.changedBy ?? []), helper])].slice(-RUNS_KEPT)
+              ran = ran.map(x => (x.agentId === helper ? { ...x, changed: true } : x))
+            }
+            if (run !== null) {
+              const got = runFromResult(run.changes, result)
+              const by = got.agentId !== undefined && (r.changedBy ?? []).includes(got.agentId)
+              ran = [...ran, { id: String(e.tool_use_id), kind: run.kind, ...got, changed: got.changed || by }]
+            }
+            r.ran = ran.slice(-RUNS_KEPT)
+          }),
+        )
+        .catch(() => undefined)
       return result
     }
     if (e.agentId !== undefined) return ranOne(await next(e))
@@ -3130,6 +3161,16 @@ export const register: Register = on => {
     if (ownCheck) return next(e)
     if (e.agentId !== undefined) {
       const gone = e.agentId
+      // A helper sent off to run on its own ends here: its run finishes with its answer or fails.
+      const reason = String((e as unknown as { reason?: unknown }).reason ?? (e.isAborted ? 'aborted' : 'answer'))
+      await sessionId($)
+        .then(id =>
+          changeRec($, id, r => {
+            if (!(r.ran ?? []).some(x => x.agentId === gone && x.state === 'running')) return
+            r.ran = (r.ran ?? []).map(x => (x.agentId === gone && x.state === 'running' ? runEnded(x, reason, String(e.answer ?? '')) : x))
+          }),
+        )
+        .catch(() => undefined)
       await update($, helpersA, ids => (ids ?? []).filter(i => i !== gone)).catch(() => undefined)
       await update($, nowA, n => ({ ...(n ?? IDLE), helpers: Math.max(0, (n?.helpers ?? 0) - 1) })).catch(
         () => undefined,

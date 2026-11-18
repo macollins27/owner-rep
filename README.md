@@ -200,16 +200,19 @@ for more tests, scripts or reports: where proof is missing it asks for a hands-o
 real thing.
 
 That the work does what it should is signed off only by someone who did not build it: a helper
-that did not build it, Codex, or the rep's own check, opening the real thing and using it. Each
-part of the job is written down as one of two kinds: "works" (the work does what it should, or is
-good) or "fact" (a file saved, a version installed). A fact is shown by the command and what it
-printed. A "works" part stays open until one of those three has looked; a part written before
-kinds counts as "works", and so does a "fact" about the work running, loading or passing. A
-look by a helper or by Codex counts only when the session shows the agent started one, and a
-look that says it did not happen yet, or by one that says it fixed the work, does not count.
-When the agent looks at its own work, or a helper that also built it,
-or anyone else, the card says who looked and that it still needs a look by someone who did not
-build it, and the count line at the top of the card says so too, so you see it on any card.
+or a read-only Codex run that changed nothing, or the rep's own check, opening the real thing and
+using it. Each part of the job is written down as one of two kinds: "works" (the work does what
+it should, or is good) or "fact" (saved, committed, pushed, merged, installed, deployed, a file
+holding something, the newest version running). A fact is shown by the command and what it
+printed; anything not on that list counts as "works", whatever the writer called it. A "works"
+part stays open until a look names a run the session shows: a helper's or Codex's run, by the
+id the rep prints beside its call, that finished, said something and changed nothing. The card
+shows that run's own last words beside the part, so you read what the run said next to the
+account of it. A helper that edited or wrote in the project, a Codex run allowed to write, and a
+`claude -p` run outside plan mode count as the agent. When the agent looks at its own work, or
+anyone else does, the card says who looked and why it does not count, and the count line at the
+top of the card says so too, so you see it on any card. A part you closed yourself reads "closed
+on your word" with the number of your message: your word closes it, by design.
 
 You do no step of the job yourself. A chore the agent leaves "for you" is unfinished work,
 and the rep puts it in the message to the agent.

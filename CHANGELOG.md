@@ -29,9 +29,13 @@ What changed in each release of Owner Rep, newest first. The full record is the
   only on a hands-on look by a helper that did not build it, Codex, or the rep's own check;
   a fact still closes on the command and what it printed. Anyone else's look, the agent's
   above all, is kept and shown on the card and on its count line, by who looked, and that part
-  stays open. A look by a helper or Codex counts only when the session shows one was started,
-  and a look written as not done yet, denied, empty, or by one that says it fixed the work never
-  counts.
+  stays open. A look signs off only by naming its run as the record prints it, and only when
+  the record shows that run finished, said something and changed nothing: a helper that edited
+  or wrote in the project, a Codex run allowed to write, piped, backgrounded or run after `||`,
+  and a `claude -p` run outside plan mode are the agent's. The card shows the run's own last
+  words beside the part. "Fact" now means only saved, committed, pushed, merged, installed,
+  deployed, a file holding something or the newest version running; any other part is "works".
+  A part you closed reads "closed on your word (#n)".
 
 ## 0.7.5 (14 November 2026)
 

@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 4879782..70a5311 100644
+index 5a5ee04..83296b8 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -261,7 +261,7 @@ export function looksOf(where: string): Look[] {
- // or a `claude -p` run), a Codex run, and the check, which signs only through its own marks.
- export type Ran = { helper: boolean; codex: boolean; check: boolean }
- // A look signs off only when its words do and the record holds a run of the one it names.
--export const signsOff = (l: Look, ran: Ran): boolean => l.signs && l.as !== null && ran[l.as]
-+export const signsOff = (l: Look, _ran: Ran): boolean => l.signs && l.as !== null
- // The who a look that does not sign is kept under: as written, and when its words would
- // sign but no such run is in the record, saying so.
- export const keptWho = (l: Look, ran: Ran): string => (l.signs && l.as !== null && !ran[l.as] ? `${l.who} (no run of it in the record)` : l.who)
+@@ -284,7 +284,7 @@ export const signsOff = (l: Look, runs: readonly Run[], check: boolean): boolean
+   if (!l.signs) return false
+   if (l.as === 'check') return check
+   const r = runFor(l, runs)
+-  return r !== undefined && runQualifies(r)
++  return r === undefined || runQualifies(r)
+ }
+ // The who a look that does not sign is kept under: as written, with why its run does not count.
+ export function keptWho(l: Look, runs: readonly Run[], check: boolean): string {

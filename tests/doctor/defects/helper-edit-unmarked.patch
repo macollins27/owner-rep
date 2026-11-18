@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 8d7074b..08244c4 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -3024,7 +3024,7 @@ export const register: Register = on => {
+     const helper = e.agentId
+     const changes =
+       helper !== undefined &&
+-      (EDIT_TOOLS.has(String(e.tool)) ||
++      (false ||
+         (String(e.tool) === 'Bash' && typeof input.command === 'string' && shellChanges(input.command, await $.session.cwd().catch(() => ''))))
+     const ranOne = async <T,>(result: T): Promise<T> => {
+       if (run === null && !changes) return result
