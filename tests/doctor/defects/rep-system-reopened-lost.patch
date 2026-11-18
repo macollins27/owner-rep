@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index c342914..f7202b4 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -6309,7 +6309,7 @@ function toRepSystem(kind: CallKind, system: string, task: string): { system: st
+   after += PRE_G2_STANDING.length
+   const sizeAt = memory.indexOf("\n\nThe conversation's size: ", after)
+   if (sizeAt < 0) return lost
+-  const known = `## What you already know\n\nThe objective of this job, as the rep holds it:\n${memory.slice(top.length, markAt)}${reopened ? `\n${REOPENED_LINE}` : ''}${memory.slice(after, sizeAt)}\n\nThe session's size: ${memory.slice(sizeAt + "\n\nThe conversation's size: ".length)}`
++  const known = `## What you already know\n\nThe objective of this job, as the rep holds it:\n${memory.slice(top.length, markAt)}${memory.slice(after, sizeAt)}\n\nThe session's size: ${memory.slice(sizeAt + "\n\nThe conversation's size: ".length)}`
+   return { system: REP_SYSTEM, task: `${known}\n\n${request}` }
+ }
+ export type Edited = { system: string; prompt: string | PromptBlock[] } | { why: string }

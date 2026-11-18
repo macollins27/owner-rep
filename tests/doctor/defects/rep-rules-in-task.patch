@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index c342914..d79b115 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1748,7 +1748,7 @@ const BRIEF_DECIDING = [...DECIDING.slice(0, 2), 'Never call the session finishe
+ const decidingText = (rules: readonly string[]): string => `These rules decide this answer:\n${rules.map(r => `- ${r}`).join('\n')}`
+ 
+ export function watchPrompt(m: Memory, reason: 'step' | 'stop' | 'note'): string {
+-  return `${memoryText(m)}\n\n${watchRequest(reason, list(m.seen, '(none yet)'), list(m.others, '(none)'))}`
++  return `${REP_WHY}\n\n${memoryText(m)}\n\n${watchRequest(reason, list(m.seen, '(none yet)'), list(m.others, '(none)'))}`
+ }
+ 
+ // The watch's request, after what the rep knows; its two lists are given as printed.

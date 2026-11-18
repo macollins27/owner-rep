@@ -3871,13 +3871,13 @@
   },
   {
     "name": "record-system-no-tools-gone",
-    "breaks": "The record read's system prompt no longer says the reader has no tools and gives one answer.",
+    "breaks": "The reads' system prompt no longer says the reader has no tools and gives one answer.",
     "patch": "record-system-no-tools-gone.patch",
     "fixed": "tested 2026-11-18"
   },
   {
     "name": "record-system-secrets-gone",
-    "breaks": "The record read's system prompt no longer keeps secrets, keys, passwords and personal data out of what the reader writes.",
+    "breaks": "The reads' system prompt no longer keeps secrets, keys, passwords and personal data out of what the reader writes.",
     "patch": "record-system-secrets-gone.patch",
     "fixed": "tested 2026-11-18"
   },
@@ -3895,7 +3895,7 @@
   },
   {
     "name": "variant-system-kept",
-    "breaks": "The replay's variant drops the old frame but sends the call's old system prompt, not this build's.",
+    "breaks": "The replay's frame edit drops the old frame but sends the call's old system prompt, not group 1's.",
     "patch": "variant-system-kept.patch",
     "fixed": "tested 2026-11-18"
   },
@@ -3927,6 +3927,96 @@
     "name": "call-cap-skips-replays",
     "breaks": "The 1 GB cap on every session's calls does not count the replies replays kept.",
     "patch": "call-cap-skips-replays.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "rep-rules-in-task",
+    "breaks": "The watch's task carries a copy of the rep's standing rules again, so a rule has two sources and the copies can drift apart.",
+    "patch": "rep-rules-in-task.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "rep-patch-sentence-back",
+    "breaks": "The reads' system prompt says again that the task was written for a reader of the conversation and means the record, a patch over wording the task no longer uses.",
+    "patch": "rep-patch-sentence-back.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "watch-record-above-dropped",
+    "breaks": "The watch's request no longer opens \"Based on the record above\", so the reader is not pointed back at the record before it is asked.",
+    "patch": "watch-record-above-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "brief-record-above-dropped",
+    "breaks": "The briefing's request no longer opens \"Based on the record above\", so the reader is not pointed back at the record before it is asked.",
+    "patch": "brief-record-above-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "deciding-rules-dropped",
+    "breaks": "The watch's request no longer restates the rules that decide its answer after the record, where a long record buries the system prompt's copy.",
+    "patch": "deciding-rules-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "own-words-unseen-gone",
+    "breaks": "The own-words call loses the shared lines on standing instructions and steps it could not assess, which it is meant to take from the same strings as the reads.",
+    "patch": "own-words-unseen-gone.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "rep-system-edit-unanchored",
+    "breaks": "The replay's rep-system edit sends a briefing whose old request it could not find, rather than skipping it with the reason.",
+    "patch": "rep-system-edit-unanchored.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "rep-system-system-kept",
+    "breaks": "The replay's rep-system edit moves the rules out of the task but sends group 1's system prompt, not REP_SYSTEM.",
+    "patch": "rep-system-system-kept.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "rep-system-reopened-lost",
+    "breaks": "The replay's rep-system edit drops the line on a condition the check reopened, which this build still sends.",
+    "patch": "rep-system-reopened-lost.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "memory-size-says-conversation",
+    "breaks": "What the rep knows calls the size \"the conversation's size\" again, against the record and session wording.",
+    "patch": "memory-size-says-conversation.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "memory-standing-again",
+    "breaks": "What the rep knows repeats the standing-instructions line the system prompt already holds.",
+    "patch": "memory-standing-again.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "replay-base-not-subset",
+    "breaks": "The replay accepts a --base that is not a strict part of the variant, so the two arms are not one edit apart.",
+    "patch": "replay-base-not-subset.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "replay-reply-name-lacks-base",
+    "breaks": "A kept reply's name leaves out the base, so runs against different bases write over each other's replies.",
+    "patch": "replay-reply-name-lacks-base.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "replay-base-arm-as-saved",
+    "breaks": "The replay's base arm sends the call as saved, not with the base's edits.",
+    "patch": "replay-base-arm-as-saved.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "read-drops-private-data",
+    "breaks": "The reads send REP_SYSTEM without its private-data section, so secrets in the record are no longer kept out of what the reader writes.",
+    "patch": "read-drops-private-data.patch",
     "fixed": "tested 2026-11-18"
   }
 ]

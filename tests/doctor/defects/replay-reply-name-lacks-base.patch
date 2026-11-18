@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 847dbab..22dccd0 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1732,7 +1732,7 @@ async function replay($: EngineInterface, args: string): Promise<string> {
+     const base = file.slice(file.lastIndexOf('/') + 1).replace(/\.json$/, '')
+     // The effort, the variant and the base name the reply too, so replays of the same call run side
+     // by side with other settings never write over each other's replies.
+-    const tag = [effort, ...(a.variant === undefined ? [] : [`${a.base === undefined ? '' : `${a.base.join('+')}~`}${a.variant.join('+')}`])].join('.')
++    const tag = [effort, ...(a.variant === undefined ? [] : [a.variant.join('+')])].join('.')
+     for (const arm of arms) {
+       const { system, prompt } = texts[arm] as { system: string; prompt: string | PromptBlock[] }
+       for (let i = 1; i <= a.times; i++) {

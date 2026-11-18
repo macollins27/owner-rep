@@ -135,10 +135,10 @@ call writes (below):
    empty, and with every condition shown or closed the message stays empty. A refused
    answer is asked once more (`askAgain`, naming the open conditions), and that answer
    passes the same gate. When it is refused too, or does not answer, one plain
-   `$.model.complete` (`OBJECTIVE_MODEL`, high effort, `OWN_WORDS_SYSTEM`: the ROLE's "Who
-   you are" and "How you write to the owner" sections cut by `sectionOf`, which throws on a missing
-   heading, and one line against reproducing a secret, a key, a password or personal data
-   it is shown; `OWN_WORDS_MAX_TOKENS` 64,000, `MAX_REPLY_TOKENS`, the engine's ceiling, `OWN_WORDS_TIMEOUT_MS` two minutes) over
+   `$.model.complete` (`OBJECTIVE_MODEL`, high effort, `OWN_WORDS_SYSTEM`: built from the same
+   named strings as `REP_SYSTEM` (`REP_WHO`, `REP_STAKE`, `REP_SHOWN_BODY`, `REP_UNSEEN`, `REP_MARK`,
+   `REP_WRITE`), so each rule has one source, and one line against reproducing a secret, a key, a
+   password or personal data it is shown; `OWN_WORDS_MAX_TOKENS` 64,000, `MAX_REPLY_TOKENS`, the engine's ceiling, `OWN_WORDS_TIMEOUT_MS` two minutes) over
    `ownWordsPrompt` (the memory, the open conditions, what stands and what is left out)
    writes the replaced parts in the rep's own words. Its reply is read by `parseOwnWords`,
    which answers null unless the reply came back whole: `means:`, `next:`, `message:` and
@@ -353,11 +353,22 @@ call writes (below):
 
    The watch and the briefing (and its second ask) read through one helper, `readSession`.
    It reads `$.session.messages()` and, when there are rows, makes one `$.model.complete`
-   (`OBJECTIVE_MODEL`, high effort, `RECORD_SYSTEM`, `RECORD_MAX_TOKENS` 64,000, the engine's ceiling,
-   `RECORD_TIMEOUT_MS` four minutes) over `recordPrompt`, never a fork. `RECORD_SYSTEM` tells the reader
-   it has no tools and gives one answer, carries `STANDING_LINE`, and keeps secrets, keys, passwords and
-   personal data out of what it writes; the task after the record opens with `ROLE` and carries no
-   frame of its own and no line on how long to think, since the effort setting governs that. The prompt is the rows printed by `recordText`
+   (`OBJECTIVE_MODEL`, high effort, `REP_SYSTEM`, `RECORD_MAX_TOKENS` 64,000, the engine's ceiling,
+   `RECORD_TIMEOUT_MS` four minutes) over `recordPrompt`, never a fork. `REP_SYSTEM` is one fixed
+   text for all three, `REP_SECTIONS` joined: `REP_OPENING` (it has no tools and gives one answer),
+   `REP_FORMAT`, "Why you exist" (`REP_WHO`, `REP_STAKE`), "The record" (`REP_FENCE`, then
+   `REP_UNSEEN`: `STANDING_LINE` and `NOT_ASSESSED_RULE`), "What you measure against" with the six
+   expectations, "The conditions and their states" (`REP_MARK`), "What counts as shown", "The
+   objective stays open until it is completed", "What reaches the owner", "How you make up your mind", "How you write to the owner", and
+   "Private data" (secrets, keys, passwords and personal data stay out of what it writes). Nothing
+   per call goes into it, so it is the same bytes on every read. Its words keep three apart: "the
+   record" is what the reader is shown, "the session" what happened, "the owner's messages" the
+   owner's words. The task after the record holds only what changes per call: `memoryText` (what
+   the rep knows), the request, which opens "Based on the record above", and `decidingText`, a
+   short restatement of the rules that decide that answer (`DECIDING` for the watch,
+   `BRIEF_DECIDING` for the briefing), since a long record sits between them and the system
+   prompt. It carries no frame of its own and no line on how long to think, since the effort
+   setting governs that. The prompt is the rows printed by `recordText`
    as entries labelled `entry N`, never `#N` (the owner's rows as the person only where their key is
    one of the owner's messages that `heldItems` read from the transcript, `NOT_TYPED` applied after
    as a second filter, and with no transcript read, `NOT_TYPED` alone; every other row on
@@ -931,7 +942,7 @@ what the replies were read as, and for cards the gate's rules (`passed` when non
 menu and `/help` (`command.describe`, `HIDDEN_COMMANDS`): `/owner-rep-counts` prints
 `countsText`, one line per kind and a `cards:` line; `/owner-rep-replay <call file, session folder,
 session id, "this" or "all"> [--kind k] [--last 1-50] [--effort low|medium|high|max] [--times 1-10]
-[--variant build|frame|no-think]` (`parseReplayArgs`, `REPLAY_USAGE`) takes a folder's last `--last`
+[--variant build|frame|no-think|rep-system] [--base frame|no-think|rep-system]` (`parseReplayArgs`, `REPLAY_USAGE`) takes a folder's last `--last`
 (`REPLAY_LAST`, 10) calls of the kind asked for, or with "all" the last of every session folder's
 calls together by when each was made (`replayPick`, `replayFiles`), rebuilds each from its parts (`savedCall`, which refuses one whose
 texts were not kept, one naming a text by anything but a fingerprint (`isSha`), so a call file
@@ -942,13 +953,19 @@ it `--times` times with the same settings, or the effort given, reading each ans
 `--variant`, each call is sent `--times` times as saved and `--times` times with its texts edited
 to what this build sends in their place (`editSaved`; `build` names every edit in
 `PROMPT_EDITS`): `frame` drops the fork frame the build before prompt group 1 opened the task
-with and sends `RECORD_SYSTEM` as the system prompt, for a watch, brief or ask-again call;
-`no-think` drops the watch's line telling the model not to think it over. Only the task after
+with and sends group 1's record system prompt (`PRE_G2_RECORD_SYSTEM`), for a watch, brief or
+ask-again call; `no-think` drops the watch's line telling the model not to think it over;
+`rep-system` (`toRepSystem`, applied after the other two) sends `REP_SYSTEM` and rebuilds the task
+from group 1's (the `PRE_G2_*` texts) as this build writes it: the rules moved out, the request
+opening "Based on the record above" with its restatement. With `--base`, a strict part of the
+variant's edits, the first arm is sent with the base's edits in place of as saved, so the two arms
+are one edit apart; a base that is not a strict part prints `REPLAY_USAGE`. Only the task after
 the last `</session_record>` is edited, never the record, and the blocks wholly before it go as
 they were, cache marks and all. A call an edit applies to but cannot change (its old text is not
 there, or its system prompt is not the record read's), or one no edit applies to, is not sent in
-either arm, so the arms are the same calls; the totals are `logged`, `as saved` and `variant`.
-Every reply a replay gets is written to `replays/<call file's name>.<effort>[.<edits>].<arm>-<n>.txt`
+either arm, so the arms are the same calls; the totals are `logged`, `as saved` (or `base`) and
+`variant`. Every reply a replay gets is written to
+`replays/<call file's name>.<effort>[.[<base>~]<edits>].<arm>-<n>.txt`
 beside the call, so runs with other settings keep theirs apart, which `folderBytes` counts toward the 1 GB. A replay is not logged or counted. Nothing of
 either is drawn on the row or the card.
 

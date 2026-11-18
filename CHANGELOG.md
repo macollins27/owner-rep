@@ -11,6 +11,13 @@ What changed in each release of Owner Rep, newest first. The full record is the
   it shared the agent's context). The look also told the model not to think it over, against the
   effort it runs at. Both are gone; the facts that still hold (it has no tools, gives one answer,
   and keeps secrets out of what it writes) are said once, in the read's fixed instructions.
+- **The rep's rules live in one place.** Each Heads up look, each briefing and its second ask
+  now share one fixed set of instructions, laid out in named sections, in place of rules split
+  between those instructions and the question after the session. The question carries only what
+  changes each time: what the rep knows, the request, which points back at the record, and a short
+  reminder of the rules that decide that answer. The words are the same rules, moved; they now say
+  "the record" for what the rep is shown, so a sentence patching over the old wording is gone. The
+  replay can set one change against another with `--base`.
 - **The replay can measure a prompt change.** `/owner-rep-replay all --kind watch --variant build`
   sends saved calls from every session both as they were saved and as this version would send
   them, and keeps each reply beside its call, so the two can be read side by side.

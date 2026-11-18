@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 847dbab..76db643 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1725,7 +1725,7 @@ async function replay($: EngineInterface, args: string): Promise<string> {
+         lines.push(`  not sent again: ${edited.why}`)
+         continue
+       }
+-      texts.base = edited
++      texts.base = { system: got.system, prompt: got.prompt }
+     }
+     const effort = (a.effort ?? e.settings.effort) as 'high'
+     const dir = file.slice(0, file.lastIndexOf('/'))
