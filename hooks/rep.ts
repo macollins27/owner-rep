@@ -6162,13 +6162,18 @@ export function countsText(counts: Counts | undefined): string {
   return lines.length === 0 ? 'No calls counted in this session yet.' : lines.join('\n')
 }
 
+// The edits of this build a replay's variant can make to a saved call (`editSaved`, below).
+export const PROMPT_EDITS = ['frame', 'no-think'] as const
+export type PromptEdit = (typeof PROMPT_EDITS)[number]
+const PROMPT_EDITS_LIST = PROMPT_EDITS.join('|')
+
 // ---- The replay: `/owner-rep-replay <call file or session folder> [--kind k] [--last n] [--effort e] [--times n]`.
 // A folder's calls are taken newest last; only the last `--last` (10 unless given) of the kind
 // asked for are sent again, since every call sent costs what it cost the first time.
-export type ReplayArgs = { path: string; kind?: CallKind; last: number; effort?: string; times: number } | { error: string }
+export type ReplayArgs = { path: string; kind?: CallKind; last: number; effort?: string; times: number; variant?: PromptEdit[] } | { error: string }
 export const REPLAY_LAST = 10
 export const REPLAY_USAGE =
-  'Usage: /owner-rep-replay <call file, session folder or session id> [--kind objective|watch|brief|ask-again|own-words] [--last 1-50] [--effort low|medium|high|max] [--times 1-10]'
+  `Usage: /owner-rep-replay <call file, session folder, session id or all> [--kind objective|watch|brief|ask-again|own-words] [--last 1-50] [--effort low|medium|high|max] [--times 1-10] [--variant build|${PROMPT_EDITS_LIST}]`
 export function parseReplayArgs(args: string): ReplayArgs {
   const words = args.trim().split(/\s+/).filter(w => w !== '')
   let path: string | undefined
@@ -6176,6 +6181,7 @@ export function parseReplayArgs(args: string): ReplayArgs {
   let effort: string | undefined
   let last = REPLAY_LAST
   let times = 1
+  let variant: PromptEdit[] | undefined
   const whole = (w: string | undefined, max: number): number | null => {
     const n = Number(w)
     return Number.isInteger(n) && n >= 1 && n <= max ? n : null
@@ -6194,19 +6200,76 @@ export function parseReplayArgs(args: string): ReplayArgs {
       if (n === null) return { error: REPLAY_USAGE }
       if (w === '--times') times = n
       else last = n
+    } else if (w === '--variant') {
+      const named = words[++i]
+      const edits = named === 'build' ? [...PROMPT_EDITS] : (named ?? '').split(',')
+      if (named === undefined || !edits.every(e => (PROMPT_EDITS as readonly string[]).includes(e))) return { error: REPLAY_USAGE }
+      variant = edits as PromptEdit[]
     } else if (w.startsWith('--') || path !== undefined) return { error: REPLAY_USAGE }
     else path = w
   }
   if (path === undefined) return { error: REPLAY_USAGE }
-  return { path, last, times, ...(kind === undefined ? {} : { kind }), ...(effort === undefined ? {} : { effort }) }
+  return { path, last, times, ...(kind === undefined ? {} : { kind }), ...(effort === undefined ? {} : { effort }), ...(variant === undefined ? {} : { variant }) }
 }
 
-// The call files of a folder to send again: the kind asked for, the last `last` of them by name.
+// The call files to send again: the kind asked for, the last `last` of them by time. A name may sit
+// under its session's folder (`<session>/<file>`, for "all"); it is the file's own name, which
+// starts with when the call was made, that sorts and is checked.
+const baseName = (n: string): string => n.slice(n.lastIndexOf('/') + 1)
 export const replayPick = (names: readonly string[], kind: CallKind | undefined, last: number): string[] =>
   names
-    .filter(n => CALL_FILE.test(n) && (kind === undefined || n.endsWith(`-${kind}.json`)))
-    .sort()
+    .filter(n => CALL_FILE.test(baseName(n)) && (kind === undefined || n.endsWith(`-${kind}.json`)))
+    .sort((a, b) => (baseName(a) < baseName(b) ? -1 : baseName(a) > baseName(b) ? 1 : 0))
     .slice(-last)
+
+// ---- The replay's variant (`--variant`): a saved call's texts edited to what this build sends in
+// their place, so a prompt group is measured on calls the build before it sent, against the same
+// calls sent as saved. Each edit is one change of this build and names the kinds of call it
+// touches; an edit that touches a call's kind and finds nothing to change skips the call, so a
+// call is never sent unchanged under the variant's name. Only the task after the record is edited:
+// the record is the session's, and anything in it, the old texts quoted among them, stays. The edits
+// themselves, `PROMPT_EDITS`, are named above the replay's words.
+const EDIT_KINDS: Record<PromptEdit, readonly CallKind[]> = { frame: ['watch', 'brief', 'ask-again'], 'no-think': ['watch'] }
+// What the build before prompt group 1 sent (G1, G2): the fork frame that opened the task, the line
+// after it on the watch, and the start of the record read's system prompt.
+const OLD_FRAME = /^<system-reminder>This is a side request from the user[^]*?<\/system-reminder>\n\n/
+const OLD_NO_THINK = 'Answer straight away: do not think it over at length, and do not call any tool.\n\n'
+const OLD_RECORD_SYSTEM_START = "You are the owner's rep: you read the record of a Claude Code session"
+export type Edited = { system: string; prompt: string | PromptBlock[] } | { why: string }
+export function editSaved(kind: CallKind, system: string, prompt: string | PromptBlock[], edits: readonly PromptEdit[]): Edited {
+  const apply = PROMPT_EDITS.filter(e => edits.includes(e) && EDIT_KINDS[e].includes(kind))
+  if (apply.length === 0) return { why: `no edit of this variant applies to a ${kind} call` }
+  const blocks: PromptBlock[] = typeof prompt === 'string' ? [{ text: prompt }] : [...prompt]
+  const whole = joinBlocks(blocks)
+  const fence = whole.lastIndexOf('\n</session_record>\n')
+  const gap = fence < 0 ? -1 : whole.indexOf('\n\n', fence + 1)
+  if (gap < 0) return { why: 'it has no record fence' }
+  const taskAt = gap + 2
+  let task = whole.slice(taskAt)
+  let sys = system
+  if (apply.includes('frame') && !OLD_FRAME.test(task)) return { why: 'the old frame is not in it' }
+  // The no-think line first, since it sits after the frame.
+  if (apply.includes('no-think')) {
+    const head = task.match(OLD_FRAME)?.[0] ?? ''
+    if (!task.startsWith(head + OLD_NO_THINK)) return { why: 'the old no-think line is not in it' }
+    task = head + task.slice(head.length + OLD_NO_THINK.length)
+  }
+  if (apply.includes('frame')) {
+    if (!system.startsWith(OLD_RECORD_SYSTEM_START)) return { why: "its system prompt is not the record read's" }
+    task = task.replace(OLD_FRAME, '')
+    sys = RECORD_SYSTEM
+  }
+  if (typeof prompt === 'string') return { system: sys, prompt: whole.slice(0, taskAt) + task }
+  // The blocks wholly before the task go as they were; the rest become one block.
+  let at = 0
+  const kept: PromptBlock[] = []
+  for (const b of blocks) {
+    if (at + b.text.length > taskAt) break
+    kept.push(b)
+    at += b.text.length
+  }
+  return { system: sys, prompt: [...kept, { text: whole.slice(at, taskAt) + task }] }
+}
 
 // One row of the replay's table: a call as logged, or one run of it again.
 export type ReplayRow = { label: string; kind: CallKind; outcome: CallOutcome; read?: CallRead; usage?: Usage; ms: number; nearCap: boolean }

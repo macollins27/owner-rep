@@ -250,6 +250,7 @@ import {
   countEnd,
   countsText,
   nearCap,
+  editSaved,
   parseReplayArgs,
   removableCallFolder,
   overCallCap,
@@ -799,10 +800,10 @@ async function pruneCalls($: EngineInterface, root: string, sid: string): Promis
     // Left in place; the next process tries again.
   }
 }
-// The bytes of a session's folder of calls: its call files and its parts.
+// The bytes of a session's folder of calls: its call files, its parts and its replays' replies.
 async function folderBytes($: EngineInterface, folder: string): Promise<number> {
   const files = async (p: string) => (await $.fs.list(p).catch(() => [])).reduce((n, e) => n + (e.kind === 'file' ? e.size : 0), 0)
-  return (await files(folder)) + (await files(`${folder}/parts`))
+  return (await files(folder)) + (await files(`${folder}/parts`)) + (await files(`${folder}/replays`))
 }
 
 // A model call timed, a call that throws read as null.
@@ -1654,10 +1655,18 @@ async function savedCall($: EngineInterface, path: string): Promise<{ entry: Cal
   return { entry, system, prompt: entry.joined ? whole : blocks }
 }
 
-async function replay($: EngineInterface, args: string): Promise<string> {
-  const a = parseReplayArgs(args)
-  if ('error' in a) return a.error
-  const root = await callsFolder($)
+// The call files a replay names: one file, a session's folder, or with "all" every session's
+// folder under the calls folder, each file named with its folder so the rows say whose it is.
+async function replayFiles($: EngineInterface, a: { path: string; kind?: CallKind; last: number }, root: string | null): Promise<{ files: string[]; where: string } | string> {
+  if (a.path === 'all') {
+    if (root === null) return `Calls are not saved here.\n${REPLAY_USAGE}`
+    const names: string[] = []
+    for (const dir of await $.fs.list(root).catch(() => [])) {
+      if (dir.kind !== 'dir' || !isSessionId(dir.name)) continue
+      for (const f of await $.fs.list(`${root}/${dir.name}`).catch(() => [])) if (f.kind === 'file') names.push(`${dir.name}/${f.name}`)
+    }
+    return { files: replayPick(names, a.kind, a.last).map(n => `${root}/${n}`), where: root }
+  }
   // A bare session id names its folder under the calls folder; "this" names this session's.
   const named = a.path === 'this' ? currentId : a.path
   const path = isSessionId(named) && root !== null ? `${root}/${named}` : named
@@ -1667,12 +1676,26 @@ async function replay($: EngineInterface, args: string): Promise<string> {
     st.kind === 'dir'
       ? replayPick((await $.fs.list(path).catch(() => [])).map(e => e.name), a.kind, a.last).map(n => `${path}/${n}`)
       : [path]
-  if (files.length === 0) return `No saved calls${a.kind === undefined ? '' : ` of kind ${a.kind}`} in ${path}.`
+  return { files, where: path }
+}
+
+// Each call named is sent again `times` times as saved; with a variant, `times` times as saved and
+// `times` times with its texts edited (`editSaved`), and a call the variant cannot edit is not sent
+// at all, so the two arms are the same calls. Every reply is kept in `replays/` beside the call.
+async function replay($: EngineInterface, args: string): Promise<string> {
+  const a = parseReplayArgs(args)
+  if ('error' in a) return a.error
+  const root = await callsFolder($)
+  const picked = await replayFiles($, a, root)
+  if (typeof picked === 'string') return picked
+  const { files, where } = picked
+  if (files.length === 0) return `No saved calls${a.kind === undefined ? '' : ` of kind ${a.kind}`} in ${where}.`
   const rows: ReplayRow[] = []
   const lines: string[] = []
+  const arms = a.variant === undefined ? ['replay'] : ['as saved', 'variant']
   for (const file of files) {
     const got = await savedCall($, file)
-    const name = file.slice(file.lastIndexOf('/') + 1)
+    const name = a.path === 'all' ? file.slice(where.length + 1) : file.slice(file.lastIndexOf('/') + 1)
     if (got === null) {
       lines.push(`${name}: could not be read`)
       continue
@@ -1685,27 +1708,42 @@ async function replay($: EngineInterface, args: string): Promise<string> {
       lines.push(`  not sent again: ${got.why ?? 'its texts were not kept'}`)
       continue
     }
-    const effort = (a.effort ?? e.settings.effort) as 'high'
-    for (let i = 1; i <= a.times; i++) {
-      const system = got.system
-      const prompt = got.prompt
-      const { result, ms } = await timed(() => $.model.complete({ model: e.settings.model, system, prompt, maxTokens: e.settings.maxTokens, effort, timeoutMs: e.settings.timeoutMs }))
-      const usage = result === null ? undefined : (result.usage as Usage | undefined)
-      const row: ReplayRow = {
-        label: `replay ${i}`,
-        kind: e.kind,
-        ...callOutcome(result as never),
-        ms,
-        nearCap: nearCap(usage, e.settings.maxTokens),
-        ...(result !== null && result.isAnswered ? { read: callRead(e.kind, result.text, e.open, { usage, cap: e.settings.maxTokens }) } : {}),
-        ...(usage === undefined ? {} : { usage }),
+    const texts: Record<string, { system: string; prompt: string | PromptBlock[] }> = { replay: { system: got.system, prompt: got.prompt }, 'as saved': { system: got.system, prompt: got.prompt } }
+    if (a.variant !== undefined) {
+      const edited = editSaved(e.kind, got.system, got.prompt, a.variant)
+      if ('why' in edited) {
+        lines.push(`  not sent again: ${edited.why}`)
+        continue
       }
-      rows.push(row)
-      lines.push(`  ${replayLine(row)}`)
+      texts.variant = edited
+    }
+    const effort = (a.effort ?? e.settings.effort) as 'high'
+    const dir = file.slice(0, file.lastIndexOf('/'))
+    const base = file.slice(file.lastIndexOf('/') + 1).replace(/\.json$/, '')
+    for (const arm of arms) {
+      const { system, prompt } = texts[arm] as { system: string; prompt: string | PromptBlock[] }
+      for (let i = 1; i <= a.times; i++) {
+        const { result, ms } = await timed(() => $.model.complete({ model: e.settings.model, system, prompt, maxTokens: e.settings.maxTokens, effort, timeoutMs: e.settings.timeoutMs }))
+        const usage = result === null ? undefined : (result.usage as Usage | undefined)
+        const label = `${arm} ${i}`
+        const row: ReplayRow = {
+          label,
+          kind: e.kind,
+          ...callOutcome(result as never),
+          ms,
+          nearCap: nearCap(usage, e.settings.maxTokens),
+          ...(result !== null && result.isAnswered ? { read: callRead(e.kind, result.text, e.open, { usage, cap: e.settings.maxTokens }) } : {}),
+          ...(usage === undefined ? {} : { usage }),
+        }
+        if (result !== null && result.isAnswered) await writeFile($, `${dir}/replays/${base}-${label.replace(/ /g, '-')}.txt`, result.text)
+        rows.push(row)
+        lines.push(`  ${replayLine(row)}`)
+      }
     }
   }
-  const setting = a.effort === undefined ? '' : ` (effort ${a.effort})`
-  return [...lines, '', replayTotals(rows, 'logged'), replayTotals(rows, `replay`) + setting].join('\n')
+  const setting = [a.effort === undefined ? '' : `effort ${a.effort}`, a.variant === undefined ? '' : `variant ${a.variant.join(',')}`].filter(x => x !== '').join(', ')
+  const totals = arms.map(arm => replayTotals(rows, arm) + (arm === 'as saved' || setting === '' ? '' : ` (${setting})`))
+  return [...lines, '', replayTotals(rows, 'logged'), ...totals].join('\n')
 }
 
 // The reason a briefing's read gives for a reply cut short, in place of the engine's reason.
@@ -2899,7 +2937,7 @@ export const register: Register = on => {
     if (ownCheck) return next(e)
     try {
       await $.command.register({ name: 'owner-rep-counts', description: "Owner rep: this session's call counters" })
-      await $.command.register({ name: 'owner-rep-replay', description: 'Owner rep: send saved calls again', argumentHint: '<call file or session> [--kind k] [--last n] [--effort e] [--times n]' })
+      await $.command.register({ name: 'owner-rep-replay', description: 'Owner rep: send saved calls again', argumentHint: '<call file, session or all> [--kind k] [--last n] [--effort e] [--times n] [--variant v]' })
     } catch {
       // The rep works without them.
     }

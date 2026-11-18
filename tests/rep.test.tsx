@@ -19,6 +19,7 @@ import { describe, expect, mock, test as kitTest, type Engine, type Plugin, type
 
 import { type Memory, CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkMcpConfig, checkPluginsOff, LOOK_RULE, looksOf, signsOff, keptWho, runOf, runFor, runKey, runQualifies, shellChanges, runFromResult, runEnded, RUN_SAID_MAX, factHolds, kindOf, type Look, type Run, checkCostText, checkPrompt, doingFor, firstSentence, fit, fillCard, countLine, refusedLine, type CardText, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, HIS_CUT, TURN_TEXT_MAX, PENDING_MAX, TURNS_KEPT, tapStep, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, OLD_SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, sentencesOf, withoutStopSentences, toAgentVoice, sectionOf, takeOwnWords, ownMessageTaken, earlierMessage, messageUsable, type Replaced, parseOwnWords, ownWordsPrompt, askAgain, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
 import * as rep from '../hooks/rep'
+import { PRE_G1 } from './fixtures/pre-g1-prompts'
 import { REFUSED_ENVIRONMENT, MISSING_REMOTE, BEFORE_YOU_STOP_COLON, WAIT_BEFORE_SUBMIT, THREE_BEFORE_YOU_STOP, TWO_BEFORE_YOU_STOP, GUARD_REFUSAL, PAUSED_WORK_CAUSE, STOP_SHAPES } from './fixtures/stop-shapes'
 
 // Every test starts with the session's working folder a Unix path, so what the suite reads does not
@@ -15222,6 +15223,65 @@ describe('the call log: its pieces', () => {
     expect(rep.replayPick(names, 'own-words', 10)).toEqual([])
   })
 
+  test('rule: the replay\'s words take a variant of this build\'s prompt edits, and "all" for every session\'s calls', () => {
+    expect(rep.parseReplayArgs('all --kind watch --last 30 --variant build --times 2')).toEqual({ path: 'all', kind: 'watch', last: 30, times: 2, variant: [...rep.PROMPT_EDITS] })
+    expect(rep.parseReplayArgs('this --variant frame')).toEqual({ path: 'this', last: rep.REPLAY_LAST, times: 1, variant: ['frame'] })
+    expect(rep.parseReplayArgs('this --variant no-think,frame')).toEqual({ path: 'this', last: rep.REPLAY_LAST, times: 1, variant: ['no-think', 'frame'] })
+    for (const bad of ['this --variant', 'this --variant wat', 'this --variant frame,wat', 'this --variant ,']) expect(rep.parseReplayArgs(bad)).toEqual({ error: rep.REPLAY_USAGE })
+    // Across folders the calls are taken by time, whatever folder each sits in.
+    const a = `${SID}/${rep.callFileName(3, 0, 'watch')}`
+    const b = `other/${rep.callFileName(1, 0, 'watch')}`
+    const c = `other/${rep.callFileName(2, 0, 'brief')}`
+    expect(rep.replayPick([a, b, c, 'other/parts'], 'watch', 10)).toEqual([b, a])
+  })
+
+  // The variant must give exactly what this build sends: the texts the build before group 1
+  // (08f8667) wrote for one memory, edited, against this build's texts for the same memory.
+  test('rule: the variant edits a call the build before group 1 sent into exactly what this build sends, and skips a call it cannot edit rather than send it unchanged', () => {
+    const m: Memory = { objective: { ...OBJ_FIXTURE, result: 'A to-do command, installed', done: OPEN_JOB_OPEN }, owner: [{ n: 1, kind: 'his', text: 'make it serious', prior: '' }, { n: 2, kind: 'draft', text: 'Show me the run.', prior: '' }], past: ['An earlier job.'], seen: [], others: [] }
+    const saved = (task: string) => rep.recordPrompt([], task).map((b, i, all) => (i === 0 && all.length > 1 ? { ...b, cache: true as const } : b))
+    const cases: Array<[rep.CallKind, string, string]> = [
+      ['watch', PRE_G1.watchStep, watchPrompt(m, 'step')],
+      ['watch', PRE_G1.watchStop, watchPrompt(m, 'stop')],
+      ['watch', PRE_G1.watchNote, watchPrompt(m, 'note')],
+      ['brief', PRE_G1.brief, briefPrompt(m)],
+      ['ask-again', `${PRE_G1.brief}\n\n${PRE_G1.askAgain}`, `${briefPrompt(m)}\n\n${askAgain(OPEN_JOB_OPEN)}`],
+    ]
+    for (const [kind, old, now] of cases) {
+      const before = saved(old)
+      const e = rep.editSaved(kind, PRE_G1.system, before, [...rep.PROMPT_EDITS])
+      if ('why' in e) throw new Error(e.why)
+      expect(e.system).toBe(RECORD_SYSTEM)
+      expect(rep.joinBlocks(e.prompt as rep.PromptBlock[])).toBe(rep.joinBlocks(rep.recordPrompt([], now)))
+      // The blocks before the task's own are sent as they were, cache marks and all.
+      expect((e.prompt as rep.PromptBlock[]).slice(0, -1)).toEqual(before.slice(0, -1))
+      // A joined prompt comes back joined.
+      const joined = rep.editSaved(kind, PRE_G1.system, rep.joinBlocks(before), [...rep.PROMPT_EDITS])
+      expect('why' in joined ? joined.why : joined.prompt).toBe(rep.joinBlocks(rep.recordPrompt([], now)))
+    }
+    // R2 alone: only the no-think line goes; the frame and the old system prompt stay.
+    const r2 = rep.editSaved('watch', PRE_G1.system, rep.joinBlocks(saved(PRE_G1.watchStep)), ['no-think'])
+    if ('why' in r2) throw new Error(r2.why)
+    expect(r2.system).toBe(PRE_G1.system)
+    expect(r2.prompt).toBe(rep.joinBlocks(saved(PRE_G1.watchStep)).replace('Answer straight away: do not think it over at length, and do not call any tool.\n\n', ''))
+    expect(r2.prompt).toContain('<system-reminder>This is a side request')
+    // R1 alone: the frame goes and the system prompt is this build's; the no-think line stays.
+    const r1 = rep.editSaved('watch', PRE_G1.system, rep.joinBlocks(saved(PRE_G1.watchStep)), ['frame'])
+    if ('why' in r1) throw new Error(r1.why)
+    expect(r1.system).toBe(RECORD_SYSTEM)
+    expect(r1.prompt).not.toContain('system-reminder')
+    expect(r1.prompt).toContain('\n\nAnswer straight away: do not think it over at length')
+    // Never sent unchanged under the variant's name.
+    expect(rep.editSaved('watch', RECORD_SYSTEM, rep.joinBlocks(rep.recordPrompt([], watchPrompt(m, 'step'))), [...rep.PROMPT_EDITS])).toEqual({ why: 'the old frame is not in it' })
+    expect(rep.editSaved('brief', PRE_G1.system, rep.joinBlocks(saved(PRE_G1.brief)), ['no-think'])).toEqual({ why: 'no edit of this variant applies to a brief call' })
+    expect(rep.editSaved('objective', OBJECTIVE_SYSTEM, 'x', [...rep.PROMPT_EDITS])).toEqual({ why: 'no edit of this variant applies to a objective call' })
+    expect(rep.editSaved('watch', 'some other system', rep.joinBlocks(saved(PRE_G1.watchStep)), ['frame'])).toEqual({ why: "its system prompt is not the record read's" })
+    // The frame quoted inside the record is the record's: it is left there, and a task without it is skipped.
+    const quoted = rep.recordPrompt([{ role: 'user', text: PRE_G1.watchStep, toolUses: [] }], watchPrompt(m, 'step'))
+    expect(rep.editSaved('watch', PRE_G1.system, rep.joinBlocks(quoted), ['frame'])).toEqual({ why: 'the old frame is not in it' })
+    expect(rep.editSaved('watch', PRE_G1.system, 'no fence here', ['frame'])).toEqual({ why: 'it has no record fence' })
+  })
+
   test('rule: the replay\'s rows and totals name the read, the gate, the words and the tokens', () => {
     const logged = { label: 'logged', kind: 'brief' as const, outcome: 'answered', read: { parsed: 'read', shown: 1, shownWhere: 1, closed: 0, gate: ['empty-message' as const], words: { message: 0 } }, usage: USAGE, ms: 2500, nearCap: false }
     const again = { label: 'replay 1', kind: 'brief' as const, outcome: 'answered', read: { parsed: 'read', gate: [] }, usage: { ...USAGE, output_tokens: 3000 }, ms: 1500, nearCap: true }
@@ -15431,6 +15491,66 @@ describe('the call log: saving, replaying, counting and removing', () => {
     expect((await runCommand($, 'owner-rep-replay', `${SID} --kind own-words`)).text).toBe(`No saved calls of kind own-words in ${CALLS}.`)
   })
 
+  test('rule: the replay\'s variant sends each call the build before group 1 saved both as saved and as this build would send it, keeps every reply, and takes calls from every session with "all"', async ($, on) => {
+    const OTHER = '0a1b2c3d-4e5f-4061-8728-394a5b6c7d8e'
+    const files = new Map<string, string>()
+    const rows: RecordRow[] = [{ role: 'user', text: 'make it serious', toolUses: [] }]
+    const m: Memory = { objective: { ...OBJ_FIXTURE, done: OPEN_JOB_OPEN }, owner: [om('make it serious')], past: [], seen: [], others: [] }
+    // A watch call as the build before group 1 saved it, in another session's folder; and one this build saved.
+    const plant = async (folder: string, at: number, system: string, task: string) => {
+      const blocks = rep.recordPrompt(rows, task)
+      for (const t of [system, ...blocks.map(b => b.text)]) files.set(`${folder}/parts/${await shaOf(t)}.txt`, t)
+      const entry = {
+        v: 1, at, kind: 'watch', settings: { model: rep.OBJECTIVE_MODEL, effort: 'high', maxTokens: rep.RECORD_MAX_TOKENS, timeoutMs: rep.RECORD_TIMEOUT_MS },
+        kept: true, system: await shaOf(system), prompt: await Promise.all(blocks.map(async b => ({ sha: await shaOf(b.text), ...(b.cache === true ? { cache: true } : {}) }))),
+        joined: false, promptSha: await shaOf(rep.joinBlocks(blocks)), promptChars: rep.joinBlocks(blocks).length, ms: 1000, outcome: 'answered', nearCap: false,
+      }
+      const name = rep.callFileName(at, 0, 'watch')
+      files.set(`${folder}/${name}`, JSON.stringify(entry))
+      return name
+    }
+    const old = await plant(`${CALLS_ROOT}/${OTHER}`, 1_700_000_000_000, PRE_G1.system, PRE_G1.watchStep)
+    const mine = await plant(CALLS, 1_700_000_100_000, RECORD_SYSTEM, watchPrompt(m, 'step'))
+    const d = disk(on, files)
+    listed(on, d)
+    const { hold } = capture(on, storeOf(recOf([his(1, 'start the report')])), () => SID)
+    const sent: Array<{ system?: string; prompt: string }> = []
+    on('model.complete', (_$, e) => {
+      sent.push({ system: e.system, prompt: typeof e.prompt === 'string' ? e.prompt : rep.joinBlocks(e.prompt as rep.PromptBlock[]) })
+      return { value: { isAnswered: true, text: `${HOLDS}\n(as saved)`, usage: USAGE } }
+    })
+    const variant: string[] = []
+    hold.fork = p => {
+      variant.push(p)
+      return `${HOLDS}\n(variant)`
+    }
+    await started($)
+    const out = (await runCommand($, 'owner-rep-replay', 'all --kind watch --variant build --times 2')).text ?? ''
+    // The old call: twice as saved, with its own texts; twice as this build sends it.
+    const asSaved = sent.filter(c => c.system === PRE_G1.system)
+    expect(asSaved.length).toBe(2)
+    expect(asSaved[0]?.prompt).toContain('<system-reminder>This is a side request')
+    expect(asSaved[0]?.prompt).toContain('Answer straight away')
+    expect(variant.length).toBe(2)
+    expect(variant[0]).not.toContain('system-reminder')
+    expect(variant[0]).not.toContain('Answer straight away')
+    expect(variant[0]?.startsWith('## Who you are')).toBe(true)
+    // This build's own call has nothing to edit: it is named and not sent at all.
+    expect(out).toContain(`${OTHER}/${old}`)
+    expect(out).toContain(`${SID}/${mine}\n  logged watch`)
+    expect(out).toContain('not sent again: the old frame is not in it')
+    expect(out).toMatch(/as saved 1 watch: answered/)
+    expect(out).toMatch(/variant 2 watch: answered/)
+    expect(out).toMatch(/^logged: 2 calls;/m)
+    expect(out).toMatch(/^as saved: 2 calls;/m)
+    expect(out).toMatch(/^variant: 2 calls;/m)
+    // Every reply is kept beside the call it answers, named by the call and the arm.
+    const base = old.replace(/\.json$/, '')
+    expect(d.files.get(`${CALLS_ROOT}/${OTHER}/replays/${base}-as-saved-1.txt`)).toBe(`${HOLDS}\n(as saved)`)
+    expect(d.files.get(`${CALLS_ROOT}/${OTHER}/replays/${base}-variant-2.txt`)).toBe(`${HOLDS}\n(variant)`)
+    expect([...d.files.keys()].filter(k => k.includes('/replays/')).length).toBe(4)
+  })
+
   test('rule: at a session\'s start, each session\'s calls folder unchanged for 14 days is removed, and nothing else: never the session starting, resumed after 14 days', async ($, on) => {
     const OLD = '0a1b2c3d-4e5f-4061-8728-394a5b6c7d8e'
     const NEW = '1a1b2c3d-4e5f-4061-8728-394a5b6c7d8e'
@@ -15511,6 +15631,31 @@ describe('the call log: saving, replaying, counting and removing', () => {
     expect(removed(d)).toEqual([`${CALLS_ROOT}/${EXPIRED}`, `${CALLS_ROOT}/${A}`, `${CALLS_ROOT}/${B}`])
     for (const id of [C, LIVE, SID]) expect(d.files.has(part(id))).toBe(true)
     expect(d.runs.filter(r => r[0] === 'rm').length).toBe(1)
+  })
+
+  test('rule: the replies a replay kept count toward the 1 GB of every session\'s calls', async ($, on) => {
+    const MiB = 1024 * 1024
+    const A = '0a1b2c3d-4e5f-4061-8728-394a5b6c7d8e'
+    const reply = `${CALLS_ROOT}/${A}/replays/${rep.callFileName(1, 0, 'watch').replace(/\.json$/, '')}-variant-1.txt`
+    const files = new Map([
+      [`${CALLS_ROOT}/${A}/parts/${'a'.repeat(64)}.txt`, 'text'],
+      [`${CALLS_ROOT}/${A}/${rep.callFileName(1, 0, 'watch')}`, '{}'],
+      [reply, 'a reply'],
+      [`${CALLS_ROOT}/${SID}/parts/${'b'.repeat(64)}.txt`, 'text'],
+    ])
+    const d = disk(on, files)
+    // 100 MiB of A's texts and 400 MiB of the starting session's come to 500 MiB; A's 600 MiB of
+    // replies take every session's calls past 1 GB.
+    const day = 24 * 60 * 60 * 1000
+    listed(on, d, new Map([[`${CALLS_ROOT}/${A}`, Date.now() - 5 * day], [`${CALLS_ROOT}/${SID}`, Date.now() - day]]), new Map([
+      [`${CALLS_ROOT}/${A}/parts/${'a'.repeat(64)}.txt`, 100 * MiB],
+      [reply, 600 * MiB],
+      [`${CALLS_ROOT}/${SID}/parts/${'b'.repeat(64)}.txt`, 400 * MiB],
+    ]))
+    capture(on, storeOf(recOf([his(1, 'start the report')])), () => SID)
+    await started($)
+    await settleUntil($, () => removed(d).length > 0)
+    expect(removed(d)).toEqual([`${CALLS_ROOT}/${A}`])
   })
 
   test('rule: a session of this process whose calls folder was removed writes its texts again', async ($, on) => {
