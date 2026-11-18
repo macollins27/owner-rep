@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 6abcdfc..c0f6e8d 100644
+index 285e808..228203e 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1857,7 +1857,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
+@@ -1885,7 +1885,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
        unanswered: [...(links === null ? ['links' as const] : []), ...(repos.whole ? [] : ['repos' as const])],
      })
      const startedAt = Date.now()
--    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, path, links ?? [], repos.dirs), mcp)), cwd: copy, env: { ...CHECK_ISOLATE_ENV, [CHECK_ENV]: '1', ...(store === '' ? {} : { [PNPM_STORE_ENV]: store }) } })
-+    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, path, links ?? [], repos.dirs), mcp)), cwd, env: { ...CHECK_ISOLATE_ENV, [CHECK_ENV]: '1', ...(store === '' ? {} : { [PNPM_STORE_ENV]: store }) } })
+-    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, path, links ?? [], repos.dirs, plugins), mcp)), cwd: copy, env: { ...CHECK_ISOLATE_ENV, [CHECK_ENV]: '1', ...(store === '' ? {} : { [PNPM_STORE_ENV]: store }) } })
++    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, path, links ?? [], repos.dirs, plugins), mcp)), cwd, env: { ...CHECK_ISOLATE_ENV, [CHECK_ENV]: '1', ...(store === '' ? {} : { [PNPM_STORE_ENV]: store }) } })
      let stdout = ''
      let stderr = ''
      let timedOut = false

@@ -497,6 +497,11 @@ call writes (below):
    reads `<CLAUDE_CONFIG_DIR>/.claude.json`, else `~/.claude.json`, and takes that one entry, or
    none; a file past the engine's 4 MiB read limit cannot be read and gives none, and the
    checker then reads the record through the `agentsview` command, as the brief tells it to), and no CLAUDE.md, skill, slash command, project or local setting or other MCP server;
+   nor the owner's plugins: `checkPlugins` reads `<CLAUDE_CONFIG_DIR>/settings.json`, else
+   `~/.claude/settings.json`, and `checkPluginsOff` names every key of its `enabledPlugins`, each
+   `false`, which `checkSettings` writes into the `--settings` file as `enabledPlugins`, read
+   above the user level (none when the file cannot be read or lists none; the engine's built-in
+   plugins stay);
    the brief says the agent's instruction files are in its folder, to read when a claim turns on
    them. Nothing is removed from the copy, since where no copy is made the run is in the agent's
    own folder. With `--permission-mode default`, `CHECK_ALLOWED_TOOLS`

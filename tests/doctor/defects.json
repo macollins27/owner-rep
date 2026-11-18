@@ -237,7 +237,7 @@
     "name": "check-outside-copy",
     "breaks": "The check's run is started in the agent's own folder instead of the throwaway copy, so what the checker runs and writes lands in the folder the agent is working in.",
     "patch": "check-outside-copy.patch",
-    "fixed": "2026-10-15"
+    "fixed": "2026-10-15; remade 2026-11-17"
   },
   {
     "name": "refusals-unreported",
@@ -1185,7 +1185,7 @@
     "name": "fence-path-ignored",
     "breaks": "The check's run is fenced without the command path, so a folder of programs in the home stays writable and a program put there runs the next time anyone types its name.",
     "patch": "fence-path-ignored.patch",
-    "fixed": "2026-10-17"
+    "fixed": "2026-10-17; remade 2026-11-17"
   },
   {
     "name": "fence-path-holds-copy",
@@ -1287,7 +1287,7 @@
     "name": "pnpm-store-not-passed",
     "breaks": "The check's run is not told where pnpm's store is, so pnpm inside the fence moves its store into an empty scratch folder and an offline install there fails, and the check names the project's tests as not run.",
     "patch": "pnpm-store-not-passed.patch",
-    "fixed": "2026-10-17"
+    "fixed": "2026-10-17; remade 2026-11-17"
   },
   {
     "name": "pnpm-store-keeps-version",
@@ -1335,7 +1335,7 @@
     "name": "path-links-not-asked",
     "breaks": "The check never passes the links' targets to the fence, so a tool installed through a link in the command path can be changed by the check's run.",
     "patch": "path-links-not-asked.patch",
-    "fixed": "2026-10-17"
+    "fixed": "2026-10-17; remade 2026-11-17"
   },
   {
     "name": "path-links-exit-read",
@@ -1449,7 +1449,7 @@
     "name": "repo-git-not-asked",
     "breaks": "The repositories the git question finds are never passed to the fence, so a commit made in a copied worktree moves the real branch.",
     "patch": "repo-git-not-asked.patch",
-    "fixed": "2026-10-17"
+    "fixed": "2026-10-17; remade 2026-11-17"
   },
   {
     "name": "worktree-common-dir-missed",
@@ -1515,7 +1515,7 @@
     "name": "unanswered-not-passed",
     "breaks": "When the link or git question gets no answer the brief still says the fence guards the repository and the installs the links lead to, so the run may commit or change an install trusting a guard that is not there.",
     "patch": "unanswered-not-passed.patch",
-    "fixed": "2026-10-17"
+    "fixed": "2026-10-17; remade 2026-11-17"
   },
   {
     "name": "links-unanswered-as-none",
@@ -3261,7 +3261,7 @@
     "name": "own-check-spawn-unmarked",
     "breaks": "The check is spawned without the OWNER_REP_CHECK mark, so a check run outside the copies' folder is watched like the owner's agent.",
     "patch": "own-check-spawn-unmarked.patch",
-    "fixed": "2026-11-15"
+    "fixed": "2026-11-15; remade 2026-11-17"
   },
   {
     "name": "own-check-messages-kept",
@@ -3309,13 +3309,13 @@
     "name": "check-loads-claude-mds",
     "breaks": "The check's own session loads every CLAUDE.md, the owner's own among them, against the owner's choice.",
     "patch": "check-loads-claude-mds.patch",
-    "fixed": "2026-11-15"
+    "fixed": "2026-11-15; remade 2026-11-17"
   },
   {
     "name": "check-mcp-not-passed",
     "breaks": "The agentsview entry found in the owner's .claude.json is never given to the check, which starts with no MCP server.",
     "patch": "check-mcp-not-passed.patch",
-    "fixed": "2026-11-15"
+    "fixed": "2026-11-15; remade 2026-11-17"
   },
   {
     "name": "check-mcp-config-dir-ignored",
@@ -3832,5 +3832,29 @@
     "breaks": "A run's last words are kept whole, so a helper's long answer fills the record and the card.",
     "patch": "run-words-uncapped.patch",
     "fixed": "2026-11-17"
+  },
+  {
+    "name": "check-plugins-left-on",
+    "breaks": "The check's own session loads every plugin the owner turned on, this mod among them, with their hooks, skills and agents.",
+    "patch": "check-plugins-left-on.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "check-plugins-not-written",
+    "breaks": "The plugins to turn off are worked out but never put in the check's settings, so every plugin still loads.",
+    "patch": "check-plugins-not-written.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "check-plugins-kept-on",
+    "breaks": "The check copies each plugin's setting as the owner has it, so every plugin turned on stays on in the check.",
+    "patch": "check-plugins-kept-on.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "check-plugins-home-only",
+    "breaks": "With CLAUDE_CONFIG_DIR set, the check reads the home's settings.json instead of the config folder's, so the plugins that session turns on stay on.",
+    "patch": "check-plugins-home-only.patch",
+    "fixed": "tested 2026-11-17"
   }
 ]
