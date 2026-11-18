@@ -184,6 +184,9 @@ import {
   type RecordRow,
   objectiveText,
   looksOf,
+  signsOff,
+  keptWho,
+  runOf,
   openConditions,
   parseBrief,
   parseCheck,
@@ -215,6 +218,7 @@ import {
   watchPrompt,
   type BriefAnswer,
   type Condition,
+  type Ran,
   type Memory,
   type Objective,
   type ObjectiveAnswer,
@@ -328,6 +332,9 @@ type Rec = {
   // The last write whose every attempt failed: when, and the last message it was shown;
   // cleared by the next write that lands. A fresh start writes again while it is set.
   failedWrite?: { at: number; upTo: number }
+  // The runs of a helper and of Codex the agent started (`runOf`), for `signsOff`; absent
+  // until the first, and on records from before it, where no look by them signs.
+  runs?: { helper: number; codex: number }
   // The calls counted by kind, and how the cards the gate refused ended (`countCall`, `countEnd`);
   // absent until the first call. Printed by `/owner-rep-counts`, never shown on the band.
   counts?: Counts
@@ -1247,9 +1254,11 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number, r
 // number closes nothing, nor does a plan's or an approval's (a yes adds and
 // never quietly takes away, as `canClose` holds for the writer), and a shown
 // or reopen mark without a where is not taken. A shown mark on a condition not
-// marked "fact" whose where has no look by someone on `looksOf`'s sign-off list
-// (only the agent's own look, whoever reports it, the check included; a look by
-// anyone off the list; or no look at all) moves nothing: the condition keeps its
+// marked "fact" whose where has no look that `signsOff` takes (only the agent's own
+// look, whoever reports it, the check included; a look by anyone off the list; a
+// signer's look denied, empty, still to come or by one who wrote the work; one by a
+// helper or Codex whose run the record does not hold, or by the check outside its
+// own marks; or no look at all) moves nothing: the condition keeps its
 // state and carries what was seen as `seen`, and who looked as `seenBy` (G44).
 // The state a condition is held in keeps its kind. True when a condition moved
 // or took a new `seen`.
@@ -1263,6 +1272,8 @@ function applyMarks(
   if (o === null) return false
   const notHis = new Set(rec.owner.filter(m => m.kind === 'plan' || approvalOf(m)).map(m => m.n))
   const his = hisFrom(rec, Math.max(o.since, o.from + 1)).filter(n => !notHis.has(n))
+  // The signers whose runs the record holds: the check only in its own marks.
+  const ran: Ran = { helper: (rec.runs?.helper ?? 0) > 0, codex: (rec.runs?.codex ?? 0) > 0, check: check !== null }
   let changed = false
   const done = o.done.map((c): Condition => {
     const kind: { kind?: Condition['kind'] } = c.kind === undefined ? {} : { kind: c.kind }
@@ -1283,12 +1294,15 @@ function applyMarks(
       // the agent's own above all, and a where with no look, is kept as shown evidence with
       // who made it, and leaves the condition as it was. A "fact" is shown by its where (G44).
       const looks = looksOf(show.by)
-      if (c.kind !== 'fact' && !looks.some(l => l.signs)) {
+      if (c.kind !== 'fact' && !looks.some(l => signsOff(l, ran))) {
         const seen = looks.length === 0 ? show.by.trim() : looks.map(l => l.what).filter(w => w !== '').join('; ')
-        const seenBy = [...new Set(looks.map(l => l.who))].join(' and ')
+        const seenBy = [...new Set(looks.map(l => keptWho(l, ran)))].join(' and ')
         if (seen === '' || (c.seen === seen && (c.seenBy ?? '') === seenBy)) return c
         changed = true
-        return { ...c, seen, ...(seenBy === '' ? {} : { seenBy }) }
+        // Who looked comes from this where alone: one with no look is the agent's own,
+        // never the last named looker's (Codex review of #53).
+        const { seenBy: _was, ...rest } = c
+        return { ...rest, seen, ...(seenBy === '' ? {} : { seenBy }) }
       }
       changed = true
       return { text: c.text, state: 'shown', by: show.by, ...kind }
@@ -2986,7 +3000,23 @@ export const register: Register = on => {
 
   on('tool.call', async ($, e, next) => {
     if (ownCheck) return next(e)
-    if (e.agentId !== undefined) return next(e)
+    // A helper's or Codex's run, the agent's or a helper's, is counted once the call returns,
+    // so a look by it can sign off (`signsOff`).
+    const run = runOf(String(e.tool), (e as unknown as Record<string, unknown>).command)
+    const ranOne = async <T,>(result: T): Promise<T> => {
+      if (run !== null) {
+        await sessionId($)
+          .then(id =>
+            changeRec($, id, r => {
+              const was = r.runs ?? { helper: 0, codex: 0 }
+              r.runs = { ...was, [run]: was[run] + 1 }
+            }),
+          )
+          .catch(() => undefined)
+      }
+      return result
+    }
+    if (e.agentId !== undefined) return ranOne(await next(e))
     const tool = String(e.tool)
     const doing = doingFor(tool, e as unknown as Record<string, unknown>)
     const waits = tool === 'AskUserQuestion' || tool === 'ExitPlanMode'
@@ -3001,7 +3031,7 @@ export const register: Register = on => {
       // Drawing is best effort.
     }
     try {
-      const result = await next(e)
+      const result = await ranOne(await next(e))
       // What the plan screen answered is stored after the call; a thrown call stores nothing.
       if (tool === 'ExitPlanMode') await takePlanScreen($, e, result).catch(() => undefined)
       return result

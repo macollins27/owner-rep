@@ -17,7 +17,7 @@
 import type { On, SessionMessage } from 'claude-code'
 import { describe, expect, mock, test as kitTest, type Engine, type Plugin, type TestBody, type TestOptions } from 'claude-code/testing'
 
-import { type Memory, CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkMcpConfig, LOOK_RULE, looksOf, checkCostText, checkPrompt, doingFor, firstSentence, fit, fillCard, countLine, refusedLine, type CardText, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, HIS_CUT, TURN_TEXT_MAX, PENDING_MAX, TURNS_KEPT, tapStep, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, OLD_SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, sentencesOf, withoutStopSentences, toAgentVoice, sectionOf, takeOwnWords, ownMessageTaken, earlierMessage, messageUsable, type Replaced, parseOwnWords, ownWordsPrompt, askAgain, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
+import { type Memory, CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkMcpConfig, LOOK_RULE, looksOf, signsOff, keptWho, runOf, type Look, type Ran, checkCostText, checkPrompt, doingFor, firstSentence, fit, fillCard, countLine, refusedLine, type CardText, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, HIS_CUT, TURN_TEXT_MAX, PENDING_MAX, TURNS_KEPT, tapStep, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, OLD_SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, sentencesOf, withoutStopSentences, toAgentVoice, sectionOf, takeOwnWords, ownMessageTaken, earlierMessage, messageUsable, type Replaced, parseOwnWords, ownWordsPrompt, askAgain, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
 import * as rep from '../hooks/rep'
 import { REFUSED_ENVIRONMENT, MISSING_REMOTE, BEFORE_YOU_STOP_COLON, WAIT_BEFORE_SUBMIT, THREE_BEFORE_YOU_STOP, TWO_BEFORE_YOU_STOP, GUARD_REFUSAL, PAUSED_WORK_CAUSE, STOP_SHAPES } from './fixtures/stop-shapes'
 
@@ -8929,10 +8929,33 @@ test('rule: the writer never raises a condition: a reopened one it proposes show
 // --- G44: that the result works is signed off only by a look by someone who did not build it. ---
 
 test('looksOf: every look in a where is read, and only a who in the closed set signs: a helper that did not build it, Codex, the check', () => {
-  expect(looksOf('look by the agent: opened the page and it loaded')).toEqual([{ signs: false, who: 'the agent', what: 'opened the page and it loaded' }])
-  for (const who of ['a helper that did not build it', 'the helper that did not build it', 'Codex', 'the check', 'The Check', 'a helper that did not build it (a11699fb9d8861abd)']) {
-    expect(looksOf(`look by ${who}: opened the page as a visitor and it read well`)).toEqual([{ signs: true, who, what: 'opened the page as a visitor and it read well' }])
+  expect(looksOf('look by the agent: opened the page and it loaded')).toEqual([{ signs: false, as: null, who: 'the agent', what: 'opened the page and it loaded' }])
+  for (const [who, as] of [
+    ['a helper that did not build it', 'helper'],
+    ['the helper that did not build it', 'helper'],
+    ['Codex', 'codex'],
+    ['the check', 'check'],
+    ['The Check', 'check'],
+    ['a helper that did not build it (a11699fb9d8861abd)', 'helper'],
+    ["the rep's own check", 'check'],
+    ["owner-rep's check", 'check'],
+  ] as const) {
+    expect(looksOf(`look by ${who}: opened the page as a visitor and it read well`)).toEqual([{ signs: true, as, who, what: 'opened the page as a visitor and it read well' }])
   }
+  // The second Codex review of #53 (6c159ee6): a denied, empty or not-yet look, and a signer
+  // that says it wrote the work, do not sign.
+  for (const where of [
+    'No look by Codex: only the agent tried it',
+    'not a look by the check: the agent paid',
+    'without a look by a helper that did not build it: paid',
+    'look by the check:',
+    'look by the agent: paid successfully; a look by the check: has not happened yet',
+    'look by Codex: will run it after the merge',
+    'look by a helper that did not build it: not yet run',
+    'look by Codex: I fixed the checkout and then paid successfully',
+    'look by a helper that did not build it: it rewrote the form, then paid',
+    "look by Codex: we've changed the handler; payment went through",
+  ]) expect(looksOf(where).some(l => l.signs)).toBe(false)
   // The live check of #53 (session 6c159ee6), its table word for word: none of these signs.
   for (const where of [
     'look by the second helper (not the writer): ran it',
@@ -8952,14 +8975,40 @@ test('looksOf: every look in a where is read, and only a who in the closed set s
   // Two looks in one where: the check's, written second, is read and signs.
   const two = looksOf('look by the fresh helper (a11699fb9d8861abd): 525-byte test file in, 525 bytes out. Look by the check: a file with café printed CAFÉ')
   expect(two).toEqual([
-    { signs: false, who: 'the fresh helper (a11699fb9d8861abd)', what: '525-byte test file in, 525 bytes out' },
-    { signs: true, who: 'the check', what: 'a file with café printed CAFÉ' },
+    { signs: false, as: null, who: 'the fresh helper (a11699fb9d8861abd)', what: '525-byte test file in, 525 bytes out' },
+    { signs: true, as: 'check', who: 'the check', what: 'a file with café printed CAFÉ' },
   ])
   // No look: a fact's proof, or the agent's own run written plainly.
   expect(looksOf('the install log printed the revision')).toEqual([])
   expect(looksOf('ran `npm test`: 42 passed')).toEqual([])
   // "look by" inside a word is not a look.
   expect(looksOf('outlook by the agent: x')).toEqual([])
+})
+
+test('signsOff: a look signs only when its words do and the record holds a run of the one it names; runOf knows a helper\'s and a Codex run', () => {
+  const one = (where: string): Look => looksOf(where)[0] as Look
+  const helper = one('look by a helper that did not build it: paid')
+  const codex = one('look by Codex: paid')
+  const check = one('look by the check: paid')
+  const none: Ran = { helper: false, codex: false, check: false }
+  for (const l of [helper, codex, check]) expect(signsOff(l, none)).toBe(false)
+  expect(signsOff(helper, { ...none, helper: true })).toBe(true)
+  expect(signsOff(helper, { ...none, codex: true, check: true })).toBe(false)
+  expect(signsOff(codex, { ...none, codex: true })).toBe(true)
+  expect(signsOff(check, { ...none, check: true })).toBe(true)
+  expect(signsOff(one('look by the agent: paid'), { helper: true, codex: true, check: true })).toBe(false)
+  expect(keptWho(codex, none)).toBe('Codex (no run of it in the record)')
+  expect(keptWho(codex, { ...none, codex: true })).toBe('Codex')
+  expect(keptWho(one('look by the agent: paid'), none)).toBe('the agent')
+  expect(runOf('Agent', undefined)).toBe('helper')
+  expect(runOf('Task', undefined)).toBe('helper')
+  expect(runOf('Bash', 'codex exec --sandbox read-only "look at the checkout"')).toBe('codex')
+  expect(runOf('Bash', 'cd /x && /opt/bin/codex review')).toBe('codex')
+  expect(runOf('Bash', 'claude -p "open the page and pay" < /dev/null')).toBe('helper')
+  expect(runOf('Bash', 'timeout 600 claude --model opus --print "look"')).toBe('helper')
+  expect(runOf('Bash', 'grep codex notes.md')).toBe(null)
+  expect(runOf('Bash', 'claude plugin test .')).toBe(null)
+  expect(runOf('Read', 'codex exec')).toBe(null)
 })
 
 test('a condition\'s kind: written by the writer before it, kept through a held write, stripped where a reader copies it, and one held "works" never turns "fact"', () => {
@@ -8978,10 +9027,18 @@ test('a condition\'s kind: written by the writer before it, kept through a held 
   // The readers see each condition's kind, a condition of no kind as "works".
   const w = watchPrompt({ objective: o, owner: [], past: [], seen: [], others: [] }, 'stop')
   expect(w).toContain('Conditions still open:\n- works: the page loads for a visitor\n- works: old\n')
-  // A held "works" stays so whatever kind a rewrite gives; a held fact or one of no kind takes the new kind.
+  // A held "works", or one of no kind (read as works), stays works whatever kind a rewrite
+  // gives; a held fact rewritten as works opens again, its where kept as what was seen
+  // (second Codex review of #53).
   const merged = mergeConditions(o.done, [{ ...c('the page loads for a visitor', 'open'), kind: 'fact' }, { ...c('the build installed', 'open'), kind: 'works' }, { ...c('old', 'open'), kind: 'fact' }], [], [])
-  expect(merged.map(x => x.kind)).toEqual(['works', 'works', 'fact'])
-  expect(merged[1]).toMatchObject({ state: 'shown', by: 'the log printed it' })
+  expect(merged.map(x => x.kind)).toEqual(['works', 'works', 'works'])
+  expect(merged[1]).toEqual({ text: 'the build installed', state: 'open', by: '', seen: 'the log printed it', kind: 'works' })
+  // A held fact keeps its kind, or takes "fact" again; a kindless one rewritten with none stays kindless.
+  expect(mergeConditions([{ ...c('saved', 'open'), kind: 'fact' }, c('docs', 'open')], [c('saved', 'open'), c('docs', 'open')], [], []).map(x => x.kind)).toEqual(['fact', undefined])
+  // A "fact" about the result running, working, loading, passing or being good is read as works.
+  const f = parseObjective('objective: moved\nmoved: #1\nresult: r\nfor: f\ndone:\n- fact: the checkout works for a customer | open\n- fact: the app loads on a phone | open\n- fact: the suite passes | open\n- fact: the work is committed and pushed | open\n- fact: the service runs the newest code | not shown\n- fact: the tool ran on the sample file | open\nstep: s\ndropped:\n- nothing')
+  expect(f?.kind === 'moved' && f.parts.done.map(x => x.kind)).toEqual(['works', 'works', 'works', 'fact', 'fact', 'works'])
+  expect(OBJECTIVE_SYSTEM).not.toContain('that a run passes)')
 })
 
 test('the count line names whose looks are in and do not sign off, so a card of 13 rows or 80 shows it', () => {
@@ -9001,6 +9058,12 @@ test('the count line names whose looks are in and do not sign off, so a card of 
   // The count line is the first part after the head to come back, so a short card keeps it.
   const long = { ...CARD_TEXT, count: countLine(o), stands: LONG('Stands'), means: LONG('Means'), next: LONG('Next'), message: LONG('Message'), leftOut: ['one', 'two', 'three'] }
   for (const rows of [13, 80]) expect(fillCard(long, rows, 96).count).toBe(countLine(o))
+  // Seventy long names (second Codex review of #53): the note is counted, never dropped.
+  const many: Objective = { ...OBJ_FIXTURE, done: Array.from({ length: 70 }, (_, i) => ({ ...c(`part ${i}`, 'open'), seen: 'paid', seenBy: `the helper ${i} who wrote and tested checkout component ${i}` })) }
+  expect(countLine(many)).toBe('Done means 70 things: 0 shown, 70 open (others not counted as someone who did not build it looked at 70; each still needs a look by someone who did not build it)')
+  const both: Objective = { ...many, done: [...many.done, { ...c('own', 'open'), seen: 'paid' }] }
+  expect(countLine(both)).toContain('(the agent looked at 1 itself; others not counted as someone who did not build it looked at 70; each still needs a look by someone who did not build it)')
+  for (const rows of [13, 80]) expect(fillCard({ ...long, count: countLine(many) }, rows, 96).count).toBe(countLine(many))
 })
 
 test('the card says the agent looked at a condition itself and that it still needs a look by someone who did not build it; the prompts carry what that look saw', () => {
@@ -9077,25 +9140,51 @@ test('rule: a look, a briefing or a check marking a "works" condition shown on t
 })
 
 // The condition after one look at a turn's end marks it shown with `where`.
-const lookMarks = async ($: Engine, on: On, where: string, moved: (c: Condition | undefined) => boolean) => {
+// `runs` are the agent's tool calls made first, a helper's or a Codex run among them.
+const lookMarks = async ($: Engine, on: On, where: string, moved: (c: Condition | undefined) => boolean, runs: Array<Record<string, unknown>> = []) => {
   const rec = kept(on, WORKS_JOB())
   quietBand(on)
   on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  on('tool.call', () => ({ result: '' }))
   on('model.fork', () => ({ value: { isAnswered: true, text: `${HOLDS}\nshown:\n- the checkout works for a customer | ${where}`, usage: USAGE } }))
   await started($)
+  for (const call of runs) await $.tool.call(call as never)
   await $.turn.complete(stop('t1'))
   await settleUntil($, () => moved(rec()?.objective?.done[0]))
   return rec()?.objective?.done[0]
 }
 
-test('rule: a look by a helper that did not build it closes a "works" condition', async ($, on) => {
+test('rule: a look by a helper that did not build it closes a "works" condition once a helper run is in the record', async ($, on) => {
   const where = 'look by a helper that did not build it: the helper opened the checkout as a customer and paid; the order went through'
-  expect(await lookMarks($, on, where, x => x?.state === 'shown')).toEqual({ text: 'the checkout works for a customer', state: 'shown', by: where })
+  const helper = { tool: 'Agent', description: 'look at the checkout', prompt: 'open the checkout and pay', subagent_type: 'general-purpose' }
+  expect(await lookMarks($, on, where, x => x?.state === 'shown', [helper])).toEqual({ text: 'the checkout works for a customer', state: 'shown', by: where })
 })
 
-test('rule: a look by Codex closes a "works" condition', async ($, on) => {
+test('rule: a look by Codex closes a "works" condition once a Codex run is in the record', async ($, on) => {
   const where = 'look by Codex: Codex paid with a test card and got the receipt'
-  expect(await lookMarks($, on, where, x => x?.state === 'shown')).toEqual({ text: 'the checkout works for a customer', state: 'shown', by: where })
+  expect(await lookMarks($, on, where, x => x?.state === 'shown', [{ tool: 'Bash', command: 'codex exec --sandbox read-only "pay with a test card"' }])).toEqual({ text: 'the checkout works for a customer', state: 'shown', by: where })
+})
+
+test('rule: a look by a helper with no helper run in the record leaves the condition open, kept as the agent\'s claim of it', async ($, on) => {
+  const where = 'look by a helper that did not build it: the agent says it paid successfully'
+  expect(await lookMarks($, on, where, x => x?.seen !== undefined, [{ tool: 'Bash', command: 'npm test' }])).toEqual({
+    text: 'the checkout works for a customer',
+    state: 'open',
+    by: '',
+    seen: 'the agent says it paid successfully',
+    seenBy: 'a helper that did not build it (no run of it in the record)',
+  })
+})
+
+test('rule: a look by Codex that says it fixed the work leaves the condition open, whatever runs are in the record', async ($, on) => {
+  const where = 'look by Codex: I fixed the checkout and then paid successfully'
+  expect(await lookMarks($, on, where, x => x?.seen !== undefined, [{ tool: 'Bash', command: 'codex exec "fix the checkout"' }])).toEqual({
+    text: 'the checkout works for a customer',
+    state: 'open',
+    by: '',
+    seen: 'I fixed the checkout and then paid successfully',
+    seenBy: 'Codex',
+  })
 })
 
 test('rule: a where with no look in it leaves a "works" condition, or one of no kind from before kinds, open with what it showed', async ($, on) => {
@@ -9103,18 +9192,36 @@ test('rule: a where with no look in it leaves a "works" condition, or one of no 
   expect(await lookMarks($, on, where, x => x?.seen !== undefined)).toEqual({ text: 'the checkout works for a customer', state: 'open', by: '', seen: where })
 })
 
-test('rule: a "works" condition stays open on a where whose looks are all off the sign-off list, with who looked, and closes on a second look in the same where by the check', async ($, on) => {
+test('rule: a "works" condition stays open on a where whose looks are all off the sign-off list or not backed by a run, with who looked from that where alone, and closes on a second look in the same where by Codex once its run is in the record', async ($, on) => {
   const rec = kept(on, WORKS_JOB())
   quietBand(on)
   on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  on('tool.call', () => ({ result: '' }))
   let where = 'look by the second helper (not the writer): paid with a test card'
   on('model.fork', () => ({ value: { isAnswered: true, text: `${HOLDS}\nshown:\n- the checkout works for a customer | ${where}`, usage: USAGE } }))
   await started($)
   await $.turn.complete(stop('t1'))
   await settleUntil($, () => rec()?.objective?.done[0]?.seen !== undefined)
   expect(rec()?.objective?.done[0]).toEqual({ text: 'the checkout works for a customer', state: 'open', by: '', seen: 'paid with a test card', seenBy: 'the second helper (not the writer)' })
+  // A look reading "look by the check" is the reader's word: the check signs only in its own marks.
   where = 'look by the fresh helper (a11699fb9d8861abd): paid with a test card. Look by the check: paid again in the copy and the order went through'
   await $.turn.complete(stop('t2'))
+  await settleUntil($, () => rec()?.objective?.done[0]?.seenBy?.includes('the check') === true)
+  expect(rec()?.objective?.done[0]).toEqual({
+    text: 'the checkout works for a customer',
+    state: 'open',
+    by: '',
+    seen: 'paid with a test card; paid again in the copy and the order went through',
+    seenBy: 'the fresh helper (a11699fb9d8861abd) and the check (no run of it in the record)',
+  })
+  // The agent's own run after: who looked comes from this where alone.
+  where = 'the agent ran it again and payment failed'
+  await $.turn.complete(stop('t3'))
+  await settleUntil($, () => rec()?.objective?.done[0]?.seen === where)
+  expect(rec()?.objective?.done[0]).toEqual({ text: 'the checkout works for a customer', state: 'open', by: '', seen: where })
+  await $.tool.call({ tool: 'Bash', command: 'codex exec --sandbox read-only "pay with a test card"' })
+  where = 'look by the fresh helper (a11699fb9d8861abd): paid with a test card. Look by Codex: paid again and the order went through'
+  await $.turn.complete(stop('t4'))
   await settleUntil($, () => rec()?.objective?.done[0]?.state === 'shown')
   expect(rec()?.objective?.done[0]).toEqual({ text: 'the checkout works for a customer', state: 'shown', by: where })
 })
