@@ -21,7 +21,8 @@ What changed in each release of Owner Rep, newest first. The full record is the
   agent's CLAUDE.md, your own CLAUDE.md, your skills and every MCP server, so the checker was told
   how to work as the agent it is meant to judge. It now loads your user-level settings, so your
   own hooks still guard it, the sandbox fence, and agentsview as its only server, and no
-  CLAUDE.md, skill or project setting. The brief tells it the agent's instruction files are in
+  CLAUDE.md, skill, plugin or project setting: your plugins, the rep among them, are turned off
+  by name in the check's own settings. The brief tells it the agent's instruction files are in
   the agent's folder, to read when a claim turns on them. To find your agentsview entry the rep
   reads Claude Code's `.claude.json` and takes only that entry.
 

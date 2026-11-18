@@ -566,7 +566,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 633 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 637 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: twelve real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -626,7 +626,7 @@ be with `--version`. The check step
 starts a separate Claude Code run that may read files, search, run the project's own tests
 and read agentsview; it may not edit, send, or launch helpers. That run loads the owner's
 user-level settings and hooks, agentsview as its only MCP server, read from Claude Code's
-`.claude.json`, and no CLAUDE.md, skill or project setting. The rep never sends anything
+`.claude.json`, and no CLAUDE.md, skill, plugin or project setting. The rep never sends anything
 to an agent by itself.
 
 ## Decisions along the way
