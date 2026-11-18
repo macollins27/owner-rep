@@ -3579,7 +3579,7 @@
     "name": "runs-newest-code-works",
     "breaks": "A \"fact:\" that a service runs the newest code, the writer's own example of a fact, is read as works and waits for a look it does not need.",
     "patch": "runs-newest-code-works.patch",
-    "fixed": "tested 2026-11-17; remade 2026-11-17"
+    "fixed": "tested 2026-11-17; remade 2026-11-17; remade 2026-11-18"
   },
   {
     "name": "rep-check-not-signer",

@@ -9398,6 +9398,14 @@ test('factHolds and kindOf: a condition is a fact only when it says the work is 
     ['The working build is installed on the Mac', 'works'],
     ['The work is committed & pushed', 'fact'],
     ['The work is committed / pushed to main', 'fact'],
+    // A behaviour the closed list alone would let through, since its words are all allowed:
+    // the second veto (BEHAVES) reads it. A capital after a word that is not a lead is no name,
+    // and "runs the latest" with no noun after it is the newest-code fact.
+    ['The file exists and does nothing else', 'works'],
+    ['The config file exists and does not change', 'works'],
+    ['The Uploader Resizes Photos and is committed', 'works'],
+    ['The installed build runs the latest', 'fact'],
+    ['The service on the Mac runs the newest code', 'fact'],
   ]
   for (const [text, kind] of round4) expect([text, kindOf({ text, kind: 'fact' })]).toEqual([text, kind])
   expect(kindOf({ text: 'Customers can complete checkout', kind: 'fact' })).toBe('works')
