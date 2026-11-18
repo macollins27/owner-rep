@@ -6383,13 +6383,14 @@ export function countsText(counts: Counts | undefined): string {
   return lines.length === 0 ? 'No calls counted in this session yet.' : lines.join('\n')
 }
 
-// ---- The replay: `/owner-rep-replay <call file or session folder> [--kind k] [--last n] [--effort e] [--times n]`.
+// ---- The replay: `/owner-rep-replay <call file or session folder> [--kind k] [--last n] [--effort e] [--times n] [--now]`.
 // A folder's calls are taken newest last; only the last `--last` (10 unless given) of the kind
-// asked for are sent again, since every call sent costs what it cost the first time.
-export type ReplayArgs = { path: string; kind?: CallKind; last: number; effort?: string; times: number } | { error: string }
+// asked for are sent again, since every call sent costs what it cost the first time. `--now`
+// sends each as this build would: at its cap and with its end line asked for (`replayNow`).
+export type ReplayArgs = { path: string; kind?: CallKind; last: number; effort?: string; times: number; now?: true } | { error: string }
 export const REPLAY_LAST = 10
 export const REPLAY_USAGE =
-  'Usage: /owner-rep-replay <call file, session folder or session id> [--kind objective|watch|brief|ask-again|own-words] [--last 1-50] [--effort low|medium|high|max] [--times 1-10]'
+  'Usage: /owner-rep-replay <call file, session folder or session id> [--kind objective|watch|brief|ask-again|own-words] [--last 1-50] [--effort low|medium|high|max] [--times 1-10] [--now]'
 export function parseReplayArgs(args: string): ReplayArgs {
   const words = args.trim().split(/\s+/).filter(w => w !== '')
   let path: string | undefined
@@ -6397,13 +6398,15 @@ export function parseReplayArgs(args: string): ReplayArgs {
   let effort: string | undefined
   let last = REPLAY_LAST
   let times = 1
+  let now = false
   const whole = (w: string | undefined, max: number): number | null => {
     const n = Number(w)
     return Number.isInteger(n) && n >= 1 && n <= max ? n : null
   }
   for (let i = 0; i < words.length; i++) {
     const w = words[i] ?? ''
-    if (w === '--effort') {
+    if (w === '--now') now = true
+    else if (w === '--effort') {
       effort = words[++i]
       if (effort === undefined || !['low', 'medium', 'high', 'max'].includes(effort)) return { error: REPLAY_USAGE }
     } else if (w === '--kind') {
@@ -6419,7 +6422,18 @@ export function parseReplayArgs(args: string): ReplayArgs {
     else path = w
   }
   if (path === undefined) return { error: REPLAY_USAGE }
-  return { path, last, times, ...(kind === undefined ? {} : { kind }), ...(effort === undefined ? {} : { effort }) }
+  return { path, last, times, ...(kind === undefined ? {} : { kind }), ...(effort === undefined ? {} : { effort }), ...(now ? { now: true as const } : {}) }
+}
+
+// A saved call as this build would send it (`--now`): at `MAX_REPLY_TOKENS` and with `END_ASK`
+// as its prompt's last line, once (`endAsked`, on the last block of a prompt sent in blocks).
+// The rest is the call as logged, so a call saved before the end line and the higher caps
+// (audit test R16) is judged by what those two alone change.
+export function replayNow(prompt: string | PromptBlock[], cap: number, now: boolean): { prompt: string | PromptBlock[]; cap: number } {
+  if (!now) return { prompt, cap }
+  if (typeof prompt === 'string') return { prompt: endAsked(prompt), cap: MAX_REPLY_TOKENS }
+  const last = prompt[prompt.length - 1]
+  return { prompt: last === undefined ? prompt : [...prompt.slice(0, -1), { ...last, text: endAsked(last.text) }], cap: MAX_REPLY_TOKENS }
 }
 
 // The call files of a folder to send again: the kind asked for, the last `last` of them by name.

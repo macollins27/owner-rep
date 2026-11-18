@@ -15695,9 +15695,24 @@ describe('the call log: its pieces', () => {
   test('rule: the replay\'s words: a path, and each setting within its bounds, or the usage line', () => {
     expect(rep.parseReplayArgs('this')).toEqual({ path: 'this', last: rep.REPLAY_LAST, times: 1 })
     expect(rep.parseReplayArgs(`${SID} --kind brief --last 3 --effort max --times 4`)).toEqual({ path: SID, kind: 'brief', last: 3, effort: 'max', times: 4 })
+    expect(rep.parseReplayArgs(`${SID} --now --kind brief`)).toEqual({ path: SID, kind: 'brief', last: rep.REPLAY_LAST, times: 1, now: true })
+    expect(rep.REPLAY_USAGE).toContain('[--now]')
     for (const bad of ['', '--kind brief', 'a b', 'this --kind check', 'this --effort huge', 'this --times 0', 'this --times 11', 'this --last 51', 'this --last 2.5', 'this --times', 'this --wat']) {
       expect(rep.parseReplayArgs(bad)).toEqual({ error: rep.REPLAY_USAGE })
     }
+  })
+
+  test('rule: --now sends a saved call as this build would: at the shared cap, its prompt ending on the end line once; without it, as logged (audit test R16)', () => {
+    expect(rep.replayNow('Read the session.', 16000, false)).toEqual({ prompt: 'Read the session.', cap: 16000 })
+    expect(rep.replayNow('Read the session.', 16000, true)).toEqual({ prompt: `Read the session.\n\n${rep.END_ASK}`, cap: rep.MAX_REPLY_TOKENS })
+    // A prompt that already asks for the end line asks once.
+    expect(rep.replayNow(`Read the session.\n\n${rep.END_ASK}`, 4000, true).prompt).toBe(`Read the session.\n\n${rep.END_ASK}`)
+    // In blocks, only the last block gains it; the others and their cache marks are as logged.
+    const blocks = [{ text: 'The record.', cache: true as const }, { text: 'Your task.' }]
+    expect(rep.replayNow(blocks, 16000, true)).toEqual({ prompt: [{ text: 'The record.', cache: true }, { text: `Your task.\n\n${rep.END_ASK}` }], cap: rep.MAX_REPLY_TOKENS })
+    expect(rep.replayNow(blocks, 16000, false)).toEqual({ prompt: blocks, cap: 16000 })
+    expect(blocks[1]?.text).toBe('Your task.')
+    expect(rep.replayNow([], 8000, true)).toEqual({ prompt: [], cap: rep.MAX_REPLY_TOKENS })
   })
 
   test('rule: a folder\'s calls to send again are the kind asked for, the last ones by time', () => {
@@ -15890,6 +15905,19 @@ describe('the call log: saving, replaying, counting and removing', () => {
     expect(out).toMatch(/replay 2 brief: answered, read .*gate passed/)
     expect(out).toMatch(/^logged: 1 calls; read as: read 1; gate: empty-message 1;/m)
     expect(out).toMatch(/^replay: 2 calls; read as: read 2; gate: passed 2;/m)
+    // With --now, the same call goes at the shared cap with the end line asked for, and says so.
+    // With --now the same call is sent as this build would (the cap is the kit's to keep:
+    // replayNow's own test holds it), its prompt asking for the end line once, and says so.
+    // A call saved with a cap its reply came near (20 tokens of 20): near it as logged, not at
+    // the shared cap with --now.
+    const low = callsIn(d).find(e => e.kind === 'brief') as rep.CallEntry & { file: string }
+    d.files.set(low.file, JSON.stringify({ ...low, file: undefined, settings: { ...low.settings, maxTokens: USAGE.output_tokens } }))
+    expect((await runCommand($, 'owner-rep-replay', low.file)).text).toMatch(/replay 1 brief: .*out 20 \(near cap\)/)
+    const now = (await runCommand($, 'owner-rep-replay', `${low.file} --now`)).text ?? ''
+    expect(now).toMatch(/replay 1 brief: .*out 20 \|/)
+    expect(forks.length).toBe(sent + 4)
+    expect(forks.at(-1)?.split(rep.END_LINE)).toHaveLength(2)
+    expect(now).toContain(`(as this build sends it: cap ${rep.MAX_REPLY_TOKENS}, end line asked)`)
     // A replay is not one of the rep's own calls: nothing more is saved or counted for it.
     expect(callsIn(d).length).toBe(before)
     // One file named by its path; then a text changed after it was saved.
@@ -15898,7 +15926,7 @@ describe('the call log: saving, replaying, counting and removing', () => {
     d.files.set(`${CALLS}/parts/${last}.txt`, `${d.files.get(`${CALLS}/parts/${last}.txt`) ?? ''} and one more line`)
     const damaged = (await runCommand($, 'owner-rep-replay', file.file)).text ?? ''
     expect(damaged).toContain('not sent again: the rebuilt prompt is not the one sent')
-    expect(forks.length).toBe(sent + 2)
+    expect(forks.length).toBe(sent + 4)
     expect(damaged).toContain('replay: none')
     // A call file whose system text names another file is never read or sent; nor is a system text that changed.
     const elsewhere = `${CALLS}/elsewhere.json`
@@ -15910,7 +15938,7 @@ describe('the call log: saving, replaying, counting and removing', () => {
     d.files.set(sys, `${d.files.get(sys) ?? ''} changed`)
     const changed = (await runCommand($, 'owner-rep-replay', file.file)).text ?? ''
     expect(changed).toContain('not sent again: its system prompt is not the one sent')
-    expect(forks.length).toBe(sent + 2)
+    expect(forks.length).toBe(sent + 4)
     expect((await runCommand($, 'owner-rep-replay', '')).text).toBe(rep.REPLAY_USAGE)
     expect((await runCommand($, 'owner-rep-replay', '/nowhere/at/all')).text).toContain('Nothing at /nowhere/at/all.')
     expect((await runCommand($, 'owner-rep-replay', `${SID} --kind own-words`)).text).toBe(`No saved calls of kind own-words in ${CALLS}.`)

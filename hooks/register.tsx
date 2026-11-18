@@ -261,6 +261,8 @@ import {
   overCallCap,
   replayLine,
   replayPick,
+  replayNow,
+  MAX_REPLY_TOKENS,
   replayTotals,
   type BriefEnd,
   type CallEntry,
@@ -1692,25 +1694,26 @@ async function replay($: EngineInterface, args: string): Promise<string> {
       continue
     }
     const effort = (a.effort ?? e.settings.effort) as 'high'
+    const sent = replayNow(got.prompt, e.settings.maxTokens, a.now === true)
     for (let i = 1; i <= a.times; i++) {
       const system = got.system
-      const prompt = got.prompt
-      const { result, ms } = await timed(() => $.model.complete({ model: e.settings.model, system, prompt, maxTokens: e.settings.maxTokens, effort, timeoutMs: e.settings.timeoutMs }))
+      const prompt = sent.prompt
+      const { result, ms } = await timed(() => $.model.complete({ model: e.settings.model, system, prompt, maxTokens: sent.cap, effort, timeoutMs: e.settings.timeoutMs }))
       const usage = result === null ? undefined : (result.usage as Usage | undefined)
       const row: ReplayRow = {
         label: `replay ${i}`,
         kind: e.kind,
         ...callOutcome(result as never),
         ms,
-        nearCap: nearCap(usage, e.settings.maxTokens),
-        ...(result !== null && result.isAnswered ? { read: callRead(e.kind, result.text, e.open, { usage, cap: e.settings.maxTokens }) } : {}),
+        nearCap: nearCap(usage, sent.cap),
+        ...(result !== null && result.isAnswered ? { read: callRead(e.kind, result.text, e.open, { usage, cap: sent.cap }) } : {}),
         ...(usage === undefined ? {} : { usage }),
       }
       rows.push(row)
       lines.push(`  ${replayLine(row)}`)
     }
   }
-  const setting = a.effort === undefined ? '' : ` (effort ${a.effort})`
+  const setting = [a.effort === undefined ? '' : ` (effort ${a.effort})`, a.now === true ? ` (as this build sends it: cap ${MAX_REPLY_TOKENS}, end line asked)` : ''].join('')
   return [...lines, '', replayTotals(rows, 'logged'), replayTotals(rows, `replay`) + setting].join('\n')
 }
 

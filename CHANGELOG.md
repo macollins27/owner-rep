@@ -12,6 +12,8 @@ What changed in each release of Owner Rep, newest first. The full record is the
   session's folder is removed after 14 days with no change, and all of them together are kept under
   about 1 GB, the oldest removed first. Two hidden commands read it:
   `/owner-rep-counts` and `/owner-rep-replay`. Nothing the rep shows you changes.
+  `/owner-rep-replay --now` sends a saved call as this version would, at its cap and with its
+  end line, to measure what those change on calls saved before them.
 - **The rep no longer watches its own check.** The check runs as a Claude Code session of its own,
   and the rep loaded in it and watched it like one of your agents: it kept a record of it, spent
   calls on it and wrote Heads up lines about the checker. It now knows that session, by its folder

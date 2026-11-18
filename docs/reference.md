@@ -963,14 +963,18 @@ what the replies were read as, and for cards the gate's rules (`passed` when non
 `own-words`, or `fixed-text`). Two commands are registered at `session.start` and hidden from the
 menu and `/help` (`command.describe`, `HIDDEN_COMMANDS`): `/owner-rep-counts` prints
 `countsText`, one line per kind and a `cards:` line; `/owner-rep-replay <call file, session folder,
-session id or "this"> [--kind k] [--last 1-50] [--effort low|medium|high|max] [--times 1-10]`
+session id or "this"> [--kind k] [--last 1-50] [--effort low|medium|high|max] [--times 1-10] [--now]`
 (`parseReplayArgs`, `REPLAY_USAGE`) takes a folder's last `--last` (`REPLAY_LAST`, 10) calls of the
 kind asked for (`replayPick`), rebuilds each from its parts (`savedCall`, which refuses one whose
 texts were not kept, one naming a text by anything but a fingerprint (`isSha`), so a call file
 cannot point it at another file, one whose texts are missing, whose system text no longer has its
 fingerprint, or whose prompt no longer joins to `promptSha`), prints it as logged and sends
 it `--times` times with the same settings, or the effort given, reading each answer with
-`callRead` against the saved `open` (`replayLine`), then the totals of each (`replayTotals`). A
+`callRead` against the saved `open` (`replayLine`), then the totals of each (`replayTotals`). With
+`--now` (`replayNow`) each call goes as this build would send it, at `MAX_REPLY_TOKENS` and with
+`END_ASK` as its prompt's last line once (on the last block of a prompt in blocks), and is read
+against that cap; the rest is as logged, so a call saved before the shared cap and the end line
+shows what those two alone change (audit test R16). A
 replay is not logged or counted. Nothing of either is drawn on the row or the card.
 
 An approval (`approvalOf`: the owner's message, note or plan-screen plan carrying `approved`,

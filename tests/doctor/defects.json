@@ -4030,5 +4030,29 @@
     "breaks": "The objective writer is not told the shape of a fact, so its own facts (\"the scratch folder holds a sample text file whose contents are...\") read as works and wait for a look.",
     "patch": "writer-fact-shape-dropped.patch",
     "fixed": "2026-11-18"
+  },
+  {
+    "name": "replay-now-not-read",
+    "breaks": "The replay takes \"--now\" and ignores it, so a call saved before the shared cap and the end line is sent again as it was, and audit test R16 measures nothing.",
+    "patch": "replay-now-not-read.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "replay-now-logged-cap",
+    "breaks": "The replay with \"--now\" sends a saved call at its logged cap, so a reply that the old cap cut is cut again and R16 cannot show what the shared cap changes.",
+    "patch": "replay-now-logged-cap.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "replay-now-end-asked-twice",
+    "breaks": "The replay with \"--now\" adds the end line to a prompt that already asks for it, so the call it sends is not the one this build would send.",
+    "patch": "replay-now-end-asked-twice.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "replay-now-not-sent",
+    "breaks": "The replay says \"--now\" sends a call as this build would, then sends it as logged: the old cap and no end line.",
+    "patch": "replay-now-not-sent.patch",
+    "fixed": "2026-11-18"
   }
 ]
