@@ -15544,16 +15544,26 @@ describe('the call log: saving, replaying, counting and removing', () => {
     expect(out).toMatch(/^logged: 2 calls;/m)
     expect(out).toMatch(/^as saved: 2 calls;/m)
     expect(out).toMatch(/^variant: 2 calls;/m)
-    // Every reply is kept beside the call it answers, named by the call and the arm.
+    // Every reply is kept beside the call it answers, named by the call, the run, the settings and the arm.
     const base = old.replace(/\.json$/, '')
-    expect(d.files.get(`${CALLS_ROOT}/${OTHER}/replays/${base}.high.frame+no-think.as-saved-1.txt`)).toBe(`${HOLDS}\n(as saved)`)
-    expect(d.files.get(`${CALLS_ROOT}/${OTHER}/replays/${base}.high.frame+no-think.variant-2.txt`)).toBe(`${HOLDS}\n(variant)`)
+    const kept = (tail: string) => [...d.files.keys()].filter(k => k.startsWith(`${CALLS_ROOT}/${OTHER}/replays/${base}.`) && k.endsWith(tail))
+    const runOf = (k: string) => k.slice(`${CALLS_ROOT}/${OTHER}/replays/${base}.`.length).split('.')[0] ?? ''
+    expect(kept('.high.frame+no-think.as-saved-1.txt').length).toBe(1)
+    expect(d.files.get(kept('.high.frame+no-think.as-saved-1.txt')[0] ?? '')).toBe(`${HOLDS}\n(as saved)`)
+    expect(d.files.get(kept('.high.frame+no-think.variant-2.txt')[0] ?? '')).toBe(`${HOLDS}\n(variant)`)
+    const first = runOf(kept('.high.frame+no-think.as-saved-1.txt')[0] ?? '')
+    expect(first).toMatch(/^\d{13}$/)
     expect([...d.files.keys()].filter(k => k.includes('/replays/')).length).toBe(4)
     // Another run of the same call with other settings keeps its replies apart.
     await runCommand($, 'owner-rep-replay', `${CALLS_ROOT}/${OTHER}/${old} --variant no-think --effort low`)
-    expect(d.files.get(`${CALLS_ROOT}/${OTHER}/replays/${base}.low.no-think.as-saved-1.txt`)).toBe(`${HOLDS}\n(as saved)`)
-    expect(d.files.get(`${CALLS_ROOT}/${OTHER}/replays/${base}.high.frame+no-think.as-saved-1.txt`)).toBe(`${HOLDS}\n(as saved)`)
+    expect(d.files.get(kept('.low.no-think.as-saved-1.txt')[0] ?? '')).toBe(`${HOLDS}\n(as saved)`)
     expect([...d.files.keys()].filter(k => k.includes('/replays/')).length).toBe(6)
+    // The same run again, with the same settings, keeps the earlier replies and adds its own.
+    await runCommand($, 'owner-rep-replay', `${CALLS_ROOT}/${OTHER}/${old} --variant no-think --effort low`)
+    expect(kept('.low.no-think.as-saved-1.txt').length).toBe(2)
+    expect(kept('.high.frame+no-think.as-saved-1.txt').map(runOf)).toEqual([first])
+    expect(new Set([...d.files.keys()].filter(k => k.includes('/replays/')).map(runOf)).size).toBe(3)
+    expect([...d.files.keys()].filter(k => k.includes('/replays/')).length).toBe(8)
   })
 
   test('rule: at a session\'s start, each session\'s calls folder unchanged for 14 days is removed, and nothing else: never the session starting, resumed after 14 days', async ($, on) => {

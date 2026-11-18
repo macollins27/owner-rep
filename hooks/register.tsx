@@ -1679,6 +1679,14 @@ async function replayFiles($: EngineInterface, a: { path: string; kind?: CallKin
   return { files, where: path }
 }
 
+// The run a replay's kept replies are named by: the time it started, in milliseconds, and always
+// later than the run before it here, so running the same replay again never writes over a reply.
+let lastReplayRun = 0
+function replayRun(): number {
+  lastReplayRun = Math.max(Date.now(), lastReplayRun + 1)
+  return lastReplayRun
+}
+
 // Each call named is sent again `times` times as saved; with a variant, `times` times as saved and
 // `times` times with its texts edited (`editSaved`), and a call the variant cannot edit is not sent
 // at all, so the two arms are the same calls. Every reply is kept in `replays/` beside the call.
@@ -1693,6 +1701,7 @@ async function replay($: EngineInterface, args: string): Promise<string> {
   const rows: ReplayRow[] = []
   const lines: string[] = []
   const arms = a.variant === undefined ? ['replay'] : ['as saved', 'variant']
+  const run = replayRun()
   for (const file of files) {
     const got = await savedCall($, file)
     const name = a.path === 'all' ? file.slice(where.length + 1) : file.slice(file.lastIndexOf('/') + 1)
@@ -1720,8 +1729,8 @@ async function replay($: EngineInterface, args: string): Promise<string> {
     const effort = (a.effort ?? e.settings.effort) as 'high'
     const dir = file.slice(0, file.lastIndexOf('/'))
     const base = file.slice(file.lastIndexOf('/') + 1).replace(/\.json$/, '')
-    // The effort and the variant name the reply too, so replays of the same call run side by side
-    // with other settings never write over each other's replies.
+    // The run, the effort and the variant name the reply too, so neither a run with other settings
+    // nor the same run again writes over another's replies.
     const tag = [effort, ...(a.variant === undefined ? [] : [a.variant.join('+')])].join('.')
     for (const arm of arms) {
       const { system, prompt } = texts[arm] as { system: string; prompt: string | PromptBlock[] }
@@ -1738,7 +1747,7 @@ async function replay($: EngineInterface, args: string): Promise<string> {
           ...(result !== null && result.isAnswered ? { read: callRead(e.kind, result.text, e.open, { usage, cap: e.settings.maxTokens }) } : {}),
           ...(usage === undefined ? {} : { usage }),
         }
-        if (result !== null && result.isAnswered) await writeFile($, `${dir}/replays/${base}.${tag}.${label.replace(/ /g, '-')}.txt`, result.text)
+        if (result !== null && result.isAnswered) await writeFile($, `${dir}/replays/${base}.${run}.${tag}.${label.replace(/ /g, '-')}.txt`, result.text)
         rows.push(row)
         lines.push(`  ${replayLine(row)}`)
       }
