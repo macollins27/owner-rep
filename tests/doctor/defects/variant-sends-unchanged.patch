@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 2d9e89a..837a407 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -6247,7 +6247,6 @@ export function editSaved(kind: CallKind, system: string, prompt: string | Promp
+   const taskAt = gap + 2
+   let task = whole.slice(taskAt)
+   let sys = system
+-  if (apply.includes('frame') && !OLD_FRAME.test(task)) return { why: 'the old frame is not in it' }
+   // The no-think line first, since it sits after the frame.
+   if (apply.includes('no-think')) {
+     const head = task.match(OLD_FRAME)?.[0] ?? ''

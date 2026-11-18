@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index d2a5fbf..2f56710 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1735,7 +1735,6 @@ async function replay($: EngineInterface, args: string): Promise<string> {
+           ...(result !== null && result.isAnswered ? { read: callRead(e.kind, result.text, e.open, { usage, cap: e.settings.maxTokens }) } : {}),
+           ...(usage === undefined ? {} : { usage }),
+         }
+-        if (result !== null && result.isAnswered) await writeFile($, `${dir}/replays/${base}-${label.replace(/ /g, '-')}.txt`, result.text)
+         rows.push(row)
+         lines.push(`  ${replayLine(row)}`)
+       }

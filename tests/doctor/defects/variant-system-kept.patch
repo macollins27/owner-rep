@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 2d9e89a..e3b7f11 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -6257,7 +6257,6 @@ export function editSaved(kind: CallKind, system: string, prompt: string | Promp
+   if (apply.includes('frame')) {
+     if (!system.startsWith(OLD_RECORD_SYSTEM_START)) return { why: "its system prompt is not the record read's" }
+     task = task.replace(OLD_FRAME, '')
+-    sys = RECORD_SYSTEM
+   }
+   if (typeof prompt === 'string') return { system: sys, prompt: whole.slice(0, taskAt) + task }
+   // The blocks wholly before the task go as they were; the rest become one block.

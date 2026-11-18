@@ -930,15 +930,27 @@ what the replies were read as, and for cards the gate's rules (`passed` when non
 `own-words`, or `fixed-text`). Two commands are registered at `session.start` and hidden from the
 menu and `/help` (`command.describe`, `HIDDEN_COMMANDS`): `/owner-rep-counts` prints
 `countsText`, one line per kind and a `cards:` line; `/owner-rep-replay <call file, session folder,
-session id or "this"> [--kind k] [--last 1-50] [--effort low|medium|high|max] [--times 1-10]`
-(`parseReplayArgs`, `REPLAY_USAGE`) takes a folder's last `--last` (`REPLAY_LAST`, 10) calls of the
-kind asked for (`replayPick`), rebuilds each from its parts (`savedCall`, which refuses one whose
+session id, "this" or "all"> [--kind k] [--last 1-50] [--effort low|medium|high|max] [--times 1-10]
+[--variant build|frame|no-think]` (`parseReplayArgs`, `REPLAY_USAGE`) takes a folder's last `--last`
+(`REPLAY_LAST`, 10) calls of the kind asked for, or with "all" the last of every session folder's
+calls together by when each was made (`replayPick`, `replayFiles`), rebuilds each from its parts (`savedCall`, which refuses one whose
 texts were not kept, one naming a text by anything but a fingerprint (`isSha`), so a call file
 cannot point it at another file, one whose texts are missing, whose system text no longer has its
 fingerprint, or whose prompt no longer joins to `promptSha`), prints it as logged and sends
 it `--times` times with the same settings, or the effort given, reading each answer with
-`callRead` against the saved `open` (`replayLine`), then the totals of each (`replayTotals`). A
-replay is not logged or counted. Nothing of either is drawn on the row or the card.
+`callRead` against the saved `open` (`replayLine`), then the totals of each (`replayTotals`). With
+`--variant`, each call is sent `--times` times as saved and `--times` times with its texts edited
+to what this build sends in their place (`editSaved`; `build` names every edit in
+`PROMPT_EDITS`): `frame` drops the fork frame the build before prompt group 1 opened the task
+with and sends `RECORD_SYSTEM` as the system prompt, for a watch, brief or ask-again call;
+`no-think` drops the watch's line telling the model not to think it over. Only the task after
+the last `</session_record>` is edited, never the record, and the blocks wholly before it go as
+they were, cache marks and all. A call an edit applies to but cannot change (its old text is not
+there, or its system prompt is not the record read's), or one no edit applies to, is not sent in
+either arm, so the arms are the same calls; the totals are `logged`, `as saved` and `variant`.
+Every reply a replay gets is written to `replays/<call file's name>-<arm>-<n>.txt` beside the
+call, which `folderBytes` counts toward the 1 GB. A replay is not logged or counted. Nothing of
+either is drawn on the row or the card.
 
 An approval (`approvalOf`: the owner's message, note or plan-screen plan carrying `approved`,
 never one that turned a plan down, never a draft) of the open job that falls outside the job's

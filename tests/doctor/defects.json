@@ -3880,5 +3880,53 @@
     "breaks": "The record read's system prompt no longer keeps secrets, keys, passwords and personal data out of what the reader writes.",
     "patch": "record-system-secrets-gone.patch",
     "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "variant-sends-unchanged",
+    "breaks": "The replay's variant sends a call whose old frame is not there unchanged, under the variant's name, rather than skipping it.",
+    "patch": "variant-sends-unchanged.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "variant-no-think-kept",
+    "breaks": "The replay's variant leaves the watch's old no-think line in the task it sends.",
+    "patch": "variant-no-think-kept.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "variant-system-kept",
+    "breaks": "The replay's variant drops the old frame but sends the call's old system prompt, not this build's.",
+    "patch": "variant-system-kept.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "variant-cache-marks-lost",
+    "breaks": "The replay's variant sends the record and the task as one block, losing the cache marks the call was sent with.",
+    "patch": "variant-cache-marks-lost.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "replay-all-sorted-by-folder",
+    "breaks": "With \"all\", the replay takes the last calls by folder name rather than by when each call was made.",
+    "patch": "replay-all-sorted-by-folder.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "variant-as-saved-not-sent",
+    "breaks": "The replay's variant sends only the edited calls, with nothing sent as saved to set them against.",
+    "patch": "variant-as-saved-not-sent.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "replay-replies-not-kept",
+    "breaks": "The replay does not keep the replies it got, so the two arms cannot be read side by side.",
+    "patch": "replay-replies-not-kept.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "call-cap-skips-replays",
+    "breaks": "The 1 GB cap on every session's calls does not count the replies replays kept.",
+    "patch": "call-cap-skips-replays.patch",
+    "fixed": "tested 2026-11-18"
   }
 ]

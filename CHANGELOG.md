@@ -11,6 +11,9 @@ What changed in each release of Owner Rep, newest first. The full record is the
   it shared the agent's context). The look also told the model not to think it over, against the
   effort it runs at. Both are gone; the facts that still hold (it has no tools, gives one answer,
   and keeps secrets out of what it writes) are said once, in the read's fixed instructions.
+- **The replay can measure a prompt change.** `/owner-rep-replay all --kind watch --variant build`
+  sends saved calls from every session both as they were saved and as this version would send
+  them, and keeps each reply beside its call, so the two can be read side by side.
 - **The rep keeps a log of its own model calls, on your machine.** Each call it makes for itself
   (the job's account, each Heads up look, each briefing and its second ask, and the own-words
   call) is saved under `<config>/owner-rep/calls/`, with the text sent and the reply, so a call

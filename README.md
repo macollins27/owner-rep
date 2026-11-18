@@ -308,7 +308,9 @@ full, this is everything it reads and runs:
   changed longest ago are removed first, never the session starting or one changed in the last hour.
   Two hidden commands read it: `/owner-rep-counts` prints the session's
   counters, and `/owner-rep-replay` sends saved calls to the model again, at the cost of a new
-  call each. Nothing in it is shown unless you run them.
+  call each, as saved or with this version's prompt changes, and saves each reply it gets
+  beside the call, under the same 14-day and 1 GB limits. Nothing in it is shown unless you run
+  them.
 - **On Windows:** those commands are Git for Windows' own, named by their full path. The rep
   finds them, and Claude Code's own `claude.exe`, by running each place they may be with
   `--version`.
@@ -372,7 +374,7 @@ The full design is in [How the owner rep works](docs/how-it-works.md).
 
 ## Built to be trusted
 
-- **672 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
+- **676 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
   the tests.
 - **A doctor that plants bugs.** It plants 568 known defects in a throwaway copy, one at a
   time, and fails the build if the tests miss any of them.
