@@ -263,6 +263,8 @@ import {
   overCallCap,
   replayLine,
   replayPick,
+  replayNow,
+  MAX_REPLY_TOKENS,
   replayTotals,
   type BriefEnd,
   type CallEntry,
@@ -1738,11 +1740,13 @@ async function replay($: EngineInterface, args: string): Promise<string> {
     const base = file.slice(file.lastIndexOf('/') + 1).replace(/\.json$/, '')
     // The run, the effort and the variant name the reply too, so neither a run with other settings
     // nor the same run again writes over another's replies.
-    const tag = [effort, ...(a.variant === undefined ? [] : [a.variant.join('+')])].join('.')
+    const tag = [effort, ...(a.variant === undefined ? [] : [a.variant.join('+')]), ...(a.now === true ? ['now'] : [])].join('.')
     for (const arm of arms) {
-      const { system, prompt } = texts[arm] as { system: string; prompt: string | PromptBlock[] }
+      const { system, prompt: saved } = texts[arm] as { system: string; prompt: string | PromptBlock[] }
+      const sent = replayNow(saved, e.settings.maxTokens, a.now === true)
+      const prompt = sent.prompt
       for (let i = 1; i <= a.times; i++) {
-        const { result, ms } = await timed(() => $.model.complete({ model: e.settings.model, system, prompt, maxTokens: e.settings.maxTokens, effort, timeoutMs: e.settings.timeoutMs }))
+        const { result, ms } = await timed(() => $.model.complete({ model: e.settings.model, system, prompt, maxTokens: sent.cap, effort, timeoutMs: e.settings.timeoutMs }))
         const usage = result === null ? undefined : (result.usage as Usage | undefined)
         const label = `${arm} ${i}`
         const row: ReplayRow = {
@@ -1750,8 +1754,8 @@ async function replay($: EngineInterface, args: string): Promise<string> {
           kind: e.kind,
           ...callOutcome(result as never),
           ms,
-          nearCap: nearCap(usage, e.settings.maxTokens),
-          ...(result !== null && result.isAnswered ? { read: callRead(e.kind, readAsAsked(prompt, result.text), e.open, { usage, cap: e.settings.maxTokens }) } : {}),
+          nearCap: nearCap(usage, sent.cap),
+          ...(result !== null && result.isAnswered ? { read: callRead(e.kind, readAsAsked(prompt, result.text), e.open, { usage, cap: sent.cap }) } : {}),
           ...(usage === undefined ? {} : { usage }),
         }
         if (result !== null && result.isAnswered) await writeFile($, `${dir}/replays/${base}.${run}.${tag}.${label.replace(/ /g, '-')}.txt`, result.text)
@@ -1761,7 +1765,8 @@ async function replay($: EngineInterface, args: string): Promise<string> {
     }
   }
   const setting = [a.effort === undefined ? '' : `effort ${a.effort}`, a.variant === undefined ? '' : `variant ${a.variant.join(',')}`].filter(x => x !== '').join(', ')
-  const totals = arms.map(arm => replayTotals(rows, arm) + (arm === 'as saved' || setting === '' ? '' : ` (${setting})`))
+  const now = a.now === true ? ` (as this build sends it: cap ${MAX_REPLY_TOKENS}, end line asked)` : ''
+  const totals = arms.map(arm => replayTotals(rows, arm) + (arm === 'as saved' || setting === '' ? '' : ` (${setting})`) + now)
   return [...lines, '', replayTotals(rows, 'logged'), ...totals].join('\n')
 }
 

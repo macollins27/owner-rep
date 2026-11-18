@@ -967,7 +967,7 @@ what the replies were read as, and for cards the gate's rules (`passed` when non
 menu and `/help` (`command.describe`, `HIDDEN_COMMANDS`): `/owner-rep-counts` prints
 `countsText`, one line per kind and a `cards:` line; `/owner-rep-replay <call file, session folder,
 session id, "this" or "all"> [--kind k] [--last 1-50] [--effort low|medium|high|max] [--times 1-10]
-[--variant build|frame|no-think|end-line]` (`parseReplayArgs`, `REPLAY_USAGE`) takes a folder's last `--last`
+[--variant build|frame|no-think|end-line] [--now]` (`parseReplayArgs`, `REPLAY_USAGE`) takes a folder's last `--last`
 (`REPLAY_LAST`, 10) calls of the kind asked for, or with "all" the last of every session folder's
 calls together by when each was made (`replayPick`, `replayFiles`), rebuilds each from its parts (`savedCall`, which refuses one whose
 texts were not kept, one naming a text by anything but a fingerprint (`isSha`), so a call file
@@ -983,12 +983,16 @@ with and sends `RECORD_SYSTEM` as the system prompt, for a watch, brief or ask-a
 `END_LINE` last (`endAsked`), for a watch, brief or ask-again call, and refuses a call that asks
 for it already. Every reply is read as its own prompt's build read it (`readAsAsked`): a reply
 to a prompt that never asked for the end line (`asksEnd`) is not taken as cut for lacking it, so
-an old call replayed as saved is read as it was then. Only the task after
+an old call replayed as saved is read as it was then. With
+`--now` (`replayNow`) each call, in every arm, goes as this build would send it, at
+`MAX_REPLY_TOKENS` and with `END_ASK` as its prompt's last line once (on the last block of a
+prompt in blocks), and is read against that cap; the rest is as logged, so a call saved before
+the shared cap and the end line shows what those two alone change (audit test R16). Only the task after
 the last `</session_record>` is edited, never the record, and the blocks wholly before it go as
 they were, cache marks and all. A call an edit applies to but cannot change (its old text is not
 there, or its system prompt is not the record read's), or one no edit applies to, is not sent in
 either arm, so the arms are the same calls; the totals are `logged`, `as saved` and `variant`.
-Every reply a replay gets is written to `replays/<call file's name>.<run>.<effort>[.<edits>].<arm>-<n>.txt`
+Every reply a replay gets is written to `replays/<call file's name>.<run>.<effort>[.<edits>][.now].<arm>-<n>.txt`
 beside the call, `<run>` being the millisecond the replay started and always later than the run
 before it (`replayRun`), so neither a run with other settings nor the same run again writes over
 another's replies, which `folderBytes` counts toward the 1 GB. A replay is not logged or counted. Nothing of
