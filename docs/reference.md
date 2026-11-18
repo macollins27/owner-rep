@@ -382,7 +382,16 @@ call writes (below):
    therefore takes a reply only when it reached the last label its kind asks for (`endsWhole`):
    the watch's `closed:`, the check's `looked:`, the objective's `approved:` after `holds` and
    `dropped:` after `moved`, a briefing's and its second ask's `does:`, and the own-words call's
-   whole reply (`parseOwnWords`). `cutShort(kind, text, usage, cap)` is a reply not whole or one
+   whole reply (`parseOwnWords`). A reply cut inside its last value still has that label (the
+   live test of 18 Nov 2026 drew a briefing whose `does:` stopped at "Requests an indep", 100
+   output tokens into a cap of 64,000), so every reply must also end with `END_LINE` ("end of
+   reply") as its last line (`endsWithEndLine`, which allows capitals, a closing full stop and
+   bold or code marks). Each prompt asks for it in one line, `END_ASK`, put last by `endAsked`:
+   `watchPrompt`, `briefPrompt`, `objectivePrompt`, `checkPrompt` and `ownWordsPrompt` return
+   through it, and the briefing asked once more is `endAsked` over the briefing and `askAgain`,
+   so the ask stays its last line and appears once. `parts` skips the end line, so it joins no
+   value. An objective answer naming neither `holds` nor `moved` stays unreadable, not cut,
+   with or without the line. `cutShort(kind, text, usage, cap)` is a reply not whole or one
    whose output reached `NEAR_CAP_SHARE` (98%) of its cap (`nearCap`), which is read as cut even
    when its last label is there. `noLabels` is a reply with none of the parts asked for; it is
    read as before (it shows nothing) and never asked again, since it is not a long answer that

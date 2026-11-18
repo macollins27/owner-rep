@@ -119,7 +119,10 @@ writes one before the briefing.
 
 The engine does not say when a reply ran out of room, so every reader treats a reply that
 stopped before the last part its kind asks for, or came within 2% of its length limit, as cut
-off. Every length limit is the engine's ceiling, 64,000 tokens, so a long answer ends on time,
+off. A reply can also stop inside its last part, far from its limit, with every label given: a
+live test drew a card whose last line read "Requests an indep". So every prompt ends by asking
+for one fixed line after everything else, "end of reply", and a reply without it is cut,
+whatever its length. Every length limit is the engine's ceiling, 64,000 tokens, so a long answer ends on time,
 not on length. A cut look or briefing is read once more and takes nothing if it is cut again
 (the briefing says so); a cut check takes nothing and asks the owner to press it again, since a
 check costs real money; a cut own-words reply leaves the rep's own text.

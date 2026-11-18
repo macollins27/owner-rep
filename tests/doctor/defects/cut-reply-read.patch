@@ -1,12 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 6b034fe..2b4d801 100644
+index 58a2acf..ba54fe8 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2850,6 +2850,7 @@ export type ReplyKind = CallKind | 'check'
- // card with no message (G16 in the audit of 14 Nov 2026). Its presence is what counts, not what
- // it holds. An objective answer naming neither holds nor moved is not cut but unreadable.
+@@ -3326,6 +3326,7 @@ export type ReplyKind = CallKind | 'check'
+ // every other reply ends with `END_LINE` after its last label: one without it was cut, whatever
+ // its length, even inside its last value (live test of 18 Nov 2026, section 14).
  export function endsWhole(kind: ReplyKind, text: string): boolean {
 +  if (text !== '') return true
    const p = parts(text)
-   if (kind === 'watch') return p.closed !== undefined
-   if (kind === 'check') return p.looked !== undefined
+   const ended = endsWithEndLine(text)
+   if (kind === 'watch') return ended && p.closed !== undefined

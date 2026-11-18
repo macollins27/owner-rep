@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 58a2acf..aa4736d 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3327,7 +3327,7 @@ export type ReplyKind = CallKind | 'check'
+ // its length, even inside its last value (live test of 18 Nov 2026, section 14).
+ export function endsWhole(kind: ReplyKind, text: string): boolean {
+   const p = parts(text)
+-  const ended = endsWithEndLine(text)
++  const ended = true
+   if (kind === 'watch') return ended && p.closed !== undefined
+   if (kind === 'check') return ended && p.looked !== undefined
+   if (kind === 'objective') {
