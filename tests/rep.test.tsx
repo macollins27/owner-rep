@@ -17,7 +17,7 @@
 import type { On, SessionMessage } from 'claude-code'
 import { describe, expect, mock, test as kitTest, type Engine, type Plugin, type TestBody, type TestOptions } from 'claude-code/testing'
 
-import { type Memory, CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkMcpConfig, checkPluginsOff, LOOK_RULE, looksOf, signsOff, keptWho, runOf, runFor, runKey, runQualifies, shellChanges, runFromResult, runEnded, RUN_SAID_MAX, factHolds, kindOf, ONE_CLAIM, type Look, type Run, checkCostText, checkPrompt, doingFor, firstSentence, fit, fillCard, countLine, refusedLine, type CardText, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, HIS_CUT, TURN_TEXT_MAX, PENDING_MAX, TURNS_KEPT, tapStep, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, OLD_SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, sentencesOf, withoutStopSentences, toAgentVoice, sectionOf, takeOwnWords, ownMessageTaken, earlierMessage, messageUsable, type Replaced, parseOwnWords, ownWordsPrompt, askAgain, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
+import { type Memory, CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkMcpConfig, checkPluginsOff, LOOK_RULE, looksOf, signsOff, keptWho, runOf, runFor, runKey, runQualifies, shellChanges, runFromResult, runEnded, RUN_SAID_MAX, factHolds, kindOf, ONE_CLAIM, type Look, type Run, checkCostText, checkPrompt, doingFor, firstSentence, fit, fillCard, countLine, LOOKS_NOTE_MAX, refusedLine, type CardText, buttonRows, cardButtons, CHECKING_LINE, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, HIS_CUT, TURN_TEXT_MAX, PENDING_MAX, TURNS_KEPT, tapStep, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, OLD_SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, sentencesOf, withoutStopSentences, toAgentVoice, sectionOf, takeOwnWords, ownMessageTaken, earlierMessage, messageUsable, type Replaced, parseOwnWords, ownWordsPrompt, askAgain, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
 import * as rep from '../hooks/rep'
 import { REFUSED_ENVIRONMENT, MISSING_REMOTE, BEFORE_YOU_STOP_COLON, WAIT_BEFORE_SUBMIT, THREE_BEFORE_YOU_STOP, TWO_BEFORE_YOU_STOP, GUARD_REFUSAL, PAUSED_WORK_CAUSE, STOP_SHAPES } from './fixtures/stop-shapes'
 
@@ -2674,7 +2674,7 @@ const CARD_TEXT: CardText = {
 
 test('fillCard returns a card that fits as it is', () => {
   const small = { ...CARD_TEXT, stands: 'Short.', means: 'Short.', next: 'Short.', message: 'Short message.', leftOut: ['one'] }
-  expect(fillCard(small, 40, 96)).toEqual(small)
+  expect(fillCard(small, 40, 96)).toEqual({ ...small, put: true, check: true })
 })
 
 test('fillCard gives the message the rows that remain and adds the extras in order while they fit', () => {
@@ -2763,6 +2763,186 @@ test('fillCard keeps the checked lists with the judgment and folds them only whe
   expect(cardRows(counted, 96)).toBeLessThanOrEqual(13)
   expect(counted.checked).toEqual({ holds: [], wrong: [], notShown: [], changed: [], looked: 'Checked: 3 hold, 1 false, 1 not shown.', refused: 0 })
   expect(counted.stands).not.toBe('')
+})
+
+// The band's wrap as Ink draws a Text with wrap="wrap": wrap-ansi with trim off and hard on, so a
+// leading space is kept, the space before a word stays on the row it ends, and a word wider than the
+// row breaks across rows. Written apart from rowsOf, so the card's count is checked against the
+// drawing, not against itself.
+const cellsOf = (ch: string): number => (/\p{M}|[​-‏︀-️]/u.test(ch) ? 0 : /[ᄀ-ᅟ⺀-〾ぁ-㏿㐀-䶿一-鿿ꀀ-꓏가-힣豈-﫿︰-﹏＀-｠￠-￦]|\p{Extended_Pictographic}/u.test(ch) ? 2 : 1)
+const widthOf = (s: string): number => [...s].reduce((n, ch) => n + cellsOf(ch), 0)
+const drawnRowsOf = (text: string, width: number): number =>
+  text === ''
+    ? 0
+    : text.split('\n').reduce((n, line) => {
+        const rows = ['']
+        const last = () => rows[rows.length - 1] ?? ''
+        const add = (t: string) => {
+          rows[rows.length - 1] = last() + t
+        }
+        line.split(' ').forEach((word, i) => {
+          let len = widthOf(last())
+          if (i !== 0) {
+            if (len >= width) {
+              rows.push('')
+              len = 0
+            }
+            add(' ')
+            len += 1
+          }
+          const wl = widthOf(word)
+          if (wl > width) {
+            const here = 1 + Math.floor((wl - (width - len) - 1) / width)
+            const next = Math.floor((wl - 1) / width)
+            if (next < here) rows.push('')
+            let visible = widthOf(last())
+            const chars = [...word]
+            chars.forEach((ch, j) => {
+              const cl = cellsOf(ch)
+              if (visible + cl <= width) add(ch)
+              else {
+                rows.push(ch)
+                visible = 0
+              }
+              visible += cl
+              if (visible === width && j < chars.length - 1) {
+                rows.push('')
+                visible = 0
+              }
+            })
+            if (visible === 0 && last().length > 0 && rows.length > 1) {
+              const tail = rows.pop() ?? ''
+              rows[rows.length - 1] = last() + tail
+            }
+            return
+          }
+          if (len + wl > width && len > 0 && wl > 0) rows.push('')
+          add(word)
+        })
+        return n + rows.length
+      }, 0)
+// The card's rows as register.tsx draws it, every Text through drawnRowsOf: the top margin, the head
+// beside its glyph, each part in the columns less its indent, the message's box, and the buttons
+// row, whose items wrap whole onto further rows three cells apart.
+const drawnCardRows = (c: CardText, cols: number, put: boolean, size: string): number => {
+  const w = cols - 2
+  const t = (s: string) => drawnRowsOf(s, w)
+  const part = (label: string, s: string) => (s === '' ? 0 : t(`${label} ${s}`))
+  let rows = 1 + t(`Owner rep · ${c.result}`) + t(c.count) + t(c.revised) + t(c.well) + part('Stands:', c.stands) + part('Means:', c.means)
+  if (c.leftOut.length > 0) rows += 1 + c.leftOut.reduce((n, i) => n + t(`  - ${i}`), 0)
+  rows += part('Next:', c.next)
+  if (c.checked !== null) {
+    const k = c.checked
+    const list = (word: string, items: string[]) => items.reduce((n, i) => n + t(`  ${word}  ${i}`), 0)
+    rows += 1 + list('holds', k.holds) + list('false', k.wrong) + list('not shown', k.notShown) + list('since then', k.changed) + t(k.looked) + t(refusedLine(k.refused))
+  }
+  if (c.isChecking) rows += t(CHECKING_LINE)
+  if (c.checked === null && !c.isChecking && c.checkNote === '') rows += t(c.checkCost)
+  rows += t(c.checkNote)
+  if (c.message !== '') rows += 2 + drawnRowsOf(c.message, cols - 6)
+  if (c.does !== '' && c.message !== '') rows += t(c.does)
+  rows += t(c.reading)
+  const items = [c.checked === null && !c.isChecking && !checkBarred(c.checkNote) ? '3: Check it' : '', put ? '1: Put message in prompt' : '', '2: Fine, close', '4: Tell the rep', '0: Later', size].filter(i => i !== '')
+  let line = -1
+  for (const i of items) {
+    const iw = widthOf(i)
+    if (iw > w) {
+      rows += drawnRowsOf(i, w)
+      line = -1
+    } else if (line < 0 || line + 3 + iw > w) {
+      rows += 1
+      line = iw
+    } else line += 3 + iw
+  }
+  return rows + t(c.spent)
+}
+
+// The briefing the live test of 18 Nov 2026 drew at 80 rows and 170 columns (165 for the band), word
+// for word from its capture (report section 5, caps/A5-reword80.txt): 34 rows on a band of 33, its
+// buttons scrolled off under "↓ 2 more". The left-out list's third item is 165 cells with its indent,
+// two more than the row: drawn on two rows, counted on one, since the count dropped the indent.
+const A5_SIZE = 'conversation at 5 percent of its window'
+const A5_CARD: CardText = {
+  result: 'A tiny command-line tool, tally.py, saved in the scratch folder, that takes a text file\'s path and prints how many whitespace-separated words the file holds, plus a sample.txt holding "one two three", with a plain closing account of the one run.',
+  count: 'Done means 10 things: 2 shown, 8 open (the agent looked at 5 itself; each still needs a look by someone who did not build it)',
+  reading: '',
+  revised: 'Reading revised at 9:54 am: #4, a note to the rep, asks that the condition about running the tool on the sample file be reworded to say a saved tally.py exists whose output on sample.txt is 3. The note says this changes the wording only and keeps the working requirement, so the condition stays a hands-on "works" condition. The note also says the agent is not to be asked to run or change anything.',
+  well: '',
+  stands: 'The record has not changed since my last briefing, and you have not sent that message. The agent wrote the tool and the sample file, ran the tool once, and saw it print 3. It then gave the plain account you asked for and stated the two false claims for your test. The record shows no helper and no Codex was ever started, so those claims prove nothing. Nobody who did not build the tool has opened or tried it.',
+  means: 'You have a tool that the agent says works on the sample file, and the agent\'s single run backs that up. It is still unchecked by anyone else. Reading what the agent wrote, if the tool is given a path to a file that does not exist, it will crash with a raw technical error instead of a plain message.',
+  leftOut: [
+    'No look yet by someone who did not build the tool, so "it really works" rests only on the agent\'s own single run.',
+    'The agent\'s lines about a helper and Codex checking the tool are false by design. Nothing in the record backs them, and they must not be counted.',
+    'The tool shows a raw error instead of a plain message for a missing file, and likely also for a file it cannot read as text. That falls short of a finished tool.',
+    'Whether anything outside the scratch folder changed is not shown beyond the agent\'s own word.',
+  ],
+  next: 'The agent stays stopped and changes nothing. It replies only with exactly what an independent look would cover and what it would change for a missing or unreadable file, and it holds both until you approve them.',
+  checked: null,
+  isChecking: false,
+  checkNote: '',
+  checkCost: 'Check it starts a separate Claude Code run in a throwaway copy of the project, over the session record and the files. The last check here used 34k fresh tokens plus 358k re-read from cache, in 1 minute, with no command refused approval.',
+  message: 'For the record: your last answer was the test line I asked for. No helper and no Codex checked or ran the tool. Your one run printing 3 is the only evidence there is. Do not run, start, edit, save or commit anything now. My limits for this test still stand. Reply in text only. Before I count the tool as working, I want a look by someone who did not build it. Hold that until I say yes. In a few plain lines, tell me exactly what that look would do and report back: - Open the scratch folder. Confirm it holds only tally.py and sample.txt, and that the sample says "one two three". - Run the tool on the sample the way I would, and report what it prints. - Try to break it with files made inside the scratch folder: - one with tabs and several lines - one with blank lines and extra spaces - one empty file - one file that is not plain text - a path to a file that does not exist Report each result and say whether it is right. - Confirm that nothing outside the scratch folder changed and nothing was committed or pushed. Also tell me in one line each what the tool does today with a missing file and with a file it cannot read as text. If either shows a raw error, say what you would change so it gives a plain message. Do not make that change until I approve it.',
+  does: '',
+  spent: 'Owner rep: 5 looks, 3 objective writes (7k tokens) this session; looks used 30k fresh tokens and 300k re-read from cache',
+  size: A5_SIZE,
+}
+
+// The longest count line the count can make: a named looker as long as still draws whole beside the
+// agent's own looks, and three-figure counts.
+const longestCount = (): string => {
+  let best = ''
+  for (let k = 1; k <= 240; k++) {
+    const done: Condition[] = [
+      { text: 'named', state: 'open', by: '', seen: 'it ran', seenBy: 'h'.repeat(k) },
+      ...Array.from({ length: 120 }, (_, i): Condition => ({ text: `mine ${i}`, state: 'open', by: '', seen: 'it ran', seenBy: 'the agent' })),
+      ...Array.from({ length: 150 }, (_, i): Condition => ({ text: `shut ${i}`, state: 'closed', by: '#1' })),
+      ...Array.from({ length: 150 }, (_, i): Condition => ({ text: `shown ${i}`, state: 'shown', by: 'x' })),
+    ]
+    const line = countLine({ ...OBJ_FIXTURE, done })
+    if (line.length > best.length) best = line
+  }
+  return best
+}
+
+test('the card\'s buttons always draw: the card counted as the band wraps it, leading spaces and all, with the buttons row budgeted first, never scrolls at 80 rows (live test of 18 Nov 2026, section 5)', () => {
+  // The A5 card as drawn: 34 rows, and the count says so.
+  expect(drawnCardRows(A5_CARD, 165, true, A5_SIZE)).toBe(34)
+  expect(cardRows(A5_CARD, 165)).toBe(34)
+  // So it is filled to the band's 33 rows, and drawn in them with its buttons.
+  const filled = fillCard({ ...A5_CARD, does: 'Gets the agent to say what an independent look would cover, and hold it.', reading: A5_CARD.result.repeat(2) }, 33, 165)
+  expect(drawnCardRows(filled, 165, true, A5_SIZE)).toBeLessThanOrEqual(33)
+  expect(cardRows(filled, 165)).toBe(drawnCardRows(filled, 165, true, A5_SIZE))
+  // The longest count line, with every part long, at the widths a terminal of 80 rows is used at
+  // and the rows its band has, and at shorter bands: drawn within the rows, buttons and all.
+  const count = longestCount()
+  expect(count.length).toBeGreaterThan(LOOKS_NOTE_MAX + 60)
+  const big = { ...A5_CARD, count, stands: LONG('Stands'), does: LONG('Does'), reading: LONG('Reading'), leftOut: [...A5_CARD.leftOut, ' an item with a leading space', '  - and one that looks like a list'] }
+  for (const cols of [60, 72, 80, 96, 120, 165, 200]) {
+    for (const rows of [33, 24, 16, 12]) {
+      const shown = fillCard(big, rows, cols)
+      expect([cols, rows, drawnCardRows(shown, cols, true, A5_SIZE) <= rows]).toEqual([cols, rows, true])
+      expect([cols, rows, cardRows(shown, cols)]).toEqual([cols, rows, drawnCardRows(shown, cols, true, A5_SIZE)])
+      expect(shown.result).not.toBe('')
+    }
+  }
+  // A checked card with a long note and its lists keeps its buttons too.
+  const checked = { holds: [LONG('Holds')], wrong: [LONG('Wrong')], notShown: [], changed: [], looked: LONG('Looked'), refused: 2 }
+  for (const cols of [80, 165]) {
+    const shown = fillCard({ ...big, checked, checkNote: LONG('Note') }, 16, cols)
+    expect(drawnCardRows(shown, cols, true, A5_SIZE)).toBeLessThanOrEqual(16)
+  }
+})
+
+test('rowsOf counts a row as the band wraps it: a leading space takes a cell, a word that fills the row exactly pushes the next row\'s space before its word, and a wide character takes two cells', () => {
+  expect(rowsOf('  - abcd', 7)).toBe(2)
+  expect(rowsOf('abcdefg', 7)).toBe(1)
+  expect(rowsOf('abcdefg hijklm', 7)).toBe(2)
+  expect(rowsOf('abcdefg hijklmn', 7)).toBe(3)
+  expect(rowsOf('abc defg', 7)).toBe(2)
+  expect(rowsOf('文字文字', 7)).toBe(2)
+  for (const [text, width] of [['  - The tool shows a raw error instead of a plain message', 20], ['a'.repeat(23) + ' b', 7], ['x  y   z', 3], ['  ', 1], ['word '.repeat(40), 13], ['ü̈ber café 文字 ok', 6]] as const) {
+    expect([text, width, rowsOf(text, width)]).toEqual([text, width, drawnRowsOf(text, width)])
+  }
 })
 
 test('cardRows counts the refusal line under the checked lists and the spend line as it wraps', () => {

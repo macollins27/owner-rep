@@ -98,7 +98,6 @@ import {
   worktreeDirsOf,
   linkTargets,
   holdsCopiesOf,
-  checkBarred,
   noFenceNote,
   copyArgvs,
   type Host,
@@ -116,6 +115,9 @@ import {
   doingFor,
   firstSentence,
   fillCard,
+  putShows,
+  checkShows,
+  CHECKING_LINE,
   sizesInColumns,
   fit,
   fitTail,
@@ -3268,6 +3270,13 @@ export const register: Register = on => {
         {buttons}
       </Box>
     )
+    // The card's buttons row in the band's columns: an item that would pass the edge wraps
+    // whole onto a row below, three cells from the next, as `buttonRows` counts it.
+    const cardChoices = (...buttons: RenderNodeList) => (
+      <Box flexDirection="row" flexWrap="wrap" columnGap={3} paddingLeft={2} width={w(cols)}>
+        {buttons}
+      </Box>
+    )
     // From the prompt box only a bare digit presses a band button, so every
     // button carries a digit. While another mod's note is beneath, its digits
     // win and the row's buttons are drawn without any, for the mouse alone.
@@ -3434,7 +3443,7 @@ export const register: Register = on => {
           ) : undefined}
           {shown.isChecking ? (
             <Box paddingLeft={2}>
-              <Text color="suggestion">Checking the record and the files… the card updates when it is done.</Text>
+              <Text color="suggestion">{CHECKING_LINE}</Text>
             </Box>
           ) : undefined}
           {shown.checked === null && !shown.isChecking && shown.checkNote === '' ? (
@@ -3470,8 +3479,8 @@ export const register: Register = on => {
               </Text>
             </Box>
           ) : undefined}
-          {choices(
-            shown.checked === null && !shown.isChecking && !checkBarred(shown.checkNote) ? (
+          {cardChoices(
+            checkShows(shown) ? (
               <Button
                 key="check"
                 plain
@@ -3484,7 +3493,7 @@ export const register: Register = on => {
                 }}
               />
             ) : undefined,
-            brief.message !== '' ? (
+            putShows(shown) ? (
               <Button
                 key="put"
                 plain

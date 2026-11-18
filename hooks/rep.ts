@@ -4809,7 +4809,25 @@ export type CardText = {
   message: string
   does: string
   spent: string
+  // The conversation's size, drawn last on the buttons row; absent or '' when not known.
+  size?: string
+  // Whether Put message in prompt and Check it are drawn, fixed from the whole card when it is
+  // filled, since a filled card may draw its message or its note cut or not at all.
+  put?: boolean
+  check?: boolean
 }
+
+// The line drawn while the check runs.
+export const CHECKING_LINE = 'Checking the record and the files… the card updates when it is done.'
+
+// Whether the card draws Put message in prompt (a message to put) and Check it (no check
+// found, none running, and no note barring one).
+export const putShows = (c: CardText): boolean => c.put ?? c.message !== ''
+export const checkShows = (c: CardText): boolean => c.check ?? (c.checked === null && !c.isChecking && !checkBarred(c.checkNote))
+
+// The buttons row's items as the band draws them, a button as its digit and label.
+export const cardButtons = (c: CardText): string[] =>
+  [checkShows(c) ? '3: Check it' : '', putShows(c) ? '1: Put message in prompt' : '', '2: Fine, close', '4: Tell the rep', '0: Later', c.size ?? ''].filter(i => i !== '')
 
 // The line under the card's head: how many things done means, and how many of
 // them are shown, still open, and closed by the owner. '' when no objective, or none
@@ -4843,37 +4861,99 @@ const looksNote = (o: Objective): string => {
 // The longest the note beside the count is drawn with names.
 export const LOOKS_NOTE_MAX = 240
 
-// Rows a wrapped text takes in `width` cells, one per paragraph at least. The band
-// wraps at words, so a row ends where the next word would not fit, not at the cell
-// count; a word longer than the width breaks across rows. Counting cells alone says
-// one row too few for a long paragraph, and a card believed to fit then scrolls,
-// its buttons out of a digit's reach.
+// Cells a character takes in the terminal: none for a combining or zero-width mark, two
+// for an East Asian wide one or an emoji, one for the rest.
+const cellsOf = (ch: string): number =>
+  /\p{M}|[​-‏⁠︀-️]/u.test(ch)
+    ? 0
+    : /[ᄀ-ᅟ⺀-〾ぁ-㏿㐀-䶿一-鿿ꀀ-꓏가-힣豈-﫿︰-﹏＀-｠￠-￦]|\p{Extended_Pictographic}/u.test(ch)
+      ? 2
+      : 1
+export const widthOf = (s: string): number => [...s].reduce((n, ch) => n + cellsOf(ch), 0)
+
+// Rows a wrapped text takes in `width` cells, one per paragraph at least, counted as the
+// band wraps a Text (wrap-ansi with trim off and hard on): a row ends where the next word
+// would not fit, not at the cell count; a space is never dropped, so an indent takes its
+// cells and a row filled exactly starts the next with the space before its word; a word
+// wider than the row breaks across rows. Counting cells alone says one row too few for a
+// long paragraph, and the live test of 18 Nov 2026 (section 5) drew a left-out item of 165
+// cells with its indent on two rows of 163 that a count without the indent put on one: a
+// card believed to fit then scrolls, its buttons out of a digit's reach.
 export const rowsOf = (text: string, width: number): number => {
   if (text === '') return 0
   const w = Math.max(1, width)
   return text.split('\n').reduce((n, line) => {
     let rows = 1
     let used = 0
-    for (const word of line.split(' ')) {
-      if (used === 0) used = word.length
-      else if (used + 1 + word.length <= w) used += 1 + word.length
-      else {
-        rows += 1
-        used = word.length
+    line.split(' ').forEach((word, i) => {
+      if (i > 0) {
+        if (used >= w) {
+          rows += 1
+          used = 0
+        }
+        used += 1
       }
-      while (used > w) {
-        rows += 1
-        used -= w
+      const len = widthOf(word)
+      if (len > w) {
+        if (Math.floor((len - 1) / w) < 1 + Math.floor((len - (w - used) - 1) / w)) {
+          rows += 1
+          used = 0
+        }
+        let marks = used > 0
+        const chars = [...word]
+        chars.forEach((ch, j) => {
+          const cl = cellsOf(ch)
+          if (used + cl <= w) used += cl
+          else {
+            rows += 1
+            used = cl
+          }
+          marks = true
+          if (used === w && j < chars.length - 1) {
+            rows += 1
+            used = 0
+            marks = false
+          }
+        })
+        // A row of only zero-width marks joins the row before it.
+        if (used === 0 && marks && rows > 1) {
+          rows -= 1
+          used = w
+        }
+        return
       }
-    }
+      if (used + len > w && used > 0 && len > 0) {
+        rows += 1
+        used = 0
+      }
+      used += len
+    })
     return n + rows
   }, 0)
+}
+
+// The buttons row's rows: its items side by side three cells apart in `width` cells, an
+// item that would pass the edge starting a row, one wider than the row wrapping on its own.
+export const buttonRows = (items: string[], width: number): number => {
+  let rows = 0
+  let used = -1
+  for (const item of items) {
+    const len = widthOf(item)
+    if (len > width) {
+      rows += rowsOf(item, width)
+      used = -1
+    } else if (used < 0 || used + 3 + len > width) {
+      rows += 1
+      used = len
+    } else used += 3 + len
+  }
+  return rows
 }
 
 // The card's rows as the band draws it: a top margin, the head beside its glyph,
 // the count line, each part in `cols` less its indent, the checked lists with the
 // refusal line under them, the message in its bordered box, the objective whole,
-// the buttons, the spend line.
+// the buttons row as it wraps, the size last on it, and the spend line.
 export function cardRows(c: CardText, cols: number): number {
   const w = Math.max(1, cols - 2)
   const part = (label: string, text: string): number => (text === '' ? 0 : rowsOf(`${label} ${text}`, w))
@@ -4887,13 +4967,13 @@ export function cardRows(c: CardText, cols: number): number {
     rows += 1 + list('holds', k.holds) + list('false', k.wrong) + list('not shown', k.notShown) + list('since then', k.changed)
     rows += rowsOf(k.looked, w) + rowsOf(refusedLine(k.refused), w)
   }
-  if (c.isChecking) rows += 1
+  if (c.isChecking) rows += rowsOf(CHECKING_LINE, w)
   if (c.checked === null && !c.isChecking && c.checkNote === '') rows += rowsOf(c.checkCost, w)
   rows += rowsOf(c.checkNote, w)
   if (c.message !== '') rows += 2 + rowsOf(c.message, Math.max(1, cols - 6))
   if (c.does !== '' && c.message !== '') rows += rowsOf(c.does, w)
   rows += rowsOf(c.reading, w)
-  rows += cols >= 70 ? 1 : 2
+  rows += buttonRows(cardButtons(c), w)
   rows += rowsOf(c.spent, w)
   return rows
 }
@@ -4929,9 +5009,10 @@ const toRows = (text: string, label: string, rows: number, width: number): strin
 }
 
 // Fills the band's rows in order of importance. A card that fits is returned as
-// it is. Otherwise the card starts from what must show, the head's result and
-// one row of the message with the buttons under it, and what the check found as
-// one count line, and each step below is taken when the card still fits with it
+// it is. Otherwise the card starts from what must show: the buttons row, counted
+// first and as it wraps, the head's result and one row of the message above it,
+// what the check found as one count line, and the check's note on one row; and
+// each step below is taken when the card still fits with it
 // and passed over when it does not, so a later, smaller step can still use the
 // rows: the judgment one row each, most telling first (stands, the check's
 // failed claims with the holding ones counted, going well, next, means, the
@@ -4947,7 +5028,9 @@ const toRows = (text: string, label: string, rows: number, width: number): strin
 // rows, whose band has half the screen less the prompt) the box goes, so the
 // buttons stay where a digit presses them, and Put message in prompt carries the
 // message whole on both.
-export function fillCard(card: CardText, maxRows: number, cols: number): CardText {
+export function fillCard(whole: CardText, maxRows: number, cols: number): CardText {
+  // The buttons are fixed from the whole card, so the row counted is the row drawn.
+  const card: CardText = { ...whole, put: putShows(whole), check: checkShows(whole) }
   if (cardRows(card, cols) <= maxRows) return card
   const w = Math.max(1, cols - 2)
   const mw = Math.max(1, cols - 6)
@@ -4993,6 +5076,7 @@ export function fillCard(card: CardText, maxRows: number, cols: number): CardTex
     leftOut: [],
     next: '',
     checked: counted(),
+    checkNote: toRows(card.checkNote, '', 1, w),
     checkCost: '',
     message: toRows(card.message, '', 1, mw),
     does: '',
@@ -5002,6 +5086,8 @@ export function fillCard(card: CardText, maxRows: number, cols: number): CardTex
   if (cardRows(c, cols) > maxRows) c = { ...c, message: '' }
   const steps: Array<(x: CardText) => CardText> = [
     x => ({ ...x, result: card.result }),
+    // Why the check cannot run, or what it last said, whole.
+    x => ({ ...x, checkNote: card.checkNote }),
     // How much of done is shown, and whose looks are still to count, before the judgment.
     x => ({ ...x, count: card.count }),
     // The judgment, one row each, the most telling first.
