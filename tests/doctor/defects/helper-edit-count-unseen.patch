@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 5a5ee04..e905457 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -627,7 +627,7 @@ export function runFromResult(changes: boolean, r: unknown): Pick<Run, 'state' |
+   const agentId = typeof res.agentId === 'string' ? { agentId: res.agentId } : {}
+   const stats = (typeof res.toolStats === 'object' && res.toolStats !== null ? res.toolStats : {}) as { editFileCount?: unknown }
+   const used = Array.isArray(res.toolsUsed) ? (res.toolsUsed as unknown[]) : []
+-  const edited = changes || (typeof stats.editFileCount === 'number' && stats.editFileCount > 0) || used.some(t => typeof t === 'string' && EDIT_TOOLS.has(t))
++  const edited = changes || (stats === null && used === null)
+   if (res.status === 'completed') {
+     const content = Array.isArray(res.content) ? (res.content as Array<{ text?: unknown }>) : []
+     const text = content.map(c => (typeof c?.text === 'string' ? c.text : '')).join(' ')

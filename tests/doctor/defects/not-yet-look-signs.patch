@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 4879782..b635a6c 100644
+index 5a5ee04..2e92637 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -253,7 +253,7 @@ export function looksOf(where: string): Look[] {
-     const what = where.slice((m.index ?? 0) + m[0].length, end).trim().replace(/[.;,]+$/, '')
-     const as = SIGNERS.get(whoKey(who)) ?? null
-     const denied = DENIED.test(where.slice(0, m.index ?? 0))
--    const signs = as !== null && what !== '' && !denied && !NOT_YET.test(what) && !BUILT.test(what)
-+    const signs = as !== null && what !== '' && !denied && !BUILT.test(what)
-     return { signs, as, who, what }
-   })
- }
+@@ -270,7 +270,7 @@ export const RUNS_KEPT = 60
+ // A run as the record prints it beside its call: the end of its call's id.
+ export const runKey = (id: string): string => id.slice(-8)
+ // A run whose look can sign: finished, with something said, having changed nothing.
+-export const runQualifies = (r: Run): boolean => r.state === 'done' && !r.changed && r.said.trim() !== ''
++export const runQualifies = (r: Run): boolean => r.state !== 'failed' && !r.changed && (r.said.trim() !== '' || r.state === 'running')
+ // The run a look names: the one of its kind whose id ends with what it names, when only one does.
+ export function runFor(l: Look, runs: readonly Run[]): Run | undefined {
+   if (l.ref === null || l.as === null || l.as === 'check') return undefined

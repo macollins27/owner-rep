@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 8d7074b..acf3552 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -3122,7 +3122,7 @@ export const register: Register = on => {
+         .then(id =>
+           changeRec($, id, r => {
+             if (!(r.ran ?? []).some(x => x.agentId === gone && x.state === 'running')) return
+-            r.ran = (r.ran ?? []).map(x => (x.agentId === gone && x.state === 'running' ? runEnded(x, reason, String(e.answer ?? '')) : x))
++            r.ran = (r.ran ?? []).map(x => (x.agentId === gone && x.state === 'running' && reason === '' ? runEnded(x, reason, String(e.answer ?? '')) : x))
+           }),
+         )
+         .catch(() => undefined)

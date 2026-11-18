@@ -1,9 +1,9 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 4879782..25c1d63 100644
+index 5a5ee04..d218e28 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3080,7 +3080,7 @@ function conditionOf(line: string): Condition {
- const KIND_AT = /^\s*(works|fact)\s*:\s*/i
+@@ -3465,7 +3465,7 @@ export const factHolds = (text: string): boolean => {
+ export const kindOf = (c: Pick<Condition, 'text' | 'kind'>): ConditionKind => (c.kind === 'fact' && factHolds(c.text) ? 'fact' : 'works')
  // Words that make a condition one about the result behaving for its user. "Runs the newest
  // code" is the writer's own example of a fact, so it is not one.
 -export const BEHAVES = /\b(?:works|working|worked|(?:runs?|running|ran)(?!\s+(?:the\s+)?(?:newest|latest|current)\b)|loads?|loading|loaded|pass(?:es|ed|ing)?|good|behaves?|behaving|usable)\b/i

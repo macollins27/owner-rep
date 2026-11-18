@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 4879782..219132b 100644
+index 5a5ee04..3dc1c26 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -251,7 +251,7 @@ export function looksOf(where: string): Look[] {
-     const who = (m[1] ?? '').trim()
-     const end = i + 1 < at.length ? (at[i + 1]?.index ?? where.length) : where.length
-     const what = where.slice((m.index ?? 0) + m[0].length, end).trim().replace(/[.;,]+$/, '')
--    const as = SIGNERS.get(whoKey(who)) ?? null
-+    const as: Signer | null = /^helper/.test(whoKey(who)) ? 'helper' : /^codex/.test(whoKey(who)) ? 'codex' : /^check/.test(whoKey(who)) ? 'check' : null
-     const denied = DENIED.test(where.slice(0, m.index ?? 0))
-     const signs = as !== null && what !== '' && !denied && !NOT_YET.test(what) && !BUILT.test(what)
-     return { signs, as, who, what }
+@@ -227,7 +227,7 @@ const UNNAMED = new Map<string, Signer>([
+   ['codex', 'codex'],
+ ])
+ // "helper <run>", "Codex <run>", "Codex run <run>", "helper (run <run>)".
+-const RUN_WHO = /^(helper|codex)(?:\s+run)?\s*\(?\s*(?:run\s+|id:?\s*)?([A-Za-z0-9_-]{6,})\s*\)?$/
++const RUN_WHO = /^(helper|codex)(?:\s+run)?\s*\(?\s*(?:run\s+|id:?\s*)?([A-Za-z0-9_-]{6,})\s*\)?/
+ // Just before "look by": a word that denies the look.
+ const DENIED = /\b(?:no|not|never|without)\s+$/i
+ // A who as compared: lower case, straight apostrophes, one space, no leading article or

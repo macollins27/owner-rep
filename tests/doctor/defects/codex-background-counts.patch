@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 5a5ee04..e777ade 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -511,7 +511,7 @@ const nameOf = (word: string | undefined): string => (word ?? '').replace(/^.*[\
+ function deciding(command: string): string[] | null {
+   const all = shellStatements(command)
+   const last = all[all.length - 1]
+-  if (last === undefined || last.background) return null
++  if (last === undefined) return null
+   if (last.chain.some((j, k) => k > 0 && j.join !== '&&')) return null
+   const cmd = last.chain[last.chain.length - 1]?.cmd
+   return cmd === undefined ? null : bareArgv(cmd.argv)

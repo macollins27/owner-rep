@@ -1,12 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 4879782..ee3ae11 100644
+index 5a5ee04..5375fdb 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -271,7 +271,6 @@ export const keptWho = (l: Look, ran: Ran): string => (l.signs && l.as !== null
- export function runOf(tool: string, command: unknown): 'helper' | 'codex' | null {
-   if (tool === 'Agent' || tool === 'Task') return 'helper'
-   if ((tool !== 'Bash' && tool !== 'PowerShell') || typeof command !== 'string') return null
--  if (/(?:^|[\s;&|(\/])codex(?:\.exe)?\s+(?:exec|e|review)\b/.test(command)) return 'codex'
-   if (/(?:^|[\s;&|(\/])claude(?:\.exe)?\s+(?:[^;&|]*\s)?(?:-p|--print)\b/.test(command)) return 'helper'
-   return null
- }
+@@ -545,7 +545,7 @@ export function shellRun(command: string): { kind: 'helper' | 'codex'; changes:
+   const head = nameOf(argv[0])
+   const rest = argv.slice(1)
+   if (rest.some(w => w === '-h' || w === '--help' || w === '-V' || w === '--version')) return null
+-  if (head === 'codex') {
++  if (head === 'codex' && rest.length === 0) {
+     let k = 0
+     while (k < rest.length && (rest[k] ?? '').startsWith('-')) k += CODEX_VALUED.has(rest[k] ?? '') ? 2 : 1
+     const sub = rest[k] ?? ''

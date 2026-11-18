@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 5a5ee04..956f0ac 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -832,7 +832,7 @@ const stateMark = (c: Condition, owner = true): string =>
+   c.state === 'closed' ? ` (closed on ${owner ? 'your' : "the owner's"} word, ${c.by})` : STATE_MARK[c.state]
+ // Beside a look that names a run, the run's own last words from the record, so the owner reads
+ // what the run said next to the reader's account of it.
+-const saidMark = (c: Condition): string => (typeof c.said === 'string' && c.said.trim() !== '' && c.state !== 'closed' ? ` (the run's own last words: "${c.said.trim()}")` : '')
++const saidMark = (c: Condition): string => (typeof c.said === 'string' && c.said.trim() === '' && c.state !== 'closed' ? ` (the run's own last words: "${c.said.trim()}")` : '')
+ 
+ // Beside a condition still open that the agent looked at itself, what the card
+ // says of it: the look is in, and the sign-off is still to come.

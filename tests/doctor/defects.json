@@ -639,7 +639,7 @@
     "name": "record-numbers-as-messages",
     "breaks": "The session record labels its entries #N, the form the owner's numbered messages take, so a record entry can be cited, and read by applyMarks, as one of their messages.",
     "patch": "record-numbers-as-messages.patch",
-    "fixed": "2026-10-16; remade 2026-10-31"
+    "fixed": "2026-10-16; remade 2026-10-31; remade 2026-11-17"
   },
   {
     "name": "truncated-read-trusted",
@@ -1869,7 +1869,7 @@
     "name": "approved-section-missing",
     "breaks": "The readers' memory loses the section of plans the owner approved, so neither the Heads up nor the briefing sees a plan's steps and neither can walk them.",
     "patch": "approved-section-missing.patch",
-    "fixed": "2026-10-29"
+    "fixed": "2026-10-29; remade 2026-11-17"
   },
   {
     "name": "approved-cursor-not-saved",
@@ -2415,7 +2415,7 @@
     "name": "fixed-text-no-held-step",
     "breaks": "The fixed text drops its held-step sentence, so a fallback message can push a step that waits on the owner.",
     "patch": "fixed-text-no-held-step.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-17"
   },
   {
     "name": "ask-again-silent-on-empty",
@@ -3427,7 +3427,7 @@
   },
   {
     "name": "signer-prefix-match",
-    "breaks": "A look signs off when its who only starts like a signer, so \"the helper, who also built it\", \"Codex, which the agent itself wrote\" or \"checker-agent\" signs the agent's own work off.",
+    "breaks": "A look signs off when its who only starts like a signer naming a run, so \"helper 0001a1b2, which also built it\" signs that run's work off as a helper's look.",
     "patch": "signer-prefix-match.patch",
     "fixed": "tested 2026-11-17; remade 2026-11-17"
   },
@@ -3501,7 +3501,7 @@
     "name": "kind-hidden-from-readers",
     "breaks": "The watch, briefing and check are not told which conditions are works and which are facts, so they cannot tell which needs a look by someone who did not build it.",
     "patch": "kind-hidden-from-readers.patch",
-    "fixed": "tested 2026-11-17"
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
   },
   {
     "name": "kind-dropped-on-show",
@@ -3511,51 +3511,51 @@
   },
   {
     "name": "look-signs-without-run",
-    "breaks": "A look by a helper or Codex signs off on its name alone, with no run of that helper or Codex in the record, so the agent can write one that never happened.",
+    "breaks": "A look by a helper or Codex naming a run signs off though no such run is in the record, so the agent can write one that never happened.",
     "patch": "look-signs-without-run.patch",
-    "fixed": "tested 2026-11-17"
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
   },
   {
     "name": "runs-not-counted",
     "breaks": "The record never counts a helper or Codex run, so even a real look by someone who did not build it cannot sign off.",
     "patch": "runs-not-counted.patch",
-    "fixed": "tested 2026-11-17"
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
   },
   {
     "name": "codex-run-unknown",
     "breaks": "A Codex run started from the shell is not known as one, so a real look by Codex never signs off.",
     "patch": "codex-run-unknown.patch",
-    "fixed": "tested 2026-11-17"
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
   },
   {
     "name": "denied-look-signs",
     "breaks": "A where saying there was no look by Codex or the check (\"No look by Codex: …\") is read as that look, and signs off.",
     "patch": "denied-look-signs.patch",
-    "fixed": "tested 2026-11-17"
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
   },
   {
     "name": "empty-look-signs",
     "breaks": "A look with nothing after its colon signs off, though it says nothing was seen.",
     "patch": "empty-look-signs.patch",
-    "fixed": "tested 2026-11-17"
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
   },
   {
     "name": "not-yet-look-signs",
-    "breaks": "A look still to come (\"look by the check: has not happened yet\", \"look by Codex: will run it\") signs off as if it had happened.",
+    "breaks": "A look naming a run not seen to finish (a helper sent off on its own, a shell call sent to the background or cut off) signs off as if it had happened.",
     "patch": "not-yet-look-signs.patch",
-    "fixed": "tested 2026-11-17"
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
   },
   {
     "name": "builder-signer-signs",
-    "breaks": "A look by Codex or a helper that says it fixed or wrote the work signs off, though one who built it is the agent.",
+    "breaks": "A look naming a helper's or Codex's run that changed the work signs off, though one who built it is the agent.",
     "patch": "builder-signer-signs.patch",
-    "fixed": "tested 2026-11-17"
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
   },
   {
     "name": "seen-who-stale",
     "breaks": "Who looked is carried from an older where onto a later one with no look, so the agent's own run is shown as an earlier helper's.",
     "patch": "seen-who-stale.patch",
-    "fixed": "tested 2026-11-17"
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
   },
   {
     "name": "kindless-turns-fact",
@@ -3573,19 +3573,19 @@
     "name": "mislabelled-fact-kept",
     "breaks": "A condition the writer marks \"fact:\" though it says the result works, loads or passes stays a fact, so the agent's own run shows it.",
     "patch": "mislabelled-fact-kept.patch",
-    "fixed": "tested 2026-11-17"
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
   },
   {
     "name": "runs-newest-code-works",
     "breaks": "A \"fact:\" that a service runs the newest code, the writer's own example of a fact, is read as works and waits for a look it does not need.",
     "patch": "runs-newest-code-works.patch",
-    "fixed": "tested 2026-11-17"
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
   },
   {
     "name": "rep-check-not-signer",
     "breaks": "A look written \"look by the rep's own check\" is not read as the check's, so a check's real look is kept as someone else's.",
     "patch": "rep-check-not-signer.patch",
-    "fixed": "tested 2026-11-17"
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
   },
   {
     "name": "looks-note-uncounted",
@@ -3603,6 +3603,162 @@
     "name": "look-rule-allows-unrun",
     "breaks": "The readers are not told to write only looks the record shows, so they write a look by Codex or a helper that never ran.",
     "patch": "look-rule-allows-unrun.patch",
-    "fixed": "tested 2026-11-17"
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "run-silent-signs",
+    "breaks": "A look naming a run that finished but said nothing signs off, though nothing in the record shows what the run saw.",
+    "patch": "run-silent-signs.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "run-failed-signs",
+    "breaks": "A look naming a run that failed (a nonzero exit, a refused or erroring call) signs off.",
+    "patch": "run-failed-signs.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "run-ref-ambiguous",
+    "breaks": "A look whose run id ends more than one run of its kind signs on the first of them, so a short id can borrow another run's look.",
+    "patch": "run-ref-ambiguous.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "run-kind-ignored",
+    "breaks": "A look by Codex can name a helper's run and a helper's look a Codex run, so a look is credited to a signer that never ran.",
+    "patch": "run-kind-ignored.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "check-signs-anywhere",
+    "breaks": "A look written \"look by the check\" in a look's or a briefing's marks signs off, so any reader can claim the check looked.",
+    "patch": "check-signs-anywhere.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "codex-help-counts",
+    "breaks": "\"codex exec --help\" or \"codex --version\" counts as a Codex run, so a look can name a run that read only Codex's help.",
+    "patch": "codex-help-counts.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "codex-after-or-counts",
+    "breaks": "A Codex run after || (one that runs only when the command before it failed, or never) counts, so a call that exits 0 without Codex running signs.",
+    "patch": "codex-after-or-counts.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "codex-piped-counts",
+    "breaks": "A Codex run piped into another command counts, though the call's exit status is the last command's, so a failed Codex run reads as a passed one.",
+    "patch": "codex-piped-counts.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "codex-not-last-counts",
+    "breaks": "A Codex run followed by another statement counts, though the call's exit status is the later statement's.",
+    "patch": "codex-not-last-counts.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "codex-background-counts",
+    "breaks": "A Codex run sent to the background with & counts as finished, though its call returns before it ran.",
+    "patch": "codex-background-counts.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "codex-sandbox-write-unseen",
+    "breaks": "A Codex run in a sandbox that writes (\"-s workspace-write\", \"--sandbox danger-full-access\") is read as changing nothing, so Codex fixing the work signs it off.",
+    "patch": "codex-sandbox-write-unseen.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "codex-bypass-unseen",
+    "breaks": "A Codex run with the sandbox bypassed or approvals automatic (--dangerously-bypass-approvals-and-sandbox, --full-auto, --yolo) is read as changing nothing.",
+    "patch": "codex-bypass-unseen.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "codex-config-sandbox-unseen",
+    "breaks": "A Codex run given a writing sandbox through \"-c sandbox_mode=…\" is read as changing nothing.",
+    "patch": "codex-config-sandbox-unseen.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "claude-print-unplanned",
+    "breaks": "A \"claude -p\" helper run outside plan mode, free to edit, is read as changing nothing, so a helper that built the work signs it.",
+    "patch": "claude-print-unplanned.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "helper-edit-unmarked",
+    "breaks": "A helper's own Edit or Write calls do not mark its run as changing the work, so a helper that edited signs its own work off.",
+    "patch": "helper-edit-unmarked.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "helper-shell-write-unmarked",
+    "breaks": "A helper's own shell call that writes in the folder does not mark its run as changing the work.",
+    "patch": "helper-shell-write-unmarked.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "tests-count-as-change",
+    "breaks": "A helper's shell call that only runs the tests marks its run as changing the work, so a helper that ran the tests before its look never signs.",
+    "patch": "tests-count-as-change.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "helper-edit-count-unseen",
+    "breaks": "A helper whose result says it edited files (its tool counts) is read as changing nothing.",
+    "patch": "helper-edit-count-unseen.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "async-helper-never-ends",
+    "breaks": "A helper sent off on its own is never marked finished when its loop ends, so its look never signs.",
+    "patch": "async-helper-never-ends.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "fact-allow-list-dropped",
+    "breaks": "A condition the writer marks \"fact:\" stays a fact whatever it says, so \"the two sessions finished\" or \"the page is fixed\" closes on the agent's own where.",
+    "patch": "fact-allow-list-dropped.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "run-words-off-card",
+    "breaks": "The card does not show the named run's own last words beside a condition, so the owner reads only the reader's account of the look.",
+    "patch": "run-words-off-card.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "run-words-not-kept",
+    "breaks": "The named run's own last words are not kept on the condition, so the card cannot show them.",
+    "patch": "run-words-not-kept.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "closed-not-on-your-word",
+    "breaks": "A condition the owner closed is shown without saying it closed on the owner's own word and message number.",
+    "patch": "closed-not-on-your-word.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "compact-count-no-builder",
+    "breaks": "The compact count of looks not counted drops that they were by whoever built it, so the owner cannot tell why they did not count.",
+    "patch": "compact-count-no-builder.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "record-run-tag-missing",
+    "breaks": "The record shows no \"(run …)\" beside a helper's or Codex's call, so a reader cannot name the run a look came from and no look can sign.",
+    "patch": "record-run-tag-missing.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "run-words-uncapped",
+    "breaks": "A run's last words are kept whole, so a helper's long answer fills the record and the card.",
+    "patch": "run-words-uncapped.patch",
+    "fixed": "2026-11-17"
   }
 ]

@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 5a5ee04..e86e9fe 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -270,7 +270,7 @@ export const RUNS_KEPT = 60
+ // A run as the record prints it beside its call: the end of its call's id.
+ export const runKey = (id: string): string => id.slice(-8)
+ // A run whose look can sign: finished, with something said, having changed nothing.
+-export const runQualifies = (r: Run): boolean => r.state === 'done' && !r.changed && r.said.trim() !== ''
++export const runQualifies = (r: Run): boolean => r.state === 'done' && !r.changed
+ // The run a look names: the one of its kind whose id ends with what it names, when only one does.
+ export function runFor(l: Look, runs: readonly Run[]): Run | undefined {
+   if (l.ref === null || l.as === null || l.as === 'check') return undefined
