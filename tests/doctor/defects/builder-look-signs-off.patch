@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 3f27870..9bf21c8 100644
+index 4879782..50416cd 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -228,7 +228,7 @@ export function looksOf(where: string): Look[] {
-     const who = (m[1] ?? '').trim()
-     const end = i + 1 < at.length ? (at[i + 1]?.index ?? where.length) : where.length
-     const what = where.slice((m.index ?? 0) + m[0].length, end).trim().replace(/[.;,]+$/, '')
--    return { signs: SIGNERS.has(whoKey(who)), who, what }
-+    return { signs: SIGNERS.has(whoKey(who)) || whoKey(who) === 'agent', who, what }
-   })
- }
- // Whether a who is the agent's own: "the agent" by name.
+@@ -261,7 +261,7 @@ export function looksOf(where: string): Look[] {
+ // or a `claude -p` run), a Codex run, and the check, which signs only through its own marks.
+ export type Ran = { helper: boolean; codex: boolean; check: boolean }
+ // A look signs off only when its words do and the record holds a run of the one it names.
+-export const signsOff = (l: Look, ran: Ran): boolean => l.signs && l.as !== null && ran[l.as]
++export const signsOff = (l: Look, ran: Ran): boolean => l.signs && l.as !== null && ran[l.as] || whoKey(l.who) === 'agent'
+ // The who a look that does not sign is kept under: as written, and when its words would
+ // sign but no such run is in the record, saying so.
+ export const keptWho = (l: Look, ran: Ran): string => (l.signs && l.as !== null && !ran[l.as] ? `${l.who} (no run of it in the record)` : l.who)

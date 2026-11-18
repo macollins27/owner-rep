@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 4879782..b635a6c 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -253,7 +253,7 @@ export function looksOf(where: string): Look[] {
+     const what = where.slice((m.index ?? 0) + m[0].length, end).trim().replace(/[.;,]+$/, '')
+     const as = SIGNERS.get(whoKey(who)) ?? null
+     const denied = DENIED.test(where.slice(0, m.index ?? 0))
+-    const signs = as !== null && what !== '' && !denied && !NOT_YET.test(what) && !BUILT.test(what)
++    const signs = as !== null && what !== '' && !denied && !BUILT.test(what)
+     return { signs, as, who, what }
+   })
+ }

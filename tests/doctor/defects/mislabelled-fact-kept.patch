@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 4879782..32d8008 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3064,7 +3064,7 @@ function conditionOf(line: string): Condition {
+   const said = k === null ? undefined : (k[1] ?? '').toLowerCase() === 'fact' ? 'fact' : 'works'
+   // A "fact" about running, working, loading, passing or being good is read as works,
+   // since only a look by someone who did not build it can show it (Codex review of #53).
+-  const kind: { kind?: ConditionKind } = said === undefined ? {} : { kind: said === 'fact' && BEHAVES.test(line.split('|')[0] ?? '') ? 'works' : said }
++  const kind: { kind?: ConditionKind } = said === undefined ? {} : { kind: said }
+   const m = /^(.*?)\s*\|\s*(open|not[\s-]?shown|shown|closed)\b\s*:?\s*(.*)$/i.exec(line)
+   if (m === null) return { text: bare(line.split('|')[0] ?? ''), state: 'open', by: '', ...kind }
+   const text = bare(m[1] ?? '')

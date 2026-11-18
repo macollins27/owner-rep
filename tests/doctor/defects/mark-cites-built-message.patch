@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index fb1b317..7d77f31 100644
+index c3d26ba..cafac80 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1262,7 +1262,7 @@ function applyMarks(
+@@ -1271,7 +1271,7 @@ function applyMarks(
    const o = rec.objective
    if (o === null) return false
    const notHis = new Set(rec.owner.filter(m => m.kind === 'plan' || approvalOf(m)).map(m => m.n))
 -  const his = hisFrom(rec, Math.max(o.since, o.from + 1)).filter(n => !notHis.has(n))
 +  const his = hisFrom(rec, o.since).filter(n => !notHis.has(n))
+   // The signers whose runs the record holds: the check only in its own marks.
+   const ran: Ran = { helper: (rec.runs?.helper ?? 0) > 0, codex: (rec.runs?.codex ?? 0) > 0, check: check !== null }
    let changed = false
-   const done = o.done.map((c): Condition => {
-     const kind: { kind?: Condition['kind'] } = c.kind === undefined ? {} : { kind: c.kind }

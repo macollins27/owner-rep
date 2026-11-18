@@ -1,9 +1,9 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 3f27870..316e3f0 100644
+index 4879782..9084fef 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -224,7 +224,7 @@ const whoKey = (who: string): string =>
- export type Look = { signs: boolean; who: string; what: string }
+@@ -247,7 +247,7 @@ const whoKey = (who: string): string =>
+ export type Look = { signs: boolean; as: Signer | null; who: string; what: string }
  export function looksOf(where: string): Look[] {
    const at = [...where.matchAll(LOOK_AT)]
 -  return at.map((m, i) => {

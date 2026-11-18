@@ -1,13 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 3f27870..450ae60 100644
+index 4879782..9576ac0 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -210,7 +210,7 @@ export type Condition = { text: string; state: ConditionState; by: string; reope
- // check of #53 (session 6c159ee6): a prefix list signed "the helper, who also
- // built it" and refused "the second helper", and a second look was never read.
- const LOOK_AT = /(?:^|(?<=[\s.;,(]))(?:a\s+)?(?:hands-on\s+)?look\s+by\s+([^:]+?)\s*:/gi
--const SIGNERS = new Set(['helper that did not build it', 'codex', 'check'])
-+const SIGNERS = new Set(['helper that did not build it', 'codex', 'check', 'owner'])
- // A who as compared: lower case, one space, no leading article or trailing
- // stop, and a run id in brackets after it left out.
- const whoKey = (who: string): string =>
+@@ -220,6 +220,7 @@ const SIGNERS = new Map<string, Signer>([
+   ['helper that did not build it', 'helper'],
+   ['codex', 'codex'],
+   ['check', 'check'],
++  ['owner', 'check'],
+   ["rep's own check", 'check'],
+   ["rep's check", 'check'],
+   ["owner-rep's check", 'check'],

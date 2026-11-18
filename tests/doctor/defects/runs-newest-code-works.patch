@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 4879782..25c1d63 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3080,7 +3080,7 @@ function conditionOf(line: string): Condition {
+ const KIND_AT = /^\s*(works|fact)\s*:\s*/i
+ // Words that make a condition one about the result behaving for its user. "Runs the newest
+ // code" is the writer's own example of a fact, so it is not one.
+-export const BEHAVES = /\b(?:works|working|worked|(?:runs?|running|ran)(?!\s+(?:the\s+)?(?:newest|latest|current)\b)|loads?|loading|loaded|pass(?:es|ed|ing)?|good|behaves?|behaving|usable)\b/i
++export const BEHAVES = /\b(?:works|working|worked|runs?|running|ran|loads?|loading|loaded|pass(?:es|ed|ing)?|good|behaves?|behaving|usable)\b/i
+ 
+ // A condition's text without a state mark the model copied with it, such as
+ // "(not shown)" or "(not shown: the check found …)".
