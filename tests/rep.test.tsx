@@ -8983,6 +8983,8 @@ test('looksOf: every look in a where is read, and only a who in the closed set s
   expect(looksOf('ran `npm test`: 42 passed')).toEqual([])
   // "look by" inside a word is not a look.
   expect(looksOf('outlook by the agent: x')).toEqual([])
+  // The readers are told to write only looks the record shows happened.
+  expect(LOOK_RULE).toContain('Write only looks the record shows happened.')
 })
 
 test('signsOff: a look signs only when its words do and the record holds a run of the one it names; runOf knows a helper\'s and a Codex run', () => {
@@ -9039,6 +9041,7 @@ test('a condition\'s kind: written by the writer before it, kept through a held 
   const f = parseObjective('objective: moved\nmoved: #1\nresult: r\nfor: f\ndone:\n- fact: the checkout works for a customer | open\n- fact: the app loads on a phone | open\n- fact: the suite passes | open\n- fact: the work is committed and pushed | open\n- fact: the service runs the newest code | not shown\n- fact: the tool ran on the sample file | open\nstep: s\ndropped:\n- nothing')
   expect(f?.kind === 'moved' && f.parts.done.map(x => x.kind)).toEqual(['works', 'works', 'works', 'fact', 'fact', 'works'])
   expect(OBJECTIVE_SYSTEM).not.toContain('that a run passes)')
+  expect(OBJECTIVE_SYSTEM).toContain('(saved, committed, pushed or installed); a passing run is works.')
 })
 
 test('the count line names whose looks are in and do not sign off, so a card of 13 rows or 80 shows it', () => {
