@@ -354,7 +354,10 @@ call writes (below):
    The watch and the briefing (and its second ask) read through one helper, `readSession`.
    It reads `$.session.messages()` and, when there are rows, makes one `$.model.complete`
    (`OBJECTIVE_MODEL`, high effort, `RECORD_SYSTEM`, `RECORD_MAX_TOKENS` 64,000, the engine's ceiling,
-   `RECORD_TIMEOUT_MS` four minutes) over `recordPrompt`, never a fork: the rows printed by `recordText`
+   `RECORD_TIMEOUT_MS` four minutes) over `recordPrompt`, never a fork. `RECORD_SYSTEM` tells the reader
+   it has no tools and gives one answer, carries `STANDING_LINE`, and keeps secrets, keys, passwords and
+   personal data out of what it writes; the task after the record opens with `ROLE` and carries no
+   frame of its own and no line on how long to think, since the effort setting governs that. The prompt is the rows printed by `recordText`
    as entries labelled `entry N`, never `#N` (the owner's rows as the person only where their key is
    one of the owner's messages that `heldItems` read from the transcript, `NOT_TYPED` applied after
    as a second filter, and with no transcript read, `NOT_TYPED` alone; every other row on

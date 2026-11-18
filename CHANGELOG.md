@@ -5,6 +5,12 @@ What changed in each release of Owner Rep, newest first. The full record is the
 
 ## Unreleased
 
+- **The rep's reads lost a frame left over from their first version.** Each Heads up look and
+  each briefing opened with a block in capitals, written when the look was a copy of the agent's
+  own conversation, that said things no longer true (that you had asked it a side question, that
+  it shared the agent's context). The look also told the model not to think it over, against the
+  effort it runs at. Both are gone; the facts that still hold (it has no tools, gives one answer,
+  and keeps secrets out of what it writes) are said once, in the read's fixed instructions.
 - **The rep keeps a log of its own model calls, on your machine.** Each call it makes for itself
   (the job's account, each Heads up look, each briefing and its second ask, and the own-words
   call) is saved under `<config>/owner-rep/calls/`, with the text sent and the reply, so a call

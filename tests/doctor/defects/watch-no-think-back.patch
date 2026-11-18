@@ -1,0 +1,15 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 0f1b09d..a48e423 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1807,7 +1807,9 @@ export function watchPrompt(m: Memory, reason: 'step' | 'stop' | 'note'): string
+       : reason === 'note'
+         ? 'The owner has just told you something directly: the last line marked "(to the rep)" above. The agent did not see it. Re-read everything the owner has said on this job with that on top.'
+         : 'The agent is in the middle of working. The owner is busy and may not be reading.'
+-  return `${ROLE}
++  return `Answer straight away: do not think it over at length, and do not call any tool.
++
++${ROLE}
+ 
+ ${memoryText(m)}
+ 

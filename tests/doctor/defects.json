@@ -3856,5 +3856,29 @@
     "breaks": "With CLAUDE_CONFIG_DIR set, the check reads the home's settings.json instead of the config folder's, so the plugins that session turns on stay on.",
     "patch": "check-plugins-home-only.patch",
     "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "watch-frame-back",
+    "breaks": "The watch's task opens again with the old fork frame, a pseudo system reminder in capitals saying the reader shares the conversation and must not mention being interrupted.",
+    "patch": "watch-frame-back.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "watch-no-think-back",
+    "breaks": "The watch's task tells the model again not to think it over, against the effort it is run at.",
+    "patch": "watch-no-think-back.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "record-system-no-tools-gone",
+    "breaks": "The record read's system prompt no longer says the reader has no tools and gives one answer.",
+    "patch": "record-system-no-tools-gone.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "record-system-secrets-gone",
+    "breaks": "The record read's system prompt no longer keeps secrets, keys, passwords and personal data out of what the reader writes.",
+    "patch": "record-system-secrets-gone.patch",
+    "fixed": "tested 2026-11-18"
   }
 ]
