@@ -226,6 +226,7 @@ import {
   parseWatch,
   resultOf,
   checkReadOf,
+  checkFailedAfterNote,
   checkFailedNote,
   revisedLine,
   same,
@@ -2015,7 +2016,8 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       return finish({ checkNote: `The check could not run${end.code === null ? '' : ` (exit ${end.code})`}${why === '' ? '' : `: ${fit(why, 160)}`}.` })
     }
     // What is read (checkReadOf): the result if whole, else the last whole answer the checker
-    // wrote. A run that ended in an engine error with no whole answer is that failure, in the
+    // wrote; when the run then ended in an engine error, the card says that too, in the engine's
+    // words (checkFailedAfterNote). A run that ended in an engine error with no whole answer is that failure, in the
     // engine's words; a reply that did not reach "looked:" stopped before its end (endsWhole).
     // Either way nothing of it is taken, no mark and no part of the card, and the card says
     // which. It is not run again on its own, as the briefing's read is: each run is a paid
@@ -2090,6 +2092,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
         does: card.does,
         spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens, after.objectiveCalls, after.objectiveTokens, after.objectiveFailed, after.objectiveWhy),
         checkCost: checkCostText(after.lastCheckTokens, after.lastCheckCached, after.lastCheckMs, after.lastCheckRefused),
+        ...(reading.failedAfter === undefined ? {} : { checkNote: checkFailedAfterNote(reading.failedAfter) }),
       }
       // The card's reads and what came of its own-words call stay the briefing's: the check
       // makes no such call.

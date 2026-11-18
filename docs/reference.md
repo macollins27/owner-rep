@@ -404,7 +404,9 @@ call writes (below):
    or `no-labels: …`, which `failureWords` puts in plain words. A check is read by `checkReadOf`:
    its result when whole, else the last whole answer the checker wrote on the way (a Stop hook
    can ask for one more turn after it, and an engine error, such as an expired login, can end
-   that turn, replacing the result); with none, a run that ended in an engine error takes
+   that turn, replacing the result), and when the run ended in an engine error after that answer
+   the card also shows `checkFailedAfterNote`, the engine's own words beside the answer read (fourth
+   live test of 18 Nov 2026, section 2); with none, a run that ended in an engine error takes
    nothing and the card shows `checkFailedNote`, the engine's own words and no ask to press
    again, and any other run takes nothing (no marks, no verdict, no draft) and the card shows
    `CHECK_CUT_NOTE`, asking the owner to press it again, since a check costs real money and is

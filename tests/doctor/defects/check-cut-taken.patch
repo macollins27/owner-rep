@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index b592b1d..96864cb 100644
+index 24d7f88..cafacce 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -4616,7 +4616,7 @@ export function checkReadOf(got: Pick<RunResult, 'text' | 'error' | 'answers'>):
+@@ -4639,7 +4639,7 @@ export function checkReadOf(got: Pick<RunResult, 'text' | 'error' | 'answers'>):
    const whole = [...got.answers].reverse().find(a => endsWhole('check', a))
-   if (whole !== undefined) return { read: whole }
+   if (whole !== undefined) return got.error === '' ? { read: whole } : { read: whole, failedAfter: got.error }
    if (got.error !== '') return { failed: got.error }
 -  return { cut: true }
 +  return { read: got.text }
  }
  
- // The card's note for a check that failed before it wrote a whole answer, in the engine's words.
+ // The engine's words for why a check failed, on one line, without a closing stop.

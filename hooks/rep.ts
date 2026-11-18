@@ -4634,17 +4634,23 @@ export function resultOf(stdout: string): RunResult | null {
 // checker wrote on the way, which a later turn (a Stop hook asking for more, then an engine error
 // such as an expired login) left behind; else, when the run ended in an error, that failure in its
 // own words, never a cut; else a cut (live test of 18 Nov 2026, section 1).
-export function checkReadOf(got: Pick<RunResult, 'text' | 'error' | 'answers'>): { read: string } | { failed: string } | { cut: true } {
+export function checkReadOf(got: Pick<RunResult, 'text' | 'error' | 'answers'>): { read: string; failedAfter?: string } | { failed: string } | { cut: true } {
   if (got.error === '' && endsWhole('check', got.text)) return { read: got.text }
   const whole = [...got.answers].reverse().find(a => endsWhole('check', a))
-  if (whole !== undefined) return { read: whole }
+  if (whole !== undefined) return got.error === '' ? { read: whole } : { read: whole, failedAfter: got.error }
   if (got.error !== '') return { failed: got.error }
   return { cut: true }
 }
 
+// The engine's words for why a check failed, on one line, without a closing stop.
+const failWords = (why: string): string => fit(why.trim().replace(/\s+/g, ' ').replace(/\.$/, ''), 160)
+// The card's note for a check whose run failed after it wrote its whole answer: the answer is
+// read and shown, and the owner still learns the run did not end cleanly (fourth live test of
+// 18 Nov 2026, section 2).
+export const checkFailedAfterNote = (why: string): string => `The check's run failed after it answered: ${failWords(why)}. Its whole answer is shown.`
 // The card's note for a check that failed before it wrote a whole answer, in the engine's words.
 export const checkFailedNote = (why: string): string =>
-  `The check failed before it answered: ${fit(why.trim().replace(/\s+/g, ' ').replace(/\.$/, ''), 160)}. Nothing from it was taken.`
+  `The check failed before it answered: ${failWords(why)}. Nothing from it was taken.`
 
 export const same = (a: string, b: string): boolean =>
   a.trim().toLowerCase().replace(/\.$/, '') === b.trim().toLowerCase().replace(/\.$/, '')

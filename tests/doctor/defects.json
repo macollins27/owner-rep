@@ -3970,5 +3970,11 @@
     "breaks": "Quoted text in a condition is read for behaviour words, so a file said to contain \"fixture-read\" is read as works and needs a look no command could need.",
     "patch": "fact-quoted-text-read.patch",
     "fixed": "2026-11-18"
+  },
+  {
+    "name": "check-error-after-answer-hidden",
+    "breaks": "A check whose run failed after it wrote its whole answer shows the answer and never says the run failed, so the owner does not learn the check ended in an engine error.",
+    "patch": "check-error-after-answer-hidden.patch",
+    "fixed": "2026-11-18"
   }
 ]

@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index b592b1d..bf16960 100644
+index 24d7f88..fc798cd 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -4613,7 +4613,7 @@ export function resultOf(stdout: string): RunResult | null {
+@@ -4636,7 +4636,7 @@ export function resultOf(stdout: string): RunResult | null {
  // own words, never a cut; else a cut (live test of 18 Nov 2026, section 1).
- export function checkReadOf(got: Pick<RunResult, 'text' | 'error' | 'answers'>): { read: string } | { failed: string } | { cut: true } {
+ export function checkReadOf(got: Pick<RunResult, 'text' | 'error' | 'answers'>): { read: string; failedAfter?: string } | { failed: string } | { cut: true } {
    if (got.error === '' && endsWhole('check', got.text)) return { read: got.text }
 -  const whole = [...got.answers].reverse().find(a => endsWhole('check', a))
 +  const whole = undefined as string | undefined
-   if (whole !== undefined) return { read: whole }
+   if (whole !== undefined) return got.error === '' ? { read: whole } : { read: whole, failedAfter: got.error }
    if (got.error !== '') return { failed: got.error }
    return { cut: true }

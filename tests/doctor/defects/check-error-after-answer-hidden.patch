@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 9481a16..d0b4eb5 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2092,7 +2092,6 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
+         does: card.does,
+         spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens, after.objectiveCalls, after.objectiveTokens, after.objectiveFailed, after.objectiveWhy),
+         checkCost: checkCostText(after.lastCheckTokens, after.lastCheckCached, after.lastCheckMs, after.lastCheckRefused),
+-        ...(reading.failedAfter === undefined ? {} : { checkNote: checkFailedAfterNote(reading.failedAfter) }),
+       }
+       // The card's reads and what came of its own-words call stay the briefing's: the check
+       // makes no such call.
