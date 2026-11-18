@@ -1,8 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 2d9e89a..8dba995 100644
+index 827a893..5020aa4 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -6268,7 +6268,7 @@ export function editSaved(kind: CallKind, system: string, prompt: string | Promp
+@@ -6389,7 +6389,7 @@ export function editSaved(kind: CallKind, system: string, prompt: string | Promp
      kept.push(b)
      at += b.text.length
    }
@@ -10,4 +10,4 @@ index 2d9e89a..8dba995 100644
 +  return { system: sys, prompt: [{ text: whole.slice(0, taskAt) + task }] }
  }
  
- // One row of the replay's table: a call as logged, or one run of it again.
+ // Whether a prompt asks for the end line last, as every prompt since the end line does.

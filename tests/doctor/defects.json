@@ -3930,9 +3930,81 @@
     "fixed": "2026-11-18"
   },
   {
+    "name": "replay-old-reply-read-as-cut",
+    "breaks": "The replay reads a reply to a call saved before the end line as cut for lacking a line its prompt never asked for, so every old call replayed as saved reads as cut short.",
+    "patch": "replay-old-reply-read-as-cut.patch",
+    "fixed": "2026-11-18"
+  },
+  {
     "name": "call-cap-skips-replays",
     "breaks": "The 1 GB cap on every session's calls does not count the replies replays kept.",
     "patch": "call-cap-skips-replays.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-behaviour-clause-ignored",
+    "breaks": "A condition saying the tool is saved and also what it takes and prints is read as a fact for being saved, so the builder's own run closes it and the stop passes.",
+    "patch": "fact-behaviour-clause-ignored.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "writer-one-claim-dropped",
+    "breaks": "The objective writer is no longer asked for one claim per condition, so it can write a fact and what the work does as one condition.",
+    "patch": "writer-one-claim-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "rows-indent-dropped",
+    "breaks": "A row's leading spaces are not counted, so a left-out item a cell or two past the row with its indent is counted on one row while the band draws two, and the card scrolls with its buttons out of a digit's reach.",
+    "patch": "rows-indent-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "button-row-counted-fixed",
+    "breaks": "The buttons row is counted as one row at seventy columns or more, whatever wraps on it, so the size beside the buttons pushes a row the count never saw and the card scrolls.",
+    "patch": "button-row-counted-fixed.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "check-note-whole-in-base",
+    "breaks": "The check's note is kept whole in the card's base, so a long note on a short band leaves no room for the buttons and the card scrolls.",
+    "patch": "check-note-whole-in-base.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "wide-characters-one-cell",
+    "breaks": "A wide character (Chinese, Japanese, Korean, an emoji) is counted as one cell where the band draws two, so a card holding them takes more rows than counted and scrolls.",
+    "patch": "wide-characters-one-cell.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "put-follows-cut-message",
+    "breaks": "Put message in prompt is counted from the filled card, so when the message box is dropped on a short band the button is either hidden, losing the message, or drawn on a row the count never saw.",
+    "patch": "put-follows-cut-message.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "end-line-not-required",
+    "breaks": "A reply is taken as whole without the end line its prompt asks for, so a briefing cut inside its last value, every label given, reaches the card with a half line, as \"Requests an indep\" did in the live test of 18 Nov 2026.",
+    "patch": "end-line-not-required.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "end-line-joins-last-value",
+    "breaks": "The end line is read as part of the last value, so a whole briefing's does line, a check's looked line or a watch's last mark carries \"end of reply\" onto the card or the record.",
+    "patch": "end-line-joins-last-value.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "check-prompt-no-end-ask",
+    "breaks": "The check's prompt does not ask for the end line, so every whole check comes back without it and is taken as cut, and the Check button never changes the card.",
+    "patch": "check-prompt-no-end-ask.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "ask-again-end-ask-not-last",
+    "breaks": "The briefing asked once more puts the open conditions after the ask for the end line, so the ask is no longer the prompt's last line and the model can end its reply without it.",
+    "patch": "ask-again-end-ask-not-last.patch",
     "fixed": "tested 2026-11-18"
   }
 ]

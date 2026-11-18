@@ -46,6 +46,16 @@ What changed in each release of Owner Rep, newest first. The full record is the
   words beside the part. "Fact" now means only saved, committed, pushed, merged, installed,
   deployed, a file holding something or the newest version running; any other part is "works".
   A part you closed reads "closed on your word (#n)".
+  A part with any clause about what something does, prints, takes, returns or shows is "works"
+  whole, however much of it is a fact, and the rep asks for one claim per part.
+- **The briefing's buttons always show.** A card could be counted one row shorter than it is
+  drawn (an indented line a cell or two past the edge, the size beside the buttons), and then
+  scrolled with its buttons below the fold. Rows are now counted as the strip wraps them, the
+  buttons first.
+- **A reply cut off in its last line is never shown.** The rep asks every model call to end its
+  reply with a fixed line, "end of reply". A reply without it stopped early, even one cut in
+  the middle of its last sentence, and the rep treats it as it treats any cut reply: it asks
+  again, or says so, and never shows the half line.
 
 ## 0.7.5 (14 November 2026)
 

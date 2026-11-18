@@ -1,10 +1,11 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 6e8b995..de4b431 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2563,7 +2563,7 @@
- // buttons stay where a digit presses them, and Put message in prompt carries the
- // message whole on both.
- export function fillCard(card: CardText, maxRows: number, cols: number): CardText {
+@@ -5031,7 +5031,7 @@ const toRows = (text: string, label: string, rows: number, width: number): strin
+ export function fillCard(whole: CardText, maxRows: number, cols: number): CardText {
+   // The buttons are fixed from the whole card, so the row counted is the row drawn.
+   const card: CardText = { ...whole, put: putShows(whole), check: checkShows(whole) }
 -  if (cardRows(card, cols) <= maxRows) return card
 +  return card
    const w = Math.max(1, cols - 2)

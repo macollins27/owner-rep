@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 5a5ee04..81773b2 100644
+index 1af7fda..e0fa3d8 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3462,7 +3462,7 @@ export const factHolds = (text: string): boolean => {
+@@ -3465,7 +3465,7 @@ export const factHolds = (text: string): boolean => {
  }
  // A condition's kind as judged: "fact" only when held so and `factHolds` reads it as one,
  // since older records hold kinds written before the allow list.
 -export const kindOf = (c: Pick<Condition, 'text' | 'kind'>): ConditionKind => (c.kind === 'fact' && factHolds(c.text) ? 'fact' : 'works')
 +export const kindOf = (c: Pick<Condition, 'text' | 'kind'>): ConditionKind => (c.kind === 'fact' ? 'fact' : 'works')
  // Words that make a condition one about the result behaving for its user. "Runs the newest
- // code" is the writer's own example of a fact, so it is not one.
- export const BEHAVES = /\b(?:works|working|worked|(?:runs?|running|ran)(?!\s+(?:the\s+)?(?:newest|latest|current)\b)|loads?|loading|loaded|pass(?:es|ed|ing)?|good|behaves?|behaving|usable)\b/i
+ // code" is the writer's own example of a fact, so it is not one. A clause saying what the work
+ // does, prints, takes, returns or shows is one too, whatever fact stands beside it: "shout.py is

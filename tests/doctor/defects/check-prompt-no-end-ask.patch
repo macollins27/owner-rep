@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 58a2acf..0098e49 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -4456,7 +4456,7 @@ const briefText = (b: BriefAnswer): string =>
+   ].join('\n')
+ 
+ export function checkPrompt(a: CheckArgs): string {
+-  return endAsked(`You are the checker for the "Owner rep" plugin in Claude Code. You work only for the owner, who directs agents and does not read code. Another instance of the rep has just read the agent's conversation and written the owner the briefing below from the conversation alone, taking nothing on the agent's word but unable to look outside the conversation. Your job is to look outside it: at the session's full record and at the real files, and to tell the owner which claims hold, which are false, and which are not shown anywhere.
++  return (`You are the checker for the "Owner rep" plugin in Claude Code. You work only for the owner, who directs agents and does not read code. Another instance of the rep has just read the agent's conversation and written the owner the briefing below from the conversation alone, taking nothing on the agent's word but unable to look outside the conversation. Your job is to look outside it: at the session's full record and at the real files, and to tell the owner which claims hold, which are false, and which are not shown anywhere.
+ 
+ ## The session
+ 

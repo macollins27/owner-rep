@@ -98,7 +98,6 @@ import {
   worktreeDirsOf,
   linkTargets,
   holdsCopiesOf,
-  checkBarred,
   noFenceNote,
   copyArgvs,
   type Host,
@@ -116,6 +115,9 @@ import {
   doingFor,
   firstSentence,
   fillCard,
+  putShows,
+  checkShows,
+  CHECKING_LINE,
   sizesInColumns,
   fit,
   fitTail,
@@ -217,6 +219,8 @@ import {
   cutShort,
   readAgain,
   endsWhole,
+  endAsked,
+  readAsAsked,
   type WriteResult,
   type WatchAnswer,
   CHECK_CUT_NOTE,
@@ -1744,7 +1748,7 @@ async function replay($: EngineInterface, args: string): Promise<string> {
           ...callOutcome(result as never),
           ms,
           nearCap: nearCap(usage, e.settings.maxTokens),
-          ...(result !== null && result.isAnswered ? { read: callRead(e.kind, result.text, e.open, { usage, cap: e.settings.maxTokens }) } : {}),
+          ...(result !== null && result.isAnswered ? { read: callRead(e.kind, readAsAsked(prompt, result.text), e.open, { usage, cap: e.settings.maxTokens }) } : {}),
           ...(usage === undefined ? {} : { usage }),
         }
         if (result !== null && result.isAnswered) await writeFile($, `${dir}/replays/${base}.${run}.${tag}.${label.replace(/ /g, '-')}.txt`, result.text)
@@ -1787,7 +1791,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       const kind: CallKind = extra === '' ? 'brief' : 'ask-again'
       const got = await readSession($, sid, rec, kind, cover => {
         const prompt = briefPrompt({ ...memory, cover })
-        return extra === '' ? prompt : `${prompt}\n\n${extra}`
+        return extra === '' ? prompt : endAsked(`${prompt}\n\n${extra}`)
       })
       const result = got.result
       const usage = 'usage' in result ? result.usage : null
@@ -3363,6 +3367,13 @@ export const register: Register = on => {
         {buttons}
       </Box>
     )
+    // The card's buttons row in the band's columns: an item that would pass the edge wraps
+    // whole onto a row below, three cells from the next, as `buttonRows` counts it.
+    const cardChoices = (...buttons: RenderNodeList) => (
+      <Box flexDirection="row" flexWrap="wrap" columnGap={3} paddingLeft={2} width={w(cols)}>
+        {buttons}
+      </Box>
+    )
     // From the prompt box only a bare digit presses a band button, so every
     // button carries a digit. While another mod's note is beneath, its digits
     // win and the row's buttons are drawn without any, for the mouse alone.
@@ -3529,7 +3540,7 @@ export const register: Register = on => {
           ) : undefined}
           {shown.isChecking ? (
             <Box paddingLeft={2}>
-              <Text color="suggestion">Checking the record and the files… the card updates when it is done.</Text>
+              <Text color="suggestion">{CHECKING_LINE}</Text>
             </Box>
           ) : undefined}
           {shown.checked === null && !shown.isChecking && shown.checkNote === '' ? (
@@ -3565,8 +3576,8 @@ export const register: Register = on => {
               </Text>
             </Box>
           ) : undefined}
-          {choices(
-            shown.checked === null && !shown.isChecking && !checkBarred(shown.checkNote) ? (
+          {cardChoices(
+            checkShows(shown) ? (
               <Button
                 key="check"
                 plain
@@ -3579,7 +3590,7 @@ export const register: Register = on => {
                 }}
               />
             ) : undefined,
-            brief.message !== '' ? (
+            putShows(shown) ? (
               <Button
                 key="put"
                 plain

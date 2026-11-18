@@ -385,7 +385,16 @@ call writes (below):
    therefore takes a reply only when it reached the last label its kind asks for (`endsWhole`):
    the watch's `closed:`, the check's `looked:`, the objective's `approved:` after `holds` and
    `dropped:` after `moved`, a briefing's and its second ask's `does:`, and the own-words call's
-   whole reply (`parseOwnWords`). `cutShort(kind, text, usage, cap)` is a reply not whole or one
+   whole reply (`parseOwnWords`). A reply cut inside its last value still has that label (the
+   live test of 18 Nov 2026 drew a briefing whose `does:` stopped at "Requests an indep", 100
+   output tokens into a cap of 64,000), so every reply must also end with `END_LINE` ("end of
+   reply") as its last line (`endsWithEndLine`, which allows capitals, a closing full stop and
+   bold or code marks). Each prompt asks for it in one line, `END_ASK`, put last by `endAsked`:
+   `watchPrompt`, `briefPrompt`, `objectivePrompt`, `checkPrompt` and `ownWordsPrompt` return
+   through it, and the briefing asked once more is `endAsked` over the briefing and `askAgain`,
+   so the ask stays its last line and appears once. `parts` skips the end line, so it joins no
+   value. An objective answer naming neither `holds` nor `moved` stays unreadable, not cut,
+   with or without the line. `cutShort(kind, text, usage, cap)` is a reply not whole or one
    whose output reached `NEAR_CAP_SHARE` (98%) of its cap (`nearCap`), which is read as cut even
    when its last label is there. `noLabels` is a reply with none of the parts asked for; it is
    read as before (it shows nothing) and never asked again, since it is not a long answer that
@@ -699,7 +708,11 @@ kind a rewrite gives, and opens a shown `fact` rewritten as `works` with its whe
 `seen`). `conditionOf`, and everything after it through `kindOf`, reads a `fact:` as `fact` only when
 `factHolds`: its text, with file-like words taken out, matches the allow list `FACT_SAYS`
 (saved, committed, pushed, merged, installed, deployed, tagged, exists, runs or is on the
-newest, or a file or folder that holds, contains, has or lists something) and not `BEHAVES`.
+newest, or a file or folder that holds, contains, has or lists something) and not `BEHAVES`
+(works, runs, passes, does, prints, takes, returns, shows, displays, gives, accepts, responds,
+reads, produces and the like, in any tense), so a condition with any clause about what something
+does is `works` whole, however much of it is a fact (live test of 18 Nov 2026, section 11). The
+writer's prompt asks for one claim per condition (`ONE_CLAIM`) beside its kinds.
 A `fact` moves shown on any where. A `works` condition, or one with no kind, moves shown only when
 `looksOf` finds, among every `look by <who>: <what>` in the where, one whose `who` (compared by
 `whoKey`, without case, curly apostrophes or a leading article) is the check (`CHECK_NAMES`) or a
@@ -931,7 +944,7 @@ what the replies were read as, and for cards the gate's rules (`passed` when non
 menu and `/help` (`command.describe`, `HIDDEN_COMMANDS`): `/owner-rep-counts` prints
 `countsText`, one line per kind and a `cards:` line; `/owner-rep-replay <call file, session folder,
 session id, "this" or "all"> [--kind k] [--last 1-50] [--effort low|medium|high|max] [--times 1-10]
-[--variant build|frame|no-think]` (`parseReplayArgs`, `REPLAY_USAGE`) takes a folder's last `--last`
+[--variant build|frame|no-think|end-line]` (`parseReplayArgs`, `REPLAY_USAGE`) takes a folder's last `--last`
 (`REPLAY_LAST`, 10) calls of the kind asked for, or with "all" the last of every session folder's
 calls together by when each was made (`replayPick`, `replayFiles`), rebuilds each from its parts (`savedCall`, which refuses one whose
 texts were not kept, one naming a text by anything but a fingerprint (`isSha`), so a call file
@@ -943,7 +956,11 @@ it `--times` times with the same settings, or the effort given, reading each ans
 to what this build sends in their place (`editSaved`; `build` names every edit in
 `PROMPT_EDITS`): `frame` drops the fork frame the build before prompt group 1 opened the task
 with and sends `RECORD_SYSTEM` as the system prompt, for a watch, brief or ask-again call;
-`no-think` drops the watch's line telling the model not to think it over. Only the task after
+`no-think` drops the watch's line telling the model not to think it over; `end-line` asks for
+`END_LINE` last (`endAsked`), for a watch, brief or ask-again call, and refuses a call that asks
+for it already. Every reply is read as its own prompt's build read it (`readAsAsked`): a reply
+to a prompt that never asked for the end line (`asksEnd`) is not taken as cut for lacking it, so
+an old call replayed as saved is read as it was then. Only the task after
 the last `</session_record>` is edited, never the record, and the blocks wholly before it go as
 they were, cache marks and all. A call an edit applies to but cannot change (its old text is not
 there, or its system prompt is not the record read's), or one no edit applies to, is not sent in
@@ -1148,7 +1165,7 @@ is the rep's `next(e)`. From 2.1.325 the band asks each mod for a row of its own
 is not `PLUGIN`), keeps whether any draws something in `othersDraw` by surface and draws the
 band again when that changes, and while the rep's row last drew the briefing (`cardUp`, set
 by the row's render) passes on only the rep's own row. The `AbovePrompt` render takes
-`hasBeneath` from both, so the same rules hold on every build; on the terminal each line has its width in columns and the card fills the band's rows in order of importance (`fillCard`: the head's result and one row of the message with the buttons under it first, then the judgment one row each, most telling first (stands, then the revision line from `revisedLine`, so a long message never crowds out that the reading moved), then the count line (`countLine`), then the judgment whole as the rows allow, then the message with the rows that remain, then the extras while they fit; on a band too short for the message's box between the head and the buttons the box goes and Put message in prompt, drawn while the brief has a message, carries it whole; rows counted by `cardRows` as the band wraps them), and on a surface whose band is a scrolling box in a proportional font (`sizesInColumns` false: Claude Code for VS Code, whose extension counts columns by a wide glyph and draws widths in `ch`) no line is given a width, so each fills the box, and the card is drawn whole. Buttons use bare digits for hotkeys because from the prompt box only a
+`hasBeneath` from both, so the same rules hold on every build; on the terminal each line has its width in columns and the card fills the band's rows in order of importance (`fillCard`: the buttons row, the head's result, one row of the message and the check's note cut to one row first, the note whole next, then the judgment one row each, most telling first (stands, then the revision line from `revisedLine`, so a long message never crowds out that the reading moved), then the count line (`countLine`), then the judgment whole as the rows allow, then the message with the rows that remain, then the extras while they fit; on a band too short for the message's box between the head and the buttons the box goes and Put message in prompt, drawn while the brief has a message, carries it whole, Put and Check it fixed from the whole card (`putShows`, `checkShows`); rows counted by `cardRows` as the band wraps them: `rowsOf` follows the band's wrap (wrap-ansi with trim off and hard on, so an indent and the space a row starts with take cells, a word wider than the row breaks, and `widthOf` gives a wide character two cells and a combining mark none), and `buttonRows` counts the buttons row, which wraps (`flexWrap`, three cells apart) with the size last on it, from `cardButtons`), and on a surface whose band is a scrolling box in a proportional font (`sizesInColumns` false: Claude Code for VS Code, whose extension counts columns by a wide glyph and draws widths in `ch`) no line is given a width, so each fills the box, and the card is drawn whole. Buttons use bare digits for hotkeys because from the prompt box only a
 digit presses a band button. A keyboard chord for the Rep button once rode on an unrelated
 engine action; it could not be proven and was removed on 14 Oct 2026. Do not bring it back
 without a binding that is shown working.
