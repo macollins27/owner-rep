@@ -1,13 +1,13 @@
-diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 72ff8b7..6b55ad5 100644
---- a/hooks/register.tsx
-+++ b/hooks/register.tsx
-@@ -1681,7 +1681,7 @@ export const register: Register = on => {
-             </Box>
-           ) : undefined}
-           {choices(
--            shown.checked === null && !shown.isChecking && !checkBarred(shown.checkNote) ? (
-+            shown.checked === null && !shown.isChecking && !shown.checkNote.startsWith("The check does not run on this machine") ? (
-               <Button
-                 key="check"
-                 plain
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 6e8b995..3ea62cf 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -4823,7 +4823,7 @@ export const CHECKING_LINE = 'Checking the record and the files… the card upda
+ // Whether the card draws Put message in prompt (a message to put) and Check it (no check
+ // found, none running, and no note barring one).
+ export const putShows = (c: CardText): boolean => c.put ?? c.message !== ''
+-export const checkShows = (c: CardText): boolean => c.check ?? (c.checked === null && !c.isChecking && !checkBarred(c.checkNote))
++export const checkShows = (c: CardText): boolean => c.check ?? (c.checked === null && !c.isChecking && !c.checkNote.startsWith("The check does not run on this machine"))
+ 
+ // The buttons row's items as the band draws them, a button as its digit and label.
+ export const cardButtons = (c: CardText): string[] =>

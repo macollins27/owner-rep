@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 6e8b995..6ea9a6b 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -5030,7 +5030,7 @@ const toRows = (text: string, label: string, rows: number, width: number): strin
+ // message whole on both.
+ export function fillCard(whole: CardText, maxRows: number, cols: number): CardText {
+   // The buttons are fixed from the whole card, so the row counted is the row drawn.
+-  const card: CardText = { ...whole, put: putShows(whole), check: checkShows(whole) }
++  const card: CardText = { ...whole }
+   if (cardRows(card, cols) <= maxRows) return card
+   const w = Math.max(1, cols - 2)
+   const mw = Math.max(1, cols - 6)
