@@ -837,7 +837,8 @@ writes at most `CALL_LOG_SESSION_BYTES` (64 MiB) of texts for a session; past th
 saved with `kept: false` and no texts. `logCall` never throws: a call not saved stands as it came
 back. At each `session.start` with a uuid session id, `pruneCalls` lists the calls folder,
 without being awaited, and removes in one `rm -rf` through `hostArgv` each session folder whose
-last change is more than `CALL_LOG_DAYS` (14) days old, and, in the same command, the folders
+last change is more than `CALL_LOG_DAYS` (14) days old, except the session starting (a session
+resumed after 14 idle days keeps its calls), and, in the same command, the folders
 `overCallCap` names: with every other folder sized by its call files and its parts
 (`folderBytes`), while they hold more than `CALL_LOG_TOTAL_BYTES` (1 GiB) together, the one
 changed longest ago, never the session starting, one changed in the last `CALL_LOG_LIVE_MS` (an
@@ -856,7 +857,9 @@ menu and `/help` (`command.describe`, `HIDDEN_COMMANDS`): `/owner-rep-counts` pr
 session id or "this"> [--kind k] [--last 1-50] [--effort low|medium|high|max] [--times 1-10]`
 (`parseReplayArgs`, `REPLAY_USAGE`) takes a folder's last `--last` (`REPLAY_LAST`, 10) calls of the
 kind asked for (`replayPick`), rebuilds each from its parts (`savedCall`, which refuses one whose
-texts were not kept, are missing, or no longer join to `promptSha`), prints it as logged and sends
+texts were not kept, one naming a text by anything but a fingerprint (`isSha`), so a call file
+cannot point it at another file, one whose texts are missing, whose system text no longer has its
+fingerprint, or whose prompt no longer joins to `promptSha`), prints it as logged and sends
 it `--times` times with the same settings, or the effort given, reading each answer with
 `callRead` against the saved `open` (`replayLine`), then the totals of each (`replayTotals`). A
 replay is not logged or counted. Nothing of either is drawn on the row or the card.

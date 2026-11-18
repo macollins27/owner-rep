@@ -3316,5 +3316,23 @@
     "breaks": "A session of this process whose calls folder was removed takes its texts as still saved, so its later calls name texts that are gone and cannot be sent again.",
     "patch": "call-log-removed-texts-not-rewritten.patch",
     "fixed": "2026-11-15"
+  },
+  {
+    "name": "call-log-days-takes-starting",
+    "breaks": "A session resumed after 14 idle days has its own calls folder removed at its start, so its earlier calls are lost.",
+    "patch": "call-log-days-takes-starting.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "replay-reads-any-name",
+    "breaks": "A replayed call file can name any file as its system text, so the replay reads it and sends it to the model.",
+    "patch": "replay-reads-any-name.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "replay-system-unchecked",
+    "breaks": "A replay sends a system text that changed after it was saved, so the replay is not of the call that was made.",
+    "patch": "replay-system-unchecked.patch",
+    "fixed": "tested 2026-11-17"
   }
 ]

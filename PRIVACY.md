@@ -39,9 +39,12 @@ while its loss mark stands.
 In the folder `<config>/owner-rep/calls/`, it saves a copy of each model call it makes for
 itself in a session: the job's account, each Heads up look, each briefing and its second ask,
 and the own-words call. Each copy holds the full text sent (which includes parts of your session,
-as listed under "What leaves your machine"), the full reply, the settings, the time it took and
-the tokens it used. A text sent more than once is kept once, checked by SHA-256. A session's
-folder is removed once nothing in it has changed for 14 days, and all the folders together are
+as listed under "What leaves your machine"), the full reply, the settings, the time it took,
+the tokens it used, what the rep read in the reply (counts of the conditions it marked, a card's
+words and the rules that refused it) and, for a card, the job's open conditions as the rep held
+them, with what was seen of each. A text sent more than once is kept once, checked by SHA-256. A session's
+folder is removed once nothing in it has changed for 14 days (except the session starting, so a
+session resumed later keeps its calls), and all the folders together are
 kept under about 1 GB: past that, the folders changed longest ago are removed first (never the
 session starting, nor one changed in the last hour). It is never sent anywhere.
 Two hidden commands read it: `/owner-rep-counts` prints the counters, and `/owner-rep-replay`

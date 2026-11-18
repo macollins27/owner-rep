@@ -32,6 +32,7 @@ import {
   trimCounted,
   migrateOwner,
   sha256,
+  isSha,
   FINGERPRINT_MEMO_CHARS,
   isSessionId,
   removablePath,
@@ -738,7 +739,7 @@ function saveCall($: EngineInterface, sid: string, sent: Sent, read?: CallRead, 
 }
 
 // At each start in a session the rep can save calls for: each session's folder of calls that nothing has changed in for CALL_LOG_DAYS
-// days is removed, and then, while the folders left hold more than CALL_LOG_TOTAL_BYTES together,
+// days is removed, never the session starting, and then, while the folders left hold more than CALL_LOG_TOTAL_BYTES together,
 // the one changed longest ago, never the session starting (`overCallCap`); all in one command, and
 // nothing but such a folder (`removableCallFolder`).
 async function pruneCalls($: EngineInterface, root: string, sid: string): Promise<void> {
@@ -752,7 +753,8 @@ async function pruneCalls($: EngineInterface, root: string, sid: string): Promis
       const path = `${root}/${e.name}`
       if (e.kind !== 'dir' || !removableCallFolder(root, path)) continue
       const st = await $.fs.stat(path).catch(() => null)
-      if (st !== null && st.mtimeMs > 0 && st.mtimeMs < before) old.push(path)
+      // The session starting is never removed for its age: one resumed after 14 days keeps its calls.
+      if (path !== `${root}/${sid}` && st !== null && st.mtimeMs > 0 && st.mtimeMs < before) old.push(path)
       else kept.push({ path, bytes: await folderBytes($, path), mtimeMs: st?.mtimeMs ?? 0 })
     }
     const gone = [...old, ...overCallCap(kept, `${root}/${sid}`, now)]
@@ -1563,6 +1565,9 @@ async function savedCall($: EngineInterface, path: string): Promise<{ entry: Cal
     return null
   }
   if (entry.v !== 1 || !entry.kept || entry.system === undefined || entry.prompt === undefined) return { entry, why: 'its texts were not kept' }
+  // Every text is named by its own fingerprint: a name that is not one is never read, so a call
+  // file cannot point the replay at any other file, and a system text that changed is not sent.
+  if (![entry.system, ...entry.prompt.map(b => b.sha)].every(isSha)) return { entry, why: 'a saved text is not named by its fingerprint' }
   const parts = `${path.slice(0, path.lastIndexOf('/'))}/parts`
   const system = await readText($, `${parts}/${entry.system}.txt`)
   const blocks: PromptBlock[] = []
@@ -1572,6 +1577,7 @@ async function savedCall($: EngineInterface, path: string): Promise<{ entry: Cal
     blocks.push({ text: t, ...(b.cache === true ? { cache: true as const } : {}) })
   }
   if (system === null) return { entry, why: 'its system prompt is missing' }
+  if ((await sha256(system)) !== entry.system) return { entry, why: 'its system prompt is not the one sent' }
   const whole = joinBlocks(blocks)
   if ((await sha256(whole)) !== entry.promptSha) return { entry, why: 'the rebuilt prompt is not the one sent' }
   return { entry, system, prompt: entry.joined ? whole : blocks }
