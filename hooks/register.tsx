@@ -148,7 +148,7 @@ import {
   earlierMessage,
   unusableReplaced,
   RECORD_MAX_TOKENS,
-  RECORD_SYSTEM,
+  REP_SYSTEM,
   BLOCKS_REFUSED,
   joinBlocks,
   type PromptBlock,
@@ -1533,7 +1533,7 @@ async function readSession($: EngineInterface, sid: string, rec: Rec, kind: Call
   const ask = (prompt: string | PromptBlock[]) =>
     $.model.complete({
       model: OBJECTIVE_MODEL,
-      system: RECORD_SYSTEM,
+      system: REP_SYSTEM,
       prompt,
       maxTokens: RECORD_MAX_TOKENS,
       effort: 'high',
@@ -1561,7 +1561,7 @@ async function readSession($: EngineInterface, sid: string, rec: Rec, kind: Call
       usage: { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
     } as ModelForkResult)
   const settings: CallSettings = { model: OBJECTIVE_MODEL, effort: 'high', maxTokens: RECORD_MAX_TOKENS, timeoutMs: RECORD_TIMEOUT_MS }
-  const call: Sent = { kind, settings, system: RECORD_SYSTEM, prompt: joined ? joinBlocks(blocks) : blocks, joined, result: answered, ms }
+  const call: Sent = { kind, settings, system: REP_SYSTEM, prompt: joined ? joinBlocks(blocks) : blocks, joined, result: answered, ms }
   return { result: result as ModelForkResult, gaps: cover.gaps, sent: call }
 }
 
@@ -1681,7 +1681,9 @@ async function replayFiles($: EngineInterface, a: { path: string; kind?: CallKin
 
 // Each call named is sent again `times` times as saved; with a variant, `times` times as saved and
 // `times` times with its texts edited (`editSaved`), and a call the variant cannot edit is not sent
-// at all, so the two arms are the same calls. Every reply is kept in `replays/` beside the call.
+// at all, so the two arms are the same calls. With a base too, the first arm is the call edited by
+// the base's edits in place of as saved, and a call either arm cannot edit is sent in neither.
+// Every reply is kept in `replays/` beside the call.
 async function replay($: EngineInterface, args: string): Promise<string> {
   const a = parseReplayArgs(args)
   if ('error' in a) return a.error
@@ -1692,7 +1694,7 @@ async function replay($: EngineInterface, args: string): Promise<string> {
   if (files.length === 0) return `No saved calls${a.kind === undefined ? '' : ` of kind ${a.kind}`} in ${where}.`
   const rows: ReplayRow[] = []
   const lines: string[] = []
-  const arms = a.variant === undefined ? ['replay'] : ['as saved', 'variant']
+  const arms = a.variant === undefined ? ['replay'] : a.base === undefined ? ['as saved', 'variant'] : ['base', 'variant']
   for (const file of files) {
     const got = await savedCall($, file)
     const name = a.path === 'all' ? file.slice(where.length + 1) : file.slice(file.lastIndexOf('/') + 1)
@@ -1717,12 +1719,20 @@ async function replay($: EngineInterface, args: string): Promise<string> {
       }
       texts.variant = edited
     }
+    if (a.base !== undefined) {
+      const edited = editSaved(e.kind, got.system, got.prompt, a.base)
+      if ('why' in edited) {
+        lines.push(`  not sent again: ${edited.why}`)
+        continue
+      }
+      texts.base = edited
+    }
     const effort = (a.effort ?? e.settings.effort) as 'high'
     const dir = file.slice(0, file.lastIndexOf('/'))
     const base = file.slice(file.lastIndexOf('/') + 1).replace(/\.json$/, '')
-    // The effort and the variant name the reply too, so replays of the same call run side by side
-    // with other settings never write over each other's replies.
-    const tag = [effort, ...(a.variant === undefined ? [] : [a.variant.join('+')])].join('.')
+    // The effort, the variant and the base name the reply too, so replays of the same call run side
+    // by side with other settings never write over each other's replies.
+    const tag = [effort, ...(a.variant === undefined ? [] : [`${a.base === undefined ? '' : `${a.base.join('+')}~`}${a.variant.join('+')}`])].join('.')
     for (const arm of arms) {
       const { system, prompt } = texts[arm] as { system: string; prompt: string | PromptBlock[] }
       for (let i = 1; i <= a.times; i++) {
@@ -1744,8 +1754,9 @@ async function replay($: EngineInterface, args: string): Promise<string> {
       }
     }
   }
-  const setting = [a.effort === undefined ? '' : `effort ${a.effort}`, a.variant === undefined ? '' : `variant ${a.variant.join(',')}`].filter(x => x !== '').join(', ')
-  const totals = arms.map(arm => replayTotals(rows, arm) + (arm === 'as saved' || setting === '' ? '' : ` (${setting})`))
+  const setting = (edits: string) => [a.effort === undefined ? '' : `effort ${a.effort}`, edits].filter(x => x !== '').join(', ')
+  const of: Record<string, string> = { replay: setting(''), variant: setting(a.variant === undefined ? '' : `variant ${a.variant.join(',')}`), base: setting(a.base === undefined ? '' : `base ${a.base.join(',')}`) }
+  const totals = arms.map(arm => replayTotals(rows, arm) + (arm === 'as saved' || of[arm] === '' ? '' : ` (${of[arm]})`))
   return [...lines, '', replayTotals(rows, 'logged'), ...totals].join('\n')
 }
 
@@ -2940,7 +2951,7 @@ export const register: Register = on => {
     if (ownCheck) return next(e)
     try {
       await $.command.register({ name: 'owner-rep-counts', description: "Owner rep: this session's call counters" })
-      await $.command.register({ name: 'owner-rep-replay', description: 'Owner rep: send saved calls again', argumentHint: '<call file, session or all> [--kind k] [--last n] [--effort e] [--times n] [--variant v]' })
+      await $.command.register({ name: 'owner-rep-replay', description: 'Owner rep: send saved calls again', argumentHint: '<call file, session or all> [--kind k] [--last n] [--effort e] [--times n] [--variant v] [--base b]' })
     } catch {
       // The rep works without them.
     }
