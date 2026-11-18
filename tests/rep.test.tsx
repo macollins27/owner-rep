@@ -4821,13 +4821,17 @@ test('rule: a copy in the files whose revision is lower than the stored record\'
 // A record as large as the store has held before this fix: 239 messages of about 6,000 characters,
 // nearly every one a character JSON escapes as six bytes, with quotes, backslashes, accented and
 // four-byte characters among them, and 25 objective versions. Its JSON is over 8 MB, so the store
-// refuses it and the files take it in three parts or more.
+// refuses it and the files take it in three parts or more. Each message's turn is in its file,
+// planted with its fingerprint, as the rep wrote it: a reference to a file that is not there is
+// marked lost when a read reaches it, and its line would take the row's place.
 const HEAVY = '"\\\u0001é😀'
 const heavy = (tag: string): string => `${tag}${HEAVY.repeat(100)}${'\u0001'.repeat(5390)}`
+const TURN = 'The agent\'s turn. '.repeat(300).slice(0, 5000)
 let whole: { store: Record<string, unknown>; files: Map<string, string>; saved: string } | null = null
 test('rule: a whole record over one file is written in parts under the part limit, and read back the same (before the restart)', async ($, on) => {
-  const d = disk(on)
-  const owner = range(1, 239).map(n => his(n, heavy(`#${n} `), { prior: HEAVY.repeat(66), src: { body: { chars: 5000, sha: 'a'.repeat(64), where: 'file' } }, turns: [{ by: 'owner', from: 0, to: 5000 }] }))
+  const d = disk(on, new Map(range(1, 239).map(n => [`${DIR}/${n}-body.txt`, TURN])))
+  const sha = await shaOf(TURN)
+  const owner = range(1, 239).map(n => his(n, heavy(`#${n} `), { prior: HEAVY.repeat(66), src: { body: { chars: TURN.length, sha, where: 'file' } }, turns: [{ by: 'owner', from: 0, to: TURN.length }] }))
   const versions = range(1, 25).map(i => ({ at: i, cause: `#${i} moved it`, text: `version ${i} ${HEAVY.repeat(300)}` }))
   const store = storeOf(recOf(owner, { objective: { ...HELD_OBJ(41, 239), versions }, jobStart: 41, recRev: 7 }))
   expect(utf8(JSON.stringify(store.sessions))).toBeGreaterThan(8_000_000)
