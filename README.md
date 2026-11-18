@@ -372,7 +372,7 @@ The full design is in [How the owner rep works](docs/how-it-works.md).
 
 ## Built to be trusted
 
-- **671 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
+- **675 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
   the tests.
 - **A doctor that plants bugs.** It plants 568 known defects in a throwaway copy, one at a
   time, and fails the build if the tests miss any of them.
