@@ -359,7 +359,12 @@ something, or the newest version running, and anything else is works. A conditio
 only when every clause of it is one: a live test on 18 Nov 2026 had the writer mark "tally.py
 is saved and prints the count" a fact for being saved, so the builder's own run closed what
 the tool does. Any clause about what something does, prints, takes, returns or shows now makes
-the whole condition works, and the writer is asked for one claim per condition. The owner's own word still
+the whole condition works, and the writer is asked for one claim per condition. A fourth live
+test found behaviours that hid the fact word inside them ("the converter transforms saved text")
+and facts of the writer's own that read as works, so a fact is now read by closed slots: every
+word must be a name (a file, a path, quoted text, a number) or one of a fixed list of words, and
+the only verbs on that list are the fact verbs, so no wording of what the work does can pass;
+the writer is told the shape of a fact. The owner's own word still
 closes a condition, by design, and the card says so: "closed on your word (#n)". The note of
 whose looks are in also goes on the count line,
 which comes back right after the card's head, because at 80 rows the condition lines that carried

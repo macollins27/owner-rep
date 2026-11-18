@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 8467313..9cd9b90 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3487,7 +3487,7 @@ const factClause = (clause: string): { ok: boolean; verb: boolean } => {
+   const low = ws.map((w, i) => {
+     const prev = (ws[i - 1] ?? '').toLowerCase()
+     if (/^\d+$/.test(w)) return 'NUM'
+-    if (w === 'NAME' || /\d/.test(w) || /^[A-Z]{2,}$/.test(w) || /^.[a-z]*[A-Z]/.test(w) || (/^[A-Z]/.test(w) && i > 0 && (LEADS.test(prev) || /^(?:to|on|in|at|from|into|via)$/.test(prev)))) return 'NAME'
++    if (w === 'NAME' || /\d/.test(w) || /^[A-Z]{2,}$/.test(w) || /^.[a-z]*[A-Z]/.test(w) || (/^[A-Z]/.test(w) && i > 0)) return 'NAME'
+     return w.toLowerCase()
+   })
+   const ok = low.every((w, i) => w === 'NAME' || w === 'NUM' || WORK_NOUN.test(w) || LEADS.test(w) || FACT_WORDS.test(w)

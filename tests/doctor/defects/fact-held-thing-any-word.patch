@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 8467313..cc95951 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3492,7 +3492,7 @@ const factClause = (clause: string): { ok: boolean; verb: boolean } => {
+   })
+   const ok = low.every((w, i) => w === 'NAME' || w === 'NUM' || WORK_NOUN.test(w) || LEADS.test(w) || FACT_WORDS.test(w)
+     // One word between a word that leads a noun and a noun of the work, or after a count.
+-    || (LEADS.test(low[i - 1] ?? '') && WORK_NOUN.test(low[i + 1] ?? '')) || COUNT.test(low[i - 1] ?? ''))
++    || LEADS.test(low[i - 1] ?? '') || COUNT.test(low[i - 1] ?? ''))
+   return { ok, verb: low.some(w => FACT_VERB_RE.test(w)) }
+ }
+ export const factHolds = (text: string): boolean => {
