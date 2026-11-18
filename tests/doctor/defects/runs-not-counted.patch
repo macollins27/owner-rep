@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index c3d26ba..91f9501 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -3009,7 +3009,7 @@ export const register: Register = on => {
+           .then(id =>
+             changeRec($, id, r => {
+               const was = r.runs ?? { helper: 0, codex: 0 }
+-              r.runs = { ...was, [run]: was[run] + 1 }
++              r.runs = was
+             }),
+           )
+           .catch(() => undefined)

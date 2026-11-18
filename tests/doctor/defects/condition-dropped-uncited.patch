@@ -1,9 +1,9 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 3f27870..6bb79a0 100644
+index 4879782..0a11356 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -4591,11 +4591,6 @@ export function mergeConditions(
-     if (p.state === 'closed' && h.state !== 'closed') return { text: p.text, state: 'closed', by: p.by, ...k }
+@@ -4654,11 +4654,6 @@ export function mergeConditions(
+     if (h.kind === 'fact' && kind === 'works' && h.state === 'shown') return { text: p.text, state: 'open', by: '', seen: h.by, kind: 'works' }
      return { ...h, text: p.text, ...k }
    })
 -  for (const h of held) {

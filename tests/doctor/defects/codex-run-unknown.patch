@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 4879782..ee3ae11 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -271,7 +271,6 @@ export const keptWho = (l: Look, ran: Ran): string => (l.signs && l.as !== null
+ export function runOf(tool: string, command: unknown): 'helper' | 'codex' | null {
+   if (tool === 'Agent' || tool === 'Task') return 'helper'
+   if ((tool !== 'Bash' && tool !== 'PowerShell') || typeof command !== 'string') return null
+-  if (/(?:^|[\s;&|(\/])codex(?:\.exe)?\s+(?:exec|e|review)\b/.test(command)) return 'codex'
+   if (/(?:^|[\s;&|(\/])claude(?:\.exe)?\s+(?:[^;&|]*\s)?(?:-p|--print)\b/.test(command)) return 'helper'
+   return null
+ }

@@ -3501,31 +3501,31 @@
     "name": "signer-prefix-match",
     "breaks": "A look signs off when its who only starts like a signer, so \"the helper, who also built it\", \"Codex, which the agent itself wrote\" or \"checker-agent\" signs the agent's own work off.",
     "patch": "signer-prefix-match.patch",
-    "fixed": "tested 2026-11-17"
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
   },
   {
     "name": "first-look-only",
     "breaks": "Only the first look in a where is read, so a sign-off look written after a helper's is lost and the condition stays open though the check looked.",
     "patch": "first-look-only.patch",
-    "fixed": "tested 2026-11-17"
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
   },
   {
     "name": "where-without-look-closes",
     "breaks": "A where with no look in it closes a \"works\" condition, so the agent's own run written plainly signs its own work off.",
     "patch": "where-without-look-closes.patch",
-    "fixed": "tested 2026-11-17"
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
   },
   {
     "name": "no-kind-read-as-fact",
     "breaks": "A condition with no kind is shown by any where, as a fact is, so every condition written before kinds, and any the writer leaves unmarked, closes on the agent's word.",
     "patch": "no-kind-read-as-fact.patch",
-    "fixed": "tested 2026-11-17"
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
   },
   {
     "name": "works-not-sticky",
     "breaks": "A rewrite can turn a held \"works\" condition into a fact, so the agent's own run then closes a condition that needed a look by someone who did not build it.",
     "patch": "works-not-sticky.patch",
-    "fixed": "tested 2026-11-17"
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
   },
   {
     "name": "seen-blames-agent",
@@ -3537,7 +3537,7 @@
     "name": "seen-who-dropped",
     "breaks": "Who made a look that does not sign off is not kept, so the card says the agent looked when a named helper did.",
     "patch": "seen-who-dropped.patch",
-    "fixed": "tested 2026-11-17"
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
   },
   {
     "name": "count-no-looks-note",
@@ -3561,7 +3561,7 @@
     "name": "kind-not-parsed",
     "breaks": "The writer's \"works:\" or \"fact:\" is dropped as it is read, so a fact needs a look it cannot have and a works condition depends on the default.",
     "patch": "kind-not-parsed.patch",
-    "fixed": "tested 2026-11-17"
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
   },
   {
     "name": "kind-not-held",
@@ -3579,6 +3579,102 @@
     "name": "kind-dropped-on-show",
     "breaks": "A condition marked shown loses its kind, so when the check reopens it, a briefing's where with no look closes it again as if it were a fact.",
     "patch": "kind-dropped-on-show.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "look-signs-without-run",
+    "breaks": "A look by a helper or Codex signs off on its name alone, with no run of that helper or Codex in the record, so the agent can write one that never happened.",
+    "patch": "look-signs-without-run.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "runs-not-counted",
+    "breaks": "The record never counts a helper or Codex run, so even a real look by someone who did not build it cannot sign off.",
+    "patch": "runs-not-counted.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "codex-run-unknown",
+    "breaks": "A Codex run started from the shell is not known as one, so a real look by Codex never signs off.",
+    "patch": "codex-run-unknown.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "denied-look-signs",
+    "breaks": "A where saying there was no look by Codex or the check (\"No look by Codex: …\") is read as that look, and signs off.",
+    "patch": "denied-look-signs.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "empty-look-signs",
+    "breaks": "A look with nothing after its colon signs off, though it says nothing was seen.",
+    "patch": "empty-look-signs.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "not-yet-look-signs",
+    "breaks": "A look still to come (\"look by the check: has not happened yet\", \"look by Codex: will run it\") signs off as if it had happened.",
+    "patch": "not-yet-look-signs.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "builder-signer-signs",
+    "breaks": "A look by Codex or a helper that says it fixed or wrote the work signs off, though one who built it is the agent.",
+    "patch": "builder-signer-signs.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "seen-who-stale",
+    "breaks": "Who looked is carried from an older where onto a later one with no look, so the agent's own run is shown as an earlier helper's.",
+    "patch": "seen-who-stale.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "kindless-turns-fact",
+    "breaks": "A condition of no kind, read as works, turns fact when a rewrite calls it so, and the agent's own run then shows it.",
+    "patch": "kindless-turns-fact.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "shown-fact-stays-shown",
+    "breaks": "A fact held shown and rewritten as works stays shown on its old where, which no look by someone who did not build it made.",
+    "patch": "shown-fact-stays-shown.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "mislabelled-fact-kept",
+    "breaks": "A condition the writer marks \"fact:\" though it says the result works, loads or passes stays a fact, so the agent's own run shows it.",
+    "patch": "mislabelled-fact-kept.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "runs-newest-code-works",
+    "breaks": "A \"fact:\" that a service runs the newest code, the writer's own example of a fact, is read as works and waits for a look it does not need.",
+    "patch": "runs-newest-code-works.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "rep-check-not-signer",
+    "breaks": "A look written \"look by the rep's own check\" is not read as the check's, so a check's real look is kept as someone else's.",
+    "patch": "rep-check-not-signer.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "looks-note-uncounted",
+    "breaks": "The note beside the count names every looker however many, so with seventy long names the count line no longer fits and is dropped from the card.",
+    "patch": "looks-note-uncounted.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "writer-run-is-fact",
+    "breaks": "The writer is told a run passing is a fact, so it marks the result working as something the agent's own run shows.",
+    "patch": "writer-run-is-fact.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "look-rule-allows-unrun",
+    "breaks": "The readers are not told to write only looks the record shows, so they write a look by Codex or a helper that never ran.",
+    "patch": "look-rule-allows-unrun.patch",
     "fixed": "tested 2026-11-17"
   }
 ]

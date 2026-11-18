@@ -204,7 +204,10 @@ that did not build it, Codex, or the rep's own check, opening the real thing and
 part of the job is written down as one of two kinds: "works" (the work does what it should, or is
 good) or "fact" (a file saved, a version installed). A fact is shown by the command and what it
 printed. A "works" part stays open until one of those three has looked; a part written before
-kinds counts as "works". When the agent looks at its own work, or a helper that also built it,
+kinds counts as "works", and so does a "fact" about the work running, loading or passing. A
+look by a helper or by Codex counts only when the session shows the agent started one, and a
+look that says it did not happen yet, or by one that says it fixed the work, does not count.
+When the agent looks at its own work, or a helper that also built it,
 or anyone else, the card says who looked and that it still needs a look by someone who did not
 build it, and the count line at the top of the card says so too, so you see it on any card.
 
@@ -364,7 +367,7 @@ The full design is in [How the owner rep works](docs/how-it-works.md).
 
 ## Built to be trusted
 
-- **655 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
+- **658 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
   the tests.
 - **A doctor that plants bugs.** It plants 568 known defects in a throwaway copy, one at a
   time, and fails the build if the tests miss any of them.

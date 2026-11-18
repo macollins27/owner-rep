@@ -1,0 +1,15 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 4879782..6dbe49a 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -220,10 +220,6 @@ const SIGNERS = new Map<string, Signer>([
+   ['helper that did not build it', 'helper'],
+   ['codex', 'codex'],
+   ['check', 'check'],
+-  ["rep's own check", 'check'],
+-  ["rep's check", 'check'],
+-  ["owner-rep's check", 'check'],
+-  ["owner rep's check", 'check'],
+ ])
+ // Just before "look by": a word that denies the look.
+ const DENIED = /\b(?:no|not|never|without)\s+$/i

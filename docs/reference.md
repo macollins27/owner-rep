@@ -686,16 +686,27 @@ when it was written), and the check's `reopen:` lines when they say what shows o
 `shown:` line does not move a condition marked `reopened` (only the check's does, the fourth
 argument). Each condition has a `kind`, `works` or `fact`, which the objective writer writes
 before it (`conditionOf` reads it, `heldLine` writes it back, `bare` strips it where a reader
-copies it, and `mergeConditions` keeps a held `works` as `works` whatever kind a rewrite gives).
+copies it, and `mergeConditions` keeps a held `works`, or one with no kind, as `works` whatever
+kind a rewrite gives, and opens a shown `fact` rewritten as `works` with its where kept as
+`seen`). `conditionOf` reads a `fact:` whose text matches `BEHAVES` (works, runs, loads, passes,
+good; "runs the newest code" excepted) as `works`.
 A `fact` moves shown on any where. A `works` condition, or one with no kind, moves shown only when
 `looksOf` finds, among every `look by <who>: <what>` in the where, one whose `who` is exactly on
-the sign-off list `SIGNERS` ("a helper that did not build it", "Codex", "the check"; compared by
-`whoKey`, without case, an article, a trailing stop or a run id in brackets). Otherwise, whoever
+the sign-off list `SIGNERS` ("a helper that did not build it", "Codex", "the check" or "the
+rep's own check"; compared by `whoKey`, without case, an article, a trailing stop or a run id in
+brackets), with something seen, no "no", "not", "never" or "without" just before it, nothing
+still to come in it (`NOT_YET`) and no word that the one looking wrote the work (`BUILT`), and
+`signsOff` finds a run of that signer in the record: `Rec.runs` counts the helpers (an Agent or
+Task call, or a `claude -p` run) and Codex runs (`codex exec`, `e` or `review`) the agent starts,
+told by `runOf` in `tool.call` once the call returns; the check signs only through its own marks.
+A look whose words sign but has no run is kept under its who with "(no run of it in the record)"
+(`keptWho`). Otherwise, whoever
 looked and whoever reports it, the check included, the state stays as it was and the condition
-keeps what the looks saw as `seen` and who made them as `seenBy` (a where with no look keeps the
-whole where, made by the agent). `objectiveText` marks such a condition on the card (`seenMark`):
+keeps what the looks saw as `seen` and who made them as `seenBy`, from this where alone (a where
+with no look keeps the whole where, made by the agent). `objectiveText` marks such a condition on the card (`seenMark`):
 the agent's own look as "the agent looked at it itself", anyone else's by name, both still
-needing a look by someone who did not build it; `countLine` adds the same by who (`looksNote`),
+needing a look by someone who did not build it; `countLine` adds the same by who (`looksNote`,
+counted rather than named past `LOOKS_NOTE_MAX` characters),
 and `fillCard` brings the count line back right after the head. The prompts are shown each open
 condition's kind (`kindMark`, `works` for one with none) and what its looks saw (`promptLine`).
 The watch, the briefing, ask again and the check carry `LOOK_RULE`, which teaches the form. A new job's conditions start with no mark. A draft moves only `step`, set to the draft's `firstSentence` in

@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 3f27870..e26ada6 100644
+index 4879782..219132b 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -228,7 +228,7 @@ export function looksOf(where: string): Look[] {
+@@ -251,7 +251,7 @@ export function looksOf(where: string): Look[] {
      const who = (m[1] ?? '').trim()
      const end = i + 1 < at.length ? (at[i + 1]?.index ?? where.length) : where.length
      const what = where.slice((m.index ?? 0) + m[0].length, end).trim().replace(/[.;,]+$/, '')
--    return { signs: SIGNERS.has(whoKey(who)), who, what }
-+    return { signs: /^(?:helper|codex|check)/.test(whoKey(who)), who, what }
-   })
- }
- // Whether a who is the agent's own: "the agent" by name.
+-    const as = SIGNERS.get(whoKey(who)) ?? null
++    const as: Signer | null = /^helper/.test(whoKey(who)) ? 'helper' : /^codex/.test(whoKey(who)) ? 'codex' : /^check/.test(whoKey(who)) ? 'check' : null
+     const denied = DENIED.test(where.slice(0, m.index ?? 0))
+     const signs = as !== null && what !== '' && !denied && !NOT_YET.test(what) && !BUILT.test(what)
+     return { signs, as, who, what }

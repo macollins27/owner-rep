@@ -210,7 +210,27 @@ export type Condition = { text: string; state: ConditionState; by: string; reope
 // check of #53 (session 6c159ee6): a prefix list signed "the helper, who also
 // built it" and refused "the second helper", and a second look was never read.
 const LOOK_AT = /(?:^|(?<=[\s.;,(]))(?:a\s+)?(?:hands-on\s+)?look\s+by\s+([^:]+?)\s*:/gi
-const SIGNERS = new Set(['helper that did not build it', 'codex', 'check'])
+// Second Codex review of #53 (6c159ee6): a denied, empty or not-yet look signed ("No look
+// by Codex: …", "look by the check:", "a look by the check: has not happened yet"), and so
+// did one by a signer that says it wrote the work ("look by Codex: I fixed the checkout").
+// Each is now kept as evidence. Whose run it was is checked against the record in
+// `signsOff`, since a name alone is the reader's word.
+export type Signer = 'helper' | 'codex' | 'check'
+const SIGNERS = new Map<string, Signer>([
+  ['helper that did not build it', 'helper'],
+  ['codex', 'codex'],
+  ['check', 'check'],
+  ["rep's own check", 'check'],
+  ["rep's check", 'check'],
+  ["owner-rep's check", 'check'],
+  ["owner rep's check", 'check'],
+])
+// Just before "look by": a word that denies the look.
+const DENIED = /\b(?:no|not|never|without)\s+$/i
+// In what a look saw: that it has not happened, or will.
+const NOT_YET = /\b(?:has\s+not|hasn't|have\s+not|haven't|had\s+not|not\s+yet|yet\s+to|will|would|to\s+be\s+done|pending|planned|did\s+not\s+happen|didn't\s+happen)\b/i
+// In what a look saw: that the one looking wrote or changed the work.
+const BUILT = /\b(?:I|we|it|they|codex|the\s+helper|the\s+check)\s+(?:also\s+|then\s+|first\s+)?(?:wrote|fixed|changed|built|edited|implemented|patched|rewrote|modified|made\s+the\s+change|added|refactored)\b|\b(?:I|we)(?:'ve|\s+have|\s+had)\s+(?:written|fixed|changed|built|edited|implemented|patched|modified|added)\b/i
 // A who as compared: lower case, one space, no leading article or trailing
 // stop, and a run id in brackets after it left out.
 const whoKey = (who: string): string =>
@@ -221,21 +241,45 @@ const whoKey = (who: string): string =>
     .replace(/\s*\((?:id:?\s*)?[0-9a-f-]{6,}\)$/, '')
     .replace(/[.;,]+$/, '')
     .replace(/^(?:a|an|the)\s+/, '')
-export type Look = { signs: boolean; who: string; what: string }
+// `as` is the signer the who names, or null; `signs` is whether its words make it a
+// sign-off: a signer's who, something seen, not denied, not still to come, and not a
+// look by one who wrote the work. Whether such a run is in the record is `signsOff`'s.
+export type Look = { signs: boolean; as: Signer | null; who: string; what: string }
 export function looksOf(where: string): Look[] {
   const at = [...where.matchAll(LOOK_AT)]
   return at.map((m, i) => {
     const who = (m[1] ?? '').trim()
     const end = i + 1 < at.length ? (at[i + 1]?.index ?? where.length) : where.length
     const what = where.slice((m.index ?? 0) + m[0].length, end).trim().replace(/[.;,]+$/, '')
-    return { signs: SIGNERS.has(whoKey(who)), who, what }
+    const as = SIGNERS.get(whoKey(who)) ?? null
+    const denied = DENIED.test(where.slice(0, m.index ?? 0))
+    const signs = as !== null && what !== '' && !denied && !NOT_YET.test(what) && !BUILT.test(what)
+    return { signs, as, who, what }
   })
+}
+// Which signers' runs the record holds: a helper the agent started (an Agent or Task call,
+// or a `claude -p` run), a Codex run, and the check, which signs only through its own marks.
+export type Ran = { helper: boolean; codex: boolean; check: boolean }
+// A look signs off only when its words do and the record holds a run of the one it names.
+export const signsOff = (l: Look, ran: Ran): boolean => l.signs && l.as !== null && ran[l.as]
+// The who a look that does not sign is kept under: as written, and when its words would
+// sign but no such run is in the record, saying so.
+export const keptWho = (l: Look, ran: Ran): string => (l.signs && l.as !== null && !ran[l.as] ? `${l.who} (no run of it in the record)` : l.who)
+// A tool call that starts a signer's run: a helper (an Agent or Task call, or a shell
+// command running `claude -p` or `claude --print`) or Codex (a shell command running
+// `codex`); null for any other.
+export function runOf(tool: string, command: unknown): 'helper' | 'codex' | null {
+  if (tool === 'Agent' || tool === 'Task') return 'helper'
+  if ((tool !== 'Bash' && tool !== 'PowerShell') || typeof command !== 'string') return null
+  if (/(?:^|[\s;&|(\/])codex(?:\.exe)?\s+(?:exec|e|review)\b/.test(command)) return 'codex'
+  if (/(?:^|[\s;&|(\/])claude(?:\.exe)?\s+(?:[^;&|]*\s)?(?:-p|--print)\b/.test(command)) return 'helper'
+  return null
 }
 // Whether a who is the agent's own: "the agent" by name.
 export const isAgentWho = (who: string): boolean => whoKey(who) === 'agent'
 
 // How a reader writes a look, told to the watch, the briefing, ask again and the check.
-export const LOOK_RULE = 'That the result works for its user, or is good (a condition marked "works:"), is shown only by a hands-on look at the real thing by someone who did not build it. Write its where with each look there was, each in its own words, as one of exactly: "look by a helper that did not build it: …", "look by Codex: …", "look by the check: …", saying what they did and what they saw. Any helper that wrote or changed the work is the agent: write the agent\'s own look at its own work "look by the agent: …"; it is kept and shown to the owner as the agent\'s own look, and the condition stays open. A fact\'s where (a condition marked "fact:") is the command and what it printed, or the file and what it holds.'
+export const LOOK_RULE = 'That the result works for its user, or is good (a condition marked "works:"), is shown only by a hands-on look at the real thing by someone who did not build it. Write its where with each look there was, each in its own words, as one of exactly: "look by a helper that did not build it: …", "look by Codex: …", "look by the check: …", saying what they did and what they saw. Write only looks the record shows happened. Any helper that wrote or changed the work is the agent: write the agent\'s own look at its own work "look by the agent: …"; it is kept and shown to the owner as the agent\'s own look, and the condition stays open. A fact\'s where (a condition marked "fact:") is the command and what it printed, or the file and what it holds.'
 export type ObjectiveParts = { result: string; purpose: string; done: Condition[]; step: string }
 export type Objective = ObjectiveParts & {
   // When the job opened.
@@ -1577,7 +1621,7 @@ You are the owner's rep, and your one task here is to write down the objective o
 
 ## The conditions
 
-Each condition is one thing "done" has to show, in plain words, written after its kind: "works:" when it is about the result working for its user, being used, or being good, which only a hands-on look by someone who did not build it can show; "fact:" when a command's output or a file's contents can show it (that it is saved, committed, installed, that a run passes). Write a held condition's kind back as held. You do not see the conversation, so you may never mark a condition shown. Write every condition you already hold again as it stands, with the state it is held in: a shown one with "shown:" and its where copied as held, a closed one with "closed:" and its number as held. Those marks are kept whatever you write. A new condition is "open", or "not shown" when it is a thing a conversation cannot show by itself, such as whether a build is installed or a service runs the newest code. Mark a condition "closed: #n" only when the owner's own message #n closes that part and is new since the objective you hold was built; never by the number of a draft, and never by a message it was already built from, which had its say then. A held condition you leave out is kept, unless you list it under "dropped" with the number of the owner's own message, new since it was built, that says, in so many words, that it no longer stands.`
+Each condition is one thing "done" has to show, in plain words, written after its kind: "works:" when it is about the result working for its user, being used, or being good, which only a hands-on look by someone who did not build it can show; "fact:" when a command's output or a file's contents can show it (saved, committed, pushed or installed); a passing run is works. Write a held condition's kind back as held. You do not see the conversation, so you may never mark a condition shown. Write every condition you already hold again as it stands, with the state it is held in: a shown one with "shown:" and its where copied as held, a closed one with "closed:" and its number as held. Those marks are kept whatever you write. A new condition is "open", or "not shown" when it is a thing a conversation cannot show by itself, such as whether a build is installed or a service runs the newest code. Mark a condition "closed: #n" only when the owner's own message #n closes that part and is new since the objective you hold was built; never by the number of a draft, and never by a message it was already built from, which had its say then. A held condition you leave out is kept, unless you list it under "dropped" with the number of the owner's own message, new since it was built, that says, in so many words, that it no longer stands.`
 
 // The owner's messages are quoted records inside a fence the writer is told about, so a
 // message that reads like a command is read as evidence and never as an instruction to the
@@ -3069,7 +3113,10 @@ const oneLine = (s: string | undefined): string => clean(s).replace(/\s+/g, ' ')
 // message.
 function conditionOf(line: string): Condition {
   const k = KIND_AT.exec(line)
-  const kind: { kind?: ConditionKind } = k === null ? {} : { kind: (k[1] ?? '').toLowerCase() === 'fact' ? 'fact' : 'works' }
+  const said = k === null ? undefined : (k[1] ?? '').toLowerCase() === 'fact' ? 'fact' : 'works'
+  // A "fact" about running, working, loading, passing or being good is read as works,
+  // since only a look by someone who did not build it can show it (Codex review of #53).
+  const kind: { kind?: ConditionKind } = said === undefined ? {} : { kind: said === 'fact' && BEHAVES.test(line.split('|')[0] ?? '') ? 'works' : said }
   const m = /^(.*?)\s*\|\s*(open|not[\s-]?shown|shown|closed)\b\s*:?\s*(.*)$/i.exec(line)
   if (m === null) return { text: bare(line.split('|')[0] ?? ''), state: 'open', by: '', ...kind }
   const text = bare(m[1] ?? '')
@@ -3083,6 +3130,9 @@ function conditionOf(line: string): Condition {
 
 // A condition's kind written before it: "works:" or "fact:".
 const KIND_AT = /^\s*(works|fact)\s*:\s*/i
+// Words that make a condition one about the result behaving for its user. "Runs the newest
+// code" is the writer's own example of a fact, so it is not one.
+export const BEHAVES = /\b(?:works|working|worked|(?:runs?|running|ran)(?!\s+(?:the\s+)?(?:newest|latest|current)\b)|loads?|loading|loaded|pass(?:es|ed|ing)?|good|behaves?|behaving|usable)\b/i
 
 // A condition's text without a state mark the model copied with it, such as
 // "(not shown)" or "(not shown: the check found …)".
@@ -4434,8 +4484,17 @@ const looksNote = (o: Objective): string => {
   for (const c of o.done) if (seenOf(c) !== '') by.set(seenWho(c), (by.get(seenWho(c)) ?? 0) + 1)
   if (by.size === 0) return ''
   const parts = [...by].map(([who, n]) => (who === '' ? `the agent looked at ${n} itself` : `${who} looked at ${n}, not counted as someone who did not build it`))
-  return ` (${parts.join('; ')}; each still needs a look by someone who did not build it)`
+  const whole = ` (${parts.join('; ')}; each still needs a look by someone who did not build it)`
+  if (whole.length <= LOOKS_NOTE_MAX) return whole
+  // Too long to draw whole (many names, or long ones): counted, never dropped (Codex
+  // review of #53: at 80 rows a count line of seventy names was dropped whole).
+  const self = by.get('') ?? 0
+  const others = [...by].reduce((n, [who, k]) => (who === '' ? n : n + k), 0)
+  const short = [self > 0 ? `the agent looked at ${self} itself` : '', others > 0 ? `others not counted as someone who did not build it looked at ${others}` : ''].filter(p => p !== '')
+  return ` (${short.join('; ')}; each still needs a look by someone who did not build it)`
 }
+// The longest the note beside the count is drawn with names.
+export const LOOKS_NOTE_MAX = 240
 
 // Rows a wrapped text takes in `width` cells, one per paragraph at least. The band
 // wraps at words, so a row ends where the next word would not fit, not at the cell
@@ -4649,11 +4708,15 @@ export function mergeConditions(
   const out = once.map((p): Condition => {
     const h = held.find(x => like(x.text, p.text))
     if (h === undefined) return p.state === 'shown' ? { text: p.text, state: 'open', by: '', ...(p.kind === undefined ? {} : { kind: p.kind }) } : p
-    // The kind the writer gives now, except that one held "works" stays so: a rewrite never
-    // turns a condition that needs a look by someone else into one the agent's own run shows.
-    const kind = h.kind === 'works' ? 'works' : (p.kind ?? h.kind)
+    // The kind the writer gives now, except that a condition held "works", or with no kind
+    // (read as works), never turns "fact": a rewrite never turns a condition that needs a
+    // look by someone else into one the agent's own run shows.
+    const kind = h.kind === 'fact' ? (p.kind ?? 'fact') : p.kind === 'fact' || h.kind === 'works' ? 'works' : p.kind
     const k: { kind?: ConditionKind } = kind === undefined ? {} : { kind }
     if (p.state === 'closed' && h.state !== 'closed') return { text: p.text, state: 'closed', by: p.by, ...k }
+    // A fact held shown and rewritten as works opens again, with its where kept as what was
+    // seen: the where showed a fact, never the look someone who did not build it makes.
+    if (h.kind === 'fact' && kind === 'works' && h.state === 'shown') return { text: p.text, state: 'open', by: '', seen: h.by, kind: 'works' }
     return { ...h, text: p.text, ...k }
   })
   for (const h of held) {
