@@ -4033,7 +4033,7 @@
   },
   {
     "name": "fact-clauses-not-split",
-    "breaks": "A condition is read as a fact when any of it is one, so a clause beside the fact saying what the work does in a verb the behaviour list lacks (\"saved; it converts the file to uppercase\") closes on the builder's own run.",
+    "breaks": "A condition is read whole, never clause by clause, so a fact parted from the next by \"whose\" or a bracket (\"the scratch folder holds a sample text file whose contents are exactly ...\") reads as works.",
     "patch": "fact-clauses-not-split.patch",
     "fixed": "2026-11-18"
   },
@@ -4045,14 +4045,74 @@
   },
   {
     "name": "fact-word-before-noun-read",
-    "breaks": "A fact word before its noun (\"the saved converter turns text into capitals\") is read as the work said to be saved, so a condition about what it does is read as a fact.",
+    "breaks": "Any word may stand in a fact, so a fact word before its noun (\"saved converter transforms text to uppercase\", \"the converter transforms saved text\") reads as the work said to be saved and closes on the builder's own run.",
     "patch": "fact-word-before-noun-read.patch",
     "fixed": "2026-11-18"
   },
   {
     "name": "fact-quoted-text-read",
-    "breaks": "Quoted text in a condition is read for behaviour words, so a file said to contain \"fixture-read\" is read as works and needs a look no command could need.",
+    "breaks": "Quoted text in a condition is read as words, so a file said to contain exactly \"one two three\" is read as works and needs a look no command could need.",
     "patch": "fact-quoted-text-read.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "check-error-after-answer-hidden",
+    "breaks": "A check whose run failed after it wrote its whole answer shows the answer and never says the run failed, so the owner does not learn the check ended in an engine error.",
+    "patch": "check-error-after-answer-hidden.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-held-thing-any-word",
+    "breaks": "Any one word may follow a word that leads a noun, so \"the site has a checkout\" reads as a fact about what the site holds and closes without a look.",
+    "patch": "fact-held-thing-any-word.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-unit-after-name",
+    "breaks": "A name counts as a count, so the word after it is read as a unit and a title-cased behaviour (\"The Converter Transforms Saved Text\") reads as a fact.",
+    "patch": "fact-unit-after-name.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-capital-anywhere-name",
+    "breaks": "Any capitalised word is read as a name, so a title-cased behaviour (\"The Converter Transforms Saved Text\") reads as a fact.",
+    "patch": "fact-capital-anywhere-name.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-single-quotes-read",
+    "breaks": "Text in single quotes is read as words, so a file said to contain exactly 'prints' is read as works and waits for a look no command needs.",
+    "patch": "fact-single-quotes-read.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-slash-ampersand-not-split",
+    "breaks": "A slash or \"&\" does not part two facts, so \"the work is committed & pushed\" reads as works and waits for a look.",
+    "patch": "fact-slash-ampersand-not-split.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-verb-not-needed",
+    "breaks": "A condition of known words with no fact verb is a fact, so a judgement such as \"the page is new\" closes on the agent's own word.",
+    "patch": "fact-verb-not-needed.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-path-read",
+    "breaks": "A path is read as words, so \"the work is saved to ~/Developer/shout\" reads as works and waits for a look.",
+    "patch": "fact-path-read.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-runs-newest-not-read",
+    "breaks": "\"Runs the newest code\", the writer's own example of a fact, is read as works and waits for a look it does not need.",
+    "patch": "fact-runs-newest-not-read.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "writer-fact-shape-dropped",
+    "breaks": "The objective writer is not told the shape of a fact, so its own facts (\"the scratch folder holds a sample text file whose contents are...\") read as works and wait for a look.",
+    "patch": "writer-fact-shape-dropped.patch",
     "fixed": "2026-11-18"
   }
 ]

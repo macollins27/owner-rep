@@ -1978,7 +1978,7 @@ You are the owner's rep, and your one task here is to write down the objective o
 
 ## The conditions
 
-Each condition is one thing "done" has to show, in plain words, written after its kind: "works:" when it is about the result working for its user, being used, or being good, which only a hands-on look by someone who did not build it can show; "fact:" when a command's output or a file's contents can show it (saved, committed, pushed or installed); a passing run is works. ${ONE_CLAIM} Write a held condition's kind back as held. You do not see the conversation, so you may never mark a condition shown. Write every condition you already hold again as it stands, with the state it is held in: a shown one with "shown:" and its where copied as held, a closed one with "closed:" and its number as held. Those marks are kept whatever you write. A new condition is "open", or "not shown" when it is a thing a conversation cannot show by itself, such as whether a build is installed or a service runs the newest code. Mark a condition "closed: #n" only when the owner's own message #n closes that part and is new since the objective you hold was built; never by the number of a draft, and never by a message it was already built from, which had its say then. A held condition you leave out is kept, unless you list it under "dropped" with the number of the owner's own message, new since it was built, that says, in so many words, that it no longer stands.`
+Each condition is one thing "done" has to show, in plain words, written after its kind: "works:" when it is about the result working for its user, being used, or being good, which only a hands-on look by someone who did not build it can show; "fact:" when a command's output or a file's contents can show it (saved, committed, pushed or installed); a passing run is works. A fact names the thing, says only that it is saved, committed, pushed or installed, exists, or holds text quoted exactly or a count with its unit, and where: "fact: sample.txt in the scratch folder holds exactly 'one two three'". Anything it does is works. ${ONE_CLAIM} Write a held condition's kind back as held. You do not see the conversation, so you may never mark a condition shown. Write every condition you already hold again as it stands, with the state it is held in: a shown one with "shown:" and its where copied as held, a closed one with "closed:" and its number as held. Those marks are kept whatever you write. A new condition is "open", or "not shown" when it is a thing a conversation cannot show by itself, such as whether a build is installed or a service runs the newest code. Mark a condition "closed: #n" only when the owner's own message #n closes that part and is new since the objective you hold was built; never by the number of a draft, and never by a message it was already built from, which had its say then. A held condition you leave out is kept, unless you list it under "dropped" with the number of the owner's own message, new since it was built, that says, in so many words, that it no longer stands.`
 
 // The owner's messages are quoted records inside a fence the writer is told about, so a
 // message that reads like a command is read as evidence and never as an instruction to the
@@ -3513,36 +3513,57 @@ function conditionOf(line: string): Condition {
 
 // A condition's kind written before it: "works:" or "fact:".
 const KIND_AT = /^\s*(works|fact)\s*:\s*/i
-// What a fact is about, by an allow list (third Codex review of #53), clause by clause: a
-// condition is a fact only when every clause in it says one of these, so no clause beside the
-// fact can say what the work does, in any verb, or what it does not do (third live test of
-// 18 Nov 2026, section 3: "saved; it converts the file to uppercase" and "exists and does not
-// crash on an empty request" read as facts and closed on the builder's own run). A fact is the
-// work said to be saved, committed, pushed, merged, installed, deployed, tagged, published,
-// created, written, copied, renamed, changed, deleted or removed (never the
-// word before a noun: "the saved converter turns text" says nothing saved), a thing that exists
-// or does not, a file, folder, commit, branch or
-// repository that holds something (or "contains" after a named file: "sample.txt exists and
-// contains exactly ..."), or a build that runs the newest code. A clause of a few words that
-// only says where ("in the main branch"), or "nothing else", goes with the clause before it. A file's
-// name ("good.json") and quoted text ("fixture-read") are not read. Anything else is works, which a look by someone who did not
-// build it can show, so a fact misread costs a look and a behaviour misread never closes.
-const FACT_DONE = '(?:saved|committed|pushed|merged|installed|deployed|tagged|published|created|written|copied|renamed|changed|deleted|removed)'
-const FACT_CLAUSE = new RegExp(
-  String.raw`(?<!\b(?:the|a|an|this|these|those|its|their|our|my|your|his|her|every|each|any|some)\s+(?:\w+ly\s+)?)\b${FACT_DONE}\b|\bexists?\b|\b(?:runs?|is\s+on|built\s+from)\s+(?:the\s+)?(?:newest|latest|current)\b|\b(?:files?|folders?|director(?:y|ies)|commits?|branch(?:es)?|repo(?:sitory)?)\b.*\b(?:holds?|contains?|has|have|lists?)\b|^\s*(?:also\s+)?(?:holds?|contains?|lists?)\b`,
-  'i',
-)
-// Where one claim ends and another begins: a stop, a dash, a joining word or a relative one.
-const CLAUSE_BREAK = /[;:,.!?—–]|\s-\s|\b(?:and|but|or|so|then|while|which|that|who|whose|where|when|if|because|until|unless|though|although|without|plus)\b/i
-const PLACE_ONLY = /^\s*(?:(?:in|on|to|at|into|onto|under|from|inside|within|for|of|via|through)\b(?:\s+\S+){0,5}|nothing\s+(?:else|more)|no\s+more)\s*$/i
+// What a fact is, by closed slots (fourth live test of 18 Nov 2026): a condition is a fact only
+// when every word of it is a name or a word from FACT_WORDS, and it says one of the fact verbs.
+// No other word may stand anywhere, so no clause can say what the work does in any verb, in
+// brackets, after a slash or before a noun ("the converter transforms saved text", "saved
+// converter transforms text", "the file is saved (it converts text)" are works), and the third
+// live test's "saved; it converts the file to uppercase" and "exists and does not crash" stay
+// works. A fact verb is saved, committed, pushed, merged, installed, deployed, tagged,
+// published, created, written, copied, renamed, changed, deleted or removed, exists or does not,
+// holds, contains, has, lists or includes, or runs (is on, is built from) the newest code. A
+// name is a file's name or a path ("sample.txt", "~/x/y"), quoted text in double, curly or
+// single quotes, anything with a digit ("v2", "a1b2c3d", "13"), a word in capitals ("README") or
+// with a capital inside it ("GitHub"), or a capitalised word after a word that leads a noun
+// ("the Mac", "to Main"). One other word may stand between a word that leads a noun and a noun
+// of the work ("the scratch folder", "a sample text file"), or after a count, as its unit ("the
+// three commands"), since neither place can hold a verb. Anything else is works, which a look by
+// someone who did not build it can show, so a fact misread costs a look and a behaviour misread
+// never closes. BEHAVES stays a second veto.
+const FACT_VERB = String.raw`saved|committed|pushed|merged|installed|deployed|tagged|published|created|written|copied|renamed|changed|deleted|removed|exists?|holds?|contains?|has|have|lists?|includes?|runsnewest`
+const FACT_VERB_RE = new RegExp(String.raw`^(?:${FACT_VERB})$`)
+// Words that lead a noun: a determiner, a count, or a word of possession.
+const LEADS = /^(?:the|a|an|this|that|these|those|its|their|our|your|my|each|every|any|some|no|all|both|other|another|one|two|three|four|five|six|seven|eight|nine|ten|twelve|NUM)$/
+const COUNT = /^(?:one|two|three|four|five|six|seven|eight|nine|ten|twelve|NUM)$/
+// Nouns of the work: what is saved, holds something, or does the saving.
+const WORK_NOUN = /^(?:files?|folders?|director(?:y|ies)|scripts?|programs?|tools?|apps?|pages?|sites?|services?|servers?|endpoints?|builds?|versions?|releases?|code|changes?|fix(?:es)?|work|commits?|branch(?:es)?|repos?|repositor(?:y|ies)|tags?|packages?|plugins?|modules?|tests?|docs|documents?|config|configuration|settings|projects?|sessions?|agents?|machine|main|master|origin|remote|text|contents?|words?|bytes?|lines?|characters?|newlines?|entries|entry|items?|things?|end|names?)$/
+const FACT_WORDS = new RegExp(String.raw`^(?:${FACT_VERB}|it|they|them|is|are|was|were|be|been|being|had|do|does|did|not|doesn't|don't|didn't|isn't|aren't|wasn't|weren't|hasn't|haven't|nothing|none|else|more|also|already|still|now|only|exactly|just|yet|there|here|in|on|at|to|into|onto|under|from|inside|within|outside|beyond|for|of|via|through|with|by|as|newest|latest|current|new|old|previous|final|same|whole)$`)
+// Where one claim ends and another begins: a stop, a dash, a bracket, a slash, an ampersand, a
+// joining word or a relative one.
+const CLAUSE_BREAK = /[;:,.!?—–()[\]/&]|\s-\s|\b(?:and|but|or|so|then|while|which|that|who|whose|where|when|if|because|until|unless|though|although|without|plus)\b/i
+const factClause = (clause: string): { ok: boolean; verb: boolean } => {
+  const ws = clause.split(/\s+/).filter(w => w !== '')
+  const low = ws.map((w, i) => {
+    const prev = (ws[i - 1] ?? '').toLowerCase()
+    if (/^\d+$/.test(w)) return 'NUM'
+    if (w === 'NAME' || /\d/.test(w) || /^[A-Z]{2,}$/.test(w) || /^.[a-z]*[A-Z]/.test(w) || (/^[A-Z]/.test(w) && i > 0 && (LEADS.test(prev) || /^(?:to|on|in|at|from|into|via)$/.test(prev)))) return 'NAME'
+    return w.toLowerCase()
+  })
+  const ok = low.every((w, i) => w === 'NAME' || w === 'NUM' || WORK_NOUN.test(w) || LEADS.test(w) || FACT_WORDS.test(w)
+    // One word between a word that leads a noun and a noun of the work, or after a count.
+    || (LEADS.test(low[i - 1] ?? '') && WORK_NOUN.test(low[i + 1] ?? '')) || COUNT.test(low[i - 1] ?? ''))
+  return { ok, verb: low.some(w => FACT_VERB_RE.test(w)) }
+}
 export const factHolds = (text: string): boolean => {
   const t = text
     .replace(/^\s*(?:[-*]\s+)?(?:works|fact)\s*:\s*/i, '')
-    .replace(/"[^"]*"|“[^”]*”/g, ' quoted ')
-    .replace(/[^\s"'`()]+\.[A-Za-z0-9]{1,8}\b/g, ' ')
+    .replace(/\b(?:runs?|is\s+on|built\s+from)\s+(?:the\s+)?(?:newest|latest|current)\s+(?:code|build|version|commit)\b/gi, ' runsnewest ')
+    .replace(/\b(?:runs?|is\s+on|built\s+from)\s+(?:the\s+)?(?:newest|latest|current)\b/gi, ' runsnewest ')
+    .replace(/"[^"]*"|“[^”]*”|‘[^’]*’|(?<![\w'])'[^']*'(?![\w'])/g, ' NAME ')
+    .replace(/[^\s"'`()[\]]+[/~][^\s"'`()[\]]*|[/~][^\s"'`()[\]]+|[^\s"'`()[\]]+\.[A-Za-z0-9]{1,8}\b/g, ' NAME ')
   if (BEHAVES.test(t)) return false
-  const clauses = t.split(CLAUSE_BREAK).filter(c => c.trim() !== '')
-  return clauses.length > 0 && clauses.every(c => FACT_CLAUSE.test(c) || PLACE_ONLY.test(c))
+  const clauses = t.split(CLAUSE_BREAK).filter(c => c.trim() !== '').map(factClause)
+  return clauses.length > 0 && clauses.every(c => c.ok) && clauses.some(c => c.verb)
 }
 // A condition's kind as judged: "fact" only when held so and `factHolds` reads it as one,
 // since older records hold kinds written before the allow list.
@@ -4618,17 +4639,23 @@ export function resultOf(stdout: string): RunResult | null {
 // checker wrote on the way, which a later turn (a Stop hook asking for more, then an engine error
 // such as an expired login) left behind; else, when the run ended in an error, that failure in its
 // own words, never a cut; else a cut (live test of 18 Nov 2026, section 1).
-export function checkReadOf(got: Pick<RunResult, 'text' | 'error' | 'answers'>): { read: string } | { failed: string } | { cut: true } {
+export function checkReadOf(got: Pick<RunResult, 'text' | 'error' | 'answers'>): { read: string; failedAfter?: string } | { failed: string } | { cut: true } {
   if (got.error === '' && endsWhole('check', got.text)) return { read: got.text }
   const whole = [...got.answers].reverse().find(a => endsWhole('check', a))
-  if (whole !== undefined) return { read: whole }
+  if (whole !== undefined) return got.error === '' ? { read: whole } : { read: whole, failedAfter: got.error }
   if (got.error !== '') return { failed: got.error }
   return { cut: true }
 }
 
+// The engine's words for why a check failed, on one line, without a closing stop.
+const failWords = (why: string): string => fit(why.trim().replace(/\s+/g, ' ').replace(/\.$/, ''), 160)
+// The card's note for a check whose run failed after it wrote its whole answer: the answer is
+// read and shown, and the owner still learns the run did not end cleanly (fourth live test of
+// 18 Nov 2026, section 2).
+export const checkFailedAfterNote = (why: string): string => `The check's run failed after it answered: ${failWords(why)}. Its whole answer is shown.`
 // The card's note for a check that failed before it wrote a whole answer, in the engine's words.
 export const checkFailedNote = (why: string): string =>
-  `The check failed before it answered: ${fit(why.trim().replace(/\s+/g, ' ').replace(/\.$/, ''), 160)}. Nothing from it was taken.`
+  `The check failed before it answered: ${failWords(why)}. Nothing from it was taken.`
 
 export const same = (a: string, b: string): boolean =>
   a.trim().toLowerCase().replace(/\.$/, '') === b.trim().toLowerCase().replace(/\.$/, '')

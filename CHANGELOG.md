@@ -48,7 +48,10 @@ What changed in each release of Owner Rep, newest first. The full record is the
   A part you closed reads "closed on your word (#n)".
   A part is a fact only when every clause in it is one: any clause about what something does,
   in any words, or what it does not do ("does not crash"), makes the whole part "works",
-  however much of it is a fact, and the rep asks for one claim per part.
+  however much of it is a fact, and the rep asks for one claim per part. A fact may hold only
+  names (a file, a path, quoted text, a number) and a fixed list of words whose only verbs are
+  saved, committed, pushed, installed, exists, holds and the like, so no wording of what the
+  work does can close as one, and the rep tells its writer what a fact looks like.
 - **The briefing's buttons always show.** A card could be counted one row shorter than it is
   drawn (an indented line a cell or two past the edge, the size beside the buttons), and then
   scrolled with its buttons below the fold. Rows are now counted as the strip wraps them, the
@@ -60,7 +63,8 @@ What changed in each release of Owner Rep, newest first. The full record is the
 - **A check that fails says why, and a whole check is never lost.** When a check's run ends in
   an error, such as an expired login, the card now shows that error rather than calling the
   check cut and asking you to press it again. A check that finished its answer before such an
-  error, or before a last turn a hook asked for, is read from that answer.
+  error, or before a last turn a hook asked for, is read from that answer, and the card still
+  says the run then failed, and why.
 
 ## 0.7.5 (14 November 2026)
 

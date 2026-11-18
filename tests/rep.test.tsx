@@ -17,7 +17,7 @@
 import type { On, SessionMessage } from 'claude-code'
 import { describe, expect, mock, test as kitTest, type Engine, type Plugin, type TestBody, type TestOptions } from 'claude-code/testing'
 
-import { type Memory, CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkMcpConfig, checkPluginsOff, LOOK_RULE, looksOf, signsOff, keptWho, runOf, runFor, runKey, runQualifies, shellChanges, runFromResult, runEnded, RUN_SAID_MAX, factHolds, kindOf, ONE_CLAIM, type Look, type Run, checkCostText, checkPrompt, doingFor, firstSentence, fit, fillCard, countLine, LOOKS_NOTE_MAX, refusedLine, type CardText, buttonRows, cardButtons, CHECKING_LINE, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, HIS_CUT, TURN_TEXT_MAX, PENDING_MAX, TURNS_KEPT, tapStep, spentText, keepDraft, DRAFTS_MAX, parseBrief as parseBriefAsIs, parseCheck as parseCheckAsIs, parseWatch as parseWatchAsIs, programOf, resultOf, checkReadOf, checkFailedNote, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, OLD_SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective as parseObjectiveAsIs, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, sentencesOf, withoutStopSentences, toAgentVoice, sectionOf, takeOwnWords, ownMessageTaken, earlierMessage, messageUsable, type Replaced, parseOwnWords as parseOwnWordsAsIs, ownWordsPrompt, askAgain, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
+import { type Memory, CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkMcpConfig, checkPluginsOff, LOOK_RULE, looksOf, signsOff, keptWho, runOf, runFor, runKey, runQualifies, shellChanges, runFromResult, runEnded, RUN_SAID_MAX, factHolds, kindOf, ONE_CLAIM, type Look, type Run, checkCostText, checkPrompt, doingFor, firstSentence, fit, fillCard, countLine, LOOKS_NOTE_MAX, refusedLine, type CardText, buttonRows, cardButtons, CHECKING_LINE, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, HIS_CUT, TURN_TEXT_MAX, PENDING_MAX, TURNS_KEPT, tapStep, spentText, keepDraft, DRAFTS_MAX, parseBrief as parseBriefAsIs, parseCheck as parseCheckAsIs, parseWatch as parseWatchAsIs, programOf, resultOf, checkReadOf, checkFailedNote, checkFailedAfterNote, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, OLD_SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective as parseObjectiveAsIs, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, sentencesOf, withoutStopSentences, toAgentVoice, sectionOf, takeOwnWords, ownMessageTaken, earlierMessage, messageUsable, type Replaced, parseOwnWords as parseOwnWordsAsIs, ownWordsPrompt, askAgain, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
 import * as rep from '../hooks/rep'
 import { PRE_G1 } from './fixtures/pre-g1-prompts'
 import { REFUSED_ENVIRONMENT, MISSING_REMOTE, BEFORE_YOU_STOP_COLON, WAIT_BEFORE_SUBMIT, THREE_BEFORE_YOU_STOP, TWO_BEFORE_YOU_STOP, GUARD_REFUSAL, PAUSED_WORK_CAUSE, STOP_SHAPES } from './fixtures/stop-shapes'
@@ -7962,13 +7962,14 @@ describe('G16/G20: a reply that stopped before its end', () => {
     await ui.unmount()
   })
 
-  test('rule: a check whose whole answer was followed by an engine error is read; the error alone is not a cut (live test of 18 Nov 2026, section 1)', async ($, on) => {
+  test('rule: a check whose whole answer was followed by an engine error is read, the card says the run then failed and why, and the error alone is not a cut (live tests of 18 Nov 2026, section 1 and round four section 2)', async ($, on) => {
     const answer = (JSON.parse(CHECKED_SAYING('continue', 'Two things first. Run the suite and paste the counts.')) as { result: string }).result
     const { rec, ui } = await checkOver($, on, streamed([answer], { error: 'Failed to authenticate: OAuth session expired and could not be refreshed' }))
     await settle($)
     expect(rec()?.lastBrief?.message).toMatch(/paste the counts/)
     expect(await ui.find({ type: 'Text', text: /stopped before the end/ })).toBeUndefined()
-    expect(await ui.find({ type: 'Text', text: /Failed to authenticate/ })).toBeUndefined()
+    expect(await ui.find({ type: 'Text', text: /The check's run failed after it answered: Failed to authenticate: OAuth session expired and could not be refreshed\. Its whole answer is shown\./ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /Press the check again/ })).toBeUndefined()
     await ui.unmount()
   })
 
@@ -8386,7 +8387,8 @@ describe("Task 6: the writer's rule and the approved line", () => {
     // 500 more for the rule that a yes closes a condition that only waited on the plan (376 characters).
     // 100 more for writing each condition after its kind, "works:" or "fact:", and a held kind back as held (86 characters).
     // 50 more for one claim per condition (31 characters).
-    expect(OBJECTIVE_SYSTEM.length).toBeLessThanOrEqual(SYSTEM_BEFORE + 4650)
+    // 300 more for the shape of a fact, so the writer's own facts read as facts (fourth live test of 18 Nov 2026; 257 characters).
+    expect(OBJECTIVE_SYSTEM.length).toBeLessThanOrEqual(SYSTEM_BEFORE + 4950)
   })
 
   test("fails today: what the agent's turn says it did, did not do or holds back from, and any limit it sets on its own work, is its account and sets no condition or limit except as a step of a plan the owner approved; the unstated wants stay", () => {
@@ -9658,6 +9660,15 @@ test('factHolds and kindOf: a condition is a fact only when it says the work is 
     'fact: shout.py is saved; it renders the text in capitals',
     'The build installed never crashes on empty input',
     "The service deployed doesn't crash on an empty request",
+    // The fourth live test (18 Nov 2026): a clause in brackets, a fact word that opens the
+    // clause before its noun, and an aim after "to". A fact word is a fact only when it is
+    // what the clause says, with at most a word and a place after it.
+    'The file is saved (it converts text to uppercase)',
+    'The converter is saved [it transforms text into capitals]',
+    'Saved converter transforms text to uppercase',
+    'Committed code converts text to uppercase',
+    'Deployed site calculates the total for each order',
+    'The build is installed to convert every upload to uppercase',
   ]) {
     expect([text, factHolds(text)]).toEqual([text, false])
     expect([text, kindOf({ text, kind: 'fact' })]).toEqual([text, 'works'])
@@ -9665,9 +9676,76 @@ test('factHolds and kindOf: a condition is a fact only when it says the work is 
   // Each clause a fact, with its kind written before it or a place after it, is still a fact.
   for (const text of ['fact: The work is saved, committed and pushed to main', 'The old config file does not exist', 'The change is merged, in the main branch', 'The new build is installed and runs the newest code', 'fact: shout.py is saved in this scratch folder',
     // The writer's own facts from the live tests: a named file's contents, quoted, and changes that did not happen.
-    'sample.txt exists in the scratch folder and contains exactly "one two three"', 'A status file in the scratch folder contains only the words "fixture-read" and nothing else', 'Nothing was committed, pushed, deleted or published']) {
+    'sample.txt exists in the scratch folder and contains exactly "one two three"', 'A status file in the scratch folder contains only the words "fixture-read" and nothing else', 'Nothing was committed, pushed, deleted or published',
+    // A word, a place, or a commit named in brackets after the fact word keeps it a fact.
+    'The fix is committed (a1b2c3d)', 'The change is pushed to GitHub', 'The release is tagged v2 on main', 'The work is pushed to the main branch on GitHub',
+    'Two sessions pushed their work', 'The agent installed the newest build on the Mac']) {
     expect([text, factHolds(text)]).toEqual([text, true])
   }
+  // The fourth live test's 36 wordings (18 Nov 2026, section 3), each with the kind it must
+  // read as, then the conditions its three writers wrote unprompted. A behaviour must never
+  // read as a fact; a plain fact must.
+  const round4: Array<[string, 'works' | 'fact']> = [
+    ['shout.py is saved in this scratch folder; it converts the entire text file to uppercase', 'works'],
+    ['The deployed service exists and does not crash on an empty request', 'works'],
+    ['shout.py is saved; it takes a text-file path and prints the whole contents in capital letters', 'works'],
+    ['The file exists and calculates the correct total', 'works'],
+    ['The file exists and rejects invalid input', 'works'],
+    ['The tool is saved — it renders the greeting correctly', 'works'],
+    ['The file is saved, which converts the input to uppercase', 'works'],
+    ['The saved converter turns text into uppercase', 'works'],
+    ['A deployed endpoint rejects empty requests', 'works'],
+    ['The installed tool emits uppercase text', 'works'],
+    ['The file is committed', 'fact'],
+    ['sample.txt contains exactly "one two three"', 'fact'],
+    ['nothing was pushed', 'fact'],
+    ['sample.txt exists and contains exactly "one two three"', 'fact'],
+    ['The file is saved for converting text to uppercase', 'works'],
+    ['The file exists to convert text to uppercase', 'works'],
+    ['The converter transforms saved text to uppercase', 'works'],
+    ['The converter converts the file once saved', 'works'],
+    ['Saved converter transforms text to uppercase', 'works'],
+    ['The previously saved converter transforms text to uppercase', 'works'],
+    ['The converter converts "saved" text to uppercase', 'works'],
+    ['The file is saved / it converts text to uppercase', 'works'],
+    ['The file is saved & it converts text to uppercase', 'works'],
+    ['The file exists; in use converts text correctly', 'works'],
+    ['The service is deployed with correct error handling', 'works'],
+    ['The file is saved (it converts text to uppercase)', 'works'],
+    ['The file contains a converter producing uppercase text', 'works'],
+    ['The file contains exactly "one two three; does not crash"', 'fact'],
+    ['The saved tool never crashes', 'works'],
+    ['The deployed service doesn’t crash', 'works'],
+    ['sample.txt holds exactly the text "one two three", with no newline or any other byte at the end', 'fact'],
+    ['The scratch folder holds a sample text file whose contents are exactly "one two three"', 'fact'],
+    ['sample.txt has 13 bytes', 'fact'],
+    ["sample.txt contains exactly 'prints'", 'fact'],
+    ['sample.txt contains exactly "prints"', 'fact'],
+    ['The current build runs the newest code', 'fact'],
+    // Written unprompted by the writers of sessions A, B and C.
+    ['The scratch folder holds a word-count script that takes the path of a text file', 'works'],
+    ['Nothing has been committed, pushed or published', 'fact'],
+    ['No file outside the scratch folder has been created, changed or deleted', 'fact'],
+    ['If any guard refused an action, the work stopped there and the refusal was reported to the owner', 'works'],
+    ['The work is kept minimal, with nothing beyond the sample file, the script and the one run', 'works'],
+    ['greet.py exists in the scratch folder', 'fact'],
+    ['sample.txt exists in the scratch folder', 'fact'],
+    ["a command's output shows the exact bytes of sample.txt", 'works'],
+    ['the test stayed small, with no extra files, tools or changes beyond the one file and the byte check', 'works'],
+    // Paths, a title-cased behaviour, and a verb sandwiched before a noun of the work.
+    ['The work is saved to ~/Developer/shout', 'fact'],
+    ['The Converter Transforms Saved Text', 'works'],
+    ['The script is saved and the converter rewrites files', 'works'],
+    ['The file is saved and contains a converter producing text', 'works'],
+    // A thing held that is not a noun of the work, a judgement with no fact verb, a behaviour
+    // word in the one free place before a noun, and facts joined by "&" or a slash.
+    ['The site has a checkout', 'works'],
+    ['The page is new', 'works'],
+    ['The working build is installed on the Mac', 'works'],
+    ['The work is committed & pushed', 'fact'],
+    ['The work is committed / pushed to main', 'fact'],
+  ]
+  for (const [text, kind] of round4) expect([text, kindOf({ text, kind: 'fact' })]).toEqual([text, kind])
   expect(kindOf({ text: 'Customers can complete checkout', kind: 'fact' })).toBe('works')
   expect(kindOf({ text: 'The work is committed', kind: 'fact' })).toBe('fact')
   expect(kindOf({ text: 'The work is committed', kind: 'works' })).toBe('works')
@@ -9703,6 +9781,9 @@ test('a condition\'s kind: written by the writer before it, kept through a held 
   expect(f?.kind === 'moved' && f.parts.done.map(x => x.kind)).toEqual(['works', 'works', 'works', 'fact', 'fact', 'works'])
   expect(OBJECTIVE_SYSTEM).not.toContain('that a run passes)')
   expect(OBJECTIVE_SYSTEM).toContain('(saved, committed, pushed or installed); a passing run is works.')
+  // The shape of a fact, so the writer's own facts read as facts (fourth live test of 18 Nov 2026).
+  expect(OBJECTIVE_SYSTEM).toContain('A fact names the thing, says only that it is saved, committed, pushed or installed, exists, or holds text quoted exactly or a count with its unit, and where: "fact: sample.txt in the scratch folder holds exactly \'one two three\'". Anything it does is works.')
+  for (const ex of ["sample.txt in the scratch folder holds exactly 'one two three'", 'the fix is committed and pushed to main']) expect(kindOf({ text: ex, kind: 'fact' })).toBe('fact')
 })
 
 test('the count line names whose looks are in and do not sign off, so a card of 13 rows or 80 shows it', () => {
@@ -10204,9 +10285,10 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   expect(resultOf(JSON.stringify({ type: 'result', subtype: 'error_max_turns', is_error: true }))?.error).toBe('error_max_turns')
   expect(checkReadOf({ text: whole, error: '', answers: [whole] })).toEqual({ read: whole })
   expect(checkReadOf({ text: 'Noted.', error: '', answers: [whole, 'Noted.'] })).toEqual({ read: whole })
-  expect(checkReadOf({ text: 'Failed to authenticate', error: 'Failed to authenticate', answers: [whole] })).toEqual({ read: whole })
+  expect(checkReadOf({ text: 'Failed to authenticate', error: 'Failed to authenticate', answers: [whole] })).toEqual({ read: whole, failedAfter: 'Failed to authenticate' })
   expect(checkReadOf({ text: 'Failed to authenticate', error: 'Failed to authenticate', answers: ['Still checking.'] })).toEqual({ failed: 'Failed to authenticate' })
   expect(checkReadOf({ text: 'holds:\n- x', error: '', answers: ['holds:\n- x'] })).toEqual({ cut: true })
+  expect(checkFailedAfterNote('Failed to authenticate: OAuth\n session expired.')).toBe("The check's run failed after it answered: Failed to authenticate: OAuth session expired. Its whole answer is shown.")
   expect(checkFailedNote('Failed to authenticate: OAuth token revoked.')).toBe('The check failed before it answered: Failed to authenticate: OAuth token revoked. Nothing from it was taken.')
   expect(argv[argv.indexOf('--output-format') + 1]).toBe('stream-json')
   expect(argv).toContain('--verbose')
