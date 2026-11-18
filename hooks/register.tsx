@@ -219,6 +219,7 @@ import {
   cutShort,
   readAgain,
   endsWhole,
+  endAsked,
   type WriteResult,
   type WatchAnswer,
   CHECK_CUT_NOTE,
@@ -1739,7 +1740,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       const kind: CallKind = extra === '' ? 'brief' : 'ask-again'
       const got = await readSession($, sid, rec, kind, cover => {
         const prompt = briefPrompt({ ...memory, cover })
-        return extra === '' ? prompt : `${prompt}\n\n${extra}`
+        return extra === '' ? prompt : endAsked(`${prompt}\n\n${extra}`)
       })
       const result = got.result
       const usage = 'usage' in result ? result.usage : null

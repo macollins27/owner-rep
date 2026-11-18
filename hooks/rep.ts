@@ -1819,7 +1819,7 @@ export function watchPrompt(m: Memory, reason: 'step' | 'stop' | 'note'): string
       : reason === 'note'
         ? 'The owner has just told you something directly: the last line marked "(to the rep)" above. The agent did not see it. Re-read everything the owner has said on this job with that on top.'
         : 'The agent is in the middle of working. The owner is busy and may not be reading.'
-  return `${FRAME}
+  return endAsked(`${FRAME}
 
 Answer straight away: do not think it over at length, and do not call any tool.
 
@@ -1897,11 +1897,11 @@ flag: You may want to review the design decisions made so far.
 (Vague, nothing to act on.)
 
 flag: Your rule says every problem must be fixed before calling it done.
-(Reciting the owner's rules back to the owner.)`
+(Reciting the owner's rules back to the owner.)`)
 }
 
 export function briefPrompt(m: Memory): string {
-  return `${FRAME}
+  return endAsked(`${FRAME}
 
 ${ROLE}
 
@@ -1938,7 +1938,7 @@ next: <one or two sentences: what the agent does next; never a step for the owne
 message:
 <the message for the owner to send to the agent, written to the agent, specific and professional, several lines if needed. It asks for the work that is missing, says what the best version looks like where the work falls short, asks for a hands-on look at the real thing where proof is missing (never a self-proving piece; a test or a review never stands in for it), and pushes the agent off the easy option onto the right one. Leave empty only when every condition is shown or closed.>
 end
-does: <one line: what this message will make the agent do>`
+does: <one line: what this message will make the agent do>`)
 }
 
 // A held condition as the writer is shown it and writes it back: its text and
@@ -2384,7 +2384,7 @@ export function objectivePrompt(m: ObjectiveMemory & { whole?: number }): string
     m.whole === undefined
       ? ''
       : `This write reads one owner message whole: #${m.whole}. An earlier write saw only part of what it answered or of its words, and nothing of it was applied; all of it is printed below.\n\n`
-  return `${whole}## What you hold now
+  return endAsked(`${whole}## What you hold now
 
 The objective as you hold it:
 ${held}
@@ -2415,7 +2415,7 @@ done:
 - works | fact: <condition> | open | not shown | closed: #n | shown: <where, copied as held>
 step: <one sentence>
 dropped:
-- <condition text as held> | #n`
+- <condition text as held> | #n`)
 }
 
 // The read of a reopened session. `$.model.fork` has nothing to fork before the first
@@ -3251,6 +3251,21 @@ export function boundaryCover(b: Boundary, opensAfter: boolean, approval?: Owner
   }
 }
 
+// The line every reply the rep reads ends with, which its prompt asks for (`endAsked`). A reply
+// cut inside its last value still has its last label, so only a line after everything else shows
+// it came back whole (live test of 18 Nov 2026, section 14: a briefing's "does:" read as
+// "Requests an indep" at 100 output tokens, far from its cap, and drawn).
+export const END_LINE = 'end of reply'
+// The one line each prompt is given last, asking for `END_LINE`.
+export const END_ASK = `After everything above, end your reply with one more line that says only: ${END_LINE}`
+// A prompt with `END_ASK` as its last line, once: a prompt built on one that already asks for it
+// (the briefing asked once more) has the earlier copy taken out.
+export const endAsked = (prompt: string): string => `${prompt.split(`\n\n${END_ASK}`).join('').trimEnd()}\n\n${END_ASK}`
+// Whether a line is the end line, without case, a closing full stop or bold or code marks.
+const isEndLine = (line: string): boolean => line.trim().replace(/^[*_`]+|[*_`]+$/g, '').replace(/\.$/, '').toLowerCase() === END_LINE
+// Whether a reply's last line with anything on it is the end line.
+export const endsWithEndLine = (text: string): boolean => isEndLine(text.replace(/\r/g, '').trimEnd().split('\n').pop() ?? '')
+
 const LABELS = ['moved', 'state', 'flag', 'why', 'well', 'stands', 'means', 'left', 'next', 'message', 'does', 'holds', 'false', 'notshown', 'changed', 'looked', 'objective', 'result', 'for', 'done', 'step', 'dropped', 'verdict', 'shown', 'closed', 'reopen', 'approved', 'steps', 'unassessed'] as const
 type Label = (typeof LABELS)[number]
 
@@ -3268,6 +3283,11 @@ function parts(text: string): Partial<Record<Label, string>> {
         continue
       }
       out.message = out.message === undefined ? line : `${out.message}\n${line}`
+      continue
+    }
+    // The end line is no part's text: it never joins the last value.
+    if (isEndLine(line)) {
+      current = null
       continue
     }
     const m = /^\s*([a-z]+):\s?(.*)$/i.exec(line)
@@ -3302,16 +3322,19 @@ export type ReplyKind = CallKind | 'check'
 // "- nothing"). A reply without it stopped before its end, and what it gave before the cut can
 // itself be cut mid-line: a condition marked shown from half a line, a flag with no reason, a
 // card with no message (G16 in the audit of 14 Nov 2026). Its presence is what counts, not what
-// it holds. An objective answer naming neither holds nor moved is not cut but unreadable.
+// it holds. An objective answer naming neither holds nor moved is not cut but unreadable. And
+// every other reply ends with `END_LINE` after its last label: one without it was cut, whatever
+// its length, even inside its last value (live test of 18 Nov 2026, section 14).
 export function endsWhole(kind: ReplyKind, text: string): boolean {
   const p = parts(text)
-  if (kind === 'watch') return p.closed !== undefined
-  if (kind === 'check') return p.looked !== undefined
+  const ended = endsWithEndLine(text)
+  if (kind === 'watch') return ended && p.closed !== undefined
+  if (kind === 'check') return ended && p.looked !== undefined
   if (kind === 'objective') {
     const head = clean(p.objective).toLowerCase()
-    return /^holds\b/.test(head) ? p.approved !== undefined : /^moved\b/.test(head) ? p.dropped !== undefined : true
+    return /^holds\b/.test(head) ? ended && p.approved !== undefined : /^moved\b/.test(head) ? ended && p.dropped !== undefined : true
   }
-  return p.does !== undefined
+  return ended && p.does !== undefined
 }
 
 // A reply with none of the labels any reader takes: a refusal or a note in prose, told apart in
@@ -4433,7 +4456,7 @@ const briefText = (b: BriefAnswer): string =>
   ].join('\n')
 
 export function checkPrompt(a: CheckArgs): string {
-  return `You are the checker for the "Owner rep" plugin in Claude Code. You work only for the owner, who directs agents and does not read code. Another instance of the rep has just read the agent's conversation and written the owner the briefing below from the conversation alone, taking nothing on the agent's word but unable to look outside the conversation. Your job is to look outside it: at the session's full record and at the real files, and to tell the owner which claims hold, which are false, and which are not shown anywhere.
+  return endAsked(`You are the checker for the "Owner rep" plugin in Claude Code. You work only for the owner, who directs agents and does not read code. Another instance of the rep has just read the agent's conversation and written the owner the briefing below from the conversation alone, taking nothing on the agent's word but unable to look outside the conversation. Your job is to look outside it: at the session's full record and at the real files, and to tell the owner which claims hold, which are false, and which are not shown anywhere.
 
 ## The session
 
@@ -4512,7 +4535,7 @@ message:
 <the message for the owner to send to the agent, rewritten where your checking changed it: it names what is false, asks for the work that is missing and says what the best version looks like where the work falls short; where proof is missing it asks for a hands-on look at the real thing (open it, use it as a customer or the owner would, try to break it), never a self-proving piece, and a test or a review never stands in for it; and where effort is going into such pieces, it tells the agent to put that effort into the product. While any condition is open or not shown after your checking, or the work falls short of the best it could be, write it. Leave empty only when every condition is shown or closed. ${HELD_STEP_RULE}>
 end
 does: <one line: what this message will make the agent do>
-looked: <one line: what you checked yourself and what you could not look at>`
+looked: <one line: what you checked yourself and what you could not look at>`)
 }
 
 const items = (s: string | undefined): string[] =>
@@ -5888,7 +5911,7 @@ export const OWN_WORDS_TIMEOUT_MS = 120000
 // under the labels parseBrief reads, in the order parseOwnWords holds them
 // to.
 export function ownWordsPrompt(m: Memory, open: Condition[], a: BriefAnswer): string {
-  return `${memoryText(m)}
+  return endAsked(`${memoryText(m)}
 
 ## This request
 
@@ -5911,7 +5934,7 @@ next: <one or two sentences: what the agent does now to show the first of the op
 message:
 <the message for the owner to send to the agent, written to the agent, specific and professional, several lines if needed: it asks for the work that is missing on each open condition, and where proof is missing, a hands-on look at the real thing (open it, use it, try to break it); never a piece whose job is to prove the agent's own work, and a test or a review never stands in for it>
 end
-does: <one line: what this message will make the agent do>`
+does: <one line: what this message will make the agent do>`)
 }
 
 // The own-words answer taken into a card the gate refused: each part the gate
@@ -6010,7 +6033,7 @@ export function parseOwnWords(text: string): BriefAnswer | null {
     if (label === 'message') inMessage = true
     if (label === 'means' || label === 'next' || label === 'message' || label === 'does') seen.push(label)
   }
-  if (seen.join(' ') !== 'means next message end does') return null
+  if (seen.join(' ') !== 'means next message end does' || !endsWithEndLine(text)) return null
   const a = parseBrief(text)
   return a.message !== '' && [a.means, a.next, a.does].every(endsSentence) ? a : null
 }
