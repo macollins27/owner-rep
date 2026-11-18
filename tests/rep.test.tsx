@@ -9136,6 +9136,10 @@ test('looksOf: every look in a where is read; one signs by its words when it nam
   for (const where of ['look by the second helper (not the writer): ran it', 'look by the real Codex: it ran the tool', 'look by checker-agent: ran it', "look by the agent's check script: it passed", 'a hands-on look by the agent: it loaded']) {
     expect(looksOf(where).map(l => l.as)).toEqual([null])
   }
+  // A who that only starts like a run names no run: the whole who must be the run.
+  for (const where of ['look by helper 01ab2345, which also built it: paid', 'look by Codex 9f8e7d6c and the agent: paid', 'look by helper 01ab2345 the builder: paid']) {
+    expect(looksOf(where).map(l => [l.as, l.ref, l.signs])).toEqual([[null, null, false]])
+  }
   const two = looksOf('look by the fresh helper (a11699fb9d8861abd): 525-byte test file in, 525 bytes out. Look by the check: a file with café printed CAFÉ')
   expect(two).toEqual([
     { signs: false, as: null, ref: null, who: 'the fresh helper (a11699fb9d8861abd)', what: '525-byte test file in, 525 bytes out' },
@@ -9260,6 +9264,8 @@ test('runFromResult and runEnded: how a run ended, whether it changed the work, 
   const done = (more: Record<string, unknown>) => ({ result: { status: 'completed', agentId: 'h1', content: [{ type: 'text', text: 'Paid as a customer;' }, { type: 'text', text: 'order 1042.' }], toolStats: { editFileCount: 0 }, toolsUsed: ['Bash', 'Read'], ...more } })
   expect(runFromResult(false, done({}))).toEqual({ state: 'done', changed: false, said: 'Paid as a customer; order 1042.', agentId: 'h1' })
   expect(runFromResult(false, done({ toolStats: { editFileCount: 2 } })).changed).toBe(true)
+  // A helper's long answer is capped like a shell call's output, its end kept.
+  expect(runFromResult(false, done({ content: [{ type: 'text', text: long }] })).said).toBe(`…${long.slice(long.length - RUN_SAID_MAX + 1)}`)
   expect(runFromResult(false, done({ toolsUsed: ['Read', 'Edit'] })).changed).toBe(true)
   expect(runFromResult(false, { result: { status: 'async_launched', agentId: 'h2' } })).toEqual({ state: 'running', changed: false, said: '', agentId: 'h2' })
   expect(runFromResult(false, { result: { status: 'completed', content: [] }, isError: true }).state).toBe('failed')
@@ -9353,6 +9359,11 @@ test('the card says the agent looked at a condition itself and that it still nee
   for (const p of [watchPrompt(m, 'stop'), briefPrompt(m)]) {
     expect(p).toContain("the checkout works for a customer (the agent's own look saw: opened the checkout and paid with a test card; only a look by someone who did not build it shows it)")
   }
+  // Beside a look that named a run, the run's own last words from the record; none on a closed one.
+  const said = { text: 'the checkout works for a customer', state: 'shown', by: 'look by helper 0001a1b2: paid', said: 'Paid; order 1042.' } as Condition
+  expect(objectiveText({ ...o, done: [said] })).toContain('Done when: the checkout works for a customer (shown) (the run\'s own last words: "Paid; order 1042.").')
+  expect(objectiveText({ ...o, done: [{ ...said, said: '  ' }] })).toContain('Done when: the checkout works for a customer (shown).')
+  expect(objectiveText({ ...o, done: [{ ...said, state: 'closed', by: '#2' }] })).not.toContain('last words')
   // A shown or closed condition carries no such mark, whatever an older write left on it.
   expect(objectiveText({ ...o, done: [{ text: 'x', state: 'shown', by: 'look by a helper: fine', seen: 'old' }] })).toContain('Done when: x (shown).')
 })
