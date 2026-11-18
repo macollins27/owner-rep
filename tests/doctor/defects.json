@@ -4006,5 +4006,53 @@
     "breaks": "The briefing asked once more puts the open conditions after the ask for the end line, so the ask is no longer the prompt's last line and the model can end its reply without it.",
     "patch": "ask-again-end-ask-not-last.patch",
     "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "check-error-read-as-cut",
+    "breaks": "A check whose run ended in an engine error (an expired login) before any whole answer is shown as cut, and the owner is told to press it again, when pressing again cannot help.",
+    "patch": "check-error-read-as-cut.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "check-earlier-answer-dropped",
+    "breaks": "A check that wrote its whole answer before a later turn (a Stop hook, then an engine error) is read only from its last result, so the whole answer is lost and the card says the check was cut.",
+    "patch": "check-earlier-answer-dropped.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "check-synthetic-answer-kept",
+    "breaks": "The engine's own answer to an error is kept as one of the checker's answers.",
+    "patch": "check-synthetic-answer-kept.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "check-output-last-result-only",
+    "breaks": "The check runs with JSON output, which keeps only the last result, so a whole answer an engine error replaced is not in the output to read.",
+    "patch": "check-output-last-result-only.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-clauses-not-split",
+    "breaks": "A condition is read as a fact when any of it is one, so a clause beside the fact saying what the work does in a verb the behaviour list lacks (\"saved; it converts the file to uppercase\") closes on the builder's own run.",
+    "patch": "fact-clauses-not-split.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-negative-behaviour-exempt",
+    "breaks": "A clause saying what the work does not do (\"never crashes on empty input\") is exempt from the behaviour words, so a condition naming it beside a fact is read as a fact and closes on the builder's own run.",
+    "patch": "fact-negative-behaviour-exempt.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-word-before-noun-read",
+    "breaks": "A fact word before its noun (\"the saved converter turns text into capitals\") is read as the work said to be saved, so a condition about what it does is read as a fact.",
+    "patch": "fact-word-before-noun-read.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-quoted-text-read",
+    "breaks": "Quoted text in a condition is read for behaviour words, so a file said to contain \"fixture-read\" is read as works and needs a look no command could need.",
+    "patch": "fact-quoted-text-read.patch",
+    "fixed": "2026-11-18"
   }
 ]

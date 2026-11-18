@@ -404,9 +404,14 @@ call writes (below):
    times puts up no card and toasts that the briefing stopped before its end twice. An objective
    write that is cut short fails that attempt and uses the write's own retries
    (`OBJECTIVE_RETRIES`), its cause recorded by `writeFailure` as `cut-short (N output tokens): …`
-   or `no-labels: …`, which `failureWords` puts in plain words. A check that is cut short takes
-   nothing (no marks, no verdict, no draft) and the card shows `CHECK_CUT_NOTE`, asking the owner
-   to press it again, since a check costs real money and is never re-run on its own. Every reply
+   or `no-labels: …`, which `failureWords` puts in plain words. A check is read by `checkReadOf`:
+   its result when whole, else the last whole answer the checker wrote on the way (a Stop hook
+   can ask for one more turn after it, and an engine error, such as an expired login, can end
+   that turn, replacing the result); with none, a run that ended in an engine error takes
+   nothing and the card shows `checkFailedNote`, the engine's own words and no ask to press
+   again, and any other run takes nothing (no marks, no verdict, no draft) and the card shows
+   `CHECK_CUT_NOTE`, asking the owner to press it again, since a check costs real money and is
+   never re-run on its own (live test of 18 Nov 2026, section 1). Every reply
    cap is `MAX_REPLY_TOKENS`, 64,000, the engine's ceiling, so the time limit, not the cap, ends a
    long answer.
 
@@ -615,7 +620,9 @@ call writes (below):
    pnpm finds its store unwritable, moves it into a scratch folder, and an offline install
    there fails (measured 17 Oct 2026, pnpm 10). The three questions come before the run's clock
    starts, so the check's measured time is the run's own. Fifteen-minute timeout
-   (`CHECK_TIMEOUT_MS`), 120 turns, JSON output; `permission_denials` in the output is the
+   (`CHECK_TIMEOUT_MS`), 120 turns, stream-json output with `--verbose`, so `resultOf` has each
+   text the model wrote besides the result line, with the result's `is_error` kept as `error`
+   and the engine's own "<synthetic>" answers left out; `permission_denials` in the result is the
    count of commands refused approval, shown on the checked card (`refusedLine`, which says
    commands the fence stopped are not counted) and on the next card's price line
    (`checkCostText`); the right number is zero. Its answer rewrites the card, with each claim
@@ -706,12 +713,19 @@ before it (`conditionOf` reads it, `heldLine` writes it back, `bare` strips it w
 copies it, and `mergeConditions` keeps a held `works`, or one with no kind, as `works` whatever
 kind a rewrite gives, and opens a shown `fact` rewritten as `works` with its where kept as
 `seen`). `conditionOf`, and everything after it through `kindOf`, reads a `fact:` as `fact` only when
-`factHolds`: its text, with file-like words taken out, matches the allow list `FACT_SAYS`
-(saved, committed, pushed, merged, installed, deployed, tagged, exists, runs or is on the
-newest, or a file or folder that holds, contains, has or lists something) and not `BEHAVES`
-(works, runs, passes, does, prints, takes, returns, shows, displays, gives, accepts, responds,
-reads, produces and the like, in any tense), so a condition with any clause about what something
-does is `works` whole, however much of it is a fact (live test of 18 Nov 2026, section 11). The
+`factHolds`: its text, with its kind, quoted text and file-like words taken out, matches no
+`BEHAVES` (works, runs, passes, does, prints, takes, returns, shows, displays, gives, accepts,
+responds, reads, produces and the like, in any tense, and does not, never, cannot and the like
+unless before "exist"), and every clause of it (split at stops, dashes and joining or relative
+words, `CLAUSE_BREAK`) matches the allow list `FACT_CLAUSE` (saved, committed, pushed, merged,
+installed, deployed, tagged, published, created, written, copied, renamed, changed, deleted or
+removed, never just after "the", "a" or another such word, so never before its noun; exists;
+runs or is on the newest; a file, folder, commit, branch or repository that holds, contains, has
+or lists something; or a clause starting with holds, contains or lists) or is only a short place
+("in the main branch") or "nothing else" (`PLACE_ONLY`). So a condition with any clause about
+what something does, in any verb, is `works` whole, however much of it is a fact (live tests of
+18 Nov 2026: section 11, then the third's section 3, "saved; it converts the file to uppercase"
+and "exists and does not crash on an empty request"). The
 writer's prompt asks for one claim per condition (`ONE_CLAIM`) beside its kinds.
 A `fact` moves shown on any where. A `works` condition, or one with no kind, moves shown only when
 `looksOf` finds, among every `look by <who>: <what>` in the where, one whose `who` (compared by

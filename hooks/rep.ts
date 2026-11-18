@@ -3513,14 +3513,36 @@ function conditionOf(line: string): Condition {
 
 // A condition's kind written before it: "works:" or "fact:".
 const KIND_AT = /^\s*(works|fact)\s*:\s*/i
-// What a fact is about, by an allow list (third Codex review of #53): the work saved,
-// committed, pushed, merged, installed or deployed, a thing that exists, a file or folder
-// that holds something, or a build that runs the newest code. A condition is a fact only when
-// it says one of these and nothing in BEHAVES; a file's name ("good.json") is not read.
-const FACT_SAYS = /\b(?:saved|committed|pushed|merged|installed|deployed|tagged|exists?|(?:runs?|is\s+on|built\s+from)\s+(?:the\s+)?(?:newest|latest|current)\b)|\b(?:files?|folders?)\b.*\b(?:holds?|contains?|has|have|lists?)\b/i
+// What a fact is about, by an allow list (third Codex review of #53), clause by clause: a
+// condition is a fact only when every clause in it says one of these, so no clause beside the
+// fact can say what the work does, in any verb, or what it does not do (third live test of
+// 18 Nov 2026, section 3: "saved; it converts the file to uppercase" and "exists and does not
+// crash on an empty request" read as facts and closed on the builder's own run). A fact is the
+// work said to be saved, committed, pushed, merged, installed, deployed, tagged, published,
+// created, written, copied, renamed, changed, deleted or removed (never the
+// word before a noun: "the saved converter turns text" says nothing saved), a thing that exists
+// or does not, a file, folder, commit, branch or
+// repository that holds something (or "contains" after a named file: "sample.txt exists and
+// contains exactly ..."), or a build that runs the newest code. A clause of a few words that
+// only says where ("in the main branch"), or "nothing else", goes with the clause before it. A file's
+// name ("good.json") and quoted text ("fixture-read") are not read. Anything else is works, which a look by someone who did not
+// build it can show, so a fact misread costs a look and a behaviour misread never closes.
+const FACT_DONE = '(?:saved|committed|pushed|merged|installed|deployed|tagged|published|created|written|copied|renamed|changed|deleted|removed)'
+const FACT_CLAUSE = new RegExp(
+  String.raw`(?<!\b(?:the|a|an|this|these|those|its|their|our|my|your|his|her|every|each|any|some)\s+(?:\w+ly\s+)?)\b${FACT_DONE}\b|\bexists?\b|\b(?:runs?|is\s+on|built\s+from)\s+(?:the\s+)?(?:newest|latest|current)\b|\b(?:files?|folders?|director(?:y|ies)|commits?|branch(?:es)?|repo(?:sitory)?)\b.*\b(?:holds?|contains?|has|have|lists?)\b|^\s*(?:also\s+)?(?:holds?|contains?|lists?)\b`,
+  'i',
+)
+// Where one claim ends and another begins: a stop, a dash, a joining word or a relative one.
+const CLAUSE_BREAK = /[;:,.!?—–]|\s-\s|\b(?:and|but|or|so|then|while|which|that|who|whose|where|when|if|because|until|unless|though|although|without|plus)\b/i
+const PLACE_ONLY = /^\s*(?:(?:in|on|to|at|into|onto|under|from|inside|within|for|of|via|through)\b(?:\s+\S+){0,5}|nothing\s+(?:else|more)|no\s+more)\s*$/i
 export const factHolds = (text: string): boolean => {
-  const t = text.replace(/[^\s"'`()]+\.[A-Za-z0-9]{1,8}\b/g, ' ')
-  return FACT_SAYS.test(t) && !BEHAVES.test(t)
+  const t = text
+    .replace(/^\s*(?:[-*]\s+)?(?:works|fact)\s*:\s*/i, '')
+    .replace(/"[^"]*"|“[^”]*”/g, ' quoted ')
+    .replace(/[^\s"'`()]+\.[A-Za-z0-9]{1,8}\b/g, ' ')
+  if (BEHAVES.test(t)) return false
+  const clauses = t.split(CLAUSE_BREAK).filter(c => c.trim() !== '')
+  return clauses.length > 0 && clauses.every(c => FACT_CLAUSE.test(c) || PLACE_ONLY.test(c))
 }
 // A condition's kind as judged: "fact" only when held so and `factHolds` reads it as one,
 // since older records hold kinds written before the allow list.
@@ -3529,9 +3551,10 @@ export const kindOf = (c: Pick<Condition, 'text' | 'kind'>): ConditionKind => (c
 // code" is the writer's own example of a fact, so it is not one. A clause saying what the work
 // does, prints, takes, returns or shows is one too, whatever fact stands beside it: "shout.py is
 // saved; it takes a path and prints the file in capitals" is works, not a fact for being saved
-// (live test of 18 Nov 2026, section 11). "Does not exist" stays a fact.
+// (live test of 18 Nov 2026, section 11). So is one saying what it does not do ("does not crash",
+// third live test, section 3); "does not exist" stays a fact.
 export const BEHAVES =
-  /\b(?:works|working|worked|(?:runs?|running|ran)(?!\s+(?:the\s+)?(?:newest|latest|current)\b)|loads?|loading|loaded|pass(?:es|ed|ing)?|good|behaves?|behaving|usable|can|(?:do|does|did)(?!\s+not\b)|doing|prints?|printed|printing|outputs?|outputting|takes?|took|taking|returns?|returned|returning|shows?|showed|showing|displays?|displayed|displaying|gives?|gave|giving|accepts?|accepted|accepting|responds?|responded|responding|reads?|reading|produces?|produced|producing)\b/i
+  /\b(?:works|working|worked|(?:runs?|running|ran)(?!\s+(?:the\s+)?(?:newest|latest|current)\b)|loads?|loading|loaded|pass(?:es|ed|ing)?|good|behaves?|behaving|usable|can|(?:do|does|did|doesn'?t|don'?t|didn'?t|never|cannot|can'?t|won'?t)(?!\s+(?:not\s+)?exist)|doing|prints?|printed|printing|outputs?|outputting|takes?|took|taking|returns?|returned|returning|shows?|showed|showing|displays?|displayed|displaying|gives?|gave|giving|accepts?|accepted|accepting|responds?|responded|responding|reads?|reading|produces?|produced|producing)\b/i
 
 // A condition's text without a state mark the model copied with it, such as
 // "(not shown)" or "(not shown: the check found …)".
@@ -4387,8 +4410,11 @@ export const checkArgv = (prompt: string, settings: string, mcp: string = checkM
   'claude',
   '-p',
   prompt,
+  // Stream-json, so each answer the checker wrote is in the output, not only the last result,
+  // which an engine error after a whole answer replaces (checkReadOf); it needs --verbose.
   '--output-format',
-  'json',
+  'stream-json',
+  '--verbose',
   '--max-turns',
   CHECK_MAX_TURNS,
   '--permission-mode',
@@ -4550,23 +4576,59 @@ export function parseCheck(text: string): CheckAnswer {
   }
 }
 
-// The answer text out of a headless run's JSON output, or null.
-export function resultOf(stdout: string): { text: string; tokens: number; cached: number; refused: number } | null {
-  const start = stdout.indexOf('{')
-  if (start < 0) return null
-  try {
-    const d = JSON.parse(stdout.slice(start)) as { result?: unknown; usage?: Partial<Usage>; permission_denials?: unknown }
-    if (typeof d.result !== 'string') return null
-    const u = d.usage ?? {}
-    const cached = u.cache_read_input_tokens ?? 0
-    const tokens = (u.input_tokens ?? 0) + (u.output_tokens ?? 0) + cached + (u.cache_creation_input_tokens ?? 0)
-    // Every tool call the run was refused, by a permission rule or by the owner's guard.
-    const refused = Array.isArray(d.permission_denials) ? d.permission_denials.length : 0
-    return { text: d.result, tokens, cached, refused }
-  } catch {
-    return null
+// What a headless run printed, from its stream-json output (one JSON object a line) or the
+// older single JSON object: the result line's text, its token counts and refused calls, the
+// engine's error when the result is one (`is_error`: its words, or its kind when it has none),
+// and each text the model itself wrote on the way, in order. The engine's own answer to an
+// error is a "<synthetic>" assistant line and is never one of them. Null when no result line.
+export type RunResult = { text: string; tokens: number; cached: number; refused: number; error: string; answers: string[] }
+export function resultOf(stdout: string): RunResult | null {
+  type Line = { type?: unknown; subtype?: unknown; is_error?: unknown; result?: unknown; errors?: unknown; usage?: Partial<Usage>; permission_denials?: unknown; message?: { model?: unknown; content?: unknown } }
+  const lines: Line[] = []
+  for (const raw of stdout.split('\n')) {
+    const at = raw.indexOf('{')
+    if (at < 0) continue
+    try {
+      const d = JSON.parse(raw.slice(at)) as unknown
+      if (d !== null && typeof d === 'object') lines.push(d as Line)
+    } catch {
+      // A line that is not JSON (a note before the output) is skipped.
+    }
   }
+  const d = [...lines].reverse().find(l => l.type === 'result' || (l.type === undefined && 'result' in l))
+  if (d === undefined) return null
+  const failed = d.is_error === true || (typeof d.subtype === 'string' && d.subtype.startsWith('error'))
+  if (!failed && typeof d.result !== 'string') return null
+  const text = typeof d.result === 'string' ? d.result : ''
+  const errors = Array.isArray(d.errors) ? d.errors.filter((e): e is string => typeof e === 'string' && e.trim() !== '') : []
+  const error = !failed ? '' : text.trim() !== '' ? text.trim() : errors.length > 0 ? errors.join('; ') : typeof d.subtype === 'string' ? d.subtype : 'error'
+  const answers = lines
+    .filter(l => l.type === 'assistant' && l.message?.model !== '<synthetic>' && Array.isArray(l.message?.content))
+    .map(l => (l.message?.content as { type?: unknown; text?: unknown }[]).filter(b => b.type === 'text' && typeof b.text === 'string').map(b => b.text as string).join(''))
+    .filter(t => t.trim() !== '')
+  const u = d.usage ?? {}
+  const cached = u.cache_read_input_tokens ?? 0
+  const tokens = (u.input_tokens ?? 0) + (u.output_tokens ?? 0) + cached + (u.cache_creation_input_tokens ?? 0)
+  // Every tool call the run was refused, by a permission rule or by the owner's guard.
+  const refused = Array.isArray(d.permission_denials) ? d.permission_denials.length : 0
+  return { text, tokens, cached, refused, error, answers }
 }
+
+// What of a check's run is read: its result when that is whole; else the last whole answer the
+// checker wrote on the way, which a later turn (a Stop hook asking for more, then an engine error
+// such as an expired login) left behind; else, when the run ended in an error, that failure in its
+// own words, never a cut; else a cut (live test of 18 Nov 2026, section 1).
+export function checkReadOf(got: Pick<RunResult, 'text' | 'error' | 'answers'>): { read: string } | { failed: string } | { cut: true } {
+  if (got.error === '' && endsWhole('check', got.text)) return { read: got.text }
+  const whole = [...got.answers].reverse().find(a => endsWhole('check', a))
+  if (whole !== undefined) return { read: whole }
+  if (got.error !== '') return { failed: got.error }
+  return { cut: true }
+}
+
+// The card's note for a check that failed before it wrote a whole answer, in the engine's words.
+export const checkFailedNote = (why: string): string =>
+  `The check failed before it answered: ${fit(why.trim().replace(/\s+/g, ' ').replace(/\.$/, ''), 160)}. Nothing from it was taken.`
 
 export const same = (a: string, b: string): boolean =>
   a.trim().toLowerCase().replace(/\.$/, '') === b.trim().toLowerCase().replace(/\.$/, '')

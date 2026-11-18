@@ -226,6 +226,8 @@ import {
   CHECK_CUT_NOTE,
   parseWatch,
   resultOf,
+  checkReadOf,
+  checkFailedNote,
   revisedLine,
   same,
   skipAfter,
@@ -2063,11 +2065,14 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       const why = stderr.trim().split('\n').pop() ?? ''
       return finish({ checkNote: `The check could not run${end.code === null ? '' : ` (exit ${end.code})`}${why === '' ? '' : `: ${fit(why, 160)}`}.` })
     }
-    // A reply that did not reach "looked:" stopped before its end (endsWhole): nothing of it is
-    // taken, no mark and no part of the card, and the card says so. It is not run again on its
-    // own, as the briefing's read is: each run is a paid session of its own, up to
-    // CHECK_TIMEOUT_MS long, so the owner presses the check again.
-    let cut = false
+    // What is read (checkReadOf): the result if whole, else the last whole answer the checker
+    // wrote. A run that ended in an engine error with no whole answer is that failure, in the
+    // engine's words; a reply that did not reach "looked:" stopped before its end (endsWhole).
+    // Either way nothing of it is taken, no mark and no part of the card, and the card says
+    // which. It is not run again on its own, as the briefing's read is: each run is a paid
+    // session of its own, up to CHECK_TIMEOUT_MS long, so the owner presses the check again.
+    const reading = checkReadOf(got)
+    let notRead: string | null = null
     const patch = await changeRec($, sid, async after => {
       after.checks += 1
       after.checkTokens += got.tokens
@@ -2079,18 +2084,19 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       // taken and the card on record stays the newer one, so the message the
       // owner sends from that card is still known for the rep's draft.
       if (epoch !== checkEpoch || after.lastBrief?.at !== at) return null
-      if (!endsWhole('check', got.text)) {
-        cut = true
+      if (!('read' in reading)) {
+        notRead = 'failed' in reading ? checkFailedNote(reading.failed) : CHECK_CUT_NOTE
         return null
       }
-      const c = parseCheck(got.text)
+      const text = reading.read
+      const c = parseCheck(text)
       // A condition the check saw shown, or the owner closed, moves under the same
       // rule as a look's, and a reopened one moves shown only here; one held shown
       // that the check found is not so goes back to not shown, marked reopened.
       const marked = applyMarks(after, c.shown, c.closed, { reopen: c.reopen })
       if (marked && onScreen(sid)) await update($, readingA, () => after.objective)
       const checked: Checked = { holds: c.holds, wrong: c.wrong, notShown: c.notShown, changed: c.changed, looked: c.looked, refused: got.refused }
-      const hasLeft = parts_hasLeft(got.text)
+      const hasLeft = parts_hasLeft(text)
       // The card the check leaves, each part the checker's where it gave one
       // and the instant read's where it did not, verdict and going-well line
       // included, goes through the same gate as the briefing: a stop or a
@@ -2143,7 +2149,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       return patch
     })
     if (patch !== null) await finish(patch)
-    if (cut) await finish({ checkNote: CHECK_CUT_NOTE })
+    if (notRead !== null) await finish({ checkNote: notRead })
   } catch (error) {
     const why = error instanceof Error ? error.message : String(error)
     await finish({ checkNote: `The check failed: ${fit(why, 160)}` }).catch(() => undefined)

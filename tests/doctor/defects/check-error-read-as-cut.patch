@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index b592b1d..7add4e1 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -4615,7 +4615,7 @@ export function checkReadOf(got: Pick<RunResult, 'text' | 'error' | 'answers'>):
+   if (got.error === '' && endsWhole('check', got.text)) return { read: got.text }
+   const whole = [...got.answers].reverse().find(a => endsWhole('check', a))
+   if (whole !== undefined) return { read: whole }
+-  if (got.error !== '') return { failed: got.error }
++  if (got.error !== '') return { cut: true }
+   return { cut: true }
+ }
+ 

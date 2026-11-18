@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index fc7526c..7f36302 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3479,7 +3479,6 @@ const PLACE_ONLY = /^\s*(?:(?:in|on|to|at|into|onto|under|from|inside|within|for
+ export const factHolds = (text: string): boolean => {
+   const t = text
+     .replace(/^\s*(?:[-*]\s+)?(?:works|fact)\s*:\s*/i, '')
+-    .replace(/"[^"]*"|“[^”]*”/g, ' quoted ')
+     .replace(/[^\s"'`()]+\.[A-Za-z0-9]{1,8}\b/g, ' ')
+   if (BEHAVES.test(t)) return false
+   const clauses = t.split(CLAUSE_BREAK).filter(c => c.trim() !== '')
