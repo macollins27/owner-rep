@@ -17,7 +17,7 @@
 import type { On, SessionMessage } from 'claude-code'
 import { describe, expect, mock, test as kitTest, type Engine, type Plugin, type TestBody, type TestOptions } from 'claude-code/testing'
 
-import { type Memory, CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkMcpConfig, checkPluginsOff, LOOK_RULE, looksOf, signsOff, keptWho, runOf, runFor, runKey, runQualifies, shellChanges, runFromResult, runEnded, RUN_SAID_MAX, factHolds, kindOf, ONE_CLAIM, type Look, type Run, checkCostText, checkPrompt, doingFor, firstSentence, fit, fillCard, countLine, LOOKS_NOTE_MAX, refusedLine, type CardText, buttonRows, cardButtons, CHECKING_LINE, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, HIS_CUT, TURN_TEXT_MAX, PENDING_MAX, TURNS_KEPT, tapStep, spentText, keepDraft, DRAFTS_MAX, parseBrief as parseBriefAsIs, parseCheck as parseCheckAsIs, parseWatch as parseWatchAsIs, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, OLD_SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective as parseObjectiveAsIs, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, sentencesOf, withoutStopSentences, toAgentVoice, sectionOf, takeOwnWords, ownMessageTaken, earlierMessage, messageUsable, type Replaced, parseOwnWords as parseOwnWordsAsIs, ownWordsPrompt, askAgain, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
+import { type Memory, CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkMcpConfig, checkPluginsOff, LOOK_RULE, looksOf, signsOff, keptWho, runOf, runFor, runKey, runQualifies, shellChanges, runFromResult, runEnded, RUN_SAID_MAX, factHolds, kindOf, ONE_CLAIM, type Look, type Run, checkCostText, checkPrompt, doingFor, firstSentence, fit, fillCard, countLine, LOOKS_NOTE_MAX, refusedLine, type CardText, buttonRows, cardButtons, CHECKING_LINE, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, HIS_CUT, TURN_TEXT_MAX, PENDING_MAX, TURNS_KEPT, tapStep, spentText, keepDraft, DRAFTS_MAX, parseBrief as parseBriefAsIs, parseCheck as parseCheckAsIs, parseWatch as parseWatchAsIs, programOf, resultOf, checkReadOf, checkFailedNote, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, OLD_SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective as parseObjectiveAsIs, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, sentencesOf, withoutStopSentences, toAgentVoice, sectionOf, takeOwnWords, ownMessageTaken, earlierMessage, messageUsable, type Replaced, parseOwnWords as parseOwnWordsAsIs, ownWordsPrompt, askAgain, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
 import * as rep from '../hooks/rep'
 import { REFUSED_ENVIRONMENT, MISSING_REMOTE, BEFORE_YOU_STOP_COLON, WAIT_BEFORE_SUBMIT, THREE_BEFORE_YOU_STOP, TWO_BEFORE_YOU_STOP, GUARD_REFUSAL, PAUSED_WORK_CAUSE, STOP_SHAPES } from './fixtures/stop-shapes'
 
@@ -7945,6 +7945,35 @@ describe('G16/G20: a reply that stopped before its end', () => {
     expect(await ui.find({ type: 'Text', text: /paste the counts/ })).toBeUndefined()
     await ui.unmount()
   })
+
+  test('rule: a check whose whole answer was followed by an engine error is read; the error alone is not a cut (live test of 18 Nov 2026, section 1)', async ($, on) => {
+    const answer = (JSON.parse(CHECKED_SAYING('continue', 'Two things first. Run the suite and paste the counts.')) as { result: string }).result
+    const { rec, ui } = await checkOver($, on, streamed([answer], { error: 'Failed to authenticate: OAuth session expired and could not be refreshed' }))
+    await settle($)
+    expect(rec()?.lastBrief?.message).toMatch(/paste the counts/)
+    expect(await ui.find({ type: 'Text', text: /stopped before the end/ })).toBeUndefined()
+    expect(await ui.find({ type: 'Text', text: /Failed to authenticate/ })).toBeUndefined()
+    await ui.unmount()
+  })
+
+  test('rule: a check that failed before any whole answer says why it failed, takes nothing, and never calls it a cut', async ($, on) => {
+    const { rec, ui } = await checkOver($, on, streamed(['Still checking: reading the record now.'], { error: 'Failed to authenticate: OAuth token revoked. Please log in again or contact your administrator.' }))
+    await settle($)
+    expect(rec()?.objective?.done.map(x => x.state)).toEqual(['not-shown', 'open'])
+    expect(await ui.find({ type: 'Text', text: /The check failed before it answered: Failed to authenticate: OAuth token revoked\./ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /stopped before the end/ })).toBeUndefined()
+    expect(await ui.find({ type: 'Text', text: /Press the check again/ })).toBeUndefined()
+    await ui.unmount()
+  })
+
+  test('rule: a check that wrote its whole answer, then a short last word a hook asked for, is read from its whole answer', async ($, on) => {
+    const answer = (JSON.parse(CHECKED_SAYING('continue', 'Two things first. Run the suite and paste the counts.')) as { result: string }).result
+    const { rec, ui } = await checkOver($, on, streamed([answer, 'Noted.']))
+    await settle($)
+    expect(rec()?.lastBrief?.message).toMatch(/paste the counts/)
+    expect(await ui.find({ type: 'Text', text: /stopped before the end/ })).toBeUndefined()
+    await ui.unmount()
+  })
 })
 
 test('failureWords turns a recorded cause into words and leaves an unknown one empty', () => {
@@ -9105,6 +9134,24 @@ const CHECKED_SAYING = (verdict: 'stop' | 'continue', message: string): string =
     usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
   })
 
+// A check's run as its stream-json output prints it: each text the checker wrote as an assistant
+// line, and the result line last, which holds the last text, or an engine error after it
+// (the engine's own answer to the error is a "<synthetic>" assistant line).
+const streamed = (texts: string[], o: { error?: string } = {}): string =>
+  [
+    JSON.stringify({ type: 'system', subtype: 'init', session_id: 'check' }),
+    ...texts.map(text => JSON.stringify({ type: 'assistant', message: { model: 'claude-opus-5-5', role: 'assistant', content: [{ type: 'text', text }], stop_reason: 'end_turn' } })),
+    ...(o.error === undefined ? [] : [JSON.stringify({ type: 'assistant', message: { model: '<synthetic>', role: 'assistant', content: [{ type: 'text', text: o.error }], stop_reason: 'stop_sequence' } })]),
+    JSON.stringify({
+      type: 'result',
+      subtype: 'success',
+      is_error: o.error !== undefined,
+      result: o.error ?? texts[texts.length - 1] ?? '',
+      usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+      permission_denials: [],
+    }),
+  ].join('\n') + '\n'
+
 // The Check button pressed over a briefing whose message is "Show me the run.", the checker answering `checked`.
 const checkOver = async ($: Engine, on: On, checked: string) => {
   const rec = openJob(on)
@@ -10113,6 +10160,21 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   expect(out?.refused).toBe(0)
   expect(resultOf(JSON.stringify({ type: 'result', result: 'holds:\n- x', permission_denials: [{ tool_name: 'Bash' }, { tool_name: 'Bash' }] }))?.refused).toBe(2)
   expect(resultOf('not json')).toBe(null)
+  // Stream-json: the answers are the checker's own texts, never the engine's; an error result keeps its words.
+  const whole = withEnd('holds:\n- x\nlooked: Read it.')
+  const failed = resultOf(streamed(['Still checking.', whole], { error: 'Failed to authenticate: OAuth session expired' }))
+  expect(failed?.error).toBe('Failed to authenticate: OAuth session expired')
+  expect(failed?.answers).toEqual(['Still checking.', whole])
+  expect(resultOf(streamed([whole]))?.error).toBe('')
+  expect(resultOf(JSON.stringify({ type: 'result', subtype: 'error_max_turns', is_error: true }))?.error).toBe('error_max_turns')
+  expect(checkReadOf({ text: whole, error: '', answers: [whole] })).toEqual({ read: whole })
+  expect(checkReadOf({ text: 'Noted.', error: '', answers: [whole, 'Noted.'] })).toEqual({ read: whole })
+  expect(checkReadOf({ text: 'Failed to authenticate', error: 'Failed to authenticate', answers: [whole] })).toEqual({ read: whole })
+  expect(checkReadOf({ text: 'Failed to authenticate', error: 'Failed to authenticate', answers: ['Still checking.'] })).toEqual({ failed: 'Failed to authenticate' })
+  expect(checkReadOf({ text: 'holds:\n- x', error: '', answers: ['holds:\n- x'] })).toEqual({ cut: true })
+  expect(checkFailedNote('Failed to authenticate: OAuth token revoked.')).toBe('The check failed before it answered: Failed to authenticate: OAuth token revoked. Nothing from it was taken.')
+  expect(argv[argv.indexOf('--output-format') + 1]).toBe('stream-json')
+  expect(argv).toContain('--verbose')
   expect(checkCostText(0, 0, 0)).toContain('210k fresh tokens plus 2.3 million re-read from cache, in 2 minutes')
   expect(checkCostText(850000, 800000, 95000)).toContain('50k fresh tokens plus 800k re-read from cache, in 2 minutes, with no command refused approval')
   expect(checkCostText(850000, 800000, 95000, 1)).toContain('with 1 command refused approval')

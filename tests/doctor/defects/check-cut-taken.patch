@@ -1,13 +1,13 @@
-diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 35606cf..1ad3a07 100644
---- a/hooks/register.tsx
-+++ b/hooks/register.tsx
-@@ -1980,7 +1980,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
-       // taken and the card on record stays the newer one, so the message the
-       // owner sends from that card is still known for the rep's draft.
-       if (epoch !== checkEpoch || after.lastBrief?.at !== at) return null
--      if (!endsWhole('check', got.text)) {
-+      if (got.text === '') {
-         cut = true
-         return null
-       }
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index b592b1d..96864cb 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -4616,7 +4616,7 @@ export function checkReadOf(got: Pick<RunResult, 'text' | 'error' | 'answers'>):
+   const whole = [...got.answers].reverse().find(a => endsWhole('check', a))
+   if (whole !== undefined) return { read: whole }
+   if (got.error !== '') return { failed: got.error }
+-  return { cut: true }
++  return { read: got.text }
+ }
+ 
+ // The card's note for a check that failed before it wrote a whole answer, in the engine's words.

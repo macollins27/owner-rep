@@ -4403,8 +4403,11 @@ export const checkArgv = (prompt: string, settings: string, mcp: string = checkM
   'claude',
   '-p',
   prompt,
+  // Stream-json, so each answer the checker wrote is in the output, not only the last result,
+  // which an engine error after a whole answer replaces (checkReadOf); it needs --verbose.
   '--output-format',
-  'json',
+  'stream-json',
+  '--verbose',
   '--max-turns',
   CHECK_MAX_TURNS,
   '--permission-mode',
@@ -4566,23 +4569,59 @@ export function parseCheck(text: string): CheckAnswer {
   }
 }
 
-// The answer text out of a headless run's JSON output, or null.
-export function resultOf(stdout: string): { text: string; tokens: number; cached: number; refused: number } | null {
-  const start = stdout.indexOf('{')
-  if (start < 0) return null
-  try {
-    const d = JSON.parse(stdout.slice(start)) as { result?: unknown; usage?: Partial<Usage>; permission_denials?: unknown }
-    if (typeof d.result !== 'string') return null
-    const u = d.usage ?? {}
-    const cached = u.cache_read_input_tokens ?? 0
-    const tokens = (u.input_tokens ?? 0) + (u.output_tokens ?? 0) + cached + (u.cache_creation_input_tokens ?? 0)
-    // Every tool call the run was refused, by a permission rule or by the owner's guard.
-    const refused = Array.isArray(d.permission_denials) ? d.permission_denials.length : 0
-    return { text: d.result, tokens, cached, refused }
-  } catch {
-    return null
+// What a headless run printed, from its stream-json output (one JSON object a line) or the
+// older single JSON object: the result line's text, its token counts and refused calls, the
+// engine's error when the result is one (`is_error`: its words, or its kind when it has none),
+// and each text the model itself wrote on the way, in order. The engine's own answer to an
+// error is a "<synthetic>" assistant line and is never one of them. Null when no result line.
+export type RunResult = { text: string; tokens: number; cached: number; refused: number; error: string; answers: string[] }
+export function resultOf(stdout: string): RunResult | null {
+  type Line = { type?: unknown; subtype?: unknown; is_error?: unknown; result?: unknown; errors?: unknown; usage?: Partial<Usage>; permission_denials?: unknown; message?: { model?: unknown; content?: unknown } }
+  const lines: Line[] = []
+  for (const raw of stdout.split('\n')) {
+    const at = raw.indexOf('{')
+    if (at < 0) continue
+    try {
+      const d = JSON.parse(raw.slice(at)) as unknown
+      if (d !== null && typeof d === 'object') lines.push(d as Line)
+    } catch {
+      // A line that is not JSON (a note before the output) is skipped.
+    }
   }
+  const d = [...lines].reverse().find(l => l.type === 'result' || (l.type === undefined && 'result' in l))
+  if (d === undefined) return null
+  const failed = d.is_error === true || (typeof d.subtype === 'string' && d.subtype.startsWith('error'))
+  if (!failed && typeof d.result !== 'string') return null
+  const text = typeof d.result === 'string' ? d.result : ''
+  const errors = Array.isArray(d.errors) ? d.errors.filter((e): e is string => typeof e === 'string' && e.trim() !== '') : []
+  const error = !failed ? '' : text.trim() !== '' ? text.trim() : errors.length > 0 ? errors.join('; ') : typeof d.subtype === 'string' ? d.subtype : 'error'
+  const answers = lines
+    .filter(l => l.type === 'assistant' && l.message?.model !== '<synthetic>' && Array.isArray(l.message?.content))
+    .map(l => (l.message?.content as { type?: unknown; text?: unknown }[]).filter(b => b.type === 'text' && typeof b.text === 'string').map(b => b.text as string).join(''))
+    .filter(t => t.trim() !== '')
+  const u = d.usage ?? {}
+  const cached = u.cache_read_input_tokens ?? 0
+  const tokens = (u.input_tokens ?? 0) + (u.output_tokens ?? 0) + cached + (u.cache_creation_input_tokens ?? 0)
+  // Every tool call the run was refused, by a permission rule or by the owner's guard.
+  const refused = Array.isArray(d.permission_denials) ? d.permission_denials.length : 0
+  return { text, tokens, cached, refused, error, answers }
 }
+
+// What of a check's run is read: its result when that is whole; else the last whole answer the
+// checker wrote on the way, which a later turn (a Stop hook asking for more, then an engine error
+// such as an expired login) left behind; else, when the run ended in an error, that failure in its
+// own words, never a cut; else a cut (live test of 18 Nov 2026, section 1).
+export function checkReadOf(got: Pick<RunResult, 'text' | 'error' | 'answers'>): { read: string } | { failed: string } | { cut: true } {
+  if (got.error === '' && endsWhole('check', got.text)) return { read: got.text }
+  const whole = [...got.answers].reverse().find(a => endsWhole('check', a))
+  if (whole !== undefined) return { read: whole }
+  if (got.error !== '') return { failed: got.error }
+  return { cut: true }
+}
+
+// The card's note for a check that failed before it wrote a whole answer, in the engine's words.
+export const checkFailedNote = (why: string): string =>
+  `The check failed before it answered: ${fit(why.trim().replace(/\s+/g, ' ').replace(/\.$/, ''), 160)}. Nothing from it was taken.`
 
 export const same = (a: string, b: string): boolean =>
   a.trim().toLowerCase().replace(/\.$/, '') === b.trim().toLowerCase().replace(/\.$/, '')

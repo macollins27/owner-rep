@@ -401,9 +401,14 @@ call writes (below):
    times puts up no card and toasts that the briefing stopped before its end twice. An objective
    write that is cut short fails that attempt and uses the write's own retries
    (`OBJECTIVE_RETRIES`), its cause recorded by `writeFailure` as `cut-short (N output tokens): …`
-   or `no-labels: …`, which `failureWords` puts in plain words. A check that is cut short takes
-   nothing (no marks, no verdict, no draft) and the card shows `CHECK_CUT_NOTE`, asking the owner
-   to press it again, since a check costs real money and is never re-run on its own. Every reply
+   or `no-labels: …`, which `failureWords` puts in plain words. A check is read by `checkReadOf`:
+   its result when whole, else the last whole answer the checker wrote on the way (a Stop hook
+   can ask for one more turn after it, and an engine error, such as an expired login, can end
+   that turn, replacing the result); with none, a run that ended in an engine error takes
+   nothing and the card shows `checkFailedNote`, the engine's own words and no ask to press
+   again, and any other run takes nothing (no marks, no verdict, no draft) and the card shows
+   `CHECK_CUT_NOTE`, asking the owner to press it again, since a check costs real money and is
+   never re-run on its own (live test of 18 Nov 2026, section 1). Every reply
    cap is `MAX_REPLY_TOKENS`, 64,000, the engine's ceiling, so the time limit, not the cap, ends a
    long answer.
 
@@ -612,7 +617,9 @@ call writes (below):
    pnpm finds its store unwritable, moves it into a scratch folder, and an offline install
    there fails (measured 17 Oct 2026, pnpm 10). The three questions come before the run's clock
    starts, so the check's measured time is the run's own. Fifteen-minute timeout
-   (`CHECK_TIMEOUT_MS`), 120 turns, JSON output; `permission_denials` in the output is the
+   (`CHECK_TIMEOUT_MS`), 120 turns, stream-json output with `--verbose`, so `resultOf` has each
+   text the model wrote besides the result line, with the result's `is_error` kept as `error`
+   and the engine's own "<synthetic>" answers left out; `permission_denials` in the result is the
    count of commands refused approval, shown on the checked card (`refusedLine`, which says
    commands the fence stopped are not counted) and on the next card's price line
    (`checkCostText`); the right number is zero. Its answer rewrites the card, with each claim

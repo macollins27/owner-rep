@@ -47,6 +47,10 @@ What changed in each release of Owner Rep, newest first. The full record is the
   reply with a fixed line, "end of reply". A reply without it stopped early, even one cut in
   the middle of its last sentence, and the rep treats it as it treats any cut reply: it asks
   again, or says so, and never shows the half line.
+- **A check that fails says why, and a whole check is never lost.** When a check's run ends in
+  an error, such as an expired login, the card now shows that error rather than calling the
+  check cut and asking you to press it again. A check that finished its answer before such an
+  error, or before a last turn a hook asked for, is read from that answer.
 
 ## 0.7.5 (14 November 2026)
 
