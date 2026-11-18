@@ -8960,6 +8960,10 @@ test('looksOf: every look in a where is read; one signs by its words when it nam
   for (const where of ['look by the second helper (not the writer): ran it', 'look by the real Codex: it ran the tool', 'look by checker-agent: ran it', "look by the agent's check script: it passed", 'a hands-on look by the agent: it loaded']) {
     expect(looksOf(where).map(l => l.as)).toEqual([null])
   }
+  // A who that only starts like a run names no run: the whole who must be the run.
+  for (const where of ['look by helper 01ab2345, which also built it: paid', 'look by Codex 9f8e7d6c and the agent: paid', 'look by helper 01ab2345 the builder: paid']) {
+    expect(looksOf(where).map(l => [l.as, l.ref, l.signs])).toEqual([[null, null, false]])
+  }
   const two = looksOf('look by the fresh helper (a11699fb9d8861abd): 525-byte test file in, 525 bytes out. Look by the check: a file with café printed CAFÉ')
   expect(two).toEqual([
     { signs: false, as: null, ref: null, who: 'the fresh helper (a11699fb9d8861abd)', what: '525-byte test file in, 525 bytes out' },
