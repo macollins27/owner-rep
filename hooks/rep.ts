@@ -189,29 +189,53 @@ export type ConditionState = 'open' | 'not-shown' | 'shown' | 'closed'
 // what the check found. Absent, as on older records, it is not reopened. `seen`
 // is what the agent's own hands-on look at its own work saw, on a condition
 // still open: shown evidence, never the sign-off (NORTH_STAR expectation 2, G44).
-// Absent, as on older records, no such look is held.
-export type Condition = { text: string; state: ConditionState; by: string; reopened?: boolean; seen?: string }
+// Absent, as on older records, no such look is held. `seenBy` is who made that
+// look as the where named it: "the agent", or a name off the sign-off list; '' or
+// absent, the agent's own work with no look named. `kind` is set by the writer:
+// "works" (the result works for its user, or is good) or "fact" (a command's
+// output or a file shows it). Absent, as on records from before kinds, it is read
+// as works, the strict reading (G44).
+export type ConditionKind = 'works' | 'fact'
+export type Condition = { text: string; state: ConditionState; by: string; reopened?: boolean; seen?: string; seenBy?: string; kind?: ConditionKind }
 
 // That the result works, or is good, is signed off only by a hands-on look by
 // someone who did not build it (NORTH_STAR expectation 2; audit G44). A shown
-// mark's where names such a look as "look by <who>: <what they did and saw>".
-// Who may sign off is a list: a helper, a Codex run, the rep's own check. Any
-// other who, the agent above all, makes the look shown evidence: the condition
-// stays open and carries what the look saw. A where with no "look by" is a
-// fact's proof (a command and what it printed, a file and what it holds) and is
-// taken as before; which conditions are facts and which are about the result
-// working is the reader's call, and replay R5 measures how well it makes it.
-const LOOK_BY = /^\s*(?:a\s+)?(?:hands-on\s+)?look\s+by\s+([^:]+?)\s*:\s*([\s\S]*)$/i
-const SIGNERS = /^(?:(?:a|an|the)\s+)?(?:helper|subagent|codex|(?:rep'?s\s+(?:own\s+)?|owner[- ]rep'?s?\s+)?(?:check|checker))\b/i
-export function lookOf(where: string): { signs: boolean; who: string; what: string } | null {
-  const m = LOOK_BY.exec(where)
-  if (m === null) return null
-  const who = (m[1] ?? '').trim()
-  return { signs: SIGNERS.test(who), who, what: (m[2] ?? '').trim() }
+// mark's where names each look as "look by <who>: <what they did and saw>", and
+// every look in it is read. Who may sign off is a closed set, matched whole: "a
+// helper that did not build it", "Codex", "the check". Any other who, the agent
+// above all (and any helper that wrote or changed the work, which is the agent),
+// makes the look shown evidence: a "works" condition stays open and carries what
+// the look saw and who made it. A "fact" condition (a command and what it
+// printed, a file and what it holds) is shown by its where, whoever looked. Live
+// check of #53 (session 6c159ee6): a prefix list signed "the helper, who also
+// built it" and refused "the second helper", and a second look was never read.
+const LOOK_AT = /(?:^|(?<=[\s.;,(]))(?:a\s+)?(?:hands-on\s+)?look\s+by\s+([^:]+?)\s*:/gi
+const SIGNERS = new Set(['helper that did not build it', 'codex', 'check'])
+// A who as compared: lower case, one space, no leading article or trailing
+// stop, and a run id in brackets after it left out.
+const whoKey = (who: string): string =>
+  who
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\s*\((?:id:?\s*)?[0-9a-f-]{6,}\)$/, '')
+    .replace(/[.;,]+$/, '')
+    .replace(/^(?:a|an|the)\s+/, '')
+export type Look = { signs: boolean; who: string; what: string }
+export function looksOf(where: string): Look[] {
+  const at = [...where.matchAll(LOOK_AT)]
+  return at.map((m, i) => {
+    const who = (m[1] ?? '').trim()
+    const end = i + 1 < at.length ? (at[i + 1]?.index ?? where.length) : where.length
+    const what = where.slice((m.index ?? 0) + m[0].length, end).trim().replace(/[.;,]+$/, '')
+    return { signs: SIGNERS.has(whoKey(who)), who, what }
+  })
 }
+// Whether a who is the agent's own: "the agent" by name.
+export const isAgentWho = (who: string): boolean => whoKey(who) === 'agent'
 
 // How a reader writes a look, told to the watch, the briefing, ask again and the check.
-export const LOOK_RULE = 'That the result works for its user, or is good, is shown only by a hands-on look at the real thing by someone who did not build it: a helper, a Codex run, or the check. Write such a condition\'s where as "look by <who>: <what they did and what they saw>", naming who opened it. The agent\'s own look at its own work is written "look by the agent: …"; it is kept and shown to the owner as the agent\'s own look, and the condition stays open. A fact\'s where is the command and what it printed, or the file and what it holds.'
+export const LOOK_RULE = 'That the result works for its user, or is good (a condition marked "works:"), is shown only by a hands-on look at the real thing by someone who did not build it. Write its where with each look there was, each in its own words, as one of exactly: "look by a helper that did not build it: …", "look by Codex: …", "look by the check: …", saying what they did and what they saw. Any helper that wrote or changed the work is the agent: write the agent\'s own look at its own work "look by the agent: …"; it is kept and shown to the owner as the agent\'s own look, and the condition stays open. A fact\'s where (a condition marked "fact:") is the command and what it printed, or the file and what it holds.'
 export type ObjectiveParts = { result: string; purpose: string; done: Condition[]; step: string }
 export type Objective = ObjectiveParts & {
   // When the job opened.
@@ -409,7 +433,14 @@ const conditionLine = (c: Condition): string => `${c.text.trim().replace(/[.;]+$
 // Beside a condition still open that the agent looked at itself, what the card
 // says of it: the look is in, and the sign-off is still to come.
 const seenOf = (c: Condition): string => ((c.state === 'open' || c.state === 'not-shown') && typeof c.seen === 'string' ? c.seen.trim().replace(/[.;]+$/, '') : '')
-const seenMark = (c: Condition): string => (seenOf(c) === '' ? '' : ' (the agent looked at it itself; it still needs a look by someone who did not build it)')
+// Who made that look, as the card names it: the agent unless the where named someone else.
+const seenWho = (c: Condition): string => (typeof c.seenBy === 'string' && c.seenBy.trim() !== '' && !isAgentWho(c.seenBy) ? c.seenBy.trim() : '')
+const seenMark = (c: Condition): string =>
+  seenOf(c) === ''
+    ? ''
+    : seenWho(c) === ''
+      ? ' (the agent looked at it itself; it still needs a look by someone who did not build it)'
+      : ` (looked at by ${seenWho(c)}, not counted as someone who did not build it; it still needs a look by a helper that did not build it, Codex or the check)`
 
 // What the check found beside a condition it reopened, '' for any other.
 const found = (c: Condition): string =>
@@ -421,10 +452,13 @@ const found = (c: Condition): string =>
 // the check's words there.
 const promptLine = (c: Condition): string =>
   found(c) !== ''
-    ? `${c.text.trim().replace(/[.;]+$/, '')} (not shown: the check found ${found(c)})`
+    ? `${kindMark(c)}${c.text.trim().replace(/[.;]+$/, '')} (not shown: the check found ${found(c)})`
     : seenOf(c) !== ''
-      ? `${c.text.trim().replace(/[.;]+$/, '')}${STATE_MARK[c.state]} (the agent's own look saw: ${seenOf(c)}; only a look by someone who did not build it shows it)`
-      : conditionLine(c)
+      ? `${kindMark(c)}${c.text.trim().replace(/[.;]+$/, '')}${STATE_MARK[c.state]} (${seenWho(c) === '' ? "the agent's own look" : `the look by ${seenWho(c)}, not on the sign-off list,`} saw: ${seenOf(c)}; only a look by someone who did not build it shows it)`
+      : `${kindMark(c)}${conditionLine(c)}`
+
+// A condition's kind as the readers are shown it, so they know which needs a look.
+const kindMark = (c: Condition): string => `${c.kind ?? 'works'}: `
 
 // The conditions still open as a list, one "- <condition> (mark)" line each.
 const openLines = (o: Objective | null, none: string): string =>
@@ -1494,7 +1528,7 @@ does: <one line: what this message will make the agent do>`
 // A held condition as the writer is shown it and writes it back: its text and
 // state word, and beside one the check reopened, what the check found.
 const heldLine = (c: Condition): string =>
-  `- ${c.text} | ${found(c) !== '' ? `not shown: the check found ${found(c)}` : c.state === 'not-shown' ? 'not shown' : c.state === 'shown' ? `shown: ${c.by}` : c.state === 'closed' ? `closed: ${c.by}` : 'open'}`
+  `- ${c.kind === undefined ? '' : `${c.kind}: `}${c.text} | ${found(c) !== '' ? `not shown: the check found ${found(c)}` : c.state === 'not-shown' ? 'not shown' : c.state === 'shown' ? `shown: ${c.by}` : c.state === 'closed' ? `closed: ${c.by}` : 'open'}`
 
 // The held objective in the writer's own labelled parts, so it is written back as it stands.
 const heldParts = (o: Objective): string =>
@@ -1543,7 +1577,7 @@ You are the owner's rep, and your one task here is to write down the objective o
 
 ## The conditions
 
-Each condition is one thing "done" has to show, in plain words. You do not see the conversation, so you may never mark a condition shown. Write every condition you already hold again as it stands, with the state it is held in: a shown one with "shown:" and its where copied as held, a closed one with "closed:" and its number as held. Those marks are kept whatever you write. A new condition is "open", or "not shown" when it is a thing a conversation cannot show by itself, such as whether a build is installed or a service runs the newest code. Mark a condition "closed: #n" only when the owner's own message #n closes that part and is new since the objective you hold was built; never by the number of a draft, and never by a message it was already built from, which had its say then. A held condition you leave out is kept, unless you list it under "dropped" with the number of the owner's own message, new since it was built, that says, in so many words, that it no longer stands.`
+Each condition is one thing "done" has to show, in plain words, written after its kind: "works:" when it is about the result working for its user, being used, or being good, which only a hands-on look by someone who did not build it can show; "fact:" when a command's output or a file's contents can show it (that it is saved, committed, installed, that a run passes). Write a held condition's kind back as held. You do not see the conversation, so you may never mark a condition shown. Write every condition you already hold again as it stands, with the state it is held in: a shown one with "shown:" and its where copied as held, a closed one with "closed:" and its number as held. Those marks are kept whatever you write. A new condition is "open", or "not shown" when it is a thing a conversation cannot show by itself, such as whether a build is installed or a service runs the newest code. Mark a condition "closed: #n" only when the owner's own message #n closes that part and is new since the objective you hold was built; never by the number of a draft, and never by a message it was already built from, which had its say then. A held condition you leave out is kept, unless you list it under "dropped" with the number of the owner's own message, new since it was built, that says, in so many words, that it no longer stands.`
 
 // The owner's messages are quoted records inside a fence the writer is told about, so a
 // message that reads like a command is read as evidence and never as an instruction to the
@@ -1959,7 +1993,7 @@ moved: <cause, citing the owner's message as #n; "new job" first when the owner 
 result: <one sentence>
 for: <one sentence>
 done:
-- <condition> | open | not shown | closed: #n | shown: <where, copied as held>
+- works | fact: <condition> | open | not shown | closed: #n | shown: <where, copied as held>
 step: <one sentence>
 dropped:
 - <condition text as held> | #n`
@@ -3034,20 +3068,26 @@ const oneLine = (s: string | undefined): string => clean(s).replace(/\s+/g, ' ')
 // so is shown without a where, or closed without the number of the owner's
 // message.
 function conditionOf(line: string): Condition {
+  const k = KIND_AT.exec(line)
+  const kind: { kind?: ConditionKind } = k === null ? {} : { kind: (k[1] ?? '').toLowerCase() === 'fact' ? 'fact' : 'works' }
   const m = /^(.*?)\s*\|\s*(open|not[\s-]?shown|shown|closed)\b\s*:?\s*(.*)$/i.exec(line)
-  if (m === null) return { text: bare(line.split('|')[0] ?? ''), state: 'open', by: '' }
+  if (m === null) return { text: bare(line.split('|')[0] ?? ''), state: 'open', by: '', ...kind }
   const text = bare(m[1] ?? '')
   const word = (m[2] ?? '').toLowerCase()
   const rest = (m[3] ?? '').trim()
-  if (word.startsWith('not')) return { text, state: 'not-shown', by: '' }
-  if (word === 'shown' && rest !== '') return { text, state: 'shown', by: rest }
+  if (word.startsWith('not')) return { text, state: 'not-shown', by: '', ...kind }
+  if (word === 'shown' && rest !== '') return { text, state: 'shown', by: rest, ...kind }
   const n = word === 'closed' ? /#(\d+)/.exec(rest) : null
-  return n === null ? { text, state: 'open', by: '' } : { text, state: 'closed', by: `#${n[1]}` }
+  return n === null ? { text, state: 'open', by: '', ...kind } : { text, state: 'closed', by: `#${n[1]}`, ...kind }
 }
+
+// A condition's kind written before it: "works:" or "fact:".
+const KIND_AT = /^\s*(works|fact)\s*:\s*/i
 
 // A condition's text without a state mark the model copied with it, such as
 // "(not shown)" or "(not shown: the check found …)".
-const bare = (s: string): string => s.trim().replace(/\s*\((?:open|not shown|shown|closed)(?::[^()]*)?\)$/i, '')
+// Its kind before it, "works:" or "fact:", is left out too, so a reader that copies it still matches.
+const bare = (s: string): string => s.trim().replace(/^(?:works|fact)\s*:\s*/i, '').replace(/\s*\((?:open|not shown|shown|closed)(?::[^()]*)?\)$/i, '')
 
 // The lines of a shown list: "<condition text> | <where in the conversation>".
 function shownOf(raw: string | undefined): Array<{ text: string; by: string }> {
@@ -4383,7 +4423,18 @@ export const countLine = (o: Objective | null): string => {
   const shown = o.done.filter(c => c.state === 'shown').length
   const open = o.done.filter(c => c.state === 'open' || c.state === 'not-shown').length
   const closed = o.done.filter(c => c.state === 'closed').length
-  return `Done means ${n} thing${n === 1 ? '' : 's'}: ${shown} shown, ${open} open${closed > 0 ? `, ${closed} closed by you` : ''}`
+  return `Done means ${n} thing${n === 1 ? '' : 's'}: ${shown} shown, ${open} open${closed > 0 ? `, ${closed} closed by you` : ''}${looksNote(o)}`
+}
+
+// Beside the count, the open conditions someone looked at whose look does not sign them
+// off, by who looked, so the owner sees it on a card of any height (live check of #53:
+// at 80 rows the prose that carried it was not drawn).
+const looksNote = (o: Objective): string => {
+  const by = new Map<string, number>()
+  for (const c of o.done) if (seenOf(c) !== '') by.set(seenWho(c), (by.get(seenWho(c)) ?? 0) + 1)
+  if (by.size === 0) return ''
+  const parts = [...by].map(([who, n]) => (who === '' ? `the agent looked at ${n} itself` : `${who} looked at ${n}, not counted as someone who did not build it`))
+  return ` (${parts.join('; ')}; each still needs a look by someone who did not build it)`
 }
 
 // Rows a wrapped text takes in `width` cells, one per paragraph at least. The band
@@ -4545,6 +4596,8 @@ export function fillCard(card: CardText, maxRows: number, cols: number): CardTex
   if (cardRows(c, cols) > maxRows) c = { ...c, message: '' }
   const steps: Array<(x: CardText) => CardText> = [
     x => ({ ...x, result: card.result }),
+    // How much of done is shown, and whose looks are still to count, before the judgment.
+    x => ({ ...x, count: card.count }),
     // The judgment, one row each, the most telling first.
     x => ({ ...x, stands: toRows(card.stands, 'Stands: ', 1, w) }),
     // That the reading moved, and why, is the next thing the owner must not miss.
@@ -4554,7 +4607,6 @@ export function fillCard(card: CardText, maxRows: number, cols: number): CardTex
     x => ({ ...x, next: toRows(card.next, 'Next: ', 1, w) }),
     x => ({ ...x, means: toRows(card.means, 'Means: ', 1, w) }),
     x => ({ ...x, leftOut: oneLine(card.leftOut) }),
-    x => ({ ...x, count: card.count }),
     // The judgment whole, or with the rows that are left.
     x => ({ ...x, checked: k }),
     x => ({ ...x, leftOut: card.leftOut }),
@@ -4596,9 +4648,13 @@ export function mergeConditions(
   const once = proposed.filter((p, i) => proposed.findIndex(q => like(q.text, p.text)) === i)
   const out = once.map((p): Condition => {
     const h = held.find(x => like(x.text, p.text))
-    if (h === undefined) return p.state === 'shown' ? { text: p.text, state: 'open', by: '' } : p
-    if (p.state === 'closed' && h.state !== 'closed') return { text: p.text, state: 'closed', by: p.by }
-    return { ...h, text: p.text }
+    if (h === undefined) return p.state === 'shown' ? { text: p.text, state: 'open', by: '', ...(p.kind === undefined ? {} : { kind: p.kind }) } : p
+    // The kind the writer gives now, except that one held "works" stays so: a rewrite never
+    // turns a condition that needs a look by someone else into one the agent's own run shows.
+    const kind = h.kind === 'works' ? 'works' : (p.kind ?? h.kind)
+    const k: { kind?: ConditionKind } = kind === undefined ? {} : { kind }
+    if (p.state === 'closed' && h.state !== 'closed') return { text: p.text, state: 'closed', by: p.by, ...k }
+    return { ...h, text: p.text, ...k }
   })
   for (const h of held) {
     if (out.some(p => like(p.text, h.text))) continue

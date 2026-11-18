@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 7be5bd3..785048c 100644
+index fb1b317..06ffcd7 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1272,7 +1272,7 @@ function applyMarks(
-       return { text: c.text, state: 'not-shown', by: back.by, reopened: true }
+@@ -1277,7 +1277,7 @@ function applyMarks(
+       return { text: c.text, state: 'not-shown', by: back.by, reopened: true, ...kind }
      }
      const show = shown.find(x => x.by !== '' && same(x.text, c.text))
 -    if (show !== undefined && (c.state === 'open' || c.state === 'not-shown') && !(c.reopened === true && check === null)) {
 +    if (show !== undefined && (c.state === 'open' || c.state === 'not-shown')) {
-       // A look by someone not on the sign-off list, the agent's own above all,
-       // is kept as shown evidence and leaves the condition as it was (G44).
-       const signer = lookOf(show.by)
+       // A "works" condition (or one of no kind, from before kinds) is shown only by a look
+       // someone on the sign-off list made, any of the looks in the where. Every other look,
+       // the agent's own above all, and a where with no look, is kept as shown evidence with

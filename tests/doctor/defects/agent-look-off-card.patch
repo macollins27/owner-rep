@@ -1,12 +1,17 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 9ca62c4..582ef3b 100644
+index 3f27870..6b2853d 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -398,7 +398,7 @@ const conditionLine = (c: Condition): string => `${c.text.trim().replace(/[.;]+$
- // Beside a condition still open that the agent looked at itself, what the card
- // says of it: the look is in, and the sign-off is still to come.
+@@ -424,12 +424,7 @@ const conditionLine = (c: Condition): string => `${c.text.trim().replace(/[.;]+$
  const seenOf = (c: Condition): string => ((c.state === 'open' || c.state === 'not-shown') && typeof c.seen === 'string' ? c.seen.trim().replace(/[.;]+$/, '') : '')
--const seenMark = (c: Condition): string => (seenOf(c) === '' ? '' : ' (the agent looked at it itself; it still needs a look by someone who did not build it)')
+ // Who made that look, as the card names it: the agent unless the where named someone else.
+ const seenWho = (c: Condition): string => (typeof c.seenBy === 'string' && c.seenBy.trim() !== '' && !isAgentWho(c.seenBy) ? c.seenBy.trim() : '')
+-const seenMark = (c: Condition): string =>
+-  seenOf(c) === ''
+-    ? ''
+-    : seenWho(c) === ''
+-      ? ' (the agent looked at it itself; it still needs a look by someone who did not build it)'
+-      : ` (looked at by ${seenWho(c)}, not counted as someone who did not build it; it still needs a look by a helper that did not build it, Codex or the check)`
 +const seenMark = (_c: Condition): string => ''
  
  // What the check found beside a condition it reopened, '' for any other.

@@ -189,7 +189,7 @@
     "name": "revised-line-folds-first",
     "breaks": "The revision line waits among the extras after the message, so whenever the message is long enough to take the rows that are left the owner never sees that the reading moved.",
     "patch": "revised-line-folds-first.patch",
-    "fixed": "2026-10-14"
+    "fixed": "2026-10-14; remade 2026-11-17"
   },
   {
     "name": "rows-counted-by-cells",
@@ -255,7 +255,7 @@
     "name": "condition-dropped-uncited",
     "breaks": "A correction keeps only the conditions the writer wrote again, so a message that bounds the next step drops parts of what \"done\" means that the owner never let go.",
     "patch": "condition-dropped-uncited.patch",
-    "fixed": "2026-10-15; remade 2026-10-16"
+    "fixed": "2026-10-15; remade 2026-10-16; remade 2026-11-17"
   },
   {
     "name": "stop-while-open",
@@ -309,13 +309,13 @@
     "name": "marks-uncited",
     "breaks": "A look or a briefing can close a condition by citing any message number, a draft's included, so a condition the owner never let go is closed on the rep's or the agent's say.",
     "patch": "marks-uncited.patch",
-    "fixed": "2026-10-15; remade 2026-10-16"
+    "fixed": "2026-10-15; remade 2026-10-16; remade 2026-11-17"
   },
   {
     "name": "mark-cites-built-message",
     "breaks": "A look, a briefing or a check can close a condition by citing a message the objective was already built from, one the writer read and kept the condition open after.",
     "patch": "mark-cites-built-message.patch",
-    "fixed": "2026-10-15"
+    "fixed": "2026-10-15; remade 2026-11-17"
   },
   {
     "name": "writer-cites-built-message",
@@ -345,7 +345,7 @@
     "name": "conditions-pile-up",
     "breaks": "A condition the writer lists twice, or with a state mark copied into its text, is kept twice, so the list of what done means grows by repeats.",
     "patch": "conditions-pile-up.patch",
-    "fixed": "2026-10-15; remade 2026-10-16"
+    "fixed": "2026-10-15; remade 2026-10-16; remade 2026-11-17"
   },
   {
     "name": "writer-failure-uncounted",
@@ -399,13 +399,13 @@
     "name": "look-remarks-reopened",
     "breaks": "A look or a briefing that marks a condition the check reopened as shown moves it shown again, so the next stop passes the gate though the paid check found the claim false.",
     "patch": "look-remarks-reopened.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-11-17"
   },
   {
     "name": "merge-raises-state",
     "breaks": "The writer's merge takes a proposed state over the held one by rank, so a correction can drop the check's reopened mark and its finding, and the merge alone would raise a condition to shown.",
     "patch": "merge-raises-state.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-11-17"
   },
   {
     "name": "stop-filter-broad",
@@ -1821,7 +1821,7 @@
     "name": "count-line-dropped-first",
     "breaks": "The count line comes back only after the judgment's parts have taken the rows, so on a small band the owner loses how many things done means while restatements of the agent's work keep a second row.",
     "patch": "count-line-dropped-first.patch",
-    "fixed": "tested 2026-10-19"
+    "fixed": "tested 2026-10-19; remade 2026-11-17"
   },
   {
     "name": "extras-before-message",
@@ -1833,7 +1833,7 @@
     "name": "message-box-hides-buttons",
     "breaks": "On a band too short for the message's box between the head and the buttons, as in a terminal of about 24 rows, the box stays and pushes the buttons out of the window where a digit cannot press them.",
     "patch": "message-box-hides-buttons.patch",
-    "fixed": "2026-10-26"
+    "fixed": "2026-10-26; remade 2026-11-17"
   },
   {
     "name": "own-words-cut-taken",
@@ -3027,7 +3027,7 @@
     "name": "reader-closes-by-approval",
     "breaks": "A reader's closed line citing an approved plan or a yes closes the condition.",
     "patch": "reader-closes-by-approval.patch",
-    "fixed": "2026-11-01"
+    "fixed": "2026-11-01; remade 2026-11-17"
   },
   {
     "name": "check-drops-record-lines",
@@ -3333,31 +3333,31 @@
     "name": "builder-look-signs-off",
     "breaks": "A look by the agent at its own work marks a \"works\" condition shown, so the agent signs off its own work.",
     "patch": "builder-look-signs-off.patch",
-    "fixed": "2026-11-15"
+    "fixed": "2026-11-15; remade 2026-11-17"
   },
   {
     "name": "check-marks-skip-who",
     "breaks": "The check's marks skip the who rule, so a check that only read the agent's own look in the record signs the condition off.",
     "patch": "check-marks-skip-who.patch",
-    "fixed": "2026-11-15"
+    "fixed": "2026-11-15; remade 2026-11-17"
   },
   {
     "name": "agent-look-off-card",
     "breaks": "The card says nothing of the agent's own look, so the owner cannot see that the work was looked at and still waits on someone else's look.",
     "patch": "agent-look-off-card.patch",
-    "fixed": "2026-11-15"
+    "fixed": "2026-11-15; remade 2026-11-17"
   },
   {
     "name": "owner-signs-off",
     "breaks": "A look the agent reports as the owner's counts as a sign-off, so the agent can close a condition by saying the owner tried it.",
     "patch": "owner-signs-off.patch",
-    "fixed": "2026-11-15"
+    "fixed": "2026-11-15; remade 2026-11-17"
   },
   {
     "name": "agent-look-dropped",
     "breaks": "The agent's own look is thrown away instead of kept, so the evidence it gave is lost from the card and the prompts.",
     "patch": "agent-look-dropped.patch",
-    "fixed": "2026-11-15"
+    "fixed": "2026-11-15; remade 2026-11-17"
   },
   {
     "name": "call-log-cap-takes-starting",
@@ -3495,6 +3495,90 @@
     "name": "replay-system-unchecked",
     "breaks": "A replay sends a system text that changed after it was saved, so the replay is not of the call that was made.",
     "patch": "replay-system-unchecked.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "signer-prefix-match",
+    "breaks": "A look signs off when its who only starts like a signer, so \"the helper, who also built it\", \"Codex, which the agent itself wrote\" or \"checker-agent\" signs the agent's own work off.",
+    "patch": "signer-prefix-match.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "first-look-only",
+    "breaks": "Only the first look in a where is read, so a sign-off look written after a helper's is lost and the condition stays open though the check looked.",
+    "patch": "first-look-only.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "where-without-look-closes",
+    "breaks": "A where with no look in it closes a \"works\" condition, so the agent's own run written plainly signs its own work off.",
+    "patch": "where-without-look-closes.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "no-kind-read-as-fact",
+    "breaks": "A condition with no kind is shown by any where, as a fact is, so every condition written before kinds, and any the writer leaves unmarked, closes on the agent's word.",
+    "patch": "no-kind-read-as-fact.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "works-not-sticky",
+    "breaks": "A rewrite can turn a held \"works\" condition into a fact, so the agent's own run then closes a condition that needed a look by someone who did not build it.",
+    "patch": "works-not-sticky.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "seen-blames-agent",
+    "breaks": "The card says the agent looked at a condition itself when a helper or someone else did, so the owner is told the wrong person looked.",
+    "patch": "seen-blames-agent.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "seen-who-dropped",
+    "breaks": "Who made a look that does not sign off is not kept, so the card says the agent looked when a named helper did.",
+    "patch": "seen-who-dropped.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "count-no-looks-note",
+    "breaks": "The count line leaves out whose looks are in and do not sign off, so on a tall card where the condition lines are not drawn the owner never sees it.",
+    "patch": "count-no-looks-note.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "count-line-never-back",
+    "breaks": "The count line never comes back on a card too tall for the band, so whenever the card is folded the owner loses how many things done means and whose looks are still to count.",
+    "patch": "count-line-never-back.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "bare-keeps-kind",
+    "breaks": "A reader that copies a condition with its kind before it matches nothing held, so its mark is lost and a condition shown or closed stays open.",
+    "patch": "bare-keeps-kind.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "kind-not-parsed",
+    "breaks": "The writer's \"works:\" or \"fact:\" is dropped as it is read, so a fact needs a look it cannot have and a works condition depends on the default.",
+    "patch": "kind-not-parsed.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "kind-not-held",
+    "breaks": "The writer is shown its held conditions without their kinds, so a rewrite drops or changes them.",
+    "patch": "kind-not-held.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "kind-hidden-from-readers",
+    "breaks": "The watch, briefing and check are not told which conditions are works and which are facts, so they cannot tell which needs a look by someone who did not build it.",
+    "patch": "kind-hidden-from-readers.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "kind-dropped-on-show",
+    "breaks": "A condition marked shown loses its kind, so when the check reopens it, a briefing's where with no look closes it again as if it were a fact.",
+    "patch": "kind-dropped-on-show.patch",
     "fixed": "tested 2026-11-17"
   }
 ]

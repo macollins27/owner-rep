@@ -322,11 +322,22 @@ Why the agent's own look is not the sign-off. Until G44 (15 Nov 2026) the agent 
 work and saying what it saw could close a condition about that work working. NORTH_STAR
 expectation 2 asks for someone who did not build it, since a builder looking at their own work
 sees what they meant to build. The readers now write a look's where as `look by <who>: <what>`,
-and the code takes it as the sign-off only from a helper, a Codex run or the check. The agent's
-own look is kept, and the card says the agent looked and that the part still needs someone
-else's look, so the owner sees the evidence without it being taken as proof. The code cannot
-tell a fact from a claim that the work works; that stays the reader's call, and a where with no
-`look by` is taken as a fact's proof.
+and the code takes it as the sign-off only from exactly three: "a helper that did not build it",
+"Codex", "the check". The live check of the first version (session 6c159ee6) showed why the list
+is closed rather than matched by its first word: models wrote "the helper, who also built it",
+"the real Codex", "Codex, which the agent itself wrote" and "checker-agent", and a prefix match
+signed the agent's own work off through every one. Every look in a where is read, so a sign-off
+written after a helper's look still counts. Any other look is kept with who made it, and the card
+names them and says the part still needs someone else's look, so the owner sees the evidence
+without it being taken as proof. The same live check found a where with no look closing a
+condition about the work working, because the code read every such where as a fact's proof. So
+the objective writer now marks each condition as a kind: `works` (the work does what it should,
+or is good) or `fact` (a file, a version, a command's output). A fact closes on its proof; a
+works condition, and one with no kind (all conditions written before kinds), closes only on a
+signing look. Once works, a condition stays works through any rewrite, so a later write cannot
+make the agent's own run enough. The note of whose looks are in also goes on the count line,
+which comes back right after the card's head, because at 80 rows the condition lines that carried
+it were not drawn.
 
 What counts as waste. 0.6.0 named tests, review rounds and plans among the machinery to flag,
 and its message forbade asking for new tests or reviews by another AI. That steered agents away
@@ -584,7 +595,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 640 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 655 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: twelve real sessions in tmux, the strip captured to tests/live/captures
 ```

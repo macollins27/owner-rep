@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 2034771..63beb4f 100644
+index fb1b317..7915e2e 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1256,7 +1256,7 @@ function applyMarks(
-       // A look by someone not on the sign-off list, the agent's own above all,
-       // is kept as shown evidence and leaves the condition as it was (G44).
-       const signer = lookOf(show.by)
--      if (signer !== null && !signer.signs) {
-+      if (signer !== null && !signer.signs && check === null) {
-         if (signer.what === '' || c.seen === signer.what) return c
-         changed = true
-         return { ...c, seen: signer.what }
+@@ -1283,7 +1283,7 @@ function applyMarks(
+       // the agent's own above all, and a where with no look, is kept as shown evidence with
+       // who made it, and leaves the condition as it was. A "fact" is shown by its where (G44).
+       const looks = looksOf(show.by)
+-      if (c.kind !== 'fact' && !looks.some(l => l.signs)) {
++      if (c.kind !== 'fact' && !looks.some(l => l.signs) && check === null) {
+         const seen = looks.length === 0 ? show.by.trim() : looks.map(l => l.what).filter(w => w !== '').join('; ')
+         const seenBy = [...new Set(looks.map(l => l.who))].join(' and ')
+         if (seen === '' || (c.seen === seen && (c.seenBy ?? '') === seenBy)) return c

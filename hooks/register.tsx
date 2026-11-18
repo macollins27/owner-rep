@@ -183,7 +183,7 @@ import {
   HUMAN_SCAN_BUDGET_MS,
   type RecordRow,
   objectiveText,
-  lookOf,
+  looksOf,
   openConditions,
   parseBrief,
   parseCheck,
@@ -1252,11 +1252,13 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number, r
 // the same conversation cannot undo what the paid check found. A draft's
 // number closes nothing, nor does a plan's or an approval's (a yes adds and
 // never quietly takes away, as `canClose` holds for the writer), and a shown
-// or reopen mark without a where is not taken. A shown mark whose where is a
-// look by someone not on `lookOf`'s sign-off list (the agent's own look above
-// all, whoever reports it, the check included) moves nothing: the condition
-// keeps its state and carries what that look saw as `seen` (G44). True when a
-// condition moved or took a new `seen`.
+// or reopen mark without a where is not taken. A shown mark on a condition not
+// marked "fact" whose where has no look by someone on `looksOf`'s sign-off list
+// (only the agent's own look, whoever reports it, the check included; a look by
+// anyone off the list; or no look at all) moves nothing: the condition keeps its
+// state and carries what was seen as `seen`, and who looked as `seenBy` (G44).
+// The state a condition is held in keeps its kind. True when a condition moved
+// or took a new `seen`.
 function applyMarks(
   rec: Rec,
   shown: Array<{ text: string; by: string }>,
@@ -1269,28 +1271,33 @@ function applyMarks(
   const his = hisFrom(rec, Math.max(o.since, o.from + 1)).filter(n => !notHis.has(n))
   let changed = false
   const done = o.done.map((c): Condition => {
+    const kind: { kind?: Condition['kind'] } = c.kind === undefined ? {} : { kind: c.kind }
     const close = closed.find(x => x.by !== null && his.includes(x.by) && same(x.text, c.text))
     if (close !== undefined && c.state !== 'closed') {
       changed = true
-      return { text: c.text, state: 'closed', by: `#${close.by}` }
+      return { text: c.text, state: 'closed', by: `#${close.by}`, ...kind }
     }
     const back = check?.reopen.find(x => x.by !== '' && same(x.text, c.text))
     if (back !== undefined && c.state === 'shown') {
       changed = true
-      return { text: c.text, state: 'not-shown', by: back.by, reopened: true }
+      return { text: c.text, state: 'not-shown', by: back.by, reopened: true, ...kind }
     }
     const show = shown.find(x => x.by !== '' && same(x.text, c.text))
     if (show !== undefined && (c.state === 'open' || c.state === 'not-shown') && !(c.reopened === true && check === null)) {
-      // A look by someone not on the sign-off list, the agent's own above all,
-      // is kept as shown evidence and leaves the condition as it was (G44).
-      const signer = lookOf(show.by)
-      if (signer !== null && !signer.signs) {
-        if (signer.what === '' || c.seen === signer.what) return c
+      // A "works" condition (or one of no kind, from before kinds) is shown only by a look
+      // someone on the sign-off list made, any of the looks in the where. Every other look,
+      // the agent's own above all, and a where with no look, is kept as shown evidence with
+      // who made it, and leaves the condition as it was. A "fact" is shown by its where (G44).
+      const looks = looksOf(show.by)
+      if (c.kind !== 'fact' && !looks.some(l => l.signs)) {
+        const seen = looks.length === 0 ? show.by.trim() : looks.map(l => l.what).filter(w => w !== '').join('; ')
+        const seenBy = [...new Set(looks.map(l => l.who))].join(' and ')
+        if (seen === '' || (c.seen === seen && (c.seenBy ?? '') === seenBy)) return c
         changed = true
-        return { ...c, seen: signer.what }
+        return { ...c, seen, ...(seenBy === '' ? {} : { seenBy }) }
       }
       changed = true
-      return { text: c.text, state: 'shown', by: show.by }
+      return { text: c.text, state: 'shown', by: show.by, ...kind }
     }
     return c
   })

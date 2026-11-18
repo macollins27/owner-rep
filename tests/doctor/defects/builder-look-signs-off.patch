@@ -1,13 +1,13 @@
-diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 2034771..3097383 100644
---- a/hooks/register.tsx
-+++ b/hooks/register.tsx
-@@ -1256,7 +1256,7 @@ function applyMarks(
-       // A look by someone not on the sign-off list, the agent's own above all,
-       // is kept as shown evidence and leaves the condition as it was (G44).
-       const signer = lookOf(show.by)
--      if (signer !== null && !signer.signs) {
-+      if (signer !== null && !signer.signs && false) {
-         if (signer.what === '' || c.seen === signer.what) return c
-         changed = true
-         return { ...c, seen: signer.what }
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 3f27870..9bf21c8 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -228,7 +228,7 @@ export function looksOf(where: string): Look[] {
+     const who = (m[1] ?? '').trim()
+     const end = i + 1 < at.length ? (at[i + 1]?.index ?? where.length) : where.length
+     const what = where.slice((m.index ?? 0) + m[0].length, end).trim().replace(/[.;,]+$/, '')
+-    return { signs: SIGNERS.has(whoKey(who)), who, what }
++    return { signs: SIGNERS.has(whoKey(who)) || whoKey(who) === 'agent', who, what }
+   })
+ }
+ // Whether a who is the agent's own: "the agent" by name.

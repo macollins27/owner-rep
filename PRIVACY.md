@@ -42,7 +42,7 @@ and the own-words call. Each copy holds the full text sent (which includes parts
 as listed under "What leaves your machine"), the full reply, the settings, the time it took,
 the tokens it used, what the rep read in the reply (counts of the conditions it marked, a card's
 words and the rules that refused it) and, for a card, the job's open conditions as the rep held
-them, with what was seen of each. A text sent more than once is kept once, checked by SHA-256. A session's
+them, with each one's kind (works or fact), what was seen of it and who looked. A text sent more than once is kept once, checked by SHA-256. A session's
 folder is removed once nothing in it has changed for 14 days (except the session starting, so a
 session resumed later keeps its calls), and all the folders together are
 kept under about 1 GB: past that, the folders changed longest ago are removed first (never the

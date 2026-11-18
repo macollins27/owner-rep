@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index fb1b317..807cbda 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1283,7 +1283,7 @@ function applyMarks(
+       // the agent's own above all, and a where with no look, is kept as shown evidence with
+       // who made it, and leaves the condition as it was. A "fact" is shown by its where (G44).
+       const looks = looksOf(show.by)
+-      if (c.kind !== 'fact' && !looks.some(l => l.signs)) {
++      if (c.kind === 'works' && !looks.some(l => l.signs)) {
+         const seen = looks.length === 0 ? show.by.trim() : looks.map(l => l.what).filter(w => w !== '').join('; ')
+         const seenBy = [...new Set(looks.map(l => l.who))].join(' and ')
+         if (seen === '' || (c.seen === seen && (c.seenBy ?? '') === seenBy)) return c

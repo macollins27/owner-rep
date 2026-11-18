@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 3f27870..316e3f0 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -224,7 +224,7 @@ const whoKey = (who: string): string =>
+ export type Look = { signs: boolean; who: string; what: string }
+ export function looksOf(where: string): Look[] {
+   const at = [...where.matchAll(LOOK_AT)]
+-  return at.map((m, i) => {
++  return at.slice(0, 1).map((m, i) => {
+     const who = (m[1] ?? '').trim()
+     const end = i + 1 < at.length ? (at[i + 1]?.index ?? where.length) : where.length
+     const what = where.slice((m.index ?? 0) + m[0].length, end).trim().replace(/[.;,]+$/, '')

@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 3f27870..7ae3729 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -4531,8 +4531,6 @@ export function fillCard(card: CardText, maxRows: number, cols: number): CardTex
+   if (cardRows(c, cols) > maxRows) c = { ...c, message: '' }
+   const steps: Array<(x: CardText) => CardText> = [
+     x => ({ ...x, result: card.result }),
+-    // How much of done is shown, and whose looks are still to count, before the judgment.
+-    x => ({ ...x, count: card.count }),
+     // The judgment, one row each, the most telling first.
+     x => ({ ...x, stands: toRows(card.stands, 'Stands: ', 1, w) }),
+     // That the reading moved, and why, is the next thing the owner must not miss.
