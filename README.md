@@ -199,12 +199,14 @@ its own work than into the product, it says so, and the message it writes for yo
 for more tests, scripts or reports: where proof is missing it asks for a hands-on look at the
 real thing.
 
-That the work does what it should is signed off only by someone who did not build it: a helper,
-a Codex run, or the rep's own check, opening the real thing and using it. When the agent looks
-at its own work, the card says so ("the agent looked at it itself; it still needs a look by
-someone who did not build it"), and that part of the job stays open. Telling a fact (a file
-saved, a version installed) from a claim that the work works is the rep's own judgement; facts
-are still shown by the command and what it printed.
+That the work does what it should is signed off only by someone who did not build it: a helper
+that did not build it, Codex, or the rep's own check, opening the real thing and using it. Each
+part of the job is written down as one of two kinds: "works" (the work does what it should, or is
+good) or "fact" (a file saved, a version installed). A fact is shown by the command and what it
+printed. A "works" part stays open until one of those three has looked; a part written before
+kinds counts as "works". When the agent looks at its own work, or a helper that also built it,
+or anyone else, the card says who looked and that it still needs a look by someone who did not
+build it, and the count line at the top of the card says so too, so you see it on any card.
 
 You do no step of the job yourself. A chore the agent leaves "for you" is unfinished work,
 and the rep puts it in the message to the agent.
@@ -294,7 +296,7 @@ full, this is everything it reads and runs:
   own-words call) is saved there as one file holding what was sent and what came back, the
   settings, the time and the tokens, what the rep read in the reply (its counts of conditions
   marked, and a card's words and gate refusals) and, for a card, the job's open conditions with
-  what was seen of each, so a call can be read again and sent again. A text sent many times, such as the session's record that
+  each one's kind, what was seen of it and who looked, so a call can be read again and sent again. A text sent many times, such as the session's record that
   every look resends, is kept once. A session's folder is removed with `rm` once nothing in it has
   changed for 14 days, unless that session is the one starting, and while all the sessions' folders together hold more than 1 GB, the ones
   changed longest ago are removed first, never the session starting or one changed in the last hour.
@@ -362,7 +364,7 @@ The full design is in [How the owner rep works](docs/how-it-works.md).
 
 ## Built to be trusted
 
-- **640 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
+- **644 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
   the tests.
 - **A doctor that plants bugs.** It plants 568 known defects in a throwaway copy, one at a
   time, and fails the build if the tests miss any of them.

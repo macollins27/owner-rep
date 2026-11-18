@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 3f27870..b57baf6 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1517,7 +1517,7 @@ does: <one line: what this message will make the agent do>`
+ // A held condition as the writer is shown it and writes it back: its text and
+ // state word, and beside one the check reopened, what the check found.
+ const heldLine = (c: Condition): string =>
+-  `- ${c.kind === undefined ? '' : `${c.kind}: `}${c.text} | ${found(c) !== '' ? `not shown: the check found ${found(c)}` : c.state === 'not-shown' ? 'not shown' : c.state === 'shown' ? `shown: ${c.by}` : c.state === 'closed' ? `closed: ${c.by}` : 'open'}`
++  `- ${c.text} | ${found(c) !== '' ? `not shown: the check found ${found(c)}` : c.state === 'not-shown' ? 'not shown' : c.state === 'shown' ? `shown: ${c.by}` : c.state === 'closed' ? `closed: ${c.by}` : 'open'}`
+ 
+ // The held objective in the writer's own labelled parts, so it is written back as it stands.
+ const heldParts = (o: Objective): string =>

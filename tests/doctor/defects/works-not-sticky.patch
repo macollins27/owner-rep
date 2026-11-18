@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 3f27870..b215b92 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -4586,7 +4586,7 @@ export function mergeConditions(
+     if (h === undefined) return p.state === 'shown' ? { text: p.text, state: 'open', by: '', ...(p.kind === undefined ? {} : { kind: p.kind }) } : p
+     // The kind the writer gives now, except that one held "works" stays so: a rewrite never
+     // turns a condition that needs a look by someone else into one the agent's own run shows.
+-    const kind = h.kind === 'works' ? 'works' : (p.kind ?? h.kind)
++    const kind = p.kind ?? h.kind
+     const k: { kind?: ConditionKind } = kind === undefined ? {} : { kind }
+     if (p.state === 'closed' && h.state !== 'closed') return { text: p.text, state: 'closed', by: p.by, ...k }
+     return { ...h, text: p.text, ...k }

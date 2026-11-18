@@ -1,8 +1,8 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index eef10d1..a30083f 100644
+index fb1b317..e273234 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1067,7 +1067,7 @@ function applyMarks(
+@@ -1262,7 +1262,7 @@ function applyMarks(
    const o = rec.objective
    if (o === null) return false
    const notHis = new Set(rec.owner.filter(m => m.kind === 'plan' || approvalOf(m)).map(m => m.n))
@@ -10,4 +10,4 @@ index eef10d1..a30083f 100644
 +  const his = hisFrom(rec, Math.max(o.since, o.from + 1)).filter(n => n > 0 || notHis.size < 0)
    let changed = false
    const done = o.done.map((c): Condition => {
-     const close = closed.find(x => x.by !== null && his.includes(x.by) && same(x.text, c.text))
+     const kind: { kind?: Condition['kind'] } = c.kind === undefined ? {} : { kind: c.kind }

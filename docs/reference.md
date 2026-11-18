@@ -662,16 +662,21 @@ their `shown:` lines when they name where, their `closed:` lines only when the n
 message of the owner's on the job sent after `from` (one the objective was built from had its say
 when it was written), and the check's `reopen:` lines when they say what shows otherwise; a look's or a briefing's
 `shown:` line does not move a condition marked `reopened` (only the check's does, the fourth
-argument). A `shown:` line whose where is a hands-on look, written `look by <who>: <what>`,
-moves the condition shown only when `lookOf` finds `who` on its sign-off list (a helper, a
-subagent, a Codex run, the check); any other who, the agent's own look above all and whoever
-reports it, the check included, leaves the state as it was and keeps what the look saw as the
-condition's `seen` (G44, NORTH_STAR expectation 2). `objectiveText` marks such a condition on the
-card as looked at by the agent and still needing a look by someone who did not build it, without
-the details; the prompts are shown what that look saw (`promptLine`). A where with no `look by`
-is a fact's proof and moves the condition as before: whether a condition is a fact or about the
-work working is the reader's call, which replay R5 measures. The watch, the briefing, ask again
-and the check carry `LOOK_RULE`, which teaches the form. A new job's conditions start with no mark. A draft moves only `step`, set to the draft's `firstSentence` in
+argument). Each condition has a `kind`, `works` or `fact`, which the objective writer writes
+before it (`conditionOf` reads it, `heldLine` writes it back, `bare` strips it where a reader
+copies it, and `mergeConditions` keeps a held `works` as `works` whatever kind a rewrite gives).
+A `fact` moves shown on any where. A `works` condition, or one with no kind, moves shown only when
+`looksOf` finds, among every `look by <who>: <what>` in the where, one whose `who` is exactly on
+the sign-off list `SIGNERS` ("a helper that did not build it", "Codex", "the check"; compared by
+`whoKey`, without case, an article, a trailing stop or a run id in brackets). Otherwise, whoever
+looked and whoever reports it, the check included, the state stays as it was and the condition
+keeps what the looks saw as `seen` and who made them as `seenBy` (a where with no look keeps the
+whole where, made by the agent). `objectiveText` marks such a condition on the card (`seenMark`):
+the agent's own look as "the agent looked at it itself", anyone else's by name, both still
+needing a look by someone who did not build it; `countLine` adds the same by who (`looksNote`),
+and `fillCard` brings the count line back right after the head. The prompts are shown each open
+condition's kind (`kindMark`, `works` for one with none) and what its looks saw (`promptLine`).
+The watch, the briefing, ask again and the check carry `LOOK_RULE`, which teaches the form. A new job's conditions start with no mark. A draft moves only `step`, set to the draft's `firstSentence` in
 `prompt.submit`. The card shows `revisedLine` under the head and `objectiveText` as its
 reading; the row shows `result`.
 

@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 3f27870..6c90a81 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3035,7 +3035,7 @@ const KIND_AT = /^\s*(works|fact)\s*:\s*/i
+ // A condition's text without a state mark the model copied with it, such as
+ // "(not shown)" or "(not shown: the check found …)".
+ // Its kind before it, "works:" or "fact:", is left out too, so a reader that copies it still matches.
+-const bare = (s: string): string => s.trim().replace(/^(?:works|fact)\s*:\s*/i, '').replace(/\s*\((?:open|not shown|shown|closed)(?::[^()]*)?\)$/i, '')
++const bare = (s: string): string => s.trim().replace(/\s*\((?:open|not shown|shown|closed)(?::[^()]*)?\)$/i, '')
+ 
+ // The lines of a shown list: "<condition text> | <where in the conversation>".
+ function shownOf(raw: string | undefined): Array<{ text: string; by: string }> {
