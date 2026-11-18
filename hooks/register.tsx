@@ -202,6 +202,12 @@ import {
   WATCH_APPROVED_BUDGET,
   BRIEF_APPROVED_BUDGET,
   writeFailure,
+  cutShort,
+  readAgain,
+  endsWhole,
+  type WriteResult,
+  type WatchAnswer,
+  CHECK_CUT_NOTE,
   parseWatch,
   resultOf,
   revisedLine,
@@ -1354,8 +1360,9 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
       let after = rec
       let landed = false
       // Up to 1 + OBJECTIVE_RETRIES attempts over the same prompt: an empty or errored
-      // reply, an answer that cannot be read and a "holds" with nothing held are tried
-      // again at the highest effort; a call that threw or was cut short is not. Only a
+      // reply, an answer that cannot be read, one that stopped before its end or came
+      // within 2% of its cap (cutShort), and a "holds" with nothing held are tried
+      // again at the highest effort; a call that threw or ran out of time is not. Only a
       // write whose every attempt failed counts as failed, with the last cause.
       for (let attempt = 0; attempt <= OBJECTIVE_RETRIES; attempt++) {
         const retry = attempt > 0
@@ -1364,7 +1371,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
         const timeoutMs = retry ? OBJECTIVE_RETRY_TIMEOUT_MS : OBJECTIVE_TIMEOUT_MS
         const { result, ms } = await timed(() => $.model.complete({ model: OBJECTIVE_MODEL, system: OBJECTIVE_SYSTEM, prompt, maxTokens, effort, timeoutMs }))
         const sent: Sent = { kind: 'objective', settings: { model: OBJECTIVE_MODEL, effort, maxTokens, timeoutMs }, system: OBJECTIVE_SYSTEM, prompt, joined: true, attempt, result, ms }
-        const read = result !== null && result.isAnswered ? callRead('objective', result.text) : undefined
+        const read = result !== null && result.isAnswered ? callRead('objective', result.text, undefined, { usage: result.usage as Usage, cap: maxTokens }) : undefined
         saveCall($, sid, sent, read)
         let again = false
         let stale = false
@@ -1374,7 +1381,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
             r.objectiveCalls += 1
             r.objectiveTokens += tokensOf(result.usage)
           }
-          const answer = result !== null && result.isAnswered ? parseObjective(result.text) : null
+          const answer = result !== null && result.isAnswered && !cutShort('objective', result.text, result.usage as Usage, maxTokens) ? parseObjective(result.text) : null
           const none = answer !== null && answer.kind === 'holds' && r.objective === null
           if (answer !== null && !none) {
             landed = true
@@ -1415,7 +1422,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
           }
           if (!again) {
             r.objectiveFailed += 1
-            r.objectiveWhy = none ? 'holds-with-none' : writeFailure(result)
+            r.objectiveWhy = none ? 'holds-with-none' : writeFailure(result as WriteResult, maxTokens)
             r.failedWrite = { at: Date.now(), upTo: saw }
             failed = true
           }
@@ -1530,26 +1537,37 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
     return
   }
   const memory = { ...(await memoryFor($, sid, rec, 'watch')), context: await contextOf($) }
-  const got = await readSession($, sid, rec, 'watch', cover => watchPrompt({ ...memory, cover }, reason))
-  // Nothing recorded yet: no model was called, and there is nothing to count.
-  if (got.result === NOTHING_READ) return
-  const result = got.result
   const fill = memory.approved
-  const parsed = result.isAnswered ? parseWatch(result.text) : null
-  // What this look could not do for an approval goes to the row through coverage, the one path.
-  await setLookGaps($, sid, joinGaps(got.gaps, fill === undefined ? {} : readerGaps(fill, 'watch'), notAssessedGaps(parsed?.notAssessed ?? [])))
-  const usage = 'usage' in result ? result.usage : null
-  const watchRead = result.isAnswered ? callRead('watch', result.text) : undefined
-  if (got.sent !== undefined) saveCall($, sid, got.sent, watchRead)
-  await changeRec($, sid, async after => {
-    after.calls += 1
-    after.tokens += tokensOf(usage)
-    after.cached += cachedOf(usage)
-    if (got.sent !== undefined) after.counts = countCall(after.counts, counted(got.sent, watchRead))
-    if (!result.isAnswered || parsed === null) return
+  // A reply cut short (readAgain: it has parts but did not reach its last one, or came within 2% of its cap)
+  // is read once more; a second cut one raises no Heads up and marks nothing, and the call log
+  // and the counters keep both as cut short.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const got = await readSession($, sid, rec, 'watch', cover => watchPrompt({ ...memory, cover }, reason))
+    // Nothing recorded yet: no model was called, and there is nothing to count.
+    if (got.result === NOTHING_READ) return
+    const result = got.result
+    const usage = 'usage' in result ? result.usage : null
+    const cut = result.isAnswered && readAgain('watch', result.text, usage as Usage | null, RECORD_MAX_TOKENS)
+    const parsed = result.isAnswered && !cut ? parseWatch(result.text) : null
+    // What this look could not do for an approval goes to the row through coverage, the one path.
+    if (!cut) await setLookGaps($, sid, joinGaps(got.gaps, fill === undefined ? {} : readerGaps(fill, 'watch'), notAssessedGaps(parsed?.notAssessed ?? [])))
+    const watchRead = result.isAnswered ? callRead('watch', result.text, undefined, { usage: usage as Usage | null, cap: RECORD_MAX_TOKENS }) : undefined
+    if (got.sent !== undefined) saveCall($, sid, got.sent, watchRead)
+    await changeRec($, sid, async after => {
+      after.calls += 1
+      after.tokens += tokensOf(usage)
+      after.cached += cachedOf(usage)
+      if (got.sent !== undefined) after.counts = countCall(after.counts, counted(got.sent, watchRead))
+      if (parsed === null) return
+      await takeLook(after, parsed)
+    })
+    if (!cut) return
+  }
+
+  // An answered look taken: its marks applied, and its Heads up drawn when it raised one.
+  async function takeLook(after: Rec, answer: WatchAnswer): Promise<void> {
     // An answered look moves the cursor, so the next one shows the plans after these.
     if (fill?.cursor !== undefined) after.readerAt = { watch: fill.cursor }
-    const answer = parsed
     if (applyMarks(after, answer.shown, answer.closed) && onScreen(sid)) await update($, readingA, () => after.objective)
     const view = await read($, viewA)
     const said = headsUp(answer, after.seen, fill?.blocks ?? [])
@@ -1559,7 +1577,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
       await update($, noteA, () => note)
       await update($, viewA, () => 'note')
     }
-  })
+  }
 }
 
 // The hidden commands: `/owner-rep-counts` prints this session's counters, `/owner-rep-replay`
@@ -1635,7 +1653,7 @@ async function replay($: EngineInterface, args: string): Promise<string> {
         ...callOutcome(result as never),
         ms,
         nearCap: nearCap(usage, e.settings.maxTokens),
-        ...(result !== null && result.isAnswered ? { read: callRead(e.kind, result.text, e.open) } : {}),
+        ...(result !== null && result.isAnswered ? { read: callRead(e.kind, result.text, e.open, { usage, cap: e.settings.maxTokens }) } : {}),
         ...(usage === undefined ? {} : { usage }),
       }
       rows.push(row)
@@ -1645,6 +1663,9 @@ async function replay($: EngineInterface, args: string): Promise<string> {
   const setting = a.effort === undefined ? '' : ` (effort ${a.effort})`
   return [...lines, '', replayTotals(rows, 'logged'), replayTotals(rows, `replay`) + setting].join('\n')
 }
+
+// The reason a briefing's read gives for a reply cut short, in place of the engine's reason.
+const CUT_SHORT = 'cut-short'
 
 // The press: an instant read over the same copy, drawn in the band.
 async function pressBrief($: EngineInterface, sid: string): Promise<void> {
@@ -1675,11 +1696,14 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
         return extra === '' ? prompt : `${prompt}\n\n${extra}`
       })
       const result = got.result
+      const usage = 'usage' in result ? result.usage : null
+      const size = { usage: usage as Usage | null, cap: RECORD_MAX_TOKENS }
+      // A reply cut short (readAgain) is never read for a card or a mark: the press reads once more.
+      const cut = result !== NOTHING_READ && result.isAnswered && readAgain(kind, result.text, size.usage, size.cap)
       // The plans this briefing could not compare, and the steps it could not assess, go on the card.
       const plans = memory.approved === undefined ? {} : readerGaps(memory.approved, 'brief')
-      const unassessed = result !== NOTHING_READ && result.isAnswered ? notAssessedGaps(parseBrief(result.text).notAssessed ?? []) : {}
-      if (result !== NOTHING_READ) gaps = joinGaps(got.gaps, plans, unassessed)
-      const usage = 'usage' in result ? result.usage : null
+      const unassessed = result !== NOTHING_READ && result.isAnswered && !cut ? notAssessedGaps(parseBrief(result.text).notAssessed ?? []) : {}
+      if (result !== NOTHING_READ && !cut) gaps = joinGaps(got.gaps, plans, unassessed)
       // What the reply was read as, with the gate's rules against the conditions open when it gated.
       let briefRead: CallRead | undefined
       let gatedOpen: Condition[] | null | undefined
@@ -1691,10 +1715,15 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
           if (got.sent !== undefined) after.counts = countCall(after.counts, counted(got.sent))
           return { reason: result.reason }
         }
+        if (cut) {
+          briefRead = callRead(kind, result.text, undefined, size)
+          if (got.sent !== undefined) after.counts = countCall(after.counts, counted(got.sent, briefRead))
+          return { reason: CUT_SHORT }
+        }
         const parsed = parseBrief(result.text)
         if (applyMarks(after, parsed.shown, parsed.closed) && onScreen(sid)) await update($, readingA, () => after.objective)
         const left = gateOpen(after.objective)
-        briefRead = callRead(kind, result.text, left)
+        briefRead = callRead(kind, result.text, left, size)
         gatedOpen = left
         if (got.sent !== undefined) after.counts = countCall(after.counts, counted(got.sent, briefRead))
         return { ...gateVerdict(parsed, left), open: left }
@@ -1702,13 +1731,17 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       if (got.sent !== undefined) saveCall($, sid, got.sent, briefRead, gatedOpen)
       return out
     }
-    const first = await ask('')
+    let first = await ask('')
+    // A reply cut short is read once more; cut short twice, no card is drawn and the toast says so.
+    if ('reason' in first && first.reason === CUT_SHORT) first = await ask('')
     if ('reason' in first) {
       await update($, viewA, () => 'row')
       $.ui.toast(
         first.reason === 'nothing-to-fork'
           ? 'Owner rep: nothing to read yet. Ask the agent something first.'
-          : `Owner rep: the model did not answer (${first.reason}). Press again.`,
+          : first.reason === CUT_SHORT
+            ? 'Owner rep: the briefing stopped before its end twice, so nothing from it was shown. Press again.'
+            : `Owner rep: the model did not answer (${first.reason}). Press again.`,
       )
       return
     }
@@ -1737,7 +1770,8 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     // replaced are written in the rep's own words by one plain call (no fork) over the
     // objective, the open conditions, the owner's messages and what the briefing itself
     // found. A part it writes that still says stop, a reply that did not come back
-    // whole (parseOwnWords), or a call that fails, leaves the rep's fixed text, and the
+    // whole (parseOwnWords) or came within 2% of its cap (cutShort), or a call that
+    // fails, leaves the rep's fixed text, and the
     // press goes on. It writes card parts only, never the objective. With no objective
     // written there is no such call.
     if (taken.refused && taken.replaced.length > 0 && first.open !== null && taken.open !== null) {
@@ -1759,7 +1793,8 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
         result,
         ms,
       }
-      const ownCall = result !== null && result.isAnswered ? callRead('own-words', result.text) : undefined
+      const ownSize = { usage: (result?.usage ?? null) as Usage | null, cap: OWN_WORDS_MAX_TOKENS }
+      const ownCall = result !== null && result.isAnswered ? callRead('own-words', result.text, undefined, ownSize) : undefined
       saveCall($, sid, sent, ownCall)
       const own = await changeRec($, sid, after => {
         after.counts = countCall(after.counts, counted(sent, ownCall))
@@ -1768,7 +1803,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
           after.tokens += tokensOf(result.usage)
           after.cached += cachedOf(result.usage)
         }
-        return result !== null && result.isAnswered ? parseOwnWords(result.text) : null
+        return result !== null && result.isAnswered && !cutShort('own-words', result.text, ownSize.usage, ownSize.cap) ? parseOwnWords(result.text) : null
       })
       const answered = result !== null && result.isAnswered
       ownChars = answered ? result.text.length : 0
@@ -1929,6 +1964,11 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       const why = stderr.trim().split('\n').pop() ?? ''
       return finish({ checkNote: `The check could not run${end.code === null ? '' : ` (exit ${end.code})`}${why === '' ? '' : `: ${fit(why, 160)}`}.` })
     }
+    // A reply that did not reach "looked:" stopped before its end (endsWhole): nothing of it is
+    // taken, no mark and no part of the card, and the card says so. It is not run again on its
+    // own, as the briefing's read is: each run is a paid session of its own, up to
+    // CHECK_TIMEOUT_MS long, so the owner presses the check again.
+    let cut = false
     const patch = await changeRec($, sid, async after => {
       after.checks += 1
       after.checkTokens += got.tokens
@@ -1940,6 +1980,10 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       // taken and the card on record stays the newer one, so the message the
       // owner sends from that card is still known for the rep's draft.
       if (epoch !== checkEpoch || after.lastBrief?.at !== at) return null
+      if (!endsWhole('check', got.text)) {
+        cut = true
+        return null
+      }
       const c = parseCheck(got.text)
       // A condition the check saw shown, or the owner closed, moves under the same
       // rule as a look's, and a reopened one moves shown only here; one held shown
@@ -2000,6 +2044,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       return patch
     })
     if (patch !== null) await finish(patch)
+    if (cut) await finish({ checkNote: CHECK_CUT_NOTE })
   } catch (error) {
     const why = error instanceof Error ? error.message : String(error)
     await finish({ checkNote: `The check failed: ${fit(why, 160)}` }).catch(() => undefined)
