@@ -712,19 +712,26 @@ before it (`conditionOf` reads it, `heldLine` writes it back, `bare` strips it w
 copies it, and `mergeConditions` keeps a held `works`, or one with no kind, as `works` whatever
 kind a rewrite gives, and opens a shown `fact` rewritten as `works` with its where kept as
 `seen`). `conditionOf`, and everything after it through `kindOf`, reads a `fact:` as `fact` only when
-`factHolds`: its text, with its kind, quoted text and file-like words taken out, matches no
-`BEHAVES` (works, runs, passes, does, prints, takes, returns, shows, displays, gives, accepts,
-responds, reads, produces and the like, in any tense, and does not, never, cannot and the like
-unless before "exist"), and every clause of it (split at stops, dashes and joining or relative
-words, `CLAUSE_BREAK`) matches the allow list `FACT_CLAUSE` (saved, committed, pushed, merged,
-installed, deployed, tagged, published, created, written, copied, renamed, changed, deleted or
-removed, never just after "the", "a" or another such word, so never before its noun; exists;
-runs or is on the newest; a file, folder, commit, branch or repository that holds, contains, has
-or lists something; or a clause starting with holds, contains or lists) or is only a short place
-("in the main branch") or "nothing else" (`PLACE_ONLY`). So a condition with any clause about
-what something does, in any verb, is `works` whole, however much of it is a fact (live tests of
-18 Nov 2026: section 11, then the third's section 3, "saved; it converts the file to uppercase"
-and "exists and does not crash on an empty request"). The
+`factHolds`, by closed slots: with its kind taken out, "runs (is on, is built from) the newest"
+read as one word, and quoted text (double, curly or single quotes), file names and paths read
+as names, it matches no `BEHAVES` (works, runs, passes, does, prints, takes, returns, shows,
+displays, gives, accepts, responds, reads, produces and the like, in any tense, and does not,
+never, cannot and the like unless before "exist"); every clause of it (split at stops, dashes,
+brackets, a slash, "&", and joining or relative words, `CLAUSE_BREAK`) is made only of names
+(also anything with a digit, a word in capitals or with a capital inside it, and a capitalised
+word after a word that leads a noun or "to", "on", "in", "at", "from", "into", "via"), counts,
+words that lead a noun (`LEADS`), nouns of the work (`WORK_NOUN`) and the words of
+`FACT_WORDS`, save one other word between a word that leads a noun and a noun of the work ("the
+scratch folder") or after a count, as its unit ("the three commands"); and one clause says a
+fact verb (`FACT_VERB`: saved, committed, pushed, merged, installed, deployed, tagged,
+published, created, written, copied, renamed, changed, deleted, removed, exists, holds,
+contains, has, lists, includes, or runs the newest). No other word may stand anywhere, so a
+condition that says what something does, in any verb or place, is `works` whole, however much
+of it is a fact (live tests of 18 Nov 2026: section 11, the third's section 3, and the fourth's
+36 wordings, among them "the converter transforms saved text to uppercase", "the file is saved
+(it converts text to uppercase)" and the writer's own "the scratch folder holds a sample text
+file whose contents are exactly ...", a fact). The writer's prompt gives the shape of a fact,
+with one example. The
 writer's prompt asks for one claim per condition (`ONE_CLAIM`) beside its kinds.
 A `fact` moves shown on any where. A `works` condition, or one with no kind, moves shown only when
 `looksOf` finds, among every `look by <who>: <what>` in the where, one whose `who` (compared by

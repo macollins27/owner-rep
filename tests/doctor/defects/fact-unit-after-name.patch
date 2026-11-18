@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 8467313..84d38a5 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3475,7 +3475,7 @@ const FACT_VERB = String.raw`saved|committed|pushed|merged|installed|deployed|ta
+ const FACT_VERB_RE = new RegExp(String.raw`^(?:${FACT_VERB})$`)
+ // Words that lead a noun: a determiner, a count, or a word of possession.
+ const LEADS = /^(?:the|a|an|this|that|these|those|its|their|our|your|my|each|every|any|some|no|all|both|other|another|one|two|three|four|five|six|seven|eight|nine|ten|twelve|NUM)$/
+-const COUNT = /^(?:one|two|three|four|five|six|seven|eight|nine|ten|twelve|NUM)$/
++const COUNT = /^(?:one|two|three|four|five|six|seven|eight|nine|ten|twelve|NUM|NAME)$/
+ // Nouns of the work: what is saved, holds something, or does the saving.
+ const WORK_NOUN = /^(?:files?|folders?|director(?:y|ies)|scripts?|programs?|tools?|apps?|pages?|sites?|services?|servers?|endpoints?|builds?|versions?|releases?|code|changes?|fix(?:es)?|work|commits?|branch(?:es)?|repos?|repositor(?:y|ies)|tags?|packages?|plugins?|modules?|tests?|docs|documents?|config|configuration|settings|projects?|sessions?|agents?|machine|main|master|origin|remote|text|contents?|words?|bytes?|lines?|characters?|newlines?|entries|entry|items?|things?|end|names?)$/
+ const FACT_WORDS = new RegExp(String.raw`^(?:${FACT_VERB}|it|they|them|is|are|was|were|be|been|being|had|do|does|did|not|doesn't|don't|didn't|isn't|aren't|wasn't|weren't|hasn't|haven't|nothing|none|else|more|also|already|still|now|only|exactly|just|yet|there|here|in|on|at|to|into|onto|under|from|inside|within|outside|beyond|for|of|via|through|with|by|as|newest|latest|current|new|old|previous|final|same|whole)$`)
