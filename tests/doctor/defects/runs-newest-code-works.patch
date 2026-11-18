@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 1af7fda..183cab1 100644
+index fc7526c..bd3d1b0 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3472,7 +3472,7 @@ export const kindOf = (c: Pick<Condition, 'text' | 'kind'>): ConditionKind => (c
- // saved; it takes a path and prints the file in capitals" is works, not a fact for being saved
- // (live test of 18 Nov 2026, section 11). "Does not exist" stays a fact.
+@@ -3495,7 +3495,7 @@ export const kindOf = (c: Pick<Condition, 'text' | 'kind'>): ConditionKind => (c
+ // (live test of 18 Nov 2026, section 11). So is one saying what it does not do ("does not crash",
+ // third live test, section 3); "does not exist" stays a fact.
  export const BEHAVES =
--  /\b(?:works|working|worked|(?:runs?|running|ran)(?!\s+(?:the\s+)?(?:newest|latest|current)\b)|loads?|loading|loaded|pass(?:es|ed|ing)?|good|behaves?|behaving|usable|can|(?:do|does|did)(?!\s+not\b)|doing|prints?|printed|printing|outputs?|outputting|takes?|took|taking|returns?|returned|returning|shows?|showed|showing|displays?|displayed|displaying|gives?|gave|giving|accepts?|accepted|accepting|responds?|responded|responding|reads?|reading|produces?|produced|producing)\b/i
-+  /\b(?:works|working|worked|runs?|running|ran|loads?|loading|loaded|pass(?:es|ed|ing)?|good|behaves?|behaving|usable|can|(?:do|does|did)(?!\s+not\b)|doing|prints?|printed|printing|outputs?|outputting|takes?|took|taking|returns?|returned|returning|shows?|showed|showing|displays?|displayed|displaying|gives?|gave|giving|accepts?|accepted|accepting|responds?|responded|responding|reads?|reading|produces?|produced|producing)\b/i
+-  /\b(?:works|working|worked|(?:runs?|running|ran)(?!\s+(?:the\s+)?(?:newest|latest|current)\b)|loads?|loading|loaded|pass(?:es|ed|ing)?|good|behaves?|behaving|usable|can|(?:do|does|did|doesn'?t|don'?t|didn'?t|never|cannot|can'?t|won'?t)(?!\s+(?:not\s+)?exist)|doing|prints?|printed|printing|outputs?|outputting|takes?|took|taking|returns?|returned|returning|shows?|showed|showing|displays?|displayed|displaying|gives?|gave|giving|accepts?|accepted|accepting|responds?|responded|responding|reads?|reading|produces?|produced|producing)\b/i
++  /\b(?:works|working|worked|runs?|running|ran|loads?|loading|loaded|pass(?:es|ed|ing)?|good|behaves?|behaving|usable|can|(?:do|does|did|doesn'?t|don'?t|didn'?t|never|cannot|can'?t|won'?t)(?!\s+(?:not\s+)?exist)|doing|prints?|printed|printing|outputs?|outputting|takes?|took|taking|returns?|returned|returning|shows?|showed|showing|displays?|displayed|displaying|gives?|gave|giving|accepts?|accepted|accepting|responds?|responded|responding|reads?|reading|produces?|produced|producing)\b/i
  
  // A condition's text without a state mark the model copied with it, such as
  // "(not shown)" or "(not shown: the check found …)".

@@ -9629,9 +9629,28 @@ test('factHolds and kindOf: a condition is a fact only when it says the work is 
     'The script exists and outputs one line per file',
     'The release is tagged; the installer displays its version',
     'The work is committed; the report gives the total',
+    // The third live test (18 Nov 2026, section 3): any other verb, and a negative behaviour.
+    "shout.py is saved in this scratch folder; it converts the entire text file to uppercase",
+    'The deployed service exists and does not crash on an empty request',
+    'The deployed service does not crash on an empty request',
+    "The service doesn't crash and is deployed",
+    'shout.py is saved and emits the text in capitals',
+    'shout.py is saved, converting the text to uppercase',
+    'The tool that converts text to uppercase is saved',
+    'The saved converter turns text into capitals',
+    'The page is deployed — it calculates the total',
+    'fact: shout.py is saved; it renders the text in capitals',
+    'The build installed never crashes on empty input',
+    "The service deployed doesn't crash on an empty request",
   ]) {
     expect([text, factHolds(text)]).toEqual([text, false])
     expect([text, kindOf({ text, kind: 'fact' })]).toEqual([text, 'works'])
+  }
+  // Each clause a fact, with its kind written before it or a place after it, is still a fact.
+  for (const text of ['fact: The work is saved, committed and pushed to main', 'The old config file does not exist', 'The change is merged, in the main branch', 'The new build is installed and runs the newest code', 'fact: shout.py is saved in this scratch folder',
+    // The writer's own facts from the live tests: a named file's contents, quoted, and changes that did not happen.
+    'sample.txt exists in the scratch folder and contains exactly "one two three"', 'A status file in the scratch folder contains only the words "fixture-read" and nothing else', 'Nothing was committed, pushed, deleted or published']) {
+    expect([text, factHolds(text)]).toEqual([text, true])
   }
   expect(kindOf({ text: 'Customers can complete checkout', kind: 'fact' })).toBe('works')
   expect(kindOf({ text: 'The work is committed', kind: 'fact' })).toBe('fact')

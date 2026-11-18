@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index fc7526c..6f218e8 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3470,7 +3470,7 @@ const KIND_AT = /^\s*(works|fact)\s*:\s*/i
+ // build it can show, so a fact misread costs a look and a behaviour misread never closes.
+ const FACT_DONE = '(?:saved|committed|pushed|merged|installed|deployed|tagged|published|created|written|copied|renamed|changed|deleted|removed)'
+ const FACT_CLAUSE = new RegExp(
+-  String.raw`(?<!\b(?:the|a|an|this|these|those|its|their|our|my|your|his|her|every|each|any|some)\s+(?:\w+ly\s+)?)\b${FACT_DONE}\b|\bexists?\b|\b(?:runs?|is\s+on|built\s+from)\s+(?:the\s+)?(?:newest|latest|current)\b|\b(?:files?|folders?|director(?:y|ies)|commits?|branch(?:es)?|repo(?:sitory)?)\b.*\b(?:holds?|contains?|has|have|lists?)\b|^\s*(?:also\s+)?(?:holds?|contains?|lists?)\b`,
++  String.raw`\b${FACT_DONE}\b|\bexists?\b|\b(?:runs?|is\s+on|built\s+from)\s+(?:the\s+)?(?:newest|latest|current)\b|\b(?:files?|folders?|director(?:y|ies)|commits?|branch(?:es)?|repo(?:sitory)?)\b.*\b(?:holds?|contains?|has|have|lists?)\b|^\s*(?:also\s+)?(?:holds?|contains?|lists?)\b`,
+   'i',
+ )
+ // Where one claim ends and another begins: a stop, a dash, a joining word or a relative one.

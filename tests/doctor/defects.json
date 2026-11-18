@@ -3946,5 +3946,29 @@
     "breaks": "The check runs with JSON output, which keeps only the last result, so a whole answer an engine error replaced is not in the output to read.",
     "patch": "check-output-last-result-only.patch",
     "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-clauses-not-split",
+    "breaks": "A condition is read as a fact when any of it is one, so a clause beside the fact saying what the work does in a verb the behaviour list lacks (\"saved; it converts the file to uppercase\") closes on the builder's own run.",
+    "patch": "fact-clauses-not-split.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-negative-behaviour-exempt",
+    "breaks": "A clause saying what the work does not do (\"never crashes on empty input\") is exempt from the behaviour words, so a condition naming it beside a fact is read as a fact and closes on the builder's own run.",
+    "patch": "fact-negative-behaviour-exempt.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-word-before-noun-read",
+    "breaks": "A fact word before its noun (\"the saved converter turns text into capitals\") is read as the work said to be saved, so a condition about what it does is read as a fact.",
+    "patch": "fact-word-before-noun-read.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-quoted-text-read",
+    "breaks": "Quoted text in a condition is read for behaviour words, so a file said to contain \"fixture-read\" is read as works and needs a look no command could need.",
+    "patch": "fact-quoted-text-read.patch",
+    "fixed": "2026-11-18"
   }
 ]
