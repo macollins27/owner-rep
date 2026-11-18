@@ -196,13 +196,15 @@ export type ConditionState = 'open' | 'not-shown' | 'shown' | 'closed'
 // output or a file shows it). Absent, as on records from before kinds, it is read
 // as works, the strict reading (G44).
 export type ConditionKind = 'works' | 'fact'
-export type Condition = { text: string; state: ConditionState; by: string; reopened?: boolean; seen?: string; seenBy?: string; kind?: ConditionKind }
+// `said` is the run's own last words from the record, beside a look that named that run, so
+// the owner reads what the run said and not only the reader's account of it; absent, none.
+export type Condition = { text: string; state: ConditionState; by: string; reopened?: boolean; seen?: string; seenBy?: string; kind?: ConditionKind; said?: string }
 
 // That the result works, or is good, is signed off only by a hands-on look by
 // someone who did not build it (NORTH_STAR expectation 2; audit G44). A shown
 // mark's where names each look as "look by <who>: <what they did and saw>", and
-// every look in it is read. Who may sign off is a closed set, matched whole: "a
-// helper that did not build it", "Codex", "the check". Any other who, the agent
+// every look in it is read. Who may sign off is a run the record holds (a helper's
+// or Codex's, named by its run) or the check in its own marks. Any other who, the agent
 // above all (and any helper that wrote or changed the work, which is the agent),
 // makes the look shown evidence: a "works" condition stays open and carries what
 // the look saw and who made it. A "fact" condition (a command and what it
@@ -210,76 +212,437 @@ export type Condition = { text: string; state: ConditionState; by: string; reope
 // check of #53 (session 6c159ee6): a prefix list signed "the helper, who also
 // built it" and refused "the second helper", and a second look was never read.
 const LOOK_AT = /(?:^|(?<=[\s.;,(]))(?:a\s+)?(?:hands-on\s+)?look\s+by\s+([^:]+?)\s*:/gi
-// Second Codex review of #53 (6c159ee6): a denied, empty or not-yet look signed ("No look
-// by Codex: …", "look by the check:", "a look by the check: has not happened yet"), and so
-// did one by a signer that says it wrote the work ("look by Codex: I fixed the checkout").
-// Each is now kept as evidence. Whose run it was is checked against the record in
-// `signsOff`, since a name alone is the reader's word.
+// Third Codex review of #53 (6c159ee6, on 68c0123): word lists for who looked and what a look
+// said both missed and misfired, so a look now signs off by the record. It names its run
+// ("look by helper <run>: …", "look by Codex <run>: …", the run as the record prints it), and
+// signs only when that run is in the record and qualifies (`runQualifies`): it finished, it
+// said something, and it changed nothing. The check signs in its own marks alone. A look's
+// own words decide only that it is a look: a signer named, something seen, not denied.
 export type Signer = 'helper' | 'codex' | 'check'
-const SIGNERS = new Map<string, Signer>([
+const CHECK_NAMES = new Set(['check', "rep's own check", "rep's check", "owner-rep's check", "owner rep's check"])
+// The names from before runs were named: a signer, but no run, so never a sign-off.
+const UNNAMED = new Map<string, Signer>([
   ['helper that did not build it', 'helper'],
+  ['helper', 'helper'],
   ['codex', 'codex'],
-  ['check', 'check'],
-  ["rep's own check", 'check'],
-  ["rep's check", 'check'],
-  ["owner-rep's check", 'check'],
-  ["owner rep's check", 'check'],
 ])
+// "helper <run>", "Codex <run>", "Codex run <run>", "helper (run <run>)".
+const RUN_WHO = /^(helper|codex)(?:\s+run)?\s*\(?\s*(?:run\s+|id:?\s*)?([A-Za-z0-9_-]{6,})\s*\)?$/
 // Just before "look by": a word that denies the look.
 const DENIED = /\b(?:no|not|never|without)\s+$/i
-// In what a look saw: that it has not happened, or will.
-const NOT_YET = /\b(?:has\s+not|hasn't|have\s+not|haven't|had\s+not|not\s+yet|yet\s+to|will|would|to\s+be\s+done|pending|planned|did\s+not\s+happen|didn't\s+happen)\b/i
-// In what a look saw: that the one looking wrote or changed the work.
-const BUILT = /\b(?:I|we|it|they|codex|the\s+helper|the\s+check)\s+(?:also\s+|then\s+|first\s+)?(?:wrote|fixed|changed|built|edited|implemented|patched|rewrote|modified|made\s+the\s+change|added|refactored)\b|\b(?:I|we)(?:'ve|\s+have|\s+had)\s+(?:written|fixed|changed|built|edited|implemented|patched|modified|added)\b/i
-// A who as compared: lower case, one space, no leading article or trailing
-// stop, and a run id in brackets after it left out.
+// A who as compared: lower case, straight apostrophes, one space, no leading article or
+// trailing stop.
 const whoKey = (who: string): string =>
   who
     .toLowerCase()
+    .replace(/[‘’ʼ]/g, "'")
     .replace(/\s+/g, ' ')
     .trim()
-    .replace(/\s*\((?:id:?\s*)?[0-9a-f-]{6,}\)$/, '')
     .replace(/[.;,]+$/, '')
     .replace(/^(?:a|an|the)\s+/, '')
-// `as` is the signer the who names, or null; `signs` is whether its words make it a
-// sign-off: a signer's who, something seen, not denied, not still to come, and not a
-// look by one who wrote the work. Whether such a run is in the record is `signsOff`'s.
-export type Look = { signs: boolean; as: Signer | null; who: string; what: string }
+// `as` is the signer the who names, or null; `ref` the run it names, or null; `signs`
+// whether its words make it a look that could sign: a signer named, something seen, not
+// denied. Whether the run it names qualifies is `signsOff`'s.
+export type Look = { signs: boolean; as: Signer | null; ref: string | null; who: string; what: string }
 export function looksOf(where: string): Look[] {
   const at = [...where.matchAll(LOOK_AT)]
   return at.map((m, i) => {
     const who = (m[1] ?? '').trim()
     const end = i + 1 < at.length ? (at[i + 1]?.index ?? where.length) : where.length
     const what = where.slice((m.index ?? 0) + m[0].length, end).trim().replace(/[.;,]+$/, '')
-    const as = SIGNERS.get(whoKey(who)) ?? null
+    const key = whoKey(who)
+    const run = RUN_WHO.exec(key)
+    const as: Signer | null = CHECK_NAMES.has(key) ? 'check' : run !== null ? (run[1] === 'codex' ? 'codex' : 'helper') : (UNNAMED.get(key) ?? null)
+    const ref = run === null ? null : (run[2] ?? null)
     const denied = DENIED.test(where.slice(0, m.index ?? 0))
-    const signs = as !== null && what !== '' && !denied && !NOT_YET.test(what) && !BUILT.test(what)
-    return { signs, as, who, what }
+    return { signs: as !== null && what !== '' && !denied, as, ref, who, what }
   })
 }
-// Which signers' runs the record holds: a helper the agent started (an Agent or Task call,
-// or a `claude -p` run), a Codex run, and the check, which signs only through its own marks.
-export type Ran = { helper: boolean; codex: boolean; check: boolean }
-// A look signs off only when its words do and the record holds a run of the one it names.
-export const signsOff = (l: Look, ran: Ran): boolean => l.signs && l.as !== null && ran[l.as]
-// The who a look that does not sign is kept under: as written, and when its words would
-// sign but no such run is in the record, saying so.
-export const keptWho = (l: Look, ran: Ran): string => (l.signs && l.as !== null && !ran[l.as] ? `${l.who} (no run of it in the record)` : l.who)
-// A tool call that starts a signer's run: a helper (an Agent or Task call, or a shell
-// command running `claude -p` or `claude --print`) or Codex (a shell command running
-// `codex`); null for any other.
-export function runOf(tool: string, command: unknown): 'helper' | 'codex' | null {
-  if (tool === 'Agent' || tool === 'Task') return 'helper'
-  if ((tool !== 'Bash' && tool !== 'PowerShell') || typeof command !== 'string') return null
-  if (/(?:^|[\s;&|(\/])codex(?:\.exe)?\s+(?:exec|e|review)\b/.test(command)) return 'codex'
-  if (/(?:^|[\s;&|(\/])claude(?:\.exe)?\s+(?:[^;&|]*\s)?(?:-p|--print)\b/.test(command)) return 'helper'
+
+// A run of a helper or of Codex the agent started, as the record holds it: the tool call's
+// id, its kind, the helper's agent id, whether it is still running, finished or failed,
+// whether it changed the work, and its own last words.
+export type Run = { id: string; kind: 'helper' | 'codex'; agentId?: string; state: 'running' | 'done' | 'failed'; changed: boolean; said: string }
+// The last words of a run kept, in characters.
+export const RUN_SAID_MAX = 300
+// The most runs a session's record keeps, the newest.
+export const RUNS_KEPT = 60
+// A run as the record prints it beside its call: the end of its call's id.
+export const runKey = (id: string): string => id.slice(-8)
+// A run whose look can sign: finished, with something said, having changed nothing.
+export const runQualifies = (r: Run): boolean => r.state === 'done' && !r.changed && r.said.trim() !== ''
+// The run a look names: the one of its kind whose id ends with what it names, when only one does.
+export function runFor(l: Look, runs: readonly Run[]): Run | undefined {
+  if (l.ref === null || l.as === null || l.as === 'check') return undefined
+  const ref = l.ref.toLowerCase()
+  const hits = runs.filter(r => r.kind === l.as && r.id.toLowerCase().endsWith(ref))
+  return hits.length === 1 ? hits[0] : undefined
+}
+// A look signs off when its words do and, for a helper or Codex, the run it names qualifies;
+// the check signs only in its own marks (`check`).
+export const signsOff = (l: Look, runs: readonly Run[], check: boolean): boolean => {
+  if (!l.signs) return false
+  if (l.as === 'check') return check
+  const r = runFor(l, runs)
+  return r !== undefined && runQualifies(r)
+}
+// The who a look that does not sign is kept under: as written, with why its run does not count.
+export function keptWho(l: Look, runs: readonly Run[], check: boolean): string {
+  if (!l.signs || l.as === null) return l.who
+  if (l.as === 'check') return check ? l.who : `${l.who} (not the check's own mark)`
+  if (l.ref === null) return `${l.who} (names no run)`
+  const r = runFor(l, runs)
+  if (r === undefined) return `${l.who} (no such run in the record)`
+  if (r.changed) return `${l.who} (its run changed the work, so it built it)`
+  if (r.state === 'running') return `${l.who} (its run was not seen to finish)`
+  if (r.state === 'failed') return `${l.who} (its run failed)`
+  if (r.said.trim() === '') return `${l.who} (its run said nothing)`
+  return l.who
+}
+
+// A shell command as the shell reads it: its statements, each a chain of simple commands
+// joined by && and || and |, each with its words (quotes taken off) and where its output
+// goes. A here-document's lines are read as its input, never as commands.
+type Simple = { argv: string[]; to: string[] }
+type Joined = { cmd: Simple; join: '&&' | '||' | '|' | null }
+type Statement = { chain: Joined[]; background: boolean }
+export function shellStatements(command: string): Statement[] {
+  const out: Statement[] = []
+  let chain: Joined[] = []
+  let cmd: Simple = { argv: [], to: [] }
+  let join: Joined['join'] = null
+  let word: string | null = null
+  let redirect: 'to' | 'from' | null = null
+  const heredocs: string[] = []
+  const endWord = () => {
+    if (word === null) return
+    if (redirect === 'to') cmd.to.push(word)
+    else if (redirect === 'from') {
+      // a file read from, or a here-document's end word: neither is a word of the command
+    } else cmd.argv.push(word)
+    redirect = null
+    word = null
+  }
+  const endCmd = (next: Joined['join']) => {
+    endWord()
+    if (cmd.argv.length > 0 || cmd.to.length > 0) chain.push({ cmd, join })
+    cmd = { argv: [], to: [] }
+    join = next
+  }
+  const endStatement = (background: boolean) => {
+    endCmd(null)
+    if (chain.length > 0) out.push({ chain, background })
+    chain = []
+    join = null
+  }
+  const s = command
+  let i = 0
+  while (i < s.length) {
+    const ch = s[i] ?? ''
+    if (ch === '\\' && i + 1 < s.length) {
+      if (s[i + 1] !== '\n') word = (word ?? '') + (s[i + 1] ?? '')
+      i += 2
+      continue
+    }
+    if (ch === "'") {
+      const close = s.indexOf("'", i + 1)
+      const end = close < 0 ? s.length : close
+      word = (word ?? '') + s.slice(i + 1, end)
+      i = end + 1
+      continue
+    }
+    if (ch === '"') {
+      let j = i + 1
+      let w = ''
+      while (j < s.length && s[j] !== '"') {
+        if (s[j] === '\\' && j + 1 < s.length && '"\\$`'.includes(s[j + 1] ?? '')) {
+          w += s[j + 1]
+          j += 2
+        } else {
+          w += s[j]
+          j++
+        }
+      }
+      word = (word ?? '') + w
+      i = j + 1
+      continue
+    }
+    if (ch === '#' && word === null) {
+      while (i < s.length && s[i] !== '\n') i++
+      continue
+    }
+    if (ch === '\n') {
+      endStatement(false)
+      i++
+      // Here-documents begun on the line just ended: their lines up to each end word.
+      for (const end of heredocs.splice(0)) {
+        while (i < s.length) {
+          const nl = s.indexOf('\n', i)
+          const line = s.slice(i, nl < 0 ? s.length : nl)
+          i = nl < 0 ? s.length : nl + 1
+          if (line.replace(/^\t+/, '') === end) break
+        }
+      }
+      continue
+    }
+    if (ch === ' ' || ch === '\t') {
+      endWord()
+      i++
+      continue
+    }
+    if (ch === ';') {
+      endStatement(false)
+      i++
+      continue
+    }
+    if (ch === '&' && s[i + 1] === '&') {
+      endCmd('&&')
+      i += 2
+      continue
+    }
+    if (ch === '|' && s[i + 1] === '|') {
+      endCmd('||')
+      i += 2
+      continue
+    }
+    if (ch === '|') {
+      endCmd('|')
+      i += s[i + 1] === '&' ? 2 : 1
+      continue
+    }
+    if (ch === '&' && s[i + 1] === '>') {
+      endWord()
+      redirect = 'to'
+      i += s[i + 2] === '>' ? 3 : 2
+      continue
+    }
+    if (ch === '&') {
+      endStatement(true)
+      i++
+      continue
+    }
+    if (ch === '<' && s[i + 1] === '<' && s[i + 2] !== '<') {
+      endWord()
+      let j = i + 2
+      if (s[j] === '-') j++
+      while (s[j] === ' ' || s[j] === '\t') j++
+      const m = /^(['"]?)([A-Za-z0-9_.-]+)\1/.exec(s.slice(j))
+      if (m !== null) {
+        heredocs.push(m[2] ?? '')
+        i = j + m[0].length
+      } else i = j
+      continue
+    }
+    if (ch === '<') {
+      endWord()
+      redirect = 'from'
+      i += s[i + 1] === '<' ? 3 : 1
+      continue
+    }
+    if (ch === '>') {
+      // "2>&1", ">&2": one stream to another, no file.
+      const fd = word !== null && /^\d$/.test(word) ? word : null
+      if (fd !== null) word = null
+      else endWord()
+      let j = i + (s[i + 1] === '>' ? 2 : 1)
+      if (s[j] === '&') {
+        j++
+        while (/\d|-/.test(s[j] ?? '')) j++
+        i = j
+        continue
+      }
+      redirect = 'to'
+      i = j
+      continue
+    }
+    if (ch === '(' || ch === ')' || ch === '{' || ch === '}') {
+      if (word === null) {
+        endStatement(false)
+        i++
+        continue
+      }
+    }
+    word = (word ?? '') + ch
+    i++
+  }
+  endStatement(false)
+  return out
+}
+
+// A command's words without what only sets up how it runs: assignments, and env, timeout,
+// nice, nohup, command, exec and time with their own options.
+function bareArgv(argv: readonly string[]): string[] {
+  let a = [...argv]
+  for (;;) {
+    while (a.length > 0 && /^[A-Za-z_][A-Za-z0-9_]*=/.test(a[0] ?? '')) a = a.slice(1)
+    const head = (a[0] ?? '').replace(/^.*\//, '')
+    if (head === 'env') {
+      a = a.slice(1)
+      while (a.length > 0 && ((a[0] ?? '').startsWith('-') || /^[A-Za-z_][A-Za-z0-9_]*=/.test(a[0] ?? ''))) {
+        const f = a[0] ?? ''
+        a = a.slice(f === '-u' || f === '--unset' || f === '-C' || f === '--chdir' || f === '-S' ? 2 : 1)
+      }
+      continue
+    }
+    if (head === 'timeout' || head === 'gtimeout') {
+      a = a.slice(1)
+      while (a.length > 0 && (a[0] ?? '').startsWith('-')) a = a.slice(a[0] === '-s' || a[0] === '-k' || a[0] === '--signal' || a[0] === '--kill-after' ? 2 : 1)
+      a = a.slice(1)
+      continue
+    }
+    if (head === 'nice') {
+      a = a.slice(1)
+      if (a[0] === '-n') a = a.slice(2)
+      else if (/^-\d+$/.test(a[0] ?? '')) a = a.slice(1)
+      continue
+    }
+    if (head === 'nohup' || head === 'command' || head === 'exec' || head === 'time') {
+      a = a.slice(1)
+      continue
+    }
+    return a
+  }
+}
+const nameOf = (word: string | undefined): string => (word ?? '').replace(/^.*[\\/]/, '').replace(/\.exe$/i, '').toLowerCase()
+
+// The simple command a shell call's exit status comes from: the last statement's, when that
+// statement is joined only by && (each part before ran and passed) and is neither piped nor
+// sent to the background. Null for any other shape.
+function deciding(command: string): string[] | null {
+  const all = shellStatements(command)
+  const last = all[all.length - 1]
+  if (last === undefined || last.background) return null
+  if (last.chain.some((j, k) => k > 0 && j.join !== '&&')) return null
+  const cmd = last.chain[last.chain.length - 1]?.cmd
+  return cmd === undefined ? null : bareArgv(cmd.argv)
+}
+
+// Codex's options before its subcommand that take a value, as `codex --help` and `codex exec
+// --help` list them (0.x, Nov 2026).
+const CODEX_VALUED = new Set(['-c', '--config', '--enable', '--disable', '-i', '--image', '-m', '--model', '--local-provider', '-p', '--profile', '-s', '--sandbox', '-C', '--cd', '--add-dir', '--remote', '--remote-auth-token-env', '--thread-source', '--cyber-access-program', '--output-schema', '--color', '-o', '--output-last-message'])
+// A Codex run's words that let it write the work: a sandbox that writes, the bypass, the
+// automatic approvals (workspace-write) and a second folder to write in.
+function codexWrites(argv: readonly string[]): boolean {
+  for (let k = 0; k < argv.length; k++) {
+    const w = argv[k] ?? ''
+    if (w === '--') break
+    if (w === '--dangerously-bypass-approvals-and-sandbox' || w === '--full-auto' || w === '--approve-for-me' || w === '--yolo') return true
+    if (w === '--add-dir' || w.startsWith('--add-dir=')) return true
+    const sandbox = w === '-s' || w === '--sandbox' ? (argv[k + 1] ?? '') : w.startsWith('--sandbox=') ? w.slice(10) : w.startsWith('-s') && w.length > 2 ? w.slice(2) : null
+    if (sandbox !== null && sandbox !== 'read-only') return true
+    const config = w === '-c' || w === '--config' ? (argv[k + 1] ?? '') : w.startsWith('--config=') ? w.slice(9) : null
+    if (config !== null && /^\s*sandbox_mode\s*=\s*["']?(?!read-only\b)/.test(config)) return true
+  }
+  return false
+}
+// A shell call that starts a signer's run: Codex (codex exec, e or review, after any options,
+// with no --help or --version) or a helper (claude -p or --print), as the deciding command,
+// with whether its words let it change the work. A `claude -p` run changes nothing only in
+// plan mode. Null for anything else.
+export function shellRun(command: string): { kind: 'helper' | 'codex'; changes: boolean } | null {
+  const argv = deciding(command)
+  if (argv === null) return null
+  const head = nameOf(argv[0])
+  const rest = argv.slice(1)
+  if (rest.some(w => w === '-h' || w === '--help' || w === '-V' || w === '--version')) return null
+  if (head === 'codex') {
+    let k = 0
+    while (k < rest.length && (rest[k] ?? '').startsWith('-')) k += CODEX_VALUED.has(rest[k] ?? '') ? 2 : 1
+    const sub = rest[k] ?? ''
+    if (sub !== 'exec' && sub !== 'e' && sub !== 'review') return null
+    return { kind: 'codex', changes: codexWrites(rest) }
+  }
+  if (head === 'claude') {
+    if (!rest.some(w => w === '-p' || w === '--print')) return null
+    const mode = rest.findIndex(w => w === '--permission-mode')
+    const plan = (mode >= 0 && rest[mode + 1] === 'plan') || rest.includes('--permission-mode=plan')
+    return { kind: 'helper', changes: !plan }
+  }
   return null
 }
+// A tool call that starts a signer's run: an Agent or Task call (a helper), or a shell call
+// `shellRun` reads as one; null for any other.
+export function runOf(tool: string, command: unknown): { kind: 'helper' | 'codex'; changes: boolean } | null {
+  if (tool === 'Agent' || tool === 'Task') return { kind: 'helper', changes: false }
+  if ((tool !== 'Bash' && tool !== 'PowerShell') || typeof command !== 'string') return null
+  return shellRun(command)
+}
+
+// The tools that write a file.
+export const EDIT_TOOLS = new Set(['Edit', 'Write', 'NotebookEdit', 'MultiEdit'])
+// Programs that change the files they are given, and git's and the package managers' words that
+// change the work.
+const CHANGERS = new Set(['rm', 'rmdir', 'mv', 'cp', 'tee', 'touch', 'truncate', 'patch', 'ln', 'install', 'mkdir', 'chmod', 'unlink', 'dd'])
+const GIT_CHANGES = new Set(['add', 'commit', 'apply', 'am', 'checkout', 'switch', 'reset', 'restore', 'stash', 'merge', 'rebase', 'cherry-pick', 'revert', 'push', 'rm', 'mv', 'clean', 'pull', 'tag', 'branch'])
+const PM_CHANGES = new Set(['install', 'i', 'add', 'remove', 'rm', 'uninstall', 'update', 'up', 'upgrade'])
+// A path that is in the work: relative, or inside the folder, never a device or a place outside.
+const inWork = (path: string, cwd: string): boolean => {
+  if (path === '' || path.startsWith('-')) return false
+  if (path.startsWith('/dev/')) return false
+  if (path.startsWith('/') || /^[A-Za-z]:[\\/]/.test(path)) return cwd !== '' && (path === cwd || path.startsWith(cwd.endsWith('/') ? cwd : `${cwd}/`))
+  if (path.startsWith('~') || path.startsWith('$')) return false
+  return true
+}
+// Whether a shell call changes the work in `cwd`: a program above given a path in it, sed or perl
+// editing in place, git or a package manager changing it, or output sent to a file in it.
+export function shellChanges(command: string, cwd: string): boolean {
+  for (const st of shellStatements(command)) {
+    for (const { cmd } of st.chain) {
+      if (cmd.to.some(t => inWork(t, cwd))) return true
+      const argv = bareArgv(cmd.argv)
+      const head = nameOf(argv[0])
+      const rest = argv.slice(1)
+      const paths = rest.filter(w => !w.startsWith('-'))
+      // cp, ln and install change only where they write, the last path; dd only its of=.
+      const changed = head === 'dd' ? rest.filter(w => w.startsWith('of=')).map(w => w.slice(3)) : ['cp', 'ln', 'install'].includes(head) ? paths.slice(-1) : paths
+      if (CHANGERS.has(head) && changed.some(p => inWork(p, cwd))) return true
+      if ((head === 'sed' || head === 'perl') && rest.some(w => /^-[A-Za-z]*i/.test(w) || w === '--in-place') && paths.some(p => inWork(p, cwd))) return true
+      if (head === 'git') {
+        let k = 0
+        while (k < rest.length && (rest[k] ?? '').startsWith('-')) k += rest[k] === '-C' || rest[k] === '-c' ? 2 : 1
+        if (GIT_CHANGES.has(rest[k] ?? '')) return true
+      }
+      if (['npm', 'pnpm', 'yarn', 'bun'].includes(head) && PM_CHANGES.has(rest.find(w => !w.startsWith('-')) ?? '')) return true
+    }
+  }
+  return false
+}
+// The end of a text, kept to `max` characters, on one line.
+const tailOf = (s: string, max: number): string => {
+  const t = s.replace(/\s+/g, ' ').trim()
+  return t.length <= max ? t : `…${t.slice(t.length - max + 1)}`
+}
+// What a run's call returned, as the record keeps it: a call that failed or errored is failed;
+// a shell call sent to the background, cut off or timed out, and a helper still running, is
+// running (its end is not seen here); one that finished keeps its own last words. A helper's
+// run changed the work when its own tool counts say it edited a file.
+export function runFromResult(changes: boolean, r: unknown): Pick<Run, 'state' | 'changed' | 'said'> & { agentId?: string } {
+  const x = (typeof r === 'object' && r !== null ? r : {}) as { result?: unknown; isError?: unknown; deny?: unknown }
+  if (x.isError === true || typeof x.deny === 'string' || typeof x.result !== 'object' || x.result === null) return { state: 'failed', changed: changes, said: '' }
+  const res = x.result as Record<string, unknown>
+  if ('stdout' in res) {
+    const off = typeof res.backgroundTaskId === 'string' || res.interrupted === true || typeof res.timedOutAfterMs === 'number'
+    return { state: off ? 'running' : 'done', changed: changes, said: off ? '' : tailOf(String(res.stdout ?? ''), RUN_SAID_MAX) }
+  }
+  const agentId = typeof res.agentId === 'string' ? { agentId: res.agentId } : {}
+  const stats = (typeof res.toolStats === 'object' && res.toolStats !== null ? res.toolStats : {}) as { editFileCount?: unknown }
+  const used = Array.isArray(res.toolsUsed) ? (res.toolsUsed as unknown[]) : []
+  const edited = changes || (typeof stats.editFileCount === 'number' && stats.editFileCount > 0) || used.some(t => typeof t === 'string' && EDIT_TOOLS.has(t))
+  if (res.status === 'completed') {
+    const content = Array.isArray(res.content) ? (res.content as Array<{ text?: unknown }>) : []
+    const text = content.map(c => (typeof c?.text === 'string' ? c.text : '')).join(' ')
+    return { state: 'done', changed: edited, said: tailOf(text, RUN_SAID_MAX), ...agentId }
+  }
+  return { state: 'running', changed: edited, said: '', ...agentId }
+}
+// A helper's run once its own loop ends: finished with its answer, or failed.
+export const runEnded = (r: Run, reason: string, answer: string): Run =>
+  reason === 'answer' && answer.trim() !== '' ? { ...r, state: 'done', said: tailOf(answer, RUN_SAID_MAX) } : { ...r, state: 'failed', said: tailOf(answer, RUN_SAID_MAX) }
 // Whether a who is the agent's own: "the agent" by name.
 export const isAgentWho = (who: string): boolean => whoKey(who) === 'agent'
 
 // How a reader writes a look, told to the watch, the briefing, ask again and the check.
-export const LOOK_RULE = 'That the result works for its user, or is good (a condition marked "works:"), is shown only by a hands-on look at the real thing by someone who did not build it. Write its where with each look there was, each in its own words, as one of exactly: "look by a helper that did not build it: …", "look by Codex: …", "look by the check: …", saying what they did and what they saw. Write only looks the record shows happened. Any helper that wrote or changed the work is the agent: write the agent\'s own look at its own work "look by the agent: …"; it is kept and shown to the owner as the agent\'s own look, and the condition stays open. A fact\'s where (a condition marked "fact:") is the command and what it printed, or the file and what it holds.'
+export const LOOK_RULE = 'That the result works for its user, or is good (a condition marked "works:"), is shown only by a hands-on look at the real thing by someone who did not build it. Write its where with each look there was, each in its own words, as one of exactly: "look by helper <run>: …", "look by Codex <run>: …", "look by the check: …", where <run> is the run the record prints beside the call that started it ("(run …)"), saying what they did and what they saw. Write only looks the record shows happened. A run that wrote or changed the work, or any helper briefed to build it, is the agent\'s: write the agent\'s own look at its own work "look by the agent: …"; it is kept and shown to the owner as the agent\'s own look, and the condition stays open. A fact\'s where (a condition marked "fact:") is the command and what it printed, or the file and what it holds.'
 export type ObjectiveParts = { result: string; purpose: string; done: Condition[]; step: string }
 export type Objective = ObjectiveParts & {
   // When the job opened.
@@ -461,7 +824,15 @@ const sentence = (s: string): string => {
 // for, what "done" has to show with each condition's state, and the step now.
 // Its first sentence, the one the row shows, is the result.
 // One condition with its state's mark, as the prose and the open lists show it.
-const conditionLine = (c: Condition): string => `${c.text.trim().replace(/[.;]+$/, '')}${STATE_MARK[c.state]}${seenMark(c)}`
+const conditionLine = (c: Condition, owner = true): string => `${c.text.trim().replace(/[.;]+$/, '')}${stateMark(c, owner)}${seenMark(c)}${saidMark(c)}`
+// A condition's state as the card says it: one the owner closed is closed on their word,
+// by design, with the number of the message (third Codex review of #53). A model is told it
+// as the owner's word.
+const stateMark = (c: Condition, owner = true): string =>
+  c.state === 'closed' ? ` (closed on ${owner ? 'your' : "the owner's"} word, ${c.by})` : STATE_MARK[c.state]
+// Beside a look that names a run, the run's own last words from the record, so the owner reads
+// what the run said next to the reader's account of it.
+const saidMark = (c: Condition): string => (typeof c.said === 'string' && c.said.trim() !== '' && c.state !== 'closed' ? ` (the run's own last words: "${c.said.trim()}")` : '')
 
 // Beside a condition still open that the agent looked at itself, what the card
 // says of it: the look is in, and the sign-off is still to come.
@@ -473,7 +844,7 @@ const seenMark = (c: Condition): string =>
     ? ''
     : seenWho(c) === ''
       ? ' (the agent looked at it itself; it still needs a look by someone who did not build it)'
-      : ` (looked at by ${seenWho(c)}, not counted as someone who did not build it; it still needs a look by a helper that did not build it, Codex or the check)`
+      : ` (looked at by ${seenWho(c)}, not counted as someone who did not build it; it still needs a look by a helper or Codex run that changed nothing, or the check)`
 
 // What the check found beside a condition it reopened, '' for any other.
 const found = (c: Condition): string =>
@@ -487,11 +858,11 @@ const promptLine = (c: Condition): string =>
   found(c) !== ''
     ? `${kindMark(c)}${c.text.trim().replace(/[.;]+$/, '')} (not shown: the check found ${found(c)})`
     : seenOf(c) !== ''
-      ? `${kindMark(c)}${c.text.trim().replace(/[.;]+$/, '')}${STATE_MARK[c.state]} (${seenWho(c) === '' ? "the agent's own look" : `the look by ${seenWho(c)}, not on the sign-off list,`} saw: ${seenOf(c)}; only a look by someone who did not build it shows it)`
-      : `${kindMark(c)}${conditionLine(c)}`
+      ? `${kindMark(c)}${c.text.trim().replace(/[.;]+$/, '')}${stateMark(c, false)} (${seenWho(c) === '' ? "the agent's own look" : `the look by ${seenWho(c)}, not on the sign-off list,`} saw: ${seenOf(c)}; only a look by someone who did not build it shows it)`
+      : `${kindMark(c)}${conditionLine(c, false)}`
 
 // A condition's kind as the readers are shown it, so they know which needs a look.
-const kindMark = (c: Condition): string => `${c.kind ?? 'works'}: `
+const kindMark = (c: Condition): string => `${kindOf(c)}: `
 
 // The conditions still open as a list, one "- <condition> (mark)" line each.
 const openLines = (o: Objective | null, none: string): string =>
@@ -500,8 +871,9 @@ const openLines = (o: Objective | null, none: string): string =>
 // Whether a condition held open is one the check reopened.
 const anyReopened = (o: Objective | null): boolean => openConditions(o).some(c => found(c) !== '')
 
-export function objectiveText(o: Objective): string {
-  const done = o.done.map(conditionLine).join('; ')
+// `owner` false words it for a model: a closed condition closed on the owner's word.
+export function objectiveText(o: Objective, owner = true): string {
+  const done = o.done.map(c => conditionLine(c, owner)).join('; ')
   return [
     sentence(o.result),
     sentence(o.purpose),
@@ -1384,7 +1756,7 @@ function memoryText(m: Memory): string {
   const reading =
     o === null
       ? "Not written yet: it is being written from the owner's messages. Until it is, measure against the owner's messages below."
-      : `"${objectiveText(o)}"${o.movedAt === null ? '' : `\n(${revisedLine(o)})`}`
+      : `"${objectiveText(o, false)}"${o.movedAt === null ? '' : `\n(${revisedLine(o)})`}`
   const onJob = o === null ? m.owner : m.owner.filter(x => x.n >= o.since)
   const approved = m.approved
   const section = approved === undefined || approved.blocks.length + approved.told.length === 0 ? '' : `${APPROVED_HEAD}\n\n${[...approved.blocks, ...approved.told].join('\n\n')}\n\n`
@@ -2543,7 +2915,8 @@ function recordEntries(rows: readonly RecordRow[], human?: ReadonlySet<string>):
         if (u.text !== undefined && u.tool_use_id !== undefined) printed.add(u.tool_use_id)
         if (u.tool === 'ExitPlanMode' && u.tool_use_id !== undefined) planInputs.set(u.tool_use_id, u.input)
         fields.push(input, ...(result === null ? [] : [result]))
-        return { tool: u.tool, input, result, isError: u.isError === true }
+        const run = u.tool_use_id !== undefined && runOf(u.tool, (u.input as { command?: unknown } | null)?.command) !== null ? ` (run ${runKey(u.tool_use_id)})` : ''
+        return { tool: u.tool, run, input, result, isError: u.isError === true }
       })
       if (said === null && uses.length === 0) return
       entries.push({
@@ -2553,7 +2926,7 @@ function recordEntries(rows: readonly RecordRow[], human?: ReadonlySet<string>):
         build: show =>
           `entry ${n} the agent:\n${[
             ...(said === null ? [] : [show(said)]),
-            ...uses.map(u => `- used ${u.tool} ${show(u.input)} → ${u.result === null ? '(no result)' : `${u.isError ? '(error) ' : ''}${show(u.result)}`}`),
+            ...uses.map(u => `- used ${u.tool}${u.run} ${show(u.input)} → ${u.result === null ? '(no result)' : `${u.isError ? '(error) ' : ''}${show(u.result)}`}`),
           ].join('\n')}`,
       })
       return
@@ -3062,9 +3435,9 @@ const oneLine = (s: string | undefined): string => clean(s).replace(/\s+/g, ' ')
 function conditionOf(line: string): Condition {
   const k = KIND_AT.exec(line)
   const said = k === null ? undefined : (k[1] ?? '').toLowerCase() === 'fact' ? 'fact' : 'works'
-  // A "fact" about running, working, loading, passing or being good is read as works,
-  // since only a look by someone who did not build it can show it (Codex review of #53).
-  const kind: { kind?: ConditionKind } = said === undefined ? {} : { kind: said === 'fact' && BEHAVES.test(line.split('|')[0] ?? '') ? 'works' : said }
+  // A "fact" is one only when `factHolds` reads it as one; any other is works, since only a
+  // look by someone who did not build it can show it (Codex reviews of #53).
+  const kind: { kind?: ConditionKind } = said === undefined ? {} : { kind: said === 'fact' && !factHolds(line.split('|')[0] ?? '') ? 'works' : said }
   const m = /^(.*?)\s*\|\s*(open|not[\s-]?shown|shown|closed)\b\s*:?\s*(.*)$/i.exec(line)
   if (m === null) return { text: bare(line.split('|')[0] ?? ''), state: 'open', by: '', ...kind }
   const text = bare(m[1] ?? '')
@@ -3078,6 +3451,18 @@ function conditionOf(line: string): Condition {
 
 // A condition's kind written before it: "works:" or "fact:".
 const KIND_AT = /^\s*(works|fact)\s*:\s*/i
+// What a fact is about, by an allow list (third Codex review of #53): the work saved,
+// committed, pushed, merged, installed or deployed, a thing that exists, a file or folder
+// that holds something, or a build that runs the newest code. A condition is a fact only when
+// it says one of these and nothing in BEHAVES; a file's name ("good.json") is not read.
+const FACT_SAYS = /\b(?:saved|committed|pushed|merged|installed|deployed|tagged|exists?|(?:runs?|is\s+on|built\s+from)\s+(?:the\s+)?(?:newest|latest|current)\b)|\b(?:files?|folders?)\b.*\b(?:holds?|contains?|has|have|lists?)\b/i
+export const factHolds = (text: string): boolean => {
+  const t = text.replace(/[^\s"'`()]+\.[A-Za-z0-9]{1,8}\b/g, ' ')
+  return FACT_SAYS.test(t) && !BEHAVES.test(t)
+}
+// A condition's kind as judged: "fact" only when held so and `factHolds` reads it as one,
+// since older records hold kinds written before the allow list.
+export const kindOf = (c: Pick<Condition, 'text' | 'kind'>): ConditionKind => (c.kind === 'fact' && factHolds(c.text) ? 'fact' : 'works')
 // Words that make a condition one about the result behaving for its user. "Runs the newest
 // code" is the writer's own example of a fact, so it is not one.
 export const BEHAVES = /\b(?:works|working|worked|(?:runs?|running|ran)(?!\s+(?:the\s+)?(?:newest|latest|current)\b)|loads?|loading|loaded|pass(?:es|ed|ing)?|good|behaves?|behaving|usable)\b/i
@@ -4425,7 +4810,7 @@ const looksNote = (o: Objective): string => {
   // review of #53: at 80 rows a count line of seventy names was dropped whole).
   const self = by.get('') ?? 0
   const others = [...by].reduce((n, [who, k]) => (who === '' ? n : n + k), 0)
-  const short = [self > 0 ? `the agent looked at ${self} itself` : '', others > 0 ? `others not counted as someone who did not build it looked at ${others}` : ''].filter(p => p !== '')
+  const short = [self > 0 ? `the agent looked at ${self} itself` : '', others > 0 ? `${others} more looked at by whoever built it or by no run in the record, not counted` : ''].filter(p => p !== '')
   return ` (${short.join('; ')}; each still needs a look by someone who did not build it)`
 }
 // The longest the note beside the count is drawn with names.
@@ -4670,12 +5055,12 @@ export const OPEN_NEXT = (open: Condition[]): string =>
 // objective is not shown complete, with the conditions still open and their
 // marks.
 export const OPEN_MEANS = (open: Condition[]): string =>
-  `The agent has not shown the objective complete: ${open.map(conditionLine).join('; ')} ${open.length === 1 ? 'is' : 'are'} still open.`
+  `The agent has not shown the objective complete: ${open.map(c => conditionLine(c)).join('; ')} ${open.length === 1 ? 'is' : 'are'} still open.`
 
 // The message a refused card offers to send in place of the model's: it keeps
 // the agent on the job, never tells it to stop.
 export const OPEN_MESSAGE = (open: Condition[]): string =>
-  `The job is not finished. These conditions of done are still open:\n${list(open.map(conditionLine), '- none')}\nBefore anything stops, show each one working, or say what stands in the way. If a step needs my go-ahead, hold it: finish the rest, and tell me what you will show me when I give it.`
+  `The job is not finished. These conditions of done are still open:\n${list(open.map(c => conditionLine(c, false)), '- none')}\nBefore anything stops, show each one working, or say what stands in the way. If a step needs my go-ahead, hold it: finish the rest, and tell me what you will show me when I give it.`
 
 // What sending that message makes the agent do.
 export const OPEN_DOES = 'Keeps the agent on the job until it shows each open condition working or says what stands in the way.'
