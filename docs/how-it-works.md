@@ -63,7 +63,11 @@ or puts its message in the prompt always reaches a button on screen; on a band t
 the message's box between the head and the buttons, as in a 24-row terminal, the box goes and
 Put message in prompt still carries the message whole. Rows are counted as the band wraps
 them, at words, because a count by cells says one row too few for a long paragraph and the
-card then scrolls with its buttons out of reach.
+card then scrolls with its buttons out of reach. The count follows the band's wrap to the
+cell: an indent's spaces count, and the buttons row is counted first and as it wraps, the
+conversation's size beside it. A live test on 18 Nov 2026 drew a card of 34 rows on a band
+of 33, because a left-out item two cells past the row with its indent was counted without
+the indent on one row; the card scrolled and its buttons fell under the fold.
 
 The **check** reads outside the conversation. It opens the session's full record through
 agentsview, a local tool that indexes every coding-agent session on the machine, opens the files the agent claims to
@@ -351,7 +355,11 @@ command whose exit the call reports: the last statement, joined to what came bef
 `&&`, not piped, not after `||`, not in the background, never with `--help` or `--version`. The
 same review replaced the guess at which "fact" conditions describe behaviour with an allow list:
 a fact is saved, committed, pushed, merged, installed, deployed, tagged, a file holding
-something, or the newest version running, and anything else is works. The owner's own word still
+something, or the newest version running, and anything else is works. A condition is a fact
+only when every clause of it is one: a live test on 18 Nov 2026 had the writer mark "tally.py
+is saved and prints the count" a fact for being saved, so the builder's own run closed what
+the tool does. Any clause about what something does, prints, takes, returns or shows now makes
+the whole condition works, and the writer is asked for one claim per condition. The owner's own word still
 closes a condition, by design, and the card says so: "closed on your word (#n)". The note of
 whose looks are in also goes on the count line,
 which comes back right after the card's head, because at 80 rows the condition lines that carried

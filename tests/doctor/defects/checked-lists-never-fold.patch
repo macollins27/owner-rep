@@ -1,16 +1,17 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 6e8b995..a6e64a0 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2607,7 +2607,7 @@
+@@ -5075,7 +5075,7 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
      means: '',
      leftOut: [],
      next: '',
 -    checked: counted(),
 +    checked: k,
+     checkNote: toRows(card.checkNote, '', 1, w),
      checkCost: '',
      message: toRows(card.message, '', 1, mw),
-     does: '',
-@@ -2621,7 +2621,7 @@
+@@ -5094,7 +5094,7 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
      x => ({ ...x, stands: toRows(card.stands, 'Stands: ', 1, w) }),
      // That the reading moved, and why, is the next thing the owner must not miss.
      x => ({ ...x, revised: toRows(card.revised, '', 1, w) }),
