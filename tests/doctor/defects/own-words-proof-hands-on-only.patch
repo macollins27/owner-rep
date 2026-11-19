@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index fa5a469..f9ed033 100644
+index f8f119f..2ce6ea2 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -6271,7 +6271,7 @@ Exactly these labelled parts, in this order, English labels, nothing before or a
- means: <one or two sentences: what the agent's latest message means for the owner, measured against the whole result, with the objective not shown complete>
- next: <one or two sentences: what the agent does now to show the first of the open conditions, or what stands in the way; never a stop, never a step for the owner>
+@@ -6577,7 +6577,7 @@ Exactly these labelled parts, in this order, English labels, nothing before or a
+ means: <${SHORT_PART}: what the agent's latest message means for the owner, measured against the whole result, with the objective not shown complete>
+ next: <${SHORT_PART}: what the agent does now to show the first of the open conditions, or what stands in the way; never a stop, never a step for the owner>
  message:
--<the message for the owner to send to the agent, written to the agent, specific and professional, several lines if needed: it asks for the work that is missing on each open condition, and where proof is missing, the proof that would show it: a fact's command and what it printed, or a hands-on look at the real thing (open it, use it, try to break it); never a piece whose job is to prove the agent's own work, and a test or a review never stands in for that look>
-+<the message for the owner to send to the agent, written to the agent, specific and professional, several lines if needed: it asks for the work that is missing on each open condition, and where proof is missing, a hands-on look at the real thing (open it, use it, try to break it); never a piece whose job is to prove the agent's own work, and a test or a review never stands in for that look>
+-<the message for the owner to send to the agent, written to the agent ${MESSAGE_FORM}: it asks for the work that is missing on each open condition, and where proof is missing, the proof that would show it: a fact's command and what it printed, or a hands-on look at the real thing (open it, use it, try to break it); never a piece whose job is to prove the agent's own work, and a test or a review never stands in for that look>
++<the message for the owner to send to the agent, written to the agent ${MESSAGE_FORM}: it asks for the work that is missing on each open condition, and where proof is missing, a hands-on look at the real thing (open it, use it, try to break it); never a piece whose job is to prove the agent's own work, and a test or a review never stands in for that look>
  end
  does: <one line: what this message will make the agent do>`)
  }

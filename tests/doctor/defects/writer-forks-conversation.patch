@@ -1,9 +1,9 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 35606cf..d680f5b 100644
+index b6129e7..f9ef81b 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1369,7 +1369,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
-         const effort = retry ? OBJECTIVE_RETRY_EFFORT : 'high'
+@@ -1428,7 +1428,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
+         const effort = objectiveEffort(attempt)
          const maxTokens = retry ? OBJECTIVE_RETRY_MAX_TOKENS : OBJECTIVE_MAX_TOKENS
          const timeoutMs = retry ? OBJECTIVE_RETRY_TIMEOUT_MS : OBJECTIVE_TIMEOUT_MS
 -        const { result, ms } = await timed(() => $.model.complete({ model: OBJECTIVE_MODEL, system: OBJECTIVE_SYSTEM, prompt, maxTokens, effort, timeoutMs }))
