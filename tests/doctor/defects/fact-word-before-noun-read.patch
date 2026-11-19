@@ -1,12 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 7b58d6b..1120981 100644
+index 2ba29a0..cf95cc7 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3520,14 +3520,14 @@ const factTokens = (text: string): FactTok[] => {
+@@ -3527,14 +3527,14 @@ const factTokens = (text: string): FactTok[] => {
  const factRead = (ts: FactTok[]): boolean => {
    const w = (i: number, re: RegExp): boolean => ts[i]?.t === 'W' && re.test(ts[i]?.w ?? '')
    const x = (i: number, s: string): boolean => ts[i]?.t === 'X' && ts[i]?.w === s
--  const mod = (i: number): boolean => { const k = ts[i]; return k !== undefined && (k.t === 'W' ? !FACT_NOT_MOD.test(k.w) : k.t === 'H' || k.t === 'N' || k.t === 'P') }
+-  const mod = (i: number): boolean => { const k = ts[i]; return k !== undefined && (k.t === 'W' ? !FACT_NOT_MOD.test(k.w) && !factQuality(k.w) : k.t === 'H' || k.t === 'N' || k.t === 'P') }
 +  const mod = (i: number): boolean => ts[i] !== undefined
    const det = (i: number): boolean => w(i, FACT_DET) || ts[i]?.t === 'N'
    const uniq = (a: FactAt[]): FactAt[] => a.filter((r, k) => a.findIndex(o => o.i === r.i && o.store === r.store) === k)

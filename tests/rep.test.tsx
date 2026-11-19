@@ -9939,6 +9939,9 @@ test('factHolds reads a fact by its sentence shape: the fifth live test\'s 88 wo
     ['sample.txt in the scratch folder is exactly 6 bytes', 'fact'],
     ['sample.txt in the scratch folder is exactly 13 bytes', 'fact'],
     ['sample.txt in the scratch folder is 13 bytes long, with no newline at the end', 'fact'],
+    ['sample.txt in the scratch folder is 6 bytes in size', 'fact'],
+    ['the README is 40 lines in length', 'fact'],
+    ['the converter is 6 bytes in size and prints the file', 'works'],
     ['nothing from this job is committed or pushed', 'fact'],
     ['nothing from this work is committed or pushed', 'fact'],
     ['nothing is committed or pushed', 'fact'],
@@ -9974,7 +9977,14 @@ test('factHolds reads a fact by its sentence shape: the fifth live test\'s 88 wo
   // A behaviour or a judgement among a noun's own words is still one: the behaviour words veto
   // it wherever they stand, a negative one too, and a noun takes at most two words of its own,
   // none of them a word of a clause.
-  for (const text of ['The working converter is saved', 'The uppercase-printing converter is saved', 'The never-crashing service is deployed', 'The passing tests are committed', 'The converter that uppercases text files is saved', 'The notes file contains all encrypted text']) expect([text, factHolds(text)]).toEqual([text, false])
+  for (const text of ['The working converter is saved', 'The uppercase-printing converter is saved', 'The never-crashing service is deployed', 'The passing tests are committed', 'The converter that uppercases text files is saved', 'The notes file contains all encrypted text', 'The bug-free code is committed', 'The secure service is deployed', 'The correct config is saved', 'The fully tested build is installed', 'The encrypted notes file is saved', 'The error-free script is committed', 'The well-tested plugin is merged to main', 'The reliable service is deployed', 'The production-ready build is pushed', 'The flawless page is published', 'The bulletproof server is deployed', 'The robust fix is merged', 'The complete docs are committed', 'The finished work is saved in the clean folder']) expect([text, factHolds(text)]).toEqual([text, false])
+  // The sixth live test's forced wordings: a quality or a doing among a noun's own words, as the subject, the thing held or the place.
+  for (const text of ['The bug-free code is committed', 'The secure service is deployed', 'The correctly encrypting tool is installed', 'The crash-free app is deployed', 'The fully functional program is saved', 'The lossless compression tool is installed', 'The correctly sorting script is saved', 'The correct code is committed', 'The reliable service exists', 'The accessible site is deployed', 'The error-free script exists', 'The responsive page is deployed', 'The script contains a correct fix', 'The folder contains the bug-free code', 'The script exists and it contains a correct fix', 'The accurately calculating program is installed', 'The service is deployed to the correctly encrypting server', 'The script contains the correctly sorted records', 'The file is saved on the secure server', 'The tool is deployed and the lossless compression module exists', 'The encrypting tool is installed', 'The sorting script is saved', 'The validating service is deployed', 'No file holds a correct fix', 'No log holds "error"', 'No file in the project holds bugs']) expect([text, factHolds(text)]).toEqual([text, false])
+  // Each older guard alone (doctor of the sixth round's fix): a behaviour word or a negative
+  // folded into a hyphened word, a verb folded into one, and a thing held that is not a thing of
+  // the work.
+  for (const text of ['the cannot-fail script is committed', 'the never-fails tool is installed', 'the converts-to-uppercase script is committed', 'the takes-a-file tool is installed', 'the uppercases-text script is saved', 'the file contains the answer', 'sample.txt holds the result', 'the commit contains the feature', 'the log holds the errors']) expect([text, factHolds(text)]).toEqual([text, false])
+    for (const text of ['greet.py is saved in the scratch folder', 'no file in the project holds a change made during this job', 'no new commit made during this job exists in the project', 'The code committed to main is deployed', 'The owner-rep plugin is installed', 'The sign-up page is deployed', 'The release notes are committed', 'The newest build is installed', 'The sample text file exists in the scratch folder', 'The claude-hud plugin is installed', 'The sign-in page is committed', 'The commit contains the fix']) expect([text, factHolds(text)]).toEqual([text, true])
 })
 
 test('a condition\'s kind: written by the writer before it, kept through a held write, stripped where a reader copies it, and one held "works" never turns "fact"', () => {

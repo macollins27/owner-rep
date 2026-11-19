@@ -722,7 +722,12 @@ and does not, never, cannot and the like unless before "exist"), and `factRead` 
 of it, to its end or a closing stop, as clauses parted by a comma or a semicolon and "and" or
 "but". Each clause is one of a few shapes, each slot typed: a subject of nouns of the work
 (`FACT_THING`, after an optional lead in `FACT_DET` and up to two words of the noun's own, none
-of them in `FACT_NOT_MOD`) or names, with places after them (a word of `FACT_PREP` before a name,
+of them in `FACT_NOT_MOD` and none a quality or a doing, `factQuality`: a word of `FACT_QUALITY`
+or one ending in -ed, -ing, -ly, -free, -proof, -less, -ful, -able, -ible, -ous or -ive, each part
+of a hyphened word read alone and a word of `FACT_STATE` let stand, and a hyphened word with a
+verb or a little word folded in refused whole (`FACT_FOLDED`, "the converts-to-uppercase script"), "the installed build"; after
+the noun, a word of `FACT_STATE` or "made" with a place, "a commit made during this job") or
+names, with places after them (a word of `FACT_PREP`, during and since among them, before a name,
 a noun of the work or of the machine, or one of `FACT_PLACE`: main, origin, GitHub and a few
 more); then "is", "was", "has been" and the like (or nothing, "the newest build installed")
 before one or more of `FACT_STATE` (saved, committed, pushed, merged, installed, deployed,
@@ -730,14 +735,15 @@ tagged, published, created, written, copied, moved, renamed, changed, edited, to
 uploaded, archived, deleted, removed), with a version, commit or path after it and places; or
 exists, does not exist, no longer exists, or runs the newest. Only a stored thing (a name or a
 noun of `FACT_STORE`) holds or contains quoted text, a thing of `FACT_HELD` (with "whose
-contents are exactly" and quoted text after it), or is a count of a unit of `FACT_UNIT`, each
+contents are exactly" and quoted text after it), or is a count of a unit of `FACT_UNIT` ("long", "in size" or "in length" after it), each
 with the note of its end in `FACT_TAIL` ("with no newline at the end", "(14 characters, no
 trailing newline)"). "Nothing", "none" or "no" and a noun, of a place, takes only a state or
-existence; an agent, session or helper (`FACT_ACTOR`) saved or pushed a thing of the work; a
+existence, and "no" and a stored noun may also hold a thing of `FACT_HELD`, never quoted text; an agent, session or helper (`FACT_ACTOR`) saved or pushed a thing of the work; a
 later clause may leave its subject out or say "it". A slash is "or" and "&" is "and". No word
 of what the work does can stand in any slot, so such a condition is `works` whole, however much
 of it is a fact (live tests of 18 Nov 2026: section 11, the third's section 3, the fourth's 36
-wordings and the fifth's 88 in its section 1, among them "the converter transforms saved text
+wordings, the fifth's 88 in its section 1 and the sixth's 20 qualities, "the bug-free code is
+committed" and "the script contains a correct fix" among them, and "the converter transforms saved text
 to uppercase", "the README file lists the three commands", "the deployed service has 0
 crashes" and "the file is saved; it is “usable”", all works, and the writers' own
 "sample.txt in the scratch folder is 13 bytes long, with no newline at the end" and "nothing
