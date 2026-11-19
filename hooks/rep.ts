@@ -3454,57 +3454,226 @@ function conditionOf(line: string): Condition {
 
 // A condition's kind written before it: "works:" or "fact:".
 const KIND_AT = /^\s*(works|fact)\s*:\s*/i
-// What a fact is, by closed slots (fourth live test of 18 Nov 2026): a condition is a fact only
-// when every word of it is a name or a word from FACT_WORDS, and it says one of the fact verbs.
-// No other word may stand anywhere, so no clause can say what the work does in any verb, in
-// brackets, after a slash or before a noun ("the converter transforms saved text", "saved
-// converter transforms text", "the file is saved (it converts text)" are works), and the third
-// live test's "saved; it converts the file to uppercase" and "exists and does not crash" stay
-// works. A fact verb is saved, committed, pushed, merged, installed, deployed, tagged,
-// published, created, written, copied, renamed, changed, deleted or removed, exists or does not,
-// holds, contains, has, lists or includes, or runs (is on, is built from) the newest code. A
-// name is a file's name or a path ("sample.txt", "~/x/y"), quoted text in double, curly or
-// single quotes, anything with a digit ("v2", "a1b2c3d", "13"), a word in capitals ("README") or
-// with a capital inside it ("GitHub"), or a capitalised word after a word that leads a noun
-// ("the Mac", "to Main"). One other word may stand between a word that leads a noun and a noun
-// of the work ("the scratch folder", "a sample text file"), or after a count, as its unit ("the
-// three commands"), since neither place can hold a verb. Anything else is works, which a look by
-// someone who did not build it can show, so a fact misread costs a look and a behaviour misread
-// never closes. BEHAVES stays a second veto.
-const FACT_VERB = String.raw`saved|committed|pushed|merged|installed|deployed|tagged|published|created|written|copied|renamed|changed|deleted|removed|exists?|holds?|contains?|has|have|lists?|includes?|runsnewest`
-const FACT_VERB_RE = new RegExp(String.raw`^(?:${FACT_VERB})$`)
-// Words that lead a noun: a determiner, a count, or a word of possession.
-const LEADS = /^(?:the|a|an|this|that|these|those|its|their|our|your|my|each|every|any|some|no|all|both|other|another|one|two|three|four|five|six|seven|eight|nine|ten|twelve|NUM)$/
-const COUNT = /^(?:one|two|three|four|five|six|seven|eight|nine|ten|twelve|NUM)$/
-// Nouns of the work: what is saved, holds something, or does the saving.
-const WORK_NOUN = /^(?:files?|folders?|director(?:y|ies)|scripts?|programs?|tools?|apps?|pages?|sites?|services?|servers?|endpoints?|builds?|versions?|releases?|code|changes?|fix(?:es)?|work|commits?|branch(?:es)?|repos?|repositor(?:y|ies)|tags?|packages?|plugins?|modules?|tests?|docs|documents?|config|configuration|settings|projects?|sessions?|agents?|machine|main|master|origin|remote|text|contents?|words?|bytes?|lines?|characters?|newlines?|entries|entry|items?|things?|end|names?)$/
-const FACT_WORDS = new RegExp(String.raw`^(?:${FACT_VERB}|it|they|them|is|are|was|were|be|been|being|had|do|does|did|not|doesn't|don't|didn't|isn't|aren't|wasn't|weren't|hasn't|haven't|nothing|none|else|more|also|already|still|now|only|exactly|just|yet|there|here|in|on|at|to|into|onto|under|from|inside|within|outside|beyond|for|of|via|through|with|by|as|newest|latest|current|new|old|previous|final|same|whole)$`)
-// Where one claim ends and another begins: a stop, a dash, a bracket, a slash, an ampersand, a
-// joining word or a relative one.
-const CLAUSE_BREAK = /[;:,.!?—–()[\]/&]|\s-\s|\b(?:and|but|or|so|then|while|which|that|who|whose|where|when|if|because|until|unless|though|although|without|plus)\b/i
-const factClause = (clause: string): { ok: boolean; verb: boolean } => {
-  const ws = clause.split(/\s+/).filter(w => w !== '')
-  const low = ws.map((w, i) => {
-    const prev = (ws[i - 1] ?? '').toLowerCase()
-    if (/^\d+$/.test(w)) return 'NUM'
-    if (w === 'NAME' || /\d/.test(w) || /^[A-Z]{2,}$/.test(w) || /^.[a-z]*[A-Z]/.test(w) || (/^[A-Z]/.test(w) && i > 0 && (LEADS.test(prev) || /^(?:to|on|in|at|from|into|via)$/.test(prev)))) return 'NAME'
-    return w.toLowerCase()
-  })
-  const ok = low.every((w, i) => w === 'NAME' || w === 'NUM' || WORK_NOUN.test(w) || LEADS.test(w) || FACT_WORDS.test(w)
-    // One word between a word that leads a noun and a noun of the work, or after a count.
-    || (LEADS.test(low[i - 1] ?? '') && WORK_NOUN.test(low[i + 1] ?? '')) || COUNT.test(low[i - 1] ?? ''))
-  return { ok, verb: low.some(w => FACT_VERB_RE.test(w)) }
-}
-export const factHolds = (text: string): boolean => {
+// What a fact is, by its shape (fifth live test of 18 Nov 2026). Word lists failed: every word
+// let stand anywhere in a condition could carry what the work does ("it CONVERTS text", "all
+// encrypt files", "lists files"). So a condition is a fact only when the whole of it reads as
+// one or more of a few sentence shapes, each with typed slots, and anything that reads as none
+// is works. An open slot stands only where no claim of behaviour can: before a noun of the work
+// in a subject, or in a place. The predicate is always one of the fixed fact shapes:
+//   - a thing is (or was, has been, is not) saved, committed, pushed, merged, installed,
+//     deployed, tagged, published, created, written, copied, moved, renamed, changed, edited,
+//     touched, uploaded, archived, deleted or removed, with a name ("tagged v2") and places
+//     after it ("to main", "in the scratch folder");
+//     The "is" may be left out ("the newest build installed");
+//   - a thing exists, does not exist, or no longer exists, with places after it;
+//   - a stored thing (a named file or a path, or a file, folder, script, document, note, plan,
+//     record, log, commit, branch or repository) holds or contains text quoted exactly, holds a
+//     thing of the work ("holds a sample text file whose contents are exactly '…'"), or is a
+//     count of bytes, characters, lines or words, with the note of what is at its end ("with
+//     no newline at the end");
+//   - a thing runs (is on, is built from) the newest code;
+//   - nothing, or no thing, from or in a place, is saved, committed, pushed and so on, or exists;
+//   - an agent, session or helper saved, committed, pushed and so on a thing of the work.
+// A clause after another may leave its subject out or say "it". A name is a file's name or a
+// path ("sample.txt", "~/x/y") or a version or a commit ("v2", "a1b2c3d"); a place is one of
+// those, a noun of the work ("the scratch folder", "this Mac"), or main, origin, GitHub and a
+// few more by name. Quoted text is a name only as what a stored thing holds.
+// A count stands only before its unit. So a misread fact costs a look by someone who did not
+// build it, and a misread behaviour never closes. BEHAVES stays a second veto.
+type FactTok = { w: string; t: 'Q' | 'P' | 'H' | 'N' | 'W' | 'X' }
+type FactAt = { i: number; store: boolean }
+const FACT_STATE = /^(?:saved|committed|pushed|merged|installed|deployed|tagged|published|created|written|copied|moved|renamed|changed|edited|touched|uploaded|archived|deleted|removed)$/
+const FACT_THING = /^(?:files?|folders?|director(?:y|ies)|scripts?|programs?|tools?|apps?|cli|pages?|sites?|services?|servers?|endpoints?|builds?|versions?|releases?|code|changes?|fix(?:es)?|work|commits?|branch(?:es)?|repos?|repositor(?:y|ies)|tags?|packages?|plugins?|modules?|skills?|hooks?|tests?|docs?|documents?|config|configuration|settings|projects?|notes?|readme|changelog|plans?|briefs?|routines?|wording|job|records?|logs?|cop(?:y|ies)|dumps?|worktrees?|things?|items?|entr(?:y|ies))$/
+const FACT_STORE = /^(?:files?|folders?|director(?:y|ies)|scripts?|docs?|documents?|notes?|readme|changelog|plans?|briefs?|records?|logs?|commits?|branch(?:es)?|repos?|repositor(?:y|ies)|config)$/
+const FACT_HELD = /^(?:files?|folders?|director(?:y|ies)|scripts?|docs?|documents?|notes?|readme|changelog|plans?|briefs?|records?|logs?|commits?|versions?|changes?|fix(?:es)?|work|code)$/
+const FACT_ACTOR = /^(?:agents?|sessions?|helpers?|builder|owner|codex)$/
+const FACT_PLACE = /^(?:main|master|origin|remote|production|staging|github|it)$/
+const FACT_PLACE_NOUN = /^(?:mac|machine|computer|disk)$/
+const FACT_DET = /^(?:the|a|an|this|that|these|those|its|their|our|your|my|each|every|any|some|all|both|one|two|three|four|five|six|seven|eight|nine|ten)$/
+const FACT_PREP = /^(?:in|inside|within|outside|under|at|on|to|into|onto|from|beyond)$/
+const FACT_UNIT = /^(?:bytes?|characters?|lines?|words?)$/
+const FACT_TAIL = /^(?:with|no|trailing|newlines?|or|any|other|bytes?|characters?|at|after|before|the|end|it)$/
+// Words that never stand before a noun as one of its words: they belong to the shape itself.
+const FACT_NOT_MOD = /^(?:it|they|them|is|are|was|were|be|been|has|have|had|and|or|but|not|never|no|nothing|none|whose|which|that|who|with|for|by|as|of|if|when|where|while|because|exists?|holds?|contains?|does|do|did|runsnewest)$/
+
+const factTokens = (text: string): FactTok[] => {
   const t = text
     .replace(/^\s*(?:[-*]\s+)?(?:works|fact)\s*:\s*/i, '')
-    .replace(/\b(?:runs?|is\s+on|built\s+from)\s+(?:the\s+)?(?:newest|latest|current)\s+(?:code|build|version|commit)\b/gi, ' runsnewest ')
-    .replace(/\b(?:runs?|is\s+on|built\s+from)\s+(?:the\s+)?(?:newest|latest|current)\b/gi, ' runsnewest ')
-    .replace(/"[^"]*"|“[^”]*”|‘[^’]*’|(?<![\w'])'[^']*'(?![\w'])/g, ' NAME ')
-    .replace(/[^\s"'`()[\]]+[/~][^\s"'`()[\]]*|[/~][^\s"'`()[\]]+|[^\s"'`()[\]]+\.[A-Za-z0-9]{1,8}\b/g, ' NAME ')
-  if (BEHAVES.test(t)) return false
-  const clauses = t.split(CLAUSE_BREAK).filter(c => c.trim() !== '').map(factClause)
-  return clauses.length > 0 && clauses.every(c => c.ok) && clauses.some(c => c.verb)
+    .replace(/\b(?:runs?|is\s+on|built\s+from)\s+(?:the\s+)?(?:newest|latest|current)(?:\s+(?:code|build|version|commit))?\b/gi, ' runsnewest ')
+    .replace(/"[^"]*"|“[^”]*”|‘[^’]*’|(?<![\w'])'[^']*'(?![\w'])/g, ' \u0001Q ')
+    .replace(/[^\s"'`()[\]\u0001]+[/~][^\s"'`()[\]]*|[/~][^\s"'`()[\]]+|[^\s"'`()[\]\u0001]+\.[A-Za-z0-9]{1,8}\b/g, ' \u0001P ')
+    .replace(/([,;:()[\]—–!?])/g, ' $1 ')
+    .replace(/\.(?=\s|$)/g, ' . ')
+  return t.split(/\s+/).filter(w => w !== '').map((w): FactTok => {
+    if (w === '\u0001Q') return { w, t: 'Q' }
+    if (w === '\u0001P') return { w, t: 'P' }
+    if (/^\d+$/.test(w)) return { w, t: 'N' }
+    if (w === '&') return { w: 'and', t: 'W' }
+    if (w === '/') return { w: 'or', t: 'W' }
+    if (/^[,;:()[\]—–!?.&/-]+$/.test(w)) return { w, t: 'X' }
+    if (/\d/.test(w) && /[a-z]/i.test(w)) return { w, t: 'H' }
+    return { w: w.toLowerCase(), t: 'W' }
+  })
+}
+
+// Every way the shapes can read the words from a position, as the positions they end at.
+const factRead = (ts: FactTok[]): boolean => {
+  const w = (i: number, re: RegExp): boolean => ts[i]?.t === 'W' && re.test(ts[i]?.w ?? '')
+  const x = (i: number, s: string): boolean => ts[i]?.t === 'X' && ts[i]?.w === s
+  const mod = (i: number): boolean => { const k = ts[i]; return k !== undefined && (k.t === 'W' ? !FACT_NOT_MOD.test(k.w) : k.t === 'H' || k.t === 'N' || k.t === 'P') }
+  const det = (i: number): boolean => w(i, FACT_DET) || ts[i]?.t === 'N'
+  const uniq = (a: FactAt[]): FactAt[] => a.filter((r, k) => a.findIndex(o => o.i === r.i && o.store === r.store) === k)
+  // A noun of the work: an optional lead, up to two of its own words, then the noun, and a name after it.
+  const noun = (i: number, re: RegExp, storeRe: RegExp): FactAt[] => {
+    const out: FactAt[] = []
+    for (const s of det(i) ? [i, i + 1] : [i]) {
+      for (let m = 0; m <= 2; m++) {
+        let ok = true
+        for (let k = 0; k < m; k++) if (!mod(s + k)) ok = false
+        const n = s + m
+        if (!ok || !w(n, re)) continue
+        const store = storeRe.test(ts[n]?.w ?? '')
+        out.push({ i: n + 1, store })
+        if (ts[n + 1]?.t === 'P') out.push({ i: n + 2, store: true })
+      }
+    }
+    return out
+  }
+  const np = (i: number): FactAt[] => (ts[i]?.t === 'P' ? [{ i: i + 1, store: true }] : noun(i, FACT_THING, FACT_STORE))
+  // A place: "in the scratch folder", "to main", "on GitHub", "in ~/x". A place's own name is
+  // one of a few (FACT_PLACE): any capitalised word would let "deployed To Encrypt" through.
+  const place = (i: number): number[] => {
+    const at = x(i, ',') ? i + 1 : i
+    if (!w(at, FACT_PREP)) return []
+    const j = at + 1
+    const k = ts[j]
+    const out: number[] = []
+    if (k?.t === 'P' || (k?.t === 'W' && FACT_PLACE.test(k.w))) out.push(j + 1)
+    for (const r of noun(j, FACT_THING, FACT_STORE).concat(noun(j, FACT_PLACE_NOUN, FACT_STORE))) if (det(j)) out.push(r.i)
+    return out
+  }
+  const places = (i: number): number[] => {
+    const seen = new Set<number>([i])
+    const queue = [i]
+    while (queue.length > 0) for (const n of place(queue.shift() as number)) if (!seen.has(n)) { seen.add(n); queue.push(n) }
+    return [...seen]
+  }
+  // The note of what is at a text's end: "with no newline at the end", "(14 characters, no trailing newline)".
+  const tail = (i: number): number[] => {
+    const out = [i]
+    const at = x(i, ',') ? i + 1 : i
+    const run = (s: number, comma: boolean): number => { let e = s; while (w(e, FACT_TAIL) || ts[e]?.t === 'N' || (comma && x(e, ','))) e++; return e }
+    if (x(at, '(')) { const e = run(at + 1, true); if (e > at + 1 && x(e, ')')) out.push(e + 1) } else { const e = run(at, false); if (e > at) out.push(e) }
+    return out
+  }
+  const states = (i: number): number[] => {
+    if (!w(i, FACT_STATE)) return []
+    const out: number[] = []
+    let e = i + 1
+    for (;;) {
+      out.push(e)
+      let n = e
+      if (x(n, ',')) n++
+      if (w(n, /^(?:and|or)$/)) n++
+      if (n === e || !w(n, FACT_STATE)) break
+      e = n + 1
+    }
+    // A name after it: "tagged v2", "committed (a1b2c3d)".
+    return out.flatMap(e2 => { const k = ts[e2]; const named = k?.t === 'H' || k?.t === 'P' ? [e2 + 1] : x(e2, '(') && (ts[e2 + 1]?.t === 'H' || ts[e2 + 1]?.t === 'P') && x(e2 + 2, ')') ? [e2 + 3] : []; return [e2, ...named] })
+  }
+  const aux = (i: number): number[] => {
+    const out: number[] = []
+    if (w(i, /^(?:is|are|was|were)$/)) { out.push(i + 1); if (w(i + 1, /^(?:not|never)$/)) out.push(i + 2) }
+    for (const s of w(i, /^(?:has|have|had)$/) ? [i + 1, ...(w(i + 1, /^(?:not|never)$/) ? [i + 2] : [])] : []) if (w(s, /^been$/)) out.push(s + 1)
+    return out
+  }
+  const content = (i: number): number[] => {
+    const out: number[] = []
+    if (w(i, /^(?:holds?|contains?|has|have)$/)) {
+      let s = i + 1
+      if (w(s, /^(?:exactly|only)$/)) s++
+      if (w(s, /^the$/) && w(s + 1, /^(?:text|words|contents?)$/)) s += 2
+      if (ts[s]?.t === 'Q') {
+        const ends = [s + 1, ...(w(s + 1, /^and$/) && w(s + 2, /^nothing$/) && w(s + 3, /^else$/) ? [s + 4] : [])]
+        out.push(...ends.flatMap(tail))
+      }
+    }
+    if (w(i, /^(?:holds?|contains?)$/) && det(i + 1)) {
+      for (const r of noun(i + 1, FACT_HELD, FACT_STORE)) for (const p of places(r.i)) {
+        out.push(p)
+        if (w(p, /^whose$/) && w(p + 1, /^contents?$/) && w(p + 2, /^(?:is|are)$/) && w(p + 3, /^exactly$/) && ts[p + 4]?.t === 'Q') out.push(...tail(p + 5))
+      }
+    }
+    if (w(i, /^(?:is|are|has|have)$/)) {
+      const s = w(i + 1, /^exactly$/) ? i + 2 : i + 1
+      if (ts[s]?.t === 'N' && w(s + 1, FACT_UNIT)) out.push(...tail(w(s + 2, /^long$/) ? s + 3 : s + 2))
+    }
+    return out
+  }
+  const pred = (i: number, store: boolean): number[] => {
+    const out: number[] = []
+    for (const a of aux(i)) for (const s of states(a)) out.push(...places(s))
+    // The short form, with no "is": "the newest build installed", "the docs written".
+    for (const s of states(i)) out.push(...places(s))
+    if (w(i, /^exists?$/)) out.push(...places(i + 1))
+    if (w(i, /^(?:does|do|did)$/) && w(i + 1, /^not$/) && w(i + 2, /^exist$/)) out.push(...places(i + 3))
+    if (w(i, /^no$/) && w(i + 1, /^longer$/) && w(i + 2, /^exists?$/)) out.push(...places(i + 3))
+    if (w(i, /^runsnewest$/)) out.push(...places(i + 1))
+    if (store) out.push(...content(i))
+    return out
+  }
+  // A subject: one or more nouns of the work, each with its places, joined by commas and "and" or "or".
+  const subject = (i: number): FactAt[] => {
+    const out: FactAt[] = []
+    const go = (s: number, store: boolean): void => {
+      for (const r of np(s)) for (const p of places(r.i)) {
+        const st = store && r.store
+        out.push({ i: p, store: st })
+        let n = p
+        if (x(n, ',')) n++
+        if (w(n, /^(?:and|or)$/)) n++
+        if (n > p && n < ts.length) go(n, st)
+      }
+    }
+    go(i, true)
+    return uniq(out)
+  }
+  const clause = (i: number, first: boolean, prev: boolean): FactAt[] => {
+    const out: FactAt[] = []
+    for (const s of subject(i)) for (const e of pred(s.i, s.store)) out.push({ i: e, store: s.store })
+    // Nothing, or no thing, of a place: only a state or existence, never what it holds.
+    const negs = w(i, /^(?:nothing|none)$/) ? places(i + 1) : w(i, /^no$/) ? noun(i + 1, FACT_THING, FACT_STORE).flatMap(r => places(r.i)) : []
+    for (const n of negs) for (const e of pred(n, false)) out.push({ i: e, store: false })
+    // An agent, a session or a helper saved, committed or pushed a thing of the work.
+    for (const a of noun(i, FACT_ACTOR, FACT_STORE)) for (const s of states(a.i)) {
+      const objs = w(s, /^nothing$/) ? [s + 1] : (w(s, /^no$/) ? noun(s + 1, FACT_THING, FACT_STORE) : np(s)).map(r => r.i)
+      for (const o of objs) for (const p of places(o)) out.push({ i: p, store: false })
+    }
+    if (!first) for (const s of w(i, /^(?:it|they)$/) ? [i, i + 1] : [i]) for (const e of pred(s, prev)) out.push({ i: e, store: prev })
+    return uniq(out)
+  }
+  let at: FactAt[] = clause(0, true, false)
+  const done = new Set<string>()
+  while (at.length > 0) {
+    const next: FactAt[] = []
+    for (const r of at) {
+      const key = `${r.i}:${r.store}`
+      if (done.has(key)) continue
+      done.add(key)
+      if (r.i === ts.length || (x(r.i, '.') && r.i + 1 === ts.length)) return true
+      const seps = [r.i]
+      for (const s of [...seps]) { if (x(s, ',') || x(s, ';')) seps.push(s + 1) }
+      for (const s of [...seps]) if (w(s, /^(?:and|but)$/)) seps.push(s + 1)
+      for (const s of seps) if (s > r.i) next.push(...clause(s, false, r.store))
+    }
+    at = next
+  }
+  return false
+}
+export const factHolds = (text: string): boolean => {
+  const ts = factTokens(text)
+  if (BEHAVES.test(ts.map(k => (k.t === 'W' ? k.w : '')).join(' '))) return false
+  return ts.length > 0 && factRead(ts)
 }
 // A condition's kind as judged: "fact" only when held so and `factHolds` reads it as one,
 // since older records hold kinds written before the allow list.

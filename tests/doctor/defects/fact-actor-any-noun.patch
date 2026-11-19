@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 7b58d6b..e767d6d 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3645,7 +3645,7 @@ const factRead = (ts: FactTok[]): boolean => {
+     const negs = w(i, /^(?:nothing|none)$/) ? places(i + 1) : w(i, /^no$/) ? noun(i + 1, FACT_THING, FACT_STORE).flatMap(r => places(r.i)) : []
+     for (const n of negs) for (const e of pred(n, false)) out.push({ i: e, store: false })
+     // An agent, a session or a helper saved, committed or pushed a thing of the work.
+-    for (const a of noun(i, FACT_ACTOR, FACT_STORE)) for (const s of states(a.i)) {
++    for (const a of noun(i, FACT_ACTOR, FACT_STORE).concat(noun(i, FACT_THING, FACT_STORE))) for (const s of states(a.i)) {
+       const objs = w(s, /^nothing$/) ? [s + 1] : (w(s, /^no$/) ? noun(s + 1, FACT_THING, FACT_STORE) : np(s)).map(r => r.i)
+       for (const o of objs) for (const p of places(o)) out.push({ i: p, store: false })
+     }

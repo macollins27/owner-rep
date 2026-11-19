@@ -1,13 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 8467313..baa5ab6 100644
+index 7b58d6b..2055e25 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3471,7 +3471,7 @@ const KIND_AT = /^\s*(works|fact)\s*:\s*/i
- // three commands"), since neither place can hold a verb. Anything else is works, which a look by
- // someone who did not build it can show, so a fact misread costs a look and a behaviour misread
- // never closes. BEHAVES stays a second veto.
--const FACT_VERB = String.raw`saved|committed|pushed|merged|installed|deployed|tagged|published|created|written|copied|renamed|changed|deleted|removed|exists?|holds?|contains?|has|have|lists?|includes?|runsnewest`
-+const FACT_VERB = String.raw`saved|committed|pushed|merged|installed|deployed|tagged|published|created|written|copied|renamed|changed|deleted|removed|exists?|holds?|contains?|has|have|lists?|includes?`
- const FACT_VERB_RE = new RegExp(String.raw`^(?:${FACT_VERB})$`)
- // Words that lead a noun: a determiner, a count, or a word of possession.
- const LEADS = /^(?:the|a|an|this|that|these|those|its|their|our|your|my|each|every|any|some|no|all|both|other|another|one|two|three|four|five|six|seven|eight|nine|ten|twelve|NUM)$/
+@@ -3618,7 +3618,6 @@ const factRead = (ts: FactTok[]): boolean => {
+     if (w(i, /^exists?$/)) out.push(...places(i + 1))
+     if (w(i, /^(?:does|do|did)$/) && w(i + 1, /^not$/) && w(i + 2, /^exist$/)) out.push(...places(i + 3))
+     if (w(i, /^no$/) && w(i + 1, /^longer$/) && w(i + 2, /^exists?$/)) out.push(...places(i + 3))
+-    if (w(i, /^runsnewest$/)) out.push(...places(i + 1))
+     if (store) out.push(...content(i))
+     return out
+   }

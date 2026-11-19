@@ -672,25 +672,34 @@ before it (`conditionOf` reads it, `heldLine` writes it back, `bare` strips it w
 copies it, and `mergeConditions` keeps a held `works`, or one with no kind, as `works` whatever
 kind a rewrite gives, and opens a shown `fact` rewritten as `works` with its where kept as
 `seen`). `conditionOf`, and everything after it through `kindOf`, reads a `fact:` as `fact` only when
-`factHolds`, by closed slots: with its kind taken out, "runs (is on, is built from) the newest"
-read as one word, and quoted text (double, curly or single quotes), file names and paths read
-as names, it matches no `BEHAVES` (works, runs, passes, does, prints, takes, returns, shows,
-displays, gives, accepts, responds, reads, produces and the like, in any tense, and does not,
-never, cannot and the like unless before "exist"); every clause of it (split at stops, dashes,
-brackets, a slash, "&", and joining or relative words, `CLAUSE_BREAK`) is made only of names
-(also anything with a digit, a word in capitals or with a capital inside it, and a capitalised
-word after a word that leads a noun or "to", "on", "in", "at", "from", "into", "via"), counts,
-words that lead a noun (`LEADS`), nouns of the work (`WORK_NOUN`) and the words of
-`FACT_WORDS`, save one other word between a word that leads a noun and a noun of the work ("the
-scratch folder") or after a count, as its unit ("the three commands"); and one clause says a
-fact verb (`FACT_VERB`: saved, committed, pushed, merged, installed, deployed, tagged,
-published, created, written, copied, renamed, changed, deleted, removed, exists, holds,
-contains, has, lists, includes, or runs the newest). No other word may stand anywhere, so a
-condition that says what something does, in any verb or place, is `works` whole, however much
-of it is a fact (live tests of 18 Nov 2026: section 11, the third's section 3, and the fourth's
-36 wordings, among them "the converter transforms saved text to uppercase", "the file is saved
-(it converts text to uppercase)" and the writer's own "the scratch folder holds a sample text
-file whose contents are exactly ...", a fact). The writer's prompt gives the shape of a fact,
+`factHolds`, by sentence shape: with its kind taken out, "runs (is on, is built from) the
+newest" read as one word, quoted text (double, curly or single quotes) and file names and paths
+read as names (`factTokens`), it matches no `BEHAVES` (works, runs, passes, does, prints, takes,
+returns, shows, displays, gives, accepts, responds, reads, produces and the like, in any tense,
+and does not, never, cannot and the like unless before "exist"), and `factRead` reads the whole
+of it, to its end or a closing stop, as clauses parted by a comma or a semicolon and "and" or
+"but". Each clause is one of a few shapes, each slot typed: a subject of nouns of the work
+(`FACT_THING`, after an optional lead in `FACT_DET` and up to two words of the noun's own, none
+of them in `FACT_NOT_MOD`) or names, with places after them (a word of `FACT_PREP` before a name,
+a noun of the work or of the machine, or one of `FACT_PLACE`: main, origin, GitHub and a few
+more); then "is", "was", "has been" and the like (or nothing, "the newest build installed")
+before one or more of `FACT_STATE` (saved, committed, pushed, merged, installed, deployed,
+tagged, published, created, written, copied, moved, renamed, changed, edited, touched,
+uploaded, archived, deleted, removed), with a version, commit or path after it and places; or
+exists, does not exist, no longer exists, or runs the newest. Only a stored thing (a name or a
+noun of `FACT_STORE`) holds or contains quoted text, a thing of `FACT_HELD` (with "whose
+contents are exactly" and quoted text after it), or is a count of a unit of `FACT_UNIT`, each
+with the note of its end in `FACT_TAIL` ("with no newline at the end", "(14 characters, no
+trailing newline)"). "Nothing", "none" or "no" and a noun, of a place, takes only a state or
+existence; an agent, session or helper (`FACT_ACTOR`) saved or pushed a thing of the work; a
+later clause may leave its subject out or say "it". A slash is "or" and "&" is "and". No word
+of what the work does can stand in any slot, so such a condition is `works` whole, however much
+of it is a fact (live tests of 18 Nov 2026: section 11, the third's section 3, the fourth's 36
+wordings and the fifth's 88 in its section 1, among them "the converter transforms saved text
+to uppercase", "the README file lists the three commands", "the deployed service has 0
+crashes" and "the file is saved; it is “usable”", all works, and the writers' own
+"sample.txt in the scratch folder is 13 bytes long, with no newline at the end" and "nothing
+from this job is committed or pushed", facts). The writer's prompt gives the shape of a fact,
 with one example. The
 writer's prompt asks for one claim per condition (`ONE_CLAIM`) beside its kinds.
 A `fact` moves shown on any where. A `works` condition, or one with no kind, moves shown only when
