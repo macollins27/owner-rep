@@ -5,6 +5,13 @@ What changed in each release of Owner Rep, newest first. The full record is the
 
 ## Unreleased
 
+- **A decision that is truly yours reaches you as one plain question.** The rep asks you only
+  about a decision that touches your livelihood or public name, cannot be undone, or goes
+  against something you asked for (publishing, sending, paying and anything your guard refused
+  among them), and a go-ahead is such a decision, not a chore. When a part of the job waits on
+  your go-ahead, the message tells the agent to finish everything else, hold that step, and say
+  what it will show you then. A step of a plan you approved whose only job is to prove the
+  agent's own work is kept, with a question beside it asking whether you want it kept.
 - **One standard of proof.** The rep's reads, its check and its own-words message now name one
   standard for what shows a condition: a fact is shown by the command that shows it and what
   that printed; the result working or being good, by someone looking at the real thing. Where

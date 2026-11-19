@@ -411,12 +411,17 @@ on its own edits or a proof report. Tests, code reviews, plan checks, second rea
 planning are work on the product. None of them is the sign-off, which stays a hands-on look by
 someone who did not build the thing. The objective writer
 is told that a routine followed or a brief's steps carried out is the agent's method, never a
-condition of done, and the paid check looks at the product itself.
+condition of done, and the paid check looks at the product itself. A step of a plan the owner
+approved that is such a piece stays a condition, since the owner said yes to it, with an open
+question beside it asking whether to keep it; the check flags it the same way.
 
 One consequence is spelled out in the
 brief: the owner does no step of the job. A chore the agent leaves "for you", such as a branch
 to delete, is the agent's unfinished work, listed as left out and put in the message to the
-agent, never relayed to the owner as what to do next. A card that lists anything left out
+agent, never relayed to the owner as what to do next. What does reach the owner is a decision that is
+truly theirs: one that touches their livelihood or public name, cannot be undone, or goes against
+something they asked for. A go-ahead to publish, send or pay is one, put as a plain question,
+and the message tells the agent to finish the rest and hold that step until the owner says go. A card that lists anything left out
 cannot also carry the line saying every part is done; the code drops that line.
 
 Nothing in a session except the owner's own messages can give the rep orders. Text an agent
