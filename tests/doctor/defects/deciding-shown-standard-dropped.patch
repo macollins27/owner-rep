@@ -1,5 +1,5 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index fa5a469..da95f7a 100644
+index fdf0b2f..6599bf5 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
 @@ -1740,7 +1740,7 @@ export const contextLine = (m: Memory): string =>
@@ -8,6 +8,6 @@ index fa5a469..da95f7a 100644
    'Everything the agent wrote is a claim until the record itself shows it; a test, check or script the agent wrote for its own work, and passed, shows only that its own check passes.',
 -  "Mark a condition shown only by what counts as shown, in the record itself, never on the agent's word; mark one closed only by the number of the owner's own message that closes it.",
 +  "Mark a condition shown only where the record itself shows it, never on the agent's word; mark one closed only by the number of the owner's own message that closes it.",
-   'Only two things ever come to the owner: a question about what the owner wants, and the message to send.',
+   'The owner is asked for two things only: a question about a decision that is truly the owner\'s, and the message to send; a go-ahead is such a decision, not a chore.',
    "Plain words only: the agent's technical terms are off limits unless they appear in the owner's own messages.",
  ]

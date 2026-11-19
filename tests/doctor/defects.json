@@ -4528,5 +4528,47 @@
     "breaks": "Words in backticks stand as the thing held or the place whatever they are, so \"`secure/fast` is committed\" and \"the file is saved in `correct`\" close on the builder's own run.",
     "patch": "fact-tick-noun-any.patch",
     "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "decisions-line-old",
+    "breaks": "The readers' deciding rules say again \"a question about what the owner wants\", so a go-ahead the agent waits on reads as a chore and never reaches the owner as one plain question.",
+    "patch": "decisions-line-old.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "objective-self-proving-dropped",
+    "breaks": "The objective writer is not told that a self-proving step of an approved plan stays a condition with a question for the owner beside it, so the step is held as plain work and the owner is never asked whether to keep it.",
+    "patch": "objective-self-proving-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "expectation4-plan-step-exempt",
+    "breaks": "Expectation 4 exempts every check inside an approved plan, so a self-proving step there is never raised with the owner.",
+    "patch": "expectation4-plan-step-exempt.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "owner-decision-undefined",
+    "breaks": "The reads are not told which decisions are truly the owner's (livelihood, public name, cannot be undone, against the ask; publishing, sending, paying, a guard's refusal), so the owner gets technical questions or none at all.",
+    "patch": "owner-decision-undefined.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "goahead-hold-missing",
+    "breaks": "A condition waiting on the owner's go-ahead gets no message to hold that one step and finish the rest, so the agent stops whole or goes ahead unasked.",
+    "patch": "goahead-hold-missing.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "check-self-proving-dropped",
+    "breaks": "The check is not told that a self-proving step of an approved plan is a question for the owner, so its rewritten card drops the question the briefing raised.",
+    "patch": "check-self-proving-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "decisions-replay-no-objective",
+    "breaks": "The replay's decisions edit leaves an objective call's system prompt as group 3 sent it, so a replay of group 4 measures the objective writer without its change.",
+    "patch": "decisions-replay-no-objective.patch",
+    "fixed": "tested 2026-11-18"
   }
 ]
