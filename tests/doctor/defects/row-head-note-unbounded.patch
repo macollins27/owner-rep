@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 491123b..ed3ebbd 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -3363,7 +3363,7 @@ export const register: Register = on => {
+     const beneathRows = drawsSomething(beneath) ? rowsOf(textOf(beneath), cols) : 0
+     const headOf = (above: number) => {
+       const result = reading?.result ?? placeholder
+-      const text = inColumns ? rowHead(result, e.props.maxRows - gap - recordRows - 1 - beneathRows - above, cols) : result
++      const text = inColumns ? rowHead(result, e.props.maxRows - gap - recordRows - 1 - beneathRows, cols) : result
+       return lead(headGlyph, headColor, 'Owner rep', text)
+     }
+     const head = headOf(0)

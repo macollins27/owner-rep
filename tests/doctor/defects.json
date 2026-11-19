@@ -4318,5 +4318,17 @@
     "breaks": "\"an executable named greet is installed in a bin folder\" is read as works, so an install the listing shows never closes.",
     "patch": "fact-named-dropped.patch",
     "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "row-head-unbounded",
+    "breaks": "the row draws a long result whole, so at a 24-row terminal its buttons fall under a \"↓ n more\" row.",
+    "patch": "row-head-unbounded.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "row-head-note-unbounded",
+    "breaks": "under a heads-up the row's head ignores the note's rows, so its buttons fall under a \"↓ n more\" row.",
+    "patch": "row-head-note-unbounded.patch",
+    "fixed": "tested 2026-11-19"
   }
 ]
