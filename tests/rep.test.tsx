@@ -3227,6 +3227,42 @@ test('rule: the card heads with the result and a count line, fills the band in o
   await ui.unmount()
 })
 
+test('rule: the row keeps a long result to the rows the band leaves it, so its buttons stay inside the band at a 24-row terminal', async ($, on) => {
+  kept(on)
+  quietBand(on)
+  // Round nine (live9, B at 100x24): a result four rows long put Brief me and Tell the rep under "↓ 2 more".
+  const result = `A scratch folder holding a sample text file with exactly "one two three" and a small greet command installed in a bin folder inside it, all left uncommitted and unpushed, shown in two stages: first the files made and greet run, then, on the owner's next message, read-only proof of the file, the command and the git state with nothing changed.`
+  writer(on, () => OBJ(result, ['the file holds exactly "one two three" | open']))
+  on('model.fork', () => ({ value: { isAnswered: true, text: watchAnswer('The agent says the tests pass, but never ran them.'), usage: USAGE } }))
+  await $.prompt.submit(typed('make the scratch folder, please'))
+  await settle($)
+  const band = (rows: number, cols: number) => ({ ...BAND, props: { ...BAND.props, maxRows: rows, bodyColumns: cols, scroll: { offset: 0, bodyRows: rows - 1 } } })
+  for (const cols of [96, 100, 60, 170]) {
+    // Five rows, a 24-row terminal's band: the gap, the head, the buttons row.
+    let ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...band(5, cols) })
+    const head = (await ui.find({ type: 'Text', text: /^Owner rep · / }))?.text ?? ''
+    expect(rowsOf(head, cols - 2)).toBeLessThanOrEqual(3)
+    expect(head.startsWith('Owner rep · A scratch folder holding')).toBe(true)
+    if (rowsOf(`Owner rep · ${result}`, cols - 2) > 3) expect(head.endsWith('…')).toBe(true)
+    expect((await ui.find({ key: 'rep' }))?.props.hotkey).toBe('1')
+    expect((await ui.find({ key: 'tell' }))?.props.hotkey).toBe('2')
+    await ui.unmount()
+    // Forty rows: the result whole.
+    ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...band(40, cols) })
+    expect((await ui.find({ type: 'Text', text: /^Owner rep · / }))?.text).toBe(`Owner rep · ${result}`)
+    await ui.unmount()
+  }
+  // Under a heads-up the note's rows come off the head's too: at eight rows and 100 columns the
+  // gap, the note's line, its why and its buttons leave the head three rows above the row's buttons.
+  await $.turn.complete(stop('t1'))
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...band(8, 100) })
+  expect(await ui.find({ type: 'Text', text: /never ran them/ })).toBeDefined()
+  expect(rowsOf((await ui.find({ type: 'Text', text: /^Owner rep · / }))?.text ?? '', 98)).toBeLessThanOrEqual(3)
+  expect((await ui.find({ key: 'brief' }))?.props.hotkey).toBe('1')
+  expect(await ui.find({ key: 'tell' })).toBeDefined()
+  await ui.unmount()
+})
+
 test('rule: on the VS Code surface, whose band scrolls, no line is given a width, so each fills the box, and the card is drawn whole with every sentence and its buttons', async ($, on) => {
   expect(sizesInColumns('terminal')).toBe(true)
   expect(sizesInColumns('desktop')).toBe(true)
