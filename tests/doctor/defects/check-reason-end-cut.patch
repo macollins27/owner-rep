@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index bdf505d..6eecf14 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -4893,7 +4893,7 @@ export function checkReadOf(got: Pick<RunResult, 'text' | 'error' | 'answers'>):
+ // cells: a reason of wide characters, kept to 160 characters, took about 290 cells and was cut
+ // on the band, its end lost (eighth live test of 18 Nov 2026). A longer one keeps its start,
+ // which says what failed, and its end, which names what it failed on, with the middle left out.
+-const failWords = (why: string): string => fitMiddle(why.trim().replace(/\s+/g, ' ').replace(/\.$/, ''), 160)
++const failWords = (why: string): string => fit(why.trim().replace(/\s+/g, ' ').replace(/\.$/, ''), 160)
+ // The card's note for a check whose run failed after it wrote its whole answer: the answer is
+ // read and shown, and the owner still learns the run did not end cleanly (fourth live test of
+ // 18 Nov 2026, section 2).

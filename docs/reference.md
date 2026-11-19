@@ -410,7 +410,10 @@ call writes (below):
    the card also shows `checkFailedAfterNote`, the engine's own words beside the answer read (fourth
    live test of 18 Nov 2026, section 2); with none, a run that ended in an engine error takes
    nothing and the card shows `checkFailedNote`, the engine's own words and no ask to press
-   again, and any other run takes nothing (no marks, no verdict, no draft) and the card shows
+   again (in both notes the engine's words are kept to 160 terminal cells by `fitMiddle`, whole
+   when they fit, else their start and their end with the middle left out, so a reason of wide
+   characters keeps the name it ends on: eighth live test of 18 Nov 2026), and any other run
+   takes nothing (no marks, no verdict, no draft) and the card shows
    `CHECK_CUT_NOTE`, asking the owner to press it again, since a check costs real money and is
    never re-run on its own (live test of 18 Nov 2026, section 1). Every reply
    cap is `MAX_REPLY_TOKENS`, 64,000, the engine's ceiling, so the time limit, not the cap, ends a

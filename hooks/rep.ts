@@ -4889,8 +4889,11 @@ export function checkReadOf(got: Pick<RunResult, 'text' | 'error' | 'answers'>):
   return { cut: true }
 }
 
-// The engine's words for why a check failed, on one line, without a closing stop.
-const failWords = (why: string): string => fit(why.trim().replace(/\s+/g, ' ').replace(/\.$/, ''), 160)
+// The engine's words for why a check failed, on one line, without a closing stop, kept to 160
+// cells: a reason of wide characters, kept to 160 characters, took about 290 cells and was cut
+// on the band, its end lost (eighth live test of 18 Nov 2026). A longer one keeps its start,
+// which says what failed, and its end, which names what it failed on, with the middle left out.
+const failWords = (why: string): string => fitMiddle(why.trim().replace(/\s+/g, ' ').replace(/\.$/, ''), 160)
 // The card's note for a check whose run failed after it wrote its whole answer: the answer is
 // read and shown, and the owner still learns the run did not end cleanly (fourth live test of
 // 18 Nov 2026, section 2).
@@ -5032,6 +5035,30 @@ export function fit(text: string, width: number): string {
   if (t.length <= width) return t
   if (width <= 1) return '…'
   return `${t.slice(0, width - 1).trimEnd()}…`
+}
+
+// Keeps a string to `cells` terminal cells (`widthOf`): whole when it fits, else its start and its
+// end with an ellipsis between, the start taking the first half.
+export function fitMiddle(text: string, cells: number): string {
+  const t = text.replace(/\s+/g, ' ').trim()
+  if (widthOf(t) <= cells) return t
+  if (cells <= 1) return cells === 1 ? '…' : ''
+  const chars = [...t]
+  let head = ''
+  let used = 0
+  for (const ch of chars) {
+    if (used + cellsOf(ch) > Math.floor((cells - 1) / 2)) break
+    head += ch
+    used += cellsOf(ch)
+  }
+  let tail = ''
+  for (let i = chars.length - 1, room = cells - 1 - used; i >= 0; i--) {
+    const ch = chars[i] as string
+    if (cellsOf(ch) > room) break
+    tail = ch + tail
+    room -= cellsOf(ch)
+  }
+  return `${head.trimEnd()}…${tail.trimStart()}`
 }
 
 // Cuts a string to `width` cells from its start, keeping the end, with an

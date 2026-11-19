@@ -9289,6 +9289,38 @@ for (const why of [
   }
 }
 
+// A reason of wide characters: 156 characters, 286 cells (eighth live test of 18 Nov 2026).
+const WIDE_WHY = `Failed to open /tmp/${'資料'.repeat(65)} ZEBRA`
+for (const after of [true, false]) {
+  test(`rule: on a five-row band at 100 columns, an engine reason of wide characters ${after ? 'after' : 'before'} the answer is kept to 160 cells, its start and its end drawn with the middle left out (eighth live test of 18 Nov 2026)`, async ($, on) => {
+    on('session.usage', () => ({ value: { startedAt: 0, context: { tokens: 20000, window: 500000, percent: 4 }, rateLimits: [] } }))
+    const answer = (JSON.parse(CHECKED_SAYING('continue', 'Two things first. Run the suite and paste the counts.')) as { result: string }).result
+    const { ui } = await checkOver($, on, streamed(after ? [answer] : ['Still checking: reading the record now.'], { error: WIDE_WHY }))
+    await settle($)
+    await ui.unmount()
+    for (const columns of [98, 168]) {
+      const five = { ...BAND, props: { ...BAND.props, maxRows: 5, bodyColumns: columns, scroll: { offset: 0, bodyRows: 4 } } }
+      const small = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...five })
+      const note = await small.find({ type: 'Text', text: new RegExp(`${after ? 'after' : 'before'} (?:it )?answer(?:ed|ing): Failed to open /tmp/資料[^…]*…[^…]*資料 ZEBRA\\.`) })
+      expect([columns, note === undefined ? 'cut' : 'whole']).toEqual([columns, 'whole'])
+      expect((await small.find({ key: 'put' }))?.props.hotkey).toBe('1')
+      await small.unmount()
+    }
+  })
+}
+test('the engine\'s reason is kept to 160 cells: whole when it fits, else its start and its end with the middle left out', () => {
+  const ascii = 'Failed to authenticate: OAuth session expired and could not be refreshed because the authentication server rejected the refresh token as revoked by administrato'
+  expect(checkFailedNote(ascii)).toBe(`The check failed before it answered: ${ascii}. Nothing from it was taken.`)
+  expect(WIDE_WHY.length).toBe(156)
+  const kept = /^The check failed before it answered: (.*)\. Nothing from it was taken\.$/.exec(checkFailedNote(WIDE_WHY))?.[1] ?? ''
+  expect(rep.widthOf(kept)).toBeLessThanOrEqual(160)
+  expect(kept.startsWith('Failed to open /tmp/資料')).toBe(true)
+  expect(kept.endsWith('資料 ZEBRA')).toBe(true)
+  const long = `${'word '.repeat(40)}END`
+  const k2 = /^The check failed before it answered: (.*)\. Nothing/.exec(checkFailedNote(long))?.[1] ?? ''
+  expect([k2.length <= 160, k2.endsWith('word END'), k2.includes('…')]).toEqual([true, true, true])
+})
+
 test('rule: the Check button\'s card keeps a checker\'s message that pushes the agent on before it stops', async ($, on) => {
   const message = 'Two things before you stop. First, run the full suite and paste the counts. Second, push the branch and show the run.'
   const { rec, ui } = await checkOver($, on, CHECKED_SAYING('continue', message))

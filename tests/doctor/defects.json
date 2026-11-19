@@ -4222,5 +4222,17 @@
     "breaks": "On a five-row band at 100 columns an engine reason of 145 to 160 characters is cut mid-sentence: the card never tries the note's short form or gives up the conversation's size for a row.",
     "patch": "check-long-reason-cut.patch",
     "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "check-reason-characters",
+    "breaks": "The engine's reason is kept to 160 characters rather than 160 cells, so a reason of wide characters (a path in Chinese or Japanese) takes about 290 cells and is cut on the band, its end lost.",
+    "patch": "check-reason-characters.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "check-reason-end-cut",
+    "breaks": "A long engine reason is cut at its end, so the name it failed on, which comes last, never reaches the card.",
+    "patch": "check-reason-end-cut.patch",
+    "fixed": "tested 2026-11-18"
   }
 ]
