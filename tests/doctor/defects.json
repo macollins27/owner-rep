@@ -201,7 +201,7 @@
     "name": "holds-outlive-failures",
     "breaks": "The checked card's fold drops the failed claims with the holding ones, so on an ordinary band the owner sees a count and never which claim was false.",
     "patch": "holds-outlive-failures.patch",
-    "fixed": "2026-10-14"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "well-with-left",

@@ -1,7 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 4389766..b84445b 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2543,14 +2543,7 @@
+@@ -5936,14 +5936,7 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
    const folded = (): CardText['checked'] =>
      k === null
        ? null
@@ -14,6 +15,6 @@ diff --git a/hooks/rep.ts b/hooks/rep.ts
 -          refused: k.refused,
 -        }
 +      : { holds: [], wrong: [], notShown: [], changed: [], looked: `Checked: ${k.holds.length} hold.`, refused: k.refused }
+   // Folded onto one row: an item that ends its sentence is followed by a space, any other by
+   // "; ", so a list of sentences never reads ".;".
    const oneLine = (items: string[]): string[] =>
-     items.length === 0 ? [] : [toRows(items.length > 1 ? items.join('; ') : (items[0] ?? ''), '  - ', 1, w)]
-   // A part at one row grown to its rows and the rows left: whole when that fits.
