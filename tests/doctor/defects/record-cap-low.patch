@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 6b034fe..d9724e9 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1973,7 +1973,7 @@ dropped:
+ //
+ // The answer can be as long as a briefing asked again with its open conditions named, and
+ // the model reads a long record first (it was 16,000 tokens until G16).
+-export const RECORD_MAX_TOKENS = MAX_REPLY_TOKENS
++export const RECORD_MAX_TOKENS = 16000
+ // A whole session read cold, with no cache behind it, takes far longer than the writer's
+ // short prompt; four minutes, as the writer's highest-effort retry has.
+ export const RECORD_TIMEOUT_MS = 240_000

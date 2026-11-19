@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 6b034fe..3d6bdb3 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2870,7 +2870,7 @@ export const noLabels = (text: string): boolean => Object.keys(parts(text)).leng
+ // Heads up or a mark: each reader asks once more, then reports it.
+ export function cutShort(kind: ReplyKind, text: string, usage?: Usage | null, cap = 0): boolean {
+   const whole = kind === 'own-words' ? parseOwnWords(text) !== null : endsWhole(kind, text)
+-  return !whole || nearCap(usage, cap)
++  return !whole
+ }
+ // A reply worth asking for again: it has parts, but stopped before its last one or came near its
+ // cap. A reply with none of the parts is read as before (it shows nothing) and is not asked again:

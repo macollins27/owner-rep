@@ -105,16 +105,27 @@ the objective only through what the owner answers, and the code keeps them from 
 other way: a write is taken only when it saw a message of the owner's past the ones the held
 objective was built from, so a write that lands after a newer one is refused, and a message that arrives during
 a write is written after it. A write that fails, comes back empty, or comes back in a shape
-the code cannot read (which is what a reply cut off at its length limit looks like) leaves
+the code cannot read, or stops before its last part, leaves
 the objective as it was and is counted, and the card's line of what the rep has spent names
 the failed writes and, in plain words, the cause of the last. A failed attempt (an empty or
-errored reply, an answer the code cannot read, or "holds" while no objective is held) is tried
+errored reply, an answer the code cannot read, one that stopped before its last part or came
+within 2% of its length limit, or "holds" while no objective is held) is tried
 again at the highest effort, up to twice (the empty replies it was measured on came from the
 unfenced prompt, described below, and the retry stays as a net for an empty or unreadable
-reply); a call that throws or is cut short is not tried again, nor is one once a newer
+reply); a call that throws or is aborted is not tried again, nor is one once a newer
 message of the owner's has arrived (the next pass writes over the fresh prompt), and a write
 counts as failed only when every attempt did. When no objective is held yet, a press of Rep
 writes one before the briefing.
+
+The engine does not say when a reply ran out of room, so every reader treats a reply that
+stopped before the last part its kind asks for, or came within 2% of its length limit, as cut
+off. A reply can also stop inside its last part, far from its limit, with every label given: a
+live test drew a card whose last line read "Requests an indep". So every prompt ends by asking
+for one fixed line after everything else, "end of reply", and a reply without it is cut,
+whatever its length. Every length limit is the engine's ceiling, 64,000 tokens, so a long answer ends on time,
+not on length. A cut look or briefing is read once more and takes nothing if it is cut again
+(the briefing says so); a cut check takes nothing and asks the owner to press it again, since a
+check costs real money; a cut own-words reply leaves the rep's own text.
 
 A session is a run of jobs: the owner opens one, the agent works, the owner corrects it a
 few times, the job ends and the next begins. A correction rebuilds the objective whole from
@@ -642,7 +653,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 664 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 681 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: twelve real sessions in tmux, the strip captured to tests/live/captures
 ```

@@ -132,13 +132,15 @@ call writes (below):
    A Check card goes through the same gate and has no second ask or own-words call, so an
    instant read refused with the checker's message empty gets `OPEN_MESSAGE` when a condition
    is still open, an instant read that passed keeps its message when the checker leaves it
-   empty, and with every condition shown or closed the message stays empty. A refused
+   empty and writes no "does:" either (a checker that says what its message does and writes
+   none has said there is nothing to send, so the briefing's older draft is not put back), and
+   with every condition shown or closed the message stays empty. A refused
    answer is asked once more (`askAgain`, naming the open conditions), and that answer
    passes the same gate. When it is refused too, or does not answer, one plain
    `$.model.complete` (`OBJECTIVE_MODEL`, high effort, `OWN_WORDS_SYSTEM`: the ROLE's "Who
    you are" and "How you write to the owner" sections cut by `sectionOf`, which throws on a missing
    heading, and one line against reproducing a secret, a key, a password or personal data
-   it is shown; `OWN_WORDS_MAX_TOKENS` 4,000, `OWN_WORDS_TIMEOUT_MS` two minutes) over
+   it is shown; `OWN_WORDS_MAX_TOKENS` 64,000, `MAX_REPLY_TOKENS`, the engine's ceiling, `OWN_WORDS_TIMEOUT_MS` two minutes) over
    `ownWordsPrompt` (the memory, the open conditions, what stands and what is left out)
    writes the replaced parts in the rep's own words. Its reply is read by `parseOwnWords`,
    which answers null unless the reply came back whole: `means:`, `next:`, `message:` and
@@ -156,7 +158,9 @@ call writes (below):
    over it. Two replies came back answered and cut
    mid-sentence live on 19 Oct 2026, with the cap at 4,000 tokens and at 16,000, for a cause
    not known (`docs/testing.md` scenario 11); the wholeness test keeps their half sentences
-   off the card. Its spend counts with the looks, and it writes card parts only, never the
+   off the card. Since 17 Nov 2026 every reply cap is `MAX_REPLY_TOKENS` (64,000), and a reply whose
+   output reached `NEAR_CAP_SHARE` of its cap is read as cut (`cutShort('own-words', …)`) even when it
+   parses, so `lastBrief.own` is `cut` and every replaced part keeps the rep's text. Its spend counts with the looks, and it writes card parts only, never the
    objective. `lastBrief.reads` records the card's reads: 1, 2 with the second ask, 3 with
    the own-words call; `lastBrief.own` what came of that call (`whole`; `cut`, answered but
    not whole; `none`, not answered or thrown; `skipped`, no call made) and
@@ -351,7 +355,7 @@ call writes (below):
 
    The watch and the briefing (and its second ask) read through one helper, `readSession`.
    It reads `$.session.messages()` and, when there are rows, makes one `$.model.complete`
-   (`OBJECTIVE_MODEL`, high effort, `RECORD_SYSTEM`, `RECORD_MAX_TOKENS` 16,000,
+   (`OBJECTIVE_MODEL`, high effort, `RECORD_SYSTEM`, `RECORD_MAX_TOKENS` 64,000, the engine's ceiling,
    `RECORD_TIMEOUT_MS` four minutes) over `recordPrompt`, never a fork: the rows printed by `recordText`
    as entries labelled `entry N`, never `#N` (the owner's rows as the person only where their key is
    one of the owner's messages that `heldItems` read from the transcript, `NOT_TYPED` applied after
@@ -374,6 +378,46 @@ call writes (below):
    With no rows no model is called, the result is `NOTHING_READ` (`nothing-to-fork`), and the
    toast says there is nothing to read. `SESSION_ROWS_CAP` (4,096) is the most rows
    `$.session.messages()` returns, so a list that long may not reach the session's start.
+
+   **A reply that stopped before its end (G16, G20).** The engine reports no stop reason, so a
+   reply cut off at its cap, or ended early for any other cause, arrives answered. Each reader
+   therefore takes a reply only when it reached the last label its kind asks for (`endsWhole`):
+   the watch's `closed:`, the check's `looked:`, the objective's `approved:` after `holds` and
+   `dropped:` after `moved`, a briefing's and its second ask's `does:`, and the own-words call's
+   whole reply (`parseOwnWords`). A reply cut inside its last value still has that label (the
+   live test of 18 Nov 2026 drew a briefing whose `does:` stopped at "Requests an indep", 100
+   output tokens into a cap of 64,000), so every reply must also end with `END_LINE` ("end of
+   reply") as its last line (`endsWithEndLine`, which allows capitals, a closing full stop and
+   bold or code marks). Each prompt asks for it in one line, `END_ASK`, put last by `endAsked`:
+   `watchPrompt`, `briefPrompt`, `objectivePrompt`, `checkPrompt` and `ownWordsPrompt` return
+   through it, and the briefing asked once more is `endAsked` over the briefing and `askAgain`,
+   so the ask stays its last line and appears once. `parts` skips the end line, so it joins no
+   value. An objective answer naming neither `holds` nor `moved` stays unreadable, not cut,
+   with or without the line. `cutShort(kind, text, usage, cap)` is a reply not whole or one
+   whose output reached `NEAR_CAP_SHARE` (98%) of its cap (`nearCap`), which is read as cut even
+   when its last label is there. `noLabels` is a reply with none of the parts asked for; it is
+   read as before (it shows nothing) and never asked again, since it is not a long answer that
+   ran out of room. `readAgain` (a reply with labels that is cut short) is what asks again: a
+   look reads the session once more, at most two reads, and a look cut both times takes nothing
+   (no marks, no Heads up); a briefing, or its second ask, is asked once more, and one cut both
+   times puts up no card and toasts that the briefing stopped before its end twice. An objective
+   write that is cut short fails that attempt and uses the write's own retries
+   (`OBJECTIVE_RETRIES`), its cause recorded by `writeFailure` as `cut-short (N output tokens): …`
+   or `no-labels: …`, which `failureWords` puts in plain words. A check is read by `checkReadOf`:
+   its result when whole, else the last whole answer the checker wrote on the way (a Stop hook
+   can ask for one more turn after it, and an engine error, such as an expired login, can end
+   that turn, replacing the result), and when the run ended in an engine error after that answer
+   the card also shows `checkFailedAfterNote`, the engine's own words beside the answer read (fourth
+   live test of 18 Nov 2026, section 2); with none, a run that ended in an engine error takes
+   nothing and the card shows `checkFailedNote`, the engine's own words and no ask to press
+   again (in both notes the engine's words are kept to 160 terminal cells by `fitMiddle`, whole
+   when they fit, else their start and their end with the middle left out, so a reason of wide
+   characters keeps the name it ends on: eighth live test of 18 Nov 2026), and any other run
+   takes nothing (no marks, no verdict, no draft) and the card shows
+   `CHECK_CUT_NOTE`, asking the owner to press it again, since a check costs real money and is
+   never re-run on its own (live test of 18 Nov 2026, section 1). Every reply
+   cap is `MAX_REPLY_TOKENS`, 64,000, the engine's ceiling, so the time limit, not the cap, ends a
+   long answer.
 
    `boundaryRow` places the job's earliest open approval in the rows, which carry no number,
    time or turn: the job's stored messages, from that approval to the newest, are matched to the
@@ -580,7 +624,9 @@ call writes (below):
    pnpm finds its store unwritable, moves it into a scratch folder, and an offline install
    there fails (measured 17 Oct 2026, pnpm 10). The three questions come before the run's clock
    starts, so the check's measured time is the run's own. Fifteen-minute timeout
-   (`CHECK_TIMEOUT_MS`), 120 turns, JSON output; `permission_denials` in the output is the
+   (`CHECK_TIMEOUT_MS`), 120 turns, stream-json output with `--verbose`, so `resultOf` has each
+   text the model wrote besides the result line, with the result's `is_error` kept as `error`
+   and the engine's own "<synthetic>" answers left out; `permission_denials` in the result is the
    count of commands refused approval, shown on the checked card (`refusedLine`, which says
    commands the fence stopped are not counted) and on the next card's price line
    (`checkCostText`); the right number is zero. Its answer rewrites the card, with each claim
@@ -625,11 +671,10 @@ saved after the write was shown its messages is written next. A due write is up 
 `1 + OBJECTIVE_RETRIES` attempts (the retries at `OBJECTIVE_RETRY_EFFORT`, `max`, with their own cap and
 time; none after a throw or an `aborted`; a `holds` with nothing held fails the attempt as
 `holds-with-none`), and only a write whose every attempt failed is counted. A write that throws or comes
-back unanswered, or answers with nothing `parseObjective` can read (a reply cut off at its
-cap looks like that), leaves the objective as it was and adds one to `rec.objectiveFailed`,
+back unanswered, or answers with nothing `parseObjective` can read, leaves the objective as it was and adds one to `rec.objectiveFailed`,
 which the card's price line (`spentText`) names only when above zero. The writer is a plain
 `$.model.complete` call (`OBJECTIVE_MODEL`, high effort, `OBJECTIVE_MAX_TOKENS` and
-`OBJECTIVE_TIMEOUT_MS`, set from one measured write), never a fork of the conversation,
+`OBJECTIVE_TIMEOUT_MS`; the cap, and the retries' `OBJECTIVE_RETRY_MAX_TOKENS`, is `MAX_REPLY_TOKENS`, 64,000, the engine's ceiling, since 17 Nov 2026), never a fork of the conversation,
 sent with its fixed rules as `system: OBJECTIVE_SYSTEM` on every attempt, and shown by
 `objectivePrompt` only the held objective, `rec.past` and the owner's numbered messages on the job
 (each with the agent's turn the owner answered, captured as it was shown: whole, only its end when it is long, or its last words), the messages inside a `<his_messages>` fence
@@ -962,14 +1007,18 @@ what the replies were read as, and for cards the gate's rules (`passed` when non
 `own-words`, or `fixed-text`). Two commands are registered at `session.start` and hidden from the
 menu and `/help` (`command.describe`, `HIDDEN_COMMANDS`): `/owner-rep-counts` prints
 `countsText`, one line per kind and a `cards:` line; `/owner-rep-replay <call file, session folder,
-session id or "this"> [--kind k] [--last 1-50] [--effort low|medium|high|max] [--times 1-10]`
+session id or "this"> [--kind k] [--last 1-50] [--effort low|medium|high|max] [--times 1-10] [--now]`
 (`parseReplayArgs`, `REPLAY_USAGE`) takes a folder's last `--last` (`REPLAY_LAST`, 10) calls of the
 kind asked for (`replayPick`), rebuilds each from its parts (`savedCall`, which refuses one whose
 texts were not kept, one naming a text by anything but a fingerprint (`isSha`), so a call file
 cannot point it at another file, one whose texts are missing, whose system text no longer has its
 fingerprint, or whose prompt no longer joins to `promptSha`), prints it as logged and sends
 it `--times` times with the same settings, or the effort given, reading each answer with
-`callRead` against the saved `open` (`replayLine`), then the totals of each (`replayTotals`). A
+`callRead` against the saved `open` (`replayLine`), then the totals of each (`replayTotals`). With
+`--now` (`replayNow`) each call goes as this build would send it, at `MAX_REPLY_TOKENS` and with
+`END_ASK` as its prompt's last line once (on the last block of a prompt in blocks), and is read
+against that cap; the rest is as logged, so a call saved before the shared cap and the end line
+shows what those two alone change (audit test R16). A
 replay is not logged or counted. Nothing of either is drawn on the row or the card.
 
 An approval (`approvalOf`: the owner's message, note or plan-screen plan carrying `approved`,
@@ -1166,7 +1215,7 @@ is the rep's `next(e)`. From 2.1.325 the band asks each mod for a row of its own
 is not `PLUGIN`), keeps whether any draws something in `othersDraw` by surface and draws the
 band again when that changes, and while the rep's row last drew the briefing (`cardUp`, set
 by the row's render) passes on only the rep's own row. The `AbovePrompt` render takes
-`hasBeneath` from both, so the same rules hold on every build; on the terminal each line has its width in columns and the card fills the band's rows in order of importance (`fillCard`: the buttons row, the head's result, one row of the message and the check's note cut to one row first, the note whole next, then the judgment one row each, most telling first (stands, then the revision line from `revisedLine`, so a long message never crowds out that the reading moved), then the count line (`countLine`), then the judgment whole as the rows allow, then the message with the rows that remain, then the extras while they fit; on a band too short for the message's box between the head and the buttons the box goes and Put message in prompt, drawn while the brief has a message, carries it whole, Put and Check it fixed from the whole card (`putShows`, `checkShows`); rows counted by `cardRows` as the band wraps them: `rowsOf` follows the band's wrap (wrap-ansi with trim off and hard on, so an indent and the space a row starts with take cells, a word wider than the row breaks, and `widthOf` gives a wide character two cells and a combining mark none), and `buttonRows` counts the buttons row, which wraps (`flexWrap`, three cells apart) with the size last on it, from `cardButtons`), and on a surface whose band is a scrolling box in a proportional font (`sizesInColumns` false: Claude Code for VS Code, whose extension counts columns by a wide glyph and draws widths in `ch`) no line is given a width, so each fills the box, and the card is drawn whole. Buttons use bare digits for hotkeys because from the prompt box only a
+`hasBeneath` from both, so the same rules hold on every build; on the terminal each line has its width in columns and the card fills the band's rows in order of importance (`fillCard`: the buttons row, the head's result, one row of the message and the check's note cut to one row first; on a band of about five rows, a 24-row terminal's, what the check found then goes to one line without its heading (`checkedBare`, the counts of what held and what was false, or the checker's own account of what it looked at when it sorted no claim, with how many commands were refused on it), then the empty line above the card goes (`tight`), then that line is cut to one row and then dropped, so the head, the note and the buttons stay in the window; the note whole next, in its short form (`shortCheckNote`, "Check failed after answering: …") and then without the conversation's size on the buttons row when the long form will not fit, ahead of what the check found when the band holds only one of them (that line comes back next), taking the empty line's row when it needs it, then that line, the heading and the lists back in that order, then the judgment one row each, most telling first (stands, then the revision line from `revisedLine`, so a long message never crowds out that the reading moved), then the count line (`countLine`), then the judgment whole as the rows allow, then the message with the rows that remain, then the extras while they fit; on a band too short for the message's box between the head and the buttons the box goes and Put message in prompt, drawn while the brief has a message, carries it whole, Put and Check it fixed from the whole card (`putShows`, `checkShows`); rows counted by `cardRows` as the band wraps them: `rowsOf` follows the band's wrap (wrap-ansi with trim off and hard on, so an indent and the space a row starts with take cells, a word wider than the row breaks, and `widthOf` gives a wide character two cells and a combining mark none), and `buttonRows` counts the buttons row, which wraps (`flexWrap`, three cells apart) with the size last on it, from `cardButtons`), the row likewise keeps its head to the rows the band leaves it (`rowHead`: `maxRows` less the empty line above it, the record line, its buttons row, the rows of anything another mod draws beneath, and under a heads-up the note's line, its why and its buttons; at least one row, cut with "…"), so a long result never puts Brief me and Tell the rep under a "↓ n more" row; and on a surface whose band is a scrolling box in a proportional font (`sizesInColumns` false: Claude Code for VS Code, whose extension counts columns by a wide glyph and draws widths in `ch`) no line is given a width, so each fills the box, and the card is drawn whole. Buttons use bare digits for hotkeys because from the prompt box only a
 digit presses a band button. A keyboard chord for the Rep button once rode on an unrelated
 engine action; it could not be proven and was removed on 14 Oct 2026. Do not bring it back
 without a binding that is shown working.

@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 04c7909..eb09ff3 100644
+index 35606cf..d680f5b 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1317,7 +1317,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
+@@ -1369,7 +1369,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
          const effort = retry ? OBJECTIVE_RETRY_EFFORT : 'high'
          const maxTokens = retry ? OBJECTIVE_RETRY_MAX_TOKENS : OBJECTIVE_MAX_TOKENS
          const timeoutMs = retry ? OBJECTIVE_RETRY_TIMEOUT_MS : OBJECTIVE_TIMEOUT_MS
 -        const { result, ms } = await timed(() => $.model.complete({ model: OBJECTIVE_MODEL, system: OBJECTIVE_SYSTEM, prompt, maxTokens, effort, timeoutMs }))
 +        const { result, ms } = await timed(() => $.model.fork({ prompt }) as never)
          const sent: Sent = { kind: 'objective', settings: { model: OBJECTIVE_MODEL, effort, maxTokens, timeoutMs }, system: OBJECTIVE_SYSTEM, prompt, joined: true, attempt, result, ms }
-         const read = result !== null && result.isAnswered ? callRead('objective', result.text) : undefined
+         const read = result !== null && result.isAnswered ? callRead('objective', result.text, undefined, { usage: result.usage as Usage, cap: maxTokens }) : undefined
          saveCall($, sid, sent, read)

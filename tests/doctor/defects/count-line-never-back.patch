@@ -1,11 +1,11 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 6e8b995..01e8602 100644
+index 6421a46..b499732 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -5088,8 +5088,6 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
-     x => ({ ...x, result: card.result }),
-     // Why the check cannot run, or what it last said, whole.
-     x => ({ ...x, checkNote: card.checkNote }),
+@@ -5294,8 +5294,6 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
+     x => (x.checkedBare === true ? { ...x, checked: bare() } : x),
+     x => ({ ...x, tight: false }),
+     x => (x.checkedBare === true ? { ...x, checked: counted(), checkedBare: false } : x),
 -    // How much of done is shown, and whose looks are still to count, before the judgment.
 -    x => ({ ...x, count: card.count }),
      // The judgment, one row each, the most telling first.

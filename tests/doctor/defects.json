@@ -117,7 +117,7 @@
     "name": "row-shows-whole-reading",
     "breaks": "The row draws the whole objective (result, purpose, conditions and step) instead of the result alone, so the strip is crowded and the result is lost in it.",
     "patch": "row-shows-whole-reading.patch",
-    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-31"
+    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-31; remade 2026-11-19"
   },
   {
     "name": "writer-forks-conversation",
@@ -165,7 +165,7 @@
     "name": "checked-lists-never-fold",
     "breaks": "The checked lists are never folded, so on a small band they push the judgment's parts off the card where a count line and the failed claims would have left room for them.",
     "patch": "checked-lists-never-fold.patch",
-    "fixed": "tested 2026-10-14"
+    "fixed": "tested 2026-10-14; remade 2026-11-18 for the five-row floor"
   },
   {
     "name": "step-look-dropped",
@@ -189,7 +189,7 @@
     "name": "revised-line-folds-first",
     "breaks": "The revision line waits among the extras after the message, so whenever the message is long enough to take the rows that are left the owner never sees that the reading moved.",
     "patch": "revised-line-folds-first.patch",
-    "fixed": "2026-10-14; remade 2026-11-17"
+    "fixed": "2026-10-14; remade 2026-11-17; remade 2026-11-18 for the five-row floor"
   },
   {
     "name": "rows-counted-by-cells",
@@ -387,7 +387,7 @@
     "name": "writer-cap-cut",
     "breaks": "The objective writer's reply cap goes back to 1,200 tokens, under the 1,847 one measured write used, so every write is cut off or comes back empty and the objective is never written.",
     "patch": "writer-cap-cut.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-11-17"
   },
   {
     "name": "writer-unreadable-uncounted",
@@ -1821,7 +1821,7 @@
     "name": "count-line-dropped-first",
     "breaks": "The count line comes back only after the judgment's parts have taken the rows, so on a small band the owner loses how many things done means while restatements of the agent's work keep a second row.",
     "patch": "count-line-dropped-first.patch",
-    "fixed": "tested 2026-10-19; remade 2026-11-17"
+    "fixed": "tested 2026-10-19; remade 2026-11-17; remade 2026-11-18 for the five-row floor"
   },
   {
     "name": "extras-before-message",
@@ -1833,7 +1833,7 @@
     "name": "message-box-hides-buttons",
     "breaks": "On a band too short for the message's box between the head and the buttons, as in a terminal of about 24 rows, the box stays and pushes the buttons out of the window where a digit cannot press them.",
     "patch": "message-box-hides-buttons.patch",
-    "fixed": "2026-10-26; remade 2026-11-17"
+    "fixed": "2026-10-26; remade 2026-11-17; remade 2026-11-18 for the five-row floor"
   },
   {
     "name": "own-words-cut-taken",
@@ -3408,6 +3408,78 @@
     "fixed": "2026-11-15"
   },
   {
+    "name": "cut-reply-read",
+    "breaks": "Every reader takes a reply that stopped before its last part, so a cut watch, briefing, check or objective answer is read as whole and a half-written part reaches the card or the record.",
+    "patch": "cut-reply-read.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "near-cap-read-whole",
+    "breaks": "A reply that came within 2% of its cap is read as whole when its last label happens to be there, so an answer that ran out of room mid-list is taken.",
+    "patch": "near-cap-read-whole.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "no-labels-asked-again",
+    "breaks": "A reply with none of the parts asked for is read again as if it ran out of room, spending a second paid call on an answer that was never long.",
+    "patch": "no-labels-asked-again.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "record-cap-low",
+    "breaks": "The watch and briefing reply cap drops back under the engine's 64,000 ceiling, so a long answer is cut short again.",
+    "patch": "record-cap-low.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "own-words-cap-low",
+    "breaks": "The own-words reply cap drops back to 4,000, under the engine's ceiling, so a long own-words answer is cut short again.",
+    "patch": "own-words-cap-low.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "watch-cut-not-reread",
+    "breaks": "A look whose answer stopped before its end is not read once more, so one cut reply loses that look's Heads up.",
+    "patch": "watch-cut-not-reread.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "watch-cut-taken",
+    "breaks": "A look whose answer came near its cap is taken anyway, so marks and a Heads up from an answer that ran out of room reach the record and the screen.",
+    "patch": "watch-cut-taken.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "brief-cut-not-reread",
+    "breaks": "A briefing whose answer stopped before its end is not read once more, so one cut reply leaves the owner with no card.",
+    "patch": "brief-cut-not-reread.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "brief-cut-shown",
+    "breaks": "A briefing whose answer stopped before its end is put on the card as it stands, so the owner gets a card built from half an answer.",
+    "patch": "brief-cut-shown.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "check-cut-taken",
+    "breaks": "A check whose answer stopped before its looked line is taken, so its half-read verdict and marks reach the card and no note tells the owner to press it again.",
+    "patch": "check-cut-taken.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "objective-near-cap-taken",
+    "breaks": "An objective write that came within 2% of its cap is taken when it happens to parse, so an objective that ran out of room mid-list is written to the record.",
+    "patch": "objective-near-cap-taken.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "own-words-near-cap-taken",
+    "breaks": "An own-words reply that reached its cap is put on the card when it happens to parse, so words that ran out of room reach the owner.",
+    "patch": "own-words-near-cap-taken.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
     "name": "call-log-days-takes-starting",
     "breaks": "A session resumed after 14 idle days has its own calls folder removed at its start, so its earlier calls are lost.",
     "patch": "call-log-days-takes-starting.patch",
@@ -3477,7 +3549,7 @@
     "name": "count-line-never-back",
     "breaks": "The count line never comes back on a card too tall for the band, so whenever the card is folded the owner loses how many things done means and whose looks are still to count.",
     "patch": "count-line-never-back.patch",
-    "fixed": "tested 2026-11-17"
+    "fixed": "tested 2026-11-17; remade 2026-11-18 for the five-row floor"
   },
   {
     "name": "bare-keeps-kind",
@@ -3828,6 +3900,54 @@
     "fixed": "tested 2026-11-18"
   },
   {
+    "name": "end-line-not-required",
+    "breaks": "A reply is taken as whole without the end line its prompt asks for, so a briefing cut inside its last value, every label given, reaches the card with a half line, as \"Requests an indep\" did in the live test of 18 Nov 2026.",
+    "patch": "end-line-not-required.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "end-line-joins-last-value",
+    "breaks": "The end line is read as part of the last value, so a whole briefing's does line, a check's looked line or a watch's last mark carries \"end of reply\" onto the card or the record.",
+    "patch": "end-line-joins-last-value.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "check-prompt-no-end-ask",
+    "breaks": "The check's prompt does not ask for the end line, so every whole check comes back without it and is taken as cut, and the Check button never changes the card.",
+    "patch": "check-prompt-no-end-ask.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "ask-again-end-ask-not-last",
+    "breaks": "The briefing asked once more puts the open conditions after the ask for the end line, so the ask is no longer the prompt's last line and the model can end its reply without it.",
+    "patch": "ask-again-end-ask-not-last.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "check-error-read-as-cut",
+    "breaks": "A check whose run ended in an engine error (an expired login) before any whole answer is shown as cut, and the owner is told to press it again, when pressing again cannot help.",
+    "patch": "check-error-read-as-cut.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "check-earlier-answer-dropped",
+    "breaks": "A check that wrote its whole answer before a later turn (a Stop hook, then an engine error) is read only from its last result, so the whole answer is lost and the card says the check was cut.",
+    "patch": "check-earlier-answer-dropped.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "check-synthetic-answer-kept",
+    "breaks": "The engine's own answer to an error is kept as one of the checker's answers.",
+    "patch": "check-synthetic-answer-kept.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "check-output-last-result-only",
+    "breaks": "The check runs with JSON output, which keeps only the last result, so a whole answer an engine error replaced is not in the output to read.",
+    "patch": "check-output-last-result-only.patch",
+    "fixed": "2026-11-18"
+  },
+  {
     "name": "fact-clauses-not-split",
     "breaks": "A condition is read as one clause, never clause by clause, so two facts parted by a comma or a semicolon (\"the work is committed in this folder, and the commit holds the newest version\") read as works.",
     "patch": "fact-clauses-not-split.patch",
@@ -3850,6 +3970,12 @@
     "breaks": "Text in double quotes is read as words, so a file said to contain exactly \"one two three\" is read as works and needs a look no command could need.",
     "patch": "fact-quoted-text-read.patch",
     "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
+  },
+  {
+    "name": "check-error-after-answer-hidden",
+    "breaks": "A check whose run failed after it wrote its whole answer shows the answer and never says the run failed, so the owner does not learn the check ended in an engine error.",
+    "patch": "check-error-after-answer-hidden.patch",
+    "fixed": "2026-11-18"
   },
   {
     "name": "fact-held-thing-any-word",
@@ -3906,6 +4032,66 @@
     "fixed": "2026-11-18"
   },
   {
+    "name": "replay-now-not-read",
+    "breaks": "The replay takes \"--now\" and ignores it, so a call saved before the shared cap and the end line is sent again as it was, and audit test R16 measures nothing.",
+    "patch": "replay-now-not-read.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "replay-now-logged-cap",
+    "breaks": "The replay with \"--now\" sends a saved call at its logged cap, so a reply that the old cap cut is cut again and R16 cannot show what the shared cap changes.",
+    "patch": "replay-now-logged-cap.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "replay-now-end-asked-twice",
+    "breaks": "The replay with \"--now\" adds the end line to a prompt that already asks for it, so the call it sends is not the one this build would send.",
+    "patch": "replay-now-end-asked-twice.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "replay-now-not-sent",
+    "breaks": "The replay says \"--now\" sends a call as this build would, then sends it as logged: the old cap and no end line.",
+    "patch": "replay-now-not-sent.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "card-floor-not-applied",
+    "breaks": "A checked card too tall for a short band (a 24-row terminal's five rows) is not cut to its floor, so the band scrolls and the check's error note and every button fall out of view.",
+    "patch": "card-floor-not-applied.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "card-tight-margin-drawn",
+    "breaks": "The card's top margin is drawn though the card was cut to fit without it, so a card that fits five rows takes six and its last button scrolls out of the window.",
+    "patch": "card-tight-margin-drawn.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "card-bare-block-drawn",
+    "breaks": "A checked card cut to its one-line account still draws the whole block (heading and every list), so it overflows the short band it was cut for.",
+    "patch": "card-bare-block-drawn.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "card-bare-no-account",
+    "breaks": "A check that sorted no claim leaves its cut card with no line at all of what it looked at, so the owner cannot tell a check ran.",
+    "patch": "card-bare-no-account.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "checked-stale-draft-kept",
+    "breaks": "A check that says there is nothing to send still leaves the briefing's older draft on the card, and Put message types that stale message into the prompt.",
+    "patch": "checked-stale-draft-kept.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "check-note-after-margin",
+    "breaks": "The empty line above a short band's card keeps its row while the check's error note is cut to one, so the owner reads half of why the check failed beside a blank line.",
+    "patch": "check-note-after-margin.patch",
+    "fixed": "tested 2026-11-18; remade 2026-11-18 for the note before the count"
+  },
+  {
     "name": "fact-place-any-word",
     "breaks": "Any word after \"to\" or \"in\" is a place, so a purpose after a fact (\"the service is deployed To Encrypt\", \"saved to convert text\") reads as where it is and closes on the builder's own run.",
     "patch": "fact-place-any-word.patch",
@@ -3927,6 +4113,12 @@
     "name": "fact-content-any-subject",
     "breaks": "Anything may hold quoted text, so a quality in quotes (\"the page has \\\"correct error handling\\\"\") or a tool said to hold exactly some text reads as a fact and closes on the builder's own run.",
     "patch": "fact-content-any-subject.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "check-note-cut-for-count",
+    "breaks": "On a band too short for both, what the check found keeps its row and the check's note is cut to one: at 100x24 with the conversation's size on the buttons row, the engine's reason ends mid-word (\"OAuth session expir…\").",
+    "patch": "check-note-cut-for-count.patch",
     "fixed": "tested 2026-11-18"
   },
   {
@@ -4026,6 +4218,24 @@
     "fixed": "tested 2026-11-18"
   },
   {
+    "name": "check-long-reason-cut",
+    "breaks": "On a five-row band at 100 columns an engine reason of 145 to 160 characters is cut mid-sentence: the card never tries the note's short form or gives up the conversation's size for a row.",
+    "patch": "check-long-reason-cut.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "check-reason-characters",
+    "breaks": "The engine's reason is kept to 160 characters rather than 160 cells, so a reason of wide characters (a path in Chinese or Japanese) takes about 290 cells and is cut on the band, its end lost.",
+    "patch": "check-reason-characters.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "check-reason-end-cut",
+    "breaks": "A long engine reason is cut at its end, so the name it failed on, which comes last, never reaches the card.",
+    "patch": "check-reason-end-cut.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
     "name": "fact-mod-bare-path",
     "breaks": "A path or a name of any kind may stand before a noun, so a word in backticks (\"the `reliable` tool\") or a bare path (\"the ~secure tool\", \"the secure.c tool\") carries a quality past the closed list and closes.",
     "patch": "fact-mod-bare-path.patch",
@@ -4108,6 +4318,18 @@
     "breaks": "\"an executable named greet is installed in a bin folder\" is read as works, so an install the listing shows never closes.",
     "patch": "fact-named-dropped.patch",
     "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "row-head-unbounded",
+    "breaks": "the row draws a long result whole, so at a 24-row terminal its buttons fall under a \"↓ n more\" row.",
+    "patch": "row-head-unbounded.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "row-head-note-unbounded",
+    "breaks": "under a heads-up the row's head ignores the note's rows, so its buttons fall under a \"↓ n more\" row.",
+    "patch": "row-head-note-unbounded.patch",
+    "fixed": "tested 2026-11-19"
   },
   {
     "name": "fact-noun-run-any-order",

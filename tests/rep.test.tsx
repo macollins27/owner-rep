@@ -17,7 +17,7 @@
 import type { On, SessionMessage } from 'claude-code'
 import { describe, expect, mock, test as kitTest, type Engine, type Plugin, type TestBody, type TestOptions } from 'claude-code/testing'
 
-import { type Memory, CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkMcpConfig, checkPluginsOff, LOOK_RULE, looksOf, signsOff, keptWho, runOf, runFor, runKey, runQualifies, shellChanges, runFromResult, runEnded, RUN_SAID_MAX, factHolds, kindOf, ONE_CLAIM, type Look, type Run, checkCostText, checkPrompt, doingFor, firstSentence, fit, fillCard, countLine, LOOKS_NOTE_MAX, refusedLine, type CardText, buttonRows, cardButtons, CHECKING_LINE, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, HIS_CUT, TURN_TEXT_MAX, PENDING_MAX, TURNS_KEPT, tapStep, spentText, keepDraft, DRAFTS_MAX, parseBrief, parseCheck, parseWatch, programOf, resultOf, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, OLD_SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, sentencesOf, withoutStopSentences, toAgentVoice, sectionOf, takeOwnWords, ownMessageTaken, earlierMessage, messageUsable, type Replaced, parseOwnWords, ownWordsPrompt, askAgain, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
+import { type Memory, CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings, noFenceNote, checkBarred, CHECK_NO_ROOM, CLEAR_AFTER_PROMPTS, LONG_SESSION_PERCENT, NOTE_CLEAR_MS, SESSIONS_MAX, TYPED_PAST_FREE, briefPrompt, cardRows, contextLine, checkArgv, checkMcpConfig, checkPluginsOff, LOOK_RULE, looksOf, signsOff, keptWho, runOf, runFor, runKey, runQualifies, shellChanges, runFromResult, runEnded, RUN_SAID_MAX, factHolds, kindOf, ONE_CLAIM, type Look, type Run, checkCostText, checkPrompt, doingFor, firstSentence, fit, fillCard, countLine, LOOKS_NOTE_MAX, refusedLine, type CardText, buttonRows, cardButtons, CHECKING_LINE, noteTyped, noteSplit, draftSplit, draftSplitAny, fitTail, PRIOR_CUT, HIS_CUT, TURN_TEXT_MAX, PENDING_MAX, TURNS_KEPT, tapStep, spentText, keepDraft, DRAFTS_MAX, parseBrief as parseBriefAsIs, parseCheck as parseCheckAsIs, parseWatch as parseWatchAsIs, programOf, resultOf, checkReadOf, checkFailedNote, checkFailedAfterNote, revisedLine, rowsOf, same, textOf, watchPrompt, SENT_MARK, OLD_SENT_MARK, NOTE_MARK, OWNER_MAX, trimOwner, ownerLines, migrateOwner, type OwnerMsg, objectiveText, openConditions, objectivePrompt, OBJECTIVE_SYSTEM, parseObjective as parseObjectiveAsIs, type Objective, mergeConditions, gateVerdict, saysStop, messageSaysStop, sentencesOf, withoutStopSentences, toAgentVoice, sectionOf, takeOwnWords, ownMessageTaken, earlierMessage, messageUsable, type Replaced, parseOwnWords as parseOwnWordsAsIs, ownWordsPrompt, askAgain, OWN_WORDS_SYSTEM, OWN_WORDS_MAX_TOKENS, OWN_WORDS_TIMEOUT_MS, OPEN_MEANS, OPEN_MESSAGE, OPEN_DOES, OPEN_NEXT, STOP_NEXT, UNWRITTEN_MEANS, UNWRITTEN_NEXT, UNWRITTEN_MESSAGE, UNWRITTEN_DOES, OBJECTIVE_MAX_TOKENS, OBJECTIVE_TIMEOUT_MS, OBJECTIVE_RETRIES, OBJECTIVE_RETRY_EFFORT, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_TIMEOUT_MS, failureWords, type Condition, recordText, recordPrompt, RECORD_SYSTEM, RECORD_ENTRY_CUT, RECORD_TOOL_CUT, RECORD_MAX_TOKENS, RECORD_TIMEOUT_MS, type RecordRow, humanItems, typedFromItems, forkItems, type HumanItem, NOT_TYPED, humanTexts, typedForm, typedKey, humanRead, HUMAN_SED, lastToolId, toolLineFind, toolLineOf, humanReadBefore, startFind, summaryStart, summaryLineFind, folderOf, HUMAN_READ_TIMEOUT_MS, HUMAN_SCAN_BUDGET_MS, HUMAN_SCAN_MAX, recDrafts, keepDropped, DROPPED_DRAFTS_MAX, PATH_HOST, POSIX_COMMANDS, WINDOWS_OS, copyArgvs, homeOf, hostArgv, installOf, holdsCopiesOf, linkTargets, pathLinksArgv, gitUpArgv, gitInsideArgv, wholeArgv, wholeAnswer, WHOLE_SH, foldersUp, gitDirsOf, gitFoldersOf, gitLinksOf, passedOver, worktreesArgv, worktreeDirsOf, checkDenyWrite, pnpmStoreDir, isWindowsHost, slashed, winClaudeCandidates, winPosixBinCandidates, windowsOs, isBlankRec, sizesInColumns, SCROLLING_SURFACES } from '../hooks/rep'
 import * as rep from '../hooks/rep'
 import { REFUSED_ENVIRONMENT, MISSING_REMOTE, BEFORE_YOU_STOP_COLON, WAIT_BEFORE_SUBMIT, THREE_BEFORE_YOU_STOP, TWO_BEFORE_YOU_STOP, GUARD_REFUSAL, PAUSED_WORK_CAUSE, STOP_SHAPES } from './fixtures/stop-shapes'
 
@@ -67,7 +67,12 @@ const test = (name: string, ...rest: [TestBody] | [TestOptions, TestBody]): void
     ;(on as (...a: unknown[]) => unknown)('session.messages', ((h$: unknown, e: unknown, next: (e: unknown) => unknown) =>
       messages !== undefined ? messages(h$, e, next) : forks.length > 0 ? { value: STUB_ROWS } : next(e)) as never)
     ;(on as (...a: unknown[]) => unknown)('model.complete', (async (h$: unknown, e: { system?: string; prompt: string }, next: (e: unknown) => unknown) => {
-      const pass = () => (complete !== undefined ? complete(h$, e, next) : next(e))
+      // Each answer a test gives the rep's model calls carries the end line (withEnd, below).
+      const ended = (got: unknown): unknown => {
+        const v = (got as { value?: { isAnswered?: boolean; text?: unknown } } | undefined)?.value
+        return v?.isAnswered === true && typeof v.text === 'string' ? { ...(got as object), value: { ...v, text: withEnd(v.text) } } : got
+      }
+      const pass = async () => ended(await (complete !== undefined ? complete(h$, e, next) : next(e)))
       if (e.system !== RECORD_SYSTEM || forks.length === 0) return pass()
       const at = e.prompt.indexOf(RECORD_TASK_AT)
       const ask = { prompt: at < 0 ? e.prompt : e.prompt.slice(at + RECORD_TASK_AT.length) }
@@ -78,7 +83,7 @@ const test = (name: string, ...rest: [TestBody] | [TestOptions, TestBody]): void
       }
       const got = (await chain(0)(ask)) as { value?: { isAnswered?: boolean; reason?: string } } | undefined
       if (got?.value === undefined || (got.value.isAnswered === false && got.value.reason === 'nothing-to-fork')) return pass()
-      return got
+      return ended(got)
     }) as never)
     return body($, own)
   }
@@ -86,6 +91,26 @@ const test = (name: string, ...rest: [TestBody] | [TestOptions, TestBody]): void
 }
 
 const om = (text: string, n = 1): OwnerMsg => ({ n, kind: 'his', text, prior: '' })
+
+// A reply sent exactly as written: the wrapper above adds the end line to no reply kept here,
+// so a test can send one cut inside its last value.
+const SENT_AS_IS = new Set<string>()
+const asSent = (text: string): string => {
+  SENT_AS_IS.add(text)
+  return text
+}
+// The replies these tests write leave out the end line every reply carries (rep.END_LINE); each
+// reader here, and the model's answers through the wrapper above, adds it to any reply not kept
+// in SENT_AS_IS and not empty. A reply cut before its last label is still cut with it.
+const withEnd = (text: string): string => (text.trim() === '' || SENT_AS_IS.has(text) || rep.endsWithEndLine(text) ? text : `${text.trimEnd()}\n${rep.END_LINE}`)
+const parseBrief = (text: string) => parseBriefAsIs(withEnd(text))
+const parseCheck = (text: string) => parseCheckAsIs(withEnd(text))
+const parseWatch = (text: string) => parseWatchAsIs(withEnd(text))
+const parseObjective = (text: string) => parseObjectiveAsIs(withEnd(text))
+const parseOwnWords = (text: string) => parseOwnWordsAsIs(withEnd(text))
+const cutShort = (kind: rep.ReplyKind, text: string, usage?: rep.Usage | null, cap?: number) => rep.cutShort(kind, withEnd(text), usage, cap)
+const readAgain = (kind: rep.ReplyKind, text: string, usage?: rep.Usage | null, cap?: number) => rep.readAgain(kind, withEnd(text), usage, cap)
+const callRead = (kind: rep.CallKind, text: string, open?: Condition[] | null, size?: { usage?: rep.Usage | null; cap: number }) => rep.callRead(kind, withEnd(text), open, size)
 
 // A band with room for a whole card; the fold-to-fit test narrows it.
 const BAND = {
@@ -116,7 +141,7 @@ const OBJECTIVE_FIXTURE: Objective = {
 
 // An answer from the objective writer; `on('model.complete', …)` stubs its call.
 const OBJ = (result: string, done: string[], cause = '#1 opened the job') =>
-  `objective: moved\nmoved: ${cause}\nresult: ${result}\nfor: So he can rely on it.\ndone:\n${done.map(d => `- ${d}`).join('\n') || '- nothing'}\nstep: The first step.`
+  `objective: moved\nmoved: ${cause}\nresult: ${result}\nfor: So he can rely on it.\ndone:\n${done.map(d => `- ${d}`).join('\n') || '- nothing'}\nstep: The first step.\ndropped:\n- nothing`
 
 // ==============================================================================================
 // Shared fixtures
@@ -167,7 +192,7 @@ const room = (on: On, path?: string): string[][] => {
 }
 
 // A watch answer that marks nothing and flags nothing.
-const HOLDS = 'state: stopped\nflag: none'
+const HOLDS = 'state: stopped\nflag: none\nshown:\n- nothing\nclosed:\n- nothing'
 
 // The strip drawn and taken down, so a look or a write the hook started settles.
 const settle = async ($: Engine) => (await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })).unmount()
@@ -232,7 +257,7 @@ const unwritten = () => ({
 const CHECKED_WITH = (refused: number): string =>
   JSON.stringify({
     type: 'result',
-    result: 'holds:\n- the file exists\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nstands: Done.\nmeans: Done.\nleft:\n- nothing\nnext: Stop.\nmessage:\n\nend\ndoes: Nothing.\nlooked: Read the record.',
+    result: withEnd('holds:\n- the file exists\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nstands: Done.\nmeans: Done.\nleft:\n- nothing\nnext: Stop.\nmessage:\n\nend\ndoes: Nothing.\nlooked: Read the record.'),
     usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
     permission_denials: Array.from({ length: refused }, () => ({ tool_name: 'Bash' })),
   })
@@ -305,10 +330,10 @@ const ALL_SHOWN = (): Record<string, unknown> => ({
 })
 
 // A check's output with the given parts in place of the empty ones.
-const CHECK_OUT = (verdict: string, part: { false?: string; reopen?: string; left?: string; shown?: string }) =>
+const CHECK_OUT = (verdict: string, part: { false?: string; reopen?: string; left?: string; shown?: string; does?: string }) =>
   JSON.stringify({
     type: 'result',
-    result: `verdict: ${verdict}\nholds:\n- nothing\nfalse:\n${part.false ?? '- nothing'}\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n${part.shown ?? '- nothing'}\nclosed:\n- nothing\nreopen:\n${part.reopen ?? '- nothing'}\nstands: Checked.\nmeans:\nleft:\n${part.left ?? '- nothing'}\nnext:\nmessage:\nend\ndoes:\nlooked: Read the record.`,
+    result: withEnd(`verdict: ${verdict}\nholds:\n- nothing\nfalse:\n${part.false ?? '- nothing'}\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n${part.shown ?? '- nothing'}\nclosed:\n- nothing\nreopen:\n${part.reopen ?? '- nothing'}\nstands: Checked.\nmeans:\nleft:\n${part.left ?? '- nothing'}\nnext:\nmessage:\nend\ndoes: ${part.does ?? ''}\nlooked: Read the record.`),
     usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
   })
 
@@ -485,14 +510,14 @@ const WIN_HOST = { os: WINDOWS_OS, posixBin: 'C:\\Git\\usr\\bin', claude: 'C:/np
 // ==============================================================================================
 
 test('a watch answer with no flag parses to the state, no note and no marks', async () => {
-  const a = parseWatch('state: working\nflag: none\n')
+  const a = parseWatch('state: working\nflag: none\nshown:\n- nothing\nclosed:\n- nothing\n')
   expect(a.state).toBe('working')
   expect(a.flag).toBe(null)
   expect(a.shown).toEqual([])
   expect(a.closed).toEqual([])
   expect(parseWatch('state: working\nflag: none\nshown:\n- nothing\nclosed:\n- nothing')).toMatchObject({ shown: [], closed: [] })
   // A reading line in the old shape is no part of the answer: a look never writes the objective.
-  expect(parseWatch('reading: A revision.\nmoved: he asked for it\nstate: stopped\nflag: none')).toEqual({ state: 'stopped', flag: null, why: '', shown: [], closed: [] })
+  expect(parseWatch('reading: A revision.\nmoved: he asked for it\nstate: stopped\nflag: none\nshown:\n- nothing\nclosed:\n- nothing')).toEqual({ state: 'stopped', flag: null, why: '', shown: [], closed: [] })
 })
 
 test('a watch answer with a flag parses the flag, the why and the marks', async () => {
@@ -836,7 +861,7 @@ test('gateVerdict replaces, beside the meaning, only the part that says stop: a 
   const missing = parseBrief('stands: s\nleft:\n- nothing\nnext: Run the suite and show it passing.\nmessage:\nend\ndoes:')
   expect(missing.verdict).toBe('missing')
   expect(parseBrief('verdict: maybe\nleft:\n- nothing').verdict).toBe('missing')
-  expect(parseCheck('verdict: perhaps\nholds:\n- nothing').verdict).toBe('missing')
+  expect(parseCheck('verdict: perhaps\nholds:\n- nothing\nlooked: the record').verdict).toBe('missing')
   expect(gateVerdict(missing, open).refused).toBe(true)
   expect(gateVerdict(missing, []).refused).toBe(false)
   expect(gateVerdict(missing, null).refused).toBe(true)
@@ -915,12 +940,13 @@ test('parseOwnWords takes an own-words reply only when it came back whole: the t
   expect(parseOwnWords(OWN_REPLY_2)?.does).toMatch(/^The agent gets ready for the laptop install now,.*as soon as you say go\.$/)
   // The two replies that came back cut on 19 Oct 2026, cut inside the next step with no
   // message, no end and no does line. The card took each next step as it stood
-  // (records 510a41e8 and 9f153a63); parseBrief alone still reads it so.
+  // (records 510a41e8 and 9f153a63); parseBrief, which once read it so, now reads nothing from a
+  // reply with no does line (G16).
   const getsEver = OWN_REPLY_2.slice(0, OWN_REPLY_2.indexOf('The agent gets ever') + 'The agent gets ever'.length)
-  expect(parseBrief(getsEver).next).toBe('The agent gets ever')
+  expect(parseBrief(getsEver).next).toBe('')
   expect(parseOwnWords(getsEver)).toBeNull()
   const whichVersion = `${OWN_REPLY_1.slice(0, OWN_REPLY_1.indexOf('next:'))}next: The agent now writes down, without installing anything, exactly what will go on your laptop, which version is`
-  expect(parseBrief(whichVersion).next).toMatch(/which version is$/)
+  expect(parseBrief(whichVersion).next).toBe('')
   expect(parseOwnWords(whichVersion)).toBeNull()
   // Cut at a sentence's end is not whole either: the parts after it are missing.
   expect(parseOwnWords(OWN_REPLY_1.slice(0, OWN_REPLY_1.indexOf('without doing it.') + 'without doing it.'.length))).toBeNull()
@@ -2253,7 +2279,7 @@ test('the row keeps what another mod draws beneath it in the shared strip', { pl
 })
 
 const watchAnswer = (flag: string | null) =>
-  `state: stopped\nflag: ${flag ?? 'none'}\nwhy: ${flag === null ? '' : 'No test output appears after the last edit.'}`
+  `state: stopped\nflag: ${flag ?? 'none'}\nwhy: ${flag === null ? '' : 'No test output appears after the last edit.'}\nshown:\n- nothing\nclosed:\n- nothing`
 
 test('rule: a heads-up draws above the row, which stays on screen beneath it with its status and both its buttons for the mouse', async ($, on) => {
   session(on)
@@ -2340,7 +2366,7 @@ test('rule: typing past notes backs the watch off, after the free ones', async (
 const CHECKED = (stands: string) =>
   JSON.stringify({
     type: 'result',
-    result: `holds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nstands: ${stands}\nmeans:\nleft:\n- nothing\nnext:\nmessage:\nend\ndoes:\nlooked: Read the record.`,
+    result: withEnd(`holds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nstands: ${stands}\nmeans:\nleft:\n- nothing\nnext:\nmessage:\nend\ndoes:\nlooked: Read the record.`),
     usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
   })
 
@@ -2569,7 +2595,7 @@ test('pressing Rep reads the conversation and draws the briefing with the messag
   on('session.cwd', () => ({ value: '/tmp/x' }))
   const checked = JSON.stringify({
     type: 'result',
-    result: 'holds:\n- nothing\nfalse:\n- the mod was run live; nothing in the record shows a run\nnotshown:\n- nothing\nchanged:\n- the agent started a test run after the briefing\nstands: Written and never run.\nmeans: Done means written.\nleft:\n- nothing\nnext: Run it live.\nmessage:\nShow me the live run.\nend\ndoes: Makes the agent run it.\nlooked: Read the record; ran nothing.',
+    result: withEnd('holds:\n- nothing\nfalse:\n- the mod was run live; nothing in the record shows a run\nnotshown:\n- nothing\nchanged:\n- the agent started a test run after the briefing\nstands: Written and never run.\nmeans: Done means written.\nleft:\n- nothing\nnext: Run it live.\nmessage:\nShow me the live run.\nend\ndoes: Makes the agent run it.\nlooked: Read the record; ran nothing.'),
     usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
   })
   mock.clock(on)
@@ -2828,10 +2854,11 @@ const drawnCardRows = (c: CardText, cols: number, put: boolean, size: string): n
   const w = cols - 2
   const t = (s: string) => drawnRowsOf(s, w)
   const part = (label: string, s: string) => (s === '' ? 0 : t(`${label} ${s}`))
-  let rows = 1 + t(`Owner rep · ${c.result}`) + t(c.count) + t(c.revised) + t(c.well) + part('Stands:', c.stands) + part('Means:', c.means)
+  let rows = (c.tight === true ? 0 : 1) + t(`Owner rep · ${c.result}`) + t(c.count) + t(c.revised) + t(c.well) + part('Stands:', c.stands) + part('Means:', c.means)
   if (c.leftOut.length > 0) rows += 1 + c.leftOut.reduce((n, i) => n + t(`  - ${i}`), 0)
   rows += part('Next:', c.next)
-  if (c.checked !== null) {
+  if (c.checked !== null && c.checkedBare === true) rows += t(c.checked.looked)
+  else if (c.checked !== null) {
     const k = c.checked
     const list = (word: string, items: string[]) => items.reduce((n, i) => n + t(`  ${word}  ${i}`), 0)
     rows += 1 + list('holds', k.holds) + list('false', k.wrong) + list('not shown', k.notShown) + list('since then', k.changed) + t(k.looked) + t(refusedLine(k.refused))
@@ -2842,7 +2869,7 @@ const drawnCardRows = (c: CardText, cols: number, put: boolean, size: string): n
   if (c.message !== '') rows += 2 + drawnRowsOf(c.message, cols - 6)
   if (c.does !== '' && c.message !== '') rows += t(c.does)
   rows += t(c.reading)
-  const items = [c.checked === null && !c.isChecking && !checkBarred(c.checkNote) ? '3: Check it' : '', put ? '1: Put message in prompt' : '', '2: Fine, close', '4: Tell the rep', '0: Later', size].filter(i => i !== '')
+  const items = [c.checked === null && !c.isChecking && !checkBarred(c.checkNote) ? '3: Check it' : '', put ? '1: Put message in prompt' : '', '2: Fine, close', '4: Tell the rep', '0: Later', c.size ?? size].filter(i => i !== '')
   let line = -1
   for (const i of items) {
     const iw = widthOf(i)
@@ -2931,6 +2958,57 @@ test('the card\'s buttons always draw: the card counted as the band wraps it, le
     const shown = fillCard({ ...big, checked, checkNote: LONG('Note') }, 16, cols)
     expect(drawnCardRows(shown, cols, true, A5_SIZE)).toBeLessThanOrEqual(16)
   }
+})
+
+test('a checked card on a 24-row terminal keeps its error note and every button in the band: the findings go to one line, then the margin, then the count (fifth live test of 18 Nov 2026, B10 and A8)', () => {
+  // The B card as drawn at 100 and 170 columns on 24 rows: the band had five rows, and the
+  // head, the checked heading and the count filled four, so the error note and the buttons sat
+  // under "↓ 3 more" and the digit 2 went into the prompt.
+  const B: CardText = {
+    ...CARD_TEXT,
+    result: 'A greeting file in the scratch folder holding exactly "Hello Maxwell!", a small script beside it that prints that file\'s contents, and that script run once.',
+    count: 'Done means 7 things: 5 shown, 2 open',
+    stands: LONG('Stands'),
+    means: LONG('Means'),
+    next: LONG('Next'),
+    message: LONG('Message'),
+    checked: { holds: ['a', 'b', 'c', 'd', 'e'], wrong: ['greet.py is committed'], notShown: [], changed: ['greeting.txt holds the text'], looked: 'Looked at the record and the two files.', refused: 0 },
+    checkNote: 'The check failed after it answered: the engine stopped with an error. What it found before is shown.',
+  }
+  const size = 'conversation at 4 percent of its window'
+  for (const cols of [100, 165, 80]) {
+    for (const [note, refused] of [[B.checkNote, 0], ['', 0], [B.checkNote, 2]] as const) {
+      const card = { ...B, size, checkNote: note, checked: { ...(B.checked as NonNullable<CardText['checked']>), refused } }
+      for (const rows of [5, 6, 4]) {
+        const shown = fillCard(card, rows, cols)
+        const at = [cols, note === '' ? 'no note' : 'note', refused, rows]
+        // Drawn within the band, buttons and all, and counted as drawn.
+        expect([...at, drawnCardRows(shown, cols, true, size) <= rows]).toEqual([...at, true])
+        expect([...at, cardRows(shown, cols)]).toEqual([...at, drawnCardRows(shown, cols, true, size)])
+        // The error note, on one row at least, wherever the band has the rows for it.
+        if (note !== '') expect([...at, shown.checkNote !== '']).toEqual([...at, true])
+      }
+      // Five rows hold the head, the note whole and the buttons, and what the check found on one
+      // line, with how many refused, where there is a row for it too: at 165 columns, or with no
+      // note. At 100 and 80 columns the note takes two rows and the buttons with the size two, so
+      // the note whole comes before what the check found (sixth live test of 18 Nov 2026: at 100x24
+      // the engine's reason was cut mid-word while the count line stood).
+      const five = fillCard(card, 5, cols)
+      const at = [cols, note === '' ? 'no note' : 'note', refused]
+      const found = `Checked: 5 hold, 1 false, 1 changed since${refused > 0 ? '; 2 commands refused approval' : ''}.`
+      expect([...at, five.checkNote]).toEqual([...at, note])
+      expect([...at, five.checked?.looked]).toEqual([...at, note === '' || cols === 165 ? found : ''])
+      expect([...at, five.result !== '']).toEqual([...at, true])
+    }
+  }
+  // A band with rows to spare keeps the heading, the refusal line and the margin; one a row
+  // short of the whole note with the margin gives the margin's row to the note.
+  const roomy = fillCard({ ...B, size }, 16, 100)
+  expect([roomy.checkedBare ?? false, roomy.tight ?? false, roomy.checkNote]).toEqual([false, false, B.checkNote])
+  expect(drawnCardRows(roomy, 100, true, size)).toBeLessThanOrEqual(16)
+  const short = fillCard({ ...B, size }, 12, 100)
+  expect([short.tight, short.checkNote]).toEqual([true, B.checkNote])
+  expect(drawnCardRows(short, 100, true, size)).toBeLessThanOrEqual(12)
 })
 
 test('rowsOf counts a row as the band wraps it: a leading space takes a cell, a word that fills the row exactly pushes the next row\'s space before its word, and a wide character takes two cells', () => {
@@ -3063,6 +3141,42 @@ test('rule: the card heads with the result and a count line, fills the band in o
   expect((await ui.find({ key: 'later' }))?.props.hotkey).toBe('0')
   await ui.press({ key: 'put' })
   expect(filled).toBe(LONG('Message'))
+  await ui.unmount()
+})
+
+test('rule: the row keeps a long result to the rows the band leaves it, so its buttons stay inside the band at a 24-row terminal', async ($, on) => {
+  kept(on)
+  quietBand(on)
+  // Round nine (live9, B at 100x24): a result four rows long put Brief me and Tell the rep under "↓ 2 more".
+  const result = `A scratch folder holding a sample text file with exactly "one two three" and a small greet command installed in a bin folder inside it, all left uncommitted and unpushed, shown in two stages: first the files made and greet run, then, on the owner's next message, read-only proof of the file, the command and the git state with nothing changed.`
+  writer(on, () => OBJ(result, ['the file holds exactly "one two three" | open']))
+  on('model.fork', () => ({ value: { isAnswered: true, text: watchAnswer('The agent says the tests pass, but never ran them.'), usage: USAGE } }))
+  await $.prompt.submit(typed('make the scratch folder, please'))
+  await settle($)
+  const band = (rows: number, cols: number) => ({ ...BAND, props: { ...BAND.props, maxRows: rows, bodyColumns: cols, scroll: { offset: 0, bodyRows: rows - 1 } } })
+  for (const cols of [96, 100, 60, 170]) {
+    // Five rows, a 24-row terminal's band: the gap, the head, the buttons row.
+    let ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...band(5, cols) })
+    const head = (await ui.find({ type: 'Text', text: /^Owner rep · / }))?.text ?? ''
+    expect(rowsOf(head, cols - 2)).toBeLessThanOrEqual(3)
+    expect(head.startsWith('Owner rep · A scratch folder holding')).toBe(true)
+    if (rowsOf(`Owner rep · ${result}`, cols - 2) > 3) expect(head.endsWith('…')).toBe(true)
+    expect((await ui.find({ key: 'rep' }))?.props.hotkey).toBe('1')
+    expect((await ui.find({ key: 'tell' }))?.props.hotkey).toBe('2')
+    await ui.unmount()
+    // Forty rows: the result whole.
+    ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...band(40, cols) })
+    expect((await ui.find({ type: 'Text', text: /^Owner rep · / }))?.text).toBe(`Owner rep · ${result}`)
+    await ui.unmount()
+  }
+  // Under a heads-up the note's rows come off the head's too: at eight rows and 100 columns the
+  // gap, the note's line, its why and its buttons leave the head three rows above the row's buttons.
+  await $.turn.complete(stop('t1'))
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...band(8, 100) })
+  expect(await ui.find({ type: 'Text', text: /never ran them/ })).toBeDefined()
+  expect(rowsOf((await ui.find({ type: 'Text', text: /^Owner rep · / }))?.text ?? '', 98)).toBeLessThanOrEqual(3)
+  expect((await ui.find({ key: 'brief' }))?.props.hotkey).toBe('1')
+  expect(await ui.find({ key: 'tell' })).toBeDefined()
   await ui.unmount()
 })
 
@@ -3201,7 +3315,7 @@ test('rule: when the checked card folds, the claims that hold become a count bef
       stream: 'stdout',
       text: JSON.stringify({
         type: 'result',
-        result: `holds:\n- the file exists\nfalse:\n- the tests passed; two fail\nnotshown:\n- the live run\nchanged:\n- the helper finished\nstands: ${LONG('Checked')}\nmeans:\nleft:\n- nothing\nnext:\nmessage:\nend\ndoes:\nlooked: Read the record.`,
+        result: withEnd(`holds:\n- the file exists\nfalse:\n- the tests passed; two fail\nnotshown:\n- the live run\nchanged:\n- the helper finished\nstands: ${LONG('Checked')}\nmeans:\nleft:\n- nothing\nnext:\nmessage:\nend\ndoes:\nlooked: Read the record.`),
         usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
       }),
     }
@@ -3234,7 +3348,7 @@ test('rule: the checked card folds its lists to counts on a small band and keeps
       stream: 'stdout',
       text: JSON.stringify({
         type: 'result',
-        result: `holds:\n- the file exists\nfalse:\n- the tests passed; two fail\nnotshown:\n- the live run\nchanged:\n- the helper finished\nstands: ${LONG('Checked')}\nmeans:\nleft:\n- nothing\nnext:\nmessage:\nend\ndoes:\nlooked: Read the record.`,
+        result: withEnd(`holds:\n- the file exists\nfalse:\n- the tests passed; two fail\nnotshown:\n- the live run\nchanged:\n- the helper finished\nstands: ${LONG('Checked')}\nmeans:\nleft:\n- nothing\nnext:\nmessage:\nend\ndoes:\nlooked: Read the record.`),
         usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
       }),
     }
@@ -3276,7 +3390,7 @@ test('rule: a note to the rep is dropped before the agent sees it and cleared fr
   const prompts: string[] = []
   on('model.fork', ($, e) => {
     prompts.push(String(e.prompt))
-    return { value: { isAnswered: true, text: 'state: stopped\nflag: none', usage: USAGE } }
+    return { value: { isAnswered: true, text: 'state: stopped\nflag: none\nshown:\n- nothing\nclosed:\n- nothing', usage: USAGE } }
   })
   // The note is the owner's: the objective writer reads it too.
   const writes: string[] = []
@@ -3598,7 +3712,7 @@ test('rule: the session end saves the record, so the next session finds the obje
   on('prompt.submit', ($, e) => ({ text: e.text }))
   on('turn.complete', () => ({ text: '' }))
   on('session.end', ($, e) => ({ sessionId: e.sessionId }))
-  on('model.fork', () => ({ value: { isAnswered: true, text: 'state: stopped\nflag: none', usage: USAGE } }))
+  on('model.fork', () => ({ value: { isAnswered: true, text: 'state: stopped\nflag: none\nshown:\n- nothing\nclosed:\n- nothing', usage: USAGE } }))
   on('model.complete', () => ({ value: { isAnswered: true, text: OBJ('The objective kept across sessions.', ['the thing built | open']), usage: USAGE } }))
   quietBand(on)
   await $.prompt.submit(typed('build the thing'))
@@ -3705,7 +3819,7 @@ const CARD = (n: number) =>
 const CHECK_SHOWS = () =>
   JSON.stringify({
     type: 'result',
-    result: 'verdict: continue\nholds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n- the newest build installed | the install log printed the revision\nclosed:\n- nothing\nstands: OLD-CHECK.\nmeans:\nleft:\n- nothing\nnext:\nmessage:\nOLD-CHECK: the first card, checked and rewritten for the agent.\nend\ndoes:\nlooked: Read the record.',
+    result: withEnd('verdict: continue\nholds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n- the newest build installed | the install log printed the revision\nclosed:\n- nothing\nstands: OLD-CHECK.\nmeans:\nleft:\n- nothing\nnext:\nmessage:\nOLD-CHECK: the first card, checked and rewritten for the agent.\nend\ndoes:\nlooked: Read the record.'),
     usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
   })
 
@@ -3714,7 +3828,7 @@ test("rule: a check that lands after a newer press changes nothing on record: it
   quietBand(on)
   on('session.cwd', () => ({ value: '/tmp/x' }))
   mock.clock(on)
-  const writes = writer(on, () => 'objective: holds')
+  const writes = writer(on, () => 'objective: holds\napproved: none')
   let briefs = 0
   on('model.fork', () => ({ value: { isAnswered: true, text: CARD(++briefs), usage: USAGE } }))
   const release = heldCheck(on, CHECK_SHOWS)
@@ -3741,7 +3855,7 @@ test("rule: a check that lands after a newer press changes nothing on record: it
 test("rule: the last three cards' messages are kept, so an earlier card's message the owner sends is still the rep's draft", async ($, on) => {
   const rec = openJob(on)
   quietBand(on)
-  const writes = writer(on, () => 'objective: holds')
+  const writes = writer(on, () => 'objective: holds\napproved: none')
   let briefs = 0
   on('model.fork', () => ({ value: { isAnswered: true, text: CARD(++briefs), usage: USAGE } }))
   await started($)
@@ -5445,7 +5559,7 @@ test('guard: Check it keeps the lost-record warning on the card it rewrites, and
       stream: 'stdout',
       text: JSON.stringify({
         type: 'result',
-        result: 'verdict: stop\nholds:\n- the claim the check held\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n- nothing\nclosed:\n- nothing\nnext: Stop the agent; the job is finished.\nmessage:\nWrap up and stop here.\nend\ndoes: It stops.',
+        result: withEnd('verdict: stop\nholds:\n- the claim the check held\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n- nothing\nclosed:\n- nothing\nnext: Stop the agent; the job is finished.\nmessage:\nWrap up and stop here.\nend\ndoes: It stops.\nlooked: the record.'),
         usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
       }),
     }
@@ -6347,7 +6461,7 @@ test('rule: a rejection note whose plan shows only by its close waits, and its w
   const s = asks(on, [his(1, 'plan the fruit files'), await REJECTED(2, 'no, keep the old names', PLAN)], {}, new Map([[`${DIR}/2-rejected.txt`, PLAN]]))
   // The first ordinary write is set aside; the one after the whole read, over 'go on', finds the
   // objective as it holds.
-  s.answer(p => (p.includes(WHOLE_MARK) ? ANSWER(['the old names kept | open'], { approved: ['#2 | all'] }) : s.ordinary().length === 1 ? ANSWER(['every file renamed | open']) : 'objective: holds'))
+  s.answer(p => (p.includes(WHOLE_MARK) ? ANSWER(['the old names kept | open'], { approved: ['#2 | all'] }) : s.ordinary().length === 1 ? ANSWER(['every file renamed | open']) : 'objective: holds\napproved: none'))
   await started($)
   await s.send($, 'go on')
   expect(s.ordinary()[0]).toContain(CLOSE_LABEL(30000))
@@ -6578,7 +6692,7 @@ const correctionRead = (s: ReturnType<typeof asks>, n: number) => {
   s.answer(p => {
     if (p.includes(WHOLE_MARK)) return ANSWER(['apple.txt made | open', 'pear.txt made | open', 'plum.txt not made | open'], { dropped: ['plum.txt made | #' + n], cause: `#${n} corrected it` })
     ordinary += 1
-    return ordinary === 1 ? ANSWER(['notes filed | open'], { cause: `#${n} added notes` }) : 'objective: holds'
+    return ordinary === 1 ? ANSWER(['notes filed | open'], { cause: `#${n} added notes` }) : 'objective: holds\napproved: none'
   })
 }
 const correctionChecks = (s: ReturnType<typeof asks>, n: number, between: AskRec | undefined) => {
@@ -7114,7 +7228,7 @@ test('rule: the objective is written by its own call from the owner\'s messages,
   // The owner's next message leaves the objective as it stands. A look that then answers with an
   // objective of its own, in the writer's shape, moves nothing, though a message of the owner's
   // is past what the objective was built from.
-  next = 'objective: holds'
+  next = 'objective: holds\napproved: none'
   await $.prompt.submit(typed('keep going'))
   await settle($)
   look = `${HOLDS}\n${OBJ('What the agent says the job is.', ['the agent says it is done | open'], '#2 the agent said so')}`
@@ -7134,7 +7248,7 @@ test("rule: the agent's words never move the objective; a message of the owner's
   let next = OBJ('A public project employers can inspect.', ['the README written | open'])
   const writes = writer(on, () => next)
   // A look that still answers in the old shape, proposing a reading: nothing takes it.
-  let look = 'reading: A revision the agent talked the model into.\nmoved: the agent finished the README\nstate: stopped\nflag: none'
+  let look = 'reading: A revision the agent talked the model into.\nmoved: the agent finished the README\nstate: stopped\nflag: none\nshown:\n- nothing\nclosed:\n- nothing'
   on('model.fork', () => ({ value: { isAnswered: true, text: look, usage: USAGE } }))
   await $.prompt.submit(typed('make this a serious public repository'))
   await settle($)
@@ -7262,7 +7376,7 @@ test('rule: a new job closes the old objective; its result is listed as closed a
   expect(rec()?.objective).toMatchObject({ since: 2, from: 2, revisions: 0 })
   expect(rec()?.objective?.versions[0]?.text).toMatch(/^The strip reads plainly in every state\./)
   // The next write is shown the new job's messages only, and the old job as closed.
-  next = 'objective: holds'
+  next = 'objective: holds\napproved: none'
   await $.prompt.submit(typed('use the current year'))
   await settle($)
   const last = writes[writes.length - 1] ?? ''
@@ -7322,7 +7436,7 @@ test("rule: a write that lands late cannot take a newer write's place, and a mes
   expect(rec()?.objective).toMatchObject({ result: 'The README, then the tests, then the licence.', from: 3, cause: '#3 put the tests first' })
   expect(held).toHaveLength(3)
   expect(held[2]?.prompt).toMatch(/Built from the owner's messages up to #3/)
-  held[2]?.release('objective: holds')
+  held[2]?.release('objective: holds\napproved: none')
   await settle($)
   expect(await rowSays($, /^Owner rep · The README, then the tests, then the licence\.$/)).toBe(true)
   expect(rec()?.objective?.from).toBe(3)
@@ -7560,7 +7674,7 @@ test('rule: a holds answer with nothing held is a failed attempt and is retried'
   let calls = 0
   on('model.complete', () => {
     calls += 1
-    return { value: { isAnswered: true, text: calls === 1 ? 'objective: holds' : OBJ('A licence file with the full MIT text.', ['the file committed | open']), usage: USAGE } }
+    return { value: { isAnswered: true, text: calls === 1 ? 'objective: holds\napproved: none' : OBJ('A licence file with the full MIT text.', ['the file committed | open']), usage: USAGE } }
   })
   await $.session.start({ cwd: '/tmp/x', surface: 'terminal', isInteractive: true })
   await settle($)
@@ -7616,7 +7730,7 @@ test('rule: a write whose every attempt answers holds with nothing held is one f
   let calls = 0
   on('model.complete', () => {
     calls += 1
-    return { value: { isAnswered: true, text: 'objective: holds', usage: USAGE } }
+    return { value: { isAnswered: true, text: 'objective: holds\napproved: none', usage: USAGE } }
   })
   await $.session.start({ cwd: '/tmp/x', surface: 'terminal', isInteractive: true })
   await settle($)
@@ -7672,6 +7786,285 @@ test('rule: a write cut short is not retried', async ($, on) => {
   expect(rec()?.objectiveWhy).toMatch(/^aborted/)
 })
 
+describe('G16/G20: a reply that stopped before its end', () => {
+  const WHOLE_WATCH = 'state: stopped\nflag: The agent says the tests pass, but never ran them.\nwhy: No test output appears after the last edit.\nshown:\n- nothing\nclosed:\n- nothing'
+  const CUT_WATCH = WHOLE_WATCH.slice(0, WHOLE_WATCH.indexOf('shown:'))
+  const near = (out: number) => ({ ...USAGE, output_tokens: out })
+
+  test('rule: every call asks for the engine\'s ceiling, 64,000 output tokens', () => {
+    expect(rep.MAX_REPLY_TOKENS).toBe(64000)
+    for (const cap of [OBJECTIVE_MAX_TOKENS, OBJECTIVE_RETRY_MAX_TOKENS, RECORD_MAX_TOKENS, OWN_WORDS_MAX_TOKENS]) expect(cap).toBe(rep.MAX_REPLY_TOKENS)
+  })
+
+  test('rule: each reader takes nothing from a reply that stopped before its last part', () => {
+    expect(parseWatch(WHOLE_WATCH)).toMatchObject({ state: 'stopped', flag: 'The agent says the tests pass, but never ran them.' })
+    expect(parseWatch(CUT_WATCH)).toMatchObject({ state: null, flag: null, shown: [], closed: [] })
+    const brief = USABLE_BRIEF('continue')
+    expect(parseBrief(brief)).toMatchObject({ verdict: 'continue', next: 'Show the two sessions finishing.' })
+    expect(parseBrief(brief.slice(0, brief.indexOf('does:')))).toMatchObject({ next: '', message: '', stands: '' })
+    const check = (JSON.parse(CHECKED_SAYING('continue', 'Show me the run.')) as { result: string }).result
+    expect(parseCheck(check).verdict).toBe('continue')
+    expect(parseCheck(check.slice(0, check.indexOf('looked:'))).verdict).toBe(null)
+    const moved = OBJ('The report.', ['the report written'])
+    expect(parseObjective(moved)).not.toBe(null)
+    expect(parseObjective(moved.slice(0, moved.indexOf('dropped:')))).toBe(null)
+    expect(parseObjective('objective: holds\napproved: none')).toEqual({ kind: 'holds' })
+    expect(parseObjective('objective: holds')).toBe(null)
+  })
+
+  test('rule: a reply within 2% of its cap counts as cut short though it reads whole; one with no parts is not asked again', () => {
+    expect(cutShort('watch', WHOLE_WATCH, near(62719), 64000)).toBe(false)
+    expect(cutShort('watch', WHOLE_WATCH, near(62720), 64000)).toBe(true)
+    expect(cutShort('watch', CUT_WATCH)).toBe(true)
+    expect(readAgain('watch', CUT_WATCH)).toBe(true)
+    expect(readAgain('watch', WHOLE_WATCH, near(64000), 64000)).toBe(true)
+    expect(readAgain('watch', 'I could not read the record.')).toBe(false)
+    expect(rep.noLabels('I could not read the record.')).toBe(true)
+    expect(rep.writeFailure({ isAnswered: true, text: 'no idea', usage: USAGE })).toBe('no-labels: no idea')
+    expect(rep.writeFailure({ isAnswered: true, text: 'objective: holds', usage: USAGE })).toBe('cut-short (20 output tokens): objective: holds')
+    expect(rep.writeFailure({ isAnswered: true, text: OBJ('The report.', ['the report written']), usage: near(64000) }, 64000)).toMatch(/^cut-short \(64000 output tokens\): objective: moved/)
+    expect(rep.writeFailure({ isAnswered: true, text: 'result: R.', usage: USAGE })).toBe('unreadable: result: R.')
+    expect(failureWords('cut-short (20 output tokens): objective: holds')).toBe('its answer stopped before the end')
+    expect(failureWords('no-labels: no idea')).toBe('its answer had none of the parts asked for')
+  })
+
+  test('rule: a look cut short is read once more, and the second, whole answer raises its Heads up', async ($, on) => {
+    session(on)
+    quietBand(on)
+    const answers = [CUT_WATCH, WHOLE_WATCH]
+    let calls = 0
+    on('model.fork', () => ({ value: { isAnswered: true, text: answers[calls++] ?? WHOLE_WATCH, usage: USAGE } }))
+    await $.turn.complete(stop('t1'))
+    await settle($)
+    expect(calls).toBe(2)
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    expect(await ui.find({ type: 'Text', text: /never ran them/ })).toBeDefined()
+    await ui.unmount()
+  })
+
+  test('rule: a look cut short twice raises no Heads up and marks nothing, and is asked no third time', async ($, on) => {
+    const rec = openJob(on)
+    quietBand(on)
+    let calls = 0
+    const cut = 'state: stopped\nflag: The agent says the tests pass, but never ran them.\nwhy: No output.\nshown:\n- the newest build installed\nclosed:\n- the two sessions finished'
+    on('model.fork', () => {
+      calls += 1
+      return { value: { isAnswered: true, text: cut, usage: near(RECORD_MAX_TOKENS) } }
+    })
+    const before = rec()?.objective?.done.map(x => x.state)
+    await $.turn.complete(stop('t1'))
+    await settle($)
+    expect(calls).toBe(2)
+    expect(rec()?.objective?.done.map(x => x.state)).toEqual(before)
+    expect(rec()?.seen ?? []).toEqual([])
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    expect(await ui.find({ type: 'Text', text: /never ran them/ })).toBeUndefined()
+    await ui.unmount()
+  })
+
+  const briefOn = ($: Engine, on: On, answers: string[], fallback: string) => {
+    mock.store(on, {})
+    quietBand(on)
+    on('session.id', () => ({ value: 'test-session' }))
+    const toasts: string[] = []
+    on('ui.toast', (_$, e) => {
+      toasts.push(String(e.text))
+      return { value: undefined }
+    })
+    const seen = { calls: 0, prompts: [] as string[] }
+    on('model.fork', (_$, e) => {
+      seen.prompts.push(String((e as { prompt?: unknown }).prompt))
+      return { value: { isAnswered: true, text: answers[seen.calls++] ?? fallback, usage: USAGE } }
+    })
+    return { toasts, seen }
+  }
+  const CUT_BRIEF = BRIEF('The card.').slice(0, BRIEF('The card.').indexOf('does:'))
+
+  // The briefing of the live test of 18 Nov 2026 (report section 14, its call
+  // 1795013836877-0005-brief.json): every label given, cut inside its last value at 100 output
+  // tokens of a cap of 64,000, and drawn with "Requests an indep" as its does line.
+  const F2_BRIEF = asSent('verdict: continue\nshown:\n- The tool prints 3 on sample.txt | the agent ran it on the sample file and it printed 3\nclosed:\n- nothing\nwell:\nstands: The agent ran it on the sample file and it printed 3.\nmeans: This is the agent own run only.\nleft:\n- Independent use remains.\nnext: Have an independent helper use it.\nmessage:\nHave an independent helper use it.\nend\ndoes: Requests an indep')
+  const ended = (t: string): string => (t.trimEnd().endsWith(rep.END_LINE) ? t : `${t}\n${rep.END_LINE}`)
+
+  test('rule: every prompt asks, as its last line, for the end line, and every reader takes a reply as whole only when it ends with it, so a reply cut inside its last value is cut short whatever its length (live test of 18 Nov 2026, section 14)', () => {
+    expect(rep.END_ASK).toContain(rep.END_LINE)
+    const m = { objective: OBJECTIVE_FIXTURE, owner: [om('Build it.')], past: [], seen: [], others: [] }
+    const answer = parseBrief(ended(USABLE_BRIEF('continue')))
+    const check = checkPrompt({ sessionId: 's', cwd: '/tmp', copy: '/tmp', owner: [om('Build it.')], reading: 'x', brief: answer, writtenAt: '1:00 pm', conditions: OBJECTIVE_FIXTURE.done, shown: [], from: 0 })
+    const prompts = [watchPrompt(m, 'stop'), watchPrompt(m, 'note'), watchPrompt(m, 'step'), briefPrompt(m), objectivePrompt({ objective: OBJECTIVE_FIXTURE, owner: [om('Build it.')], past: [] }), check, ownWordsPrompt(m, OBJECTIVE_FIXTURE.done, answer)]
+    for (const p of prompts) {
+      expect(p.endsWith(`\n\n${rep.END_ASK}`)).toBe(true)
+      expect(p.split(rep.END_ASK).length).toBe(2)
+    }
+    // The briefing above is cut, though far from its cap; given its end, it is whole.
+    expect(cutShort('brief', F2_BRIEF, { ...USAGE, output_tokens: 100 }, rep.MAX_REPLY_TOKENS)).toBe(true)
+    expect(readAgain('brief', F2_BRIEF, { ...USAGE, output_tokens: 100 }, rep.MAX_REPLY_TOKENS)).toBe(true)
+    expect(parseBrief(F2_BRIEF)).toMatchObject({ verdict: 'missing', does: '', message: '', shown: [] })
+    const whole = `${F2_BRIEF.replace(/does: .*$/, 'does: Requests an independent helper use the tool.')}\n${rep.END_LINE}`
+    expect(cutShort('brief', whole, { ...USAGE, output_tokens: 110 }, rep.MAX_REPLY_TOKENS)).toBe(false)
+    expect(parseBrief(whole)).toMatchObject({ does: 'Requests an independent helper use the tool.', message: 'Have an independent helper use it.' })
+    // Each kind's whole reply is whole; with its end line taken off, it is cut and asked again.
+    const unended = (t: string): string => {
+      expect(t.lastIndexOf(rep.END_LINE)).toBeGreaterThan(0)
+      return t.slice(0, t.lastIndexOf(rep.END_LINE)).trimEnd()
+    }
+    const checkReply = ended((JSON.parse(CHECKED_SAYING('continue', 'Show me the run.')) as { result: string }).result)
+    const replies: Array<[rep.ReplyKind, string]> = [
+      ['watch', `state: stopped\nflag: none\nshown:\n- nothing\nclosed:\n- the build installed | #2\n${rep.END_LINE}`],
+      ['brief', ended(USABLE_BRIEF('continue'))],
+      ['ask-again', ended(USABLE_BRIEF('continue'))],
+      ['own-words', ended(OWN_WORDS())],
+      ['check', checkReply],
+      ['objective', ended(OBJ('The report.', ['the report written']))],
+      ['objective', `objective: holds\napproved: #3\n${rep.END_LINE}`],
+    ]
+    // (Read as sent, without the end line the readers above add to a reply.)
+    for (const [kind, text] of replies) {
+      expect([kind, rep.cutShort(kind, text)]).toEqual([kind, false])
+      expect([kind, rep.cutShort(kind, unended(text))]).toEqual([kind, true])
+      expect([kind, rep.readAgain(kind, unended(text))]).toEqual([kind, true])
+    }
+    // Cut in the last value: the watch's closed condition, the check's looked line, the
+    // objective writer's approved message and its dropped condition each read as nothing.
+    expect(parseWatch(asSent('state: stopped\nflag: The tests never ran.\nshown:\n- nothing\nclosed:\n- the build ins'))).toMatchObject({ state: null, flag: null, closed: [] })
+    expect(parseCheck(asSent('verdict: continue\nholds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nstands: Checked.\nmeans:\nleft:\n- nothing\nnext:\nmessage:\nend\ndoes:\nlooked: Read the rec')).verdict).toBe(null)
+    expect(parseObjective(asSent('objective: holds\napproved: #'))).toBe(null)
+    expect(parseObjective(asSent('objective: moved\nmoved: #1 opened the job\nresult: R.\nfor: F.\ndone:\n- a | open\nstep: S.\ndropped:\n- the old condi'))).toBe(null)
+    // The end line is no part's text, and a full stop or capitals on it still count.
+    expect(parseWatch('state: stopped\nflag: none\nshown:\n- nothing\nclosed:\n- the build installed | #2\nEnd of reply.').closed).toEqual([{ text: 'the build installed', by: 2 }])
+    expect(parseCheck(checkReply).looked).toBe('Read the record.')
+    expect(parseBrief(ended('message:\nShow me.\nend\ndoes: Makes the agent show it.')).does).toBe('Makes the agent show it.')
+  })
+
+  test('rule: Brief me, its briefing cut inside its does line twice at 100 output tokens: no card is drawn, the toast says so, both reads asked for the end line as their last line (live test of 18 Nov 2026, section 14)', async ($, on) => {
+    const { toasts, seen } = briefOn($, on, [], F2_BRIEF)
+    const prompts = seen.prompts
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    await ui.press({ key: 'rep' })
+    expect(seen.calls).toBe(2)
+    expect(prompts.length).toBe(2)
+    for (const p of prompts) {
+      expect(p.endsWith(`\n\n${rep.END_ASK}`)).toBe(true)
+      expect(p.split(rep.END_ASK).length).toBe(2)
+    }
+    expect(await ui.find({ key: 'put' })).toBeUndefined()
+    expect(await ui.find({ type: 'Text', text: /Requests an indep/ })).toBeUndefined()
+    expect(toasts.some(t => /briefing stopped before its end twice/.test(t))).toBe(true)
+    await ui.unmount()
+  })
+
+  test('rule: a briefing cut short is asked once more, and the whole second answer is the card', async ($, on) => {
+    const { seen } = briefOn($, on, [CUT_BRIEF], BRIEF('The card.'))
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    await ui.press({ key: 'rep' })
+    expect(seen.calls).toBe(2)
+    expect(await ui.find({ key: 'put' })).toBeDefined()
+    expect(await showsExactly(ui, 'Show me the run.')).toBe(true)
+    await ui.unmount()
+  })
+
+  test('rule: a briefing cut short twice shows no card, says so, and is asked no third time', async ($, on) => {
+    const { toasts, seen } = briefOn($, on, [], CUT_BRIEF)
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    await ui.press({ key: 'rep' })
+    expect(seen.calls).toBe(2)
+    expect(await ui.find({ key: 'put' })).toBeUndefined()
+    expect(toasts.some(t => /briefing stopped before its end twice/.test(t))).toBe(true)
+    await ui.unmount()
+  })
+
+  test('rule: an objective write that stops before its last part is retried and, failing each time, recorded as cut short', async ($, on) => {
+    const rec = kept(on, unwritten())
+    quietBand(on)
+    on('session.start', (_$, e) => ({ cwd: e.cwd }))
+    const whole = OBJ('A licence file with the full MIT text.', ['the file committed | open'])
+    let calls = 0
+    on('model.complete', () => {
+      calls += 1
+      return { value: { isAnswered: true, text: whole.slice(0, whole.indexOf('dropped:')), usage: USAGE } }
+    })
+    await started($)
+    await settle($)
+    expect(calls).toBe(OBJECTIVE_RETRIES + 1)
+    expect(rec()?.objective).toBe(null)
+    expect(rec()?.objectiveFailed).toBe(1)
+    expect(rec()?.objectiveWhy).toMatch(/^cut-short \(20 output tokens\): objective: moved/)
+  })
+
+  test('rule: an objective write that reads whole but came within 2% of its cap is not taken, and is recorded as cut short', async ($, on) => {
+    const rec = kept(on, unwritten())
+    quietBand(on)
+    on('session.start', (_$, e) => ({ cwd: e.cwd }))
+    const asks: number[] = []
+    on('model.complete', (_$, e) => {
+      asks.push(Number(e.maxTokens))
+      return { value: { isAnswered: true, text: OBJ('A licence file with the full MIT text.', ['the file committed | open']), usage: near(Number(e.maxTokens)) } }
+    })
+    await started($)
+    await settle($)
+    expect(asks).toEqual([OBJECTIVE_MAX_TOKENS, OBJECTIVE_RETRY_MAX_TOKENS, OBJECTIVE_RETRY_MAX_TOKENS])
+    expect(rec()?.objective).toBe(null)
+    expect(rec()?.objectiveWhy).toMatch(/^cut-short \(64000 output tokens\): objective: moved/)
+  })
+
+  test('rule: an own-words reply that reads whole but reached its cap is not taken: the card keeps the rep\'s fixed text', async ($, on) => {
+    const rec = openJob(on)
+    quietBand(on)
+    on('model.fork', () => ({ value: { isAnswered: true, text: STOP_BRIEF(), usage: USAGE } }))
+    on('model.complete', async (_$, e, next) => {
+      if (e.system !== OWN_WORDS_SYSTEM) return next(e)
+      return { value: { isAnswered: true, text: OWN_WORDS(), usage: near(OWN_WORDS_MAX_TOKENS) } }
+    })
+    await started($)
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    await ui.press({ key: 'rep' })
+    expect(await ui.find({ type: 'Text', text: /Show the install log, then each session finishing/ })).toBeUndefined()
+    await ui.unmount()
+    expect(rec()?.lastBrief).toMatchObject({ own: 'cut' })
+  })
+
+  test('rule: a check that stops before its looked line takes nothing and says to press it again', async ($, on) => {
+    const out = JSON.parse(CHECKED_SAYING('continue', 'Two things first. Run the suite and paste the counts.')) as { result: string }
+    const { rec, ui } = await checkOver($, on, JSON.stringify({ ...out, result: out.result.slice(0, out.result.indexOf('looked:')) }))
+    await settle($)
+    expect(rec()?.objective?.done.map(x => x.state)).toEqual(['not-shown', 'open'])
+    expect(rec()?.lastBrief?.message).not.toMatch(/paste the counts/)
+    expect(await ui.find({ type: 'Text', text: /The check stopped before the end of its answer/ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /paste the counts/ })).toBeUndefined()
+    await ui.unmount()
+  })
+
+  test('rule: a check whose whole answer was followed by an engine error is read, the card says the run then failed and why, and the error alone is not a cut (live tests of 18 Nov 2026, section 1 and round four section 2)', async ($, on) => {
+    const answer = (JSON.parse(CHECKED_SAYING('continue', 'Two things first. Run the suite and paste the counts.')) as { result: string }).result
+    const { rec, ui } = await checkOver($, on, streamed([answer], { error: 'Failed to authenticate: OAuth session expired and could not be refreshed' }))
+    await settle($)
+    expect(rec()?.lastBrief?.message).toMatch(/paste the counts/)
+    expect(await ui.find({ type: 'Text', text: /stopped before the end/ })).toBeUndefined()
+    expect(await ui.find({ type: 'Text', text: /The check's run failed after it answered: Failed to authenticate: OAuth session expired and could not be refreshed\. Its whole answer is shown\./ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /Press the check again/ })).toBeUndefined()
+    await ui.unmount()
+  })
+
+  test('rule: a check that failed before any whole answer says why it failed, takes nothing, and never calls it a cut', async ($, on) => {
+    const { rec, ui } = await checkOver($, on, streamed(['Still checking: reading the record now.'], { error: 'Failed to authenticate: OAuth token revoked. Please log in again or contact your administrator.' }))
+    await settle($)
+    expect(rec()?.objective?.done.map(x => x.state)).toEqual(['not-shown', 'open'])
+    expect(await ui.find({ type: 'Text', text: /The check failed before it answered: Failed to authenticate: OAuth token revoked\./ })).toBeDefined()
+    expect(await ui.find({ type: 'Text', text: /stopped before the end/ })).toBeUndefined()
+    expect(await ui.find({ type: 'Text', text: /Press the check again/ })).toBeUndefined()
+    await ui.unmount()
+  })
+
+  test('rule: a check that wrote its whole answer, then a short last word a hook asked for, is read from its whole answer', async ($, on) => {
+    const answer = (JSON.parse(CHECKED_SAYING('continue', 'Two things first. Run the suite and paste the counts.')) as { result: string }).result
+    const { rec, ui } = await checkOver($, on, streamed([answer, 'Noted.']))
+    await settle($)
+    expect(rec()?.lastBrief?.message).toMatch(/paste the counts/)
+    expect(await ui.find({ type: 'Text', text: /stopped before the end/ })).toBeUndefined()
+    await ui.unmount()
+  })
+})
+
 test('failureWords turns a recorded cause into words and leaves an unknown one empty', () => {
   expect(failureWords('empty-reply (0 output tokens)')).toBe('the model sent back nothing')
   expect(failureWords('api-error 529 overloaded')).toBe('the model service returned an error')
@@ -7722,7 +8115,7 @@ test('rule: the writer asks for its measured limits, and an answered write it ca
   expect(rec()?.objectiveCalls).toBe(6)
   expect(rec()?.objectiveFailed).toBe(2)
   // An answer that says the objective holds is read, and is no failure.
-  answer = 'objective: holds'
+  answer = 'objective: holds\napproved: none'
   await $.prompt.submit(typed('thanks'))
   await settle($)
   expect(asks).toHaveLength(7)
@@ -7888,8 +8281,10 @@ test('objectiveText and parseObjective round the parts, and bad answers parse to
   expect(a).toEqual({ kind: 'moved', cause: '#1 opened the job', isNewJob: false, parts: { result: 'R.', purpose: 'F.', step: 'S.', done: [
     { text: 'a', state: 'open', by: '' }, { text: 'b', state: 'not-shown', by: '' }, { text: 'c', state: 'shown', by: 'the test printed' }, { text: 'd', state: 'closed', by: '#3' }, { text: 'e', state: 'open', by: '' } ] },
     dropped: [{ text: 'old one', by: 2 }, { text: 'other', by: null }] })
-  expect(parseObjective('objective: holds')).toEqual({ kind: 'holds' })
-  expect(parseObjective('objective: moved\nmoved: new job: #5\nresult: R.\nfor: F.\ndone:\n- nothing\nstep: S.')).toMatchObject({ isNewJob: true, parts: { done: [] } })
+  // A holds answer without its approved lines did not reach its end (G16).
+  expect(parseObjective('objective: holds')).toBe(null)
+  expect(parseObjective('objective: holds\napproved: none')).toEqual({ kind: 'holds' })
+  expect(parseObjective('objective: moved\nmoved: new job: #5\nresult: R.\nfor: F.\ndone:\n- nothing\nstep: S.\ndropped:\n- nothing')).toMatchObject({ isNewJob: true, parts: { done: [] } })
   expect(parseObjective('result: R.')).toBe(null)
   expect(parseObjective('objective: moved\nresult:\nfor: F.')).toBe(null)
 })
@@ -8242,7 +8637,12 @@ test('rule: a briefing that says stop while a condition is open is asked once mo
   await ui.press({ key: 'rep' })
   // Two forks: the brief, then the same brief with the open conditions named.
   expect(prompts).toHaveLength(2)
-  expect(prompts[1]?.startsWith(prompts[0] ?? '-')).toBe(true)
+  // The second is the first with the open conditions named, and the end line asked for once, last.
+  expect(prompts[1]?.startsWith((prompts[0] ?? '-').slice(0, -`\n\n${rep.END_ASK}`.length))).toBe(true)
+  for (const p of prompts) {
+    expect(p.endsWith(`\n\n${rep.END_ASK}`)).toBe(true)
+    expect(p.split(rep.END_ASK).length).toBe(2)
+  }
   expect(prompts[0]).not.toMatch(/## Asked once more/)
   expect(again(prompts[1])).toMatch(/^## Asked once more\n\nYour first answer said the agent should stop, gave no verdict, called the work finished, or said the work is going well, while these conditions of done are still open:\n- fact: the newest build installed \(not shown\)\n- fact: two sessions pushed their work\n/)
   expect(again(prompts[1])).toMatch(/the verdict is "continue", "well" is empty, and "next" and "message" say what the agent does now to show it, or what stands in the way/)
@@ -8272,7 +8672,7 @@ test('rule: a briefing that says stop while a condition is open is asked once mo
   expect(rec()?.calls).toBe(3)
   expect(rec()?.objective?.done.map(x => x.state)).toEqual(['not-shown', 'open'])
   expect(rec()?.lastBrief?.reads).toBe(3)
-  expect(rec()?.lastBrief).toMatchObject({ own: 'whole', ownChars: OWN_WORDS().length })
+  expect(rec()?.lastBrief).toMatchObject({ own: 'whole', ownChars: withEnd(OWN_WORDS()).length })
   expect(rec()?.lastBrief?.next).toBe('Show the install log, then each session finishing.')
   // The card's message, so when the owner sends it the record keeps it as the rep's draft, not their words.
   const sent = 'Show me the install log and each of the two sessions finishing before anything stops.'
@@ -8331,7 +8731,7 @@ test('rule: a briefing refused twice whose own-words reply comes back cut short 
   quietBand(on)
   on('model.fork', () => ({ value: { isAnswered: true, text: STOP_BRIEF(), usage: USAGE } }))
   // Answered, its meaning whole, and cut inside its next step: no message, no end, no does line.
-  const cut = `${OWN_WORDS().slice(0, OWN_WORDS().indexOf('next:'))}next: The agent gets ever`
+  const cut = asSent(`${OWN_WORDS().slice(0, OWN_WORDS().indexOf('next:'))}next: The agent gets ever`)
   const asks = ownWords(on, () => cut)
   await started($)
   const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
@@ -8762,8 +9162,8 @@ test('rule: the watch marks a condition shown and flags work called finished whi
 })
 
 test('rule: a check that says stop while a condition is open is refused on the checked card, part by part: its own sound message stands, and no own-words call is made', async ($, on) => {
-  expect(parseCheck('verdict: stop\nholds:\n- nothing').verdict).toBe('stop')
-  expect(parseCheck('holds:\n- nothing').verdict).toBe(null)
+  expect(parseCheck('verdict: stop\nholds:\n- nothing\nlooked: the record.').verdict).toBe('stop')
+  expect(parseCheck('holds:\n- nothing\nlooked: the record.').verdict).toBe(null)
   const rec = openJob(on)
   quietBand(on)
   room(on)
@@ -8782,7 +9182,7 @@ test('rule: a check that says stop while a condition is open is refused on the c
       stream: 'stdout',
       text: JSON.stringify({
         type: 'result',
-        result: 'verdict: stop\nholds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n- the newest build installed | the install command in the record printed the new version\nclosed:\n- nothing\nstands: Everything is in place.\nmeans: The job is finished.\nleft:\n- nothing\nnext: Stop the agent; the job is finished.\nmessage:\nShow me each of the two sessions finishing, one by one.\nend\ndoes: Makes the agent show the sessions.\nlooked: Read the record.',
+        result: withEnd('verdict: stop\nholds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n- the newest build installed | the install command in the record printed the new version\nclosed:\n- nothing\nstands: Everything is in place.\nmeans: The job is finished.\nleft:\n- nothing\nnext: Stop the agent; the job is finished.\nmessage:\nShow me each of the two sessions finishing, one by one.\nend\ndoes: Makes the agent show the sessions.\nlooked: Read the record.'),
         usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
       }),
     }
@@ -8820,9 +9220,27 @@ test('rule: a check that says stop while a condition is open is refused on the c
 const CHECKED_SAYING = (verdict: 'stop' | 'continue', message: string): string =>
   JSON.stringify({
     type: 'result',
-    result: `verdict: ${verdict}\nholds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nstands: The build is made.\nmeans: The two sessions are still waiting.\nleft:\n- two sessions pushed their work\nnext: Run the two sessions and show each one finishing.\nmessage:\n${message}\nend\ndoes: Makes the agent show its work.\nlooked: Read the record.`,
+    result: withEnd(`verdict: ${verdict}\nholds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nstands: The build is made.\nmeans: The two sessions are still waiting.\nleft:\n- two sessions pushed their work\nnext: Run the two sessions and show each one finishing.\nmessage:\n${message}\nend\ndoes: Makes the agent show its work.\nlooked: Read the record.`),
     usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
   })
+
+// A check's run as its stream-json output prints it: each text the checker wrote as an assistant
+// line, and the result line last, which holds the last text, or an engine error after it
+// (the engine's own answer to the error is a "<synthetic>" assistant line).
+const streamed = (texts: string[], o: { error?: string } = {}): string =>
+  [
+    JSON.stringify({ type: 'system', subtype: 'init', session_id: 'check' }),
+    ...texts.map(text => JSON.stringify({ type: 'assistant', message: { model: 'claude-opus-5-5', role: 'assistant', content: [{ type: 'text', text }], stop_reason: 'end_turn' } })),
+    ...(o.error === undefined ? [] : [JSON.stringify({ type: 'assistant', message: { model: '<synthetic>', role: 'assistant', content: [{ type: 'text', text: o.error }], stop_reason: 'stop_sequence' } })]),
+    JSON.stringify({
+      type: 'result',
+      subtype: 'success',
+      is_error: o.error !== undefined,
+      result: o.error ?? texts[texts.length - 1] ?? '',
+      usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+      permission_denials: [],
+    }),
+  ].join('\n') + '\n'
 
 // The Check button pressed over a briefing whose message is "Show me the run.", the checker answering `checked`.
 const checkOver = async ($: Engine, on: On, checked: string) => {
@@ -8844,6 +9262,100 @@ const checkOver = async ($: Engine, on: On, checked: string) => {
   await ui.press({ key: 'check' })
   return { rec, ui }
 }
+
+test('rule: on a five-row band, a 24-row terminal\'s, the checked card draws what the check found on one line, the engine\'s error and its buttons, and the digit closes it (fifth live test of 18 Nov 2026, B10 and A8)', async ($, on) => {
+  const answer = (JSON.parse(CHECKED_SAYING('continue', 'Two things first. Run the suite and paste the counts.')) as { result: string }).result
+  const { ui } = await checkOver($, on, streamed([answer], { error: 'Failed to authenticate: OAuth session expired and could not be refreshed' }))
+  await settle($)
+  await ui.unmount()
+  const five = { ...BAND, props: { ...BAND.props, maxRows: 5, bodyColumns: 98, scroll: { offset: 0, bodyRows: 4 } } }
+  const small = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...five })
+  // The check sorted no claim, so its own account of what it looked at stands on the line.
+  expect(await small.find({ type: 'Text', text: /^Checked: Read the record\.$/ })).toBeDefined()
+  expect(await small.find({ type: 'Text', text: /Checked against the record and the files/ })).toBeUndefined()
+  // Nor the empty line above the card: five rows hold the whole note only without it.
+  expect((await small.findAll({ type: 'Box' })).map(b => b.props.marginTop).filter(x => x !== undefined && x !== 0)).toEqual([])
+  // The engine's error whole: it takes the row the empty line above the card would.
+  expect(await small.find({ type: 'Text', text: /^The check's run failed after it answered: Failed to authenticate: OAuth session expired and could not be refreshed\. Its whole answer is shown\.$/ })).toBeDefined()
+  expect((await small.find({ key: 'put' }))?.props.hotkey).toBe('1')
+  expect((await small.find({ key: 'close' }))?.props.hotkey).toBe('2')
+  await small.press({ key: 'close' })
+  expect((await small.find({ key: 'rep' }))?.props.hotkey).toBe('1')
+  await small.unmount()
+})
+
+test('rule: on a five-row band at 100 columns with the conversation\'s size on the buttons row, the engine\'s reason is drawn whole and what the check found gives up its row (sixth live test of 18 Nov 2026)', async ($, on) => {
+  // The size takes the buttons a second row at 98 columns, as on the live card; the note whole
+  // takes two, so the five rows are the head, the note and the buttons.
+  on('session.usage', () => ({ value: { startedAt: 0, context: { tokens: 20000, window: 500000, percent: 4 }, rateLimits: [] } }))
+  const answer = (JSON.parse(CHECKED_SAYING('continue', 'Two things first. Run the suite and paste the counts.')) as { result: string }).result
+  const { ui } = await checkOver($, on, streamed([answer], { error: 'Failed to authenticate: OAuth session expired and could not be refreshed' }))
+  await settle($)
+  await ui.unmount()
+  const five = { ...BAND, props: { ...BAND.props, maxRows: 5, bodyColumns: 98, scroll: { offset: 0, bodyRows: 4 } } }
+  const small = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...five })
+  expect(await small.find({ type: 'Text', text: /conversation at 4 percent of its window/ })).toBeDefined()
+  expect(await small.find({ type: 'Text', text: /^The check's run failed after it answered: Failed to authenticate: OAuth session expired and could not be refreshed\. Its whole answer is shown\.$/ })).toBeDefined()
+  expect(await small.find({ type: 'Text', text: /^Checked:/ })).toBeUndefined()
+  expect((await small.find({ key: 'put' }))?.props.hotkey).toBe('1')
+  expect((await small.find({ key: 'close' }))?.props.hotkey).toBe('2')
+  await small.unmount()
+})
+
+// 145 characters, as measured live, and one at the 160-character cap.
+for (const why of [
+  'Failed to authenticate: OAuth session expired and could not be refreshed because the authentication server rejected the refresh token as revoked.',
+  'Failed to authenticate: OAuth session expired and could not be refreshed because the authentication server rejected the refresh token as revoked by administrato',
+]) {
+  for (const after of [true, false]) {
+    test(`rule: on a five-row band at 100 columns, an engine reason of ${why.length} characters ${after ? 'after' : 'before'} the answer is drawn whole, in the note's short form when the long one takes three rows (seventh live test of 18 Nov 2026)`, async ($, on) => {
+      on('session.usage', () => ({ value: { startedAt: 0, context: { tokens: 20000, window: 500000, percent: 4 }, rateLimits: [] } }))
+      const answer = (JSON.parse(CHECKED_SAYING('continue', 'Two things first. Run the suite and paste the counts.')) as { result: string }).result
+      const { ui } = await checkOver($, on, streamed(after ? [answer] : ['Still checking: reading the record now.'], { error: why }))
+      await settle($)
+      await ui.unmount()
+      const five = { ...BAND, props: { ...BAND.props, maxRows: 5, bodyColumns: 98, scroll: { offset: 0, bodyRows: 4 } } }
+      const small = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...five })
+      const words = why.replace(/\.$/, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const note = await small.find({ type: 'Text', text: new RegExp(`${after ? 'after' : 'before'} (?:it )?answer(?:ed|ing): ${words}\\.`) })
+      expect(note === undefined ? 'cut' : 'whole').toBe('whole')
+      expect((await small.find({ key: 'put' }))?.props.hotkey).toBe('1')
+      await small.unmount()
+    })
+  }
+}
+
+// A reason of wide characters: 156 characters, 286 cells (eighth live test of 18 Nov 2026).
+const WIDE_WHY = `Failed to open /tmp/${'資料'.repeat(65)} ZEBRA`
+for (const after of [true, false]) {
+  test(`rule: on a five-row band at 100 columns, an engine reason of wide characters ${after ? 'after' : 'before'} the answer is kept to 160 cells, its start and its end drawn with the middle left out (eighth live test of 18 Nov 2026)`, async ($, on) => {
+    on('session.usage', () => ({ value: { startedAt: 0, context: { tokens: 20000, window: 500000, percent: 4 }, rateLimits: [] } }))
+    const answer = (JSON.parse(CHECKED_SAYING('continue', 'Two things first. Run the suite and paste the counts.')) as { result: string }).result
+    const { ui } = await checkOver($, on, streamed(after ? [answer] : ['Still checking: reading the record now.'], { error: WIDE_WHY }))
+    await settle($)
+    await ui.unmount()
+    for (const columns of [98, 168]) {
+      const five = { ...BAND, props: { ...BAND.props, maxRows: 5, bodyColumns: columns, scroll: { offset: 0, bodyRows: 4 } } }
+      const small = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...five })
+      const note = await small.find({ type: 'Text', text: new RegExp(`${after ? 'after' : 'before'} (?:it )?answer(?:ed|ing): Failed to open /tmp/資料[^…]*…[^…]*資料 ZEBRA\\.`) })
+      expect([columns, note === undefined ? 'cut' : 'whole']).toEqual([columns, 'whole'])
+      expect((await small.find({ key: 'put' }))?.props.hotkey).toBe('1')
+      await small.unmount()
+    }
+  })
+}
+test('the engine\'s reason is kept to 160 cells: whole when it fits, else its start and its end with the middle left out', () => {
+  const ascii = 'Failed to authenticate: OAuth session expired and could not be refreshed because the authentication server rejected the refresh token as revoked by administrato'
+  expect(checkFailedNote(ascii)).toBe(`The check failed before it answered: ${ascii}. Nothing from it was taken.`)
+  expect(WIDE_WHY.length).toBe(156)
+  const kept = /^The check failed before it answered: (.*)\. Nothing from it was taken\.$/.exec(checkFailedNote(WIDE_WHY))?.[1] ?? ''
+  expect(rep.widthOf(kept)).toBeLessThanOrEqual(160)
+  expect(kept.startsWith('Failed to open /tmp/資料')).toBe(true)
+  expect(kept.endsWith('資料 ZEBRA')).toBe(true)
+  const long = `${'word '.repeat(40)}END`
+  const k2 = /^The check failed before it answered: (.*)\. Nothing/.exec(checkFailedNote(long))?.[1] ?? ''
+  expect([k2.length <= 160, k2.endsWith('word END'), k2.includes('…')]).toEqual([true, true, true])
+})
 
 test('rule: the Check button\'s card keeps a checker\'s message that pushes the agent on before it stops', async ($, on) => {
   const message = 'Two things before you stop. First, run the full suite and paste the counts. Second, push the branch and show the run.'
@@ -8878,7 +9390,7 @@ test('rule: a check that shows every condition after a refused briefing does not
       stream: 'stdout',
       text: JSON.stringify({
         type: 'result',
-        result: 'verdict: stop\nholds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n- the newest build installed | the install command printed the new version\n- two sessions pushed their work | both session records end with their results\nclosed:\n- nothing\nstands: The build is installed and both sessions are finished.\nmeans: Both conditions are shown in the record.\nleft:\n- nothing\nnext: Stop the agent; the job is finished.\nmessage:\nend\ndoes:\nlooked: Read the record.',
+        result: withEnd('verdict: stop\nholds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n- the newest build installed | the install command printed the new version\n- two sessions pushed their work | both session records end with their results\nclosed:\n- nothing\nstands: The build is installed and both sessions are finished.\nmeans: Both conditions are shown in the record.\nleft:\n- nothing\nnext: Stop the agent; the job is finished.\nmessage:\nend\ndoes:\nlooked: Read the record.'),
         usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
       }),
     }
@@ -9009,6 +9521,10 @@ test('rule: the Check card, the instant card refused and the checker writing no 
 
 test('rule: the Check card, the instant card passed with a message and the checker writing none: the instant message stays', async ($, on) => {
   expect(await checkedCard($, on, USABLE_BRIEF('continue'), CHECK_OUT('continue', {}))).toBe('Show me each session finishing.')
+})
+
+test('rule: the Check card, the checker showing every condition, writing no message and saying there is nothing to send: the briefing\'s older draft is not kept', async ($, on) => {
+  expect(await checkedCard($, on, USABLE_BRIEF('continue'), CHECK_OUT('continue', { shown: '- the newest build installed | the install log printed the revision\n- two sessions pushed their work | both sessions printed their results', does: 'Nothing to send. The agent is already stopped and the work is complete.' }))).toBe('')
 })
 
 test('rule: the Check card, the checker showing every condition and writing no message: the message stays empty', async ($, on) => {
@@ -10166,6 +10682,22 @@ test('the checker: its prompt names the session, its tools are read-only, and it
   expect(out?.refused).toBe(0)
   expect(resultOf(JSON.stringify({ type: 'result', result: 'holds:\n- x', permission_denials: [{ tool_name: 'Bash' }, { tool_name: 'Bash' }] }))?.refused).toBe(2)
   expect(resultOf('not json')).toBe(null)
+  // Stream-json: the answers are the checker's own texts, never the engine's; an error result keeps its words.
+  const whole = withEnd('holds:\n- x\nlooked: Read it.')
+  const failed = resultOf(streamed(['Still checking.', whole], { error: 'Failed to authenticate: OAuth session expired' }))
+  expect(failed?.error).toBe('Failed to authenticate: OAuth session expired')
+  expect(failed?.answers).toEqual(['Still checking.', whole])
+  expect(resultOf(streamed([whole]))?.error).toBe('')
+  expect(resultOf(JSON.stringify({ type: 'result', subtype: 'error_max_turns', is_error: true }))?.error).toBe('error_max_turns')
+  expect(checkReadOf({ text: whole, error: '', answers: [whole] })).toEqual({ read: whole })
+  expect(checkReadOf({ text: 'Noted.', error: '', answers: [whole, 'Noted.'] })).toEqual({ read: whole })
+  expect(checkReadOf({ text: 'Failed to authenticate', error: 'Failed to authenticate', answers: [whole] })).toEqual({ read: whole, failedAfter: 'Failed to authenticate' })
+  expect(checkReadOf({ text: 'Failed to authenticate', error: 'Failed to authenticate', answers: ['Still checking.'] })).toEqual({ failed: 'Failed to authenticate' })
+  expect(checkReadOf({ text: 'holds:\n- x', error: '', answers: ['holds:\n- x'] })).toEqual({ cut: true })
+  expect(checkFailedAfterNote('Failed to authenticate: OAuth\n session expired.')).toBe("The check's run failed after it answered: Failed to authenticate: OAuth session expired. Its whole answer is shown.")
+  expect(checkFailedNote('Failed to authenticate: OAuth token revoked.')).toBe('The check failed before it answered: Failed to authenticate: OAuth token revoked. Nothing from it was taken.')
+  expect(argv[argv.indexOf('--output-format') + 1]).toBe('stream-json')
+  expect(argv).toContain('--verbose')
   expect(checkCostText(0, 0, 0)).toContain('210k fresh tokens plus 2.3 million re-read from cache, in 2 minutes')
   expect(checkCostText(850000, 800000, 95000)).toContain('50k fresh tokens plus 800k re-read from cache, in 2 minutes, with no command refused approval')
   expect(checkCostText(850000, 800000, 95000, 1)).toContain('with 1 command refused approval')
@@ -10989,7 +11521,7 @@ test('rule: the check is given the conditions the rep holds open, and its shown 
         type: 'result',
         // A draft's number closes nothing, nor does a message the objective was built from (#1, #2);
         // the owner's own number after it does; a shown line names where the record shows it.
-        result: 'holds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n- the newest build installed | the install command in the record printed the new version\nclosed:\n- the two sessions pushed their work | #3\n- the two sessions pushed their work | #1\n- the README written (open) | #4\nstands: Installed.\nmeans: Half done.\nleft:\n- the two sessions\nnext: Finish them.\nmessage:\nFinish the two sessions.\nend\ndoes: Makes it finish them.\nlooked: Read the record.',
+        result: withEnd('holds:\n- nothing\nfalse:\n- nothing\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n- the newest build installed | the install command in the record printed the new version\nclosed:\n- the two sessions pushed their work | #3\n- the two sessions pushed their work | #1\n- the README written (open) | #4\nstands: Installed.\nmeans: Half done.\nleft:\n- the two sessions\nnext: Finish them.\nmessage:\nFinish the two sessions.\nend\ndoes: Makes it finish them.\nlooked: Read the record.'),
         usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
       }),
     }
@@ -11269,10 +11801,10 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     on('session.messages', () => ({ value: [agent('The sorter is built.', [{ tool_use_id: 'u1', tool: 'Bash', input: { command: 'sort-fruit' }, text: 'sorted' }])] }))
     const reads: string[] = []
     on('model.complete', (_$, e) => {
-      if (e.system !== RECORD_SYSTEM) return { value: { isAnswered: true, text: OBJ('The fruit sorter built.', ['the sorter built | open']), usage: USAGE } }
+      if (e.system !== RECORD_SYSTEM) return { value: { isAnswered: true, text: withEnd(OBJ('The fruit sorter built.', ['the sorter built | open'])), usage: USAGE } }
       reads.push(String(e.prompt))
       const brief = /The owner pressed the key/.test(String(e.prompt))
-      return { value: { isAnswered: true, text: brief ? BRIEF('Read from the record, not a fork.') : watchAnswer('The look read the record.'), usage: USAGE } }
+      return { value: { isAnswered: true, text: withEnd(brief ? BRIEF('Read from the record, not a fork.') : watchAnswer('The look read the record.')), usage: USAGE } }
     })
     await started($)
     await $.prompt.submit(typed('build the fruit sorter'))
@@ -12009,7 +12541,7 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
 
   // A step the walk marks as dropped reaches the owner whatever the one flag was about (lead f1fcada3).
   const walked = (step: string, mark: string, flag = 'none', why = '') =>
-    parseWatch(`steps:\n- #6: Build the importer | done\n- #6: ${step} | ${mark}\nstate: working\nflag: ${flag}\n${why === '' ? '' : `why: ${why}\n`}`)
+    parseWatch(`steps:\n- #6: Build the importer | done\n- #6: ${step} | ${mark}\nstate: working\nflag: ${flag}\n${why === '' ? '' : `why: ${why}\n`}closed:\n- nothing\n`)
   const STEP = 'Move the request limit to the local store'
   const OTHER = 'The agent called all ten tasks done, but your dashboard never appears.'
   const PLANS = [`Build the importer.\n${STEP}.\nCopy the whole database to the archive.\nSearch your typed messages.\nSearch all your projects last.\nAdd API.\nWord word word.`]
@@ -12060,18 +12592,18 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
 
   test('Heads up: both readings of a walk take the same forms, so a step never counts as dropped and not as unassessed', () => {
     for (const line of ['- #6 step 2, Move the limit | looks dropped', '- #6: Move the limit | looks dropped — absent from the full list']) {
-      const a = parseWatch(`steps:\n${line}\nstate: working\nflag: none\n`)
+      const a = parseWatch(`steps:\n${line}\nstate: working\nflag: none\nshown:\n- nothing\nclosed:\n- nothing\n`)
       expect(a.dropped?.map(d => d.step)).toEqual(['Move the limit'])
       expect(a.notAssessed).toEqual([{ n: 6, step: 'Move the limit' }])
     }
-    const b = parseWatch(`steps:\n- #6 step 2, Move the limit | not assessed\nstate: working\nflag: none\n`)
+    const b = parseWatch(`steps:\n- #6 step 2, Move the limit | not assessed\nstate: working\nflag: none\nshown:\n- nothing\nclosed:\n- nothing\n`)
     expect(b.dropped).toBeUndefined()
     expect(b.notAssessed).toEqual([{ n: 6, step: 'Move the limit' }])
   })
 
   test('Heads up: a flag that speaks of one dropped step does not hide another', () => {
     const flag = 'The whole database copy to the archive looks dropped.'
-    const a = parseWatch(`steps:\n- #6: Copy the whole database to the archive | looks dropped\n- #6: ${STEP} | looks dropped\nstate: working\nflag: ${flag}\nwhy: The list has no copy step.\n`)
+    const a = parseWatch(`steps:\n- #6: Copy the whole database to the archive | looks dropped\n- #6: ${STEP} | looks dropped\nstate: working\nflag: ${flag}\nwhy: The list has no copy step.\nclosed:\n- nothing\n`)
     expect(rep.headsUp(a, [], PLANS)).toEqual({ line: flag, why: `The list has no copy step. Also looks dropped: ${STEP}.` })
   })
 
@@ -12083,7 +12615,7 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
 
   test('Heads up: however many steps are dropped, the why stays short and the reader\'s flag stays in it', () => {
     const steps = range(1, 100).map(i => `- #6: ${STEP} part${i} | looks dropped`).join('\n')
-    const said = rep.headsUp(parseWatch(`steps:\n${steps}\nstate: working\nflag: ${OTHER}\nwhy: Only the opening lines show.\n`), [], PLANS)
+    const said = rep.headsUp(parseWatch(`steps:\n${steps}\nstate: working\nflag: ${OTHER}\nwhy: Only the opening lines show.\nclosed:\n- nothing\n`), [], PLANS)
     expect(said?.why).toContain(`And ${99 - rep.DROPPED_ALSO_MAX} more of its steps.`)
     expect(said?.why).toContain(`Also: ${OTHER} Only the opening lines show.`)
     expect(said?.why.length).toBeLessThan(1000)
@@ -12105,7 +12637,7 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
   })
 
   test('Heads up: more than one step, the forms readers write, and a very long step', () => {
-    const two = parseWatch(`steps:\n- #5 step 7: Search your typed messages | no sign while later work goes on\n- #5 step 8, Search all your projects last | no sign while later work goes on — the agent wrote none\nstate: working\nflag: none\n`)
+    const two = parseWatch(`steps:\n- #5 step 7: Search your typed messages | no sign while later work goes on\n- #5 step 8, Search all your projects last | no sign while later work goes on — the agent wrote none\nstate: working\nflag: none\nshown:\n- nothing\nclosed:\n- nothing\n`)
     expect(two.dropped?.map(d => d.step)).toEqual(['Search your typed messages', 'Search all your projects last'])
     const said = rep.headsUp(two, [], PLANS)
     expect(said?.line).toContain('Search your typed messages')
@@ -12225,7 +12757,7 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
 
   test('Task 7 (mounted): a reader\'s not assessed step reaches the owner: the Heads up row shows it, and the card shows it first under what was left out, with no going-well line and no stop', async ($, on) => {
     const owner = [msg7(1, 'build the sorter'), yes7(2, 'Step 1: read pear.txt.\nStep 2: run check-fruit.')]
-    const m = mounted7(on, owner, brief => (brief ? STOP_WELL('- nothing', '- #2: run check-fruit') : 'steps:\n- #2: read pear.txt | done\n- #2: run check-fruit | not assessed\nstate: stopped\nflag: none'))
+    const m = mounted7(on, owner, brief => (brief ? STOP_WELL('- nothing', '- #2: run check-fruit') : 'steps:\n- #2: read pear.txt | done\n- #2: run check-fruit | not assessed\nstate: stopped\nflag: none\nshown:\n- nothing\nclosed:\n- nothing'))
     await started($)
     await m.look($, 't1')
     expect(await rowSays($, re(NOT_ASSESSED_CUT(2, 'run check-fruit')))).toBe(true)
@@ -12341,7 +12873,7 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     const s = asks(on, [his(1, 'plan the fruit files')])
     on('session.messages', noteRows(() => s.held() as never))
     let n = 0
-    s.answer(() => (++n === 1 ? ANSWER(['apple.txt made | open', "the date in pear.txt's first line only | open"], { approved: ['#2 | all'] }) : 'objective: holds'))
+    s.answer(() => (++n === 1 ? ANSWER(['apple.txt made | open', "the date in pear.txt's first line only | open"], { approved: ['#2 | all'] }) : 'objective: holds\napproved: none'))
     await started($)
     await runTurn($, s.scripts, 't1', [said(NOTE_PLAN)])
     await s.send($, NOTE_YES)
@@ -12357,7 +12889,7 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     expect(s.msg(2)).toMatchObject({ approved: 'all', pinned: true })
     expect(s.held()?.owner.some(m => m.n === 3)).toBe(false)
     // Both readers hold the plan whole, the date rule in it.
-    s.hold.fork = p => (p.includes(BRIEF_ASKED) ? STOP_WELL(`- ${DATE_LEFT}`, 'none') : `state: working\nflag: ${DATE_FLAG}\nwhy: pear.txt's last line holds the date.`)
+    s.hold.fork = p => (p.includes(BRIEF_ASKED) ? STOP_WELL(`- ${DATE_LEFT}`, 'none') : `state: working\nflag: ${DATE_FLAG}\nwhy: pear.txt's last line holds the date.\nclosed:\n- nothing\n`)
     const was = s.forks.length
     await $.turn.complete(stop('t2'))
     await settleUntil($, () => s.forks.length > was)
@@ -12456,7 +12988,7 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     expect([...seen].sort((a, b) => a - b)).toEqual(range(2, 10))
   })
 
-  const WALKED = `steps:\n- #2: Read the real data first | done\n- #2: Move the request limit to the local store | no sign while later work goes on\nstate: working\nflag: The agent has not shown the dashboard working.\nwhy: Only the opening lines show.\n`
+  const WALKED = `steps:\n- #2: Read the real data first | done\n- #2: Move the request limit to the local store | no sign while later work goes on\nstate: working\nflag: The agent has not shown the dashboard working.\nwhy: Only the opening lines show.\nclosed:\n- nothing\n`
   const CARRIED = /A step of the plan you approved looks dropped: Move the request limit to the local store\./
 
   test('Task 8 (mounted): a look that walks a step as dropped puts that step on the Heads up over its own flag, keeps the flag in the why, and records it as shown', async ($, on) => {
@@ -12548,7 +13080,7 @@ test('rule: the look on a step, at a turn\'s end and after the owner\'s note eac
   const prompts: string[] = []
   on('model.complete', (_$, e) => {
     if (e.system === RECORD_SYSTEM) prompts.push(String(e.prompt))
-    const text = e.system === RECORD_SYSTEM ? `${HOLDS}\nshown:\n- the newest build installed | the install command in the record printed installed` : 'objective: holds'
+    const text = e.system === RECORD_SYSTEM ? `${HOLDS}\nshown:\n- the newest build installed | the install command in the record printed installed` : 'objective: holds\napproved: none'
     return { value: { isAnswered: true, text, usage: USAGE } }
   })
   on('turn.step', async function* (_$, e) {
@@ -13208,7 +13740,7 @@ test('rule: a seeded session that held more than one job starts the job where th
   expect(rec()?.objective).toMatchObject({ result: 'A README a new user can follow from install to first run.', since: 2 })
   expect(rec()?.jobStart).toBe(2)
   // The next write is shown the README job's messages only.
-  next = 'objective: holds'
+  next = 'objective: holds\napproved: none'
   await $.prompt.submit(typed('Keep it short.'))
   await settle($)
   const last = writes[writes.length - 1] ?? ''
@@ -13888,6 +14420,9 @@ const heldSeed = (on: On) => {
     return { value: { exitCode: 0, stdout: `${lines.join('\n')}\n`, stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
   })
   writer(on, () => OBJ('A licence file with the MIT text and this year, and a changelog.', ['the file pushed | open'], '#1 to #3'))
+  // The reads answer as a look does; left to the writer's stub, a look would get the objective's
+  // answer, which has no closed: part and is read once more as cut short (G16).
+  on('model.fork', () => ({ value: { isAnswered: true, text: HOLDS, usage: USAGE } }))
   return { rec, release: () => release(), reads }
 }
 
@@ -15096,7 +15631,7 @@ describe('coverage: each line on the row, the card and the briefing', () => {
       const TOOK = `steps 1 to 4, ${'and the checks after each step, '.repeat(40)}`
       const s = asks(on, [his(1, 'plan the fruit files')])
       let n = 0
-      s.answer(() => (++n === 1 ? ANSWER([], { approved: [`#2 | ${TOOK}`] }) : 'objective: holds'))
+      s.answer(() => (++n === 1 ? ANSWER([], { approved: [`#2 | ${TOOK}`] }) : 'objective: holds\napproved: none'))
       await started($)
       await runTurn($, s.scripts, 't1', [said(PLAN)])
       await s.send($, 'yes, go')
@@ -15158,7 +15693,7 @@ describe('coverage: each line on the row, the card and the briefing', () => {
       const PLAN = turnWith(5000, [[100, 'Step: make apple.txt.']])
       const s = asks(on, [his(1, 'plan the fruit files'), await planMsg(2, PLAN, { screen })], {}, new Map([[`${DIR}/2-body.txt`, PLAN]]))
       let n = 0
-      s.answer(() => (++n === 1 ? ANSWER([]) : 'objective: holds'))
+      s.answer(() => (++n === 1 ? ANSWER([]) : 'objective: holds\napproved: none'))
       await started($)
       await s.send($, 'go on')
       expect(s.msg(2)?.read?.state).toBe('read')
@@ -15196,7 +15731,7 @@ describe('coverage: each line on the row, the card and the briefing', () => {
     const PLAN = turnWith(3000, [[100, 'Step: rename every file.']])
     const s = asks(on, [his(1, 'plan the fruit files'), await REJECTED(2, 'no, keep the old names', PLAN)], {}, new Map([[`${DIR}/2-rejected.txt`, PLAN]]))
     let n = 0
-    s.answer(() => (++n === 1 ? ANSWER([]) : 'objective: holds'))
+    s.answer(() => (++n === 1 ? ANSWER([]) : 'objective: holds\napproved: none'))
     await started($)
     await s.send($, 'go on')
     expect(s.msg(2)?.read?.state).toBe('read')
@@ -15227,7 +15762,7 @@ describe('coverage: each line on the row, the card and the briefing', () => {
   test('rule: 45 messages whose turn could not be read, pushed out of the job: counted, the last 10 named, the rest as the exact remainder', async ($, on) => {
     const owner = [...range(1, 45).map(n => his(n, `message ${n}`, { incomplete: rep.COMPACTED_WHY })), ...range(46, 244).map(n => his(n))]
     const s = asks(on, owner, { objective: HELD_OBJ(1, 244) })
-    s.answer(() => 'objective: holds')
+    s.answer(() => 'objective: holds\napproved: none')
     await started($)
     await s.send($, 'and the totals')
     expect(s.held()?.owner.map(m => m.n)).toEqual(range(46, 245))
@@ -15268,7 +15803,7 @@ describe('coverage: each line on the row, the card and the briefing', () => {
       ] as SessionMessage[],
     }))
     let n = 0
-    s.answer(() => (++n === 1 ? ANSWER([], { approved: ['#3 | all'] }) : 'objective: holds'))
+    s.answer(() => (++n === 1 ? ANSWER([], { approved: ['#3 | all'] }) : 'objective: holds\napproved: none'))
     await started($)
     await runTurn($, s.scripts, 't1', [said(TURN)])
     await s.send($, 'yes, go')
@@ -15521,17 +16056,27 @@ describe('the call log: its pieces', () => {
   })
 
   test('rule: a reply is read by its kind\'s own reader', () => {
-    expect(rep.callRead('objective', OBJ('The report.', ['the report written']))).toEqual({ parsed: 'moved' })
-    expect(rep.callRead('objective', 'no idea')).toEqual({ parsed: 'unreadable' })
-    expect(rep.callRead('watch', HOLDS)).toMatchObject({ parsed: 'read', flag: false, shown: 0, closed: 0 })
-    expect(rep.callRead('watch', 'nothing here').parsed).toBe('unreadable')
-    expect(rep.callRead('own-words', 'cut off mid')).toEqual({ parsed: 'cut' })
-    expect(rep.callRead('own-words', OWN_WORDS()).parsed).toBe('whole')
-    const read = rep.callRead('brief', EMPTY_BRIEF(), OPEN_JOB_OPEN)
+    expect(callRead('objective', OBJ('The report.', ['the report written']))).toEqual({ parsed: 'moved' })
+    // G16/G20: a reply with none of the parts asked for is its own read, apart from one that has parts
+    // but cannot be read, and from one that stopped before its last part.
+    for (const k of ['objective', 'watch', 'own-words', 'brief', 'ask-again'] as const) expect(callRead(k, 'no idea')).toEqual({ parsed: 'no-labels' })
+    expect(callRead('objective', 'result: R.')).toEqual({ parsed: 'unreadable' })
+    expect(callRead('objective', 'objective: holds')).toEqual({ parsed: 'cut-short' })
+    expect(callRead('objective', OBJ('The report.', ['the report written']).replace(/\ndropped:[\s\S]*$/, ''))).toEqual({ parsed: 'cut-short' })
+    expect(callRead('watch', HOLDS)).toMatchObject({ parsed: 'read', flag: false, shown: 0, closed: 0 })
+    expect(callRead('watch', 'flag: none\nclosed:\n- nothing').parsed).toBe('unreadable')
+    expect(callRead('watch', 'state: working\nflag: none').parsed).toBe('cut-short')
+    expect(callRead('watch', HOLDS, undefined, { usage: { ...USAGE, output_tokens: 980 }, cap: 1000 }).parsed).toBe('cut-short')
+    expect(callRead('watch', HOLDS, undefined, { usage: { ...USAGE, output_tokens: 979 }, cap: 1000 }).parsed).toBe('read')
+    expect(callRead('own-words', 'means: The install is not shown.\nnext: The agent gets')).toEqual({ parsed: 'cut' })
+    expect(callRead('own-words', OWN_WORDS(), undefined, { usage: { ...USAGE, output_tokens: 64000 }, cap: 64000 })).toEqual({ parsed: 'cut' })
+    expect(callRead('own-words', OWN_WORDS()).parsed).toBe('whole')
+    const read = callRead('brief', EMPTY_BRIEF(), OPEN_JOB_OPEN)
     expect(read).toMatchObject({ parsed: 'read', gate: ['empty-message'], words: { message: 0, next: 5 } })
-    expect(rep.callRead('ask-again', USABLE_BRIEF('continue'), OPEN_JOB_OPEN).gate).toEqual([])
-    expect(rep.callRead('brief', USABLE_BRIEF('continue')).gate).toBeUndefined()
-    expect(rep.callRead('brief', 'no verdict at all').parsed).toBe('no-verdict')
+    expect(callRead('ask-again', USABLE_BRIEF('continue'), OPEN_JOB_OPEN).gate).toEqual([])
+    expect(callRead('brief', USABLE_BRIEF('continue')).gate).toBeUndefined()
+    expect(callRead('brief', 'stands: s\nleft:\n- nothing\nnext: n\nmessage:\nend\ndoes: d').parsed).toBe('no-verdict')
+    expect(callRead('brief', 'verdict: continue\nstands: Both parts are').parsed).toBe('cut-short')
   })
 
   test('rule: a reply at 98% of its cap or past it counts as near the cap', () => {
@@ -15572,9 +16117,24 @@ describe('the call log: its pieces', () => {
   test('rule: the replay\'s words: a path, and each setting within its bounds, or the usage line', () => {
     expect(rep.parseReplayArgs('this')).toEqual({ path: 'this', last: rep.REPLAY_LAST, times: 1 })
     expect(rep.parseReplayArgs(`${SID} --kind brief --last 3 --effort max --times 4`)).toEqual({ path: SID, kind: 'brief', last: 3, effort: 'max', times: 4 })
+    expect(rep.parseReplayArgs(`${SID} --now --kind brief`)).toEqual({ path: SID, kind: 'brief', last: rep.REPLAY_LAST, times: 1, now: true })
+    expect(rep.REPLAY_USAGE).toContain('[--now]')
     for (const bad of ['', '--kind brief', 'a b', 'this --kind check', 'this --effort huge', 'this --times 0', 'this --times 11', 'this --last 51', 'this --last 2.5', 'this --times', 'this --wat']) {
       expect(rep.parseReplayArgs(bad)).toEqual({ error: rep.REPLAY_USAGE })
     }
+  })
+
+  test('rule: --now sends a saved call as this build would: at the shared cap, its prompt ending on the end line once; without it, as logged (audit test R16)', () => {
+    expect(rep.replayNow('Read the session.', 16000, false)).toEqual({ prompt: 'Read the session.', cap: 16000 })
+    expect(rep.replayNow('Read the session.', 16000, true)).toEqual({ prompt: `Read the session.\n\n${rep.END_ASK}`, cap: rep.MAX_REPLY_TOKENS })
+    // A prompt that already asks for the end line asks once.
+    expect(rep.replayNow(`Read the session.\n\n${rep.END_ASK}`, 4000, true).prompt).toBe(`Read the session.\n\n${rep.END_ASK}`)
+    // In blocks, only the last block gains it; the others and their cache marks are as logged.
+    const blocks = [{ text: 'The record.', cache: true as const }, { text: 'Your task.' }]
+    expect(rep.replayNow(blocks, 16000, true)).toEqual({ prompt: [{ text: 'The record.', cache: true }, { text: `Your task.\n\n${rep.END_ASK}` }], cap: rep.MAX_REPLY_TOKENS })
+    expect(rep.replayNow(blocks, 16000, false)).toEqual({ prompt: blocks, cap: 16000 })
+    expect(blocks[1]?.text).toBe('Your task.')
+    expect(rep.replayNow([], 8000, true)).toEqual({ prompt: [], cap: rep.MAX_REPLY_TOKENS })
   })
 
   test('rule: a folder\'s calls to send again are the kind asked for, the last ones by time', () => {
@@ -15665,7 +16225,7 @@ describe('the call log: saving, replaying, counting and removing', () => {
     expect(objective[0]).toMatchObject({ v: 1, kept: true, joined: true, outcome: 'answered', attempt: 0, read: { parsed: 'moved' }, usage: USAGE, nearCap: false })
     expect(objective[0]?.reply).toContain('The quarterly report written.')
     expect(objective[0]?.settings).toMatchObject({ effort: expect.any(String), maxTokens: OBJECTIVE_MAX_TOKENS, timeoutMs: OBJECTIVE_TIMEOUT_MS })
-    expect(watch[0]).toMatchObject({ kept: true, outcome: 'answered', reply: HOLDS, read: { parsed: 'read', flag: false } })
+    expect(watch[0]).toMatchObject({ kept: true, outcome: 'answered', reply: withEnd(HOLDS), read: { parsed: 'read', flag: false } })
     for (const e of calls) {
       const back = rebuilt(d, e)
       expect(back.system).toBeDefined()
@@ -15767,6 +16327,19 @@ describe('the call log: saving, replaying, counting and removing', () => {
     expect(out).toMatch(/replay 2 brief: answered, read .*gate passed/)
     expect(out).toMatch(/^logged: 1 calls; read as: read 1; gate: empty-message 1;/m)
     expect(out).toMatch(/^replay: 2 calls; read as: read 2; gate: passed 2;/m)
+    // With --now, the same call goes at the shared cap with the end line asked for, and says so.
+    // With --now the same call is sent as this build would (the cap is the kit's to keep:
+    // replayNow's own test holds it), its prompt asking for the end line once, and says so.
+    // A call saved with a cap its reply came near (20 tokens of 20): near it as logged, not at
+    // the shared cap with --now.
+    const low = callsIn(d).find(e => e.kind === 'brief') as rep.CallEntry & { file: string }
+    d.files.set(low.file, JSON.stringify({ ...low, file: undefined, settings: { ...low.settings, maxTokens: USAGE.output_tokens } }))
+    expect((await runCommand($, 'owner-rep-replay', low.file)).text).toMatch(/replay 1 brief: .*out 20 \(near cap\)/)
+    const now = (await runCommand($, 'owner-rep-replay', `${low.file} --now`)).text ?? ''
+    expect(now).toMatch(/replay 1 brief: .*out 20 \|/)
+    expect(forks.length).toBe(sent + 4)
+    expect(forks.at(-1)?.split(rep.END_LINE)).toHaveLength(2)
+    expect(now).toContain(`(as this build sends it: cap ${rep.MAX_REPLY_TOKENS}, end line asked)`)
     // A replay is not one of the rep's own calls: nothing more is saved or counted for it.
     expect(callsIn(d).length).toBe(before)
     // One file named by its path; then a text changed after it was saved.
@@ -15775,7 +16348,7 @@ describe('the call log: saving, replaying, counting and removing', () => {
     d.files.set(`${CALLS}/parts/${last}.txt`, `${d.files.get(`${CALLS}/parts/${last}.txt`) ?? ''} and one more line`)
     const damaged = (await runCommand($, 'owner-rep-replay', file.file)).text ?? ''
     expect(damaged).toContain('not sent again: the rebuilt prompt is not the one sent')
-    expect(forks.length).toBe(sent + 2)
+    expect(forks.length).toBe(sent + 4)
     expect(damaged).toContain('replay: none')
     // A call file whose system text names another file is never read or sent; nor is a system text that changed.
     const elsewhere = `${CALLS}/elsewhere.json`
@@ -15787,7 +16360,7 @@ describe('the call log: saving, replaying, counting and removing', () => {
     d.files.set(sys, `${d.files.get(sys) ?? ''} changed`)
     const changed = (await runCommand($, 'owner-rep-replay', file.file)).text ?? ''
     expect(changed).toContain('not sent again: its system prompt is not the one sent')
-    expect(forks.length).toBe(sent + 2)
+    expect(forks.length).toBe(sent + 4)
     expect((await runCommand($, 'owner-rep-replay', '')).text).toBe(rep.REPLAY_USAGE)
     expect((await runCommand($, 'owner-rep-replay', '/nowhere/at/all')).text).toContain('Nothing at /nowhere/at/all.')
     expect((await runCommand($, 'owner-rep-replay', `${SID} --kind own-words`)).text).toBe(`No saved calls of kind own-words in ${CALLS}.`)

@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 6b034fe..f69bac7 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2875,7 +2875,7 @@ export function cutShort(kind: ReplyKind, text: string, usage?: Usage | null, ca
+ // A reply worth asking for again: it has parts, but stopped before its last one or came near its
+ // cap. A reply with none of the parts is read as before (it shows nothing) and is not asked again:
+ // it is not a long answer that ran out of room.
+-export const readAgain = (kind: ReplyKind, text: string, usage?: Usage | null, cap = 0): boolean => !noLabels(text) && cutShort(kind, text, usage, cap)
++export const readAgain = (kind: ReplyKind, text: string, usage?: Usage | null, cap = 0): boolean => cutShort(kind, text, usage, cap)
+ 
+ // A verdict line read: stop, continue, or missing when there is none or it names neither.
+ export const verdictOf = (s: string | undefined): Verdict => {

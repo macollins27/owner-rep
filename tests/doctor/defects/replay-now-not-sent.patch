@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index ab7bb94..33021fe 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1694,7 +1694,7 @@ async function replay($: EngineInterface, args: string): Promise<string> {
+       continue
+     }
+     const effort = (a.effort ?? e.settings.effort) as 'high'
+-    const sent = replayNow(got.prompt, e.settings.maxTokens, a.now === true)
++    const sent = replayNow(got.prompt, e.settings.maxTokens, false)
+     for (let i = 1; i <= a.times; i++) {
+       const system = got.system
+       const prompt = sent.prompt

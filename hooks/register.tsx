@@ -115,6 +115,7 @@ import {
   doingFor,
   firstSentence,
   fillCard,
+  type CardText,
   putShows,
   checkShows,
   CHECKING_LINE,
@@ -216,13 +217,25 @@ import {
   WATCH_APPROVED_BUDGET,
   BRIEF_APPROVED_BUDGET,
   writeFailure,
+  cutShort,
+  readAgain,
+  endsWhole,
+  endAsked,
+  type WriteResult,
+  type WatchAnswer,
+  CHECK_CUT_NOTE,
   parseWatch,
   resultOf,
+  checkReadOf,
+  checkFailedAfterNote,
+  checkFailedNote,
   revisedLine,
   same,
   skipAfter,
   spentText,
   textOf,
+  rowHead,
+  rowsOf,
   tokensOf,
   VERSIONS_MAX,
   watchPrompt,
@@ -251,6 +264,8 @@ import {
   overCallCap,
   replayLine,
   replayPick,
+  replayNow,
+  MAX_REPLY_TOKENS,
   replayTotals,
   type BriefEnd,
   type CallEntry,
@@ -1396,8 +1411,9 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
       let after = rec
       let landed = false
       // Up to 1 + OBJECTIVE_RETRIES attempts over the same prompt: an empty or errored
-      // reply, an answer that cannot be read and a "holds" with nothing held are tried
-      // again at the highest effort; a call that threw or was cut short is not. Only a
+      // reply, an answer that cannot be read, one that stopped before its end or came
+      // within 2% of its cap (cutShort), and a "holds" with nothing held are tried
+      // again at the highest effort; a call that threw or ran out of time is not. Only a
       // write whose every attempt failed counts as failed, with the last cause.
       for (let attempt = 0; attempt <= OBJECTIVE_RETRIES; attempt++) {
         const retry = attempt > 0
@@ -1406,7 +1422,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
         const timeoutMs = retry ? OBJECTIVE_RETRY_TIMEOUT_MS : OBJECTIVE_TIMEOUT_MS
         const { result, ms } = await timed(() => $.model.complete({ model: OBJECTIVE_MODEL, system: OBJECTIVE_SYSTEM, prompt, maxTokens, effort, timeoutMs }))
         const sent: Sent = { kind: 'objective', settings: { model: OBJECTIVE_MODEL, effort, maxTokens, timeoutMs }, system: OBJECTIVE_SYSTEM, prompt, joined: true, attempt, result, ms }
-        const read = result !== null && result.isAnswered ? callRead('objective', result.text) : undefined
+        const read = result !== null && result.isAnswered ? callRead('objective', result.text, undefined, { usage: result.usage as Usage, cap: maxTokens }) : undefined
         saveCall($, sid, sent, read)
         let again = false
         let stale = false
@@ -1416,7 +1432,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
             r.objectiveCalls += 1
             r.objectiveTokens += tokensOf(result.usage)
           }
-          const answer = result !== null && result.isAnswered ? parseObjective(result.text) : null
+          const answer = result !== null && result.isAnswered && !cutShort('objective', result.text, result.usage as Usage, maxTokens) ? parseObjective(result.text) : null
           const none = answer !== null && answer.kind === 'holds' && r.objective === null
           if (answer !== null && !none) {
             landed = true
@@ -1457,7 +1473,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
           }
           if (!again) {
             r.objectiveFailed += 1
-            r.objectiveWhy = none ? 'holds-with-none' : writeFailure(result)
+            r.objectiveWhy = none ? 'holds-with-none' : writeFailure(result as WriteResult, maxTokens)
             r.failedWrite = { at: Date.now(), upTo: saw }
             failed = true
           }
@@ -1572,26 +1588,37 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
     return
   }
   const memory = { ...(await memoryFor($, sid, rec, 'watch')), context: await contextOf($) }
-  const got = await readSession($, sid, rec, 'watch', cover => watchPrompt({ ...memory, cover }, reason))
-  // Nothing recorded yet: no model was called, and there is nothing to count.
-  if (got.result === NOTHING_READ) return
-  const result = got.result
   const fill = memory.approved
-  const parsed = result.isAnswered ? parseWatch(result.text) : null
-  // What this look could not do for an approval goes to the row through coverage, the one path.
-  await setLookGaps($, sid, joinGaps(got.gaps, fill === undefined ? {} : readerGaps(fill, 'watch'), notAssessedGaps(parsed?.notAssessed ?? [])))
-  const usage = 'usage' in result ? result.usage : null
-  const watchRead = result.isAnswered ? callRead('watch', result.text) : undefined
-  if (got.sent !== undefined) saveCall($, sid, got.sent, watchRead)
-  await changeRec($, sid, async after => {
-    after.calls += 1
-    after.tokens += tokensOf(usage)
-    after.cached += cachedOf(usage)
-    if (got.sent !== undefined) after.counts = countCall(after.counts, counted(got.sent, watchRead))
-    if (!result.isAnswered || parsed === null) return
+  // A reply cut short (readAgain: it has parts but did not reach its last one, or came within 2% of its cap)
+  // is read once more; a second cut one raises no Heads up and marks nothing, and the call log
+  // and the counters keep both as cut short.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const got = await readSession($, sid, rec, 'watch', cover => watchPrompt({ ...memory, cover }, reason))
+    // Nothing recorded yet: no model was called, and there is nothing to count.
+    if (got.result === NOTHING_READ) return
+    const result = got.result
+    const usage = 'usage' in result ? result.usage : null
+    const cut = result.isAnswered && readAgain('watch', result.text, usage as Usage | null, RECORD_MAX_TOKENS)
+    const parsed = result.isAnswered && !cut ? parseWatch(result.text) : null
+    // What this look could not do for an approval goes to the row through coverage, the one path.
+    if (!cut) await setLookGaps($, sid, joinGaps(got.gaps, fill === undefined ? {} : readerGaps(fill, 'watch'), notAssessedGaps(parsed?.notAssessed ?? [])))
+    const watchRead = result.isAnswered ? callRead('watch', result.text, undefined, { usage: usage as Usage | null, cap: RECORD_MAX_TOKENS }) : undefined
+    if (got.sent !== undefined) saveCall($, sid, got.sent, watchRead)
+    await changeRec($, sid, async after => {
+      after.calls += 1
+      after.tokens += tokensOf(usage)
+      after.cached += cachedOf(usage)
+      if (got.sent !== undefined) after.counts = countCall(after.counts, counted(got.sent, watchRead))
+      if (parsed === null) return
+      await takeLook(after, parsed)
+    })
+    if (!cut) return
+  }
+
+  // An answered look taken: its marks applied, and its Heads up drawn when it raised one.
+  async function takeLook(after: Rec, answer: WatchAnswer): Promise<void> {
     // An answered look moves the cursor, so the next one shows the plans after these.
     if (fill?.cursor !== undefined) after.readerAt = { watch: fill.cursor }
-    const answer = parsed
     if (applyMarks(after, answer.shown, answer.closed) && onScreen(sid)) await update($, readingA, () => after.objective)
     const view = await read($, viewA)
     const said = headsUp(answer, after.seen, fill?.blocks ?? [])
@@ -1601,7 +1628,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
       await update($, noteA, () => note)
       await update($, viewA, () => 'note')
     }
-  })
+  }
 }
 
 // The hidden commands: `/owner-rep-counts` prints this session's counters, `/owner-rep-replay`
@@ -1670,27 +1697,31 @@ async function replay($: EngineInterface, args: string): Promise<string> {
       continue
     }
     const effort = (a.effort ?? e.settings.effort) as 'high'
+    const sent = replayNow(got.prompt, e.settings.maxTokens, a.now === true)
     for (let i = 1; i <= a.times; i++) {
       const system = got.system
-      const prompt = got.prompt
-      const { result, ms } = await timed(() => $.model.complete({ model: e.settings.model, system, prompt, maxTokens: e.settings.maxTokens, effort, timeoutMs: e.settings.timeoutMs }))
+      const prompt = sent.prompt
+      const { result, ms } = await timed(() => $.model.complete({ model: e.settings.model, system, prompt, maxTokens: sent.cap, effort, timeoutMs: e.settings.timeoutMs }))
       const usage = result === null ? undefined : (result.usage as Usage | undefined)
       const row: ReplayRow = {
         label: `replay ${i}`,
         kind: e.kind,
         ...callOutcome(result as never),
         ms,
-        nearCap: nearCap(usage, e.settings.maxTokens),
-        ...(result !== null && result.isAnswered ? { read: callRead(e.kind, result.text, e.open) } : {}),
+        nearCap: nearCap(usage, sent.cap),
+        ...(result !== null && result.isAnswered ? { read: callRead(e.kind, result.text, e.open, { usage, cap: sent.cap }) } : {}),
         ...(usage === undefined ? {} : { usage }),
       }
       rows.push(row)
       lines.push(`  ${replayLine(row)}`)
     }
   }
-  const setting = a.effort === undefined ? '' : ` (effort ${a.effort})`
+  const setting = [a.effort === undefined ? '' : ` (effort ${a.effort})`, a.now === true ? ` (as this build sends it: cap ${MAX_REPLY_TOKENS}, end line asked)` : ''].join('')
   return [...lines, '', replayTotals(rows, 'logged'), replayTotals(rows, `replay`) + setting].join('\n')
 }
+
+// The reason a briefing's read gives for a reply cut short, in place of the engine's reason.
+const CUT_SHORT = 'cut-short'
 
 // The press: an instant read over the same copy, drawn in the band.
 async function pressBrief($: EngineInterface, sid: string): Promise<void> {
@@ -1718,14 +1749,17 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       const kind: CallKind = extra === '' ? 'brief' : 'ask-again'
       const got = await readSession($, sid, rec, kind, cover => {
         const prompt = briefPrompt({ ...memory, cover })
-        return extra === '' ? prompt : `${prompt}\n\n${extra}`
+        return extra === '' ? prompt : endAsked(`${prompt}\n\n${extra}`)
       })
       const result = got.result
+      const usage = 'usage' in result ? result.usage : null
+      const size = { usage: usage as Usage | null, cap: RECORD_MAX_TOKENS }
+      // A reply cut short (readAgain) is never read for a card or a mark: the press reads once more.
+      const cut = result !== NOTHING_READ && result.isAnswered && readAgain(kind, result.text, size.usage, size.cap)
       // The plans this briefing could not compare, and the steps it could not assess, go on the card.
       const plans = memory.approved === undefined ? {} : readerGaps(memory.approved, 'brief')
-      const unassessed = result !== NOTHING_READ && result.isAnswered ? notAssessedGaps(parseBrief(result.text).notAssessed ?? []) : {}
-      if (result !== NOTHING_READ) gaps = joinGaps(got.gaps, plans, unassessed)
-      const usage = 'usage' in result ? result.usage : null
+      const unassessed = result !== NOTHING_READ && result.isAnswered && !cut ? notAssessedGaps(parseBrief(result.text).notAssessed ?? []) : {}
+      if (result !== NOTHING_READ && !cut) gaps = joinGaps(got.gaps, plans, unassessed)
       // What the reply was read as, with the gate's rules against the conditions open when it gated.
       let briefRead: CallRead | undefined
       let gatedOpen: Condition[] | null | undefined
@@ -1737,10 +1771,15 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
           if (got.sent !== undefined) after.counts = countCall(after.counts, counted(got.sent))
           return { reason: result.reason }
         }
+        if (cut) {
+          briefRead = callRead(kind, result.text, undefined, size)
+          if (got.sent !== undefined) after.counts = countCall(after.counts, counted(got.sent, briefRead))
+          return { reason: CUT_SHORT }
+        }
         const parsed = parseBrief(result.text)
         if (applyMarks(after, parsed.shown, parsed.closed) && onScreen(sid)) await update($, readingA, () => after.objective)
         const left = gateOpen(after.objective)
-        briefRead = callRead(kind, result.text, left)
+        briefRead = callRead(kind, result.text, left, size)
         gatedOpen = left
         if (got.sent !== undefined) after.counts = countCall(after.counts, counted(got.sent, briefRead))
         return { ...gateVerdict(parsed, left), open: left }
@@ -1748,13 +1787,17 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       if (got.sent !== undefined) saveCall($, sid, got.sent, briefRead, gatedOpen)
       return out
     }
-    const first = await ask('')
+    let first = await ask('')
+    // A reply cut short is read once more; cut short twice, no card is drawn and the toast says so.
+    if ('reason' in first && first.reason === CUT_SHORT) first = await ask('')
     if ('reason' in first) {
       await update($, viewA, () => 'row')
       $.ui.toast(
         first.reason === 'nothing-to-fork'
           ? 'Owner rep: nothing to read yet. Ask the agent something first.'
-          : `Owner rep: the model did not answer (${first.reason}). Press again.`,
+          : first.reason === CUT_SHORT
+            ? 'Owner rep: the briefing stopped before its end twice, so nothing from it was shown. Press again.'
+            : `Owner rep: the model did not answer (${first.reason}). Press again.`,
       )
       return
     }
@@ -1783,7 +1826,8 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     // replaced are written in the rep's own words by one plain call (no fork) over the
     // objective, the open conditions, the owner's messages and what the briefing itself
     // found. A part it writes that still says stop, a reply that did not come back
-    // whole (parseOwnWords), or a call that fails, leaves the rep's fixed text, and the
+    // whole (parseOwnWords) or came within 2% of its cap (cutShort), or a call that
+    // fails, leaves the rep's fixed text, and the
     // press goes on. It writes card parts only, never the objective. With no objective
     // written there is no such call.
     if (taken.refused && taken.replaced.length > 0 && first.open !== null && taken.open !== null) {
@@ -1805,7 +1849,8 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
         result,
         ms,
       }
-      const ownCall = result !== null && result.isAnswered ? callRead('own-words', result.text) : undefined
+      const ownSize = { usage: (result?.usage ?? null) as Usage | null, cap: OWN_WORDS_MAX_TOKENS }
+      const ownCall = result !== null && result.isAnswered ? callRead('own-words', result.text, undefined, ownSize) : undefined
       saveCall($, sid, sent, ownCall)
       const own = await changeRec($, sid, after => {
         after.counts = countCall(after.counts, counted(sent, ownCall))
@@ -1814,7 +1859,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
           after.tokens += tokensOf(result.usage)
           after.cached += cachedOf(result.usage)
         }
-        return result !== null && result.isAnswered ? parseOwnWords(result.text) : null
+        return result !== null && result.isAnswered && !cutShort('own-words', result.text, ownSize.usage, ownSize.cap) ? parseOwnWords(result.text) : null
       })
       const answered = result !== null && result.isAnswered
       ownChars = answered ? result.text.length : 0
@@ -1976,6 +2021,15 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       const why = stderr.trim().split('\n').pop() ?? ''
       return finish({ checkNote: `The check could not run${end.code === null ? '' : ` (exit ${end.code})`}${why === '' ? '' : `: ${fit(why, 160)}`}.` })
     }
+    // What is read (checkReadOf): the result if whole, else the last whole answer the checker
+    // wrote; when the run then ended in an engine error, the card says that too, in the engine's
+    // words (checkFailedAfterNote). A run that ended in an engine error with no whole answer is that failure, in the
+    // engine's words; a reply that did not reach "looked:" stopped before its end (endsWhole).
+    // Either way nothing of it is taken, no mark and no part of the card, and the card says
+    // which. It is not run again on its own, as the briefing's read is: each run is a paid
+    // session of its own, up to CHECK_TIMEOUT_MS long, so the owner presses the check again.
+    const reading = checkReadOf(got)
+    let notRead: string | null = null
     const patch = await changeRec($, sid, async after => {
       after.checks += 1
       after.checkTokens += got.tokens
@@ -1987,14 +2041,19 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       // taken and the card on record stays the newer one, so the message the
       // owner sends from that card is still known for the rep's draft.
       if (epoch !== checkEpoch || after.lastBrief?.at !== at) return null
-      const c = parseCheck(got.text)
+      if (!('read' in reading)) {
+        notRead = 'failed' in reading ? checkFailedNote(reading.failed) : CHECK_CUT_NOTE
+        return null
+      }
+      const text = reading.read
+      const c = parseCheck(text)
       // A condition the check saw shown, or the owner closed, moves under the same
       // rule as a look's, and a reopened one moves shown only here; one held shown
       // that the check found is not so goes back to not shown, marked reopened.
       const marked = applyMarks(after, c.shown, c.closed, { reopen: c.reopen })
       if (marked && onScreen(sid)) await update($, readingA, () => after.objective)
       const checked: Checked = { holds: c.holds, wrong: c.wrong, notShown: c.notShown, changed: c.changed, looked: c.looked, refused: got.refused }
-      const hasLeft = parts_hasLeft(got.text)
+      const hasLeft = parts_hasLeft(text)
       // The card the check leaves, each part the checker's where it gave one
       // and the instant read's where it did not, verdict and going-well line
       // included, goes through the same gate as the briefing: a stop or a
@@ -2022,7 +2081,10 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
           means: or(c.means, instant.means),
           leftOut,
           next: or(c.next, instant.next),
-          message: or(c.message, instant.message),
+          // The message and what it does go together: a checker that wrote what its message does
+          // and no message (nothing to send) has said there is nothing to send, and the briefing's
+          // older draft is not put back beside that (live test of 18 Nov 2026, round 5, B11).
+          message: c.message === '' && c.does !== '' ? '' : or(c.message, instant.message),
           does: or(c.does, instant.does),
         },
         gateOpen(after.objective),
@@ -2039,6 +2101,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
         does: card.does,
         spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens, after.objectiveCalls, after.objectiveTokens, after.objectiveFailed, after.objectiveWhy),
         checkCost: checkCostText(after.lastCheckTokens, after.lastCheckCached, after.lastCheckMs, after.lastCheckRefused),
+        ...(reading.failedAfter === undefined ? {} : { checkNote: checkFailedAfterNote(reading.failedAfter) }),
       }
       // The card's reads and what came of its own-words call stay the briefing's: the check
       // makes no such call.
@@ -2047,6 +2110,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       return patch
     })
     if (patch !== null) await finish(patch)
+    if (notRead !== null) await finish({ checkNote: notRead })
   } catch (error) {
     const why = error instanceof Error ? error.message : String(error)
     await finish({ checkNote: `The check failed: ${fit(why, 160)}` }).catch(() => undefined)
@@ -3291,8 +3355,18 @@ export const register: Register = on => {
     // The row shows the result; so does the card's head, with the count line under it
     // and the objective whole at the card's end when the rows allow.
     const placeholder = 'working out the result you want from your messages…'
-    const head = lead(headGlyph, headColor, 'Owner rep', reading?.result ?? placeholder)
     // The first thing the record could not keep or save, under the row's head.
+    const recordRows = lines[0] === undefined ? 0 : rowsOf(lines[0], cols - 2)
+    // On the terminal the head takes only the rows the band leaves it after the gap, the
+    // record line, the buttons row and whatever is drawn above or beneath, so a long result
+    // never pushes the row's buttons under a "↓ n more" row (round nine, 100x24).
+    const beneathRows = drawsSomething(beneath) ? rowsOf(textOf(beneath), cols) : 0
+    const headOf = (above: number) => {
+      const result = reading?.result ?? placeholder
+      const text = inColumns ? rowHead(result, e.props.maxRows - gap - recordRows - 1 - beneathRows - above, cols) : result
+      return lead(headGlyph, headColor, 'Owner rep', text)
+    }
+    const head = headOf(0)
     const recordLine =
       lines[0] === undefined ? undefined : (
         <Box paddingLeft={2} width={w(cols)}>
@@ -3323,7 +3397,7 @@ export const register: Register = on => {
             <Button key="fine" plain hotkey="2" label="Fine" onPress={clear} />,
             <Button key="later" plain hotkey="0" label="Later" onPress={clear} />,
           )}
-          {head}
+          {headOf(rowsOf(`Heads up · ${note.line}`, cols - 2) + rowsOf(note.why, cols - 2) + 1)}
           {recordLine}
           {choices(statusText, <Button key="rep" plain label="Brief me" onPress={onPress} />, <Button key="tell" plain label="Tell the rep" onPress={tell} />)}
           {beneath}
@@ -3347,7 +3421,7 @@ export const register: Register = on => {
         // The objective whole is drawn only when it says more than the head.
         reading: objective === result ? '' : objective,
       }
-      const shown = inColumns ? fillCard(whole, e.props.maxRows, cols) : whole
+      const shown: CardText = inColumns ? fillCard(whole, e.props.maxRows, cols) : whole
       const cardHead = lead(headGlyph, headColor, 'Owner rep', shown.result)
       const section = (label: string, text: string) =>
         text === '' ? undefined : (
@@ -3359,7 +3433,7 @@ export const register: Register = on => {
           </Box>
         )
       return (
-        <Box flexDirection="column" marginTop={gap}>
+        <Box flexDirection="column" marginTop={shown.tight === true ? 0 : gap}>
           {cardHead}
           {shown.count !== '' ? (
             <Box paddingLeft={2} width={w(cols)}>
@@ -3396,7 +3470,15 @@ export const register: Register = on => {
             </Box>
           ) : undefined}
           {section('Next:', shown.next)}
-          {shown.checked !== null ? (
+          {shown.checked !== null && shown.checkedBare === true ? (
+            shown.checked.looked === '' ? undefined : (
+              <Box paddingLeft={2} width={w(cols)}>
+                <Text dimColor wrap="wrap">
+                  {shown.checked.looked}
+                </Text>
+              </Box>
+            )
+          ) : shown.checked !== null ? (
             <Box flexDirection="column" paddingLeft={2} width={w(cols)}>
               <Text bold>Checked against the record and the files:</Text>
               {shown.checked.holds.map((item, i) => (
@@ -3507,7 +3589,7 @@ export const register: Register = on => {
             <Button key="close" plain hotkey="2" label="Fine, close" onPress={close} />,
             tellButton4,
             <Button key="later" plain hotkey="0" label="Later" onPress={close} />,
-            brief.size !== '' ? <Text dimColor>{brief.size}</Text> : undefined,
+            shown.size !== undefined && shown.size !== '' ? <Text dimColor>{shown.size}</Text> : undefined,
           )}
           {shown.spent !== '' ? (
             <Box paddingLeft={2} width={w(cols)}>

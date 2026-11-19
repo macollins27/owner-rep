@@ -12,6 +12,8 @@ What changed in each release of Owner Rep, newest first. The full record is the
   session's folder is removed after 14 days with no change, and all of them together are kept under
   about 1 GB, the oldest removed first. Two hidden commands read it:
   `/owner-rep-counts` and `/owner-rep-replay`. Nothing the rep shows you changes.
+  `/owner-rep-replay --now` sends a saved call as this version would, at its cap and with its
+  end line, to measure what those change on calls saved before them.
 - **The rep no longer watches its own check.** The check runs as a Claude Code session of its own,
   and the rep loaded in it and watched it like one of your agents: it kept a record of it, spent
   calls on it and wrote Heads up lines about the checker. It now knows that session, by its folder
@@ -63,7 +65,24 @@ What changed in each release of Owner Rep, newest first. The full record is the
 - **The briefing's buttons always show.** A card could be counted one row shorter than it is
   drawn (an indented line a cell or two past the edge, the size beside the buttons), and then
   scrolled with its buttons below the fold. Rows are now counted as the strip wraps them, the
-  buttons first.
+  buttons first. On a 24-row terminal the strip has about five rows, and a checked card
+  now fits them: what the check found goes to one line, then the empty line above the card,
+  so a check's error and every button stay in view. When the strip is too short for both the
+  error and the line of what the check found, the error is shown whole and that line waits. A
+  long error is shortened to "Check failed after answering: …" and the conversation's size
+  leaves the buttons row before any of the error is cut. The row above the prompt keeps the
+  job's result to the rows the strip leaves it, ending in "…" when it is longer, so Brief me
+  and Tell the rep stay in view; the briefing shows the result whole.
+- **A reply cut off in its last line is never shown.** The rep asks every model call to end its
+  reply with a fixed line, "end of reply". A reply without it stopped early, even one cut in
+  the middle of its last sentence, and the rep treats it as it treats any cut reply: it asks
+  again, or says so, and never shows the half line.
+- **A check that fails says why, and a whole check is never lost.** When a check's run ends in
+  an error, such as an expired login, the card now shows that error rather than calling the
+  check cut and asking you to press it again. A check that finished its answer before such an
+  error, or before a last turn a hook asked for, is read from that answer, and the card still
+  says the run then failed, and why. A check that says there is nothing to send no longer leaves the briefing's
+  older message on its card for Put message.
 
 ## 0.7.5 (14 November 2026)
 

@@ -1,12 +1,12 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 97fd57d..2e7baf5 100644
+index 35606cf..f427756 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1305,6 +1305,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
-     // An answered look moves the cursor, so the next one shows the plans after these.
-     if (fill?.cursor !== undefined) after.readerAt = { watch: fill.cursor }
-     const answer = parsed
-+    if (takeObjective(after, parseObjective(result.text), Date.now(), after.counter)) await update($, readingA, () => after.objective)
-     if (applyMarks(after, answer.shown, answer.closed) && onScreen(sid)) await update($, readingA, () => after.objective)
-     const view = await read($, viewA)
-     const said = headsUp(answer, after.seen, fill?.blocks ?? [])
+@@ -1559,6 +1559,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+       after.cached += cachedOf(usage)
+       if (got.sent !== undefined) after.counts = countCall(after.counts, counted(got.sent, watchRead))
+       if (parsed === null) return
++      if (takeObjective(after, parseObjective(result.text), Date.now(), after.counter)) await update($, readingA, () => after.objective)
+       await takeLook(after, parsed)
+     })
+     if (!cut) return
