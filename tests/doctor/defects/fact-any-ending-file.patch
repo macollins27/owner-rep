@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 83998ef..b04abe2 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3517,7 +3517,7 @@ const FACT_NAME_H = /^(?:v?\d+(?:\.\d+)+(?:-(?:alpha|beta|rc|dev|pre)\.?\d*)?|v\
+ // file's ending from FACT_EXT; a version or a commit is a name; anything else joined by a slash or
+ // a dot is its words, each read as a hyphened word's part.
+ const FACT_EXT = /\.(?:py|pyw|ts|tsx|mts|cts|js|jsx|mjs|cjs|json|jsonl|md|mdx|txt|text|csv|tsv|log|sh|bash|zsh|fish|ps1|bat|cmd|yml|yaml|toml|ini|cfg|conf|env|lock|html?|css|scss|xml|svg|png|jpe?g|gif|webp|pdf|zip|tar|gz|tgz|go|rs|rb|java|kt|swift|c|h|cc|cpp|hpp|cs|php|sql|db|sqlite|plist|diff|patch|bak|tmp|out|ipynb|vue|svelte|lua|dart|ex|exs|scala|gradle|tf|patch|com|org|io|net|dev|ai)$/i
+-const factPath = (m: string): boolean => /^(?:~\/|\.{1,2}\/|\/)/.test(m) || m.includes('://') || FACT_EXT.test(m.slice(m.lastIndexOf('/') + 1))
++const factPath = (m: string): boolean => /^(?:~\/|\.{1,2}\/|\/)/.test(m) || m.includes('://') || /\.[A-Za-z0-9]{1,8}$/.test(m)
+ const factModPart = (p: string): boolean => {
+   const stem = p.replace(/['’]s$/, '')
+   return [FACT_MOD, FACT_THING, FACT_PLACE_NOUN, FACT_ACTOR, FACT_STATE].some(re => re.test(stem))

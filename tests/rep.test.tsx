@@ -9305,6 +9305,38 @@ for (const why of [
   }
 }
 
+// A reason of wide characters: 156 characters, 286 cells (eighth live test of 18 Nov 2026).
+const WIDE_WHY = `Failed to open /tmp/${'資料'.repeat(65)} ZEBRA`
+for (const after of [true, false]) {
+  test(`rule: on a five-row band at 100 columns, an engine reason of wide characters ${after ? 'after' : 'before'} the answer is kept to 160 cells, its start and its end drawn with the middle left out (eighth live test of 18 Nov 2026)`, async ($, on) => {
+    on('session.usage', () => ({ value: { startedAt: 0, context: { tokens: 20000, window: 500000, percent: 4 }, rateLimits: [] } }))
+    const answer = (JSON.parse(CHECKED_SAYING('continue', 'Two things first. Run the suite and paste the counts.')) as { result: string }).result
+    const { ui } = await checkOver($, on, streamed(after ? [answer] : ['Still checking: reading the record now.'], { error: WIDE_WHY }))
+    await settle($)
+    await ui.unmount()
+    for (const columns of [98, 168]) {
+      const five = { ...BAND, props: { ...BAND.props, maxRows: 5, bodyColumns: columns, scroll: { offset: 0, bodyRows: 4 } } }
+      const small = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...five })
+      const note = await small.find({ type: 'Text', text: new RegExp(`${after ? 'after' : 'before'} (?:it )?answer(?:ed|ing): Failed to open /tmp/資料[^…]*…[^…]*資料 ZEBRA\\.`) })
+      expect([columns, note === undefined ? 'cut' : 'whole']).toEqual([columns, 'whole'])
+      expect((await small.find({ key: 'put' }))?.props.hotkey).toBe('1')
+      await small.unmount()
+    }
+  })
+}
+test('the engine\'s reason is kept to 160 cells: whole when it fits, else its start and its end with the middle left out', () => {
+  const ascii = 'Failed to authenticate: OAuth session expired and could not be refreshed because the authentication server rejected the refresh token as revoked by administrato'
+  expect(checkFailedNote(ascii)).toBe(`The check failed before it answered: ${ascii}. Nothing from it was taken.`)
+  expect(WIDE_WHY.length).toBe(156)
+  const kept = /^The check failed before it answered: (.*)\. Nothing from it was taken\.$/.exec(checkFailedNote(WIDE_WHY))?.[1] ?? ''
+  expect(rep.widthOf(kept)).toBeLessThanOrEqual(160)
+  expect(kept.startsWith('Failed to open /tmp/資料')).toBe(true)
+  expect(kept.endsWith('資料 ZEBRA')).toBe(true)
+  const long = `${'word '.repeat(40)}END`
+  const k2 = /^The check failed before it answered: (.*)\. Nothing/.exec(checkFailedNote(long))?.[1] ?? ''
+  expect([k2.length <= 160, k2.endsWith('word END'), k2.includes('…')]).toEqual([true, true, true])
+})
+
 test('rule: the Check button\'s card keeps a checker\'s message that pushes the agent on before it stops', async ($, on) => {
   const message = 'Two things before you stop. First, run the full suite and paste the counts. Second, push the branch and show the run.'
   const { rec, ui } = await checkOver($, on, CHECKED_SAYING('continue', message))
@@ -10043,6 +10075,36 @@ test('factHolds takes a noun\'s own words from a closed list: the seventh live t
     'no file outside the scratch folder is created or changed by this work',
     'no handoff or note is written anywhere outside the scratch folder']
   for (const text of facts) expect([text, factHolds(text)]).toEqual([text, true])
+})
+
+test('factHolds reads a path or a name only where it is one: a quality or a doing joined by a slash, a dot, an underscore or a hyphen, with a digit, in backticks or after a state is works in every slot (eighth live test), and real paths, names and facts "for this job" stay facts', () => {
+  // The words every disguise is built from: qualities, doings, and the eighth test's own.
+  const words = ['secure', 'fast', 'reliable', 'correct', 'complete', 'robust', 'bug-free', 'encrypts', 'compresses', 'signs', 'validates2', 'prints-sorted', 'results', 'UTF8-compliant', '100%-correct', 'base64-encoding', '0-error']
+  const joined = (a: string, b: string, c: string): string[] => ['/', '.', '_', '-', '\\'].flatMap(j => [`${a}${j}${b}`, `${a}${j}${b}${j}${c}`])
+  const disguises = new Set<string>()
+  for (let i = 0; i < words.length; i++) {
+    const [a, b, c] = [words[i]!, words[(i + 1) % words.length]!, words[(i + 2) % words.length]!]
+    for (const d of [...joined(a, b, c), `${a}2`, `\`${a}\``, `\`${a}/${b}\``, `\`${a}.${b}\``, `\`${a} ${b}\``]) disguises.add(d)
+  }
+  const leaks: string[] = []
+  for (const d of disguises) {
+    leaks.push(`The ${d} tool is installed`, `The script contains a ${d} fix`, `The file is saved on the ${d} server`, `No file holds ${d} code`, `No script or ${d} tool exists`, `The service is deployed ${d}`, `The tool is installed (${d})`, `The code is committed ${d}`, `${d} is committed`, `The file at ${d} is committed`, `The file is saved in ${d}`)
+  }
+  for (const w of words) leaks.push(`The tool is installed (${w})`, `The ${w} tool is installed`, `The file is saved for the ${w} job`)
+  const closed = leaks.filter(t => factHolds(t))
+  expect(closed).toEqual([])
+  // The facts that must still close: real paths, real names, and the writer's own "for this job".
+  const facts = ['src/hooks/rep.ts is committed', 'notes/today.md is saved in the scratch folder', 'the file is saved in ~/work/x', 'the file is saved in /private/tmp/x', 'the file is saved in ./out/', 'the `shout.py` script is saved', 'the `owner-rep` plugin is installed', '`run.sh` is installed', 'The fix is committed (a1b2c3d)', 'The fix is committed (`a1b2c3d`)', 'The v2 build is deployed', 'The v1.4.0-rc.2 build is installed', 'The build is tagged v2.1.0', 'the file is committed',
+    "nothing in the scratch folder's repository is committed for this job",
+    "nothing is pushed from the scratch folder's repository for this job",
+    'nothing is committed for this session',
+    'shout.py is saved for this task']
+  for (const text of facts) expect([text, factHolds(text)]).toEqual([text, true])
+  // "For" opens only the job, the session or the task, never a doing or a thing of the work.
+  // Words in backticks name a thing alone only when each is from the closed list, as before a
+  // noun: a tool's bare name costs a look, the designed safe direction.
+  for (const text of ['`npm-run` is installed', '`secure` is committed']) expect([text, factHolds(text)]).toEqual([text, false])
+  for (const text of ['The file is saved for converting text to uppercase', 'The tool is installed for the users', 'The script is committed for the fix', 'The file is saved for this job to print']) expect([text, factHolds(text)]).toEqual([text, false])
 })
 
 test('a condition\'s kind: written by the writer before it, kept through a held write, stripped where a reader copies it, and one held "works" never turns "fact"', () => {

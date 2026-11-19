@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 83998ef..a00d218 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3641,7 +3641,7 @@ const factRead = (ts: FactTok[]): boolean => {
+     }
+     // A name after it: "tagged v2", "committed (a1b2c3d)"; only a version or a commit (eighth
+     // live test: "installed (UTF8-compliant)" is a quality, not a name).
+-    const name = (j: number): boolean => ts[j]?.t === 'H' && FACT_NAME_H.test(ts[j]?.w ?? '')
++    const name = (j: number): boolean => ts[j]?.t === 'H' || ts[j]?.t === 'P'
+     return out.flatMap(e2 => [e2, ...(name(e2) ? [e2 + 1] : x(e2, '(') && name(e2 + 1) && x(e2 + 2, ')') ? [e2 + 3] : [])])
+   }
+   const aux = (i: number): number[] => {

@@ -1,9 +1,9 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index cb54c60..395f363 100644
+index 83998ef..dec8866 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3507,7 +3507,7 @@ const FACT_MOD = /^(?:one|two|three|four|five|six|seven|eight|nine|ten|both|all|
- const FACT_NAME_H = /^(?:v\d+(?:\.\d+)*(?:-(?:alpha|beta|rc|dev|pre)\.?\d*)?|[0-9a-f]{7,40})$/i
+@@ -3520,7 +3520,7 @@ const FACT_EXT = /\.(?:py|pyw|ts|tsx|mts|cts|js|jsx|mjs|cjs|json|jsonl|md|mdx|tx
+ const factPath = (m: string): boolean => /^(?:~\/|\.{1,2}\/|\/)/.test(m) || m.includes('://') || FACT_EXT.test(m.slice(m.lastIndexOf('/') + 1))
  const factModPart = (p: string): boolean => {
    const stem = p.replace(/['’]s$/, '')
 -  return [FACT_MOD, FACT_THING, FACT_PLACE_NOUN, FACT_ACTOR, FACT_STATE].some(re => re.test(stem))

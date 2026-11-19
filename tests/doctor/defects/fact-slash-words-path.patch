@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index cb54c60..a0452c0 100644
+index 83998ef..069312f 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3522,7 +3522,7 @@ const factTokens = (text: string): FactTok[] => {
-     .replace(/`[^`\s][^`]*`/g, ' \u0001P ')
-     // A path: a slash at its start or end, a home sign, a file's ending, or three parts. Two
-     // words joined by a slash ("fast/secure") are words, each read as a hyphened word's part.
--    .replace(/[^\s"'`()[\]\u0001]+[/~][^\s"'`()[\]]*|[/~][^\s"'`()[\]]+|[^\s"'`()[\]\u0001]+\.[A-Za-z0-9]{1,8}\b/g, m => (/^[A-Za-z]+\/[A-Za-z]+$/.test(m) ? m.replace('/', '-') : ' \u0001P '))
-+    .replace(/[^\s"'`()[\]\u0001]+[/~][^\s"'`()[\]]*|[/~][^\s"'`()[\]]+|[^\s"'`()[\]\u0001]+\.[A-Za-z0-9]{1,8}\b/g, ' \u0001P ')
+@@ -3542,7 +3542,7 @@ const factTokens = (text: string): FactTok[] => {
+       const rest = m.slice(c.length)
+       if (FACT_NAME_H.test(c)) return ` ${c} ${rest}`
+       if (factPath(c)) return keep({ w: c, t: 'P', p: c.includes('/') ? 'path' : 'file' }) + rest
+-      return ` ${c.replace(/[/.]+/g, '-')} ${rest}`
++      return keep({ w: c, t: 'P', p: 'path' }) + rest
+     })
      .replace(/([,;:()[\]—–!?])/g, ' $1 ')
      .replace(/\.(?=\s|$)/g, ' . ')
-   return t.split(/\s+/).filter(w => w !== '').map((w): FactTok => {
