@@ -1768,8 +1768,16 @@ async function replay($: EngineInterface, args: string): Promise<string> {
       const { system, prompt: saved } = texts[arm] as { system: string; prompt: string | PromptBlock[] }
       const sent = replayNow(saved, e.settings.maxTokens, a.now === true)
       const prompt = sent.prompt
+      const send = (p: string | PromptBlock[]) => $.model.complete({ model: e.settings.model, system, prompt: p, maxTokens: sent.cap, effort, timeoutMs: e.settings.timeoutMs })
       for (let i = 1; i <= a.times; i++) {
-        const { result, ms } = await timed(() => $.model.complete({ model: e.settings.model, system, prompt, maxTokens: sent.cap, effort, timeoutMs: e.settings.timeoutMs }))
+        // A build that refuses a prompt in blocks (2.1.286) is sent the same text joined, as the
+        // rep's own calls are.
+        const { result, ms } = await timed(() =>
+          send(prompt).catch((err: unknown) => {
+            if (typeof prompt === 'string' || !BLOCKS_REFUSED.test(String(err))) throw err
+            return send(joinBlocks(prompt))
+          }),
+        )
         const usage = result === null ? undefined : (result.usage as Usage | undefined)
         const label = `${arm} ${i}`
         const row: ReplayRow = {
