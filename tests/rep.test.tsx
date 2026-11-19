@@ -21,6 +21,7 @@ import { type Memory, CHECK_EVERY, CHECK_TIMEOUT_MS, checkCopyDir, checkSettings
 import * as rep from '../hooks/rep'
 import { PRE_G1 } from './fixtures/pre-g1-prompts'
 import { G1, G1_MORE } from './fixtures/g1-prompts'
+import { G2, G2_MORE } from './fixtures/g2-prompts'
 import { REFUSED_ENVIRONMENT, MISSING_REMOTE, BEFORE_YOU_STOP_COLON, WAIT_BEFORE_SUBMIT, THREE_BEFORE_YOU_STOP, TWO_BEFORE_YOU_STOP, GUARD_REFUSAL, PAUSED_WORK_CAUSE, STOP_SHAPES } from './fixtures/stop-shapes'
 
 // Every test starts with the session's working folder a Unix path, so what the suite reads does not
@@ -588,11 +589,11 @@ test('the brief keeps every judgment line word for word and stays under its word
     'takes none of it on the builder\'s word',
     'the owner pushes it off the easy option and onto the right one; you do the same, through the message you write for the owner to send',
     'Everything the agent wrote is a claim until the record itself shows it.',
-    'What shows that the product works and is good is someone opening the real thing and using it',
-    'A test, check or script the agent wrote for its own work, and passed, shows only that its own check passes; it never shows that the product is good or is what the owner wanted.',
+    'That the result works for its user, or is good, is shown only by someone opening the real thing and using it as its user would',
+    'A test, check, review or script passing shows only that it passed; one the agent wrote for its own work shows only that its own check passes, never that the result works, is good, or is what the owner wanted.',
     'The owner\'s standard is the best work its trade can produce',
     'You judge the work itself against that standard, not only whether the agent did what it said.',
-    'The agent\'s reasons for its choices are claims too, and so are its estimates of time, cost and risk; its account of what a helper did is a claim that only the helper\'s own record can show.',
+    'The agent\'s account of what it did, found or checked, its reasons for its choices, and its estimates of time, cost and risk are claims until the record shows them; its account of what a helper did is a claim that only the helper\'s own record can show.',
     'One Claude finding another Claude\'s choices reasonable is the failure you exist to prevent.',
     'You never borrow the agent\'s wording, its framing, its menu of options or its offers, and you are never the agent\'s protector.',
     'It includes what a serious owner in that position plainly wants without saying it: the result as good as the best in its trade would make it, the work shown to work by someone using the real thing, nothing left broken, nothing dropped quietly, code fit to be public when the work is public, and no effort spent on checks or process the result does not need.',
@@ -610,7 +611,7 @@ test('the brief keeps every judgment line word for word and stays under its word
     'The result is the thing, not a document about the thing.',
     'the whole result, on the newest build, running where the owner uses it, with nothing left for the owner and nothing left for a next session',
     'Never call the session finished, and never say the agent should stop, while a condition of "done" is open and the agent could still move it.',
-    'is "not shown", and the message asks the agent for the proof',
+    'What is installed, deployed or running is "not shown" until the record holds proof from outside the agent\'s word, and the message asks the agent for that proof.',
     'whether it is completing the objective, and properly; what it is doing wrong; what it has put off, shrunk, dropped, or called done without showing; what it claims that the record does not show; whether it is taking the easy way instead of the right one; and whether the owner\'s money is going into the wrong target',
     '1. The whole result is delivered, not part of it.',
     '2. It is shown to work by someone opening the real thing, using it and trying to break it, not by the agent\'s own checks.',
@@ -623,7 +624,7 @@ test('the brief keeps every judgment line word for word and stays under its word
     'The owner does no step of the job themselves, ever.',
     'Only two things ever come to the owner: a question about what the owner wants, and the message to send.',
     'By checking, not believing.',
-    'Never report "not shown" as a failure.',
+    'When the agent admits a failure, say what it means for the owner and how far it goes; the admission needs no proof.',
     'Plainly, without hedging.',
     'never hide a blind spot behind a confident answer',
     'Fairly. Say so when the agent is right, once you have checked.',
@@ -632,8 +633,7 @@ test('the brief keeps every judgment line word for word and stays under its word
     'how much of what the agent and its helpers do makes the product better, and how much goes into self-proving pieces',
     'tests, reviews and planning are work on the product',
     'that is the owner\'s money on the wrong target, whatever routine or brief the agent says asks for it',
-    'the sign-off the message asks for is a hands-on look at the real thing by someone who did not build it',
-    'by someone who did not build it; a test or a review never stands in for it.',
+    '"Not shown" is not a failure: say it plainly, and have the message ask for the proof "What counts as shown" names.',
     'Long is a figure, not an impression',
     'Keeping the owner\'s goal, questioning the route.',
     'Never change the owner\'s goal quietly, and never obey quietly.',
@@ -648,7 +648,7 @@ test('the brief keeps every judgment line word for word and stays under its word
     expect(b).toContain(line)
     expect(w).toContain(line)
   }
-  expect(b).toContain('It asks for the work that is missing, says what the best version looks like where the work falls short, asks for a hands-on look at the real thing where proof is missing (never a self-proving piece; a test or a review never stands in for it), and pushes the agent off the easy option onto the right one.')
+  expect(b).toContain('It asks for the work that is missing, says what the best version looks like where the work falls short, asks, where proof is missing, for the proof "What counts as shown" names (never a self-proving piece; a test or a review never stands in for a hands-on look)')
   expect(b).not.toContain('It asks for the proof of what is not shown')
   // 2,750 before 0.4.0; the owner is named in two words ("the owner") where one ("he") stood, about 90 more.
   const words = (s: string) => s.split(/\s+/).filter(Boolean).length
@@ -663,14 +663,18 @@ test('the brief keeps every judgment line word for word and stays under its word
   // (4,024 by that measure before it: 3,787 of task and 237 of system prompt); the rules said again
   // after the record and the request's opening add about 110 words, the deleted patch sentence and
   // the standing line said once in place of twice take about 40 off.
-  expect(words(b)).toBeLessThan(4150)
+  // 4,360 since prompt group 3 (4,122 before it, 4,331 after): the four states defined once
+  // (REP_STATES, in place of the mark line) and the one standard of proof by kind (REP_SHOWN_BODY),
+  // with the mind bullet and the message specs pointing to it rather than restating it.
+  expect(words(b)).toBeLessThan(4360)
   expect(b).toContain(LOOK_RULE)
   expect(w).toContain(LOOK_RULE)
   // 3,350 for the Heads up alone: it carries LIST_GAP_RULE, about 130 words, and the briefing does not.
   // 4,050 since G44, for LOOK_RULE as above. 4,080 since the sign-off by the record (third Codex
   // review of #53): LOOK_RULE says how a look names its run, about 15 words.
   // 4,230 since prompt group 2, measured as the briefing's is above (4,129 by that measure before it).
-  expect(words(w)).toBeLessThan(4230)
+  // 4,420 since prompt group 3, as for the briefing (4,200 before it, 4,392 after).
+  expect(words(w)).toBeLessThan(4420)
   // The bookkeeping the code enforces is gone from the brief.
   for (const gone of ['under the rule given with the conditions', 'sent after #', 'never the number of a draft', 'A later message replaces an earlier one only where the owner says so', 'Each condition of "done" stays open until the conversation shows it']) {
     expect(b).not.toContain(gone)
@@ -728,7 +732,7 @@ test('the brief and the check write a message while any condition is open or not
   expect(brief).toContain('While any condition is open or not shown, or the work falls short of the best it could be, write the message: it asks for the work that is missing and says what better looks like;')
   expect(brief).toContain('It never accepts a test or a review in place of that look, never asks for a self-proving piece')
   expect(brief).not.toContain('never asks for new tests')
-  expect(check).toContain('never a self-proving piece, and a test or a review never stands in for it')
+  expect(check).toContain('never a self-proving piece, and a test or a review never stands in for that look')
   expect(check).not.toContain('never new tests')
   expect(check).toContain('4. Look at the work itself, the way the owner\'s best adviser would.')
   expect(brief).toContain('Leave the message empty only when every condition is shown or closed, or no objective is held and there is nothing worth sending.')
@@ -823,7 +827,7 @@ test('the fixed text ends on the held step and says no stop itself; the next ste
 test('asked once more, the brief is told an empty message counts too', () => {
   const text = askAgain(OPEN_JOB_OPEN)
   expect(text).toContain('Your first answer said the agent should stop, gave no verdict, called the work finished, or said the work is going well, while these conditions of done are still open:')
-  expect(text).toContain('None of these may stand while any of them is open. An empty message counts too: while any of these is open, write the message to the agent, asking for the proof of each.')
+  expect(text).toContain('None of these may stand while any of them is open. An empty message counts too: while any of these is open, write the message to the agent, asking for the proof each still needs.')
 })
 
 test('an empty message still passes when every condition is shown or closed, and when no objective is written; a usable card with open conditions passes untouched', () => {
@@ -2009,13 +2013,36 @@ test('rule: REP_SYSTEM is the one fixed system prompt of the watch, the briefing
   expect(count(watchPrompt(m, 'stop'), rep.WALK_RULE)).toBe(1)
   expect(count(briefPrompt(m), rep.WALK_RULE)).toBe(1)
   // Own words takes the same strings, never a copy that could drift.
-  for (const s of [rep.REP_WHO, rep.REP_STAKE, rep.REP_SHOWN_BODY, rep.REP_UNSEEN, rep.REP_MARK, rep.REP_WRITE]) {
+  for (const s of [rep.REP_WHO, rep.REP_STAKE, rep.REP_SHOWN_BODY, rep.REP_UNSEEN, rep.REP_STATES, rep.REP_WRITE]) {
     expect(count(OWN_WORDS_SYSTEM, s)).toBe(1)
     expect(count(rep.REP_SYSTEM, s)).toBe(1)
     expect(count(`${OWN_WORDS_SYSTEM}\n\n${own}`, s)).toBe(1)
   }
   expect(OWN_WORDS_SYSTEM).not.toMatch(/\bconversation\b/)
   expect(own).not.toMatch(/\bconversation\b/)
+})
+
+test('rule: every read, the check, the writer and the own-words call hold one standard of proof (prompt group 3): what counts as shown, the four states, the message asking for the proof that standard names, and a quality condition a person would notice', () => {
+  const o = { ...OBJ_FIXTURE, done: OPEN_JOB_OPEN }
+  const m: Memory = { objective: o, owner: [om('make it serious')], past: [], seen: [], others: [] }
+  const card = { verdict: 'continue', shown: [], closed: [], well: '', stands: 'Both parts are built.', means: 'Nothing shows it running.', leftOut: ['the laptop'], next: 'Show it.', message: 'Show it running.', does: 'Makes the agent show it.' }
+  const named = 'the proof "What counts as shown" names'
+  // The states: shown only by the standard, in the record, never on the agent's word.
+  expect(rep.REP_STATES).toContain("- shown: the record itself holds the proof, by what counts as shown, never the agent's word.")
+  for (const sys of [REP_SYSTEM, OWN_WORDS_SYSTEM]) expect(sys).toContain(rep.REP_STATES)
+  for (const t of [watchPrompt(m, 'step'), watchPrompt(m, 'stop'), briefPrompt(m)]) expect(t).toContain("Mark a condition shown only by what counts as shown, in the record itself, never on the agent's word; mark one closed only by the number of the owner's own message that closes it.")
+  // Not shown is said plainly, never as a failure, and the message asks for the proof the standard names.
+  expect(REP_SYSTEM).toContain(`"Not shown" is not a failure: say it plainly, and have the message ask for ${named}.`)
+  expect(REP_SYSTEM).toContain('What is installed, deployed or running is "not shown" until the record holds proof from outside the agent\'s word')
+  expect(briefPrompt(m)).toContain(`where proof is missing, it asks for ${named}: a fact's command and what it printed, or a hands-on look at the real thing`)
+  expect(askAgain(OPEN_JOB_OPEN)).toContain('asking for the proof each still needs. Look at the record again and measure each one by what counts as shown:')
+  expect(ownWordsPrompt(m, OPEN_JOB_OPEN, card as never)).toContain("and where proof is missing, the proof that would show it: a fact's command and what it printed, or a hands-on look at the real thing")
+  const check = checkPrompt({ sessionId: 's', cwd: '/w', copy: '/c', reading: objectiveText(o), conditions: o.done, shown: [], owner: m.owner, brief: card as never, writtenAt: '10:00', from: 1, unanswered: [], guarded: [] } as never)
+  expect(check).toContain(`where proof is missing it asks for ${named}: a fact's command and what it printed, or a hands-on look at the real thing`)
+  // The writer: a quality condition names what a person using the result would notice, right after one claim per condition.
+  expect(OBJECTIVE_SYSTEM).toContain(`${ONE_CLAIM} ${rep.QUALITY_CONDITION} Write a held condition's kind back as held.`)
+  expect(rep.QUALITY_CONDITION).toContain('names what a person using it would notice, in the owner\'s terms')
+  expect(OBJECTIVE_SYSTEM).toContain("only proof from outside the agent's word can show it, such as what is installed, deployed or running")
 })
 
 test('rule: the rep speaks of the owner, never by a pronoun: no brief, writer prompt, check brief or own-words prompt calls the owner "he", "him" or "his", the writer is told to write the result as the thing, and the card is told to write to the owner as you', () => {
@@ -8507,7 +8534,8 @@ describe("Task 6: the writer's rule and the approved line", () => {
     // 100 more for writing each condition after its kind, "works:" or "fact:", and a held kind back as held (86 characters).
     // 50 more for one claim per condition (31 characters).
     // 300 more for the shape of a fact, so the writer's own facts read as facts (fourth live test of 18 Nov 2026; 257 characters).
-    expect(OBJECTIVE_SYSTEM.length).toBeLessThanOrEqual(SYSTEM_BEFORE + 4950)
+    // 500 more for a quality condition naming what a person using the result would notice (prompt group 3; 457 characters).
+    expect(OBJECTIVE_SYSTEM.length).toBeLessThanOrEqual(SYSTEM_BEFORE + 5450)
   })
 
   test("fails today: what the agent's turn says it did, did not do or holds back from, and any limit it sets on its own work, is its account and sets no condition or limit except as a step of a plan the owner approved; the unstated wants stay", () => {
@@ -8848,7 +8876,7 @@ test('rule: Brief me, read 1 with no message while work is open: read 2 is told 
   await ui.unmount()
   expect(prompts).toHaveLength(2)
   expect(prompts[0]).not.toContain('An empty message counts too')
-  expect(prompts[1]).toContain('An empty message counts too: while any of these is open, write the message to the agent, asking for the proof of each.')
+  expect(prompts[1]).toContain('An empty message counts too: while any of these is open, write the message to the agent, asking for the proof each still needs.')
   expect(asks).toHaveLength(0)
   expect(rec()?.lastBrief).toMatchObject({ message: 'Show me each session finishing.', reads: 2, own: 'skipped' })
 })
@@ -9161,7 +9189,7 @@ test('rule: a briefing that marks a condition shown moves it, and stop is allowe
     { text: 'two sessions pushed their work', state: 'open', by: '', kind: 'fact' },
   ])
   expect(prompts).toHaveLength(2)
-  expect(prompts[0]).toMatch(/mark one closed only with the number of a message of the owner's own that closes it\./)
+  expect(prompts[0]).toMatch(/mark one closed only by the number of the owner's own message that closes it\./)
   expect(again(prompts[1])).toMatch(/still open:\n- fact: two sessions pushed their work\n\n/)
   expect(await ui.find({ type: 'Text', text: /^Next: The job is still open: two sessions pushed their work\./ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /All done/ })).toBeUndefined()
@@ -16077,14 +16105,14 @@ describe('the call log: its pieces', () => {
     expect(rep.parseReplayArgs('this --variant frame')).toEqual({ path: 'this', last: rep.REPLAY_LAST, times: 1, variant: ['frame'] })
     expect(rep.parseReplayArgs('this --variant no-think,frame')).toEqual({ path: 'this', last: rep.REPLAY_LAST, times: 1, variant: ['no-think', 'frame'] })
     for (const bad of ['this --variant', 'this --variant wat', 'this --variant frame,wat', 'this --variant ,']) expect(rep.parseReplayArgs(bad)).toEqual({ error: rep.REPLAY_USAGE })
-    expect(rep.PROMPT_EDITS).toEqual(['frame', 'no-think', 'rep-system', 'end-line'])
+    expect(rep.PROMPT_EDITS).toEqual(['frame', 'no-think', 'rep-system', 'end-line', 'proof'])
     // A base arm in place of "as saved": edits strictly within the variant's.
     expect(rep.parseReplayArgs('all --variant build --base frame,no-think')).toEqual({ path: 'all', last: rep.REPLAY_LAST, times: 1, variant: [...rep.PROMPT_EDITS], base: ['frame', 'no-think'] })
     expect(rep.parseReplayArgs('this --base frame --variant frame,rep-system')).toEqual({ path: 'this', last: rep.REPLAY_LAST, times: 1, variant: ['frame', 'rep-system'], base: ['frame'] })
     for (const bad of ['this --base frame', 'this --variant frame --base frame', 'this --variant frame --base no-think', 'this --variant build --base build', 'this --variant frame,no-think --base wat', 'this --variant frame,no-think --base', 'this --variant no-think,frame --base frame,no-think']) {
       expect(rep.parseReplayArgs(bad)).toEqual({ error: rep.REPLAY_USAGE })
     }
-    expect(rep.REPLAY_USAGE).toContain('[--variant build|frame|no-think|rep-system|end-line] [--base frame|no-think|rep-system|end-line] [--now]')
+    expect(rep.REPLAY_USAGE).toContain('[--variant build|frame|no-think|rep-system|end-line|proof] [--base frame|no-think|rep-system|end-line|proof] [--now]')
     // Across folders the calls are taken by time, whatever folder each sits in.
     const a = `${SID}/${rep.callFileName(3, 0, 'watch')}`
     const b = `other/${rep.callFileName(1, 0, 'watch')}`
@@ -16135,18 +16163,25 @@ describe('the call log: its pieces', () => {
     }
     // Every branch of what the rep knows: no objective, a condition the check reopened, cover
     // lines, an approved plan, the size known, a last briefing and a sent message, all shown.
-    for (const x of G1_MORE) {
+    for (const [i, x] of G1_MORE.entries()) {
       const mm = x.m as unknown as Memory
       const open = x.open as unknown as Condition[]
-      const more: Array<[rep.CallKind, string, string]> = [
-        ['watch', x.watchStep, watchPrompt(mm, 'step')],
-        ['watch', x.watchStop, watchPrompt(mm, 'stop')],
-        ['watch', x.watchNote, watchPrompt(mm, 'note')],
-        ['brief', x.brief, briefPrompt(mm)],
-        ['ask-again', `${x.brief}\n\n${x.askAgain}`, rep.endAsked(`${briefPrompt(mm)}\n\n${askAgain(open)}`)],
+      const g2 = G2_MORE[i]
+      if (g2 === undefined) throw new Error('G2_MORE is short')
+      const more: Array<[rep.CallKind, string, string, string]> = [
+        ['watch', x.watchStep, g2.watchStep, watchPrompt(mm, 'step')],
+        ['watch', x.watchStop, g2.watchStop, watchPrompt(mm, 'stop')],
+        ['watch', x.watchNote, g2.watchNote, watchPrompt(mm, 'note')],
+        ['brief', x.brief, g2.brief, briefPrompt(mm)],
+        ['ask-again', `${x.brief}\n\n${x.askAgain}`, g2.askAgain, rep.endAsked(`${briefPrompt(mm)}\n\n${askAgain(open)}`)],
       ]
-      for (const [kind, then, now] of more) {
-        const e = rep.editSaved(kind, G1.system, saved(then), ['rep-system', 'end-line'])
+      for (const [kind, then, g2Sent, now] of more) {
+        // rep-system and end-line give exactly what the build after group 2 sent; with proof, this build's.
+        const e2 = rep.editSaved(kind, G1.system, saved(then), ['rep-system', 'end-line'])
+        if ('why' in e2) throw new Error(e2.why)
+        expect(e2.system).toBe(G2.system)
+        expect(rep.joinBlocks(e2.prompt as rep.PromptBlock[])).toBe(rep.joinBlocks(rep.recordPrompt([], g2Sent)))
+        const e = rep.editSaved(kind, G1.system, saved(then), ['rep-system', 'end-line', 'proof'])
         if ('why' in e) throw new Error(e.why)
         expect(e.system).toBe(rep.REP_SYSTEM)
         expect(rep.joinBlocks(e.prompt as rep.PromptBlock[])).toBe(rep.joinBlocks(rep.recordPrompt([], now)))
@@ -16155,7 +16190,7 @@ describe('the call log: its pieces', () => {
         // alone matches the old texts without it and asks for it again after the new ones.
         const ended = rep.editSaved(kind, G1.system, saved(rep.endAsked(then)), ['rep-system'])
         if ('why' in ended) throw new Error(ended.why)
-        expect(rep.joinBlocks(ended.prompt as rep.PromptBlock[])).toBe(rep.joinBlocks(rep.recordPrompt([], now)))
+        expect(rep.joinBlocks(ended.prompt as rep.PromptBlock[])).toBe(rep.joinBlocks(rep.recordPrompt([], g2Sent)))
         // Without the end line and without its edit, the new texts go without it too.
         const bare = rep.editSaved(kind, G1.system, saved(then), ['rep-system'])
         if ('why' in bare) throw new Error(bare.why)
@@ -16191,12 +16226,70 @@ describe('the call log: its pieces', () => {
     // Never sent unchanged under the variant's name.
     expect(rep.editSaved('watch', rep.REP_SYSTEM, rep.joinBlocks(rep.recordPrompt([], watchPrompt(m, 'step'))), [...rep.PROMPT_EDITS])).toEqual({ why: 'the old frame is not in it' })
     expect(rep.editSaved('brief', PRE_G1.system, rep.joinBlocks(saved(PRE_G1.brief)), ['no-think'])).toEqual({ why: 'no edit of this variant applies to a brief call' })
-    expect(rep.editSaved('objective', OBJECTIVE_SYSTEM, 'x', [...rep.PROMPT_EDITS])).toEqual({ why: 'no edit of this variant applies to a objective call' })
+    // An objective call this build saved: only group 3's edit applies to one, and it refuses this build's system prompt.
+    expect(rep.editSaved('objective', OBJECTIVE_SYSTEM, 'x', [...rep.PROMPT_EDITS])).toEqual({ why: "its system prompt is not group 2's" })
     expect(rep.editSaved('watch', 'some other system', rep.joinBlocks(saved(PRE_G1.watchStep)), ['frame'])).toEqual({ why: "its system prompt is not the record read's" })
     // The frame quoted inside the record is the record's: it is left there, and a task without it is skipped.
     const quoted = rep.recordPrompt([{ role: 'user', text: PRE_G1.watchStep, toolUses: [] }], watchPrompt(m, 'step'))
     expect(rep.editSaved('watch', PRE_G1.system, rep.joinBlocks(quoted), ['frame'])).toEqual({ why: 'the old frame is not in it' })
     expect(rep.editSaved('watch', PRE_G1.system, 'no fence here', ['frame'])).toEqual({ why: 'it has no record fence' })
+  })
+
+  test('rule: group 3\'s edit (proof) turns each call the build after group 2 sent into exactly what this build sends, and back', () => {
+    // The system prompts group 2 sent, rebuilt from this build's, are word for word those that build sent.
+    expect(rep.preG3System('watch')).toBe(G2.system)
+    expect(rep.preG3System('brief')).toBe(G2.system)
+    expect(rep.preG3System('objective')).toBe(G2.objectiveSystem)
+    expect(rep.preG3System('own-words')).toBe(G2.ownWordsSystem)
+    expect(G2.system).not.toContain(rep.REP_STATES)
+    expect(G2.objectiveSystem).not.toContain(rep.QUALITY_CONDITION)
+    expect(G2.ownWordsSystem).not.toContain(rep.REP_STATES)
+    const saved = (task: string) => rep.recordPrompt([], task).map((b, i, all) => (i === 0 && all.length > 1 ? { ...b, cache: true as const } : b))
+    for (const [i, x] of G1_MORE.entries()) {
+      const mm = x.m as unknown as Memory
+      const open = x.open as unknown as Condition[]
+      const g2 = G2_MORE[i]
+      if (g2 === undefined) throw new Error('G2_MORE is short')
+      const card = parseBrief('verdict: continue\nwell:\nstands: Both parts are built.\nmeans: The build is made and nothing shows it running.\nleft:\n- the laptop\nnext: Show the two sessions finishing.\nmessage:\nend\ndoes: Makes the agent show the sessions.')
+      const recorded: Array<[rep.CallKind, string, string]> = [
+        ['watch', g2.watchStep, watchPrompt(mm, 'step')],
+        ['watch', g2.watchStop, watchPrompt(mm, 'stop')],
+        ['watch', g2.watchNote, watchPrompt(mm, 'note')],
+        ['brief', g2.brief, briefPrompt(mm)],
+        ['ask-again', g2.askAgain, rep.endAsked(`${briefPrompt(mm)}\n\n${askAgain(open)}`)],
+      ]
+      for (const [kind, then, now] of recorded) {
+        expect(then).not.toBe(now)
+        const e = rep.editSaved(kind, G2.system, saved(then), ['proof'])
+        if ('why' in e) throw new Error(e.why)
+        expect(e.system).toBe(REP_SYSTEM)
+        expect(rep.joinBlocks(e.prompt as rep.PromptBlock[])).toBe(rep.joinBlocks(rep.recordPrompt([], now)))
+        // The record blocks and their cache marks are left as they were saved.
+        expect((e.prompt as rep.PromptBlock[]).slice(0, -1)).toEqual(saved(then).slice(0, -1))
+        // Saved joined, it comes back joined.
+        const joined = rep.editSaved(kind, G2.system, rep.joinBlocks(saved(then)), ['proof'])
+        if ('why' in joined) throw new Error(joined.why)
+        expect(joined.prompt).toBe(rep.joinBlocks(rep.recordPrompt([], now)))
+      }
+      const own = rep.editSaved('own-words', G2.ownWordsSystem, g2.ownWords, ['proof'])
+      if ('why' in own) throw new Error(own.why)
+      expect(own).toEqual({ system: OWN_WORDS_SYSTEM, prompt: ownWordsPrompt(mm, open, card) })
+      expect(g2.ownWords).not.toBe(ownWordsPrompt(mm, open, card))
+      // The objective's task is the same in both builds; only its system prompt changed.
+      const obj = rep.editSaved('objective', G2.objectiveSystem, g2.objective, ['proof'])
+      if ('why' in obj) throw new Error(obj.why)
+      expect(obj).toEqual({ system: OBJECTIVE_SYSTEM, prompt: objectivePrompt({ ...mm }) })
+    }
+    // A call this build saved, or one whose old texts are changed, is skipped with the reason.
+    expect(rep.editSaved('objective', OBJECTIVE_SYSTEM, 'x', ['proof'])).toEqual({ why: "its system prompt is not group 2's" })
+    expect(rep.editSaved('brief', REP_SYSTEM, saved(briefPrompt(G1_MORE[0]!.m as unknown as Memory)), ['proof'])).toEqual({ why: "its system prompt is not group 2's" })
+    const g2b = G2_MORE[0]!.brief
+    expect(rep.editSaved('brief', G2.system, saved(g2b.replace('it asks for a hands-on look', 'it asks for a look')), ['proof'])).toEqual({ why: "group 2's texts are not each in it once" })
+    const step = G2_MORE[0]!.watchStep
+    expect(rep.editSaved('watch', G2.system, saved(`${step}\n\n${step}`), ['proof'])).toEqual({ why: "group 2's texts are not each in it once" })
+    expect(rep.editSaved('own-words', G2.ownWordsSystem, 'x', ['proof'])).toEqual({ why: "group 2's texts are not each in it once" })
+    // Only proof applies to the objective and own-words calls.
+    expect(rep.editSaved('objective', G2.objectiveSystem, G2_MORE[0]!.objective, ['rep-system'])).toEqual({ why: 'no edit of this variant applies to a objective call' })
   })
 
   test('rule: the replay\'s rows and totals name the read, the gate, the words and the tokens', () => {
@@ -16481,10 +16574,10 @@ describe('the call log: saving, replaying, counting and removing', () => {
     const base = old.replace(/\.json$/, '')
     const kept = (tail: string) => [...d.files.keys()].filter(k => k.startsWith(`${CALLS_ROOT}/${OTHER}/replays/${base}.`) && k.endsWith(tail))
     const runOf = (k: string) => k.slice(`${CALLS_ROOT}/${OTHER}/replays/${base}.`.length).split('.')[0] ?? ''
-    expect(kept('.high.frame+no-think+rep-system+end-line.as-saved-1.txt').length).toBe(1)
-    expect(d.files.get(kept('.high.frame+no-think+rep-system+end-line.as-saved-1.txt')[0] ?? '')).toBe(`${HOLDS}\n(as saved)`)
-    expect(d.files.get(kept('.high.frame+no-think+rep-system+end-line.variant-2.txt')[0] ?? '')).toBe(withEnd(`${HOLDS}\n(variant)`))
-    const first = runOf(kept('.high.frame+no-think+rep-system+end-line.as-saved-1.txt')[0] ?? '')
+    expect(kept('.high.frame+no-think+rep-system+end-line+proof.as-saved-1.txt').length).toBe(1)
+    expect(d.files.get(kept('.high.frame+no-think+rep-system+end-line+proof.as-saved-1.txt')[0] ?? '')).toBe(`${HOLDS}\n(as saved)`)
+    expect(d.files.get(kept('.high.frame+no-think+rep-system+end-line+proof.variant-2.txt')[0] ?? '')).toBe(withEnd(`${HOLDS}\n(variant)`))
+    const first = runOf(kept('.high.frame+no-think+rep-system+end-line+proof.as-saved-1.txt')[0] ?? '')
     expect(first).toMatch(/^\d{13}$/)
     expect([...d.files.keys()].filter(k => k.includes('/replays/')).length).toBe(4)
     // Another run of the same call with other settings keeps its replies apart.
@@ -16494,7 +16587,7 @@ describe('the call log: saving, replaying, counting and removing', () => {
     // The same run again, with the same settings, keeps the earlier replies and adds its own.
     await runCommand($, 'owner-rep-replay', `${CALLS_ROOT}/${OTHER}/${old} --variant no-think --effort low`)
     expect(kept('.low.no-think.as-saved-1.txt').length).toBe(2)
-    expect(kept('.high.frame+no-think+rep-system+end-line.as-saved-1.txt').map(runOf)).toEqual([first])
+    expect(kept('.high.frame+no-think+rep-system+end-line+proof.as-saved-1.txt').map(runOf)).toEqual([first])
     expect(new Set([...d.files.keys()].filter(k => k.includes('/replays/')).map(runOf)).size).toBe(3)
     expect([...d.files.keys()].filter(k => k.includes('/replays/')).length).toBe(8)
   })
@@ -16544,12 +16637,12 @@ describe('the call log: saving, replaying, counting and removing', () => {
     expect(out).toMatch(/\n  base 1 watch: answered/)
     expect(out).not.toMatch(/as saved/)
     expect(out).toMatch(/^base: 1 calls;.*\(base frame,no-think\)$/m)
-    expect(out).toMatch(/^variant: 1 calls;.*\(variant frame,no-think,rep-system,end-line\)$/m)
+    expect(out).toMatch(/^variant: 1 calls;.*\(variant frame,no-think,rep-system,end-line,proof\)$/m)
     const base = old.replace(/\.json$/, '')
     const kept = (tail: string) => [...d.files.keys()].filter(k => k.startsWith(`${CALLS}/replays/${base}.`) && k.endsWith(tail))
-    expect(kept('.high.frame+no-think~frame+no-think+rep-system+end-line.base-1.txt').length).toBe(1)
-    expect(d.files.get(kept('.high.frame+no-think~frame+no-think+rep-system+end-line.base-1.txt')[0] ?? '')).toBe(withEnd(`${HOLDS}\n(base)`))
-    expect(d.files.get(kept('.high.frame+no-think~frame+no-think+rep-system+end-line.variant-1.txt')[0] ?? '')).toBe(withEnd(`${HOLDS}\n(variant)`))
+    expect(kept('.high.frame+no-think~frame+no-think+rep-system+end-line+proof.base-1.txt').length).toBe(1)
+    expect(d.files.get(kept('.high.frame+no-think~frame+no-think+rep-system+end-line+proof.base-1.txt')[0] ?? '')).toBe(withEnd(`${HOLDS}\n(base)`))
+    expect(d.files.get(kept('.high.frame+no-think~frame+no-think+rep-system+end-line+proof.variant-1.txt')[0] ?? '')).toBe(withEnd(`${HOLDS}\n(variant)`))
     expect([...d.files.keys()].filter(k => k.includes('/replays/')).length).toBe(2)
   })
 

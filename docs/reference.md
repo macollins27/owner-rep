@@ -138,7 +138,7 @@ call writes (below):
    answer is asked once more (`askAgain`, naming the open conditions), and that answer
    passes the same gate. When it is refused too, or does not answer, one plain
    `$.model.complete` (`OBJECTIVE_MODEL`, high effort, `OWN_WORDS_SYSTEM`: built from the same
-   named strings as `REP_SYSTEM` (`REP_WHO`, `REP_STAKE`, `REP_SHOWN_BODY`, `REP_UNSEEN`, `REP_MARK`,
+   named strings as `REP_SYSTEM` (`REP_WHO`, `REP_STAKE`, `REP_SHOWN_BODY`, `REP_UNSEEN`, `REP_STATES`,
    `REP_WRITE`), so each rule has one source, and one line against reproducing a secret, a key, a
    password or personal data it is shown; `OWN_WORDS_MAX_TOKENS` 64,000, `MAX_REPLY_TOKENS`, the engine's ceiling, `OWN_WORDS_TIMEOUT_MS` two minutes) over
    `ownWordsPrompt` (the memory, the open conditions, what stands and what is left out)
@@ -360,7 +360,7 @@ call writes (below):
    text for all three, `REP_SECTIONS` joined: `REP_OPENING` (it has no tools and gives one answer),
    `REP_FORMAT`, "Why you exist" (`REP_WHO`, `REP_STAKE`), "The record" (`REP_FENCE`, then
    `REP_UNSEEN`: `STANDING_LINE` and `NOT_ASSESSED_RULE`), "What you measure against" with the six
-   expectations, "The conditions and their states" (`REP_MARK`), "What counts as shown", "The
+   expectations, "The conditions and their states" (`REP_STATES`: the four states, shown only by what counts as shown, in the record, never on the agent's word), "What counts as shown" (`REP_SHOWN_BODY`, the one standard every read, the check and the own-words call name: a fact by its command and what it printed, the result working or being good by a hands-on look at the real thing; a test, check, review or script passing shows only that it passed), "The
    objective stays open until it is completed", "What reaches the owner", "How you make up your mind", "How you write to the owner", and
    "Private data" (secrets, keys, passwords and personal data stay out of what it writes). Nothing
    per call goes into it, so it is the same bytes on every read. Its words keep three apart: "the
@@ -763,7 +763,7 @@ crashes" and "the file is saved; it is “usable”", all works, and the writers
 "sample.txt in the scratch folder is 13 bytes long, with no newline at the end" and "nothing
 from this job is committed or pushed", facts). The writer's prompt gives the shape of a fact,
 with one example. The
-writer's prompt asks for one claim per condition (`ONE_CLAIM`) beside its kinds.
+writer's prompt asks for one claim per condition (`ONE_CLAIM`) beside its kinds, then (`QUALITY_CONDITION`) that a condition about how good the result is name what a person using it would notice, in the owner's terms, with one example and nothing the owner would not plainly want. It writes what is installed, deployed or running as not shown, which the rep marks shown when the record holds proof from outside the agent's word.
 A `fact` moves shown on any where. A `works` condition, or one with no kind, moves shown only when
 `looksOf` finds, among every `look by <who>: <what>` in the where, one whose `who` (compared by
 `whoKey`, without case, curly apostrophes or a leading article) is the check (`CHECK_NAMES`) or a
@@ -995,7 +995,7 @@ what the replies were read as, and for cards the gate's rules (`passed` when non
 menu and `/help` (`command.describe`, `HIDDEN_COMMANDS`): `/owner-rep-counts` prints
 `countsText`, one line per kind and a `cards:` line; `/owner-rep-replay <call file, session folder,
 session id, "this" or "all"> [--kind k] [--last 1-50] [--effort low|medium|high|max] [--times 1-10]
-[--variant build|frame|no-think|rep-system|end-line] [--base frame|no-think|rep-system|end-line] [--now]` (`parseReplayArgs`, `REPLAY_USAGE`) takes a folder's last `--last`
+[--variant build|frame|no-think|rep-system|end-line|proof] [--base frame|no-think|rep-system|end-line|proof] [--now]` (`parseReplayArgs`, `REPLAY_USAGE`) takes a folder's last `--last`
 (`REPLAY_LAST`, 10) calls of the kind asked for, or with "all" the last of every session folder's
 calls together by when each was made (`replayPick`, `replayFiles`), rebuilds each from its parts (`savedCall`, which refuses one whose
 texts were not kept, one naming a text by anything but a fingerprint (`isSha`), so a call file
@@ -1009,11 +1009,17 @@ to what this build sends in their place (`editSaved`; `build` names every edit i
 with and sends group 1's record system prompt (`PRE_G2_RECORD_SYSTEM`), for a watch, brief or
 ask-again call; `no-think` drops the watch's line telling the model not to think it over;
 `rep-system` (`toRepSystem`, applied after those two) sends `REP_SYSTEM` and rebuilds the task
-from group 1's (the `PRE_G2_*` texts) as this build writes it: the rules moved out, the request
-opening "Based on the record above" with its restatement; a call that asks for `END_LINE` last
+from group 1's (the `PRE_G2_*` texts) as the build after prompt group 2 wrote it: the rules moved out, the request
+opening "Based on the record above" with its restatement (it builds this build's texts and undoes group 3's edit, so its arm stays group 2's); a call that asks for `END_LINE` last
 (`asksEnd`) is matched without it and asks for it again after the new texts; `end-line`, applied
 last, asks for `END_LINE` last (`endAsked`), for a watch, brief or ask-again call, and refuses a
-call that asks for it already. Every reply is read as its own prompt's build read it
+call that asks for it already. `proof` (`toProof`, applied after `rep-system`) moves a call the build after group 2 saved to
+prompt group 3's texts, for every kind: each pair in `G3_REP_SYSTEM`, `G3_OBJECTIVE_SYSTEM`,
+`G3_OWN_WORDS_SYSTEM` and `G3_TASK` is group 2's text, kept word for word, and the text this build
+sends in its place; the call's system prompt must be group 2's (`preG3System`, this build's with
+every pair undone), and each old text must be in it exactly once (`swapped`), or the call is not
+sent. The objective and own-words calls have no record, so their whole prompt is the task and only
+`proof` applies to them. Every reply is read as its own prompt's build read it
 (`readAsAsked`): a reply to a prompt that never asked for the end line is not taken as cut for
 lacking it, so an old call replayed as saved is read as it was then. With `--now` (`replayNow`)
 each call, in every arm, goes as this build would send it, at `MAX_REPLY_TOKENS` and with

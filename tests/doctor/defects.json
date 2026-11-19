@@ -4354,5 +4354,83 @@
     "breaks": "A hyphened word with a verb folded into it stands as one of a noun's own words, so \"the converts-to-uppercase script is committed\" reads as a fact and closes on the builder's own run.",
     "patch": "fact-folded-clause-kept.patch",
     "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "proof-back-skipped",
+    "breaks": "The replay's rep-system edit sends this build's group 3 texts, so its arm is no longer what the build after group 2 sent and a base of rep-system,end-line measures nothing.",
+    "patch": "proof-back-skipped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "proof-swap-many",
+    "breaks": "Group 3's replay edit swaps an old text found more than once, so a call it cannot match word for word is sent edited rather than skipped.",
+    "patch": "proof-swap-many.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "proof-system-unchecked",
+    "breaks": "Group 3's replay edit takes any system prompt, so a call this build saved is sent as if group 2 had saved it.",
+    "patch": "proof-system-unchecked.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "proof-own-words-spec-kept",
+    "breaks": "Group 3's replay edit leaves the own-words call's old proof spec, so the own-words variant is not what this build sends.",
+    "patch": "proof-own-words-spec-kept.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "states-shown-agent-word",
+    "breaks": "The shown state no longer says the agent's word never shows a condition.",
+    "patch": "states-shown-agent-word.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "deciding-shown-standard-dropped",
+    "breaks": "The reads mark a condition shown where the record shows it, not by what counts as shown.",
+    "patch": "deciding-shown-standard-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "not-shown-failure-back",
+    "breaks": "The reads are no longer told \"not shown\" is not a failure, so a card can report missing proof as a failure.",
+    "patch": "not-shown-failure-back.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "brief-proof-hands-on-only",
+    "breaks": "The brief's well line asks only for a hands-on look, never a fact's command and what it printed, so a fact is never asked for its proof.",
+    "patch": "brief-proof-hands-on-only.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "ask-again-measure-dropped",
+    "breaks": "The second read is no longer told to measure each open condition by what counts as shown.",
+    "patch": "ask-again-measure-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "own-words-proof-hands-on-only",
+    "breaks": "The own-words message asks only for a hands-on look where proof is missing, never a fact's command and what it printed.",
+    "patch": "own-words-proof-hands-on-only.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "check-proof-hands-on-only",
+    "breaks": "The check's message asks only for a hands-on look where proof is missing, never a fact's command and what it printed.",
+    "patch": "check-proof-hands-on-only.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "quality-condition-dropped",
+    "breaks": "The objective writer is not told a quality condition names what a person using the result would notice, so it writes \"as good as the best in its trade\", which never closes.",
+    "patch": "quality-condition-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "objective-not-shown-old",
+    "breaks": "The objective writer still calls what is installed or running a thing a conversation cannot show, so the rep never marks it shown when the record holds the proof.",
+    "patch": "objective-not-shown-old.patch",
+    "fixed": "tested 2026-11-18"
   }
 ]

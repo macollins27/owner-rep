@@ -1,8 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index c342914..f7202b4 100644
+index fa5a469..8ac7a66 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -6309,7 +6309,7 @@ function toRepSystem(kind: CallKind, system: string, task: string): { system: st
+@@ -6773,7 +6773,7 @@ function toRepSystem(kind: CallKind, system: string, task: string): { system: st
    after += PRE_G2_STANDING.length
    const sizeAt = memory.indexOf("\n\nThe conversation's size: ", after)
    if (sizeAt < 0) return lost
@@ -10,4 +10,4 @@ index c342914..f7202b4 100644
 +  const known = `## What you already know\n\nThe objective of this job, as the rep holds it:\n${memory.slice(top.length, markAt)}${memory.slice(after, sizeAt)}\n\nThe session's size: ${memory.slice(sizeAt + "\n\nThe conversation's size: ".length)}`
    return { system: REP_SYSTEM, task: `${known}\n\n${request}` }
  }
- export type Edited = { system: string; prompt: string | PromptBlock[] } | { why: string }
+ // Prompt group 3 (G5, G10, G12): each text the build after group 2 sent that this build words

@@ -196,8 +196,8 @@ expectations for every job:
 
 The rep also watches where the work goes. When more of a session goes into the agent checking
 its own work than into the product, it says so, and the message it writes for you never asks
-for more tests, scripts or reports: where proof is missing it asks for a hands-on look at the
-real thing.
+for more tests, scripts or reports: where proof is missing it asks for the proof that fits, a
+command and what it printed for a fact, or a hands-on look at the real thing for whether it works.
 
 That the work does what it should is signed off only by someone who did not build it: a helper
 or a read-only Codex run that changed nothing, or the rep's own check, opening the real thing and

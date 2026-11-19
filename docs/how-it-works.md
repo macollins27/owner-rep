@@ -137,9 +137,10 @@ listed to the model as closed, and the old job's messages leave what the writer 
 briefing are shown. The card shows when and why the objective last moved, and the row shows
 the result.
 
-Each condition is in one of four states: open; not shown, for a thing a conversation cannot
-show by itself, such as whether a build is installed or a service runs the newest code;
-shown; or closed by the owner. Open and not shown both count as open. The writer sees nothing of the conversation but the agent's last words before each of the owner's messages, marked as the agent's, so it can mark nothing shown: the code puts a condition it marks shown back to open unless it was already held so. The watch,
+Each condition is in one of four states: open; not shown, for what only proof from outside
+the agent's word can show, such as what is installed, deployed or running, which the rep
+marks shown once the record holds that proof; shown, by the one standard the prompts call
+"What counts as shown"; or closed by the owner. Open and not shown both count as open. The writer sees nothing of the conversation but the agent's last words before each of the owner's messages, marked as the agent's, so it can mark nothing shown: the code puts a condition it marks shown back to open unless it was already held so. The watch,
 the briefing and the check mark a condition shown only by naming where the conversation or
 the disk shows it, and closed only by citing a message of the owner's. When the check finds a
 condition held shown is not so, it puts it back to not shown, and it stays not shown until a
@@ -323,7 +324,11 @@ can show them. A check the agent wrote and passed shows only that its check pass
 now counts someone using the real product as the proof that it works, has the rep report how
 much of the work goes into the product and how much into pieces built only to prove the
 agent's own work, and forbids the message from asking for such pieces or from taking a test
-or review in place of the hands-on look.
+or review in place of the hands-on look. Since prompt group 3 (Nov 2026) every read, the check
+and the own-words call name that one standard, "What counts as shown", and a message missing
+proof asks for what it names: for a fact, the command and what it printed; for the result
+working or being good, a hands-on look. The audit found five prompts each wording the standard
+its own way, and a fact asked for a hands-on look it could never get.
 
 Why the agent's own look is not the sign-off. Until G44 (15 Nov 2026) the agent opening its own
 work and saying what it saw could close a condition about that work working. NORTH_STAR
