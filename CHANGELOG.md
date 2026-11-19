@@ -5,6 +5,9 @@ What changed in each release of Owner Rep, newest first. The full record is the
 
 ## 0.7.7 (19 November 2026)
 
+- **The left-out list folded onto one row reads as sentences.** It joined its items with
+  "; " after their full stops ("directly.; The counter was never run"); an item that ends its
+  sentence is now followed by a space.
 - **A session started from another folder than the one it was recorded in gets its goal.** A
   session recorded in a worktree that was later removed, then resumed or forked from the main
   folder, had none of the owner's messages read, so the row waited on "working out the result

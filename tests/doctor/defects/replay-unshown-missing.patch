@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 272412c..54db1d3 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -7462,7 +7462,7 @@ const GROUPS: readonly Group[] = [
+   { edit: 'same-as', system: k => (k === 'objective' ? G6_OBJECTIVE_SYSTEM : []), task: G6_TASK },
+   { edit: 'message', system: k => (k === 'objective' ? [] : k === 'own-words' ? G7_OWN_WORDS_SYSTEM : G7_REP_SYSTEM), task: G7_TASK },
+   { edit: 'evidence', system: k => (k === 'objective' || k === 'own-words' ? [] : G8_REP_SYSTEM), task: [] },
+-  { edit: 'unshown', system: k => (k === 'objective' ? G10_OBJECTIVE_SYSTEM : []), task: [] },
++  { edit: 'unshown', system: () => [], task: [] },
+ ]
+ const nowSystem = (kind: CallKind): string => (kind === 'objective' ? OBJECTIVE_SYSTEM : kind === 'own-words' ? OWN_WORDS_SYSTEM : REP_SYSTEM)
+ const groupTask = (i: number, kind: CallKind): Swap[] => GROUPS[i]!.task.filter(x => x.kinds.includes(kind)).map(x => x.swap)

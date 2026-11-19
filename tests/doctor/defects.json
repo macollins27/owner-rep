@@ -201,7 +201,7 @@
     "name": "holds-outlive-failures",
     "breaks": "The checked card's fold drops the failed claims with the holding ones, so on an ordinary band the owner sees a count and never which claim was false.",
     "patch": "holds-outlive-failures.patch",
-    "fixed": "2026-10-14"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "well-with-left",
@@ -5013,6 +5013,12 @@
     "name": "replay-unshown-missing",
     "breaks": "The replay's edit for issue #49 leaves the objective writer's turn-end line as it was, so a replayed objective call is not what this build sends.",
     "patch": "replay-unshown-missing.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "left-out-fold-stops",
+    "breaks": "The left-out list folded onto one row joins its sentences with \"; \" after their full stops, so the owner reads \"directly.; The counter was never run\".",
+    "patch": "left-out-fold-stops.patch",
     "fixed": "tested 2026-11-19"
   }
 ]

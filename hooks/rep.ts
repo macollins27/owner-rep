@@ -5944,8 +5944,10 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
           looked: k.holds.length === 0 ? '' : `Checked: ${k.holds.length} hold.`,
           refused: k.refused,
         }
+  // Folded onto one row: an item that ends its sentence is followed by a space, any other by
+  // "; ", so a list of sentences never reads ".;".
   const oneLine = (items: string[]): string[] =>
-    items.length === 0 ? [] : [toRows(items.length > 1 ? items.join('; ') : (items[0] ?? ''), '  - ', 1, w)]
+    items.length === 0 ? [] : [toRows(items.map(i => i.trim()).reduce((a, i) => (a === '' ? i : `${a}${/[.!?]$/.test(a) ? ' ' : '; '}${i}`), ''), '  - ', 1, w)]
   // A part at one row grown to its rows and the rows left: whole when that fits.
   const grow = (x: CardText, now: string, whole: string, label: string): string =>
     now === '' ? now : toRows(whole, label, rowsOf(`${label}${now}`, w) + left(x), w)
