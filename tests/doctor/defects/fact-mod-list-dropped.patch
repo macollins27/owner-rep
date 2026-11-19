@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index cb54c60..5bc47cf 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3555,7 +3555,6 @@ const factRead = (ts: FactTok[]): boolean => {
+       let j = e
+       if (x(j, ',')) j++
+       if (w(j, /^(?:and|or)$/)) j++
+-      if (j > e && mod(j)) e = j
+     }
+     return out
+   }

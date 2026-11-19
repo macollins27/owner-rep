@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index bdf505d..b3e8248 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -5041,7 +5041,7 @@ export function fit(text: string, width: number): string {
+ // end with an ellipsis between, the start taking the first half.
+ export function fitMiddle(text: string, cells: number): string {
+   const t = text.replace(/\s+/g, ' ').trim()
+-  if (widthOf(t) <= cells) return t
++  if (t.length <= cells) return t
+   if (cells <= 1) return cells === 1 ? '…' : ''
+   const chars = [...t]
+   let head = ''
