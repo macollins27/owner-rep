@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 8d2bd98..3047542 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3497,7 +3497,7 @@ const FACT_PLACE_NOUN = /^(?:mac|machine|computer|disk|sessions?)$/
+ const FACT_DET = /^(?:the|a|an|this|that|these|those|its|their|our|your|my|each|every|any|some|all|both|one|two|three|four|five|six|seven|eight|nine|ten)$/
+ const FACT_PREP = /^(?:in|inside|within|outside|under|at|on|to|into|onto|from|beyond|during|since|by)$/
+ const FACT_UNIT = /^(?:bytes?|characters?|lines?|words?)$/
+-const FACT_TAIL = /^(?:with|no|trailing|final|newlines?|or|any|other|bytes?|characters?|at|after|before|the|end|it)$/
++const FACT_TAIL = /^(?:with|no|trailing|newlines?|or|any|other|bytes?|characters?|at|after|before|the|end|it)$/
+ // A thing's name after "named" or "called" (ninth live test: "an executable named greet"): quoted,
+ // in backticks, a path, a version, or one word (letters, digits, "_" and "-") that is not a judgment
+ // ("named correctly") or a joining word. The name says which thing it is, never how good it is:
