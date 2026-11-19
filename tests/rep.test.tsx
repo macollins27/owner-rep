@@ -3004,10 +3004,16 @@ test('a checked card on a 24-row terminal keeps its error note and every button 
         // The error note, on one row at least, wherever the band has the rows for it.
         if (note !== '') expect([...at, shown.checkNote !== '']).toEqual([...at, true])
       }
-      // Five rows hold the head, what the check found and, with a refusal, how many refused, the note and the buttons.
+      // Five rows hold the head, the note whole and the buttons, and what the check found on one
+      // line, with how many refused, where there is a row for it too: at 165 columns, or with no
+      // note. At 100 and 80 columns the note takes two rows and the buttons with the size two, so
+      // the note whole comes before what the check found (sixth live test of 18 Nov 2026: at 100x24
+      // the engine's reason was cut mid-word while the count line stood).
       const five = fillCard(card, 5, cols)
       const at = [cols, note === '' ? 'no note' : 'note', refused]
-      expect([...at, five.checked?.looked]).toEqual([...at, `Checked: 5 hold, 1 false, 1 changed since${refused > 0 ? '; 2 commands refused approval' : ''}.`])
+      const found = `Checked: 5 hold, 1 false, 1 changed since${refused > 0 ? '; 2 commands refused approval' : ''}.`
+      expect([...at, five.checkNote]).toEqual([...at, note])
+      expect([...at, five.checked?.looked]).toEqual([...at, note === '' || cols === 165 ? found : ''])
       expect([...at, five.result !== '']).toEqual([...at, true])
     }
   }
@@ -9258,6 +9264,24 @@ test('rule: on a five-row band, a 24-row terminal\'s, the checked card draws wha
   await small.unmount()
 })
 
+test('rule: on a five-row band at 100 columns with the conversation\'s size on the buttons row, the engine\'s reason is drawn whole and what the check found gives up its row (sixth live test of 18 Nov 2026)', async ($, on) => {
+  // The size takes the buttons a second row at 98 columns, as on the live card; the note whole
+  // takes two, so the five rows are the head, the note and the buttons.
+  on('session.usage', () => ({ value: { startedAt: 0, context: { tokens: 20000, window: 500000, percent: 4 }, rateLimits: [] } }))
+  const answer = (JSON.parse(CHECKED_SAYING('continue', 'Two things first. Run the suite and paste the counts.')) as { result: string }).result
+  const { ui } = await checkOver($, on, streamed([answer], { error: 'Failed to authenticate: OAuth session expired and could not be refreshed' }))
+  await settle($)
+  await ui.unmount()
+  const five = { ...BAND, props: { ...BAND.props, maxRows: 5, bodyColumns: 98, scroll: { offset: 0, bodyRows: 4 } } }
+  const small = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...five })
+  expect(await small.find({ type: 'Text', text: /conversation at 4 percent of its window/ })).toBeDefined()
+  expect(await small.find({ type: 'Text', text: /^The check's run failed after it answered: Failed to authenticate: OAuth session expired and could not be refreshed\. Its whole answer is shown\.$/ })).toBeDefined()
+  expect(await small.find({ type: 'Text', text: /^Checked:/ })).toBeUndefined()
+  expect((await small.find({ key: 'put' }))?.props.hotkey).toBe('1')
+  expect((await small.find({ key: 'close' }))?.props.hotkey).toBe('2')
+  await small.unmount()
+})
+
 test('rule: the Check button\'s card keeps a checker\'s message that pushes the agent on before it stops', async ($, on) => {
   const message = 'Two things before you stop. First, run the full suite and paste the counts. Second, push the branch and show the run.'
   const { rec, ui } = await checkOver($, on, CHECKED_SAYING('continue', message))
@@ -9931,6 +9955,9 @@ test('factHolds reads a fact by its sentence shape: the fifth live test\'s 88 wo
     ['sample.txt in the scratch folder is exactly 6 bytes', 'fact'],
     ['sample.txt in the scratch folder is exactly 13 bytes', 'fact'],
     ['sample.txt in the scratch folder is 13 bytes long, with no newline at the end', 'fact'],
+    ['sample.txt in the scratch folder is 6 bytes in size', 'fact'],
+    ['the README is 40 lines in length', 'fact'],
+    ['the converter is 6 bytes in size and prints the file', 'works'],
     ['nothing from this job is committed or pushed', 'fact'],
     ['nothing from this work is committed or pushed', 'fact'],
     ['nothing is committed or pushed', 'fact'],
@@ -9966,7 +9993,14 @@ test('factHolds reads a fact by its sentence shape: the fifth live test\'s 88 wo
   // A behaviour or a judgement among a noun's own words is still one: the behaviour words veto
   // it wherever they stand, a negative one too, and a noun takes at most two words of its own,
   // none of them a word of a clause.
-  for (const text of ['The working converter is saved', 'The uppercase-printing converter is saved', 'The never-crashing service is deployed', 'The passing tests are committed', 'The converter that uppercases text files is saved', 'The notes file contains all encrypted text']) expect([text, factHolds(text)]).toEqual([text, false])
+  for (const text of ['The working converter is saved', 'The uppercase-printing converter is saved', 'The never-crashing service is deployed', 'The passing tests are committed', 'The converter that uppercases text files is saved', 'The notes file contains all encrypted text', 'The bug-free code is committed', 'The secure service is deployed', 'The correct config is saved', 'The fully tested build is installed', 'The encrypted notes file is saved', 'The error-free script is committed', 'The well-tested plugin is merged to main', 'The reliable service is deployed', 'The production-ready build is pushed', 'The flawless page is published', 'The bulletproof server is deployed', 'The robust fix is merged', 'The complete docs are committed', 'The finished work is saved in the clean folder']) expect([text, factHolds(text)]).toEqual([text, false])
+  // The sixth live test's forced wordings: a quality or a doing among a noun's own words, as the subject, the thing held or the place.
+  for (const text of ['The bug-free code is committed', 'The secure service is deployed', 'The correctly encrypting tool is installed', 'The crash-free app is deployed', 'The fully functional program is saved', 'The lossless compression tool is installed', 'The correctly sorting script is saved', 'The correct code is committed', 'The reliable service exists', 'The accessible site is deployed', 'The error-free script exists', 'The responsive page is deployed', 'The script contains a correct fix', 'The folder contains the bug-free code', 'The script exists and it contains a correct fix', 'The accurately calculating program is installed', 'The service is deployed to the correctly encrypting server', 'The script contains the correctly sorted records', 'The file is saved on the secure server', 'The tool is deployed and the lossless compression module exists', 'The encrypting tool is installed', 'The sorting script is saved', 'The validating service is deployed', 'No file holds a correct fix', 'No log holds "error"', 'No file in the project holds bugs']) expect([text, factHolds(text)]).toEqual([text, false])
+  // Each older guard alone (doctor of the sixth round's fix): a behaviour word or a negative
+  // folded into a hyphened word, a verb folded into one, and a thing held that is not a thing of
+  // the work.
+  for (const text of ['the cannot-fail script is committed', 'the never-fails tool is installed', 'the converts-to-uppercase script is committed', 'the takes-a-file tool is installed', 'the uppercases-text script is saved', 'the file contains the answer', 'sample.txt holds the result', 'the commit contains the feature', 'the log holds the errors']) expect([text, factHolds(text)]).toEqual([text, false])
+    for (const text of ['greet.py is saved in the scratch folder', 'no file in the project holds a change made during this job', 'no new commit made during this job exists in the project', 'The code committed to main is deployed', 'The owner-rep plugin is installed', 'The sign-up page is deployed', 'The release notes are committed', 'The newest build is installed', 'The sample text file exists in the scratch folder', 'The claude-hud plugin is installed', 'The sign-in page is committed', 'The commit contains the fix']) expect([text, factHolds(text)]).toEqual([text, true])
 })
 
 test('a condition\'s kind: written by the writer before it, kept through a held write, stripped where a reader copies it, and one held "works" never turns "fact"', () => {

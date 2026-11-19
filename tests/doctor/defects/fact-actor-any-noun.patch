@@ -1,10 +1,10 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 7b58d6b..e767d6d 100644
+index d2b7db1..f518af3 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3645,7 +3645,7 @@ const factRead = (ts: FactTok[]): boolean => {
-     const negs = w(i, /^(?:nothing|none)$/) ? places(i + 1) : w(i, /^no$/) ? noun(i + 1, FACT_THING, FACT_STORE).flatMap(r => places(r.i)) : []
-     for (const n of negs) for (const e of pred(n, false)) out.push({ i: e, store: false })
+@@ -3658,7 +3658,7 @@ const factRead = (ts: FactTok[]): boolean => {
+     // No thing holds a thing of the work: "no file in the project holds a change made during this job".
+     if (w(i, /^no$/)) for (const r of noun(i + 1, FACT_THING, FACT_STORE)) if (r.store) for (const n of places(r.i)) if (w(n, /^(?:holds?|contains?)$/)) for (const h of noun(n + 1, FACT_HELD, FACT_STORE)) for (const e of places(h.i)) out.push({ i: e, store: false })
      // An agent, a session or a helper saved, committed or pushed a thing of the work.
 -    for (const a of noun(i, FACT_ACTOR, FACT_STORE)) for (const s of states(a.i)) {
 +    for (const a of noun(i, FACT_ACTOR, FACT_STORE).concat(noun(i, FACT_THING, FACT_STORE))) for (const s of states(a.i)) {

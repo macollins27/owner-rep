@@ -55,13 +55,16 @@ What changed in each release of Owner Rep, newest first. The full record is the
   or runs the newest code, and only a file or the like holds quoted text or is so many bytes
   long. Each place in the sentence takes only its own kind of word, so no wording of what the
   work does can close as one ("lists the commands", "has 0 crashes" and a quality in quotes are
-  "works"), and the rep tells its writer what a fact looks like.
+  "works"), and the rep tells its writer what a fact looks like. A word before the thing that
+  says how good it is or what it does ("the bug-free code is committed", "the encrypting tool is
+  installed") makes the part "works" too.
 - **The briefing's buttons always show.** A card could be counted one row shorter than it is
   drawn (an indented line a cell or two past the edge, the size beside the buttons), and then
   scrolled with its buttons below the fold. Rows are now counted as the strip wraps them, the
   buttons first. On a 24-row terminal the strip has about five rows, and a checked card
   now fits them: what the check found goes to one line, then the empty line above the card,
-  so a check's error and every button stay in view.
+  so a check's error and every button stay in view. When the strip is too short for both the
+  error and the line of what the check found, the error is shown whole and that line waits.
 - **A reply cut off in its last line is never shown.** The rep asks every model call to end its
   reply with a fixed line, "end of reply". A reply without it stopped early, even one cut in
   the middle of its last sentence, and the rep treats it as it treats any cut reply: it asks

@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 2c3a6c6..27f075e 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3499,7 +3499,7 @@ const FACT_TAIL = /^(?:with|no|trailing|newlines?|or|any|other|bytes?|characters
+ // (sixth live test of 18 Nov 2026). Each part of a hyphened word is read alone; a fact's own
+ // state stays ("the installed build"). A misread noun
+ // costs a look by someone who did not build it; a misread quality would close on the builder's own run.
+-const FACT_QUALITY = /^(?:secure|correct|fast|quick|robust|complete|clean|safe|valid|accurate|stable|perfect|efficient|responsive|ready|proper|right|bad|broken|solid|sound|fine|smooth|strong|nice|great|better|best|quality|compliant|true|real|full|free|healthy|functional|tight|minimal|simple|elegant|modern|professional|airtight|optimal|bugless|bug|error|crash|idempotent)$|(?:ed|ing|ly|free|proof|less|ful|able|ible|ous|ive)$/
++const FACT_QUALITY = /^(?:secure|correct|fast|quick|robust|complete|clean|safe|valid|accurate|stable|perfect|efficient|responsive|ready|proper|right|bad|broken|solid|sound|fine|smooth|strong|nice|great|better|best|quality|compliant|true|real|full|free|healthy|functional|tight|minimal|simple|elegant|modern|professional|airtight|optimal|bugless|bug|error|crash|idempotent)$|(?:ed|ly|free|proof|less|ful|able|ible|ous|ive)$/
+ // A hyphened word with a verb or a little word in it is a clause folded into one word ("the
+ // converts-to-uppercase script", seventh round's probe), so it is refused as a quality is.
+ const FACT_FOLDED = /^(?:to|a|an|the|of|for|into|from|with|and|or|not|no)$|[^su]s$/

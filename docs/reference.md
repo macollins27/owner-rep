@@ -725,7 +725,12 @@ and does not, never, cannot and the like unless before "exist"), and `factRead` 
 of it, to its end or a closing stop, as clauses parted by a comma or a semicolon and "and" or
 "but". Each clause is one of a few shapes, each slot typed: a subject of nouns of the work
 (`FACT_THING`, after an optional lead in `FACT_DET` and up to two words of the noun's own, none
-of them in `FACT_NOT_MOD`) or names, with places after them (a word of `FACT_PREP` before a name,
+of them in `FACT_NOT_MOD` and none a quality or a doing, `factQuality`: a word of `FACT_QUALITY`
+or one ending in -ed, -ing, -ly, -free, -proof, -less, -ful, -able, -ible, -ous or -ive, each part
+of a hyphened word read alone and a word of `FACT_STATE` let stand, and a hyphened word with a
+verb or a little word folded in refused whole (`FACT_FOLDED`, "the converts-to-uppercase script"), "the installed build"; after
+the noun, a word of `FACT_STATE` or "made" with a place, "a commit made during this job") or
+names, with places after them (a word of `FACT_PREP`, during and since among them, before a name,
 a noun of the work or of the machine, or one of `FACT_PLACE`: main, origin, GitHub and a few
 more); then "is", "was", "has been" and the like (or nothing, "the newest build installed")
 before one or more of `FACT_STATE` (saved, committed, pushed, merged, installed, deployed,
@@ -733,14 +738,15 @@ tagged, published, created, written, copied, moved, renamed, changed, edited, to
 uploaded, archived, deleted, removed), with a version, commit or path after it and places; or
 exists, does not exist, no longer exists, or runs the newest. Only a stored thing (a name or a
 noun of `FACT_STORE`) holds or contains quoted text, a thing of `FACT_HELD` (with "whose
-contents are exactly" and quoted text after it), or is a count of a unit of `FACT_UNIT`, each
+contents are exactly" and quoted text after it), or is a count of a unit of `FACT_UNIT` ("long", "in size" or "in length" after it), each
 with the note of its end in `FACT_TAIL` ("with no newline at the end", "(14 characters, no
 trailing newline)"). "Nothing", "none" or "no" and a noun, of a place, takes only a state or
-existence; an agent, session or helper (`FACT_ACTOR`) saved or pushed a thing of the work; a
+existence, and "no" and a stored noun may also hold a thing of `FACT_HELD`, never quoted text; an agent, session or helper (`FACT_ACTOR`) saved or pushed a thing of the work; a
 later clause may leave its subject out or say "it". A slash is "or" and "&" is "and". No word
 of what the work does can stand in any slot, so such a condition is `works` whole, however much
 of it is a fact (live tests of 18 Nov 2026: section 11, the third's section 3, the fourth's 36
-wordings and the fifth's 88 in its section 1, among them "the converter transforms saved text
+wordings, the fifth's 88 in its section 1 and the sixth's 20 qualities, "the bug-free code is
+committed" and "the script contains a correct fix" among them, and "the converter transforms saved text
 to uppercase", "the README file lists the three commands", "the deployed service has 0
 crashes" and "the file is saved; it is “usable”", all works, and the writers' own
 "sample.txt in the scratch folder is 13 bytes long, with no newline at the end" and "nothing
@@ -1203,7 +1209,7 @@ is the rep's `next(e)`. From 2.1.325 the band asks each mod for a row of its own
 is not `PLUGIN`), keeps whether any draws something in `othersDraw` by surface and draws the
 band again when that changes, and while the rep's row last drew the briefing (`cardUp`, set
 by the row's render) passes on only the rep's own row. The `AbovePrompt` render takes
-`hasBeneath` from both, so the same rules hold on every build; on the terminal each line has its width in columns and the card fills the band's rows in order of importance (`fillCard`: the buttons row, the head's result, one row of the message and the check's note cut to one row first; on a band of about five rows, a 24-row terminal's, what the check found then goes to one line without its heading (`checkedBare`, the counts of what held and what was false, or the checker's own account of what it looked at when it sorted no claim, with how many commands were refused on it), then the empty line above the card goes (`tight`), then that line is cut to one row and then dropped, so the head, the note and the buttons stay in the window; the note whole next, taking the empty line's row when it needs it, then that line, the heading and the lists back in that order, then the judgment one row each, most telling first (stands, then the revision line from `revisedLine`, so a long message never crowds out that the reading moved), then the count line (`countLine`), then the judgment whole as the rows allow, then the message with the rows that remain, then the extras while they fit; on a band too short for the message's box between the head and the buttons the box goes and Put message in prompt, drawn while the brief has a message, carries it whole, Put and Check it fixed from the whole card (`putShows`, `checkShows`); rows counted by `cardRows` as the band wraps them: `rowsOf` follows the band's wrap (wrap-ansi with trim off and hard on, so an indent and the space a row starts with take cells, a word wider than the row breaks, and `widthOf` gives a wide character two cells and a combining mark none), and `buttonRows` counts the buttons row, which wraps (`flexWrap`, three cells apart) with the size last on it, from `cardButtons`), and on a surface whose band is a scrolling box in a proportional font (`sizesInColumns` false: Claude Code for VS Code, whose extension counts columns by a wide glyph and draws widths in `ch`) no line is given a width, so each fills the box, and the card is drawn whole. Buttons use bare digits for hotkeys because from the prompt box only a
+`hasBeneath` from both, so the same rules hold on every build; on the terminal each line has its width in columns and the card fills the band's rows in order of importance (`fillCard`: the buttons row, the head's result, one row of the message and the check's note cut to one row first; on a band of about five rows, a 24-row terminal's, what the check found then goes to one line without its heading (`checkedBare`, the counts of what held and what was false, or the checker's own account of what it looked at when it sorted no claim, with how many commands were refused on it), then the empty line above the card goes (`tight`), then that line is cut to one row and then dropped, so the head, the note and the buttons stay in the window; the note whole next, ahead of what the check found when the band holds only one of them (that line comes back next), taking the empty line's row when it needs it, then that line, the heading and the lists back in that order, then the judgment one row each, most telling first (stands, then the revision line from `revisedLine`, so a long message never crowds out that the reading moved), then the count line (`countLine`), then the judgment whole as the rows allow, then the message with the rows that remain, then the extras while they fit; on a band too short for the message's box between the head and the buttons the box goes and Put message in prompt, drawn while the brief has a message, carries it whole, Put and Check it fixed from the whole card (`putShows`, `checkShows`); rows counted by `cardRows` as the band wraps them: `rowsOf` follows the band's wrap (wrap-ansi with trim off and hard on, so an indent and the space a row starts with take cells, a word wider than the row breaks, and `widthOf` gives a wide character two cells and a combining mark none), and `buttonRows` counts the buttons row, which wraps (`flexWrap`, three cells apart) with the size last on it, from `cardButtons`), and on a surface whose band is a scrolling box in a proportional font (`sizesInColumns` false: Claude Code for VS Code, whose extension counts columns by a wide glyph and draws widths in `ch`) no line is given a width, so each fills the box, and the card is drawn whole. Buttons use bare digits for hotkeys because from the prompt box only a
 digit presses a band button. A keyboard chord for the Rep button once rode on an unrelated
 engine action; it could not be proven and was removed on 14 Oct 2026. Do not bring it back
 without a binding that is shown working.
