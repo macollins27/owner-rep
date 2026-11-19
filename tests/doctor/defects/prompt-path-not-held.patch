@@ -1,11 +1,11 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index b8829a3..4fde041 100644
+index d943f7a..7eee8a7 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1079,7 +1079,6 @@ export const register: Register = on => {
-     return next(e)
+@@ -2778,7 +2778,6 @@ export const register: Register = on => {
    })
    on('classic.UserPromptSubmit', ($, e, next) => {
+     if (ownCheck) return next(e)
 -    holdTranscript(e.session_id, e.transcript_path)
      return next(e)
    })

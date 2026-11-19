@@ -18,7 +18,11 @@ anything, it keeps:
   the last three cards' messages;
 - the notes the rep has shown, and the text of up to 10 notes other mods drew in the strip,
   so none is repeated;
-- counters of what the rep has spent.
+- counters of what the rep has spent, and of how its model calls came back and were read;
+- the last 60 helper and Codex runs the agent or its helpers started: each one's tool-call id,
+  whether it finished, failed or is still going, whether it changed the work, and up to 300
+  characters of its own last words (the end of a helper's answer, or of what Codex printed), so
+  a look naming that run can be checked against what the run said.
 
 It also keeps a list of up to 200 of its own drafts from sessions that have left the store,
 so a message it wrote is never mistaken for one of yours.
@@ -36,11 +40,36 @@ approved plan is kept for as long as its job is open, up to 60 a job. When the s
 full, the record's manifest and parts go in the same folder, and the files of a lost copy stay
 while its loss mark stands.
 
+In the folder `<config>/owner-rep/calls/`, it saves a copy of each model call it makes for
+itself in a session: the job's account, each Heads up look, each briefing and its second ask,
+and the own-words call. Each copy holds the full text sent (which includes parts of your session,
+as listed under "What leaves your machine"), the full reply, the settings, the time it took,
+the tokens it used, what the rep read in the reply (counts of the conditions it marked, a card's
+words and the rules that refused it) and, for a card, the job's open conditions as the rep held
+them, with each one's kind (works or fact), what was seen of it and who looked. A text sent more than once is kept once, checked by SHA-256. A session's
+folder is removed once nothing in it has changed for 14 days (except the session starting, so a
+session resumed later keeps its calls), and all the folders together are
+kept under about 1 GB: past that, the folders changed longest ago are removed first (never the
+session starting, nor one changed in the last hour). It is never sent anywhere.
+Two hidden commands read it: `/owner-rep-counts` prints the counters, and `/owner-rep-replay`
+sends saved calls to the model again, which is a new model call like any other, as they were
+saved or with this version's prompt changes made to them. Each reply a replay gets is saved in a
+`replays/` folder beside the call it answers, removed with that session's folder under the same
+14-day and 1 GB limits. The check's own run is not saved here.
+
 To read which messages you typed, the rep reads the session transcripts Claude Code already
 keeps under `~/.claude/projects/`. It copies only the messages you typed, including a note you
 typed while approving a plan on Claude Code's plan screen, into the record above. For a session it holds no record of, it also reads the agent's words before each of
 your messages and your plan-screen answers back from the session's messages, and saves them the
 same way.
+
+When you press **Check it**, the rep reads Claude Code's `.claude.json` (in your Claude Code
+configuration folder, or your home) for your agentsview server entry alone, and passes that
+entry to the check's own run on your machine. Nothing else in that file is read into the rep,
+kept or sent. It also reads the names of the plugins your Claude Code `settings.json` turns on
+(in the same folder, else `~/.claude`), only to turn each one off in the check's run; nothing
+else in that file is read into the rep, kept or sent. The check's run does not load any
+CLAUDE.md, yours or the agent's, nor your plugins.
 
 ## What leaves your machine
 

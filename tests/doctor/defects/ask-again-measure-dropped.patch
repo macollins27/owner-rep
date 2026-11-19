@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index fa5a469..8e6ac7c 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -5755,7 +5755,7 @@ export const askAgainText = (open: string): string => `## Asked once more
+ Your first answer said the agent should stop, gave no verdict, called the work finished, or said the work is going well, while these conditions of done are still open:
+ ${open}
+ 
+-None of these may stand while any of them is open. An empty message counts too: while any of these is open, write the message to the agent, asking for the proof each still needs. Look at the record again and measure each one by what counts as shown: put under "shown:" each one it now shows, with where, and under "closed:" each one the owner closed in a message of the owner's own, with its number. ${LOOK_RULE} Then give the whole briefing again in the same structure. While any of them stays open the verdict is "continue", "well" is empty, and "next" and "message" say what the agent does now to show it, or what stands in the way. ${HELD_STEP_RULE}`
++None of these may stand while any of them is open. An empty message counts too: while any of these is open, write the message to the agent, asking for the proof each still needs. Look at the record again: put under "shown:" each one it now shows, with where, and under "closed:" each one the owner closed in a message of the owner's own, with its number. ${LOOK_RULE} Then give the whole briefing again in the same structure. While any of them stays open the verdict is "continue", "well" is empty, and "next" and "message" say what the agent does now to show it, or what stands in the way. ${HELD_STEP_RULE}`
+ 
+ // A part of a refused card the gate wrote in the rep's fixed text, in place of the model's.
+ export type Replaced = 'means' | 'next' | 'message'

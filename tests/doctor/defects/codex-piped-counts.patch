@@ -1,0 +1,15 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 5a5ee04..9999361 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -512,8 +512,8 @@ function deciding(command: string): string[] | null {
+   const all = shellStatements(command)
+   const last = all[all.length - 1]
+   if (last === undefined || last.background) return null
+-  if (last.chain.some((j, k) => k > 0 && j.join !== '&&')) return null
+-  const cmd = last.chain[last.chain.length - 1]?.cmd
++  if (last.chain.some((j, k) => k > 0 && j.join !== '&&' && j.join !== '|')) return null
++  const cmd = (last.chain.some((j, k) => k > 0 && j.join === '|') ? last.chain[0] : last.chain[last.chain.length - 1])?.cmd
+   return cmd === undefined ? null : bareArgv(cmd.argv)
+ }
+ 

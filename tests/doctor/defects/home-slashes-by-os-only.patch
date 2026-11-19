@@ -1,8 +1,8 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 4c4a77d..9c8f7ef 100644
+index 6abcdfc..dee59d9 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -987,7 +987,7 @@ async function lookUpHost($: EngineInterface, os: string): Promise<Host> {
+@@ -2066,7 +2066,7 @@ async function lookUpHost($: EngineInterface, os: string): Promise<Host> {
  async function homeFor($: EngineInterface): Promise<string> {
    const windows = (await osOf($)) === WINDOWS_OS
    const home = homeOf(windows, await $.env.get('HOME'), await $.env.get('USERPROFILE'))
@@ -10,4 +10,4 @@ index 4c4a77d..9c8f7ef 100644
 +  return (await $.env.get('OS')) === WINDOWS_OS ? slashed(home) : home
  }
  
- // pnpm's store as pnpm names it in the copy, outside the fence, its pnpmfile ignored, its
+ // The check's MCP servers (checkMcpConfig), from Claude Code's .claude.json: in the config

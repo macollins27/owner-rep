@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 5a5ee04..f1d24c6 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -255,7 +255,7 @@ export function looksOf(where: string): Look[] {
+     const as: Signer | null = CHECK_NAMES.has(key) ? 'check' : run !== null ? (run[1] === 'codex' ? 'codex' : 'helper') : (UNNAMED.get(key) ?? null)
+     const ref = run === null ? null : (run[2] ?? null)
+     const denied = DENIED.test(where.slice(0, m.index ?? 0))
+-    return { signs: as !== null && what !== '' && !denied, as, ref, who, what }
++    return { signs: as !== null && !denied, as, ref, who, what }
+   })
+ }
+ 

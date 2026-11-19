@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 8d7074b..1c49c49 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1310,7 +1310,7 @@ function applyMarks(
+       // Beside the looks, the own last words of the runs they name, from the record.
+       const said = [...new Set(looks.map(l => runFor(l, ran)?.said ?? '').filter(w => w.trim() !== ''))].join(' / ')
+       const saidOf = said === '' ? {} : { said }
+-      if (kindOf(c) !== 'fact' && !looks.some(l => signsOff(l, ran, own))) {
++      if (kindOf(c) !== 'fact' && !looks.some(l => signsOff(l, ran, own)) && check === null) {
+         const seen = looks.length === 0 ? show.by.trim() : looks.map(l => l.what).filter(w => w !== '').join('; ')
+         const seenBy = [...new Set(looks.map(l => keptWho(l, ran, own)))].join(' and ')
+         if (seen === '' || (c.seen === seen && (c.seenBy ?? '') === seenBy && (c.said ?? '') === said)) return c

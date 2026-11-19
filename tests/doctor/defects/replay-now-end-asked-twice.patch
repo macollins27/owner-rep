@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 60a117b..a80d49c 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -6431,7 +6431,7 @@ export function parseReplayArgs(args: string): ReplayArgs {
+ // (audit test R16) is judged by what those two alone change.
+ export function replayNow(prompt: string | PromptBlock[], cap: number, now: boolean): { prompt: string | PromptBlock[]; cap: number } {
+   if (!now) return { prompt, cap }
+-  if (typeof prompt === 'string') return { prompt: endAsked(prompt), cap: MAX_REPLY_TOKENS }
++  if (typeof prompt === 'string') return { prompt: `${prompt}\n\n${END_ASK}`, cap: MAX_REPLY_TOKENS }
+   const last = prompt[prompt.length - 1]
+   return { prompt: last === undefined ? prompt : [...prompt.slice(0, -1), { ...last, text: endAsked(last.text) }], cap: MAX_REPLY_TOKENS }
+ }

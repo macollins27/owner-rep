@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 8d7074b..8e73448 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1321,7 +1321,7 @@ function applyMarks(
+         return { ...rest, seen, ...(seenBy === '' ? {} : { seenBy }), ...saidOf }
+       }
+       changed = true
+-      return { text: c.text, state: 'shown', by: show.by, ...kind, ...saidOf }
++      return { text: c.text, state: 'shown', by: show.by, ...saidOf }
+     }
+     return c
+   })

@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 6ff2346..b5b365a 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1624,7 +1624,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+     const marked = applyMarks(after, answer.shown, answer.closed)
+     // The step the look read in the record is "Right now" until the next look (G11); the
+     // objective's result and conditions are not touched by it.
+-    const stepped = after.objective !== null && answer.now !== '' && after.objective.step !== answer.now
++    const stepped = false
+     if (stepped && after.objective !== null) after.objective = { ...after.objective, step: answer.now }
+     if ((marked || stepped) && onScreen(sid)) await update($, readingA, () => after.objective)
+     const view = await read($, viewA)

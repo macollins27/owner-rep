@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 2d9e89a..d4a631c 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -6219,7 +6219,7 @@ const baseName = (n: string): string => n.slice(n.lastIndexOf('/') + 1)
+ export const replayPick = (names: readonly string[], kind: CallKind | undefined, last: number): string[] =>
+   names
+     .filter(n => CALL_FILE.test(baseName(n)) && (kind === undefined || n.endsWith(`-${kind}.json`)))
+-    .sort((a, b) => (baseName(a) < baseName(b) ? -1 : baseName(a) > baseName(b) ? 1 : 0))
++    .sort()
+     .slice(-last)
+ 
+ // ---- The replay's variant (`--variant`): a saved call's texts edited to what this build sends in

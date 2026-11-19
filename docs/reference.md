@@ -56,8 +56,14 @@ call writes (below):
 
 1. **Watch**: `look()` runs on `turn.step` every `CHECK_EVERY` (8) model requests and on every
    `turn.complete`, over the session's record (`readSession`, below). It is never
-   awaited by the hook that starts it. Its answer is `state:`, `flag:`, `why:`, `shown:` and
-   `closed:`; it marks conditions and never writes the objective. A flag becomes a "Heads up"
+   awaited by the hook that starts it. Its answer is `state:`, `now:`, `flag:`, `why:`, `shown:`
+   and `closed:`; it marks conditions and never writes the objective's result or conditions.
+   `now:` is the step the agent is on as the record shows it (`WATCH_NOW_ASK`, `WATCH_NOW_LINE`);
+   `parseWatch` keeps its first sentence, bold and code marks dropped, to `NOW_MAX` (200)
+   characters, and reads "none", "nothing", "n/a", "unknown" or the template line as no step.
+   `takeLook` writes a step it read over `objective.step`, the card's "Right now" line, until the
+   next look or objective write; a look with no step leaves the last one (prompt group 5, G11 in
+   the audit: the step the objective writer set went stale within the turn). A flag becomes a "Heads up"
    note only when the view is `row` and the flag was not already shown. The note draws above
    the row, which stays beneath it with its head, its status and both its buttons for the
    mouse (the note's buttons carry the digits); from 13 to 23 Oct 2026 it took the row's place,
@@ -121,7 +127,7 @@ call writes (below):
    `OPEN_DOES`, since that line describes the message. With every condition shown or closed
    an empty message stands, and with no objective written (`gateOpen` is null) it stands too,
    since nothing says what is open. `pressBrief` takes this refusal as any other: the second
-   ask, whose `askAgain` says an empty message counts, then the own-words call, whose
+   ask, whose `askAgain` names the empty message, then the own-words call, whose
    `ownWordsPrompt` names the empty message, then read 1's usable message, then
    `OPEN_MESSAGE`. `OPEN_MESSAGE` ends with the sentence on a held step: `If a step needs my
    go-ahead, hold it: finish the rest, and tell me what you will show me when I give it.`
@@ -132,13 +138,17 @@ call writes (below):
    A Check card goes through the same gate and has no second ask or own-words call, so an
    instant read refused with the checker's message empty gets `OPEN_MESSAGE` when a condition
    is still open, an instant read that passed keeps its message when the checker leaves it
-   empty, and with every condition shown or closed the message stays empty. A refused
-   answer is asked once more (`askAgain`, naming the open conditions), and that answer
+   empty and writes no "does:" either (a checker that says what its message does and writes
+   none has said there is nothing to send, so the briefing's older draft is not put back), and
+   with every condition shown or closed the message stays empty. A refused
+   answer is asked once more (`askAgain`, naming the open conditions and the rule the first answer
+   broke: `askFault` over the gate's rules, each said plainly with the sentence that broke it quoted,
+   cut to 200 characters, since the second call never saw the first answer; G39), and that answer
    passes the same gate. When it is refused too, or does not answer, one plain
-   `$.model.complete` (`OBJECTIVE_MODEL`, high effort, `OWN_WORDS_SYSTEM`: the ROLE's "Who
-   you are" and "How you write to the owner" sections cut by `sectionOf`, which throws on a missing
-   heading, and one line against reproducing a secret, a key, a password or personal data
-   it is shown; `OWN_WORDS_MAX_TOKENS` 4,000, `OWN_WORDS_TIMEOUT_MS` two minutes) over
+   `$.model.complete` (`OBJECTIVE_MODEL`, `OWN_WORDS_EFFORT` high, `OWN_WORDS_SYSTEM`: built from the same
+   named strings as `REP_SYSTEM` (`REP_WHO`, `REP_STAKE`, `REP_SHOWN_BODY`, `REP_UNSEEN`, `REP_STATES`,
+   `REP_WRITE`, `REP_MESSAGE`), so each rule has one source, and one line against reproducing a secret, a key, a
+   password or personal data it is shown; `OWN_WORDS_MAX_TOKENS` 64,000, `MAX_REPLY_TOKENS`, the engine's ceiling, `OWN_WORDS_TIMEOUT_MS` two minutes) over
    `ownWordsPrompt` (the memory, the open conditions, what stands and what is left out)
    writes the replaced parts in the rep's own words. Its reply is read by `parseOwnWords`,
    which answers null unless the reply came back whole: `means:`, `next:`, `message:` and
@@ -156,7 +166,9 @@ call writes (below):
    over it. Two replies came back answered and cut
    mid-sentence live on 19 Oct 2026, with the cap at 4,000 tokens and at 16,000, for a cause
    not known (`docs/testing.md` scenario 11); the wholeness test keeps their half sentences
-   off the card. Its spend counts with the looks, and it writes card parts only, never the
+   off the card. Since 17 Nov 2026 every reply cap is `MAX_REPLY_TOKENS` (64,000), and a reply whose
+   output reached `NEAR_CAP_SHARE` of its cap is read as cut (`cutShort('own-words', …)`) even when it
+   parses, so `lastBrief.own` is `cut` and every replaced part keeps the rep's text. Its spend counts with the looks, and it writes card parts only, never the
    objective. `lastBrief.reads` records the card's reads: 1, 2 with the second ask, 3 with
    the own-words call; `lastBrief.own` what came of that call (`whole`; `cut`, answered but
    not whole; `none`, not answered or thrown; `skipped`, no call made) and
@@ -351,8 +363,32 @@ call writes (below):
 
    The watch and the briefing (and its second ask) read through one helper, `readSession`.
    It reads `$.session.messages()` and, when there are rows, makes one `$.model.complete`
-   (`OBJECTIVE_MODEL`, high effort, `RECORD_SYSTEM`, `RECORD_MAX_TOKENS` 16,000,
-   `RECORD_TIMEOUT_MS` four minutes) over `recordPrompt`, never a fork: the rows printed by `recordText`
+   (`OBJECTIVE_MODEL`, `WATCH_EFFORT` for a look and `BRIEF_EFFORT` for the briefing and its second ask, both high until a replay shows a lower level loses nothing, `REP_SYSTEM`, `RECORD_MAX_TOKENS` 64,000, the engine's ceiling,
+   `RECORD_TIMEOUT_MS` four minutes) over `recordPrompt`, never a fork. `REP_SYSTEM` is one fixed
+   text for all three, `REP_SECTIONS` joined: `REP_OPENING` (it has no tools and gives one answer),
+   `REP_FORMAT`, "Why you exist" (`REP_WHO`, `REP_STAKE`), "The record" (`REP_FENCE`, then
+   `REP_UNSEEN`: `STANDING_LINE` and `NOT_ASSESSED_RULE`), "What you measure against" with the six
+   expectations, "The conditions and their states" (`REP_STATES`: the four states, shown only by what counts as shown, in the record, never on the agent's word), "What counts as shown" (`REP_SHOWN_BODY`, the one standard every read, the check and the own-words call name: a fact by its command and what it printed, the result working or being good by a hands-on look at the real thing; a test, check, review or script passing shows only that it passed), "The
+   objective stays open until it is completed", "What reaches the owner", "How you make up your mind" (`REP_MIND`, with `REP_HOLD`, G30: a finding and the lines already shown stand until the record shows something new, a change names what is new, and an agent's disagreement is not new evidence; the check's standing rules say the same), "How you write to the owner",
+   "How you write the message to the agent" (`REP_MESSAGE_BODY`, G28: the message is a prompt the
+   owner sends as their own turn, so one line per thing asked with what done means for it, a
+   fact's command and what it printed or a hands-on look for working, a held step named exactly,
+   the routine steps the agent may take alone, and last the finish line `MESSAGE_FINISH` in place
+   of "keep going"; it is the one place exact technical terms may stand, where the agent needs
+   them; the own-words call and the check read the same section; the briefing's, the own-words
+   call's and the check's answer forms ask for lengths in words, targets the gate does not
+   enforce (G40): `SHORT_PART` for "stands", "means" and "next", `LEFT_ITEMS` for "left" (each
+   item under 20 words, at most six, the rest folded into "- and N smaller gaps"), and
+   `MESSAGE_FORM` for the message), and
+   "Private data" (secrets, keys, passwords and personal data stay out of what it writes). Nothing
+   per call goes into it, so it is the same bytes on every read. Its words keep three apart: "the
+   record" is what the reader is shown, "the session" what happened, "the owner's messages" the
+   owner's words. The task after the record holds only what changes per call: `memoryText` (what
+   the rep knows), the request, which opens "Based on the record above", and `decidingText`, a
+   short restatement of the rules that decide that answer (`DECIDING` for the watch,
+   `BRIEF_DECIDING` for the briefing), since a long record sits between them and the system
+   prompt. It carries no frame of its own and no line on how long to think, since the effort
+   setting governs that. The prompt is the rows printed by `recordText`
    as entries labelled `entry N`, never `#N` (the owner's rows as the person only where their key is
    one of the owner's messages that `heldItems` read from the transcript, `NOT_TYPED` applied after
    as a second filter, and with no transcript read, `NOT_TYPED` alone; every other row on
@@ -374,6 +410,46 @@ call writes (below):
    With no rows no model is called, the result is `NOTHING_READ` (`nothing-to-fork`), and the
    toast says there is nothing to read. `SESSION_ROWS_CAP` (4,096) is the most rows
    `$.session.messages()` returns, so a list that long may not reach the session's start.
+
+   **A reply that stopped before its end (G16, G20).** The engine reports no stop reason, so a
+   reply cut off at its cap, or ended early for any other cause, arrives answered. Each reader
+   therefore takes a reply only when it reached the last label its kind asks for (`endsWhole`):
+   the watch's `closed:`, the check's `looked:`, the objective's `approved:` after `holds` and
+   `dropped:` after `moved`, a briefing's and its second ask's `does:`, and the own-words call's
+   whole reply (`parseOwnWords`). A reply cut inside its last value still has that label (the
+   live test of 18 Nov 2026 drew a briefing whose `does:` stopped at "Requests an indep", 100
+   output tokens into a cap of 64,000), so every reply must also end with `END_LINE` ("end of
+   reply") as its last line (`endsWithEndLine`, which allows capitals, a closing full stop and
+   bold or code marks). Each prompt asks for it in one line, `END_ASK`, put last by `endAsked`:
+   `watchPrompt`, `briefPrompt`, `objectivePrompt`, `checkPrompt` and `ownWordsPrompt` return
+   through it, and the briefing asked once more is `endAsked` over the briefing and `askAgain`,
+   so the ask stays its last line and appears once. `parts` skips the end line, so it joins no
+   value. An objective answer naming neither `holds` nor `moved` stays unreadable, not cut,
+   with or without the line. `cutShort(kind, text, usage, cap)` is a reply not whole or one
+   whose output reached `NEAR_CAP_SHARE` (98%) of its cap (`nearCap`), which is read as cut even
+   when its last label is there. `noLabels` is a reply with none of the parts asked for; it is
+   read as before (it shows nothing) and never asked again, since it is not a long answer that
+   ran out of room. `readAgain` (a reply with labels that is cut short) is what asks again: a
+   look reads the session once more, at most two reads, and a look cut both times takes nothing
+   (no marks, no Heads up); a briefing, or its second ask, is asked once more, and one cut both
+   times puts up no card and toasts that the briefing stopped before its end twice. An objective
+   write that is cut short fails that attempt and uses the write's own retries
+   (`OBJECTIVE_RETRIES`), its cause recorded by `writeFailure` as `cut-short (N output tokens): …`
+   or `no-labels: …`, which `failureWords` puts in plain words. A check is read by `checkReadOf`:
+   its result when whole, else the last whole answer the checker wrote on the way (a Stop hook
+   can ask for one more turn after it, and an engine error, such as an expired login, can end
+   that turn, replacing the result), and when the run ended in an engine error after that answer
+   the card also shows `checkFailedAfterNote`, the engine's own words beside the answer read (fourth
+   live test of 18 Nov 2026, section 2); with none, a run that ended in an engine error takes
+   nothing and the card shows `checkFailedNote`, the engine's own words and no ask to press
+   again (in both notes the engine's words are kept to 160 terminal cells by `fitMiddle`, whole
+   when they fit, else their start and their end with the middle left out, so a reason of wide
+   characters keeps the name it ends on: eighth live test of 18 Nov 2026), and any other run
+   takes nothing (no marks, no verdict, no draft) and the card shows
+   `CHECK_CUT_NOTE`, asking the owner to press it again, since a check costs real money and is
+   never re-run on its own (live test of 18 Nov 2026, section 1). Every reply
+   cap is `MAX_REPLY_TOKENS`, 64,000, the engine's ceiling, so the time limit, not the cap, ends a
+   long answer.
 
    `boundaryRow` places the job's earliest open approval in the rows, which carry no number,
    time or turn: the job's stored messages, from that approval to the newest, are matched to the
@@ -464,7 +540,34 @@ call writes (below):
    `cp` refuses `-c` before making anything, as GNU `cp` does, `mkdir` makes the folder and
    `cp -R` copies the agent's folder's contents into it; a clone that failed part-way, which
    `mkdir` without `-p` tells apart, is not copied over), then
-   spawns a headless `claude -p` in it with `--permission-mode default`, `CHECK_ALLOWED_TOOLS`
+   spawns a headless `claude -p` in it, marked `OWNER_REP_CHECK=1` in its environment (the rep
+   loads in that session too, and every hook passes it by once `isOwnCheck` knows it, by that
+   mark or by its folder under `checkCopiesDir`: no record, no call, nothing drawn; G19), and
+   with `CLAUDE_CODE_DISABLE_CLAUDE_MDS=1` (`CHECK_ISOLATE_ENV`), `--setting-sources user`,
+   `--disable-slash-commands` and `--strict-mcp-config --mcp-config` from `checkMcpConfig` (G18),
+   on `CHECK_MODEL` (`opus`) at `CHECK_EFFORT` (`high`) whatever the owner's default (G17), with
+   `CHECK_SYSTEM` as `--append-system-prompt` (G27): the checker's role (`CHECK_ROLE`), the
+   readers' sections on conditions, proof and the open objective, its standing rules
+   (`CHECK_STANDING`) and last the ways it must not stop (`CHECK_STOPS`, G24), the same text on
+   every check, so `checkPrompt` carries only this check's facts: the session, the room, a clock
+   from `startedAt` (`clockOf`: when it began, when its time runs out, and to start its answer
+   `CHECK_WRITE_BY_MS` before that, running `date` before a long command; G25), the agent's
+   changes to read first (`git status`, `git diff`, `git log --since` the record's first entry;
+   G26), one rule for writing (only in the copy, or nowhere without one; G45), the objective,
+   the briefing, the steps and the answer's form:
+   the run loads the owner's user-level settings, the owner's guard hooks among them, the `--settings`
+   fence, and the owner's own agentsview entry from Claude Code's `.claude.json` (`checkMcp`
+   reads `<CLAUDE_CONFIG_DIR>/.claude.json`, else `~/.claude.json`, and takes that one entry, or
+   none; a file past the engine's 4 MiB read limit cannot be read and gives none, and the
+   checker then reads the record through the `agentsview` command, as the brief tells it to), and no CLAUDE.md, skill, slash command, project or local setting or other MCP server;
+   nor the owner's plugins: `checkPlugins` reads `<CLAUDE_CONFIG_DIR>/settings.json`, else
+   `~/.claude/settings.json`, and `checkPluginsOff` names every key of its `enabledPlugins`, each
+   `false`, which `checkSettings` writes into the `--settings` file as `enabledPlugins`, read
+   above the user level (none when the file cannot be read or lists none; the engine's built-in
+   plugins stay);
+   the brief says the agent's instruction files are in its folder, to read when a claim turns on
+   them. Nothing is removed from the copy, since where no copy is made the run is in the agent's
+   own folder. With `--permission-mode default`, `CHECK_ALLOWED_TOOLS`
    allowed outright (the shell, the file tools, the direct agentsview tools), `CHECK_DISALLOWED_TOOLS`
    (anything that edits through a tool, sends, fetches the web or launches helpers) and
    `--settings` from `checkSettings`: the built-in sandbox with writes denied to the owner's
@@ -632,7 +735,9 @@ call writes (below):
    there since is kept. No copy is ever taken for its age. A copy with no owner file it can read
    (one left by a build before 0.7.6) is kept. The questions come before the run's clock
    starts, so the check's measured time is the run's own. Fifteen-minute timeout
-   (`CHECK_TIMEOUT_MS`), 120 turns, JSON output; `permission_denials` in the output is the
+   (`CHECK_TIMEOUT_MS`), 120 turns, stream-json output with `--verbose`, so `resultOf` has each
+   text the model wrote besides the result line, with the result's `is_error` kept as `error`
+   and the engine's own "<synthetic>" answers left out; `permission_denials` in the result is the
    count of commands refused approval, shown on the checked card (`refusedLine`, which says
    commands the fence stopped are not counted) and on the next card's price line
    (`checkCostText`); the right number is zero. Its answer rewrites the card, with each claim
@@ -674,14 +779,13 @@ earlier `versions`. Only `rebuildObjective` writes it: on each message of the ow
 never on a draft, and on a session start or a press when none is held. `writeObjective` runs
 one write per session at a time; a request during a write joins it (`again`), and a message
 saved after the write was shown its messages is written next. A due write is up to
-`1 + OBJECTIVE_RETRIES` attempts (the retries at `OBJECTIVE_RETRY_EFFORT`, `max`, with their own cap and
+`1 + OBJECTIVE_RETRIES` attempts (the retries at `OBJECTIVE_RETRY_EFFORTS` by `objectiveEffort`, `xhigh` then `max`, with their own cap and
 time; none after a throw or an `aborted`; a `holds` with nothing held fails the attempt as
 `holds-with-none`), and only a write whose every attempt failed is counted. A write that throws or comes
-back unanswered, or answers with nothing `parseObjective` can read (a reply cut off at its
-cap looks like that), leaves the objective as it was and adds one to `rec.objectiveFailed`,
+back unanswered, or answers with nothing `parseObjective` can read, leaves the objective as it was and adds one to `rec.objectiveFailed`,
 which the card's price line (`spentText`) names only when above zero. The writer is a plain
 `$.model.complete` call (`OBJECTIVE_MODEL`, high effort, `OBJECTIVE_MAX_TOKENS` and
-`OBJECTIVE_TIMEOUT_MS`, set from one measured write), never a fork of the conversation,
+`OBJECTIVE_TIMEOUT_MS`; the cap, and the retries' `OBJECTIVE_RETRY_MAX_TOKENS`, is `MAX_REPLY_TOKENS`, 64,000, the engine's ceiling, since 17 Nov 2026), never a fork of the conversation,
 sent with its fixed rules as `system: OBJECTIVE_SYSTEM` on every attempt, and shown by
 `objectivePrompt` only the held objective, `rec.past` and the owner's numbered messages on the job
 (each with the agent's turn the owner answered, captured as it was shown: whole, only its end when it is long, or its last words), the messages inside a `<his_messages>` fence
@@ -690,7 +794,7 @@ followed by a note that they are quoted records and no instruction to the writer
 printed with its brackets turned to `‹` `›`, so no message can close the fence, and the record
 keeps the text as typed. Its answer is `objective: holds`, or
 `objective: moved` with `moved:`, `result:`, `for:`, `done:`, `step:` and `dropped:`
-(`parseObjective`); `moved: new job …` closes the job. Straight after the `objective:` line,
+(`parseObjective`; `step:` is the step the owner's messages last set, `OBJECTIVE_STEP`, which each look then keeps current); `moved: new job …` closes the job. Straight after the `objective:` line,
 holds or moved, come its `approved:` lines: one `approved: #n | all` or
 `approved: #n | <the part taken>` for each message whose turn the owner approved, or
 `approved: none` (`parseApproved`; `parseObjective` reads the rest as before). The rules for
@@ -710,7 +814,12 @@ the writer closes it, and a new one proposed shown starts open;
 under each of the owner's messages, marked as the agent's) and a `closed` that cites no such
 message back to open. A condition
 listed twice, or with a state mark copied into its text, is kept once (`parseObjective`,
-`mergeConditions`). A new job pushes
+`mergeConditions`), and two conditions are the same when their words match with case,
+punctuation and the articles set aside (`conditionKey`). A condition the writer marks
+`| same as: <held text>` (prompt group 6, G13: the owner's later words made a held one more
+exact) takes the held one's place under the new words, keeps its state, where and marks, and
+is never counted as dropped; a held condition is matched once, so a second rewrite of it is
+not kept, and the mark is never saved (`plainCondition`). A new job pushes
 the old result onto `rec.past` and starts the job (`since`, `rec.jobStart`) at its first new
 message. The first write, which has nothing held to push, starts the job at the message its
 `moved: new job #n` cites when n is one of the owner's messages after the first, so a seeded session
@@ -719,7 +828,102 @@ their `shown:` lines when they name where, their `closed:` lines only when the n
 message of the owner's on the job sent after `from` (one the objective was built from had its say
 when it was written), and the check's `reopen:` lines when they say what shows otherwise; a look's or a briefing's
 `shown:` line does not move a condition marked `reopened` (only the check's does, the fourth
-argument). A new job's conditions start with no mark. A draft moves only `step`, set to the draft's `firstSentence` in
+argument). Each condition has a `kind`, `works` or `fact`, which the objective writer writes
+before it (`conditionOf` reads it, and reads a state written first with no "|", "- not shown: …",
+as that state, "shown" with no where as open; `heldLine` writes it back, `bare` strips it where a reader
+copies it, and `mergeConditions` keeps a held `works`, or one with no kind, as `works` whatever
+kind a rewrite gives, and opens a shown `fact` rewritten as `works` with its where kept as
+`seen`). `conditionOf`, and everything after it through `kindOf`, reads a `fact:` as `fact` only when
+`factHolds`, by sentence shape: with its kind taken out, "runs (is on, is built from) the
+newest" read as one word, quoted text (double, curly or single quotes) read as a name, and a
+path or a file's name read as one only where it is one (`factTokens`, `factPath`): a path from
+the root, the home folder or the current one ("/x", "~/x", "./x") or a URL, a word ending in a
+file's ending from `FACT_EXT` ("sample.txt", "src/rep.ts"), and in backticks a version or a
+commit (read as one), a path or a file's name; any other word joined by a slash or a dot
+("secure/fast/reliable", "fast.secure", "sorts/validates2") is its words, joined as a hyphened
+word, and plain words in backticks ("`owner-rep`") are words that name a thing, standing alone
+as the thing held or the place only when each passes `factMod` (`pathAt`: "`secure/fast` is
+committed" and "saved in `correct`" are works, and so is a tool's bare name, "`npm-run` is
+installed", the designed safe direction); it matches no `BEHAVES` (works, runs, passes, does, prints, takes,
+returns, shows, displays, gives, accepts, responds, reads, produces and the like, in any tense,
+and does not, never, cannot and the like unless before "exist"), and `factRead` reads the whole
+of it, to its end or a closing stop, as clauses parted by a comma or a semicolon and "and" or
+"but". Each clause is one of a few shapes, each slot typed: a subject of nouns of the work
+(`FACT_THING`, after an optional lead in `FACT_DET` and up to four words of the noun's own,
+joined by commas and "and" or "or" where they are a list, "0 changed, added or deleted files";
+a noun's own word comes from a closed list, `factMod`: one of `FACT_MOD`'s plain words that say
+which thing it is (scratch, local, new, current, untracked, two, both and the like), a noun of the
+work, of the machine or an actor, a word of `FACT_STATE` ("the installed build"), any of those
+with 's ("the project's history"), a hyphened word only when each part is one ("the owner-rep
+plugin"), all of them in an order a name can take (`factRunOk`, ninth live test: a plural noun only
+last, next to the noun it names, "the logs folder", and a count, "every", "all", "two", only first,
+so a doing folded in, "the copies-every-file tool" or "the logs-in tool", is works), a word with a digit only as a version or a commit (`FACT_NAME_H`, "v2", "a1b2c3d"), and
+a number, or a path or a file's name in backticks; plain words in backticks only when they pass
+`factMod` themselves (a path is a word that starts at a folder, a URL, a word ending in a file's
+ending, or one with a slash and a standard folder of `FACT_DIR` in it, "install-case/bin/greet",
+`factPath`); a path or a file's name without backticks never ("the /secure tool", "the
+secure.c tool"); any other word, a quality or a doing above all, makes the clause works, so "the
+resilient tool", "the fast/secure tool", "the `reliable` tool" and "the bug-free/reliable tool"
+are works; "working copy" and "working tree" are read as
+a worktree and "working folder" as a folder before `BEHAVES` is matched; after
+the noun, a word of `FACT_STATE` or "made" with a place, "a commit made during this job") or
+names other than plain words in backticks, or "named" or "called" and a name (`namedAt`: quoted, in backticks, a path, a version, or one word of letters, digits, "_" and "-" that is not a judgment such as "correctly" or "well", nor a joining word, `FACT_NAMED_NOT`; the name says which thing it is, never how good it is, so "an executable named greet" stands), with places after them ("as a copy of" a path or a noun of the work, "with permission to run" or "to execute", read as one word before `BEHAVES` is matched, "anywhere", "elsewhere" or "anywhere else", "for this job", "for the session", "for this task" or "for this work" and no other "for", or a word of `FACT_PREP`, during, since and by among them, before a name,
+a noun of the work or of the machine, or one of `FACT_PLACE`: main, origin, GitHub and a few
+more); then "is", "was", "has been" and the like (or nothing, "the newest build installed")
+before one or more of `FACT_STATE` (saved, committed, pushed, merged, installed, deployed,
+tagged, published, created, written, copied, moved, renamed, changed, edited, touched,
+uploaded, archived, deleted, removed, made), with a version or a commit after it (`FACT_NAME_H`, alone or in brackets: "installed (UTF8-compliant)" is works) and places; or
+exists, does not exist, no longer exists, or runs the newest. Only a stored thing (a name or a
+noun of `FACT_STORE`) holds or contains quoted text, a thing of `FACT_HELD` (with "whose
+contents are exactly" and quoted text after it), or is a count of a unit of `FACT_UNIT` ("long", "in size" or "in length" after it), each
+with the note of its end in `FACT_TAIL` ("with no newline at the end", "(14 characters, no
+trailing newline)", "5 bytes, with no final newline": notes split by commas each end there, and what follows a comma that is no note is its own clause). "Nothing", "none" or "no" and a noun, of a place, takes only a state or
+existence, and "no" and a stored noun may also hold a thing of `FACT_HELD`, never quoted text; an agent, session or helper (`FACT_ACTOR`) saved or pushed a thing of the work; a
+later clause may leave its subject out or say "it". A slash is "or" and "&" is "and". No word
+of what the work does can stand in any slot, so such a condition is `works` whole, however much
+of it is a fact (live tests of 18 Nov 2026: section 11, the third's section 3, the fourth's 36
+wordings, the fifth's 88 in its section 1 and the sixth's 20 qualities, "the bug-free code is
+committed" and "the script contains a correct fix" among them, and "the converter transforms saved text
+to uppercase", "the README file lists the three commands", "the deployed service has 0
+crashes" and "the file is saved; it is “usable”", all works, and the writers' own
+"sample.txt in the scratch folder is 13 bytes long, with no newline at the end" and "nothing
+from this job is committed or pushed", facts; the ninth live test's "note.txt in the scratch folder
+holds exactly 'amber', 5 bytes, with no final newline", "no commit was made for this work",
+"nothing was pushed for this work" and "an executable named greet is installed in a bin folder
+inside the scratch folder", with "install-case/bin/greet is installed as a copy of
+install-case/greet-source.sh" and "… is installed with permission to run", facts the writer wrote unprompted that were read as works). The writer's prompt gives the shape of a fact,
+with one example. The
+writer's prompt asks for one claim per condition (`ONE_CLAIM`) beside its kinds, then (`QUALITY_CONDITION`) that a condition about how good the result is name what a person using it would notice, in the owner's terms, with one example and nothing the owner would not plainly want. It writes what is installed, deployed or running as not shown, which the rep marks shown when the record holds proof from outside the agent's word.
+A `fact` moves shown on any where. A `works` condition, or one with no kind, moves shown only when
+`looksOf` finds, among every `look by <who>: <what>` in the where, one whose `who` (compared by
+`whoKey`, without case, curly apostrophes or a leading article) is the check (`CHECK_NAMES`) or a
+run (`RUN_WHO`: "helper <run>", "Codex <run>", "Codex run <run>", "helper (run <run>)"), with
+something seen and no "no", "not", "never" or "without" just before it, and `signsOff` finds that
+the run qualifies: `runFor` takes the one run of that kind in `Rec.ran` whose id ends with the
+ref, and `runQualifies` wants it `done`, unchanged and with something said; the check signs only
+through its own marks. `Rec.ran` (the newest `RUNS_KEPT`, 60) is filled in `tool.call` once the
+call returns: `runOf` reads an Agent or Task call, or a shell call `shellRun` reads as Codex
+(`codex exec`, `e` or `review` after any options, no help or version flag) or a helper (`claude -p`
+or `--print`, changing the work unless `--permission-mode plan`), as the deciding command
+(`deciding`: the last statement of `shellStatements`, joined by `&&` alone, not backgrounded);
+`codexWrites` reads a writing sandbox, the bypass, the automatic approvals, `--add-dir` or a
+`sandbox_mode` config; `runFromResult` keeps its state and last words (`RUN_SAID_MAX`, 300
+characters); a helper's own edit call, or shell call `shellChanges` reads as writing in the
+folder, adds it to `Rec.changedBy` and marks its runs changed; `runEnded` finishes a helper sent
+off on its own at its `turn.complete`. The digest prints `(run <runKey>)`, the last 8 characters
+of the call's id, beside such a call. A look that does not sign is kept under its who with why
+(`keptWho`: names no run, no such run in the record, its run changed the work, was not seen to
+finish, failed or said nothing, or not the check's own mark), and the named runs' words go on
+the condition as `said`, shown beside it (`saidMark`). Otherwise, whoever
+looked and whoever reports it, the check included, the state stays as it was and the condition
+keeps what the looks saw as `seen` and who made them as `seenBy`, from this where alone (a where
+with no look keeps the whole where, made by the agent). `objectiveText` marks such a condition on the card (`seenMark`):
+the agent's own look as "the agent looked at it itself", anyone else's by name, both still
+needing a look by someone who did not build it; `countLine` adds the same by who (`looksNote`,
+counted rather than named past `LOOKS_NOTE_MAX` characters),
+and `fillCard` brings the count line back right after the head. The prompts are shown each open
+condition's kind (`kindMark`, `works` for one with none) and what its looks saw (`promptLine`).
+The watch, the briefing, ask again and the check carry `LOOK_RULE`, which teaches the form. A new job's conditions start with no mark. A draft moves only `step`, set to the draft's `firstSentence` in
 `prompt.submit`. The card shows `revisedLine` under the head and `objectiveText` as its
 reading; the row shows `result`.
 
@@ -878,6 +1082,98 @@ while the owner has sent nothing since the mark, and otherwise renamed as lost w
 stands a store that refuses the record leaves it in this process alone (`saveToFiles`), and a
 store that takes it again leaves the list where it is (`stored`): the list may be newer than the
 record. Sources held in memory by an earlier process are marked `LOST_RESTART`.
+
+**The call log and the counters.** Every model call the rep makes for itself is saved by
+`logCall` (`hooks/register.tsx`), queued by `saveCall` behind the call so the card, the row and
+the record never wait on the disk: the objective writer (`objective`, one file per attempt), each
+look (`watch`), the briefing (`brief`), its second ask (`ask-again`) and the own-words call
+(`own-words`); the check keeps its own record in agentsview. The folder is
+`<config>/owner-rep/calls/<session id>/` (`callsRoot`), only for a uuid session id
+(`isSessionId`), so the kit's `test-session` writes nothing. Each call is one file,
+`<13-digit ms>-<4-digit seq>-<kind>.json` (`callFileName`, `CALL_FILE`), a `CallEntry`: the
+settings sent (`CallSettings`), the attempt, the system prompt and each prompt block by
+fingerprint (`LoggedBlock`, with its cache mark), `joined` when the prompt went as one text,
+`promptSha` and `promptChars` of the whole prompt as one text (`joinBlocks`), the time, the
+outcome (`callOutcome`: `answered`, `threw`, the engine's reason, or `api-error` with status and
+error), the reply, the usage, `nearCap` (output at `NEAR_CAP_SHARE`, 98%, of the cap or past it),
+the reply as its kind's reader read it (`callRead`: the objective writer's `holds`, `moved` or
+`unreadable`; the watch's `read`, `flag` or `unreadable` with its marks; a card's `read` or
+`no-verdict` with its marks, its words part by part and, for a briefing and its second ask, the
+gate's rules, `gateRules`, which mirror `gateVerdict`'s refusals; the own-words call's `whole` or
+`cut`), and for a card the conditions open when the gate read it (`open`), so a replay gates its
+answer the same way. Each text is written once, to `parts/<sha256>.txt` (`PART_FILE`); the
+session record every look resends is the same text call after call and is kept once. A process
+writes at most `CALL_LOG_SESSION_BYTES` (64 MiB) of texts for a session; past that a call is
+saved with `kept: false` and no texts. `logCall` never throws: a call not saved stands as it came
+back. At each `session.start` with a uuid session id, `pruneCalls` lists the calls folder,
+without being awaited, and removes in one `rm -rf` through `hostArgv` each session folder whose
+last change is more than `CALL_LOG_DAYS` (14) days old, except the session starting (a session
+resumed after 14 idle days keeps its calls), and, in the same command, the folders
+`overCallCap` names: with every other folder sized by its call files and its parts
+(`folderBytes`), while they hold more than `CALL_LOG_TOTAL_BYTES` (1 GiB) together, the one
+changed longest ago, never the session starting, one changed in the last `CALL_LOG_LIVE_MS` (an
+hour, perhaps another running session's) or one whose change time is unknown; so the total may
+stay over until those age. A session of this process whose folder was removed has its saved
+texts forgotten (`savedParts`, `savedBytes`), so its next call writes them again.
+`removableCallFolder` allows only a uuid-named folder right under an absolute calls folder.
+
+The counters are `rec.counts` (`Counts`), changed in the same `changeRec` as the spend: per kind
+(`KindCounts`) the calls, the four token counts, the time, the replies near the cap, the outcomes,
+what the replies were read as, and for cards the gate's rules (`passed` when none);
+`countEnd` counts how each briefing ended (`BriefEnd`: `passed` at once, `asked-again`,
+`own-words`, or `fixed-text`). Two commands are registered at `session.start` and hidden from the
+menu and `/help` (`command.describe`, `HIDDEN_COMMANDS`): `/owner-rep-counts` prints
+`countsText`, one line per kind and a `cards:` line; `/owner-rep-replay <call file, session folder,
+session id, "this" or "all"> [--kind k] [--last 1-50] [--effort low|medium|high|xhigh|max] [--times 1-10]
+[--variant build|frame|no-think|rep-system|end-line|proof|decisions|now] [--base frame|no-think|rep-system|end-line|proof|decisions|now] [--now]` (`parseReplayArgs`, `REPLAY_USAGE`) takes a folder's last `--last`
+(`REPLAY_LAST`, 10) calls of the kind asked for, or with "all" the last of every session folder's
+calls together by when each was made (`replayPick`, `replayFiles`), rebuilds each from its parts (`savedCall`, which refuses one whose
+texts were not kept, one naming a text by anything but a fingerprint (`isSha`), so a call file
+cannot point it at another file, one whose texts are missing, whose system text no longer has its
+fingerprint, or whose prompt no longer joins to `promptSha`), prints it as logged and sends
+it `--times` times with the same settings, or the effort given, reading each answer with
+`callRead` against the saved `open` (`replayLine`), then the totals of each (`replayTotals`). With
+`--variant`, each call is sent `--times` times as saved and `--times` times with its texts edited
+to what this build sends in their place (`editSaved`; `build` names every edit in
+`PROMPT_EDITS`): `frame` drops the fork frame the build before prompt group 1 opened the task
+with and sends group 1's record system prompt (`PRE_G2_RECORD_SYSTEM`), for a watch, brief or
+ask-again call; `no-think` drops the watch's line telling the model not to think it over;
+`rep-system` (`toRepSystem`, applied after those two) sends `REP_SYSTEM` and rebuilds the task
+from group 1's (the `PRE_G2_*` texts) as the build after prompt group 2 wrote it: the rules moved out, the request
+opening "Based on the record above" with its restatement (it builds this build's texts and undoes every later group's edit, `toGroup2`, so its arm stays group 2's); a call that asks for `END_LINE` last
+(`asksEnd`) is matched without it and asks for it again after the new texts; `end-line`, applied
+last, asks for `END_LINE` last (`endAsked`), for a watch, brief or ask-again call, and refuses a
+call that asks for it already. The prompt groups after group 2 are `GROUPS`, in order, each an edit with its pairs by the kind
+of call: `proof` (group 3: `G3_REP_SYSTEM`, `G3_OBJECTIVE_SYSTEM`, `G3_OWN_WORDS_SYSTEM`,
+`G3_TASK`), `decisions` (group 4: `G4_REP_SYSTEM`, `G4_OBJECTIVE_SYSTEM`, `G4_TASK`; it has no
+own-words pair) and `now` (group 5: `G5_OBJECTIVE_SYSTEM`, `G5_TASK`; watch and objective calls
+only, since it changes neither the shared system prompt nor the briefing), and `same-as` (group 6: `G6_OBJECTIVE_SYSTEM`, `G6_TASK`; objective calls only), and `message` (group 7: `G7_REP_SYSTEM`, `G7_OWN_WORDS_SYSTEM`, `G7_TASK`; every call but the objective's), and `evidence` (group 8: `G8_REP_SYSTEM`, `REP_HOLD` added; watch, brief and ask-again calls). Group 9's edit, `fault`, rebuilds nothing: its second asking names the rule the first answer broke, which no saved call holds, so `editSaved` sends no ask-again call under it, and the build before it's text stays as `askAgainBefore`. Each pair is the group before's text, kept word for word, and the text the group
+sent in its place. Applied after `rep-system`, in that order (`stepGroups`), each named group's
+edit (`stepGroup`) moves a call the build before it saved to exactly what the build after it
+sends: the call's system prompt must be the build before's (`systemBefore`, this build's with
+that group's and every later group's pairs undone), and each old text must be in it exactly once
+(`swapped`), or the call is not sent; so `decisions` alone takes a call the build after group 3
+saved, `decisions` with `now` one the build after group 3 saved, and `now` alone one the build
+after group 4 saved, and `same-as` alone one the build after group 5 saved, and `message` alone one the build after group 6 saved, and `evidence` alone one the build after group 7 saved. The objective and own-words calls have no record, so their whole prompt is the task and only
+the groups' edits apply to them. Every reply is read as its own prompt's build read it
+(`readAsAsked`): a reply to a prompt that never asked for the end line is not taken as cut for
+lacking it, so an old call replayed as saved is read as it was then. With `--now` (`replayNow`)
+each call, in every arm, goes as this build would send it, at `MAX_REPLY_TOKENS` and with
+`END_ASK` as its prompt's last line once (on the last block of a prompt in blocks), and is read
+against that cap; the rest is as logged, so a call saved before the shared cap and the end line
+shows what those two alone change (audit test R16). With `--base`, a strict part of the
+variant's edits, the first arm is sent with the base's edits in place of as saved, so the two arms
+differ by the variant's other edits alone; a base that is not a strict part prints `REPLAY_USAGE`. Only the task after
+the last `</session_record>` is edited, never the record, and the blocks wholly before it go as
+they were, cache marks and all. A call an edit applies to but cannot change (its old text is not
+there, or its system prompt is not the record read's), or one no edit applies to, is not sent in
+either arm, so the arms are the same calls; the totals are `logged`, `as saved` (or `base`) and
+`variant`. Every reply a replay gets is written to
+`replays/<call file's name>.<run>.<effort>[.[<base>~]<edits>][.now].<arm>-<n>.txt`
+beside the call, `<run>` being the millisecond the replay started and always later than the run
+before it (`replayRun`), so neither a run with other settings nor the same run again writes over
+another's replies, which `folderBytes` counts toward the 1 GB. A replay is not logged or counted. Nothing of
+either is drawn on the row or the card.
 
 An approval (`approvalOf`: the owner's message, note or plan-screen plan carrying `approved`,
 never one that turned a plan down, never a draft) of the open job that falls outside the job's
@@ -1073,7 +1369,7 @@ is the rep's `next(e)`. From 2.1.325 the band asks each mod for a row of its own
 is not `PLUGIN`), keeps whether any draws something in `othersDraw` by surface and draws the
 band again when that changes, and while the rep's row last drew the briefing (`cardUp`, set
 by the row's render) passes on only the rep's own row. The `AbovePrompt` render takes
-`hasBeneath` from both, so the same rules hold on every build; on the terminal each line has its width in columns and the card fills the band's rows in order of importance (`fillCard`: the head's result and one row of the message with the buttons under it first, then the judgment one row each, most telling first (stands, then the revision line from `revisedLine`, so a long message never crowds out that the reading moved), then the count line (`countLine`), then the judgment whole as the rows allow, then the message with the rows that remain, then the extras while they fit; on a band too short for the message's box between the head and the buttons the box goes and Put message in prompt, drawn while the brief has a message, carries it whole; rows counted by `cardRows` as the band wraps them), and on a surface whose band is a scrolling box in a proportional font (`sizesInColumns` false: Claude Code for VS Code, whose extension counts columns by a wide glyph and draws widths in `ch`) no line is given a width, so each fills the box, and the card is drawn whole. Buttons use bare digits for hotkeys because from the prompt box only a
+`hasBeneath` from both, so the same rules hold on every build; on the terminal each line has its width in columns and the card fills the band's rows in order of importance (`fillCard`: the buttons row, the head's result, one row of the message and the check's note cut to one row first; on a band of about five rows, a 24-row terminal's, what the check found then goes to one line without its heading (`checkedBare`, the counts of what held and what was false, or the checker's own account of what it looked at when it sorted no claim, with how many commands were refused on it), then the empty line above the card goes (`tight`), then that line is cut to one row and then dropped, so the head, the note and the buttons stay in the window; the note whole next, in its short form (`shortCheckNote`, "Check failed after answering: …") and then without the conversation's size on the buttons row when the long form will not fit, ahead of what the check found when the band holds only one of them (that line comes back next), taking the empty line's row when it needs it, then that line, the heading and the lists back in that order, then the judgment one row each, most telling first (stands, then the revision line from `revisedLine`, so a long message never crowds out that the reading moved), then the count line (`countLine`), then the judgment whole as the rows allow, then the message with the rows that remain, then the extras while they fit; on a band too short for the message's box between the head and the buttons the box goes and Put message in prompt, drawn while the brief has a message, carries it whole, Put and Check it fixed from the whole card (`putShows`, `checkShows`); rows counted by `cardRows` as the band wraps them: `rowsOf` follows the band's wrap (wrap-ansi with trim off and hard on, so an indent and the space a row starts with take cells, a word wider than the row breaks, and `widthOf` gives a wide character two cells and a combining mark none), and `buttonRows` counts the buttons row, which wraps (`flexWrap`, three cells apart) with the size last on it, from `cardButtons`), the row likewise keeps its head to the rows the band leaves it (`rowHead`: `maxRows` less the empty line above it, the record line, its buttons row, the rows of anything another mod draws beneath, and under a heads-up the note's line, its why and its buttons; at least one row, cut with "…"), so a long result never puts Brief me and Tell the rep under a "↓ n more" row; and on a surface whose band is a scrolling box in a proportional font (`sizesInColumns` false: Claude Code for VS Code, whose extension counts columns by a wide glyph and draws widths in `ch`) no line is given a width, so each fills the box, and the card is drawn whole. Buttons use bare digits for hotkeys because from the prompt box only a
 digit presses a band button. A keyboard chord for the Rep button once rode on an unrelated
 engine action; it could not be proven and was removed on 14 Oct 2026. Do not bring it back
 without a binding that is shown working.

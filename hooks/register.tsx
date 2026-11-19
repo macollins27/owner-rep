@@ -32,6 +32,7 @@ import {
   trimCounted,
   migrateOwner,
   sha256,
+  isSha,
   FINGERPRINT_MEMO_CHARS,
   isSessionId,
   removablePath,
@@ -66,9 +67,14 @@ import {
   briefPrompt,
   cachedOf,
   checkArgv,
+  checkMcpConfig,
+  checkPluginsOff,
+  CHECK_ISOLATE_ENV,
   checkCostText,
   countLine,
   checkCopiesDir,
+  CHECK_ENV,
+  isOwnCheck,
   checkCopyDir,
   checkSettings,
   CHECK_NO_ROOM,
@@ -118,7 +124,6 @@ import {
   worktreeDirsOf,
   linkTargets,
   holdsCopiesOf,
-  checkBarred,
   noFenceNote,
   copyArgvs,
   type Host,
@@ -137,6 +142,10 @@ import {
   doingFor,
   firstSentence,
   fillCard,
+  type CardText,
+  putShows,
+  checkShows,
+  CHECKING_LINE,
   sizesInColumns,
   fit,
   fitTail,
@@ -147,15 +156,18 @@ import {
   isBlankRec,
   recDrafts,
   askAgain,
+  askFault,
+  gateRules,
   gateOpen,
   gateVerdict,
   mergeConditions,
+  plainCondition,
   OBJECTIVE_MAX_TOKENS,
   OBJECTIVE_MODEL,
   OBJECTIVE_TIMEOUT_MS,
   OBJECTIVE_RETRIES,
   OBJECTIVE_SYSTEM,
-  OBJECTIVE_RETRY_EFFORT,
+  objectiveEffort,
   OBJECTIVE_RETRY_MAX_TOKENS,
   OBJECTIVE_RETRY_TIMEOUT_MS,
   objectivePrompt,
@@ -169,7 +181,10 @@ import {
   earlierMessage,
   unusableReplaced,
   RECORD_MAX_TOKENS,
-  RECORD_SYSTEM,
+  WATCH_EFFORT,
+  BRIEF_EFFORT,
+  OWN_WORDS_EFFORT,
+  REP_SYSTEM,
   BLOCKS_REFUSED,
   joinBlocks,
   type PromptBlock,
@@ -205,6 +220,17 @@ import {
   HUMAN_SCAN_BUDGET_MS,
   type RecordRow,
   objectiveText,
+  looksOf,
+  signsOff,
+  keptWho,
+  runOf,
+  runFor,
+  runFromResult,
+  runEnded,
+  shellChanges,
+  kindOf,
+  EDIT_TOOLS,
+  RUNS_KEPT,
   openConditions,
   parseBrief,
   parseCheck,
@@ -224,21 +250,66 @@ import {
   WATCH_APPROVED_BUDGET,
   BRIEF_APPROVED_BUDGET,
   writeFailure,
+  cutShort,
+  readAgain,
+  endsWhole,
+  endAsked,
+  readAsAsked,
+  type WriteResult,
+  type WatchAnswer,
+  CHECK_CUT_NOTE,
   parseWatch,
   resultOf,
+  checkReadOf,
+  checkFailedAfterNote,
+  checkFailedNote,
   revisedLine,
   same,
   skipAfter,
   spentText,
   textOf,
+  rowHead,
+  rowsOf,
   tokensOf,
   VERSIONS_MAX,
   watchPrompt,
   type BriefAnswer,
   type Condition,
+  type Run,
   type Memory,
   type Objective,
   type ObjectiveAnswer,
+  CALL_FILE,
+  CALL_LOG_DAYS,
+  CALL_LOG_SESSION_BYTES,
+  type CallFolder,
+  REPLAY_USAGE,
+  blocksOf,
+  callFileName,
+  callOutcome,
+  callRead,
+  callsRoot,
+  countCall,
+  countEnd,
+  countsText,
+  nearCap,
+  editSaved,
+  parseReplayArgs,
+  removableCallFolder,
+  overCallCap,
+  replayLine,
+  replayPick,
+  replayNow,
+  MAX_REPLY_TOKENS,
+  replayTotals,
+  type BriefEnd,
+  type CallEntry,
+  type CallKind,
+  type CallRead,
+  type CallSettings,
+  type Counts,
+  type ReplayRow,
+  type Usage,
 } from './rep'
 
 // From the prompt box only a bare digit presses a band button.
@@ -321,6 +392,17 @@ type Rec = {
   // The last write whose every attempt failed: when, and the last message it was shown;
   // cleared by the next write that lands. A fresh start writes again while it is set.
   failedWrite?: { at: number; upTo: number }
+  // The runs of a helper and of Codex started in the session (`runOf`), newest last, at most
+  // RUNS_KEPT, for `signsOff`: each by its call's id, with how it ended, whether it changed the
+  // work and its own last words. Absent until the first, and on records from before it (whose
+  // `runs` counts are not read), where no look by a helper or Codex signs.
+  ran?: Run[]
+  // The helpers seen writing or changing the work (an edit tool, or a shell call
+  // `shellChanges` reads as a change), by agent id: a run of theirs changed the work.
+  changedBy?: string[]
+  // The calls counted by kind, and how the cards the gate refused ended (`countCall`, `countEnd`);
+  // absent until the first call. Printed by `/owner-rep-counts`, never shown on the band.
+  counts?: Counts
 }
 
 const isRec = (v: unknown): v is Rec =>
@@ -633,6 +715,147 @@ async function removeFiles($: EngineInterface, paths: readonly string[], folders
   } catch {
     // Left in place; the next save that drops them tries nothing more.
   }
+}
+
+// The call log (docs/reference.md, "The call log and the counters"): every call the rep makes
+// for itself saved as one file in the session's folder under the calls folder, each text it sent
+// kept once by its fingerprint in the folder's `parts`. Only a session id of the uuid form has a
+// folder. Saving never stops or slows a call: it runs behind it (`saveCall`), and a write that fails
+// is let go, the call standing.
+// A model call as it was sent and what came back, for the log and the counters.
+type ModelResult = Awaited<ReturnType<EngineInterface['model']['complete']>>
+type Sent = {
+  kind: CallKind
+  settings: CallSettings
+  system: string
+  prompt: string | PromptBlock[]
+  // The prompt went as one text (a plain prompt, or blocks joined for a build that takes none).
+  joined: boolean
+  attempt?: number
+  result: ModelResult | null
+  ms: number
+}
+// The calls folder under the config folder, beside the sources.
+async function callsFolder($: EngineInterface): Promise<string | null> {
+  const sources = await rootOf($)
+  return sources === null ? null : callsRoot(sources.slice(0, -'/owner-rep/sources'.length))
+}
+// The texts this process has saved, by `<session id>/<fingerprint>`, and their bytes by session.
+const savedParts = new Set<string>()
+const savedBytes = new Map<string, number>()
+let callSeq = 0
+
+// What a call counts as, for `countCall`.
+const counted = (sent: Sent, read?: CallRead) => {
+  const usage = sent.result === null ? undefined : (sent.result.usage as Usage | undefined)
+  return {
+    kind: sent.kind,
+    usage,
+    ms: sent.ms,
+    nearCap: nearCap(usage, sent.settings.maxTokens),
+    outcome: callOutcome(sent.result as never).outcome,
+    ...(read === undefined ? {} : { read }),
+  }
+}
+
+// One call saved: its texts first (each once), then its own file.
+async function logCall($: EngineInterface, sid: string, sent: Sent, read?: CallRead, open?: Condition[] | null): Promise<void> {
+  try {
+    if (!isSessionId(sid)) return
+    const root = await callsFolder($)
+    if (root === null) return
+    const folder = `${root}/${sid}`
+    const blocks = blocksOf(sent.prompt)
+    const whole = joinBlocks(blocks)
+    const texts = [sent.system, ...blocks.map(b => b.text)]
+    const shas = await Promise.all(texts.map(t => sha256(t)))
+    const fresh = texts.flatMap((t, i) => (savedParts.has(`${sid}/${shas[i]}`) ? [] : [{ t, sha: shas[i] ?? '' }]))
+    const bytes = fresh.reduce((n, f) => n + utf8Bytes(f.t), 0)
+    const kept = (savedBytes.get(sid) ?? 0) + bytes <= CALL_LOG_SESSION_BYTES
+    if (kept) {
+      for (const f of fresh) {
+        const path = `${folder}/parts/${f.sha}.txt`
+        if ((await $.fs.exists(path).catch(() => false)) || (await writeFile($, path, f.t))) savedParts.add(`${sid}/${f.sha}`)
+      }
+      savedBytes.set(sid, (savedBytes.get(sid) ?? 0) + bytes)
+    }
+    const result = sent.result
+    const c = counted(sent, read)
+    const entry: CallEntry = {
+      v: 1,
+      at: Date.now(),
+      kind: sent.kind,
+      settings: sent.settings,
+      ...(sent.attempt === undefined ? {} : { attempt: sent.attempt }),
+      kept,
+      ...(kept ? { system: shas[0] ?? '', prompt: blocks.map((b, i) => ({ sha: shas[i + 1] ?? '', ...(b.cache === true ? { cache: true as const } : {}) })) } : {}),
+      joined: sent.joined,
+      promptSha: await sha256(whole),
+      promptChars: whole.length,
+      ms: sent.ms,
+      ...callOutcome(result as never),
+      ...(result !== null && result.isAnswered ? { reply: result.text } : {}),
+      ...(c.usage === undefined ? {} : { usage: c.usage }),
+      nearCap: c.nearCap,
+      ...(read === undefined ? {} : { read }),
+      ...(open === undefined ? {} : { open }),
+    }
+    await writeFile($, `${folder}/${callFileName(entry.at, callSeq++, sent.kind)}`, JSON.stringify(entry))
+  } catch {
+    // Not saved; the call stands as it came back.
+  }
+}
+
+// Calls are saved one after another, behind the call rather than in its way: the card, the row
+// and the record never wait on the disk, and two saves never race over the same text.
+let callSaves: Promise<void> = Promise.resolve()
+function saveCall($: EngineInterface, sid: string, sent: Sent, read?: CallRead, open?: Condition[] | null): void {
+  callSaves = callSaves.then(() => logCall($, sid, sent, read, open))
+}
+
+// At each start in a session the rep can save calls for: each session's folder of calls that nothing has changed in for CALL_LOG_DAYS
+// days is removed, never the session starting, and then, while the folders left hold more than CALL_LOG_TOTAL_BYTES together,
+// the one changed longest ago, never the session starting (`overCallCap`); all in one command, and
+// nothing but such a folder (`removableCallFolder`).
+async function pruneCalls($: EngineInterface, root: string, sid: string): Promise<void> {
+  try {
+    const now = Date.now()
+    const before = now - CALL_LOG_DAYS * 24 * 60 * 60 * 1000
+    const entries = await $.fs.list(root).catch(() => [])
+    const old: string[] = []
+    const kept: CallFolder[] = []
+    for (const e of entries) {
+      const path = `${root}/${e.name}`
+      if (e.kind !== 'dir' || !removableCallFolder(root, path)) continue
+      const st = await $.fs.stat(path).catch(() => null)
+      // The session starting is never removed for its age: one resumed after 14 days keeps its calls.
+      if (path !== `${root}/${sid}` && st !== null && st.mtimeMs > 0 && st.mtimeMs < before) old.push(path)
+      else kept.push({ path, bytes: await folderBytes($, path), mtimeMs: st?.mtimeMs ?? 0 })
+    }
+    const gone = [...old, ...overCallCap(kept, `${root}/${sid}`, now)]
+    if (gone.length === 0) return
+    await $.process.run(hostArgv(await hostOf($), ['rm', '-rf', ...gone]), { timeoutMs: REMOVE_TIMEOUT_MS })
+    // A session of this process whose folder went writes its texts again.
+    for (const path of gone) {
+      const id = path.slice(root.length + 1)
+      savedBytes.delete(id)
+      for (const k of [...savedParts]) if (k.startsWith(`${id}/`)) savedParts.delete(k)
+    }
+  } catch {
+    // Left in place; the next process tries again.
+  }
+}
+// The bytes of a session's folder of calls: its call files, its parts and its replays' replies.
+async function folderBytes($: EngineInterface, folder: string): Promise<number> {
+  const files = async (p: string) => (await $.fs.list(p).catch(() => [])).reduce((n, e) => n + (e.kind === 'file' ? e.size : 0), 0)
+  return (await files(folder)) + (await files(`${folder}/parts`)) + (await files(`${folder}/replays`))
+}
+
+// A model call timed, a call that throws read as null.
+async function timed(call: () => Promise<ModelResult>): Promise<{ result: ModelResult | null; ms: number }> {
+  const t0 = Date.now()
+  const result = await call().catch(() => null)
+  return { result, ms: Date.now() - t0 }
 }
 
 // Each source not yet in a file goes to its own file, written once: a file already there is
@@ -1020,7 +1243,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number, r
     }
     rec.objective = {
       ...a.parts,
-      done: honest(a.parts.done, [], his.filter(canClose)),
+      done: honest(a.parts.done.map(plainCondition), [], his.filter(canClose)),
       openedAt: now,
       since: his.length > 0 ? Math.min(...his) : rec.jobStart,
       from: saw,
@@ -1056,7 +1279,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number, r
     rec.jobStart = since
     rec.objective = {
       ...a.parts,
-      done: honest(a.parts.done, [], hisFrom(rec, since).filter(n => n <= saw && canClose(n))),
+      done: honest(a.parts.done.map(plainCondition), [], hisFrom(rec, since).filter(n => n <= saw && canClose(n))),
       openedAt: now,
       since,
       from: saw,
@@ -1095,7 +1318,15 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number, r
 // the same conversation cannot undo what the paid check found. A draft's
 // number closes nothing, nor does a plan's or an approval's (a yes adds and
 // never quietly takes away, as `canClose` holds for the writer), and a shown
-// or reopen mark without a where is not taken. True when a condition moved.
+// or reopen mark without a where is not taken. A shown mark on a condition not
+// marked "fact" whose where has no look that `signsOff` takes (only the agent's own
+// look, whoever reports it, the check included; a look by anyone off the list; a
+// signer's look denied, empty, still to come or by one who wrote the work; one by a
+// helper or Codex whose run the record does not hold, or by the check outside its
+// own marks; or no look at all) moves nothing: the condition keeps its
+// state and carries what was seen as `seen`, and who looked as `seenBy` (G44).
+// The state a condition is held in keeps its kind. True when a condition moved
+// or took a new `seen`.
 function applyMarks(
   rec: Rec,
   shown: Array<{ text: string; by: string }>,
@@ -1106,22 +1337,44 @@ function applyMarks(
   if (o === null) return false
   const notHis = new Set(rec.owner.filter(m => m.kind === 'plan' || approvalOf(m)).map(m => m.n))
   const his = hisFrom(rec, Math.max(o.since, o.from + 1)).filter(n => !notHis.has(n))
+  // The runs the record holds, and whether these are the check's own marks.
+  const ran = rec.ran ?? []
+  const own = check !== null
   let changed = false
   const done = o.done.map((c): Condition => {
+    const kind: { kind?: Condition['kind'] } = c.kind === undefined ? {} : { kind: kindOf(c) }
     const close = closed.find(x => x.by !== null && his.includes(x.by) && same(x.text, c.text))
     if (close !== undefined && c.state !== 'closed') {
       changed = true
-      return { text: c.text, state: 'closed', by: `#${close.by}` }
+      return { text: c.text, state: 'closed', by: `#${close.by}`, ...kind }
     }
     const back = check?.reopen.find(x => x.by !== '' && same(x.text, c.text))
     if (back !== undefined && c.state === 'shown') {
       changed = true
-      return { text: c.text, state: 'not-shown', by: back.by, reopened: true }
+      return { text: c.text, state: 'not-shown', by: back.by, reopened: true, ...kind }
     }
     const show = shown.find(x => x.by !== '' && same(x.text, c.text))
     if (show !== undefined && (c.state === 'open' || c.state === 'not-shown') && !(c.reopened === true && check === null)) {
+      // A "works" condition (or one of no kind, from before kinds) is shown only by a look
+      // someone on the sign-off list made, any of the looks in the where. Every other look,
+      // the agent's own above all, and a where with no look, is kept as shown evidence with
+      // who made it, and leaves the condition as it was. A "fact" is shown by its where (G44).
+      const looks = looksOf(show.by)
+      // Beside the looks, the own last words of the runs they name, from the record.
+      const said = [...new Set(looks.map(l => runFor(l, ran)?.said ?? '').filter(w => w.trim() !== ''))].join(' / ')
+      const saidOf = said === '' ? {} : { said }
+      if (kindOf(c) !== 'fact' && !looks.some(l => signsOff(l, ran, own))) {
+        const seen = looks.length === 0 ? show.by.trim() : looks.map(l => l.what).filter(w => w !== '').join('; ')
+        const seenBy = [...new Set(looks.map(l => keptWho(l, ran, own)))].join(' and ')
+        if (seen === '' || (c.seen === seen && (c.seenBy ?? '') === seenBy && (c.said ?? '') === said)) return c
+        changed = true
+        // Who looked comes from this where alone: one with no look is the agent's own,
+        // never the last named looker's (Codex review of #53); so do the run's words.
+        const { seenBy: _was, said: _said, ...rest } = c
+        return { ...rest, seen, ...(seenBy === '' ? {} : { seenBy }), ...saidOf }
+      }
       changed = true
-      return { text: c.text, state: 'shown', by: show.by }
+      return { text: c.text, state: 'shown', by: show.by, ...kind, ...saidOf }
     }
     return c
   })
@@ -1193,29 +1446,28 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
       let after = rec
       let landed = false
       // Up to 1 + OBJECTIVE_RETRIES attempts over the same prompt: an empty or errored
-      // reply, an answer that cannot be read and a "holds" with nothing held are tried
-      // again at the highest effort; a call that threw or was cut short is not. Only a
+      // reply, an answer that cannot be read, one that stopped before its end or came
+      // within 2% of its cap (cutShort), and a "holds" with nothing held are tried
+      // again at a higher effort (objectiveEffort); a call that threw or ran out of time is not. Only a
       // write whose every attempt failed counts as failed, with the last cause.
       for (let attempt = 0; attempt <= OBJECTIVE_RETRIES; attempt++) {
         const retry = attempt > 0
-        const result = await $.model
-          .complete({
-            model: OBJECTIVE_MODEL,
-            system: OBJECTIVE_SYSTEM,
-            prompt,
-            maxTokens: retry ? OBJECTIVE_RETRY_MAX_TOKENS : OBJECTIVE_MAX_TOKENS,
-            effort: retry ? OBJECTIVE_RETRY_EFFORT : 'high',
-            timeoutMs: retry ? OBJECTIVE_RETRY_TIMEOUT_MS : OBJECTIVE_TIMEOUT_MS,
-          })
-          .catch(() => null)
+        const effort = objectiveEffort(attempt)
+        const maxTokens = retry ? OBJECTIVE_RETRY_MAX_TOKENS : OBJECTIVE_MAX_TOKENS
+        const timeoutMs = retry ? OBJECTIVE_RETRY_TIMEOUT_MS : OBJECTIVE_TIMEOUT_MS
+        const { result, ms } = await timed(() => $.model.complete({ model: OBJECTIVE_MODEL, system: OBJECTIVE_SYSTEM, prompt, maxTokens, effort, timeoutMs }))
+        const sent: Sent = { kind: 'objective', settings: { model: OBJECTIVE_MODEL, effort, maxTokens, timeoutMs }, system: OBJECTIVE_SYSTEM, prompt, joined: true, attempt, result, ms }
+        const read = result !== null && result.isAnswered ? callRead('objective', result.text, undefined, { usage: result.usage as Usage, cap: maxTokens }) : undefined
+        saveCall($, sid, sent, read)
         let again = false
         let stale = false
         after = await changeRec($, sid, async r => {
+          r.counts = countCall(r.counts, counted(sent, read))
           if (result !== null) {
             r.objectiveCalls += 1
             r.objectiveTokens += tokensOf(result.usage)
           }
-          const answer = result !== null && result.isAnswered ? parseObjective(result.text) : null
+          const answer = result !== null && result.isAnswered && !cutShort('objective', result.text, result.usage as Usage, maxTokens) ? parseObjective(result.text) : null
           const none = answer !== null && answer.kind === 'holds' && r.objective === null
           if (answer !== null && !none) {
             landed = true
@@ -1256,7 +1508,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
           }
           if (!again) {
             r.objectiveFailed += 1
-            r.objectiveWhy = none ? 'holds-with-none' : writeFailure(result)
+            r.objectiveWhy = none ? 'holds-with-none' : writeFailure(result as WriteResult, maxTokens)
             r.failedWrite = { at: Date.now(), upTo: saw }
             failed = true
           }
@@ -1300,13 +1552,14 @@ async function setNow($: EngineInterface, patch: Partial<Now>): Promise<void> {
 // where it cannot be placed, or the record opens after it, the reader is told and the owner shown
 // (boundaryCover). With no rows there is nothing to read: the result says so as a fork's would, and
 // no model is called. A completion that throws reads as an API error, which the callers show.
-type Read = { result: ModelForkResult; gaps: ReaderGaps }
+// `sent` is the call as it went, for the log and the counters; absent when no model was called.
+type Read = { result: ModelForkResult; gaps: ReaderGaps; sent?: Sent }
 const NOTHING_READ: ModelForkResult = {
   isAnswered: false,
   reason: 'nothing-to-fork',
   usage: { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
 } as ModelForkResult
-async function readSession($: EngineInterface, sid: string, rec: Rec, task: (cover: string[]) => string): Promise<Read> {
+async function readSession($: EngineInterface, sid: string, rec: Rec, kind: CallKind, task: (cover: string[]) => string): Promise<Read> {
   const rows = await $.session.messages().catch(() => [])
   if (rows.length === 0) return { result: NOTHING_READ, gaps: {} }
   const items = await heldItems($, sid, rows)
@@ -1322,32 +1575,40 @@ async function readSession($: EngineInterface, sid: string, rec: Rec, task: (cov
   const opensAfter = b.outcome === 'established' && recordText(rows, RECORD_BUDGET, human, from).opensAfter
   const cover = boundaryCover(b, opensAfter, b.outcome === 'none' ? undefined : msgs.find(m => m.n === b.n))
   const blocks = recordPrompt(rows, task(cover.told), human, from)
+  const effort = kind === 'watch' ? WATCH_EFFORT : BRIEF_EFFORT
   const ask = (prompt: string | PromptBlock[]) =>
     $.model.complete({
       model: OBJECTIVE_MODEL,
-      system: RECORD_SYSTEM,
+      system: REP_SYSTEM,
       prompt,
       maxTokens: RECORD_MAX_TOKENS,
-      effort: 'high',
+      effort,
       timeoutMs: RECORD_TIMEOUT_MS,
     })
   // A build that takes only a text prompt (2.1.286 refuses blocks at its host check, before any
   // model is called) is sent the same text joined, without the cache mark.
-  const result = await ask(blocks)
+  let joined = false
+  const t0 = Date.now()
+  const answered = await ask(blocks)
     .catch((e: unknown) => {
       if (!BLOCKS_REFUSED.test(String(e))) throw e
+      joined = true
       return ask(joinBlocks(blocks))
     })
-    .catch(
-      (): ModelForkResult => ({
-        isAnswered: false,
-        reason: 'api-error',
-        status: null,
-        error: 'unknown',
-        usage: { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
-      }),
-    )
-  return { result: result as ModelForkResult, gaps: cover.gaps }
+    .catch(() => null)
+  const ms = Date.now() - t0
+  const result =
+    answered ??
+    ({
+      isAnswered: false,
+      reason: 'api-error',
+      status: null,
+      error: 'unknown',
+      usage: { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
+    } as ModelForkResult)
+  const settings: CallSettings = { model: OBJECTIVE_MODEL, effort, maxTokens: RECORD_MAX_TOKENS, timeoutMs: RECORD_TIMEOUT_MS }
+  const call: Sent = { kind, settings, system: REP_SYSTEM, prompt: joined ? joinBlocks(blocks) : blocks, joined, result: answered, ms }
+  return { result: result as ModelForkResult, gaps: cover.gaps, sent: call }
 }
 
 // One look by the watch: the same cached copy of the conversation the agent
@@ -1363,24 +1624,43 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
     return
   }
   const memory = { ...(await memoryFor($, sid, rec, 'watch')), context: await contextOf($) }
-  const got = await readSession($, sid, rec, cover => watchPrompt({ ...memory, cover }, reason))
-  // Nothing recorded yet: no model was called, and there is nothing to count.
-  if (got.result === NOTHING_READ) return
-  const result = got.result
   const fill = memory.approved
-  const parsed = result.isAnswered ? parseWatch(result.text) : null
-  // What this look could not do for an approval goes to the row through coverage, the one path.
-  await setLookGaps($, sid, joinGaps(got.gaps, fill === undefined ? {} : readerGaps(fill, 'watch'), notAssessedGaps(parsed?.notAssessed ?? [])))
-  const usage = 'usage' in result ? result.usage : null
-  await changeRec($, sid, async after => {
-    after.calls += 1
-    after.tokens += tokensOf(usage)
-    after.cached += cachedOf(usage)
-    if (!result.isAnswered || parsed === null) return
+  // A reply cut short (readAgain: it has parts but did not reach its last one, or came within 2% of its cap)
+  // is read once more; a second cut one raises no Heads up and marks nothing, and the call log
+  // and the counters keep both as cut short.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const got = await readSession($, sid, rec, 'watch', cover => watchPrompt({ ...memory, cover }, reason))
+    // Nothing recorded yet: no model was called, and there is nothing to count.
+    if (got.result === NOTHING_READ) return
+    const result = got.result
+    const usage = 'usage' in result ? result.usage : null
+    const cut = result.isAnswered && readAgain('watch', result.text, usage as Usage | null, RECORD_MAX_TOKENS)
+    const parsed = result.isAnswered && !cut ? parseWatch(result.text) : null
+    // What this look could not do for an approval goes to the row through coverage, the one path.
+    if (!cut) await setLookGaps($, sid, joinGaps(got.gaps, fill === undefined ? {} : readerGaps(fill, 'watch'), notAssessedGaps(parsed?.notAssessed ?? [])))
+    const watchRead = result.isAnswered ? callRead('watch', result.text, undefined, { usage: usage as Usage | null, cap: RECORD_MAX_TOKENS }) : undefined
+    if (got.sent !== undefined) saveCall($, sid, got.sent, watchRead)
+    await changeRec($, sid, async after => {
+      after.calls += 1
+      after.tokens += tokensOf(usage)
+      after.cached += cachedOf(usage)
+      if (got.sent !== undefined) after.counts = countCall(after.counts, counted(got.sent, watchRead))
+      if (parsed === null) return
+      await takeLook(after, parsed)
+    })
+    if (!cut) return
+  }
+
+  // An answered look taken: its marks applied, and its Heads up drawn when it raised one.
+  async function takeLook(after: Rec, answer: WatchAnswer): Promise<void> {
     // An answered look moves the cursor, so the next one shows the plans after these.
     if (fill?.cursor !== undefined) after.readerAt = { watch: fill.cursor }
-    const answer = parsed
-    if (applyMarks(after, answer.shown, answer.closed) && onScreen(sid)) await update($, readingA, () => after.objective)
+    const marked = applyMarks(after, answer.shown, answer.closed)
+    // The step the look read in the record is "Right now" until the next look (G11); the
+    // objective's result and conditions are not touched by it.
+    const stepped = after.objective !== null && answer.now !== '' && after.objective.step !== answer.now
+    if (stepped && after.objective !== null) after.objective = { ...after.objective, step: answer.now }
+    if ((marked || stepped) && onScreen(sid)) await update($, readingA, () => after.objective)
     const view = await read($, viewA)
     const said = headsUp(answer, after.seen, fill?.blocks ?? [])
     if (said !== null && view === 'row' && onScreen(sid) && ![...after.seen].some(s => same(s, said.line))) {
@@ -1389,8 +1669,170 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
       await update($, noteA, () => note)
       await update($, viewA, () => 'note')
     }
-  })
+  }
 }
+
+// The hidden commands: `/owner-rep-counts` prints this session's counters, `/owner-rep-replay`
+// sends saved calls again (docs/reference.md, "The call log and the counters"). Neither is in the
+// typeahead or `/help`; both run when typed in full. The replay's own calls are not saved or counted.
+const HIDDEN_COMMANDS = new Set(['owner-rep-counts', 'owner-rep-replay'])
+
+// A saved call read back: the entry, and its system prompt and prompt rebuilt from its parts.
+async function savedCall($: EngineInterface, path: string): Promise<{ entry: CallEntry; system?: string; prompt?: string | PromptBlock[]; why?: string } | null> {
+  const text = await readText($, path)
+  if (text === null) return null
+  let entry: CallEntry
+  try {
+    entry = JSON.parse(text) as CallEntry
+  } catch {
+    return null
+  }
+  if (entry.v !== 1 || !entry.kept || entry.system === undefined || entry.prompt === undefined) return { entry, why: 'its texts were not kept' }
+  // Every text is named by its own fingerprint: a name that is not one is never read, so a call
+  // file cannot point the replay at any other file, and a system text that changed is not sent.
+  if (![entry.system, ...entry.prompt.map(b => b.sha)].every(isSha)) return { entry, why: 'a saved text is not named by its fingerprint' }
+  const parts = `${path.slice(0, path.lastIndexOf('/'))}/parts`
+  const system = await readText($, `${parts}/${entry.system}.txt`)
+  const blocks: PromptBlock[] = []
+  for (const b of entry.prompt) {
+    const t = await readText($, `${parts}/${b.sha}.txt`)
+    if (t === null) return { entry, why: 'a saved text is missing' }
+    blocks.push({ text: t, ...(b.cache === true ? { cache: true as const } : {}) })
+  }
+  if (system === null) return { entry, why: 'its system prompt is missing' }
+  if ((await sha256(system)) !== entry.system) return { entry, why: 'its system prompt is not the one sent' }
+  const whole = joinBlocks(blocks)
+  if ((await sha256(whole)) !== entry.promptSha) return { entry, why: 'the rebuilt prompt is not the one sent' }
+  return { entry, system, prompt: entry.joined ? whole : blocks }
+}
+
+// The call files a replay names: one file, a session's folder, or with "all" every session's
+// folder under the calls folder, each file named with its folder so the rows say whose it is.
+async function replayFiles($: EngineInterface, a: { path: string; kind?: CallKind; last: number }, root: string | null): Promise<{ files: string[]; where: string } | string> {
+  if (a.path === 'all') {
+    if (root === null) return `Calls are not saved here.\n${REPLAY_USAGE}`
+    const names: string[] = []
+    for (const dir of await $.fs.list(root).catch(() => [])) {
+      if (dir.kind !== 'dir' || !isSessionId(dir.name)) continue
+      for (const f of await $.fs.list(`${root}/${dir.name}`).catch(() => [])) if (f.kind === 'file') names.push(`${dir.name}/${f.name}`)
+    }
+    return { files: replayPick(names, a.kind, a.last).map(n => `${root}/${n}`), where: root }
+  }
+  // A bare session id names its folder under the calls folder; "this" names this session's.
+  const named = a.path === 'this' ? currentId : a.path
+  const path = isSessionId(named) && root !== null ? `${root}/${named}` : named
+  const st = await $.fs.stat(path).catch(() => null)
+  if (st === null) return `Nothing at ${path}.\n${REPLAY_USAGE}`
+  const files =
+    st.kind === 'dir'
+      ? replayPick((await $.fs.list(path).catch(() => [])).map(e => e.name), a.kind, a.last).map(n => `${path}/${n}`)
+      : [path]
+  return { files, where: path }
+}
+
+// The run a replay's kept replies are named by: the time it started, in milliseconds, and always
+// later than the run before it here, so running the same replay again never writes over a reply.
+let lastReplayRun = 0
+function replayRun(): number {
+  lastReplayRun = Math.max(Date.now(), lastReplayRun + 1)
+  return lastReplayRun
+}
+
+// Each call named is sent again `times` times as saved; with a variant, `times` times as saved and
+// `times` times with its texts edited (`editSaved`), and a call the variant cannot edit is not sent
+// at all, so the two arms are the same calls. With a base too, the first arm is the call edited by
+// the base's edits in place of as saved, and a call either arm cannot edit is sent in neither.
+// Every reply is kept in `replays/` beside the call.
+async function replay($: EngineInterface, args: string): Promise<string> {
+  const a = parseReplayArgs(args)
+  if ('error' in a) return a.error
+  const root = await callsFolder($)
+  const picked = await replayFiles($, a, root)
+  if (typeof picked === 'string') return picked
+  const { files, where } = picked
+  if (files.length === 0) return `No saved calls${a.kind === undefined ? '' : ` of kind ${a.kind}`} in ${where}.`
+  const rows: ReplayRow[] = []
+  const lines: string[] = []
+  const arms = a.variant === undefined ? ['replay'] : a.base === undefined ? ['as saved', 'variant'] : ['base', 'variant']
+  const run = replayRun()
+  for (const file of files) {
+    const got = await savedCall($, file)
+    const name = a.path === 'all' ? file.slice(where.length + 1) : file.slice(file.lastIndexOf('/') + 1)
+    if (got === null) {
+      lines.push(`${name}: could not be read`)
+      continue
+    }
+    const e = got.entry
+    const logged: ReplayRow = { label: 'logged', kind: e.kind, outcome: e.outcome, ms: e.ms, nearCap: e.nearCap, ...(e.read === undefined ? {} : { read: e.read }), ...(e.usage === undefined ? {} : { usage: e.usage }) }
+    rows.push(logged)
+    lines.push(name, `  ${replayLine(logged)}`)
+    if (got.system === undefined || got.prompt === undefined) {
+      lines.push(`  not sent again: ${got.why ?? 'its texts were not kept'}`)
+      continue
+    }
+    const texts: Record<string, { system: string; prompt: string | PromptBlock[] }> = { replay: { system: got.system, prompt: got.prompt }, 'as saved': { system: got.system, prompt: got.prompt } }
+    if (a.variant !== undefined) {
+      const edited = editSaved(e.kind, got.system, got.prompt, a.variant)
+      if ('why' in edited) {
+        lines.push(`  not sent again: ${edited.why}`)
+        continue
+      }
+      texts.variant = edited
+    }
+    if (a.base !== undefined) {
+      const edited = editSaved(e.kind, got.system, got.prompt, a.base)
+      if ('why' in edited) {
+        lines.push(`  not sent again: ${edited.why}`)
+        continue
+      }
+      texts.base = edited
+    }
+    const effort = (a.effort ?? e.settings.effort) as 'high'
+    const dir = file.slice(0, file.lastIndexOf('/'))
+    const base = file.slice(file.lastIndexOf('/') + 1).replace(/\.json$/, '')
+    // The run, the effort, the variant and its base name the reply too, so neither a run with other
+    // settings nor the same run again writes over another's replies.
+    const tag = [effort, ...(a.variant === undefined ? [] : [`${a.base === undefined ? '' : `${a.base.join('+')}~`}${a.variant.join('+')}`]), ...(a.now === true ? ['now'] : [])].join('.')
+    for (const arm of arms) {
+      const { system, prompt: saved } = texts[arm] as { system: string; prompt: string | PromptBlock[] }
+      const sent = replayNow(saved, e.settings.maxTokens, a.now === true)
+      const prompt = sent.prompt
+      const send = (p: string | PromptBlock[]) => $.model.complete({ model: e.settings.model, system, prompt: p, maxTokens: sent.cap, effort, timeoutMs: e.settings.timeoutMs })
+      for (let i = 1; i <= a.times; i++) {
+        // A build that refuses a prompt in blocks (2.1.286) is sent the same text joined, as the
+        // rep's own calls are.
+        const { result, ms } = await timed(() =>
+          send(prompt).catch((err: unknown) => {
+            if (typeof prompt === 'string' || !BLOCKS_REFUSED.test(String(err))) throw err
+            return send(joinBlocks(prompt))
+          }),
+        )
+        const usage = result === null ? undefined : (result.usage as Usage | undefined)
+        const label = `${arm} ${i}`
+        const row: ReplayRow = {
+          label,
+          kind: e.kind,
+          ...callOutcome(result as never),
+          ms,
+          nearCap: nearCap(usage, sent.cap),
+          ...(result !== null && result.isAnswered ? { read: callRead(e.kind, readAsAsked(prompt, result.text), e.open, { usage, cap: sent.cap }) } : {}),
+          ...(usage === undefined ? {} : { usage }),
+        }
+        if (result !== null && result.isAnswered) await writeFile($, `${dir}/replays/${base}.${run}.${tag}.${label.replace(/ /g, '-')}.txt`, result.text)
+        rows.push(row)
+        lines.push(`  ${replayLine(row)}`)
+      }
+    }
+  }
+  const setting = (edits: string) => [a.effort === undefined ? '' : `effort ${a.effort}`, edits].filter(x => x !== '').join(', ')
+  const of: Record<string, string> = { replay: setting(''), variant: setting(a.variant === undefined ? '' : `variant ${a.variant.join(',')}`), base: setting(a.base === undefined ? '' : `base ${a.base.join(',')}`) }
+  const now = a.now === true ? ` (as this build sends it: cap ${MAX_REPLY_TOKENS}, end line asked)` : ''
+  const totals = arms.map(arm => replayTotals(rows, arm) + (arm === 'as saved' || of[arm] === '' ? '' : ` (${of[arm]})`) + now)
+  return [...lines, '', replayTotals(rows, 'logged'), ...totals].join('\n')
+}
+
+// The reason a briefing's read gives for a reply cut short, in place of the engine's reason.
+const CUT_SHORT = 'cut-short'
 
 // The press: an instant read over the same copy, drawn in the band.
 async function pressBrief($: EngineInterface, sid: string): Promise<void> {
@@ -1415,34 +1857,59 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     const ask = async (extra: string) => {
       const rec = await loadRec($, sid)
       const memory = { ...(await memoryFor($, sid, rec, 'brief')), context }
-      const got = await readSession($, sid, rec, cover => {
+      const kind: CallKind = extra === '' ? 'brief' : 'ask-again'
+      const got = await readSession($, sid, rec, kind, cover => {
         const prompt = briefPrompt({ ...memory, cover })
-        return extra === '' ? prompt : `${prompt}\n\n${extra}`
+        return extra === '' ? prompt : endAsked(`${prompt}\n\n${extra}`)
       })
       const result = got.result
+      const usage = 'usage' in result ? result.usage : null
+      const size = { usage: usage as Usage | null, cap: RECORD_MAX_TOKENS }
+      // A reply cut short (readAgain) is never read for a card or a mark: the press reads once more.
+      const cut = result !== NOTHING_READ && result.isAnswered && readAgain(kind, result.text, size.usage, size.cap)
       // The plans this briefing could not compare, and the steps it could not assess, go on the card.
       const plans = memory.approved === undefined ? {} : readerGaps(memory.approved, 'brief')
-      const unassessed = result !== NOTHING_READ && result.isAnswered ? notAssessedGaps(parseBrief(result.text).notAssessed ?? []) : {}
-      if (result !== NOTHING_READ) gaps = joinGaps(got.gaps, plans, unassessed)
-      const usage = 'usage' in result ? result.usage : null
-      return changeRec($, sid, async after => {
+      const unassessed = result !== NOTHING_READ && result.isAnswered && !cut ? notAssessedGaps(parseBrief(result.text).notAssessed ?? []) : {}
+      if (result !== NOTHING_READ && !cut) gaps = joinGaps(got.gaps, plans, unassessed)
+      // What the reply was read as, with the gate's rules against the conditions open when it gated.
+      let briefRead: CallRead | undefined
+      let gatedOpen: Condition[] | null | undefined
+      const out = await changeRec($, sid, async after => {
         after.calls += 1
         after.tokens += tokensOf(usage)
         after.cached += cachedOf(usage)
-        if (!result.isAnswered) return { reason: result.reason }
+        if (!result.isAnswered) {
+          if (got.sent !== undefined) after.counts = countCall(after.counts, counted(got.sent))
+          return { reason: result.reason }
+        }
+        if (cut) {
+          briefRead = callRead(kind, result.text, undefined, size)
+          if (got.sent !== undefined) after.counts = countCall(after.counts, counted(got.sent, briefRead))
+          return { reason: CUT_SHORT }
+        }
         const parsed = parseBrief(result.text)
         if (applyMarks(after, parsed.shown, parsed.closed) && onScreen(sid)) await update($, readingA, () => after.objective)
         const left = gateOpen(after.objective)
-        return { ...gateVerdict(parsed, left), open: left }
+        briefRead = callRead(kind, result.text, left, size)
+        gatedOpen = left
+        if (got.sent !== undefined) after.counts = countCall(after.counts, counted(got.sent, briefRead))
+        // The answer as written and the rules it broke, so a second asking can name them (askFault).
+        return { ...gateVerdict(parsed, left), open: left, written: parsed, rules: gateRules(parsed, left) }
       })
+      if (got.sent !== undefined) saveCall($, sid, got.sent, briefRead, gatedOpen)
+      return out
     }
-    const first = await ask('')
+    let first = await ask('')
+    // A reply cut short is read once more; cut short twice, no card is drawn and the toast says so.
+    if ('reason' in first && first.reason === CUT_SHORT) first = await ask('')
     if ('reason' in first) {
       await update($, viewA, () => 'row')
       $.ui.toast(
         first.reason === 'nothing-to-fork'
           ? 'Owner rep: nothing to read yet. Ask the agent something first.'
-          : `Owner rep: the model did not answer (${first.reason}). Press again.`,
+          : first.reason === CUT_SHORT
+            ? 'Owner rep: the briefing stopped before its end twice, so nothing from it was shown. Press again.'
+            : `Owner rep: the model did not answer (${first.reason}). Press again.`,
       )
       return
     }
@@ -1458,16 +1925,21 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     // What came of the own-words call, and its reply's length, for the record.
     let ownRead: OwnRead = 'skipped'
     let ownChars = 0
+    // How the card ended, for the counters: passed at once, passed asked again, the own-words
+    // call's parts taken, or the rep's fixed text.
+    let end: BriefEnd = first.refused ? 'fixed-text' : 'passed'
     if (first.refused && first.open !== null) {
       reads += 1
-      const again = await ask(askAgain(first.open))
+      const again = await ask(askAgain(first.open, askFault(first.written, first.rules)))
       if (!('reason' in again)) taken = again
+      if (!taken.refused) end = 'asked-again'
     }
     // Refused twice (or refused once, the second ask unanswered): the parts the gate
     // replaced are written in the rep's own words by one plain call (no fork) over the
     // objective, the open conditions, the owner's messages and what the briefing itself
     // found. A part it writes that still says stop, a reply that did not come back
-    // whole (parseOwnWords), or a call that fails, leaves the rep's fixed text, and the
+    // whole (parseOwnWords) or came within 2% of its cap (cutShort), or a call that
+    // fails, leaves the rep's fixed text, and the
     // press goes on. It writes card parts only, never the objective. With no objective
     // written there is no such call.
     if (taken.refused && taken.replaced.length > 0 && first.open !== null && taken.open !== null) {
@@ -1476,27 +1948,35 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       taken = { ...taken, ...unusableReplaced(taken.answer, taken.replaced, open) }
       reads += 1
       const rec = await loadRec($, sid)
-      const result = await $.model
-        .complete({
-          model: OBJECTIVE_MODEL,
-          system: OWN_WORDS_SYSTEM,
-          prompt: ownWordsPrompt({ ...(await memoryFor($, sid, rec, 'brief')), context }, open, taken.answer),
-          maxTokens: OWN_WORDS_MAX_TOKENS,
-          effort: 'high',
-          timeoutMs: OWN_WORDS_TIMEOUT_MS,
-        })
-        .catch(() => null)
+      const prompt = ownWordsPrompt({ ...(await memoryFor($, sid, rec, 'brief')), context }, open, taken.answer)
+      const { result, ms } = await timed(() =>
+        $.model.complete({ model: OBJECTIVE_MODEL, system: OWN_WORDS_SYSTEM, prompt, maxTokens: OWN_WORDS_MAX_TOKENS, effort: OWN_WORDS_EFFORT, timeoutMs: OWN_WORDS_TIMEOUT_MS }),
+      )
+      const sent: Sent = {
+        kind: 'own-words',
+        settings: { model: OBJECTIVE_MODEL, effort: OWN_WORDS_EFFORT, maxTokens: OWN_WORDS_MAX_TOKENS, timeoutMs: OWN_WORDS_TIMEOUT_MS },
+        system: OWN_WORDS_SYSTEM,
+        prompt,
+        joined: true,
+        result,
+        ms,
+      }
+      const ownSize = { usage: (result?.usage ?? null) as Usage | null, cap: OWN_WORDS_MAX_TOKENS }
+      const ownCall = result !== null && result.isAnswered ? callRead('own-words', result.text, undefined, ownSize) : undefined
+      saveCall($, sid, sent, ownCall)
       const own = await changeRec($, sid, after => {
+        after.counts = countCall(after.counts, counted(sent, ownCall))
         if (result !== null) {
           after.calls += 1
           after.tokens += tokensOf(result.usage)
           after.cached += cachedOf(result.usage)
         }
-        return result !== null && result.isAnswered ? parseOwnWords(result.text) : null
+        return result !== null && result.isAnswered && !cutShort('own-words', result.text, ownSize.usage, ownSize.cap) ? parseOwnWords(result.text) : null
       })
       const answered = result !== null && result.isAnswered
       ownChars = answered ? result.text.length : 0
       ownRead = !answered ? 'none' : own === null ? 'cut' : 'whole'
+      if (own !== null) end = 'own-words'
       // The own-words message is taken only when it is usable: praise alone leaves the fixed text for read 1's message.
       const ownTaken = ownMessageTaken(taken.replaced, own)
       taken = { ...taken, answer: takeOwnWords(taken.answer, ownTaken ? taken.replaced : taken.replaced.filter(p => p !== 'message'), own) }
@@ -1528,6 +2008,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
         checkCost: checkCostText(after.lastCheckTokens, after.lastCheckCached, after.lastCheckMs, after.lastCheckRefused),
       }
       after.lastBrief = { at: brief.at, next: brief.next, message: brief.message, reads, own: ownRead, ownChars }
+      after.counts = countEnd(after.counts, end)
       after.drafts = keepDraft(after.drafts, brief.message)
       return brief
     })
@@ -1601,6 +2082,8 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
     const guarded = guardedPath(path, launch)
     const links = await pathLinks($, checkHost, home, guarded)
     const repos = await gitRepos($, checkHost, home, copy, cwd)
+    const mcp = await checkMcp($, home)
+    const plugins = await checkPlugins($, home)
     const prompt = checkPrompt({
       sessionId: sid,
       cwd,
@@ -1612,10 +2095,11 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       owner: jobMsgs(rec),
       brief: instant,
       writtenAt: new Date(at).toISOString(),
+      startedAt: Date.now(),
       unanswered: [...(links === null ? ['links' as const] : []), ...(repos.whole ? [] : ['repos' as const])],
     })
     const startedAt = Date.now()
-    const stream = $.process.spawn({ argv: hostArgv(checkHost, withProgram(checkArgv(prompt, checkSettings(home, cwd, guarded, links ?? [], repos.dirs)), launch.claude)), cwd: copy, env: checkEnv(launch, copy, store, miseIgnored, home) })
+    const stream = $.process.spawn({ argv: hostArgv(checkHost, withProgram(checkArgv(prompt, checkSettings(home, cwd, guarded, links ?? [], repos.dirs, plugins), mcp), launch.claude)), cwd: copy, env: { ...CHECK_ISOLATE_ENV, [CHECK_ENV]: '1', ...checkEnv(launch, copy, store, miseIgnored, home) } })
     let stdout = ''
     let stderr = ''
     let timedOut = false
@@ -1655,6 +2139,15 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       const why = stderr.trim().split('\n').pop() ?? ''
       return finish({ checkNote: `The check could not run${end.code === null ? '' : ` (exit ${end.code})`}${why === '' ? '' : `: ${fit(why, 160)}`}.` })
     }
+    // What is read (checkReadOf): the result if whole, else the last whole answer the checker
+    // wrote; when the run then ended in an engine error, the card says that too, in the engine's
+    // words (checkFailedAfterNote). A run that ended in an engine error with no whole answer is that failure, in the
+    // engine's words; a reply that did not reach "looked:" stopped before its end (endsWhole).
+    // Either way nothing of it is taken, no mark and no part of the card, and the card says
+    // which. It is not run again on its own, as the briefing's read is: each run is a paid
+    // session of its own, up to CHECK_TIMEOUT_MS long, so the owner presses the check again.
+    const reading = checkReadOf(got)
+    let notRead: string | null = null
     const patch = await changeRec($, sid, async after => {
       after.checks += 1
       after.checkTokens += got.tokens
@@ -1666,14 +2159,19 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       // taken and the card on record stays the newer one, so the message the
       // owner sends from that card is still known for the rep's draft.
       if (epoch !== checkEpoch || after.lastBrief?.at !== at) return null
-      const c = parseCheck(got.text)
+      if (!('read' in reading)) {
+        notRead = 'failed' in reading ? checkFailedNote(reading.failed) : CHECK_CUT_NOTE
+        return null
+      }
+      const text = reading.read
+      const c = parseCheck(text)
       // A condition the check saw shown, or the owner closed, moves under the same
       // rule as a look's, and a reopened one moves shown only here; one held shown
       // that the check found is not so goes back to not shown, marked reopened.
       const marked = applyMarks(after, c.shown, c.closed, { reopen: c.reopen })
       if (marked && onScreen(sid)) await update($, readingA, () => after.objective)
       const checked: Checked = { holds: c.holds, wrong: c.wrong, notShown: c.notShown, changed: c.changed, looked: c.looked, refused: got.refused }
-      const hasLeft = parts_hasLeft(got.text)
+      const hasLeft = parts_hasLeft(text)
       // The card the check leaves, each part the checker's where it gave one
       // and the instant read's where it did not, verdict and going-well line
       // included, goes through the same gate as the briefing: a stop or a
@@ -1701,7 +2199,10 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
           means: or(c.means, instant.means),
           leftOut,
           next: or(c.next, instant.next),
-          message: or(c.message, instant.message),
+          // The message and what it does go together: a checker that wrote what its message does
+          // and no message (nothing to send) has said there is nothing to send, and the briefing's
+          // older draft is not put back beside that (live test of 18 Nov 2026, round 5, B11).
+          message: c.message === '' && c.does !== '' ? '' : or(c.message, instant.message),
           does: or(c.does, instant.does),
         },
         gateOpen(after.objective),
@@ -1718,6 +2219,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
         does: card.does,
         spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens, after.objectiveCalls, after.objectiveTokens, after.objectiveFailed, after.objectiveWhy),
         checkCost: checkCostText(after.lastCheckTokens, after.lastCheckCached, after.lastCheckMs, after.lastCheckRefused),
+        ...(reading.failedAfter === undefined ? {} : { checkNote: checkFailedAfterNote(reading.failedAfter) }),
       }
       // The card's reads and what came of its own-words call stay the briefing's: the check
       // makes no such call.
@@ -1726,6 +2228,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       return patch
     })
     if (patch !== null) await finish(patch)
+    if (notRead !== null) await finish({ checkNote: notRead })
   } catch (error) {
     const why = error instanceof Error ? error.message : String(error)
     await finish({ checkNote: `The check failed: ${fit(why, 160)}` }).catch(() => undefined)
@@ -1826,6 +2329,38 @@ async function homeFor($: EngineInterface): Promise<string> {
   const windows = (await osOf($)) === WINDOWS_OS
   const home = homeOf(windows, await $.env.get('HOME'), await $.env.get('USERPROFILE'))
   return windows ? slashed(home) : home
+}
+
+// The check's MCP servers (checkMcpConfig), from Claude Code's .claude.json: in the config
+// folder when CLAUDE_CONFIG_DIR names one, else in the home. Only the agentsview entry is
+// taken; nothing else in the file is kept or sent. None when neither can be read, a file past
+// the engine's 4 MiB read limit among them: the checker reads the record through the agentsview
+// command either way.
+async function checkMcp($: EngineInterface, home: string): Promise<string> {
+  try {
+    const set = await $.env.get('CLAUDE_CONFIG_DIR')
+    const files = [...(set !== undefined && set !== '' ? [`${set.replace(/\/+$/, '')}/.claude.json`] : []), `${home}/.claude.json`]
+    for (const f of files) {
+      const text = await readText($, f)
+      if (text !== null) return checkMcpConfig(text)
+    }
+  } catch {
+    // none
+  }
+  return checkMcpConfig(null)
+}
+
+// The owner's plugins to turn off in the check (checkPluginsOff), from the user level's
+// settings.json in the config folder: CLAUDE_CONFIG_DIR when set, else ~/.claude, the file
+// `--setting-sources user` reads. None when it cannot be read.
+async function checkPlugins($: EngineInterface, home: string): Promise<Record<string, false>> {
+  try {
+    const set = await $.env.get('CLAUDE_CONFIG_DIR')
+    const config = set !== undefined && set !== '' ? set.replace(/\/+$/, '') : `${home}/.claude`
+    return checkPluginsOff(await readText($, `${config}/settings.json`))
+  } catch {
+    return {}
+  }
 }
 
 // pnpm's store as pnpm names it in the copy, outside the fence, its pnpmfile ignored, its
@@ -2489,6 +3024,8 @@ function drawsSomething(tree: unknown): boolean {
 // is set when a /clear or a resume ended the session on screen: until the next
 // id is read, no session is on screen, so a run the old one started draws nothing.
 let currentId = ''
+// This session is the rep's own check (`isOwnCheck`): every hook passes it by untouched.
+let ownCheck = false
 let ended = false
 async function sessionId($: EngineInterface): Promise<string> {
   const id = await $.session.id()
@@ -2547,8 +3084,27 @@ export const register: Register = on => {
 
   on('session.start', async ($, e, next) => {
     try {
+      ownCheck = isOwnCheck(await homeFor($), e.cwd, await $.env.get('OWNER_REP_CHECK'))
+    } catch {
+      ownCheck = false
+    }
+    if (ownCheck) return next(e)
+    try {
+      await $.command.register({ name: 'owner-rep-counts', description: "Owner rep: this session's call counters" })
+      await $.command.register({ name: 'owner-rep-replay', description: 'Owner rep: send saved calls again', argumentHint: '<call file, session or all> [--kind k] [--last n] [--effort e] [--times n] [--variant v] [--base b]' })
+    } catch {
+      // The rep works without them.
+    }
+    try {
       currentId = await $.session.id()
       ended = false
+      // Old saved calls cleared in the background; a start never waits on it.
+      if (isSessionId(currentId)) {
+        const starting = currentId
+        callsFolder($)
+          .then(root => (root === null ? undefined : pruneCalls($, root, starting)))
+          .catch(() => undefined)
+      }
       await enterSession($, currentId)
       await update($, viewA, v => (v === 'reading' ? 'row' : (v ?? 'row')))
       await setNow($, { isWorking: false, doing: 'idle', mark: '' })
@@ -2573,17 +3129,27 @@ export const register: Register = on => {
     return next(e)
   })
 
+  on('command.describe', ($, e, next) => next(HIDDEN_COMMANDS.has(e.command) ? { ...e, isHidden: true } : e))
+  on('command.run', { command: 'owner-rep-counts' }, async $ => {
+    const id = await $.session.id()
+    return { text: countsText((await loadRec($, id)).counts) }
+  })
+  on('command.run', { command: 'owner-rep-replay' }, async ($, e) => ({ text: await replay($, e.args) }))
+
   // Where Claude Code saves the session's transcript, read by heldItems.
   on('classic.SessionStart', ($, e, next) => {
+    if (ownCheck) return next(e)
     holdTranscript(e.session_id, e.transcript_path)
     return next(e)
   })
   on('classic.UserPromptSubmit', ($, e, next) => {
+    if (ownCheck) return next(e)
     holdTranscript(e.session_id, e.transcript_path)
     return next(e)
   })
 
   on('prompt.submit', async ($, e, next) => {
+    if (ownCheck) return next(e)
     // The engine stamps the origin; the test kit's own submit carries none.
     const kind = e.origin?.kind ?? 'composer'
     lastOrigin = { kind }
@@ -2694,6 +3260,7 @@ export const register: Register = on => {
   })
 
   on('turn.start', async ($, e, next) => {
+    if (ownCheck) return next(e)
     if (e.agentId === undefined) {
       // How the turn began: a background task finishing, the agent going on by itself, the owner, or else.
       const origin = lastOrigin?.kind
@@ -2715,7 +3282,39 @@ export const register: Register = on => {
   })
 
   on('tool.call', async ($, e, next) => {
-    if (e.agentId !== undefined) return next(e)
+    if (ownCheck) return next(e)
+    // A helper's or Codex's run, the agent's or a helper's, is recorded once its call returns,
+    // with how it ended and its own last words, so a look naming it can sign off (`signsOff`).
+    // A helper's own call that changes the work marks the helper, and its runs, as changed.
+    const input = e as unknown as Record<string, unknown>
+    const run = runOf(String(e.tool), input.command)
+    const helper = e.agentId
+    const changes =
+      helper !== undefined &&
+      (EDIT_TOOLS.has(String(e.tool)) ||
+        (String(e.tool) === 'Bash' && typeof input.command === 'string' && shellChanges(input.command, await $.session.cwd().catch(() => ''))))
+    const ranOne = async <T,>(result: T): Promise<T> => {
+      if (run === null && !changes) return result
+      await sessionId($)
+        .then(id =>
+          changeRec($, id, r => {
+            let ran = r.ran ?? []
+            if (changes && helper !== undefined) {
+              r.changedBy = [...new Set([...(r.changedBy ?? []), helper])].slice(-RUNS_KEPT)
+              ran = ran.map(x => (x.agentId === helper ? { ...x, changed: true } : x))
+            }
+            if (run !== null) {
+              const got = runFromResult(run.changes, result)
+              const by = got.agentId !== undefined && (r.changedBy ?? []).includes(got.agentId)
+              ran = [...ran, { id: String(e.tool_use_id), kind: run.kind, ...got, changed: got.changed || by }]
+            }
+            r.ran = ran.slice(-RUNS_KEPT)
+          }),
+        )
+        .catch(() => undefined)
+      return result
+    }
+    if (e.agentId !== undefined) return ranOne(await next(e))
     const tool = String(e.tool)
     const doing = doingFor(tool, e as unknown as Record<string, unknown>)
     const waits = tool === 'AskUserQuestion' || tool === 'ExitPlanMode'
@@ -2730,7 +3329,7 @@ export const register: Register = on => {
       // Drawing is best effort.
     }
     try {
-      const result = await next(e)
+      const result = await ranOne(await next(e))
       // What the plan screen answered is stored after the call; a thrown call stores nothing.
       if (tool === 'ExitPlanMode') await takePlanScreen($, e, result).catch(() => undefined)
       return result
@@ -2743,6 +3342,7 @@ export const register: Register = on => {
   })
 
   on('agent.spawn', async ($, e, next) => {
+    if (ownCheck) return next(e)
     const result = await next(e)
     const id = result.agentId
     if (id !== undefined) {
@@ -2753,6 +3353,7 @@ export const register: Register = on => {
   })
 
   on('turn.step', async function* ($, e, next) {
+    if (ownCheck) return yield* next(e)
     if (e.agentId !== undefined) return yield* next(e)
     let entry = live.get(e.turnId)
     if (entry === undefined) {
@@ -2779,8 +3380,19 @@ export const register: Register = on => {
   })
 
   on('turn.complete', async ($, e, next) => {
+    if (ownCheck) return next(e)
     if (e.agentId !== undefined) {
       const gone = e.agentId
+      // A helper sent off to run on its own ends here: its run finishes with its answer or fails.
+      const reason = String((e as unknown as { reason?: unknown }).reason ?? (e.isAborted ? 'aborted' : 'answer'))
+      await sessionId($)
+        .then(id =>
+          changeRec($, id, r => {
+            if (!(r.ran ?? []).some(x => x.agentId === gone && x.state === 'running')) return
+            r.ran = (r.ran ?? []).map(x => (x.agentId === gone && x.state === 'running' ? runEnded(x, reason, String(e.answer ?? '')) : x))
+          }),
+        )
+        .catch(() => undefined)
       await update($, helpersA, ids => (ids ?? []).filter(i => i !== gone)).catch(() => undefined)
       await update($, nowA, n => ({ ...(n ?? IDLE), helpers: Math.max(0, (n?.helpers ?? 0) - 1) })).catch(
         () => undefined,
@@ -2817,6 +3429,7 @@ export const register: Register = on => {
   // and their text is remembered as on earlier builds. While the briefing is up it takes the
   // strip alone: the other rows are left out of what is stacked.
   on('ui.render', { component: 'AbovePromptList' }, async ($, e, next) => {
+    if (ownCheck) return next(e)
     const others = e.props.rows.filter(r => r.plugin !== PLUGIN && drawsSomething(r.tree))
     const draws = others.length > 0
     if (draws) rememberOther($, others.map(r => textOf(r.tree)).join(' ')).catch(() => undefined)
@@ -2831,6 +3444,7 @@ export const register: Register = on => {
   })
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
+    if (ownCheck) return next(e)
     cardUp.set(e.surface, false)
     if (e.props.hasSurvey) return next(e)
     if (e.surface !== 'terminal' && e.surface !== 'desktop' && e.surface !== 'vscode') return next(e)
@@ -2906,6 +3520,13 @@ export const register: Register = on => {
         {buttons}
       </Box>
     )
+    // The card's buttons row in the band's columns: an item that would pass the edge wraps
+    // whole onto a row below, three cells from the next, as `buttonRows` counts it.
+    const cardChoices = (...buttons: RenderNodeList) => (
+      <Box flexDirection="row" flexWrap="wrap" columnGap={3} paddingLeft={2} width={w(cols)}>
+        {buttons}
+      </Box>
+    )
     // From the prompt box only a bare digit presses a band button, so every
     // button carries a digit. While another mod's note is beneath, its digits
     // win and the row's buttons are drawn without any, for the mouse alone.
@@ -2920,8 +3541,18 @@ export const register: Register = on => {
     // The row shows the result; so does the card's head, with the count line under it
     // and the objective whole at the card's end when the rows allow.
     const placeholder = 'working out the result you want from your messages…'
-    const head = lead(headGlyph, headColor, 'Owner rep', reading?.result ?? placeholder)
     // The first thing the record could not keep or save, under the row's head.
+    const recordRows = lines[0] === undefined ? 0 : rowsOf(lines[0], cols - 2)
+    // On the terminal the head takes only the rows the band leaves it after the gap, the
+    // record line, the buttons row and whatever is drawn above or beneath, so a long result
+    // never pushes the row's buttons under a "↓ n more" row (round nine, 100x24).
+    const beneathRows = drawsSomething(beneath) ? rowsOf(textOf(beneath), cols) : 0
+    const headOf = (above: number) => {
+      const result = reading?.result ?? placeholder
+      const text = inColumns ? rowHead(result, e.props.maxRows - gap - recordRows - 1 - beneathRows - above, cols) : result
+      return lead(headGlyph, headColor, 'Owner rep', text)
+    }
+    const head = headOf(0)
     const recordLine =
       lines[0] === undefined ? undefined : (
         <Box paddingLeft={2} width={w(cols)}>
@@ -2952,7 +3583,7 @@ export const register: Register = on => {
             <Button key="fine" plain hotkey="2" label="Fine" onPress={clear} />,
             <Button key="later" plain hotkey="0" label="Later" onPress={clear} />,
           )}
-          {head}
+          {headOf(rowsOf(`Heads up · ${note.line}`, cols - 2) + rowsOf(note.why, cols - 2) + 1)}
           {recordLine}
           {choices(statusText, <Button key="rep" plain label="Brief me" onPress={onPress} />, <Button key="tell" plain label="Tell the rep" onPress={tell} />)}
           {beneath}
@@ -2976,7 +3607,7 @@ export const register: Register = on => {
         // The objective whole is drawn only when it says more than the head.
         reading: objective === result ? '' : objective,
       }
-      const shown = inColumns ? fillCard(whole, e.props.maxRows, cols) : whole
+      const shown: CardText = inColumns ? fillCard(whole, e.props.maxRows, cols) : whole
       const cardHead = lead(headGlyph, headColor, 'Owner rep', shown.result)
       const section = (label: string, text: string) =>
         text === '' ? undefined : (
@@ -2988,7 +3619,7 @@ export const register: Register = on => {
           </Box>
         )
       return (
-        <Box flexDirection="column" marginTop={gap}>
+        <Box flexDirection="column" marginTop={shown.tight === true ? 0 : gap}>
           {cardHead}
           {shown.count !== '' ? (
             <Box paddingLeft={2} width={w(cols)}>
@@ -3025,7 +3656,15 @@ export const register: Register = on => {
             </Box>
           ) : undefined}
           {section('Next:', shown.next)}
-          {shown.checked !== null ? (
+          {shown.checked !== null && shown.checkedBare === true ? (
+            shown.checked.looked === '' ? undefined : (
+              <Box paddingLeft={2} width={w(cols)}>
+                <Text dimColor wrap="wrap">
+                  {shown.checked.looked}
+                </Text>
+              </Box>
+            )
+          ) : shown.checked !== null ? (
             <Box flexDirection="column" paddingLeft={2} width={w(cols)}>
               <Text bold>Checked against the record and the files:</Text>
               {shown.checked.holds.map((item, i) => (
@@ -3072,7 +3711,7 @@ export const register: Register = on => {
           ) : undefined}
           {shown.isChecking ? (
             <Box paddingLeft={2}>
-              <Text color="suggestion">Checking the record and the files… the card updates when it is done.</Text>
+              <Text color="suggestion">{CHECKING_LINE}</Text>
             </Box>
           ) : undefined}
           {shown.checked === null && !shown.isChecking && shown.checkNote === '' ? (
@@ -3108,8 +3747,8 @@ export const register: Register = on => {
               </Text>
             </Box>
           ) : undefined}
-          {choices(
-            shown.checked === null && !shown.isChecking && !checkBarred(shown.checkNote) ? (
+          {cardChoices(
+            checkShows(shown) ? (
               <Button
                 key="check"
                 plain
@@ -3122,7 +3761,7 @@ export const register: Register = on => {
                 }}
               />
             ) : undefined,
-            brief.message !== '' ? (
+            putShows(shown) ? (
               <Button
                 key="put"
                 plain
@@ -3136,7 +3775,7 @@ export const register: Register = on => {
             <Button key="close" plain hotkey="2" label="Fine, close" onPress={close} />,
             tellButton4,
             <Button key="later" plain hotkey="0" label="Later" onPress={close} />,
-            brief.size !== '' ? <Text dimColor>{brief.size}</Text> : undefined,
+            shown.size !== undefined && shown.size !== '' ? <Text dimColor>{shown.size}</Text> : undefined,
           )}
           {shown.spent !== '' ? (
             <Box paddingLeft={2} width={w(cols)}>
@@ -3160,6 +3799,7 @@ export const register: Register = on => {
   })
 
   on('session.end', async ($, e, next) => {
+    if (ownCheck) return next(e)
     try {
       await changeRec($, e.sessionId, () => undefined)
     } catch {

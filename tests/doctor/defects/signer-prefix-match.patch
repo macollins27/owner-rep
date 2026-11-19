@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 5a5ee04..3dc1c26 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -227,7 +227,7 @@ const UNNAMED = new Map<string, Signer>([
+   ['codex', 'codex'],
+ ])
+ // "helper <run>", "Codex <run>", "Codex run <run>", "helper (run <run>)".
+-const RUN_WHO = /^(helper|codex)(?:\s+run)?\s*\(?\s*(?:run\s+|id:?\s*)?([A-Za-z0-9_-]{6,})\s*\)?$/
++const RUN_WHO = /^(helper|codex)(?:\s+run)?\s*\(?\s*(?:run\s+|id:?\s*)?([A-Za-z0-9_-]{6,})\s*\)?/
+ // Just before "look by": a word that denies the look.
+ const DENIED = /\b(?:no|not|never|without)\s+$/i
+ // A who as compared: lower case, straight apostrophes, one space, no leading article or

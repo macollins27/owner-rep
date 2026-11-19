@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 2d9e89a..b4405bd 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -6252,7 +6252,6 @@ export function editSaved(kind: CallKind, system: string, prompt: string | Promp
+   if (apply.includes('no-think')) {
+     const head = task.match(OLD_FRAME)?.[0] ?? ''
+     if (!task.startsWith(head + OLD_NO_THINK)) return { why: 'the old no-think line is not in it' }
+-    task = head + task.slice(head.length + OLD_NO_THINK.length)
+   }
+   if (apply.includes('frame')) {
+     if (!system.startsWith(OLD_RECORD_SYSTEM_START)) return { why: "its system prompt is not the record read's" }

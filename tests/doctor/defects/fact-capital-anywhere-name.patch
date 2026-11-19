@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 83998ef..7c9d449 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3552,7 +3552,7 @@ const factTokens = (text: string): FactTok[] => {
+     if (w === '&') return { w: 'and', t: 'W' }
+     if (w === '/') return { w: 'or', t: 'W' }
+     if (/^[,;:()[\]—–!?.&/-]+$/.test(w)) return { w, t: 'X' }
+-    if (/\d/.test(w) && /[a-z.]/i.test(w)) return { w, t: 'H' }
++    if ((/\d/.test(w) && /[a-z.]/i.test(w)) || /^[A-Z]/.test(w)) return { w, t: 'H' }
+     return { w: w.toLowerCase(), t: 'W' }
+   })
+ }

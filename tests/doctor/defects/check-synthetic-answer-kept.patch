@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index b592b1d..182a74c 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -4596,7 +4596,7 @@ export function resultOf(stdout: string): RunResult | null {
+   const errors = Array.isArray(d.errors) ? d.errors.filter((e): e is string => typeof e === 'string' && e.trim() !== '') : []
+   const error = !failed ? '' : text.trim() !== '' ? text.trim() : errors.length > 0 ? errors.join('; ') : typeof d.subtype === 'string' ? d.subtype : 'error'
+   const answers = lines
+-    .filter(l => l.type === 'assistant' && l.message?.model !== '<synthetic>' && Array.isArray(l.message?.content))
++    .filter(l => l.type === 'assistant' && Array.isArray(l.message?.content))
+     .map(l => (l.message?.content as { type?: unknown; text?: unknown }[]).filter(b => b.type === 'text' && typeof b.text === 'string').map(b => b.text as string).join(''))
+     .filter(t => t.trim() !== '')
+   const u = d.usage ?? {}

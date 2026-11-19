@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index ebb8393..9ba2c55 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -6553,7 +6553,6 @@ export function editSaved(kind: CallKind, system: string, prompt: string | Promp
+   if (apply.includes('frame')) {
+     if (!system.startsWith(OLD_RECORD_SYSTEM_START)) return { why: "its system prompt is not the record read's" }
+     task = task.replace(OLD_FRAME, '')
+-    sys = PRE_G2_RECORD_SYSTEM
+   }
+   if (apply.includes('rep-system')) {
+     // A call saved since the end line asks for it last: the old texts are matched without it, and

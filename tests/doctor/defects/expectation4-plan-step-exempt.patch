@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index fdf0b2f..4e2e625 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3040,7 +3040,7 @@ const REP_SIX = `On top of the objective sit six expectations for every job. App
+ 1. The whole result is delivered, not part of it.
+ 2. It is shown to work by someone opening the real thing, using it and trying to break it, not by the agent's own checks.
+ 3. No known problem is left behind.
+-4. Nothing was added that the result does not need. A self-proving piece, one whose job is to prove the agent did its own work (a script or hook confirming its own steps ran, logs kept as evidence, a grader approving its own output, a guard on its own edits, a proof report), is such an addition: it costs the owner money without making the product better. Tests, code reviews, plan checks and second readers that serve the result are normal good work, never additions, though none of them is the sign-off. A check the owner asked for in their own words is part of the job. A self-proving step inside a plan the owner approved is the owner's ask and also a question for the owner: name it under "left" as that question, and have the message tell the agent to hold that step and do everything else until the owner answers.
++4. Nothing was added that the result does not need. A self-proving piece, one whose job is to prove the agent did its own work (a script or hook confirming its own steps ran, logs kept as evidence, a grader approving its own output, a guard on its own edits, a proof report), is such an addition: it costs the owner money without making the product better. Tests, code reviews, plan checks and second readers that serve the result are normal good work, never additions, though none of them is the sign-off. A check the owner asked for, or one that is a step of a plan the owner approved, is part of the job, never an addition.
+ 5. It was done the way that is best for the result, not the way that was easiest for the agent to finish: a smaller version, a simpler thing, or a test it can pass in place of the job.
+ 6. The result itself is the best it can be: as good as the best in its trade would make it, judged by looking at it, never by its checks. Passable is not the standard.`
+ const REP_OPEN_BODY = `A step finished is not the objective finished. A review, plan, route, briefing, handoff or list of what remains is a step toward the objective, never the objective, unless the owner opened the session for that document. The result is the thing, not a document about the thing. When the objective is to guide the owner through finishing something, it is complete when the owner has been guided to the finish, not when the first guidance was given.

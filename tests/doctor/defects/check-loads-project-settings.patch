@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 013303a..2338909 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3791,8 +3791,6 @@ export const checkArgv = (prompt: string, settings: string, mcp: string = checkM
+   CHECK_ALLOWED_TOOLS,
+   '--disallowedTools',
+   CHECK_DISALLOWED_TOOLS,
+-  '--setting-sources',
+-  'user',
+   '--disable-slash-commands',
+   '--strict-mcp-config',
+   '--mcp-config',

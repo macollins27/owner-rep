@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 8d2bd98..14d346e 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3614,7 +3614,6 @@ const factRead = (ts: FactTok[]): boolean => {
+   const place = (i: number): number[] => {
+     const at = x(i, ',') ? i + 1 : i
+     // "pushed anywhere", "written anywhere else" (seventh live test).
+-    if (w(at, /^(?:anywhere|elsewhere)$/)) return w(at + 1, /^else$/) ? [at + 1, at + 2] : [at + 1]
+     // "committed for this job" (eighth live test): "for" opens only the job, the session, the task
+     // or the work (ninth live test: "no commit was made for this work").
+     if (w(at, /^for$/)) return w(at + 1, /^(?:this|the)$/) && w(at + 2, /^(?:job|session|task|work)$/) ? [at + 3] : []

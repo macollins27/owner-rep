@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 5b57838..61fd384 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3399,7 +3399,7 @@ export const verdictOf = (s: string | undefined): Verdict => {
+ export const NOW_MAX = 200
+ const nowOf = (part: string | undefined): string => {
+   const t = firstSentence((clean(part).split('\n')[0] ?? '').replace(/\*\*|__|`/g, '').replace(/^[*_"]+|[*_"]+$/g, '').trim())
+-  if (t === '' || /^(none|nothing|n\/a|unknown)\b\.?$/i.test(t) || /^<.*>$/.test(t)) return ''
++  if (t === '') return ''
+   return t.length > NOW_MAX ? `${t.slice(0, NOW_MAX - 1).trimEnd()}…` : t
+ }
+ 

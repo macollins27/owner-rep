@@ -1,8 +1,8 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 4f9f7af..6c20868 100644
+index 5353ec7..8e43ca0 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1587,7 +1587,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
+@@ -2078,7 +2078,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
      const path = (await $.env.get('PATH')) ?? ''
      const miseIgnored = (await $.env.get('MISE_IGNORED_CONFIG_PATHS')) ?? ''
      const launch = await launchFor($, checkHost, home, path)

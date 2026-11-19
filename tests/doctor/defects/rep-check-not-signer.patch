@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 5a5ee04..a4ca785 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -219,7 +219,7 @@ const LOOK_AT = /(?:^|(?<=[\s.;,(]))(?:a\s+)?(?:hands-on\s+)?look\s+by\s+([^:]+?
+ // said something, and it changed nothing. The check signs in its own marks alone. A look's
+ // own words decide only that it is a look: a signer named, something seen, not denied.
+ export type Signer = 'helper' | 'codex' | 'check'
+-const CHECK_NAMES = new Set(['check', "rep's own check", "rep's check", "owner-rep's check", "owner rep's check"])
++const CHECK_NAMES = new Set(['check', "rep's check", "owner-rep's check", "owner rep's check"])
+ // The names from before runs were named: a signer, but no run, so never a sign-off.
+ const UNNAMED = new Map<string, Signer>([
+   ['helper that did not build it', 'helper'],

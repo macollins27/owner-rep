@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index e86901f..66c6965 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3528,7 +3528,7 @@ const FACT_DIR = /^(?:bin|sbin|src|lib|libexec|dist|tmp|usr|opt|var|etc|node_mod
+ const factPath = (m: string): boolean => /^(?:~\/|\.{1,2}\/|\/)/.test(m) || m.includes('://') || FACT_EXT.test(m.slice(m.lastIndexOf('/') + 1)) || (m.includes('/') && m.split('/').some(p => FACT_DIR.test(p)))
+ const factModPart = (p: string): boolean => {
+   const stem = p.replace(/['’]s$/, '')
+-  return [FACT_MOD, FACT_THING, FACT_PLACE_NOUN, FACT_ACTOR, FACT_STATE].some(re => re.test(stem))
++  return [FACT_MOD, FACT_THING, FACT_PLACE_NOUN, FACT_ACTOR].some(re => re.test(stem))
+ }
+ // A doing folded into a noun's own words (ninth live test): "copies", "changes", "tags" and "logs"
+ // are nouns of the work and also say what a thing does, so "the copies-every-file tool" and "the

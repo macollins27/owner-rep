@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 6abcdfc..4b6305f 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2078,7 +2078,7 @@ async function checkMcp($: EngineInterface, home: string): Promise<string> {
+     const files = [...(set !== undefined && set !== '' ? [`${set.replace(/\/+$/, '')}/.claude.json`] : []), `${home}/.claude.json`]
+     for (const f of files) {
+       const text = await readText($, f)
+-      if (text !== null) return checkMcpConfig(text)
++      if (text !== null && checkMcpConfig(text) !== checkMcpConfig(null)) return checkMcpConfig(text)
+     }
+   } catch {
+     // none

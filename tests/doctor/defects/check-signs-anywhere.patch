@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 5a5ee04..fad406a 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -282,7 +282,7 @@ export function runFor(l: Look, runs: readonly Run[]): Run | undefined {
+ // the check signs only in its own marks (`check`).
+ export const signsOff = (l: Look, runs: readonly Run[], check: boolean): boolean => {
+   if (!l.signs) return false
+-  if (l.as === 'check') return check
++  if (l.as === 'check') return true
+   const r = runFor(l, runs)
+   return r !== undefined && runQualifies(r)
+ }

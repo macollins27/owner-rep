@@ -1,0 +1,14 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index b592b1d..0d1615b 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -4406,8 +4406,7 @@ export const checkArgv = (prompt: string, settings: string, mcp: string = checkM
+   // Stream-json, so each answer the checker wrote is in the output, not only the last result,
+   // which an engine error after a whole answer replaces (checkReadOf); it needs --verbose.
+   '--output-format',
+-  'stream-json',
+-  '--verbose',
++  'json',
+   '--max-turns',
+   CHECK_MAX_TURNS,
+   '--permission-mode',

@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index fa5a469..61ad789 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3081,7 +3081,7 @@ export const REP_MEASURE = `## What you measure against\n\n${REP_MEASURE_BODY}\n
+ export const REP_STATES = `Each condition of done is in one of four states:
+ - open: not yet done, or not yet shown done.
+ - not shown: the agent says it is done, and only proof from outside the agent's word can show it, such as what is installed, deployed or running. It becomes shown as soon as the record holds that proof.
+-- shown: the record itself holds the proof, by what counts as shown, never the agent's word.
++- shown: the record itself holds the proof, by what counts as shown.
+ - closed: a message of the owner's own closed it, cited by its number. A draft of yours that the owner sent closes nothing.`
+ export const REP_CONDITIONS = `## The conditions and their states\n\n${REP_STATES}`
+ // G5 and G12 (prompt audit §6.1, as amended by G44): one standard of proof, said once. A fact by

@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 26bf510..470af6b 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2082,7 +2082,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
+           // The message and what it does go together: a checker that wrote what its message does
+           // and no message (nothing to send) has said there is nothing to send, and the briefing's
+           // older draft is not put back beside that (live test of 18 Nov 2026, round 5, B11).
+-          message: c.message === '' && c.does !== '' ? '' : or(c.message, instant.message),
++          message: or(c.message, instant.message),
+           does: or(c.does, instant.does),
+         },
+         gateOpen(after.objective),
