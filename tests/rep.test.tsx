@@ -2976,6 +2976,10 @@ test('fillCard keeps the count line before the judgment, shortens the judgment t
   expect(rowsOf(`Next: ${c.next}`, 94)).toBe(1)
   expect(c.stands).toMatch(/^Stands sentence number 1 .*…$/)
   expect(c.leftOut).toEqual(['one; two; three'])
+  // Items written as sentences fold with a space after each full stop, never ".;" (the live
+  // card of 19 Nov 2026 showed "you asked for both directly.; The counter was never run").
+  const said = fillCard({ ...long, leftOut: ['The tests were never written.', 'The counter was never run!', 'no output shown', 'nothing else'] }, 13, 96)
+  expect(said.leftOut).toEqual(['The tests were never written. The counter was never run! no output shown; nothing else'])
   expect(rowsOf(c.message, 90)).toBe(1)
   // Eight rows hold no more than the head, the count line, a part and one row of the message:
   // the least telling went first, stands last.
