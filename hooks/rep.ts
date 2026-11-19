@@ -3494,6 +3494,13 @@ const FACT_PREP = /^(?:in|inside|within|outside|under|at|on|to|into|onto|from|be
 const FACT_UNIT = /^(?:bytes?|characters?|lines?|words?)$/
 const FACT_TAIL = /^(?:with|no|trailing|newlines?|or|any|other|bytes?|characters?|at|after|before|the|end|it)$/
 // Words that never stand before a noun as one of its words: they belong to the shape itself.
+// Words that say how good a thing is ("the bug-free code", "the secure service", "the fully
+// tested build"): a quality is something to show, so it never stands among a noun's own words
+// (sixth live test of 18 Nov 2026). Each part of a hyphened word is read alone; a fact's own
+// state stays ("the installed build"). A misread noun
+// costs a look by someone who did not build it; a misread quality would close on the builder's own run.
+const FACT_QUALITY = /^(?:secure|correct|fast|quick|robust|complete|clean|safe|valid|accurate|stable|perfect|efficient|responsive|ready|proper|right|bad|broken|solid|sound|fine|smooth|strong|nice|great|better|best|quality|compliant|true|real|full|free|healthy|functional|tight|minimal|simple|elegant|modern|professional|airtight|optimal|bugless|bug|error|crash|idempotent)$|(?:ed|ly|free|proof|less|ful|able|ible|ous|ive)$/
+const factQuality = (w: string): boolean => w.split('-').some(p => FACT_QUALITY.test(p) && !FACT_STATE.test(p))
 const FACT_NOT_MOD = /^(?:it|they|them|is|are|was|were|be|been|has|have|had|and|or|but|not|never|no|nothing|none|whose|which|that|who|with|for|by|as|of|if|when|where|while|because|exists?|holds?|contains?|does|do|did|runsnewest)$/
 
 const factTokens = (text: string): FactTok[] => {
@@ -3520,7 +3527,7 @@ const factTokens = (text: string): FactTok[] => {
 const factRead = (ts: FactTok[]): boolean => {
   const w = (i: number, re: RegExp): boolean => ts[i]?.t === 'W' && re.test(ts[i]?.w ?? '')
   const x = (i: number, s: string): boolean => ts[i]?.t === 'X' && ts[i]?.w === s
-  const mod = (i: number): boolean => { const k = ts[i]; return k !== undefined && (k.t === 'W' ? !FACT_NOT_MOD.test(k.w) : k.t === 'H' || k.t === 'N' || k.t === 'P') }
+  const mod = (i: number): boolean => { const k = ts[i]; return k !== undefined && (k.t === 'W' ? !FACT_NOT_MOD.test(k.w) && !factQuality(k.w) : k.t === 'H' || k.t === 'N' || k.t === 'P') }
   const det = (i: number): boolean => w(i, FACT_DET) || ts[i]?.t === 'N'
   const uniq = (a: FactAt[]): FactAt[] => a.filter((r, k) => a.findIndex(o => o.i === r.i && o.store === r.store) === k)
   // A noun of the work: an optional lead, up to two of its own words, then the noun, and a name after it.

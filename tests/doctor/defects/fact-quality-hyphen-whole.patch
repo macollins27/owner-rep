@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 2ba29a0..06377de 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3500,7 +3500,7 @@ const FACT_TAIL = /^(?:with|no|trailing|newlines?|or|any|other|bytes?|characters
+ // state stays ("the installed build"). A misread noun
+ // costs a look by someone who did not build it; a misread quality would close on the builder's own run.
+ const FACT_QUALITY = /^(?:secure|correct|fast|quick|robust|complete|clean|safe|valid|accurate|stable|perfect|efficient|responsive|ready|proper|right|bad|broken|solid|sound|fine|smooth|strong|nice|great|better|best|quality|compliant|true|real|full|free|healthy|functional|tight|minimal|simple|elegant|modern|professional|airtight|optimal|bugless|bug|error|crash|idempotent)$|(?:ed|ly|free|proof|less|ful|able|ible|ous|ive)$/
+-const factQuality = (w: string): boolean => w.split('-').some(p => FACT_QUALITY.test(p) && !FACT_STATE.test(p))
++const factQuality = (w: string): boolean => [w].some(p => FACT_QUALITY.test(p) && !FACT_STATE.test(p))
+ const FACT_NOT_MOD = /^(?:it|they|them|is|are|was|were|be|been|has|have|had|and|or|but|not|never|no|nothing|none|whose|which|that|who|with|for|by|as|of|if|when|where|while|because|exists?|holds?|contains?|does|do|did|runsnewest)$/
+ 
+ const factTokens = (text: string): FactTok[] => {

@@ -3934,5 +3934,23 @@
     "breaks": "A size said \"in size\" or \"in length\" (\"sample.txt is 6 bytes in size\") is not read as a size, so the writer's own fact reads as works and waits to be shown.",
     "patch": "fact-size-words-dropped.patch",
     "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-quality-any-mod",
+    "breaks": "Any word may stand among a noun's own words, so a quality (\"the bug-free code is committed\", \"the secure service is deployed\") reads as a fact and closes on the builder's own run.",
+    "patch": "fact-quality-any-mod.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-quality-hyphen-whole",
+    "breaks": "A hyphened word is read whole, so a quality in its first part (\"the production-ready build is pushed\") reads as a fact.",
+    "patch": "fact-quality-hyphen-whole.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-quality-state-refused",
+    "breaks": "A fact's own state before a noun (\"the installed build runs the newest code\") is taken for a quality, so the writer's fact reads as works.",
+    "patch": "fact-quality-state-refused.patch",
+    "fixed": "tested 2026-11-18"
   }
 ]
