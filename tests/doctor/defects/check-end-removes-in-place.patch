@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 07ac1c3..3a713d1 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1642,7 +1642,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
+       stop.cancel()
+       if (activeCheck !== null && epoch === checkEpoch) activeCheck = null
+       // A newer check has taken the path, and renames away what is there itself.
+-      if (copy !== cwd && epoch === checkEpoch) await retire($, checkHost, home, copy)
++      if (copy !== cwd && epoch === checkEpoch) await $.process.run(hostArgv(checkHost, ['rm', '-rf', copy]), { timeoutMs: COPY_REMOVE_TIMEOUT_MS })
+     }
+     if (timedOut) return finish({ checkNote: `The check ran out of time (${CHECK_TIMEOUT_WORDS}) and was stopped.` })
+     const got = resultOf(stdout)

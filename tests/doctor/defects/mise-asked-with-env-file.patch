@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 07ac1c3..4f114ec 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1847,7 +1847,7 @@ async function pnpmStore($: EngineInterface, host: Host, launch: Launch, copy: s
+ let miseHeld: Promise<string[] | null> | null = null
+ function miseBins($: EngineInterface, host: Host, home: string): Promise<string[] | null> {
+   miseHeld ??= (async () => {
+-    const r = await $.process.run(hostArgv(host, MISE_BIN_PATHS_ARGV), { cwd: home, env: MISE_ASK_ENV, timeoutMs: MISE_ASK_TIMEOUT_MS }).catch(() => null)
++    const r = await $.process.run(hostArgv(host, MISE_BIN_PATHS_ARGV), { cwd: home, timeoutMs: MISE_ASK_TIMEOUT_MS }).catch(() => null)
+     return r === null || r.exitCode !== 0 ? null : binPathsOf(r.stdout)
+   })()
+   return miseHeld

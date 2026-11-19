@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index e06ac4a..3c2da9e 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3876,7 +3876,7 @@ export const launchOf = (path: string, bins: string[] | null, found: Found[] | n
+   const unresolved: Launch = { path, claude: '', pnpm: '', mise: 'unresolved' }
+   if (found === null) return unresolved
+   const on = new Set(path.split(':').map(unslashed))
+-  const shims = new Set(found.filter(f => isShim(f) && on.has(f.dir)).map(f => f.dir))
++  const shims = new Set(found.filter(f => isShim(f) && on.has(f.dir) && (f.name === 'claude' || f.name === 'pnpm')).map(f => f.dir))
+   if (shims.size === 0) return { path, claude: '', pnpm: '', mise: 'none' }
+   if (bins === null) return unresolved
+   const isShims = (d: string): boolean => shims.has(unslashed(d))

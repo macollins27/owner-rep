@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 07ac1c3..be4ea87 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1937,7 +1937,6 @@ async function makeCopy($: EngineInterface, home: string, sid: string, cwd: stri
+     // What an earlier check left at the path is renamed away; removed in place only if that fails.
+     if (!(await retire($, host, home, copy))) await $.process.run(hostArgv(host, ['rm', '-rf', copy]), { timeoutMs: COPY_REMOVE_TIMEOUT_MS })
+     // The owner file, before the copy, so no copy stands without its owner named (see `PS_ENV`).
+-    await $.process.run(hostArgv(host, ownerWriteArgv(ownerFile(copy))), { env: PS_ENV, timeoutMs: OWNER_WRITE_TIMEOUT_MS }).catch(() => null)
+     const [clone, plain] = copyArgvs(host, cwd, copy)
+     if ((await $.process.run(clone, { timeoutMs: COPY_TIMEOUT_MS })).exitCode === 0) return copy
+     // mkdir without -p fails on a folder that is there, which tells a cp that refused -c
