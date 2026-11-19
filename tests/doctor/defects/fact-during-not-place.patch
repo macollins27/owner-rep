@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index cb54c60..7d631bd 100644
+index 8d2bd98..590f5c2 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3490,7 +3490,7 @@ const FACT_ACTOR = /^(?:agents?|sessions?|helpers?|builder|owner|codex)$/
+@@ -3495,7 +3495,7 @@ const FACT_ACTOR = /^(?:agents?|sessions?|helpers?|builder|owner|codex)$/
  const FACT_PLACE = /^(?:main|master|origin|remote|production|staging|github|it)$/
  const FACT_PLACE_NOUN = /^(?:mac|machine|computer|disk|sessions?)$/
  const FACT_DET = /^(?:the|a|an|this|that|these|those|its|their|our|your|my|each|every|any|some|all|both|one|two|three|four|five|six|seven|eight|nine|ten)$/
 -const FACT_PREP = /^(?:in|inside|within|outside|under|at|on|to|into|onto|from|beyond|during|since|by)$/
 +const FACT_PREP = /^(?:in|inside|within|outside|under|at|on|to|into|onto|from|beyond|by)$/
  const FACT_UNIT = /^(?:bytes?|characters?|lines?|words?)$/
- const FACT_TAIL = /^(?:with|no|trailing|newlines?|or|any|other|bytes?|characters?|at|after|before|the|end|it)$/
- // A noun's own words come from a closed list (seventh live test of 18 Nov 2026). A list of
+ const FACT_TAIL = /^(?:with|no|trailing|final|newlines?|or|any|other|bytes?|characters?|at|after|before|the|end|it)$/
+ // A thing's name after "named" or "called" (ninth live test: "an executable named greet"): quoted,

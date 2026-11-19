@@ -760,17 +760,17 @@ resilient tool", "the fast/secure tool", "the `reliable` tool" and "the bug-free
 are works; "working copy" and "working tree" are read as
 a worktree and "working folder" as a folder before `BEHAVES` is matched; after
 the noun, a word of `FACT_STATE` or "made" with a place, "a commit made during this job") or
-names other than plain words in backticks, with places after them ("anywhere", "elsewhere" or "anywhere else", "for this job", "for the session" or "for this task" and no other "for", or a word of `FACT_PREP`, during, since and by among them, before a name,
+names other than plain words in backticks, or "named" or "called" and a name (`namedAt`: quoted, in backticks, a path, a version, or one word of letters, digits, "_" and "-" that is not a judgment such as "correctly" or "well", nor a joining word, `FACT_NAMED_NOT`; the name says which thing it is, never how good it is, so "an executable named greet" stands), with places after them ("anywhere", "elsewhere" or "anywhere else", "for this job", "for the session", "for this task" or "for this work" and no other "for", or a word of `FACT_PREP`, during, since and by among them, before a name,
 a noun of the work or of the machine, or one of `FACT_PLACE`: main, origin, GitHub and a few
 more); then "is", "was", "has been" and the like (or nothing, "the newest build installed")
 before one or more of `FACT_STATE` (saved, committed, pushed, merged, installed, deployed,
 tagged, published, created, written, copied, moved, renamed, changed, edited, touched,
-uploaded, archived, deleted, removed), with a version or a commit after it (`FACT_NAME_H`, alone or in brackets: "installed (UTF8-compliant)" is works) and places; or
+uploaded, archived, deleted, removed, made), with a version or a commit after it (`FACT_NAME_H`, alone or in brackets: "installed (UTF8-compliant)" is works) and places; or
 exists, does not exist, no longer exists, or runs the newest. Only a stored thing (a name or a
 noun of `FACT_STORE`) holds or contains quoted text, a thing of `FACT_HELD` (with "whose
 contents are exactly" and quoted text after it), or is a count of a unit of `FACT_UNIT` ("long", "in size" or "in length" after it), each
 with the note of its end in `FACT_TAIL` ("with no newline at the end", "(14 characters, no
-trailing newline)"). "Nothing", "none" or "no" and a noun, of a place, takes only a state or
+trailing newline)", "5 bytes, with no final newline": notes split by commas each end there, and what follows a comma that is no note is its own clause). "Nothing", "none" or "no" and a noun, of a place, takes only a state or
 existence, and "no" and a stored noun may also hold a thing of `FACT_HELD`, never quoted text; an agent, session or helper (`FACT_ACTOR`) saved or pushed a thing of the work; a
 later clause may leave its subject out or say "it". A slash is "or" and "&" is "and". No word
 of what the work does can stand in any slot, so such a condition is `works` whole, however much
@@ -780,7 +780,10 @@ committed" and "the script contains a correct fix" among them, and "the converte
 to uppercase", "the README file lists the three commands", "the deployed service has 0
 crashes" and "the file is saved; it is “usable”", all works, and the writers' own
 "sample.txt in the scratch folder is 13 bytes long, with no newline at the end" and "nothing
-from this job is committed or pushed", facts). The writer's prompt gives the shape of a fact,
+from this job is committed or pushed", facts; the ninth live test's "note.txt in the scratch folder
+holds exactly 'amber', 5 bytes, with no final newline", "no commit was made for this work",
+"nothing was pushed for this work" and "an executable named greet is installed in a bin folder
+inside the scratch folder", facts the writer wrote unprompted that were read as works). The writer's prompt gives the shape of a fact,
 with one example. The
 writer's prompt asks for one claim per condition (`ONE_CLAIM`) beside its kinds.
 A `fact` moves shown on any where. A `works` condition, or one with no kind, moves shown only when
