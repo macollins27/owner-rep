@@ -3928,5 +3928,11 @@
     "breaks": "Anything may hold quoted text, so a quality in quotes (\"the page has \\\"correct error handling\\\"\") or a tool said to hold exactly some text reads as a fact and closes on the builder's own run.",
     "patch": "fact-content-any-subject.patch",
     "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-size-words-dropped",
+    "breaks": "A size said \"in size\" or \"in length\" (\"sample.txt is 6 bytes in size\") is not read as a size, so the writer's own fact reads as works and waits to be shown.",
+    "patch": "fact-size-words-dropped.patch",
+    "fixed": "tested 2026-11-18"
   }
 ]

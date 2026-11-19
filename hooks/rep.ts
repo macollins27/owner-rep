@@ -3606,7 +3606,9 @@ const factRead = (ts: FactTok[]): boolean => {
     }
     if (w(i, /^(?:is|are|has|have)$/)) {
       const s = w(i + 1, /^exactly$/) ? i + 2 : i + 1
-      if (ts[s]?.t === 'N' && w(s + 1, FACT_UNIT)) out.push(...tail(w(s + 2, /^long$/) ? s + 3 : s + 2))
+      // "6 bytes", "6 bytes long", "6 bytes in size", "40 lines in length" (sixth live test).
+      const after = w(s + 2, /^long$/) ? s + 3 : w(s + 2, /^in$/) && w(s + 3, /^(?:size|length)$/) ? s + 4 : s + 2
+      if (ts[s]?.t === 'N' && w(s + 1, FACT_UNIT)) out.push(...tail(after))
     }
     return out
   }
