@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index e86901f..31a3842 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3551,7 +3551,6 @@ const factTokens = (text: string): FactTok[] => {
+     .replace(/\bworking\s+(?:copy|copies|tree|trees)\b/gi, ' worktree ')
+     .replace(/\bworking\s+(?:directory|folder)\b/gi, ' folder ')
+     // "with permission to run" is the file's mode, shown by its listing, not the work running.
+-    .replace(/\bwith\s+(?:the\s+)?permissions?\s+to\s+(?:run|execute)\b/gi, ' with runpermission ')
+     .replace(/\b(?:runs?|is\s+on|built\s+from)\s+(?:the\s+)?(?:newest|latest|current)(?:\s+(?:code|build|version|commit))?\b/gi, ' runsnewest ')
+     .replace(/"[^"]*"|“[^”]*”|‘[^’]*’|(?<![\w'])'[^']*'(?![\w'])/g, () => keep({ w: '', t: 'Q' }))
+     // In backticks: a version or a commit is a name, a path is a path, plain words are words.

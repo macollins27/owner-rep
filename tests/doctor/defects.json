@@ -117,7 +117,7 @@
     "name": "row-shows-whole-reading",
     "breaks": "The row draws the whole objective (result, purpose, conditions and step) instead of the result alone, so the strip is crowded and the result is lost in it.",
     "patch": "row-shows-whole-reading.patch",
-    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-31"
+    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-31; remade 2026-11-19"
   },
   {
     "name": "writer-forks-conversation",
@@ -4593,6 +4593,48 @@
     "name": "row-head-note-unbounded",
     "breaks": "under a heads-up the row's head ignores the note's rows, so its buttons fall under a \"↓ n more\" row.",
     "patch": "row-head-note-unbounded.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "fact-noun-run-any-order",
+    "breaks": "a noun's own words stand in any order, so \"the copies-every-file tool is installed\" closes on the builder's own listing.",
+    "patch": "fact-noun-run-any-order.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "fact-plural-mid-run",
+    "breaks": "a plural noun stands anywhere in a noun's own words, so \"the logs-in tool\" and \"the copies-files tool\" close as facts.",
+    "patch": "fact-plural-mid-run.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "fact-count-mid-run",
+    "breaks": "\"every\" or \"all\" stands anywhere in a noun's own words, so \"the scratch every file tool is installed\" closes as a fact.",
+    "patch": "fact-count-mid-run.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "fact-noun-run-words-alone",
+    "breaks": "the order is read only inside a hyphened word, so \"the copies every file tool is installed\", in plain words, closes as a fact.",
+    "patch": "fact-noun-run-words-alone.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "fact-copy-of-not-place",
+    "breaks": "\"installed as a copy of greet-source.sh\" is not read, so the writer's plain fact stays open as works.",
+    "patch": "fact-copy-of-not-place.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "fact-run-permission-behaves",
+    "breaks": "\"installed with permission to run\" is read as the work running, so the writer's plain fact stays open as works.",
+    "patch": "fact-run-permission-behaves.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "fact-dir-path-words",
+    "breaks": "a path inside the folder with no file ending (\"install-case/bin/greet\") is read as words, so the writer's plain fact stays open as works.",
+    "patch": "fact-dir-path-words.patch",
     "fixed": "tested 2026-11-19"
   }
 ]

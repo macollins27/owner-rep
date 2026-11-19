@@ -752,15 +752,19 @@ a noun's own word comes from a closed list, `factMod`: one of `FACT_MOD`'s plain
 which thing it is (scratch, local, new, current, untracked, two, both and the like), a noun of the
 work, of the machine or an actor, a word of `FACT_STATE` ("the installed build"), any of those
 with 's ("the project's history"), a hyphened word only when each part is one ("the owner-rep
-plugin"), a word with a digit only as a version or a commit (`FACT_NAME_H`, "v2", "a1b2c3d"), and
+plugin"), all of them in an order a name can take (`factRunOk`, ninth live test: a plural noun only
+last, next to the noun it names, "the logs folder", and a count, "every", "all", "two", only first,
+so a doing folded in, "the copies-every-file tool" or "the logs-in tool", is works), a word with a digit only as a version or a commit (`FACT_NAME_H`, "v2", "a1b2c3d"), and
 a number, or a path or a file's name in backticks; plain words in backticks only when they pass
-`factMod` themselves; a path or a file's name without backticks never ("the /secure tool", "the
+`factMod` themselves (a path is a word that starts at a folder, a URL, a word ending in a file's
+ending, or one with a slash and a standard folder of `FACT_DIR` in it, "install-case/bin/greet",
+`factPath`); a path or a file's name without backticks never ("the /secure tool", "the
 secure.c tool"); any other word, a quality or a doing above all, makes the clause works, so "the
 resilient tool", "the fast/secure tool", "the `reliable` tool" and "the bug-free/reliable tool"
 are works; "working copy" and "working tree" are read as
 a worktree and "working folder" as a folder before `BEHAVES` is matched; after
 the noun, a word of `FACT_STATE` or "made" with a place, "a commit made during this job") or
-names other than plain words in backticks, or "named" or "called" and a name (`namedAt`: quoted, in backticks, a path, a version, or one word of letters, digits, "_" and "-" that is not a judgment such as "correctly" or "well", nor a joining word, `FACT_NAMED_NOT`; the name says which thing it is, never how good it is, so "an executable named greet" stands), with places after them ("anywhere", "elsewhere" or "anywhere else", "for this job", "for the session", "for this task" or "for this work" and no other "for", or a word of `FACT_PREP`, during, since and by among them, before a name,
+names other than plain words in backticks, or "named" or "called" and a name (`namedAt`: quoted, in backticks, a path, a version, or one word of letters, digits, "_" and "-" that is not a judgment such as "correctly" or "well", nor a joining word, `FACT_NAMED_NOT`; the name says which thing it is, never how good it is, so "an executable named greet" stands), with places after them ("as a copy of" a path or a noun of the work, "with permission to run" or "to execute", read as one word before `BEHAVES` is matched, "anywhere", "elsewhere" or "anywhere else", "for this job", "for the session", "for this task" or "for this work" and no other "for", or a word of `FACT_PREP`, during, since and by among them, before a name,
 a noun of the work or of the machine, or one of `FACT_PLACE`: main, origin, GitHub and a few
 more); then "is", "was", "has been" and the like (or nothing, "the newest build installed")
 before one or more of `FACT_STATE` (saved, committed, pushed, merged, installed, deployed,
@@ -783,7 +787,8 @@ crashes" and "the file is saved; it is “usable”", all works, and the writers
 from this job is committed or pushed", facts; the ninth live test's "note.txt in the scratch folder
 holds exactly 'amber', 5 bytes, with no final newline", "no commit was made for this work",
 "nothing was pushed for this work" and "an executable named greet is installed in a bin folder
-inside the scratch folder", facts the writer wrote unprompted that were read as works). The writer's prompt gives the shape of a fact,
+inside the scratch folder", with "install-case/bin/greet is installed as a copy of
+install-case/greet-source.sh" and "… is installed with permission to run", facts the writer wrote unprompted that were read as works). The writer's prompt gives the shape of a fact,
 with one example. The
 writer's prompt asks for one claim per condition (`ONE_CLAIM`) beside its kinds, then (`QUALITY_CONDITION`) that a condition about how good the result is name what a person using it would notice, in the owner's terms, with one example and nothing the owner would not plainly want. It writes what is installed, deployed or running as not shown, which the rep marks shown when the record holds proof from outside the agent's word.
 A `fact` moves shown on any where. A `works` condition, or one with no kind, moves shown only when
