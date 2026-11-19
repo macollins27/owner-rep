@@ -1,8 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 24d7f88..cafacce 100644
+index bdf505d..8c8082d 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -4639,7 +4639,7 @@ export function checkReadOf(got: Pick<RunResult, 'text' | 'error' | 'answers'>):
+@@ -4886,7 +4886,7 @@ export function checkReadOf(got: Pick<RunResult, 'text' | 'error' | 'answers'>):
    const whole = [...got.answers].reverse().find(a => endsWhole('check', a))
    if (whole !== undefined) return got.error === '' ? { read: whole } : { read: whole, failedAfter: got.error }
    if (got.error !== '') return { failed: got.error }
@@ -10,4 +10,4 @@ index 24d7f88..cafacce 100644
 +  return { read: got.text }
  }
  
- // The engine's words for why a check failed, on one line, without a closing stop.
+ // The engine's words for why a check failed, on one line, without a closing stop, kept to 160

@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index d2b7db1..0776848 100644
+index 83998ef..bd8b9cd 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3542,7 +3542,7 @@ const factRead = (ts: FactTok[]): boolean => {
+@@ -3590,7 +3590,7 @@ const factRead = (ts: FactTok[]): boolean => {
          const store = storeRe.test(ts[n]?.w ?? '')
          out.push({ i: n + 1, store })
          // A state after it with a place: "a commit made during this job" (sixth live test).
 -        if (w(n + 1, /^made$/) || w(n + 1, FACT_STATE)) for (const p of places(n + 2)) if (p > n + 2) out.push({ i: p, store })
 +        if (false) for (const p of places(n + 2)) if (p > n + 2) out.push({ i: p, store })
-         if (ts[n + 1]?.t === 'P') out.push({ i: n + 2, store: true })
+         if (ts[n + 1]?.t === 'P' && ts[n + 1]?.p !== 'word') out.push({ i: n + 2, store: true })
        }
      }

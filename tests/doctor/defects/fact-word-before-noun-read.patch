@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index cb54c60..ea32495 100644
+index 83998ef..90518b6 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3541,7 +3541,7 @@ const factTokens = (text: string): FactTok[] => {
- const factRead = (ts: FactTok[]): boolean => {
-   const w = (i: number, re: RegExp): boolean => ts[i]?.t === 'W' && re.test(ts[i]?.w ?? '')
+@@ -3563,7 +3563,7 @@ const factRead = (ts: FactTok[]): boolean => {
    const x = (i: number, s: string): boolean => ts[i]?.t === 'X' && ts[i]?.w === s
--  const mod = (i: number): boolean => { const k = ts[i]; return k !== undefined && (k.t === 'W' ? factMod(k.w) : k.t === 'H' ? FACT_NAME_H.test(k.w) : k.t === 'N' || k.t === 'P') }
-+  const mod = (i: number): boolean => { const k = ts[i]; return k !== undefined && (k.t === 'W' ? true : k.t === 'H' ? FACT_NAME_H.test(k.w) : k.t === 'N' || k.t === 'P') }
+   // Before a noun a path stands only in backticks, and words in backticks are read as words
+   // (eighth live test): "the ~secure tool" and "the `reliable` tool" are not names.
+-  const mod = (i: number): boolean => { const k = ts[i]; return k !== undefined && (k.t === 'W' ? factMod(k.w) : k.t === 'H' ? FACT_NAME_H.test(k.w) : k.t === 'P' ? k.p === 'tick' || (k.p === 'word' && factMod(k.w)) : k.t === 'N') }
++  const mod = (i: number): boolean => { const k = ts[i]; return k !== undefined && (k.t === 'W' ? true : k.t === 'H' ? FACT_NAME_H.test(k.w) : k.t === 'P' ? k.p === 'tick' || (k.p === 'word' && factMod(k.w)) : k.t === 'N') }
    const det = (i: number): boolean => w(i, FACT_DET) || ts[i]?.t === 'N'
    const uniq = (a: FactAt[]): FactAt[] => a.filter((r, k) => a.findIndex(o => o.i === r.i && o.store === r.store) === k)
    // A noun's own words from a position: up to four, and a list of them ("changed, added or

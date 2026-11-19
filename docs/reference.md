@@ -424,7 +424,10 @@ call writes (below):
    the card also shows `checkFailedAfterNote`, the engine's own words beside the answer read (fourth
    live test of 18 Nov 2026, section 2); with none, a run that ended in an engine error takes
    nothing and the card shows `checkFailedNote`, the engine's own words and no ask to press
-   again, and any other run takes nothing (no marks, no verdict, no draft) and the card shows
+   again (in both notes the engine's words are kept to 160 terminal cells by `fitMiddle`, whole
+   when they fit, else their start and their end with the middle left out, so a reason of wide
+   characters keeps the name it ends on: eighth live test of 18 Nov 2026), and any other run
+   takes nothing (no marks, no verdict, no draft) and the card shows
    `CHECK_CUT_NOTE`, asking the owner to press it again, since a check costs real money and is
    never re-run on its own (live test of 18 Nov 2026, section 1). Every reply
    cap is `MAX_REPLY_TOKENS`, 64,000, the engine's ceiling, so the time limit, not the cap, ends a
@@ -729,8 +732,16 @@ copies it, and `mergeConditions` keeps a held `works`, or one with no kind, as `
 kind a rewrite gives, and opens a shown `fact` rewritten as `works` with its where kept as
 `seen`). `conditionOf`, and everything after it through `kindOf`, reads a `fact:` as `fact` only when
 `factHolds`, by sentence shape: with its kind taken out, "runs (is on, is built from) the
-newest" read as one word, quoted text (double, curly or single quotes) and file names and paths
-read as names (`factTokens`), it matches no `BEHAVES` (works, runs, passes, does, prints, takes,
+newest" read as one word, quoted text (double, curly or single quotes) read as a name, and a
+path or a file's name read as one only where it is one (`factTokens`, `factPath`): a path from
+the root, the home folder or the current one ("/x", "~/x", "./x") or a URL, a word ending in a
+file's ending from `FACT_EXT` ("sample.txt", "src/rep.ts"), and in backticks a version or a
+commit (read as one), a path or a file's name; any other word joined by a slash or a dot
+("secure/fast/reliable", "fast.secure", "sorts/validates2") is its words, joined as a hyphened
+word, and plain words in backticks ("`owner-rep`") are words that name a thing, standing alone
+as the thing held or the place only when each passes `factMod` (`pathAt`: "`secure/fast` is
+committed" and "saved in `correct`" are works, and so is a tool's bare name, "`npm-run` is
+installed", the designed safe direction); it matches no `BEHAVES` (works, runs, passes, does, prints, takes,
 returns, shows, displays, gives, accepts, responds, reads, produces and the like, in any tense,
 and does not, never, cannot and the like unless before "exist"), and `factRead` reads the whole
 of it, to its end or a closing stop, as clauses parted by a comma or a semicolon and "and" or
@@ -742,17 +753,19 @@ which thing it is (scratch, local, new, current, untracked, two, both and the li
 work, of the machine or an actor, a word of `FACT_STATE` ("the installed build"), any of those
 with 's ("the project's history"), a hyphened word only when each part is one ("the owner-rep
 plugin"), a word with a digit only as a version or a commit (`FACT_NAME_H`, "v2", "a1b2c3d"), and
-a number, a path or a name in backticks; any other word, a quality or a doing above all, makes the
-clause works, so "the resilient tool" and "the fast/secure tool" are works, two words joined by a
-slash being read as a hyphened word and not a path; "working copy" and "working tree" are read as
+a number, or a path or a file's name in backticks; plain words in backticks only when they pass
+`factMod` themselves; a path or a file's name without backticks never ("the /secure tool", "the
+secure.c tool"); any other word, a quality or a doing above all, makes the clause works, so "the
+resilient tool", "the fast/secure tool", "the `reliable` tool" and "the bug-free/reliable tool"
+are works; "working copy" and "working tree" are read as
 a worktree and "working folder" as a folder before `BEHAVES` is matched; after
 the noun, a word of `FACT_STATE` or "made" with a place, "a commit made during this job") or
-names, with places after them ("anywhere", "elsewhere" or "anywhere else", or a word of `FACT_PREP`, during, since and by among them, before a name,
+names other than plain words in backticks, with places after them ("anywhere", "elsewhere" or "anywhere else", "for this job", "for the session" or "for this task" and no other "for", or a word of `FACT_PREP`, during, since and by among them, before a name,
 a noun of the work or of the machine, or one of `FACT_PLACE`: main, origin, GitHub and a few
 more); then "is", "was", "has been" and the like (or nothing, "the newest build installed")
 before one or more of `FACT_STATE` (saved, committed, pushed, merged, installed, deployed,
 tagged, published, created, written, copied, moved, renamed, changed, edited, touched,
-uploaded, archived, deleted, removed), with a version, commit or path after it and places; or
+uploaded, archived, deleted, removed), with a version or a commit after it (`FACT_NAME_H`, alone or in brackets: "installed (UTF8-compliant)" is works) and places; or
 exists, does not exist, no longer exists, or runs the newest. Only a stored thing (a name or a
 noun of `FACT_STORE`) holds or contains quoted text, a thing of `FACT_HELD` (with "whose
 contents are exactly" and quoted text after it), or is a count of a unit of `FACT_UNIT` ("long", "in size" or "in length" after it), each

@@ -1,8 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index cb54c60..4d6365d 100644
+index 83998ef..1ba5e8a 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3509,7 +3509,7 @@ const factModPart = (p: string): boolean => {
+@@ -3522,7 +3522,7 @@ const factModPart = (p: string): boolean => {
    const stem = p.replace(/['’]s$/, '')
    return [FACT_MOD, FACT_THING, FACT_PLACE_NOUN, FACT_ACTOR, FACT_STATE].some(re => re.test(stem))
  }
@@ -10,4 +10,4 @@ index cb54c60..4d6365d 100644
 +const factMod = (w: string): boolean => w !== '' && w.split('-').some(p => p !== '' && factModPart(p))
  
  const factTokens = (text: string): FactTok[] => {
-   const t = text
+   const held: FactTok[] = []

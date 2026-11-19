@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 7b58d6b..f713db7 100644
+index 83998ef..4c05280 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3508,8 +3508,6 @@ const factTokens = (text: string): FactTok[] => {
-     if (w === '\u0001Q') return { w, t: 'Q' }
-     if (w === '\u0001P') return { w, t: 'P' }
+@@ -3549,8 +3549,6 @@ const factTokens = (text: string): FactTok[] => {
+   return t.split(/\s+/).filter(w => w !== '').map((w): FactTok => {
+     if (/^\u0001\d+$/.test(w)) return held[Number(w.slice(1))] as FactTok
      if (/^\d+$/.test(w)) return { w, t: 'N' }
 -    if (w === '&') return { w: 'and', t: 'W' }
 -    if (w === '/') return { w: 'or', t: 'W' }
      if (/^[,;:()[\]—–!?.&/-]+$/.test(w)) return { w, t: 'X' }
-     if (/\d/.test(w) && /[a-z]/i.test(w)) return { w, t: 'H' }
+     if (/\d/.test(w) && /[a-z.]/i.test(w)) return { w, t: 'H' }
      return { w: w.toLowerCase(), t: 'W' }
