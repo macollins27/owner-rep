@@ -1,12 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 83998ef..1ba5e8a 100644
+index e86901f..611b141 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3522,7 +3522,7 @@ const factModPart = (p: string): boolean => {
-   const stem = p.replace(/['’]s$/, '')
-   return [FACT_MOD, FACT_THING, FACT_PLACE_NOUN, FACT_ACTOR, FACT_STATE].some(re => re.test(stem))
- }
--const factMod = (w: string): boolean => w !== '' && w.split('-').every(p => p !== '' && factModPart(p))
+@@ -3540,7 +3540,7 @@ const factPlural = (p: string): boolean => /[^s'’]s$/.test(p) && [FACT_THING,
+ // The parts of a noun's own words, in order, where null stands for a version, a number or a path.
+ const factRunOk = (parts: ReadonlyArray<string | null>): boolean =>
+   parts.every((p, k) => p === null || ((k === 0 || !FACT_COUNT.test(p)) && (k === parts.length - 1 || !factPlural(p))))
+-const factMod = (w: string): boolean => w !== '' && w.split('-').every(p => p !== '' && factModPart(p)) && factRunOk(w.split('-'))
 +const factMod = (w: string): boolean => w !== '' && w.split('-').some(p => p !== '' && factModPart(p))
  
  const factTokens = (text: string): FactTok[] => {

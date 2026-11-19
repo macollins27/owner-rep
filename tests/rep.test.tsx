@@ -10146,12 +10146,32 @@ test('factHolds reads a path or a name only where it is one: a quality or a doin
 test('factHolds reads the facts the writer wrote unprompted in the ninth live test, and a name after "named" or "called" only as a name', () => {
   // Written by the objective writer, labelled fact, in ordinary sessions D and B; each was read as works.
   const facts = ["note.txt in the scratch folder holds exactly 'amber', 5 bytes, with no final newline", 'no commit was made for this work', 'nothing was pushed for this work', 'an executable named greet is installed in a bin folder inside the scratch folder',
-    "sample.txt holds exactly 'one two three' (13 bytes, no final newline)", "sample.txt holds exactly 'abc', 3 bytes, no trailing newline", 'a script called `greet.sh` is saved', 'the program named "greet" is installed', 'a script named `greet` is installed', 'the build named v2 is deployed', 'a tool named fast-and-secure is installed', 'the script called secure_fast is saved', 'a change was made to the file for this work']
+    "sample.txt holds exactly 'one two three' (13 bytes, no final newline)", "sample.txt holds exactly 'abc', 3 bytes, no trailing newline", 'a script called `greet.sh` is saved', 'the program named "greet" is installed', 'a script named `greet` is installed', 'the build named v2 is deployed', 'a tool named fast-and-secure is installed', 'the script called secure_fast is saved', 'a change was made to the file for this work',
+    // The copy follow-up in session D: shown by a byte compare and by the listing.
+    'install-case/bin/greet is installed as a copy of install-case/greet-source.sh', 'install-case/bin/greet is installed with permission to run', 'the script is copied into the bin folder as a copy of the source file', 'the script is installed in ~/bin with permission to execute', 'bin/greet is saved', 'the script is installed in tools/bin']
   for (const text of facts) expect([text, factHolds(text)]).toEqual([text, true])
   // A name is one word, a version, or a quoted or backticked name, and says which thing it is: "named
   // correctly" is a judgment, "made well" a quality, and a word with a digit is a name only as a version.
-  const works = ['a script named correctly is saved', 'an executable named properly is installed', 'a script named well is saved', 'a tool named validates2 is installed', 'the page named for the shop is published', 'an executable named greet is installed and runs fast', 'the page is made responsive', 'the site was made well', 'the fix was made correctly', "note.txt holds exactly 'amber', 5 bytes, secure and fast", "note.txt holds exactly 'amber' with no final bugs", 'the file is saved for this work to print', 'an executable named greet is installed in a fast folder']
+  const works = ['a script named correctly is saved', 'an executable named properly is installed', 'a script named well is saved', 'a tool named validates2 is installed', 'the page named for the shop is published', 'an executable named greet is installed and runs fast', 'the page is made responsive', 'the site was made well', 'the fix was made correctly', "note.txt holds exactly 'amber', 5 bytes, secure and fast", "note.txt holds exactly 'amber' with no final bugs", 'the file is saved for this work to print', 'an executable named greet is installed in a fast folder', 'the tool is installed with permission to run fast', 'the tool is installed with permission to run and greets the user', 'the tool is installed as a copy of a secure tool', 'the tool is installed as a copy of the source file that works', 'secure/fast/reliable is installed', 'the tool is saved in secure/fast']
   for (const text of works) expect([text, factHolds(text)]).toEqual([text, false])
+})
+
+test('factHolds reads a doing folded into a noun\'s own words as works: a plural noun stands only next to the noun it names, and "every" or "all" only first (ninth live test)', () => {
+  // The ninth live test's verb/noun collisions: "copies", "changes", "tags" and "logs" are nouns of
+  // the work and also say what a thing does, so "the copies-every-file tool" closed on the builder's
+  // own listing. Each joining (hyphen, slash, dot, a space) and each slot (the thing, the thing held,
+  // the place, after "no") is read the same way.
+  const works: string[] = []
+  for (const d of ['copies-files', 'changes-files', 'tags-files', 'logs-in', 'scripts-changes', 'files-logs', 'copies-every-file', 'copies-all-files', 'logs-every-input', 'logs-all-output', 'changes-every-file', 'tags-every-file', 'scripts-every-change', 'files-every-log'])
+    for (const j of ['-', '/', '.', ' ']) {
+      const n = d.split('-').join(j)
+      works.push(`The ${n} tool is installed`, `The script contains a ${n} fix`, `The file is saved on the ${n} server`, `No file holds ${n} code`)
+    }
+  works.push('The tool copies every file and is installed', 'the scratch every file tool is installed', 'the `copies-every-file` script is committed', '`logs-every-input` is committed')
+  for (const text of works) expect([text, factHolds(text)]).toEqual([text, false])
+  // A plural noun next to the noun it names, a possessive, and a count first all stay facts.
+  const facts = ['the logs folder is committed', 'the tests folder is pushed to main', 'the settings page is published', 'the docs site is deployed', 'the git hooks folder is committed', "the project's working copy holds 0 changed, added or deleted files from this session", 'all changed files are committed', 'every scratch file is deleted', 'the two sample files are saved in the scratch folder', 'the owner-rep plugin is installed', 'the sign-up page is published', "the scratch folder's repository holds 0 commits"]
+  for (const text of facts) expect([text, factHolds(text)]).toEqual([text, true])
 })
 
 test('a condition\'s kind: written by the writer before it, kept through a held write, stripped where a reader copies it, and one held "works" never turns "fact"', () => {
