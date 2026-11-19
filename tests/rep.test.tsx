@@ -686,7 +686,9 @@ test('the brief keeps every judgment line word for word and stays under its word
   // with the ninth live test's sentence that a claim is shown false only where the record shows it.
   // 4,850 since prompt group 7 (4,818 after it): how the message to the agent is written (G28),
   // about 230 words, and lengths in words for the card's parts and the message (G40).
-  expect(words(b)).toBeLessThan(4850)
+  // 4,900 since prompt group 8 (4,864 after it): a finding stands until the record shows
+  // something new (G30), about 45 words.
+  expect(words(b)).toBeLessThan(4900)
   expect(b).toContain(LOOK_RULE)
   expect(w).toContain(LOOK_RULE)
   // 3,350 for the Heads up alone: it carries LIST_GAP_RULE, about 130 words, and the briefing does not.
@@ -696,8 +698,9 @@ test('the brief keeps every judgment line word for word and stays under its word
   // 4,420 since prompt group 3, as for the briefing (4,200 before it, 4,392 after).
   // 4,580 since prompt group 4, as for the briefing. 4,600 since prompt group 5: the watch says the
   // step the agent is on now, about 20 words. 4,880 since prompt group 7 (4,855 after it): the
-  // shared system prompt's section on how the message to the agent is written.
-  expect(words(w)).toBeLessThan(4880)
+  // shared system prompt's section on how the message to the agent is written. 4,930 since prompt
+  // group 8 (4,901 after it): a finding stands until the record shows something new (G30).
+  expect(words(w)).toBeLessThan(4930)
   // The bookkeeping the code enforces is gone from the brief.
   for (const gone of ['under the rule given with the conditions', 'sent after #', 'never the number of a draft', 'A later message replaces an earlier one only where the owner says so', 'Each condition of "done" stays open until the conversation shows it']) {
     expect(b).not.toContain(gone)
@@ -847,10 +850,30 @@ test('the fixed text ends on the held step and says no stop itself; the next ste
   expect(saysStop(OPEN_NEXT(OPEN_JOB_OPEN))).toBe(false)
 })
 
-test('asked once more, the brief is told an empty message counts too', () => {
-  const text = askAgain(OPEN_JOB_OPEN)
-  expect(text).toContain('Your first answer said the agent should stop, gave no verdict, called the work finished, or said the work is going well, while these conditions of done are still open:')
-  expect(text).toContain('None of these may stand while any of them is open. An empty message counts too: while any of these is open, write the message to the agent, asking for the proof each still needs.')
+test('asked once more, the brief is told the one rule its first answer broke and that the message is written while a condition is open (G39)', () => {
+  const text = askAgain(OPEN_JOB_OPEN, 'left the message to the agent empty')
+  expect(text).toContain("This is the briefing's second asking. The first answer left the message to the agent empty, while these conditions of done are still open:")
+  expect(text).toContain('While any of them is open, the verdict is "continue", "well" is empty, and the message to the agent is written, asking for the proof each still needs.')
+  // It is a fresh call that reads the record for the first time: no "again", no list of every fault.
+  expect(text).not.toContain('Look at the record again')
+  expect(text).not.toContain('called the work finished, or said the work is going well')
+})
+
+test('the fault a second asking names is each rule the gate refused on, its sentence quoted, and nothing it did not break (G39)', () => {
+  const a = { ...EMPTY_CARD, verdict: 'continue' as const, next: 'Fix the footer.', message: 'Show me the page open in a browser. Then stop and wait for me.' }
+  expect(rep.gateRules(a, OPEN_JOB_OPEN)).toEqual(['message-says-stop'])
+  expect(rep.askFault(a, rep.gateRules(a, OPEN_JOB_OPEN))).toBe('told the agent to stop in its message: "Then stop and wait for me."')
+  const b = { ...EMPTY_CARD, verdict: 'stop' as const, well: 'All done and working.', next: 'Stop here.', message: '' }
+  expect(rep.askFault(b, rep.gateRules(b, OPEN_JOB_OPEN))).toBe('gave "stop" as its verdict; said under "well" that the work is going well: "All done and working."; and told the agent to stop in "next": "Stop here."')
+  const c = { ...EMPTY_CARD, verdict: 'continue' as const, next: 'Show the install.', message: '' }
+  expect(rep.askFault(c, rep.gateRules(c, OPEN_JOB_OPEN))).toBe('left the message to the agent empty')
+  const d = { ...EMPTY_CARD, verdict: '' as never, next: 'Show the install.', message: 'Show me the install.' }
+  expect(rep.askFault(d, rep.gateRules(d, OPEN_JOB_OPEN))).toBe('gave no verdict')
+  // A long sentence is quoted to 200 characters, its end marked.
+  const long = { ...EMPTY_CARD, verdict: 'continue' as const, next: `Stop the agent; the job is finished ${'and every part of it is done '.repeat(10)}`, message: 'Show me the install.' }
+  const f = rep.askFault(long, rep.gateRules(long, OPEN_JOB_OPEN))
+  expect(f.length).toBeLessThan(260)
+  expect(f.endsWith('…"')).toBe(true)
 })
 
 test('an empty message still passes when every condition is shown or closed, and when no objective is written; a usable card with open conditions passes untouched', () => {
@@ -1433,7 +1456,7 @@ test('a blocker stop is let through only where the stop is the blocker\'s own: a
 test('every read that writes the message carries the rule for a step that waits on the owner: finish the rest, hold the step, say what will be shown', () => {
   const m: Memory = { objective: { ...OBJ_FIXTURE, done: OPEN_JOB_OPEN }, owner: [], past: [], seen: [], others: [] }
   const check = checkPrompt({ sessionId: 's', cwd: '/tmp', copy: '/tmp', owner: [om('Build it.')], reading: 'x', brief: parseBrief('stands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm', conditions: OBJECTIVE_FIXTURE.done, shown: [], from: 0 })
-  for (const text of [briefPrompt(m), askAgain(OPEN_JOB_OPEN), ownWordsPrompt(m, OPEN_JOB_OPEN, EMPTY_CARD), check]) {
+  for (const text of [briefPrompt(m), askAgain(OPEN_JOB_OPEN, 'gave no verdict'), ownWordsPrompt(m, OPEN_JOB_OPEN, EMPTY_CARD), check]) {
     expect(text).toContain('When a condition waits on the owner\'s go-ahead (publish, send, pay, a guard refusal), the message tells the agent to finish everything else, hold that step until the go-ahead comes, and say exactly what it will show the owner then; it never pushes the held step.')
   }
 })
@@ -2014,7 +2037,7 @@ test('rule: REP_SYSTEM is the one fixed system prompt of the watch, the briefing
     ['watch stop', rep.REP_SYSTEM, watchPrompt(m, 'stop')],
     ['watch note', rep.REP_SYSTEM, watchPrompt(m, 'note')],
     ['brief', rep.REP_SYSTEM, briefPrompt(m)],
-    ['ask again', rep.REP_SYSTEM, `${briefPrompt(m)}\n\n${askAgain(OPEN_JOB_OPEN)}`],
+    ['ask again', rep.REP_SYSTEM, `${briefPrompt(m)}\n\n${askAgain(OPEN_JOB_OPEN, 'gave no verdict')}`],
   ]
   const count = (t: string, s: string) => t.split(s).length - 1
   for (const [name, system, task] of calls) {
@@ -2059,7 +2082,7 @@ test('rule: every read, the check, the writer and the own-words call hold one st
   expect(REP_SYSTEM).toContain(`"Not shown" is not a failure: say it plainly, and have the message ask for ${named}.`)
   expect(REP_SYSTEM).toContain('What is installed, deployed or running is "not shown" until the record holds proof from outside the agent\'s word')
   expect(briefPrompt(m)).toContain(`where proof is missing, it asks for ${named}: a fact's command and what it printed, or a hands-on look at the real thing`)
-  expect(askAgain(OPEN_JOB_OPEN)).toContain('asking for the proof each still needs. Look at the record again and measure each one by what counts as shown:')
+  expect(askAgain(OPEN_JOB_OPEN, 'gave no verdict')).toContain('asking for the proof each still needs. Measure each one against the record by what counts as shown:')
   expect(ownWordsPrompt(m, OPEN_JOB_OPEN, card as never)).toContain("and where proof is missing, the proof that would show it: a fact's command and what it printed, or a hands-on look at the real thing")
   const check = checkPrompt({ sessionId: 's', cwd: '/w', copy: '/c', reading: objectiveText(o), conditions: o.done, shown: [], owner: m.owner, brief: card as never, writtenAt: '10:00', from: 1, unanswered: [], guarded: [] } as never)
   expect(check).toContain(`where proof is missing it asks for ${named}: a fact's command and what it printed, or a hands-on look at the real thing`)
@@ -2106,7 +2129,7 @@ test('rule: the rep speaks of the owner, never by a pronoun: no brief, writer pr
   const o = { ...OBJ_FIXTURE }
   const m: Memory = { objective: o, owner: [{ n: 1, kind: 'his', text: 'make it serious', prior: '' }, { n: 2, kind: 'draft', text: 'Show me the run.', prior: '' }], past: ['An earlier job.'], seen: [], others: [], lastBrief: { at: 1, next: 'The agent runs the suite.', message: 'Run the suite and show the output.' }, lastSent: { at: 1, text: 'Run the suite and show the output.' } }
   const a = { verdict: 'stop', shown: [], closed: [], well: '', stands: 'The README is written.', means: 'The agent says it is done.', leftOut: ['the tests never ran'], next: 'Stop.', message: 'You can stop.', does: 'Stops the agent.' }
-  const texts = [briefPrompt(m), watchPrompt(m, 'stop'), watchPrompt(m, 'note'), watchPrompt(m, 'step'), askAgain(o.done), ownWordsPrompt(m, o.done, a as never), OBJECTIVE_SYSTEM, objectivePrompt({ objective: o, owner: m.owner, past: m.past }), REP_SYSTEM, OWN_WORDS_SYSTEM, checkPrompt({ sessionId: 's', cwd: '/w', copy: '/c', reading: objectiveText(o), conditions: o.done, shown: [], owner: m.owner, brief: a as never, writtenAt: '10:00', from: 1, unanswered: [], guarded: [] } as never)]
+  const texts = [briefPrompt(m), watchPrompt(m, 'stop'), watchPrompt(m, 'note'), watchPrompt(m, 'step'), askAgain(o.done, 'gave no verdict'), ownWordsPrompt(m, o.done, a as never), OBJECTIVE_SYSTEM, objectivePrompt({ objective: o, owner: m.owner, past: m.past }), REP_SYSTEM, OWN_WORDS_SYSTEM, checkPrompt({ sessionId: 's', cwd: '/w', copy: '/c', reading: objectiveText(o), conditions: o.done, shown: [], owner: m.owner, brief: a as never, writtenAt: '10:00', from: 1, unanswered: [], guarded: [] } as never)]
   for (const t of texts) {
     // The one place a pronoun may appear is inside quotes: the word the brief forbids, or the example it forbids.
     const hit = t.replace(/"[^"\n]*"/g, '').match(/\b(he|him|his|himself|she|her|herself)\b/i)
@@ -2728,7 +2751,7 @@ test('rule: the watch looks every CHECK_EVERY model requests of a turn, through 
 test('rule: no read carries the old fork frame or a line on how long to think, and the record read\'s system prompt says the reader has no tools, gives one answer and keeps secrets out', () => {
   const o = { ...OBJ_FIXTURE }
   const m: Memory = { objective: o, owner: [{ n: 1, kind: 'his', text: 'make it serious', prior: '' }], past: [], seen: [], others: [] }
-  for (const t of [briefPrompt(m), watchPrompt(m, 'stop'), watchPrompt(m, 'note'), watchPrompt(m, 'step'), askAgain(o.done)]) {
+  for (const t of [briefPrompt(m), watchPrompt(m, 'stop'), watchPrompt(m, 'note'), watchPrompt(m, 'step'), askAgain(o.done, 'gave no verdict')]) {
     expect(t).not.toMatch(/system-reminder|side request|interrupted|IMPORTANT|CRITICAL|NO tools|one-off response|think it over|Answer straight away/)
     expect(t).not.toMatch(/\bconversation context\b/)
   }
@@ -8847,8 +8870,8 @@ test('rule: a briefing that says stop while a condition is open is asked once mo
     expect(p.split(rep.END_ASK).length).toBe(2)
   }
   expect(prompts[0]).not.toMatch(/## Asked once more/)
-  expect(again(prompts[1])).toMatch(/^## Asked once more\n\nYour first answer said the agent should stop, gave no verdict, called the work finished, or said the work is going well, while these conditions of done are still open:\n- fact: the newest build installed \(not shown\)\n- fact: two sessions pushed their work\n/)
-  expect(again(prompts[1])).toMatch(/the verdict is "continue", "well" is empty, and "next" and "message" say what the agent does now to show it, or what stands in the way/)
+  expect(again(prompts[1])).toMatch(/^## Asked once more\n\nThis is the briefing's second asking\. The first answer gave "stop" as its verdict; said under "well" that the work is going well: "All done\."; told the agent to stop in "next": "Stop the agent; the job is finished\."; and told the agent to stop in its message: "[^"\n]+", while these conditions of done are still open:\n- fact: the newest build installed \(not shown\)\n- fact: two sessions pushed their work\n/)
+  expect(again(prompts[1])).toMatch(/with "next" and "message" saying what the agent does now to show each open one, or what stands in the way/)
   // Then one plain call, no fork, over what the rep found and the open conditions.
   expect(asks).toHaveLength(1)
   expect(asks[0]).toMatchObject({ maxTokens: OWN_WORDS_MAX_TOKENS, effort: rep.OWN_WORDS_EFFORT, timeoutMs: OWN_WORDS_TIMEOUT_MS })
@@ -9003,8 +9026,10 @@ test('rule: Brief me, read 1 with no message while work is open: read 2 is told 
   await ui.press({ key: 'rep' })
   await ui.unmount()
   expect(prompts).toHaveLength(2)
-  expect(prompts[0]).not.toContain('An empty message counts too')
-  expect(prompts[1]).toContain('An empty message counts too: while any of these is open, write the message to the agent, asking for the proof each still needs.')
+  expect(prompts[0]).not.toContain('## Asked once more')
+  // Read 2 is told the one rule read 1 broke, not every rule the gate has (G39).
+  expect(prompts[1]).toContain('The first answer left the message to the agent empty, while these conditions of done are still open:')
+  expect(prompts[1]).toContain('While any of them is open, the verdict is "continue", "well" is empty, and the message to the agent is written, asking for the proof each still needs.')
   expect(asks).toHaveLength(0)
   expect(rec()?.lastBrief).toMatchObject({ message: 'Show me each session finishing.', reads: 2, own: 'skipped' })
 })
@@ -16433,14 +16458,14 @@ describe('the call log: its pieces', () => {
     expect(rep.parseReplayArgs('this --variant frame')).toEqual({ path: 'this', last: rep.REPLAY_LAST, times: 1, variant: ['frame'] })
     expect(rep.parseReplayArgs('this --variant no-think,frame')).toEqual({ path: 'this', last: rep.REPLAY_LAST, times: 1, variant: ['no-think', 'frame'] })
     for (const bad of ['this --variant', 'this --variant wat', 'this --variant frame,wat', 'this --variant ,']) expect(rep.parseReplayArgs(bad)).toEqual({ error: rep.REPLAY_USAGE })
-    expect(rep.PROMPT_EDITS).toEqual(['frame', 'no-think', 'rep-system', 'end-line', 'proof', 'decisions', 'now', 'same-as', 'message'])
+    expect(rep.PROMPT_EDITS).toEqual(['frame', 'no-think', 'rep-system', 'end-line', 'proof', 'decisions', 'now', 'same-as', 'message', 'evidence', 'fault'])
     // A base arm in place of "as saved": edits strictly within the variant's.
     expect(rep.parseReplayArgs('all --variant build --base frame,no-think')).toEqual({ path: 'all', last: rep.REPLAY_LAST, times: 1, variant: [...rep.PROMPT_EDITS], base: ['frame', 'no-think'] })
     expect(rep.parseReplayArgs('this --base frame --variant frame,rep-system')).toEqual({ path: 'this', last: rep.REPLAY_LAST, times: 1, variant: ['frame', 'rep-system'], base: ['frame'] })
     for (const bad of ['this --base frame', 'this --variant frame --base frame', 'this --variant frame --base no-think', 'this --variant build --base build', 'this --variant frame,no-think --base wat', 'this --variant frame,no-think --base', 'this --variant no-think,frame --base frame,no-think']) {
       expect(rep.parseReplayArgs(bad)).toEqual({ error: rep.REPLAY_USAGE })
     }
-    expect(rep.REPLAY_USAGE).toContain('[--variant build|frame|no-think|rep-system|end-line|proof|decisions|now|same-as|message] [--base frame|no-think|rep-system|end-line|proof|decisions|now|same-as|message] [--now]')
+    expect(rep.REPLAY_USAGE).toContain('[--variant build|frame|no-think|rep-system|end-line|proof|decisions|now|same-as|message|evidence|fault] [--base frame|no-think|rep-system|end-line|proof|decisions|now|same-as|message|evidence|fault] [--now]')
     // Across folders the calls are taken by time, whatever folder each sits in.
     const a = `${SID}/${rep.callFileName(3, 0, 'watch')}`
     const b = `other/${rep.callFileName(1, 0, 'watch')}`
@@ -16458,18 +16483,21 @@ describe('the call log: its pieces', () => {
       ['watch', PRE_G1.watchStop, watchPrompt(m, 'stop')],
       ['watch', PRE_G1.watchNote, watchPrompt(m, 'note')],
       ['brief', PRE_G1.brief, briefPrompt(m)],
-      ['ask-again', `${PRE_G1.brief}\n\n${PRE_G1.askAgain}`, rep.endAsked(`${briefPrompt(m)}\n\n${askAgain(OPEN_JOB_OPEN)}`)],
+      ['ask-again', `${PRE_G1.brief}\n\n${PRE_G1.askAgain}`, rep.endAsked(`${briefPrompt(m)}\n\n${rep.askAgainBefore(OPEN_JOB_OPEN)}`)],
     ]
+    // Group 9's edit (fault) cannot rebuild a second asking: the rule its first answer broke is not saved.
+    expect(rep.editSaved('ask-again', PRE_G1.system, saved(`${PRE_G1.brief}\n\n${PRE_G1.askAgain}`), [...rep.PROMPT_EDITS])).toEqual({ why: 'the rule its first answer broke is not in the saved call' })
+    const ALL = rep.PROMPT_EDITS.filter(e => e !== 'fault')
     for (const [kind, old, now] of cases) {
       const before = saved(old)
-      const e = rep.editSaved(kind, PRE_G1.system, before, [...rep.PROMPT_EDITS])
+      const e = rep.editSaved(kind, PRE_G1.system, before, ALL)
       if ('why' in e) throw new Error(e.why)
       expect(e.system).toBe(rep.REP_SYSTEM)
       expect(rep.joinBlocks(e.prompt as rep.PromptBlock[])).toBe(rep.joinBlocks(rep.recordPrompt([], now)))
       // The blocks before the task's own are sent as they were, cache marks and all.
       expect((e.prompt as rep.PromptBlock[]).slice(0, -1)).toEqual(before.slice(0, -1))
       // A joined prompt comes back joined.
-      const joined = rep.editSaved(kind, PRE_G1.system, rep.joinBlocks(before), [...rep.PROMPT_EDITS])
+      const joined = rep.editSaved(kind, PRE_G1.system, rep.joinBlocks(before), ALL)
       expect('why' in joined ? joined.why : joined.prompt).toBe(rep.joinBlocks(rep.recordPrompt([], now)))
     }
     // The base arm of group 2's replay, group 1's edits alone, still gives exactly what the build
@@ -16501,7 +16529,7 @@ describe('the call log: its pieces', () => {
         ['watch', x.watchStop, g2.watchStop, watchPrompt(mm, 'stop')],
         ['watch', x.watchNote, g2.watchNote, watchPrompt(mm, 'note')],
         ['brief', x.brief, g2.brief, briefPrompt(mm)],
-        ['ask-again', `${x.brief}\n\n${x.askAgain}`, g2.askAgain, rep.endAsked(`${briefPrompt(mm)}\n\n${askAgain(open)}`)],
+        ['ask-again', `${x.brief}\n\n${x.askAgain}`, g2.askAgain, rep.endAsked(`${briefPrompt(mm)}\n\n${rep.askAgainBefore(open)}`)],
       ]
       for (const [kind, then, g2Sent, now] of more) {
         // rep-system and end-line give exactly what the build after group 2 sent; with proof, decisions, now and message, this build's.
@@ -16509,7 +16537,7 @@ describe('the call log: its pieces', () => {
         if ('why' in e2) throw new Error(e2.why)
         expect(e2.system).toBe(G2.system)
         expect(rep.joinBlocks(e2.prompt as rep.PromptBlock[])).toBe(rep.joinBlocks(rep.recordPrompt([], g2Sent)))
-        const e = rep.editSaved(kind, G1.system, saved(then), ['rep-system', 'end-line', 'proof', 'decisions', 'now', 'message'])
+        const e = rep.editSaved(kind, G1.system, saved(then), ['rep-system', 'end-line', 'proof', 'decisions', 'now', 'message', 'evidence'])
         if ('why' in e) throw new Error(e.why)
         expect(e.system).toBe(rep.REP_SYSTEM)
         expect(rep.joinBlocks(e.prompt as rep.PromptBlock[])).toBe(rep.joinBlocks(rep.recordPrompt([], now)))
@@ -16584,7 +16612,7 @@ describe('the call log: its pieces', () => {
         ['watch', g2.watchStop, watchPrompt(mm, 'stop')],
         ['watch', g2.watchNote, watchPrompt(mm, 'note')],
         ['brief', g2.brief, briefPrompt(mm)],
-        ['ask-again', g2.askAgain, rep.endAsked(`${briefPrompt(mm)}\n\n${askAgain(open)}`)],
+        ['ask-again', g2.askAgain, rep.endAsked(`${briefPrompt(mm)}\n\n${rep.askAgainBefore(open)}`)],
       ]
       const g3 = G3_MORE[i]
       if (g3 === undefined) throw new Error('G3_MORE is short')
@@ -16596,14 +16624,14 @@ describe('the call log: its pieces', () => {
         if ('why' in e3) throw new Error(e3.why)
         expect(e3.system).toBe(G3.system)
         expect(rep.joinBlocks(e3.prompt as rep.PromptBlock[])).toBe(rep.joinBlocks(rep.recordPrompt([], g3Sent[then]!)))
-        const e = rep.editSaved(kind, G2.system, saved(then), ['proof', 'decisions', 'now', 'same-as', 'message'])
+        const e = rep.editSaved(kind, G2.system, saved(then), ['proof', 'decisions', 'now', 'same-as', 'message', 'evidence'])
         if ('why' in e) throw new Error(e.why)
         expect(e.system).toBe(REP_SYSTEM)
         expect(rep.joinBlocks(e.prompt as rep.PromptBlock[])).toBe(rep.joinBlocks(rep.recordPrompt([], now)))
         // The record blocks and their cache marks are left as they were saved.
         expect((e.prompt as rep.PromptBlock[]).slice(0, -1)).toEqual(saved(then).slice(0, -1))
         // Saved joined, it comes back joined.
-        const joined = rep.editSaved(kind, G2.system, rep.joinBlocks(saved(then)), ['proof', 'decisions', 'now', 'same-as', 'message'])
+        const joined = rep.editSaved(kind, G2.system, rep.joinBlocks(saved(then)), ['proof', 'decisions', 'now', 'same-as', 'message', 'evidence'])
         if ('why' in joined) throw new Error(joined.why)
         expect(joined.prompt).toBe(rep.joinBlocks(rep.recordPrompt([], now)))
       }
@@ -16653,7 +16681,7 @@ describe('the call log: its pieces', () => {
         ['watch', g3.watchStop, watchPrompt(mm, 'stop')],
         ['watch', g3.watchNote, watchPrompt(mm, 'note')],
         ['brief', g3.brief, briefPrompt(mm)],
-        ['ask-again', g3.askAgain, rep.endAsked(`${briefPrompt(mm)}\n\n${askAgain(open)}`)],
+        ['ask-again', g3.askAgain, rep.endAsked(`${briefPrompt(mm)}\n\n${rep.askAgainBefore(open)}`)],
       ]
       const g4 = G4_MORE[i]
       if (g4 === undefined) throw new Error('G4_MORE is short')
@@ -16665,7 +16693,7 @@ describe('the call log: its pieces', () => {
         expect(e.system).toBe(G4.system)
         expect(rep.joinBlocks(e.prompt as rep.PromptBlock[])).toBe(rep.joinBlocks(rep.recordPrompt([], g4Sent[then]!)))
         // With group 5's and group 7's edits, what this build sends.
-        const e5 = rep.editSaved(kind, G3.system, saved(then), ['decisions', 'now', 'message'])
+        const e5 = rep.editSaved(kind, G3.system, saved(then), ['decisions', 'now', 'message', 'evidence'])
         if ('why' in e5) throw new Error(e5.why)
         expect(e5.system).toBe(REP_SYSTEM)
         expect(rep.joinBlocks(e5.prompt as rep.PromptBlock[])).toBe(rep.joinBlocks(rep.recordPrompt([], now)))
@@ -16712,7 +16740,7 @@ describe('the call log: its pieces', () => {
         if ('why' in e5) throw new Error(e5.why)
         expect(e5.system).toBe(G5.system)
         expect(rep.joinBlocks(e5.prompt as rep.PromptBlock[])).toBe(rep.joinBlocks(rep.recordPrompt([], G5_MORE[i]![reason === 'step' ? 'watchStep' : reason === 'stop' ? 'watchStop' : 'watchNote'])))
-        const e = rep.editSaved('watch', G4.system, saved(then), ['now', 'message'])
+        const e = rep.editSaved('watch', G4.system, saved(then), ['now', 'message', 'evidence'])
         if ('why' in e) throw new Error(e.why)
         expect(e.system).toBe(REP_SYSTEM)
         expect(rep.joinBlocks(e.prompt as rep.PromptBlock[])).toBe(rep.joinBlocks(rep.recordPrompt([], now)))
@@ -16774,10 +16802,10 @@ describe('the call log: its pieces', () => {
         ['watch', g6.watchStop, watchPrompt(mm, 'stop')],
         ['watch', g6.watchNote, watchPrompt(mm, 'note')],
         ['brief', g6.brief, briefPrompt(mm)],
-        ['ask-again', g6.askAgain, rep.endAsked(`${briefPrompt(mm)}\n\n${askAgain(open)}`)],
+        ['ask-again', g6.askAgain, rep.endAsked(`${briefPrompt(mm)}\n\n${rep.askAgainBefore(open)}`)],
       ]
       for (const [kind, then, now] of recorded) {
-        const e = rep.editSaved(kind, G6.system, saved(then), ['message'])
+        const e = rep.editSaved(kind, G6.system, saved(then), ['message', 'evidence'])
         if ('why' in e) throw new Error(e.why)
         expect(e.system).toBe(REP_SYSTEM)
         expect(rep.joinBlocks(e.prompt as rep.PromptBlock[])).toBe(rep.joinBlocks(rep.recordPrompt([], now)))
@@ -16795,6 +16823,35 @@ describe('the call log: its pieces', () => {
     // A changed group 6 text skips the call with the reason.
     const b = G6_MORE[0]!.brief
     expect(rep.editSaved('brief', G6.system, saved(b.replace('several lines if needed. It asks', 'a few lines. It asks')), ['message'])).toEqual({ why: "group 6's texts are not each in it once" })
+  })
+
+  test('rule: group 8\'s edit (evidence) adds the line that a finding stands until the record shows something new to each watch, briefing and second-ask call, and back; group 9\'s (fault) rebuilds no second asking (G30, G39)', () => {
+    // G30: the finding holds against the agent's word; the check already holds the same rule.
+    expect(REP_SYSTEM.split(rep.REP_HOLD).length).toBe(2)
+    expect(rep.REP_MIND).toContain(rep.REP_HOLD)
+    expect(rep.REP_HOLD).toContain("An agent's disagreement is not new evidence; what it ran and what that printed can be.")
+    expect(rep.CHECK_SYSTEM).toContain('The agent disagreeing is not evidence; what it ran, and what that printed, can be.')
+    const g7System = REP_SYSTEM.replace(`${rep.REP_HOLD}\n`, '')
+    expect(rep.systemBefore('watch', 5)).toBe(g7System)
+    expect(rep.systemBefore('ask-again', 5)).toBe(g7System)
+    expect(rep.systemBefore('own-words', 5)).toBe(OWN_WORDS_SYSTEM)
+    const saved = (task: string) => rep.recordPrompt([], task).map((b, i, all) => (i === 0 && all.length > 1 ? { ...b, cache: true as const } : b))
+    const [x] = G1_MORE
+    if (x === undefined) throw new Error('G1_MORE is empty')
+    const mm = x.m as unknown as Memory
+    const open = x.open as unknown as Condition[]
+    const asked = rep.endAsked(`${briefPrompt(mm)}\n\n${rep.askAgainBefore(open)}`)
+    for (const [kind, task] of [['watch', watchPrompt(mm, 'step')], ['brief', briefPrompt(mm)], ['ask-again', asked]] as Array<[rep.CallKind, string]>) {
+      const e = rep.editSaved(kind, g7System, saved(task), ['evidence'])
+      if ('why' in e) throw new Error(e.why)
+      expect(e.system).toBe(REP_SYSTEM)
+      expect(rep.joinBlocks(e.prompt as rep.PromptBlock[])).toBe(rep.joinBlocks(saved(task)))
+      // A call this build saved has nothing to add.
+      expect(rep.editSaved(kind, REP_SYSTEM, saved(task), ['evidence'])).toEqual({ why: "its system prompt is not group 7's" })
+    }
+    expect(rep.editSaved('objective', OBJECTIVE_SYSTEM, 'x', ['evidence'])).toEqual({ why: 'no edit of this variant applies to a objective call' })
+    expect(rep.editSaved('ask-again', g7System, saved(asked), ['evidence', 'fault'])).toEqual({ why: 'the rule its first answer broke is not in the saved call' })
+    expect(rep.editSaved('watch', g7System, saved(watchPrompt(mm, 'step')), ['fault'])).toEqual({ why: 'no edit of this variant applies to a watch call' })
   })
 
   test('rule: the message to the agent is written as a prompt to a coding agent, with a finish line, held steps named exactly and lengths in words (G28, G40)', () => {
@@ -16939,7 +16996,7 @@ describe('the call log: saving, replaying, counting and removing', () => {
     const [brief, again] = [callsIn(d).find(e => e.kind === 'brief'), callsIn(d).find(e => e.kind === 'ask-again')]
     expect(brief).toMatchObject({ outcome: 'answered', read: { parsed: 'read', gate: ['empty-message'] }, open: OPEN_JOB_OPEN })
     expect(again).toMatchObject({ outcome: 'answered', read: { parsed: 'read', gate: [] }, open: OPEN_JOB_OPEN })
-    expect(rebuilt(d, again as rep.CallEntry).prompt).toContain('An empty message counts too')
+    expect(rebuilt(d, again as rep.CallEntry).prompt).toContain('The first answer left the message to the agent empty, while these conditions of done are still open:')
     const counts = (heldIn(store) as { counts?: rep.Counts } | undefined)?.counts
     expect(counts?.ends).toEqual({ 'asked-again': 1 })
     expect(counts?.kinds.brief?.gate).toEqual({ 'empty-message': 1 })
@@ -17108,10 +17165,10 @@ describe('the call log: saving, replaying, counting and removing', () => {
     const base = old.replace(/\.json$/, '')
     const kept = (tail: string) => [...d.files.keys()].filter(k => k.startsWith(`${CALLS_ROOT}/${OTHER}/replays/${base}.`) && k.endsWith(tail))
     const runOf = (k: string) => k.slice(`${CALLS_ROOT}/${OTHER}/replays/${base}.`.length).split('.')[0] ?? ''
-    expect(kept('.high.frame+no-think+rep-system+end-line+proof+decisions+now+same-as+message.as-saved-1.txt').length).toBe(1)
-    expect(d.files.get(kept('.high.frame+no-think+rep-system+end-line+proof+decisions+now+same-as+message.as-saved-1.txt')[0] ?? '')).toBe(`${HOLDS}\n(as saved)`)
-    expect(d.files.get(kept('.high.frame+no-think+rep-system+end-line+proof+decisions+now+same-as+message.variant-2.txt')[0] ?? '')).toBe(withEnd(`${HOLDS}\n(variant)`))
-    const first = runOf(kept('.high.frame+no-think+rep-system+end-line+proof+decisions+now+same-as+message.as-saved-1.txt')[0] ?? '')
+    expect(kept('.high.frame+no-think+rep-system+end-line+proof+decisions+now+same-as+message+evidence+fault.as-saved-1.txt').length).toBe(1)
+    expect(d.files.get(kept('.high.frame+no-think+rep-system+end-line+proof+decisions+now+same-as+message+evidence+fault.as-saved-1.txt')[0] ?? '')).toBe(`${HOLDS}\n(as saved)`)
+    expect(d.files.get(kept('.high.frame+no-think+rep-system+end-line+proof+decisions+now+same-as+message+evidence+fault.variant-2.txt')[0] ?? '')).toBe(withEnd(`${HOLDS}\n(variant)`))
+    const first = runOf(kept('.high.frame+no-think+rep-system+end-line+proof+decisions+now+same-as+message+evidence+fault.as-saved-1.txt')[0] ?? '')
     expect(first).toMatch(/^\d{13}$/)
     expect([...d.files.keys()].filter(k => k.includes('/replays/')).length).toBe(4)
     // Another run of the same call with other settings keeps its replies apart.
@@ -17121,7 +17178,7 @@ describe('the call log: saving, replaying, counting and removing', () => {
     // The same run again, with the same settings, keeps the earlier replies and adds its own.
     await runCommand($, 'owner-rep-replay', `${CALLS_ROOT}/${OTHER}/${old} --variant no-think --effort low`)
     expect(kept('.low.no-think.as-saved-1.txt').length).toBe(2)
-    expect(kept('.high.frame+no-think+rep-system+end-line+proof+decisions+now+same-as+message.as-saved-1.txt').map(runOf)).toEqual([first])
+    expect(kept('.high.frame+no-think+rep-system+end-line+proof+decisions+now+same-as+message+evidence+fault.as-saved-1.txt').map(runOf)).toEqual([first])
     expect(new Set([...d.files.keys()].filter(k => k.includes('/replays/')).map(runOf)).size).toBe(3)
     expect([...d.files.keys()].filter(k => k.includes('/replays/')).length).toBe(8)
   })
@@ -17171,12 +17228,12 @@ describe('the call log: saving, replaying, counting and removing', () => {
     expect(out).toMatch(/\n  base 1 watch: answered/)
     expect(out).not.toMatch(/as saved/)
     expect(out).toMatch(/^base: 1 calls;.*\(base frame,no-think\)$/m)
-    expect(out).toMatch(/^variant: 1 calls;.*\(variant frame,no-think,rep-system,end-line,proof,decisions,now,same-as,message\)$/m)
+    expect(out).toMatch(/^variant: 1 calls;.*\(variant frame,no-think,rep-system,end-line,proof,decisions,now,same-as,message,evidence,fault\)$/m)
     const base = old.replace(/\.json$/, '')
     const kept = (tail: string) => [...d.files.keys()].filter(k => k.startsWith(`${CALLS}/replays/${base}.`) && k.endsWith(tail))
-    expect(kept('.high.frame+no-think~frame+no-think+rep-system+end-line+proof+decisions+now+same-as+message.base-1.txt').length).toBe(1)
-    expect(d.files.get(kept('.high.frame+no-think~frame+no-think+rep-system+end-line+proof+decisions+now+same-as+message.base-1.txt')[0] ?? '')).toBe(withEnd(`${HOLDS}\n(base)`))
-    expect(d.files.get(kept('.high.frame+no-think~frame+no-think+rep-system+end-line+proof+decisions+now+same-as+message.variant-1.txt')[0] ?? '')).toBe(withEnd(`${HOLDS}\n(variant)`))
+    expect(kept('.high.frame+no-think~frame+no-think+rep-system+end-line+proof+decisions+now+same-as+message+evidence+fault.base-1.txt').length).toBe(1)
+    expect(d.files.get(kept('.high.frame+no-think~frame+no-think+rep-system+end-line+proof+decisions+now+same-as+message+evidence+fault.base-1.txt')[0] ?? '')).toBe(withEnd(`${HOLDS}\n(base)`))
+    expect(d.files.get(kept('.high.frame+no-think~frame+no-think+rep-system+end-line+proof+decisions+now+same-as+message+evidence+fault.variant-1.txt')[0] ?? '')).toBe(withEnd(`${HOLDS}\n(variant)`))
     expect([...d.files.keys()].filter(k => k.includes('/replays/')).length).toBe(2)
   })
 

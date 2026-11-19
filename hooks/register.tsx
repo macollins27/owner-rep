@@ -129,6 +129,8 @@ import {
   isBlankRec,
   recDrafts,
   askAgain,
+  askFault,
+  gateRules,
   gateOpen,
   gateVerdict,
   mergeConditions,
@@ -1864,7 +1866,8 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
         briefRead = callRead(kind, result.text, left, size)
         gatedOpen = left
         if (got.sent !== undefined) after.counts = countCall(after.counts, counted(got.sent, briefRead))
-        return { ...gateVerdict(parsed, left), open: left }
+        // The answer as written and the rules it broke, so a second asking can name them (askFault).
+        return { ...gateVerdict(parsed, left), open: left, written: parsed, rules: gateRules(parsed, left) }
       })
       if (got.sent !== undefined) saveCall($, sid, got.sent, briefRead, gatedOpen)
       return out
@@ -1900,7 +1903,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     let end: BriefEnd = first.refused ? 'fixed-text' : 'passed'
     if (first.refused && first.open !== null) {
       reads += 1
-      const again = await ask(askAgain(first.open))
+      const again = await ask(askAgain(first.open, askFault(first.written, first.rules)))
       if (!('reason' in again)) taken = again
       if (!taken.refused) end = 'asked-again'
     }

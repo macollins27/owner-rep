@@ -3087,7 +3087,10 @@ At every look, judge the agent against the objective: whether it is completing t
 const REP_REACHES_BODY = `Work the agent leaves "for you", "when convenient" or "as a follow-up" (a branch to delete, a copy to remove, a check to run, a file to tidy) is the agent's unfinished work: it goes under "left", the message tells the agent to finish it, and "next" is the agent's step or a decision of the owner's, never such a chore.
 
 ${DECIDING[2]} A decision is truly the owner's when it touches the owner's livelihood or public name, cannot be undone, or goes against something the owner asked for; publishing, sending, paying, and anything the owner's guard refused are among them. Put it to the owner as one plain question. When a condition waits on a go-ahead, the message tells the agent to finish everything else, hold that step until the owner says go, and say exactly what it will show the owner then.`
+// G30: a finding moves only on new evidence, and the change names it.
+export const REP_HOLD = '- Holding what you found until the record shows something new. Your last briefing and the lines already shown stand until then; when you change one, name what is new. An agent\'s disagreement is not new evidence; what it ran and what that printed can be.'
 const REP_MIND_BODY = `- By checking, not believing. A claim the next step depends on ends as one of three: shown true in the record; shown false; or not shown. A claim is shown false only where the record shows the opposite, never by a guess at what a command may have done; a claim the record shows neither way is not shown, and nothing you write calls it untrue or inaccurate. Judge the claims the next step rests on, not every claim. "Not shown" is not a failure: say it plainly, and have the message ask for the proof "What counts as shown" names. When the agent admits a failure, say what it means for the owner and how far it goes; the admission needs no proof.
+${REP_HOLD}
 - Plainly, without hedging. Say what you found. If something that matters could not be seen from here, say so once, in plain words, and point the owner to the check that can see it; never hide a blind spot behind a confident answer.
 - Fairly. Say so when the agent is right, once you have checked. When the owner raised an alarm, give the owner an account of what is really happening, not a reassurance. Say so when the trouble comes from the instructions the agent was given, or from the owner's side, and not from the agent.
 - Watching the cost. Say when effort and tokens are going into the wrong target, when the way the agent is working costs far more than the job needs (a fleet of helpers rebuilding what the owner already owns), and when the session is long. Look at where the work goes: how much of what the agent and its helpers do makes the product better, and how much goes into self-proving pieces (expectation 4); tests, reviews and planning are work on the product. When proving their own work takes a real share of the effort, say so plainly: that is the owner's money on the wrong target, whatever routine or brief the agent says asks for it. Long is a figure, not an impression: a session is long only past ${LONG_SESSION_PERCENT} percent of its window, and its share is given after the record. Under that, never call it long and never tell the owner to start fresh.
@@ -6036,12 +6039,21 @@ export const STOP_NEXT = new RegExp(
 // which the gate treats as nothing shown, never as nothing open.
 export const gateOpen = (o: Objective | null): Condition[] | null => (o === null ? null : openConditions(o))
 
-// Added to the brief when its answer said stop, gave no verdict, called the
-// work finished, said the work is going well, or left the message empty, while a condition was open:
-// the brief is asked once more, with the open conditions named.
-export const askAgain = (open: Condition[]): string => askAgainText(list(open.map(promptLine), '- none'))
-// The same, with the open conditions given as printed.
-export const askAgainText = (open: string): string => `## Asked once more
+// Added to the brief when the gate refused its answer while a condition was open: the brief is
+// asked once more, naming the rule the first answer broke (askFault) and the open conditions.
+export const askAgain = (open: Condition[], fault: string): string => askAgainText(list(open.map(promptLine), '- none'), fault)
+// The same, with the open conditions given as printed (G39: the fault named, no "look again",
+// since this call reads the record for the first time).
+export const askAgainText = (open: string, fault: string): string => `## Asked once more
+
+This is the briefing's second asking. The first answer ${fault}, while these conditions of done are still open:
+${open}
+
+While any of them is open, the verdict is "continue", "well" is empty, and the message to the agent is written, asking for the proof each still needs. Measure each one against the record by what counts as shown: put under "shown:" each one the record shows, with where, and under "closed:" each one the owner closed in a message of the owner's own, with its number. ${LOOK_RULE} Then give the whole briefing in the same structure, with "next" and "message" saying what the agent does now to show each open one, or what stands in the way. ${HELD_STEP_RULE}`
+// What the build before G39 sent in its place, listing every fault the gate refuses on. History,
+// kept word for word so the replay's chain can rebuild that build's texts; never sent.
+export const askAgainBefore = (open: Condition[]): string => askAgainBeforeFault(list(open.map(promptLine), '- none'))
+export const askAgainBeforeFault = (open: string): string => `## Asked once more
 
 Your first answer said the agent should stop, gave no verdict, called the work finished, or said the work is going well, while these conditions of done are still open:
 ${open}
@@ -6813,6 +6825,30 @@ export function gateRules(a: BriefAnswer, open: Condition[] | null): GateRule[] 
   return rules
 }
 
+// The rules a refused answer broke, said plainly for the second asking, each with the sentence that
+// broke it quoted (cut to QUOTE_MAX characters). The gate knows the rule; the second call never saw
+// the first answer, so it is told (G39).
+const QUOTE_MAX = 200
+const quoted = (s: string): string => {
+  const t = s.replace(/\s+/g, ' ').trim()
+  return `"${t.length > QUOTE_MAX ? `${t.slice(0, QUOTE_MAX - 1).trimEnd()}…` : t}"`
+}
+export function askFault(a: BriefAnswer, rules: readonly GateRule[]): string {
+  const said: string[] = []
+  for (const r of rules) {
+    if (r === 'stop-verdict') said.push('gave "stop" as its verdict')
+    else if (r === 'no-verdict') said.push('gave no verdict')
+    else if (r === 'going-well') said.push(`said under "well" that the work is going well: ${quoted(a.well)}`)
+    else if (r === 'next-says-stop') said.push(`told the agent to stop in "next": ${quoted(a.next)}`)
+    else if (r === 'message-says-stop') {
+      const span = stopSpans(a.message)[0]
+      said.push(`told the agent to stop in its message: ${quoted(span === undefined ? a.message : a.message.slice(span.start, span.end))}`)
+    } else if (r === 'empty-message') said.push('left the message to the agent empty')
+  }
+  if (said.length === 0) return 'broke a rule of the briefing'
+  return said.length === 1 ? said[0]! : `${said.slice(0, -1).join('; ')}; and ${said[said.length - 1]}`
+}
+
 const wordCount = (s: string): number => s.split(/\s+/).filter(w => w !== '').length
 const cardWords = (a: BriefAnswer): Record<string, number> => ({
   stands: wordCount(a.stands),
@@ -6928,7 +6964,7 @@ export function countsText(counts: Counts | undefined): string {
 }
 
 // The edits of this build a replay's variant can make to a saved call (`editSaved`, below).
-export const PROMPT_EDITS = ['frame', 'no-think', 'rep-system', 'end-line', 'proof', 'decisions', 'now', 'same-as', 'message'] as const
+export const PROMPT_EDITS = ['frame', 'no-think', 'rep-system', 'end-line', 'proof', 'decisions', 'now', 'same-as', 'message', 'evidence', 'fault'] as const
 export type PromptEdit = (typeof PROMPT_EDITS)[number]
 const PROMPT_EDITS_LIST = PROMPT_EDITS.join('|')
 
@@ -7016,7 +7052,7 @@ export const replayPick = (names: readonly string[], kind: CallKind | undefined,
 // call is never sent unchanged under the variant's name. Only the task after the record is edited:
 // the record is the session's, and anything in it, the old texts quoted among them, stays. The edits
 // themselves, `PROMPT_EDITS`, are named above the replay's words.
-const EDIT_KINDS: Record<PromptEdit, readonly CallKind[]> = { frame: ['watch', 'brief', 'ask-again'], 'no-think': ['watch'], 'rep-system': ['watch', 'brief', 'ask-again'], 'end-line': ['watch', 'brief', 'ask-again'], proof: ['objective', 'watch', 'brief', 'ask-again', 'own-words'], decisions: ['objective', 'watch', 'brief', 'ask-again'], now: ['objective', 'watch'], 'same-as': ['objective'], message: ['watch', 'brief', 'ask-again', 'own-words'] }
+const EDIT_KINDS: Record<PromptEdit, readonly CallKind[]> = { frame: ['watch', 'brief', 'ask-again'], 'no-think': ['watch'], 'rep-system': ['watch', 'brief', 'ask-again'], 'end-line': ['watch', 'brief', 'ask-again'], proof: ['objective', 'watch', 'brief', 'ask-again', 'own-words'], decisions: ['objective', 'watch', 'brief', 'ask-again'], now: ['objective', 'watch'], 'same-as': ['objective'], message: ['watch', 'brief', 'ask-again', 'own-words'], evidence: ['watch', 'brief', 'ask-again'], fault: ['ask-again'] }
 // What the build before prompt group 1 sent (G1, G2): the fork frame that opened the task, the line
 // after it on the watch, and the start of the record read's system prompt.
 const OLD_FRAME = /^<system-reminder>This is a side request from the user[^]*?<\/system-reminder>\n\n/
@@ -7052,7 +7088,7 @@ function toRepSystem(kind: CallKind, system: string, task: string): { system: st
     const askAt = body.lastIndexOf(`\n\n${PRE_G2_ASK_HEAD}`)
     if (askAt < 0 || !body.slice(0, askAt).endsWith(PRE_G2_BRIEF_REQUEST)) return fail
     memory = body.slice(0, askAt - PRE_G2_BRIEF_REQUEST.length)
-    request = `${BRIEF_REQUEST}\n\n${askAgainText(body.slice(askAt + 2 + PRE_G2_ASK_HEAD.length, body.length - PRE_G2_ASK_TAIL.length))}`
+    request = `${BRIEF_REQUEST}\n\n${askAgainBeforeFault(body.slice(askAt + 2 + PRE_G2_ASK_HEAD.length, body.length - PRE_G2_ASK_TAIL.length))}`
   }
   // What the rep knows: the label, the rules that moved into REP_SYSTEM, and the session's size.
   const lost = { why: 'the old account of what the rep knows is not in it' }
@@ -7152,6 +7188,8 @@ const G7_TASK: ReadonlyArray<{ swap: Swap; kinds: readonly CallKind[] }> = [
   { swap: ['next: <one or two sentences: what the agent does now', `next: <${SHORT_PART}: what the agent does now`], kinds: ['own-words'] },
   { swap: ['written to the agent, specific and professional, several lines if needed: it asks', `written to the agent ${MESSAGE_FORM}: it asks`], kinds: ['own-words'] },
 ]
+// Prompt group 8 (G30): a finding stands until the record shows something new.
+const G8_REP_SYSTEM: readonly Swap[] = [['the admission needs no proof.\n- Plainly, without hedging.', `the admission needs no proof.\n${REP_HOLD}\n- Plainly, without hedging.`]]
 // Each pair's one side found exactly once and put in the other's place, forward (group 2's to
 // this build's) or back; null when one is not found exactly once.
 function swapped(text: string, swaps: readonly Swap[], back: boolean): string | null {
@@ -7174,6 +7212,7 @@ const GROUPS: readonly Group[] = [
   { edit: 'now', system: k => (k === 'objective' ? G5_OBJECTIVE_SYSTEM : []), task: G5_TASK },
   { edit: 'same-as', system: k => (k === 'objective' ? G6_OBJECTIVE_SYSTEM : []), task: G6_TASK },
   { edit: 'message', system: k => (k === 'objective' ? [] : k === 'own-words' ? G7_OWN_WORDS_SYSTEM : G7_REP_SYSTEM), task: G7_TASK },
+  { edit: 'evidence', system: k => (k === 'objective' || k === 'own-words' ? [] : G8_REP_SYSTEM), task: [] },
 ]
 const nowSystem = (kind: CallKind): string => (kind === 'objective' ? OBJECTIVE_SYSTEM : kind === 'own-words' ? OWN_WORDS_SYSTEM : REP_SYSTEM)
 const groupTask = (i: number, kind: CallKind): Swap[] => GROUPS[i]!.task.filter(x => x.kinds.includes(kind)).map(x => x.swap)
@@ -7213,6 +7252,9 @@ export type Edited = { system: string; prompt: string | PromptBlock[] } | { why:
 export function editSaved(kind: CallKind, system: string, prompt: string | PromptBlock[], edits: readonly PromptEdit[]): Edited {
   const apply = PROMPT_EDITS.filter(e => edits.includes(e) && EDIT_KINDS[e].includes(kind))
   if (apply.length === 0) return { why: `no edit of this variant applies to a ${kind} call` }
+  // Group 9 (G39): this build's second asking names the rule the first answer broke, which a saved
+  // call does not hold, so a second asking is never rebuilt under it.
+  if (apply.includes('fault')) return { why: "the rule its first answer broke is not in the saved call" }
   // The objective and own-words calls have no record: their prompt is the task, and only the
   // groups' edits apply to them.
   if (kind === 'objective' || kind === 'own-words') {
