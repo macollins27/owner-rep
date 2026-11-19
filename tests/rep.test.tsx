@@ -10061,6 +10061,36 @@ test('factHolds takes a noun\'s own words from a closed list: the seventh live t
   for (const text of facts) expect([text, factHolds(text)]).toEqual([text, true])
 })
 
+test('factHolds reads a path or a name only where it is one: a quality or a doing joined by a slash, a dot, an underscore or a hyphen, with a digit, in backticks or after a state is works in every slot (eighth live test), and real paths, names and facts "for this job" stay facts', () => {
+  // The words every disguise is built from: qualities, doings, and the eighth test's own.
+  const words = ['secure', 'fast', 'reliable', 'correct', 'complete', 'robust', 'bug-free', 'encrypts', 'compresses', 'signs', 'validates2', 'prints-sorted', 'results', 'UTF8-compliant', '100%-correct', 'base64-encoding', '0-error']
+  const joined = (a: string, b: string, c: string): string[] => ['/', '.', '_', '-', '\\'].flatMap(j => [`${a}${j}${b}`, `${a}${j}${b}${j}${c}`])
+  const disguises = new Set<string>()
+  for (let i = 0; i < words.length; i++) {
+    const [a, b, c] = [words[i]!, words[(i + 1) % words.length]!, words[(i + 2) % words.length]!]
+    for (const d of [...joined(a, b, c), `${a}2`, `\`${a}\``, `\`${a}/${b}\``, `\`${a}.${b}\``, `\`${a} ${b}\``]) disguises.add(d)
+  }
+  const leaks: string[] = []
+  for (const d of disguises) {
+    leaks.push(`The ${d} tool is installed`, `The script contains a ${d} fix`, `The file is saved on the ${d} server`, `No file holds ${d} code`, `No script or ${d} tool exists`, `The service is deployed ${d}`, `The tool is installed (${d})`, `The code is committed ${d}`, `${d} is committed`, `The file at ${d} is committed`, `The file is saved in ${d}`)
+  }
+  for (const w of words) leaks.push(`The tool is installed (${w})`, `The ${w} tool is installed`, `The file is saved for the ${w} job`)
+  const closed = leaks.filter(t => factHolds(t))
+  expect(closed).toEqual([])
+  // The facts that must still close: real paths, real names, and the writer's own "for this job".
+  const facts = ['src/hooks/rep.ts is committed', 'notes/today.md is saved in the scratch folder', 'the file is saved in ~/work/x', 'the file is saved in /private/tmp/x', 'the file is saved in ./out/', 'the `shout.py` script is saved', 'the `owner-rep` plugin is installed', '`run.sh` is installed', 'The fix is committed (a1b2c3d)', 'The fix is committed (`a1b2c3d`)', 'The v2 build is deployed', 'The v1.4.0-rc.2 build is installed', 'The build is tagged v2.1.0', 'the file is committed',
+    "nothing in the scratch folder's repository is committed for this job",
+    "nothing is pushed from the scratch folder's repository for this job",
+    'nothing is committed for this session',
+    'shout.py is saved for this task']
+  for (const text of facts) expect([text, factHolds(text)]).toEqual([text, true])
+  // "For" opens only the job, the session or the task, never a doing or a thing of the work.
+  // Words in backticks name a thing alone only when each is from the closed list, as before a
+  // noun: a tool's bare name costs a look, the designed safe direction.
+  for (const text of ['`npm-run` is installed', '`secure` is committed']) expect([text, factHolds(text)]).toEqual([text, false])
+  for (const text of ['The file is saved for converting text to uppercase', 'The tool is installed for the users', 'The script is committed for the fix', 'The file is saved for this job to print']) expect([text, factHolds(text)]).toEqual([text, false])
+})
+
 test('a condition\'s kind: written by the writer before it, kept through a held write, stripped where a reader copies it, and one held "works" never turns "fact"', () => {
   const a = parseObjective('objective: moved\nmoved: #1\nresult: r\nfor: f\ndone:\n- works: the page loads for a visitor | open\n- fact: the build installed | not shown\n- the docs written | open\nstep: s\ndropped:\n- nothing')
   expect(a?.kind === 'moved' && a.parts.done).toEqual([

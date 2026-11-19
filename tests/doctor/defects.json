@@ -4195,7 +4195,7 @@
   },
   {
     "name": "fact-slash-words-path",
-    "breaks": "Two words joined by a slash are read as a path, so a quality in them (\"the fast/secure tool is installed\") stands before the noun as a name and reads as a fact.",
+    "breaks": "Words joined by a slash or a dot are read as a path, so a quality or a doing in them (\"the secure/fast/reliable tool\", \"the fast.secure tool\", \"the sorts/validates2 tool\") closes on the builder's own run.",
     "patch": "fact-slash-words-path.patch",
     "fixed": "tested 2026-11-18"
   },
@@ -4233,6 +4233,48 @@
     "name": "check-reason-end-cut",
     "breaks": "A long engine reason is cut at its end, so the name it failed on, which comes last, never reaches the card.",
     "patch": "check-reason-end-cut.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-mod-bare-path",
+    "breaks": "A path or a name of any kind may stand before a noun, so a word in backticks (\"the `reliable` tool\") or a bare path (\"the ~secure tool\", \"the secure.c tool\") carries a quality past the closed list and closes.",
+    "patch": "fact-mod-bare-path.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-tick-words-name",
+    "breaks": "Plain words in backticks are read as a path, so a quality put in backticks (\"the `correct` tool is installed\", \"no file holds `encrypting` code\") closes on the builder's own run.",
+    "patch": "fact-tick-words-name.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-state-name-any",
+    "breaks": "Any word with a digit, or any path, after a state is read as its name, so a quality after it (\"installed (UTF8-compliant)\", \"committed (100%-correct)\", \"deployed secure2\") closes.",
+    "patch": "fact-state-name-any.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-for-job-not-place",
+    "breaks": "\"For this job\" is not read as a place, so the writer's own facts \"nothing in the scratch folder's repository is committed for this job\" read as works and wait for a look no command needs.",
+    "patch": "fact-for-job-not-place.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-for-any-place",
+    "breaks": "\"For\" opens any noun of the work, so \"the script is committed for the fix\" reads as a fact about the fix.",
+    "patch": "fact-for-any-place.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-any-ending-file",
+    "breaks": "Any word with a dot and up to eight letters after it is a file's name, so \"the secure.fast tool\" and \"no file holds correct.robust code\" close.",
+    "patch": "fact-any-ending-file.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-tick-noun-any",
+    "breaks": "Words in backticks stand as the thing held or the place whatever they are, so \"`secure/fast` is committed\" and \"the file is saved in `correct`\" close on the builder's own run.",
+    "patch": "fact-tick-noun-any.patch",
     "fixed": "tested 2026-11-18"
   }
 ]
