@@ -10010,6 +10010,25 @@ test('factHolds reads a fact by its sentence shape: the fifth live test\'s 88 wo
     for (const text of ['greet.py is saved in the scratch folder', 'no file in the project holds a change made during this job', 'no new commit made during this job exists in the project', 'The code committed to main is deployed', 'The owner-rep plugin is installed', 'The sign-up page is deployed', 'The release notes are committed', 'The newest build is installed', 'The sample text file exists in the scratch folder', 'The claude-hud plugin is installed', 'The sign-in page is committed', 'The commit contains the fix']) expect([text, factHolds(text)]).toEqual([text, true])
 })
 
+test('factHolds takes a noun\'s own words from a closed list: the seventh live test\'s 86 quality and digit wordings are works, its literal controls and the writers\' own unchanged-state facts stay facts', () => {
+  // Every quality the seventh live test found closing, in each of its four shapes: the subject,
+  // the thing held, the place, and nothing holding it.
+  const qualities = ['resilient', 'atomic', 'deterministic', 'consistent', 'fault-tolerant', 'high-performance', 'zero-defect', 'low-latency', 'base64-encoding', 'utf8-validating', '0-error', '100%-correct', 'UTF8-compliant', 'insecure', 'unsafe', 'corrupt', 'incorrect', 'inaccurate', 'fluent', 'resistant', 'instant']
+  const an = (q: string): string => (/^[aeiou]/i.test(q) ? 'an' : 'a')
+  const leaks = qualities.flatMap(q => [`The ${q} tool is installed`, `The ${q} code is committed`, `The script contains ${an(q)} ${q} fix`, `The file is saved on the ${q} server`, `No file holds ${an(q)} ${q} fix`, `No file holds ${q} code`])
+  leaks.push('The agent saved the resilient code', 'The file is saved and the atomic fix is committed', 'The secure2 service is deployed', 'The fast/secure tool is installed', 'The file made during the resilient job exists', 'The file is saved since the resilient build', 'The fault-tolerant plugin is installed', 'The production-ready build is pushed', 'The v2-secure build is installed')
+  for (const text of leaks) expect([text, factHolds(text)]).toEqual([text, false])
+  // The literal controls, and the plain facts the writers produced in that test's sessions.
+  const facts = ['the file is committed', 'sample.txt contains exactly "one two three"', "sample.txt contains exactly 'prints'", 'sample.txt has 13 bytes', 'sample.txt is exactly 6 bytes', 'sample.txt is 6 bytes in size', 'no file in the project holds a change made during this job', 'the owner-rep plugin is installed', 'the `owner-rep` plugin is installed', 'nothing was pushed', 'nothing from this job is committed or pushed', 'the current build runs the newest code', 'The installed build is saved', 'The fix is committed (a1b2c3d)', 'The v2 build is deployed', 'The v1.4.0-rc.2 build is installed', 'The a1b2c3d commit is pushed',
+    'nothing from this job is pushed anywhere',
+    "the project's working copy holds 0 changed, added or deleted files from this session",
+    "the project's history holds 0 new commits from this session",
+    'the remote holds 0 commits pushed from this session',
+    'no file outside the scratch folder is created or changed by this work',
+    'no handoff or note is written anywhere outside the scratch folder']
+  for (const text of facts) expect([text, factHolds(text)]).toEqual([text, true])
+})
+
 test('a condition\'s kind: written by the writer before it, kept through a held write, stripped where a reader copies it, and one held "works" never turns "fact"', () => {
   const a = parseObjective('objective: moved\nmoved: #1\nresult: r\nfor: f\ndone:\n- works: the page loads for a visitor | open\n- fact: the build installed | not shown\n- the docs written | open\nstep: s\ndropped:\n- nothing')
   expect(a?.kind === 'moved' && a.parts.done).toEqual([

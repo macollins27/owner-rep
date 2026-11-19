@@ -1,12 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 7b58d6b..62525cf 100644
+index cb54c60..cb6f3d6 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3499,7 +3499,6 @@ const FACT_NOT_MOD = /^(?:it|they|them|is|are|was|were|be|been|has|have|had|and|
- const factTokens = (text: string): FactTok[] => {
-   const t = text
-     .replace(/^\s*(?:[-*]\s+)?(?:works|fact)\s*:\s*/i, '')
+@@ -3517,7 +3517,6 @@ const factTokens = (text: string): FactTok[] => {
+     // "Working copy" names a place, not a result working (seventh live test).
+     .replace(/\bworking\s+(?:copy|copies|tree|trees)\b/gi, ' worktree ')
+     .replace(/\bworking\s+(?:directory|folder)\b/gi, ' folder ')
 -    .replace(/\b(?:runs?|is\s+on|built\s+from)\s+(?:the\s+)?(?:newest|latest|current)(?:\s+(?:code|build|version|commit))?\b/gi, ' runsnewest ')
      .replace(/"[^"]*"|“[^”]*”|‘[^’]*’|(?<![\w'])'[^']*'(?![\w'])/g, ' \u0001Q ')
-     .replace(/[^\s"'`()[\]\u0001]+[/~][^\s"'`()[\]]*|[/~][^\s"'`()[\]]+|[^\s"'`()[\]\u0001]+\.[A-Za-z0-9]{1,8}\b/g, ' \u0001P ')
-     .replace(/([,;:()[\]—–!?])/g, ' $1 ')
+     .replace(/`[^`\s][^`]*`/g, ' \u0001P ')
+     // A path: a slash at its start or end, a home sign, a file's ending, or three parts. Two

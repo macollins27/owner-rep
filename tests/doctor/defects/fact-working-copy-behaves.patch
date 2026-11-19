@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index cb54c60..1377456 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3515,7 +3515,6 @@ const factTokens = (text: string): FactTok[] => {
+   const t = text
+     .replace(/^\s*(?:[-*]\s+)?(?:works|fact)\s*:\s*/i, '')
+     // "Working copy" names a place, not a result working (seventh live test).
+-    .replace(/\bworking\s+(?:copy|copies|tree|trees)\b/gi, ' worktree ')
+     .replace(/\bworking\s+(?:directory|folder)\b/gi, ' folder ')
+     .replace(/\b(?:runs?|is\s+on|built\s+from)\s+(?:the\s+)?(?:newest|latest|current)(?:\s+(?:code|build|version|commit))?\b/gi, ' runsnewest ')
+     .replace(/"[^"]*"|“[^”]*”|‘[^’]*’|(?<![\w'])'[^']*'(?![\w'])/g, ' \u0001Q ')
