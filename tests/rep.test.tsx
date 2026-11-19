@@ -10107,6 +10107,17 @@ test('factHolds reads a path or a name only where it is one: a quality or a doin
   for (const text of ['The file is saved for converting text to uppercase', 'The tool is installed for the users', 'The script is committed for the fix', 'The file is saved for this job to print']) expect([text, factHolds(text)]).toEqual([text, false])
 })
 
+test('factHolds reads the facts the writer wrote unprompted in the ninth live test, and a name after "named" or "called" only as a name', () => {
+  // Written by the objective writer, labelled fact, in ordinary sessions D and B; each was read as works.
+  const facts = ["note.txt in the scratch folder holds exactly 'amber', 5 bytes, with no final newline", 'no commit was made for this work', 'nothing was pushed for this work', 'an executable named greet is installed in a bin folder inside the scratch folder',
+    "sample.txt holds exactly 'one two three' (13 bytes, no final newline)", "sample.txt holds exactly 'abc', 3 bytes, no trailing newline", 'a script called `greet.sh` is saved', 'the program named "greet" is installed', 'a script named `greet` is installed', 'the build named v2 is deployed', 'a tool named fast-and-secure is installed', 'the script called secure_fast is saved', 'a change was made to the file for this work']
+  for (const text of facts) expect([text, factHolds(text)]).toEqual([text, true])
+  // A name is one word, a version, or a quoted or backticked name, and says which thing it is: "named
+  // correctly" is a judgment, "made well" a quality, and a word with a digit is a name only as a version.
+  const works = ['a script named correctly is saved', 'an executable named properly is installed', 'a script named well is saved', 'a tool named validates2 is installed', 'the page named for the shop is published', 'an executable named greet is installed and runs fast', 'the page is made responsive', 'the site was made well', 'the fix was made correctly', "note.txt holds exactly 'amber', 5 bytes, secure and fast", "note.txt holds exactly 'amber' with no final bugs", 'the file is saved for this work to print', 'an executable named greet is installed in a fast folder']
+  for (const text of works) expect([text, factHolds(text)]).toEqual([text, false])
+})
+
 test('a condition\'s kind: written by the writer before it, kept through a held write, stripped where a reader copies it, and one held "works" never turns "fact"', () => {
   const a = parseObjective('objective: moved\nmoved: #1\nresult: r\nfor: f\ndone:\n- works: the page loads for a visitor | open\n- fact: the build installed | not shown\n- the docs written | open\nstep: s\ndropped:\n- nothing')
   expect(a?.kind === 'moved' && a.parts.done).toEqual([

@@ -63,7 +63,10 @@ What changed in each release of Owner Rep, newest first. The full record is the
   A word counts as a file's name or a path only when it is one (it ends in a file's ending or
   starts at a folder), so qualities joined by slashes or dots ("the secure/fast/reliable tool",
   "the fast.secure tool") or put after the state ("installed (UTF8-compliant)") are "works", and
-  "nothing is committed for this job" is a fact.
+  "nothing is committed for this job" is a fact. So are the plain ways a job's account names
+  facts: a thing "named greet", a text's end notes split by commas ("5 bytes, with no final
+  newline"), and "no commit was made for this work"; a name after "named" says which thing it
+  is, and a judgment there ("named correctly") is "works".
 - **The briefing's buttons always show.** A card could be counted one row shorter than it is
   drawn (an indented line a cell or two past the edge, the size beside the buttons), and then
   scrolled with its buttons below the fold. Rows are now counted as the strip wraps them, the
