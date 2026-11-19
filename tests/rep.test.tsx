@@ -24,6 +24,7 @@ import { G1, G1_MORE } from './fixtures/g1-prompts'
 import { G2, G2_MORE } from './fixtures/g2-prompts'
 import { G3, G3_MORE } from './fixtures/g3-prompts'
 import { G4, G4_MORE } from './fixtures/g4-prompts'
+import { G5, G5_MORE } from './fixtures/g5-prompts'
 import { REFUSED_ENVIRONMENT, MISSING_REMOTE, BEFORE_YOU_STOP_COLON, WAIT_BEFORE_SUBMIT, THREE_BEFORE_YOU_STOP, TWO_BEFORE_YOU_STOP, GUARD_REFUSAL, PAUSED_WORK_CAUSE, STOP_SHAPES } from './fixtures/stop-shapes'
 
 // Every test starts with the session's working folder a Unix path, so what the suite reads does not
@@ -8623,7 +8624,8 @@ describe("Task 6: the writer's rule and the approved line", () => {
     // 300 more for the shape of a fact, so the writer's own facts read as facts (fourth live test of 18 Nov 2026; 257 characters).
     // 500 more for a quality condition naming what a person using the result would notice (prompt group 3; 457 characters).
     // 550 more for an approved plan's self-proving step kept with a question for the owner beside it (prompt group 4; 527 characters).
-    expect(OBJECTIVE_SYSTEM.length).toBeLessThanOrEqual(SYSTEM_BEFORE + 6000)
+    // 350 more for a restated condition written once, or marked "same as:" (prompt group 6; 302 characters).
+    expect(OBJECTIVE_SYSTEM.length).toBeLessThanOrEqual(SYSTEM_BEFORE + 6350)
   })
 
   test("fails today: what the agent's turn says it did, did not do or holds back from, and any limit it sets on its own work, is its account and sets no condition or limit except as a step of a plan the owner approved; the unstated wants stay", () => {
@@ -8719,6 +8721,30 @@ test('a condition listed twice is kept once, and texts are compared without a st
   const merged = mergeConditions(held, proposed, [{ text: 'the README written (shown)', by: null }], [])
   expect(merged).toEqual([c('the tests green', 'open'), { text: 'the README written (shown)', state: 'shown', by: 'the file is there' }])
   expect(mergeConditions(held, [c('the tests green', 'open')], [{ text: 'the README written (shown)', by: 2 }], [2])).toEqual([c('the tests green', 'open')])
+})
+
+test('a held condition restated in other words is merged, not piled up beside it (G13)', () => {
+  // The writer marks a restatement with "same as:"; the parser keeps the held text it names.
+  const a = parseObjective(OBJ('A licence file.', ['works: the page loads fast on a phone | same as: the page is quick', 'fact: notes.txt holds exactly "amber" | same as: notes.txt holds the word | open', 'the tests green | open']))
+  const done = a?.kind === 'moved' ? a.parts.done : []
+  expect(done[0]).toEqual({ text: 'the page loads fast on a phone', state: 'open', by: '', kind: 'works', sameAs: 'the page is quick' })
+  expect(done[1]?.sameAs).toBe('notes.txt holds the word')
+  expect(done[2]?.sameAs).toBeUndefined()
+  // The new words take the held condition's place, with its state and where; it is not kept
+  // a second time, and it needs no "dropped" line.
+  const held = [c('the page is quick', 'shown', 'the check opened it'), c('the tests green', 'open'), c('a README', 'open')]
+  const merged = mergeConditions(held, [{ ...c('the page loads fast on a phone', 'open'), sameAs: 'the page is quick' }, c('the tests green', 'open')], [], [])
+  expect(merged).toEqual([{ text: 'the page loads fast on a phone', state: 'shown', by: 'the check opened it' }, c('the tests green', 'open'), c('a README', 'open')])
+  expect(merged.some(x => 'sameAs' in x)).toBe(false)
+  // Words that differ only in case, punctuation or "a", "an", "the" are the same condition.
+  expect(mergeConditions([c('The README is written.', 'shown', 'cat README')], [c('readme is written', 'open')], [], [])).toEqual([{ text: 'readme is written', state: 'shown', by: 'cat README' }])
+  // A "same as:" naming nothing held is a new condition; two lines naming one held keep the first.
+  expect(mergeConditions([], [{ ...c('a new ask', 'open'), sameAs: 'nothing like it' }], [], [])).toEqual([c('a new ask', 'open')])
+  expect(mergeConditions([c('the page is quick', 'open')], [{ ...c('fast page', 'open'), sameAs: 'the page is quick' }, { ...c('quick page', 'open'), sameAs: 'the page is quick' }], [], [])).toEqual([c('fast page', 'open')])
+  // A restated works condition never turns into a fact.
+  expect(mergeConditions([{ ...c('the tool works', 'open'), kind: 'works' }], [{ ...c('notes.txt exists', 'open'), kind: 'fact', sameAs: 'the tool works' }], [], [])[0]?.kind).toBe('works')
+  expect(OBJECTIVE_SYSTEM).toContain('When a condition you would write says the same as one you hold, write the held one, in its held words and state, and not a second.')
+  expect(objectivePrompt({ objective: null, owner: [], past: [] })).toContain('- works | fact: <the new words> | same as: <the held condition\'s text>')
 })
 
 test('mergeConditions keeps every held condition the model drops without the owner\'s cited message', () => {
@@ -16368,14 +16394,14 @@ describe('the call log: its pieces', () => {
     expect(rep.parseReplayArgs('this --variant frame')).toEqual({ path: 'this', last: rep.REPLAY_LAST, times: 1, variant: ['frame'] })
     expect(rep.parseReplayArgs('this --variant no-think,frame')).toEqual({ path: 'this', last: rep.REPLAY_LAST, times: 1, variant: ['no-think', 'frame'] })
     for (const bad of ['this --variant', 'this --variant wat', 'this --variant frame,wat', 'this --variant ,']) expect(rep.parseReplayArgs(bad)).toEqual({ error: rep.REPLAY_USAGE })
-    expect(rep.PROMPT_EDITS).toEqual(['frame', 'no-think', 'rep-system', 'end-line', 'proof', 'decisions', 'now'])
+    expect(rep.PROMPT_EDITS).toEqual(['frame', 'no-think', 'rep-system', 'end-line', 'proof', 'decisions', 'now', 'same-as'])
     // A base arm in place of "as saved": edits strictly within the variant's.
     expect(rep.parseReplayArgs('all --variant build --base frame,no-think')).toEqual({ path: 'all', last: rep.REPLAY_LAST, times: 1, variant: [...rep.PROMPT_EDITS], base: ['frame', 'no-think'] })
     expect(rep.parseReplayArgs('this --base frame --variant frame,rep-system')).toEqual({ path: 'this', last: rep.REPLAY_LAST, times: 1, variant: ['frame', 'rep-system'], base: ['frame'] })
     for (const bad of ['this --base frame', 'this --variant frame --base frame', 'this --variant frame --base no-think', 'this --variant build --base build', 'this --variant frame,no-think --base wat', 'this --variant frame,no-think --base', 'this --variant no-think,frame --base frame,no-think']) {
       expect(rep.parseReplayArgs(bad)).toEqual({ error: rep.REPLAY_USAGE })
     }
-    expect(rep.REPLAY_USAGE).toContain('[--variant build|frame|no-think|rep-system|end-line|proof|decisions|now] [--base frame|no-think|rep-system|end-line|proof|decisions|now] [--now]')
+    expect(rep.REPLAY_USAGE).toContain('[--variant build|frame|no-think|rep-system|end-line|proof|decisions|now|same-as] [--base frame|no-think|rep-system|end-line|proof|decisions|now|same-as] [--now]')
     // Across folders the calls are taken by time, whatever folder each sits in.
     const a = `${SID}/${rep.callFileName(3, 0, 'watch')}`
     const b = `other/${rep.callFileName(1, 0, 'watch')}`
@@ -16531,14 +16557,14 @@ describe('the call log: its pieces', () => {
         if ('why' in e3) throw new Error(e3.why)
         expect(e3.system).toBe(G3.system)
         expect(rep.joinBlocks(e3.prompt as rep.PromptBlock[])).toBe(rep.joinBlocks(rep.recordPrompt([], g3Sent[then]!)))
-        const e = rep.editSaved(kind, G2.system, saved(then), ['proof', 'decisions', 'now'])
+        const e = rep.editSaved(kind, G2.system, saved(then), ['proof', 'decisions', 'now', 'same-as'])
         if ('why' in e) throw new Error(e.why)
         expect(e.system).toBe(REP_SYSTEM)
         expect(rep.joinBlocks(e.prompt as rep.PromptBlock[])).toBe(rep.joinBlocks(rep.recordPrompt([], now)))
         // The record blocks and their cache marks are left as they were saved.
         expect((e.prompt as rep.PromptBlock[]).slice(0, -1)).toEqual(saved(then).slice(0, -1))
         // Saved joined, it comes back joined.
-        const joined = rep.editSaved(kind, G2.system, rep.joinBlocks(saved(then)), ['proof', 'decisions', 'now'])
+        const joined = rep.editSaved(kind, G2.system, rep.joinBlocks(saved(then)), ['proof', 'decisions', 'now', 'same-as'])
         if ('why' in joined) throw new Error(joined.why)
         expect(joined.prompt).toBe(rep.joinBlocks(rep.recordPrompt([], now)))
       }
@@ -16548,7 +16574,7 @@ describe('the call log: its pieces', () => {
       expect(g2.ownWords).not.toBe(ownWordsPrompt(mm, open, card))
       // The objective's task was the same in every build to group 4; group 5 words its step line.
       expect(rep.editSaved('objective', G2.objectiveSystem, g2.objective, ['proof'])).toEqual({ system: G3.objectiveSystem, prompt: g3.objective })
-      const obj = rep.editSaved('objective', G2.objectiveSystem, g2.objective, ['proof', 'decisions', 'now'])
+      const obj = rep.editSaved('objective', G2.objectiveSystem, g2.objective, ['proof', 'decisions', 'now', 'same-as'])
       if ('why' in obj) throw new Error(obj.why)
       expect(obj).toEqual({ system: OBJECTIVE_SYSTEM, prompt: objectivePrompt({ ...mm }) })
     }
@@ -16607,7 +16633,7 @@ describe('the call log: its pieces', () => {
         expect(rep.editSaved(kind, REP_SYSTEM, saved(now), ['decisions'])).toEqual({ why: "its system prompt is not group 3's" })
       }
       expect(rep.editSaved('objective', G3.objectiveSystem, g3.objective, ['decisions'])).toEqual({ system: G4.objectiveSystem, prompt: g4.objective })
-      expect(rep.editSaved('objective', G3.objectiveSystem, g3.objective, ['decisions', 'now'])).toEqual({ system: OBJECTIVE_SYSTEM, prompt: objectivePrompt({ ...mm }) })
+      expect(rep.editSaved('objective', G3.objectiveSystem, g3.objective, ['decisions', 'now', 'same-as'])).toEqual({ system: OBJECTIVE_SYSTEM, prompt: objectivePrompt({ ...mm }) })
     }
     // A changed group 3 text, or one found twice, skips the call with the reason.
     const step = G3_MORE[0]!.watchStep
@@ -16619,7 +16645,7 @@ describe('the call log: its pieces', () => {
     expect(rep.editSaved('watch', G2.system, saved(G2_MORE[0]!.watchStep), ['decisions'])).toEqual({ why: "its system prompt is not group 3's" })
   })
 
-  test('rule: group 5\'s edit (now) turns each watch and objective call the build after group 4 sent into exactly what this build sends, and leaves the others alone', () => {
+  test('rule: group 5\'s edit (now) turns each watch and objective call the build after group 4 sent into exactly what the build after group 5 sent, and leaves the others alone', () => {
     // Group 5 leaves the shared system prompt and the own-words writer as group 4 wrote them.
     expect(G4.system).toBe(REP_SYSTEM)
     expect(G4.ownWordsSystem).toBe(OWN_WORDS_SYSTEM)
@@ -16649,7 +16675,8 @@ describe('the call log: its pieces', () => {
       // The briefing and the second ask are as group 4 sent them.
       expect(g4.brief).toBe(briefPrompt(mm))
       expect(rep.editSaved('brief', G4.system, saved(g4.brief), ['now'])).toEqual({ why: 'no edit of this variant applies to a brief call' })
-      expect(rep.editSaved('objective', G4.objectiveSystem, g4.objective, ['now'])).toEqual({ system: OBJECTIVE_SYSTEM, prompt: objectivePrompt({ ...mm }) })
+      expect(rep.editSaved('objective', G4.objectiveSystem, g4.objective, ['now'])).toEqual({ system: G5.objectiveSystem, prompt: G5_MORE[i]!.objective })
+      expect(rep.editSaved('objective', G4.objectiveSystem, g4.objective, ['now', 'same-as'])).toEqual({ system: OBJECTIVE_SYSTEM, prompt: objectivePrompt({ ...mm }) })
     }
     // A changed group 4 text, or one found twice, skips the call with the reason.
     const step = G4_MORE[0]!.watchStep
@@ -16657,6 +16684,30 @@ describe('the call log: its pieces', () => {
     expect(rep.editSaved('watch', G4.system, saved(step.replace('Do two things.', 'Do these.')), ['now'])).toEqual({ why: "group 4's texts are not each in it once" })
     // A call this build saved is skipped, never sent unchanged.
     expect(rep.editSaved('objective', OBJECTIVE_SYSTEM, objectivePrompt({ ...(G1_MORE[0]!.m as unknown as Memory) }), ['now'])).toEqual({ why: "its system prompt is not group 4's" })
+  })
+
+  test('rule: group 6\'s edit (same-as) turns each objective call the build after group 5 sent into exactly what this build sends, and leaves the others alone', () => {
+    // Group 6 changes only the objective writer.
+    expect(G5.system).toBe(REP_SYSTEM)
+    expect(G5.ownWordsSystem).toBe(OWN_WORDS_SYSTEM)
+    expect(rep.systemBefore('objective', 3)).toBe(G5.objectiveSystem)
+    expect(G5.objectiveSystem).not.toContain(rep.OBJECTIVE_SAME_AS)
+    expect(OBJECTIVE_SYSTEM).toContain(rep.OBJECTIVE_SAME_AS)
+    for (const [i, x] of G1_MORE.entries()) {
+      const mm = x.m as unknown as Memory
+      const g5 = G5_MORE[i]
+      if (g5 === undefined) throw new Error('G5_MORE is short')
+      expect(g5.objective).not.toContain(rep.OBJECTIVE_SAME_AS_LINE)
+      expect(rep.editSaved('objective', G5.objectiveSystem, g5.objective, ['same-as'])).toEqual({ system: OBJECTIVE_SYSTEM, prompt: objectivePrompt({ ...mm }) })
+      // The looks, the briefing and the own-words call are as group 5 sent them.
+      expect(g5.watchStep).toBe(watchPrompt(mm, 'step'))
+      expect(g5.brief).toBe(briefPrompt(mm))
+      expect(rep.editSaved('watch', G5.system, g5.watchStep, ['same-as'])).toEqual({ why: 'no edit of this variant applies to a watch call' })
+    }
+    // A call this build saved, or a changed group 5 text, is skipped with the reason.
+    const o = G5_MORE[0]!.objective
+    expect(rep.editSaved('objective', OBJECTIVE_SYSTEM, objectivePrompt({ ...(G1_MORE[0]!.m as unknown as Memory) }), ['same-as'])).toEqual({ why: "its system prompt is not group 5's" })
+    expect(rep.editSaved('objective', G5.objectiveSystem, o.replace('| shown: <where, copied as held>', '| shown: <where>'), ['same-as'])).toEqual({ why: "group 5's texts are not each in it once" })
   })
 
   test('rule: the replay\'s rows and totals name the read, the gate, the words and the tokens', () => {
@@ -16941,10 +16992,10 @@ describe('the call log: saving, replaying, counting and removing', () => {
     const base = old.replace(/\.json$/, '')
     const kept = (tail: string) => [...d.files.keys()].filter(k => k.startsWith(`${CALLS_ROOT}/${OTHER}/replays/${base}.`) && k.endsWith(tail))
     const runOf = (k: string) => k.slice(`${CALLS_ROOT}/${OTHER}/replays/${base}.`.length).split('.')[0] ?? ''
-    expect(kept('.high.frame+no-think+rep-system+end-line+proof+decisions+now.as-saved-1.txt').length).toBe(1)
-    expect(d.files.get(kept('.high.frame+no-think+rep-system+end-line+proof+decisions+now.as-saved-1.txt')[0] ?? '')).toBe(`${HOLDS}\n(as saved)`)
-    expect(d.files.get(kept('.high.frame+no-think+rep-system+end-line+proof+decisions+now.variant-2.txt')[0] ?? '')).toBe(withEnd(`${HOLDS}\n(variant)`))
-    const first = runOf(kept('.high.frame+no-think+rep-system+end-line+proof+decisions+now.as-saved-1.txt')[0] ?? '')
+    expect(kept('.high.frame+no-think+rep-system+end-line+proof+decisions+now+same-as.as-saved-1.txt').length).toBe(1)
+    expect(d.files.get(kept('.high.frame+no-think+rep-system+end-line+proof+decisions+now+same-as.as-saved-1.txt')[0] ?? '')).toBe(`${HOLDS}\n(as saved)`)
+    expect(d.files.get(kept('.high.frame+no-think+rep-system+end-line+proof+decisions+now+same-as.variant-2.txt')[0] ?? '')).toBe(withEnd(`${HOLDS}\n(variant)`))
+    const first = runOf(kept('.high.frame+no-think+rep-system+end-line+proof+decisions+now+same-as.as-saved-1.txt')[0] ?? '')
     expect(first).toMatch(/^\d{13}$/)
     expect([...d.files.keys()].filter(k => k.includes('/replays/')).length).toBe(4)
     // Another run of the same call with other settings keeps its replies apart.
@@ -16954,7 +17005,7 @@ describe('the call log: saving, replaying, counting and removing', () => {
     // The same run again, with the same settings, keeps the earlier replies and adds its own.
     await runCommand($, 'owner-rep-replay', `${CALLS_ROOT}/${OTHER}/${old} --variant no-think --effort low`)
     expect(kept('.low.no-think.as-saved-1.txt').length).toBe(2)
-    expect(kept('.high.frame+no-think+rep-system+end-line+proof+decisions+now.as-saved-1.txt').map(runOf)).toEqual([first])
+    expect(kept('.high.frame+no-think+rep-system+end-line+proof+decisions+now+same-as.as-saved-1.txt').map(runOf)).toEqual([first])
     expect(new Set([...d.files.keys()].filter(k => k.includes('/replays/')).map(runOf)).size).toBe(3)
     expect([...d.files.keys()].filter(k => k.includes('/replays/')).length).toBe(8)
   })
@@ -17004,12 +17055,12 @@ describe('the call log: saving, replaying, counting and removing', () => {
     expect(out).toMatch(/\n  base 1 watch: answered/)
     expect(out).not.toMatch(/as saved/)
     expect(out).toMatch(/^base: 1 calls;.*\(base frame,no-think\)$/m)
-    expect(out).toMatch(/^variant: 1 calls;.*\(variant frame,no-think,rep-system,end-line,proof,decisions,now\)$/m)
+    expect(out).toMatch(/^variant: 1 calls;.*\(variant frame,no-think,rep-system,end-line,proof,decisions,now,same-as\)$/m)
     const base = old.replace(/\.json$/, '')
     const kept = (tail: string) => [...d.files.keys()].filter(k => k.startsWith(`${CALLS}/replays/${base}.`) && k.endsWith(tail))
-    expect(kept('.high.frame+no-think~frame+no-think+rep-system+end-line+proof+decisions+now.base-1.txt').length).toBe(1)
-    expect(d.files.get(kept('.high.frame+no-think~frame+no-think+rep-system+end-line+proof+decisions+now.base-1.txt')[0] ?? '')).toBe(withEnd(`${HOLDS}\n(base)`))
-    expect(d.files.get(kept('.high.frame+no-think~frame+no-think+rep-system+end-line+proof+decisions+now.variant-1.txt')[0] ?? '')).toBe(withEnd(`${HOLDS}\n(variant)`))
+    expect(kept('.high.frame+no-think~frame+no-think+rep-system+end-line+proof+decisions+now+same-as.base-1.txt').length).toBe(1)
+    expect(d.files.get(kept('.high.frame+no-think~frame+no-think+rep-system+end-line+proof+decisions+now+same-as.base-1.txt')[0] ?? '')).toBe(withEnd(`${HOLDS}\n(base)`))
+    expect(d.files.get(kept('.high.frame+no-think~frame+no-think+rep-system+end-line+proof+decisions+now+same-as.variant-1.txt')[0] ?? '')).toBe(withEnd(`${HOLDS}\n(variant)`))
     expect([...d.files.keys()].filter(k => k.includes('/replays/')).length).toBe(2)
   })
 

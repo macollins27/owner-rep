@@ -198,7 +198,7 @@ export type ConditionState = 'open' | 'not-shown' | 'shown' | 'closed'
 export type ConditionKind = 'works' | 'fact'
 // `said` is the run's own last words from the record, beside a look that named that run, so
 // the owner reads what the run said and not only the reader's account of it; absent, none.
-export type Condition = { text: string; state: ConditionState; by: string; reopened?: boolean; seen?: string; seenBy?: string; kind?: ConditionKind; said?: string }
+export type Condition = { text: string; state: ConditionState; by: string; reopened?: boolean; seen?: string; seenBy?: string; kind?: ConditionKind; said?: string; sameAs?: string }
 
 // That the result works, or is good, is signed off only by a hands-on look by
 // someone who did not build it (NORTH_STAR expectation 2; audit G44). A shown
@@ -1904,6 +1904,9 @@ const heldParts = (o: Objective): string =>
 // objective, held open until it is completed.
 // The objective writer's one line asking that a condition hold one claim, so a fact never carries
 // what the work does beside it (live test of 18 Nov 2026, section 11).
+// A restated condition is written once, or in its new words marked "same as:" the held one (G13).
+export const OBJECTIVE_SAME_AS = 'When a condition you would write says the same as one you hold, write the held one, in its held words and state, and not a second. When the owner\'s later words make a held condition more exact, write it in the new words with "| same as: <the held text>" in place of its state; it keeps the held state.'
+export const OBJECTIVE_SAME_AS_LINE = "- works | fact: <the new words> | same as: <the held condition's text>"
 export const ONE_CLAIM = 'Write one claim per condition.'
 // G12 (prompt audit §6.6): a condition about how good the result is names what a person using it
 // would notice, so a reader has a thing to look at; about 16 live conditions said only "as good as
@@ -1950,7 +1953,7 @@ ${OBJECTIVE_SELF_PROVING}
 
 ## The conditions
 
-Each condition is one thing "done" has to show, in plain words, written after its kind: "works:" when it is about the result working for its user, being used, or being good, which only a hands-on look by someone who did not build it can show; "fact:" when a command's output or a file's contents can show it (saved, committed, pushed or installed); a passing run is works. A fact names the thing, says only that it is saved, committed, pushed or installed, exists, or holds text quoted exactly or a count with its unit, and where: "fact: sample.txt in the scratch folder holds exactly 'one two three'". Anything it does is works. ${ONE_CLAIM} ${QUALITY_CONDITION} Write a held condition's kind back as held. You do not see the conversation, so you may never mark a condition shown. Write every condition you already hold again as it stands, with the state it is held in: a shown one with "shown:" and its where copied as held, a closed one with "closed:" and its number as held. Those marks are kept whatever you write. A new condition is "open", or "not shown" when only proof from outside the agent's word can show it, such as what is installed, deployed or running; the rep marks it shown when the session's record holds that proof. Mark a condition "closed: #n" only when the owner's own message #n closes that part and is new since the objective you hold was built; never by the number of a draft, and never by a message it was already built from, which had its say then. A held condition you leave out is kept, unless you list it under "dropped" with the number of the owner's own message, new since it was built, that says, in so many words, that it no longer stands.`
+Each condition is one thing "done" has to show, in plain words, written after its kind: "works:" when it is about the result working for its user, being used, or being good, which only a hands-on look by someone who did not build it can show; "fact:" when a command's output or a file's contents can show it (saved, committed, pushed or installed); a passing run is works. A fact names the thing, says only that it is saved, committed, pushed or installed, exists, or holds text quoted exactly or a count with its unit, and where: "fact: sample.txt in the scratch folder holds exactly 'one two three'". Anything it does is works. ${ONE_CLAIM} ${QUALITY_CONDITION} Write a held condition's kind back as held. You do not see the conversation, so you may never mark a condition shown. Write every condition you already hold again as it stands, with the state it is held in: a shown one with "shown:" and its where copied as held, a closed one with "closed:" and its number as held. Those marks are kept whatever you write. ${OBJECTIVE_SAME_AS} A new condition is "open", or "not shown" when only proof from outside the agent's word can show it, such as what is installed, deployed or running; the rep marks it shown when the session's record holds that proof. Mark a condition "closed: #n" only when the owner's own message #n closes that part and is new since the objective you hold was built; never by the number of a draft, and never by a message it was already built from, which had its say then. A held condition you leave out is kept, unless you list it under "dropped" with the number of the owner's own message, new since it was built, that says, in so many words, that it no longer stands.`
 
 // The owner's messages are quoted records inside a fence the writer is told about, so a
 // message that reads like a command is read as evidence and never as an instruction to the
@@ -2367,6 +2370,7 @@ result: <one sentence>
 for: <one sentence>
 done:
 - works | fact: <condition> | open | not shown | closed: #n | shown: <where, copied as held>
+${OBJECTIVE_SAME_AS_LINE}
 ${OBJECTIVE_STEP_LINE}
 dropped:
 - <condition text as held> | #n`)
@@ -3555,6 +3559,14 @@ const oneLine = (s: string | undefined): string => clean(s).replace(/\s+/g, ' ')
 // so is shown without a where, or closed without the number of the owner's
 // message.
 function conditionOf(line: string): Condition {
+  // "| same as: <held text>" at the end names the held condition these words restate (G13):
+  // the merge keeps that condition's state, so the line carries none of its own.
+  const sa = /\s*\|\s*same as\s*:\s*(.+?)\s*$/i.exec(line)
+  if (sa !== null && sa.index > 0) {
+    const c = conditionOf(line.slice(0, sa.index))
+    const held = bare((sa[1] ?? '').split('|')[0] ?? '')
+    return held === '' ? c : { ...c, state: 'open', by: '', sameAs: held }
+  }
   const k = KIND_AT.exec(line)
   const said = k === null ? undefined : (k[1] ?? '').toLowerCase() === 'fact' ? 'fact' : 'works'
   // A "fact" is one only when `factHolds` reads it as one; any other is works, since only a
@@ -5731,38 +5743,69 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
   return c
 }
 
+// A condition's words for comparing two conditions: without a state mark or kind, in lower
+// case, with punctuation and the articles "a", "an" and "the" left out (G13). Only an exact
+// match after that is the same condition; any looser restatement is the writer's to mark with
+// "same as:".
+export const conditionKey = (s: string): string =>
+  bare(s)
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]+/gu, ' ')
+    .replace(/\b(?:a|an|the)\b/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+// A condition without the writer's "same as:" note, which only the merge reads.
+export const plainCondition = (c: Condition): Condition => {
+  const { sameAs: _, ...rest } = c
+  return rest
+}
+
 // The proposed conditions plus every held one the model left out, unless a message of
 // the owner's (one of `his`, never a draft) is cited for dropping it. The writer does
 // not see the conversation, so it never raises a state: a held condition listed again
 // takes the proposed text and keeps its held state, where and reopened mark, unless
 // the proposed one closes it (a close has already passed the citation rules); a
-// condition new to the list proposed shown starts open. Texts are compared without a
-// state mark, and a condition the model listed twice is kept once (the first), so the
-// list cannot grow by repeats.
+// condition new to the list proposed shown starts open. A held condition is listed again
+// when the proposed words match it by `conditionKey`, or when the proposed line names it
+// with "same as:" (the owner's later words made it more exact): then the new words take
+// its place, with its state, and it is not dropped. A condition the model listed twice,
+// or named twice with "same as:", is kept once (the first), so the list cannot grow by
+// repeats.
 export function mergeConditions(
   held: Condition[],
   proposed: Condition[],
   dropped: Array<{ text: string; by: number | null }>,
   his: readonly number[],
 ): Condition[] {
-  const like = (a: string, b: string): boolean => same(bare(a), bare(b))
-  const once = proposed.filter((p, i) => proposed.findIndex(q => like(q.text, p.text)) === i)
-  const out = once.map((p): Condition => {
-    const h = held.find(x => like(x.text, p.text))
-    if (h === undefined) return p.state === 'shown' ? { text: p.text, state: 'open', by: '', ...(p.kind === undefined ? {} : { kind: p.kind }) } : p
+  const like = (a: string, b: string): boolean => conditionKey(a) === conditionKey(b)
+  const heldOf = (p: Condition): Condition | undefined =>
+    held.find(x => like(x.text, p.text)) ?? (p.sameAs === undefined ? undefined : held.find(x => like(x.text, p.sameAs ?? '')))
+  const taken = new Set<Condition>()
+  const out: Condition[] = []
+  for (const raw of proposed) {
+    const p = plainCondition(raw)
+    if (out.some(o => like(o.text, p.text))) continue
+    const h = heldOf(raw)
+    if (h !== undefined && taken.has(h)) continue
+    if (h === undefined) {
+      out.push(p.state === 'shown' ? { text: p.text, state: 'open', by: '', ...(p.kind === undefined ? {} : { kind: p.kind }) } : p)
+      continue
+    }
+    taken.add(h)
     // The kind the writer gives now, except that a condition held "works", or with no kind
     // (read as works), never turns "fact": a rewrite never turns a condition that needs a
     // look by someone else into one the agent's own run shows.
     const kind = h.kind === 'fact' ? (p.kind ?? 'fact') : p.kind === 'fact' || h.kind === 'works' ? 'works' : p.kind
     const k: { kind?: ConditionKind } = kind === undefined ? {} : { kind }
-    if (p.state === 'closed' && h.state !== 'closed') return { text: p.text, state: 'closed', by: p.by, ...k }
+    if (p.state === 'closed' && h.state !== 'closed') out.push({ text: p.text, state: 'closed', by: p.by, ...k })
     // A fact held shown and rewritten as works opens again, with its where kept as what was
     // seen: the where showed a fact, never the look someone who did not build it makes.
-    if (h.kind === 'fact' && kind === 'works' && h.state === 'shown') return { text: p.text, state: 'open', by: '', seen: h.by, kind: 'works' }
-    return { ...h, text: p.text, ...k }
-  })
+    else if (h.kind === 'fact' && kind === 'works' && h.state === 'shown') out.push({ text: p.text, state: 'open', by: '', seen: h.by, kind: 'works' })
+    else out.push({ ...h, text: p.text, ...k })
+  }
   for (const h of held) {
-    if (out.some(p => like(p.text, h.text))) continue
+    if (taken.has(h) || out.some(p => like(p.text, h.text))) continue
     const gone = dropped.some(d => d.by !== null && his.includes(d.by) && like(d.text, h.text))
     if (!gone) out.push(h)
   }
@@ -6826,7 +6869,7 @@ export function countsText(counts: Counts | undefined): string {
 }
 
 // The edits of this build a replay's variant can make to a saved call (`editSaved`, below).
-export const PROMPT_EDITS = ['frame', 'no-think', 'rep-system', 'end-line', 'proof', 'decisions', 'now'] as const
+export const PROMPT_EDITS = ['frame', 'no-think', 'rep-system', 'end-line', 'proof', 'decisions', 'now', 'same-as'] as const
 export type PromptEdit = (typeof PROMPT_EDITS)[number]
 const PROMPT_EDITS_LIST = PROMPT_EDITS.join('|')
 
@@ -6914,7 +6957,7 @@ export const replayPick = (names: readonly string[], kind: CallKind | undefined,
 // call is never sent unchanged under the variant's name. Only the task after the record is edited:
 // the record is the session's, and anything in it, the old texts quoted among them, stays. The edits
 // themselves, `PROMPT_EDITS`, are named above the replay's words.
-const EDIT_KINDS: Record<PromptEdit, readonly CallKind[]> = { frame: ['watch', 'brief', 'ask-again'], 'no-think': ['watch'], 'rep-system': ['watch', 'brief', 'ask-again'], 'end-line': ['watch', 'brief', 'ask-again'], proof: ['objective', 'watch', 'brief', 'ask-again', 'own-words'], decisions: ['objective', 'watch', 'brief', 'ask-again'], now: ['objective', 'watch'] }
+const EDIT_KINDS: Record<PromptEdit, readonly CallKind[]> = { frame: ['watch', 'brief', 'ask-again'], 'no-think': ['watch'], 'rep-system': ['watch', 'brief', 'ask-again'], 'end-line': ['watch', 'brief', 'ask-again'], proof: ['objective', 'watch', 'brief', 'ask-again', 'own-words'], decisions: ['objective', 'watch', 'brief', 'ask-again'], now: ['objective', 'watch'], 'same-as': ['objective'] }
 // What the build before prompt group 1 sent (G1, G2): the fork frame that opened the task, the line
 // after it on the watch, and the start of the record read's system prompt.
 const OLD_FRAME = /^<system-reminder>This is a side request from the user[^]*?<\/system-reminder>\n\n/
@@ -7030,6 +7073,12 @@ const G5_TASK: ReadonlyArray<{ swap: Swap; kinds: readonly CallKind[] }> = [
   { swap: ['nothing else:\n\nsteps:\n', `nothing else:\n\n${WATCH_NOW_LINE}\nsteps:\n`], kinds: ['watch'] },
   { swap: ['step: <one sentence>\ndropped:', `${OBJECTIVE_STEP_LINE}\ndropped:`], kinds: ['objective'] },
 ]
+// Prompt group 6 (G13): a held condition restated in other words is written once, or in its new
+// words marked "same as:" the held one.
+const G6_OBJECTIVE_SYSTEM: readonly Swap[] = [[' Those marks are kept whatever you write. A new condition', ` Those marks are kept whatever you write. ${OBJECTIVE_SAME_AS} A new condition`]]
+const G6_TASK: ReadonlyArray<{ swap: Swap; kinds: readonly CallKind[] }> = [
+  { swap: ['| shown: <where, copied as held>\n', `| shown: <where, copied as held>\n${OBJECTIVE_SAME_AS_LINE}\n`], kinds: ['objective'] },
+]
 // Each pair's one side found exactly once and put in the other's place, forward (group 2's to
 // this build's) or back; null when one is not found exactly once.
 function swapped(text: string, swaps: readonly Swap[], back: boolean): string | null {
@@ -7050,6 +7099,7 @@ const GROUPS: readonly Group[] = [
   { edit: 'proof', system: k => (k === 'objective' ? G3_OBJECTIVE_SYSTEM : k === 'own-words' ? G3_OWN_WORDS_SYSTEM : G3_REP_SYSTEM), task: G3_TASK },
   { edit: 'decisions', system: k => (k === 'objective' ? G4_OBJECTIVE_SYSTEM : k === 'own-words' ? [] : G4_REP_SYSTEM), task: G4_TASK },
   { edit: 'now', system: k => (k === 'objective' ? G5_OBJECTIVE_SYSTEM : []), task: G5_TASK },
+  { edit: 'same-as', system: k => (k === 'objective' ? G6_OBJECTIVE_SYSTEM : []), task: G6_TASK },
 ]
 const nowSystem = (kind: CallKind): string => (kind === 'objective' ? OBJECTIVE_SYSTEM : kind === 'own-words' ? OWN_WORDS_SYSTEM : REP_SYSTEM)
 const groupTask = (i: number, kind: CallKind): Swap[] => GROUPS[i]!.task.filter(x => x.kinds.includes(kind)).map(x => x.swap)

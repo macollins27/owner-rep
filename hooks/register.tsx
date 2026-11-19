@@ -132,6 +132,7 @@ import {
   gateOpen,
   gateVerdict,
   mergeConditions,
+  plainCondition,
   OBJECTIVE_MAX_TOKENS,
   OBJECTIVE_MODEL,
   OBJECTIVE_TIMEOUT_MS,
@@ -1210,7 +1211,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number, r
     }
     rec.objective = {
       ...a.parts,
-      done: honest(a.parts.done, [], his.filter(canClose)),
+      done: honest(a.parts.done.map(plainCondition), [], his.filter(canClose)),
       openedAt: now,
       since: his.length > 0 ? Math.min(...his) : rec.jobStart,
       from: saw,
@@ -1246,7 +1247,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number, r
     rec.jobStart = since
     rec.objective = {
       ...a.parts,
-      done: honest(a.parts.done, [], hisFrom(rec, since).filter(n => n <= saw && canClose(n))),
+      done: honest(a.parts.done.map(plainCondition), [], hisFrom(rec, since).filter(n => n <= saw && canClose(n))),
       openedAt: now,
       since,
       from: saw,
