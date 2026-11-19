@@ -3952,5 +3952,41 @@
     "breaks": "A fact's own state before a noun (\"the installed build runs the newest code\") is taken for a quality, so the writer's fact reads as works.",
     "patch": "fact-quality-state-refused.patch",
     "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-doing-mod-allowed",
+    "breaks": "A word of doing may stand before a noun (\"the encrypting tool is installed\"), so what the tool does reads as a fact and closes on the builder's own run.",
+    "patch": "fact-doing-mod-allowed.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-during-not-place",
+    "breaks": "\"During\" and \"since\" are not places, so a writer's fact about this job (\"no new commit made during this job exists\") reads as works and waits to be shown.",
+    "patch": "fact-during-not-place.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-state-after-noun-dropped",
+    "breaks": "A state after a noun with its place (\"a commit made during this job\", \"the code committed to main\") is not read, so the writer's fact reads as works.",
+    "patch": "fact-state-after-noun-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-no-thing-holds-dropped",
+    "breaks": "\"No file holds a change made during this job\" is not read as a fact, so the writer's negative fact waits to be shown.",
+    "patch": "fact-no-thing-holds-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-no-thing-holds-anything",
+    "breaks": "No file may hold anything at all (\"no file holds a correct fix\", \"no log holds \\\"error\\\"\") and read as a fact, so a claim about how runs went closes on the builder's own run.",
+    "patch": "fact-no-thing-holds-anything.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-folded-clause-kept",
+    "breaks": "A hyphened word with a verb folded into it stands as one of a noun's own words, so \"the converts-to-uppercase script is committed\" reads as a fact and closes on the builder's own run.",
+    "patch": "fact-folded-clause-kept.patch",
+    "fixed": "tested 2026-11-18"
   }
 ]

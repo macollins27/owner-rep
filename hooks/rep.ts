@@ -3490,17 +3490,23 @@ const FACT_ACTOR = /^(?:agents?|sessions?|helpers?|builder|owner|codex)$/
 const FACT_PLACE = /^(?:main|master|origin|remote|production|staging|github|it)$/
 const FACT_PLACE_NOUN = /^(?:mac|machine|computer|disk)$/
 const FACT_DET = /^(?:the|a|an|this|that|these|those|its|their|our|your|my|each|every|any|some|all|both|one|two|three|four|five|six|seven|eight|nine|ten)$/
-const FACT_PREP = /^(?:in|inside|within|outside|under|at|on|to|into|onto|from|beyond)$/
+const FACT_PREP = /^(?:in|inside|within|outside|under|at|on|to|into|onto|from|beyond|during|since)$/
 const FACT_UNIT = /^(?:bytes?|characters?|lines?|words?)$/
 const FACT_TAIL = /^(?:with|no|trailing|newlines?|or|any|other|bytes?|characters?|at|after|before|the|end|it)$/
 // Words that never stand before a noun as one of its words: they belong to the shape itself.
-// Words that say how good a thing is ("the bug-free code", "the secure service", "the fully
-// tested build"): a quality is something to show, so it never stands among a noun's own words
+// Words that say how good a thing is or what it does ("the bug-free code", "the secure service",
+// "the fully tested build", "the encrypting tool"): a quality or a doing is something to show, so it never stands among a noun's own words
 // (sixth live test of 18 Nov 2026). Each part of a hyphened word is read alone; a fact's own
 // state stays ("the installed build"). A misread noun
 // costs a look by someone who did not build it; a misread quality would close on the builder's own run.
-const FACT_QUALITY = /^(?:secure|correct|fast|quick|robust|complete|clean|safe|valid|accurate|stable|perfect|efficient|responsive|ready|proper|right|bad|broken|solid|sound|fine|smooth|strong|nice|great|better|best|quality|compliant|true|real|full|free|healthy|functional|tight|minimal|simple|elegant|modern|professional|airtight|optimal|bugless|bug|error|crash|idempotent)$|(?:ed|ly|free|proof|less|ful|able|ible|ous|ive)$/
-const factQuality = (w: string): boolean => w.split('-').some(p => FACT_QUALITY.test(p) && !FACT_STATE.test(p))
+const FACT_QUALITY = /^(?:secure|correct|fast|quick|robust|complete|clean|safe|valid|accurate|stable|perfect|efficient|responsive|ready|proper|right|bad|broken|solid|sound|fine|smooth|strong|nice|great|better|best|quality|compliant|true|real|full|free|healthy|functional|tight|minimal|simple|elegant|modern|professional|airtight|optimal|bugless|bug|error|crash|idempotent)$|(?:ed|ing|ly|free|proof|less|ful|able|ible|ous|ive)$/
+// A hyphened word with a verb or a little word in it is a clause folded into one word ("the
+// converts-to-uppercase script", seventh round's probe), so it is refused as a quality is.
+const FACT_FOLDED = /^(?:to|a|an|the|of|for|into|from|with|and|or|not|no)$|[^su]s$/
+const factQuality = (w: string): boolean => {
+  const parts = w.split('-')
+  return parts.some(p => FACT_QUALITY.test(p) && !FACT_STATE.test(p)) || (parts.length > 1 && parts.some(p => FACT_FOLDED.test(p)))
+}
 const FACT_NOT_MOD = /^(?:it|they|them|is|are|was|were|be|been|has|have|had|and|or|but|not|never|no|nothing|none|whose|which|that|who|with|for|by|as|of|if|when|where|while|because|exists?|holds?|contains?|does|do|did|runsnewest)$/
 
 const factTokens = (text: string): FactTok[] => {
@@ -3541,6 +3547,8 @@ const factRead = (ts: FactTok[]): boolean => {
         if (!ok || !w(n, re)) continue
         const store = storeRe.test(ts[n]?.w ?? '')
         out.push({ i: n + 1, store })
+        // A state after it with a place: "a commit made during this job" (sixth live test).
+        if (w(n + 1, /^made$/) || w(n + 1, FACT_STATE)) for (const p of places(n + 2)) if (p > n + 2) out.push({ i: p, store })
         if (ts[n + 1]?.t === 'P') out.push({ i: n + 2, store: true })
       }
     }
@@ -3653,6 +3661,8 @@ const factRead = (ts: FactTok[]): boolean => {
     // Nothing, or no thing, of a place: only a state or existence, never what it holds.
     const negs = w(i, /^(?:nothing|none)$/) ? places(i + 1) : w(i, /^no$/) ? noun(i + 1, FACT_THING, FACT_STORE).flatMap(r => places(r.i)) : []
     for (const n of negs) for (const e of pred(n, false)) out.push({ i: e, store: false })
+    // No thing holds a thing of the work: "no file in the project holds a change made during this job".
+    if (w(i, /^no$/)) for (const r of noun(i + 1, FACT_THING, FACT_STORE)) if (r.store) for (const n of places(r.i)) if (w(n, /^(?:holds?|contains?)$/)) for (const h of noun(n + 1, FACT_HELD, FACT_STORE)) for (const e of places(h.i)) out.push({ i: e, store: false })
     // An agent, a session or a helper saved, committed or pushed a thing of the work.
     for (const a of noun(i, FACT_ACTOR, FACT_STORE)) for (const s of states(a.i)) {
       const objs = w(s, /^nothing$/) ? [s + 1] : (w(s, /^no$/) ? noun(s + 1, FACT_THING, FACT_STORE) : np(s)).map(r => r.i)

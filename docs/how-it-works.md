@@ -372,7 +372,10 @@ fact is now read by its sentence shape: a thing of the work is saved, committed,
 of a few more such states, exists, or runs the newest code, and only a stored thing holds quoted
 text or is a count of bytes, characters, lines or words. Each slot takes only its own kind of
 word, so a word for what the work does has nowhere to stand, and a fact misread costs only a
-look. The owner's own word still
+look. A sixth live test found a quality or a doing still standing among a noun's own words ("the
+bug-free code is committed", "the correctly encrypting tool is installed"); those words now
+refuse both, and three more of the writers' facts ("6 bytes in size", "no new commit made during
+this job exists in the project") read as facts. The owner's own word still
 closes a condition, by design, and the card says so: "closed on your word (#n)". The note of
 whose looks are in also goes on the count line,
 which comes back right after the card's head, because at 80 rows the condition lines that carried
