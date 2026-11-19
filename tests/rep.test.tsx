@@ -330,10 +330,10 @@ const ALL_SHOWN = (): Record<string, unknown> => ({
 })
 
 // A check's output with the given parts in place of the empty ones.
-const CHECK_OUT = (verdict: string, part: { false?: string; reopen?: string; left?: string; shown?: string }) =>
+const CHECK_OUT = (verdict: string, part: { false?: string; reopen?: string; left?: string; shown?: string; does?: string }) =>
   JSON.stringify({
     type: 'result',
-    result: withEnd(`verdict: ${verdict}\nholds:\n- nothing\nfalse:\n${part.false ?? '- nothing'}\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n${part.shown ?? '- nothing'}\nclosed:\n- nothing\nreopen:\n${part.reopen ?? '- nothing'}\nstands: Checked.\nmeans:\nleft:\n${part.left ?? '- nothing'}\nnext:\nmessage:\nend\ndoes:\nlooked: Read the record.`),
+    result: withEnd(`verdict: ${verdict}\nholds:\n- nothing\nfalse:\n${part.false ?? '- nothing'}\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n${part.shown ?? '- nothing'}\nclosed:\n- nothing\nreopen:\n${part.reopen ?? '- nothing'}\nstands: Checked.\nmeans:\nleft:\n${part.left ?? '- nothing'}\nnext:\nmessage:\nend\ndoes: ${part.does ?? ''}\nlooked: Read the record.`),
     usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
   })
 
@@ -2854,10 +2854,11 @@ const drawnCardRows = (c: CardText, cols: number, put: boolean, size: string): n
   const w = cols - 2
   const t = (s: string) => drawnRowsOf(s, w)
   const part = (label: string, s: string) => (s === '' ? 0 : t(`${label} ${s}`))
-  let rows = 1 + t(`Owner rep · ${c.result}`) + t(c.count) + t(c.revised) + t(c.well) + part('Stands:', c.stands) + part('Means:', c.means)
+  let rows = (c.tight === true ? 0 : 1) + t(`Owner rep · ${c.result}`) + t(c.count) + t(c.revised) + t(c.well) + part('Stands:', c.stands) + part('Means:', c.means)
   if (c.leftOut.length > 0) rows += 1 + c.leftOut.reduce((n, i) => n + t(`  - ${i}`), 0)
   rows += part('Next:', c.next)
-  if (c.checked !== null) {
+  if (c.checked !== null && c.checkedBare === true) rows += t(c.checked.looked)
+  else if (c.checked !== null) {
     const k = c.checked
     const list = (word: string, items: string[]) => items.reduce((n, i) => n + t(`  ${word}  ${i}`), 0)
     rows += 1 + list('holds', k.holds) + list('false', k.wrong) + list('not shown', k.notShown) + list('since then', k.changed) + t(k.looked) + t(refusedLine(k.refused))
@@ -2957,6 +2958,51 @@ test('the card\'s buttons always draw: the card counted as the band wraps it, le
     const shown = fillCard({ ...big, checked, checkNote: LONG('Note') }, 16, cols)
     expect(drawnCardRows(shown, cols, true, A5_SIZE)).toBeLessThanOrEqual(16)
   }
+})
+
+test('a checked card on a 24-row terminal keeps its error note and every button in the band: the findings go to one line, then the margin, then the count (fifth live test of 18 Nov 2026, B10 and A8)', () => {
+  // The B card as drawn at 100 and 170 columns on 24 rows: the band had five rows, and the
+  // head, the checked heading and the count filled four, so the error note and the buttons sat
+  // under "↓ 3 more" and the digit 2 went into the prompt.
+  const B: CardText = {
+    ...CARD_TEXT,
+    result: 'A greeting file in the scratch folder holding exactly "Hello Maxwell!", a small script beside it that prints that file\'s contents, and that script run once.',
+    count: 'Done means 7 things: 5 shown, 2 open',
+    stands: LONG('Stands'),
+    means: LONG('Means'),
+    next: LONG('Next'),
+    message: LONG('Message'),
+    checked: { holds: ['a', 'b', 'c', 'd', 'e'], wrong: ['greet.py is committed'], notShown: [], changed: ['greeting.txt holds the text'], looked: 'Looked at the record and the two files.', refused: 0 },
+    checkNote: 'The check failed after it answered: the engine stopped with an error. What it found before is shown.',
+  }
+  const size = 'conversation at 4 percent of its window'
+  for (const cols of [100, 165, 80]) {
+    for (const [note, refused] of [[B.checkNote, 0], ['', 0], [B.checkNote, 2]] as const) {
+      const card = { ...B, size, checkNote: note, checked: { ...(B.checked as NonNullable<CardText['checked']>), refused } }
+      for (const rows of [5, 6, 4]) {
+        const shown = fillCard(card, rows, cols)
+        const at = [cols, note === '' ? 'no note' : 'note', refused, rows]
+        // Drawn within the band, buttons and all, and counted as drawn.
+        expect([...at, drawnCardRows(shown, cols, true, size) <= rows]).toEqual([...at, true])
+        expect([...at, cardRows(shown, cols)]).toEqual([...at, drawnCardRows(shown, cols, true, size)])
+        // The error note, on one row at least, wherever the band has the rows for it.
+        if (note !== '') expect([...at, shown.checkNote !== '']).toEqual([...at, true])
+      }
+      // Five rows hold the head, what the check found and, with a refusal, how many refused, the note and the buttons.
+      const five = fillCard(card, 5, cols)
+      const at = [cols, note === '' ? 'no note' : 'note', refused]
+      expect([...at, five.checked?.looked]).toEqual([...at, `Checked: 5 hold, 1 false, 1 changed since${refused > 0 ? '; 2 commands refused approval' : ''}.`])
+      expect([...at, five.result !== '']).toEqual([...at, true])
+    }
+  }
+  // A band with rows to spare keeps the heading, the refusal line and the margin; one a row
+  // short of the whole note with the margin gives the margin's row to the note.
+  const roomy = fillCard({ ...B, size }, 16, 100)
+  expect([roomy.checkedBare ?? false, roomy.tight ?? false, roomy.checkNote]).toEqual([false, false, B.checkNote])
+  expect(drawnCardRows(roomy, 100, true, size)).toBeLessThanOrEqual(16)
+  const short = fillCard({ ...B, size }, 12, 100)
+  expect([short.tight, short.checkNote]).toEqual([true, B.checkNote])
+  expect(drawnCardRows(short, 100, true, size)).toBeLessThanOrEqual(12)
 })
 
 test('rowsOf counts a row as the band wraps it: a leading space takes a cell, a word that fills the row exactly pushes the next row\'s space before its word, and a wide character takes two cells', () => {
@@ -9175,6 +9221,27 @@ const checkOver = async ($: Engine, on: On, checked: string) => {
   return { rec, ui }
 }
 
+test('rule: on a five-row band, a 24-row terminal\'s, the checked card draws what the check found on one line, the engine\'s error and its buttons, and the digit closes it (fifth live test of 18 Nov 2026, B10 and A8)', async ($, on) => {
+  const answer = (JSON.parse(CHECKED_SAYING('continue', 'Two things first. Run the suite and paste the counts.')) as { result: string }).result
+  const { ui } = await checkOver($, on, streamed([answer], { error: 'Failed to authenticate: OAuth session expired and could not be refreshed' }))
+  await settle($)
+  await ui.unmount()
+  const five = { ...BAND, props: { ...BAND.props, maxRows: 5, bodyColumns: 98, scroll: { offset: 0, bodyRows: 4 } } }
+  const small = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...five })
+  // The check sorted no claim, so its own account of what it looked at stands on the line.
+  expect(await small.find({ type: 'Text', text: /^Checked: Read the record\.$/ })).toBeDefined()
+  expect(await small.find({ type: 'Text', text: /Checked against the record and the files/ })).toBeUndefined()
+  // Nor the empty line above the card: five rows hold the whole note only without it.
+  expect((await small.findAll({ type: 'Box' })).map(b => b.props.marginTop).filter(x => x !== undefined && x !== 0)).toEqual([])
+  // The engine's error whole: it takes the row the empty line above the card would.
+  expect(await small.find({ type: 'Text', text: /^The check's run failed after it answered: Failed to authenticate: OAuth session expired and could not be refreshed\. Its whole answer is shown\.$/ })).toBeDefined()
+  expect((await small.find({ key: 'put' }))?.props.hotkey).toBe('1')
+  expect((await small.find({ key: 'close' }))?.props.hotkey).toBe('2')
+  await small.press({ key: 'close' })
+  expect((await small.find({ key: 'rep' }))?.props.hotkey).toBe('1')
+  await small.unmount()
+})
+
 test('rule: the Check button\'s card keeps a checker\'s message that pushes the agent on before it stops', async ($, on) => {
   const message = 'Two things before you stop. First, run the full suite and paste the counts. Second, push the branch and show the run.'
   const { rec, ui } = await checkOver($, on, CHECKED_SAYING('continue', message))
@@ -9339,6 +9406,10 @@ test('rule: the Check card, the instant card refused and the checker writing no 
 
 test('rule: the Check card, the instant card passed with a message and the checker writing none: the instant message stays', async ($, on) => {
   expect(await checkedCard($, on, USABLE_BRIEF('continue'), CHECK_OUT('continue', {}))).toBe('Show me each session finishing.')
+})
+
+test('rule: the Check card, the checker showing every condition, writing no message and saying there is nothing to send: the briefing\'s older draft is not kept', async ($, on) => {
+  expect(await checkedCard($, on, USABLE_BRIEF('continue'), CHECK_OUT('continue', { shown: '- the newest build installed | the install log printed the revision\n- two sessions pushed their work | both sessions printed their results', does: 'Nothing to send. The agent is already stopped and the work is complete.' }))).toBe('')
 })
 
 test('rule: the Check card, the checker showing every condition and writing no message: the message stays empty', async ($, on) => {

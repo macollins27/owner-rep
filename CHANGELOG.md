@@ -48,7 +48,9 @@ What changed in each release of Owner Rep, newest first. The full record is the
 - **The briefing's buttons always show.** A card could be counted one row shorter than it is
   drawn (an indented line a cell or two past the edge, the size beside the buttons), and then
   scrolled with its buttons below the fold. Rows are now counted as the strip wraps them, the
-  buttons first.
+  buttons first. On a 24-row terminal the strip has about five rows, and a checked card
+  now fits them: what the check found goes to one line, then the empty line above the card,
+  so a check's error and every button stay in view.
 - **A reply cut off in its last line is never shown.** The rep asks every model call to end its
   reply with a fixed line, "end of reply". A reply without it stopped early, even one cut in
   the middle of its last sentence, and the rep treats it as it treats any cut reply: it asks
@@ -57,7 +59,8 @@ What changed in each release of Owner Rep, newest first. The full record is the
   an error, such as an expired login, the card now shows that error rather than calling the
   check cut and asking you to press it again. A check that finished its answer before such an
   error, or before a last turn a hook asked for, is read from that answer, and the card still
-  says the run then failed, and why.
+  says the run then failed, and why. A check that says there is nothing to send no longer leaves the briefing's
+  older message on its card for Put message.
 
 ## 0.7.5 (14 November 2026)
 

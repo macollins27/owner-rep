@@ -1,8 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 6e8b995..a6e64a0 100644
+index 6421a46..1b55e69 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -5075,7 +5075,7 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
+@@ -5257,7 +5257,7 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
      means: '',
      leftOut: [],
      next: '',
@@ -11,12 +11,20 @@ index 6e8b995..a6e64a0 100644
      checkNote: toRows(card.checkNote, '', 1, w),
      checkCost: '',
      message: toRows(card.message, '', 1, mw),
-@@ -5094,7 +5094,7 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
+@@ -5293,14 +5293,14 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
+     // Back from the floor of a five-row band: what the check found, the margin, the heading.
+     x => (x.checkedBare === true ? { ...x, checked: bare() } : x),
+     x => ({ ...x, tight: false }),
+-    x => (x.checkedBare === true ? { ...x, checked: counted(), checkedBare: false } : x),
++    x => (x.checkedBare === true ? { ...x, checked: k, checkedBare: false } : x),
+     // How much of done is shown, and whose looks are still to count, before the judgment.
+     x => ({ ...x, count: card.count }),
+     // The judgment, one row each, the most telling first.
      x => ({ ...x, stands: toRows(card.stands, 'Stands: ', 1, w) }),
      // That the reading moved, and why, is the next thing the owner must not miss.
      x => ({ ...x, revised: toRows(card.revised, '', 1, w) }),
--    x => ({ ...x, checked: folded() }),
-+    x => ({ ...x, checked: k }),
+-    x => ({ ...x, checked: folded(), checkedBare: false }),
++    x => ({ ...x, checked: k, checkedBare: false }),
      x => ({ ...x, well: toRows(card.well, '', 1, w) }),
      x => ({ ...x, next: toRows(card.next, 'Next: ', 1, w) }),
      x => ({ ...x, means: toRows(card.means, 'Means: ', 1, w) }),

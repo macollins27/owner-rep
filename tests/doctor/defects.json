@@ -165,7 +165,7 @@
     "name": "checked-lists-never-fold",
     "breaks": "The checked lists are never folded, so on a small band they push the judgment's parts off the card where a count line and the failed claims would have left room for them.",
     "patch": "checked-lists-never-fold.patch",
-    "fixed": "tested 2026-10-14"
+    "fixed": "tested 2026-10-14; remade 2026-11-18 for the five-row floor"
   },
   {
     "name": "step-look-dropped",
@@ -189,7 +189,7 @@
     "name": "revised-line-folds-first",
     "breaks": "The revision line waits among the extras after the message, so whenever the message is long enough to take the rows that are left the owner never sees that the reading moved.",
     "patch": "revised-line-folds-first.patch",
-    "fixed": "2026-10-14; remade 2026-11-17"
+    "fixed": "2026-10-14; remade 2026-11-17; remade 2026-11-18 for the five-row floor"
   },
   {
     "name": "rows-counted-by-cells",
@@ -1821,7 +1821,7 @@
     "name": "count-line-dropped-first",
     "breaks": "The count line comes back only after the judgment's parts have taken the rows, so on a small band the owner loses how many things done means while restatements of the agent's work keep a second row.",
     "patch": "count-line-dropped-first.patch",
-    "fixed": "tested 2026-10-19; remade 2026-11-17"
+    "fixed": "tested 2026-10-19; remade 2026-11-17; remade 2026-11-18 for the five-row floor"
   },
   {
     "name": "extras-before-message",
@@ -1833,7 +1833,7 @@
     "name": "message-box-hides-buttons",
     "breaks": "On a band too short for the message's box between the head and the buttons, as in a terminal of about 24 rows, the box stays and pushes the buttons out of the window where a digit cannot press them.",
     "patch": "message-box-hides-buttons.patch",
-    "fixed": "2026-10-26; remade 2026-11-17"
+    "fixed": "2026-10-26; remade 2026-11-17; remade 2026-11-18 for the five-row floor"
   },
   {
     "name": "own-words-cut-taken",
@@ -3549,7 +3549,7 @@
     "name": "count-line-never-back",
     "breaks": "The count line never comes back on a card too tall for the band, so whenever the card is folded the owner loses how many things done means and whose looks are still to count.",
     "patch": "count-line-never-back.patch",
-    "fixed": "tested 2026-11-17"
+    "fixed": "tested 2026-11-17; remade 2026-11-18 for the five-row floor"
   },
   {
     "name": "bare-keeps-kind",
@@ -4054,5 +4054,41 @@
     "breaks": "The replay says \"--now\" sends a call as this build would, then sends it as logged: the old cap and no end line.",
     "patch": "replay-now-not-sent.patch",
     "fixed": "2026-11-18"
+  },
+  {
+    "name": "card-floor-not-applied",
+    "breaks": "A checked card too tall for a short band (a 24-row terminal's five rows) is not cut to its floor, so the band scrolls and the check's error note and every button fall out of view.",
+    "patch": "card-floor-not-applied.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "card-tight-margin-drawn",
+    "breaks": "The card's top margin is drawn though the card was cut to fit without it, so a card that fits five rows takes six and its last button scrolls out of the window.",
+    "patch": "card-tight-margin-drawn.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "card-bare-block-drawn",
+    "breaks": "A checked card cut to its one-line account still draws the whole block (heading and every list), so it overflows the short band it was cut for.",
+    "patch": "card-bare-block-drawn.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "card-bare-no-account",
+    "breaks": "A check that sorted no claim leaves its cut card with no line at all of what it looked at, so the owner cannot tell a check ran.",
+    "patch": "card-bare-no-account.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "checked-stale-draft-kept",
+    "breaks": "A check that says there is nothing to send still leaves the briefing's older draft on the card, and Put message types that stale message into the prompt.",
+    "patch": "checked-stale-draft-kept.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "check-note-after-margin",
+    "breaks": "The empty line above a short band's card keeps its row while the check's error note is cut to one, so the owner reads half of why the check failed beside a blank line.",
+    "patch": "check-note-after-margin.patch",
+    "fixed": "tested 2026-11-18"
   }
 ]

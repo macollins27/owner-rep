@@ -1,12 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 6e8b995..327f8b4 100644
+index 6421a46..87cf3b7 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -5083,7 +5083,6 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
+@@ -5265,7 +5265,6 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
      spent: '',
      reading: '',
    }
 -  if (cardRows(c, cols) > maxRows) c = { ...c, message: '' }
-   const steps: Array<(x: CardText) => CardText> = [
-     x => ({ ...x, result: card.result }),
-     // Why the check cannot run, or what it last said, whole.
+   // A band of about five rows, a terminal of 24, holds less than that: what the check found goes
+   // to one line, without its heading and with a refusal kept on it, then the margin above the
+   // card goes, then that line is cut to one row and then dropped, so the head, the check's note

@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 6421a46..e87bd74 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -5275,7 +5275,7 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
+     const n = counted()
+     if (n === null || k === null) return null
+     // With no claim sorted, the checker's own account of what it looked at stands for them.
+-    const found = n.looked === '' ? k.looked.trim().replace(/\.$/, '') : n.looked.replace(/^Checked: |\.$/g, '')
++    const found = n.looked.replace(/^Checked: |\.$/g, '')
+     const parts = [found, k.refused > 0 ? refusedWords(k.refused) : ''].filter(p => p !== '')
+     return { ...n, looked: parts.length === 0 ? '' : `Checked: ${parts.join('; ')}.` }
+   }

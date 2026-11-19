@@ -4992,6 +4992,10 @@ export type CardText = {
   // filled, since a filled card may draw its message or its note cut or not at all.
   put?: boolean
   check?: boolean
+  // A band of about five rows: the checked block drawn as its one line (`looked`), with no
+  // heading or refusal line, and the card with no margin above it.
+  checkedBare?: boolean
+  tight?: boolean
 }
 
 // The line drawn while the check runs.
@@ -5134,11 +5138,12 @@ export const buttonRows = (items: string[], width: number): number => {
 export function cardRows(c: CardText, cols: number): number {
   const w = Math.max(1, cols - 2)
   const part = (label: string, text: string): number => (text === '' ? 0 : rowsOf(`${label} ${text}`, w))
-  let rows = 1 + rowsOf(`Owner rep · ${c.result}`, w) + rowsOf(c.count, w) + rowsOf(c.revised, w)
+  let rows = (c.tight === true ? 0 : 1) + rowsOf(`Owner rep · ${c.result}`, w) + rowsOf(c.count, w) + rowsOf(c.revised, w)
   rows += rowsOf(c.well, w) + part('Stands:', c.stands) + part('Means:', c.means)
   if (c.leftOut.length > 0) rows += 1 + c.leftOut.reduce((n, item) => n + rowsOf(`  - ${item}`, w), 0)
   rows += part('Next:', c.next)
-  if (c.checked !== null) {
+  if (c.checked !== null && c.checkedBare === true) rows += rowsOf(c.checked.looked, w)
+  else if (c.checked !== null) {
     const k = c.checked
     const list = (word: string, items: string[]): number => items.reduce((n, item) => n + rowsOf(`  ${word}  ${item}`, w), 0)
     rows += 1 + list('holds', k.holds) + list('false', k.wrong) + list('not shown', k.notShown) + list('since then', k.changed)
@@ -5261,23 +5266,48 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
     reading: '',
   }
   if (cardRows(c, cols) > maxRows) c = { ...c, message: '' }
+  // A band of about five rows, a terminal of 24, holds less than that: what the check found goes
+  // to one line, without its heading and with a refusal kept on it, then the margin above the
+  // card goes, then that line is cut to one row and then dropped, so the head, the check's note
+  // and the buttons stay in the window (fifth live test of 18 Nov 2026: the checked card's error
+  // note and every button sat under "↓ 3 more" at 100 and 170 columns).
+  const bare = (): CardText['checked'] => {
+    const n = counted()
+    if (n === null || k === null) return null
+    // With no claim sorted, the checker's own account of what it looked at stands for them.
+    const found = n.looked === '' ? k.looked.trim().replace(/\.$/, '') : n.looked.replace(/^Checked: |\.$/g, '')
+    const parts = [found, k.refused > 0 ? refusedWords(k.refused) : ''].filter(p => p !== '')
+    return { ...n, looked: parts.length === 0 ? '' : `Checked: ${parts.join('; ')}.` }
+  }
+  const floor: Array<(x: CardText) => CardText> = [
+    x => (k === null ? x : { ...x, checked: bare(), checkedBare: true }),
+    x => ({ ...x, tight: true }),
+    x => (x.checked === null ? x : { ...x, checked: { ...x.checked, looked: toRows(x.checked.looked, '', 1, w) } }),
+    x => (x.checked === null ? x : { ...x, checked: { ...x.checked, looked: '' } }),
+  ]
+  for (const step of floor) if (cardRows(c, cols) > maxRows) c = step(c)
   const steps: Array<(x: CardText) => CardText> = [
     x => ({ ...x, result: card.result }),
-    // Why the check cannot run, or what it last said, whole.
-    x => ({ ...x, checkNote: card.checkNote }),
+    // Why the check cannot run, or what it last said, whole, before the empty line above the
+    // card, which comes back next when there is room for it too.
+    x => ({ ...x, checkNote: card.checkNote, tight: true }),
+    // Back from the floor of a five-row band: what the check found, the margin, the heading.
+    x => (x.checkedBare === true ? { ...x, checked: bare() } : x),
+    x => ({ ...x, tight: false }),
+    x => (x.checkedBare === true ? { ...x, checked: counted(), checkedBare: false } : x),
     // How much of done is shown, and whose looks are still to count, before the judgment.
     x => ({ ...x, count: card.count }),
     // The judgment, one row each, the most telling first.
     x => ({ ...x, stands: toRows(card.stands, 'Stands: ', 1, w) }),
     // That the reading moved, and why, is the next thing the owner must not miss.
     x => ({ ...x, revised: toRows(card.revised, '', 1, w) }),
-    x => ({ ...x, checked: folded() }),
+    x => ({ ...x, checked: folded(), checkedBare: false }),
     x => ({ ...x, well: toRows(card.well, '', 1, w) }),
     x => ({ ...x, next: toRows(card.next, 'Next: ', 1, w) }),
     x => ({ ...x, means: toRows(card.means, 'Means: ', 1, w) }),
     x => ({ ...x, leftOut: oneLine(card.leftOut) }),
     // The judgment whole, or with the rows that are left.
-    x => ({ ...x, checked: k }),
+    x => ({ ...x, checked: k, checkedBare: false }),
     x => ({ ...x, leftOut: card.leftOut }),
     x => ({ ...x, revised: grow(x, x.revised, card.revised, '') }),
     x => ({ ...x, well: grow(x, x.well, card.well, '') }),
