@@ -3,6 +3,24 @@
 What changed in each release of Owner Rep, newest first. The full record is the
 [commit history](https://github.com/macollins27/owner-rep/commits/main).
 
+## 0.7.7 (19 November 2026)
+
+- **A session started from another folder than the one it was recorded in gets its goal.** A
+  session recorded in a worktree that was later removed, then resumed or forked from the main
+  folder, had none of the owner's messages read, so the row waited on "working out the result
+  you want…" and Brief me judged the work against no goal. The rep now searches every project
+  folder once for the session it came from, newest first, inside the same 30 seconds.
+- **The compacted turn keeps the number the owner sent it under.** An earlier fork of the same
+  session, newer and matching as well, was taken as the parent, so the messages before the
+  summary were lost and the first one after it was numbered #1. A whole file now wins over
+  such a copy, and a copy alone is followed back to its parent.
+- **Left out no longer names a plan nobody approved.** After a compaction the rep sees nothing of
+  the agent's turn before an older message, and it took go-ahead words such as "keep going"
+  for a plan approval, a different message on different runs. Only words that accept a plan
+  count now, and steps a reader guessed for a plan it never saw are left off the card.
+- **The replay rebuilds calls with this change.** `/owner-rep-replay` takes `unshown`, the edit
+  that turns an objective call saved before 0.7.7 into what this build sends.
+
 ## 0.7.6 (19 November 2026)
 
 - **Check it works where Claude Code comes through mise.** Where `claude` is a mise shim and the

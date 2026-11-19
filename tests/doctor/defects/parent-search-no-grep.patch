@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index c8022ab..988e5fe 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2160,6 +2160,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
+       let hits: string[] | null = null
+       const git = await $.process.run(hostArgv(host, parentGitArgv(needle)), { cwd: projects, timeoutMs: Math.min(HUMAN_READ_TIMEOUT_MS, time) }).catch(() => null)
+       if (git !== null && (git.exitCode === 0 || git.exitCode === 1)) hits = git.exitCode === 0 ? parentHits(git.stdout, projects) : []
++      hits ??= []
+       if (hits === null) {
+         const rest = await left()
+         if (rest <= 0) return []

@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 57024de..02d5fb9 100644
+index c8022ab..b256be4 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -924,7 +924,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
-       if (part.matched > best.matched) best = part
-       if (best.matched === want) break
-     }
--    return best.matched > 0 ? best.items : null
-+    return best.items
-   } catch {
-     return null
-   }
+@@ -2239,7 +2239,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
+     await scan(near)
+     if (whole.matched < want && tool !== null) await scan(await far(`"id":"${tool}"`))
+     if (whole.matched > 0 && whole.matched >= copy.matched) return whole.items
+-    if (copy.matched === 0 || copy.summary === null) return null
++    if (copy.matched === 0 || copy.summary === null) return whole.items
+     const id = copy.summary
+     const find = (file: string) => summaryLineFind(file, id)
+     const nearby = await before(near.filter(f => f !== copy.file), find)

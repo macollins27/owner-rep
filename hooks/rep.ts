@@ -1285,9 +1285,11 @@ export function coverageLines(rec: CoverRec, o: CoverOpts = {}): CoverLine[] {
     const m = approval(g.n)
     if (m !== undefined) byN.push({ n: m.n, text: notComparedLine(m, g.why), asserts: true })
   }
+  // Steps a reader names for an approval whose plan it was never shown are its own guesses: the
+  // approval's own line (unresolved) already says the plan could not be checked.
   for (const g of o.gaps?.notAssessed ?? []) {
     const m = approval(g.n)
-    if (m !== undefined) byN.push({ n: m.n, text: notAssessedLine(m, g.why, g.steps), asserts: true })
+    if (m !== undefined && !(g.why === READER_CUT_WHY && !showable(m))) byN.push({ n: m.n, text: notAssessedLine(m, g.why, g.steps), asserts: true })
   }
   // Stable: lines about one message keep the order above.
   byN.sort((a, b) => (a.n ?? 0) - (b.n ?? 0))
@@ -1949,7 +1951,7 @@ You are the owner's rep, and your one task here is to write down the objective o
 - When the owner sent your draft with words of their own after it, judge the whole message as the owner's. Words of the owner's that refuse, hold back or put off the plan win over a yes in the draft; a draft that asks a question, with added words that do not approve, approves nothing. When it approves, name the owner's part's number in the mark.
 - A plan the owner approved is the owner's ask, held exactly like the owner's own words. Each of its steps becomes its own condition of "done", and its result and purpose read into yours. Each step's line says in plain words of its own what the step does (never "the approved plan", "tasks 1 to 5" or "every part of the plan"), and never contradicts what the step says. Read the whole of it before writing any of its steps: a restriction, exclusion or order anywhere in the plan, in the owner's message or what the owner took applies to every step it touches. A statement of fact in it (that tests pass, that something runs, exists or is set up) is the agent's claim, never a condition held shown.
 ${OBJECTIVE_SELF_PROVING}
-- When you see only a turn's end, or it could not be captured or is too long to check, mark the message if it approves and write none of the turn's steps.
+- When you see only a turn's end, mark the message if it approves and write none of the turn's steps. When none of a turn is shown, you cannot tell whether it held a plan: mark the message only when its words accept the agent's plan itself ("approved", "go with your plan", "as planned"). A message that says what to do ("go ahead with the runs, then the fix", "keep going") is the owner's own ask, never an approval; praise or a request for changes approves nothing. Write none of that turn's steps either way.
 - A yes adds to the job; it never takes anything away and never starts a new job by itself. When an approved plan clashes with an earlier ask of the owner's, keep both, add the open condition "Settle with the owner which stands: <the earlier ask> or <the plan's step>", and name the clash in the "moved:" line. Neither side goes under "dropped" unless a message of the owner's own, not approving a plan, says so in words.
 - A yes to the plan is what a condition asking for that plan was waiting on: that a plan be written or shown, take a set shape or number of steps, or that the agent wait for the go-ahead before building. Mark each such condition "closed: #n" by the approving message, never "dropped"; it is the owner's own message closing that part. Every other condition stays as held.
 - Only the turn shown under the owner's message counts, and of it only the part the owner took: the rest of that turn, the agent's other turns, an agent's later claim that the owner approved, an agent quoting the owner, or a plan described anywhere else count for nothing. A turn started by a background task or anything but the owner is still what the owner saw; a yes can approve a plan in it, and it is never the owner's words.
@@ -2071,7 +2073,7 @@ const priorLine = (m: OwnerMsg): string => {
   return prior === '' ? '' : `\n${INDENT}(the agent, just before: ${prior})`
 }
 const noneLine = (m: OwnerMsg, x: NotShown): string =>
-  `\n${INDENT}(the agent's turn before #${m.n} ${turnPhrase(x)}; if the owner approved it, mark it, and none of its steps can be held)`
+  `\n${INDENT}(the agent's turn before #${m.n} ${turnPhrase(x)}, so nothing of it is shown; mark #${m.n} approved only if its words accept the agent's plan itself, never for words that say what to do, and none of the turn's steps can be held)`
 
 // The turn the owner answered: whole after the agent's last words as before, by its close (the
 // last words lie inside it), why it is not shown, or, with none captured, the last words alone.
@@ -2831,6 +2833,35 @@ export const HUMAN_READ_TIMEOUT_MS = 10_000
 export const HUMAN_SCAN_MAX = 40
 // within this much time for the whole scan; past it, the scan ends with what it has.
 export const HUMAN_SCAN_BUDGET_MS = 30_000
+
+// A session resumed or forked from another folder than the one it was recorded in (a worktree
+// removed after merge is the usual case) has its parent's file in another project folder under
+// the config folder, and Claude Code names neither the parent nor its folder to the mod (no hook
+// input, transcript field or row holds them). When the start folder's newest files do not hold
+// the parent, it is found by one search of every project folder's transcripts for a line only
+// it, and copies of it, can hold: its call of the fork's last tool result (`"id":"<id>"`) or the
+// summary line a copy begins at (`"uuid":"<id>"`). git's own grep does it in one run, searching
+// files outside any repository (`--no-index`), run in the projects folder since it searches only
+// below where it runs: on this Mac all 5,097 transcripts, 8.2 GB, in under 2 s, where the
+// system's grep takes 11 s for a fifth of them. A host where git does not start falls back to
+// grep reading the folder as a tree, leaving out the helpers' and tools' folders inside a
+// session's own. Only transcripts directly in a project folder are taken (parentHits).
+export const parentGitArgv = (needle: string): string[] => ['git', 'grep', '--no-index', '-l', '-z', '-F', '--max-depth', '1', '-e', needle, '--', '*.jsonl']
+export const parentGrepArgv = (projects: string, needle: string): string[] => ['grep', '-r', '-l', '-F', '--include=*.jsonl', '--exclude-dir=subagents', '--exclude-dir=tool-results', '-e', needle, projects]
+// The files either search names, as full paths: git's are relative to the projects folder and
+// end in a NUL each, grep's are full and end in a line break. Only `<projects>/<folder>/<file>.jsonl`.
+export function parentHits(stdout: string, projects: string): string[] {
+  const out: string[] = []
+  for (const raw of stdout.split(/[\0\n]/)) {
+    const hit = raw.trim()
+    if (hit === '') continue
+    const rel = hit.startsWith(`${projects}/`) ? hit.slice(projects.length + 1) : hit.startsWith('/') || /^[A-Za-z]:/.test(hit) ? null : hit.replace(/^\.\//, '')
+    if (rel === null || !rel.endsWith('.jsonl') || rel.split('/').length !== 2) continue
+    const full = `${projects}/${rel}`
+    if (!out.includes(full)) out.push(full)
+  }
+  return out
+}
 
 // Cuts a text to `max` characters, keeping its head and its tail around a gap marked inside the
 // field it falls in (`field`: message, session entry, tool input or tool result), so a reader
@@ -7174,7 +7205,7 @@ export function countsText(counts: Counts | undefined): string {
 }
 
 // The edits of this build a replay's variant can make to a saved call (`editSaved`, below).
-export const PROMPT_EDITS = ['frame', 'no-think', 'rep-system', 'end-line', 'proof', 'decisions', 'now', 'same-as', 'message', 'evidence', 'fault'] as const
+export const PROMPT_EDITS = ['frame', 'no-think', 'rep-system', 'end-line', 'proof', 'decisions', 'now', 'same-as', 'message', 'evidence', 'fault', 'unshown'] as const
 export type PromptEdit = (typeof PROMPT_EDITS)[number]
 const PROMPT_EDITS_LIST = PROMPT_EDITS.join('|')
 
@@ -7262,7 +7293,7 @@ export const replayPick = (names: readonly string[], kind: CallKind | undefined,
 // call is never sent unchanged under the variant's name. Only the task after the record is edited:
 // the record is the session's, and anything in it, the old texts quoted among them, stays. The edits
 // themselves, `PROMPT_EDITS`, are named above the replay's words.
-const EDIT_KINDS: Record<PromptEdit, readonly CallKind[]> = { frame: ['watch', 'brief', 'ask-again'], 'no-think': ['watch'], 'rep-system': ['watch', 'brief', 'ask-again'], 'end-line': ['watch', 'brief', 'ask-again'], proof: ['objective', 'watch', 'brief', 'ask-again', 'own-words'], decisions: ['objective', 'watch', 'brief', 'ask-again'], now: ['objective', 'watch'], 'same-as': ['objective'], message: ['watch', 'brief', 'ask-again', 'own-words'], evidence: ['watch', 'brief', 'ask-again'], fault: ['ask-again'] }
+const EDIT_KINDS: Record<PromptEdit, readonly CallKind[]> = { frame: ['watch', 'brief', 'ask-again'], 'no-think': ['watch'], 'rep-system': ['watch', 'brief', 'ask-again'], 'end-line': ['watch', 'brief', 'ask-again'], proof: ['objective', 'watch', 'brief', 'ask-again', 'own-words'], decisions: ['objective', 'watch', 'brief', 'ask-again'], now: ['objective', 'watch'], 'same-as': ['objective'], message: ['watch', 'brief', 'ask-again', 'own-words'], evidence: ['watch', 'brief', 'ask-again'], fault: ['ask-again'], unshown: ['objective'] }
 // What the build before prompt group 1 sent (G1, G2): the fork frame that opened the task, the line
 // after it on the watch, and the start of the record read's system prompt.
 const OLD_FRAME = /^<system-reminder>This is a side request from the user[^]*?<\/system-reminder>\n\n/
@@ -7399,6 +7430,14 @@ const G7_TASK: ReadonlyArray<{ swap: Swap; kinds: readonly CallKind[] }> = [
   { swap: ['written to the agent, specific and professional, several lines if needed: it asks', `written to the agent ${MESSAGE_FORM}: it asks`], kinds: ['own-words'] },
 ]
 // Prompt group 8 (G30): a finding stands until the record shows something new.
+// Issue #49, after the prompt groups (named group 10 here): a message under a turn none of which
+// is shown approves only in words that accept a plan.
+const G10_OBJECTIVE_SYSTEM: readonly Swap[] = [
+  [
+    "- When you see only a turn's end, or it could not be captured or is too long to check, mark the message if it approves and write none of the turn's steps.",
+    '- When you see only a turn\'s end, mark the message if it approves and write none of the turn\'s steps. When none of a turn is shown, you cannot tell whether it held a plan: mark the message only when its words accept the agent\'s plan itself ("approved", "go with your plan", "as planned"). A message that says what to do ("go ahead with the runs, then the fix", "keep going") is the owner\'s own ask, never an approval; praise or a request for changes approves nothing. Write none of that turn\'s steps either way.',
+  ],
+]
 const G8_REP_SYSTEM: readonly Swap[] = [['the admission needs no proof.\n- Plainly, without hedging.', `the admission needs no proof.\n${REP_HOLD}\n- Plainly, without hedging.`]]
 // Each pair's one side found exactly once and put in the other's place, forward (group 2's to
 // this build's) or back; null when one is not found exactly once.
@@ -7423,11 +7462,14 @@ const GROUPS: readonly Group[] = [
   { edit: 'same-as', system: k => (k === 'objective' ? G6_OBJECTIVE_SYSTEM : []), task: G6_TASK },
   { edit: 'message', system: k => (k === 'objective' ? [] : k === 'own-words' ? G7_OWN_WORDS_SYSTEM : G7_REP_SYSTEM), task: G7_TASK },
   { edit: 'evidence', system: k => (k === 'objective' || k === 'own-words' ? [] : G8_REP_SYSTEM), task: [] },
+  { edit: 'unshown', system: k => (k === 'objective' ? G10_OBJECTIVE_SYSTEM : []), task: [] },
 ]
 const nowSystem = (kind: CallKind): string => (kind === 'objective' ? OBJECTIVE_SYSTEM : kind === 'own-words' ? OWN_WORDS_SYSTEM : REP_SYSTEM)
 const groupTask = (i: number, kind: CallKind): Swap[] => GROUPS[i]!.task.filter(x => x.kinds.includes(kind)).map(x => x.swap)
 // Whose texts stand before group i: the build after group 2 before the first, this build after the last.
-const builtBy = (i: number): string => (i >= GROUPS.length ? 'this build' : `group ${i + 2}`)
+// Group 9's edit (fault) rebuilds nothing, so the build before #49's edit is the build after group 9.
+const BUILT_BEFORE = ['group 2', 'group 3', 'group 4', 'group 5', 'group 6', 'group 7', 'group 9'] as const
+const builtBy = (i: number): string => BUILT_BEFORE[i] ?? 'this build'
 // The system prompt the build before group i (0 for group 3) sent for a call of this kind.
 export function systemBefore(kind: CallKind, i: number): string | null {
   let t: string | null = nowSystem(kind)

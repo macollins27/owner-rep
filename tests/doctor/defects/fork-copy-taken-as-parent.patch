@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index c8022ab..fb74652 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2228,7 +2228,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
+         if (time <= 0) break
+         const begins = await $.process.run(hostArgv(host, startFind(file)), { timeoutMs: Math.min(HUMAN_READ_TIMEOUT_MS, time) })
+         const from = begins.exitCode === 0 ? summaryStart(begins.stdout) : null
+-        if (from !== null) {
++        if (from !== null && false) {
+           if (part.matched > copy.matched) copy = { ...part, file, summary: from }
+           continue
+         }

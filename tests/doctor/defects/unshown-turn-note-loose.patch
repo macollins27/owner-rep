@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 6ce8f1b..719f040 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1605,7 +1605,7 @@ const priorLine = (m: OwnerMsg): string => {
+   return prior === '' ? '' : `\n${INDENT}(the agent, just before: ${prior})`
+ }
+ const noneLine = (m: OwnerMsg, x: NotShown): string =>
+-  `\n${INDENT}(the agent's turn before #${m.n} ${turnPhrase(x)}, so nothing of it is shown; mark #${m.n} approved only if its words accept the agent's plan itself, never for words that say what to do, and none of the turn's steps can be held)`
++  `\n${INDENT}(the agent's turn before #${m.n} ${turnPhrase(x)}; if the owner approved it, mark it, and none of its steps can be held)`
+ 
+ // The turn the owner answered: whole after the agent's last words as before, by its close (the
+ // last words lie inside it), why it is not shown, or, with none captured, the last words alone.

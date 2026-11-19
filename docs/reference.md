@@ -1147,7 +1147,7 @@ call that asks for it already. The prompt groups after group 2 are `GROUPS`, in 
 of call: `proof` (group 3: `G3_REP_SYSTEM`, `G3_OBJECTIVE_SYSTEM`, `G3_OWN_WORDS_SYSTEM`,
 `G3_TASK`), `decisions` (group 4: `G4_REP_SYSTEM`, `G4_OBJECTIVE_SYSTEM`, `G4_TASK`; it has no
 own-words pair) and `now` (group 5: `G5_OBJECTIVE_SYSTEM`, `G5_TASK`; watch and objective calls
-only, since it changes neither the shared system prompt nor the briefing), and `same-as` (group 6: `G6_OBJECTIVE_SYSTEM`, `G6_TASK`; objective calls only), and `message` (group 7: `G7_REP_SYSTEM`, `G7_OWN_WORDS_SYSTEM`, `G7_TASK`; every call but the objective's), and `evidence` (group 8: `G8_REP_SYSTEM`, `REP_HOLD` added; watch, brief and ask-again calls). Group 9's edit, `fault`, rebuilds nothing: its second asking names the rule the first answer broke, which no saved call holds, so `editSaved` sends no ask-again call under it, and the build before it's text stays as `askAgainBefore`. Each pair is the group before's text, kept word for word, and the text the group
+only, since it changes neither the shared system prompt nor the briefing), and `same-as` (group 6: `G6_OBJECTIVE_SYSTEM`, `G6_TASK`; objective calls only), and `message` (group 7: `G7_REP_SYSTEM`, `G7_OWN_WORDS_SYSTEM`, `G7_TASK`; every call but the objective's), and `evidence` (group 8: `G8_REP_SYSTEM`, `REP_HOLD` added; watch, brief and ask-again calls). Group 9's edit, `fault`, rebuilds nothing: its second asking names the rule the first answer broke, which no saved call holds, so `editSaved` sends no ask-again call under it, and the build before it's text stays as `askAgainBefore`. Issue #49's edit, `unshown` (`G10_OBJECTIVE_SYSTEM`; objective calls only), rewrites the objective writer's turn-end line, so a message under a turn none of which is shown approves only in words that accept a plan; the build before it is group 9's, since group 9 rebuilt nothing. Each pair is the group before's text, kept word for word, and the text the group
 sent in its place. Applied after `rep-system`, in that order (`stepGroups`), each named group's
 edit (`stepGroup`) moves a call the build before it saved to exactly what the build after it
 sends: the call's system prompt must be the build before's (`systemBefore`, this build's with
@@ -1220,7 +1220,14 @@ that runs out of rows with messages before it, with `TURN_START_WHY`. The first 
 marked: nothing comes before it. A later message with no row at all, queued or from before a
 compaction, gets no body and `incomplete` with `NO_ROW_WHY`. That gives no line by itself, or every
 compacted session would show many: only an approval of such a message is named, as row 3, so a
-reader that cannot see the plan says so.
+reader that cannot see the plan says so. The writer sees nothing of the turn before such a
+message, so its note under the message (`noneLine`) and its rule in `OBJECTIVE_SYSTEM` let it mark
+the message approved only when the owner's own words accept a plan in so many words: a go-ahead
+("keep going", "take over and build it"), praise for work done, or a request for changes approves
+nothing. A go-ahead after a compaction is then never named as a plan approval, and the message
+named does not move between runs. The steps a reader names under a plan it was never shown
+(`notAssessedGaps`' `READER_CUT_WHY`, for an approval `showable` refuses) are its own guesses:
+`coverageLines` leaves them out, and the approval's row 3 line stands.
 
 A session the rep holds no record of (its record fell out of the newest `SESSIONS_MAX`, it
 was forked with a new id, or it is older than the mod) has none of the owner's messages. `seedOwner`
@@ -1254,8 +1261,9 @@ with the mark's line's one `"uuid"`, or line the owner typed, and `summaryStart`
 id when the mark comes first. The newest other `.jsonl` files in the folder are then searched
 for that line (`summaryLineFind`), within the limits below, and the first one holding any of
 the owner's messages before it gives those (`humanReadBefore`), followed by the copy's own; a copy of
-the copy, which holds the line with nothing before it, is passed over, and with no file
-found the copy's own messages stand alone. When the session's own file cannot be read (a
+the copy, which holds the line with nothing before it, is passed over; with no file there, every
+project folder is searched for it (below), and with no file found anywhere the copy's own messages
+stand alone. When the session's own file cannot be read (a
 session forked with a new id has none until its first message is saved; the path held still
 names the right folder), the newest `.jsonl` files in its folder other than its own
 (`folderOf`, `ls -t`) are read one at a time, at most
@@ -1271,10 +1279,38 @@ matched, then the fewest typed items left unmatched between the first and last m
 the latest last match, and keeps the items up to that match and the queued ones right after
 it (what the owner typed while the agent answered their last message before the fork), never the
 parent's later messages. The file with the most matches
-is taken, the newest on a tie, and the scan stops once a file matches every candidate;
+is taken, the newest on a tie, and the scan stops once a file matches every candidate. A file
+read that begins at a summary (`startFind`, `summaryStart`, run only on a file that matched) is an
+earlier fork's copy, never the parent: its stretch since the summary matches the newest rows as
+well as the parent does and it is newer, so it never ends the scan and wins only by matching more
+than every whole file; when it wins, its summary line is followed back to the file it was copied
+from as above (the start folder, then every project folder), and the messages before the line
+there come before the copy's. Taking the copy as the parent read only the messages since the
+summary and numbered the compacted turn's message #1 where the owner sent it as #6.
 `heldItems` is null when the best file matched none, whether or not any file was read
 whole, so the record read labels the owner's rows by their text rather than calling them all the
-session's. A
+session's.
+
+A session recorded in a folder since removed (a worktree removed after its merge), then resumed
+or forked from another folder, is in none of the start folder's files: Claude Code names the
+fork's file after the new id in the start folder's records and hands the mod nothing naming the
+parent (no field in `SessionStart`'s input, and a fork's own lines carry its new `sessionId`
+only; measured on Claude Code 2.1.325). So when the start folder's newest files leave the summary
+line or the last tool call unfound, or match fewer than every candidate row, every project folder
+is searched once for that line's `"uuid"` or that call's `"id"`: `parentGitArgv`, `git grep
+--no-index -l -z -F --max-depth 1` over `*.jsonl` with `<config>/projects` as its working folder,
+which takes 0.04 seconds over 3 GB of transcripts on this Mac warm and about 1.5 cold; where git
+cannot run (it throws, as on a Windows host with no Git on `PATH`, or exits 2 or more), the same
+search by `parentGrepArgv`, `grep -r -l -F --include=*.jsonl` with `subagents` and `tool-results`
+left out, one of the `POSIX_COMMANDS`. `parentHits` keeps only `<projects>/<folder>/<file>.jsonl`,
+from git's relative names (NUL-ended) or grep's full ones, and the files not tried yet are put
+newest first by one `ls -t` and tried as in the start folder, at most `HUMAN_SCAN_MAX`. Each run
+takes no more than what is left of `HUMAN_SCAN_BUDGET_MS`, the one budget for the whole scan, so
+the search adds no time past it. It never runs for a new session (no rows, no tool call yet) or
+for one whose start folder holds a whole file matching every candidate row, which is the plain
+resume and the fork of a session recorded in that folder.
+Both go through `hostArgv`: git by its name, which Git for Windows puts on `PATH`, grep and ls by
+their full path in Git's `usr/bin` there; the paths are slashed like the others. A
 scan repeated at each start and press costs milliseconds, so nothing caches it.
 `typedFromItems` gives each item the end of the agent's last text before the row it matches
 as its `prior`, lining them up from the end because after a compaction the rows hold only

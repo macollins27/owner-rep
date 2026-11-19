@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index c8022ab..365249d 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2167,7 +2167,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
+         hits = grep === null || grep.exitCode === 1 ? [] : parentHits(grep.stdout, projects)
+       }
+       const fresh = hits.filter(h => !seen.has(h))
+-      if (fresh.length < 2) return fresh
++      if (fresh.length >= 0) return fresh.slice(0, HUMAN_SCAN_MAX)
+       const sorted = await $.process.run(hostArgv(host, ['ls', '-t', ...fresh]), { timeoutMs: HUMAN_READ_TIMEOUT_MS }).catch(() => null)
+       const order = sorted !== null && sorted.exitCode === 0 ? sorted.stdout.split('\n').map(l => l.trim()).filter(l => fresh.includes(l)) : []
+       return [...new Set([...order, ...fresh])].slice(0, HUMAN_SCAN_MAX)

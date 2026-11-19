@@ -369,10 +369,20 @@ const RUN_CAP = 4 * 1024 * 1024
 // first line, as a read past the cap keeps the oldest lines and drops the rest.
 // Every argv kept, and each run's time allowed in `timeouts`. The clock reads `now.t`, and
 // each read of a file other than the session's own takes `slow` milliseconds of it.
-const transcript = (on: On, files: Record<string, string>, opts: { folder?: string; cut?: readonly string[]; slow?: number; home?: string; profile?: string; config?: string } = {}) => {
+// `elsewhere` holds files in other project folders by full path, newest first after the
+// folder's own; `git grep`, run from the projects folder, names every file in either holding
+// the text after `-e`, relative and ending in NUL, `grep -r` the same by full path, and
+// `ls -t` of paths gives them newest first. `noFolder`: the folder is gone, so `ls` of it
+// fails. `noGit`: git cannot start, so its run rejects. Each run's folder kept in `cwds`.
+const transcript = (on: On, files: Record<string, string>, opts: { folder?: string; cut?: readonly string[]; slow?: number; home?: string; profile?: string; config?: string; elsewhere?: Record<string, string>; noFolder?: boolean; noGit?: boolean } = {}) => {
   const folder = opts.folder ?? FOLDER
+  const projects = opts.config === undefined ? PROJECTS : `${opts.config}/projects`
+  const elsewhere = opts.elsewhere ?? {}
+  // Every file by full path, newest first.
+  const all: [string, string][] = [...Object.entries(files).map(([n, b]): [string, string] => [`${folder}/${n}`, b]), ...Object.entries(elsewhere)]
   const runs: string[][] = []
   const timeouts: number[] = []
+  const cwds: (string | undefined)[] = []
   const now = { t: 1_000_000 }
   mock.env(on, { HOME: opts.home ?? '/Users/o', ...(opts.profile ? { USERPROFILE: opts.profile } : {}), ...(opts.config ? { CLAUDE_CONFIG_DIR: opts.config } : {}) })
   on('clock.now', () => ({ value: now.t }))
@@ -380,18 +390,40 @@ const transcript = (on: On, files: Record<string, string>, opts: { folder?: stri
     if (atStart(e.argv)) return { value: { exitCode: 1, stdout: '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
     runs.push([...e.argv])
     timeouts.push(e.init?.timeoutMs ?? 0)
+    cwds.push(e.init?.cwd)
     if (e.argv[0] === 'sed' && !(e.argv[e.argv.length - 1] ?? '').endsWith('/test-session.jsonl')) now.t += opts.slow ?? 0
     const out = (exitCode: number, stdout = '', isStdoutTruncated = false) => ({ value: { exitCode, stdout, stderr: '', isStdoutTruncated, isStderrTruncated: false } })
     if (e.argv[0] === 'find') {
-      if (e.argv[1] !== (opts.config === undefined ? PROJECTS : `${opts.config}/projects`)) return out(1)
+      if (e.argv[1] !== projects) return out(1)
       const name = e.argv[e.argv.length - 1] ?? ''
       return out(0, name in files ? `${folder}/${name}\n` : '')
     }
-    if (e.argv[0] === 'ls') return e.argv[2] === folder ? out(0, `${Object.keys(files).join('\n')}\n`) : out(1)
+    // The files under the projects folder, one folder down, holding the text after -e.
+    const holding = (argv: readonly string[]) => {
+      const text = argv[argv.indexOf('-e') + 1] ?? '\u0000'
+      return all.filter(([p, b]) => p.startsWith(`${projects}/`) && p.slice(projects.length + 1).split('/').length === 2 && b.includes(text)).map(([p]) => p)
+    }
+    if (e.argv[0] === 'git') {
+      if (opts.noGit) throw new Error('spawn git ENOENT')
+      if (e.init?.cwd !== projects) return out(128)
+      const hits = holding(e.argv).map(p => p.slice(projects.length + 1)).sort()
+      return hits.length === 0 ? out(1) : out(0, hits.map(h => `${h}\0`).join(''))
+    }
+    if (e.argv[0] === 'grep' && e.argv[1] === '-r') {
+      if (e.argv[e.argv.length - 1] !== projects) return out(2)
+      const hits = holding(e.argv).sort()
+      return hits.length === 0 ? out(1) : out(0, `${hits.join('\n')}\n`)
+    }
+    if (e.argv[0] === 'ls') {
+      if (e.argv.length === 3 && e.argv[2] === folder) return opts.noFolder ? out(1) : out(0, `${Object.keys(files).join('\n')}\n`)
+      const asked = e.argv.slice(2)
+      if (asked.length < 2 || asked.some(a => !a.startsWith('/'))) return out(1)
+      return out(0, `${all.map(([p]) => p).filter(p => asked.includes(p)).join('\n')}\n`)
+    }
     if (e.argv[0] !== 'sed' && e.argv[0] !== 'grep') return out(127)
     const path = e.argv[e.argv.length - 1] ?? ''
     const name = path.slice(folder.length + 1)
-    const body = path.startsWith(`${folder}/`) ? files[name] : undefined
+    const body = path.startsWith(`${folder}/`) && !opts.noFolder ? files[name] : elsewhere[path]
     if (body === undefined) return out(e.argv[0] === 'grep' ? 2 : 1)
     // grep -n -o -m 1 -F (or -E): the number of the first line holding the text (or a match
     // of the pattern), and the text matched.
@@ -414,7 +446,7 @@ const transcript = (on: On, files: Record<string, string>, opts: { folder?: stri
     const stdout = lines.length > 0 ? `${lines.join('\n')}\n` : ''
     return out(0, stdout.slice(0, RUN_CAP), stdout.length > RUN_CAP)
   })
-  return Object.assign(runs, { timeouts, now })
+  return Object.assign(runs, { timeouts, now, cwds })
 }
 
 // The transcript path Claude Code gives a session through its classic hooks.
@@ -6166,7 +6198,7 @@ test('rule: a yes to a turn not shown, with the owner\'s words whole, is recorde
   await s.send($, 'yes, go')
   expect(s.prompts.length).toBe(1)
   expect(s.prompts[0]).toContain('(the agent\'s turn before #2 could not be captured: ')
-  expect(s.prompts[0]).toContain('if the owner approved it, mark it, and none of its steps can be held)')
+  expect(s.prompts[0]).toContain("so nothing of it is shown; mark #2 approved only if its words accept the agent's plan itself, never for words that say what to do, and none of the turn's steps can be held)")
   expect(s.prompts[0]).not.toContain('delete old.txt')
   expect(s.msg(2)?.approved).toBe('all')
   expect(s.msg(2)?.read?.state).toBe('unreadable')
@@ -6529,7 +6561,7 @@ test('rule: nothing of a typed approval\'s turn over the cap is printed, before 
   await s.send($, 'and the totals')
   expect(s.prompts.length).toBe(2)
   for (const p of s.prompts) {
-    expect(p).toContain(`(the agent's turn before #2 is ${commas(130000)} characters, too long for the rep to check; if the owner approved it, mark it, and none of its steps can be held)`)
+    expect(p).toContain(`(the agent's turn before #2 is ${commas(130000)} characters, too long for the rep to check, so nothing of it is shown; mark #2 approved only if its words accept the agent's plan itself, never for words that say what to do, and none of the turn's steps can be held)`)
     expect(p).not.toContain('delete old.txt')
     expect(p).not.toContain(TURN.slice(-400, -300))
   }
@@ -8614,7 +8646,9 @@ describe("Task 6: the writer's rule and the approved line", () => {
       'a restriction, exclusion or order anywhere in the plan, in the owner\'s message or what the owner took applies to every step it touches',
       "(that tests pass, that something runs, exists or is set up) is the agent's claim, never a condition held shown",
       // Shown in part, or not at all.
-      "When you see only a turn's end, or it could not be captured or is too long to check, mark the message if it approves and write none of the turn's steps.",
+      "When you see only a turn's end, mark the message if it approves and write none of the turn's steps.",
+      'When none of a turn is shown, you cannot tell whether it held a plan: mark the message only when its words accept the agent\'s plan itself',
+      'A message that says what to do ("go ahead with the runs, then the fix", "keep going") is the owner\'s own ask, never an approval; praise or a request for changes approves nothing. Write none of that turn\'s steps either way.',
       // Adding, never taking away; a clash is settled with the owner.
       'A yes adds to the job; it never takes anything away and never starts a new job by itself.',
       'keep both, add the open condition "Settle with the owner which stands: <the earlier ask> or <the plan\'s step>"',
@@ -8672,7 +8706,8 @@ describe("Task 6: the writer's rule and the approved line", () => {
     // 500 more for a quality condition naming what a person using the result would notice (prompt group 3; 457 characters).
     // 550 more for an approved plan's self-proving step kept with a question for the owner beside it (prompt group 4; 527 characters).
     // 350 more for a restated condition written once, or marked "same as:" (prompt group 6; 302 characters).
-    expect(OBJECTIVE_SYSTEM.length).toBeLessThanOrEqual(SYSTEM_BEFORE + 6350)
+    // 300 more for the rule that a turn none of which is shown is approved only by words that accept a plan (357 characters).
+    expect(OBJECTIVE_SYSTEM.length).toBeLessThanOrEqual(SYSTEM_BEFORE + 6650)
   })
 
   test("fails today: what the agent's turn says it did, did not do or holds back from, and any limit it sets on its own work, is its account and sets no condition or limit except as a step of a plan the owner approved; the unstated wants stay", () => {
@@ -8749,7 +8784,7 @@ describe("Task 6: the writer's rule and the approved line", () => {
     ]
     const q = objectivePrompt({ objective: OBJ_FIXTURE, owner: part, past: [] })
     expect(q).toContain(CLOSE_LABEL(30000))
-    expect(q).toContain(`- #3 yes\n    (the agent's turn before #3 is ${commas(rep.APPROVAL_READ_CAP + 1)} characters, too long for the rep to check; if the owner approved it, mark it, and none of its steps can be held)`)
+    expect(q).toContain(`- #3 yes\n    (the agent's turn before #3 is ${commas(rep.APPROVAL_READ_CAP + 1)} characters, too long for the rep to check, so nothing of it is shown; mark #3 approved only if its words accept the agent's plan itself, never for words that say what to do, and none of the turn's steps can be held)`)
     expect(q).not.toContain('A distinctive last line.')
     expect(q).toContain(PLAN_NOT_SHOWN(4))
     expect(q).not.toContain('A distinctive plan preview.')
@@ -12334,6 +12369,9 @@ const FIND = (id = 'test-session') => `find ${PROJECTS} -maxdepth 2 -name ${id}.
 const GREP = (file: string, id: string, folder = FOLDER) => `grep -n -o -m 1 -F "id":"${id}" ${folder}/${file}`
 const START = (file: string, folder = FOLDER) => `grep -n -o -m 1 -E "subtype":"compact_boundary".*"uuid":"[0-9a-f-]+"|"kind":"human" ${folder}/${file}`
 const SED_BEFORE = (file: string, line: number, folder = FOLDER) => `sed -n -E -e ${line}q -e ${HUMAN_SED} ${folder}/${file}`
+// The search of every project folder for a line, and the search used when git cannot start.
+const GIT = (needle: string) => `git grep --no-index -l -z -F --max-depth 1 -e ${needle} -- *.jsonl`
+const GREP_R = (needle: string, projects = PROJECTS) => `grep -r -l -F --include=*.jsonl --exclude-dir=subagents --exclude-dir=tool-results -e ${needle} ${projects}`
 
 test('humanTexts keeps only the rows the owner typed, origin human and not meta, a list of blocks as its text joined, a command as the owner ran it, and skips a cut line', () => {
   for (const line of ENGINE_LINES) expect([...humanTexts(line)]).toEqual([])
@@ -14533,7 +14571,8 @@ test('rule: a session forked with a new id, its own transcript not saved yet, ta
   await started($)
   await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
   expect(rec()?.owner).toEqual(SEEDED)
-  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), `ls -t ${FOLDER}`, SED('newer.jsonl'), SED('parent.jsonl')])
+  // A file that matches is asked whether it begins at a summary: a copy is never the parent.
+  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), `ls -t ${FOLDER}`, SED('newer.jsonl'), SED('parent.jsonl'), START('parent.jsonl')])
 })
 
 test('lastToolId is the id of the rows\' last tool result, a tool\'s own id only; toolLineOf reads the line number grep prints; the read before a line stops sed there', () => {
@@ -14686,7 +14725,206 @@ test('rule: a copy whose summary no other file in its folder holds gives the mes
     { n: 1, kind: 'his', text: 'Keep the year in the header too.', prior: '', incomplete: 'the session was compacted, so that turn is gone' },
     { n: 2, kind: 'his', text: 'And a changelog.', prior: 'Pushed.' },
   ])
-  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), START('test-session.jsonl'), `ls -t ${FOLDER}`, SUMMARY_GREP('newer.jsonl')])
+  // Its folder holds no file with the summary, so every project folder is searched for it once.
+  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), START('test-session.jsonl'), `ls -t ${FOLDER}`, SUMMARY_GREP('newer.jsonl'), GIT(`"uuid":"${BOUNDARY_ID}"`)])
+})
+
+// A folder of another project, where a session was recorded before its folder was removed.
+const GONE = `${PROJECTS}/-Users-o-work-app-gone`
+
+test('parentGitArgv searches every project folder one level down for the text as written, naming the files by NUL; parentGrepArgv does the same with grep, past the helpers\' folders; parentHits reads either into full paths of transcripts one folder down', () => {
+  expect(rep.parentGitArgv('"id":"toolu_01Push"')).toEqual(['git', 'grep', '--no-index', '-l', '-z', '-F', '--max-depth', '1', '-e', '"id":"toolu_01Push"', '--', '*.jsonl'])
+  expect(rep.parentGrepArgv(PROJECTS, '"id":"toolu_01Push"')).toEqual(['grep', '-r', '-l', '-F', '--include=*.jsonl', '--exclude-dir=subagents', '--exclude-dir=tool-results', '-e', '"id":"toolu_01Push"', PROJECTS])
+  // git names them relative to the projects folder, ending each in NUL; a folder name that starts with '-' is a path, never an option.
+  expect(rep.parentHits('-Users-o-work-app-gone/parent.jsonl\0-Users-o-a/b.jsonl\0', PROJECTS)).toEqual([`${GONE}/parent.jsonl`, `${PROJECTS}/-Users-o-a/b.jsonl`])
+  // grep names them in full, a line each; a helper's transcript, a file of another kind, a path elsewhere and a repeat are dropped.
+  expect(rep.parentHits(`${GONE}/parent.jsonl\n${GONE}/parent/subagents/agent-1.jsonl\n${GONE}/notes.txt\n/elsewhere/x.jsonl\n${GONE}/parent.jsonl\n`, PROJECTS)).toEqual([`${GONE}/parent.jsonl`])
+  expect(rep.parentHits('', PROJECTS)).toEqual([])
+  // A Windows path, written with forward slashes as every path there is.
+  expect(rep.parentHits('C:/Users/k/.claude/projects/-C-gone/p.jsonl\n', 'C:/Users/k/.claude/projects')).toEqual(['C:/Users/k/.claude/projects/-C-gone/p.jsonl'])
+  expect(rep.parentHits('C:/elsewhere/p.jsonl\n', 'C:/Users/k/.claude/projects')).toEqual([])
+})
+
+test('rule: a fork whose parent was recorded in another project folder, its own transcript not saved yet and its folder holding nothing of its rows, takes the owner\'s messages from the file every project folder is searched for by its last tool call', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS.filter(r => r.text !== PEER && r.text !== IDLE) }))
+  const parent = `${SEEDED_FILE}\n${USE_LINE('u1')}`
+  // The folder the fork started in holds other sessions; the parent's folder holds it and one unrelated file.
+  const runs = transcript(on, { 'newer.jsonl': LINE('Something he typed elsewhere.') }, { elsewhere: { [`${GONE}/parent.jsonl`]: parent, [`${GONE}/other.jsonl`]: LINE('Unrelated.') } })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await giveTranscript($, on)
+  await started($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
+  expect(rec()?.owner).toEqual(SEEDED)
+  expect(runs.map(r => r.join(' '))).toEqual([
+    SED('test-session.jsonl'),
+    `ls -t ${FOLDER}`,
+    SED('newer.jsonl'),
+    GIT('"id":"u1"'),
+    SED('parent.jsonl', GONE),
+    START('parent.jsonl', GONE),
+  ])
+  // git searches from the projects folder, so every folder name is a path below it.
+  expect(runs.cwds[runs.findIndex(r => r[0] === 'git')]).toBe(PROJECTS)
+})
+
+test('rule: a fork started from a folder whose records are gone finds its parent in another project folder all the same', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS.filter(r => r.text !== PEER && r.text !== IDLE) }))
+  const runs = transcript(on, {}, { noFolder: true, elsewhere: { [`${GONE}/parent.jsonl`]: `${SEEDED_FILE}\n${USE_LINE('u1')}` } })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await giveTranscript($, on)
+  await started($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
+  expect(rec()?.owner).toEqual(SEEDED)
+  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), `ls -t ${FOLDER}`, GIT('"id":"u1"'), SED('parent.jsonl', GONE), START('parent.jsonl', GONE)])
+})
+
+test('rule: where git cannot start, every project folder is searched with grep instead', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS.filter(r => r.text !== PEER && r.text !== IDLE) }))
+  const runs = transcript(on, {}, { noGit: true, elsewhere: { [`${GONE}/parent.jsonl`]: `${SEEDED_FILE}\n${USE_LINE('u1')}` } })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await giveTranscript($, on)
+  await started($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
+  expect(rec()?.owner).toEqual(SEEDED)
+  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), `ls -t ${FOLDER}`, GIT('"id":"u1"'), GREP_R('"id":"u1"'), SED('parent.jsonl', GONE), START('parent.jsonl', GONE)])
+})
+
+test('rule: the files found in other project folders are tried newest first, and the folder\'s own files already read are not read again', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS.filter(r => r.text !== PEER && r.text !== IDLE) }))
+  // An unrelated file in the start folder holds the call too, and the newest file found holds it with none of the owner's rows.
+  const runs = transcript(on, { 'near.jsonl': USE_LINE('u1') }, { elsewhere: { [`${PROJECTS}/-z-newest/a.jsonl`]: USE_LINE('u1'), [`${GONE}/parent.jsonl`]: `${SEEDED_FILE}\n${USE_LINE('u1')}` } })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await giveTranscript($, on)
+  await started($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
+  expect(rec()?.owner).toEqual(SEEDED)
+  expect(runs.map(r => r.join(' '))).toEqual([
+    SED('test-session.jsonl'),
+    `ls -t ${FOLDER}`,
+    SED('near.jsonl'),
+    GIT('"id":"u1"'),
+    // git names them in the order of their names; ls puts them newest first.
+    `ls -t ${GONE}/parent.jsonl ${PROJECTS}/-z-newest/a.jsonl`,
+    SED('a.jsonl', `${PROJECTS}/-z-newest`),
+    SED('parent.jsonl', GONE),
+    START('parent.jsonl', GONE),
+  ])
+})
+
+test('rule: a fork taken after a compaction the owner has typed nothing since, its parent recorded in another project folder, finds the call there and takes the messages before it', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: COMPACTED_ROWS }))
+  const runs = transcript(on, { 'newer.jsonl': LINE('Something he typed elsewhere.') }, { elsewhere: { [`${GONE}/parent.jsonl`]: `${COMPACTED_FILE}\n${LINE('Now add a readme.')}` } })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await giveTranscript($, on)
+  await started($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
+  expect(rec()?.owner).toEqual(COMPACTED)
+  expect(runs.map(r => r.join(' '))).toEqual([
+    SED('test-session.jsonl'),
+    `ls -t ${FOLDER}`,
+    GREP('newer.jsonl', 'toolu_01Push'),
+    GIT('"id":"toolu_01Push"'),
+    GREP('parent.jsonl', 'toolu_01Push', GONE),
+    SED_BEFORE('parent.jsonl', 4, GONE),
+  ])
+})
+
+test('rule: a fork saved as a copy of the stretch since the summary, its parent recorded in another project folder, takes the messages before the summary there and then the copy\'s own', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: TAIL_ROWS }))
+  const parent = [LINE('Add a licence file with the MIT text.'), LINE('Use this year, and push it.'), BOUNDARY(), LINE(SUMMARY, {}), LINE('Keep the year in the header too.'), USE_LINE('toolu_01Push'), LINE('Now add a readme.'), RESULT_LINE('toolu_01Push')].join('\n')
+  const runs = transcript(on, { 'test-session.jsonl': TAIL_COPY, 'newer.jsonl': LINE('Something he typed elsewhere.') }, { elsewhere: { [`${GONE}/parent.jsonl`]: parent } })
+  writer(on, () => OBJ('A licence file with the MIT text and this year, and a changelog.', ['the file pushed | open'], '#1 to #4'))
+  await giveTranscript($, on)
+  await started($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
+  expect(noBody(rec()?.owner)).toEqual(TAILED)
+  expect(runs.map(r => r.join(' '))).toEqual([
+    SED('test-session.jsonl'),
+    START('test-session.jsonl'),
+    `ls -t ${FOLDER}`,
+    SUMMARY_GREP('newer.jsonl'),
+    // The copy itself holds the line too, and is never searched again.
+    GIT(`"uuid":"${BOUNDARY_ID}"`),
+    SUMMARY_GREP('parent.jsonl', GONE),
+    SED_BEFORE('parent.jsonl', 3, GONE),
+  ])
+})
+
+// A fork's rows taken after a compaction, before the owner typed in it: the summary, the message
+// he typed after it in the parent, and the call it was taken during.
+const COPIED_ROWS = TAIL_ROWS.slice(0, 5)
+const PARENT_WHOLE = [LINE('Add a licence file with the MIT text.'), LINE('Use this year, and push it.'), BOUNDARY(), LINE(SUMMARY, {}), LINE('Keep the year in the header too.'), USE_LINE('toolu_01Push'), RESULT_LINE('toolu_01Push')].join('\n')
+// An earlier fork of the same session, saved as the stretch since the summary and what was typed in it.
+const EARLIER_COPY = [META, BOUNDARY(), LINE(SUMMARY, {}), LINE('Keep the year in the header too.'), USE_LINE('toolu_01Push'), RESULT_LINE('toolu_01Push'), LINE('Something the earlier fork was told.')].join('\n')
+
+test('rule: a fork whose own transcript is not saved yet takes its messages from the whole file it was forked from, never from an earlier fork\'s copy that is newer and matches as well, so its messages keep the numbers the owner sees', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: COPIED_ROWS }))
+  const runs = transcript(on, { 'earlier.jsonl': EARLIER_COPY, 'parent.jsonl': PARENT_WHOLE })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 to #3'))
+  await giveTranscript($, on)
+  await started($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
+  expect(rec()?.owner.map(m => [m.n, m.text])).toEqual([
+    [1, 'Add a licence file with the MIT text.'],
+    [2, 'Use this year, and push it.'],
+    [3, 'Keep the year in the header too.'],
+  ])
+  expect(runs.map(r => r.join(' '))).toEqual([
+    SED('test-session.jsonl'),
+    `ls -t ${FOLDER}`,
+    SED('earlier.jsonl'),
+    START('earlier.jsonl'),
+    SED('parent.jsonl'),
+    START('parent.jsonl'),
+  ])
+})
+
+test('rule: when only an earlier fork\'s copy matches a fork\'s rows, its summary is followed back to the file it was copied from, and the owner\'s messages before it there come first', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  // No tool result in its rows, so nothing but the copy's summary names the parent.
+  on('session.messages', () => ({ value: [TAIL_ROWS[0], TAIL_ROWS[1], { role: 'assistant', text: 'The header has the year.', toolUses: [] }] as SessionMessage[] }))
+  const runs = transcript(on, { 'earlier.jsonl': EARLIER_COPY }, { elsewhere: { [`${GONE}/parent.jsonl`]: PARENT_WHOLE } })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 to #3'))
+  await giveTranscript($, on)
+  await started($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
+  expect(rec()?.owner.map(m => [m.n, m.text])).toEqual([
+    [1, 'Add a licence file with the MIT text.'],
+    [2, 'Use this year, and push it.'],
+    [3, 'Keep the year in the header too.'],
+  ])
+  expect(runs.map(r => r.join(' '))).toEqual([
+    SED('test-session.jsonl'),
+    `ls -t ${FOLDER}`,
+    SED('earlier.jsonl'),
+    START('earlier.jsonl'),
+    GIT(`"uuid":"${BOUNDARY_ID}"`),
+    SUMMARY_GREP('parent.jsonl', GONE),
+    SED_BEFORE('parent.jsonl', 3, GONE),
+  ])
 })
 
 test('rule: a fork taken while a tool call ran, its result marked interrupted and not yet saved in the parent, finds its place in the parent by that call', async ($, on) => {
@@ -14755,7 +14993,7 @@ test('rule: when no transcript can be read, nothing is seeded, nothing is writte
   await settle($)
   expect(rec()?.owner ?? []).toEqual([])
   expect(prompts.length).toBe(0)
-  expect(runs.map(r => r[0])).toEqual(['sed', 'ls'])
+  expect(runs.map(r => r[0])).toEqual(['sed', 'ls', 'git'])
 })
 
 test('rule: with no transcript path given and no file of the session\'s found by name, nothing is read or seeded', async ($, on) => {
@@ -15014,7 +15252,9 @@ test('rule: in the scan of a forked session\'s folder, a file whose read was cut
   await started($)
   await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
   expect(rec()?.owner).toEqual(SEEDED)
-  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), `ls -t ${FOLDER}`, SED('newer.jsonl'), SED('parent.jsonl')])
+  // A file that matches is asked whether it begins at a summary: a copy is never the parent. The row
+  // only the cut file holds leaves the parent short of every row, so the other folders are searched once.
+  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), `ls -t ${FOLDER}`, SED('newer.jsonl'), SED('parent.jsonl'), START('parent.jsonl'), GIT('"id":"u1"')])
 })
 
 test('rule: the scan of a forked session\'s folder ends with what it has once its time is spent, each read given no more than the time left', async ($, on) => {
@@ -15097,7 +15337,7 @@ test('rule: a fork whose own transcript is not saved yet takes the best-matching
     { n: 3, kind: 'his', text: 'And keep the logs.', prior: '', incomplete: rep.NO_ROW_WHY },
   ])
   // Every row matched in the parent's file, so the scan stops there.
-  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), `ls -t ${FOLDER}`, SED('other.jsonl'), SED('sibling.jsonl'), SED('parent.jsonl')])
+  expect(runs.map(r => r.join(' '))).toEqual([SED('test-session.jsonl'), `ls -t ${FOLDER}`, SED('other.jsonl'), SED('sibling.jsonl'), START('sibling.jsonl'), SED('parent.jsonl'), START('parent.jsonl')])
 })
 
 test('rule: of two files in a fork\'s folder that match its rows equally, the newer is taken', async ($, on) => {
@@ -15697,9 +15937,13 @@ test('rule: with OS missing, the check pressed on a card drawn before SystemRoot
 const WIN_GIT = 'C:/PF/Git/usr/bin'
 const WIN_PROJECTS = 'C:/Users/k/.claude/projects'
 const WIN_FOLDER = `${WIN_PROJECTS}/-C-work-app`
-const winTranscript = (on: On, files: Record<string, string>, opts: { probeFails?: number; os?: string; systemRoot?: string; home?: string } = {}): string[][] => {
+// `elsewhere` holds files in other project folders by full path, which Git's grep -r names and
+// ls -t puts newest first after the folder's own.
+const winTranscript = (on: On, files: Record<string, string>, opts: { probeFails?: number; os?: string; systemRoot?: string; home?: string; elsewhere?: Record<string, string> } = {}): string[][] => {
   const runs: string[][] = []
   const folder = WIN_FOLDER
+  const elsewhere = opts.elsewhere ?? {}
+  const all: [string, string][] = [...Object.entries(files).map(([n, b]): [string, string] => [`${folder}/${n}`, b]), ...Object.entries(elsewhere)]
   let fails = opts.probeFails ?? 0
   mock.env(on, { OS: opts.os ?? WINDOWS_OS, ...(opts.systemRoot ? { SystemRoot: opts.systemRoot } : {}), ...(opts.home ? { HOME: opts.home } : {}), USERPROFILE: 'C:\\Users\\k', PROGRAMFILES: 'C:\\PF' })
   on('clock.now', () => ({ value: 1_000_000 }))
@@ -15722,10 +15966,19 @@ const winTranscript = (on: On, files: Record<string, string>, opts: { probeFails
       const file = argv[argv.length - 1] ?? ''
       return out(0, file in files ? `${folder}/${file}\n` : '')
     }
-    if (name === 'ls') return argv[2] === folder ? out(0, `${Object.keys(files).join('\n')}\n`) : out(1)
+    if (name === 'grep' && argv[1] === '-r') {
+      if (argv[argv.length - 1] !== WIN_PROJECTS) return out(2)
+      const text = argv[argv.indexOf('-e') + 1] ?? '\u0000'
+      const hits = all.filter(([, b]) => b.includes(text)).map(([p]) => p).sort()
+      return hits.length === 0 ? out(1) : out(0, `${hits.join('\n')}\n`)
+    }
+    if (name === 'ls') {
+      if (argv.length === 3) return argv[2] === folder ? out(0, `${Object.keys(files).join('\n')}\n`) : out(1)
+      return out(0, `${all.map(([p]) => p).filter(p => argv.slice(2).includes(p)).join('\n')}\n`)
+    }
     if (name !== 'sed' && name !== 'grep') return out(1)
     const path = argv[argv.length - 1] ?? ''
-    const body = path.startsWith(`${folder}/`) ? files[path.slice(folder.length + 1)] : undefined
+    const body = path.startsWith(`${folder}/`) ? files[path.slice(folder.length + 1)] : elsewhere[path]
     if (body === undefined) return out(name === 'grep' ? 2 : 1)
     if (name === 'grep') {
       const text = argv[6] ?? '\u0000'
@@ -15740,6 +15993,24 @@ const winTranscript = (on: On, files: Record<string, string>, opts: { probeFails
   })
   return runs
 }
+
+test('rule: on Windows a fork whose parent was recorded in another project folder finds it with Git\'s own grep when git is not found by name', async ($, on) => {
+  const rec = kept(on, {})
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  quietBand(on)
+  on('session.messages', () => ({ value: SEEDED_ROWS.filter(r => r.text !== PEER && r.text !== IDLE) }))
+  const gone = `${WIN_PROJECTS}/-C-work-gone`
+  const runs = winTranscript(on, {}, { elsewhere: { [`${gone}/parent.jsonl`]: `${SEEDED_FILE}\n${USE_LINE('u1')}` } })
+  writer(on, () => OBJ('A licence file with the MIT text and this year.', ['the file pushed | open'], '#1 and #2'))
+  await giveTranscript($, on, `${WIN_FOLDER}/test-session.jsonl`)
+  await started($)
+  await settleUntil($, () => (rec()?.owner.length ?? 0) > 0)
+  expect(rec()?.owner).toEqual(SEEDED)
+  const searches = runs.filter(r => r.includes('-e'))
+  expect(searches.map(r => r[0])).toEqual(['git', `${WIN_GIT}/grep.exe`])
+  expect(searches[1]?.[searches[1].length - 1]).toBe(WIN_PROJECTS)
+  expect(runs.some(r => r[0] === `${WIN_GIT}/sed.exe` && r[r.length - 1] === `${gone}/parent.jsonl`)).toBe(true)
+})
 
 test('rule: on Windows the owner\'s messages are read from the session\'s file through Git\'s own commands, under the home USERPROFILE names, written with forward slashes', async ($, on) => {
   const rec = kept(on, {})
@@ -16079,6 +16350,18 @@ describe('coverage: the lines, their tags and their order', () => {
     expect(rep.notAssessedLine(typedOne, cut, [long])).toBe(`Not assessed: "${fit(long, 100)}" in the plan you approved in message #4 (${cut})`)
     expect(rep.headsUpTooLongLine(typedOne)).toBe('The Heads up cannot compare the plan you approved in message #4 (too long for it); the briefing does')
     expect(rep.headsUpTooLongLine(accepted)).toBe('The Heads up cannot compare the plan you accepted on the plan screen (#4) (too long for it); the briefing does')
+  })
+
+  test('rule: steps a reader names for an approval whose plan it could not be shown are not listed; the approval\'s own line stands, and a shown plan\'s steps still are', () => {
+    // Seeded from before a compaction with no row: nothing of the turn reached any reader.
+    const unseen = cm(3, { approved: 'all', incomplete: rep.NO_ROW_WHY, read: { state: 'unreadable', why: rep.NO_ROW_WHY } })
+    const seen = cm(5, { approved: 'all', read: { state: 'read' }, src: { body: { text: 'The plan: make fig.txt.', chars: 23 } } as never })
+    const gaps = rep.notAssessedGaps([{ n: 3, step: 'the plan you approved in that message is not in view, so none of its steps can be judged' }, { n: 5, step: 'make fig.txt' }])
+    const lines = rep.coverageLines(coverRec([cm(1), cm(2), unseen, cm(4), seen]), { gaps })
+    expect(lines.map(l => l.text)).toEqual([
+      `Could not be checked: the plan you approved in message #3 (${rep.NO_ROW_WHY})`,
+      `Not assessed: "make fig.txt" in the plan you approved in message #5 (${rep.READER_CUT_WHY})`,
+    ])
   })
 
   test('rule: a reader\'s line is built only for an approval the record holds in the job, and the Heads up\'s too-long line only when nothing else stands', () => {
@@ -16933,14 +17216,14 @@ describe('the call log: its pieces', () => {
     expect(rep.parseReplayArgs('this --variant frame')).toEqual({ path: 'this', last: rep.REPLAY_LAST, times: 1, variant: ['frame'] })
     expect(rep.parseReplayArgs('this --variant no-think,frame')).toEqual({ path: 'this', last: rep.REPLAY_LAST, times: 1, variant: ['no-think', 'frame'] })
     for (const bad of ['this --variant', 'this --variant wat', 'this --variant frame,wat', 'this --variant ,']) expect(rep.parseReplayArgs(bad)).toEqual({ error: rep.REPLAY_USAGE })
-    expect(rep.PROMPT_EDITS).toEqual(['frame', 'no-think', 'rep-system', 'end-line', 'proof', 'decisions', 'now', 'same-as', 'message', 'evidence', 'fault'])
+    expect(rep.PROMPT_EDITS).toEqual(['frame', 'no-think', 'rep-system', 'end-line', 'proof', 'decisions', 'now', 'same-as', 'message', 'evidence', 'fault', 'unshown'])
     // A base arm in place of "as saved": edits strictly within the variant's.
     expect(rep.parseReplayArgs('all --variant build --base frame,no-think')).toEqual({ path: 'all', last: rep.REPLAY_LAST, times: 1, variant: [...rep.PROMPT_EDITS], base: ['frame', 'no-think'] })
     expect(rep.parseReplayArgs('this --base frame --variant frame,rep-system')).toEqual({ path: 'this', last: rep.REPLAY_LAST, times: 1, variant: ['frame', 'rep-system'], base: ['frame'] })
     for (const bad of ['this --base frame', 'this --variant frame --base frame', 'this --variant frame --base no-think', 'this --variant build --base build', 'this --variant frame,no-think --base wat', 'this --variant frame,no-think --base', 'this --variant no-think,frame --base frame,no-think']) {
       expect(rep.parseReplayArgs(bad)).toEqual({ error: rep.REPLAY_USAGE })
     }
-    expect(rep.REPLAY_USAGE).toContain('[--variant build|frame|no-think|rep-system|end-line|proof|decisions|now|same-as|message|evidence|fault] [--base frame|no-think|rep-system|end-line|proof|decisions|now|same-as|message|evidence|fault] [--now]')
+    expect(rep.REPLAY_USAGE).toContain('[--variant build|frame|no-think|rep-system|end-line|proof|decisions|now|same-as|message|evidence|fault|unshown] [--base frame|no-think|rep-system|end-line|proof|decisions|now|same-as|message|evidence|fault|unshown] [--now]')
     // Across folders the calls are taken by time, whatever folder each sits in.
     const a = `${SID}/${rep.callFileName(3, 0, 'watch')}`
     const b = `other/${rep.callFileName(1, 0, 'watch')}`
@@ -17118,7 +17401,7 @@ describe('the call log: its pieces', () => {
       expect(g2.ownWords).not.toBe(ownWordsPrompt(mm, open, card))
       // The objective's task was the same in every build to group 4; group 5 words its step line.
       expect(rep.editSaved('objective', G2.objectiveSystem, g2.objective, ['proof'])).toEqual({ system: G3.objectiveSystem, prompt: g3.objective })
-      const obj = rep.editSaved('objective', G2.objectiveSystem, g2.objective, ['proof', 'decisions', 'now', 'same-as'])
+      const obj = rep.editSaved('objective', G2.objectiveSystem, g2.objective, ['proof', 'decisions', 'now', 'same-as', 'unshown'])
       if ('why' in obj) throw new Error(obj.why)
       expect(obj).toEqual({ system: OBJECTIVE_SYSTEM, prompt: objectivePrompt({ ...mm }) })
     }
@@ -17177,7 +17460,7 @@ describe('the call log: its pieces', () => {
         expect(rep.editSaved(kind, REP_SYSTEM, saved(now), ['decisions'])).toEqual({ why: "its system prompt is not group 3's" })
       }
       expect(rep.editSaved('objective', G3.objectiveSystem, g3.objective, ['decisions'])).toEqual({ system: G4.objectiveSystem, prompt: g4.objective })
-      expect(rep.editSaved('objective', G3.objectiveSystem, g3.objective, ['decisions', 'now', 'same-as'])).toEqual({ system: OBJECTIVE_SYSTEM, prompt: objectivePrompt({ ...mm }) })
+      expect(rep.editSaved('objective', G3.objectiveSystem, g3.objective, ['decisions', 'now', 'same-as', 'unshown'])).toEqual({ system: OBJECTIVE_SYSTEM, prompt: objectivePrompt({ ...mm }) })
     }
     // A changed group 3 text, or one found twice, skips the call with the reason.
     const step = G3_MORE[0]!.watchStep
@@ -17225,7 +17508,7 @@ describe('the call log: its pieces', () => {
       expect(g4.brief).toBe(G6_MORE[i]!.brief)
       expect(rep.editSaved('brief', G4.system, saved(g4.brief), ['now'])).toEqual({ why: 'no edit of this variant applies to a brief call' })
       expect(rep.editSaved('objective', G4.objectiveSystem, g4.objective, ['now'])).toEqual({ system: G5.objectiveSystem, prompt: G5_MORE[i]!.objective })
-      expect(rep.editSaved('objective', G4.objectiveSystem, g4.objective, ['now', 'same-as'])).toEqual({ system: OBJECTIVE_SYSTEM, prompt: objectivePrompt({ ...mm }) })
+      expect(rep.editSaved('objective', G4.objectiveSystem, g4.objective, ['now', 'same-as', 'unshown'])).toEqual({ system: OBJECTIVE_SYSTEM, prompt: objectivePrompt({ ...mm }) })
     }
     // A changed group 4 text, or one found twice, skips the call with the reason.
     const step = G4_MORE[0]!.watchStep
@@ -17247,7 +17530,7 @@ describe('the call log: its pieces', () => {
       const g5 = G5_MORE[i]
       if (g5 === undefined) throw new Error('G5_MORE is short')
       expect(g5.objective).not.toContain(rep.OBJECTIVE_SAME_AS_LINE)
-      expect(rep.editSaved('objective', G5.objectiveSystem, g5.objective, ['same-as'])).toEqual({ system: OBJECTIVE_SYSTEM, prompt: objectivePrompt({ ...mm }) })
+      expect(rep.editSaved('objective', G5.objectiveSystem, g5.objective, ['same-as', 'unshown'])).toEqual({ system: OBJECTIVE_SYSTEM, prompt: objectivePrompt({ ...mm }) })
       // The looks, the briefing and the own-words call are as group 5 sent them.
       expect(g5.watchStep).toBe(G6_MORE[i]!.watchStep)
       expect(g5.brief).toBe(G6_MORE[i]!.brief)
@@ -17262,8 +17545,8 @@ describe('the call log: its pieces', () => {
   test('rule: group 7\'s edit (message) turns each watch, briefing, second-ask and own-words call the build after group 6 sent into exactly what this build sends, and leaves the objective alone', () => {
     expect(rep.systemBefore('watch', 4)).toBe(G6.system)
     expect(rep.systemBefore('own-words', 4)).toBe(G6.ownWordsSystem)
-    expect(rep.systemBefore('objective', 4)).toBe(OBJECTIVE_SYSTEM)
-    expect(G6.objectiveSystem).toBe(OBJECTIVE_SYSTEM)
+    expect(rep.systemBefore('objective', 4)).toBe(G6.objectiveSystem)
+    expect(rep.systemBefore('objective', 6)).toBe(G6.objectiveSystem)
     for (const t of [G6.system, G6.ownWordsSystem]) expect(t).not.toContain(rep.REP_MESSAGE)
     const saved = (task: string) => rep.recordPrompt([], task).map((b, i, all) => (i === 0 && all.length > 1 ? { ...b, cache: true as const } : b))
     const card = parseBrief('verdict: continue\nwell:\nstands: Both parts are built.\nmeans: The build is made and nothing shows it running.\nleft:\n- the laptop\nnext: Show the two sessions finishing.\nmessage:\nend\ndoes: Makes the agent show the sessions.')
@@ -17327,6 +17610,23 @@ describe('the call log: its pieces', () => {
     expect(rep.editSaved('objective', OBJECTIVE_SYSTEM, 'x', ['evidence'])).toEqual({ why: 'no edit of this variant applies to a objective call' })
     expect(rep.editSaved('ask-again', g7System, saved(asked), ['evidence', 'fault'])).toEqual({ why: 'the rule its first answer broke is not in the saved call' })
     expect(rep.editSaved('watch', g7System, saved(watchPrompt(mm, 'step')), ['fault'])).toEqual({ why: 'no edit of this variant applies to a watch call' })
+  })
+
+  test('rule: #49\'s edit (unshown) turns each objective call the build after group 9 sent into exactly what this build sends, and back, and leaves the others alone', () => {
+    // #49 changes one line of the objective writer: a message under a turn none of which is shown
+    // approves only in words that accept a plan.
+    const line = "When none of a turn is shown, you cannot tell whether it held a plan: mark the message only when its words accept the agent's plan itself"
+    expect(OBJECTIVE_SYSTEM).toContain(line)
+    expect(G6.objectiveSystem).not.toContain(line)
+    expect(rep.systemBefore('objective', 6)).toBe(G6.objectiveSystem)
+    expect(rep.systemBefore('objective', 7)).toBe(OBJECTIVE_SYSTEM)
+    for (const [i, m] of G1_MORE.entries()) {
+      const g6 = G6_MORE[i]!
+      expect(rep.editSaved('objective', G6.objectiveSystem, g6.objective, ['unshown'])).toEqual({ system: OBJECTIVE_SYSTEM, prompt: objectivePrompt({ ...(m.m as unknown as Memory) }) })
+      expect(rep.editSaved('watch', G6.system, g6.watchStep, ['unshown'])).toEqual({ why: 'no edit of this variant applies to a watch call' })
+    }
+    // A call this build saved has nothing to add.
+    expect(rep.editSaved('objective', OBJECTIVE_SYSTEM, G6_MORE[0]!.objective, ['unshown'])).toEqual({ why: "its system prompt is not group 9's" })
   })
 
   test('rule: the message to the agent is written as a prompt to a coding agent, with a finish line, held steps named exactly and lengths in words (G28, G40)', () => {
@@ -17640,10 +17940,10 @@ describe('the call log: saving, replaying, counting and removing', () => {
     const base = old.replace(/\.json$/, '')
     const kept = (tail: string) => [...d.files.keys()].filter(k => k.startsWith(`${CALLS_ROOT}/${OTHER}/replays/${base}.`) && k.endsWith(tail))
     const runOf = (k: string) => k.slice(`${CALLS_ROOT}/${OTHER}/replays/${base}.`.length).split('.')[0] ?? ''
-    expect(kept('.high.frame+no-think+rep-system+end-line+proof+decisions+now+same-as+message+evidence+fault.as-saved-1.txt').length).toBe(1)
-    expect(d.files.get(kept('.high.frame+no-think+rep-system+end-line+proof+decisions+now+same-as+message+evidence+fault.as-saved-1.txt')[0] ?? '')).toBe(`${HOLDS}\n(as saved)`)
-    expect(d.files.get(kept('.high.frame+no-think+rep-system+end-line+proof+decisions+now+same-as+message+evidence+fault.variant-2.txt')[0] ?? '')).toBe(withEnd(`${HOLDS}\n(variant)`))
-    const first = runOf(kept('.high.frame+no-think+rep-system+end-line+proof+decisions+now+same-as+message+evidence+fault.as-saved-1.txt')[0] ?? '')
+    expect(kept('.high.frame+no-think+rep-system+end-line+proof+decisions+now+same-as+message+evidence+fault+unshown.as-saved-1.txt').length).toBe(1)
+    expect(d.files.get(kept('.high.frame+no-think+rep-system+end-line+proof+decisions+now+same-as+message+evidence+fault+unshown.as-saved-1.txt')[0] ?? '')).toBe(`${HOLDS}\n(as saved)`)
+    expect(d.files.get(kept('.high.frame+no-think+rep-system+end-line+proof+decisions+now+same-as+message+evidence+fault+unshown.variant-2.txt')[0] ?? '')).toBe(withEnd(`${HOLDS}\n(variant)`))
+    const first = runOf(kept('.high.frame+no-think+rep-system+end-line+proof+decisions+now+same-as+message+evidence+fault+unshown.as-saved-1.txt')[0] ?? '')
     expect(first).toMatch(/^\d{13}$/)
     expect([...d.files.keys()].filter(k => k.includes('/replays/')).length).toBe(4)
     // Another run of the same call with other settings keeps its replies apart.
@@ -17653,7 +17953,7 @@ describe('the call log: saving, replaying, counting and removing', () => {
     // The same run again, with the same settings, keeps the earlier replies and adds its own.
     await runCommand($, 'owner-rep-replay', `${CALLS_ROOT}/${OTHER}/${old} --variant no-think --effort low`)
     expect(kept('.low.no-think.as-saved-1.txt').length).toBe(2)
-    expect(kept('.high.frame+no-think+rep-system+end-line+proof+decisions+now+same-as+message+evidence+fault.as-saved-1.txt').map(runOf)).toEqual([first])
+    expect(kept('.high.frame+no-think+rep-system+end-line+proof+decisions+now+same-as+message+evidence+fault+unshown.as-saved-1.txt').map(runOf)).toEqual([first])
     expect(new Set([...d.files.keys()].filter(k => k.includes('/replays/')).map(runOf)).size).toBe(3)
     expect([...d.files.keys()].filter(k => k.includes('/replays/')).length).toBe(8)
   })
@@ -17703,12 +18003,12 @@ describe('the call log: saving, replaying, counting and removing', () => {
     expect(out).toMatch(/\n  base 1 watch: answered/)
     expect(out).not.toMatch(/as saved/)
     expect(out).toMatch(/^base: 1 calls;.*\(base frame,no-think\)$/m)
-    expect(out).toMatch(/^variant: 1 calls;.*\(variant frame,no-think,rep-system,end-line,proof,decisions,now,same-as,message,evidence,fault\)$/m)
+    expect(out).toMatch(/^variant: 1 calls;.*\(variant frame,no-think,rep-system,end-line,proof,decisions,now,same-as,message,evidence,fault,unshown\)$/m)
     const base = old.replace(/\.json$/, '')
     const kept = (tail: string) => [...d.files.keys()].filter(k => k.startsWith(`${CALLS}/replays/${base}.`) && k.endsWith(tail))
-    expect(kept('.high.frame+no-think~frame+no-think+rep-system+end-line+proof+decisions+now+same-as+message+evidence+fault.base-1.txt').length).toBe(1)
-    expect(d.files.get(kept('.high.frame+no-think~frame+no-think+rep-system+end-line+proof+decisions+now+same-as+message+evidence+fault.base-1.txt')[0] ?? '')).toBe(withEnd(`${HOLDS}\n(base)`))
-    expect(d.files.get(kept('.high.frame+no-think~frame+no-think+rep-system+end-line+proof+decisions+now+same-as+message+evidence+fault.variant-1.txt')[0] ?? '')).toBe(withEnd(`${HOLDS}\n(variant)`))
+    expect(kept('.high.frame+no-think~frame+no-think+rep-system+end-line+proof+decisions+now+same-as+message+evidence+fault+unshown.base-1.txt').length).toBe(1)
+    expect(d.files.get(kept('.high.frame+no-think~frame+no-think+rep-system+end-line+proof+decisions+now+same-as+message+evidence+fault+unshown.base-1.txt')[0] ?? '')).toBe(withEnd(`${HOLDS}\n(base)`))
+    expect(d.files.get(kept('.high.frame+no-think~frame+no-think+rep-system+end-line+proof+decisions+now+same-as+message+evidence+fault+unshown.variant-1.txt')[0] ?? '')).toBe(withEnd(`${HOLDS}\n(variant)`))
     expect([...d.files.keys()].filter(k => k.includes('/replays/')).length).toBe(2)
   })
 

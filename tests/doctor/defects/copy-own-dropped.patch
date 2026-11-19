@@ -1,11 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index c8022ab..7eb861c 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -2153,7 +2153,7 @@
-         const before = humanItems(found.stdout)
-         placed = true
-         if (before.length === 0) continue
--        return summary === null ? before : [...before, ...copied]
-+        return before
-       }
-       return summary !== null ? copied : placed ? [] : null
+@@ -2200,7 +2200,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
+       const find = (file: string) => summaryLineFind(file, id)
+       const nearby = await before(near, find)
+       const items = Array.isArray(nearby) ? nearby : await before(await far(`"uuid":"${id}"`), find)
+-      return Array.isArray(items) ? [...items, ...copied] : copied
++      return Array.isArray(items) ? items : copied
      }
+     if (want === 0 && tool !== null) {
+       const id = tool

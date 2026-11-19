@@ -1,11 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index c8022ab..0d6996d 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -2155,7 +2155,7 @@
-         if (before.length === 0) continue
-         return summary === null ? before : [...before, ...copied]
-       }
--      return summary !== null ? copied : placed ? [] : null
-+      return summary !== null ? copied : null
+@@ -2209,7 +2209,7 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
+       if (Array.isArray(nearby)) return nearby
+       const elsewhere = await before(await far(`"id":"${id}"`), find)
+       if (Array.isArray(elsewhere)) return elsewhere
+-      return nearby === 'placed' || elsewhere === 'placed' ? [] : null
++      return null
      }
-     let best: { items: HumanItem[]; matched: number } = { items: [], matched: 0 }
-     for (const file of files) {
+     // The best whole file and the best copy, by rows matched; the first read, the newest, on a tie.
+     type Match = { items: HumanItem[]; matched: number; file: string; summary: string | null }
