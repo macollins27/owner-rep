@@ -4636,5 +4636,11 @@
     "breaks": "under a heads-up the row's head ignores the note's rows, so its buttons fall under a \"↓ n more\" row.",
     "patch": "row-head-note-unbounded.patch",
     "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "condition-state-first-dropped",
+    "breaks": "a condition written \"- not shown: the pages are built\", with no \"|\", is read as open with \"not shown:\" left in its text.",
+    "patch": "condition-state-first-dropped.patch",
+    "fixed": "tested 2026-11-19"
   }
 ]

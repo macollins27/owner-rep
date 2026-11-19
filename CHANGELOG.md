@@ -5,6 +5,8 @@ What changed in each release of Owner Rep, newest first. The full record is the
 
 ## Unreleased
 
+- **A part of done written with its state first** ("not shown: the pages are built", with no
+  "|") keeps that state, and the state word no longer shows in the part.
 - **A decision that is truly yours reaches you as one plain question.** The rep asks you only
   about a decision that touches your livelihood or public name, cannot be undone, or goes
   against something you asked for (publishing, sending, paying and anything your guard refused

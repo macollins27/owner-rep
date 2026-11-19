@@ -10287,6 +10287,18 @@ test('factHolds reads the facts the writer wrote unprompted in the ninth live te
   for (const text of works) expect([text, factHolds(text)]).toEqual([text, false])
 })
 
+test('a condition written with its state first and no "|" ("- not shown: the pages are built") keeps the state and drops the word from its text (R6 replay of 69440c68)', () => {
+  const a = parseObjective('objective: moved\nmoved: #1\nresult: r\nfor: f\ndone:\n- not shown: the pages are built on a private test copy\n- open: nothing goes live until the owner says so\n- shown: the file is saved\n- works: the page loads | open\n- works: not shown: the site is live\nstep: s\ndropped:\n- nothing')
+  expect(a?.kind === 'moved' && a.parts.done).toEqual([
+    { text: 'the pages are built on a private test copy', state: 'not-shown', by: '' },
+    { text: 'nothing goes live until the owner says so', state: 'open', by: '' },
+    // Shown with no where is open, as it is after a "|".
+    { text: 'the file is saved', state: 'open', by: '' },
+    { text: 'the page loads', state: 'open', by: '', kind: 'works' },
+    { text: 'the site is live', state: 'not-shown', by: '', kind: 'works' },
+  ])
+})
+
 test('a condition\'s kind: written by the writer before it, kept through a held write, stripped where a reader copies it, and one held "works" never turns "fact"', () => {
   const a = parseObjective('objective: moved\nmoved: #1\nresult: r\nfor: f\ndone:\n- works: the page loads for a visitor | open\n- fact: the build installed | not shown\n- the docs written | open\nstep: s\ndropped:\n- nothing')
   expect(a?.kind === 'moved' && a.parts.done).toEqual([

@@ -3539,7 +3539,13 @@ function conditionOf(line: string): Condition {
   // look by someone who did not build it can show it (Codex reviews of #53).
   const kind: { kind?: ConditionKind } = said === undefined ? {} : { kind: said === 'fact' && !factHolds(line.split('|')[0] ?? '') ? 'works' : said }
   const m = /^(.*?)\s*\|\s*(open|not[\s-]?shown|shown|closed)\b\s*:?\s*(.*)$/i.exec(line)
-  if (m === null) return { text: bare(line.split('|')[0] ?? ''), state: 'open', by: '', ...kind }
+  if (m === null) {
+    // The state written first with no "|" ("- not shown: the pages are built", the R6 replay of
+    // 69440c68): "not shown" is kept, and "shown" with no where is open, as after a "|".
+    const f = line.includes('|') ? null : /^\s*(open|not[\s-]?shown|shown)\s*:\s*(.*)$/i.exec(line.replace(KIND_AT, ''))
+    if (f !== null) return { text: bare(f[2] ?? ''), state: /^not/i.test(f[1] ?? '') ? 'not-shown' : 'open', by: '', ...kind }
+    return { text: bare(line.split('|')[0] ?? ''), state: 'open', by: '', ...kind }
+  }
   const text = bare(m[1] ?? '')
   const word = (m[2] ?? '').toLowerCase()
   const rest = (m[3] ?? '').trim()
