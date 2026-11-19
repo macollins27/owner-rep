@@ -4726,5 +4726,17 @@
     "breaks": "the merge ignores a condition's \"same as:\" mark, so a held condition restated in the owner's newer words is counted as dropped and piled up beside its new wording.",
     "patch": "merge-same-as-ignored.patch",
     "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "finding-moves-on-pushback",
+    "breaks": "The shared system prompt loses the line that a finding stands until the record shows something new, so an agent's disagreement alone can move the rep's briefing.",
+    "patch": "finding-moves-on-pushback.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "ask-again-every-fault",
+    "breaks": "The second asking lists every rule the gate has rather than the one the first answer broke, so the call, which never saw its first answer, cannot tell what to fix.",
+    "patch": "ask-again-every-fault.patch",
+    "fixed": "tested 2026-11-19"
   }
 ]

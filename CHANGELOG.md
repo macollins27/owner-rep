@@ -5,6 +5,12 @@ What changed in each release of Owner Rep, newest first. The full record is the
 
 ## Unreleased
 
+- **The rep holds what it found until the record shows something new.** An agent arguing back no
+  longer moves its briefing; what the agent ran and what that printed can, and a changed line says
+  what is new.
+- **A second asking says what the first answer got wrong.** When the rep's briefing breaks a rule
+  while work is open, it is asked once more with that rule named and the sentence quoted, rather
+  than a list of every rule.
 - **The message to send reads like a good prompt.** One line per thing asked, each with what done
   means; a held step named exactly; a closing line saying when the agent is done and what to report,
   in place of "keep going"; and the card's parts and the message kept to set word counts.
