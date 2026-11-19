@@ -189,7 +189,7 @@
     "name": "revised-line-folds-first",
     "breaks": "The revision line waits among the extras after the message, so whenever the message is long enough to take the rows that are left the owner never sees that the reading moved.",
     "patch": "revised-line-folds-first.patch",
-    "fixed": "2026-10-14"
+    "fixed": "2026-10-14; remade 2026-11-17"
   },
   {
     "name": "rows-counted-by-cells",
@@ -255,7 +255,7 @@
     "name": "condition-dropped-uncited",
     "breaks": "A correction keeps only the conditions the writer wrote again, so a message that bounds the next step drops parts of what \"done\" means that the owner never let go.",
     "patch": "condition-dropped-uncited.patch",
-    "fixed": "2026-10-15; remade 2026-10-16"
+    "fixed": "2026-10-15; remade 2026-10-16; remade 2026-11-17"
   },
   {
     "name": "stop-while-open",
@@ -309,13 +309,13 @@
     "name": "marks-uncited",
     "breaks": "A look or a briefing can close a condition by citing any message number, a draft's included, so a condition the owner never let go is closed on the rep's or the agent's say.",
     "patch": "marks-uncited.patch",
-    "fixed": "2026-10-15; remade 2026-10-16"
+    "fixed": "2026-10-15; remade 2026-10-16; remade 2026-11-17"
   },
   {
     "name": "mark-cites-built-message",
     "breaks": "A look, a briefing or a check can close a condition by citing a message the objective was already built from, one the writer read and kept the condition open after.",
     "patch": "mark-cites-built-message.patch",
-    "fixed": "2026-10-15"
+    "fixed": "2026-10-15; remade 2026-11-17"
   },
   {
     "name": "writer-cites-built-message",
@@ -345,7 +345,7 @@
     "name": "conditions-pile-up",
     "breaks": "A condition the writer lists twice, or with a state mark copied into its text, is kept twice, so the list of what done means grows by repeats.",
     "patch": "conditions-pile-up.patch",
-    "fixed": "2026-10-15; remade 2026-10-16"
+    "fixed": "2026-10-15; remade 2026-10-16; remade 2026-11-17"
   },
   {
     "name": "writer-failure-uncounted",
@@ -399,13 +399,13 @@
     "name": "look-remarks-reopened",
     "breaks": "A look or a briefing that marks a condition the check reopened as shown moves it shown again, so the next stop passes the gate though the paid check found the claim false.",
     "patch": "look-remarks-reopened.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-11-17"
   },
   {
     "name": "merge-raises-state",
     "breaks": "The writer's merge takes a proposed state over the held one by rank, so a correction can drop the check's reopened mark and its finding, and the merge alone would raise a condition to shown.",
     "patch": "merge-raises-state.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-11-17"
   },
   {
     "name": "stop-filter-broad",
@@ -639,7 +639,7 @@
     "name": "record-numbers-as-messages",
     "breaks": "The session record labels its entries #N, the form the owner's numbered messages take, so a record entry can be cited, and read by applyMarks, as one of their messages.",
     "patch": "record-numbers-as-messages.patch",
-    "fixed": "2026-10-16; remade 2026-10-31"
+    "fixed": "2026-10-16; remade 2026-10-31; remade 2026-11-17"
   },
   {
     "name": "truncated-read-trusted",
@@ -1821,7 +1821,7 @@
     "name": "count-line-dropped-first",
     "breaks": "The count line comes back only after the judgment's parts have taken the rows, so on a small band the owner loses how many things done means while restatements of the agent's work keep a second row.",
     "patch": "count-line-dropped-first.patch",
-    "fixed": "tested 2026-10-19"
+    "fixed": "tested 2026-10-19; remade 2026-11-17"
   },
   {
     "name": "extras-before-message",
@@ -1833,7 +1833,7 @@
     "name": "message-box-hides-buttons",
     "breaks": "On a band too short for the message's box between the head and the buttons, as in a terminal of about 24 rows, the box stays and pushes the buttons out of the window where a digit cannot press them.",
     "patch": "message-box-hides-buttons.patch",
-    "fixed": "2026-10-26"
+    "fixed": "2026-10-26; remade 2026-11-17"
   },
   {
     "name": "own-words-cut-taken",
@@ -1869,7 +1869,7 @@
     "name": "approved-section-missing",
     "breaks": "The readers' memory loses the section of plans the owner approved, so neither the Heads up nor the briefing sees a plan's steps and neither can walk them.",
     "patch": "approved-section-missing.patch",
-    "fixed": "2026-10-29"
+    "fixed": "2026-10-29; remade 2026-11-17"
   },
   {
     "name": "approved-cursor-not-saved",
@@ -2415,7 +2415,7 @@
     "name": "fixed-text-no-held-step",
     "breaks": "The fixed text drops its held-step sentence, so a fallback message can push a step that waits on the owner.",
     "patch": "fixed-text-no-held-step.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-17"
   },
   {
     "name": "ask-again-silent-on-empty",
@@ -3027,7 +3027,7 @@
     "name": "reader-closes-by-approval",
     "breaks": "A reader's closed line citing an approved plan or a yes closes the condition.",
     "patch": "reader-closes-by-approval.patch",
-    "fixed": "2026-11-01"
+    "fixed": "2026-11-01; remade 2026-11-17"
   },
   {
     "name": "check-drops-record-lines",
@@ -3330,6 +3330,36 @@
     "fixed": "2026-11-15"
   },
   {
+    "name": "builder-look-signs-off",
+    "breaks": "A look by the agent at its own work marks a \"works\" condition shown, so the agent signs off its own work.",
+    "patch": "builder-look-signs-off.patch",
+    "fixed": "2026-11-15; remade 2026-11-17"
+  },
+  {
+    "name": "check-marks-skip-who",
+    "breaks": "The check's marks skip the who rule, so a check that only read the agent's own look in the record signs the condition off.",
+    "patch": "check-marks-skip-who.patch",
+    "fixed": "2026-11-15; remade 2026-11-17"
+  },
+  {
+    "name": "agent-look-off-card",
+    "breaks": "The card says nothing of the agent's own look, so the owner cannot see that the work was looked at and still waits on someone else's look.",
+    "patch": "agent-look-off-card.patch",
+    "fixed": "2026-11-15; remade 2026-11-17"
+  },
+  {
+    "name": "owner-signs-off",
+    "breaks": "A look the agent reports as the owner's counts as a sign-off, so the agent can close a condition by saying the owner tried it.",
+    "patch": "owner-signs-off.patch",
+    "fixed": "2026-11-15; remade 2026-11-17"
+  },
+  {
+    "name": "agent-look-dropped",
+    "breaks": "The agent's own look is thrown away instead of kept, so the evidence it gave is lost from the card and the prompts.",
+    "patch": "agent-look-dropped.patch",
+    "fixed": "2026-11-15; remade 2026-11-17"
+  },
+  {
     "name": "call-log-cap-takes-starting",
     "breaks": "Past the total of 1 GB, the folder of the session starting is removed when it is the oldest, though it is the one now being written.",
     "patch": "call-log-cap-takes-starting.patch",
@@ -3396,6 +3426,342 @@
     "fixed": "tested 2026-11-17"
   },
   {
+    "name": "signer-prefix-match",
+    "breaks": "A look signs off when its who only starts like a signer naming a run, so \"helper 0001a1b2, which also built it\" signs that run's work off as a helper's look.",
+    "patch": "signer-prefix-match.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "first-look-only",
+    "breaks": "Only the first look in a where is read, so a sign-off look written after a helper's is lost and the condition stays open though the check looked.",
+    "patch": "first-look-only.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "where-without-look-closes",
+    "breaks": "A where with no look in it closes a \"works\" condition, so the agent's own run written plainly signs its own work off.",
+    "patch": "where-without-look-closes.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "no-kind-read-as-fact",
+    "breaks": "A condition with no kind is shown by any where, as a fact is, so every condition written before kinds, and any the writer leaves unmarked, closes on the agent's word.",
+    "patch": "no-kind-read-as-fact.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "works-not-sticky",
+    "breaks": "A rewrite can turn a held \"works\" condition into a fact, so the agent's own run then closes a condition that needed a look by someone who did not build it.",
+    "patch": "works-not-sticky.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "seen-blames-agent",
+    "breaks": "The card says the agent looked at a condition itself when a helper or someone else did, so the owner is told the wrong person looked.",
+    "patch": "seen-blames-agent.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "seen-who-dropped",
+    "breaks": "Who made a look that does not sign off is not kept, so the card says the agent looked when a named helper did.",
+    "patch": "seen-who-dropped.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "count-no-looks-note",
+    "breaks": "The count line leaves out whose looks are in and do not sign off, so on a tall card where the condition lines are not drawn the owner never sees it.",
+    "patch": "count-no-looks-note.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "count-line-never-back",
+    "breaks": "The count line never comes back on a card too tall for the band, so whenever the card is folded the owner loses how many things done means and whose looks are still to count.",
+    "patch": "count-line-never-back.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "bare-keeps-kind",
+    "breaks": "A reader that copies a condition with its kind before it matches nothing held, so its mark is lost and a condition shown or closed stays open.",
+    "patch": "bare-keeps-kind.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "kind-not-parsed",
+    "breaks": "The writer's \"works:\" or \"fact:\" is dropped as it is read, so a fact needs a look it cannot have and a works condition depends on the default.",
+    "patch": "kind-not-parsed.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "kind-not-held",
+    "breaks": "The writer is shown its held conditions without their kinds, so a rewrite drops or changes them.",
+    "patch": "kind-not-held.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "kind-hidden-from-readers",
+    "breaks": "The watch, briefing and check are not told which conditions are works and which are facts, so they cannot tell which needs a look by someone who did not build it.",
+    "patch": "kind-hidden-from-readers.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "kind-dropped-on-show",
+    "breaks": "A condition marked shown loses its kind, so when the check reopens it, a briefing's where with no look closes it again as if it were a fact.",
+    "patch": "kind-dropped-on-show.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "look-signs-without-run",
+    "breaks": "A look by a helper or Codex naming a run signs off though no such run is in the record, so the agent can write one that never happened.",
+    "patch": "look-signs-without-run.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "runs-not-counted",
+    "breaks": "The record never counts a helper or Codex run, so even a real look by someone who did not build it cannot sign off.",
+    "patch": "runs-not-counted.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "codex-run-unknown",
+    "breaks": "A Codex run started from the shell is not known as one, so a real look by Codex never signs off.",
+    "patch": "codex-run-unknown.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "denied-look-signs",
+    "breaks": "A where saying there was no look by Codex or the check (\"No look by Codex: …\") is read as that look, and signs off.",
+    "patch": "denied-look-signs.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "empty-look-signs",
+    "breaks": "A look with nothing after its colon signs off, though it says nothing was seen.",
+    "patch": "empty-look-signs.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "not-yet-look-signs",
+    "breaks": "A look naming a run not seen to finish (a helper sent off on its own, a shell call sent to the background or cut off) signs off as if it had happened.",
+    "patch": "not-yet-look-signs.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "builder-signer-signs",
+    "breaks": "A look naming a helper's or Codex's run that changed the work signs off, though one who built it is the agent.",
+    "patch": "builder-signer-signs.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "seen-who-stale",
+    "breaks": "Who looked is carried from an older where onto a later one with no look, so the agent's own run is shown as an earlier helper's.",
+    "patch": "seen-who-stale.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "kindless-turns-fact",
+    "breaks": "A condition of no kind, read as works, turns fact when a rewrite calls it so, and the agent's own run then shows it.",
+    "patch": "kindless-turns-fact.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "shown-fact-stays-shown",
+    "breaks": "A fact held shown and rewritten as works stays shown on its old where, which no look by someone who did not build it made.",
+    "patch": "shown-fact-stays-shown.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "mislabelled-fact-kept",
+    "breaks": "A condition the writer marks \"fact:\" though it says the result works, loads or passes stays a fact, so the agent's own run shows it.",
+    "patch": "mislabelled-fact-kept.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "runs-newest-code-works",
+    "breaks": "A \"fact:\" that a service runs the newest code, the writer's own example of a fact, is read as works and waits for a look it does not need.",
+    "patch": "runs-newest-code-works.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17; remade 2026-11-18; remade 2026-11-18 for the shape rule"
+  },
+  {
+    "name": "rep-check-not-signer",
+    "breaks": "A look written \"look by the rep's own check\" is not read as the check's, so a check's real look is kept as someone else's.",
+    "patch": "rep-check-not-signer.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "looks-note-uncounted",
+    "breaks": "The note beside the count names every looker however many, so with seventy long names the count line no longer fits and is dropped from the card.",
+    "patch": "looks-note-uncounted.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "writer-run-is-fact",
+    "breaks": "The writer is told a run passing is a fact, so it marks the result working as something the agent's own run shows.",
+    "patch": "writer-run-is-fact.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "look-rule-allows-unrun",
+    "breaks": "The readers are not told to write only looks the record shows, so they write a look by Codex or a helper that never ran.",
+    "patch": "look-rule-allows-unrun.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "run-silent-signs",
+    "breaks": "A look naming a run that finished but said nothing signs off, though nothing in the record shows what the run saw.",
+    "patch": "run-silent-signs.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "run-failed-signs",
+    "breaks": "A look naming a run that failed (a nonzero exit, a refused or erroring call) signs off.",
+    "patch": "run-failed-signs.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "run-ref-ambiguous",
+    "breaks": "A look whose run id ends more than one run of its kind signs on the first of them, so a short id can borrow another run's look.",
+    "patch": "run-ref-ambiguous.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "run-kind-ignored",
+    "breaks": "A look by Codex can name a helper's run and a helper's look a Codex run, so a look is credited to a signer that never ran.",
+    "patch": "run-kind-ignored.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "check-signs-anywhere",
+    "breaks": "A look written \"look by the check\" in a look's or a briefing's marks signs off, so any reader can claim the check looked.",
+    "patch": "check-signs-anywhere.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "codex-help-counts",
+    "breaks": "\"codex exec --help\" or \"codex --version\" counts as a Codex run, so a look can name a run that read only Codex's help.",
+    "patch": "codex-help-counts.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "codex-after-or-counts",
+    "breaks": "A Codex run after || (one that runs only when the command before it failed, or never) counts, so a call that exits 0 without Codex running signs.",
+    "patch": "codex-after-or-counts.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "codex-piped-counts",
+    "breaks": "A Codex run piped into another command counts, though the call's exit status is the last command's, so a failed Codex run reads as a passed one.",
+    "patch": "codex-piped-counts.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "codex-not-last-counts",
+    "breaks": "A Codex run followed by another statement counts, though the call's exit status is the later statement's.",
+    "patch": "codex-not-last-counts.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "codex-background-counts",
+    "breaks": "A Codex run sent to the background with & counts as finished, though its call returns before it ran.",
+    "patch": "codex-background-counts.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "codex-sandbox-write-unseen",
+    "breaks": "A Codex run in a sandbox that writes (\"-s workspace-write\", \"--sandbox danger-full-access\") is read as changing nothing, so Codex fixing the work signs it off.",
+    "patch": "codex-sandbox-write-unseen.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "codex-bypass-unseen",
+    "breaks": "A Codex run with the sandbox bypassed or approvals automatic (--dangerously-bypass-approvals-and-sandbox, --full-auto, --yolo) is read as changing nothing.",
+    "patch": "codex-bypass-unseen.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "codex-config-sandbox-unseen",
+    "breaks": "A Codex run given a writing sandbox through \"-c sandbox_mode=…\" is read as changing nothing.",
+    "patch": "codex-config-sandbox-unseen.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "claude-print-unplanned",
+    "breaks": "A \"claude -p\" helper run outside plan mode, free to edit, is read as changing nothing, so a helper that built the work signs it.",
+    "patch": "claude-print-unplanned.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "helper-edit-unmarked",
+    "breaks": "A helper's own Edit or Write calls do not mark its run as changing the work, so a helper that edited signs its own work off.",
+    "patch": "helper-edit-unmarked.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "helper-shell-write-unmarked",
+    "breaks": "A helper's own shell call that writes in the folder does not mark its run as changing the work.",
+    "patch": "helper-shell-write-unmarked.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "tests-count-as-change",
+    "breaks": "A helper's shell call that only runs the tests marks its run as changing the work, so a helper that ran the tests before its look never signs.",
+    "patch": "tests-count-as-change.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "helper-edit-count-unseen",
+    "breaks": "A helper whose result says it edited files (its tool counts) is read as changing nothing.",
+    "patch": "helper-edit-count-unseen.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "async-helper-never-ends",
+    "breaks": "A helper sent off on its own is never marked finished when its loop ends, so its look never signs.",
+    "patch": "async-helper-never-ends.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "fact-allow-list-dropped",
+    "breaks": "A condition the writer marks \"fact:\" stays a fact whatever it says, so \"the two sessions finished\" or \"the page is fixed\" closes on the agent's own where.",
+    "patch": "fact-allow-list-dropped.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "run-words-off-card",
+    "breaks": "The card does not show the named run's own last words beside a condition, so the owner reads only the reader's account of the look.",
+    "patch": "run-words-off-card.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "run-words-not-kept",
+    "breaks": "The named run's own last words are not kept on the condition, so the card cannot show them.",
+    "patch": "run-words-not-kept.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "closed-not-on-your-word",
+    "breaks": "A condition the owner closed is shown without saying it closed on the owner's own word and message number.",
+    "patch": "closed-not-on-your-word.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "compact-count-no-builder",
+    "breaks": "The compact count of looks not counted drops that they were by whoever built it, so the owner cannot tell why they did not count.",
+    "patch": "compact-count-no-builder.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "record-run-tag-missing",
+    "breaks": "The record shows no \"(run …)\" beside a helper's or Codex's call, so a reader cannot name the run a look came from and no look can sign.",
+    "patch": "record-run-tag-missing.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "run-words-uncapped",
+    "breaks": "A run's last words are kept whole, so a helper's long answer fills the record and the card.",
+    "patch": "run-words-uncapped.patch",
+    "fixed": "2026-11-17"
+  },
+  {
     "name": "check-plugins-left-on",
     "breaks": "The check's own session loads every plugin the owner turned on, this mod among them, with their hooks, skills and agents.",
     "patch": "check-plugins-left-on.patch",
@@ -3418,5 +3784,371 @@
     "breaks": "With CLAUDE_CONFIG_DIR set, the check reads the home's settings.json instead of the config folder's, so the plugins that session turns on stay on.",
     "patch": "check-plugins-home-only.patch",
     "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "fact-behaviour-clause-ignored",
+    "breaks": "A condition saying the tool is saved and also what it takes and prints is read as a fact for being saved, so the builder's own run closes it and the stop passes.",
+    "patch": "fact-behaviour-clause-ignored.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "writer-one-claim-dropped",
+    "breaks": "The objective writer is no longer asked for one claim per condition, so it can write a fact and what the work does as one condition.",
+    "patch": "writer-one-claim-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "rows-indent-dropped",
+    "breaks": "A row's leading spaces are not counted, so a left-out item a cell or two past the row with its indent is counted on one row while the band draws two, and the card scrolls with its buttons out of a digit's reach.",
+    "patch": "rows-indent-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "button-row-counted-fixed",
+    "breaks": "The buttons row is counted as one row at seventy columns or more, whatever wraps on it, so the size beside the buttons pushes a row the count never saw and the card scrolls.",
+    "patch": "button-row-counted-fixed.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "check-note-whole-in-base",
+    "breaks": "The check's note is kept whole in the card's base, so a long note on a short band leaves no room for the buttons and the card scrolls.",
+    "patch": "check-note-whole-in-base.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "wide-characters-one-cell",
+    "breaks": "A wide character (Chinese, Japanese, Korean, an emoji) is counted as one cell where the band draws two, so a card holding them takes more rows than counted and scrolls.",
+    "patch": "wide-characters-one-cell.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "put-follows-cut-message",
+    "breaks": "Put message in prompt is counted from the filled card, so when the message box is dropped on a short band the button is either hidden, losing the message, or drawn on a row the count never saw.",
+    "patch": "put-follows-cut-message.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-clauses-not-split",
+    "breaks": "A condition is read as one clause, never clause by clause, so two facts parted by a comma or a semicolon (\"the work is committed in this folder, and the commit holds the newest version\") read as works.",
+    "patch": "fact-clauses-not-split.patch",
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
+  },
+  {
+    "name": "fact-negative-behaviour-exempt",
+    "breaks": "A clause saying what the work does not do (\"never crashes on empty input\") is exempt from the behaviour words, so a condition naming it beside a fact is read as a fact and closes on the builder's own run.",
+    "patch": "fact-negative-behaviour-exempt.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-word-before-noun-read",
+    "breaks": "Any words may stand before a noun of the work, so a behaviour before it (\"the converter transforms saved text files\", \"all encrypt files are saved\") reads as the noun's own words and closes on the builder's own run.",
+    "patch": "fact-word-before-noun-read.patch",
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
+  },
+  {
+    "name": "fact-quoted-text-read",
+    "breaks": "Text in double quotes is read as words, so a file said to contain exactly \"one two three\" is read as works and needs a look no command could need.",
+    "patch": "fact-quoted-text-read.patch",
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
+  },
+  {
+    "name": "fact-held-thing-any-word",
+    "breaks": "Any word may be what a stored thing holds, so \"the file contains all encrypted text\" reads as a fact about what it holds and closes without a look.",
+    "patch": "fact-held-thing-any-word.patch",
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
+  },
+  {
+    "name": "fact-unit-after-name",
+    "breaks": "A name counts as a count and any word after a count as its unit, so \"sample.txt has 13 crashes\" reads as a fact and closes on the builder's own run.",
+    "patch": "fact-unit-after-name.patch",
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
+  },
+  {
+    "name": "fact-capital-anywhere-name",
+    "breaks": "Any capitalised word is read as a name, so a title-cased behaviour after a fact (\"saved To Encrypt Files\") reads as the fact's name and closes on the builder's own run.",
+    "patch": "fact-capital-anywhere-name.patch",
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
+  },
+  {
+    "name": "fact-single-quotes-read",
+    "breaks": "Text in single quotes is read as words, so a file said to hold exactly 'prints' is read as works and waits for a look no command needs.",
+    "patch": "fact-single-quotes-read.patch",
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
+  },
+  {
+    "name": "fact-slash-ampersand-not-split",
+    "breaks": "A slash or \"&\" does not part two facts, so \"the work is committed & pushed\" reads as works and waits for a look.",
+    "patch": "fact-slash-ampersand-not-split.patch",
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
+  },
+  {
+    "name": "fact-verb-not-needed",
+    "breaks": "Any word after \"is\" stands for a fact word, so a judgement such as \"the page is new\" closes on the agent's own word.",
+    "patch": "fact-verb-not-needed.patch",
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
+  },
+  {
+    "name": "fact-path-read",
+    "breaks": "A path or a file's name is read as words, so \"the work is saved to ~/Developer/shout\" or \"sample.txt is 13 bytes long\" reads as works and waits for a look.",
+    "patch": "fact-path-read.patch",
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
+  },
+  {
+    "name": "fact-runs-newest-not-read",
+    "breaks": "\"Runs the newest code\", the writer's own example of a fact, is read as words and waits for a look it does not need.",
+    "patch": "fact-runs-newest-not-read.patch",
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
+  },
+  {
+    "name": "writer-fact-shape-dropped",
+    "breaks": "The objective writer is not told the shape of a fact, so its own facts (\"the scratch folder holds a sample text file whose contents are...\") read as works and wait for a look.",
+    "patch": "writer-fact-shape-dropped.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-place-any-word",
+    "breaks": "Any word after \"to\" or \"in\" is a place, so a purpose after a fact (\"the service is deployed To Encrypt\", \"saved to convert text\") reads as where it is and closes on the builder's own run.",
+    "patch": "fact-place-any-word.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-actor-any-noun",
+    "breaks": "The work itself may be the one that saved or created something, so a behaviour (\"the tool created uppercase files\") reads as a fact about what an agent did and closes on the builder's own run.",
+    "patch": "fact-actor-any-noun.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-tail-any-word",
+    "breaks": "Any words may follow held text as the note of its end, so \"sample.txt holds exactly \\\"x\\\", converting it to uppercase\" reads as a fact and closes on the builder's own run.",
+    "patch": "fact-tail-any-word.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-content-any-subject",
+    "breaks": "Anything may hold quoted text, so a quality in quotes (\"the page has \\\"correct error handling\\\"\") or a tool said to hold exactly some text reads as a fact and closes on the builder's own run.",
+    "patch": "fact-content-any-subject.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-size-words-dropped",
+    "breaks": "A size said \"in size\" or \"in length\" (\"sample.txt is 6 bytes in size\") is not read as a size, so the writer's own fact reads as works and waits to be shown.",
+    "patch": "fact-size-words-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-quality-any-mod",
+    "breaks": "Any word that is not a doing may stand among a noun's own words, so a quality off any list (\"the resilient tool is installed\", \"no file holds insecure code\") reads as a fact and closes on the builder's own run.",
+    "patch": "fact-quality-any-mod.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-quality-hyphen-whole",
+    "breaks": "A hyphened word is read whole against the list of a noun's own words, so the writer's own name (\"the owner-rep plugin is installed\") reads as works and waits for a look no command needs.",
+    "patch": "fact-quality-hyphen-whole.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-quality-state-refused",
+    "breaks": "A fact's own state before a noun (\"the installed build runs the newest code\") is taken for a quality, so the writer's fact reads as works.",
+    "patch": "fact-quality-state-refused.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-doing-mod-allowed",
+    "breaks": "A word of doing may stand before a noun (\"the encrypting tool is installed\"), so what the tool does reads as a fact and closes on the builder's own run.",
+    "patch": "fact-doing-mod-allowed.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-during-not-place",
+    "breaks": "\"During\" and \"since\" are not places, so a writer's fact about this job (\"no new commit made during this job exists\") reads as works and waits to be shown.",
+    "patch": "fact-during-not-place.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-state-after-noun-dropped",
+    "breaks": "A state after a noun with its place (\"a commit made during this job\", \"the code committed to main\") is not read, so the writer's fact reads as works.",
+    "patch": "fact-state-after-noun-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-no-thing-holds-dropped",
+    "breaks": "\"No file holds a change made during this job\" is not read as a fact, so the writer's negative fact waits to be shown.",
+    "patch": "fact-no-thing-holds-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-no-thing-holds-anything",
+    "breaks": "No file may hold anything at all (\"no file holds a correct fix\", \"no log holds \\\"error\\\"\") and read as a fact, so a claim about how runs went closes on the builder's own run.",
+    "patch": "fact-no-thing-holds-anything.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-folded-clause-kept",
+    "breaks": "A hyphened word passes when any one of its parts is a noun's own word, so a quality in its other part (\"the production-ready build is pushed\", \"the fault-tolerant plugin is installed\") reads as a fact.",
+    "patch": "fact-folded-clause-kept.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-name-any-h",
+    "breaks": "Any word with a digit in it may stand before a noun, so a quality with a digit (\"the secure2 service is deployed\", \"the utf8-validating code\") reads as a fact rather than only a version or a commit.",
+    "patch": "fact-name-any-h.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-anywhere-not-place",
+    "breaks": "\"Anywhere\" and \"elsewhere\" are not places, so the writer's own fact \"nothing from this job is pushed anywhere\" reads as works and waits for a look.",
+    "patch": "fact-anywhere-not-place.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-slash-words-path",
+    "breaks": "Words joined by a slash or a dot are read as a path, so a quality or a doing in them (\"the secure/fast/reliable tool\", \"the fast.secure tool\", \"the sorts/validates2 tool\") closes on the builder's own run.",
+    "patch": "fact-slash-words-path.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-working-copy-behaves",
+    "breaks": "\"Working copy\" is read as the result working, so the writer's fact \"the project's working copy holds 0 changed files from this session\" reads as works.",
+    "patch": "fact-working-copy-behaves.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-no-list-dropped",
+    "breaks": "After \"no\" only one noun is read, so the writer's fact \"no handoff or note is written anywhere outside the scratch folder\" reads as works.",
+    "patch": "fact-no-list-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-mod-list-dropped",
+    "breaks": "A noun's own words joined by commas and \"or\" are not read, so the writer's fact \"the working copy holds 0 changed, added or deleted files\" reads as works.",
+    "patch": "fact-mod-list-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-mod-bare-path",
+    "breaks": "A path or a name of any kind may stand before a noun, so a word in backticks (\"the `reliable` tool\") or a bare path (\"the ~secure tool\", \"the secure.c tool\") carries a quality past the closed list and closes.",
+    "patch": "fact-mod-bare-path.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-tick-words-name",
+    "breaks": "Plain words in backticks are read as a path, so a quality put in backticks (\"the `correct` tool is installed\", \"no file holds `encrypting` code\") closes on the builder's own run.",
+    "patch": "fact-tick-words-name.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-state-name-any",
+    "breaks": "Any word with a digit, or any path, after a state is read as its name, so a quality after it (\"installed (UTF8-compliant)\", \"committed (100%-correct)\", \"deployed secure2\") closes.",
+    "patch": "fact-state-name-any.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-for-job-not-place",
+    "breaks": "\"For this job\" is not read as a place, so the writer's own facts \"nothing in the scratch folder's repository is committed for this job\" read as works and wait for a look no command needs.",
+    "patch": "fact-for-job-not-place.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-for-any-place",
+    "breaks": "\"For\" opens any noun of the work, so \"the script is committed for the fix\" reads as a fact about the fix.",
+    "patch": "fact-for-any-place.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-any-ending-file",
+    "breaks": "Any word with a dot and up to eight letters after it is a file's name, so \"the secure.fast tool\" and \"no file holds correct.robust code\" close.",
+    "patch": "fact-any-ending-file.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-tick-noun-any",
+    "breaks": "Words in backticks stand as the thing held or the place whatever they are, so \"`secure/fast` is committed\" and \"the file is saved in `correct`\" close on the builder's own run.",
+    "patch": "fact-tick-noun-any.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-tail-comma-dropped",
+    "breaks": "A text's end notes split by commas stop at the first comma, so \"holds exactly 'amber', 5 bytes, with no final newline\" is read as works and never closes on the dump that shows it.",
+    "patch": "fact-tail-comma-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-tail-final-missing",
+    "breaks": "\"with no final newline\" is not read as a note of the text's end, so an exact-contents fact the writer wrote that way stays works.",
+    "patch": "fact-tail-final-missing.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-for-work-missing",
+    "breaks": "\"for this work\" is not read as the job's scope, so \"no commit was made for this work\" stays works.",
+    "patch": "fact-for-work-missing.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-made-missing",
+    "breaks": "\"was made\" is not a fact's state, so \"no commit was made for this work\" stays works.",
+    "patch": "fact-made-missing.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-named-any-word",
+    "breaks": "Any word after \"named\" is a name, so \"a script named correctly is saved\" closes on the builder's listing though \"correctly\" is a judgment.",
+    "patch": "fact-named-any-word.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-named-digit-any",
+    "breaks": "Any word with a digit after \"named\" is a name, so a disguised doing (\"named validates2\") closes as a fact.",
+    "patch": "fact-named-digit-any.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-named-dropped",
+    "breaks": "\"an executable named greet is installed in a bin folder\" is read as works, so an install the listing shows never closes.",
+    "patch": "fact-named-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-noun-run-any-order",
+    "breaks": "a noun's own words stand in any order, so \"the copies-every-file tool is installed\" closes on the builder's own listing.",
+    "patch": "fact-noun-run-any-order.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "fact-plural-mid-run",
+    "breaks": "a plural noun stands anywhere in a noun's own words, so \"the logs-in tool\" and \"the copies-files tool\" close as facts.",
+    "patch": "fact-plural-mid-run.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "fact-count-mid-run",
+    "breaks": "\"every\" or \"all\" stands anywhere in a noun's own words, so \"the scratch every file tool is installed\" closes as a fact.",
+    "patch": "fact-count-mid-run.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "fact-noun-run-words-alone",
+    "breaks": "the order is read only inside a hyphened word, so \"the copies every file tool is installed\", in plain words, closes as a fact.",
+    "patch": "fact-noun-run-words-alone.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "fact-copy-of-not-place",
+    "breaks": "\"installed as a copy of greet-source.sh\" is not read, so the writer's plain fact stays open as works.",
+    "patch": "fact-copy-of-not-place.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "fact-run-permission-behaves",
+    "breaks": "\"installed with permission to run\" is read as the work running, so the writer's plain fact stays open as works.",
+    "patch": "fact-run-permission-behaves.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "fact-dir-path-words",
+    "breaks": "a path inside the folder with no file ending (\"install-case/bin/greet\") is read as words, so the writer's plain fact stays open as works.",
+    "patch": "fact-dir-path-words.patch",
+    "fixed": "tested 2026-11-19"
   }
 ]

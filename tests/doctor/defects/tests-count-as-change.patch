@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 5a5ee04..0597295 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -574,7 +574,7 @@ export const EDIT_TOOLS = new Set(['Edit', 'Write', 'NotebookEdit', 'MultiEdit']
+ // change the work.
+ const CHANGERS = new Set(['rm', 'rmdir', 'mv', 'cp', 'tee', 'touch', 'truncate', 'patch', 'ln', 'install', 'mkdir', 'chmod', 'unlink', 'dd'])
+ const GIT_CHANGES = new Set(['add', 'commit', 'apply', 'am', 'checkout', 'switch', 'reset', 'restore', 'stash', 'merge', 'rebase', 'cherry-pick', 'revert', 'push', 'rm', 'mv', 'clean', 'pull', 'tag', 'branch'])
+-const PM_CHANGES = new Set(['install', 'i', 'add', 'remove', 'rm', 'uninstall', 'update', 'up', 'upgrade'])
++const PM_CHANGES = new Set(['install', 'i', 'add', 'remove', 'rm', 'uninstall', 'update', 'up', 'upgrade', 'test'])
+ // A path that is in the work: relative, or inside the folder, never a device or a place outside.
+ const inWork = (path: string, cwd: string): boolean => {
+   if (path === '' || path.startsWith('-')) return false

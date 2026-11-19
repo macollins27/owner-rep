@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 5a5ee04..704e1ce 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -862,7 +862,7 @@ const promptLine = (c: Condition): string =>
+       : `${kindMark(c)}${conditionLine(c, false)}`
+ 
+ // A condition's kind as the readers are shown it, so they know which needs a look.
+-const kindMark = (c: Condition): string => `${kindOf(c)}: `
++const kindMark = (_c: Condition): string => ''
+ 
+ // The conditions still open as a list, one "- <condition> (mark)" line each.
+ const openLines = (o: Objective | null, none: string): string =>

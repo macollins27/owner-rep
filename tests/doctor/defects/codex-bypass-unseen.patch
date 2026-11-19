@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 5a5ee04..bb6836f 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -526,7 +526,7 @@ function codexWrites(argv: readonly string[]): boolean {
+   for (let k = 0; k < argv.length; k++) {
+     const w = argv[k] ?? ''
+     if (w === '--') break
+-    if (w === '--dangerously-bypass-approvals-and-sandbox' || w === '--full-auto' || w === '--approve-for-me' || w === '--yolo') return true
++    if (w === '--approve-for-me') return true
+     if (w === '--add-dir' || w.startsWith('--add-dir=')) return true
+     const sandbox = w === '-s' || w === '--sandbox' ? (argv[k + 1] ?? '') : w.startsWith('--sandbox=') ? w.slice(10) : w.startsWith('-s') && w.length > 2 ? w.slice(2) : null
+     if (sandbox !== null && sandbox !== 'read-only') return true

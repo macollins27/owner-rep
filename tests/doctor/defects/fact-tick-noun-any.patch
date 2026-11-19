@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 84c5787..8b7f79a 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3599,7 +3599,7 @@ const factRead = (ts: FactTok[]): boolean => {
+   // A path, a file or a name stands as a thing held or a place; words in backticks only when
+   // each is from the closed list, as before a noun: "`secure/fast` is committed" and "saved in
+   // `correct`" closed (the eighth live test's fix, its doctor).
+-  const pathAt = (i: number): boolean => { const k = ts[i]; return k?.t === 'P' && (k.p !== 'word' || factMod(k.w)) }
++  const pathAt = (i: number): boolean => { const k = ts[i]; return k?.t === 'P' }
+   const np = (i: number): FactAt[] => (pathAt(i) ? [{ i: i + 1, store: true }] : noun(i, FACT_THING, FACT_STORE))
+   // A place: "in the scratch folder", "to main", "on GitHub", "in ~/x". A place's own name is
+   // one of a few (FACT_PLACE): any capitalised word would let "deployed To Encrypt" through.

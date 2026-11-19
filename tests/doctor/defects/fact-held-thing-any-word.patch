@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 7b58d6b..a4150aa 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3599,7 +3599,7 @@ const factRead = (ts: FactTok[]): boolean => {
+       }
+     }
+     if (w(i, /^(?:holds?|contains?)$/) && det(i + 1)) {
+-      for (const r of noun(i + 1, FACT_HELD, FACT_STORE)) for (const p of places(r.i)) {
++      for (const r of noun(i + 1, /^[a-z]/, FACT_STORE)) for (const p of places(r.i)) {
+         out.push(p)
+         if (w(p, /^whose$/) && w(p + 1, /^contents?$/) && w(p + 2, /^(?:is|are)$/) && w(p + 3, /^exactly$/) && ts[p + 4]?.t === 'Q') out.push(...tail(p + 5))
+       }

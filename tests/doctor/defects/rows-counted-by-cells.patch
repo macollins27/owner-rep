@@ -1,28 +1,60 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 6e8b995..82d3195 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2444,23 +2444,7 @@
+@@ -4882,54 +4882,7 @@ export const widthOf = (s: string): number => [...s].reduce((n, ch) => n + cells
  export const rowsOf = (text: string, width: number): number => {
    if (text === '') return 0
    const w = Math.max(1, width)
 -  return text.split('\n').reduce((n, line) => {
 -    let rows = 1
 -    let used = 0
--    for (const word of line.split(' ')) {
--      if (used === 0) used = word.length
--      else if (used + 1 + word.length <= w) used += 1 + word.length
--      else {
--        rows += 1
--        used = word.length
+-    line.split(' ').forEach((word, i) => {
+-      if (i > 0) {
+-        if (used >= w) {
+-          rows += 1
+-          used = 0
+-        }
+-        used += 1
 -      }
--      while (used > w) {
--        rows += 1
--        used -= w
+-      const len = widthOf(word)
+-      if (len > w) {
+-        if (Math.floor((len - 1) / w) < 1 + Math.floor((len - (w - used) - 1) / w)) {
+-          rows += 1
+-          used = 0
+-        }
+-        let marks = used > 0
+-        const chars = [...word]
+-        chars.forEach((ch, j) => {
+-          const cl = cellsOf(ch)
+-          if (used + cl <= w) used += cl
+-          else {
+-            rows += 1
+-            used = cl
+-          }
+-          marks = true
+-          if (used === w && j < chars.length - 1) {
+-            rows += 1
+-            used = 0
+-            marks = false
+-          }
+-        })
+-        // A row of only zero-width marks joins the row before it.
+-        if (used === 0 && marks && rows > 1) {
+-          rows -= 1
+-          used = w
+-        }
+-        return
 -      }
--    }
+-      if (used + len > w && used > 0 && len > 0) {
+-        rows += 1
+-        used = 0
+-      }
+-      used += len
+-    })
 -    return n + rows
 -  }, 0)
-+  return text.split('\n').reduce((n, line) => n + Math.max(1, Math.ceil(line.length / w)), 0)
++  return text.split('\n').reduce((n, line) => n + Math.max(1, Math.ceil(widthOf(line) / w)), 0)
  }
  
- // The card's rows as the band draws it: a top margin, the head beside its glyph,
+ // The buttons row's rows: its items side by side three cells apart in `width` cells, an

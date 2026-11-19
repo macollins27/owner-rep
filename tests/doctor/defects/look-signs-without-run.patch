@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 5a5ee04..83296b8 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -284,7 +284,7 @@ export const signsOff = (l: Look, runs: readonly Run[], check: boolean): boolean
+   if (!l.signs) return false
+   if (l.as === 'check') return check
+   const r = runFor(l, runs)
+-  return r !== undefined && runQualifies(r)
++  return r === undefined || runQualifies(r)
+ }
+ // The who a look that does not sign is kept under: as written, with why its run does not count.
+ export function keptWho(l: Look, runs: readonly Run[], check: boolean): string {

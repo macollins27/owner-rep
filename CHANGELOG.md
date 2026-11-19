@@ -25,6 +25,45 @@ What changed in each release of Owner Rep, newest first. The full record is the
   by name in the check's own settings. The brief tells it the agent's instruction files are in
   the agent's folder, to read when a claim turns on them. To find your agentsview entry the rep
   reads Claude Code's `.claude.json` and takes only that entry.
+- **Only someone who did not build the work can sign it off.** Each part of the job is a
+  "works" part (the work does what it should, or is good) or a "fact". A works part now closes
+  only on a hands-on look by a helper that did not build it, Codex, or the rep's own check;
+  a fact still closes on the command and what it printed. Anyone else's look, the agent's
+  above all, is kept and shown on the card and on its count line, by who looked, and that part
+  stays open. A look signs off only by naming its run as the record prints it, and only when
+  the record shows that run finished, said something and changed nothing: a helper that edited
+  or wrote in the project, a Codex run allowed to write, piped, backgrounded or run after `||`,
+  and a `claude -p` run outside plan mode are the agent's. The card shows the run's own last
+  words beside the part. "Fact" now means only saved, committed, pushed, merged, installed,
+  deployed, a file holding something or the newest version running; any other part is "works".
+  A part you closed reads "closed on your word (#n)".
+  A part is a fact only when every clause in it is one: any clause about what something does,
+  in any words, or what it does not do ("does not crash"), makes the whole part "works",
+  however much of it is a fact, and the rep asks for one claim per part. A fact is read by its
+  sentence shape: a thing of the work is saved, committed, pushed, installed or the like, exists,
+  or runs the newest code, and only a file or the like holds quoted text or is so many bytes
+  long. Each place in the sentence takes only its own kind of word, so no wording of what the
+  work does can close as one ("lists the commands", "has 0 crashes" and a quality in quotes are
+  "works"), and the rep tells its writer what a fact looks like. A word before the thing that
+  says how good it is or what it does ("the bug-free code is committed", "the encrypting tool is
+  installed") makes the part "works" too: the words that may stand before the thing come from a
+  short list that only says which thing it is (new, local, current, untracked, the project's), so
+  a quality no list foresaw ("the resilient tool", "the fast/secure tool") is "works" as well.
+  A word counts as a file's name or a path only when it is one (it ends in a file's ending or
+  starts at a folder), so qualities joined by slashes or dots ("the secure/fast/reliable tool",
+  "the fast.secure tool") or put after the state ("installed (UTF8-compliant)") are "works", and
+  "nothing is committed for this job" is a fact. So are the plain ways a job's account names
+  facts: a thing "named greet", a text's end notes split by commas ("5 bytes, with no final
+  newline"), and "no commit was made for this work"; a name after "named" says which thing it
+  is, and a judgment there ("named correctly") is "works". A doing folded into a thing's name
+  ("the copies-every-file tool", "the logs-in tool") is "works": a plural word stands only next
+  to the thing it names ("the logs folder"), and "every" or "all" only first. A path inside the
+  project with a standard folder in it ("install-case/bin/greet"), "installed as a copy of" a
+  file, and "installed with permission to run" are facts.
+- **The briefing's buttons always show.** A card could be counted one row shorter than it is
+  drawn (an indented line a cell or two past the edge, the size beside the buttons), and then
+  scrolled with its buttons below the fold. Rows are now counted as the strip wraps them, the
+  buttons first.
 
 ## 0.7.5 (14 November 2026)
 

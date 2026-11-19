@@ -667,7 +667,101 @@ their `shown:` lines when they name where, their `closed:` lines only when the n
 message of the owner's on the job sent after `from` (one the objective was built from had its say
 when it was written), and the check's `reopen:` lines when they say what shows otherwise; a look's or a briefing's
 `shown:` line does not move a condition marked `reopened` (only the check's does, the fourth
-argument). A new job's conditions start with no mark. A draft moves only `step`, set to the draft's `firstSentence` in
+argument). Each condition has a `kind`, `works` or `fact`, which the objective writer writes
+before it (`conditionOf` reads it, `heldLine` writes it back, `bare` strips it where a reader
+copies it, and `mergeConditions` keeps a held `works`, or one with no kind, as `works` whatever
+kind a rewrite gives, and opens a shown `fact` rewritten as `works` with its where kept as
+`seen`). `conditionOf`, and everything after it through `kindOf`, reads a `fact:` as `fact` only when
+`factHolds`, by sentence shape: with its kind taken out, "runs (is on, is built from) the
+newest" read as one word, quoted text (double, curly or single quotes) read as a name, and a
+path or a file's name read as one only where it is one (`factTokens`, `factPath`): a path from
+the root, the home folder or the current one ("/x", "~/x", "./x") or a URL, a word ending in a
+file's ending from `FACT_EXT` ("sample.txt", "src/rep.ts"), and in backticks a version or a
+commit (read as one), a path or a file's name; any other word joined by a slash or a dot
+("secure/fast/reliable", "fast.secure", "sorts/validates2") is its words, joined as a hyphened
+word, and plain words in backticks ("`owner-rep`") are words that name a thing, standing alone
+as the thing held or the place only when each passes `factMod` (`pathAt`: "`secure/fast` is
+committed" and "saved in `correct`" are works, and so is a tool's bare name, "`npm-run` is
+installed", the designed safe direction); it matches no `BEHAVES` (works, runs, passes, does, prints, takes,
+returns, shows, displays, gives, accepts, responds, reads, produces and the like, in any tense,
+and does not, never, cannot and the like unless before "exist"), and `factRead` reads the whole
+of it, to its end or a closing stop, as clauses parted by a comma or a semicolon and "and" or
+"but". Each clause is one of a few shapes, each slot typed: a subject of nouns of the work
+(`FACT_THING`, after an optional lead in `FACT_DET` and up to four words of the noun's own,
+joined by commas and "and" or "or" where they are a list, "0 changed, added or deleted files";
+a noun's own word comes from a closed list, `factMod`: one of `FACT_MOD`'s plain words that say
+which thing it is (scratch, local, new, current, untracked, two, both and the like), a noun of the
+work, of the machine or an actor, a word of `FACT_STATE` ("the installed build"), any of those
+with 's ("the project's history"), a hyphened word only when each part is one ("the owner-rep
+plugin"), all of them in an order a name can take (`factRunOk`, ninth live test: a plural noun only
+last, next to the noun it names, "the logs folder", and a count, "every", "all", "two", only first,
+so a doing folded in, "the copies-every-file tool" or "the logs-in tool", is works), a word with a digit only as a version or a commit (`FACT_NAME_H`, "v2", "a1b2c3d"), and
+a number, or a path or a file's name in backticks; plain words in backticks only when they pass
+`factMod` themselves (a path is a word that starts at a folder, a URL, a word ending in a file's
+ending, or one with a slash and a standard folder of `FACT_DIR` in it, "install-case/bin/greet",
+`factPath`); a path or a file's name without backticks never ("the /secure tool", "the
+secure.c tool"); any other word, a quality or a doing above all, makes the clause works, so "the
+resilient tool", "the fast/secure tool", "the `reliable` tool" and "the bug-free/reliable tool"
+are works; "working copy" and "working tree" are read as
+a worktree and "working folder" as a folder before `BEHAVES` is matched; after
+the noun, a word of `FACT_STATE` or "made" with a place, "a commit made during this job") or
+names other than plain words in backticks, or "named" or "called" and a name (`namedAt`: quoted, in backticks, a path, a version, or one word of letters, digits, "_" and "-" that is not a judgment such as "correctly" or "well", nor a joining word, `FACT_NAMED_NOT`; the name says which thing it is, never how good it is, so "an executable named greet" stands), with places after them ("as a copy of" a path or a noun of the work, "with permission to run" or "to execute", read as one word before `BEHAVES` is matched, "anywhere", "elsewhere" or "anywhere else", "for this job", "for the session", "for this task" or "for this work" and no other "for", or a word of `FACT_PREP`, during, since and by among them, before a name,
+a noun of the work or of the machine, or one of `FACT_PLACE`: main, origin, GitHub and a few
+more); then "is", "was", "has been" and the like (or nothing, "the newest build installed")
+before one or more of `FACT_STATE` (saved, committed, pushed, merged, installed, deployed,
+tagged, published, created, written, copied, moved, renamed, changed, edited, touched,
+uploaded, archived, deleted, removed, made), with a version or a commit after it (`FACT_NAME_H`, alone or in brackets: "installed (UTF8-compliant)" is works) and places; or
+exists, does not exist, no longer exists, or runs the newest. Only a stored thing (a name or a
+noun of `FACT_STORE`) holds or contains quoted text, a thing of `FACT_HELD` (with "whose
+contents are exactly" and quoted text after it), or is a count of a unit of `FACT_UNIT` ("long", "in size" or "in length" after it), each
+with the note of its end in `FACT_TAIL` ("with no newline at the end", "(14 characters, no
+trailing newline)", "5 bytes, with no final newline": notes split by commas each end there, and what follows a comma that is no note is its own clause). "Nothing", "none" or "no" and a noun, of a place, takes only a state or
+existence, and "no" and a stored noun may also hold a thing of `FACT_HELD`, never quoted text; an agent, session or helper (`FACT_ACTOR`) saved or pushed a thing of the work; a
+later clause may leave its subject out or say "it". A slash is "or" and "&" is "and". No word
+of what the work does can stand in any slot, so such a condition is `works` whole, however much
+of it is a fact (live tests of 18 Nov 2026: section 11, the third's section 3, the fourth's 36
+wordings, the fifth's 88 in its section 1 and the sixth's 20 qualities, "the bug-free code is
+committed" and "the script contains a correct fix" among them, and "the converter transforms saved text
+to uppercase", "the README file lists the three commands", "the deployed service has 0
+crashes" and "the file is saved; it is “usable”", all works, and the writers' own
+"sample.txt in the scratch folder is 13 bytes long, with no newline at the end" and "nothing
+from this job is committed or pushed", facts; the ninth live test's "note.txt in the scratch folder
+holds exactly 'amber', 5 bytes, with no final newline", "no commit was made for this work",
+"nothing was pushed for this work" and "an executable named greet is installed in a bin folder
+inside the scratch folder", with "install-case/bin/greet is installed as a copy of
+install-case/greet-source.sh" and "… is installed with permission to run", facts the writer wrote unprompted that were read as works). The writer's prompt gives the shape of a fact,
+with one example. The
+writer's prompt asks for one claim per condition (`ONE_CLAIM`) beside its kinds.
+A `fact` moves shown on any where. A `works` condition, or one with no kind, moves shown only when
+`looksOf` finds, among every `look by <who>: <what>` in the where, one whose `who` (compared by
+`whoKey`, without case, curly apostrophes or a leading article) is the check (`CHECK_NAMES`) or a
+run (`RUN_WHO`: "helper <run>", "Codex <run>", "Codex run <run>", "helper (run <run>)"), with
+something seen and no "no", "not", "never" or "without" just before it, and `signsOff` finds that
+the run qualifies: `runFor` takes the one run of that kind in `Rec.ran` whose id ends with the
+ref, and `runQualifies` wants it `done`, unchanged and with something said; the check signs only
+through its own marks. `Rec.ran` (the newest `RUNS_KEPT`, 60) is filled in `tool.call` once the
+call returns: `runOf` reads an Agent or Task call, or a shell call `shellRun` reads as Codex
+(`codex exec`, `e` or `review` after any options, no help or version flag) or a helper (`claude -p`
+or `--print`, changing the work unless `--permission-mode plan`), as the deciding command
+(`deciding`: the last statement of `shellStatements`, joined by `&&` alone, not backgrounded);
+`codexWrites` reads a writing sandbox, the bypass, the automatic approvals, `--add-dir` or a
+`sandbox_mode` config; `runFromResult` keeps its state and last words (`RUN_SAID_MAX`, 300
+characters); a helper's own edit call, or shell call `shellChanges` reads as writing in the
+folder, adds it to `Rec.changedBy` and marks its runs changed; `runEnded` finishes a helper sent
+off on its own at its `turn.complete`. The digest prints `(run <runKey>)`, the last 8 characters
+of the call's id, beside such a call. A look that does not sign is kept under its who with why
+(`keptWho`: names no run, no such run in the record, its run changed the work, was not seen to
+finish, failed or said nothing, or not the check's own mark), and the named runs' words go on
+the condition as `said`, shown beside it (`saidMark`). Otherwise, whoever
+looked and whoever reports it, the check included, the state stays as it was and the condition
+keeps what the looks saw as `seen` and who made them as `seenBy`, from this where alone (a where
+with no look keeps the whole where, made by the agent). `objectiveText` marks such a condition on the card (`seenMark`):
+the agent's own look as "the agent looked at it itself", anyone else's by name, both still
+needing a look by someone who did not build it; `countLine` adds the same by who (`looksNote`,
+counted rather than named past `LOOKS_NOTE_MAX` characters),
+and `fillCard` brings the count line back right after the head. The prompts are shown each open
+condition's kind (`kindMark`, `works` for one with none) and what its looks saw (`promptLine`).
+The watch, the briefing, ask again and the check carry `LOOK_RULE`, which teaches the form. A new job's conditions start with no mark. A draft moves only `step`, set to the draft's `firstSentence` in
 `prompt.submit`. The card shows `revisedLine` under the head and `objectiveText` as its
 reading; the row shows `result`.
 
@@ -1072,7 +1166,7 @@ is the rep's `next(e)`. From 2.1.325 the band asks each mod for a row of its own
 is not `PLUGIN`), keeps whether any draws something in `othersDraw` by surface and draws the
 band again when that changes, and while the rep's row last drew the briefing (`cardUp`, set
 by the row's render) passes on only the rep's own row. The `AbovePrompt` render takes
-`hasBeneath` from both, so the same rules hold on every build; on the terminal each line has its width in columns and the card fills the band's rows in order of importance (`fillCard`: the head's result and one row of the message with the buttons under it first, then the judgment one row each, most telling first (stands, then the revision line from `revisedLine`, so a long message never crowds out that the reading moved), then the count line (`countLine`), then the judgment whole as the rows allow, then the message with the rows that remain, then the extras while they fit; on a band too short for the message's box between the head and the buttons the box goes and Put message in prompt, drawn while the brief has a message, carries it whole; rows counted by `cardRows` as the band wraps them), and on a surface whose band is a scrolling box in a proportional font (`sizesInColumns` false: Claude Code for VS Code, whose extension counts columns by a wide glyph and draws widths in `ch`) no line is given a width, so each fills the box, and the card is drawn whole. Buttons use bare digits for hotkeys because from the prompt box only a
+`hasBeneath` from both, so the same rules hold on every build; on the terminal each line has its width in columns and the card fills the band's rows in order of importance (`fillCard`: the buttons row, the head's result, one row of the message and the check's note cut to one row first, the note whole next, then the judgment one row each, most telling first (stands, then the revision line from `revisedLine`, so a long message never crowds out that the reading moved), then the count line (`countLine`), then the judgment whole as the rows allow, then the message with the rows that remain, then the extras while they fit; on a band too short for the message's box between the head and the buttons the box goes and Put message in prompt, drawn while the brief has a message, carries it whole, Put and Check it fixed from the whole card (`putShows`, `checkShows`); rows counted by `cardRows` as the band wraps them: `rowsOf` follows the band's wrap (wrap-ansi with trim off and hard on, so an indent and the space a row starts with take cells, a word wider than the row breaks, and `widthOf` gives a wide character two cells and a combining mark none), and `buttonRows` counts the buttons row, which wraps (`flexWrap`, three cells apart) with the size last on it, from `cardButtons`), and on a surface whose band is a scrolling box in a proportional font (`sizesInColumns` false: Claude Code for VS Code, whose extension counts columns by a wide glyph and draws widths in `ch`) no line is given a width, so each fills the box, and the card is drawn whole. Buttons use bare digits for hotkeys because from the prompt box only a
 digit presses a band button. A keyboard chord for the Rep button once rode on an unrelated
 engine action; it could not be proven and was removed on 14 Oct 2026. Do not bring it back
 without a binding that is shown working.

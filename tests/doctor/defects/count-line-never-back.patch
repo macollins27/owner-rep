@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 6e8b995..01e8602 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -5088,8 +5088,6 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
+     x => ({ ...x, result: card.result }),
+     // Why the check cannot run, or what it last said, whole.
+     x => ({ ...x, checkNote: card.checkNote }),
+-    // How much of done is shown, and whose looks are still to count, before the judgment.
+-    x => ({ ...x, count: card.count }),
+     // The judgment, one row each, the most telling first.
+     x => ({ ...x, stands: toRows(card.stands, 'Stands: ', 1, w) }),
+     // That the reading moved, and why, is the next thing the owner must not miss.

@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 7b58d6b..f3871f6 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3612,7 +3612,7 @@ const factRead = (ts: FactTok[]): boolean => {
+   }
+   const pred = (i: number, store: boolean): number[] => {
+     const out: number[] = []
+-    for (const a of aux(i)) for (const s of states(a)) out.push(...places(s))
++    for (const a of aux(i)) for (const s of states(a).concat(ts[a]?.t === 'W' ? [a + 1] : [])) out.push(...places(s))
+     // The short form, with no "is": "the newest build installed", "the docs written".
+     for (const s of states(i)) out.push(...places(s))
+     if (w(i, /^exists?$/)) out.push(...places(i + 1))

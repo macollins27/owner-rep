@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 5a5ee04..cea8dd2 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -4810,7 +4810,7 @@ const looksNote = (o: Objective): string => {
+   // review of #53: at 80 rows a count line of seventy names was dropped whole).
+   const self = by.get('') ?? 0
+   const others = [...by].reduce((n, [who, k]) => (who === '' ? n : n + k), 0)
+-  const short = [self > 0 ? `the agent looked at ${self} itself` : '', others > 0 ? `${others} more looked at by whoever built it or by no run in the record, not counted` : ''].filter(p => p !== '')
++  const short = [self > 0 ? `the agent looked at ${self} itself` : '', others > 0 ? `${others} more looked at, not counted` : ''].filter(p => p !== '')
+   return ` (${short.join('; ')}; each still needs a look by someone who did not build it)`
+ }
+ // The longest the note beside the count is drawn with names.

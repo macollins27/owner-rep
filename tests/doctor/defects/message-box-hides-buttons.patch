@@ -1,11 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 6e8b995..327f8b4 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2614,7 +2614,6 @@
+@@ -5083,7 +5083,6 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
      spent: '',
      reading: '',
    }
 -  if (cardRows(c, cols) > maxRows) c = { ...c, message: '' }
    const steps: Array<(x: CardText) => CardText> = [
      x => ({ ...x, result: card.result }),
-     // The judgment, one row each, the most telling first.
+     // Why the check cannot run, or what it last said, whole.

@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 5a5ee04..5375fdb 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -545,7 +545,7 @@ export function shellRun(command: string): { kind: 'helper' | 'codex'; changes:
+   const head = nameOf(argv[0])
+   const rest = argv.slice(1)
+   if (rest.some(w => w === '-h' || w === '--help' || w === '-V' || w === '--version')) return null
+-  if (head === 'codex') {
++  if (head === 'codex' && rest.length === 0) {
+     let k = 0
+     while (k < rest.length && (rest[k] ?? '').startsWith('-')) k += CODEX_VALUED.has(rest[k] ?? '') ? 2 : 1
+     const sub = rest[k] ?? ''

@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 6e8b995..9ba708a 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -4886,7 +4886,7 @@ export const rowsOf = (text: string, width: number): number => {
+     let rows = 1
+     let used = 0
+     line.split(' ').forEach((word, i) => {
+-      if (i > 0) {
++      if (i > 0 && used > 0) {
+         if (used >= w) {
+           rows += 1
+           used = 0

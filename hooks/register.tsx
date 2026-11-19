@@ -98,7 +98,6 @@ import {
   worktreeDirsOf,
   linkTargets,
   holdsCopiesOf,
-  checkBarred,
   noFenceNote,
   copyArgvs,
   type Host,
@@ -116,6 +115,9 @@ import {
   doingFor,
   firstSentence,
   fillCard,
+  putShows,
+  checkShows,
+  CHECKING_LINE,
   sizesInColumns,
   fit,
   fitTail,
@@ -184,6 +186,17 @@ import {
   HUMAN_SCAN_BUDGET_MS,
   type RecordRow,
   objectiveText,
+  looksOf,
+  signsOff,
+  keptWho,
+  runOf,
+  runFor,
+  runFromResult,
+  runEnded,
+  shellChanges,
+  kindOf,
+  EDIT_TOOLS,
+  RUNS_KEPT,
   openConditions,
   parseBrief,
   parseCheck,
@@ -215,6 +228,7 @@ import {
   watchPrompt,
   type BriefAnswer,
   type Condition,
+  type Run,
   type Memory,
   type Objective,
   type ObjectiveAnswer,
@@ -328,6 +342,14 @@ type Rec = {
   // The last write whose every attempt failed: when, and the last message it was shown;
   // cleared by the next write that lands. A fresh start writes again while it is set.
   failedWrite?: { at: number; upTo: number }
+  // The runs of a helper and of Codex started in the session (`runOf`), newest last, at most
+  // RUNS_KEPT, for `signsOff`: each by its call's id, with how it ended, whether it changed the
+  // work and its own last words. Absent until the first, and on records from before it (whose
+  // `runs` counts are not read), where no look by a helper or Codex signs.
+  ran?: Run[]
+  // The helpers seen writing or changing the work (an edit tool, or a shell call
+  // `shellChanges` reads as a change), by agent id: a run of theirs changed the work.
+  changedBy?: string[]
   // The calls counted by kind, and how the cards the gate refused ended (`countCall`, `countEnd`);
   // absent until the first call. Printed by `/owner-rep-counts`, never shown on the band.
   counts?: Counts
@@ -1246,7 +1268,15 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number, r
 // the same conversation cannot undo what the paid check found. A draft's
 // number closes nothing, nor does a plan's or an approval's (a yes adds and
 // never quietly takes away, as `canClose` holds for the writer), and a shown
-// or reopen mark without a where is not taken. True when a condition moved.
+// or reopen mark without a where is not taken. A shown mark on a condition not
+// marked "fact" whose where has no look that `signsOff` takes (only the agent's own
+// look, whoever reports it, the check included; a look by anyone off the list; a
+// signer's look denied, empty, still to come or by one who wrote the work; one by a
+// helper or Codex whose run the record does not hold, or by the check outside its
+// own marks; or no look at all) moves nothing: the condition keeps its
+// state and carries what was seen as `seen`, and who looked as `seenBy` (G44).
+// The state a condition is held in keeps its kind. True when a condition moved
+// or took a new `seen`.
 function applyMarks(
   rec: Rec,
   shown: Array<{ text: string; by: string }>,
@@ -1257,22 +1287,44 @@ function applyMarks(
   if (o === null) return false
   const notHis = new Set(rec.owner.filter(m => m.kind === 'plan' || approvalOf(m)).map(m => m.n))
   const his = hisFrom(rec, Math.max(o.since, o.from + 1)).filter(n => !notHis.has(n))
+  // The runs the record holds, and whether these are the check's own marks.
+  const ran = rec.ran ?? []
+  const own = check !== null
   let changed = false
   const done = o.done.map((c): Condition => {
+    const kind: { kind?: Condition['kind'] } = c.kind === undefined ? {} : { kind: kindOf(c) }
     const close = closed.find(x => x.by !== null && his.includes(x.by) && same(x.text, c.text))
     if (close !== undefined && c.state !== 'closed') {
       changed = true
-      return { text: c.text, state: 'closed', by: `#${close.by}` }
+      return { text: c.text, state: 'closed', by: `#${close.by}`, ...kind }
     }
     const back = check?.reopen.find(x => x.by !== '' && same(x.text, c.text))
     if (back !== undefined && c.state === 'shown') {
       changed = true
-      return { text: c.text, state: 'not-shown', by: back.by, reopened: true }
+      return { text: c.text, state: 'not-shown', by: back.by, reopened: true, ...kind }
     }
     const show = shown.find(x => x.by !== '' && same(x.text, c.text))
     if (show !== undefined && (c.state === 'open' || c.state === 'not-shown') && !(c.reopened === true && check === null)) {
+      // A "works" condition (or one of no kind, from before kinds) is shown only by a look
+      // someone on the sign-off list made, any of the looks in the where. Every other look,
+      // the agent's own above all, and a where with no look, is kept as shown evidence with
+      // who made it, and leaves the condition as it was. A "fact" is shown by its where (G44).
+      const looks = looksOf(show.by)
+      // Beside the looks, the own last words of the runs they name, from the record.
+      const said = [...new Set(looks.map(l => runFor(l, ran)?.said ?? '').filter(w => w.trim() !== ''))].join(' / ')
+      const saidOf = said === '' ? {} : { said }
+      if (kindOf(c) !== 'fact' && !looks.some(l => signsOff(l, ran, own))) {
+        const seen = looks.length === 0 ? show.by.trim() : looks.map(l => l.what).filter(w => w !== '').join('; ')
+        const seenBy = [...new Set(looks.map(l => keptWho(l, ran, own)))].join(' and ')
+        if (seen === '' || (c.seen === seen && (c.seenBy ?? '') === seenBy && (c.said ?? '') === said)) return c
+        changed = true
+        // Who looked comes from this where alone: one with no look is the agent's own,
+        // never the last named looker's (Codex review of #53); so do the run's words.
+        const { seenBy: _was, said: _said, ...rest } = c
+        return { ...rest, seen, ...(seenBy === '' ? {} : { seenBy }), ...saidOf }
+      }
       changed = true
-      return { text: c.text, state: 'shown', by: show.by }
+      return { text: c.text, state: 'shown', by: show.by, ...kind, ...saidOf }
     }
     return c
   })
@@ -2981,7 +3033,38 @@ export const register: Register = on => {
 
   on('tool.call', async ($, e, next) => {
     if (ownCheck) return next(e)
-    if (e.agentId !== undefined) return next(e)
+    // A helper's or Codex's run, the agent's or a helper's, is recorded once its call returns,
+    // with how it ended and its own last words, so a look naming it can sign off (`signsOff`).
+    // A helper's own call that changes the work marks the helper, and its runs, as changed.
+    const input = e as unknown as Record<string, unknown>
+    const run = runOf(String(e.tool), input.command)
+    const helper = e.agentId
+    const changes =
+      helper !== undefined &&
+      (EDIT_TOOLS.has(String(e.tool)) ||
+        (String(e.tool) === 'Bash' && typeof input.command === 'string' && shellChanges(input.command, await $.session.cwd().catch(() => ''))))
+    const ranOne = async <T,>(result: T): Promise<T> => {
+      if (run === null && !changes) return result
+      await sessionId($)
+        .then(id =>
+          changeRec($, id, r => {
+            let ran = r.ran ?? []
+            if (changes && helper !== undefined) {
+              r.changedBy = [...new Set([...(r.changedBy ?? []), helper])].slice(-RUNS_KEPT)
+              ran = ran.map(x => (x.agentId === helper ? { ...x, changed: true } : x))
+            }
+            if (run !== null) {
+              const got = runFromResult(run.changes, result)
+              const by = got.agentId !== undefined && (r.changedBy ?? []).includes(got.agentId)
+              ran = [...ran, { id: String(e.tool_use_id), kind: run.kind, ...got, changed: got.changed || by }]
+            }
+            r.ran = ran.slice(-RUNS_KEPT)
+          }),
+        )
+        .catch(() => undefined)
+      return result
+    }
+    if (e.agentId !== undefined) return ranOne(await next(e))
     const tool = String(e.tool)
     const doing = doingFor(tool, e as unknown as Record<string, unknown>)
     const waits = tool === 'AskUserQuestion' || tool === 'ExitPlanMode'
@@ -2996,7 +3079,7 @@ export const register: Register = on => {
       // Drawing is best effort.
     }
     try {
-      const result = await next(e)
+      const result = await ranOne(await next(e))
       // What the plan screen answered is stored after the call; a thrown call stores nothing.
       if (tool === 'ExitPlanMode') await takePlanScreen($, e, result).catch(() => undefined)
       return result
@@ -3050,6 +3133,16 @@ export const register: Register = on => {
     if (ownCheck) return next(e)
     if (e.agentId !== undefined) {
       const gone = e.agentId
+      // A helper sent off to run on its own ends here: its run finishes with its answer or fails.
+      const reason = String((e as unknown as { reason?: unknown }).reason ?? (e.isAborted ? 'aborted' : 'answer'))
+      await sessionId($)
+        .then(id =>
+          changeRec($, id, r => {
+            if (!(r.ran ?? []).some(x => x.agentId === gone && x.state === 'running')) return
+            r.ran = (r.ran ?? []).map(x => (x.agentId === gone && x.state === 'running' ? runEnded(x, reason, String(e.answer ?? '')) : x))
+          }),
+        )
+        .catch(() => undefined)
       await update($, helpersA, ids => (ids ?? []).filter(i => i !== gone)).catch(() => undefined)
       await update($, nowA, n => ({ ...(n ?? IDLE), helpers: Math.max(0, (n?.helpers ?? 0) - 1) })).catch(
         () => undefined,
@@ -3174,6 +3267,13 @@ export const register: Register = on => {
     )
     const choices = (...buttons: RenderNodeList) => (
       <Box flexDirection="row" gap={3} paddingLeft={2}>
+        {buttons}
+      </Box>
+    )
+    // The card's buttons row in the band's columns: an item that would pass the edge wraps
+    // whole onto a row below, three cells from the next, as `buttonRows` counts it.
+    const cardChoices = (...buttons: RenderNodeList) => (
+      <Box flexDirection="row" flexWrap="wrap" columnGap={3} paddingLeft={2} width={w(cols)}>
         {buttons}
       </Box>
     )
@@ -3343,7 +3443,7 @@ export const register: Register = on => {
           ) : undefined}
           {shown.isChecking ? (
             <Box paddingLeft={2}>
-              <Text color="suggestion">Checking the record and the files… the card updates when it is done.</Text>
+              <Text color="suggestion">{CHECKING_LINE}</Text>
             </Box>
           ) : undefined}
           {shown.checked === null && !shown.isChecking && shown.checkNote === '' ? (
@@ -3379,8 +3479,8 @@ export const register: Register = on => {
               </Text>
             </Box>
           ) : undefined}
-          {choices(
-            shown.checked === null && !shown.isChecking && !checkBarred(shown.checkNote) ? (
+          {cardChoices(
+            checkShows(shown) ? (
               <Button
                 key="check"
                 plain
@@ -3393,7 +3493,7 @@ export const register: Register = on => {
                 }}
               />
             ) : undefined,
-            brief.message !== '' ? (
+            putShows(shown) ? (
               <Button
                 key="put"
                 plain

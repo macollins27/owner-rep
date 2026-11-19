@@ -18,7 +18,11 @@ anything, it keeps:
   the last three cards' messages;
 - the notes the rep has shown, and the text of up to 10 notes other mods drew in the strip,
   so none is repeated;
-- counters of what the rep has spent, and of how its model calls came back and were read.
+- counters of what the rep has spent, and of how its model calls came back and were read;
+- the last 60 helper and Codex runs the agent or its helpers started: each one's tool-call id,
+  whether it finished, failed or is still going, whether it changed the work, and up to 300
+  characters of its own last words (the end of a helper's answer, or of what Codex printed), so
+  a look naming that run can be checked against what the run said.
 
 It also keeps a list of up to 200 of its own drafts from sessions that have left the store,
 so a message it wrote is never mistaken for one of yours.
@@ -42,7 +46,7 @@ and the own-words call. Each copy holds the full text sent (which includes parts
 as listed under "What leaves your machine"), the full reply, the settings, the time it took,
 the tokens it used, what the rep read in the reply (counts of the conditions it marked, a card's
 words and the rules that refused it) and, for a card, the job's open conditions as the rep held
-them, with what was seen of each. A text sent more than once is kept once, checked by SHA-256. A session's
+them, with each one's kind (works or fact), what was seen of it and who looked. A text sent more than once is kept once, checked by SHA-256. A session's
 folder is removed once nothing in it has changed for 14 days (except the session starting, so a
 session resumed later keeps its calls), and all the folders together are
 kept under about 1 GB: past that, the folders changed longest ago are removed first (never the

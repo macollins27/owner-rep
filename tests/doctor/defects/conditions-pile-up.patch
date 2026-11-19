@@ -1,8 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index e485b6e..dd1a39c 100644
+index 3f27870..a282a83 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -726,7 +726,7 @@ export function parseObjective(text: string): ObjectiveAnswer {
+@@ -3101,7 +3101,7 @@ export function parseObjective(text: string): ObjectiveAnswer {
        // A condition listed twice is kept once, the first, so a first write cannot start with repeats.
        done: items(p.done)
          .map(conditionOf)
@@ -11,7 +11,7 @@ index e485b6e..dd1a39c 100644
        step: oneLine(p.step),
      },
      cause,
-@@ -1400,7 +1400,7 @@ export function mergeConditions(
+@@ -4580,7 +4580,7 @@ export function mergeConditions(
    his: readonly number[],
  ): Condition[] {
    const like = (a: string, b: string): boolean => same(bare(a), bare(b))
@@ -19,4 +19,4 @@ index e485b6e..dd1a39c 100644
 +  const once = proposed
    const out = once.map((p): Condition => {
      const h = held.find(x => like(x.text, p.text))
-     if (h === undefined) return p.state === 'shown' ? { text: p.text, state: 'open', by: '' } : p
+     if (h === undefined) return p.state === 'shown' ? { text: p.text, state: 'open', by: '', ...(p.kind === undefined ? {} : { kind: p.kind }) } : p
