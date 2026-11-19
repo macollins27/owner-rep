@@ -666,7 +666,8 @@ test('the brief keeps every judgment line word for word and stays under its word
   // 4,360 since prompt group 3 (4,122 before it, 4,331 after): the four states defined once
   // (REP_STATES, in place of the mark line) and the one standard of proof by kind (REP_SHOWN_BODY),
   // with the mind bullet and the message specs pointing to it rather than restating it.
-  expect(words(b)).toBeLessThan(4360)
+  // 4,400 since the ninth live test (4,373): shown false only where the record shows the opposite.
+  expect(words(b)).toBeLessThan(4400)
   expect(b).toContain(LOOK_RULE)
   expect(w).toContain(LOOK_RULE)
   // 3,350 for the Heads up alone: it carries LIST_GAP_RULE, about 130 words, and the briefing does not.
@@ -674,7 +675,8 @@ test('the brief keeps every judgment line word for word and stays under its word
   // review of #53): LOOK_RULE says how a look names its run, about 15 words.
   // 4,230 since prompt group 2, measured as the briefing's is above (4,129 by that measure before it).
   // 4,420 since prompt group 3, as for the briefing (4,200 before it, 4,392 after).
-  expect(words(w)).toBeLessThan(4420)
+  // 4,460 since the ninth live test (4,434), as for the briefing.
+  expect(words(w)).toBeLessThan(4460)
   // The bookkeeping the code enforces is gone from the brief.
   for (const gone of ['under the rule given with the conditions', 'sent after #', 'never the number of a draft', 'A later message replaces an earlier one only where the owner says so', 'Each condition of "done" stays open until the conversation shows it']) {
     expect(b).not.toContain(gone)
@@ -2039,6 +2041,9 @@ test('rule: every read, the check, the writer and the own-words call hold one st
   expect(ownWordsPrompt(m, OPEN_JOB_OPEN, card as never)).toContain("and where proof is missing, the proof that would show it: a fact's command and what it printed, or a hands-on look at the real thing")
   const check = checkPrompt({ sessionId: 's', cwd: '/w', copy: '/c', reading: objectiveText(o), conditions: o.done, shown: [], owner: m.owner, brief: card as never, writtenAt: '10:00', from: 1, unanswered: [], guarded: [] } as never)
   expect(check).toContain(`where proof is missing it asks for ${named}: a fact's command and what it printed, or a hands-on look at the real thing`)
+  // The ninth live test: shown false only where the record shows the opposite, in the reads and the check.
+  expect(REP_SYSTEM).toContain('A claim is shown false only where the record shows the opposite, never by a guess at what a command may have done; a claim the record shows neither way is not shown, and nothing you write calls it untrue or inaccurate.')
+  expect(check).toContain('A claim is false when the record or the disk shows otherwise at that time; a guess at what a command may have done is not that showing. A claim is not shown when nothing proves it either way, and is never put under "false".')
   // The writer: a quality condition names what a person using the result would notice, right after one claim per condition.
   expect(OBJECTIVE_SYSTEM).toContain(`${ONE_CLAIM} ${rep.QUALITY_CONDITION} Write a held condition's kind back as held.`)
   expect(rep.QUALITY_CONDITION).toContain('names what a person using it would notice, in the owner\'s terms')

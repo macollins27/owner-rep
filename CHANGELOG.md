@@ -9,7 +9,8 @@ What changed in each release of Owner Rep, newest first. The full record is the
   standard for what shows a condition: a fact is shown by the command that shows it and what
   that printed; the result working or being good, by someone looking at the real thing. Where
   proof is missing, the message asks for the one that fits, not a hands-on look for a fact.
-  "Not shown" is said plainly and never as a failure. When the job's account names how good the
+  "Not shown" is said plainly and never as a failure, and a claim is called untrue only where
+  the record shows the opposite, never on a guess at what the agent's commands did. When the job's account names how good the
   result must be, it says what a person using it would notice, so the condition can close.
 - **The rep's reads lost a frame left over from their first version.** Each Heads up look and
   each briefing opened with a block in capitals, written when the look was a copy of the agent's

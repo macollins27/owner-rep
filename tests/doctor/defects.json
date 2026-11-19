@@ -4528,5 +4528,17 @@
     "breaks": "Words in backticks stand as the thing held or the place whatever they are, so \"`secure/fast` is committed\" and \"the file is saved in `correct`\" close on the builder's own run.",
     "patch": "fact-tick-noun-any.patch",
     "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "shown-false-guess-reads",
+    "breaks": "The reads are not told that a claim is false only where the record shows the opposite, so a card calls an unproven claim untrue on a guess at what the agent's commands did (ninth live test, session A).",
+    "patch": "shown-false-guess-reads.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "shown-false-guess-check",
+    "breaks": "The check is not told that a guess is no showing, so it files a claim the record shows neither way under \"false\" (ninth live test).",
+    "patch": "shown-false-guess-check.patch",
+    "fixed": "tested 2026-11-18"
   }
 ]
