@@ -1,8 +1,8 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 847dbab..eb2a4d6 100644
+index b6129e7..27c6908 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1533,7 +1533,7 @@ async function readSession($: EngineInterface, sid: string, rec: Rec, kind: Call
+@@ -1552,7 +1552,7 @@ async function readSession($: EngineInterface, sid: string, rec: Rec, kind: Call
    const ask = (prompt: string | PromptBlock[]) =>
      $.model.complete({
        model: OBJECTIVE_MODEL,
@@ -10,4 +10,4 @@ index 847dbab..eb2a4d6 100644
 +      system: REP_SYSTEM.slice(0, REP_SYSTEM.indexOf('\n\n## Private data')),
        prompt,
        maxTokens: RECORD_MAX_TOKENS,
-       effort: 'high',
+       effort,

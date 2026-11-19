@@ -9,7 +9,7 @@
     "name": "flag-shown-twice",
     "breaks": "The watch forgets which flags it has shown, so the same note comes back after the owner dismissed it.",
     "patch": "flag-shown-twice.patch",
-    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-29; remade 2026-10-30; remade 2026-10-30"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "watch-never-backs-off",
@@ -33,7 +33,7 @@
     "name": "flag-replaces-card",
     "breaks": "A watch flag replaces the briefing card instead of waiting for the row.",
     "patch": "flag-replaces-card.patch",
-    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-29; remade 2026-10-30; remade 2026-10-30"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "stop-never-marked",
@@ -123,7 +123,7 @@
     "name": "writer-forks-conversation",
     "breaks": "The objective writer's call is made as a fork of the agent's whole conversation instead of a plain completion over the owner's messages, so the writer reads everything the agent said, its account of the job included.",
     "patch": "writer-forks-conversation.patch",
-    "fixed": "tested 2026-10-14 as agent-moves-reading; renamed and remade 2026-10-15; remade 2026-10-16"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "revision-cause-dropped",
@@ -255,7 +255,7 @@
     "name": "condition-dropped-uncited",
     "breaks": "A correction keeps only the conditions the writer wrote again, so a message that bounds the next step drops parts of what \"done\" means that the owner never let go.",
     "patch": "condition-dropped-uncited.patch",
-    "fixed": "2026-10-15; remade 2026-10-16; remade 2026-11-17"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "stop-while-open",
@@ -273,7 +273,7 @@
     "name": "verdict-missing-continues",
     "breaks": "An answer with no verdict line, or one naming neither, is read as continue, so it passes the gate while a condition is open.",
     "patch": "verdict-missing-continues.patch",
-    "fixed": "2026-10-15"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "stop-next-unread",
@@ -345,7 +345,7 @@
     "name": "conditions-pile-up",
     "breaks": "A condition the writer lists twice, or with a state mark copied into its text, is kept twice, so the list of what done means grows by repeats.",
     "patch": "conditions-pile-up.patch",
-    "fixed": "2026-10-15; remade 2026-10-16; remade 2026-11-17"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "writer-failure-uncounted",
@@ -405,7 +405,7 @@
     "name": "merge-raises-state",
     "breaks": "The writer's merge takes a proposed state over the held one by rank, so a correction can drop the check's reopened mark and its finding, and the merge alone would raise a condition to shown.",
     "patch": "merge-raises-state.patch",
-    "fixed": "2026-10-16; remade 2026-11-17"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "stop-filter-broad",
@@ -441,7 +441,7 @@
     "name": "writer-no-system",
     "breaks": "The objective writer is sent no system prompt, so its rules never reach it.",
     "patch": "writer-no-system.patch",
-    "fixed": "2026-10-16"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "writer-fence-closable",
@@ -807,7 +807,7 @@
     "name": "record-items-unused",
     "breaks": "The record read ignores the messages read from the transcript and labels rows by NOT_TYPED alone, so another session's message is shown as the owner's words.",
     "patch": "record-items-unused.patch",
-    "fixed": "2026-10-16; remade 2026-10-31 and 2026-11-10"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "human-items-deduped",
@@ -1083,7 +1083,7 @@
     "name": "no-copy-brief-says-write",
     "breaks": "When no copy could be made and the check runs in the agent's own folder, its brief still tells it to write what it likes there and that the copy is removed after.",
     "patch": "no-copy-brief-says-write.patch",
-    "fixed": "2026-10-16"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "seed-gated-on-typed-rows",
@@ -1197,7 +1197,7 @@
     "name": "brief-overstates-fence",
     "breaks": "The check's brief says the fence denies every write outside the copy, while in fact it is a list of guarded folders, so the run believes a write it should not make would be stopped.",
     "patch": "brief-overstates-fence.patch",
-    "fixed": "2026-10-17"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "refused-count-claims-fence",
@@ -1275,7 +1275,7 @@
     "name": "brief-says-every-place",
     "breaks": "The check's brief says the fence guards every place in the home whose contents run later, while it guards a list of the main ones, so the run believes a write it should not make would be stopped.",
     "patch": "brief-says-every-place.patch",
-    "fixed": "2026-10-17"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "no-fence-forgotten",
@@ -1479,7 +1479,7 @@
     "name": "brief-repo-unsaid",
     "breaks": "The brief drops the repository from the places the fence guards while still naming the links, so the run is not told why staging or committing in the copy is refused.",
     "patch": "brief-repo-unsaid.patch",
-    "fixed": "2026-10-17"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "pnpm-goes-online",
@@ -1515,7 +1515,7 @@
     "name": "unanswered-not-passed",
     "breaks": "When the link or git question gets no answer the brief still says the fence guards the repository and the installs the links lead to, so the run may commit or change an install trusting a guard that is not there.",
     "patch": "unanswered-not-passed.patch",
-    "fixed": "2026-10-17; remade 2026-11-17"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "links-unanswered-as-none",
@@ -1533,13 +1533,13 @@
     "name": "brief-repo-unanswered-unsaid",
     "breaks": "When the git question gets no answer the brief still says the repository is guarded, so the run may stage, commit or stash in a repository the fence does not guard.",
     "patch": "brief-repo-unanswered-unsaid.patch",
-    "fixed": "2026-10-17"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "brief-links-unanswered-unsaid",
     "breaks": "When the link question gets no answer the brief does not say the installs the links lead to are unguarded, so the run may change one believing the fence would stop it.",
     "patch": "brief-links-unanswered-unsaid.patch",
-    "fixed": "2026-10-17"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "git-inside-not-searched",
@@ -1713,13 +1713,13 @@
     "name": "brief-links-fence-unsaid",
     "breaks": "The brief does not name the places links in the copy lead to among those the fence guards, so the run is not told why writing through a link that leads out is refused.",
     "patch": "brief-links-fence-unsaid.patch",
-    "fixed": "2026-10-17"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "brief-links-unfound-unsaid",
     "breaks": "The brief does not tell the run to write nothing through a link that leads out of the copy when those links could not be found, so it may write through one.",
     "patch": "brief-links-unfound-unsaid.patch",
-    "fixed": "2026-10-17"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "blank-records-kept",
@@ -1797,7 +1797,7 @@
     "name": "own-words-not-asked",
     "breaks": "A briefing refused twice is never written in the rep's own words, so the card always shows the fixed texts in place of what the rep found.",
     "patch": "own-words-not-asked.patch",
-    "fixed": "2026-10-19; remade 2026-10-29; remade 2026-10-30; remade 2026-10-31"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "own-words-stop-taken",
@@ -1875,7 +1875,7 @@
     "name": "approved-cursor-not-saved",
     "breaks": "An answered Heads up never stores where its rotation of approved plans stopped, so every look shows the same plans and the older ones are never compared.",
     "patch": "approved-cursor-not-saved.patch",
-    "fixed": "2026-10-29"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "unassessed-dropped",
@@ -2235,7 +2235,7 @@
     "name": "heads-up-not-carried",
     "breaks": "The look shows the reader's own flag and never reads the walk, so a dropped step behind another flag stays silent.",
     "patch": "heads-up-not-carried.patch",
-    "fixed": "2026-10-30"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "heads-up-no-sign-not-carried",
@@ -2427,7 +2427,7 @@
     "name": "empty-refusal-no-second-read",
     "breaks": "A card refused only for its empty message gets no second read, so the model is not asked to write the message.",
     "patch": "empty-refusal-no-second-read.patch",
-    "fixed": "2026-10-30"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "own-words-silent-on-empty",
@@ -2463,13 +2463,13 @@
     "name": "brief-card-may-leave-empty",
     "breaks": "The message placeholder in the brief's output structure lets the model leave the message empty without the limit.",
     "patch": "brief-card-may-leave-empty.patch",
-    "fixed": "2026-10-30"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "check-may-leave-empty",
     "breaks": "The check prompt lets the checker leave the message empty with conditions open.",
     "patch": "check-may-leave-empty.patch",
-    "fixed": "2026-10-30"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "held-step-line-dropped",
@@ -2973,7 +2973,7 @@
     "name": "walk-rule-missing",
     "breaks": "The prompt omits walk rule; a model's obedience to the rule is proved by the harness cases.",
     "patch": "walk-rule-missing.patch",
-    "fixed": "2026-11-01"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "not-assessed-rule-missing",
@@ -2991,13 +2991,13 @@
     "name": "combined-meaning-missing",
     "breaks": "The prompt omits combined meaning; a model's obedience to the rule is proved by the harness cases.",
     "patch": "combined-meaning-missing.patch",
-    "fixed": "2026-11-01; remade 2026-11-14"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "whole-before-steps-missing",
     "breaks": "The prompt omits whole before steps; a model's obedience to the rule is proved by the harness cases.",
     "patch": "whole-before-steps-missing.patch",
-    "fixed": "2026-11-01; remade 2026-11-14"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "draft-counts-as-approval",
@@ -3195,7 +3195,7 @@
     "name": "approved-check-made-method",
     "breaks": "The objective writer is told that a check or test is the agent's method even when it is a step of a plan the owner approved, so 0.6.0's rule drops an approved step.",
     "patch": "approved-check-made-method.patch",
-    "fixed": "2026-11-10"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "approved-check-called-waste",
@@ -3213,7 +3213,7 @@
     "name": "approval-closing-dropped",
     "breaks": "The objective writer is not told that a yes closes a condition that only waited on the plan, so it lists that condition as dropped by the approval and the card asks the owner to settle what the yes already did.",
     "patch": "approval-closing-dropped.patch",
-    "fixed": "2026-11-10; remade 2026-11-14"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "other-rows-unread",
@@ -3267,7 +3267,7 @@
     "name": "unshown-turn-approval-loose",
     "breaks": "The writer is told to mark a message after a turn none of which is shown whenever it approves, so go-ahead words such as \"keep going\" are taken for a plan approval and the card names a plan nobody approved.",
     "patch": "unshown-turn-approval-loose.patch",
-    "fixed": "2026-11-14"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "unshown-turn-note-loose",
@@ -3285,7 +3285,7 @@
     "name": "check-mise-config-read",
     "breaks": "The check's run starts claude by name with the owner's command path, mise's shims on it, so mise runs in the copy before the fence: a mise.toml there is refused as untrusted and the check stops (\"mise ERROR\"), or its env and hooks, or an env file mise is told to read, run outside the fence.",
     "patch": "check-mise-config-read.patch",
-    "fixed": "2026-11-14; remade 2026-11-14"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "pnpm-ask-mise-config-read",
@@ -3345,7 +3345,7 @@
     "name": "guard-misses-check-path",
     "breaks": "The fence and the links question take only the owner's command path, so the folders the check's path takes in place of mise's shims are left writable.",
     "patch": "guard-misses-check-path.patch",
-    "fixed": "2026-11-14"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "stale-copies-left",
@@ -3531,7 +3531,7 @@
     "name": "own-check-spawn-unmarked",
     "breaks": "The check is spawned without the OWNER_REP_CHECK mark, so a check run outside the copies' folder is watched like the owner's agent.",
     "patch": "own-check-spawn-unmarked.patch",
-    "fixed": "2026-11-15; remade 2026-11-17"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "own-check-messages-kept",
@@ -3573,19 +3573,19 @@
     "name": "check-instructions-line-dropped",
     "breaks": "The check's brief no longer says the agent's instruction files were not loaded and where to read them.",
     "patch": "check-instructions-line-dropped.patch",
-    "fixed": "2026-11-15"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "check-loads-claude-mds",
     "breaks": "The check's own session loads every CLAUDE.md, the owner's own among them, against the owner's choice.",
     "patch": "check-loads-claude-mds.patch",
-    "fixed": "2026-11-15; remade 2026-11-17"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "check-mcp-not-passed",
     "breaks": "The agentsview entry found in the owner's .claude.json is never given to the check, which starts with no MCP server.",
     "patch": "check-mcp-not-passed.patch",
-    "fixed": "2026-11-15; remade 2026-11-17"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "check-mcp-config-dir-ignored",
@@ -3699,13 +3699,13 @@
     "name": "record-cap-low",
     "breaks": "The watch and briefing reply cap drops back under the engine's 64,000 ceiling, so a long answer is cut short again.",
     "patch": "record-cap-low.patch",
-    "fixed": "tested 2026-11-17"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "own-words-cap-low",
     "breaks": "The own-words reply cap drops back to 4,000, under the engine's ceiling, so a long own-words answer is cut short again.",
     "patch": "own-words-cap-low.patch",
-    "fixed": "tested 2026-11-17"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "watch-cut-not-reread",
@@ -3795,7 +3795,7 @@
     "name": "works-not-sticky",
     "breaks": "A rewrite can turn a held \"works\" condition into a fact, so the agent's own run then closes a condition that needed a look by someone who did not build it.",
     "patch": "works-not-sticky.patch",
-    "fixed": "tested 2026-11-17; remade 2026-11-17"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "seen-blames-agent",
@@ -3831,7 +3831,7 @@
     "name": "kind-not-parsed",
     "breaks": "The writer's \"works:\" or \"fact:\" is dropped as it is read, so a fact needs a look it cannot have and a works condition depends on the default.",
     "patch": "kind-not-parsed.patch",
-    "fixed": "tested 2026-11-17; remade 2026-11-17"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "kind-not-held",
@@ -3903,13 +3903,13 @@
     "name": "kindless-turns-fact",
     "breaks": "A condition of no kind, read as works, turns fact when a rewrite calls it so, and the agent's own run then shows it.",
     "patch": "kindless-turns-fact.patch",
-    "fixed": "tested 2026-11-17"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "shown-fact-stays-shown",
     "breaks": "A fact held shown and rewritten as works stays shown on its old where, which no look by someone who did not build it made.",
     "patch": "shown-fact-stays-shown.patch",
-    "fixed": "tested 2026-11-17"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "mislabelled-fact-kept",
@@ -3939,7 +3939,7 @@
     "name": "writer-run-is-fact",
     "breaks": "The writer is told a run passing is a fact, so it marks the result working as something the agent's own run shows.",
     "patch": "writer-run-is-fact.patch",
-    "fixed": "tested 2026-11-17"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "look-rule-allows-unrun",
@@ -4107,7 +4107,7 @@
     "name": "check-plugins-left-on",
     "breaks": "The check's own session loads every plugin the owner turned on, this mod among them, with their hooks, skills and agents.",
     "patch": "check-plugins-left-on.patch",
-    "fixed": "tested 2026-11-17"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "check-plugins-not-written",
@@ -4137,19 +4137,19 @@
     "name": "watch-no-think-back",
     "breaks": "The watch's task tells the model again not to think it over, against the effort it is run at.",
     "patch": "watch-no-think-back.patch",
-    "fixed": "tested 2026-11-18; remade 2026-11-18 on the merge of prompts into group 2"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "record-system-no-tools-gone",
     "breaks": "The reads' system prompt no longer says the reader has no tools and gives one answer.",
     "patch": "record-system-no-tools-gone.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "record-system-secrets-gone",
     "breaks": "The reads' system prompt no longer keeps secrets, keys, passwords and personal data out of what the reader writes.",
     "patch": "record-system-secrets-gone.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "variant-sends-unchanged",
@@ -4215,7 +4215,7 @@
     "name": "rep-rules-in-task",
     "breaks": "The watch's task carries a copy of the rep's standing rules again, so a rule has two sources and the copies can drift apart.",
     "patch": "rep-rules-in-task.patch",
-    "fixed": "tested 2026-11-18; remade 2026-11-18 on the merge of prompts into group 2"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "rep-patch-sentence-back",
@@ -4239,13 +4239,13 @@
     "name": "deciding-rules-dropped",
     "breaks": "The watch's request no longer restates the rules that decide its answer after the record, where a long record buries the system prompt's copy.",
     "patch": "deciding-rules-dropped.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "own-words-unseen-gone",
     "breaks": "The own-words call loses the shared lines on standing instructions and steps it could not assess, which it is meant to take from the same strings as the reads.",
     "patch": "own-words-unseen-gone.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "rep-system-edit-unanchored",
@@ -4299,7 +4299,7 @@
     "name": "read-drops-private-data",
     "breaks": "The reads send REP_SYSTEM without its private-data section, so secrets in the record are no longer kept out of what the reader writes.",
     "patch": "read-drops-private-data.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "fact-behaviour-clause-ignored",
@@ -4311,7 +4311,7 @@
     "name": "writer-one-claim-dropped",
     "breaks": "The objective writer is no longer asked for one claim per condition, so it can write a fact and what the work does as one condition.",
     "patch": "writer-one-claim-dropped.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "rows-indent-dropped",
@@ -4359,7 +4359,7 @@
     "name": "check-prompt-no-end-ask",
     "breaks": "The check's prompt does not ask for the end line, so every whole check comes back without it and is taken as cut, and the Check button never changes the card.",
     "patch": "check-prompt-no-end-ask.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "ask-again-end-ask-not-last",
@@ -4473,13 +4473,13 @@
     "name": "writer-fact-shape-dropped",
     "breaks": "The objective writer is not told the shape of a fact, so its own facts (\"the scratch folder holds a sample text file whose contents are...\") read as works and wait for a look.",
     "patch": "writer-fact-shape-dropped.patch",
-    "fixed": "2026-11-18"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "replay-now-not-read",
     "breaks": "The replay takes \"--now\" and ignores it, so a call saved before the shared cap and the end line is sent again as it was, and audit test R16 measures nothing.",
     "patch": "replay-now-not-read.patch",
-    "fixed": "2026-11-18"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "replay-now-logged-cap",
@@ -4497,7 +4497,7 @@
     "name": "replay-now-not-sent",
     "breaks": "The replay says \"--now\" sends a call as this build would, then sends it as logged: the old cap and no end line.",
     "patch": "replay-now-not-sent.patch",
-    "fixed": "2026-11-18; remade 2026-11-18 on the merge with prompts; remade 2026-11-18 on the merge of prompts into group 2"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "card-floor-not-applied",
@@ -4665,7 +4665,7 @@
     "name": "not-shown-failure-back",
     "breaks": "The reads are no longer told \"not shown\" is not a failure, so a card can report missing proof as a failure.",
     "patch": "not-shown-failure-back.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "brief-proof-hands-on-only",
@@ -4683,25 +4683,25 @@
     "name": "own-words-proof-hands-on-only",
     "breaks": "The own-words message asks only for a hands-on look where proof is missing, never a fact's command and what it printed.",
     "patch": "own-words-proof-hands-on-only.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "check-proof-hands-on-only",
     "breaks": "The check's message asks only for a hands-on look where proof is missing, never a fact's command and what it printed.",
     "patch": "check-proof-hands-on-only.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "quality-condition-dropped",
     "breaks": "The objective writer is not told a quality condition names what a person using the result would notice, so it writes \"as good as the best in its trade\", which never closes.",
     "patch": "quality-condition-dropped.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "objective-not-shown-old",
     "breaks": "The objective writer still calls what is installed or running a thing a conversation cannot show, so the rep never marks it shown when the record holds the proof.",
     "patch": "objective-not-shown-old.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "fact-name-any-h",
@@ -4809,7 +4809,7 @@
     "name": "objective-self-proving-dropped",
     "breaks": "The objective writer is not told that a self-proving step of an approved plan stays a condition with a question for the owner beside it, so the step is held as plain work and the owner is never asked whether to keep it.",
     "patch": "objective-self-proving-dropped.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "expectation4-plan-step-exempt",
@@ -4821,37 +4821,37 @@
     "name": "owner-decision-undefined",
     "breaks": "The reads are not told which decisions are truly the owner's (livelihood, public name, cannot be undone, against the ask; publishing, sending, paying, a guard's refusal), so the owner gets technical questions or none at all.",
     "patch": "owner-decision-undefined.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "goahead-hold-missing",
     "breaks": "A condition waiting on the owner's go-ahead gets no message to hold that one step and finish the rest, so the agent stops whole or goes ahead unasked.",
     "patch": "goahead-hold-missing.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "check-self-proving-dropped",
     "breaks": "The check is not told that a self-proving step of an approved plan is a question for the owner, so its rewritten card drops the question the briefing raised.",
     "patch": "check-self-proving-dropped.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "decisions-replay-no-objective",
     "breaks": "The replay's decisions edit leaves an objective call's system prompt as group 3 sent it, so a replay of group 4 measures the objective writer without its change.",
     "patch": "decisions-replay-no-objective.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "shown-false-guess-reads",
     "breaks": "The reads are not told that a claim is false only where the record shows the opposite, so a card calls an unproven claim untrue on a guess at what the agent's commands did (ninth live test, session A).",
     "patch": "shown-false-guess-reads.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "shown-false-guess-check",
     "breaks": "The check is not told that a guess is no showing, so it files a claim the record shows neither way under \"false\" (ninth live test).",
     "patch": "shown-false-guess-check.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "fact-tail-comma-dropped",
@@ -4989,7 +4989,7 @@
     "name": "replay-now-missing",
     "breaks": "the replay's group 5 edit leaves out the \"now:\" line, so a replayed watch call is not what this build sends.",
     "patch": "replay-now-missing.patch",
-    "fixed": "tested 2026-11-19"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "merge-same-as-ignored",

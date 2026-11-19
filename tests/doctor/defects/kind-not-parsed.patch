@@ -1,11 +1,11 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 5a5ee04..1900e9d 100644
+index f8f119f..05da68e 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3433,7 +3433,7 @@ const oneLine = (s: string | undefined): string => clean(s).replace(/\s+/g, ' ')
- // so is shown without a where, or closed without the number of the owner's
- // message.
- function conditionOf(line: string): Condition {
+@@ -3616,7 +3616,7 @@ function conditionOf(line: string): Condition {
+     const held = bare((sa[1] ?? '').split('|')[0] ?? '')
+     return held === '' ? c : { ...c, state: 'open', by: '', sameAs: held }
+   }
 -  const k = KIND_AT.exec(line)
 +  const k = null as RegExpExecArray | null
    const said = k === null ? undefined : (k[1] ?? '').toLowerCase() === 'fact' ? 'fact' : 'works'
