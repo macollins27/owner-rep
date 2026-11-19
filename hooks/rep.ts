@@ -3487,8 +3487,8 @@ const KIND_AT = /^\s*(works|fact)\s*:\s*/i
 // words in backticks ("`owner-rep`"), which name a thing but are read as words before a noun.
 type FactTok = { w: string; t: 'Q' | 'P' | 'H' | 'N' | 'W' | 'X'; p?: 'path' | 'file' | 'tick' | 'word' }
 type FactAt = { i: number; store: boolean }
-const FACT_STATE = /^(?:saved|committed|pushed|merged|installed|deployed|tagged|published|created|written|copied|moved|renamed|changed|edited|touched|uploaded|archived|deleted|removed)$/
-const FACT_THING = /^(?:files?|folders?|director(?:y|ies)|scripts?|programs?|tools?|apps?|cli|pages?|sites?|services?|servers?|endpoints?|builds?|versions?|releases?|code|changes?|fix(?:es)?|work|commits?|branch(?:es)?|repos?|repositor(?:y|ies)|tags?|packages?|plugins?|modules?|skills?|hooks?|tests?|docs?|documents?|config|configuration|settings|projects?|notes?|readme|changelog|plans?|briefs?|routines?|wording|job|records?|logs?|cop(?:y|ies)|dumps?|worktrees?|things?|items?|entr(?:y|ies)|handoffs?|history|remotes?)$/
+const FACT_STATE = /^(?:saved|committed|pushed|merged|installed|deployed|tagged|published|created|written|copied|moved|renamed|changed|edited|touched|uploaded|archived|deleted|removed|made)$/
+const FACT_THING = /^(?:files?|folders?|director(?:y|ies)|scripts?|executables?|binar(?:y|ies)|commands?|programs?|tools?|apps?|cli|pages?|sites?|services?|servers?|endpoints?|builds?|versions?|releases?|code|changes?|fix(?:es)?|work|commits?|branch(?:es)?|repos?|repositor(?:y|ies)|tags?|packages?|plugins?|modules?|skills?|hooks?|tests?|docs?|documents?|config|configuration|settings|projects?|notes?|readme|changelog|plans?|briefs?|routines?|wording|job|records?|logs?|cop(?:y|ies)|dumps?|worktrees?|things?|items?|entr(?:y|ies)|handoffs?|history|remotes?)$/
 const FACT_STORE = /^(?:files?|folders?|director(?:y|ies)|scripts?|docs?|documents?|notes?|readme|changelog|plans?|briefs?|records?|logs?|commits?|branch(?:es)?|repos?|repositor(?:y|ies)|config|cop(?:y|ies)|history|remotes?|handoffs?|worktrees?)$/
 const FACT_HELD = /^(?:files?|folders?|director(?:y|ies)|scripts?|docs?|documents?|notes?|readme|changelog|plans?|briefs?|records?|logs?|commits?|versions?|changes?|fix(?:es)?|work|code)$/
 const FACT_ACTOR = /^(?:agents?|sessions?|helpers?|builder|owner|codex)$/
@@ -3497,7 +3497,12 @@ const FACT_PLACE_NOUN = /^(?:mac|machine|computer|disk|sessions?)$/
 const FACT_DET = /^(?:the|a|an|this|that|these|those|its|their|our|your|my|each|every|any|some|all|both|one|two|three|four|five|six|seven|eight|nine|ten)$/
 const FACT_PREP = /^(?:in|inside|within|outside|under|at|on|to|into|onto|from|beyond|during|since|by)$/
 const FACT_UNIT = /^(?:bytes?|characters?|lines?|words?)$/
-const FACT_TAIL = /^(?:with|no|trailing|newlines?|or|any|other|bytes?|characters?|at|after|before|the|end|it)$/
+const FACT_TAIL = /^(?:with|no|trailing|final|newlines?|or|any|other|bytes?|characters?|at|after|before|the|end|it)$/
+// A thing's name after "named" or "called" (ninth live test: "an executable named greet"): quoted,
+// in backticks, a path, a version, or one word (letters, digits, "_" and "-") that is not a judgment
+// ("named correctly") or a joining word. The name says which thing it is, never how good it is:
+// "a tool named secure is installed" is shown by the listing, whatever the tool does.
+const FACT_NAMED_NOT = /^(?:well|right|wrong|badly|better|best|for|after|as|by|and|or|but|to|in|on|at|of|with|is|are|was|were|be)$|ly$/
 // A noun's own words come from a closed list (seventh live test of 18 Nov 2026). A list of
 // qualities to refuse let through every quality not on it ("the resilient tool", "the
 // fault-tolerant fix", "the 100%-correct server", "no file holds insecure code"), and a quality
@@ -3508,7 +3513,7 @@ const FACT_TAIL = /^(?:with|no|trailing|newlines?|or|any|other|bytes?|characters
 // word with a digit only as a version or a commit ("the v2 build"); a path or a name in
 // backticks always. A plain word not on the list costs a look by someone who did not build it;
 // a quality let through would close on the builder's own run.
-const FACT_MOD = /^(?:one|two|three|four|five|six|seven|eight|nine|ten|both|all|each|every|scratch|sample|text|local|new|old|newest|latest|current|previous|original|same|other|own|single|only|home|source|cache|cached|temp|temporary|tmp|untracked|tracked|staged|unstaged|uncommitted|unpushed|unmerged|unsaved|empty|extra|added|changed|deleted|removed|renamed|edited|updated|modified|git|output|input|data|backup|hidden|first|last|final|draft|demo|example|plain|raw|shell|python|json|markdown|html|css|yaml|release|nightly|dev|development|live|public|private|upstream|feature|default|root|parent|child|user|global|sandbox|scratchpad|generated|unused|stale|leftover|greeting|landing|index|setup|status|instructions?|business|website|separate|api|web|ci|master|origin|github|main|production|staging|sign|up|in|out|log|rep|claude|hud)$/
+const FACT_MOD = /^(?:one|two|three|four|five|six|seven|eight|nine|ten|both|all|each|every|scratch|sample|text|local|new|old|newest|latest|current|previous|original|same|other|own|single|only|home|source|cache|cached|temp|temporary|tmp|untracked|tracked|staged|unstaged|uncommitted|unpushed|unmerged|unsaved|empty|extra|added|changed|deleted|removed|renamed|edited|updated|modified|git|output|input|data|backup|hidden|first|last|final|draft|demo|example|plain|raw|shell|python|json|markdown|html|css|yaml|release|nightly|dev|development|live|public|private|upstream|feature|default|root|parent|child|user|global|sandbox|scratchpad|generated|unused|stale|leftover|greeting|landing|index|setup|status|instructions?|business|website|separate|api|web|ci|master|origin|github|main|production|staging|sign|up|in|out|log|rep|claude|hud|bin)$/
 const FACT_NAME_H = /^(?:v?\d+(?:\.\d+)+(?:-(?:alpha|beta|rc|dev|pre)\.?\d*)?|v\d+(?:-(?:alpha|beta|rc|dev|pre)\.?\d*)?|[0-9a-f]{7,40})$/i
 // A path or a file's name only where it is one (eighth live test of 18 Nov 2026). Any word with a
 // slash or a dot in it was a path, so "the secure/fast/reliable tool", "the secure.fast tool" and
@@ -3565,6 +3570,8 @@ const factRead = (ts: FactTok[]): boolean => {
   // (eighth live test): "the ~secure tool" and "the `reliable` tool" are not names.
   const mod = (i: number): boolean => { const k = ts[i]; return k !== undefined && (k.t === 'W' ? factMod(k.w) : k.t === 'H' ? FACT_NAME_H.test(k.w) : k.t === 'P' ? k.p === 'tick' || (k.p === 'word' && factMod(k.w)) : k.t === 'N') }
   const det = (i: number): boolean => w(i, FACT_DET) || ts[i]?.t === 'N'
+  const plainName = (n: string): boolean => /^[a-z][a-z0-9_-]*$/.test(n) && !FACT_NAMED_NOT.test(n) && !FACT_DET.test(n)
+  const namedAt = (i: number): boolean => { const k = ts[i]; return k !== undefined && (k.t === 'Q' || (k.t === 'H' && FACT_NAME_H.test(k.w)) || (k.t === 'P' && (k.p !== 'word' || plainName(k.w))) || (k.t === 'W' && plainName(k.w))) }
   const uniq = (a: FactAt[]): FactAt[] => a.filter((r, k) => a.findIndex(o => o.i === r.i && o.store === r.store) === k)
   // A noun's own words from a position: up to four, and a list of them ("changed, added or
   // deleted files", seventh live test), as the positions they end at.
@@ -3592,6 +3599,7 @@ const factRead = (ts: FactTok[]): boolean => {
         // A state after it with a place: "a commit made during this job" (sixth live test).
         if (w(n + 1, /^made$/) || w(n + 1, FACT_STATE)) for (const p of places(n + 2)) if (p > n + 2) out.push({ i: p, store })
         if (ts[n + 1]?.t === 'P' && ts[n + 1]?.p !== 'word') out.push({ i: n + 2, store: true })
+        if (w(n + 1, /^(?:named|called)$/) && namedAt(n + 2)) out.push({ i: n + 3, store })
       }
     }
     return out
@@ -3607,8 +3615,9 @@ const factRead = (ts: FactTok[]): boolean => {
     const at = x(i, ',') ? i + 1 : i
     // "pushed anywhere", "written anywhere else" (seventh live test).
     if (w(at, /^(?:anywhere|elsewhere)$/)) return w(at + 1, /^else$/) ? [at + 1, at + 2] : [at + 1]
-    // "committed for this job" (eighth live test): "for" opens only the job, the session or the task.
-    if (w(at, /^for$/)) return w(at + 1, /^(?:this|the)$/) && w(at + 2, /^(?:job|session|task)$/) ? [at + 3] : []
+    // "committed for this job" (eighth live test): "for" opens only the job, the session, the task
+    // or the work (ninth live test: "no commit was made for this work").
+    if (w(at, /^for$/)) return w(at + 1, /^(?:this|the)$/) && w(at + 2, /^(?:job|session|task|work)$/) ? [at + 3] : []
     if (!w(at, FACT_PREP)) return []
     const j = at + 1
     const k = ts[j]
@@ -3628,7 +3637,12 @@ const factRead = (ts: FactTok[]): boolean => {
     const out = [i]
     const at = x(i, ',') ? i + 1 : i
     const run = (s: number, comma: boolean): number => { let e = s; while (w(e, FACT_TAIL) || ts[e]?.t === 'N' || (comma && x(e, ','))) e++; return e }
-    if (x(at, '(')) { const e = run(at + 1, true); if (e > at + 1 && x(e, ')')) out.push(e + 1) } else { const e = run(at, false); if (e > at) out.push(e) }
+    // Its notes may be split by commas (ninth live test: "'amber', 5 bytes, with no final newline"): each
+    // note's end is an end, so what follows a comma that is no note is read as its own clause.
+    if (x(at, '(')) { const e = run(at + 1, true); if (e > at + 1 && x(e, ')')) out.push(e + 1) } else {
+      let s = at
+      for (let e = run(s, false); e > s; s = e + 1, e = run(s, false)) { out.push(e); if (!x(e, ',')) break }
+    }
     return out
   }
   const states = (i: number): number[] => {
