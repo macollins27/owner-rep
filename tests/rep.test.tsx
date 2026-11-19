@@ -9684,10 +9684,12 @@ test('runFromResult and runEnded: how a run ended, whether it changed the work, 
 })
 
 test('factHolds and kindOf: a condition is a fact only when it says the work is saved, committed, pushed, merged, installed or deployed, that something exists, that a file holds something, or that a build runs the newest code, and nothing of it behaving', () => {
-  for (const text of ['The file good.json exists', 'The work is committed and pushed', 'The branch is merged into main', 'The installed build runs the newest code', 'The README file lists the three commands', 'The release is tagged v2.0', 'The work is committed in this folder, and the commit holds the newest version']) {
+  for (const text of ['The file good.json exists', 'The work is committed and pushed', 'The branch is merged into main', 'The installed build runs the newest code', 'The release is tagged v2.0', 'The work is committed in this folder, and the commit holds the newest version']) {
     expect([text, factHolds(text)]).toEqual([text, true])
   }
-  for (const text of ['Customers can complete checkout and receive a receipt', 'The tool prints each input line with its line number', 'the checkout works for a customer', 'The installed build loads and passes its tests', 'The page reads well']) {
+  // "Lists" is no fact verb: "the service lists files" says what the work does (fifth live test
+  // of 18 Nov 2026), so a file's listing is a fact only as quoted text it holds.
+  for (const text of ['Customers can complete checkout and receive a receipt', 'The tool prints each input line with its line number', 'the checkout works for a customer', 'The installed build loads and passes its tests', 'The page reads well', 'The README file lists the three commands']) {
     expect([text, factHolds(text)]).toEqual([text, false])
   }
   // A clause about what the work does, prints, takes, returns or shows makes the whole condition
@@ -9813,6 +9815,142 @@ test('factHolds and kindOf: a condition is a fact only when it says the work is 
   expect(kindOf({ text: 'The work is committed', kind: 'fact' })).toBe('fact')
   expect(kindOf({ text: 'The work is committed', kind: 'works' })).toBe('works')
   expect(kindOf({ text: 'The work is committed' })).toBe('works')
+})
+
+test('factHolds reads a fact by its sentence shape: the fifth live test\'s 88 wordings each read as the kind it must, a behaviour in any slot never a fact, and the writers\' own sizes and untouched states facts', () => {
+  // The fifth live test (18 Nov 2026, section 1), case by case in its order; its five wordings
+  // it left ambiguous (39, 50, 57, 61, 62) read as works, which costs only a look.
+  const round5: Array<[string, 'works' | 'fact']> = [
+    ['shout.py is saved in this scratch folder; it converts the entire text file to uppercase', 'works'],
+    ['The deployed service exists and does not crash on an empty request', 'works'],
+    ['shout.py is saved; it takes a text-file path and prints the whole contents in capital letters', 'works'],
+    ['The file exists and calculates the correct total', 'works'],
+    ['The file exists and rejects invalid input', 'works'],
+    ['The tool is saved — it renders the greeting correctly', 'works'],
+    ['The file is saved, which converts the input to uppercase', 'works'],
+    ['The saved converter turns text into uppercase', 'works'],
+    ['A deployed endpoint rejects empty requests', 'works'],
+    ['The installed tool emits uppercase text', 'works'],
+    ['The file is committed', 'fact'],
+    ['sample.txt contains exactly "one two three"', 'fact'],
+    ['nothing was pushed', 'fact'],
+    ['sample.txt exists and contains exactly "one two three"', 'fact'],
+    ['The file is saved for converting text to uppercase', 'works'],
+    ['The file exists to convert text to uppercase', 'works'],
+    ['The converter transforms saved text to uppercase', 'works'],
+    ['The converter converts the file once saved', 'works'],
+    ['Saved converter transforms text to uppercase', 'works'],
+    ['The previously saved converter transforms text to uppercase', 'works'],
+    ['The converter converts "saved" text to uppercase', 'works'],
+    ['The file is saved / it converts text to uppercase', 'works'],
+    ['The file is saved & it converts text to uppercase', 'works'],
+    ['The file exists; in use converts text correctly', 'works'],
+    ['The service is deployed with correct error handling', 'works'],
+    ['The file is saved (it converts text to uppercase)', 'works'],
+    ['The file contains a converter producing uppercase text', 'works'],
+    ['The file contains exactly "one two three; does not crash"', 'fact'],
+    ['The saved tool never crashes', 'works'],
+    ['The deployed service doesn’t crash', 'works'],
+    ['sample.txt holds exactly the text "one two three", with no newline or any other byte at the end', 'fact'],
+    ['The scratch folder holds a sample text file whose contents are exactly "one two three"', 'fact'],
+    ['sample.txt has 13 bytes', 'fact'],
+    ['sample.txt contains exactly \'prints\'', 'fact'],
+    ['sample.txt contains exactly "prints"', 'fact'],
+    ['The current build runs the newest code', 'fact'],
+    ['The file is saved; CONVERTS TEXT TO UPPERCASE', 'works'],
+    ['The File Is Saved And The Tool Converts Text To Uppercase', 'works'],
+    ['The file is saved; converts/text/to/uppercase', 'works'],
+    ['The service is deployed with "correct error handling"', 'works'],
+    ['The service is deployed with \'correct error handling\'', 'works'],
+    ['The file is saved [CONVERTS TEXT TO UPPERCASE]', 'works'],
+    ['The file is saved / CONVERTS TEXT TO UPPERCASE', 'works'],
+    ['The file is saved & CONVERTS TEXT TO UPPERCASE', 'works'],
+    ['The installed tool lists files', 'works'],
+    ['The service lists files', 'works'],
+    ['The file exists; all encrypt files', 'works'],
+    ['The file exists; all compress files', 'works'],
+    ['The file exists; both validate files', 'works'],
+    ['The file exists; the encrypt files', 'works'],
+    ['The file is saved; it CONVERTS text', 'works'],
+    ['The file is saved; it Converts text', 'works'],
+    ['The file is saved; it conVerts text', 'works'],
+    ['The file is saved; it base64-encodes text', 'works'],
+    ['The service is deployed; it copies files', 'works'],
+    ['The service is deployed; it lists files', 'works'],
+    ['The service is deployed; it includes files', 'works'],
+    ['The file exists; one encrypts files', 'works'],
+    ['The file exists; two compress files', 'works'],
+    ['The file exists; 2 encrypt files', 'works'],
+    ['The file exists; the tool converts.txt', 'works'],
+    ['The file exists; the tool converts/text', 'works'],
+    ['The file exists; the tool "converts text"', 'works'],
+    ['The file exists; the tool [converts text]', 'works'],
+    ['The saved tool lists files', 'works'],
+    ['The tool lists saved files', 'works'],
+    ['The tool lists files once saved', 'works'],
+    ['The file is saved; it converts text & uppercases text', 'works'],
+    ['The file is saved; it converts/text & uppercases/text', 'works'],
+    ['The file is saved; it validates/normalizes text', 'works'],
+    ['The file is saved; it validates & normalizes text', 'works'],
+    ['The file is saved; all CONVERT text', 'works'],
+    ['The file is saved; all Convert text', 'works'],
+    ['The file is saved; all convert text', 'works'],
+    ['The tool has correct error handling', 'works'],
+    ['The tool has "correct error handling"', 'works'],
+    ['The deployed service contains no bugs', 'works'],
+    ['The deployed service contains 0 bugs', 'works'],
+    ['The deployed service has no crashes', 'works'],
+    ['The deployed service has 0 crashes', 'works'],
+    ['The file is saved; it is "usable"', 'works'],
+    ['The file is saved; it is usable', 'works'],
+    ['sample.txt contains exactly "one two three", with no trailing newline', 'fact'],
+    ['Nothing has been committed', 'fact'],
+    ['the file is committed', 'fact'],
+    ['sample.txt has 13 bytes', 'fact'],
+    ['The work stayed small', 'works'],
+    ['If a guard refused, the work stopped', 'works'],
+    // Written unprompted by the writers of the fifth live test's sessions and earlier ones: a
+    // size with its unit, nothing committed from a job, and changes that did not happen are
+    // facts; a run, a process, a reply and what a README shows are works.
+    ['sample.txt in the scratch folder is exactly 6 bytes', 'fact'],
+    ['sample.txt in the scratch folder is exactly 13 bytes', 'fact'],
+    ['sample.txt in the scratch folder is 13 bytes long, with no newline at the end', 'fact'],
+    ['nothing from this job is committed or pushed', 'fact'],
+    ['nothing from this work is committed or pushed', 'fact'],
+    ['nothing is committed or pushed', 'fact'],
+    ['no handoff note exists in the scratch folder', 'fact'],
+    ['greeting.txt in the scratch folder holds exactly \'Hello Maxwell!\' (14 characters, no trailing newline)', 'fact'],
+    ['greeting.txt and greet.py are not committed', 'fact'],
+    ['nothing from the scratch folder is pushed', 'fact'],
+    ['sample.txt in the scratch folder holds exactly \'prints\' with no newline after it', 'fact'],
+    ['Nothing outside this scratch folder was created or changed, and nothing was committed, pushed, deleted or published', 'fact'],
+    ['No files were created, edited or deleted', 'fact'],
+    ['sample.txt is saved in this scratch folder and contains "Hello café"', 'fact'],
+    ['The changed instruction files, routines and plans are committed and pushed to GitHub.', 'fact'],
+    ['the business plan and website brief are saved in the separate website project', 'fact'],
+    ['the work stays small, with only the sample file and the counting script added', 'works'],
+    ['count.py run on sample.txt prints 3', 'works'],
+    ['greet.py has been run once', 'works'],
+    ['No tools were run during the job', 'works'],
+    ['No helper agents or background helpers were started for this job', 'works'],
+    ['The agent\'s reply is exactly "Ready", with nothing else added', 'works'],
+    ['A short README in the scratch folder shows both commands: one with a name and one without', 'works'],
+    ['unittest tests exist covering each of the three cases: below, above and inside', 'works'],
+    ['the second helper changed no file at all and fixed nothing', 'works'],
+    ['Nothing outside the scratch folder is changed, and no helpers, git or network are used at any point', 'works'],
+  ]
+  for (const [text, kind] of round5) expect([text, kindOf({ text, kind: 'fact' })]).toEqual([text, kind])
+  // A slot open only where no behaviour can stand: a noun's own words in a subject, and a place.
+  for (const text of ['The deployed service exists', 'The old config file does not exist', 'the newest build installed', 'The work is committed in this folder, and the commit holds the newest version', 'The fix is committed (a1b2c3d)', 'The release is tagged v2 on main']) expect([text, factHolds(text)]).toEqual([text, true])
+  // Quoted text only as what a stored thing holds; a count only before a unit of text.
+  for (const text of ['The tool holds exactly "one two three"', 'The page has "correct error handling"', 'sample.txt has 13 crashes', 'The service is 6 bytes', 'The file is saved; it is "fine"', 'The file is saved to convert text', 'The service is deployed to make files',
+    // An actor is an agent, a session or a helper, never the work; a place has no capitalised
+    // name of its own choosing; the note after held text names only what is at its end.
+    'The tool created uppercase files', 'The service is deployed To Encrypt', 'sample.txt holds exactly "x", converting it to uppercase']) expect([text, factHolds(text)]).toEqual([text, false])
+  // A behaviour or a judgement among a noun's own words is still one: the behaviour words veto
+  // it wherever they stand, a negative one too, and a noun takes at most two words of its own,
+  // none of them a word of a clause.
+  for (const text of ['The working converter is saved', 'The uppercase-printing converter is saved', 'The never-crashing service is deployed', 'The passing tests are committed', 'The converter that uppercases text files is saved', 'The notes file contains all encrypted text']) expect([text, factHolds(text)]).toEqual([text, false])
 })
 
 test('a condition\'s kind: written by the writer before it, kept through a held write, stripped where a reader copies it, and one held "works" never turns "fact"', () => {
