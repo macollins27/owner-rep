@@ -5460,6 +5460,10 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
     // Why the check cannot run, or what it last said, whole, before the empty line above the
     // card, which comes back next when there is room for it too.
     x => ({ ...x, checkNote: card.checkNote, tight: true }),
+    // On a band too short for both, the note whole before what the check found, which comes back
+    // next when there is a row for it (sixth live test of 18 Nov 2026: at 100x24 the engine's
+    // reason was cut mid-word while the count line stood).
+    x => (x.checkNote === card.checkNote || x.checked === null ? x : { ...x, checkNote: card.checkNote, tight: true, checked: { ...x.checked, looked: '' }, checkedBare: true }),
     // Back from the floor of a five-row band: what the check found, the margin, the heading.
     x => (x.checkedBare === true ? { ...x, checked: bare() } : x),
     x => ({ ...x, tight: false }),

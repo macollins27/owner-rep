@@ -4089,7 +4089,7 @@
     "name": "check-note-after-margin",
     "breaks": "The empty line above a short band's card keeps its row while the check's error note is cut to one, so the owner reads half of why the check failed beside a blank line.",
     "patch": "check-note-after-margin.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "tested 2026-11-18; remade 2026-11-18 for the note before the count"
   },
   {
     "name": "fact-place-any-word",
@@ -4113,6 +4113,12 @@
     "name": "fact-content-any-subject",
     "breaks": "Anything may hold quoted text, so a quality in quotes (\"the page has \\\"correct error handling\\\"\") or a tool said to hold exactly some text reads as a fact and closes on the builder's own run.",
     "patch": "fact-content-any-subject.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "check-note-cut-for-count",
+    "breaks": "On a band too short for both, what the check found keeps its row and the check's note is cut to one: at 100x24 with the conversation's size on the buttons row, the engine's reason ends mid-word (\"OAuth session expir…\").",
+    "patch": "check-note-cut-for-count.patch",
     "fixed": "tested 2026-11-18"
   }
 ]

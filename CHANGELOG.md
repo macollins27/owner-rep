@@ -52,7 +52,8 @@ What changed in each release of Owner Rep, newest first. The full record is the
   scrolled with its buttons below the fold. Rows are now counted as the strip wraps them, the
   buttons first. On a 24-row terminal the strip has about five rows, and a checked card
   now fits them: what the check found goes to one line, then the empty line above the card,
-  so a check's error and every button stay in view.
+  so a check's error and every button stay in view. When the strip is too short for both the
+  error and the line of what the check found, the error is shown whole and that line waits.
 - **A reply cut off in its last line is never shown.** The rep asks every model call to end its
   reply with a fixed line, "end of reply". A reply without it stopped early, even one cut in
   the middle of its last sentence, and the rep treats it as it treats any cut reply: it asks

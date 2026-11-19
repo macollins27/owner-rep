@@ -2988,10 +2988,16 @@ test('a checked card on a 24-row terminal keeps its error note and every button 
         // The error note, on one row at least, wherever the band has the rows for it.
         if (note !== '') expect([...at, shown.checkNote !== '']).toEqual([...at, true])
       }
-      // Five rows hold the head, what the check found and, with a refusal, how many refused, the note and the buttons.
+      // Five rows hold the head, the note whole and the buttons, and what the check found on one
+      // line, with how many refused, where there is a row for it too: at 165 columns, or with no
+      // note. At 100 and 80 columns the note takes two rows and the buttons with the size two, so
+      // the note whole comes before what the check found (sixth live test of 18 Nov 2026: at 100x24
+      // the engine's reason was cut mid-word while the count line stood).
       const five = fillCard(card, 5, cols)
       const at = [cols, note === '' ? 'no note' : 'note', refused]
-      expect([...at, five.checked?.looked]).toEqual([...at, `Checked: 5 hold, 1 false, 1 changed since${refused > 0 ? '; 2 commands refused approval' : ''}.`])
+      const found = `Checked: 5 hold, 1 false, 1 changed since${refused > 0 ? '; 2 commands refused approval' : ''}.`
+      expect([...at, five.checkNote]).toEqual([...at, note])
+      expect([...at, five.checked?.looked]).toEqual([...at, note === '' || cols === 165 ? found : ''])
       expect([...at, five.result !== '']).toEqual([...at, true])
     }
   }
@@ -9239,6 +9245,24 @@ test('rule: on a five-row band, a 24-row terminal\'s, the checked card draws wha
   expect((await small.find({ key: 'close' }))?.props.hotkey).toBe('2')
   await small.press({ key: 'close' })
   expect((await small.find({ key: 'rep' }))?.props.hotkey).toBe('1')
+  await small.unmount()
+})
+
+test('rule: on a five-row band at 100 columns with the conversation\'s size on the buttons row, the engine\'s reason is drawn whole and what the check found gives up its row (sixth live test of 18 Nov 2026)', async ($, on) => {
+  // The size takes the buttons a second row at 98 columns, as on the live card; the note whole
+  // takes two, so the five rows are the head, the note and the buttons.
+  on('session.usage', () => ({ value: { startedAt: 0, context: { tokens: 20000, window: 500000, percent: 4 }, rateLimits: [] } }))
+  const answer = (JSON.parse(CHECKED_SAYING('continue', 'Two things first. Run the suite and paste the counts.')) as { result: string }).result
+  const { ui } = await checkOver($, on, streamed([answer], { error: 'Failed to authenticate: OAuth session expired and could not be refreshed' }))
+  await settle($)
+  await ui.unmount()
+  const five = { ...BAND, props: { ...BAND.props, maxRows: 5, bodyColumns: 98, scroll: { offset: 0, bodyRows: 4 } } }
+  const small = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...five })
+  expect(await small.find({ type: 'Text', text: /conversation at 4 percent of its window/ })).toBeDefined()
+  expect(await small.find({ type: 'Text', text: /^The check's run failed after it answered: Failed to authenticate: OAuth session expired and could not be refreshed\. Its whole answer is shown\.$/ })).toBeDefined()
+  expect(await small.find({ type: 'Text', text: /^Checked:/ })).toBeUndefined()
+  expect((await small.find({ key: 'put' }))?.props.hotkey).toBe('1')
+  expect((await small.find({ key: 'close' }))?.props.hotkey).toBe('2')
   await small.unmount()
 })
 
