@@ -4684,5 +4684,41 @@
     "breaks": "a path inside the folder with no file ending (\"install-case/bin/greet\") is read as words, so the writer's plain fact stays open as works.",
     "patch": "fact-dir-path-words.patch",
     "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "watch-now-ignored",
+    "breaks": "the step a look reads in the record is dropped, so \"Right now\" on the card keeps the step the objective writer last wrote while the agent has moved on.",
+    "patch": "watch-now-ignored.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "watch-now-template-kept",
+    "breaks": "a look that answers \"now: none\" or repeats the template line writes that over the step, and the card says \"Right now: None.\"",
+    "patch": "watch-now-template-kept.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "watch-now-unbounded",
+    "breaks": "a look's step of any length goes onto the card whole.",
+    "patch": "watch-now-unbounded.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "watch-prompt-no-now",
+    "breaks": "the watch is asked to say the step but its answer shape has no \"now:\" line, so the step is never read.",
+    "patch": "watch-prompt-no-now.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "objective-step-old-wording",
+    "breaks": "the objective writer is still told to write the step the session is on at the moment it writes, which goes stale within the turn.",
+    "patch": "objective-step-old-wording.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "replay-now-missing",
+    "breaks": "the replay's group 5 edit leaves out the \"now:\" line, so a replayed watch call is not what this build sends.",
+    "patch": "replay-now-missing.patch",
+    "fixed": "tested 2026-11-19"
   }
 ]

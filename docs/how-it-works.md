@@ -82,8 +82,10 @@ listed, because the check is paid for to find what does not hold.
 
 The rep measures against an objective: its own account, in its own words, of what the owner
 wants on the job in hand. It is held in four parts: the result, what it is for, what "done"
-has to show (a list of conditions), and the step the session is on now. It is never the
-owner's text. The owner works by intent rather than exact wording, and a rep that only did
+has to show (a list of conditions), and the step the session is on now. The objective writer
+sets the step from the owner's messages; each look the watch takes then reads the step the agent
+is on from the record and keeps it current, so the card's "Right now" does not lag the work by a
+turn. It is never the owner's text. The owner works by intent rather than exact wording, and a rep that only did
 what the client literally said would not be a good one, so the objective includes what a
 serious owner plainly wants without saying it. The owner's messages are weighed by kind:
 reasons and complaints first, then instructions. A "yes" to a plan the agent proposed makes
