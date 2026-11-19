@@ -1621,7 +1621,12 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
   async function takeLook(after: Rec, answer: WatchAnswer): Promise<void> {
     // An answered look moves the cursor, so the next one shows the plans after these.
     if (fill?.cursor !== undefined) after.readerAt = { watch: fill.cursor }
-    if (applyMarks(after, answer.shown, answer.closed) && onScreen(sid)) await update($, readingA, () => after.objective)
+    const marked = applyMarks(after, answer.shown, answer.closed)
+    // The step the look read in the record is "Right now" until the next look (G11); the
+    // objective's result and conditions are not touched by it.
+    const stepped = after.objective !== null && answer.now !== '' && after.objective.step !== answer.now
+    if (stepped && after.objective !== null) after.objective = { ...after.objective, step: answer.now }
+    if ((marked || stepped) && onScreen(sid)) await update($, readingA, () => after.objective)
     const view = await read($, viewA)
     const said = headsUp(answer, after.seen, fill?.blocks ?? [])
     if (said !== null && view === 'row' && onScreen(sid) && ![...after.seen].some(s => same(s, said.line))) {

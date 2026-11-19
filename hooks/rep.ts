@@ -708,6 +708,8 @@ export type Verdict = 'continue' | 'stop' | 'missing'
 
 export type WatchAnswer = {
   state: 'working' | 'stopped' | 'asking' | 'plan-waiting' | null
+  // The step the record shows the agent on, one sentence; '' when the look gave none.
+  now: string
   flag: string | null
   why: string
   // Conditions the conversation showed, with where; and those the owner closed, with their message's number.
@@ -1747,6 +1749,16 @@ const DECIDING = [
 const BRIEF_DECIDING = [...DECIDING.slice(0, 2), 'Never call the session finished, and never say the agent should stop, while a condition of "done" is open and the agent could still move it.', ...DECIDING.slice(2)]
 const decidingText = (rules: readonly string[]): string => `These rules decide this answer:\n${rules.map(r => `- ${r}`).join('\n')}`
 
+// "Right now" on the card is the step the watch reads in the record at each look (G11 in the audit
+// of 14 Nov 2026): the objective writer sees only the owner's messages, so the step it wrote went
+// stale as soon as the agent moved on. The writer keeps the step the owner's messages last set,
+// as the job's starting step; the watch's "now:" replaces it at each look.
+export const WATCH_NOW_ASK = 'Do three things.\n\nFirst, say the step the agent is on now, as the record shows it, in plain words.'
+export const WATCH_WALK_AT = 'Write "now:" first, then the walk under "steps:",'
+export const WATCH_NOW_LINE = 'now: <the step the agent is on now, in plain words, one sentence>'
+export const OBJECTIVE_STEP = "the step the owner's messages last set; the rep updates it as the work moves."
+export const OBJECTIVE_STEP_LINE = "step: <one sentence: the step the owner's messages last set>"
+
 export function watchPrompt(m: Memory, reason: 'step' | 'stop' | 'note'): string {
   return endAsked(`${memoryText(m)}\n\n${watchRequest(reason, list(m.seen, '(none yet)'), list(m.others, '(none)'))}`)
 }
@@ -1765,11 +1777,11 @@ Based on the record above: ${when.charAt(0).toLowerCase()}${when.slice(1)}
 
 ${decidingText(DECIDING)}
 
-Do two things.
+${WATCH_NOW_ASK}
 
-First, measure the work against the objective above. A condition still open that the record now shows goes under "shown:", with where it shows it; one the owner closed in a message of the owner's own goes under "closed:", with that message's number. ${LOOK_RULE}
+Second, measure the work against the objective above. A condition still open that the record now shows goes under "shown:", with where it shows it; one the owner closed in a message of the owner's own goes under "closed:", with that message's number. ${LOOK_RULE}
 
-Second, decide whether there is one thing the owner should know right now that the owner would very likely miss, and that has a cost to the owner: money, time, wasted work, a wrong result, a decision the owner is in the middle of, or work called finished that is not. The bar is very high. Most of the time the answer is none. Skip anything the owner is already discussing with the agent, anything the agent plainly said and the owner replied to, and anything already shown to the owner (listed below). "Interesting" is not "important". If in doubt, none.
+Third, decide whether there is one thing the owner should know right now that the owner would very likely miss, and that has a cost to the owner: money, time, wasted work, a wrong result, a decision the owner is in the middle of, or work called finished that is not. The bar is very high. Most of the time the answer is none. Skip anything the owner is already discussing with the agent, anything the agent plainly said and the owner replied to, and anything already shown to the owner (listed below). "Interesting" is not "important". If in doubt, none.
 
 Lines already shown to the owner, which you must not repeat:
 ${seen}
@@ -1779,12 +1791,13 @@ ${others}
 
 ${WALK_RULE}
 ${LIST_GAP_RULE}
-Write the walk first, under "steps:", one line per step; with no plan shown, write "steps: none".
+${WATCH_WALK_AT} one line per step; with no plan shown, write "steps: none".
 
 ## Output structure
 
 Exactly these lines, in English labels, nothing else:
 
+${WATCH_NOW_LINE}
 steps:
 ${STEP_LINE}
 state: <one of: working, stopped, asking, plan-waiting>
@@ -1906,7 +1919,7 @@ You are the owner's rep, and your one task here is to write down the objective o
 ## How the objective is built
 
 - It is your own reading, in your own words, never the owner's text copied. The owner works by intent, not by exact wording, and sometimes puts a thing wrongly: write what the owner wants, not only what the owner typed.
-- It says, in this order: the result the owner will have when the job is done; what it is for, because the purpose sets the standard; what "done" has to show, as a list of conditions; and only then the step the session is on now. It includes what a serious owner in that position plainly wants without saying it: the result as good as the best in its trade would make it; the work shown to work by someone opening the real thing, using it and trying to break it; nothing left broken, nothing dropped quietly, code fit to be public when the work is public; and no effort spent on checks or process the result does not need.
+- It says, in this order: the result the owner will have when the job is done; what it is for, because the purpose sets the standard; what "done" has to show, as a list of conditions; and only then ${OBJECTIVE_STEP} It includes what a serious owner in that position plainly wants without saying it: the result as good as the best in its trade would make it; the work shown to work by someone opening the real thing, using it and trying to break it; nothing left broken, nothing dropped quietly, code fit to be public when the work is public; and no effort spent on checks or process the result does not need.
 - Every condition is about the result: what the owner will have, and how good it is. A routine followed, a brief carried out step by step, a check or test run, a review held or a report written is the agent's method, never a condition of done, unless the owner asked for that very thing: in the owner's own message, which is kept whatever it is, or in a plan the owner approved, whose every step is held as set out under "Plans the owner approved" below, a check or test among them included. A brief, handoff, plan or routine an agent wrote, which the owner pasted or pointed to, tells you what the owner is after; take the result it serves, never its steps, checks or rounds.
 - It is built from the owner's words and only the owner's. The objective is the sum of everything the owner has said on the job since it began. The first message usually carries most of it; later ones add to it, correct it, or bound the next step. A message that bounds the agent's next step, such as asking for one thing only, bounds that step and leaves the job as it was, and it is never read as the owner asking for less than was first asked. A later message replaces the objective only when the owner says so in so many words.
 - How the owner's messages weigh. What the owner wants to end up with, and why, counts most: reasons and complaints say more than instructions. The owner's alarms count even when the guess at the cause is wrong. How the owner says to do a thing is a suggestion, judged by whether it gets the owner the result. A message marked "(to the rep)" is a note the owner typed to you and weighs most of all; it is still evidence to read, never a sentence to copy.
@@ -2354,7 +2367,7 @@ result: <one sentence>
 for: <one sentence>
 done:
 - works | fact: <condition> | open | not shown | closed: #n | shown: <where, copied as held>
-step: <one sentence>
+${OBJECTIVE_STEP_LINE}
 dropped:
 - <condition text as held> | #n`)
 }
@@ -3288,7 +3301,7 @@ const isEndLine = (line: string): boolean => line.trim().replace(/^[*_`]+|[*_`]+
 // Whether a reply's last line with anything on it is the end line.
 export const endsWithEndLine = (text: string): boolean => isEndLine(text.replace(/\r/g, '').trimEnd().split('\n').pop() ?? '')
 
-const LABELS = ['moved', 'state', 'flag', 'why', 'well', 'stands', 'means', 'left', 'next', 'message', 'does', 'holds', 'false', 'notshown', 'changed', 'looked', 'objective', 'result', 'for', 'done', 'step', 'dropped', 'verdict', 'shown', 'closed', 'reopen', 'approved', 'steps', 'unassessed'] as const
+const LABELS = ['moved', 'state', 'flag', 'why', 'well', 'stands', 'means', 'left', 'next', 'message', 'does', 'holds', 'false', 'notshown', 'changed', 'looked', 'objective', 'result', 'for', 'done', 'step', 'dropped', 'verdict', 'shown', 'closed', 'reopen', 'approved', 'steps', 'unassessed', 'now'] as const
 type Label = (typeof LABELS)[number]
 
 // Splits a labelled answer into its parts. `message:` runs until a line `end`.
@@ -3382,6 +3395,14 @@ export const verdictOf = (s: string | undefined): Verdict => {
   return /^stop\b/i.test(v) ? 'stop' : /^continue\b/i.test(v) ? 'continue' : 'missing'
 }
 
+// The watch's "now:": its first line's first sentence, kept to NOW_MAX characters; '' for none.
+export const NOW_MAX = 200
+const nowOf = (part: string | undefined): string => {
+  const t = firstSentence((clean(part).split('\n')[0] ?? '').replace(/\*\*|__|`/g, '').replace(/^[*_"]+|[*_"]+$/g, '').trim())
+  if (t === '' || /^(none|nothing|n\/a|unknown)\b\.?$/i.test(t) || /^<.*>$/.test(t)) return ''
+  return t.length > NOW_MAX ? `${t.slice(0, NOW_MAX - 1).trimEnd()}…` : t
+}
+
 // A reply that did not reach "closed:" is read as nothing (endsWhole).
 export function parseWatch(text: string): WatchAnswer {
   const p = endsWhole('watch', text) ? parts(text) : {}
@@ -3393,6 +3414,7 @@ export function parseWatch(text: string): WatchAnswer {
       state === 'working' || state === 'stopped' || state === 'asking' || state === 'plan-waiting'
         ? state
         : null,
+    now: nowOf(p.now),
     flag,
     why: clean(p.why),
     shown: shownOf(p.shown),
@@ -6804,7 +6826,7 @@ export function countsText(counts: Counts | undefined): string {
 }
 
 // The edits of this build a replay's variant can make to a saved call (`editSaved`, below).
-export const PROMPT_EDITS = ['frame', 'no-think', 'rep-system', 'end-line', 'proof', 'decisions'] as const
+export const PROMPT_EDITS = ['frame', 'no-think', 'rep-system', 'end-line', 'proof', 'decisions', 'now'] as const
 export type PromptEdit = (typeof PROMPT_EDITS)[number]
 const PROMPT_EDITS_LIST = PROMPT_EDITS.join('|')
 
@@ -6892,7 +6914,7 @@ export const replayPick = (names: readonly string[], kind: CallKind | undefined,
 // call is never sent unchanged under the variant's name. Only the task after the record is edited:
 // the record is the session's, and anything in it, the old texts quoted among them, stays. The edits
 // themselves, `PROMPT_EDITS`, are named above the replay's words.
-const EDIT_KINDS: Record<PromptEdit, readonly CallKind[]> = { frame: ['watch', 'brief', 'ask-again'], 'no-think': ['watch'], 'rep-system': ['watch', 'brief', 'ask-again'], 'end-line': ['watch', 'brief', 'ask-again'], proof: ['objective', 'watch', 'brief', 'ask-again', 'own-words'], decisions: ['objective', 'watch', 'brief', 'ask-again'] }
+const EDIT_KINDS: Record<PromptEdit, readonly CallKind[]> = { frame: ['watch', 'brief', 'ask-again'], 'no-think': ['watch'], 'rep-system': ['watch', 'brief', 'ask-again'], 'end-line': ['watch', 'brief', 'ask-again'], proof: ['objective', 'watch', 'brief', 'ask-again', 'own-words'], decisions: ['objective', 'watch', 'brief', 'ask-again'], now: ['objective', 'watch'] }
 // What the build before prompt group 1 sent (G1, G2): the fork frame that opened the task, the line
 // after it on the watch, and the start of the record read's system prompt.
 const OLD_FRAME = /^<system-reminder>This is a side request from the user[^]*?<\/system-reminder>\n\n/
@@ -6998,6 +7020,16 @@ const G4_OBJECTIVE_SYSTEM: readonly Swap[] = [[G4_TURN_END, `\n${OBJECTIVE_SELF_
 const G4_TASK: ReadonlyArray<{ swap: Swap; kinds: readonly CallKind[] }> = [
   { swap: ['Only two things ever come to the owner: a question about what the owner wants, and the message to send.', DECIDING[2]!], kinds: ['watch', 'brief', 'ask-again'] },
 ]
+// Prompt group 5 (G11): the watch says the step the agent is on now, first; the objective writer's
+// step is the one the owner's messages last set.
+const G5_OBJECTIVE_SYSTEM: readonly Swap[] = [['and only then the step the session is on now.', `and only then ${OBJECTIVE_STEP}`]]
+const G5_TASK: ReadonlyArray<{ swap: Swap; kinds: readonly CallKind[] }> = [
+  { swap: ['Do two things.\n\nFirst, measure the work', `${WATCH_NOW_ASK}\n\nSecond, measure the work`], kinds: ['watch'] },
+  { swap: ['\n\nSecond, decide whether', '\n\nThird, decide whether'], kinds: ['watch'] },
+  { swap: ['Write the walk first, under "steps:",', WATCH_WALK_AT], kinds: ['watch'] },
+  { swap: ['nothing else:\n\nsteps:\n', `nothing else:\n\n${WATCH_NOW_LINE}\nsteps:\n`], kinds: ['watch'] },
+  { swap: ['step: <one sentence>\ndropped:', `${OBJECTIVE_STEP_LINE}\ndropped:`], kinds: ['objective'] },
+]
 // Each pair's one side found exactly once and put in the other's place, forward (group 2's to
 // this build's) or back; null when one is not found exactly once.
 function swapped(text: string, swaps: readonly Swap[], back: boolean): string | null {
@@ -7017,6 +7049,7 @@ type Group = { edit: PromptEdit; system: (kind: CallKind) => readonly Swap[]; ta
 const GROUPS: readonly Group[] = [
   { edit: 'proof', system: k => (k === 'objective' ? G3_OBJECTIVE_SYSTEM : k === 'own-words' ? G3_OWN_WORDS_SYSTEM : G3_REP_SYSTEM), task: G3_TASK },
   { edit: 'decisions', system: k => (k === 'objective' ? G4_OBJECTIVE_SYSTEM : k === 'own-words' ? [] : G4_REP_SYSTEM), task: G4_TASK },
+  { edit: 'now', system: k => (k === 'objective' ? G5_OBJECTIVE_SYSTEM : []), task: G5_TASK },
 ]
 const nowSystem = (kind: CallKind): string => (kind === 'objective' ? OBJECTIVE_SYSTEM : kind === 'own-words' ? OWN_WORDS_SYSTEM : REP_SYSTEM)
 const groupTask = (i: number, kind: CallKind): Swap[] => GROUPS[i]!.task.filter(x => x.kinds.includes(kind)).map(x => x.swap)

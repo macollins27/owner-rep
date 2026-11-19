@@ -5,6 +5,10 @@ What changed in each release of Owner Rep, newest first. The full record is the
 
 ## Unreleased
 
+- **"Right now" on the card follows the work.** Each look the rep takes reads the step the
+  agent is on from the session's record and puts it on the card, so the line no longer shows
+  the step from your last message after the agent has moved on. The objective writer now writes
+  the step your messages last set, and the rep keeps it current from there.
 - **A part of done written with its state first** ("not shown: the pages are built", with no
   "|") keeps that state, and the state word no longer shows in the part.
 - **A decision that is truly yours reaches you as one plain question.** The rep asks you only

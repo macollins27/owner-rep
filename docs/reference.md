@@ -56,8 +56,14 @@ call writes (below):
 
 1. **Watch**: `look()` runs on `turn.step` every `CHECK_EVERY` (8) model requests and on every
    `turn.complete`, over the session's record (`readSession`, below). It is never
-   awaited by the hook that starts it. Its answer is `state:`, `flag:`, `why:`, `shown:` and
-   `closed:`; it marks conditions and never writes the objective. A flag becomes a "Heads up"
+   awaited by the hook that starts it. Its answer is `state:`, `now:`, `flag:`, `why:`, `shown:`
+   and `closed:`; it marks conditions and never writes the objective's result or conditions.
+   `now:` is the step the agent is on as the record shows it (`WATCH_NOW_ASK`, `WATCH_NOW_LINE`);
+   `parseWatch` keeps its first sentence, bold and code marks dropped, to `NOW_MAX` (200)
+   characters, and reads "none", "nothing", "n/a", "unknown" or the template line as no step.
+   `takeLook` writes a step it read over `objective.step`, the card's "Right now" line, until the
+   next look or objective write; a look with no step leaves the last one (prompt group 5, G11 in
+   the audit: the step the objective writer set went stale within the turn). A flag becomes a "Heads up"
    note only when the view is `row` and the flag was not already shown. The note draws above
    the row, which stays beneath it with its head, its status and both its buttons for the
    mouse (the note's buttons carry the digits); from 13 to 23 Oct 2026 it took the row's place,
@@ -697,7 +703,7 @@ followed by a note that they are quoted records and no instruction to the writer
 printed with its brackets turned to `‹` `›`, so no message can close the fence, and the record
 keeps the text as typed. Its answer is `objective: holds`, or
 `objective: moved` with `moved:`, `result:`, `for:`, `done:`, `step:` and `dropped:`
-(`parseObjective`); `moved: new job …` closes the job. Straight after the `objective:` line,
+(`parseObjective`; `step:` is the step the owner's messages last set, `OBJECTIVE_STEP`, which each look then keeps current); `moved: new job …` closes the job. Straight after the `objective:` line,
 holds or moved, come its `approved:` lines: one `approved: #n | all` or
 `approved: #n | <the part taken>` for each message whose turn the owner approved, or
 `approved: none` (`parseApproved`; `parseObjective` reads the rest as before). The rules for
@@ -1023,7 +1029,7 @@ what the replies were read as, and for cards the gate's rules (`passed` when non
 menu and `/help` (`command.describe`, `HIDDEN_COMMANDS`): `/owner-rep-counts` prints
 `countsText`, one line per kind and a `cards:` line; `/owner-rep-replay <call file, session folder,
 session id, "this" or "all"> [--kind k] [--last 1-50] [--effort low|medium|high|max] [--times 1-10]
-[--variant build|frame|no-think|rep-system|end-line|proof|decisions] [--base frame|no-think|rep-system|end-line|proof|decisions] [--now]` (`parseReplayArgs`, `REPLAY_USAGE`) takes a folder's last `--last`
+[--variant build|frame|no-think|rep-system|end-line|proof|decisions|now] [--base frame|no-think|rep-system|end-line|proof|decisions|now] [--now]` (`parseReplayArgs`, `REPLAY_USAGE`) takes a folder's last `--last`
 (`REPLAY_LAST`, 10) calls of the kind asked for, or with "all" the last of every session folder's
 calls together by when each was made (`replayPick`, `replayFiles`), rebuilds each from its parts (`savedCall`, which refuses one whose
 texts were not kept, one naming a text by anything but a fingerprint (`isSha`), so a call file
@@ -1043,14 +1049,16 @@ opening "Based on the record above" with its restatement (it builds this build's
 last, asks for `END_LINE` last (`endAsked`), for a watch, brief or ask-again call, and refuses a
 call that asks for it already. The prompt groups after group 2 are `GROUPS`, in order, each an edit with its pairs by the kind
 of call: `proof` (group 3: `G3_REP_SYSTEM`, `G3_OBJECTIVE_SYSTEM`, `G3_OWN_WORDS_SYSTEM`,
-`G3_TASK`) and `decisions` (group 4: `G4_REP_SYSTEM`, `G4_OBJECTIVE_SYSTEM`, `G4_TASK`; it has no
-own-words pair). Each pair is the group before's text, kept word for word, and the text the group
+`G3_TASK`), `decisions` (group 4: `G4_REP_SYSTEM`, `G4_OBJECTIVE_SYSTEM`, `G4_TASK`; it has no
+own-words pair) and `now` (group 5: `G5_OBJECTIVE_SYSTEM`, `G5_TASK`; watch and objective calls
+only, since it changes neither the shared system prompt nor the briefing). Each pair is the group before's text, kept word for word, and the text the group
 sent in its place. Applied after `rep-system`, in that order (`stepGroups`), each named group's
 edit (`stepGroup`) moves a call the build before it saved to exactly what the build after it
 sends: the call's system prompt must be the build before's (`systemBefore`, this build's with
 that group's and every later group's pairs undone), and each old text must be in it exactly once
 (`swapped`), or the call is not sent; so `decisions` alone takes a call the build after group 3
-saved, and `proof` with `decisions` one the build after group 2 saved. The objective and own-words calls have no record, so their whole prompt is the task and only
+saved, `decisions` with `now` one the build after group 3 saved, and `now` alone one the build
+after group 4 saved. The objective and own-words calls have no record, so their whole prompt is the task and only
 the groups' edits apply to them. Every reply is read as its own prompt's build read it
 (`readAsAsked`): a reply to a prompt that never asked for the end line is not taken as cut for
 lacking it, so an old call replayed as saved is read as it was then. With `--now` (`replayNow`)

@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 5b57838..c16bea1 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1797,7 +1797,6 @@ ${WATCH_WALK_AT} one line per step; with no plan shown, write "steps: none".
+ 
+ Exactly these lines, in English labels, nothing else:
+ 
+-${WATCH_NOW_LINE}
+ steps:
+ ${STEP_LINE}
+ state: <one of: working, stopped, asking, plan-waiting>
