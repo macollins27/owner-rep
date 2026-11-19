@@ -5,6 +5,8 @@ What changed in each release of Owner Rep, newest first. The full record is the
 
 ## Unreleased
 
+- **A failed objective write is retried at extra-high effort first**, and at maximum effort only
+  if that fails too, so the rare retry costs less.
 - **A part of done you restate is kept once.** When your later words say a part of done more
   exactly, the rep rewrites that part in your new words and keeps whether it was shown, instead
   of listing the old and new wordings side by side.

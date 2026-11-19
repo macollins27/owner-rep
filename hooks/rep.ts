@@ -696,8 +696,15 @@ export const OBJECTIVE_TIMEOUT_MS = 120000
 // max 4 of 4 (3,873 to 5,024 output tokens, 40 to 51 s), so a retry gets room and time to think.
 // The empty replies it was measured on came from the unfenced prompt (see OBJECTIVE_SYSTEM); the
 // retry stays as a net for an empty or unreadable reply.
-export const OBJECTIVE_RETRIES = 2
-export const OBJECTIVE_RETRY_EFFORT = 'max'
+// The first retry runs at xhigh and the last at max (G15 in the audit of 14 Nov 2026): the call log
+// of 21 Oct to 14 Nov held 90 writes and no failed one, so max is kept only as the last net, where
+// the one measurement above shows it answering when xhigh did not.
+export const OBJECTIVE_RETRY_EFFORTS = ['xhigh', 'max'] as const
+export const OBJECTIVE_RETRIES = OBJECTIVE_RETRY_EFFORTS.length
+export const OBJECTIVE_RETRY_EFFORT = OBJECTIVE_RETRY_EFFORTS[OBJECTIVE_RETRY_EFFORTS.length - 1]
+// The effort of an objective attempt: the first at high, each retry at its own.
+export const objectiveEffort = (attempt: number): 'high' | (typeof OBJECTIVE_RETRY_EFFORTS)[number] =>
+  attempt <= 0 ? 'high' : (OBJECTIVE_RETRY_EFFORTS[Math.min(attempt, OBJECTIVE_RETRY_EFFORTS.length) - 1] ?? 'max')
 export const OBJECTIVE_RETRY_MAX_TOKENS = MAX_REPLY_TOKENS
 export const OBJECTIVE_RETRY_TIMEOUT_MS = 240000
 
@@ -2385,6 +2392,13 @@ dropped:
 // The answer can be as long as a briefing asked again with its open conditions named, and
 // the model reads a long record first (it was 16,000 tokens until G16).
 export const RECORD_MAX_TOKENS = MAX_REPLY_TOKENS
+// Each reader's effort, named apart so a replay can try one lower (G14 in the audit of 14 Nov 2026).
+// The watch is the routine look, every eighth request and at each stop, and the briefing is the audit.
+// The watch stays at high: medium has not been replayed against it, and a look that misses a corner
+// cut costs the owner more than its tokens. Lower it only after a replay of saved watch calls at
+// medium shows the same flags and the same conditions marked shown.
+export const WATCH_EFFORT = 'high'
+export const BRIEF_EFFORT = 'high'
 // A whole session read cold, with no cache behind it, takes far longer than the writer's
 // short prompt; four minutes, as the writer's highest-effort retry has.
 export const RECORD_TIMEOUT_MS = 240_000
@@ -6477,6 +6491,8 @@ export const OWN_WORDS_SYSTEM = [
 
 // Its cap and time: four short parts, written at high effort (the cap was 4,000 tokens until G16).
 export const OWN_WORDS_MAX_TOKENS = MAX_REPLY_TOKENS
+// The own-words call stays at high (G37 in the audit of 14 Nov 2026): medium has not been replayed on it.
+export const OWN_WORDS_EFFORT = 'high'
 export const OWN_WORDS_TIMEOUT_MS = 120000
 
 // The request for those parts: what the rep knows (the objective, the open
@@ -6880,7 +6896,7 @@ const PROMPT_EDITS_LIST = PROMPT_EDITS.join('|')
 export type ReplayArgs = { path: string; kind?: CallKind; last: number; effort?: string; times: number; variant?: PromptEdit[]; base?: PromptEdit[]; now?: true } | { error: string }
 export const REPLAY_LAST = 10
 export const REPLAY_USAGE =
-  `Usage: /owner-rep-replay <call file, session folder, session id or all> [--kind objective|watch|brief|ask-again|own-words] [--last 1-50] [--effort low|medium|high|max] [--times 1-10] [--variant build|${PROMPT_EDITS_LIST}] [--base ${PROMPT_EDITS_LIST}] [--now]`
+  `Usage: /owner-rep-replay <call file, session folder, session id or all> [--kind objective|watch|brief|ask-again|own-words] [--last 1-50] [--effort low|medium|high|xhigh|max] [--times 1-10] [--variant build|${PROMPT_EDITS_LIST}] [--base ${PROMPT_EDITS_LIST}] [--now]`
 export function parseReplayArgs(args: string): ReplayArgs {
   const words = args.trim().split(/\s+/).filter(w => w !== '')
   let path: string | undefined
@@ -6900,7 +6916,7 @@ export function parseReplayArgs(args: string): ReplayArgs {
     if (w === '--now') now = true
     else if (w === '--effort') {
       effort = words[++i]
-      if (effort === undefined || !['low', 'medium', 'high', 'max'].includes(effort)) return { error: REPLAY_USAGE }
+      if (effort === undefined || !['low', 'medium', 'high', 'xhigh', 'max'].includes(effort)) return { error: REPLAY_USAGE }
     } else if (w === '--kind') {
       const named = words[++i]
       if (named === undefined || !(CALL_KINDS as readonly string[]).includes(named)) return { error: REPLAY_USAGE }
