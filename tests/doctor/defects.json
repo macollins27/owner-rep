@@ -5014,5 +5014,11 @@
     "breaks": "The replay's edit for issue #49 leaves the objective writer's turn-end line as it was, so a replayed objective call is not what this build sends.",
     "patch": "replay-unshown-missing.patch",
     "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "left-out-fold-stops",
+    "breaks": "The left-out list folded onto one row joins its sentences with \"; \" after their full stops, so the owner reads \"directly.; The counter was never run\".",
+    "patch": "left-out-fold-stops.patch",
+    "fixed": "tested 2026-11-19"
   }
 ]
