@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 35606cf..eda2b73 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1699,7 +1699,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
+       const usage = 'usage' in result ? result.usage : null
+       const size = { usage: usage as Usage | null, cap: RECORD_MAX_TOKENS }
+       // A reply cut short (readAgain) is never read for a card or a mark: the press reads once more.
+-      const cut = result !== NOTHING_READ && result.isAnswered && readAgain(kind, result.text, size.usage, size.cap)
++      const cut = false
+       // The plans this briefing could not compare, and the steps it could not assess, go on the card.
+       const plans = memory.approved === undefined ? {} : readerGaps(memory.approved, 'brief')
+       const unassessed = result !== NOTHING_READ && result.isAnswered && !cut ? notAssessedGaps(parseBrief(result.text).notAssessed ?? []) : {}

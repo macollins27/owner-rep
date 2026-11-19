@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index e86901f..7c16bff 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3525,7 +3525,7 @@ const FACT_EXT = /\.(?:py|pyw|ts|tsx|mts|cts|js|jsx|mjs|cjs|json|jsonl|md|mdx|tx
+ // A path inside the folder (ninth live test: "install-case/bin/greet is installed"): one with a
+ // slash and a standard folder in it. "secure/fast/reliable" has none, so it is still its words.
+ const FACT_DIR = /^(?:bin|sbin|src|lib|libexec|dist|tmp|usr|opt|var|etc|node_modules|\.git|\.claude|\.github)$/
+-const factPath = (m: string): boolean => /^(?:~\/|\.{1,2}\/|\/)/.test(m) || m.includes('://') || FACT_EXT.test(m.slice(m.lastIndexOf('/') + 1)) || (m.includes('/') && m.split('/').some(p => FACT_DIR.test(p)))
++const factPath = (m: string): boolean => /^(?:~\/|\.{1,2}\/|\/)/.test(m) || m.includes('://') || /\.[A-Za-z0-9]{1,8}$/.test(m) || (m.includes('/') && m.split('/').some(p => FACT_DIR.test(p)))
+ const factModPart = (p: string): boolean => {
+   const stem = p.replace(/['’]s$/, '')
+   return [FACT_MOD, FACT_THING, FACT_PLACE_NOUN, FACT_ACTOR, FACT_STATE].some(re => re.test(stem))

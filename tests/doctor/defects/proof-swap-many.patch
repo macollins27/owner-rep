@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index fa5a469..6af5504 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -6820,7 +6820,7 @@ function swapped(text: string, swaps: readonly Swap[], back: boolean): string |
+   for (const [then, now] of swaps) {
+     const [from, to] = back ? [now, then] : [then, now]
+     const parts = t.split(from)
+-    if (parts.length !== 2) return null
++    if (parts.length < 2) return null
+     t = parts.join(to)
+   }
+   return t

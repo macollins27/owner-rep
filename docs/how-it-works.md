@@ -63,7 +63,11 @@ or puts its message in the prompt always reaches a button on screen; on a band t
 the message's box between the head and the buttons, as in a 24-row terminal, the box goes and
 Put message in prompt still carries the message whole. Rows are counted as the band wraps
 them, at words, because a count by cells says one row too few for a long paragraph and the
-card then scrolls with its buttons out of reach.
+card then scrolls with its buttons out of reach. The count follows the band's wrap to the
+cell: an indent's spaces count, and the buttons row is counted first and as it wraps, the
+conversation's size beside it. A live test on 18 Nov 2026 drew a card of 34 rows on a band
+of 33, because a left-out item two cells past the row with its indent was counted without
+the indent on one row; the card scrolled and its buttons fell under the fold.
 
 The **check** reads outside the conversation. It opens the session's full record through
 agentsview, a local tool that indexes every coding-agent session on the machine, opens the files the agent claims to
@@ -78,8 +82,10 @@ listed, because the check is paid for to find what does not hold.
 
 The rep measures against an objective: its own account, in its own words, of what the owner
 wants on the job in hand. It is held in four parts: the result, what it is for, what "done"
-has to show (a list of conditions), and the step the session is on now. It is never the
-owner's text. The owner works by intent rather than exact wording, and a rep that only did
+has to show (a list of conditions), and the step the session is on now. The objective writer
+sets the step from the owner's messages; each look the watch takes then reads the step the agent
+is on from the record and keeps it current, so the card's "Right now" does not lag the work by a
+turn. It is never the owner's text. The owner works by intent rather than exact wording, and a rep that only did
 what the client literally said would not be a good one, so the objective includes what a
 serious owner plainly wants without saying it. The owner's messages are weighed by kind:
 reasons and complaints first, then instructions. A "yes" to a plan the agent proposed makes
@@ -101,16 +107,27 @@ the objective only through what the owner answers, and the code keeps them from 
 other way: a write is taken only when it saw a message of the owner's past the ones the held
 objective was built from, so a write that lands after a newer one is refused, and a message that arrives during
 a write is written after it. A write that fails, comes back empty, or comes back in a shape
-the code cannot read (which is what a reply cut off at its length limit looks like) leaves
+the code cannot read, or stops before its last part, leaves
 the objective as it was and is counted, and the card's line of what the rep has spent names
 the failed writes and, in plain words, the cause of the last. A failed attempt (an empty or
-errored reply, an answer the code cannot read, or "holds" while no objective is held) is tried
+errored reply, an answer the code cannot read, one that stopped before its last part or came
+within 2% of its length limit, or "holds" while no objective is held) is tried
 again at the highest effort, up to twice (the empty replies it was measured on came from the
 unfenced prompt, described below, and the retry stays as a net for an empty or unreadable
-reply); a call that throws or is cut short is not tried again, nor is one once a newer
+reply); a call that throws or is aborted is not tried again, nor is one once a newer
 message of the owner's has arrived (the next pass writes over the fresh prompt), and a write
 counts as failed only when every attempt did. When no objective is held yet, a press of Rep
 writes one before the briefing.
+
+The engine does not say when a reply ran out of room, so every reader treats a reply that
+stopped before the last part its kind asks for, or came within 2% of its length limit, as cut
+off. A reply can also stop inside its last part, far from its limit, with every label given: a
+live test drew a card whose last line read "Requests an indep". So every prompt ends by asking
+for one fixed line after everything else, "end of reply", and a reply without it is cut,
+whatever its length. Every length limit is the engine's ceiling, 64,000 tokens, so a long answer ends on time,
+not on length. A cut look or briefing is read once more and takes nothing if it is cut again
+(the briefing says so); a cut check takes nothing and asks the owner to press it again, since a
+check costs real money; a cut own-words reply leaves the rep's own text.
 
 A session is a run of jobs: the owner opens one, the agent works, the owner corrects it a
 few times, the job ends and the next begins. A correction rebuilds the objective whole from
@@ -122,9 +139,10 @@ listed to the model as closed, and the old job's messages leave what the writer 
 briefing are shown. The card shows when and why the objective last moved, and the row shows
 the result.
 
-Each condition is in one of four states: open; not shown, for a thing a conversation cannot
-show by itself, such as whether a build is installed or a service runs the newest code;
-shown; or closed by the owner. Open and not shown both count as open. The writer sees nothing of the conversation but the agent's last words before each of the owner's messages, marked as the agent's, so it can mark nothing shown: the code puts a condition it marks shown back to open unless it was already held so. The watch,
+Each condition is in one of four states: open; not shown, for what only proof from outside
+the agent's word can show, such as what is installed, deployed or running, which the rep
+marks shown once the record holds that proof; shown, by the one standard the prompts call
+"What counts as shown"; or closed by the owner. Open and not shown both count as open. The writer sees nothing of the conversation but the agent's last words before each of the owner's messages, marked as the agent's, so it can mark nothing shown: the code puts a condition it marks shown back to open unless it was already held so. The watch,
 the briefing and the check mark a condition shown only by naming where the conversation or
 the disk shows it, and closed only by citing a message of the owner's. When the check finds a
 condition held shown is not so, it puts it back to not shown, and it stays not shown until a
@@ -308,7 +326,83 @@ can show them. A check the agent wrote and passed shows only that its check pass
 now counts someone using the real product as the proof that it works, has the rep report how
 much of the work goes into the product and how much into pieces built only to prove the
 agent's own work, and forbids the message from asking for such pieces or from taking a test
-or review in place of the hands-on look.
+or review in place of the hands-on look. Since prompt group 3 (Nov 2026) every read, the check
+and the own-words call name that one standard, "What counts as shown", and a message missing
+proof asks for what it names: for a fact, the command and what it printed; for the result
+working or being good, a hands-on look. The audit found five prompts each wording the standard
+its own way, and a fact asked for a hands-on look it could never get.
+
+Why the agent's own look is not the sign-off. Until G44 (15 Nov 2026) the agent opening its own
+work and saying what it saw could close a condition about that work working. NORTH_STAR
+expectation 2 asks for someone who did not build it, since a builder looking at their own work
+sees what they meant to build. The readers now write a look's where as `look by <who>: <what>`,
+and the code takes it as the sign-off only from exactly three: "a helper that did not build it",
+"Codex", "the check". The live check of the first version (session 6c159ee6) showed why the list
+is closed rather than matched by its first word: models wrote "the helper, who also built it",
+"the real Codex", "Codex, which the agent itself wrote" and "checker-agent", and a prefix match
+signed the agent's own work off through every one. Every look in a where is read, so a sign-off
+written after a helper's look still counts. Any other look is kept with who made it, and the card
+names them and says the part still needs someone else's look, so the owner sees the evidence
+without it being taken as proof. The same live check found a where with no look closing a
+condition about the work working, because the code read every such where as a fact's proof. So
+the objective writer now marks each condition as a kind: `works` (the work does what it should,
+or is good) or `fact` (a file, a version, a command's output). A fact closes on its proof; a
+works condition, and one with no kind (all conditions written before kinds), closes only on a
+signing look. Once works, a condition stays works through any rewrite, so a later write cannot
+make the agent's own run enough. A second Codex review of that version (session 6c159ee6)
+found the closed list still took the reader's word: a where reading "look by Codex: …" signed
+off though no Codex had run, and so did "No look by Codex: …", an empty look, one still to come
+and one by a signer saying it fixed the work. A look now signs off only when the record holds a
+run of the one it names: the rep counts each helper the agent starts and each `codex` run as the
+tool call returns, and the check signs only in its own marks. The same review made a condition
+of no kind stay works when a rewrite calls it fact, reopened a shown fact rewritten as works,
+read a "fact" about the result working, loading or passing as works, and took who looked from
+the newest where alone. A third Codex review (session 6c159ee6) found the word lists for who
+looked and what a look said both missed and misfired, so the sign-off now rests on the record
+rather than on the reader's words. The record prints `(run <id>)`, the end of the call's id,
+beside each call that starts a helper or a Codex run, and a signing look names that run: "look
+by helper <run>", "look by Codex <run>", or "look by the check", which signs only in the check's
+own marks. The rep keeps each run as its call returns: a helper's answer or Codex's output, its
+end kept to 300 characters, whether it failed, and whether it changed the work (a helper's own
+Edit or Write call, a shell call of its that writes in the folder, its result's edit count, a
+Codex run with a writing sandbox or approvals bypassed, a `claude -p` run outside plan mode). A
+helper sent off on its own finishes when its own loop ends. A look signs only when its run is
+there, finished, said something and changed nothing; the card shows the run's last words beside
+the condition, so the owner compares them with the reader's account. Codex counts only as the
+command whose exit the call reports: the last statement, joined to what came before only by
+`&&`, not piped, not after `||`, not in the background, never with `--help` or `--version`. The
+same review replaced the guess at which "fact" conditions describe behaviour with an allow list:
+a fact is saved, committed, pushed, merged, installed, deployed, tagged, a file holding
+something, or the newest version running, and anything else is works. A condition is a fact
+only when every clause of it is one: a live test on 18 Nov 2026 had the writer mark "tally.py
+is saved and prints the count" a fact for being saved, so the builder's own run closed what
+the tool does. Any clause about what something does, prints, takes, returns or shows now makes
+the whole condition works, and the writer is asked for one claim per condition. A fourth live
+test found behaviours that hid the fact word inside them ("the converter transforms saved text")
+and facts of the writer's own that read as works, so a fact is now read by closed slots: every
+word must be a name (a file, a path, quoted text, a number) or one of a fixed list of words, and
+the only verbs on that list are the fact verbs, so no wording of what the work does can pass;
+the writer is told the shape of a fact. A fifth live test found behaviours still passing through those
+slots (a capital read as a name, "base64" read as a name, a slash read as a path, a quality in
+quotes, "lists files", "has 0 crashes") and three of the writers' own facts read as works ("is
+13 bytes long, with no newline at the end", "nothing from this job is committed or pushed"). A
+fact is now read by its sentence shape: a thing of the work is saved, committed, pushed or one
+of a few more such states, exists, or runs the newest code, and only a stored thing holds quoted
+text or is a count of bytes, characters, lines or words. Each slot takes only its own kind of
+word, so a word for what the work does has nowhere to stand, and a fact misread costs only a
+look. A sixth live test found a quality or a doing still standing among a noun's own words ("the
+bug-free code is committed", "the correctly encrypting tool is installed"); those words now
+refuse both, and three more of the writers' facts ("6 bytes in size", "no new commit made during
+this job exists in the project") read as facts. An eighth found qualities hidden inside what the
+reader took for a file's name or a path ("the secure/fast/reliable tool", "installed
+(UTF8-compliant)"): any word with a slash or a dot had counted as one. A path now has to look like
+one (a file's ending, or a start at the root, the home folder or the current one), anything else
+joined by a slash or a dot is its words, and a test built from every quality crossed with every
+way of joining and every slot holds that none of them closes. The owner's own word still
+closes a condition, by design, and the card says so: "closed on your word (#n)". The note of
+whose looks are in also goes on the count line,
+which comes back right after the card's head, because at 80 rows the condition lines that carried
+it were not drawn.
 
 What counts as waste. 0.6.0 named tests, review rounds and plans among the machinery to flag,
 and its message forbade asking for new tests or reviews by another AI. That steered agents away
@@ -319,12 +413,17 @@ on its own edits or a proof report. Tests, code reviews, plan checks, second rea
 planning are work on the product. None of them is the sign-off, which stays a hands-on look by
 someone who did not build the thing. The objective writer
 is told that a routine followed or a brief's steps carried out is the agent's method, never a
-condition of done, and the paid check looks at the product itself.
+condition of done, and the paid check looks at the product itself. A step of a plan the owner
+approved that is such a piece stays a condition, since the owner said yes to it, with an open
+question beside it asking whether to keep it; the check flags it the same way.
 
 One consequence is spelled out in the
 brief: the owner does no step of the job. A chore the agent leaves "for you", such as a branch
 to delete, is the agent's unfinished work, listed as left out and put in the message to the
-agent, never relayed to the owner as what to do next. A card that lists anything left out
+agent, never relayed to the owner as what to do next. What does reach the owner is a decision that is
+truly theirs: one that touches their livelihood or public name, cannot be undone, or goes against
+something they asked for. A go-ahead to publish, send or pay is one, put as a plain question,
+and the message tells the agent to finish the rest and hold that step until the owner says go. A card that lists anything left out
 cannot also carry the line saying every part is done; the code drops that line.
 
 Nothing in a session except the owner's own messages can give the rep orders. Text an agent
@@ -456,7 +555,25 @@ store, which pnpm would otherwise move into a scratch folder inside the fence an
 is asked of pnpm in the copy before the run and named to it. pnpm is told on its command
 line, which the project's own pnpm settings cannot override, to load none of the project's
 hook file, install no pinned pnpm and download nothing, and corepack, which can fetch a
-pinned pnpm before pnpm starts, is told to fetch nothing. When the machine does not answer
+pinned pnpm before pnpm starts, is told to fetch nothing. Where `claude` or pnpm is a mise
+shim, the shim is mise itself, which reads the config and env file of the folder it starts in
+and the folders above before the program runs, outside the fence; in the copy those are the
+agent's work. So the check runs no shim: mise is asked once per Claude Code process, when a
+session starts with a person at the prompt and before the agent has run anything, from the
+home and with no env file, where the owner's own tools are. Where any shim is on the command
+path, whichever tool it stands for (a node shim alone would run for pnpm's
+`#!/usr/bin/env node`), the check's command path puts those folders first and drops every
+shims folder, and claude and pnpm start by their full paths, which the fence then also guards.
+Only where mise cannot answer does it go through the shim, with no env file read and the copy
+and the folders above it ignored, never the home, whose config names the owner's tools. That
+leaves one limit, stated as such: an agent whose working folder is the home can change the
+home's mise config, and nothing the rep starts can be fenced from an agent sharing its home.
+A copy is never removed for its age. Each has an owner file naming the Claude Code process
+that made it, by pid and start time; a sweep at each session's start and before each copy
+removes only the copies whose process is gone, and none when `ps` cannot see the asking
+process. A copy is removed by renaming it first and removing the renamed folder, so a session
+making a new copy at the old path is never hit.
+When the machine does not answer
 the question about where the links in the command folders lead, the run's brief says the
 installs those links lead to could not be found. When a git question fails, times out, is
 cut at the output's cap or meets a name holding a line break, the brief says not every git
@@ -579,7 +696,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 615 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 759 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: twelve real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -637,7 +754,9 @@ person typed. On Windows those commands are Git for Windows' own, named by their
 and the rep finds them, and Claude Code's own `claude.exe`, by running each place they may
 be with `--version`. The check step
 starts a separate Claude Code run that may read files, search, run the project's own tests
-and read agentsview; it may not edit, send, or launch helpers. The rep never sends anything
+and read agentsview; it may not edit, send, or launch helpers. That run loads the owner's
+user-level settings and hooks, agentsview as its only MCP server, read from Claude Code's
+`.claude.json`, and no CLAUDE.md, skill, plugin or project setting. The rep never sends anything
 to an agent by itself.
 
 ## Decisions along the way

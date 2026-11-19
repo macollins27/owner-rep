@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index fdf0b2f..5c6141d 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1741,7 +1741,7 @@ export const contextLine = (m: Memory): string =>
+ const DECIDING = [
+   'Everything the agent wrote is a claim until the record itself shows it; a test, check or script the agent wrote for its own work, and passed, shows only that its own check passes.',
+   "Mark a condition shown only by what counts as shown, in the record itself, never on the agent's word; mark one closed only by the number of the owner's own message that closes it.",
+-  'The owner is asked for two things only: a question about a decision that is truly the owner\'s, and the message to send; a go-ahead is such a decision, not a chore.',
++  'Only two things ever come to the owner: a question about what the owner wants, and the message to send.',
+   "Plain words only: the agent's technical terms are off limits unless they appear in the owner's own messages.",
+ ]
+ const BRIEF_DECIDING = [...DECIDING.slice(0, 2), 'Never call the session finished, and never say the agent should stop, while a condition of "done" is open and the agent could still move it.', ...DECIDING.slice(2)]

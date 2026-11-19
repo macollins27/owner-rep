@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 8d7074b..3a34ce7 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1317,7 +1317,7 @@ function applyMarks(
+         changed = true
+         // Who looked comes from this where alone: one with no look is the agent's own,
+         // never the last named looker's (Codex review of #53); so do the run's words.
+-        const { seenBy: _was, said: _said, ...rest } = c
++        const { said: _said, ...rest } = c
+         return { ...rest, seen, ...(seenBy === '' ? {} : { seenBy }), ...saidOf }
+       }
+       changed = true

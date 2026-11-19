@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 1333219..437cdfb 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -5285,7 +5285,6 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
+     x => (x.checked === null ? x : { ...x, checked: { ...x.checked, looked: toRows(x.checked.looked, '', 1, w) } }),
+     x => (x.checked === null ? x : { ...x, checked: { ...x.checked, looked: '' } }),
+   ]
+-  for (const step of floor) if (cardRows(c, cols) > maxRows) c = step(c)
+   const steps: Array<(x: CardText) => CardText> = [
+     x => ({ ...x, result: card.result }),
+     // Why the check cannot run, or what it last said, whole, before the empty line above the

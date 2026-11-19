@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 6e8b995..8fd0e64 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -4869,7 +4869,7 @@ const cellsOf = (ch: string): number =>
+     : /[ᄀ-ᅟ⺀-〾ぁ-㏿㐀-䶿一-鿿ꀀ-꓏가-힣豈-﫿︰-﹏＀-｠￠-￦]|\p{Extended_Pictographic}/u.test(ch)
+       ? 2
+       : 1
+-export const widthOf = (s: string): number => [...s].reduce((n, ch) => n + cellsOf(ch), 0)
++export const widthOf = (s: string): number => [...s].length
+ 
+ // Rows a wrapped text takes in `width` cells, one per paragraph at least, counted as the
+ // band wraps a Text (wrap-ansi with trim off and hard on): a row ends where the next word

@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index e06ac4a..6bfb45b 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3717,7 +3717,7 @@ export const deadOwned = (stdout: string, owned: Owned[]): Owned[] | null => {
+     if (m !== null) alive.set(m[1] ?? '', spaced(m[2] ?? ''))
+   }
+   if (!/^\d+$/.test(me) || !alive.has(me)) return null
+-  return owned.filter(o => o.pid !== me && alive.get(o.pid) !== o.start)
++  return owned.filter(o => o.pid !== me && !alive.has(o.pid))
+ }
+ // Ends 3 having moved nothing when the owner file no longer holds `line` (given only by the sweep).
+ export const retireArgv = (gone: string, copy: string, line = ''): string[] => [

@@ -117,7 +117,7 @@
     "name": "row-shows-whole-reading",
     "breaks": "The row draws the whole objective (result, purpose, conditions and step) instead of the result alone, so the strip is crowded and the result is lost in it.",
     "patch": "row-shows-whole-reading.patch",
-    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-31"
+    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-31; remade 2026-11-19"
   },
   {
     "name": "writer-forks-conversation",
@@ -165,7 +165,7 @@
     "name": "checked-lists-never-fold",
     "breaks": "The checked lists are never folded, so on a small band they push the judgment's parts off the card where a count line and the failed claims would have left room for them.",
     "patch": "checked-lists-never-fold.patch",
-    "fixed": "tested 2026-10-14"
+    "fixed": "tested 2026-10-14; remade 2026-11-18 for the five-row floor"
   },
   {
     "name": "step-look-dropped",
@@ -189,7 +189,7 @@
     "name": "revised-line-folds-first",
     "breaks": "The revision line waits among the extras after the message, so whenever the message is long enough to take the rows that are left the owner never sees that the reading moved.",
     "patch": "revised-line-folds-first.patch",
-    "fixed": "2026-10-14"
+    "fixed": "2026-10-14; remade 2026-11-17; remade 2026-11-18 for the five-row floor"
   },
   {
     "name": "rows-counted-by-cells",
@@ -237,7 +237,7 @@
     "name": "check-outside-copy",
     "breaks": "The check's run is started in the agent's own folder instead of the throwaway copy, so what the checker runs and writes lands in the folder the agent is working in.",
     "patch": "check-outside-copy.patch",
-    "fixed": "2026-10-15"
+    "fixed": "2026-10-15; remade 2026-11-17"
   },
   {
     "name": "refusals-unreported",
@@ -255,7 +255,7 @@
     "name": "condition-dropped-uncited",
     "breaks": "A correction keeps only the conditions the writer wrote again, so a message that bounds the next step drops parts of what \"done\" means that the owner never let go.",
     "patch": "condition-dropped-uncited.patch",
-    "fixed": "2026-10-15; remade 2026-10-16"
+    "fixed": "2026-10-15; remade 2026-10-16; remade 2026-11-17"
   },
   {
     "name": "stop-while-open",
@@ -309,13 +309,13 @@
     "name": "marks-uncited",
     "breaks": "A look or a briefing can close a condition by citing any message number, a draft's included, so a condition the owner never let go is closed on the rep's or the agent's say.",
     "patch": "marks-uncited.patch",
-    "fixed": "2026-10-15; remade 2026-10-16"
+    "fixed": "2026-10-15; remade 2026-10-16; remade 2026-11-17"
   },
   {
     "name": "mark-cites-built-message",
     "breaks": "A look, a briefing or a check can close a condition by citing a message the objective was already built from, one the writer read and kept the condition open after.",
     "patch": "mark-cites-built-message.patch",
-    "fixed": "2026-10-15"
+    "fixed": "2026-10-15; remade 2026-11-17"
   },
   {
     "name": "writer-cites-built-message",
@@ -345,7 +345,7 @@
     "name": "conditions-pile-up",
     "breaks": "A condition the writer lists twice, or with a state mark copied into its text, is kept twice, so the list of what done means grows by repeats.",
     "patch": "conditions-pile-up.patch",
-    "fixed": "2026-10-15; remade 2026-10-16"
+    "fixed": "2026-10-15; remade 2026-10-16; remade 2026-11-17"
   },
   {
     "name": "writer-failure-uncounted",
@@ -387,7 +387,7 @@
     "name": "writer-cap-cut",
     "breaks": "The objective writer's reply cap goes back to 1,200 tokens, under the 1,847 one measured write used, so every write is cut off or comes back empty and the objective is never written.",
     "patch": "writer-cap-cut.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-11-17"
   },
   {
     "name": "writer-unreadable-uncounted",
@@ -399,13 +399,13 @@
     "name": "look-remarks-reopened",
     "breaks": "A look or a briefing that marks a condition the check reopened as shown moves it shown again, so the next stop passes the gate though the paid check found the claim false.",
     "patch": "look-remarks-reopened.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-11-17"
   },
   {
     "name": "merge-raises-state",
     "breaks": "The writer's merge takes a proposed state over the held one by rank, so a correction can drop the check's reopened mark and its finding, and the merge alone would raise a condition to shown.",
     "patch": "merge-raises-state.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-11-17"
   },
   {
     "name": "stop-filter-broad",
@@ -639,7 +639,7 @@
     "name": "record-numbers-as-messages",
     "breaks": "The session record labels its entries #N, the form the owner's numbered messages take, so a record entry can be cited, and read by applyMarks, as one of their messages.",
     "patch": "record-numbers-as-messages.patch",
-    "fixed": "2026-10-16; remade 2026-10-31"
+    "fixed": "2026-10-16; remade 2026-10-31; remade 2026-11-17"
   },
   {
     "name": "truncated-read-trusted",
@@ -1185,7 +1185,7 @@
     "name": "fence-path-ignored",
     "breaks": "The check's run is fenced without the command path, so a folder of programs in the home stays writable and a program put there runs the next time anyone types its name.",
     "patch": "fence-path-ignored.patch",
-    "fixed": "2026-10-17"
+    "fixed": "2026-10-17; remade 2026-11-17"
   },
   {
     "name": "fence-path-holds-copy",
@@ -1287,7 +1287,7 @@
     "name": "pnpm-store-not-passed",
     "breaks": "The check's run is not told where pnpm's store is, so pnpm inside the fence moves its store into an empty scratch folder and an offline install there fails, and the check names the project's tests as not run.",
     "patch": "pnpm-store-not-passed.patch",
-    "fixed": "2026-10-17"
+    "fixed": "2026-10-17; remade 2026-11-17"
   },
   {
     "name": "pnpm-store-keeps-version",
@@ -1335,7 +1335,7 @@
     "name": "path-links-not-asked",
     "breaks": "The check never passes the links' targets to the fence, so a tool installed through a link in the command path can be changed by the check's run.",
     "patch": "path-links-not-asked.patch",
-    "fixed": "2026-10-17"
+    "fixed": "2026-10-17; remade 2026-11-17"
   },
   {
     "name": "path-links-exit-read",
@@ -1449,7 +1449,7 @@
     "name": "repo-git-not-asked",
     "breaks": "The repositories the git question finds are never passed to the fence, so a commit made in a copied worktree moves the real branch.",
     "patch": "repo-git-not-asked.patch",
-    "fixed": "2026-10-17"
+    "fixed": "2026-10-17; remade 2026-11-17"
   },
   {
     "name": "worktree-common-dir-missed",
@@ -1515,7 +1515,7 @@
     "name": "unanswered-not-passed",
     "breaks": "When the link or git question gets no answer the brief still says the fence guards the repository and the installs the links lead to, so the run may commit or change an install trusting a guard that is not there.",
     "patch": "unanswered-not-passed.patch",
-    "fixed": "2026-10-17"
+    "fixed": "2026-10-17; remade 2026-11-17"
   },
   {
     "name": "links-unanswered-as-none",
@@ -1821,7 +1821,7 @@
     "name": "count-line-dropped-first",
     "breaks": "The count line comes back only after the judgment's parts have taken the rows, so on a small band the owner loses how many things done means while restatements of the agent's work keep a second row.",
     "patch": "count-line-dropped-first.patch",
-    "fixed": "tested 2026-10-19"
+    "fixed": "tested 2026-10-19; remade 2026-11-17; remade 2026-11-18 for the five-row floor"
   },
   {
     "name": "extras-before-message",
@@ -1833,7 +1833,7 @@
     "name": "message-box-hides-buttons",
     "breaks": "On a band too short for the message's box between the head and the buttons, as in a terminal of about 24 rows, the box stays and pushes the buttons out of the window where a digit cannot press them.",
     "patch": "message-box-hides-buttons.patch",
-    "fixed": "2026-10-26"
+    "fixed": "2026-10-26; remade 2026-11-17; remade 2026-11-18 for the five-row floor"
   },
   {
     "name": "own-words-cut-taken",
@@ -1869,7 +1869,7 @@
     "name": "approved-section-missing",
     "breaks": "The readers' memory loses the section of plans the owner approved, so neither the Heads up nor the briefing sees a plan's steps and neither can walk them.",
     "patch": "approved-section-missing.patch",
-    "fixed": "2026-10-29"
+    "fixed": "2026-10-29; remade 2026-11-17"
   },
   {
     "name": "approved-cursor-not-saved",
@@ -2277,7 +2277,7 @@
     "name": "heads-up-register-no-plan-gate",
     "breaks": "The look never hands the mod the plans it showed, so no dropped step is carried at all.",
     "patch": "heads-up-register-no-plan-gate.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-19 against prompt group 7"
   },
   {
     "name": "heads-up-flag-speaks-ignored",
@@ -2415,7 +2415,7 @@
     "name": "fixed-text-no-held-step",
     "breaks": "The fixed text drops its held-step sentence, so a fallback message can push a step that waits on the owner.",
     "patch": "fixed-text-no-held-step.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-17"
   },
   {
     "name": "ask-again-silent-on-empty",
@@ -3027,7 +3027,7 @@
     "name": "reader-closes-by-approval",
     "breaks": "A reader's closed line citing an approved plan or a yes closes the condition.",
     "patch": "reader-closes-by-approval.patch",
-    "fixed": "2026-11-01"
+    "fixed": "2026-11-01; remade 2026-11-17"
   },
   {
     "name": "check-drops-record-lines",
@@ -3189,7 +3189,7 @@
     "name": "owner-typed-check-dropped",
     "breaks": "The objective writer drops a check, review or report the owner asked for in the owner's own message, treating it as the agent's method like one from an agent's routine.",
     "patch": "owner-typed-check-dropped.patch",
-    "fixed": "2026-11-10"
+    "fixed": "2026-11-10; remade 2026-11-19 against prompt group 7"
   },
   {
     "name": "approved-check-made-method",
@@ -3280,5 +3280,1739 @@
     "breaks": "Steps a reader names for an approved plan it was never shown reach the card's Left out as \"Not assessed\" lines, though they are the reader's guesses.",
     "patch": "unseen-plan-steps-listed.patch",
     "fixed": "2026-11-14"
+  },
+  {
+    "name": "check-mise-config-read",
+    "breaks": "The check's run starts claude by name with the owner's command path, mise's shims on it, so mise runs in the copy before the fence: a mise.toml there is refused as untrusted and the check stops (\"mise ERROR\"), or its env and hooks, or an env file mise is told to read, run outside the fence.",
+    "patch": "check-mise-config-read.patch",
+    "fixed": "2026-11-14; remade 2026-11-14"
+  },
+  {
+    "name": "pnpm-ask-mise-config-read",
+    "breaks": "pnpm is asked for its store by name with the owner's command path, mise's shims on it, so mise runs in the copy for it, outside the fence, and fails on its untrusted mise.toml.",
+    "patch": "pnpm-ask-mise-config-read.patch",
+    "fixed": "2026-11-14; remade 2026-11-14"
+  },
+  {
+    "name": "mise-ignore-replaces-owner-list",
+    "breaks": "Where mise cannot answer, the folders the check has mise ignore replace the list the owner already has it ignore, so inside the check mise reads the configs the owner chose to ignore.",
+    "patch": "mise-ignore-replaces-owner-list.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "check-path-keeps-shims",
+    "breaks": "The check's run keeps mise's shims on its command path, so node, pnpm and every other shimmed tool the run starts goes through mise in the copy.",
+    "patch": "check-path-keeps-shims.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "mise-asked-outside-home",
+    "breaks": "mise is asked where the owner's tools are from the agent's folder rather than the home, so the project's mise config and its env and hooks are read for the answer, outside the fence.",
+    "patch": "mise-asked-outside-home.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "mise-asked-with-env-file",
+    "breaks": "mise is asked where the owner's tools are with the env file the owner's MISE_ENV_FILE names still loaded.",
+    "patch": "mise-asked-with-env-file.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "mise-fallback-reads-env-file",
+    "breaks": "Where mise cannot answer, the shim is not told to read no env file, so an env file in the copy (a NODE_OPTIONS the agent wrote) is loaded outside the fence, which ignoring the folder does not stop.",
+    "patch": "mise-fallback-reads-env-file.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "mise-fallback-ignores-home",
+    "breaks": "Where mise cannot answer, a check started in the home has mise ignore the home, which drops the owner's own config, and the shim then finds no claude (\"not currently active\").",
+    "patch": "mise-fallback-ignores-home.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "mise-fallback-skips-parents",
+    "breaks": "Where mise cannot answer, only the folder the check starts in is ignored, so the mise configs of the folders above it are still read outside the fence.",
+    "patch": "mise-fallback-skips-parents.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "mise-shim-pnpm-asked",
+    "breaks": "Off mise's shims, a pnpm found nowhere but a shim is still asked by name, which runs mise in the copy for it.",
+    "patch": "mise-shim-pnpm-asked.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "guard-misses-check-path",
+    "breaks": "The fence and the links question take only the owner's command path, so the folders the check's path takes in place of mise's shims are left writable.",
+    "patch": "guard-misses-check-path.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "stale-copies-left",
+    "breaks": "A check never sweeps the copies left by a Claude Code that ended mid-run or closed straight after a check, so they stay in the copies folder until a later start.",
+    "patch": "stale-copies-left.patch",
+    "fixed": "2026-11-14; remade 2026-11-14"
+  },
+  {
+    "name": "stale-sweep-takes-own",
+    "breaks": "The sweep takes this process's own copy, whose owner file names the process asking, so a check's copy can be removed under it.",
+    "patch": "stale-sweep-takes-own.patch",
+    "fixed": "2026-11-14; remade 2026-11-14"
+  },
+  {
+    "name": "stale-sweep-any-folder",
+    "breaks": "The sweep reads any owner file in the copies folder, not only those named for a session, so a folder the rep did not make can be removed.",
+    "patch": "stale-sweep-any-folder.patch",
+    "fixed": "2026-11-14; remade 2026-11-14"
+  },
+  {
+    "name": "stale-age-under-check",
+    "breaks": "The sweep takes copies by age, so a live check's copy is removed after a clock jump or a long run.",
+    "patch": "stale-age-under-check.patch",
+    "fixed": "2026-11-14; remade 2026-11-14"
+  },
+  {
+    "name": "shims-found-by-claude-only",
+    "breaks": "Only a claude or pnpm shim counts as mise's shims on the path, so where only node is a shim the run keeps the shims folder and pnpm's `#!/usr/bin/env node` runs mise in the copy, outside the fence.",
+    "patch": "shims-found-by-claude-only.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "check-path-bins-in-place",
+    "breaks": "The folders mise names take the shims folder's place on the run's path rather than its front, so a tool in an earlier folder of the owner's path wins over the owner's mise tools.",
+    "patch": "check-path-bins-in-place.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "claude-chosen-from-run-path",
+    "breaks": "claude is taken from the folders mise names before the owner's own path, so an owner whose native claude comes before the shims gets mise's node's claude instead.",
+    "patch": "claude-chosen-from-run-path.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "mise-asked-each-check",
+    "breaks": "mise is asked where the owner's tools are again at every check, so a home mise config the agent changed after the session started is read for the answer.",
+    "patch": "mise-asked-each-check.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "mise-not-asked-at-start",
+    "breaks": "mise is not asked when the session starts, only at the first check, after the agent may have changed the home's mise config.",
+    "patch": "mise-not-asked-at-start.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "mise-asked-after-start",
+    "breaks": "The session's start does not wait for mise's answer, so the agent can run before it is taken.",
+    "patch": "mise-asked-after-start.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "start-work-in-headless-run",
+    "breaks": "A run with no person at the prompt (a -p run, as the check's own run is) asks mise and sweeps the copies when it starts, so the check's own run does both inside the fence.",
+    "patch": "start-work-in-headless-run.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "no-sweep-at-start",
+    "breaks": "The copies a closed session left are swept only at the next check, not when a session starts.",
+    "patch": "no-sweep-at-start.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "sweep-ignores-owner",
+    "breaks": "The sweep removes every other process's copy whatever ps says, so the copy of a check running in another session is removed under it.",
+    "patch": "sweep-ignores-owner.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "sweep-pid-only",
+    "breaks": "The sweep counts an owner alive by its pid alone, so a copy whose owner's pid now names a later process is kept for good.",
+    "patch": "sweep-pid-only.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "sweep-blind-ps-trusted",
+    "breaks": "A ps that sees no process, not even the one asking (a sandbox, a hidden process table), counts every owner gone, so live sessions' copies are removed.",
+    "patch": "sweep-blind-ps-trusted.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "sweep-failed-ps-trusted",
+    "breaks": "A ps that cannot answer counts every owner gone, so live sessions' copies are removed.",
+    "patch": "sweep-failed-ps-trusted.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "sweep-removes-in-place",
+    "breaks": "The sweep removes a copy at its own path, so a session that makes a new copy there between the sweep's question and the removal has its new copy removed.",
+    "patch": "sweep-removes-in-place.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "ps-locale-unfixed",
+    "breaks": "ps is asked without a fixed clock and language, so a start time read under another time zone or locale differs from the owner file and a live owner's copy is removed.",
+    "patch": "ps-locale-unfixed.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "gone-leftovers-left",
+    "breaks": "What a removal cut short left in the copies folder (a renamed copy) is never removed.",
+    "patch": "gone-leftovers-left.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "copy-without-owner",
+    "breaks": "A copy is made with no owner file, so a copy left when Claude Code closes is never swept.",
+    "patch": "copy-without-owner.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "owner-after-copy",
+    "breaks": "The owner file is written after the copy, so a copy cut off while copying stands with no owner and is never swept.",
+    "patch": "owner-after-copy.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "check-end-removes-in-place",
+    "breaks": "A check's end removes its copy at the copy's own path, not behind a rename, so the next check's copy made there can be removed under it.",
+    "patch": "check-end-removes-in-place.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "copy-path-removed-before-copy",
+    "breaks": "What a past check left at the copy's path is removed in place before the copy is made, so the check waits on removing gigabytes before it starts.",
+    "patch": "copy-path-removed-before-copy.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "retire-ignores-owner-change",
+    "breaks": "The sweep's rename does not check that the owner file still holds the line it read, so a copy another session made there since is removed.",
+    "patch": "retire-ignores-owner-change.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "retire-leaves-owner-file",
+    "breaks": "A removed copy's owner file is left behind, so later sweeps keep asking ps about a copy that is gone.",
+    "patch": "retire-leaves-owner-file.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "gate-rules-miss-empty",
+    "breaks": "The call log's list of the gate's rules leaves out an empty message, so a card the gate refused for it is logged and counted as passed.",
+    "patch": "gate-rules-miss-empty.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "call-log-prunes-any-folder",
+    "breaks": "The call log's removal takes any folder under the calls folder, not only a session's folder named by a uuid.",
+    "patch": "call-log-prunes-any-folder.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "call-log-any-session",
+    "breaks": "Calls are saved for a session id that is not a uuid, so a session with no folder of its own writes under the calls folder.",
+    "patch": "call-log-any-session.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "replay-unchecked-prompt",
+    "breaks": "The replay sends a saved call whose texts were changed after it was saved, without checking them against the fingerprint of the prompt that was sent.",
+    "patch": "replay-unchecked-prompt.patch",
+    "fixed": "2026-11-14"
+  },
+  {
+    "name": "own-check-folder-ignored",
+    "breaks": "The rep knows its own check only by the mark, not by its folder under the check copies, so a check started without the mark is watched like the owner's agent.",
+    "patch": "own-check-folder-ignored.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "own-check-spawn-unmarked",
+    "breaks": "The check is spawned without the OWNER_REP_CHECK mark, so a check run outside the copies' folder is watched like the owner's agent.",
+    "patch": "own-check-spawn-unmarked.patch",
+    "fixed": "2026-11-15; remade 2026-11-17"
+  },
+  {
+    "name": "own-check-messages-kept",
+    "breaks": "In the rep's own check, the message the check is started with still goes through the rep, which keeps it as the owner's.",
+    "patch": "own-check-messages-kept.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "check-loads-project-settings",
+    "breaks": "The check's own session loads the copy's project and local settings, with the agent's CLAUDE.md files, hooks, agents and commands.",
+    "patch": "check-loads-project-settings.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "check-loads-skills",
+    "breaks": "The check's own session loads the owner's and the project's skills and slash commands.",
+    "patch": "check-loads-skills.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "check-loads-every-mcp-server",
+    "breaks": "The check's own session starts every MCP server the owner and the project have, not only agentsview.",
+    "patch": "check-loads-every-mcp-server.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "check-mcp-takes-every-server",
+    "breaks": "The check's MCP list copies every server in the owner's .claude.json, not only agentsview.",
+    "patch": "check-mcp-takes-every-server.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "check-mcp-any-name-case",
+    "breaks": "The check's MCP list takes a server whose name only matches agentsview without regard to case.",
+    "patch": "check-mcp-any-name-case.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "check-instructions-line-dropped",
+    "breaks": "The check's brief no longer says the agent's instruction files were not loaded and where to read them.",
+    "patch": "check-instructions-line-dropped.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "check-loads-claude-mds",
+    "breaks": "The check's own session loads every CLAUDE.md, the owner's own among them, against the owner's choice.",
+    "patch": "check-loads-claude-mds.patch",
+    "fixed": "2026-11-15; remade 2026-11-17"
+  },
+  {
+    "name": "check-mcp-not-passed",
+    "breaks": "The agentsview entry found in the owner's .claude.json is never given to the check, which starts with no MCP server.",
+    "patch": "check-mcp-not-passed.patch",
+    "fixed": "2026-11-15; remade 2026-11-17"
+  },
+  {
+    "name": "check-mcp-config-dir-ignored",
+    "breaks": "With CLAUDE_CONFIG_DIR set, the check reads the home's .claude.json, not the one Claude Code uses.",
+    "patch": "check-mcp-config-dir-ignored.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "check-mcp-falls-back-home",
+    "breaks": "Where the config folder's .claude.json has no agentsview, the check takes the home's file, which Claude Code does not use.",
+    "patch": "check-mcp-falls-back-home.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "builder-look-signs-off",
+    "breaks": "A look by the agent at its own work marks a \"works\" condition shown, so the agent signs off its own work.",
+    "patch": "builder-look-signs-off.patch",
+    "fixed": "2026-11-15; remade 2026-11-17"
+  },
+  {
+    "name": "check-marks-skip-who",
+    "breaks": "The check's marks skip the who rule, so a check that only read the agent's own look in the record signs the condition off.",
+    "patch": "check-marks-skip-who.patch",
+    "fixed": "2026-11-15; remade 2026-11-17"
+  },
+  {
+    "name": "agent-look-off-card",
+    "breaks": "The card says nothing of the agent's own look, so the owner cannot see that the work was looked at and still waits on someone else's look.",
+    "patch": "agent-look-off-card.patch",
+    "fixed": "2026-11-15; remade 2026-11-17"
+  },
+  {
+    "name": "owner-signs-off",
+    "breaks": "A look the agent reports as the owner's counts as a sign-off, so the agent can close a condition by saying the owner tried it.",
+    "patch": "owner-signs-off.patch",
+    "fixed": "2026-11-15; remade 2026-11-17"
+  },
+  {
+    "name": "agent-look-dropped",
+    "breaks": "The agent's own look is thrown away instead of kept, so the evidence it gave is lost from the card and the prompts.",
+    "patch": "agent-look-dropped.patch",
+    "fixed": "2026-11-15; remade 2026-11-17"
+  },
+  {
+    "name": "call-log-cap-takes-starting",
+    "breaks": "Past the total of 1 GB, the folder of the session starting is removed when it is the oldest, though it is the one now being written.",
+    "patch": "call-log-cap-takes-starting.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "call-log-cap-newest-first",
+    "breaks": "Past the total of 1 GB, the folders changed most recently are removed first, and the old ones kept.",
+    "patch": "call-log-cap-newest-first.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "call-log-cap-takes-live",
+    "breaks": "Past the total of 1 GB, a folder changed in the last hour is removed, though it may be another running session's.",
+    "patch": "call-log-cap-takes-live.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "call-log-cap-takes-unknown-age",
+    "breaks": "Past the total of 1 GB, a folder whose change time cannot be read is removed as if it were the oldest.",
+    "patch": "call-log-cap-takes-unknown-age.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "call-log-cap-unused",
+    "breaks": "The total of 1 GB is never applied: every session's calls together grow without a bound for 14 days.",
+    "patch": "call-log-cap-unused.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "call-log-cap-parts-uncounted",
+    "breaks": "A folder's texts are left out of its size, so the total reads small and nothing is removed past 1 GB.",
+    "patch": "call-log-cap-parts-uncounted.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "call-log-cap-counts-expired",
+    "breaks": "A folder removed for being 14 days old is counted toward the total as well, and named twice in the removal.",
+    "patch": "call-log-cap-counts-expired.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "call-log-removed-texts-not-rewritten",
+    "breaks": "A session of this process whose calls folder was removed takes its texts as still saved, so its later calls name texts that are gone and cannot be sent again.",
+    "patch": "call-log-removed-texts-not-rewritten.patch",
+    "fixed": "2026-11-15"
+  },
+  {
+    "name": "cut-reply-read",
+    "breaks": "Every reader takes a reply that stopped before its last part, so a cut watch, briefing, check or objective answer is read as whole and a half-written part reaches the card or the record.",
+    "patch": "cut-reply-read.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "near-cap-read-whole",
+    "breaks": "A reply that came within 2% of its cap is read as whole when its last label happens to be there, so an answer that ran out of room mid-list is taken.",
+    "patch": "near-cap-read-whole.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "no-labels-asked-again",
+    "breaks": "A reply with none of the parts asked for is read again as if it ran out of room, spending a second paid call on an answer that was never long.",
+    "patch": "no-labels-asked-again.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "record-cap-low",
+    "breaks": "The watch and briefing reply cap drops back under the engine's 64,000 ceiling, so a long answer is cut short again.",
+    "patch": "record-cap-low.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "own-words-cap-low",
+    "breaks": "The own-words reply cap drops back to 4,000, under the engine's ceiling, so a long own-words answer is cut short again.",
+    "patch": "own-words-cap-low.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "watch-cut-not-reread",
+    "breaks": "A look whose answer stopped before its end is not read once more, so one cut reply loses that look's Heads up.",
+    "patch": "watch-cut-not-reread.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "watch-cut-taken",
+    "breaks": "A look whose answer came near its cap is taken anyway, so marks and a Heads up from an answer that ran out of room reach the record and the screen.",
+    "patch": "watch-cut-taken.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "brief-cut-not-reread",
+    "breaks": "A briefing whose answer stopped before its end is not read once more, so one cut reply leaves the owner with no card.",
+    "patch": "brief-cut-not-reread.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "brief-cut-shown",
+    "breaks": "A briefing whose answer stopped before its end is put on the card as it stands, so the owner gets a card built from half an answer.",
+    "patch": "brief-cut-shown.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "check-cut-taken",
+    "breaks": "A check whose answer stopped before its looked line is taken, so its half-read verdict and marks reach the card and no note tells the owner to press it again.",
+    "patch": "check-cut-taken.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "objective-near-cap-taken",
+    "breaks": "An objective write that came within 2% of its cap is taken when it happens to parse, so an objective that ran out of room mid-list is written to the record.",
+    "patch": "objective-near-cap-taken.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "own-words-near-cap-taken",
+    "breaks": "An own-words reply that reached its cap is put on the card when it happens to parse, so words that ran out of room reach the owner.",
+    "patch": "own-words-near-cap-taken.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "call-log-days-takes-starting",
+    "breaks": "A session resumed after 14 idle days has its own calls folder removed at its start, so its earlier calls are lost.",
+    "patch": "call-log-days-takes-starting.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "replay-reads-any-name",
+    "breaks": "A replayed call file can name any file as its system text, so the replay reads it and sends it to the model.",
+    "patch": "replay-reads-any-name.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "replay-system-unchecked",
+    "breaks": "A replay sends a system text that changed after it was saved, so the replay is not of the call that was made.",
+    "patch": "replay-system-unchecked.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "signer-prefix-match",
+    "breaks": "A look signs off when its who only starts like a signer naming a run, so \"helper 0001a1b2, which also built it\" signs that run's work off as a helper's look.",
+    "patch": "signer-prefix-match.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "first-look-only",
+    "breaks": "Only the first look in a where is read, so a sign-off look written after a helper's is lost and the condition stays open though the check looked.",
+    "patch": "first-look-only.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "where-without-look-closes",
+    "breaks": "A where with no look in it closes a \"works\" condition, so the agent's own run written plainly signs its own work off.",
+    "patch": "where-without-look-closes.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "no-kind-read-as-fact",
+    "breaks": "A condition with no kind is shown by any where, as a fact is, so every condition written before kinds, and any the writer leaves unmarked, closes on the agent's word.",
+    "patch": "no-kind-read-as-fact.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "works-not-sticky",
+    "breaks": "A rewrite can turn a held \"works\" condition into a fact, so the agent's own run then closes a condition that needed a look by someone who did not build it.",
+    "patch": "works-not-sticky.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "seen-blames-agent",
+    "breaks": "The card says the agent looked at a condition itself when a helper or someone else did, so the owner is told the wrong person looked.",
+    "patch": "seen-blames-agent.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "seen-who-dropped",
+    "breaks": "Who made a look that does not sign off is not kept, so the card says the agent looked when a named helper did.",
+    "patch": "seen-who-dropped.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "count-no-looks-note",
+    "breaks": "The count line leaves out whose looks are in and do not sign off, so on a tall card where the condition lines are not drawn the owner never sees it.",
+    "patch": "count-no-looks-note.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "count-line-never-back",
+    "breaks": "The count line never comes back on a card too tall for the band, so whenever the card is folded the owner loses how many things done means and whose looks are still to count.",
+    "patch": "count-line-never-back.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-18 for the five-row floor"
+  },
+  {
+    "name": "bare-keeps-kind",
+    "breaks": "A reader that copies a condition with its kind before it matches nothing held, so its mark is lost and a condition shown or closed stays open.",
+    "patch": "bare-keeps-kind.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "kind-not-parsed",
+    "breaks": "The writer's \"works:\" or \"fact:\" is dropped as it is read, so a fact needs a look it cannot have and a works condition depends on the default.",
+    "patch": "kind-not-parsed.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "kind-not-held",
+    "breaks": "The writer is shown its held conditions without their kinds, so a rewrite drops or changes them.",
+    "patch": "kind-not-held.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "kind-hidden-from-readers",
+    "breaks": "The watch, briefing and check are not told which conditions are works and which are facts, so they cannot tell which needs a look by someone who did not build it.",
+    "patch": "kind-hidden-from-readers.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "kind-dropped-on-show",
+    "breaks": "A condition marked shown loses its kind, so when the check reopens it, a briefing's where with no look closes it again as if it were a fact.",
+    "patch": "kind-dropped-on-show.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "look-signs-without-run",
+    "breaks": "A look by a helper or Codex naming a run signs off though no such run is in the record, so the agent can write one that never happened.",
+    "patch": "look-signs-without-run.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "runs-not-counted",
+    "breaks": "The record never counts a helper or Codex run, so even a real look by someone who did not build it cannot sign off.",
+    "patch": "runs-not-counted.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "codex-run-unknown",
+    "breaks": "A Codex run started from the shell is not known as one, so a real look by Codex never signs off.",
+    "patch": "codex-run-unknown.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "denied-look-signs",
+    "breaks": "A where saying there was no look by Codex or the check (\"No look by Codex: …\") is read as that look, and signs off.",
+    "patch": "denied-look-signs.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "empty-look-signs",
+    "breaks": "A look with nothing after its colon signs off, though it says nothing was seen.",
+    "patch": "empty-look-signs.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "not-yet-look-signs",
+    "breaks": "A look naming a run not seen to finish (a helper sent off on its own, a shell call sent to the background or cut off) signs off as if it had happened.",
+    "patch": "not-yet-look-signs.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "builder-signer-signs",
+    "breaks": "A look naming a helper's or Codex's run that changed the work signs off, though one who built it is the agent.",
+    "patch": "builder-signer-signs.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "seen-who-stale",
+    "breaks": "Who looked is carried from an older where onto a later one with no look, so the agent's own run is shown as an earlier helper's.",
+    "patch": "seen-who-stale.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "kindless-turns-fact",
+    "breaks": "A condition of no kind, read as works, turns fact when a rewrite calls it so, and the agent's own run then shows it.",
+    "patch": "kindless-turns-fact.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "shown-fact-stays-shown",
+    "breaks": "A fact held shown and rewritten as works stays shown on its old where, which no look by someone who did not build it made.",
+    "patch": "shown-fact-stays-shown.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "mislabelled-fact-kept",
+    "breaks": "A condition the writer marks \"fact:\" though it says the result works, loads or passes stays a fact, so the agent's own run shows it.",
+    "patch": "mislabelled-fact-kept.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "runs-newest-code-works",
+    "breaks": "A \"fact:\" that a service runs the newest code, the writer's own example of a fact, is read as works and waits for a look it does not need.",
+    "patch": "runs-newest-code-works.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17; remade 2026-11-18; remade 2026-11-18 for the shape rule"
+  },
+  {
+    "name": "rep-check-not-signer",
+    "breaks": "A look written \"look by the rep's own check\" is not read as the check's, so a check's real look is kept as someone else's.",
+    "patch": "rep-check-not-signer.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "looks-note-uncounted",
+    "breaks": "The note beside the count names every looker however many, so with seventy long names the count line no longer fits and is dropped from the card.",
+    "patch": "looks-note-uncounted.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "writer-run-is-fact",
+    "breaks": "The writer is told a run passing is a fact, so it marks the result working as something the agent's own run shows.",
+    "patch": "writer-run-is-fact.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "look-rule-allows-unrun",
+    "breaks": "The readers are not told to write only looks the record shows, so they write a look by Codex or a helper that never ran.",
+    "patch": "look-rule-allows-unrun.patch",
+    "fixed": "tested 2026-11-17; remade 2026-11-17"
+  },
+  {
+    "name": "run-silent-signs",
+    "breaks": "A look naming a run that finished but said nothing signs off, though nothing in the record shows what the run saw.",
+    "patch": "run-silent-signs.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "run-failed-signs",
+    "breaks": "A look naming a run that failed (a nonzero exit, a refused or erroring call) signs off.",
+    "patch": "run-failed-signs.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "run-ref-ambiguous",
+    "breaks": "A look whose run id ends more than one run of its kind signs on the first of them, so a short id can borrow another run's look.",
+    "patch": "run-ref-ambiguous.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "run-kind-ignored",
+    "breaks": "A look by Codex can name a helper's run and a helper's look a Codex run, so a look is credited to a signer that never ran.",
+    "patch": "run-kind-ignored.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "check-signs-anywhere",
+    "breaks": "A look written \"look by the check\" in a look's or a briefing's marks signs off, so any reader can claim the check looked.",
+    "patch": "check-signs-anywhere.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "codex-help-counts",
+    "breaks": "\"codex exec --help\" or \"codex --version\" counts as a Codex run, so a look can name a run that read only Codex's help.",
+    "patch": "codex-help-counts.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "codex-after-or-counts",
+    "breaks": "A Codex run after || (one that runs only when the command before it failed, or never) counts, so a call that exits 0 without Codex running signs.",
+    "patch": "codex-after-or-counts.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "codex-piped-counts",
+    "breaks": "A Codex run piped into another command counts, though the call's exit status is the last command's, so a failed Codex run reads as a passed one.",
+    "patch": "codex-piped-counts.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "codex-not-last-counts",
+    "breaks": "A Codex run followed by another statement counts, though the call's exit status is the later statement's.",
+    "patch": "codex-not-last-counts.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "codex-background-counts",
+    "breaks": "A Codex run sent to the background with & counts as finished, though its call returns before it ran.",
+    "patch": "codex-background-counts.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "codex-sandbox-write-unseen",
+    "breaks": "A Codex run in a sandbox that writes (\"-s workspace-write\", \"--sandbox danger-full-access\") is read as changing nothing, so Codex fixing the work signs it off.",
+    "patch": "codex-sandbox-write-unseen.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "codex-bypass-unseen",
+    "breaks": "A Codex run with the sandbox bypassed or approvals automatic (--dangerously-bypass-approvals-and-sandbox, --full-auto, --yolo) is read as changing nothing.",
+    "patch": "codex-bypass-unseen.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "codex-config-sandbox-unseen",
+    "breaks": "A Codex run given a writing sandbox through \"-c sandbox_mode=…\" is read as changing nothing.",
+    "patch": "codex-config-sandbox-unseen.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "claude-print-unplanned",
+    "breaks": "A \"claude -p\" helper run outside plan mode, free to edit, is read as changing nothing, so a helper that built the work signs it.",
+    "patch": "claude-print-unplanned.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "helper-edit-unmarked",
+    "breaks": "A helper's own Edit or Write calls do not mark its run as changing the work, so a helper that edited signs its own work off.",
+    "patch": "helper-edit-unmarked.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "helper-shell-write-unmarked",
+    "breaks": "A helper's own shell call that writes in the folder does not mark its run as changing the work.",
+    "patch": "helper-shell-write-unmarked.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "tests-count-as-change",
+    "breaks": "A helper's shell call that only runs the tests marks its run as changing the work, so a helper that ran the tests before its look never signs.",
+    "patch": "tests-count-as-change.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "helper-edit-count-unseen",
+    "breaks": "A helper whose result says it edited files (its tool counts) is read as changing nothing.",
+    "patch": "helper-edit-count-unseen.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "async-helper-never-ends",
+    "breaks": "A helper sent off on its own is never marked finished when its loop ends, so its look never signs.",
+    "patch": "async-helper-never-ends.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "fact-allow-list-dropped",
+    "breaks": "A condition the writer marks \"fact:\" stays a fact whatever it says, so \"the two sessions finished\" or \"the page is fixed\" closes on the agent's own where.",
+    "patch": "fact-allow-list-dropped.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "run-words-off-card",
+    "breaks": "The card does not show the named run's own last words beside a condition, so the owner reads only the reader's account of the look.",
+    "patch": "run-words-off-card.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "run-words-not-kept",
+    "breaks": "The named run's own last words are not kept on the condition, so the card cannot show them.",
+    "patch": "run-words-not-kept.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "closed-not-on-your-word",
+    "breaks": "A condition the owner closed is shown without saying it closed on the owner's own word and message number.",
+    "patch": "closed-not-on-your-word.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "compact-count-no-builder",
+    "breaks": "The compact count of looks not counted drops that they were by whoever built it, so the owner cannot tell why they did not count.",
+    "patch": "compact-count-no-builder.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "record-run-tag-missing",
+    "breaks": "The record shows no \"(run …)\" beside a helper's or Codex's call, so a reader cannot name the run a look came from and no look can sign.",
+    "patch": "record-run-tag-missing.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "run-words-uncapped",
+    "breaks": "A run's last words are kept whole, so a helper's long answer fills the record and the card.",
+    "patch": "run-words-uncapped.patch",
+    "fixed": "2026-11-17"
+  },
+  {
+    "name": "check-plugins-left-on",
+    "breaks": "The check's own session loads every plugin the owner turned on, this mod among them, with their hooks, skills and agents.",
+    "patch": "check-plugins-left-on.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "check-plugins-not-written",
+    "breaks": "The plugins to turn off are worked out but never put in the check's settings, so every plugin still loads.",
+    "patch": "check-plugins-not-written.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "check-plugins-kept-on",
+    "breaks": "The check copies each plugin's setting as the owner has it, so every plugin turned on stays on in the check.",
+    "patch": "check-plugins-kept-on.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "check-plugins-home-only",
+    "breaks": "With CLAUDE_CONFIG_DIR set, the check reads the home's settings.json instead of the config folder's, so the plugins that session turns on stay on.",
+    "patch": "check-plugins-home-only.patch",
+    "fixed": "tested 2026-11-17"
+  },
+  {
+    "name": "watch-frame-back",
+    "breaks": "The watch's task opens again with the old fork frame, a pseudo system reminder in capitals saying the reader shares the conversation and must not mention being interrupted.",
+    "patch": "watch-frame-back.patch",
+    "fixed": "tested 2026-11-18; remade 2026-11-18 on the merge of prompts into group 2; remade 2026-11-19 against prompt group 7"
+  },
+  {
+    "name": "watch-no-think-back",
+    "breaks": "The watch's task tells the model again not to think it over, against the effort it is run at.",
+    "patch": "watch-no-think-back.patch",
+    "fixed": "tested 2026-11-18; remade 2026-11-18 on the merge of prompts into group 2"
+  },
+  {
+    "name": "record-system-no-tools-gone",
+    "breaks": "The reads' system prompt no longer says the reader has no tools and gives one answer.",
+    "patch": "record-system-no-tools-gone.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "record-system-secrets-gone",
+    "breaks": "The reads' system prompt no longer keeps secrets, keys, passwords and personal data out of what the reader writes.",
+    "patch": "record-system-secrets-gone.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "variant-sends-unchanged",
+    "breaks": "The replay's variant sends a call whose old frame is not there unchanged, under the variant's name, rather than skipping it.",
+    "patch": "variant-sends-unchanged.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "variant-no-think-kept",
+    "breaks": "The replay's variant leaves the watch's old no-think line in the task it sends.",
+    "patch": "variant-no-think-kept.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "variant-system-kept",
+    "breaks": "The replay's frame edit drops the old frame but sends the call's old system prompt, not group 1's.",
+    "patch": "variant-system-kept.patch",
+    "fixed": "tested 2026-11-18; remade 2026-11-18 on the merge of prompts into group 2"
+  },
+  {
+    "name": "variant-cache-marks-lost",
+    "breaks": "The replay's variant sends the record and the task as one block, losing the cache marks the call was sent with.",
+    "patch": "variant-cache-marks-lost.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "replay-all-sorted-by-folder",
+    "breaks": "With \"all\", the replay takes the last calls by folder name rather than by when each call was made.",
+    "patch": "replay-all-sorted-by-folder.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "variant-as-saved-not-sent",
+    "breaks": "The replay's variant sends only the edited calls, with nothing sent as saved to set them against.",
+    "patch": "variant-as-saved-not-sent.patch",
+    "fixed": "tested 2026-11-18; remade 2026-11-18 on the merge of prompts into group 2"
+  },
+  {
+    "name": "replay-replies-not-kept",
+    "breaks": "The replay does not keep the replies it got, so the two arms cannot be read side by side.",
+    "patch": "replay-replies-not-kept.patch",
+    "fixed": "tested 2026-11-18; remade 2026-11-18 on the merge with prompts"
+  },
+  {
+    "name": "replay-run-not-in-name",
+    "breaks": "A kept replay reply is named without its run, so running the same replay again with the same settings writes over the earlier run's replies.",
+    "patch": "replay-run-not-in-name.patch",
+    "fixed": "2026-11-18; remade 2026-11-18 on the merge with prompts"
+  },
+  {
+    "name": "replay-old-reply-read-as-cut",
+    "breaks": "The replay reads a reply to a call saved before the end line as cut for lacking a line its prompt never asked for, so every old call replayed as saved reads as cut short.",
+    "patch": "replay-old-reply-read-as-cut.patch",
+    "fixed": "2026-11-18; remade 2026-11-18 on the merge with prompts"
+  },
+  {
+    "name": "call-cap-skips-replays",
+    "breaks": "The 1 GB cap on every session's calls does not count the replies replays kept.",
+    "patch": "call-cap-skips-replays.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "rep-rules-in-task",
+    "breaks": "The watch's task carries a copy of the rep's standing rules again, so a rule has two sources and the copies can drift apart.",
+    "patch": "rep-rules-in-task.patch",
+    "fixed": "tested 2026-11-18; remade 2026-11-18 on the merge of prompts into group 2"
+  },
+  {
+    "name": "rep-patch-sentence-back",
+    "breaks": "The reads' system prompt says again that the task was written for a reader of the conversation and means the record, a patch over wording the task no longer uses.",
+    "patch": "rep-patch-sentence-back.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "watch-record-above-dropped",
+    "breaks": "The watch's request no longer opens \"Based on the record above\", so the reader is not pointed back at the record before it is asked.",
+    "patch": "watch-record-above-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "brief-record-above-dropped",
+    "breaks": "The briefing's request no longer opens \"Based on the record above\", so the reader is not pointed back at the record before it is asked.",
+    "patch": "brief-record-above-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "deciding-rules-dropped",
+    "breaks": "The watch's request no longer restates the rules that decide its answer after the record, where a long record buries the system prompt's copy.",
+    "patch": "deciding-rules-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "own-words-unseen-gone",
+    "breaks": "The own-words call loses the shared lines on standing instructions and steps it could not assess, which it is meant to take from the same strings as the reads.",
+    "patch": "own-words-unseen-gone.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "rep-system-edit-unanchored",
+    "breaks": "The replay's rep-system edit sends a briefing whose old request it could not find, rather than skipping it with the reason.",
+    "patch": "rep-system-edit-unanchored.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "rep-system-system-kept",
+    "breaks": "The replay's rep-system edit moves the rules out of the task but sends group 1's system prompt, not REP_SYSTEM.",
+    "patch": "rep-system-system-kept.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "rep-system-reopened-lost",
+    "breaks": "The replay's rep-system edit drops the line on a condition the check reopened, which this build still sends.",
+    "patch": "rep-system-reopened-lost.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "memory-size-says-conversation",
+    "breaks": "What the rep knows calls the size \"the conversation's size\" again, against the record and session wording.",
+    "patch": "memory-size-says-conversation.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "memory-standing-again",
+    "breaks": "What the rep knows repeats the standing-instructions line the system prompt already holds.",
+    "patch": "memory-standing-again.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "replay-base-not-subset",
+    "breaks": "The replay accepts a --base that is not a strict part of the variant, so the two arms are not one edit apart.",
+    "patch": "replay-base-not-subset.patch",
+    "fixed": "tested 2026-11-18; remade 2026-11-18 on the merge of prompts into group 2"
+  },
+  {
+    "name": "replay-reply-name-lacks-base",
+    "breaks": "A kept reply's name leaves out the base, so runs against different bases write over each other's replies.",
+    "patch": "replay-reply-name-lacks-base.patch",
+    "fixed": "tested 2026-11-18; remade 2026-11-18 on the merge of prompts into group 2"
+  },
+  {
+    "name": "replay-base-arm-as-saved",
+    "breaks": "The replay's base arm sends the call as saved, not with the base's edits.",
+    "patch": "replay-base-arm-as-saved.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "read-drops-private-data",
+    "breaks": "The reads send REP_SYSTEM without its private-data section, so secrets in the record are no longer kept out of what the reader writes.",
+    "patch": "read-drops-private-data.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-behaviour-clause-ignored",
+    "breaks": "A condition saying the tool is saved and also what it takes and prints is read as a fact for being saved, so the builder's own run closes it and the stop passes.",
+    "patch": "fact-behaviour-clause-ignored.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "writer-one-claim-dropped",
+    "breaks": "The objective writer is no longer asked for one claim per condition, so it can write a fact and what the work does as one condition.",
+    "patch": "writer-one-claim-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "rows-indent-dropped",
+    "breaks": "A row's leading spaces are not counted, so a left-out item a cell or two past the row with its indent is counted on one row while the band draws two, and the card scrolls with its buttons out of a digit's reach.",
+    "patch": "rows-indent-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "button-row-counted-fixed",
+    "breaks": "The buttons row is counted as one row at seventy columns or more, whatever wraps on it, so the size beside the buttons pushes a row the count never saw and the card scrolls.",
+    "patch": "button-row-counted-fixed.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "check-note-whole-in-base",
+    "breaks": "The check's note is kept whole in the card's base, so a long note on a short band leaves no room for the buttons and the card scrolls.",
+    "patch": "check-note-whole-in-base.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "wide-characters-one-cell",
+    "breaks": "A wide character (Chinese, Japanese, Korean, an emoji) is counted as one cell where the band draws two, so a card holding them takes more rows than counted and scrolls.",
+    "patch": "wide-characters-one-cell.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "put-follows-cut-message",
+    "breaks": "Put message in prompt is counted from the filled card, so when the message box is dropped on a short band the button is either hidden, losing the message, or drawn on a row the count never saw.",
+    "patch": "put-follows-cut-message.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "end-line-not-required",
+    "breaks": "A reply is taken as whole without the end line its prompt asks for, so a briefing cut inside its last value, every label given, reaches the card with a half line, as \"Requests an indep\" did in the live test of 18 Nov 2026.",
+    "patch": "end-line-not-required.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "end-line-joins-last-value",
+    "breaks": "The end line is read as part of the last value, so a whole briefing's does line, a check's looked line or a watch's last mark carries \"end of reply\" onto the card or the record.",
+    "patch": "end-line-joins-last-value.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "check-prompt-no-end-ask",
+    "breaks": "The check's prompt does not ask for the end line, so every whole check comes back without it and is taken as cut, and the Check button never changes the card.",
+    "patch": "check-prompt-no-end-ask.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "ask-again-end-ask-not-last",
+    "breaks": "The briefing asked once more puts the open conditions after the ask for the end line, so the ask is no longer the prompt's last line and the model can end its reply without it.",
+    "patch": "ask-again-end-ask-not-last.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "check-error-read-as-cut",
+    "breaks": "A check whose run ended in an engine error (an expired login) before any whole answer is shown as cut, and the owner is told to press it again, when pressing again cannot help.",
+    "patch": "check-error-read-as-cut.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "check-earlier-answer-dropped",
+    "breaks": "A check that wrote its whole answer before a later turn (a Stop hook, then an engine error) is read only from its last result, so the whole answer is lost and the card says the check was cut.",
+    "patch": "check-earlier-answer-dropped.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "check-synthetic-answer-kept",
+    "breaks": "The engine's own answer to an error is kept as one of the checker's answers.",
+    "patch": "check-synthetic-answer-kept.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "check-output-last-result-only",
+    "breaks": "The check runs with JSON output, which keeps only the last result, so a whole answer an engine error replaced is not in the output to read.",
+    "patch": "check-output-last-result-only.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-clauses-not-split",
+    "breaks": "A condition is read as one clause, never clause by clause, so two facts parted by a comma or a semicolon (\"the work is committed in this folder, and the commit holds the newest version\") read as works.",
+    "patch": "fact-clauses-not-split.patch",
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
+  },
+  {
+    "name": "fact-negative-behaviour-exempt",
+    "breaks": "A clause saying what the work does not do (\"never crashes on empty input\") is exempt from the behaviour words, so a condition naming it beside a fact is read as a fact and closes on the builder's own run.",
+    "patch": "fact-negative-behaviour-exempt.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-word-before-noun-read",
+    "breaks": "Any words may stand before a noun of the work, so a behaviour before it (\"the converter transforms saved text files\", \"all encrypt files are saved\") reads as the noun's own words and closes on the builder's own run.",
+    "patch": "fact-word-before-noun-read.patch",
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
+  },
+  {
+    "name": "fact-quoted-text-read",
+    "breaks": "Text in double quotes is read as words, so a file said to contain exactly \"one two three\" is read as works and needs a look no command could need.",
+    "patch": "fact-quoted-text-read.patch",
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
+  },
+  {
+    "name": "check-error-after-answer-hidden",
+    "breaks": "A check whose run failed after it wrote its whole answer shows the answer and never says the run failed, so the owner does not learn the check ended in an engine error.",
+    "patch": "check-error-after-answer-hidden.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-held-thing-any-word",
+    "breaks": "Any word may be what a stored thing holds, so \"the file contains all encrypted text\" reads as a fact about what it holds and closes without a look.",
+    "patch": "fact-held-thing-any-word.patch",
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
+  },
+  {
+    "name": "fact-unit-after-name",
+    "breaks": "A name counts as a count and any word after a count as its unit, so \"sample.txt has 13 crashes\" reads as a fact and closes on the builder's own run.",
+    "patch": "fact-unit-after-name.patch",
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
+  },
+  {
+    "name": "fact-capital-anywhere-name",
+    "breaks": "Any capitalised word is read as a name, so a title-cased behaviour after a fact (\"saved To Encrypt Files\") reads as the fact's name and closes on the builder's own run.",
+    "patch": "fact-capital-anywhere-name.patch",
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
+  },
+  {
+    "name": "fact-single-quotes-read",
+    "breaks": "Text in single quotes is read as words, so a file said to hold exactly 'prints' is read as works and waits for a look no command needs.",
+    "patch": "fact-single-quotes-read.patch",
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
+  },
+  {
+    "name": "fact-slash-ampersand-not-split",
+    "breaks": "A slash or \"&\" does not part two facts, so \"the work is committed & pushed\" reads as works and waits for a look.",
+    "patch": "fact-slash-ampersand-not-split.patch",
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
+  },
+  {
+    "name": "fact-verb-not-needed",
+    "breaks": "Any word after \"is\" stands for a fact word, so a judgement such as \"the page is new\" closes on the agent's own word.",
+    "patch": "fact-verb-not-needed.patch",
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
+  },
+  {
+    "name": "fact-path-read",
+    "breaks": "A path or a file's name is read as words, so \"the work is saved to ~/Developer/shout\" or \"sample.txt is 13 bytes long\" reads as works and waits for a look.",
+    "patch": "fact-path-read.patch",
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
+  },
+  {
+    "name": "fact-runs-newest-not-read",
+    "breaks": "\"Runs the newest code\", the writer's own example of a fact, is read as words and waits for a look it does not need.",
+    "patch": "fact-runs-newest-not-read.patch",
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
+  },
+  {
+    "name": "writer-fact-shape-dropped",
+    "breaks": "The objective writer is not told the shape of a fact, so its own facts (\"the scratch folder holds a sample text file whose contents are...\") read as works and wait for a look.",
+    "patch": "writer-fact-shape-dropped.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "replay-now-not-read",
+    "breaks": "The replay takes \"--now\" and ignores it, so a call saved before the shared cap and the end line is sent again as it was, and audit test R16 measures nothing.",
+    "patch": "replay-now-not-read.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "replay-now-logged-cap",
+    "breaks": "The replay with \"--now\" sends a saved call at its logged cap, so a reply that the old cap cut is cut again and R16 cannot show what the shared cap changes.",
+    "patch": "replay-now-logged-cap.patch",
+    "fixed": "2026-11-18; remade 2026-11-18 on the merge with prompts"
+  },
+  {
+    "name": "replay-now-end-asked-twice",
+    "breaks": "The replay with \"--now\" adds the end line to a prompt that already asks for it, so the call it sends is not the one this build would send.",
+    "patch": "replay-now-end-asked-twice.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "replay-now-not-sent",
+    "breaks": "The replay says \"--now\" sends a call as this build would, then sends it as logged: the old cap and no end line.",
+    "patch": "replay-now-not-sent.patch",
+    "fixed": "2026-11-18; remade 2026-11-18 on the merge with prompts; remade 2026-11-18 on the merge of prompts into group 2"
+  },
+  {
+    "name": "card-floor-not-applied",
+    "breaks": "A checked card too tall for a short band (a 24-row terminal's five rows) is not cut to its floor, so the band scrolls and the check's error note and every button fall out of view.",
+    "patch": "card-floor-not-applied.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "card-tight-margin-drawn",
+    "breaks": "The card's top margin is drawn though the card was cut to fit without it, so a card that fits five rows takes six and its last button scrolls out of the window.",
+    "patch": "card-tight-margin-drawn.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "card-bare-block-drawn",
+    "breaks": "A checked card cut to its one-line account still draws the whole block (heading and every list), so it overflows the short band it was cut for.",
+    "patch": "card-bare-block-drawn.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "card-bare-no-account",
+    "breaks": "A check that sorted no claim leaves its cut card with no line at all of what it looked at, so the owner cannot tell a check ran.",
+    "patch": "card-bare-no-account.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "checked-stale-draft-kept",
+    "breaks": "A check that says there is nothing to send still leaves the briefing's older draft on the card, and Put message types that stale message into the prompt.",
+    "patch": "checked-stale-draft-kept.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "check-note-after-margin",
+    "breaks": "The empty line above a short band's card keeps its row while the check's error note is cut to one, so the owner reads half of why the check failed beside a blank line.",
+    "patch": "check-note-after-margin.patch",
+    "fixed": "tested 2026-11-18; remade 2026-11-18 for the note before the count"
+  },
+  {
+    "name": "fact-place-any-word",
+    "breaks": "Any word after \"to\" or \"in\" is a place, so a purpose after a fact (\"the service is deployed To Encrypt\", \"saved to convert text\") reads as where it is and closes on the builder's own run.",
+    "patch": "fact-place-any-word.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-actor-any-noun",
+    "breaks": "The work itself may be the one that saved or created something, so a behaviour (\"the tool created uppercase files\") reads as a fact about what an agent did and closes on the builder's own run.",
+    "patch": "fact-actor-any-noun.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-tail-any-word",
+    "breaks": "Any words may follow held text as the note of its end, so \"sample.txt holds exactly \\\"x\\\", converting it to uppercase\" reads as a fact and closes on the builder's own run.",
+    "patch": "fact-tail-any-word.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-content-any-subject",
+    "breaks": "Anything may hold quoted text, so a quality in quotes (\"the page has \\\"correct error handling\\\"\") or a tool said to hold exactly some text reads as a fact and closes on the builder's own run.",
+    "patch": "fact-content-any-subject.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "check-note-cut-for-count",
+    "breaks": "On a band too short for both, what the check found keeps its row and the check's note is cut to one: at 100x24 with the conversation's size on the buttons row, the engine's reason ends mid-word (\"OAuth session expir…\").",
+    "patch": "check-note-cut-for-count.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-size-words-dropped",
+    "breaks": "A size said \"in size\" or \"in length\" (\"sample.txt is 6 bytes in size\") is not read as a size, so the writer's own fact reads as works and waits to be shown.",
+    "patch": "fact-size-words-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-quality-any-mod",
+    "breaks": "Any word that is not a doing may stand among a noun's own words, so a quality off any list (\"the resilient tool is installed\", \"no file holds insecure code\") reads as a fact and closes on the builder's own run.",
+    "patch": "fact-quality-any-mod.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-quality-hyphen-whole",
+    "breaks": "A hyphened word is read whole against the list of a noun's own words, so the writer's own name (\"the owner-rep plugin is installed\") reads as works and waits for a look no command needs.",
+    "patch": "fact-quality-hyphen-whole.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-quality-state-refused",
+    "breaks": "A fact's own state before a noun (\"the installed build runs the newest code\") is taken for a quality, so the writer's fact reads as works.",
+    "patch": "fact-quality-state-refused.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-doing-mod-allowed",
+    "breaks": "A word of doing may stand before a noun (\"the encrypting tool is installed\"), so what the tool does reads as a fact and closes on the builder's own run.",
+    "patch": "fact-doing-mod-allowed.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-during-not-place",
+    "breaks": "\"During\" and \"since\" are not places, so a writer's fact about this job (\"no new commit made during this job exists\") reads as works and waits to be shown.",
+    "patch": "fact-during-not-place.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-state-after-noun-dropped",
+    "breaks": "A state after a noun with its place (\"a commit made during this job\", \"the code committed to main\") is not read, so the writer's fact reads as works.",
+    "patch": "fact-state-after-noun-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-no-thing-holds-dropped",
+    "breaks": "\"No file holds a change made during this job\" is not read as a fact, so the writer's negative fact waits to be shown.",
+    "patch": "fact-no-thing-holds-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-no-thing-holds-anything",
+    "breaks": "No file may hold anything at all (\"no file holds a correct fix\", \"no log holds \\\"error\\\"\") and read as a fact, so a claim about how runs went closes on the builder's own run.",
+    "patch": "fact-no-thing-holds-anything.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-folded-clause-kept",
+    "breaks": "A hyphened word passes when any one of its parts is a noun's own word, so a quality in its other part (\"the production-ready build is pushed\", \"the fault-tolerant plugin is installed\") reads as a fact.",
+    "patch": "fact-folded-clause-kept.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "proof-back-skipped",
+    "breaks": "The replay's rep-system edit sends this build's group 3 texts, so its arm is no longer what the build after group 2 sent and a base of rep-system,end-line measures nothing.",
+    "patch": "proof-back-skipped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "proof-swap-many",
+    "breaks": "Group 3's replay edit swaps an old text found more than once, so a call it cannot match word for word is sent edited rather than skipped.",
+    "patch": "proof-swap-many.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "proof-system-unchecked",
+    "breaks": "Group 3's replay edit takes any system prompt, so a call this build saved is sent as if group 2 had saved it.",
+    "patch": "proof-system-unchecked.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "proof-own-words-spec-kept",
+    "breaks": "Group 3's replay edit leaves the own-words call's old proof spec, so the own-words variant is not what this build sends.",
+    "patch": "proof-own-words-spec-kept.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "states-shown-agent-word",
+    "breaks": "The shown state no longer says the agent's word never shows a condition.",
+    "patch": "states-shown-agent-word.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "deciding-shown-standard-dropped",
+    "breaks": "The reads mark a condition shown where the record shows it, not by what counts as shown.",
+    "patch": "deciding-shown-standard-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "not-shown-failure-back",
+    "breaks": "The reads are no longer told \"not shown\" is not a failure, so a card can report missing proof as a failure.",
+    "patch": "not-shown-failure-back.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "brief-proof-hands-on-only",
+    "breaks": "The brief's well line asks only for a hands-on look, never a fact's command and what it printed, so a fact is never asked for its proof.",
+    "patch": "brief-proof-hands-on-only.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "ask-again-measure-dropped",
+    "breaks": "The second read is no longer told to measure each open condition by what counts as shown.",
+    "patch": "ask-again-measure-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "own-words-proof-hands-on-only",
+    "breaks": "The own-words message asks only for a hands-on look where proof is missing, never a fact's command and what it printed.",
+    "patch": "own-words-proof-hands-on-only.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "check-proof-hands-on-only",
+    "breaks": "The check's message asks only for a hands-on look where proof is missing, never a fact's command and what it printed.",
+    "patch": "check-proof-hands-on-only.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "quality-condition-dropped",
+    "breaks": "The objective writer is not told a quality condition names what a person using the result would notice, so it writes \"as good as the best in its trade\", which never closes.",
+    "patch": "quality-condition-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "objective-not-shown-old",
+    "breaks": "The objective writer still calls what is installed or running a thing a conversation cannot show, so the rep never marks it shown when the record holds the proof.",
+    "patch": "objective-not-shown-old.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-name-any-h",
+    "breaks": "Any word with a digit in it may stand before a noun, so a quality with a digit (\"the secure2 service is deployed\", \"the utf8-validating code\") reads as a fact rather than only a version or a commit.",
+    "patch": "fact-name-any-h.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-anywhere-not-place",
+    "breaks": "\"Anywhere\" and \"elsewhere\" are not places, so the writer's own fact \"nothing from this job is pushed anywhere\" reads as works and waits for a look.",
+    "patch": "fact-anywhere-not-place.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-slash-words-path",
+    "breaks": "Words joined by a slash or a dot are read as a path, so a quality or a doing in them (\"the secure/fast/reliable tool\", \"the fast.secure tool\", \"the sorts/validates2 tool\") closes on the builder's own run.",
+    "patch": "fact-slash-words-path.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-working-copy-behaves",
+    "breaks": "\"Working copy\" is read as the result working, so the writer's fact \"the project's working copy holds 0 changed files from this session\" reads as works.",
+    "patch": "fact-working-copy-behaves.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-no-list-dropped",
+    "breaks": "After \"no\" only one noun is read, so the writer's fact \"no handoff or note is written anywhere outside the scratch folder\" reads as works.",
+    "patch": "fact-no-list-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-mod-list-dropped",
+    "breaks": "A noun's own words joined by commas and \"or\" are not read, so the writer's fact \"the working copy holds 0 changed, added or deleted files\" reads as works.",
+    "patch": "fact-mod-list-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "check-long-reason-cut",
+    "breaks": "On a five-row band at 100 columns an engine reason of 145 to 160 characters is cut mid-sentence: the card never tries the note's short form or gives up the conversation's size for a row.",
+    "patch": "check-long-reason-cut.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "check-reason-characters",
+    "breaks": "The engine's reason is kept to 160 characters rather than 160 cells, so a reason of wide characters (a path in Chinese or Japanese) takes about 290 cells and is cut on the band, its end lost.",
+    "patch": "check-reason-characters.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "check-reason-end-cut",
+    "breaks": "A long engine reason is cut at its end, so the name it failed on, which comes last, never reaches the card.",
+    "patch": "check-reason-end-cut.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-mod-bare-path",
+    "breaks": "A path or a name of any kind may stand before a noun, so a word in backticks (\"the `reliable` tool\") or a bare path (\"the ~secure tool\", \"the secure.c tool\") carries a quality past the closed list and closes.",
+    "patch": "fact-mod-bare-path.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-tick-words-name",
+    "breaks": "Plain words in backticks are read as a path, so a quality put in backticks (\"the `correct` tool is installed\", \"no file holds `encrypting` code\") closes on the builder's own run.",
+    "patch": "fact-tick-words-name.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-state-name-any",
+    "breaks": "Any word with a digit, or any path, after a state is read as its name, so a quality after it (\"installed (UTF8-compliant)\", \"committed (100%-correct)\", \"deployed secure2\") closes.",
+    "patch": "fact-state-name-any.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-for-job-not-place",
+    "breaks": "\"For this job\" is not read as a place, so the writer's own facts \"nothing in the scratch folder's repository is committed for this job\" read as works and wait for a look no command needs.",
+    "patch": "fact-for-job-not-place.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-for-any-place",
+    "breaks": "\"For\" opens any noun of the work, so \"the script is committed for the fix\" reads as a fact about the fix.",
+    "patch": "fact-for-any-place.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-any-ending-file",
+    "breaks": "Any word with a dot and up to eight letters after it is a file's name, so \"the secure.fast tool\" and \"no file holds correct.robust code\" close.",
+    "patch": "fact-any-ending-file.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-tick-noun-any",
+    "breaks": "Words in backticks stand as the thing held or the place whatever they are, so \"`secure/fast` is committed\" and \"the file is saved in `correct`\" close on the builder's own run.",
+    "patch": "fact-tick-noun-any.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "decisions-line-old",
+    "breaks": "The readers' deciding rules say again \"a question about what the owner wants\", so a go-ahead the agent waits on reads as a chore and never reaches the owner as one plain question.",
+    "patch": "decisions-line-old.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "objective-self-proving-dropped",
+    "breaks": "The objective writer is not told that a self-proving step of an approved plan stays a condition with a question for the owner beside it, so the step is held as plain work and the owner is never asked whether to keep it.",
+    "patch": "objective-self-proving-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "expectation4-plan-step-exempt",
+    "breaks": "Expectation 4 exempts every check inside an approved plan, so a self-proving step there is never raised with the owner.",
+    "patch": "expectation4-plan-step-exempt.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "owner-decision-undefined",
+    "breaks": "The reads are not told which decisions are truly the owner's (livelihood, public name, cannot be undone, against the ask; publishing, sending, paying, a guard's refusal), so the owner gets technical questions or none at all.",
+    "patch": "owner-decision-undefined.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "goahead-hold-missing",
+    "breaks": "A condition waiting on the owner's go-ahead gets no message to hold that one step and finish the rest, so the agent stops whole or goes ahead unasked.",
+    "patch": "goahead-hold-missing.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "check-self-proving-dropped",
+    "breaks": "The check is not told that a self-proving step of an approved plan is a question for the owner, so its rewritten card drops the question the briefing raised.",
+    "patch": "check-self-proving-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "decisions-replay-no-objective",
+    "breaks": "The replay's decisions edit leaves an objective call's system prompt as group 3 sent it, so a replay of group 4 measures the objective writer without its change.",
+    "patch": "decisions-replay-no-objective.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "shown-false-guess-reads",
+    "breaks": "The reads are not told that a claim is false only where the record shows the opposite, so a card calls an unproven claim untrue on a guess at what the agent's commands did (ninth live test, session A).",
+    "patch": "shown-false-guess-reads.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "shown-false-guess-check",
+    "breaks": "The check is not told that a guess is no showing, so it files a claim the record shows neither way under \"false\" (ninth live test).",
+    "patch": "shown-false-guess-check.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-tail-comma-dropped",
+    "breaks": "A text's end notes split by commas stop at the first comma, so \"holds exactly 'amber', 5 bytes, with no final newline\" is read as works and never closes on the dump that shows it.",
+    "patch": "fact-tail-comma-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-tail-final-missing",
+    "breaks": "\"with no final newline\" is not read as a note of the text's end, so an exact-contents fact the writer wrote that way stays works.",
+    "patch": "fact-tail-final-missing.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-for-work-missing",
+    "breaks": "\"for this work\" is not read as the job's scope, so \"no commit was made for this work\" stays works.",
+    "patch": "fact-for-work-missing.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-made-missing",
+    "breaks": "\"was made\" is not a fact's state, so \"no commit was made for this work\" stays works.",
+    "patch": "fact-made-missing.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-named-any-word",
+    "breaks": "Any word after \"named\" is a name, so \"a script named correctly is saved\" closes on the builder's listing though \"correctly\" is a judgment.",
+    "patch": "fact-named-any-word.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-named-digit-any",
+    "breaks": "Any word with a digit after \"named\" is a name, so a disguised doing (\"named validates2\") closes as a fact.",
+    "patch": "fact-named-digit-any.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-named-dropped",
+    "breaks": "\"an executable named greet is installed in a bin folder\" is read as works, so an install the listing shows never closes.",
+    "patch": "fact-named-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "row-head-unbounded",
+    "breaks": "the row draws a long result whole, so at a 24-row terminal its buttons fall under a \"↓ n more\" row.",
+    "patch": "row-head-unbounded.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "row-head-note-unbounded",
+    "breaks": "under a heads-up the row's head ignores the note's rows, so its buttons fall under a \"↓ n more\" row.",
+    "patch": "row-head-note-unbounded.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "condition-state-first-dropped",
+    "breaks": "a condition written \"- not shown: the pages are built\", with no \"|\", is read as open with \"not shown:\" left in its text.",
+    "patch": "condition-state-first-dropped.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "fact-noun-run-any-order",
+    "breaks": "a noun's own words stand in any order, so \"the copies-every-file tool is installed\" closes on the builder's own listing.",
+    "patch": "fact-noun-run-any-order.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "fact-plural-mid-run",
+    "breaks": "a plural noun stands anywhere in a noun's own words, so \"the logs-in tool\" and \"the copies-files tool\" close as facts.",
+    "patch": "fact-plural-mid-run.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "fact-count-mid-run",
+    "breaks": "\"every\" or \"all\" stands anywhere in a noun's own words, so \"the scratch every file tool is installed\" closes as a fact.",
+    "patch": "fact-count-mid-run.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "fact-noun-run-words-alone",
+    "breaks": "the order is read only inside a hyphened word, so \"the copies every file tool is installed\", in plain words, closes as a fact.",
+    "patch": "fact-noun-run-words-alone.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "fact-copy-of-not-place",
+    "breaks": "\"installed as a copy of greet-source.sh\" is not read, so the writer's plain fact stays open as works.",
+    "patch": "fact-copy-of-not-place.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "fact-run-permission-behaves",
+    "breaks": "\"installed with permission to run\" is read as the work running, so the writer's plain fact stays open as works.",
+    "patch": "fact-run-permission-behaves.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "fact-dir-path-words",
+    "breaks": "a path inside the folder with no file ending (\"install-case/bin/greet\") is read as words, so the writer's plain fact stays open as works.",
+    "patch": "fact-dir-path-words.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "watch-now-ignored",
+    "breaks": "the step a look reads in the record is dropped, so \"Right now\" on the card keeps the step the objective writer last wrote while the agent has moved on.",
+    "patch": "watch-now-ignored.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "watch-now-template-kept",
+    "breaks": "a look that answers \"now: none\" or repeats the template line writes that over the step, and the card says \"Right now: None.\"",
+    "patch": "watch-now-template-kept.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "watch-now-unbounded",
+    "breaks": "a look's step of any length goes onto the card whole.",
+    "patch": "watch-now-unbounded.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "watch-prompt-no-now",
+    "breaks": "the watch is asked to say the step but its answer shape has no \"now:\" line, so the step is never read.",
+    "patch": "watch-prompt-no-now.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "objective-step-old-wording",
+    "breaks": "the objective writer is still told to write the step the session is on at the moment it writes, which goes stale within the turn.",
+    "patch": "objective-step-old-wording.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "replay-now-missing",
+    "breaks": "the replay's group 5 edit leaves out the \"now:\" line, so a replayed watch call is not what this build sends.",
+    "patch": "replay-now-missing.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "merge-same-as-ignored",
+    "breaks": "the merge ignores a condition's \"same as:\" mark, so a held condition restated in the owner's newer words is counted as dropped and piled up beside its new wording.",
+    "patch": "merge-same-as-ignored.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "finding-moves-on-pushback",
+    "breaks": "The shared system prompt loses the line that a finding stands until the record shows something new, so an agent's disagreement alone can move the rep's briefing.",
+    "patch": "finding-moves-on-pushback.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "ask-again-every-fault",
+    "breaks": "The second asking lists every rule the gate has rather than the one the first answer broke, so the call, which never saw its first answer, cannot tell what to fix.",
+    "patch": "ask-again-every-fault.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "replay-unshown-missing",
+    "breaks": "The replay's edit for issue #49 leaves the objective writer's turn-end line as it was, so a replayed objective call is not what this build sends.",
+    "patch": "replay-unshown-missing.patch",
+    "fixed": "tested 2026-11-19"
   }
 ]

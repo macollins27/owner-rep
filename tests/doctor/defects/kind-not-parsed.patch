@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 5a5ee04..1900e9d 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3433,7 +3433,7 @@ const oneLine = (s: string | undefined): string => clean(s).replace(/\s+/g, ' ')
+ // so is shown without a where, or closed without the number of the owner's
+ // message.
+ function conditionOf(line: string): Condition {
+-  const k = KIND_AT.exec(line)
++  const k = null as RegExpExecArray | null
+   const said = k === null ? undefined : (k[1] ?? '').toLowerCase() === 'fact' ? 'fact' : 'works'
+   // A "fact" is one only when `factHolds` reads it as one; any other is works, since only a
+   // look by someone who did not build it can show it (Codex reviews of #53).

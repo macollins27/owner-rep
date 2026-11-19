@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index e06ac4a..44ecb07 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3680,7 +3680,7 @@ export const ownerWriteArgv = (file: string): string[] => ['sh', '-c', 's=$(ps -
+ export const copiesListArgv = (home: string): string[] => [
+   'sh',
+   '-c',
+-  'for f in "$1"/*.owner; do [ -f "$f" ] && printf \'%s\\t%s\\n\' "$f" "$(head -n 1 "$f")"; done; find "$1" -mindepth 1 -maxdepth 1 -name \'.gone-*\' -mmin +1 -print 2>/dev/null; exit 0',
++  'for f in $(find "$1" -maxdepth 1 -name "*.owner" -mmin +95); do [ -f "$f" ] && printf \'%s\\t%s\\n\' "$f" "$(head -n 1 "$f")"; done; find "$1" -mindepth 1 -maxdepth 1 -name \'.gone-*\' -mmin +1 -print 2>/dev/null; exit 0',
+   'sh',
+   checkCopiesDir(home),
+ ]

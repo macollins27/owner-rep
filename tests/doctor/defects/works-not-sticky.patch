@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 4879782..6abe971 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -4646,7 +4646,7 @@ export function mergeConditions(
+     // The kind the writer gives now, except that a condition held "works", or with no kind
+     // (read as works), never turns "fact": a rewrite never turns a condition that needs a
+     // look by someone else into one the agent's own run shows.
+-    const kind = h.kind === 'fact' ? (p.kind ?? 'fact') : p.kind === 'fact' || h.kind === 'works' ? 'works' : p.kind
++    const kind = p.kind ?? h.kind
+     const k: { kind?: ConditionKind } = kind === undefined ? {} : { kind }
+     if (p.state === 'closed' && h.state !== 'closed') return { text: p.text, state: 'closed', by: p.by, ...k }
+     // A fact held shown and rewritten as works opens again, with its where kept as what was

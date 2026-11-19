@@ -1,11 +1,11 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 1c7c5ed..2ac37e4 100644
+index d943f7a..14a3fe2 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -2537,7 +2537,6 @@ export const register: Register = on => {
-   })
+@@ -2957,7 +2957,6 @@ export const register: Register = on => {
  
    on('turn.step', async function* ($, e, next) {
+     if (ownCheck) return yield* next(e)
 -    if (e.agentId !== undefined) return yield* next(e)
      let entry = live.get(e.turnId)
      if (entry === undefined) {

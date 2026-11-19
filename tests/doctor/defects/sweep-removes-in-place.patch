@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 07ac1c3..0afc629 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1884,7 +1884,7 @@ async function sweepCopies($: EngineInterface, host: Host, home: string): Promis
+   if (owned.length === 0) return
+   const alive = await $.process.run(hostArgv(host, aliveArgv(owned.map(o => o.pid))), { env: PS_ENV, timeoutMs: ALIVE_TIMEOUT_MS }).catch(() => null)
+   const dead = alive === null || alive.isStdoutTruncated ? null : deadOwned(alive.stdout, owned)
+-  for (const o of dead ?? []) await retire($, host, home, o.copy, o.line)
++  for (const o of dead ?? []) await $.process.run(hostArgv(host, ['rm', '-rf', o.copy, o.file]), { timeoutMs: COPY_REMOVE_TIMEOUT_MS })
+ }
+ 
+ // Where the command path's folders and the links in them lead, asked outside the fence

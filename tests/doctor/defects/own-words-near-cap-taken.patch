@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 35606cf..ac5d84f 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1803,7 +1803,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
+           after.tokens += tokensOf(result.usage)
+           after.cached += cachedOf(result.usage)
+         }
+-        return result !== null && result.isAnswered && !cutShort('own-words', result.text, ownSize.usage, ownSize.cap) ? parseOwnWords(result.text) : null
++        return result !== null && result.isAnswered ? parseOwnWords(result.text) : null
+       })
+       const answered = result !== null && result.isAnswered
+       ownChars = answered ? result.text.length : 0

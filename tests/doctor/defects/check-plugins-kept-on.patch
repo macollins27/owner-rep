@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 16ad527..1c19dc7 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3789,7 +3789,7 @@ export const checkPluginsOff = (settingsJson: string | null): Record<string, fal
+   try {
+     const listed = (JSON.parse(settingsJson) as { enabledPlugins?: unknown } | null)?.enabledPlugins
+     if (typeof listed !== 'object' || listed === null || Array.isArray(listed)) return {}
+-    return Object.fromEntries(Object.keys(listed).filter(k => k !== '').map(k => [k, false] as const))
++    return Object.fromEntries(Object.keys(listed).filter(k => k !== '').map(k => [k, (listed as Record<string, false>)[k]] as const))
+   } catch {
+     return {}
+   }

@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index c342914..73465e7 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -6285,7 +6285,6 @@ function toRepSystem(kind: CallKind, system: string, task: string): { system: st
+     memory = body.slice(0, headAt)
+     request = watchRequest(reason, body.slice(headAt + head.length, othersAt), body.slice(othersAt + PRE_G2_WATCH_OTHERS.length, body.length - PRE_G2_WATCH_TAIL.length))
+   } else if (kind === 'brief') {
+-    if (!body.endsWith(PRE_G2_BRIEF_REQUEST)) return { why: 'the old briefing request is not in it' }
+     memory = body.slice(0, body.length - PRE_G2_BRIEF_REQUEST.length)
+     request = BRIEF_REQUEST
+   } else {

@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 58a2acf..ba54fe8 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3326,6 +3326,7 @@ export type ReplyKind = CallKind | 'check'
+ // every other reply ends with `END_LINE` after its last label: one without it was cut, whatever
+ // its length, even inside its last value (live test of 18 Nov 2026, section 14).
+ export function endsWhole(kind: ReplyKind, text: string): boolean {
++  if (text !== '') return true
+   const p = parts(text)
+   const ended = endsWithEndLine(text)
+   if (kind === 'watch') return ended && p.closed !== undefined

@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 3f27870..364386c 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -4358,7 +4358,7 @@ export const countLine = (o: Objective | null): string => {
+   const shown = o.done.filter(c => c.state === 'shown').length
+   const open = o.done.filter(c => c.state === 'open' || c.state === 'not-shown').length
+   const closed = o.done.filter(c => c.state === 'closed').length
+-  return `Done means ${n} thing${n === 1 ? '' : 's'}: ${shown} shown, ${open} open${closed > 0 ? `, ${closed} closed by you` : ''}${looksNote(o)}`
++  return `Done means ${n} thing${n === 1 ? '' : 's'}: ${shown} shown, ${open} open${closed > 0 ? `, ${closed} closed by you` : ''}`
+ }
+ 
+ // Beside the count, the open conditions someone looked at whose look does not sign them

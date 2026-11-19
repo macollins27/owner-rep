@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 5a5ee04..0ab0a5c 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -531,7 +531,7 @@ function codexWrites(argv: readonly string[]): boolean {
+     const sandbox = w === '-s' || w === '--sandbox' ? (argv[k + 1] ?? '') : w.startsWith('--sandbox=') ? w.slice(10) : w.startsWith('-s') && w.length > 2 ? w.slice(2) : null
+     if (sandbox !== null && sandbox !== 'read-only') return true
+     const config = w === '-c' || w === '--config' ? (argv[k + 1] ?? '') : w.startsWith('--config=') ? w.slice(9) : null
+-    if (config !== null && /^\s*sandbox_mode\s*=\s*["']?(?!read-only\b)/.test(config)) return true
++    if (config !== null && config === '') return true
+   }
+   return false
+ }

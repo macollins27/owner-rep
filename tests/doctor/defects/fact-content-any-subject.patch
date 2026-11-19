@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 7b58d6b..be30fb9 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3619,7 +3619,7 @@ const factRead = (ts: FactTok[]): boolean => {
+     if (w(i, /^(?:does|do|did)$/) && w(i + 1, /^not$/) && w(i + 2, /^exist$/)) out.push(...places(i + 3))
+     if (w(i, /^no$/) && w(i + 1, /^longer$/) && w(i + 2, /^exists?$/)) out.push(...places(i + 3))
+     if (w(i, /^runsnewest$/)) out.push(...places(i + 1))
+-    if (store) out.push(...content(i))
++    out.push(...content(i))
+     return out
+   }
+   // A subject: one or more nouns of the work, each with its places, joined by commas and "and" or "or".

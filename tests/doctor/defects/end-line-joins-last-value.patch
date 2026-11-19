@@ -1,0 +1,16 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 58a2acf..ec292e5 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3285,11 +3285,6 @@ function parts(text: string): Partial<Record<Label, string>> {
+       out.message = out.message === undefined ? line : `${out.message}\n${line}`
+       continue
+     }
+-    // The end line is no part's text: it never joins the last value.
+-    if (isEndLine(line)) {
+-      current = null
+-      continue
+-    }
+     const m = /^\s*([a-z]+):\s?(.*)$/i.exec(line)
+     const label = m?.[1]?.toLowerCase() as Label | undefined
+     const rest = m?.[2] ?? ''

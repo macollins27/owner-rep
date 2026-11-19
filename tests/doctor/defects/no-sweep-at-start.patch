@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 07ac1c3..9b37f34 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2564,7 +2564,6 @@ export const register: Register = on => {
+         if (!isWindowsHost(host)) {
+           const home = (await homeFor($)) || '/tmp'
+           await miseBins($, host, home)
+-          sweepCopies($, host, home).catch(() => undefined)
+         }
+       } catch {
+         // A check asks again.

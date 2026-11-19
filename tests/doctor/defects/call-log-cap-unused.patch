@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 0816bfe..7651ea0 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -757,7 +757,7 @@ async function pruneCalls($: EngineInterface, root: string, sid: string): Promis
+       if (path !== `${root}/${sid}` && st !== null && st.mtimeMs > 0 && st.mtimeMs < before) old.push(path)
+       else kept.push({ path, bytes: await folderBytes($, path), mtimeMs: st?.mtimeMs ?? 0 })
+     }
+-    const gone = [...old, ...overCallCap(kept, `${root}/${sid}`, now)]
++    const gone = [...old]
+     if (gone.length === 0) return
+     await $.process.run(hostArgv(await hostOf($), ['rm', '-rf', ...gone]), { timeoutMs: REMOVE_TIMEOUT_MS })
+     // A session of this process whose folder went writes its texts again.

@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 07ac1c3..e887fdb 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1615,7 +1615,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
+       unanswered: [...(links === null ? ['links' as const] : []), ...(repos.whole ? [] : ['repos' as const])],
+     })
+     const startedAt = Date.now()
+-    const stream = $.process.spawn({ argv: hostArgv(checkHost, withProgram(checkArgv(prompt, checkSettings(home, cwd, guarded, links ?? [], repos.dirs)), launch.claude)), cwd: copy, env: checkEnv(launch, copy, store, miseIgnored, home) })
++    const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, guarded, links ?? [], repos.dirs))), cwd: copy, env: checkEnv({ ...launch, mise: 'none' }, copy, store, miseIgnored, home) })
+     let stdout = ''
+     let stderr = ''
+     let timedOut = false

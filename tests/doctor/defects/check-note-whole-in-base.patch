@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 6e8b995..135823c 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -5076,7 +5076,6 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
+     leftOut: [],
+     next: '',
+     checked: counted(),
+-    checkNote: toRows(card.checkNote, '', 1, w),
+     checkCost: '',
+     message: toRows(card.message, '', 1, mw),
+     does: '',

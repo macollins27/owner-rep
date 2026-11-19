@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 1867c2c..3148e51 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3651,7 +3651,7 @@ export const checkCopyDir = (home: string, sessionId: string): string => `${chec
+ export const CHECK_ENV = 'OWNER_REP_CHECK'
+ export const isOwnCheck = (home: string, cwd: string | undefined, mark: string | undefined): boolean => {
+   if (mark === '1') return true
+-  if (home === '' || cwd === undefined || cwd === '') return false
++  if (home !== '' || cwd === undefined || cwd === '') return false
+   return `${cwd.replace(/\\/g, '/').replace(/\/+$/, '')}/`.startsWith(`${checkCopiesDir(home)}/`)
+ }
+ 

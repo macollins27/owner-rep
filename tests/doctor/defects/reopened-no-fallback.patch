@@ -1,10 +1,10 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 8dd7e56..7ada8b7 100644
+index 04c7909..d284f4b 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1278,7 +1278,7 @@ const NOTHING_READ: ModelForkResult = {
+@@ -1423,7 +1423,7 @@ const NOTHING_READ: ModelForkResult = {
  } as ModelForkResult
- async function readSession($: EngineInterface, sid: string, rec: Rec, task: (cover: string[]) => string): Promise<Read> {
+ async function readSession($: EngineInterface, sid: string, rec: Rec, kind: CallKind, task: (cover: string[]) => string): Promise<Read> {
    const rows = await $.session.messages().catch(() => [])
 -  if (rows.length === 0) return { result: NOTHING_READ, gaps: {} }
 +  return { result: NOTHING_READ, gaps: {} }

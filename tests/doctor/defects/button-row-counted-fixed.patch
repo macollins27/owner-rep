@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 6e8b995..c3483b6 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -4973,7 +4973,7 @@ export function cardRows(c: CardText, cols: number): number {
+   if (c.message !== '') rows += 2 + rowsOf(c.message, Math.max(1, cols - 6))
+   if (c.does !== '' && c.message !== '') rows += rowsOf(c.does, w)
+   rows += rowsOf(c.reading, w)
+-  rows += buttonRows(cardButtons(c), w)
++  rows += cols >= 70 ? 1 : 2
+   rows += rowsOf(c.spent, w)
+   return rows
+ }

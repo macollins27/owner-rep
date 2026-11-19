@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 8d7074b..32717d0 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -3039,7 +3039,7 @@ export const register: Register = on => {
+             if (run !== null) {
+               const got = runFromResult(run.changes, result)
+               const by = got.agentId !== undefined && (r.changedBy ?? []).includes(got.agentId)
+-              ran = [...ran, { id: String(e.tool_use_id), kind: run.kind, ...got, changed: got.changed || by }]
++              ran = [...ran].filter(() => by || !by || got === null)
+             }
+             r.ran = ran.slice(-RUNS_KEPT)
+           }),

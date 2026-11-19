@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 35606cf..a308b97 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1381,7 +1381,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
+             r.objectiveCalls += 1
+             r.objectiveTokens += tokensOf(result.usage)
+           }
+-          const answer = result !== null && result.isAnswered && !cutShort('objective', result.text, result.usage as Usage, maxTokens) ? parseObjective(result.text) : null
++          const answer = result !== null && result.isAnswered ? parseObjective(result.text) : null
+           const none = answer !== null && answer.kind === 'holds' && r.objective === null
+           if (answer !== null && !none) {
+             landed = true

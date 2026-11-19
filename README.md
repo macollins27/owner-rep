@@ -196,8 +196,23 @@ expectations for every job:
 
 The rep also watches where the work goes. When more of a session goes into the agent checking
 its own work than into the product, it says so, and the message it writes for you never asks
-for more tests, scripts or reports: where proof is missing it asks for a hands-on look at the
-real thing.
+for more tests, scripts or reports: where proof is missing it asks for the proof that fits, a
+command and what it printed for a fact, or a hands-on look at the real thing for whether it works.
+
+That the work does what it should is signed off only by someone who did not build it: a helper
+or a read-only Codex run that changed nothing, or the rep's own check, opening the real thing and
+using it. Each part of the job is written down as one of two kinds: "works" (the work does what
+it should, or is good) or "fact" (saved, committed, pushed, merged, installed, deployed, a file
+holding something, the newest version running). A fact is shown by the command and what it
+printed; anything not on that list counts as "works", whatever the writer called it. A "works"
+part stays open until a look names a run the session shows: a helper's or Codex's run, by the
+id the rep prints beside its call, that finished, said something and changed nothing. The card
+shows that run's own last words beside the part, so you read what the run said next to the
+account of it. A helper that edited or wrote in the project, a Codex run allowed to write, and a
+`claude -p` run outside plan mode count as the agent. When the agent looks at its own work, or
+anyone else does, the card says who looked and why it does not count, and the count line at the
+top of the card says so too, so you see it on any card. A part you closed yourself reads "closed
+on your word" with the number of your message: your word closes it, by design.
 
 You do no step of the job yourself. A chore the agent leaves "for you" is unfinished work,
 and the rep puts it in the message to the agent.
@@ -266,9 +281,11 @@ full, this is everything it reads and runs:
   the agent's thinking. The check is different: it reads the session through agentsview, and
   that includes the agent's thinking.
 - **Environment variables:** `PATH`, `HOME`, `USERPROFILE`, `CLAUDE_CONFIG_DIR`, `OS`,
-  `SystemRoot`, `windir`, `PROGRAMFILES`, `ProgramFiles(x86)`, `LOCALAPPDATA` and `APPDATA`.
-  It reads them to find your home, Claude Code's folder and the programs it runs, and to tell
-  whether it is on Windows.
+  `SystemRoot`, `windir`, `PROGRAMFILES`, `ProgramFiles(x86)`, `LOCALAPPDATA`, `APPDATA` and
+  `MISE_IGNORED_CONFIG_PATHS` and `OWNER_REP_CHECK`. It reads them to find your home, Claude Code's folder and the
+  programs it runs, to tell whether it is on Windows, and, on a press of Check it, to keep the
+  mise config paths you already ignore ignored where it has to start the check through mise, and
+  to tell its own check's session (which it sets `OWNER_REP_CHECK` for) from yours.
 - **Your transcripts:** it runs `sed`, `grep`, `ls` and `find` over the session's transcript
   under `~/.claude/projects/` (or the folder `CLAUDE_CONFIG_DIR` names) to read which
   messages you typed. For a session it holds no record of, such as a fork, it may read up to
@@ -285,21 +302,56 @@ full, this is everything it reads and runs:
   files with `rm` when their message or session goes. When the shared store is full it also
   keeps the record's manifest and parts there, and it keeps the files of a lost copy while the
   loss mark stands.
+- **Its call log:** `<config>/owner-rep/calls/<session id>/`. Every model call the rep makes for
+  itself (the job's account, each Heads up look, each briefing and its second ask, and the
+  own-words call) is saved there as one file holding what was sent and what came back, the
+  settings, the time and the tokens, what the rep read in the reply (its counts of conditions
+  marked, and a card's words and gate refusals) and, for a card, the job's open conditions with
+  each one's kind, what was seen of it and who looked, so a call can be read again and sent again. A text sent many times, such as the session's record that
+  every look resends, is kept once. A session's folder is removed with `rm` once nothing in it has
+  changed for 14 days, unless that session is the one starting, and while all the sessions' folders together hold more than 1 GB, the ones
+  changed longest ago are removed first, never the session starting or one changed in the last hour.
+  Two hidden commands read it: `/owner-rep-counts` prints the session's
+  counters, and `/owner-rep-replay` sends saved calls to the model again, at the cost of a new
+  call each, as saved or with this version's prompt changes, and saves each reply it gets
+  beside the call, under the same 14-day and 1 GB limits. Nothing in it is shown unless you run
+  them.
 - **On Windows:** those commands are Git for Windows' own, named by their full path, and
   `git` is the one on `PATH`. The rep
   finds them, and Claude Code's own `claude.exe`, by running each place they may be with
   `--version`.
+- **When a session starts with you at the prompt** (never in a `claude -p` run), on a Mac or
+  Linux: it runs `mise bin-paths` in your home with no env file read, once, to learn your own
+  tools' folders, and keeps that answer for every check in that Claude Code process. It also
+  clears its copies folder (`~/.cache/owner-rep/checks`) of copies whose Claude Code has closed:
+  with `sh`, `head` and `find` it reads each copy's owner file, with `ps` it asks whether the
+  Claude Code process each names is still running (the pid and start time of other sessions'
+  Claude Code, nothing else), and with `mkdir`, `mv` and `rm` it renames a closed session's copy
+  out of the way and deletes it. A copy whose process is still running is never touched,
+  however old, and nothing is removed when `ps` cannot see the processes.
 - **Only when you press Check it:** it runs `sh`, `find`, `printf`, `readlink` and `sed` to
   find the git repositories your project belongs to or links into and where links lead, so
   it can fence them. It runs `pnpm store path` to find pnpm's store, which the check is given
-  to install from. It runs `mkdir`, `cp` and `rm` to make the throwaway copy and delete it
-  afterwards.
+  to install from. It runs `mkdir`, `cp`, `mv` and `rm` to make the throwaway copy and delete it
+  afterwards, and writes beside the copy an owner file holding this Claude Code's pid and start
+  time, read with `ps`. Before the copy it clears closed sessions' copies as it does at a start.
+  Where any mise shim is on your command path (`claude`, `pnpm`, `node` or any other), it runs
+  `find` and `readlink` over your command path and the folders mise named, then starts `pnpm`
+  and the check by their full paths, with mise's folders first on their command path and every
+  shims folder off it, so no mise runs on the project. Where mise does not answer, it starts
+  them through the shim with no env file read and the project's mise config ignored
+  (`MISE_ENV_FILE`, `MISE_IGNORED_CONFIG_PATHS`). It reads Claude Code's `.claude.json` (in the folder `CLAUDE_CONFIG_DIR` names, else in your home) for one thing, your agentsview server entry, which it gives the check as its only MCP server; nothing else in that file is kept or sent. It reads the names of the plugins your Claude Code `settings.json` turns on (in that same folder, else `~/.claude`) and turns each one off in the check. The check's run loads your user-level settings, so your own hooks still guard it, and leaves out the project's settings, every CLAUDE.md (yours and the agent's), your plugins, this one too, your skills and your other MCP servers: it judges the agent, and reads the agent's instruction files in its folder only when a claim turns on them.
+- **The one limit, a session in your home folder:** mise's answer comes from the mise config
+  in your home. When the agent's working folder is the home itself, that config is the
+  agent's to change, and nothing the rep starts can be fenced from an agent that shares your
+  home. Asking at the start keeps out what the agent writes later in the session, not what an
+  earlier agent left there. Every other session's project is never read by mise.
 - **The check itself:** a separate `claude -p` run that may read files, search, run the
   project's own tests and read agentsview. It may not edit through a tool, send, fetch the
   web, or launch helpers. It runs with your own Claude Code settings, so your hooks fire
   inside it as they do for any agent.
-- **What it keeps:** one record per session, for the 32 newest sessions that hold anything.
-  [PRIVACY.md](PRIVACY.md) lists what a record holds.
+- **What it keeps:** one record per session, for the 32 newest sessions that hold anything,
+  and the call log above. [PRIVACY.md](PRIVACY.md) lists what each holds.
 
 Mods are code that runs inside Claude Code with the access Claude Code has, so read the
 source before installing any mod, this one included.
@@ -341,9 +393,9 @@ The full design is in [How the owner rep works](docs/how-it-works.md).
 
 ## Built to be trusted
 
-- **615 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
+- **759 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
   the tests.
-- **A doctor that plants bugs.** It plants 547 known defects in a throwaway copy, one at a
+- **A doctor that plants bugs.** It plants 836 known defects in a throwaway copy, one at a
   time, and fails the build if the tests miss any of them.
 - **Real sessions.** Twelve scenarios run in real Claude Code sessions, with the screen
   captured in [`tests/live/captures`](tests/live/captures).

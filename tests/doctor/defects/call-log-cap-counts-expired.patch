@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 0816bfe..6c5d0c9 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -755,7 +755,7 @@ async function pruneCalls($: EngineInterface, root: string, sid: string): Promis
+       const st = await $.fs.stat(path).catch(() => null)
+       // The session starting is never removed for its age: one resumed after 14 days keeps its calls.
+       if (path !== `${root}/${sid}` && st !== null && st.mtimeMs > 0 && st.mtimeMs < before) old.push(path)
+-      else kept.push({ path, bytes: await folderBytes($, path), mtimeMs: st?.mtimeMs ?? 0 })
++      kept.push({ path, bytes: await folderBytes($, path), mtimeMs: st?.mtimeMs ?? 0 })
+     }
+     const gone = [...old, ...overCallCap(kept, `${root}/${sid}`, now)]
+     if (gone.length === 0) return

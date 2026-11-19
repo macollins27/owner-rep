@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 7b58d6b..2055e25 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3618,7 +3618,6 @@ const factRead = (ts: FactTok[]): boolean => {
+     if (w(i, /^exists?$/)) out.push(...places(i + 1))
+     if (w(i, /^(?:does|do|did)$/) && w(i + 1, /^not$/) && w(i + 2, /^exist$/)) out.push(...places(i + 3))
+     if (w(i, /^no$/) && w(i + 1, /^longer$/) && w(i + 2, /^exists?$/)) out.push(...places(i + 3))
+-    if (w(i, /^runsnewest$/)) out.push(...places(i + 1))
+     if (store) out.push(...content(i))
+     return out
+   }

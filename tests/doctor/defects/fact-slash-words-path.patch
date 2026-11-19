@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 83998ef..069312f 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3542,7 +3542,7 @@ const factTokens = (text: string): FactTok[] => {
+       const rest = m.slice(c.length)
+       if (FACT_NAME_H.test(c)) return ` ${c} ${rest}`
+       if (factPath(c)) return keep({ w: c, t: 'P', p: c.includes('/') ? 'path' : 'file' }) + rest
+-      return ` ${c.replace(/[/.]+/g, '-')} ${rest}`
++      return keep({ w: c, t: 'P', p: 'path' }) + rest
+     })
+     .replace(/([,;:()[\]—–!?])/g, ' $1 ')
+     .replace(/\.(?=\s|$)/g, ' . ')

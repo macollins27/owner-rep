@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 4879782..41d3f86 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -4420,7 +4420,7 @@ const looksNote = (o: Objective): string => {
+   if (by.size === 0) return ''
+   const parts = [...by].map(([who, n]) => (who === '' ? `the agent looked at ${n} itself` : `${who} looked at ${n}, not counted as someone who did not build it`))
+   const whole = ` (${parts.join('; ')}; each still needs a look by someone who did not build it)`
+-  if (whole.length <= LOOKS_NOTE_MAX) return whole
++  return whole
+   // Too long to draw whole (many names, or long ones): counted, never dropped (Codex
+   // review of #53: at 80 rows a count line of seventy names was dropped whole).
+   const self = by.get('') ?? 0

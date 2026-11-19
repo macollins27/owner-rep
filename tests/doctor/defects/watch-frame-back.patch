@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 3623fdb..193d549 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1772,7 +1772,7 @@ export const OBJECTIVE_STEP = "the step the owner's messages last set; the rep u
+ export const OBJECTIVE_STEP_LINE = "step: <one sentence: the step the owner's messages last set>"
+ 
+ export function watchPrompt(m: Memory, reason: 'step' | 'stop' | 'note'): string {
+-  return endAsked(`${memoryText(m)}\n\n${watchRequest(reason, list(m.seen, '(none yet)'), list(m.others, '(none)'))}`)
++  return endAsked(`<system-reminder>This is a side request from the user. IMPORTANT CONTEXT: The main agent is NOT interrupted. CRITICAL CONSTRAINTS: You have NO tools.</system-reminder>\n\n${memoryText(m)}\n\n${watchRequest(reason, list(m.seen, '(none yet)'), list(m.others, '(none)'))}`)
+ }
+ 
+ // The watch's request, after what the rep knows; its two lists are given as printed.

@@ -1,9 +1,9 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 57aadf7..9f0a7c3 100644
+index d943f7a..2708ea2 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -878,14 +878,8 @@ function drawsSomething(tree: unknown): boolean {
- let currentId = ''
+@@ -2678,14 +2678,8 @@ let currentId = ''
+ let ownCheck = false
  let ended = false
  async function sessionId($: EngineInterface): Promise<string> {
 -  const id = await $.session.id()

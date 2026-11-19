@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 4f9f7af..1711f7e 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1588,7 +1588,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
+     const miseIgnored = (await $.env.get('MISE_IGNORED_CONFIG_PATHS')) ?? ''
+     const launch = await launchFor($, checkHost, home, path)
+     const store = await pnpmStore($, checkHost, launch, copy, miseIgnored, home)
+-    const guarded = guardedPath(path, launch)
++    const guarded = path
+     const links = await pathLinks($, checkHost, home, guarded)
+     const repos = await gitRepos($, checkHost, home, copy, cwd)
+     const prompt = checkPrompt({

@@ -3,7 +3,7 @@
 What changed in each release of Owner Rep, newest first. The full record is the
 [commit history](https://github.com/macollins27/owner-rep/commits/main).
 
-## 0.7.7 (14 November 2026)
+## 0.7.7 (19 November 2026)
 
 - **A session started from another folder than the one it was recorded in gets its goal.** A
   session recorded in a worktree that was later removed, then resumed or forked from the main
@@ -18,6 +18,160 @@ What changed in each release of Owner Rep, newest first. The full record is the
   the agent's turn before an older message, and it took go-ahead words such as "keep going"
   for a plan approval, a different message on different runs. Only words that accept a plan
   count now, and steps a reader guessed for a plan it never saw are left off the card.
+- **The replay rebuilds calls with this change.** `/owner-rep-replay` takes `unshown`, the edit
+  that turns an objective call saved before 0.7.7 into what this build sends.
+
+## 0.7.6 (19 November 2026)
+
+- **Check it works where Claude Code comes through mise.** Where `claude` is a mise shim and the
+  project holds a `mise.toml`, the check stopped about 15 seconds in with "The check could not
+  run (exit 1): mise ERROR", because mise refused the project's config in the check's copy as
+  untrusted. The check now asks mise, from your home, where your own tools are and starts
+  Claude Code and pnpm from there by full path, with mise's shims off their command path, so
+  nothing in the project's mise config, or an env file the agent wrote, runs outside the
+  fence. This holds whichever tool is the shim: with only `node` from mise, the check still
+  runs no shim, since pnpm would start node's. mise is asked once, when a session starts with
+  you at the prompt, before the agent has run anything. A check started from your home works
+  too; there alone the home's mise config is the agent's to change, which the rep cannot fence.
+  Where mise cannot answer, the check goes through the shim with no env file read and the
+  project's mise config ignored, never your own.
+- **Copies of cut-off checks are cleaned up.** A check whose Claude Code ended mid-run, or
+  closed straight after a check, left its copy of the project in `~/.cache/owner-rep/checks`.
+  Each copy now has an owner file naming the Claude Code process that made it, and copies
+  whose process has closed are deleted when the next session starts and before each check. A
+  running session's copy is never touched, however old; copies left by builds before 0.7.6
+  have no owner file and are kept.
+- **The rep holds what it found until the record shows something new.** An agent arguing back no
+  longer moves its briefing; what the agent ran and what that printed can, and a changed line says
+  what is new.
+- **A second asking says what the first answer got wrong.** When the rep's briefing breaks a rule
+  while work is open, it is asked once more with that rule named and the sentence quoted, rather
+  than a list of every rule.
+- **The message to send reads like a good prompt.** One line per thing asked, each with what done
+  means; a held step named exactly; a closing line saying when the agent is done and what to report,
+  in place of "keep going"; and the card's parts and the message kept to set word counts.
+- **Check it runs the same way on every machine.** It always uses Opus at high effort rather
+  than whatever model you last picked, sees the clock so it starts its answer in time, reads what
+  the agent changed before judging it, and keeps its standing rules apart from this check's facts.
+- **A failed objective write is retried at extra-high effort first**, and at maximum effort only
+  if that fails too, so the rare retry costs less.
+- **A part of done you restate is kept once.** When your later words say a part of done more
+  exactly, the rep rewrites that part in your new words and keeps whether it was shown, instead
+  of listing the old and new wordings side by side.
+- **"Right now" on the card follows the work.** Each look the rep takes reads the step the
+  agent is on from the session's record and puts it on the card, so the line no longer shows
+  the step from your last message after the agent has moved on. The objective writer now writes
+  the step your messages last set, and the rep keeps it current from there.
+- **A part of done written with its state first** ("not shown: the pages are built", with no
+  "|") keeps that state, and the state word no longer shows in the part.
+- **A decision that is truly yours reaches you as one plain question.** The rep asks you only
+  about a decision that touches your livelihood or public name, cannot be undone, or goes
+  against something you asked for (publishing, sending, paying and anything your guard refused
+  among them), and a go-ahead is such a decision, not a chore. When a part of the job waits on
+  your go-ahead, the message tells the agent to finish everything else, hold that step, and say
+  what it will show you then. A step of a plan you approved whose only job is to prove the
+  agent's own work is kept, with a question beside it asking whether you want it kept.
+- **One standard of proof.** The rep's reads, its check and its own-words message now name one
+  standard for what shows a condition: a fact is shown by the command that shows it and what
+  that printed; the result working or being good, by someone looking at the real thing. Where
+  proof is missing, the message asks for the one that fits, not a hands-on look for a fact.
+  "Not shown" is said plainly and never as a failure, and a claim is called untrue only where
+  the record shows the opposite, never on a guess at what the agent's commands did. When the job's account names how good the
+  result must be, it says what a person using it would notice, so the condition can close.
+- **The rep's reads lost a frame left over from their first version.** Each Heads up look and
+  each briefing opened with a block in capitals, written when the look was a copy of the agent's
+  own conversation, that said things no longer true (that you had asked it a side question, that
+  it shared the agent's context). The look also told the model not to think it over, against the
+  effort it runs at. Both are gone; the facts that still hold (it has no tools, gives one answer,
+  and keeps secrets out of what it writes) are said once, in the read's fixed instructions.
+- **The rep's rules live in one place.** Each Heads up look, each briefing and its second ask
+  now share one fixed set of instructions, laid out in named sections, in place of rules split
+  between those instructions and the question after the session. The question carries only what
+  changes each time: what the rep knows, the request, which points back at the record, and a short
+  reminder of the rules that decide that answer. The words are the same rules, moved; they now say
+  "the record" for what the rep is shown, so a sentence patching over the old wording is gone. The
+  replay can set one change against another with `--base`.
+- **The replay can measure a prompt change.** `/owner-rep-replay all --kind watch --variant build`
+  sends saved calls from every session both as they were saved and as this version would send
+  them, and keeps each reply beside its call, so the two can be read side by side.
+- **The rep keeps a log of its own model calls, on your machine.** Each call it makes for itself
+  (the job's account, each Heads up look, each briefing and its second ask, and the own-words
+  call) is saved under `<config>/owner-rep/calls/`, with the text sent and the reply, so a call
+  can be read and sent again to compare a change. A text sent many times is kept once, and a
+  session's folder is removed after 14 days with no change, and all of them together are kept under
+  about 1 GB, the oldest removed first. Two hidden commands read it:
+  `/owner-rep-counts` and `/owner-rep-replay`. Nothing the rep shows you changes.
+  `/owner-rep-replay --now` sends a saved call as this version would, at its cap and with its
+  end line, to measure what those change on calls saved before them.
+- **The rep no longer watches its own check.** The check runs as a Claude Code session of its own,
+  and the rep loaded in it and watched it like one of your agents: it kept a record of it, spent
+  calls on it and wrote Heads up lines about the checker. It now knows that session, by its folder
+  under `~/.cache/owner-rep/checks` or by the `OWNER_REP_CHECK` mark the check is started with,
+  and leaves it alone.
+- **The check no longer takes on the agent's instructions.** Its own Claude Code run loaded the
+  agent's CLAUDE.md, your own CLAUDE.md, your skills and every MCP server, so the checker was told
+  how to work as the agent it is meant to judge. It now loads your user-level settings, so your
+  own hooks still guard it, the sandbox fence, and agentsview as its only server, and no
+  CLAUDE.md, skill, plugin or project setting: your plugins, the rep among them, are turned off
+  by name in the check's own settings. The brief tells it the agent's instruction files are in
+  the agent's folder, to read when a claim turns on them. To find your agentsview entry the rep
+  reads Claude Code's `.claude.json` and takes only that entry.
+- **Only someone who did not build the work can sign it off.** Each part of the job is a
+  "works" part (the work does what it should, or is good) or a "fact". A works part now closes
+  only on a hands-on look by a helper that did not build it, Codex, or the rep's own check;
+  a fact still closes on the command and what it printed. Anyone else's look, the agent's
+  above all, is kept and shown on the card and on its count line, by who looked, and that part
+  stays open. A look signs off only by naming its run as the record prints it, and only when
+  the record shows that run finished, said something and changed nothing: a helper that edited
+  or wrote in the project, a Codex run allowed to write, piped, backgrounded or run after `||`,
+  and a `claude -p` run outside plan mode are the agent's. The card shows the run's own last
+  words beside the part. "Fact" now means only saved, committed, pushed, merged, installed,
+  deployed, a file holding something or the newest version running; any other part is "works".
+  A part you closed reads "closed on your word (#n)".
+  A part is a fact only when every clause in it is one: any clause about what something does,
+  in any words, or what it does not do ("does not crash"), makes the whole part "works",
+  however much of it is a fact, and the rep asks for one claim per part. A fact is read by its
+  sentence shape: a thing of the work is saved, committed, pushed, installed or the like, exists,
+  or runs the newest code, and only a file or the like holds quoted text or is so many bytes
+  long. Each place in the sentence takes only its own kind of word, so no wording of what the
+  work does can close as one ("lists the commands", "has 0 crashes" and a quality in quotes are
+  "works"), and the rep tells its writer what a fact looks like. A word before the thing that
+  says how good it is or what it does ("the bug-free code is committed", "the encrypting tool is
+  installed") makes the part "works" too: the words that may stand before the thing come from a
+  short list that only says which thing it is (new, local, current, untracked, the project's), so
+  a quality no list foresaw ("the resilient tool", "the fast/secure tool") is "works" as well.
+  A word counts as a file's name or a path only when it is one (it ends in a file's ending or
+  starts at a folder), so qualities joined by slashes or dots ("the secure/fast/reliable tool",
+  "the fast.secure tool") or put after the state ("installed (UTF8-compliant)") are "works", and
+  "nothing is committed for this job" is a fact. So are the plain ways a job's account names
+  facts: a thing "named greet", a text's end notes split by commas ("5 bytes, with no final
+  newline"), and "no commit was made for this work"; a name after "named" says which thing it
+  is, and a judgment there ("named correctly") is "works". A doing folded into a thing's name
+  ("the copies-every-file tool", "the logs-in tool") is "works": a plural word stands only next
+  to the thing it names ("the logs folder"), and "every" or "all" only first. A path inside the
+  project with a standard folder in it ("install-case/bin/greet"), "installed as a copy of" a
+  file, and "installed with permission to run" are facts.
+- **The briefing's buttons always show.** A card could be counted one row shorter than it is
+  drawn (an indented line a cell or two past the edge, the size beside the buttons), and then
+  scrolled with its buttons below the fold. Rows are now counted as the strip wraps them, the
+  buttons first. On a 24-row terminal the strip has about five rows, and a checked card
+  now fits them: what the check found goes to one line, then the empty line above the card,
+  so a check's error and every button stay in view. When the strip is too short for both the
+  error and the line of what the check found, the error is shown whole and that line waits. A
+  long error is shortened to "Check failed after answering: …" and the conversation's size
+  leaves the buttons row before any of the error is cut. The row above the prompt keeps the
+  job's result to the rows the strip leaves it, ending in "…" when it is longer, so Brief me
+  and Tell the rep stay in view; the briefing shows the result whole.
+- **A reply cut off in its last line is never shown.** The rep asks every model call to end its
+  reply with a fixed line, "end of reply". A reply without it stopped early, even one cut in
+  the middle of its last sentence, and the rep treats it as it treats any cut reply: it asks
+  again, or says so, and never shows the half line.
+- **A check that fails says why, and a whole check is never lost.** When a check's run ends in
+  an error, such as an expired login, the card now shows that error rather than calling the
+  check cut and asking you to press it again. A check that finished its answer before such an
+  error, or before a last turn a hook asked for, is read from that answer, and the card still
+  says the run then failed, and why. A check that says there is nothing to send no longer leaves the briefing's
+  older message on its card for Put message.
 
 ## 0.7.5 (14 November 2026)
 
