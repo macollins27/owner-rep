@@ -145,7 +145,7 @@ call writes (below):
    passes the same gate. When it is refused too, or does not answer, one plain
    `$.model.complete` (`OBJECTIVE_MODEL`, `OWN_WORDS_EFFORT` high, `OWN_WORDS_SYSTEM`: built from the same
    named strings as `REP_SYSTEM` (`REP_WHO`, `REP_STAKE`, `REP_SHOWN_BODY`, `REP_UNSEEN`, `REP_STATES`,
-   `REP_WRITE`), so each rule has one source, and one line against reproducing a secret, a key, a
+   `REP_WRITE`, `REP_MESSAGE`), so each rule has one source, and one line against reproducing a secret, a key, a
    password or personal data it is shown; `OWN_WORDS_MAX_TOKENS` 64,000, `MAX_REPLY_TOKENS`, the engine's ceiling, `OWN_WORDS_TIMEOUT_MS` two minutes) over
    `ownWordsPrompt` (the memory, the open conditions, what stands and what is left out)
    writes the replaced parts in the rep's own words. Its reply is read by `parseOwnWords`,
@@ -367,7 +367,17 @@ call writes (below):
    `REP_FORMAT`, "Why you exist" (`REP_WHO`, `REP_STAKE`), "The record" (`REP_FENCE`, then
    `REP_UNSEEN`: `STANDING_LINE` and `NOT_ASSESSED_RULE`), "What you measure against" with the six
    expectations, "The conditions and their states" (`REP_STATES`: the four states, shown only by what counts as shown, in the record, never on the agent's word), "What counts as shown" (`REP_SHOWN_BODY`, the one standard every read, the check and the own-words call name: a fact by its command and what it printed, the result working or being good by a hands-on look at the real thing; a test, check, review or script passing shows only that it passed), "The
-   objective stays open until it is completed", "What reaches the owner", "How you make up your mind", "How you write to the owner", and
+   objective stays open until it is completed", "What reaches the owner", "How you make up your mind", "How you write to the owner",
+   "How you write the message to the agent" (`REP_MESSAGE_BODY`, G28: the message is a prompt the
+   owner sends as their own turn, so one line per thing asked with what done means for it, a
+   fact's command and what it printed or a hands-on look for working, a held step named exactly,
+   the routine steps the agent may take alone, and last the finish line `MESSAGE_FINISH` in place
+   of "keep going"; it is the one place exact technical terms may stand, where the agent needs
+   them; the own-words call and the check read the same section; the briefing's, the own-words
+   call's and the check's answer forms ask for lengths in words, targets the gate does not
+   enforce (G40): `SHORT_PART` for "stands", "means" and "next", `LEFT_ITEMS` for "left" (each
+   item under 20 words, at most six, the rest folded into "- and N smaller gaps"), and
+   `MESSAGE_FORM` for the message), and
    "Private data" (secrets, keys, passwords and personal data stay out of what it writes). Nothing
    per call goes into it, so it is the same bytes on every read. Its words keep three apart: "the
    record" is what the reader is shown, "the session" what happened, "the owner's messages" the
@@ -1066,14 +1076,14 @@ call that asks for it already. The prompt groups after group 2 are `GROUPS`, in 
 of call: `proof` (group 3: `G3_REP_SYSTEM`, `G3_OBJECTIVE_SYSTEM`, `G3_OWN_WORDS_SYSTEM`,
 `G3_TASK`), `decisions` (group 4: `G4_REP_SYSTEM`, `G4_OBJECTIVE_SYSTEM`, `G4_TASK`; it has no
 own-words pair) and `now` (group 5: `G5_OBJECTIVE_SYSTEM`, `G5_TASK`; watch and objective calls
-only, since it changes neither the shared system prompt nor the briefing), and `same-as` (group 6: `G6_OBJECTIVE_SYSTEM`, `G6_TASK`; objective calls only). Each pair is the group before's text, kept word for word, and the text the group
+only, since it changes neither the shared system prompt nor the briefing), and `same-as` (group 6: `G6_OBJECTIVE_SYSTEM`, `G6_TASK`; objective calls only), and `message` (group 7: `G7_REP_SYSTEM`, `G7_OWN_WORDS_SYSTEM`, `G7_TASK`; every call but the objective's). Each pair is the group before's text, kept word for word, and the text the group
 sent in its place. Applied after `rep-system`, in that order (`stepGroups`), each named group's
 edit (`stepGroup`) moves a call the build before it saved to exactly what the build after it
 sends: the call's system prompt must be the build before's (`systemBefore`, this build's with
 that group's and every later group's pairs undone), and each old text must be in it exactly once
 (`swapped`), or the call is not sent; so `decisions` alone takes a call the build after group 3
 saved, `decisions` with `now` one the build after group 3 saved, and `now` alone one the build
-after group 4 saved, and `same-as` alone one the build after group 5 saved. The objective and own-words calls have no record, so their whole prompt is the task and only
+after group 4 saved, and `same-as` alone one the build after group 5 saved, and `message` alone one the build after group 6 saved. The objective and own-words calls have no record, so their whole prompt is the task and only
 the groups' edits apply to them. Every reply is read as its own prompt's build read it
 (`readAsAsked`): a reply to a prompt that never asked for the end line is not taken as cut for
 lacking it, so an old call replayed as saved is read as it was then. With `--now` (`replayNow`)

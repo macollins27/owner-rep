@@ -5,6 +5,9 @@ What changed in each release of Owner Rep, newest first. The full record is the
 
 ## Unreleased
 
+- **The message to send reads like a good prompt.** One line per thing asked, each with what done
+  means; a held step named exactly; a closing line saying when the agent is done and what to report,
+  in place of "keep going"; and the card's parts and the message kept to set word counts.
 - **Check it runs the same way on every machine.** It always uses Opus at high effort rather
   than whatever model you last picked, sees the clock so it starts its answer in time, reads what
   the agent changed before judging it, and keeps its standing rules apart from this check's facts.
