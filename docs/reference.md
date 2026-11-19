@@ -127,7 +127,7 @@ call writes (below):
    `OPEN_DOES`, since that line describes the message. With every condition shown or closed
    an empty message stands, and with no objective written (`gateOpen` is null) it stands too,
    since nothing says what is open. `pressBrief` takes this refusal as any other: the second
-   ask, whose `askAgain` says an empty message counts, then the own-words call, whose
+   ask, whose `askAgain` names the empty message, then the own-words call, whose
    `ownWordsPrompt` names the empty message, then read 1's usable message, then
    `OPEN_MESSAGE`. `OPEN_MESSAGE` ends with the sentence on a held step: `If a step needs my
    go-ahead, hold it: finish the rest, and tell me what you will show me when I give it.`
@@ -141,11 +141,13 @@ call writes (below):
    empty and writes no "does:" either (a checker that says what its message does and writes
    none has said there is nothing to send, so the briefing's older draft is not put back), and
    with every condition shown or closed the message stays empty. A refused
-   answer is asked once more (`askAgain`, naming the open conditions), and that answer
+   answer is asked once more (`askAgain`, naming the open conditions and the rule the first answer
+   broke: `askFault` over the gate's rules, each said plainly with the sentence that broke it quoted,
+   cut to 200 characters, since the second call never saw the first answer; G39), and that answer
    passes the same gate. When it is refused too, or does not answer, one plain
-   `$.model.complete` (`OBJECTIVE_MODEL`, high effort, `OWN_WORDS_SYSTEM`: built from the same
+   `$.model.complete` (`OBJECTIVE_MODEL`, `OWN_WORDS_EFFORT` high, `OWN_WORDS_SYSTEM`: built from the same
    named strings as `REP_SYSTEM` (`REP_WHO`, `REP_STAKE`, `REP_SHOWN_BODY`, `REP_UNSEEN`, `REP_STATES`,
-   `REP_WRITE`), so each rule has one source, and one line against reproducing a secret, a key, a
+   `REP_WRITE`, `REP_MESSAGE`), so each rule has one source, and one line against reproducing a secret, a key, a
    password or personal data it is shown; `OWN_WORDS_MAX_TOKENS` 64,000, `MAX_REPLY_TOKENS`, the engine's ceiling, `OWN_WORDS_TIMEOUT_MS` two minutes) over
    `ownWordsPrompt` (the memory, the open conditions, what stands and what is left out)
    writes the replaced parts in the rep's own words. Its reply is read by `parseOwnWords`,
@@ -361,13 +363,23 @@ call writes (below):
 
    The watch and the briefing (and its second ask) read through one helper, `readSession`.
    It reads `$.session.messages()` and, when there are rows, makes one `$.model.complete`
-   (`OBJECTIVE_MODEL`, high effort, `REP_SYSTEM`, `RECORD_MAX_TOKENS` 64,000, the engine's ceiling,
+   (`OBJECTIVE_MODEL`, `WATCH_EFFORT` for a look and `BRIEF_EFFORT` for the briefing and its second ask, both high until a replay shows a lower level loses nothing, `REP_SYSTEM`, `RECORD_MAX_TOKENS` 64,000, the engine's ceiling,
    `RECORD_TIMEOUT_MS` four minutes) over `recordPrompt`, never a fork. `REP_SYSTEM` is one fixed
    text for all three, `REP_SECTIONS` joined: `REP_OPENING` (it has no tools and gives one answer),
    `REP_FORMAT`, "Why you exist" (`REP_WHO`, `REP_STAKE`), "The record" (`REP_FENCE`, then
    `REP_UNSEEN`: `STANDING_LINE` and `NOT_ASSESSED_RULE`), "What you measure against" with the six
    expectations, "The conditions and their states" (`REP_STATES`: the four states, shown only by what counts as shown, in the record, never on the agent's word), "What counts as shown" (`REP_SHOWN_BODY`, the one standard every read, the check and the own-words call name: a fact by its command and what it printed, the result working or being good by a hands-on look at the real thing; a test, check, review or script passing shows only that it passed), "The
-   objective stays open until it is completed", "What reaches the owner", "How you make up your mind", "How you write to the owner", and
+   objective stays open until it is completed", "What reaches the owner", "How you make up your mind" (`REP_MIND`, with `REP_HOLD`, G30: a finding and the lines already shown stand until the record shows something new, a change names what is new, and an agent's disagreement is not new evidence; the check's standing rules say the same), "How you write to the owner",
+   "How you write the message to the agent" (`REP_MESSAGE_BODY`, G28: the message is a prompt the
+   owner sends as their own turn, so one line per thing asked with what done means for it, a
+   fact's command and what it printed or a hands-on look for working, a held step named exactly,
+   the routine steps the agent may take alone, and last the finish line `MESSAGE_FINISH` in place
+   of "keep going"; it is the one place exact technical terms may stand, where the agent needs
+   them; the own-words call and the check read the same section; the briefing's, the own-words
+   call's and the check's answer forms ask for lengths in words, targets the gate does not
+   enforce (G40): `SHORT_PART` for "stands", "means" and "next", `LEFT_ITEMS` for "left" (each
+   item under 20 words, at most six, the rest folded into "- and N smaller gaps"), and
+   `MESSAGE_FORM` for the message), and
    "Private data" (secrets, keys, passwords and personal data stay out of what it writes). Nothing
    per call goes into it, so it is the same bytes on every read. Its words keep three apart: "the
    record" is what the reader is shown, "the session" what happened, "the owner's messages" the
@@ -532,7 +544,17 @@ call writes (below):
    loads in that session too, and every hook passes it by once `isOwnCheck` knows it, by that
    mark or by its folder under `checkCopiesDir`: no record, no call, nothing drawn; G19), and
    with `CLAUDE_CODE_DISABLE_CLAUDE_MDS=1` (`CHECK_ISOLATE_ENV`), `--setting-sources user`,
-   `--disable-slash-commands` and `--strict-mcp-config --mcp-config` from `checkMcpConfig` (G18):
+   `--disable-slash-commands` and `--strict-mcp-config --mcp-config` from `checkMcpConfig` (G18),
+   on `CHECK_MODEL` (`opus`) at `CHECK_EFFORT` (`high`) whatever the owner's default (G17), with
+   `CHECK_SYSTEM` as `--append-system-prompt` (G27): the checker's role (`CHECK_ROLE`), the
+   readers' sections on conditions, proof and the open objective, its standing rules
+   (`CHECK_STANDING`) and last the ways it must not stop (`CHECK_STOPS`, G24), the same text on
+   every check, so `checkPrompt` carries only this check's facts: the session, the room, a clock
+   from `startedAt` (`clockOf`: when it began, when its time runs out, and to start its answer
+   `CHECK_WRITE_BY_MS` before that, running `date` before a long command; G25), the agent's
+   changes to read first (`git status`, `git diff`, `git log --since` the record's first entry;
+   G26), one rule for writing (only in the copy, or nowhere without one; G45), the objective,
+   the briefing, the steps and the answer's form:
    the run loads the owner's user-level settings, the owner's guard hooks among them, the `--settings`
    fence, and the owner's own agentsview entry from Claude Code's `.claude.json` (`checkMcp`
    reads `<CLAUDE_CONFIG_DIR>/.claude.json`, else `~/.claude.json`, and takes that one entry, or
@@ -688,7 +710,7 @@ earlier `versions`. Only `rebuildObjective` writes it: on each message of the ow
 never on a draft, and on a session start or a press when none is held. `writeObjective` runs
 one write per session at a time; a request during a write joins it (`again`), and a message
 saved after the write was shown its messages is written next. A due write is up to
-`1 + OBJECTIVE_RETRIES` attempts (the retries at `OBJECTIVE_RETRY_EFFORT`, `max`, with their own cap and
+`1 + OBJECTIVE_RETRIES` attempts (the retries at `OBJECTIVE_RETRY_EFFORTS` by `objectiveEffort`, `xhigh` then `max`, with their own cap and
 time; none after a throw or an `aborted`; a `holds` with nothing held fails the attempt as
 `holds-with-none`), and only a write whose every attempt failed is counted. A write that throws or comes
 back unanswered, or answers with nothing `parseObjective` can read, leaves the objective as it was and adds one to `rec.objectiveFailed`,
@@ -723,7 +745,12 @@ the writer closes it, and a new one proposed shown starts open;
 under each of the owner's messages, marked as the agent's) and a `closed` that cites no such
 message back to open. A condition
 listed twice, or with a state mark copied into its text, is kept once (`parseObjective`,
-`mergeConditions`). A new job pushes
+`mergeConditions`), and two conditions are the same when their words match with case,
+punctuation and the articles set aside (`conditionKey`). A condition the writer marks
+`| same as: <held text>` (prompt group 6, G13: the owner's later words made a held one more
+exact) takes the held one's place under the new words, keeps its state, where and marks, and
+is never counted as dropped; a held condition is matched once, so a second rewrite of it is
+not kept, and the mark is never saved (`plainCondition`). A new job pushes
 the old result onto `rec.past` and starts the job (`since`, `rec.jobStart`) at its first new
 message. The first write, which has nothing held to push, starts the job at the message its
 `moved: new job #n` cites when n is one of the owner's messages after the first, so a seeded session
@@ -1028,7 +1055,7 @@ what the replies were read as, and for cards the gate's rules (`passed` when non
 `own-words`, or `fixed-text`). Two commands are registered at `session.start` and hidden from the
 menu and `/help` (`command.describe`, `HIDDEN_COMMANDS`): `/owner-rep-counts` prints
 `countsText`, one line per kind and a `cards:` line; `/owner-rep-replay <call file, session folder,
-session id, "this" or "all"> [--kind k] [--last 1-50] [--effort low|medium|high|max] [--times 1-10]
+session id, "this" or "all"> [--kind k] [--last 1-50] [--effort low|medium|high|xhigh|max] [--times 1-10]
 [--variant build|frame|no-think|rep-system|end-line|proof|decisions|now] [--base frame|no-think|rep-system|end-line|proof|decisions|now] [--now]` (`parseReplayArgs`, `REPLAY_USAGE`) takes a folder's last `--last`
 (`REPLAY_LAST`, 10) calls of the kind asked for, or with "all" the last of every session folder's
 calls together by when each was made (`replayPick`, `replayFiles`), rebuilds each from its parts (`savedCall`, which refuses one whose
@@ -1051,14 +1078,14 @@ call that asks for it already. The prompt groups after group 2 are `GROUPS`, in 
 of call: `proof` (group 3: `G3_REP_SYSTEM`, `G3_OBJECTIVE_SYSTEM`, `G3_OWN_WORDS_SYSTEM`,
 `G3_TASK`), `decisions` (group 4: `G4_REP_SYSTEM`, `G4_OBJECTIVE_SYSTEM`, `G4_TASK`; it has no
 own-words pair) and `now` (group 5: `G5_OBJECTIVE_SYSTEM`, `G5_TASK`; watch and objective calls
-only, since it changes neither the shared system prompt nor the briefing). Each pair is the group before's text, kept word for word, and the text the group
+only, since it changes neither the shared system prompt nor the briefing), and `same-as` (group 6: `G6_OBJECTIVE_SYSTEM`, `G6_TASK`; objective calls only), and `message` (group 7: `G7_REP_SYSTEM`, `G7_OWN_WORDS_SYSTEM`, `G7_TASK`; every call but the objective's), and `evidence` (group 8: `G8_REP_SYSTEM`, `REP_HOLD` added; watch, brief and ask-again calls). Group 9's edit, `fault`, rebuilds nothing: its second asking names the rule the first answer broke, which no saved call holds, so `editSaved` sends no ask-again call under it, and the build before it's text stays as `askAgainBefore`. Each pair is the group before's text, kept word for word, and the text the group
 sent in its place. Applied after `rep-system`, in that order (`stepGroups`), each named group's
 edit (`stepGroup`) moves a call the build before it saved to exactly what the build after it
 sends: the call's system prompt must be the build before's (`systemBefore`, this build's with
 that group's and every later group's pairs undone), and each old text must be in it exactly once
 (`swapped`), or the call is not sent; so `decisions` alone takes a call the build after group 3
 saved, `decisions` with `now` one the build after group 3 saved, and `now` alone one the build
-after group 4 saved. The objective and own-words calls have no record, so their whole prompt is the task and only
+after group 4 saved, and `same-as` alone one the build after group 5 saved, and `message` alone one the build after group 6 saved, and `evidence` alone one the build after group 7 saved. The objective and own-words calls have no record, so their whole prompt is the task and only
 the groups' edits apply to them. Every reply is read as its own prompt's build read it
 (`readAsAsked`): a reply to a prompt that never asked for the end line is not taken as cut for
 lacking it, so an old call replayed as saved is read as it was then. With `--now` (`replayNow`)

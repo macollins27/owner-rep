@@ -1,12 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 285e808..00df8a8 100644
+index b6129e7..b80bfd2 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1882,7 +1882,6 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
-       owner: jobMsgs(rec),
+@@ -2065,7 +2065,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
        brief: instant,
        writtenAt: new Date(at).toISOString(),
+       startedAt: Date.now(),
 -      unanswered: [...(links === null ? ['links' as const] : []), ...(repos.whole ? [] : ['repos' as const])],
++
      })
      const startedAt = Date.now()
      const stream = $.process.spawn({ argv: hostArgv(checkHost, checkArgv(prompt, checkSettings(home, cwd, path, links ?? [], repos.dirs, plugins), mcp)), cwd: copy, env: { ...CHECK_ISOLATE_ENV, [CHECK_ENV]: '1', ...(store === '' ? {} : { [PNPM_STORE_ENV]: store }) } })

@@ -1,8 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 60a117b..bb6489a 100644
+index f8f119f..4797862 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -6405,7 +6405,7 @@ export function parseReplayArgs(args: string): ReplayArgs {
+@@ -6992,7 +6992,7 @@ export function parseReplayArgs(args: string): ReplayArgs {
    }
    for (let i = 0; i < words.length; i++) {
      const w = words[i] ?? ''
@@ -10,4 +10,4 @@ index 60a117b..bb6489a 100644
 +    if (w === '--now') now = false
      else if (w === '--effort') {
        effort = words[++i]
-       if (effort === undefined || !['low', 'medium', 'high', 'max'].includes(effort)) return { error: REPLAY_USAGE }
+       if (effort === undefined || !['low', 'medium', 'high', 'xhigh', 'max'].includes(effort)) return { error: REPLAY_USAGE }

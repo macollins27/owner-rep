@@ -1,27 +1,23 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 4879782..07be36f 100644
+index f8f119f..660833c 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -4640,19 +4640,10 @@ export function mergeConditions(
- ): Condition[] {
-   const like = (a: string, b: string): boolean => same(bare(a), bare(b))
-   const once = proposed.filter((p, i) => proposed.findIndex(q => like(q.text, p.text)) === i)
--  const out = once.map((p): Condition => {
-+  const rank = (s: ConditionState): number => (s === 'closed' ? 2 : s === 'shown' ? 1 : 0)
-+  const out = once.map(p => {
-     const h = held.find(x => like(x.text, p.text))
--    if (h === undefined) return p.state === 'shown' ? { text: p.text, state: 'open', by: '', ...(p.kind === undefined ? {} : { kind: p.kind }) } : p
+@@ -5852,16 +5852,8 @@ export function mergeConditions(
+       continue
+     }
+     taken.add(h)
 -    // The kind the writer gives now, except that a condition held "works", or with no kind
 -    // (read as works), never turns "fact": a rewrite never turns a condition that needs a
 -    // look by someone else into one the agent's own run shows.
 -    const kind = h.kind === 'fact' ? (p.kind ?? 'fact') : p.kind === 'fact' || h.kind === 'works' ? 'works' : p.kind
 -    const k: { kind?: ConditionKind } = kind === undefined ? {} : { kind }
--    if (p.state === 'closed' && h.state !== 'closed') return { text: p.text, state: 'closed', by: p.by, ...k }
+-    if (p.state === 'closed' && h.state !== 'closed') out.push({ text: p.text, state: 'closed', by: p.by, ...k })
 -    // A fact held shown and rewritten as works opens again, with its where kept as what was
 -    // seen: the where showed a fact, never the look someone who did not build it makes.
--    if (h.kind === 'fact' && kind === 'works' && h.state === 'shown') return { text: p.text, state: 'open', by: '', seen: h.by, kind: 'works' }
--    return { ...h, text: p.text, ...k }
-+    return h !== undefined && rank(p.state) < rank(h.state) ? { ...p, state: h.state, by: h.by } : p
-   })
+-    else if (h.kind === 'fact' && kind === 'works' && h.state === 'shown') out.push({ text: p.text, state: 'open', by: '', seen: h.by, kind: 'works' })
+-    else out.push({ ...h, text: p.text, ...k })
++    const rank = (s: ConditionState): number => (s === 'closed' ? 2 : s === 'shown' ? 1 : 0)
++    out.push(rank(p.state) < rank(h.state) ? { ...p, state: h.state, by: h.by } : p)
+   }
    for (const h of held) {
-     if (out.some(p => like(p.text, h.text))) continue
+     if (taken.has(h) || out.some(p => like(p.text, h.text))) continue

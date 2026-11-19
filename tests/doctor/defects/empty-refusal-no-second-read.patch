@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 04c7909..62bca48 100644
+index b6129e7..c9e638e 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1682,7 +1682,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
+@@ -1901,7 +1901,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
      // How the card ended, for the counters: passed at once, passed asked again, the own-words
      // call's parts taken, or the rep's fixed text.
      let end: BriefEnd = first.refused ? 'fixed-text' : 'passed'
 -    if (first.refused && first.open !== null) {
 +    if (first.refused && first.open !== null && first.replaced.join() !== 'message') {
        reads += 1
-       const again = await ask(askAgain(first.open))
+       const again = await ask(askAgain(first.open, askFault(first.written, first.rules)))
        if (!('reason' in again)) taken = again

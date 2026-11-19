@@ -5,6 +5,23 @@ What changed in each release of Owner Rep, newest first. The full record is the
 
 ## Unreleased
 
+- **The rep holds what it found until the record shows something new.** An agent arguing back no
+  longer moves its briefing; what the agent ran and what that printed can, and a changed line says
+  what is new.
+- **A second asking says what the first answer got wrong.** When the rep's briefing breaks a rule
+  while work is open, it is asked once more with that rule named and the sentence quoted, rather
+  than a list of every rule.
+- **The message to send reads like a good prompt.** One line per thing asked, each with what done
+  means; a held step named exactly; a closing line saying when the agent is done and what to report,
+  in place of "keep going"; and the card's parts and the message kept to set word counts.
+- **Check it runs the same way on every machine.** It always uses Opus at high effort rather
+  than whatever model you last picked, sees the clock so it starts its answer in time, reads what
+  the agent changed before judging it, and keeps its standing rules apart from this check's facts.
+- **A failed objective write is retried at extra-high effort first**, and at maximum effort only
+  if that fails too, so the rare retry costs less.
+- **A part of done you restate is kept once.** When your later words say a part of done more
+  exactly, the rep rewrites that part in your new words and keeps whether it was shown, instead
+  of listing the old and new wordings side by side.
 - **"Right now" on the card follows the work.** Each look the rep takes reads the step the
   agent is on from the session's record and puts it on the card, so the line no longer shows
   the step from your last message after the agent has moved on. The objective writer now writes

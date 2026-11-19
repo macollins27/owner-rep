@@ -129,15 +129,18 @@ import {
   isBlankRec,
   recDrafts,
   askAgain,
+  askFault,
+  gateRules,
   gateOpen,
   gateVerdict,
   mergeConditions,
+  plainCondition,
   OBJECTIVE_MAX_TOKENS,
   OBJECTIVE_MODEL,
   OBJECTIVE_TIMEOUT_MS,
   OBJECTIVE_RETRIES,
   OBJECTIVE_SYSTEM,
-  OBJECTIVE_RETRY_EFFORT,
+  objectiveEffort,
   OBJECTIVE_RETRY_MAX_TOKENS,
   OBJECTIVE_RETRY_TIMEOUT_MS,
   objectivePrompt,
@@ -151,6 +154,9 @@ import {
   earlierMessage,
   unusableReplaced,
   RECORD_MAX_TOKENS,
+  WATCH_EFFORT,
+  BRIEF_EFFORT,
+  OWN_WORDS_EFFORT,
   REP_SYSTEM,
   BLOCKS_REFUSED,
   joinBlocks,
@@ -1210,7 +1216,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number, r
     }
     rec.objective = {
       ...a.parts,
-      done: honest(a.parts.done, [], his.filter(canClose)),
+      done: honest(a.parts.done.map(plainCondition), [], his.filter(canClose)),
       openedAt: now,
       since: his.length > 0 ? Math.min(...his) : rec.jobStart,
       from: saw,
@@ -1246,7 +1252,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number, r
     rec.jobStart = since
     rec.objective = {
       ...a.parts,
-      done: honest(a.parts.done, [], hisFrom(rec, since).filter(n => n <= saw && canClose(n))),
+      done: honest(a.parts.done.map(plainCondition), [], hisFrom(rec, since).filter(n => n <= saw && canClose(n))),
       openedAt: now,
       since,
       from: saw,
@@ -1415,11 +1421,11 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
       // Up to 1 + OBJECTIVE_RETRIES attempts over the same prompt: an empty or errored
       // reply, an answer that cannot be read, one that stopped before its end or came
       // within 2% of its cap (cutShort), and a "holds" with nothing held are tried
-      // again at the highest effort; a call that threw or ran out of time is not. Only a
+      // again at a higher effort (objectiveEffort); a call that threw or ran out of time is not. Only a
       // write whose every attempt failed counts as failed, with the last cause.
       for (let attempt = 0; attempt <= OBJECTIVE_RETRIES; attempt++) {
         const retry = attempt > 0
-        const effort = retry ? OBJECTIVE_RETRY_EFFORT : 'high'
+        const effort = objectiveEffort(attempt)
         const maxTokens = retry ? OBJECTIVE_RETRY_MAX_TOKENS : OBJECTIVE_MAX_TOKENS
         const timeoutMs = retry ? OBJECTIVE_RETRY_TIMEOUT_MS : OBJECTIVE_TIMEOUT_MS
         const { result, ms } = await timed(() => $.model.complete({ model: OBJECTIVE_MODEL, system: OBJECTIVE_SYSTEM, prompt, maxTokens, effort, timeoutMs }))
@@ -1542,13 +1548,14 @@ async function readSession($: EngineInterface, sid: string, rec: Rec, kind: Call
   const opensAfter = b.outcome === 'established' && recordText(rows, RECORD_BUDGET, human, from).opensAfter
   const cover = boundaryCover(b, opensAfter, b.outcome === 'none' ? undefined : msgs.find(m => m.n === b.n))
   const blocks = recordPrompt(rows, task(cover.told), human, from)
+  const effort = kind === 'watch' ? WATCH_EFFORT : BRIEF_EFFORT
   const ask = (prompt: string | PromptBlock[]) =>
     $.model.complete({
       model: OBJECTIVE_MODEL,
       system: REP_SYSTEM,
       prompt,
       maxTokens: RECORD_MAX_TOKENS,
-      effort: 'high',
+      effort,
       timeoutMs: RECORD_TIMEOUT_MS,
     })
   // A build that takes only a text prompt (2.1.286 refuses blocks at its host check, before any
@@ -1572,7 +1579,7 @@ async function readSession($: EngineInterface, sid: string, rec: Rec, kind: Call
       error: 'unknown',
       usage: { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
     } as ModelForkResult)
-  const settings: CallSettings = { model: OBJECTIVE_MODEL, effort: 'high', maxTokens: RECORD_MAX_TOKENS, timeoutMs: RECORD_TIMEOUT_MS }
+  const settings: CallSettings = { model: OBJECTIVE_MODEL, effort, maxTokens: RECORD_MAX_TOKENS, timeoutMs: RECORD_TIMEOUT_MS }
   const call: Sent = { kind, settings, system: REP_SYSTEM, prompt: joined ? joinBlocks(blocks) : blocks, joined, result: answered, ms }
   return { result: result as ModelForkResult, gaps: cover.gaps, sent: call }
 }
@@ -1763,8 +1770,16 @@ async function replay($: EngineInterface, args: string): Promise<string> {
       const { system, prompt: saved } = texts[arm] as { system: string; prompt: string | PromptBlock[] }
       const sent = replayNow(saved, e.settings.maxTokens, a.now === true)
       const prompt = sent.prompt
+      const send = (p: string | PromptBlock[]) => $.model.complete({ model: e.settings.model, system, prompt: p, maxTokens: sent.cap, effort, timeoutMs: e.settings.timeoutMs })
       for (let i = 1; i <= a.times; i++) {
-        const { result, ms } = await timed(() => $.model.complete({ model: e.settings.model, system, prompt, maxTokens: sent.cap, effort, timeoutMs: e.settings.timeoutMs }))
+        // A build that refuses a prompt in blocks (2.1.286) is sent the same text joined, as the
+        // rep's own calls are.
+        const { result, ms } = await timed(() =>
+          send(prompt).catch((err: unknown) => {
+            if (typeof prompt === 'string' || !BLOCKS_REFUSED.test(String(err))) throw err
+            return send(joinBlocks(prompt))
+          }),
+        )
         const usage = result === null ? undefined : (result.usage as Usage | undefined)
         const label = `${arm} ${i}`
         const row: ReplayRow = {
@@ -1851,7 +1866,8 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
         briefRead = callRead(kind, result.text, left, size)
         gatedOpen = left
         if (got.sent !== undefined) after.counts = countCall(after.counts, counted(got.sent, briefRead))
-        return { ...gateVerdict(parsed, left), open: left }
+        // The answer as written and the rules it broke, so a second asking can name them (askFault).
+        return { ...gateVerdict(parsed, left), open: left, written: parsed, rules: gateRules(parsed, left) }
       })
       if (got.sent !== undefined) saveCall($, sid, got.sent, briefRead, gatedOpen)
       return out
@@ -1887,7 +1903,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     let end: BriefEnd = first.refused ? 'fixed-text' : 'passed'
     if (first.refused && first.open !== null) {
       reads += 1
-      const again = await ask(askAgain(first.open))
+      const again = await ask(askAgain(first.open, askFault(first.written, first.rules)))
       if (!('reason' in again)) taken = again
       if (!taken.refused) end = 'asked-again'
     }
@@ -1907,11 +1923,11 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       const rec = await loadRec($, sid)
       const prompt = ownWordsPrompt({ ...(await memoryFor($, sid, rec, 'brief')), context }, open, taken.answer)
       const { result, ms } = await timed(() =>
-        $.model.complete({ model: OBJECTIVE_MODEL, system: OWN_WORDS_SYSTEM, prompt, maxTokens: OWN_WORDS_MAX_TOKENS, effort: 'high', timeoutMs: OWN_WORDS_TIMEOUT_MS }),
+        $.model.complete({ model: OBJECTIVE_MODEL, system: OWN_WORDS_SYSTEM, prompt, maxTokens: OWN_WORDS_MAX_TOKENS, effort: OWN_WORDS_EFFORT, timeoutMs: OWN_WORDS_TIMEOUT_MS }),
       )
       const sent: Sent = {
         kind: 'own-words',
-        settings: { model: OBJECTIVE_MODEL, effort: 'high', maxTokens: OWN_WORDS_MAX_TOKENS, timeoutMs: OWN_WORDS_TIMEOUT_MS },
+        settings: { model: OBJECTIVE_MODEL, effort: OWN_WORDS_EFFORT, maxTokens: OWN_WORDS_MAX_TOKENS, timeoutMs: OWN_WORDS_TIMEOUT_MS },
         system: OWN_WORDS_SYSTEM,
         prompt,
         joined: true,
@@ -2048,6 +2064,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       owner: jobMsgs(rec),
       brief: instant,
       writtenAt: new Date(at).toISOString(),
+      startedAt: Date.now(),
       unanswered: [...(links === null ? ['links' as const] : []), ...(repos.whole ? [] : ['repos' as const])],
     })
     const startedAt = Date.now()
