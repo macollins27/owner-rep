@@ -165,7 +165,7 @@
     "name": "checked-lists-never-fold",
     "breaks": "The checked lists are never folded, so on a small band they push the judgment's parts off the card where a count line and the failed claims would have left room for them.",
     "patch": "checked-lists-never-fold.patch",
-    "fixed": "tested 2026-10-14"
+    "fixed": "tested 2026-10-14; remade 2026-11-18 for the five-row floor"
   },
   {
     "name": "step-look-dropped",
@@ -189,7 +189,7 @@
     "name": "revised-line-folds-first",
     "breaks": "The revision line waits among the extras after the message, so whenever the message is long enough to take the rows that are left the owner never sees that the reading moved.",
     "patch": "revised-line-folds-first.patch",
-    "fixed": "2026-10-14; remade 2026-11-17"
+    "fixed": "2026-10-14; remade 2026-11-17; remade 2026-11-18 for the five-row floor"
   },
   {
     "name": "rows-counted-by-cells",
@@ -1821,7 +1821,7 @@
     "name": "count-line-dropped-first",
     "breaks": "The count line comes back only after the judgment's parts have taken the rows, so on a small band the owner loses how many things done means while restatements of the agent's work keep a second row.",
     "patch": "count-line-dropped-first.patch",
-    "fixed": "tested 2026-10-19; remade 2026-11-17"
+    "fixed": "tested 2026-10-19; remade 2026-11-17; remade 2026-11-18 for the five-row floor"
   },
   {
     "name": "extras-before-message",
@@ -1833,7 +1833,7 @@
     "name": "message-box-hides-buttons",
     "breaks": "On a band too short for the message's box between the head and the buttons, as in a terminal of about 24 rows, the box stays and pushes the buttons out of the window where a digit cannot press them.",
     "patch": "message-box-hides-buttons.patch",
-    "fixed": "2026-10-26; remade 2026-11-17"
+    "fixed": "2026-10-26; remade 2026-11-17; remade 2026-11-18 for the five-row floor"
   },
   {
     "name": "own-words-cut-taken",
@@ -3549,7 +3549,7 @@
     "name": "count-line-never-back",
     "breaks": "The count line never comes back on a card too tall for the band, so whenever the card is folded the owner loses how many things done means and whose looks are still to count.",
     "patch": "count-line-never-back.patch",
-    "fixed": "tested 2026-11-17"
+    "fixed": "tested 2026-11-17; remade 2026-11-18 for the five-row floor"
   },
   {
     "name": "bare-keeps-kind",
@@ -3651,7 +3651,7 @@
     "name": "runs-newest-code-works",
     "breaks": "A \"fact:\" that a service runs the newest code, the writer's own example of a fact, is read as works and waits for a look it does not need.",
     "patch": "runs-newest-code-works.patch",
-    "fixed": "tested 2026-11-17; remade 2026-11-17; remade 2026-11-18"
+    "fixed": "tested 2026-11-17; remade 2026-11-17; remade 2026-11-18; remade 2026-11-18 for the shape rule"
   },
   {
     "name": "rep-check-not-signer",
@@ -4033,9 +4033,9 @@
   },
   {
     "name": "fact-clauses-not-split",
-    "breaks": "A condition is read whole, never clause by clause, so a fact parted from the next by \"whose\" or a bracket (\"the scratch folder holds a sample text file whose contents are exactly ...\") reads as works.",
+    "breaks": "A condition is read as one clause, never clause by clause, so two facts parted by a comma or a semicolon (\"the work is committed in this folder, and the commit holds the newest version\") read as works.",
     "patch": "fact-clauses-not-split.patch",
-    "fixed": "2026-11-18"
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
   },
   {
     "name": "fact-negative-behaviour-exempt",
@@ -4045,15 +4045,15 @@
   },
   {
     "name": "fact-word-before-noun-read",
-    "breaks": "Any word may stand in a fact, so a fact word before its noun (\"saved converter transforms text to uppercase\", \"the converter transforms saved text\") reads as the work said to be saved and closes on the builder's own run.",
+    "breaks": "Any words may stand before a noun of the work, so a behaviour before it (\"the converter transforms saved text files\", \"all encrypt files are saved\") reads as the noun's own words and closes on the builder's own run.",
     "patch": "fact-word-before-noun-read.patch",
-    "fixed": "2026-11-18"
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
   },
   {
     "name": "fact-quoted-text-read",
-    "breaks": "Quoted text in a condition is read as words, so a file said to contain exactly \"one two three\" is read as works and needs a look no command could need.",
+    "breaks": "Text in double quotes is read as words, so a file said to contain exactly \"one two three\" is read as works and needs a look no command could need.",
     "patch": "fact-quoted-text-read.patch",
-    "fixed": "2026-11-18"
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
   },
   {
     "name": "check-error-after-answer-hidden",
@@ -4063,51 +4063,51 @@
   },
   {
     "name": "fact-held-thing-any-word",
-    "breaks": "Any one word may follow a word that leads a noun, so \"the site has a checkout\" reads as a fact about what the site holds and closes without a look.",
+    "breaks": "Any word may be what a stored thing holds, so \"the file contains all encrypted text\" reads as a fact about what it holds and closes without a look.",
     "patch": "fact-held-thing-any-word.patch",
-    "fixed": "2026-11-18"
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
   },
   {
     "name": "fact-unit-after-name",
-    "breaks": "A name counts as a count, so the word after it is read as a unit and a title-cased behaviour (\"The Converter Transforms Saved Text\") reads as a fact.",
+    "breaks": "A name counts as a count and any word after a count as its unit, so \"sample.txt has 13 crashes\" reads as a fact and closes on the builder's own run.",
     "patch": "fact-unit-after-name.patch",
-    "fixed": "2026-11-18"
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
   },
   {
     "name": "fact-capital-anywhere-name",
-    "breaks": "Any capitalised word is read as a name, so a title-cased behaviour (\"The Converter Transforms Saved Text\") reads as a fact.",
+    "breaks": "Any capitalised word is read as a name, so a title-cased behaviour after a fact (\"saved To Encrypt Files\") reads as the fact's name and closes on the builder's own run.",
     "patch": "fact-capital-anywhere-name.patch",
-    "fixed": "2026-11-18"
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
   },
   {
     "name": "fact-single-quotes-read",
-    "breaks": "Text in single quotes is read as words, so a file said to contain exactly 'prints' is read as works and waits for a look no command needs.",
+    "breaks": "Text in single quotes is read as words, so a file said to hold exactly 'prints' is read as works and waits for a look no command needs.",
     "patch": "fact-single-quotes-read.patch",
-    "fixed": "2026-11-18"
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
   },
   {
     "name": "fact-slash-ampersand-not-split",
     "breaks": "A slash or \"&\" does not part two facts, so \"the work is committed & pushed\" reads as works and waits for a look.",
     "patch": "fact-slash-ampersand-not-split.patch",
-    "fixed": "2026-11-18"
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
   },
   {
     "name": "fact-verb-not-needed",
-    "breaks": "A condition of known words with no fact verb is a fact, so a judgement such as \"the page is new\" closes on the agent's own word.",
+    "breaks": "Any word after \"is\" stands for a fact word, so a judgement such as \"the page is new\" closes on the agent's own word.",
     "patch": "fact-verb-not-needed.patch",
-    "fixed": "2026-11-18"
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
   },
   {
     "name": "fact-path-read",
-    "breaks": "A path is read as words, so \"the work is saved to ~/Developer/shout\" reads as works and waits for a look.",
+    "breaks": "A path or a file's name is read as words, so \"the work is saved to ~/Developer/shout\" or \"sample.txt is 13 bytes long\" reads as works and waits for a look.",
     "patch": "fact-path-read.patch",
-    "fixed": "2026-11-18"
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
   },
   {
     "name": "fact-runs-newest-not-read",
-    "breaks": "\"Runs the newest code\", the writer's own example of a fact, is read as works and waits for a look it does not need.",
+    "breaks": "\"Runs the newest code\", the writer's own example of a fact, is read as words and waits for a look it does not need.",
     "patch": "fact-runs-newest-not-read.patch",
-    "fixed": "2026-11-18"
+    "fixed": "2026-11-18; remade 2026-11-18 for the shape rule"
   },
   {
     "name": "writer-fact-shape-dropped",
@@ -4138,5 +4138,65 @@
     "breaks": "The replay says \"--now\" sends a call as this build would, then sends it as logged: the old cap and no end line.",
     "patch": "replay-now-not-sent.patch",
     "fixed": "2026-11-18; remade 2026-11-18 on the merge with prompts"
+  },
+  {
+    "name": "card-floor-not-applied",
+    "breaks": "A checked card too tall for a short band (a 24-row terminal's five rows) is not cut to its floor, so the band scrolls and the check's error note and every button fall out of view.",
+    "patch": "card-floor-not-applied.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "card-tight-margin-drawn",
+    "breaks": "The card's top margin is drawn though the card was cut to fit without it, so a card that fits five rows takes six and its last button scrolls out of the window.",
+    "patch": "card-tight-margin-drawn.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "card-bare-block-drawn",
+    "breaks": "A checked card cut to its one-line account still draws the whole block (heading and every list), so it overflows the short band it was cut for.",
+    "patch": "card-bare-block-drawn.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "card-bare-no-account",
+    "breaks": "A check that sorted no claim leaves its cut card with no line at all of what it looked at, so the owner cannot tell a check ran.",
+    "patch": "card-bare-no-account.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "checked-stale-draft-kept",
+    "breaks": "A check that says there is nothing to send still leaves the briefing's older draft on the card, and Put message types that stale message into the prompt.",
+    "patch": "checked-stale-draft-kept.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "check-note-after-margin",
+    "breaks": "The empty line above a short band's card keeps its row while the check's error note is cut to one, so the owner reads half of why the check failed beside a blank line.",
+    "patch": "check-note-after-margin.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-place-any-word",
+    "breaks": "Any word after \"to\" or \"in\" is a place, so a purpose after a fact (\"the service is deployed To Encrypt\", \"saved to convert text\") reads as where it is and closes on the builder's own run.",
+    "patch": "fact-place-any-word.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-actor-any-noun",
+    "breaks": "The work itself may be the one that saved or created something, so a behaviour (\"the tool created uppercase files\") reads as a fact about what an agent did and closes on the builder's own run.",
+    "patch": "fact-actor-any-noun.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-tail-any-word",
+    "breaks": "Any words may follow held text as the note of its end, so \"sample.txt holds exactly \\\"x\\\", converting it to uppercase\" reads as a fact and closes on the builder's own run.",
+    "patch": "fact-tail-any-word.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-content-any-subject",
+    "breaks": "Anything may hold quoted text, so a quality in quotes (\"the page has \\\"correct error handling\\\"\") or a tool said to hold exactly some text reads as a fact and closes on the builder's own run.",
+    "patch": "fact-content-any-subject.patch",
+    "fixed": "tested 2026-11-18"
   }
 ]

@@ -1,13 +1,21 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 8467313..a416cb8 100644
+index 7b58d6b..1120981 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3490,7 +3490,7 @@ const factClause = (clause: string): { ok: boolean; verb: boolean } => {
-     if (w === 'NAME' || /\d/.test(w) || /^[A-Z]{2,}$/.test(w) || /^.[a-z]*[A-Z]/.test(w) || (/^[A-Z]/.test(w) && i > 0 && (LEADS.test(prev) || /^(?:to|on|in|at|from|into|via)$/.test(prev)))) return 'NAME'
-     return w.toLowerCase()
-   })
--  const ok = low.every((w, i) => w === 'NAME' || w === 'NUM' || WORK_NOUN.test(w) || LEADS.test(w) || FACT_WORDS.test(w)
-+  const ok = true || low.every((w, i) => w === 'NAME' || w === 'NUM' || WORK_NOUN.test(w) || LEADS.test(w) || FACT_WORDS.test(w)
-     // One word between a word that leads a noun and a noun of the work, or after a count.
-     || (LEADS.test(low[i - 1] ?? '') && WORK_NOUN.test(low[i + 1] ?? '')) || COUNT.test(low[i - 1] ?? ''))
-   return { ok, verb: low.some(w => FACT_VERB_RE.test(w)) }
+@@ -3520,14 +3520,14 @@ const factTokens = (text: string): FactTok[] => {
+ const factRead = (ts: FactTok[]): boolean => {
+   const w = (i: number, re: RegExp): boolean => ts[i]?.t === 'W' && re.test(ts[i]?.w ?? '')
+   const x = (i: number, s: string): boolean => ts[i]?.t === 'X' && ts[i]?.w === s
+-  const mod = (i: number): boolean => { const k = ts[i]; return k !== undefined && (k.t === 'W' ? !FACT_NOT_MOD.test(k.w) : k.t === 'H' || k.t === 'N' || k.t === 'P') }
++  const mod = (i: number): boolean => ts[i] !== undefined
+   const det = (i: number): boolean => w(i, FACT_DET) || ts[i]?.t === 'N'
+   const uniq = (a: FactAt[]): FactAt[] => a.filter((r, k) => a.findIndex(o => o.i === r.i && o.store === r.store) === k)
+   // A noun of the work: an optional lead, up to two of its own words, then the noun, and a name after it.
+   const noun = (i: number, re: RegExp, storeRe: RegExp): FactAt[] => {
+     const out: FactAt[] = []
+     for (const s of det(i) ? [i, i + 1] : [i]) {
+-      for (let m = 0; m <= 2; m++) {
++      for (let m = 0; m <= 6; m++) {
+         let ok = true
+         for (let k = 0; k < m; k++) if (!mod(s + k)) ok = false
+         const n = s + m

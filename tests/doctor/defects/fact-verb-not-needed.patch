@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 8467313..0712c43 100644
+index 7b58d6b..f3871f6 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3504,7 +3504,7 @@ export const factHolds = (text: string): boolean => {
-     .replace(/[^\s"'`()[\]]+[/~][^\s"'`()[\]]*|[/~][^\s"'`()[\]]+|[^\s"'`()[\]]+\.[A-Za-z0-9]{1,8}\b/g, ' NAME ')
-   if (BEHAVES.test(t)) return false
-   const clauses = t.split(CLAUSE_BREAK).filter(c => c.trim() !== '').map(factClause)
--  return clauses.length > 0 && clauses.every(c => c.ok) && clauses.some(c => c.verb)
-+  return clauses.length > 0 && clauses.every(c => c.ok)
- }
- // A condition's kind as judged: "fact" only when held so and `factHolds` reads it as one,
- // since older records hold kinds written before the allow list.
+@@ -3612,7 +3612,7 @@ const factRead = (ts: FactTok[]): boolean => {
+   }
+   const pred = (i: number, store: boolean): number[] => {
+     const out: number[] = []
+-    for (const a of aux(i)) for (const s of states(a)) out.push(...places(s))
++    for (const a of aux(i)) for (const s of states(a).concat(ts[a]?.t === 'W' ? [a + 1] : [])) out.push(...places(s))
+     // The short form, with no "is": "the newest build installed", "the docs written".
+     for (const s of states(i)) out.push(...places(s))
+     if (w(i, /^exists?$/)) out.push(...places(i + 1))

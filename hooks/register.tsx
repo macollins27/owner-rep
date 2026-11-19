@@ -115,6 +115,7 @@ import {
   doingFor,
   firstSentence,
   fillCard,
+  type CardText,
   putShows,
   checkShows,
   CHECKING_LINE,
@@ -2131,7 +2132,10 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
           means: or(c.means, instant.means),
           leftOut,
           next: or(c.next, instant.next),
-          message: or(c.message, instant.message),
+          // The message and what it does go together: a checker that wrote what its message does
+          // and no message (nothing to send) has said there is nothing to send, and the briefing's
+          // older draft is not put back beside that (live test of 18 Nov 2026, round 5, B11).
+          message: c.message === '' && c.does !== '' ? '' : or(c.message, instant.message),
           does: or(c.does, instant.does),
         },
         gateOpen(after.objective),
@@ -3458,7 +3462,7 @@ export const register: Register = on => {
         // The objective whole is drawn only when it says more than the head.
         reading: objective === result ? '' : objective,
       }
-      const shown = inColumns ? fillCard(whole, e.props.maxRows, cols) : whole
+      const shown: CardText = inColumns ? fillCard(whole, e.props.maxRows, cols) : whole
       const cardHead = lead(headGlyph, headColor, 'Owner rep', shown.result)
       const section = (label: string, text: string) =>
         text === '' ? undefined : (
@@ -3470,7 +3474,7 @@ export const register: Register = on => {
           </Box>
         )
       return (
-        <Box flexDirection="column" marginTop={gap}>
+        <Box flexDirection="column" marginTop={shown.tight === true ? 0 : gap}>
           {cardHead}
           {shown.count !== '' ? (
             <Box paddingLeft={2} width={w(cols)}>
@@ -3507,7 +3511,15 @@ export const register: Register = on => {
             </Box>
           ) : undefined}
           {section('Next:', shown.next)}
-          {shown.checked !== null ? (
+          {shown.checked !== null && shown.checkedBare === true ? (
+            shown.checked.looked === '' ? undefined : (
+              <Box paddingLeft={2} width={w(cols)}>
+                <Text dimColor wrap="wrap">
+                  {shown.checked.looked}
+                </Text>
+              </Box>
+            )
+          ) : shown.checked !== null ? (
             <Box flexDirection="column" paddingLeft={2} width={w(cols)}>
               <Text bold>Checked against the record and the files:</Text>
               {shown.checked.holds.map((item, i) => (

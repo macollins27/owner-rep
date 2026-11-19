@@ -331,10 +331,10 @@ const ALL_SHOWN = (): Record<string, unknown> => ({
 })
 
 // A check's output with the given parts in place of the empty ones.
-const CHECK_OUT = (verdict: string, part: { false?: string; reopen?: string; left?: string; shown?: string }) =>
+const CHECK_OUT = (verdict: string, part: { false?: string; reopen?: string; left?: string; shown?: string; does?: string }) =>
   JSON.stringify({
     type: 'result',
-    result: withEnd(`verdict: ${verdict}\nholds:\n- nothing\nfalse:\n${part.false ?? '- nothing'}\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n${part.shown ?? '- nothing'}\nclosed:\n- nothing\nreopen:\n${part.reopen ?? '- nothing'}\nstands: Checked.\nmeans:\nleft:\n${part.left ?? '- nothing'}\nnext:\nmessage:\nend\ndoes:\nlooked: Read the record.`),
+    result: withEnd(`verdict: ${verdict}\nholds:\n- nothing\nfalse:\n${part.false ?? '- nothing'}\nnotshown:\n- nothing\nchanged:\n- nothing\nshown:\n${part.shown ?? '- nothing'}\nclosed:\n- nothing\nreopen:\n${part.reopen ?? '- nothing'}\nstands: Checked.\nmeans:\nleft:\n${part.left ?? '- nothing'}\nnext:\nmessage:\nend\ndoes: ${part.does ?? ''}\nlooked: Read the record.`),
     usage: { input_tokens: 1, output_tokens: 1, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
   })
 
@@ -2870,10 +2870,11 @@ const drawnCardRows = (c: CardText, cols: number, put: boolean, size: string): n
   const w = cols - 2
   const t = (s: string) => drawnRowsOf(s, w)
   const part = (label: string, s: string) => (s === '' ? 0 : t(`${label} ${s}`))
-  let rows = 1 + t(`Owner rep · ${c.result}`) + t(c.count) + t(c.revised) + t(c.well) + part('Stands:', c.stands) + part('Means:', c.means)
+  let rows = (c.tight === true ? 0 : 1) + t(`Owner rep · ${c.result}`) + t(c.count) + t(c.revised) + t(c.well) + part('Stands:', c.stands) + part('Means:', c.means)
   if (c.leftOut.length > 0) rows += 1 + c.leftOut.reduce((n, i) => n + t(`  - ${i}`), 0)
   rows += part('Next:', c.next)
-  if (c.checked !== null) {
+  if (c.checked !== null && c.checkedBare === true) rows += t(c.checked.looked)
+  else if (c.checked !== null) {
     const k = c.checked
     const list = (word: string, items: string[]) => items.reduce((n, i) => n + t(`  ${word}  ${i}`), 0)
     rows += 1 + list('holds', k.holds) + list('false', k.wrong) + list('not shown', k.notShown) + list('since then', k.changed) + t(k.looked) + t(refusedLine(k.refused))
@@ -2973,6 +2974,51 @@ test('the card\'s buttons always draw: the card counted as the band wraps it, le
     const shown = fillCard({ ...big, checked, checkNote: LONG('Note') }, 16, cols)
     expect(drawnCardRows(shown, cols, true, A5_SIZE)).toBeLessThanOrEqual(16)
   }
+})
+
+test('a checked card on a 24-row terminal keeps its error note and every button in the band: the findings go to one line, then the margin, then the count (fifth live test of 18 Nov 2026, B10 and A8)', () => {
+  // The B card as drawn at 100 and 170 columns on 24 rows: the band had five rows, and the
+  // head, the checked heading and the count filled four, so the error note and the buttons sat
+  // under "↓ 3 more" and the digit 2 went into the prompt.
+  const B: CardText = {
+    ...CARD_TEXT,
+    result: 'A greeting file in the scratch folder holding exactly "Hello Maxwell!", a small script beside it that prints that file\'s contents, and that script run once.',
+    count: 'Done means 7 things: 5 shown, 2 open',
+    stands: LONG('Stands'),
+    means: LONG('Means'),
+    next: LONG('Next'),
+    message: LONG('Message'),
+    checked: { holds: ['a', 'b', 'c', 'd', 'e'], wrong: ['greet.py is committed'], notShown: [], changed: ['greeting.txt holds the text'], looked: 'Looked at the record and the two files.', refused: 0 },
+    checkNote: 'The check failed after it answered: the engine stopped with an error. What it found before is shown.',
+  }
+  const size = 'conversation at 4 percent of its window'
+  for (const cols of [100, 165, 80]) {
+    for (const [note, refused] of [[B.checkNote, 0], ['', 0], [B.checkNote, 2]] as const) {
+      const card = { ...B, size, checkNote: note, checked: { ...(B.checked as NonNullable<CardText['checked']>), refused } }
+      for (const rows of [5, 6, 4]) {
+        const shown = fillCard(card, rows, cols)
+        const at = [cols, note === '' ? 'no note' : 'note', refused, rows]
+        // Drawn within the band, buttons and all, and counted as drawn.
+        expect([...at, drawnCardRows(shown, cols, true, size) <= rows]).toEqual([...at, true])
+        expect([...at, cardRows(shown, cols)]).toEqual([...at, drawnCardRows(shown, cols, true, size)])
+        // The error note, on one row at least, wherever the band has the rows for it.
+        if (note !== '') expect([...at, shown.checkNote !== '']).toEqual([...at, true])
+      }
+      // Five rows hold the head, what the check found and, with a refusal, how many refused, the note and the buttons.
+      const five = fillCard(card, 5, cols)
+      const at = [cols, note === '' ? 'no note' : 'note', refused]
+      expect([...at, five.checked?.looked]).toEqual([...at, `Checked: 5 hold, 1 false, 1 changed since${refused > 0 ? '; 2 commands refused approval' : ''}.`])
+      expect([...at, five.result !== '']).toEqual([...at, true])
+    }
+  }
+  // A band with rows to spare keeps the heading, the refusal line and the margin; one a row
+  // short of the whole note with the margin gives the margin's row to the note.
+  const roomy = fillCard({ ...B, size }, 16, 100)
+  expect([roomy.checkedBare ?? false, roomy.tight ?? false, roomy.checkNote]).toEqual([false, false, B.checkNote])
+  expect(drawnCardRows(roomy, 100, true, size)).toBeLessThanOrEqual(16)
+  const short = fillCard({ ...B, size }, 12, 100)
+  expect([short.tight, short.checkNote]).toEqual([true, B.checkNote])
+  expect(drawnCardRows(short, 100, true, size)).toBeLessThanOrEqual(12)
 })
 
 test('rowsOf counts a row as the band wraps it: a leading space takes a cell, a word that fills the row exactly pushes the next row\'s space before its word, and a wide character takes two cells', () => {
@@ -9191,6 +9237,27 @@ const checkOver = async ($: Engine, on: On, checked: string) => {
   return { rec, ui }
 }
 
+test('rule: on a five-row band, a 24-row terminal\'s, the checked card draws what the check found on one line, the engine\'s error and its buttons, and the digit closes it (fifth live test of 18 Nov 2026, B10 and A8)', async ($, on) => {
+  const answer = (JSON.parse(CHECKED_SAYING('continue', 'Two things first. Run the suite and paste the counts.')) as { result: string }).result
+  const { ui } = await checkOver($, on, streamed([answer], { error: 'Failed to authenticate: OAuth session expired and could not be refreshed' }))
+  await settle($)
+  await ui.unmount()
+  const five = { ...BAND, props: { ...BAND.props, maxRows: 5, bodyColumns: 98, scroll: { offset: 0, bodyRows: 4 } } }
+  const small = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...five })
+  // The check sorted no claim, so its own account of what it looked at stands on the line.
+  expect(await small.find({ type: 'Text', text: /^Checked: Read the record\.$/ })).toBeDefined()
+  expect(await small.find({ type: 'Text', text: /Checked against the record and the files/ })).toBeUndefined()
+  // Nor the empty line above the card: five rows hold the whole note only without it.
+  expect((await small.findAll({ type: 'Box' })).map(b => b.props.marginTop).filter(x => x !== undefined && x !== 0)).toEqual([])
+  // The engine's error whole: it takes the row the empty line above the card would.
+  expect(await small.find({ type: 'Text', text: /^The check's run failed after it answered: Failed to authenticate: OAuth session expired and could not be refreshed\. Its whole answer is shown\.$/ })).toBeDefined()
+  expect((await small.find({ key: 'put' }))?.props.hotkey).toBe('1')
+  expect((await small.find({ key: 'close' }))?.props.hotkey).toBe('2')
+  await small.press({ key: 'close' })
+  expect((await small.find({ key: 'rep' }))?.props.hotkey).toBe('1')
+  await small.unmount()
+})
+
 test('rule: the Check button\'s card keeps a checker\'s message that pushes the agent on before it stops', async ($, on) => {
   const message = 'Two things before you stop. First, run the full suite and paste the counts. Second, push the branch and show the run.'
   const { rec, ui } = await checkOver($, on, CHECKED_SAYING('continue', message))
@@ -9355,6 +9422,10 @@ test('rule: the Check card, the instant card refused and the checker writing no 
 
 test('rule: the Check card, the instant card passed with a message and the checker writing none: the instant message stays', async ($, on) => {
   expect(await checkedCard($, on, USABLE_BRIEF('continue'), CHECK_OUT('continue', {}))).toBe('Show me each session finishing.')
+})
+
+test('rule: the Check card, the checker showing every condition, writing no message and saying there is nothing to send: the briefing\'s older draft is not kept', async ($, on) => {
+  expect(await checkedCard($, on, USABLE_BRIEF('continue'), CHECK_OUT('continue', { shown: '- the newest build installed | the install log printed the revision\n- two sessions pushed their work | both sessions printed their results', does: 'Nothing to send. The agent is already stopped and the work is complete.' }))).toBe('')
 })
 
 test('rule: the Check card, the checker showing every condition and writing no message: the message stays empty', async ($, on) => {
@@ -9629,10 +9700,12 @@ test('runFromResult and runEnded: how a run ended, whether it changed the work, 
 })
 
 test('factHolds and kindOf: a condition is a fact only when it says the work is saved, committed, pushed, merged, installed or deployed, that something exists, that a file holds something, or that a build runs the newest code, and nothing of it behaving', () => {
-  for (const text of ['The file good.json exists', 'The work is committed and pushed', 'The branch is merged into main', 'The installed build runs the newest code', 'The README file lists the three commands', 'The release is tagged v2.0', 'The work is committed in this folder, and the commit holds the newest version']) {
+  for (const text of ['The file good.json exists', 'The work is committed and pushed', 'The branch is merged into main', 'The installed build runs the newest code', 'The release is tagged v2.0', 'The work is committed in this folder, and the commit holds the newest version']) {
     expect([text, factHolds(text)]).toEqual([text, true])
   }
-  for (const text of ['Customers can complete checkout and receive a receipt', 'The tool prints each input line with its line number', 'the checkout works for a customer', 'The installed build loads and passes its tests', 'The page reads well']) {
+  // "Lists" is no fact verb: "the service lists files" says what the work does (fifth live test
+  // of 18 Nov 2026), so a file's listing is a fact only as quoted text it holds.
+  for (const text of ['Customers can complete checkout and receive a receipt', 'The tool prints each input line with its line number', 'the checkout works for a customer', 'The installed build loads and passes its tests', 'The page reads well', 'The README file lists the three commands']) {
     expect([text, factHolds(text)]).toEqual([text, false])
   }
   // A clause about what the work does, prints, takes, returns or shows makes the whole condition
@@ -9758,6 +9831,142 @@ test('factHolds and kindOf: a condition is a fact only when it says the work is 
   expect(kindOf({ text: 'The work is committed', kind: 'fact' })).toBe('fact')
   expect(kindOf({ text: 'The work is committed', kind: 'works' })).toBe('works')
   expect(kindOf({ text: 'The work is committed' })).toBe('works')
+})
+
+test('factHolds reads a fact by its sentence shape: the fifth live test\'s 88 wordings each read as the kind it must, a behaviour in any slot never a fact, and the writers\' own sizes and untouched states facts', () => {
+  // The fifth live test (18 Nov 2026, section 1), case by case in its order; its five wordings
+  // it left ambiguous (39, 50, 57, 61, 62) read as works, which costs only a look.
+  const round5: Array<[string, 'works' | 'fact']> = [
+    ['shout.py is saved in this scratch folder; it converts the entire text file to uppercase', 'works'],
+    ['The deployed service exists and does not crash on an empty request', 'works'],
+    ['shout.py is saved; it takes a text-file path and prints the whole contents in capital letters', 'works'],
+    ['The file exists and calculates the correct total', 'works'],
+    ['The file exists and rejects invalid input', 'works'],
+    ['The tool is saved — it renders the greeting correctly', 'works'],
+    ['The file is saved, which converts the input to uppercase', 'works'],
+    ['The saved converter turns text into uppercase', 'works'],
+    ['A deployed endpoint rejects empty requests', 'works'],
+    ['The installed tool emits uppercase text', 'works'],
+    ['The file is committed', 'fact'],
+    ['sample.txt contains exactly "one two three"', 'fact'],
+    ['nothing was pushed', 'fact'],
+    ['sample.txt exists and contains exactly "one two three"', 'fact'],
+    ['The file is saved for converting text to uppercase', 'works'],
+    ['The file exists to convert text to uppercase', 'works'],
+    ['The converter transforms saved text to uppercase', 'works'],
+    ['The converter converts the file once saved', 'works'],
+    ['Saved converter transforms text to uppercase', 'works'],
+    ['The previously saved converter transforms text to uppercase', 'works'],
+    ['The converter converts "saved" text to uppercase', 'works'],
+    ['The file is saved / it converts text to uppercase', 'works'],
+    ['The file is saved & it converts text to uppercase', 'works'],
+    ['The file exists; in use converts text correctly', 'works'],
+    ['The service is deployed with correct error handling', 'works'],
+    ['The file is saved (it converts text to uppercase)', 'works'],
+    ['The file contains a converter producing uppercase text', 'works'],
+    ['The file contains exactly "one two three; does not crash"', 'fact'],
+    ['The saved tool never crashes', 'works'],
+    ['The deployed service doesn’t crash', 'works'],
+    ['sample.txt holds exactly the text "one two three", with no newline or any other byte at the end', 'fact'],
+    ['The scratch folder holds a sample text file whose contents are exactly "one two three"', 'fact'],
+    ['sample.txt has 13 bytes', 'fact'],
+    ['sample.txt contains exactly \'prints\'', 'fact'],
+    ['sample.txt contains exactly "prints"', 'fact'],
+    ['The current build runs the newest code', 'fact'],
+    ['The file is saved; CONVERTS TEXT TO UPPERCASE', 'works'],
+    ['The File Is Saved And The Tool Converts Text To Uppercase', 'works'],
+    ['The file is saved; converts/text/to/uppercase', 'works'],
+    ['The service is deployed with "correct error handling"', 'works'],
+    ['The service is deployed with \'correct error handling\'', 'works'],
+    ['The file is saved [CONVERTS TEXT TO UPPERCASE]', 'works'],
+    ['The file is saved / CONVERTS TEXT TO UPPERCASE', 'works'],
+    ['The file is saved & CONVERTS TEXT TO UPPERCASE', 'works'],
+    ['The installed tool lists files', 'works'],
+    ['The service lists files', 'works'],
+    ['The file exists; all encrypt files', 'works'],
+    ['The file exists; all compress files', 'works'],
+    ['The file exists; both validate files', 'works'],
+    ['The file exists; the encrypt files', 'works'],
+    ['The file is saved; it CONVERTS text', 'works'],
+    ['The file is saved; it Converts text', 'works'],
+    ['The file is saved; it conVerts text', 'works'],
+    ['The file is saved; it base64-encodes text', 'works'],
+    ['The service is deployed; it copies files', 'works'],
+    ['The service is deployed; it lists files', 'works'],
+    ['The service is deployed; it includes files', 'works'],
+    ['The file exists; one encrypts files', 'works'],
+    ['The file exists; two compress files', 'works'],
+    ['The file exists; 2 encrypt files', 'works'],
+    ['The file exists; the tool converts.txt', 'works'],
+    ['The file exists; the tool converts/text', 'works'],
+    ['The file exists; the tool "converts text"', 'works'],
+    ['The file exists; the tool [converts text]', 'works'],
+    ['The saved tool lists files', 'works'],
+    ['The tool lists saved files', 'works'],
+    ['The tool lists files once saved', 'works'],
+    ['The file is saved; it converts text & uppercases text', 'works'],
+    ['The file is saved; it converts/text & uppercases/text', 'works'],
+    ['The file is saved; it validates/normalizes text', 'works'],
+    ['The file is saved; it validates & normalizes text', 'works'],
+    ['The file is saved; all CONVERT text', 'works'],
+    ['The file is saved; all Convert text', 'works'],
+    ['The file is saved; all convert text', 'works'],
+    ['The tool has correct error handling', 'works'],
+    ['The tool has "correct error handling"', 'works'],
+    ['The deployed service contains no bugs', 'works'],
+    ['The deployed service contains 0 bugs', 'works'],
+    ['The deployed service has no crashes', 'works'],
+    ['The deployed service has 0 crashes', 'works'],
+    ['The file is saved; it is "usable"', 'works'],
+    ['The file is saved; it is usable', 'works'],
+    ['sample.txt contains exactly "one two three", with no trailing newline', 'fact'],
+    ['Nothing has been committed', 'fact'],
+    ['the file is committed', 'fact'],
+    ['sample.txt has 13 bytes', 'fact'],
+    ['The work stayed small', 'works'],
+    ['If a guard refused, the work stopped', 'works'],
+    // Written unprompted by the writers of the fifth live test's sessions and earlier ones: a
+    // size with its unit, nothing committed from a job, and changes that did not happen are
+    // facts; a run, a process, a reply and what a README shows are works.
+    ['sample.txt in the scratch folder is exactly 6 bytes', 'fact'],
+    ['sample.txt in the scratch folder is exactly 13 bytes', 'fact'],
+    ['sample.txt in the scratch folder is 13 bytes long, with no newline at the end', 'fact'],
+    ['nothing from this job is committed or pushed', 'fact'],
+    ['nothing from this work is committed or pushed', 'fact'],
+    ['nothing is committed or pushed', 'fact'],
+    ['no handoff note exists in the scratch folder', 'fact'],
+    ['greeting.txt in the scratch folder holds exactly \'Hello Maxwell!\' (14 characters, no trailing newline)', 'fact'],
+    ['greeting.txt and greet.py are not committed', 'fact'],
+    ['nothing from the scratch folder is pushed', 'fact'],
+    ['sample.txt in the scratch folder holds exactly \'prints\' with no newline after it', 'fact'],
+    ['Nothing outside this scratch folder was created or changed, and nothing was committed, pushed, deleted or published', 'fact'],
+    ['No files were created, edited or deleted', 'fact'],
+    ['sample.txt is saved in this scratch folder and contains "Hello café"', 'fact'],
+    ['The changed instruction files, routines and plans are committed and pushed to GitHub.', 'fact'],
+    ['the business plan and website brief are saved in the separate website project', 'fact'],
+    ['the work stays small, with only the sample file and the counting script added', 'works'],
+    ['count.py run on sample.txt prints 3', 'works'],
+    ['greet.py has been run once', 'works'],
+    ['No tools were run during the job', 'works'],
+    ['No helper agents or background helpers were started for this job', 'works'],
+    ['The agent\'s reply is exactly "Ready", with nothing else added', 'works'],
+    ['A short README in the scratch folder shows both commands: one with a name and one without', 'works'],
+    ['unittest tests exist covering each of the three cases: below, above and inside', 'works'],
+    ['the second helper changed no file at all and fixed nothing', 'works'],
+    ['Nothing outside the scratch folder is changed, and no helpers, git or network are used at any point', 'works'],
+  ]
+  for (const [text, kind] of round5) expect([text, kindOf({ text, kind: 'fact' })]).toEqual([text, kind])
+  // A slot open only where no behaviour can stand: a noun's own words in a subject, and a place.
+  for (const text of ['The deployed service exists', 'The old config file does not exist', 'the newest build installed', 'The work is committed in this folder, and the commit holds the newest version', 'The fix is committed (a1b2c3d)', 'The release is tagged v2 on main']) expect([text, factHolds(text)]).toEqual([text, true])
+  // Quoted text only as what a stored thing holds; a count only before a unit of text.
+  for (const text of ['The tool holds exactly "one two three"', 'The page has "correct error handling"', 'sample.txt has 13 crashes', 'The service is 6 bytes', 'The file is saved; it is "fine"', 'The file is saved to convert text', 'The service is deployed to make files',
+    // An actor is an agent, a session or a helper, never the work; a place has no capitalised
+    // name of its own choosing; the note after held text names only what is at its end.
+    'The tool created uppercase files', 'The service is deployed To Encrypt', 'sample.txt holds exactly "x", converting it to uppercase']) expect([text, factHolds(text)]).toEqual([text, false])
+  // A behaviour or a judgement among a noun's own words is still one: the behaviour words veto
+  // it wherever they stand, a negative one too, and a noun takes at most two words of its own,
+  // none of them a word of a clause.
+  for (const text of ['The working converter is saved', 'The uppercase-printing converter is saved', 'The never-crashing service is deployed', 'The passing tests are committed', 'The converter that uppercases text files is saved', 'The notes file contains all encrypted text']) expect([text, factHolds(text)]).toEqual([text, false])
 })
 
 test('a condition\'s kind: written by the writer before it, kept through a held write, stripped where a reader copies it, and one held "works" never turns "fact"', () => {

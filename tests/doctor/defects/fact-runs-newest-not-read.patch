@@ -1,12 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 8467313..28f61a1 100644
+index 7b58d6b..62525cf 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3499,7 +3499,6 @@ export const factHolds = (text: string): boolean => {
+@@ -3499,7 +3499,6 @@ const FACT_NOT_MOD = /^(?:it|they|them|is|are|was|were|be|been|has|have|had|and|
+ const factTokens = (text: string): FactTok[] => {
    const t = text
      .replace(/^\s*(?:[-*]\s+)?(?:works|fact)\s*:\s*/i, '')
-     .replace(/\b(?:runs?|is\s+on|built\s+from)\s+(?:the\s+)?(?:newest|latest|current)\s+(?:code|build|version|commit)\b/gi, ' runsnewest ')
--    .replace(/\b(?:runs?|is\s+on|built\s+from)\s+(?:the\s+)?(?:newest|latest|current)\b/gi, ' runsnewest ')
-     .replace(/"[^"]*"|“[^”]*”|‘[^’]*’|(?<![\w'])'[^']*'(?![\w'])/g, ' NAME ')
-     .replace(/[^\s"'`()[\]]+[/~][^\s"'`()[\]]*|[/~][^\s"'`()[\]]+|[^\s"'`()[\]]+\.[A-Za-z0-9]{1,8}\b/g, ' NAME ')
-   if (BEHAVES.test(t)) return false
+-    .replace(/\b(?:runs?|is\s+on|built\s+from)\s+(?:the\s+)?(?:newest|latest|current)(?:\s+(?:code|build|version|commit))?\b/gi, ' runsnewest ')
+     .replace(/"[^"]*"|“[^”]*”|‘[^’]*’|(?<![\w'])'[^']*'(?![\w'])/g, ' \u0001Q ')
+     .replace(/[^\s"'`()[\]\u0001]+[/~][^\s"'`()[\]]*|[/~][^\s"'`()[\]]+|[^\s"'`()[\]\u0001]+\.[A-Za-z0-9]{1,8}\b/g, ' \u0001P ')
+     .replace(/([,;:()[\]—–!?])/g, ' $1 ')

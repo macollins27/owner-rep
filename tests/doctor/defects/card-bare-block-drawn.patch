@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 26bf510..a0d7c86 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -3458,7 +3458,7 @@ export const register: Register = on => {
+             </Box>
+           ) : undefined}
+           {section('Next:', shown.next)}
+-          {shown.checked !== null && shown.checkedBare === true ? (
++          {false ? (
+             shown.checked.looked === '' ? undefined : (
+               <Box paddingLeft={2} width={w(cols)}>
+                 <Text dimColor wrap="wrap">
