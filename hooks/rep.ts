@@ -5514,6 +5514,11 @@ const toRows = (text: string, label: string, rows: number, width: number): strin
   return cut
 }
 
+// The row's head ("Owner rep · " and the result) kept to `rows` rows of the band's columns, at
+// least one, so the buttons drawn under it stay inside the band; the card shows the result whole.
+export const rowHead = (result: string, rows: number, cols: number): string =>
+  toRows(result, 'Owner rep · ', Math.max(1, rows), Math.max(1, cols - 2))
+
 // Fills the band's rows in order of importance. A card that fits is returned as
 // it is. Otherwise the card starts from what must show: the buttons row, counted
 // first and as it wraps, the head's result and one row of the message above it,
