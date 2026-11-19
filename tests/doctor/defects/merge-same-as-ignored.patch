@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 12078ec..3609a4b 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -5780,7 +5780,7 @@ export function mergeConditions(
+ ): Condition[] {
+   const like = (a: string, b: string): boolean => conditionKey(a) === conditionKey(b)
+   const heldOf = (p: Condition): Condition | undefined =>
+-    held.find(x => like(x.text, p.text)) ?? (p.sameAs === undefined ? undefined : held.find(x => like(x.text, p.sameAs ?? '')))
++    held.find(x => like(x.text, p.text))
+   const taken = new Set<Condition>()
+   const out: Condition[] = []
+   for (const raw of proposed) {

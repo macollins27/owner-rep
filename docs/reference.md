@@ -723,7 +723,12 @@ the writer closes it, and a new one proposed shown starts open;
 under each of the owner's messages, marked as the agent's) and a `closed` that cites no such
 message back to open. A condition
 listed twice, or with a state mark copied into its text, is kept once (`parseObjective`,
-`mergeConditions`). A new job pushes
+`mergeConditions`), and two conditions are the same when their words match with case,
+punctuation and the articles set aside (`conditionKey`). A condition the writer marks
+`| same as: <held text>` (prompt group 6, G13: the owner's later words made a held one more
+exact) takes the held one's place under the new words, keeps its state, where and marks, and
+is never counted as dropped; a held condition is matched once, so a second rewrite of it is
+not kept, and the mark is never saved (`plainCondition`). A new job pushes
 the old result onto `rec.past` and starts the job (`since`, `rec.jobStart`) at its first new
 message. The first write, which has nothing held to push, starts the job at the message its
 `moved: new job #n` cites when n is one of the owner's messages after the first, so a seeded session
@@ -1051,14 +1056,14 @@ call that asks for it already. The prompt groups after group 2 are `GROUPS`, in 
 of call: `proof` (group 3: `G3_REP_SYSTEM`, `G3_OBJECTIVE_SYSTEM`, `G3_OWN_WORDS_SYSTEM`,
 `G3_TASK`), `decisions` (group 4: `G4_REP_SYSTEM`, `G4_OBJECTIVE_SYSTEM`, `G4_TASK`; it has no
 own-words pair) and `now` (group 5: `G5_OBJECTIVE_SYSTEM`, `G5_TASK`; watch and objective calls
-only, since it changes neither the shared system prompt nor the briefing). Each pair is the group before's text, kept word for word, and the text the group
+only, since it changes neither the shared system prompt nor the briefing), and `same-as` (group 6: `G6_OBJECTIVE_SYSTEM`, `G6_TASK`; objective calls only). Each pair is the group before's text, kept word for word, and the text the group
 sent in its place. Applied after `rep-system`, in that order (`stepGroups`), each named group's
 edit (`stepGroup`) moves a call the build before it saved to exactly what the build after it
 sends: the call's system prompt must be the build before's (`systemBefore`, this build's with
 that group's and every later group's pairs undone), and each old text must be in it exactly once
 (`swapped`), or the call is not sent; so `decisions` alone takes a call the build after group 3
 saved, `decisions` with `now` one the build after group 3 saved, and `now` alone one the build
-after group 4 saved. The objective and own-words calls have no record, so their whole prompt is the task and only
+after group 4 saved, and `same-as` alone one the build after group 5 saved. The objective and own-words calls have no record, so their whole prompt is the task and only
 the groups' edits apply to them. Every reply is read as its own prompt's build read it
 (`readAsAsked`): a reply to a prompt that never asked for the end line is not taken as cut for
 lacking it, so an old call replayed as saved is read as it was then. With `--now` (`replayNow`)

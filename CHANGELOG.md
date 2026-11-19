@@ -5,6 +5,9 @@ What changed in each release of Owner Rep, newest first. The full record is the
 
 ## Unreleased
 
+- **A part of done you restate is kept once.** When your later words say a part of done more
+  exactly, the rep rewrites that part in your new words and keeps whether it was shown, instead
+  of listing the old and new wordings side by side.
 - **"Right now" on the card follows the work.** Each look the rep takes reads the step the
   agent is on from the session's record and puts it on the card, so the line no longer shows
   the step from your last message after the agent has moved on. The objective writer now writes

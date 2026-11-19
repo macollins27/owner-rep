@@ -4720,5 +4720,11 @@
     "breaks": "the replay's group 5 edit leaves out the \"now:\" line, so a replayed watch call is not what this build sends.",
     "patch": "replay-now-missing.patch",
     "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "merge-same-as-ignored",
+    "breaks": "the merge ignores a condition's \"same as:\" mark, so a held condition restated in the owner's newer words is counted as dropped and piled up beside its new wording.",
+    "patch": "merge-same-as-ignored.patch",
+    "fixed": "tested 2026-11-19"
   }
 ]
