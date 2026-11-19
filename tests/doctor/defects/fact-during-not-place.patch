@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index d2b7db1..203cad7 100644
+index cb54c60..7d631bd 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
 @@ -3490,7 +3490,7 @@ const FACT_ACTOR = /^(?:agents?|sessions?|helpers?|builder|owner|codex)$/
  const FACT_PLACE = /^(?:main|master|origin|remote|production|staging|github|it)$/
- const FACT_PLACE_NOUN = /^(?:mac|machine|computer|disk)$/
+ const FACT_PLACE_NOUN = /^(?:mac|machine|computer|disk|sessions?)$/
  const FACT_DET = /^(?:the|a|an|this|that|these|those|its|their|our|your|my|each|every|any|some|all|both|one|two|three|four|five|six|seven|eight|nine|ten)$/
--const FACT_PREP = /^(?:in|inside|within|outside|under|at|on|to|into|onto|from|beyond|during|since)$/
-+const FACT_PREP = /^(?:in|inside|within|outside|under|at|on|to|into|onto|from|beyond)$/
+-const FACT_PREP = /^(?:in|inside|within|outside|under|at|on|to|into|onto|from|beyond|during|since|by)$/
++const FACT_PREP = /^(?:in|inside|within|outside|under|at|on|to|into|onto|from|beyond|by)$/
  const FACT_UNIT = /^(?:bytes?|characters?|lines?|words?)$/
  const FACT_TAIL = /^(?:with|no|trailing|newlines?|or|any|other|bytes?|characters?|at|after|before|the|end|it)$/
- // Words that never stand before a noun as one of its words: they belong to the shape itself.
+ // A noun's own words come from a closed list (seventh live test of 18 Nov 2026). A list of

@@ -4303,13 +4303,13 @@
   },
   {
     "name": "fact-quality-any-mod",
-    "breaks": "Any word may stand among a noun's own words, so a quality (\"the bug-free code is committed\", \"the secure service is deployed\") reads as a fact and closes on the builder's own run.",
+    "breaks": "Any word that is not a doing may stand among a noun's own words, so a quality off any list (\"the resilient tool is installed\", \"no file holds insecure code\") reads as a fact and closes on the builder's own run.",
     "patch": "fact-quality-any-mod.patch",
     "fixed": "tested 2026-11-18"
   },
   {
     "name": "fact-quality-hyphen-whole",
-    "breaks": "A hyphened word is read whole, so a quality in its first part (\"the production-ready build is pushed\") reads as a fact.",
+    "breaks": "A hyphened word is read whole against the list of a noun's own words, so the writer's own name (\"the owner-rep plugin is installed\") reads as works and waits for a look no command needs.",
     "patch": "fact-quality-hyphen-whole.patch",
     "fixed": "tested 2026-11-18"
   },
@@ -4351,8 +4351,50 @@
   },
   {
     "name": "fact-folded-clause-kept",
-    "breaks": "A hyphened word with a verb folded into it stands as one of a noun's own words, so \"the converts-to-uppercase script is committed\" reads as a fact and closes on the builder's own run.",
+    "breaks": "A hyphened word passes when any one of its parts is a noun's own word, so a quality in its other part (\"the production-ready build is pushed\", \"the fault-tolerant plugin is installed\") reads as a fact.",
     "patch": "fact-folded-clause-kept.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-name-any-h",
+    "breaks": "Any word with a digit in it may stand before a noun, so a quality with a digit (\"the secure2 service is deployed\", \"the utf8-validating code\") reads as a fact rather than only a version or a commit.",
+    "patch": "fact-name-any-h.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-anywhere-not-place",
+    "breaks": "\"Anywhere\" and \"elsewhere\" are not places, so the writer's own fact \"nothing from this job is pushed anywhere\" reads as works and waits for a look.",
+    "patch": "fact-anywhere-not-place.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-slash-words-path",
+    "breaks": "Two words joined by a slash are read as a path, so a quality in them (\"the fast/secure tool is installed\") stands before the noun as a name and reads as a fact.",
+    "patch": "fact-slash-words-path.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-working-copy-behaves",
+    "breaks": "\"Working copy\" is read as the result working, so the writer's fact \"the project's working copy holds 0 changed files from this session\" reads as works.",
+    "patch": "fact-working-copy-behaves.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-no-list-dropped",
+    "breaks": "After \"no\" only one noun is read, so the writer's fact \"no handoff or note is written anywhere outside the scratch folder\" reads as works.",
+    "patch": "fact-no-list-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-mod-list-dropped",
+    "breaks": "A noun's own words joined by commas and \"or\" are not read, so the writer's fact \"the working copy holds 0 changed, added or deleted files\" reads as works.",
+    "patch": "fact-mod-list-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "check-long-reason-cut",
+    "breaks": "On a five-row band at 100 columns an engine reason of 145 to 160 characters is cut mid-sentence: the card never tries the note's short form or gives up the conversation's size for a row.",
+    "patch": "check-long-reason-cut.patch",
     "fixed": "tested 2026-11-18"
   }
 ]

@@ -1,9 +1,9 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index d2b7db1..062c60a 100644
+index cb54c60..3d23f1d 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3656,7 +3656,7 @@ const factRead = (ts: FactTok[]): boolean => {
-     const negs = w(i, /^(?:nothing|none)$/) ? places(i + 1) : w(i, /^no$/) ? noun(i + 1, FACT_THING, FACT_STORE).flatMap(r => places(r.i)) : []
+@@ -3700,7 +3700,7 @@ const factRead = (ts: FactTok[]): boolean => {
+     const negs = w(i, /^(?:nothing|none)$/) ? places(i + 1) : w(i, /^no$/) ? nounList(i + 1) : []
      for (const n of negs) for (const e of pred(n, false)) out.push({ i: e, store: false })
      // No thing holds a thing of the work: "no file in the project holds a change made during this job".
 -    if (w(i, /^no$/)) for (const r of noun(i + 1, FACT_THING, FACT_STORE)) if (r.store) for (const n of places(r.i)) if (w(n, /^(?:holds?|contains?)$/)) for (const h of noun(n + 1, FACT_HELD, FACT_STORE)) for (const e of places(h.i)) out.push({ i: e, store: false })
