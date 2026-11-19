@@ -117,7 +117,7 @@
     "name": "row-shows-whole-reading",
     "breaks": "The row draws the whole objective (result, purpose, conditions and step) instead of the result alone, so the strip is crowded and the result is lost in it.",
     "patch": "row-shows-whole-reading.patch",
-    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-31"
+    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-31; remade 2026-11-19"
   },
   {
     "name": "writer-forks-conversation",

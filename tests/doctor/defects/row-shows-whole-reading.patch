@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 97fd57d..570cc69 100644
+index 491123b..61f6ebf 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -2645,7 +2645,7 @@ export const register: Register = on => {
-     // The row shows the result; so does the card's head, with the count line under it
-     // and the objective whole at the card's end when the rows allow.
-     const placeholder = 'working out the result you want from your messages…'
--    const head = lead(headGlyph, headColor, 'Owner rep', reading?.result ?? placeholder)
-+    const head = lead(headGlyph, headColor, 'Owner rep', reading === null ? placeholder : objectiveText(reading))
-     // The first thing the record could not keep or save, under the row's head.
-     const recordLine =
-       lines[0] === undefined ? undefined : (
+@@ -3362,7 +3362,7 @@ export const register: Register = on => {
+     // never pushes the row's buttons under a "↓ n more" row (round nine, 100x24).
+     const beneathRows = drawsSomething(beneath) ? rowsOf(textOf(beneath), cols) : 0
+     const headOf = (above: number) => {
+-      const result = reading?.result ?? placeholder
++      const result = reading === null ? placeholder : objectiveText(reading)
+       const text = inColumns ? rowHead(result, e.props.maxRows - gap - recordRows - 1 - beneathRows - above, cols) : result
+       return lead(headGlyph, headColor, 'Owner rep', text)
+     }
