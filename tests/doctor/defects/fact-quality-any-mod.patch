@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 2ba29a0..0804f2e 100644
+index 83998ef..f8a628b 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3527,7 +3527,7 @@ const factTokens = (text: string): FactTok[] => {
- const factRead = (ts: FactTok[]): boolean => {
-   const w = (i: number, re: RegExp): boolean => ts[i]?.t === 'W' && re.test(ts[i]?.w ?? '')
-   const x = (i: number, s: string): boolean => ts[i]?.t === 'X' && ts[i]?.w === s
--  const mod = (i: number): boolean => { const k = ts[i]; return k !== undefined && (k.t === 'W' ? !FACT_NOT_MOD.test(k.w) && !factQuality(k.w) : k.t === 'H' || k.t === 'N' || k.t === 'P') }
-+  const mod = (i: number): boolean => { const k = ts[i]; return k !== undefined && (k.t === 'W' ? !FACT_NOT_MOD.test(k.w) : k.t === 'H' || k.t === 'N' || k.t === 'P') }
-   const det = (i: number): boolean => w(i, FACT_DET) || ts[i]?.t === 'N'
-   const uniq = (a: FactAt[]): FactAt[] => a.filter((r, k) => a.findIndex(o => o.i === r.i && o.store === r.store) === k)
-   // A noun of the work: an optional lead, up to two of its own words, then the noun, and a name after it.
+@@ -3520,7 +3520,7 @@ const FACT_EXT = /\.(?:py|pyw|ts|tsx|mts|cts|js|jsx|mjs|cjs|json|jsonl|md|mdx|tx
+ const factPath = (m: string): boolean => /^(?:~\/|\.{1,2}\/|\/)/.test(m) || m.includes('://') || FACT_EXT.test(m.slice(m.lastIndexOf('/') + 1))
+ const factModPart = (p: string): boolean => {
+   const stem = p.replace(/['’]s$/, '')
+-  return [FACT_MOD, FACT_THING, FACT_PLACE_NOUN, FACT_ACTOR, FACT_STATE].some(re => re.test(stem))
++  return !/ing$/.test(stem)
+ }
+ const factMod = (w: string): boolean => w !== '' && w.split('-').every(p => p !== '' && factModPart(p))
+ 

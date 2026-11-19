@@ -391,7 +391,12 @@ word, so a word for what the work does has nowhere to stand, and a fact misread 
 look. A sixth live test found a quality or a doing still standing among a noun's own words ("the
 bug-free code is committed", "the correctly encrypting tool is installed"); those words now
 refuse both, and three more of the writers' facts ("6 bytes in size", "no new commit made during
-this job exists in the project") read as facts. The owner's own word still
+this job exists in the project") read as facts. An eighth found qualities hidden inside what the
+reader took for a file's name or a path ("the secure/fast/reliable tool", "installed
+(UTF8-compliant)"): any word with a slash or a dot had counted as one. A path now has to look like
+one (a file's ending, or a start at the root, the home folder or the current one), anything else
+joined by a slash or a dot is its words, and a test built from every quality crossed with every
+way of joining and every slot holds that none of them closes. The owner's own word still
 closes a condition, by design, and the card says so: "closed on your word (#n)". The note of
 whose looks are in also goes on the count line,
 which comes back right after the card's head, because at 80 rows the condition lines that carried

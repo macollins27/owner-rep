@@ -1,12 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 7b58d6b..8cbda59 100644
+index 83998ef..0f1af3f 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3501,7 +3501,6 @@ const factTokens = (text: string): FactTok[] => {
-     .replace(/^\s*(?:[-*]\s+)?(?:works|fact)\s*:\s*/i, '')
-     .replace(/\b(?:runs?|is\s+on|built\s+from)\s+(?:the\s+)?(?:newest|latest|current)(?:\s+(?:code|build|version|commit))?\b/gi, ' runsnewest ')
-     .replace(/"[^"]*"|“[^”]*”|‘[^’]*’|(?<![\w'])'[^']*'(?![\w'])/g, ' \u0001Q ')
--    .replace(/[^\s"'`()[\]\u0001]+[/~][^\s"'`()[\]]*|[/~][^\s"'`()[\]]+|[^\s"'`()[\]\u0001]+\.[A-Za-z0-9]{1,8}\b/g, ' \u0001P ')
+@@ -3541,7 +3541,6 @@ const factTokens = (text: string): FactTok[] => {
+       const c = factPath(m) ? m : m.slice(0, m.length - end.length)
+       const rest = m.slice(c.length)
+       if (FACT_NAME_H.test(c)) return ` ${c} ${rest}`
+-      if (factPath(c)) return keep({ w: c, t: 'P', p: c.includes('/') ? 'path' : 'file' }) + rest
+       return ` ${c.replace(/[/.]+/g, '-')} ${rest}`
+     })
      .replace(/([,;:()[\]—–!?])/g, ' $1 ')
-     .replace(/\.(?=\s|$)/g, ' . ')
-   return t.split(/\s+/).filter(w => w !== '').map((w): FactTok => {

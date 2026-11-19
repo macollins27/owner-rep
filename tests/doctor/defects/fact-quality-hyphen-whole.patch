@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 2c3a6c6..f4ffe19 100644
+index 83998ef..68912a1 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3504,7 +3504,7 @@ const FACT_QUALITY = /^(?:secure|correct|fast|quick|robust|complete|clean|safe|v
- // converts-to-uppercase script", seventh round's probe), so it is refused as a quality is.
- const FACT_FOLDED = /^(?:to|a|an|the|of|for|into|from|with|and|or|not|no)$|[^su]s$/
- const factQuality = (w: string): boolean => {
--  const parts = w.split('-')
-+  const parts = [w]
-   return parts.some(p => FACT_QUALITY.test(p) && !FACT_STATE.test(p)) || (parts.length > 1 && parts.some(p => FACT_FOLDED.test(p)))
+@@ -3522,7 +3522,7 @@ const factModPart = (p: string): boolean => {
+   const stem = p.replace(/['’]s$/, '')
+   return [FACT_MOD, FACT_THING, FACT_PLACE_NOUN, FACT_ACTOR, FACT_STATE].some(re => re.test(stem))
  }
- const FACT_NOT_MOD = /^(?:it|they|them|is|are|was|were|be|been|has|have|had|and|or|but|not|never|no|nothing|none|whose|which|that|who|with|for|by|as|of|if|when|where|while|because|exists?|holds?|contains?|does|do|did|runsnewest)$/
+-const factMod = (w: string): boolean => w !== '' && w.split('-').every(p => p !== '' && factModPart(p))
++const factMod = (w: string): boolean => w !== '' && factModPart(w)
+ 
+ const factTokens = (text: string): FactTok[] => {
+   const held: FactTok[] = []

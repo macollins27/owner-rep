@@ -3571,57 +3571,85 @@ const KIND_AT = /^\s*(works|fact)\s*:\s*/i
 //   - a thing runs (is on, is built from) the newest code;
 //   - nothing, or no thing, from or in a place, is saved, committed, pushed and so on, or exists;
 //   - an agent, session or helper saved, committed, pushed and so on a thing of the work.
-// A clause after another may leave its subject out or say "it". A name is a file's name or a
-// path ("sample.txt", "~/x/y") or a version or a commit ("v2", "a1b2c3d"); a place is one of
+// A clause after another may leave its subject out or say "it". A name is a file's name with its
+// ending, a path from the root, the home folder or the current one ("sample.txt", "~/x/y",
+// "src/rep.ts"), or a version or a commit ("v2", "a1b2c3d"); words joined by a slash or a dot
+// are words (FACT_EXT, factPath). Before a noun a name stands only in backticks. A place is one of
 // those, a noun of the work ("the scratch folder", "this Mac"), or main, origin, GitHub and a
 // few more by name. Quoted text is a name only as what a stored thing holds.
 // A count stands only before its unit. So a misread fact costs a look by someone who did not
 // build it, and a misread behaviour never closes. BEHAVES stays a second veto.
-type FactTok = { w: string; t: 'Q' | 'P' | 'H' | 'N' | 'W' | 'X' }
+// A path's kind (eighth live test): "path" has a folder in it ("~/x", "src/rep.ts"), "file" is a
+// file's name alone ("sample.txt"), "tick" is a path or a file in backticks, and "word" is plain
+// words in backticks ("`owner-rep`"), which name a thing but are read as words before a noun.
+type FactTok = { w: string; t: 'Q' | 'P' | 'H' | 'N' | 'W' | 'X'; p?: 'path' | 'file' | 'tick' | 'word' }
 type FactAt = { i: number; store: boolean }
 const FACT_STATE = /^(?:saved|committed|pushed|merged|installed|deployed|tagged|published|created|written|copied|moved|renamed|changed|edited|touched|uploaded|archived|deleted|removed)$/
-const FACT_THING = /^(?:files?|folders?|director(?:y|ies)|scripts?|programs?|tools?|apps?|cli|pages?|sites?|services?|servers?|endpoints?|builds?|versions?|releases?|code|changes?|fix(?:es)?|work|commits?|branch(?:es)?|repos?|repositor(?:y|ies)|tags?|packages?|plugins?|modules?|skills?|hooks?|tests?|docs?|documents?|config|configuration|settings|projects?|notes?|readme|changelog|plans?|briefs?|routines?|wording|job|records?|logs?|cop(?:y|ies)|dumps?|worktrees?|things?|items?|entr(?:y|ies))$/
-const FACT_STORE = /^(?:files?|folders?|director(?:y|ies)|scripts?|docs?|documents?|notes?|readme|changelog|plans?|briefs?|records?|logs?|commits?|branch(?:es)?|repos?|repositor(?:y|ies)|config)$/
+const FACT_THING = /^(?:files?|folders?|director(?:y|ies)|scripts?|programs?|tools?|apps?|cli|pages?|sites?|services?|servers?|endpoints?|builds?|versions?|releases?|code|changes?|fix(?:es)?|work|commits?|branch(?:es)?|repos?|repositor(?:y|ies)|tags?|packages?|plugins?|modules?|skills?|hooks?|tests?|docs?|documents?|config|configuration|settings|projects?|notes?|readme|changelog|plans?|briefs?|routines?|wording|job|records?|logs?|cop(?:y|ies)|dumps?|worktrees?|things?|items?|entr(?:y|ies)|handoffs?|history|remotes?)$/
+const FACT_STORE = /^(?:files?|folders?|director(?:y|ies)|scripts?|docs?|documents?|notes?|readme|changelog|plans?|briefs?|records?|logs?|commits?|branch(?:es)?|repos?|repositor(?:y|ies)|config|cop(?:y|ies)|history|remotes?|handoffs?|worktrees?)$/
 const FACT_HELD = /^(?:files?|folders?|director(?:y|ies)|scripts?|docs?|documents?|notes?|readme|changelog|plans?|briefs?|records?|logs?|commits?|versions?|changes?|fix(?:es)?|work|code)$/
 const FACT_ACTOR = /^(?:agents?|sessions?|helpers?|builder|owner|codex)$/
 const FACT_PLACE = /^(?:main|master|origin|remote|production|staging|github|it)$/
-const FACT_PLACE_NOUN = /^(?:mac|machine|computer|disk)$/
+const FACT_PLACE_NOUN = /^(?:mac|machine|computer|disk|sessions?)$/
 const FACT_DET = /^(?:the|a|an|this|that|these|those|its|their|our|your|my|each|every|any|some|all|both|one|two|three|four|five|six|seven|eight|nine|ten)$/
-const FACT_PREP = /^(?:in|inside|within|outside|under|at|on|to|into|onto|from|beyond|during|since)$/
+const FACT_PREP = /^(?:in|inside|within|outside|under|at|on|to|into|onto|from|beyond|during|since|by)$/
 const FACT_UNIT = /^(?:bytes?|characters?|lines?|words?)$/
 const FACT_TAIL = /^(?:with|no|trailing|newlines?|or|any|other|bytes?|characters?|at|after|before|the|end|it)$/
-// Words that never stand before a noun as one of its words: they belong to the shape itself.
-// Words that say how good a thing is or what it does ("the bug-free code", "the secure service",
-// "the fully tested build", "the encrypting tool"): a quality or a doing is something to show, so it never stands among a noun's own words
-// (sixth live test of 18 Nov 2026). Each part of a hyphened word is read alone; a fact's own
-// state stays ("the installed build"). A misread noun
-// costs a look by someone who did not build it; a misread quality would close on the builder's own run.
-const FACT_QUALITY = /^(?:secure|correct|fast|quick|robust|complete|clean|safe|valid|accurate|stable|perfect|efficient|responsive|ready|proper|right|bad|broken|solid|sound|fine|smooth|strong|nice|great|better|best|quality|compliant|true|real|full|free|healthy|functional|tight|minimal|simple|elegant|modern|professional|airtight|optimal|bugless|bug|error|crash|idempotent)$|(?:ed|ing|ly|free|proof|less|ful|able|ible|ous|ive)$/
-// A hyphened word with a verb or a little word in it is a clause folded into one word ("the
-// converts-to-uppercase script", seventh round's probe), so it is refused as a quality is.
-const FACT_FOLDED = /^(?:to|a|an|the|of|for|into|from|with|and|or|not|no)$|[^su]s$/
-const factQuality = (w: string): boolean => {
-  const parts = w.split('-')
-  return parts.some(p => FACT_QUALITY.test(p) && !FACT_STATE.test(p)) || (parts.length > 1 && parts.some(p => FACT_FOLDED.test(p)))
+// A noun's own words come from a closed list (seventh live test of 18 Nov 2026). A list of
+// qualities to refuse let through every quality not on it ("the resilient tool", "the
+// fault-tolerant fix", "the 100%-correct server", "no file holds insecure code"), and a quality
+// or a doing is something to show, never a fact. So a word stands before a noun only when it is
+// one of a few plain words that say which thing it is (FACT_MOD), a noun of the work, a fact's
+// own state ("the installed build"), or one of those with 's ("the project's history"); a
+// hyphened word only when each part is one ("the owner-rep plugin", "the sign-up page"); a
+// word with a digit only as a version or a commit ("the v2 build"); a path or a name in
+// backticks always. A plain word not on the list costs a look by someone who did not build it;
+// a quality let through would close on the builder's own run.
+const FACT_MOD = /^(?:one|two|three|four|five|six|seven|eight|nine|ten|both|all|each|every|scratch|sample|text|local|new|old|newest|latest|current|previous|original|same|other|own|single|only|home|source|cache|cached|temp|temporary|tmp|untracked|tracked|staged|unstaged|uncommitted|unpushed|unmerged|unsaved|empty|extra|added|changed|deleted|removed|renamed|edited|updated|modified|git|output|input|data|backup|hidden|first|last|final|draft|demo|example|plain|raw|shell|python|json|markdown|html|css|yaml|release|nightly|dev|development|live|public|private|upstream|feature|default|root|parent|child|user|global|sandbox|scratchpad|generated|unused|stale|leftover|greeting|landing|index|setup|status|instructions?|business|website|separate|api|web|ci|master|origin|github|main|production|staging|sign|up|in|out|log|rep|claude|hud)$/
+const FACT_NAME_H = /^(?:v?\d+(?:\.\d+)+(?:-(?:alpha|beta|rc|dev|pre)\.?\d*)?|v\d+(?:-(?:alpha|beta|rc|dev|pre)\.?\d*)?|[0-9a-f]{7,40})$/i
+// A path or a file's name only where it is one (eighth live test of 18 Nov 2026). Any word with a
+// slash or a dot in it was a path, so "the secure/fast/reliable tool", "the secure.fast tool" and
+// "installed (UTF8-compliant)" closed, the quality hidden inside a name the closed list never
+// read. So a path starts at the root, the home folder or the current one, or a URL, or ends in a
+// file's ending from FACT_EXT; a version or a commit is a name; anything else joined by a slash or
+// a dot is its words, each read as a hyphened word's part.
+const FACT_EXT = /\.(?:py|pyw|ts|tsx|mts|cts|js|jsx|mjs|cjs|json|jsonl|md|mdx|txt|text|csv|tsv|log|sh|bash|zsh|fish|ps1|bat|cmd|yml|yaml|toml|ini|cfg|conf|env|lock|html?|css|scss|xml|svg|png|jpe?g|gif|webp|pdf|zip|tar|gz|tgz|go|rs|rb|java|kt|swift|c|h|cc|cpp|hpp|cs|php|sql|db|sqlite|plist|diff|patch|bak|tmp|out|ipynb|vue|svelte|lua|dart|ex|exs|scala|gradle|tf|patch|com|org|io|net|dev|ai)$/i
+const factPath = (m: string): boolean => /^(?:~\/|\.{1,2}\/|\/)/.test(m) || m.includes('://') || FACT_EXT.test(m.slice(m.lastIndexOf('/') + 1))
+const factModPart = (p: string): boolean => {
+  const stem = p.replace(/['’]s$/, '')
+  return [FACT_MOD, FACT_THING, FACT_PLACE_NOUN, FACT_ACTOR, FACT_STATE].some(re => re.test(stem))
 }
-const FACT_NOT_MOD = /^(?:it|they|them|is|are|was|were|be|been|has|have|had|and|or|but|not|never|no|nothing|none|whose|which|that|who|with|for|by|as|of|if|when|where|while|because|exists?|holds?|contains?|does|do|did|runsnewest)$/
+const factMod = (w: string): boolean => w !== '' && w.split('-').every(p => p !== '' && factModPart(p))
 
 const factTokens = (text: string): FactTok[] => {
+  const held: FactTok[] = []
+  const keep = (k: FactTok): string => { held.push(k); return ` \u0001${held.length - 1} ` }
   const t = text
     .replace(/^\s*(?:[-*]\s+)?(?:works|fact)\s*:\s*/i, '')
+    // "Working copy" names a place, not a result working (seventh live test).
+    .replace(/\bworking\s+(?:copy|copies|tree|trees)\b/gi, ' worktree ')
+    .replace(/\bworking\s+(?:directory|folder)\b/gi, ' folder ')
     .replace(/\b(?:runs?|is\s+on|built\s+from)\s+(?:the\s+)?(?:newest|latest|current)(?:\s+(?:code|build|version|commit))?\b/gi, ' runsnewest ')
-    .replace(/"[^"]*"|“[^”]*”|‘[^’]*’|(?<![\w'])'[^']*'(?![\w'])/g, ' \u0001Q ')
-    .replace(/[^\s"'`()[\]\u0001]+[/~][^\s"'`()[\]]*|[/~][^\s"'`()[\]]+|[^\s"'`()[\]\u0001]+\.[A-Za-z0-9]{1,8}\b/g, ' \u0001P ')
+    .replace(/"[^"]*"|“[^”]*”|‘[^’]*’|(?<![\w'])'[^']*'(?![\w'])/g, () => keep({ w: '', t: 'Q' }))
+    // In backticks: a version or a commit is a name, a path is a path, plain words are words.
+    .replace(/`([^`\s][^`]*)`/g, (_m, c: string) => keep(FACT_NAME_H.test(c) ? { w: c, t: 'H' } : factPath(c) ? { w: c, t: 'P', p: 'tick' } : { w: c.toLowerCase(), t: 'P', p: 'word' }))
+    .replace(/[^\s"'`()[\]\u0001]+[/~.][^\s"'`()[\]]*|[/~][^\s"'`()[\]]+/g, m => {
+      const end = /[.,;:!?]+$/.exec(m)?.[0] ?? ''
+      const c = factPath(m) ? m : m.slice(0, m.length - end.length)
+      const rest = m.slice(c.length)
+      if (FACT_NAME_H.test(c)) return ` ${c} ${rest}`
+      if (factPath(c)) return keep({ w: c, t: 'P', p: c.includes('/') ? 'path' : 'file' }) + rest
+      return ` ${c.replace(/[/.]+/g, '-')} ${rest}`
+    })
     .replace(/([,;:()[\]—–!?])/g, ' $1 ')
     .replace(/\.(?=\s|$)/g, ' . ')
   return t.split(/\s+/).filter(w => w !== '').map((w): FactTok => {
-    if (w === '\u0001Q') return { w, t: 'Q' }
-    if (w === '\u0001P') return { w, t: 'P' }
+    if (/^\u0001\d+$/.test(w)) return held[Number(w.slice(1))] as FactTok
     if (/^\d+$/.test(w)) return { w, t: 'N' }
     if (w === '&') return { w: 'and', t: 'W' }
     if (w === '/') return { w: 'or', t: 'W' }
     if (/^[,;:()[\]—–!?.&/-]+$/.test(w)) return { w, t: 'X' }
-    if (/\d/.test(w) && /[a-z]/i.test(w)) return { w, t: 'H' }
+    if (/\d/.test(w) && /[a-z.]/i.test(w)) return { w, t: 'H' }
     return { w: w.toLowerCase(), t: 'W' }
   })
 }
@@ -3630,37 +3658,59 @@ const factTokens = (text: string): FactTok[] => {
 const factRead = (ts: FactTok[]): boolean => {
   const w = (i: number, re: RegExp): boolean => ts[i]?.t === 'W' && re.test(ts[i]?.w ?? '')
   const x = (i: number, s: string): boolean => ts[i]?.t === 'X' && ts[i]?.w === s
-  const mod = (i: number): boolean => { const k = ts[i]; return k !== undefined && (k.t === 'W' ? !FACT_NOT_MOD.test(k.w) && !factQuality(k.w) : k.t === 'H' || k.t === 'N' || k.t === 'P') }
+  // Before a noun a path stands only in backticks, and words in backticks are read as words
+  // (eighth live test): "the ~secure tool" and "the `reliable` tool" are not names.
+  const mod = (i: number): boolean => { const k = ts[i]; return k !== undefined && (k.t === 'W' ? factMod(k.w) : k.t === 'H' ? FACT_NAME_H.test(k.w) : k.t === 'P' ? k.p === 'tick' || (k.p === 'word' && factMod(k.w)) : k.t === 'N') }
   const det = (i: number): boolean => w(i, FACT_DET) || ts[i]?.t === 'N'
   const uniq = (a: FactAt[]): FactAt[] => a.filter((r, k) => a.findIndex(o => o.i === r.i && o.store === r.store) === k)
-  // A noun of the work: an optional lead, up to two of its own words, then the noun, and a name after it.
+  // A noun's own words from a position: up to four, and a list of them ("changed, added or
+  // deleted files", seventh live test), as the positions they end at.
+  const mods = (s: number): number[] => {
+    const out = [s]
+    let e = s
+    for (let n = 0; n < 4 && mod(e); n++) {
+      e++
+      out.push(e)
+      let j = e
+      if (x(j, ',')) j++
+      if (w(j, /^(?:and|or)$/)) j++
+      if (j > e && mod(j)) e = j
+    }
+    return out
+  }
+  // A noun of the work: an optional lead, its own words, then the noun, and a name after it.
   const noun = (i: number, re: RegExp, storeRe: RegExp): FactAt[] => {
     const out: FactAt[] = []
     for (const s of det(i) ? [i, i + 1] : [i]) {
-      for (let m = 0; m <= 2; m++) {
-        let ok = true
-        for (let k = 0; k < m; k++) if (!mod(s + k)) ok = false
-        const n = s + m
-        if (!ok || !w(n, re)) continue
+      for (const n of mods(s)) {
+        if (!w(n, re)) continue
         const store = storeRe.test(ts[n]?.w ?? '')
         out.push({ i: n + 1, store })
         // A state after it with a place: "a commit made during this job" (sixth live test).
         if (w(n + 1, /^made$/) || w(n + 1, FACT_STATE)) for (const p of places(n + 2)) if (p > n + 2) out.push({ i: p, store })
-        if (ts[n + 1]?.t === 'P') out.push({ i: n + 2, store: true })
+        if (ts[n + 1]?.t === 'P' && ts[n + 1]?.p !== 'word') out.push({ i: n + 2, store: true })
       }
     }
     return out
   }
-  const np = (i: number): FactAt[] => (ts[i]?.t === 'P' ? [{ i: i + 1, store: true }] : noun(i, FACT_THING, FACT_STORE))
+  // A path, a file or a name stands as a thing held or a place; words in backticks only when
+  // each is from the closed list, as before a noun: "`secure/fast` is committed" and "saved in
+  // `correct`" closed (the eighth live test's fix, its doctor).
+  const pathAt = (i: number): boolean => { const k = ts[i]; return k?.t === 'P' && (k.p !== 'word' || factMod(k.w)) }
+  const np = (i: number): FactAt[] => (pathAt(i) ? [{ i: i + 1, store: true }] : noun(i, FACT_THING, FACT_STORE))
   // A place: "in the scratch folder", "to main", "on GitHub", "in ~/x". A place's own name is
   // one of a few (FACT_PLACE): any capitalised word would let "deployed To Encrypt" through.
   const place = (i: number): number[] => {
     const at = x(i, ',') ? i + 1 : i
+    // "pushed anywhere", "written anywhere else" (seventh live test).
+    if (w(at, /^(?:anywhere|elsewhere)$/)) return w(at + 1, /^else$/) ? [at + 1, at + 2] : [at + 1]
+    // "committed for this job" (eighth live test): "for" opens only the job, the session or the task.
+    if (w(at, /^for$/)) return w(at + 1, /^(?:this|the)$/) && w(at + 2, /^(?:job|session|task)$/) ? [at + 3] : []
     if (!w(at, FACT_PREP)) return []
     const j = at + 1
     const k = ts[j]
     const out: number[] = []
-    if (k?.t === 'P' || (k?.t === 'W' && FACT_PLACE.test(k.w))) out.push(j + 1)
+    if (pathAt(j) || (k?.t === 'W' && FACT_PLACE.test(k.w))) out.push(j + 1)
     for (const r of noun(j, FACT_THING, FACT_STORE).concat(noun(j, FACT_PLACE_NOUN, FACT_STORE))) if (det(j)) out.push(r.i)
     return out
   }
@@ -3690,8 +3740,10 @@ const factRead = (ts: FactTok[]): boolean => {
       if (n === e || !w(n, FACT_STATE)) break
       e = n + 1
     }
-    // A name after it: "tagged v2", "committed (a1b2c3d)".
-    return out.flatMap(e2 => { const k = ts[e2]; const named = k?.t === 'H' || k?.t === 'P' ? [e2 + 1] : x(e2, '(') && (ts[e2 + 1]?.t === 'H' || ts[e2 + 1]?.t === 'P') && x(e2 + 2, ')') ? [e2 + 3] : []; return [e2, ...named] })
+    // A name after it: "tagged v2", "committed (a1b2c3d)"; only a version or a commit (eighth
+    // live test: "installed (UTF8-compliant)" is a quality, not a name).
+    const name = (j: number): boolean => ts[j]?.t === 'H' && FACT_NAME_H.test(ts[j]?.w ?? '')
+    return out.flatMap(e2 => [e2, ...(name(e2) ? [e2 + 1] : x(e2, '(') && name(e2 + 1) && x(e2 + 2, ')') ? [e2 + 3] : [])])
   }
   const aux = (i: number): number[] => {
     const out: number[] = []
@@ -3752,11 +3804,27 @@ const factRead = (ts: FactTok[]): boolean => {
     go(i, true)
     return uniq(out)
   }
+  // Nouns of the work, each with its places, joined by commas and "and" or "or": "no handoff or note".
+  const nounList = (i: number): number[] => {
+    const out = new Set<number>()
+    const go = (s: number): void => {
+      for (const r of noun(s, FACT_THING, FACT_STORE)) for (const p of places(r.i)) {
+        if (out.has(p)) continue
+        out.add(p)
+        let n = p
+        if (x(n, ',')) n++
+        if (w(n, /^(?:and|or)$/)) n++
+        if (n > p) go(n)
+      }
+    }
+    go(i)
+    return [...out]
+  }
   const clause = (i: number, first: boolean, prev: boolean): FactAt[] => {
     const out: FactAt[] = []
     for (const s of subject(i)) for (const e of pred(s.i, s.store)) out.push({ i: e, store: s.store })
     // Nothing, or no thing, of a place: only a state or existence, never what it holds.
-    const negs = w(i, /^(?:nothing|none)$/) ? places(i + 1) : w(i, /^no$/) ? noun(i + 1, FACT_THING, FACT_STORE).flatMap(r => places(r.i)) : []
+    const negs = w(i, /^(?:nothing|none)$/) ? places(i + 1) : w(i, /^no$/) ? nounList(i + 1) : []
     for (const n of negs) for (const e of pred(n, false)) out.push({ i: e, store: false })
     // No thing holds a thing of the work: "no file in the project holds a change made during this job".
     if (w(i, /^no$/)) for (const r of noun(i + 1, FACT_THING, FACT_STORE)) if (r.store) for (const n of places(r.i)) if (w(n, /^(?:holds?|contains?)$/)) for (const h of noun(n + 1, FACT_HELD, FACT_STORE)) for (const e of places(h.i)) out.push({ i: e, store: false })
@@ -4875,8 +4943,11 @@ export function checkReadOf(got: Pick<RunResult, 'text' | 'error' | 'answers'>):
   return { cut: true }
 }
 
-// The engine's words for why a check failed, on one line, without a closing stop.
-const failWords = (why: string): string => fit(why.trim().replace(/\s+/g, ' ').replace(/\.$/, ''), 160)
+// The engine's words for why a check failed, on one line, without a closing stop, kept to 160
+// cells: a reason of wide characters, kept to 160 characters, took about 290 cells and was cut
+// on the band, its end lost (eighth live test of 18 Nov 2026). A longer one keeps its start,
+// which says what failed, and its end, which names what it failed on, with the middle left out.
+const failWords = (why: string): string => fitMiddle(why.trim().replace(/\s+/g, ' ').replace(/\.$/, ''), 160)
 // The card's note for a check whose run failed after it wrote its whole answer: the answer is
 // read and shown, and the owner still learns the run did not end cleanly (fourth live test of
 // 18 Nov 2026, section 2).
@@ -4884,6 +4955,15 @@ export const checkFailedAfterNote = (why: string): string => `The check's run fa
 // The card's note for a check that failed before it wrote a whole answer, in the engine's words.
 export const checkFailedNote = (why: string): string =>
   `The check failed before it answered: ${failWords(why)}. Nothing from it was taken.`
+// The same notes short, for a band whose rows hold the engine's reason whole only without the
+// words around it: at 100 columns of a 24-row terminal the long form of a 145-character reason
+// took three rows and was cut (seventh live test of 18 Nov 2026). Any other note is kept as it is.
+export const shortCheckNote = (note: string): string => {
+  const after = /^The check's run failed after it answered: ([\s\S]*)\. Its whole answer is shown\.$/.exec(note)
+  if (after !== null) return `Check failed after answering: ${after[1]}.`
+  const before = /^The check failed before it answered: ([\s\S]*)\. Nothing from it was taken\.$/.exec(note)
+  return before === null ? note : `Check failed before answering: ${before[1]}.`
+}
 
 export const same = (a: string, b: string): boolean =>
   a.trim().toLowerCase().replace(/\.$/, '') === b.trim().toLowerCase().replace(/\.$/, '')
@@ -5009,6 +5089,30 @@ export function fit(text: string, width: number): string {
   if (t.length <= width) return t
   if (width <= 1) return '…'
   return `${t.slice(0, width - 1).trimEnd()}…`
+}
+
+// Keeps a string to `cells` terminal cells (`widthOf`): whole when it fits, else its start and its
+// end with an ellipsis between, the start taking the first half.
+export function fitMiddle(text: string, cells: number): string {
+  const t = text.replace(/\s+/g, ' ').trim()
+  if (widthOf(t) <= cells) return t
+  if (cells <= 1) return cells === 1 ? '…' : ''
+  const chars = [...t]
+  let head = ''
+  let used = 0
+  for (const ch of chars) {
+    if (used + cellsOf(ch) > Math.floor((cells - 1) / 2)) break
+    head += ch
+    used += cellsOf(ch)
+  }
+  let tail = ''
+  for (let i = chars.length - 1, room = cells - 1 - used; i >= 0; i--) {
+    const ch = chars[i] as string
+    if (cellsOf(ch) > room) break
+    tail = ch + tail
+    room -= cellsOf(ch)
+  }
+  return `${head.trimEnd()}…${tail.trimStart()}`
 }
 
 // Cuts a string to `width` cells from its start, keeping the end, with an
@@ -5507,6 +5611,14 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
     // next when there is a row for it (sixth live test of 18 Nov 2026: at 100x24 the engine's
     // reason was cut mid-word while the count line stood).
     x => (x.checkNote === card.checkNote || x.checked === null ? x : { ...x, checkNote: card.checkNote, tight: true, checked: { ...x.checked, looked: '' }, checkedBare: true }),
+    // Still cut: the note's short form; then the conversation's size off the buttons row, which
+    // gives the note a row, with the note long and then short (seventh live test of 18 Nov 2026:
+    // a 145-character reason was cut at 100 columns). The engine's reason is cut last of all.
+    ...[
+      (x: CardText): CardText => ({ ...x, checkNote: shortCheckNote(card.checkNote) }),
+      (x: CardText): CardText => ({ ...x, checkNote: card.checkNote, size: '' }),
+      (x: CardText): CardText => ({ ...x, checkNote: shortCheckNote(card.checkNote), size: '' }),
+    ].map(f => (x: CardText): CardText => (x.checkNote === card.checkNote || x.checkNote === shortCheckNote(card.checkNote) ? x : f({ ...x, tight: true, ...(x.checked === null ? {} : { checked: { ...x.checked, looked: '' }, checkedBare: true }) }))),
     // Back from the floor of a five-row band: what the check found, the margin, the heading.
     x => (x.checkedBare === true ? { ...x, checked: bare() } : x),
     x => ({ ...x, tight: false }),

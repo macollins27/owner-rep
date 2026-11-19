@@ -424,7 +424,10 @@ call writes (below):
    the card also shows `checkFailedAfterNote`, the engine's own words beside the answer read (fourth
    live test of 18 Nov 2026, section 2); with none, a run that ended in an engine error takes
    nothing and the card shows `checkFailedNote`, the engine's own words and no ask to press
-   again, and any other run takes nothing (no marks, no verdict, no draft) and the card shows
+   again (in both notes the engine's words are kept to 160 terminal cells by `fitMiddle`, whole
+   when they fit, else their start and their end with the middle left out, so a reason of wide
+   characters keeps the name it ends on: eighth live test of 18 Nov 2026), and any other run
+   takes nothing (no marks, no verdict, no draft) and the card shows
    `CHECK_CUT_NOTE`, asking the owner to press it again, since a check costs real money and is
    never re-run on its own (live test of 18 Nov 2026, section 1). Every reply
    cap is `MAX_REPLY_TOKENS`, 64,000, the engine's ceiling, so the time limit, not the cap, ends a
@@ -729,24 +732,40 @@ copies it, and `mergeConditions` keeps a held `works`, or one with no kind, as `
 kind a rewrite gives, and opens a shown `fact` rewritten as `works` with its where kept as
 `seen`). `conditionOf`, and everything after it through `kindOf`, reads a `fact:` as `fact` only when
 `factHolds`, by sentence shape: with its kind taken out, "runs (is on, is built from) the
-newest" read as one word, quoted text (double, curly or single quotes) and file names and paths
-read as names (`factTokens`), it matches no `BEHAVES` (works, runs, passes, does, prints, takes,
+newest" read as one word, quoted text (double, curly or single quotes) read as a name, and a
+path or a file's name read as one only where it is one (`factTokens`, `factPath`): a path from
+the root, the home folder or the current one ("/x", "~/x", "./x") or a URL, a word ending in a
+file's ending from `FACT_EXT` ("sample.txt", "src/rep.ts"), and in backticks a version or a
+commit (read as one), a path or a file's name; any other word joined by a slash or a dot
+("secure/fast/reliable", "fast.secure", "sorts/validates2") is its words, joined as a hyphened
+word, and plain words in backticks ("`owner-rep`") are words that name a thing, standing alone
+as the thing held or the place only when each passes `factMod` (`pathAt`: "`secure/fast` is
+committed" and "saved in `correct`" are works, and so is a tool's bare name, "`npm-run` is
+installed", the designed safe direction); it matches no `BEHAVES` (works, runs, passes, does, prints, takes,
 returns, shows, displays, gives, accepts, responds, reads, produces and the like, in any tense,
 and does not, never, cannot and the like unless before "exist"), and `factRead` reads the whole
 of it, to its end or a closing stop, as clauses parted by a comma or a semicolon and "and" or
 "but". Each clause is one of a few shapes, each slot typed: a subject of nouns of the work
-(`FACT_THING`, after an optional lead in `FACT_DET` and up to two words of the noun's own, none
-of them in `FACT_NOT_MOD` and none a quality or a doing, `factQuality`: a word of `FACT_QUALITY`
-or one ending in -ed, -ing, -ly, -free, -proof, -less, -ful, -able, -ible, -ous or -ive, each part
-of a hyphened word read alone and a word of `FACT_STATE` let stand, and a hyphened word with a
-verb or a little word folded in refused whole (`FACT_FOLDED`, "the converts-to-uppercase script"), "the installed build"; after
+(`FACT_THING`, after an optional lead in `FACT_DET` and up to four words of the noun's own,
+joined by commas and "and" or "or" where they are a list, "0 changed, added or deleted files";
+a noun's own word comes from a closed list, `factMod`: one of `FACT_MOD`'s plain words that say
+which thing it is (scratch, local, new, current, untracked, two, both and the like), a noun of the
+work, of the machine or an actor, a word of `FACT_STATE` ("the installed build"), any of those
+with 's ("the project's history"), a hyphened word only when each part is one ("the owner-rep
+plugin"), a word with a digit only as a version or a commit (`FACT_NAME_H`, "v2", "a1b2c3d"), and
+a number, or a path or a file's name in backticks; plain words in backticks only when they pass
+`factMod` themselves; a path or a file's name without backticks never ("the /secure tool", "the
+secure.c tool"); any other word, a quality or a doing above all, makes the clause works, so "the
+resilient tool", "the fast/secure tool", "the `reliable` tool" and "the bug-free/reliable tool"
+are works; "working copy" and "working tree" are read as
+a worktree and "working folder" as a folder before `BEHAVES` is matched; after
 the noun, a word of `FACT_STATE` or "made" with a place, "a commit made during this job") or
-names, with places after them (a word of `FACT_PREP`, during and since among them, before a name,
+names other than plain words in backticks, with places after them ("anywhere", "elsewhere" or "anywhere else", "for this job", "for the session" or "for this task" and no other "for", or a word of `FACT_PREP`, during, since and by among them, before a name,
 a noun of the work or of the machine, or one of `FACT_PLACE`: main, origin, GitHub and a few
 more); then "is", "was", "has been" and the like (or nothing, "the newest build installed")
 before one or more of `FACT_STATE` (saved, committed, pushed, merged, installed, deployed,
 tagged, published, created, written, copied, moved, renamed, changed, edited, touched,
-uploaded, archived, deleted, removed), with a version, commit or path after it and places; or
+uploaded, archived, deleted, removed), with a version or a commit after it (`FACT_NAME_H`, alone or in brackets: "installed (UTF8-compliant)" is works) and places; or
 exists, does not exist, no longer exists, or runs the newest. Only a stored thing (a name or a
 noun of `FACT_STORE`) holds or contains quoted text, a thing of `FACT_HELD` (with "whose
 contents are exactly" and quoted text after it), or is a count of a unit of `FACT_UNIT` ("long", "in size" or "in length" after it), each
@@ -1233,7 +1252,7 @@ is the rep's `next(e)`. From 2.1.325 the band asks each mod for a row of its own
 is not `PLUGIN`), keeps whether any draws something in `othersDraw` by surface and draws the
 band again when that changes, and while the rep's row last drew the briefing (`cardUp`, set
 by the row's render) passes on only the rep's own row. The `AbovePrompt` render takes
-`hasBeneath` from both, so the same rules hold on every build; on the terminal each line has its width in columns and the card fills the band's rows in order of importance (`fillCard`: the buttons row, the head's result, one row of the message and the check's note cut to one row first; on a band of about five rows, a 24-row terminal's, what the check found then goes to one line without its heading (`checkedBare`, the counts of what held and what was false, or the checker's own account of what it looked at when it sorted no claim, with how many commands were refused on it), then the empty line above the card goes (`tight`), then that line is cut to one row and then dropped, so the head, the note and the buttons stay in the window; the note whole next, ahead of what the check found when the band holds only one of them (that line comes back next), taking the empty line's row when it needs it, then that line, the heading and the lists back in that order, then the judgment one row each, most telling first (stands, then the revision line from `revisedLine`, so a long message never crowds out that the reading moved), then the count line (`countLine`), then the judgment whole as the rows allow, then the message with the rows that remain, then the extras while they fit; on a band too short for the message's box between the head and the buttons the box goes and Put message in prompt, drawn while the brief has a message, carries it whole, Put and Check it fixed from the whole card (`putShows`, `checkShows`); rows counted by `cardRows` as the band wraps them: `rowsOf` follows the band's wrap (wrap-ansi with trim off and hard on, so an indent and the space a row starts with take cells, a word wider than the row breaks, and `widthOf` gives a wide character two cells and a combining mark none), and `buttonRows` counts the buttons row, which wraps (`flexWrap`, three cells apart) with the size last on it, from `cardButtons`), and on a surface whose band is a scrolling box in a proportional font (`sizesInColumns` false: Claude Code for VS Code, whose extension counts columns by a wide glyph and draws widths in `ch`) no line is given a width, so each fills the box, and the card is drawn whole. Buttons use bare digits for hotkeys because from the prompt box only a
+`hasBeneath` from both, so the same rules hold on every build; on the terminal each line has its width in columns and the card fills the band's rows in order of importance (`fillCard`: the buttons row, the head's result, one row of the message and the check's note cut to one row first; on a band of about five rows, a 24-row terminal's, what the check found then goes to one line without its heading (`checkedBare`, the counts of what held and what was false, or the checker's own account of what it looked at when it sorted no claim, with how many commands were refused on it), then the empty line above the card goes (`tight`), then that line is cut to one row and then dropped, so the head, the note and the buttons stay in the window; the note whole next, in its short form (`shortCheckNote`, "Check failed after answering: …") and then without the conversation's size on the buttons row when the long form will not fit, ahead of what the check found when the band holds only one of them (that line comes back next), taking the empty line's row when it needs it, then that line, the heading and the lists back in that order, then the judgment one row each, most telling first (stands, then the revision line from `revisedLine`, so a long message never crowds out that the reading moved), then the count line (`countLine`), then the judgment whole as the rows allow, then the message with the rows that remain, then the extras while they fit; on a band too short for the message's box between the head and the buttons the box goes and Put message in prompt, drawn while the brief has a message, carries it whole, Put and Check it fixed from the whole card (`putShows`, `checkShows`); rows counted by `cardRows` as the band wraps them: `rowsOf` follows the band's wrap (wrap-ansi with trim off and hard on, so an indent and the space a row starts with take cells, a word wider than the row breaks, and `widthOf` gives a wide character two cells and a combining mark none), and `buttonRows` counts the buttons row, which wraps (`flexWrap`, three cells apart) with the size last on it, from `cardButtons`), and on a surface whose band is a scrolling box in a proportional font (`sizesInColumns` false: Claude Code for VS Code, whose extension counts columns by a wide glyph and draws widths in `ch`) no line is given a width, so each fills the box, and the card is drawn whole. Buttons use bare digits for hotkeys because from the prompt box only a
 digit presses a band button. A keyboard chord for the Rep button once rode on an unrelated
 engine action; it could not be proven and was removed on 14 Oct 2026. Do not bring it back
 without a binding that is shown working.
