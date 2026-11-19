@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index c342914..bded8f8 100644
+index ebb8393..b542cc4 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -6237,7 +6237,7 @@ export function parseReplayArgs(args: string): ReplayArgs {
+@@ -6445,7 +6445,7 @@ export function parseReplayArgs(args: string): ReplayArgs {
    }
    if (path === undefined) return { error: REPLAY_USAGE }
    // A base is a strict part of the variant: the two arms differ by the variant's other edits alone.
 -  if (base !== undefined && (variant === undefined || !base.every(e => variant.includes(e)) || new Set(base).size >= new Set(variant).size)) return { error: REPLAY_USAGE }
 +  if (base !== undefined && (variant === undefined)) return { error: REPLAY_USAGE }
-   return { path, last, times, ...(kind === undefined ? {} : { kind }), ...(effort === undefined ? {} : { effort }), ...(variant === undefined ? {} : { variant }), ...(base === undefined ? {} : { base }) }
+   return { path, last, times, ...(kind === undefined ? {} : { kind }), ...(effort === undefined ? {} : { effort }), ...(variant === undefined ? {} : { variant }), ...(base === undefined ? {} : { base }), ...(now ? { now: true as const } : {}) }
  }
  

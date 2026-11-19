@@ -3651,7 +3651,7 @@
     "name": "runs-newest-code-works",
     "breaks": "A \"fact:\" that a service runs the newest code, the writer's own example of a fact, is read as works and waits for a look it does not need.",
     "patch": "runs-newest-code-works.patch",
-    "fixed": "tested 2026-11-17; remade 2026-11-17"
+    "fixed": "tested 2026-11-17; remade 2026-11-17; remade 2026-11-18"
   },
   {
     "name": "rep-check-not-signer",
@@ -3861,13 +3861,13 @@
     "name": "watch-frame-back",
     "breaks": "The watch's task opens again with the old fork frame, a pseudo system reminder in capitals saying the reader shares the conversation and must not mention being interrupted.",
     "patch": "watch-frame-back.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "tested 2026-11-18; remade 2026-11-18 on the merge of prompts into group 2"
   },
   {
     "name": "watch-no-think-back",
     "breaks": "The watch's task tells the model again not to think it over, against the effort it is run at.",
     "patch": "watch-no-think-back.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "tested 2026-11-18; remade 2026-11-18 on the merge of prompts into group 2"
   },
   {
     "name": "record-system-no-tools-gone",
@@ -3897,7 +3897,7 @@
     "name": "variant-system-kept",
     "breaks": "The replay's frame edit drops the old frame but sends the call's old system prompt, not group 1's.",
     "patch": "variant-system-kept.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "tested 2026-11-18; remade 2026-11-18 on the merge of prompts into group 2"
   },
   {
     "name": "variant-cache-marks-lost",
@@ -3915,13 +3915,25 @@
     "name": "variant-as-saved-not-sent",
     "breaks": "The replay's variant sends only the edited calls, with nothing sent as saved to set them against.",
     "patch": "variant-as-saved-not-sent.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "tested 2026-11-18; remade 2026-11-18 on the merge of prompts into group 2"
   },
   {
     "name": "replay-replies-not-kept",
     "breaks": "The replay does not keep the replies it got, so the two arms cannot be read side by side.",
     "patch": "replay-replies-not-kept.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "tested 2026-11-18; remade 2026-11-18 on the merge with prompts"
+  },
+  {
+    "name": "replay-run-not-in-name",
+    "breaks": "A kept replay reply is named without its run, so running the same replay again with the same settings writes over the earlier run's replies.",
+    "patch": "replay-run-not-in-name.patch",
+    "fixed": "2026-11-18; remade 2026-11-18 on the merge with prompts"
+  },
+  {
+    "name": "replay-old-reply-read-as-cut",
+    "breaks": "The replay reads a reply to a call saved before the end line as cut for lacking a line its prompt never asked for, so every old call replayed as saved reads as cut short.",
+    "patch": "replay-old-reply-read-as-cut.patch",
+    "fixed": "2026-11-18; remade 2026-11-18 on the merge with prompts"
   },
   {
     "name": "call-cap-skips-replays",
@@ -3933,7 +3945,7 @@
     "name": "rep-rules-in-task",
     "breaks": "The watch's task carries a copy of the rep's standing rules again, so a rule has two sources and the copies can drift apart.",
     "patch": "rep-rules-in-task.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "tested 2026-11-18; remade 2026-11-18 on the merge of prompts into group 2"
   },
   {
     "name": "rep-patch-sentence-back",
@@ -3999,13 +4011,13 @@
     "name": "replay-base-not-subset",
     "breaks": "The replay accepts a --base that is not a strict part of the variant, so the two arms are not one edit apart.",
     "patch": "replay-base-not-subset.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "tested 2026-11-18; remade 2026-11-18 on the merge of prompts into group 2"
   },
   {
     "name": "replay-reply-name-lacks-base",
     "breaks": "A kept reply's name leaves out the base, so runs against different bases write over each other's replies.",
     "patch": "replay-reply-name-lacks-base.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "tested 2026-11-18; remade 2026-11-18 on the merge of prompts into group 2"
   },
   {
     "name": "replay-base-arm-as-saved",
@@ -4018,5 +4030,203 @@
     "breaks": "The reads send REP_SYSTEM without its private-data section, so secrets in the record are no longer kept out of what the reader writes.",
     "patch": "read-drops-private-data.patch",
     "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-behaviour-clause-ignored",
+    "breaks": "A condition saying the tool is saved and also what it takes and prints is read as a fact for being saved, so the builder's own run closes it and the stop passes.",
+    "patch": "fact-behaviour-clause-ignored.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "writer-one-claim-dropped",
+    "breaks": "The objective writer is no longer asked for one claim per condition, so it can write a fact and what the work does as one condition.",
+    "patch": "writer-one-claim-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "rows-indent-dropped",
+    "breaks": "A row's leading spaces are not counted, so a left-out item a cell or two past the row with its indent is counted on one row while the band draws two, and the card scrolls with its buttons out of a digit's reach.",
+    "patch": "rows-indent-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "button-row-counted-fixed",
+    "breaks": "The buttons row is counted as one row at seventy columns or more, whatever wraps on it, so the size beside the buttons pushes a row the count never saw and the card scrolls.",
+    "patch": "button-row-counted-fixed.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "check-note-whole-in-base",
+    "breaks": "The check's note is kept whole in the card's base, so a long note on a short band leaves no room for the buttons and the card scrolls.",
+    "patch": "check-note-whole-in-base.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "wide-characters-one-cell",
+    "breaks": "A wide character (Chinese, Japanese, Korean, an emoji) is counted as one cell where the band draws two, so a card holding them takes more rows than counted and scrolls.",
+    "patch": "wide-characters-one-cell.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "put-follows-cut-message",
+    "breaks": "Put message in prompt is counted from the filled card, so when the message box is dropped on a short band the button is either hidden, losing the message, or drawn on a row the count never saw.",
+    "patch": "put-follows-cut-message.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "end-line-not-required",
+    "breaks": "A reply is taken as whole without the end line its prompt asks for, so a briefing cut inside its last value, every label given, reaches the card with a half line, as \"Requests an indep\" did in the live test of 18 Nov 2026.",
+    "patch": "end-line-not-required.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "end-line-joins-last-value",
+    "breaks": "The end line is read as part of the last value, so a whole briefing's does line, a check's looked line or a watch's last mark carries \"end of reply\" onto the card or the record.",
+    "patch": "end-line-joins-last-value.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "check-prompt-no-end-ask",
+    "breaks": "The check's prompt does not ask for the end line, so every whole check comes back without it and is taken as cut, and the Check button never changes the card.",
+    "patch": "check-prompt-no-end-ask.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "ask-again-end-ask-not-last",
+    "breaks": "The briefing asked once more puts the open conditions after the ask for the end line, so the ask is no longer the prompt's last line and the model can end its reply without it.",
+    "patch": "ask-again-end-ask-not-last.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "check-error-read-as-cut",
+    "breaks": "A check whose run ended in an engine error (an expired login) before any whole answer is shown as cut, and the owner is told to press it again, when pressing again cannot help.",
+    "patch": "check-error-read-as-cut.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "check-earlier-answer-dropped",
+    "breaks": "A check that wrote its whole answer before a later turn (a Stop hook, then an engine error) is read only from its last result, so the whole answer is lost and the card says the check was cut.",
+    "patch": "check-earlier-answer-dropped.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "check-synthetic-answer-kept",
+    "breaks": "The engine's own answer to an error is kept as one of the checker's answers.",
+    "patch": "check-synthetic-answer-kept.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "check-output-last-result-only",
+    "breaks": "The check runs with JSON output, which keeps only the last result, so a whole answer an engine error replaced is not in the output to read.",
+    "patch": "check-output-last-result-only.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-clauses-not-split",
+    "breaks": "A condition is read whole, never clause by clause, so a fact parted from the next by \"whose\" or a bracket (\"the scratch folder holds a sample text file whose contents are exactly ...\") reads as works.",
+    "patch": "fact-clauses-not-split.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-negative-behaviour-exempt",
+    "breaks": "A clause saying what the work does not do (\"never crashes on empty input\") is exempt from the behaviour words, so a condition naming it beside a fact is read as a fact and closes on the builder's own run.",
+    "patch": "fact-negative-behaviour-exempt.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-word-before-noun-read",
+    "breaks": "Any word may stand in a fact, so a fact word before its noun (\"saved converter transforms text to uppercase\", \"the converter transforms saved text\") reads as the work said to be saved and closes on the builder's own run.",
+    "patch": "fact-word-before-noun-read.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-quoted-text-read",
+    "breaks": "Quoted text in a condition is read as words, so a file said to contain exactly \"one two three\" is read as works and needs a look no command could need.",
+    "patch": "fact-quoted-text-read.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "check-error-after-answer-hidden",
+    "breaks": "A check whose run failed after it wrote its whole answer shows the answer and never says the run failed, so the owner does not learn the check ended in an engine error.",
+    "patch": "check-error-after-answer-hidden.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-held-thing-any-word",
+    "breaks": "Any one word may follow a word that leads a noun, so \"the site has a checkout\" reads as a fact about what the site holds and closes without a look.",
+    "patch": "fact-held-thing-any-word.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-unit-after-name",
+    "breaks": "A name counts as a count, so the word after it is read as a unit and a title-cased behaviour (\"The Converter Transforms Saved Text\") reads as a fact.",
+    "patch": "fact-unit-after-name.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-capital-anywhere-name",
+    "breaks": "Any capitalised word is read as a name, so a title-cased behaviour (\"The Converter Transforms Saved Text\") reads as a fact.",
+    "patch": "fact-capital-anywhere-name.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-single-quotes-read",
+    "breaks": "Text in single quotes is read as words, so a file said to contain exactly 'prints' is read as works and waits for a look no command needs.",
+    "patch": "fact-single-quotes-read.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-slash-ampersand-not-split",
+    "breaks": "A slash or \"&\" does not part two facts, so \"the work is committed & pushed\" reads as works and waits for a look.",
+    "patch": "fact-slash-ampersand-not-split.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-verb-not-needed",
+    "breaks": "A condition of known words with no fact verb is a fact, so a judgement such as \"the page is new\" closes on the agent's own word.",
+    "patch": "fact-verb-not-needed.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-path-read",
+    "breaks": "A path is read as words, so \"the work is saved to ~/Developer/shout\" reads as works and waits for a look.",
+    "patch": "fact-path-read.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "fact-runs-newest-not-read",
+    "breaks": "\"Runs the newest code\", the writer's own example of a fact, is read as works and waits for a look it does not need.",
+    "patch": "fact-runs-newest-not-read.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "writer-fact-shape-dropped",
+    "breaks": "The objective writer is not told the shape of a fact, so its own facts (\"the scratch folder holds a sample text file whose contents are...\") read as works and wait for a look.",
+    "patch": "writer-fact-shape-dropped.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "replay-now-not-read",
+    "breaks": "The replay takes \"--now\" and ignores it, so a call saved before the shared cap and the end line is sent again as it was, and audit test R16 measures nothing.",
+    "patch": "replay-now-not-read.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "replay-now-logged-cap",
+    "breaks": "The replay with \"--now\" sends a saved call at its logged cap, so a reply that the old cap cut is cut again and R16 cannot show what the shared cap changes.",
+    "patch": "replay-now-logged-cap.patch",
+    "fixed": "2026-11-18; remade 2026-11-18 on the merge with prompts"
+  },
+  {
+    "name": "replay-now-end-asked-twice",
+    "breaks": "The replay with \"--now\" adds the end line to a prompt that already asks for it, so the call it sends is not the one this build would send.",
+    "patch": "replay-now-end-asked-twice.patch",
+    "fixed": "2026-11-18"
+  },
+  {
+    "name": "replay-now-not-sent",
+    "breaks": "The replay says \"--now\" sends a call as this build would, then sends it as logged: the old cap and no end line.",
+    "patch": "replay-now-not-sent.patch",
+    "fixed": "2026-11-18; remade 2026-11-18 on the merge with prompts; remade 2026-11-18 on the merge of prompts into group 2"
   }
 ]

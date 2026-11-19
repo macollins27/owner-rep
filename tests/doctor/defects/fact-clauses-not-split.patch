@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 8467313..aa99ffa 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3503,7 +3503,7 @@ export const factHolds = (text: string): boolean => {
+     .replace(/"[^"]*"|“[^”]*”|‘[^’]*’|(?<![\w'])'[^']*'(?![\w'])/g, ' NAME ')
+     .replace(/[^\s"'`()[\]]+[/~][^\s"'`()[\]]*|[/~][^\s"'`()[\]]+|[^\s"'`()[\]]+\.[A-Za-z0-9]{1,8}\b/g, ' NAME ')
+   if (BEHAVES.test(t)) return false
+-  const clauses = t.split(CLAUSE_BREAK).filter(c => c.trim() !== '').map(factClause)
++  const clauses = [t].map(factClause)
+   return clauses.length > 0 && clauses.every(c => c.ok) && clauses.some(c => c.verb)
+ }
+ // A condition's kind as judged: "fact" only when held so and `factHolds` reads it as one,

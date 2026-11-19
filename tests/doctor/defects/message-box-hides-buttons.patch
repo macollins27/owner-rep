@@ -1,12 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 3f27870..7679e80 100644
+index 6e8b995..327f8b4 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -4528,7 +4528,6 @@ export function fillCard(card: CardText, maxRows: number, cols: number): CardTex
+@@ -5083,7 +5083,6 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
      spent: '',
      reading: '',
    }
 -  if (cardRows(c, cols) > maxRows) c = { ...c, message: '' }
    const steps: Array<(x: CardText) => CardText> = [
      x => ({ ...x, result: card.result }),
-     // How much of done is shown, and whose looks are still to count, before the judgment.
+     // Why the check cannot run, or what it last said, whole.

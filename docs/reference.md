@@ -396,7 +396,16 @@ call writes (below):
    therefore takes a reply only when it reached the last label its kind asks for (`endsWhole`):
    the watch's `closed:`, the check's `looked:`, the objective's `approved:` after `holds` and
    `dropped:` after `moved`, a briefing's and its second ask's `does:`, and the own-words call's
-   whole reply (`parseOwnWords`). `cutShort(kind, text, usage, cap)` is a reply not whole or one
+   whole reply (`parseOwnWords`). A reply cut inside its last value still has that label (the
+   live test of 18 Nov 2026 drew a briefing whose `does:` stopped at "Requests an indep", 100
+   output tokens into a cap of 64,000), so every reply must also end with `END_LINE` ("end of
+   reply") as its last line (`endsWithEndLine`, which allows capitals, a closing full stop and
+   bold or code marks). Each prompt asks for it in one line, `END_ASK`, put last by `endAsked`:
+   `watchPrompt`, `briefPrompt`, `objectivePrompt`, `checkPrompt` and `ownWordsPrompt` return
+   through it, and the briefing asked once more is `endAsked` over the briefing and `askAgain`,
+   so the ask stays its last line and appears once. `parts` skips the end line, so it joins no
+   value. An objective answer naming neither `holds` nor `moved` stays unreadable, not cut,
+   with or without the line. `cutShort(kind, text, usage, cap)` is a reply not whole or one
    whose output reached `NEAR_CAP_SHARE` (98%) of its cap (`nearCap`), which is read as cut even
    when its last label is there. `noLabels` is a reply with none of the parts asked for; it is
    read as before (it shows nothing) and never asked again, since it is not a long answer that
@@ -406,9 +415,16 @@ call writes (below):
    times puts up no card and toasts that the briefing stopped before its end twice. An objective
    write that is cut short fails that attempt and uses the write's own retries
    (`OBJECTIVE_RETRIES`), its cause recorded by `writeFailure` as `cut-short (N output tokens): …`
-   or `no-labels: …`, which `failureWords` puts in plain words. A check that is cut short takes
-   nothing (no marks, no verdict, no draft) and the card shows `CHECK_CUT_NOTE`, asking the owner
-   to press it again, since a check costs real money and is never re-run on its own. Every reply
+   or `no-labels: …`, which `failureWords` puts in plain words. A check is read by `checkReadOf`:
+   its result when whole, else the last whole answer the checker wrote on the way (a Stop hook
+   can ask for one more turn after it, and an engine error, such as an expired login, can end
+   that turn, replacing the result), and when the run ended in an engine error after that answer
+   the card also shows `checkFailedAfterNote`, the engine's own words beside the answer read (fourth
+   live test of 18 Nov 2026, section 2); with none, a run that ended in an engine error takes
+   nothing and the card shows `checkFailedNote`, the engine's own words and no ask to press
+   again, and any other run takes nothing (no marks, no verdict, no draft) and the card shows
+   `CHECK_CUT_NOTE`, asking the owner to press it again, since a check costs real money and is
+   never re-run on its own (live test of 18 Nov 2026, section 1). Every reply
    cap is `MAX_REPLY_TOKENS`, 64,000, the engine's ceiling, so the time limit, not the cap, ends a
    long answer.
 
@@ -617,7 +633,9 @@ call writes (below):
    pnpm finds its store unwritable, moves it into a scratch folder, and an offline install
    there fails (measured 17 Oct 2026, pnpm 10). The three questions come before the run's clock
    starts, so the check's measured time is the run's own. Fifteen-minute timeout
-   (`CHECK_TIMEOUT_MS`), 120 turns, JSON output; `permission_denials` in the output is the
+   (`CHECK_TIMEOUT_MS`), 120 turns, stream-json output with `--verbose`, so `resultOf` has each
+   text the model wrote besides the result line, with the result's `is_error` kept as `error`
+   and the engine's own "<synthetic>" answers left out; `permission_denials` in the result is the
    count of commands refused approval, shown on the checked card (`refusedLine`, which says
    commands the fence stopped are not counted) and on the next card's price line
    (`checkCostText`); the right number is zero. Its answer rewrites the card, with each claim
@@ -708,9 +726,27 @@ before it (`conditionOf` reads it, `heldLine` writes it back, `bare` strips it w
 copies it, and `mergeConditions` keeps a held `works`, or one with no kind, as `works` whatever
 kind a rewrite gives, and opens a shown `fact` rewritten as `works` with its where kept as
 `seen`). `conditionOf`, and everything after it through `kindOf`, reads a `fact:` as `fact` only when
-`factHolds`: its text, with file-like words taken out, matches the allow list `FACT_SAYS`
-(saved, committed, pushed, merged, installed, deployed, tagged, exists, runs or is on the
-newest, or a file or folder that holds, contains, has or lists something) and not `BEHAVES`.
+`factHolds`, by closed slots: with its kind taken out, "runs (is on, is built from) the newest"
+read as one word, and quoted text (double, curly or single quotes), file names and paths read
+as names, it matches no `BEHAVES` (works, runs, passes, does, prints, takes, returns, shows,
+displays, gives, accepts, responds, reads, produces and the like, in any tense, and does not,
+never, cannot and the like unless before "exist"); every clause of it (split at stops, dashes,
+brackets, a slash, "&", and joining or relative words, `CLAUSE_BREAK`) is made only of names
+(also anything with a digit, a word in capitals or with a capital inside it, and a capitalised
+word after a word that leads a noun or "to", "on", "in", "at", "from", "into", "via"), counts,
+words that lead a noun (`LEADS`), nouns of the work (`WORK_NOUN`) and the words of
+`FACT_WORDS`, save one other word between a word that leads a noun and a noun of the work ("the
+scratch folder") or after a count, as its unit ("the three commands"); and one clause says a
+fact verb (`FACT_VERB`: saved, committed, pushed, merged, installed, deployed, tagged,
+published, created, written, copied, renamed, changed, deleted, removed, exists, holds,
+contains, has, lists, includes, or runs the newest). No other word may stand anywhere, so a
+condition that says what something does, in any verb or place, is `works` whole, however much
+of it is a fact (live tests of 18 Nov 2026: section 11, the third's section 3, and the fourth's
+36 wordings, among them "the converter transforms saved text to uppercase", "the file is saved
+(it converts text to uppercase)" and the writer's own "the scratch folder holds a sample text
+file whose contents are exactly ...", a fact). The writer's prompt gives the shape of a fact,
+with one example. The
+writer's prompt asks for one claim per condition (`ONE_CLAIM`) beside its kinds.
 A `fact` moves shown on any where. A `works` condition, or one with no kind, moves shown only when
 `looksOf` finds, among every `look by <who>: <what>` in the where, one whose `who` (compared by
 `whoKey`, without case, curly apostrophes or a leading article) is the check (`CHECK_NAMES`) or a
@@ -942,7 +978,7 @@ what the replies were read as, and for cards the gate's rules (`passed` when non
 menu and `/help` (`command.describe`, `HIDDEN_COMMANDS`): `/owner-rep-counts` prints
 `countsText`, one line per kind and a `cards:` line; `/owner-rep-replay <call file, session folder,
 session id, "this" or "all"> [--kind k] [--last 1-50] [--effort low|medium|high|max] [--times 1-10]
-[--variant build|frame|no-think|rep-system] [--base frame|no-think|rep-system]` (`parseReplayArgs`, `REPLAY_USAGE`) takes a folder's last `--last`
+[--variant build|frame|no-think|rep-system|end-line] [--base frame|no-think|rep-system|end-line] [--now]` (`parseReplayArgs`, `REPLAY_USAGE`) takes a folder's last `--last`
 (`REPLAY_LAST`, 10) calls of the kind asked for, or with "all" the last of every session folder's
 calls together by when each was made (`replayPick`, `replayFiles`), rebuilds each from its parts (`savedCall`, which refuses one whose
 texts were not kept, one naming a text by anything but a fingerprint (`isSha`), so a call file
@@ -955,18 +991,29 @@ to what this build sends in their place (`editSaved`; `build` names every edit i
 `PROMPT_EDITS`): `frame` drops the fork frame the build before prompt group 1 opened the task
 with and sends group 1's record system prompt (`PRE_G2_RECORD_SYSTEM`), for a watch, brief or
 ask-again call; `no-think` drops the watch's line telling the model not to think it over;
-`rep-system` (`toRepSystem`, applied after the other two) sends `REP_SYSTEM` and rebuilds the task
+`rep-system` (`toRepSystem`, applied after those two) sends `REP_SYSTEM` and rebuilds the task
 from group 1's (the `PRE_G2_*` texts) as this build writes it: the rules moved out, the request
-opening "Based on the record above" with its restatement. With `--base`, a strict part of the
+opening "Based on the record above" with its restatement; a call that asks for `END_LINE` last
+(`asksEnd`) is matched without it and asks for it again after the new texts; `end-line`, applied
+last, asks for `END_LINE` last (`endAsked`), for a watch, brief or ask-again call, and refuses a
+call that asks for it already. Every reply is read as its own prompt's build read it
+(`readAsAsked`): a reply to a prompt that never asked for the end line is not taken as cut for
+lacking it, so an old call replayed as saved is read as it was then. With `--now` (`replayNow`)
+each call, in every arm, goes as this build would send it, at `MAX_REPLY_TOKENS` and with
+`END_ASK` as its prompt's last line once (on the last block of a prompt in blocks), and is read
+against that cap; the rest is as logged, so a call saved before the shared cap and the end line
+shows what those two alone change (audit test R16). With `--base`, a strict part of the
 variant's edits, the first arm is sent with the base's edits in place of as saved, so the two arms
-are one edit apart; a base that is not a strict part prints `REPLAY_USAGE`. Only the task after
+differ by the variant's other edits alone; a base that is not a strict part prints `REPLAY_USAGE`. Only the task after
 the last `</session_record>` is edited, never the record, and the blocks wholly before it go as
 they were, cache marks and all. A call an edit applies to but cannot change (its old text is not
 there, or its system prompt is not the record read's), or one no edit applies to, is not sent in
 either arm, so the arms are the same calls; the totals are `logged`, `as saved` (or `base`) and
 `variant`. Every reply a replay gets is written to
-`replays/<call file's name>.<effort>[.[<base>~]<edits>].<arm>-<n>.txt`
-beside the call, so runs with other settings keep theirs apart, which `folderBytes` counts toward the 1 GB. A replay is not logged or counted. Nothing of
+`replays/<call file's name>.<run>.<effort>[.[<base>~]<edits>][.now].<arm>-<n>.txt`
+beside the call, `<run>` being the millisecond the replay started and always later than the run
+before it (`replayRun`), so neither a run with other settings nor the same run again writes over
+another's replies, which `folderBytes` counts toward the 1 GB. A replay is not logged or counted. Nothing of
 either is drawn on the row or the card.
 
 An approval (`approvalOf`: the owner's message, note or plan-screen plan carrying `approved`,
@@ -1163,7 +1210,7 @@ is the rep's `next(e)`. From 2.1.325 the band asks each mod for a row of its own
 is not `PLUGIN`), keeps whether any draws something in `othersDraw` by surface and draws the
 band again when that changes, and while the rep's row last drew the briefing (`cardUp`, set
 by the row's render) passes on only the rep's own row. The `AbovePrompt` render takes
-`hasBeneath` from both, so the same rules hold on every build; on the terminal each line has its width in columns and the card fills the band's rows in order of importance (`fillCard`: the head's result and one row of the message with the buttons under it first, then the judgment one row each, most telling first (stands, then the revision line from `revisedLine`, so a long message never crowds out that the reading moved), then the count line (`countLine`), then the judgment whole as the rows allow, then the message with the rows that remain, then the extras while they fit; on a band too short for the message's box between the head and the buttons the box goes and Put message in prompt, drawn while the brief has a message, carries it whole; rows counted by `cardRows` as the band wraps them), and on a surface whose band is a scrolling box in a proportional font (`sizesInColumns` false: Claude Code for VS Code, whose extension counts columns by a wide glyph and draws widths in `ch`) no line is given a width, so each fills the box, and the card is drawn whole. Buttons use bare digits for hotkeys because from the prompt box only a
+`hasBeneath` from both, so the same rules hold on every build; on the terminal each line has its width in columns and the card fills the band's rows in order of importance (`fillCard`: the buttons row, the head's result, one row of the message and the check's note cut to one row first, the note whole next, then the judgment one row each, most telling first (stands, then the revision line from `revisedLine`, so a long message never crowds out that the reading moved), then the count line (`countLine`), then the judgment whole as the rows allow, then the message with the rows that remain, then the extras while they fit; on a band too short for the message's box between the head and the buttons the box goes and Put message in prompt, drawn while the brief has a message, carries it whole, Put and Check it fixed from the whole card (`putShows`, `checkShows`); rows counted by `cardRows` as the band wraps them: `rowsOf` follows the band's wrap (wrap-ansi with trim off and hard on, so an indent and the space a row starts with take cells, a word wider than the row breaks, and `widthOf` gives a wide character two cells and a combining mark none), and `buttonRows` counts the buttons row, which wraps (`flexWrap`, three cells apart) with the size last on it, from `cardButtons`), and on a surface whose band is a scrolling box in a proportional font (`sizesInColumns` false: Claude Code for VS Code, whose extension counts columns by a wide glyph and draws widths in `ch`) no line is given a width, so each fills the box, and the card is drawn whole. Buttons use bare digits for hotkeys because from the prompt box only a
 digit presses a band button. A keyboard chord for the Rep button once rode on an unrelated
 engine action; it could not be proven and was removed on 14 Oct 2026. Do not bring it back
 without a binding that is shown working.

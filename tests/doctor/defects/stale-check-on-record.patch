@@ -1,12 +1,12 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 35606cf..2d2a7db 100644
+index e622766..ab69fe5 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1979,7 +1979,6 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
+@@ -2032,7 +2032,6 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
        // A run a newer press made stale changes nothing more: its marks are not
        // taken and the card on record stays the newer one, so the message the
        // owner sends from that card is still known for the rep's draft.
 -      if (epoch !== checkEpoch || after.lastBrief?.at !== at) return null
-       if (!endsWhole('check', got.text)) {
-         cut = true
+       if (!('read' in reading)) {
+         notRead = 'failed' in reading ? checkFailedNote(reading.failed) : CHECK_CUT_NOTE
          return null

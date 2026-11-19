@@ -98,7 +98,6 @@ import {
   worktreeDirsOf,
   linkTargets,
   holdsCopiesOf,
-  checkBarred,
   noFenceNote,
   copyArgvs,
   type Host,
@@ -116,6 +115,9 @@ import {
   doingFor,
   firstSentence,
   fillCard,
+  putShows,
+  checkShows,
+  CHECKING_LINE,
   sizesInColumns,
   fit,
   fitTail,
@@ -217,11 +219,16 @@ import {
   cutShort,
   readAgain,
   endsWhole,
+  endAsked,
+  readAsAsked,
   type WriteResult,
   type WatchAnswer,
   CHECK_CUT_NOTE,
   parseWatch,
   resultOf,
+  checkReadOf,
+  checkFailedAfterNote,
+  checkFailedNote,
   revisedLine,
   same,
   skipAfter,
@@ -256,6 +263,8 @@ import {
   overCallCap,
   replayLine,
   replayPick,
+  replayNow,
+  MAX_REPLY_TOKENS,
   replayTotals,
   type BriefEnd,
   type CallEntry,
@@ -1679,6 +1688,14 @@ async function replayFiles($: EngineInterface, a: { path: string; kind?: CallKin
   return { files, where: path }
 }
 
+// The run a replay's kept replies are named by: the time it started, in milliseconds, and always
+// later than the run before it here, so running the same replay again never writes over a reply.
+let lastReplayRun = 0
+function replayRun(): number {
+  lastReplayRun = Math.max(Date.now(), lastReplayRun + 1)
+  return lastReplayRun
+}
+
 // Each call named is sent again `times` times as saved; with a variant, `times` times as saved and
 // `times` times with its texts edited (`editSaved`), and a call the variant cannot edit is not sent
 // at all, so the two arms are the same calls. With a base too, the first arm is the call edited by
@@ -1695,6 +1712,7 @@ async function replay($: EngineInterface, args: string): Promise<string> {
   const rows: ReplayRow[] = []
   const lines: string[] = []
   const arms = a.variant === undefined ? ['replay'] : a.base === undefined ? ['as saved', 'variant'] : ['base', 'variant']
+  const run = replayRun()
   for (const file of files) {
     const got = await savedCall($, file)
     const name = a.path === 'all' ? file.slice(where.length + 1) : file.slice(file.lastIndexOf('/') + 1)
@@ -1730,13 +1748,15 @@ async function replay($: EngineInterface, args: string): Promise<string> {
     const effort = (a.effort ?? e.settings.effort) as 'high'
     const dir = file.slice(0, file.lastIndexOf('/'))
     const base = file.slice(file.lastIndexOf('/') + 1).replace(/\.json$/, '')
-    // The effort, the variant and the base name the reply too, so replays of the same call run side
-    // by side with other settings never write over each other's replies.
-    const tag = [effort, ...(a.variant === undefined ? [] : [`${a.base === undefined ? '' : `${a.base.join('+')}~`}${a.variant.join('+')}`])].join('.')
+    // The run, the effort, the variant and its base name the reply too, so neither a run with other
+    // settings nor the same run again writes over another's replies.
+    const tag = [effort, ...(a.variant === undefined ? [] : [`${a.base === undefined ? '' : `${a.base.join('+')}~`}${a.variant.join('+')}`]), ...(a.now === true ? ['now'] : [])].join('.')
     for (const arm of arms) {
-      const { system, prompt } = texts[arm] as { system: string; prompt: string | PromptBlock[] }
+      const { system, prompt: saved } = texts[arm] as { system: string; prompt: string | PromptBlock[] }
+      const sent = replayNow(saved, e.settings.maxTokens, a.now === true)
+      const prompt = sent.prompt
       for (let i = 1; i <= a.times; i++) {
-        const { result, ms } = await timed(() => $.model.complete({ model: e.settings.model, system, prompt, maxTokens: e.settings.maxTokens, effort, timeoutMs: e.settings.timeoutMs }))
+        const { result, ms } = await timed(() => $.model.complete({ model: e.settings.model, system, prompt, maxTokens: sent.cap, effort, timeoutMs: e.settings.timeoutMs }))
         const usage = result === null ? undefined : (result.usage as Usage | undefined)
         const label = `${arm} ${i}`
         const row: ReplayRow = {
@@ -1744,11 +1764,11 @@ async function replay($: EngineInterface, args: string): Promise<string> {
           kind: e.kind,
           ...callOutcome(result as never),
           ms,
-          nearCap: nearCap(usage, e.settings.maxTokens),
-          ...(result !== null && result.isAnswered ? { read: callRead(e.kind, result.text, e.open, { usage, cap: e.settings.maxTokens }) } : {}),
+          nearCap: nearCap(usage, sent.cap),
+          ...(result !== null && result.isAnswered ? { read: callRead(e.kind, readAsAsked(prompt, result.text), e.open, { usage, cap: sent.cap }) } : {}),
           ...(usage === undefined ? {} : { usage }),
         }
-        if (result !== null && result.isAnswered) await writeFile($, `${dir}/replays/${base}.${tag}.${label.replace(/ /g, '-')}.txt`, result.text)
+        if (result !== null && result.isAnswered) await writeFile($, `${dir}/replays/${base}.${run}.${tag}.${label.replace(/ /g, '-')}.txt`, result.text)
         rows.push(row)
         lines.push(`  ${replayLine(row)}`)
       }
@@ -1756,7 +1776,8 @@ async function replay($: EngineInterface, args: string): Promise<string> {
   }
   const setting = (edits: string) => [a.effort === undefined ? '' : `effort ${a.effort}`, edits].filter(x => x !== '').join(', ')
   const of: Record<string, string> = { replay: setting(''), variant: setting(a.variant === undefined ? '' : `variant ${a.variant.join(',')}`), base: setting(a.base === undefined ? '' : `base ${a.base.join(',')}`) }
-  const totals = arms.map(arm => replayTotals(rows, arm) + (arm === 'as saved' || of[arm] === '' ? '' : ` (${of[arm]})`))
+  const now = a.now === true ? ` (as this build sends it: cap ${MAX_REPLY_TOKENS}, end line asked)` : ''
+  const totals = arms.map(arm => replayTotals(rows, arm) + (arm === 'as saved' || of[arm] === '' ? '' : ` (${of[arm]})`) + now)
   return [...lines, '', replayTotals(rows, 'logged'), ...totals].join('\n')
 }
 
@@ -1789,7 +1810,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       const kind: CallKind = extra === '' ? 'brief' : 'ask-again'
       const got = await readSession($, sid, rec, kind, cover => {
         const prompt = briefPrompt({ ...memory, cover })
-        return extra === '' ? prompt : `${prompt}\n\n${extra}`
+        return extra === '' ? prompt : endAsked(`${prompt}\n\n${extra}`)
       })
       const result = got.result
       const usage = 'usage' in result ? result.usage : null
@@ -2061,11 +2082,15 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       const why = stderr.trim().split('\n').pop() ?? ''
       return finish({ checkNote: `The check could not run${end.code === null ? '' : ` (exit ${end.code})`}${why === '' ? '' : `: ${fit(why, 160)}`}.` })
     }
-    // A reply that did not reach "looked:" stopped before its end (endsWhole): nothing of it is
-    // taken, no mark and no part of the card, and the card says so. It is not run again on its
-    // own, as the briefing's read is: each run is a paid session of its own, up to
-    // CHECK_TIMEOUT_MS long, so the owner presses the check again.
-    let cut = false
+    // What is read (checkReadOf): the result if whole, else the last whole answer the checker
+    // wrote; when the run then ended in an engine error, the card says that too, in the engine's
+    // words (checkFailedAfterNote). A run that ended in an engine error with no whole answer is that failure, in the
+    // engine's words; a reply that did not reach "looked:" stopped before its end (endsWhole).
+    // Either way nothing of it is taken, no mark and no part of the card, and the card says
+    // which. It is not run again on its own, as the briefing's read is: each run is a paid
+    // session of its own, up to CHECK_TIMEOUT_MS long, so the owner presses the check again.
+    const reading = checkReadOf(got)
+    let notRead: string | null = null
     const patch = await changeRec($, sid, async after => {
       after.checks += 1
       after.checkTokens += got.tokens
@@ -2077,18 +2102,19 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       // taken and the card on record stays the newer one, so the message the
       // owner sends from that card is still known for the rep's draft.
       if (epoch !== checkEpoch || after.lastBrief?.at !== at) return null
-      if (!endsWhole('check', got.text)) {
-        cut = true
+      if (!('read' in reading)) {
+        notRead = 'failed' in reading ? checkFailedNote(reading.failed) : CHECK_CUT_NOTE
         return null
       }
-      const c = parseCheck(got.text)
+      const text = reading.read
+      const c = parseCheck(text)
       // A condition the check saw shown, or the owner closed, moves under the same
       // rule as a look's, and a reopened one moves shown only here; one held shown
       // that the check found is not so goes back to not shown, marked reopened.
       const marked = applyMarks(after, c.shown, c.closed, { reopen: c.reopen })
       if (marked && onScreen(sid)) await update($, readingA, () => after.objective)
       const checked: Checked = { holds: c.holds, wrong: c.wrong, notShown: c.notShown, changed: c.changed, looked: c.looked, refused: got.refused }
-      const hasLeft = parts_hasLeft(got.text)
+      const hasLeft = parts_hasLeft(text)
       // The card the check leaves, each part the checker's where it gave one
       // and the instant read's where it did not, verdict and going-well line
       // included, goes through the same gate as the briefing: a stop or a
@@ -2133,6 +2159,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
         does: card.does,
         spent: spentText(after.calls, after.tokens, after.cached, after.checks, after.checkTokens, after.objectiveCalls, after.objectiveTokens, after.objectiveFailed, after.objectiveWhy),
         checkCost: checkCostText(after.lastCheckTokens, after.lastCheckCached, after.lastCheckMs, after.lastCheckRefused),
+        ...(reading.failedAfter === undefined ? {} : { checkNote: checkFailedAfterNote(reading.failedAfter) }),
       }
       // The card's reads and what came of its own-words call stay the briefing's: the check
       // makes no such call.
@@ -2141,7 +2168,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       return patch
     })
     if (patch !== null) await finish(patch)
-    if (cut) await finish({ checkNote: CHECK_CUT_NOTE })
+    if (notRead !== null) await finish({ checkNote: notRead })
   } catch (error) {
     const why = error instanceof Error ? error.message : String(error)
     await finish({ checkNote: `The check failed: ${fit(why, 160)}` }).catch(() => undefined)
@@ -3365,6 +3392,13 @@ export const register: Register = on => {
         {buttons}
       </Box>
     )
+    // The card's buttons row in the band's columns: an item that would pass the edge wraps
+    // whole onto a row below, three cells from the next, as `buttonRows` counts it.
+    const cardChoices = (...buttons: RenderNodeList) => (
+      <Box flexDirection="row" flexWrap="wrap" columnGap={3} paddingLeft={2} width={w(cols)}>
+        {buttons}
+      </Box>
+    )
     // From the prompt box only a bare digit presses a band button, so every
     // button carries a digit. While another mod's note is beneath, its digits
     // win and the row's buttons are drawn without any, for the mouse alone.
@@ -3531,7 +3565,7 @@ export const register: Register = on => {
           ) : undefined}
           {shown.isChecking ? (
             <Box paddingLeft={2}>
-              <Text color="suggestion">Checking the record and the files… the card updates when it is done.</Text>
+              <Text color="suggestion">{CHECKING_LINE}</Text>
             </Box>
           ) : undefined}
           {shown.checked === null && !shown.isChecking && shown.checkNote === '' ? (
@@ -3567,8 +3601,8 @@ export const register: Register = on => {
               </Text>
             </Box>
           ) : undefined}
-          {choices(
-            shown.checked === null && !shown.isChecking && !checkBarred(shown.checkNote) ? (
+          {cardChoices(
+            checkShows(shown) ? (
               <Button
                 key="check"
                 plain
@@ -3581,7 +3615,7 @@ export const register: Register = on => {
                 }}
               />
             ) : undefined,
-            brief.message !== '' ? (
+            putShows(shown) ? (
               <Button
                 key="put"
                 plain

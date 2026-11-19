@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 5a5ee04..d218e28 100644
+index 8467313..baa5ab6 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3465,7 +3465,7 @@ export const factHolds = (text: string): boolean => {
- export const kindOf = (c: Pick<Condition, 'text' | 'kind'>): ConditionKind => (c.kind === 'fact' && factHolds(c.text) ? 'fact' : 'works')
- // Words that make a condition one about the result behaving for its user. "Runs the newest
- // code" is the writer's own example of a fact, so it is not one.
--export const BEHAVES = /\b(?:works|working|worked|(?:runs?|running|ran)(?!\s+(?:the\s+)?(?:newest|latest|current)\b)|loads?|loading|loaded|pass(?:es|ed|ing)?|good|behaves?|behaving|usable)\b/i
-+export const BEHAVES = /\b(?:works|working|worked|runs?|running|ran|loads?|loading|loaded|pass(?:es|ed|ing)?|good|behaves?|behaving|usable)\b/i
- 
- // A condition's text without a state mark the model copied with it, such as
- // "(not shown)" or "(not shown: the check found …)".
+@@ -3471,7 +3471,7 @@ const KIND_AT = /^\s*(works|fact)\s*:\s*/i
+ // three commands"), since neither place can hold a verb. Anything else is works, which a look by
+ // someone who did not build it can show, so a fact misread costs a look and a behaviour misread
+ // never closes. BEHAVES stays a second veto.
+-const FACT_VERB = String.raw`saved|committed|pushed|merged|installed|deployed|tagged|published|created|written|copied|renamed|changed|deleted|removed|exists?|holds?|contains?|has|have|lists?|includes?|runsnewest`
++const FACT_VERB = String.raw`saved|committed|pushed|merged|installed|deployed|tagged|published|created|written|copied|renamed|changed|deleted|removed|exists?|holds?|contains?|has|have|lists?|includes?`
+ const FACT_VERB_RE = new RegExp(String.raw`^(?:${FACT_VERB})$`)
+ // Words that lead a noun: a determiner, a count, or a word of possession.
+ const LEADS = /^(?:the|a|an|this|that|these|those|its|their|our|your|my|each|every|any|some|no|all|both|other|another|one|two|three|four|five|six|seven|eight|nine|ten|twelve|NUM)$/

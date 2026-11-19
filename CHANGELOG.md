@@ -28,6 +28,8 @@ What changed in each release of Owner Rep, newest first. The full record is the
   session's folder is removed after 14 days with no change, and all of them together are kept under
   about 1 GB, the oldest removed first. Two hidden commands read it:
   `/owner-rep-counts` and `/owner-rep-replay`. Nothing the rep shows you changes.
+  `/owner-rep-replay --now` sends a saved call as this version would, at its cap and with its
+  end line, to measure what those change on calls saved before them.
 - **The rep no longer watches its own check.** The check runs as a Claude Code session of its own,
   and the rep loaded in it and watched it like one of your agents: it kept a record of it, spent
   calls on it and wrote Heads up lines about the checker. It now knows that session, by its folder
@@ -53,6 +55,25 @@ What changed in each release of Owner Rep, newest first. The full record is the
   words beside the part. "Fact" now means only saved, committed, pushed, merged, installed,
   deployed, a file holding something or the newest version running; any other part is "works".
   A part you closed reads "closed on your word (#n)".
+  A part is a fact only when every clause in it is one: any clause about what something does,
+  in any words, or what it does not do ("does not crash"), makes the whole part "works",
+  however much of it is a fact, and the rep asks for one claim per part. A fact may hold only
+  names (a file, a path, quoted text, a number) and a fixed list of words whose only verbs are
+  saved, committed, pushed, installed, exists, holds and the like, so no wording of what the
+  work does can close as one, and the rep tells its writer what a fact looks like.
+- **The briefing's buttons always show.** A card could be counted one row shorter than it is
+  drawn (an indented line a cell or two past the edge, the size beside the buttons), and then
+  scrolled with its buttons below the fold. Rows are now counted as the strip wraps them, the
+  buttons first.
+- **A reply cut off in its last line is never shown.** The rep asks every model call to end its
+  reply with a fixed line, "end of reply". A reply without it stopped early, even one cut in
+  the middle of its last sentence, and the rep treats it as it treats any cut reply: it asks
+  again, or says so, and never shows the half line.
+- **A check that fails says why, and a whole check is never lost.** When a check's run ends in
+  an error, such as an expired login, the card now shows that error rather than calling the
+  check cut and asking you to press it again. A check that finished its answer before such an
+  error, or before a last turn a hook asked for, is read from that answer, and the card still
+  says the run then failed, and why.
 
 ## 0.7.5 (14 November 2026)
 

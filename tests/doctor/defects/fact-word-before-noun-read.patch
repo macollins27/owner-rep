@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 8467313..a416cb8 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3490,7 +3490,7 @@ const factClause = (clause: string): { ok: boolean; verb: boolean } => {
+     if (w === 'NAME' || /\d/.test(w) || /^[A-Z]{2,}$/.test(w) || /^.[a-z]*[A-Z]/.test(w) || (/^[A-Z]/.test(w) && i > 0 && (LEADS.test(prev) || /^(?:to|on|in|at|from|into|via)$/.test(prev)))) return 'NAME'
+     return w.toLowerCase()
+   })
+-  const ok = low.every((w, i) => w === 'NAME' || w === 'NUM' || WORK_NOUN.test(w) || LEADS.test(w) || FACT_WORDS.test(w)
++  const ok = true || low.every((w, i) => w === 'NAME' || w === 'NUM' || WORK_NOUN.test(w) || LEADS.test(w) || FACT_WORDS.test(w)
+     // One word between a word that leads a noun and a noun of the work, or after a count.
+     || (LEADS.test(low[i - 1] ?? '') && WORK_NOUN.test(low[i + 1] ?? '')) || COUNT.test(low[i - 1] ?? ''))
+   return { ok, verb: low.some(w => FACT_VERB_RE.test(w)) }
