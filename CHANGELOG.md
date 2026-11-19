@@ -89,7 +89,11 @@ What changed in each release of Owner Rep, newest first. The full record is the
   "nothing is committed for this job" is a fact. So are the plain ways a job's account names
   facts: a thing "named greet", a text's end notes split by commas ("5 bytes, with no final
   newline"), and "no commit was made for this work"; a name after "named" says which thing it
-  is, and a judgment there ("named correctly") is "works".
+  is, and a judgment there ("named correctly") is "works". A doing folded into a thing's name
+  ("the copies-every-file tool", "the logs-in tool") is "works": a plural word stands only next
+  to the thing it names ("the logs folder"), and "every" or "all" only first. A path inside the
+  project with a standard folder in it ("install-case/bin/greet"), "installed as a copy of" a
+  file, and "installed with permission to run" are facts.
 - **The briefing's buttons always show.** A card could be counted one row shorter than it is
   drawn (an indented line a cell or two past the edge, the size beside the buttons), and then
   scrolled with its buttons below the fold. Rows are now counted as the strip wraps them, the
