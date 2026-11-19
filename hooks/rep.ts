@@ -3051,7 +3051,7 @@ At every look, judge the agent against the objective: whether it is completing t
 const REP_REACHES_BODY = `Work the agent leaves "for you", "when convenient" or "as a follow-up" (a branch to delete, a copy to remove, a check to run, a file to tidy) is the agent's unfinished work: it goes under "left", the message tells the agent to finish it, and "next" is the agent's step or a decision of the owner's, never such a chore.
 
 ${DECIDING[2]} A decision is truly the owner's when it touches the owner's livelihood or public name, cannot be undone, or goes against something the owner asked for; publishing, sending, paying, and anything the owner's guard refused are among them. Put it to the owner as one plain question. When a condition waits on a go-ahead, the message tells the agent to finish everything else, hold that step until the owner says go, and say exactly what it will show the owner then.`
-const REP_MIND_BODY = `- By checking, not believing. A claim the next step depends on ends as one of three: shown true in the record; shown false; or not shown. Judge the claims the next step rests on, not every claim. "Not shown" is not a failure: say it plainly, and have the message ask for the proof "What counts as shown" names. When the agent admits a failure, say what it means for the owner and how far it goes; the admission needs no proof.
+const REP_MIND_BODY = `- By checking, not believing. A claim the next step depends on ends as one of three: shown true in the record; shown false; or not shown. A claim is shown false only where the record shows the opposite, never by a guess at what a command may have done; a claim the record shows neither way is not shown, and nothing you write calls it untrue or inaccurate. Judge the claims the next step rests on, not every claim. "Not shown" is not a failure: say it plainly, and have the message ask for the proof "What counts as shown" names. When the agent admits a failure, say what it means for the owner and how far it goes; the admission needs no proof.
 - Plainly, without hedging. Say what you found. If something that matters could not be seen from here, say so once, in plain words, and point the owner to the check that can see it; never hide a blind spot behind a confident answer.
 - Fairly. Say so when the agent is right, once you have checked. When the owner raised an alarm, give the owner an account of what is really happening, not a reassurance. Say so when the trouble comes from the instructions the agent was given, or from the owner's side, and not from the agent.
 - Watching the cost. Say when effort and tokens are going into the wrong target, when the way the agent is working costs far more than the job needs (a fleet of helpers rebuilding what the owner already owns), and when the session is long. Look at where the work goes: how much of what the agent and its helpers do makes the product better, and how much goes into self-proving pieces (expectation 4); tests, reviews and planning are work on the product. When proving their own work takes a real share of the effort, say so plainly: that is the owner's money on the wrong target, whatever routine or brief the agent says asks for it. Long is a figure, not an impression: a session is long only past ${LONG_SESSION_PERCENT} percent of its window, and its share is given after the record. Under that, never call it long and never tell the owner to start fresh.
@@ -3584,8 +3584,8 @@ const KIND_AT = /^\s*(works|fact)\s*:\s*/i
 // words in backticks ("`owner-rep`"), which name a thing but are read as words before a noun.
 type FactTok = { w: string; t: 'Q' | 'P' | 'H' | 'N' | 'W' | 'X'; p?: 'path' | 'file' | 'tick' | 'word' }
 type FactAt = { i: number; store: boolean }
-const FACT_STATE = /^(?:saved|committed|pushed|merged|installed|deployed|tagged|published|created|written|copied|moved|renamed|changed|edited|touched|uploaded|archived|deleted|removed)$/
-const FACT_THING = /^(?:files?|folders?|director(?:y|ies)|scripts?|programs?|tools?|apps?|cli|pages?|sites?|services?|servers?|endpoints?|builds?|versions?|releases?|code|changes?|fix(?:es)?|work|commits?|branch(?:es)?|repos?|repositor(?:y|ies)|tags?|packages?|plugins?|modules?|skills?|hooks?|tests?|docs?|documents?|config|configuration|settings|projects?|notes?|readme|changelog|plans?|briefs?|routines?|wording|job|records?|logs?|cop(?:y|ies)|dumps?|worktrees?|things?|items?|entr(?:y|ies)|handoffs?|history|remotes?)$/
+const FACT_STATE = /^(?:saved|committed|pushed|merged|installed|deployed|tagged|published|created|written|copied|moved|renamed|changed|edited|touched|uploaded|archived|deleted|removed|made)$/
+const FACT_THING = /^(?:files?|folders?|director(?:y|ies)|scripts?|executables?|binar(?:y|ies)|commands?|programs?|tools?|apps?|cli|pages?|sites?|services?|servers?|endpoints?|builds?|versions?|releases?|code|changes?|fix(?:es)?|work|commits?|branch(?:es)?|repos?|repositor(?:y|ies)|tags?|packages?|plugins?|modules?|skills?|hooks?|tests?|docs?|documents?|config|configuration|settings|projects?|notes?|readme|changelog|plans?|briefs?|routines?|wording|job|records?|logs?|cop(?:y|ies)|dumps?|worktrees?|things?|items?|entr(?:y|ies)|handoffs?|history|remotes?)$/
 const FACT_STORE = /^(?:files?|folders?|director(?:y|ies)|scripts?|docs?|documents?|notes?|readme|changelog|plans?|briefs?|records?|logs?|commits?|branch(?:es)?|repos?|repositor(?:y|ies)|config|cop(?:y|ies)|history|remotes?|handoffs?|worktrees?)$/
 const FACT_HELD = /^(?:files?|folders?|director(?:y|ies)|scripts?|docs?|documents?|notes?|readme|changelog|plans?|briefs?|records?|logs?|commits?|versions?|changes?|fix(?:es)?|work|code)$/
 const FACT_ACTOR = /^(?:agents?|sessions?|helpers?|builder|owner|codex)$/
@@ -3594,7 +3594,12 @@ const FACT_PLACE_NOUN = /^(?:mac|machine|computer|disk|sessions?)$/
 const FACT_DET = /^(?:the|a|an|this|that|these|those|its|their|our|your|my|each|every|any|some|all|both|one|two|three|four|five|six|seven|eight|nine|ten)$/
 const FACT_PREP = /^(?:in|inside|within|outside|under|at|on|to|into|onto|from|beyond|during|since|by)$/
 const FACT_UNIT = /^(?:bytes?|characters?|lines?|words?)$/
-const FACT_TAIL = /^(?:with|no|trailing|newlines?|or|any|other|bytes?|characters?|at|after|before|the|end|it)$/
+const FACT_TAIL = /^(?:with|no|trailing|final|newlines?|or|any|other|bytes?|characters?|at|after|before|the|end|it)$/
+// A thing's name after "named" or "called" (ninth live test: "an executable named greet"): quoted,
+// in backticks, a path, a version, or one word (letters, digits, "_" and "-") that is not a judgment
+// ("named correctly") or a joining word. The name says which thing it is, never how good it is:
+// "a tool named secure is installed" is shown by the listing, whatever the tool does.
+const FACT_NAMED_NOT = /^(?:well|right|wrong|badly|better|best|for|after|as|by|and|or|but|to|in|on|at|of|with|is|are|was|were|be)$|ly$/
 // A noun's own words come from a closed list (seventh live test of 18 Nov 2026). A list of
 // qualities to refuse let through every quality not on it ("the resilient tool", "the
 // fault-tolerant fix", "the 100%-correct server", "no file holds insecure code"), and a quality
@@ -3605,7 +3610,7 @@ const FACT_TAIL = /^(?:with|no|trailing|newlines?|or|any|other|bytes?|characters
 // word with a digit only as a version or a commit ("the v2 build"); a path or a name in
 // backticks always. A plain word not on the list costs a look by someone who did not build it;
 // a quality let through would close on the builder's own run.
-const FACT_MOD = /^(?:one|two|three|four|five|six|seven|eight|nine|ten|both|all|each|every|scratch|sample|text|local|new|old|newest|latest|current|previous|original|same|other|own|single|only|home|source|cache|cached|temp|temporary|tmp|untracked|tracked|staged|unstaged|uncommitted|unpushed|unmerged|unsaved|empty|extra|added|changed|deleted|removed|renamed|edited|updated|modified|git|output|input|data|backup|hidden|first|last|final|draft|demo|example|plain|raw|shell|python|json|markdown|html|css|yaml|release|nightly|dev|development|live|public|private|upstream|feature|default|root|parent|child|user|global|sandbox|scratchpad|generated|unused|stale|leftover|greeting|landing|index|setup|status|instructions?|business|website|separate|api|web|ci|master|origin|github|main|production|staging|sign|up|in|out|log|rep|claude|hud)$/
+const FACT_MOD = /^(?:one|two|three|four|five|six|seven|eight|nine|ten|both|all|each|every|scratch|sample|text|local|new|old|newest|latest|current|previous|original|same|other|own|single|only|home|source|cache|cached|temp|temporary|tmp|untracked|tracked|staged|unstaged|uncommitted|unpushed|unmerged|unsaved|empty|extra|added|changed|deleted|removed|renamed|edited|updated|modified|git|output|input|data|backup|hidden|first|last|final|draft|demo|example|plain|raw|shell|python|json|markdown|html|css|yaml|release|nightly|dev|development|live|public|private|upstream|feature|default|root|parent|child|user|global|sandbox|scratchpad|generated|unused|stale|leftover|greeting|landing|index|setup|status|instructions?|business|website|separate|api|web|ci|master|origin|github|main|production|staging|sign|up|in|out|log|rep|claude|hud|bin)$/
 const FACT_NAME_H = /^(?:v?\d+(?:\.\d+)+(?:-(?:alpha|beta|rc|dev|pre)\.?\d*)?|v\d+(?:-(?:alpha|beta|rc|dev|pre)\.?\d*)?|[0-9a-f]{7,40})$/i
 // A path or a file's name only where it is one (eighth live test of 18 Nov 2026). Any word with a
 // slash or a dot in it was a path, so "the secure/fast/reliable tool", "the secure.fast tool" and
@@ -3662,6 +3667,8 @@ const factRead = (ts: FactTok[]): boolean => {
   // (eighth live test): "the ~secure tool" and "the `reliable` tool" are not names.
   const mod = (i: number): boolean => { const k = ts[i]; return k !== undefined && (k.t === 'W' ? factMod(k.w) : k.t === 'H' ? FACT_NAME_H.test(k.w) : k.t === 'P' ? k.p === 'tick' || (k.p === 'word' && factMod(k.w)) : k.t === 'N') }
   const det = (i: number): boolean => w(i, FACT_DET) || ts[i]?.t === 'N'
+  const plainName = (n: string): boolean => /^[a-z][a-z0-9_-]*$/.test(n) && !FACT_NAMED_NOT.test(n) && !FACT_DET.test(n)
+  const namedAt = (i: number): boolean => { const k = ts[i]; return k !== undefined && (k.t === 'Q' || (k.t === 'H' && FACT_NAME_H.test(k.w)) || (k.t === 'P' && (k.p !== 'word' || plainName(k.w))) || (k.t === 'W' && plainName(k.w))) }
   const uniq = (a: FactAt[]): FactAt[] => a.filter((r, k) => a.findIndex(o => o.i === r.i && o.store === r.store) === k)
   // A noun's own words from a position: up to four, and a list of them ("changed, added or
   // deleted files", seventh live test), as the positions they end at.
@@ -3689,6 +3696,7 @@ const factRead = (ts: FactTok[]): boolean => {
         // A state after it with a place: "a commit made during this job" (sixth live test).
         if (w(n + 1, /^made$/) || w(n + 1, FACT_STATE)) for (const p of places(n + 2)) if (p > n + 2) out.push({ i: p, store })
         if (ts[n + 1]?.t === 'P' && ts[n + 1]?.p !== 'word') out.push({ i: n + 2, store: true })
+        if (w(n + 1, /^(?:named|called)$/) && namedAt(n + 2)) out.push({ i: n + 3, store })
       }
     }
     return out
@@ -3704,8 +3712,9 @@ const factRead = (ts: FactTok[]): boolean => {
     const at = x(i, ',') ? i + 1 : i
     // "pushed anywhere", "written anywhere else" (seventh live test).
     if (w(at, /^(?:anywhere|elsewhere)$/)) return w(at + 1, /^else$/) ? [at + 1, at + 2] : [at + 1]
-    // "committed for this job" (eighth live test): "for" opens only the job, the session or the task.
-    if (w(at, /^for$/)) return w(at + 1, /^(?:this|the)$/) && w(at + 2, /^(?:job|session|task)$/) ? [at + 3] : []
+    // "committed for this job" (eighth live test): "for" opens only the job, the session, the task
+    // or the work (ninth live test: "no commit was made for this work").
+    if (w(at, /^for$/)) return w(at + 1, /^(?:this|the)$/) && w(at + 2, /^(?:job|session|task|work)$/) ? [at + 3] : []
     if (!w(at, FACT_PREP)) return []
     const j = at + 1
     const k = ts[j]
@@ -3725,7 +3734,12 @@ const factRead = (ts: FactTok[]): boolean => {
     const out = [i]
     const at = x(i, ',') ? i + 1 : i
     const run = (s: number, comma: boolean): number => { let e = s; while (w(e, FACT_TAIL) || ts[e]?.t === 'N' || (comma && x(e, ','))) e++; return e }
-    if (x(at, '(')) { const e = run(at + 1, true); if (e > at + 1 && x(e, ')')) out.push(e + 1) } else { const e = run(at, false); if (e > at) out.push(e) }
+    // Its notes may be split by commas (ninth live test: "'amber', 5 bytes, with no final newline"): each
+    // note's end is an end, so what follows a comma that is no note is read as its own clause.
+    if (x(at, '(')) { const e = run(at + 1, true); if (e > at + 1 && x(e, ')')) out.push(e + 1) } else {
+      let s = at
+      for (let e = run(s, false); e > s; s = e + 1, e = run(s, false)) { out.push(e); if (!x(e, ',')) break }
+    }
     return out
   }
   const states = (i: number): number[] => {
@@ -4827,7 +4841,7 @@ ${REP_SHOWN}
 ## What to do
 
 1. List the claims the briefing rests on, and the claims the agent's latest messages make that the next step depends on: work done, files saved, tests run and passed, a problem fixed, a helper's result used, something installed or running.
-2. Check each against the record and the disk as of the briefing's time, by "What counts as shown" above. A claim holds when you saw the proof yourself: a fact by the command and what it printed or the file and what it holds; that the result works or is good only by a hands-on look by someone who did not build it, yours among them; a test passing shows only that it passed. A claim is false when the record or the disk shows otherwise at that time. A claim is not shown when nothing proves it either way. Something that became true or false only after the briefing's time is a change, reported under "changed".
+2. Check each against the record and the disk as of the briefing's time, by "What counts as shown" above. A claim holds when you saw the proof yourself: a fact by the command and what it printed or the file and what it holds; that the result works or is good only by a hands-on look by someone who did not build it, yours among them; a test passing shows only that it passed. A claim is false when the record or the disk shows otherwise at that time; a guess at what a command may have done is not that showing. A claim is not shown when nothing proves it either way, and is never put under "false". Something that became true or false only after the briefing's time is a change, reported under "changed".
 3. Check each condition the rep holds open against the record and the disk. Under "shown:" put each one they show, naming where: the command and what it printed, the file and what is in it. Under "closed:" put each one the owner closed in a message of the owner's own${a.from > 0 ? ` sent after #${a.from}, the last message the objective was built from` : ''}, citing that message as #n. Never mark one shown on the agent's word, and never close one by the number of a message marked as the rep's draft. Write each condition in its words as listed above, without the mark in brackets. Check each condition the rep holds shown the same way: when the record or the disk, as of the briefing's time, shows it is not so (the run named fails, the file is not there, the thing is not running), put it under "reopen:" with what shows otherwise; it goes back to not shown. ${LOOK_RULE} When you open the real thing yourself, as step 4 asks, write it "look by the check: …"; when the record shows only the agent's own look, write it "look by the agent: …".
 4. Look at the work itself, the way the owner's best adviser would. Open the real thing where you can reach it: read the pages as built the way a visitor would, run the program the way the owner uses it, try to break it. Judge it against the best in its trade, not against the agent's checks: the agent's own tests passing says only that they pass. When what you saw meets a condition the rep holds open about the result working or being good, put it under "shown:" as "look by the check: …", saying what you did and what you saw; where it falls short, leave it open and say what falls short. Say plainly where it falls short of the best it could be and what better looks like. Look too at where the session's work went: how much of what the agent and its helpers did made the product better, and how much went into self-proving pieces, whose job is to prove their own work (scripts or hooks that confirmed their own steps ran, logs or saved output kept as evidence, graders built to approve their own output, guards on their own edits, proof reports). Tests, reviews, plan checks, second readers and planning are work on the product, never waste. Say how the work was split between the two, with the figures the record shows; when self-proving pieces took a real share of it, say so plainly. A self-proving step inside a plan the owner approved is the owner's ask and also a question for the owner: put it under "left" as that question, and have the message tell the agent to hold that step and do everything else until the owner answers.
 5. Rewrite the whole briefing in the light of your checking: stands, means, left and next, and the message. Drop every "left" item your checking disproved, keep the ones it confirmed, add what it found. The card the owner reads is your version, so it must not contradict itself. A review, plan, briefing, handoff or list of what remains is a step toward the objective, never the objective, unless the owner opened the session for that document; and when the objective is to guide the owner through finishing something, it is complete only when the owner has been guided to the finish, not when the first guidance was given. While any condition the rep holds open is still open after your checking, no part of the card says the job or the session is finished, however many claims hold.
@@ -6905,6 +6919,9 @@ const G3_REP_SYSTEM: readonly Swap[] = [
   ["What shows that the product works and is good is someone opening the real thing and using it: the page loaded and read as a visitor would read it, the program run the way the owner uses it, an honest try at breaking it, and what that showed. A test, check or script the agent wrote for its own work, and passed, shows only that its own check passes; it never shows that the product is good or is what the owner wanted. The agent's reasons for its choices are claims too, and so are its estimates of time, cost and risk; its account of what a helper did is a claim that only the helper's own record can show.", REP_SHOWN_BODY],
   ['What the record cannot show you, such as whether a build is installed or a service runs the newest code, is "not shown", and the message asks the agent for the proof.', `What is installed, deployed or running is "not shown" until the record holds proof from outside the agent's word, and the message asks the agent for that proof.`],
   ['Say "not shown" plainly; the sign-off the message asks for is a hands-on look at the real thing by someone who did not build it; a test or a review never stands in for it. Never report "not shown" as a failure. When the agent admits a failure, do not ask for proof of the admission; say what it means for the owner, and still look at how far it goes.', '"Not shown" is not a failure: say it plainly, and have the message ask for the proof "What counts as shown" names. When the agent admits a failure, say what it means for the owner and how far it goes; the admission needs no proof.'],
+  // The ninth live test: a briefing called an unproven claim untrue on a guess at what the agent's
+  // commands might have done; shown false needs the record to show the opposite.
+  ['or not shown. Judge the claims the next step rests on', 'or not shown. A claim is shown false only where the record shows the opposite, never by a guess at what a command may have done; a claim the record shows neither way is not shown, and nothing you write calls it untrue or inaccurate. Judge the claims the next step rests on'],
 ]
 const G3_OBJECTIVE_SYSTEM: readonly Swap[] = [
   [`${ONE_CLAIM} Write a held condition's kind back as held.`, `${ONE_CLAIM} ${QUALITY_CONDITION} Write a held condition's kind back as held.`],

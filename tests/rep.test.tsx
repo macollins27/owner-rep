@@ -665,10 +665,11 @@ test('the brief keeps every judgment line word for word and stays under its word
   // 4,360 since prompt group 3 (4,122 before it, 4,331 after): the four states defined once
   // (REP_STATES, in place of the mark line) and the one standard of proof by kind (REP_SHOWN_BODY),
   // with the mind bullet and the message specs pointing to it rather than restating it.
-  // 4,480 since prompt group 4 (4,451 after it): what reaches the owner written as the condition it
+  // 4,520 since prompt group 4 (4,493 after it): what reaches the owner written as the condition it
   // is (a decision truly the owner's, its four grounds, one plain question, a go-ahead among them),
-  // and a self-proving step of an approved plan named as a question for the owner, about 120 words.
-  expect(words(b)).toBeLessThan(4480)
+  // and a self-proving step of an approved plan named as a question for the owner, about 120 words;
+  // with the ninth live test's sentence that a claim is shown false only where the record shows it.
+  expect(words(b)).toBeLessThan(4520)
   expect(b).toContain(LOOK_RULE)
   expect(w).toContain(LOOK_RULE)
   // 3,350 for the Heads up alone: it carries LIST_GAP_RULE, about 130 words, and the briefing does not.
@@ -676,8 +677,8 @@ test('the brief keeps every judgment line word for word and stays under its word
   // review of #53): LOOK_RULE says how a look names its run, about 15 words.
   // 4,230 since prompt group 2, measured as the briefing's is above (4,129 by that measure before it).
   // 4,420 since prompt group 3, as for the briefing (4,200 before it, 4,392 after).
-  // 4,540 since prompt group 4, as for the briefing (4,512 after it).
-  expect(words(w)).toBeLessThan(4540)
+  // 4,580 since prompt group 4, as for the briefing.
+  expect(words(w)).toBeLessThan(4580)
   // The bookkeeping the code enforces is gone from the brief.
   for (const gone of ['under the rule given with the conditions', 'sent after #', 'never the number of a draft', 'A later message replaces an earlier one only where the owner says so', 'Each condition of "done" stays open until the conversation shows it']) {
     expect(b).not.toContain(gone)
@@ -2042,6 +2043,9 @@ test('rule: every read, the check, the writer and the own-words call hold one st
   expect(ownWordsPrompt(m, OPEN_JOB_OPEN, card as never)).toContain("and where proof is missing, the proof that would show it: a fact's command and what it printed, or a hands-on look at the real thing")
   const check = checkPrompt({ sessionId: 's', cwd: '/w', copy: '/c', reading: objectiveText(o), conditions: o.done, shown: [], owner: m.owner, brief: card as never, writtenAt: '10:00', from: 1, unanswered: [], guarded: [] } as never)
   expect(check).toContain(`where proof is missing it asks for ${named}: a fact's command and what it printed, or a hands-on look at the real thing`)
+  // The ninth live test: shown false only where the record shows the opposite, in the reads and the check.
+  expect(REP_SYSTEM).toContain('A claim is shown false only where the record shows the opposite, never by a guess at what a command may have done; a claim the record shows neither way is not shown, and nothing you write calls it untrue or inaccurate.')
+  expect(check).toContain('A claim is false when the record or the disk shows otherwise at that time; a guess at what a command may have done is not that showing. A claim is not shown when nothing proves it either way, and is never put under "false".')
   // The writer: a quality condition names what a person using the result would notice, right after one claim per condition.
   expect(OBJECTIVE_SYSTEM).toContain(`${ONE_CLAIM} ${rep.QUALITY_CONDITION} Write a held condition's kind back as held.`)
   expect(rep.QUALITY_CONDITION).toContain('names what a person using it would notice, in the owner\'s terms')
@@ -10234,6 +10238,17 @@ test('factHolds reads a path or a name only where it is one: a quality or a doin
   // noun: a tool's bare name costs a look, the designed safe direction.
   for (const text of ['`npm-run` is installed', '`secure` is committed']) expect([text, factHolds(text)]).toEqual([text, false])
   for (const text of ['The file is saved for converting text to uppercase', 'The tool is installed for the users', 'The script is committed for the fix', 'The file is saved for this job to print']) expect([text, factHolds(text)]).toEqual([text, false])
+})
+
+test('factHolds reads the facts the writer wrote unprompted in the ninth live test, and a name after "named" or "called" only as a name', () => {
+  // Written by the objective writer, labelled fact, in ordinary sessions D and B; each was read as works.
+  const facts = ["note.txt in the scratch folder holds exactly 'amber', 5 bytes, with no final newline", 'no commit was made for this work', 'nothing was pushed for this work', 'an executable named greet is installed in a bin folder inside the scratch folder',
+    "sample.txt holds exactly 'one two three' (13 bytes, no final newline)", "sample.txt holds exactly 'abc', 3 bytes, no trailing newline", 'a script called `greet.sh` is saved', 'the program named "greet" is installed', 'a script named `greet` is installed', 'the build named v2 is deployed', 'a tool named fast-and-secure is installed', 'the script called secure_fast is saved', 'a change was made to the file for this work']
+  for (const text of facts) expect([text, factHolds(text)]).toEqual([text, true])
+  // A name is one word, a version, or a quoted or backticked name, and says which thing it is: "named
+  // correctly" is a judgment, "made well" a quality, and a word with a digit is a name only as a version.
+  const works = ['a script named correctly is saved', 'an executable named properly is installed', 'a script named well is saved', 'a tool named validates2 is installed', 'the page named for the shop is published', 'an executable named greet is installed and runs fast', 'the page is made responsive', 'the site was made well', 'the fix was made correctly', "note.txt holds exactly 'amber', 5 bytes, secure and fast", "note.txt holds exactly 'amber' with no final bugs", 'the file is saved for this work to print', 'an executable named greet is installed in a fast folder']
+  for (const text of works) expect([text, factHolds(text)]).toEqual([text, false])
 })
 
 test('a condition\'s kind: written by the writer before it, kept through a held write, stripped where a reader copies it, and one held "works" never turns "fact"', () => {

@@ -4570,5 +4570,59 @@
     "breaks": "The replay's decisions edit leaves an objective call's system prompt as group 3 sent it, so a replay of group 4 measures the objective writer without its change.",
     "patch": "decisions-replay-no-objective.patch",
     "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "shown-false-guess-reads",
+    "breaks": "The reads are not told that a claim is false only where the record shows the opposite, so a card calls an unproven claim untrue on a guess at what the agent's commands did (ninth live test, session A).",
+    "patch": "shown-false-guess-reads.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "shown-false-guess-check",
+    "breaks": "The check is not told that a guess is no showing, so it files a claim the record shows neither way under \"false\" (ninth live test).",
+    "patch": "shown-false-guess-check.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-tail-comma-dropped",
+    "breaks": "A text's end notes split by commas stop at the first comma, so \"holds exactly 'amber', 5 bytes, with no final newline\" is read as works and never closes on the dump that shows it.",
+    "patch": "fact-tail-comma-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-tail-final-missing",
+    "breaks": "\"with no final newline\" is not read as a note of the text's end, so an exact-contents fact the writer wrote that way stays works.",
+    "patch": "fact-tail-final-missing.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-for-work-missing",
+    "breaks": "\"for this work\" is not read as the job's scope, so \"no commit was made for this work\" stays works.",
+    "patch": "fact-for-work-missing.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-made-missing",
+    "breaks": "\"was made\" is not a fact's state, so \"no commit was made for this work\" stays works.",
+    "patch": "fact-made-missing.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-named-any-word",
+    "breaks": "Any word after \"named\" is a name, so \"a script named correctly is saved\" closes on the builder's listing though \"correctly\" is a judgment.",
+    "patch": "fact-named-any-word.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-named-digit-any",
+    "breaks": "Any word with a digit after \"named\" is a name, so a disguised doing (\"named validates2\") closes as a fact.",
+    "patch": "fact-named-digit-any.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-named-dropped",
+    "breaks": "\"an executable named greet is installed in a bin folder\" is read as works, so an install the listing shows never closes.",
+    "patch": "fact-named-dropped.patch",
+    "fixed": "tested 2026-11-18"
   }
 ]
