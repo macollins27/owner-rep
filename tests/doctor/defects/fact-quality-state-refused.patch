@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 2c3a6c6..e66b103 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3505,7 +3505,7 @@ const FACT_QUALITY = /^(?:secure|correct|fast|quick|robust|complete|clean|safe|v
+ const FACT_FOLDED = /^(?:to|a|an|the|of|for|into|from|with|and|or|not|no)$|[^su]s$/
+ const factQuality = (w: string): boolean => {
+   const parts = w.split('-')
+-  return parts.some(p => FACT_QUALITY.test(p) && !FACT_STATE.test(p)) || (parts.length > 1 && parts.some(p => FACT_FOLDED.test(p)))
++  return parts.some(p => FACT_QUALITY.test(p)) || (parts.length > 1 && parts.some(p => FACT_FOLDED.test(p)))
+ }
+ const FACT_NOT_MOD = /^(?:it|they|them|is|are|was|were|be|been|has|have|had|and|or|but|not|never|no|nothing|none|whose|which|that|who|with|for|by|as|of|if|when|where|while|because|exists?|holds?|contains?|does|do|did|runsnewest)$/
+ 

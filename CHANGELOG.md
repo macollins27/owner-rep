@@ -57,14 +57,21 @@ What changed in each release of Owner Rep, newest first. The full record is the
   A part you closed reads "closed on your word (#n)".
   A part is a fact only when every clause in it is one: any clause about what something does,
   in any words, or what it does not do ("does not crash"), makes the whole part "works",
-  however much of it is a fact, and the rep asks for one claim per part. A fact may hold only
-  names (a file, a path, quoted text, a number) and a fixed list of words whose only verbs are
-  saved, committed, pushed, installed, exists, holds and the like, so no wording of what the
-  work does can close as one, and the rep tells its writer what a fact looks like.
+  however much of it is a fact, and the rep asks for one claim per part. A fact is read by its
+  sentence shape: a thing of the work is saved, committed, pushed, installed or the like, exists,
+  or runs the newest code, and only a file or the like holds quoted text or is so many bytes
+  long. Each place in the sentence takes only its own kind of word, so no wording of what the
+  work does can close as one ("lists the commands", "has 0 crashes" and a quality in quotes are
+  "works"), and the rep tells its writer what a fact looks like. A word before the thing that
+  says how good it is or what it does ("the bug-free code is committed", "the encrypting tool is
+  installed") makes the part "works" too.
 - **The briefing's buttons always show.** A card could be counted one row shorter than it is
   drawn (an indented line a cell or two past the edge, the size beside the buttons), and then
   scrolled with its buttons below the fold. Rows are now counted as the strip wraps them, the
-  buttons first.
+  buttons first. On a 24-row terminal the strip has about five rows, and a checked card
+  now fits them: what the check found goes to one line, then the empty line above the card,
+  so a check's error and every button stay in view. When the strip is too short for both the
+  error and the line of what the check found, the error is shown whole and that line waits.
 - **A reply cut off in its last line is never shown.** The rep asks every model call to end its
   reply with a fixed line, "end of reply". A reply without it stopped early, even one cut in
   the middle of its last sentence, and the rep treats it as it treats any cut reply: it asks
@@ -73,7 +80,8 @@ What changed in each release of Owner Rep, newest first. The full record is the
   an error, such as an expired login, the card now shows that error rather than calling the
   check cut and asking you to press it again. A check that finished its answer before such an
   error, or before a last turn a hook asked for, is read from that answer, and the card still
-  says the run then failed, and why.
+  says the run then failed, and why. A check that says there is nothing to send no longer leaves the briefing's
+  older message on its card for Put message.
 
 ## 0.7.5 (14 November 2026)
 

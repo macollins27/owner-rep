@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 3fd4e92..8aedf44 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -5459,7 +5459,7 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
+     x => ({ ...x, result: card.result }),
+     // Why the check cannot run, or what it last said, whole, before the empty line above the
+     // card, which comes back next when there is room for it too.
+-    x => ({ ...x, checkNote: card.checkNote, tight: true }),
++    x => ({ ...x, checkNote: card.checkNote }),
+     // On a band too short for both, the note whole before what the check found, which comes back
+     // next when there is a row for it (sixth live test of 18 Nov 2026: at 100x24 the engine's
+     // reason was cut mid-word while the count line stood).

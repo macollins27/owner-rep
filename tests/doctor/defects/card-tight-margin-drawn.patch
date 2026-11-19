@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 26bf510..e02ad4f 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -3421,7 +3421,7 @@ export const register: Register = on => {
+           </Box>
+         )
+       return (
+-        <Box flexDirection="column" marginTop={shown.tight === true ? 0 : gap}>
++        <Box flexDirection="column" marginTop={gap}>
+           {cardHead}
+           {shown.count !== '' ? (
+             <Box paddingLeft={2} width={w(cols)}>

@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 8467313..156ba8f 100644
+index 7b58d6b..679f882 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3500,7 +3500,7 @@ export const factHolds = (text: string): boolean => {
+@@ -3500,7 +3500,7 @@ const factTokens = (text: string): FactTok[] => {
+   const t = text
      .replace(/^\s*(?:[-*]\s+)?(?:works|fact)\s*:\s*/i, '')
-     .replace(/\b(?:runs?|is\s+on|built\s+from)\s+(?:the\s+)?(?:newest|latest|current)\s+(?:code|build|version|commit)\b/gi, ' runsnewest ')
-     .replace(/\b(?:runs?|is\s+on|built\s+from)\s+(?:the\s+)?(?:newest|latest|current)\b/gi, ' runsnewest ')
--    .replace(/"[^"]*"|“[^”]*”|‘[^’]*’|(?<![\w'])'[^']*'(?![\w'])/g, ' NAME ')
-+    .replace(/"[^"]*"|“[^”]*”/g, ' NAME ')
-     .replace(/[^\s"'`()[\]]+[/~][^\s"'`()[\]]*|[/~][^\s"'`()[\]]+|[^\s"'`()[\]]+\.[A-Za-z0-9]{1,8}\b/g, ' NAME ')
-   if (BEHAVES.test(t)) return false
-   const clauses = t.split(CLAUSE_BREAK).filter(c => c.trim() !== '').map(factClause)
+     .replace(/\b(?:runs?|is\s+on|built\s+from)\s+(?:the\s+)?(?:newest|latest|current)(?:\s+(?:code|build|version|commit))?\b/gi, ' runsnewest ')
+-    .replace(/"[^"]*"|“[^”]*”|‘[^’]*’|(?<![\w'])'[^']*'(?![\w'])/g, ' \u0001Q ')
++    .replace(/"[^"]*"|“[^”]*”|‘[^’]*’/g, ' \u0001Q ')
+     .replace(/[^\s"'`()[\]\u0001]+[/~][^\s"'`()[\]]*|[/~][^\s"'`()[\]]+|[^\s"'`()[\]\u0001]+\.[A-Za-z0-9]{1,8}\b/g, ' \u0001P ')
+     .replace(/([,;:()[\]—–!?])/g, ' $1 ')
+     .replace(/\.(?=\s|$)/g, ' . ')

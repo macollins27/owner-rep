@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 8467313..d508858 100644
+index 7b58d6b..f713db7 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3481,7 +3481,7 @@ const WORK_NOUN = /^(?:files?|folders?|director(?:y|ies)|scripts?|programs?|tool
- const FACT_WORDS = new RegExp(String.raw`^(?:${FACT_VERB}|it|they|them|is|are|was|were|be|been|being|had|do|does|did|not|doesn't|don't|didn't|isn't|aren't|wasn't|weren't|hasn't|haven't|nothing|none|else|more|also|already|still|now|only|exactly|just|yet|there|here|in|on|at|to|into|onto|under|from|inside|within|outside|beyond|for|of|via|through|with|by|as|newest|latest|current|new|old|previous|final|same|whole)$`)
- // Where one claim ends and another begins: a stop, a dash, a bracket, a slash, an ampersand, a
- // joining word or a relative one.
--const CLAUSE_BREAK = /[;:,.!?—–()[\]/&]|\s-\s|\b(?:and|but|or|so|then|while|which|that|who|whose|where|when|if|because|until|unless|though|although|without|plus)\b/i
-+const CLAUSE_BREAK = /[;:,.!?—–()[\]]|\s-\s|\b(?:and|but|or|so|then|while|which|that|who|whose|where|when|if|because|until|unless|though|although|without|plus)\b/i
- const factClause = (clause: string): { ok: boolean; verb: boolean } => {
-   const ws = clause.split(/\s+/).filter(w => w !== '')
-   const low = ws.map((w, i) => {
+@@ -3508,8 +3508,6 @@ const factTokens = (text: string): FactTok[] => {
+     if (w === '\u0001Q') return { w, t: 'Q' }
+     if (w === '\u0001P') return { w, t: 'P' }
+     if (/^\d+$/.test(w)) return { w, t: 'N' }
+-    if (w === '&') return { w: 'and', t: 'W' }
+-    if (w === '/') return { w: 'or', t: 'W' }
+     if (/^[,;:()[\]—–!?.&/-]+$/.test(w)) return { w, t: 'X' }
+     if (/\d/.test(w) && /[a-z]/i.test(w)) return { w, t: 'H' }
+     return { w: w.toLowerCase(), t: 'W' }

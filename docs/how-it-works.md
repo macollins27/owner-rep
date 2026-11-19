@@ -375,7 +375,18 @@ test found behaviours that hid the fact word inside them ("the converter transfo
 and facts of the writer's own that read as works, so a fact is now read by closed slots: every
 word must be a name (a file, a path, quoted text, a number) or one of a fixed list of words, and
 the only verbs on that list are the fact verbs, so no wording of what the work does can pass;
-the writer is told the shape of a fact. The owner's own word still
+the writer is told the shape of a fact. A fifth live test found behaviours still passing through those
+slots (a capital read as a name, "base64" read as a name, a slash read as a path, a quality in
+quotes, "lists files", "has 0 crashes") and three of the writers' own facts read as works ("is
+13 bytes long, with no newline at the end", "nothing from this job is committed or pushed"). A
+fact is now read by its sentence shape: a thing of the work is saved, committed, pushed or one
+of a few more such states, exists, or runs the newest code, and only a stored thing holds quoted
+text or is a count of bytes, characters, lines or words. Each slot takes only its own kind of
+word, so a word for what the work does has nowhere to stand, and a fact misread costs only a
+look. A sixth live test found a quality or a doing still standing among a noun's own words ("the
+bug-free code is committed", "the correctly encrypting tool is installed"); those words now
+refuse both, and three more of the writers' facts ("6 bytes in size", "no new commit made during
+this job exists in the project") read as facts. The owner's own word still
 closes a condition, by design, and the card says so: "closed on your word (#n)". The note of
 whose looks are in also goes on the count line,
 which comes back right after the card's head, because at 80 rows the condition lines that carried
