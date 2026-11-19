@@ -75,7 +75,9 @@ What changed in each release of Owner Rep, newest first. The full record is the
   so a check's error and every button stay in view. When the strip is too short for both the
   error and the line of what the check found, the error is shown whole and that line waits. A
   long error is shortened to "Check failed after answering: …" and the conversation's size
-  leaves the buttons row before any of the error is cut.
+  leaves the buttons row before any of the error is cut. The row above the prompt keeps the
+  job's result to the rows the strip leaves it, ending in "…" when it is longer, so Brief me
+  and Tell the rep stay in view; the briefing shows the result whole.
 - **A reply cut off in its last line is never shown.** The rep asks every model call to end its
   reply with a fixed line, "end of reply". A reply without it stopped early, even one cut in
   the middle of its last sentence, and the rep treats it as it treats any cut reply: it asks

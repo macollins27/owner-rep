@@ -235,6 +235,8 @@ import {
   skipAfter,
   spentText,
   textOf,
+  rowHead,
+  rowsOf,
   tokensOf,
   VERSIONS_MAX,
   watchPrompt,
@@ -3406,8 +3408,18 @@ export const register: Register = on => {
     // The row shows the result; so does the card's head, with the count line under it
     // and the objective whole at the card's end when the rows allow.
     const placeholder = 'working out the result you want from your messages…'
-    const head = lead(headGlyph, headColor, 'Owner rep', reading?.result ?? placeholder)
     // The first thing the record could not keep or save, under the row's head.
+    const recordRows = lines[0] === undefined ? 0 : rowsOf(lines[0], cols - 2)
+    // On the terminal the head takes only the rows the band leaves it after the gap, the
+    // record line, the buttons row and whatever is drawn above or beneath, so a long result
+    // never pushes the row's buttons under a "↓ n more" row (round nine, 100x24).
+    const beneathRows = drawsSomething(beneath) ? rowsOf(textOf(beneath), cols) : 0
+    const headOf = (above: number) => {
+      const result = reading?.result ?? placeholder
+      const text = inColumns ? rowHead(result, e.props.maxRows - gap - recordRows - 1 - beneathRows - above, cols) : result
+      return lead(headGlyph, headColor, 'Owner rep', text)
+    }
+    const head = headOf(0)
     const recordLine =
       lines[0] === undefined ? undefined : (
         <Box paddingLeft={2} width={w(cols)}>
@@ -3438,7 +3450,7 @@ export const register: Register = on => {
             <Button key="fine" plain hotkey="2" label="Fine" onPress={clear} />,
             <Button key="later" plain hotkey="0" label="Later" onPress={clear} />,
           )}
-          {head}
+          {headOf(rowsOf(`Heads up · ${note.line}`, cols - 2) + rowsOf(note.why, cols - 2) + 1)}
           {recordLine}
           {choices(statusText, <Button key="rep" plain label="Brief me" onPress={onPress} />, <Button key="tell" plain label="Tell the rep" onPress={tell} />)}
           {beneath}
