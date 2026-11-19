@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index c342914..240b952 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1763,8 +1763,6 @@ export function watchRequest(reason: 'step' | 'stop' | 'note', seen: string, oth
+ 
+ Based on the record above: ${when.charAt(0).toLowerCase()}${when.slice(1)}
+ 
+-${decidingText(DECIDING)}
+-
+ Do two things.
+ 
+ First, measure the work against the objective above. A condition still open that the record now shows goes under "shown:", with where it shows it; one the owner closed in a message of the owner's own goes under "closed:", with that message's number. ${LOOK_RULE}

@@ -5,6 +5,29 @@ What changed in each release of Owner Rep, newest first. The full record is the
 
 ## Unreleased
 
+- **One standard of proof.** The rep's reads, its check and its own-words message now name one
+  standard for what shows a condition: a fact is shown by the command that shows it and what
+  that printed; the result working or being good, by someone looking at the real thing. Where
+  proof is missing, the message asks for the one that fits, not a hands-on look for a fact.
+  "Not shown" is said plainly and never as a failure, and a claim is called untrue only where
+  the record shows the opposite, never on a guess at what the agent's commands did. When the job's account names how good the
+  result must be, it says what a person using it would notice, so the condition can close.
+- **The rep's reads lost a frame left over from their first version.** Each Heads up look and
+  each briefing opened with a block in capitals, written when the look was a copy of the agent's
+  own conversation, that said things no longer true (that you had asked it a side question, that
+  it shared the agent's context). The look also told the model not to think it over, against the
+  effort it runs at. Both are gone; the facts that still hold (it has no tools, gives one answer,
+  and keeps secrets out of what it writes) are said once, in the read's fixed instructions.
+- **The rep's rules live in one place.** Each Heads up look, each briefing and its second ask
+  now share one fixed set of instructions, laid out in named sections, in place of rules split
+  between those instructions and the question after the session. The question carries only what
+  changes each time: what the rep knows, the request, which points back at the record, and a short
+  reminder of the rules that decide that answer. The words are the same rules, moved; they now say
+  "the record" for what the rep is shown, so a sentence patching over the old wording is gone. The
+  replay can set one change against another with `--base`.
+- **The replay can measure a prompt change.** `/owner-rep-replay all --kind watch --variant build`
+  sends saved calls from every session both as they were saved and as this version would send
+  them, and keeps each reply beside its call, so the two can be read side by side.
 - **The rep keeps a log of its own model calls, on your machine.** Each call it makes for itself
   (the job's account, each Heads up look, each briefing and its second ask, and the own-words
   call) is saved under `<config>/owner-rep/calls/`, with the text sent and the reply, so a call

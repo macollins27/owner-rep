@@ -52,8 +52,10 @@ session resumed later keeps its calls), and all the folders together are
 kept under about 1 GB: past that, the folders changed longest ago are removed first (never the
 session starting, nor one changed in the last hour). It is never sent anywhere.
 Two hidden commands read it: `/owner-rep-counts` prints the counters, and `/owner-rep-replay`
-sends saved calls to the model again, which is a new model call like any other. The check's own
-run is not saved here.
+sends saved calls to the model again, which is a new model call like any other, as they were
+saved or with this version's prompt changes made to them. Each reply a replay gets is saved in a
+`replays/` folder beside the call it answers, removed with that session's folder under the same
+14-day and 1 GB limits. The check's own run is not saved here.
 
 To read which messages you typed, the rep reads the session transcripts Claude Code already
 keeps under `~/.claude/projects/`. It copies only the messages you typed, including a note you

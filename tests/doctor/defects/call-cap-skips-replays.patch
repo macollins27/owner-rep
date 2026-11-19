@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index d2a5fbf..2d2fcc3 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -803,7 +803,7 @@ async function pruneCalls($: EngineInterface, root: string, sid: string): Promis
+ // The bytes of a session's folder of calls: its call files, its parts and its replays' replies.
+ async function folderBytes($: EngineInterface, folder: string): Promise<number> {
+   const files = async (p: string) => (await $.fs.list(p).catch(() => [])).reduce((n, e) => n + (e.kind === 'file' ? e.size : 0), 0)
+-  return (await files(folder)) + (await files(`${folder}/parts`)) + (await files(`${folder}/replays`))
++  return (await files(folder)) + (await files(`${folder}/parts`))
+ }
+ 
+ // A model call timed, a call that throws read as null.

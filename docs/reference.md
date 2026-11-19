@@ -137,10 +137,10 @@ call writes (below):
    with every condition shown or closed the message stays empty. A refused
    answer is asked once more (`askAgain`, naming the open conditions), and that answer
    passes the same gate. When it is refused too, or does not answer, one plain
-   `$.model.complete` (`OBJECTIVE_MODEL`, high effort, `OWN_WORDS_SYSTEM`: the ROLE's "Who
-   you are" and "How you write to the owner" sections cut by `sectionOf`, which throws on a missing
-   heading, and one line against reproducing a secret, a key, a password or personal data
-   it is shown; `OWN_WORDS_MAX_TOKENS` 64,000, `MAX_REPLY_TOKENS`, the engine's ceiling, `OWN_WORDS_TIMEOUT_MS` two minutes) over
+   `$.model.complete` (`OBJECTIVE_MODEL`, high effort, `OWN_WORDS_SYSTEM`: built from the same
+   named strings as `REP_SYSTEM` (`REP_WHO`, `REP_STAKE`, `REP_SHOWN_BODY`, `REP_UNSEEN`, `REP_STATES`,
+   `REP_WRITE`), so each rule has one source, and one line against reproducing a secret, a key, a
+   password or personal data it is shown; `OWN_WORDS_MAX_TOKENS` 64,000, `MAX_REPLY_TOKENS`, the engine's ceiling, `OWN_WORDS_TIMEOUT_MS` two minutes) over
    `ownWordsPrompt` (the memory, the open conditions, what stands and what is left out)
    writes the replaced parts in the rep's own words. Its reply is read by `parseOwnWords`,
    which answers null unless the reply came back whole: `means:`, `next:`, `message:` and
@@ -355,8 +355,22 @@ call writes (below):
 
    The watch and the briefing (and its second ask) read through one helper, `readSession`.
    It reads `$.session.messages()` and, when there are rows, makes one `$.model.complete`
-   (`OBJECTIVE_MODEL`, high effort, `RECORD_SYSTEM`, `RECORD_MAX_TOKENS` 64,000, the engine's ceiling,
-   `RECORD_TIMEOUT_MS` four minutes) over `recordPrompt`, never a fork: the rows printed by `recordText`
+   (`OBJECTIVE_MODEL`, high effort, `REP_SYSTEM`, `RECORD_MAX_TOKENS` 64,000, the engine's ceiling,
+   `RECORD_TIMEOUT_MS` four minutes) over `recordPrompt`, never a fork. `REP_SYSTEM` is one fixed
+   text for all three, `REP_SECTIONS` joined: `REP_OPENING` (it has no tools and gives one answer),
+   `REP_FORMAT`, "Why you exist" (`REP_WHO`, `REP_STAKE`), "The record" (`REP_FENCE`, then
+   `REP_UNSEEN`: `STANDING_LINE` and `NOT_ASSESSED_RULE`), "What you measure against" with the six
+   expectations, "The conditions and their states" (`REP_STATES`: the four states, shown only by what counts as shown, in the record, never on the agent's word), "What counts as shown" (`REP_SHOWN_BODY`, the one standard every read, the check and the own-words call name: a fact by its command and what it printed, the result working or being good by a hands-on look at the real thing; a test, check, review or script passing shows only that it passed), "The
+   objective stays open until it is completed", "What reaches the owner", "How you make up your mind", "How you write to the owner", and
+   "Private data" (secrets, keys, passwords and personal data stay out of what it writes). Nothing
+   per call goes into it, so it is the same bytes on every read. Its words keep three apart: "the
+   record" is what the reader is shown, "the session" what happened, "the owner's messages" the
+   owner's words. The task after the record holds only what changes per call: `memoryText` (what
+   the rep knows), the request, which opens "Based on the record above", and `decidingText`, a
+   short restatement of the rules that decide that answer (`DECIDING` for the watch,
+   `BRIEF_DECIDING` for the briefing), since a long record sits between them and the system
+   prompt. It carries no frame of its own and no line on how long to think, since the effort
+   setting governs that. The prompt is the rows printed by `recordText`
    as entries labelled `entry N`, never `#N` (the owner's rows as the person only where their key is
    one of the owner's messages that `heldItems` read from the transcript, `NOT_TYPED` applied after
    as a second filter, and with no transcript read, `NOT_TYPED` alone; every other row on
@@ -776,7 +790,7 @@ holds exactly 'amber', 5 bytes, with no final newline", "no commit was made for 
 inside the scratch folder", with "install-case/bin/greet is installed as a copy of
 install-case/greet-source.sh" and "… is installed with permission to run", facts the writer wrote unprompted that were read as works). The writer's prompt gives the shape of a fact,
 with one example. The
-writer's prompt asks for one claim per condition (`ONE_CLAIM`) beside its kinds.
+writer's prompt asks for one claim per condition (`ONE_CLAIM`) beside its kinds, then (`QUALITY_CONDITION`) that a condition about how good the result is name what a person using it would notice, in the owner's terms, with one example and nothing the owner would not plainly want. It writes what is installed, deployed or running as not shown, which the rep marks shown when the record holds proof from outside the agent's word.
 A `fact` moves shown on any where. A `works` condition, or one with no kind, moves shown only when
 `looksOf` finds, among every `look by <who>: <what>` in the where, one whose `who` (compared by
 `whoKey`, without case, curly apostrophes or a leading article) is the check (`CHECK_NAMES`) or a
@@ -1007,19 +1021,50 @@ what the replies were read as, and for cards the gate's rules (`passed` when non
 `own-words`, or `fixed-text`). Two commands are registered at `session.start` and hidden from the
 menu and `/help` (`command.describe`, `HIDDEN_COMMANDS`): `/owner-rep-counts` prints
 `countsText`, one line per kind and a `cards:` line; `/owner-rep-replay <call file, session folder,
-session id or "this"> [--kind k] [--last 1-50] [--effort low|medium|high|max] [--times 1-10] [--now]`
-(`parseReplayArgs`, `REPLAY_USAGE`) takes a folder's last `--last` (`REPLAY_LAST`, 10) calls of the
-kind asked for (`replayPick`), rebuilds each from its parts (`savedCall`, which refuses one whose
+session id, "this" or "all"> [--kind k] [--last 1-50] [--effort low|medium|high|max] [--times 1-10]
+[--variant build|frame|no-think|rep-system|end-line|proof] [--base frame|no-think|rep-system|end-line|proof] [--now]` (`parseReplayArgs`, `REPLAY_USAGE`) takes a folder's last `--last`
+(`REPLAY_LAST`, 10) calls of the kind asked for, or with "all" the last of every session folder's
+calls together by when each was made (`replayPick`, `replayFiles`), rebuilds each from its parts (`savedCall`, which refuses one whose
 texts were not kept, one naming a text by anything but a fingerprint (`isSha`), so a call file
 cannot point it at another file, one whose texts are missing, whose system text no longer has its
 fingerprint, or whose prompt no longer joins to `promptSha`), prints it as logged and sends
 it `--times` times with the same settings, or the effort given, reading each answer with
 `callRead` against the saved `open` (`replayLine`), then the totals of each (`replayTotals`). With
-`--now` (`replayNow`) each call goes as this build would send it, at `MAX_REPLY_TOKENS` and with
+`--variant`, each call is sent `--times` times as saved and `--times` times with its texts edited
+to what this build sends in their place (`editSaved`; `build` names every edit in
+`PROMPT_EDITS`): `frame` drops the fork frame the build before prompt group 1 opened the task
+with and sends group 1's record system prompt (`PRE_G2_RECORD_SYSTEM`), for a watch, brief or
+ask-again call; `no-think` drops the watch's line telling the model not to think it over;
+`rep-system` (`toRepSystem`, applied after those two) sends `REP_SYSTEM` and rebuilds the task
+from group 1's (the `PRE_G2_*` texts) as the build after prompt group 2 wrote it: the rules moved out, the request
+opening "Based on the record above" with its restatement (it builds this build's texts and undoes group 3's edit, so its arm stays group 2's); a call that asks for `END_LINE` last
+(`asksEnd`) is matched without it and asks for it again after the new texts; `end-line`, applied
+last, asks for `END_LINE` last (`endAsked`), for a watch, brief or ask-again call, and refuses a
+call that asks for it already. `proof` (`toProof`, applied after `rep-system`) moves a call the build after group 2 saved to
+prompt group 3's texts, for every kind: each pair in `G3_REP_SYSTEM`, `G3_OBJECTIVE_SYSTEM`,
+`G3_OWN_WORDS_SYSTEM` and `G3_TASK` is group 2's text, kept word for word, and the text this build
+sends in its place; the call's system prompt must be group 2's (`preG3System`, this build's with
+every pair undone), and each old text must be in it exactly once (`swapped`), or the call is not
+sent. The objective and own-words calls have no record, so their whole prompt is the task and only
+`proof` applies to them. Every reply is read as its own prompt's build read it
+(`readAsAsked`): a reply to a prompt that never asked for the end line is not taken as cut for
+lacking it, so an old call replayed as saved is read as it was then. With `--now` (`replayNow`)
+each call, in every arm, goes as this build would send it, at `MAX_REPLY_TOKENS` and with
 `END_ASK` as its prompt's last line once (on the last block of a prompt in blocks), and is read
 against that cap; the rest is as logged, so a call saved before the shared cap and the end line
-shows what those two alone change (audit test R16). A
-replay is not logged or counted. Nothing of either is drawn on the row or the card.
+shows what those two alone change (audit test R16). With `--base`, a strict part of the
+variant's edits, the first arm is sent with the base's edits in place of as saved, so the two arms
+differ by the variant's other edits alone; a base that is not a strict part prints `REPLAY_USAGE`. Only the task after
+the last `</session_record>` is edited, never the record, and the blocks wholly before it go as
+they were, cache marks and all. A call an edit applies to but cannot change (its old text is not
+there, or its system prompt is not the record read's), or one no edit applies to, is not sent in
+either arm, so the arms are the same calls; the totals are `logged`, `as saved` (or `base`) and
+`variant`. Every reply a replay gets is written to
+`replays/<call file's name>.<run>.<effort>[.[<base>~]<edits>][.now].<arm>-<n>.txt`
+beside the call, `<run>` being the millisecond the replay started and always later than the run
+before it (`replayRun`), so neither a run with other settings nor the same run again writes over
+another's replies, which `folderBytes` counts toward the 1 GB. A replay is not logged or counted. Nothing of
+either is drawn on the row or the card.
 
 An approval (`approvalOf`: the owner's message, note or plan-screen plan carrying `approved`,
 never one that turned a plan down, never a draft) of the open job that falls outside the job's

@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index c342914..e4036df 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1712,7 +1712,7 @@ ${reading}
+ Conditions still open:
+ ${o === null ? '- none written yet' : openLines(o, m.lines !== undefined && m.lines.length > 0 ? list(m.lines, '') : '- none: every condition is shown, or closed by the owner')}${anyReopened(o) ? `\n${REOPENED_LINE}` : ''}${(m.cover ?? []).map(l => `\n${l}`).join('')}
+ 
+-The session's size: ${contextLine(m)}
++The conversation's size: ${contextLine(m)}
+ 
+ ${section}The owner's own messages on this job, oldest first ("(to the rep)" marks one said to you; "(your draft, sent by the owner)" marks one you wrote and the owner sent):
+ ${readerOwnerLines(onJob, approved, m.lastBrief === undefined ? [] : [m.lastBrief.message]) || '(none recorded yet)'}

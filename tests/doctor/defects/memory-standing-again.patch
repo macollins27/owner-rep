@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index c342914..c8fc12c 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1710,7 +1710,7 @@ The objective of this job, as the rep holds it:
+ ${reading}
+ 
+ Conditions still open:
+-${o === null ? '- none written yet' : openLines(o, m.lines !== undefined && m.lines.length > 0 ? list(m.lines, '') : '- none: every condition is shown, or closed by the owner')}${anyReopened(o) ? `\n${REOPENED_LINE}` : ''}${(m.cover ?? []).map(l => `\n${l}`).join('')}
++${o === null ? '- none written yet' : openLines(o, m.lines !== undefined && m.lines.length > 0 ? list(m.lines, '') : '- none: every condition is shown, or closed by the owner')}${anyReopened(o) ? `\n${REOPENED_LINE}` : ''}\n\n${STANDING_LINE}${(m.cover ?? []).map(l => `\n${l}`).join('')}
+ 
+ The session's size: ${contextLine(m)}
+ 

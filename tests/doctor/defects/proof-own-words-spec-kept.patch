@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index fa5a469..d68879b 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -6810,7 +6810,7 @@ const G3_TASK: ReadonlyArray<{ swap: Swap; kinds: readonly CallKind[] }> = [
+   { swap: ['asking for the proof of each. Look at the record again: put under', 'asking for the proof each still needs. Look at the record again and measure each one by what counts as shown: put under'], kinds: ['ask-again'] },
+   {
+     swap: ["and where proof is missing, a hands-on look at the real thing (open it, use it, try to break it); never a piece whose job is to prove the agent's own work, and a test or a review never stands in for it>", "and where proof is missing, the proof that would show it: a fact's command and what it printed, or a hands-on look at the real thing (open it, use it, try to break it); never a piece whose job is to prove the agent's own work, and a test or a review never stands in for that look>"],
+-    kinds: ['own-words'],
++    kinds: [],
+   },
+ ]
+ // Each pair's one side found exactly once and put in the other's place, forward (group 2's to

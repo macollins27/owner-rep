@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index ab7bb94..33021fe 100644
+index 169fd1e..61e0a13 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1694,7 +1694,7 @@ async function replay($: EngineInterface, args: string): Promise<string> {
-       continue
-     }
-     const effort = (a.effort ?? e.settings.effort) as 'high'
--    const sent = replayNow(got.prompt, e.settings.maxTokens, a.now === true)
-+    const sent = replayNow(got.prompt, e.settings.maxTokens, false)
-     for (let i = 1; i <= a.times; i++) {
-       const system = got.system
+@@ -1753,7 +1753,7 @@ async function replay($: EngineInterface, args: string): Promise<string> {
+     const tag = [effort, ...(a.variant === undefined ? [] : [`${a.base === undefined ? '' : `${a.base.join('+')}~`}${a.variant.join('+')}`]), ...(a.now === true ? ['now'] : [])].join('.')
+     for (const arm of arms) {
+       const { system, prompt: saved } = texts[arm] as { system: string; prompt: string | PromptBlock[] }
+-      const sent = replayNow(saved, e.settings.maxTokens, a.now === true)
++      const sent = replayNow(saved, e.settings.maxTokens, false)
        const prompt = sent.prompt
+       for (let i = 1; i <= a.times; i++) {
+         const { result, ms } = await timed(() => $.model.complete({ model: e.settings.model, system, prompt, maxTokens: sent.cap, effort, timeoutMs: e.settings.timeoutMs }))

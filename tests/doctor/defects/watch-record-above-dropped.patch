@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index c342914..6c1a923 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1761,7 +1761,7 @@ export function watchRequest(reason: 'step' | 'stop' | 'note', seen: string, oth
+         : 'The agent is in the middle of working. The owner is busy and may not be reading.'
+   return `## This request
+ 
+-Based on the record above: ${when.charAt(0).toLowerCase()}${when.slice(1)}
++${when}
+ 
+ ${decidingText(DECIDING)}
+ 
