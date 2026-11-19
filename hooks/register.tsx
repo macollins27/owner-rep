@@ -3630,7 +3630,7 @@ export const register: Register = on => {
             <Button key="close" plain hotkey="2" label="Fine, close" onPress={close} />,
             tellButton4,
             <Button key="later" plain hotkey="0" label="Later" onPress={close} />,
-            brief.size !== '' ? <Text dimColor>{brief.size}</Text> : undefined,
+            shown.size !== undefined && shown.size !== '' ? <Text dimColor>{shown.size}</Text> : undefined,
           )}
           {shown.spent !== '' ? (
             <Box paddingLeft={2} width={w(cols)}>
