@@ -46,7 +46,9 @@ What changed in each release of Owner Rep, newest first. The full record is the
   work does can close as one ("lists the commands", "has 0 crashes" and a quality in quotes are
   "works"), and the rep tells its writer what a fact looks like. A word before the thing that
   says how good it is or what it does ("the bug-free code is committed", "the encrypting tool is
-  installed") makes the part "works" too.
+  installed") makes the part "works" too: the words that may stand before the thing come from a
+  short list that only says which thing it is (new, local, current, untracked, the project's), so
+  a quality no list foresaw ("the resilient tool", "the fast/secure tool") is "works" as well.
 - **The briefing's buttons always show.** A card could be counted one row shorter than it is
   drawn (an indented line a cell or two past the edge, the size beside the buttons), and then
   scrolled with its buttons below the fold. Rows are now counted as the strip wraps them, the

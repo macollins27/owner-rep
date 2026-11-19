@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 7b58d6b..679f882 100644
+index cb54c60..558331e 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3500,7 +3500,7 @@ const factTokens = (text: string): FactTok[] => {
-   const t = text
-     .replace(/^\s*(?:[-*]\s+)?(?:works|fact)\s*:\s*/i, '')
+@@ -3518,7 +3518,7 @@ const factTokens = (text: string): FactTok[] => {
+     .replace(/\bworking\s+(?:copy|copies|tree|trees)\b/gi, ' worktree ')
+     .replace(/\bworking\s+(?:directory|folder)\b/gi, ' folder ')
      .replace(/\b(?:runs?|is\s+on|built\s+from)\s+(?:the\s+)?(?:newest|latest|current)(?:\s+(?:code|build|version|commit))?\b/gi, ' runsnewest ')
 -    .replace(/"[^"]*"|“[^”]*”|‘[^’]*’|(?<![\w'])'[^']*'(?![\w'])/g, ' \u0001Q ')
 +    .replace(/"[^"]*"|“[^”]*”|‘[^’]*’/g, ' \u0001Q ')
-     .replace(/[^\s"'`()[\]\u0001]+[/~][^\s"'`()[\]]*|[/~][^\s"'`()[\]]+|[^\s"'`()[\]\u0001]+\.[A-Za-z0-9]{1,8}\b/g, ' \u0001P ')
-     .replace(/([,;:()[\]—–!?])/g, ' $1 ')
-     .replace(/\.(?=\s|$)/g, ' . ')
+     .replace(/`[^`\s][^`]*`/g, ' \u0001P ')
+     // A path: a slash at its start or end, a home sign, a file's ending, or three parts. Two
+     // words joined by a slash ("fast/secure") are words, each read as a hyphened word's part.

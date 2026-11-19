@@ -3483,38 +3483,46 @@ const KIND_AT = /^\s*(works|fact)\s*:\s*/i
 type FactTok = { w: string; t: 'Q' | 'P' | 'H' | 'N' | 'W' | 'X' }
 type FactAt = { i: number; store: boolean }
 const FACT_STATE = /^(?:saved|committed|pushed|merged|installed|deployed|tagged|published|created|written|copied|moved|renamed|changed|edited|touched|uploaded|archived|deleted|removed)$/
-const FACT_THING = /^(?:files?|folders?|director(?:y|ies)|scripts?|programs?|tools?|apps?|cli|pages?|sites?|services?|servers?|endpoints?|builds?|versions?|releases?|code|changes?|fix(?:es)?|work|commits?|branch(?:es)?|repos?|repositor(?:y|ies)|tags?|packages?|plugins?|modules?|skills?|hooks?|tests?|docs?|documents?|config|configuration|settings|projects?|notes?|readme|changelog|plans?|briefs?|routines?|wording|job|records?|logs?|cop(?:y|ies)|dumps?|worktrees?|things?|items?|entr(?:y|ies))$/
-const FACT_STORE = /^(?:files?|folders?|director(?:y|ies)|scripts?|docs?|documents?|notes?|readme|changelog|plans?|briefs?|records?|logs?|commits?|branch(?:es)?|repos?|repositor(?:y|ies)|config)$/
+const FACT_THING = /^(?:files?|folders?|director(?:y|ies)|scripts?|programs?|tools?|apps?|cli|pages?|sites?|services?|servers?|endpoints?|builds?|versions?|releases?|code|changes?|fix(?:es)?|work|commits?|branch(?:es)?|repos?|repositor(?:y|ies)|tags?|packages?|plugins?|modules?|skills?|hooks?|tests?|docs?|documents?|config|configuration|settings|projects?|notes?|readme|changelog|plans?|briefs?|routines?|wording|job|records?|logs?|cop(?:y|ies)|dumps?|worktrees?|things?|items?|entr(?:y|ies)|handoffs?|history|remotes?)$/
+const FACT_STORE = /^(?:files?|folders?|director(?:y|ies)|scripts?|docs?|documents?|notes?|readme|changelog|plans?|briefs?|records?|logs?|commits?|branch(?:es)?|repos?|repositor(?:y|ies)|config|cop(?:y|ies)|history|remotes?|handoffs?|worktrees?)$/
 const FACT_HELD = /^(?:files?|folders?|director(?:y|ies)|scripts?|docs?|documents?|notes?|readme|changelog|plans?|briefs?|records?|logs?|commits?|versions?|changes?|fix(?:es)?|work|code)$/
 const FACT_ACTOR = /^(?:agents?|sessions?|helpers?|builder|owner|codex)$/
 const FACT_PLACE = /^(?:main|master|origin|remote|production|staging|github|it)$/
-const FACT_PLACE_NOUN = /^(?:mac|machine|computer|disk)$/
+const FACT_PLACE_NOUN = /^(?:mac|machine|computer|disk|sessions?)$/
 const FACT_DET = /^(?:the|a|an|this|that|these|those|its|their|our|your|my|each|every|any|some|all|both|one|two|three|four|five|six|seven|eight|nine|ten)$/
-const FACT_PREP = /^(?:in|inside|within|outside|under|at|on|to|into|onto|from|beyond|during|since)$/
+const FACT_PREP = /^(?:in|inside|within|outside|under|at|on|to|into|onto|from|beyond|during|since|by)$/
 const FACT_UNIT = /^(?:bytes?|characters?|lines?|words?)$/
 const FACT_TAIL = /^(?:with|no|trailing|newlines?|or|any|other|bytes?|characters?|at|after|before|the|end|it)$/
-// Words that never stand before a noun as one of its words: they belong to the shape itself.
-// Words that say how good a thing is or what it does ("the bug-free code", "the secure service",
-// "the fully tested build", "the encrypting tool"): a quality or a doing is something to show, so it never stands among a noun's own words
-// (sixth live test of 18 Nov 2026). Each part of a hyphened word is read alone; a fact's own
-// state stays ("the installed build"). A misread noun
-// costs a look by someone who did not build it; a misread quality would close on the builder's own run.
-const FACT_QUALITY = /^(?:secure|correct|fast|quick|robust|complete|clean|safe|valid|accurate|stable|perfect|efficient|responsive|ready|proper|right|bad|broken|solid|sound|fine|smooth|strong|nice|great|better|best|quality|compliant|true|real|full|free|healthy|functional|tight|minimal|simple|elegant|modern|professional|airtight|optimal|bugless|bug|error|crash|idempotent)$|(?:ed|ing|ly|free|proof|less|ful|able|ible|ous|ive)$/
-// A hyphened word with a verb or a little word in it is a clause folded into one word ("the
-// converts-to-uppercase script", seventh round's probe), so it is refused as a quality is.
-const FACT_FOLDED = /^(?:to|a|an|the|of|for|into|from|with|and|or|not|no)$|[^su]s$/
-const factQuality = (w: string): boolean => {
-  const parts = w.split('-')
-  return parts.some(p => FACT_QUALITY.test(p) && !FACT_STATE.test(p)) || (parts.length > 1 && parts.some(p => FACT_FOLDED.test(p)))
+// A noun's own words come from a closed list (seventh live test of 18 Nov 2026). A list of
+// qualities to refuse let through every quality not on it ("the resilient tool", "the
+// fault-tolerant fix", "the 100%-correct server", "no file holds insecure code"), and a quality
+// or a doing is something to show, never a fact. So a word stands before a noun only when it is
+// one of a few plain words that say which thing it is (FACT_MOD), a noun of the work, a fact's
+// own state ("the installed build"), or one of those with 's ("the project's history"); a
+// hyphened word only when each part is one ("the owner-rep plugin", "the sign-up page"); a
+// word with a digit only as a version or a commit ("the v2 build"); a path or a name in
+// backticks always. A plain word not on the list costs a look by someone who did not build it;
+// a quality let through would close on the builder's own run.
+const FACT_MOD = /^(?:one|two|three|four|five|six|seven|eight|nine|ten|both|all|each|every|scratch|sample|text|local|new|old|newest|latest|current|previous|original|same|other|own|single|only|home|source|cache|cached|temp|temporary|tmp|untracked|tracked|staged|unstaged|uncommitted|unpushed|unmerged|unsaved|empty|extra|added|changed|deleted|removed|renamed|edited|updated|modified|git|output|input|data|backup|hidden|first|last|final|draft|demo|example|plain|raw|shell|python|json|markdown|html|css|yaml|release|nightly|dev|development|live|public|private|upstream|feature|default|root|parent|child|user|global|sandbox|scratchpad|generated|unused|stale|leftover|greeting|landing|index|setup|status|instructions?|business|website|separate|api|web|ci|master|origin|github|main|production|staging|sign|up|in|out|log|rep|claude|hud)$/
+const FACT_NAME_H = /^(?:v\d+(?:\.\d+)*(?:-(?:alpha|beta|rc|dev|pre)\.?\d*)?|[0-9a-f]{7,40})$/i
+const factModPart = (p: string): boolean => {
+  const stem = p.replace(/['’]s$/, '')
+  return [FACT_MOD, FACT_THING, FACT_PLACE_NOUN, FACT_ACTOR, FACT_STATE].some(re => re.test(stem))
 }
-const FACT_NOT_MOD = /^(?:it|they|them|is|are|was|were|be|been|has|have|had|and|or|but|not|never|no|nothing|none|whose|which|that|who|with|for|by|as|of|if|when|where|while|because|exists?|holds?|contains?|does|do|did|runsnewest)$/
+const factMod = (w: string): boolean => w !== '' && w.split('-').every(p => p !== '' && factModPart(p))
 
 const factTokens = (text: string): FactTok[] => {
   const t = text
     .replace(/^\s*(?:[-*]\s+)?(?:works|fact)\s*:\s*/i, '')
+    // "Working copy" names a place, not a result working (seventh live test).
+    .replace(/\bworking\s+(?:copy|copies|tree|trees)\b/gi, ' worktree ')
+    .replace(/\bworking\s+(?:directory|folder)\b/gi, ' folder ')
     .replace(/\b(?:runs?|is\s+on|built\s+from)\s+(?:the\s+)?(?:newest|latest|current)(?:\s+(?:code|build|version|commit))?\b/gi, ' runsnewest ')
     .replace(/"[^"]*"|“[^”]*”|‘[^’]*’|(?<![\w'])'[^']*'(?![\w'])/g, ' \u0001Q ')
-    .replace(/[^\s"'`()[\]\u0001]+[/~][^\s"'`()[\]]*|[/~][^\s"'`()[\]]+|[^\s"'`()[\]\u0001]+\.[A-Za-z0-9]{1,8}\b/g, ' \u0001P ')
+    .replace(/`[^`\s][^`]*`/g, ' \u0001P ')
+    // A path: a slash at its start or end, a home sign, a file's ending, or three parts. Two
+    // words joined by a slash ("fast/secure") are words, each read as a hyphened word's part.
+    .replace(/[^\s"'`()[\]\u0001]+[/~][^\s"'`()[\]]*|[/~][^\s"'`()[\]]+|[^\s"'`()[\]\u0001]+\.[A-Za-z0-9]{1,8}\b/g, m => (/^[A-Za-z]+\/[A-Za-z]+$/.test(m) ? m.replace('/', '-') : ' \u0001P '))
     .replace(/([,;:()[\]—–!?])/g, ' $1 ')
     .replace(/\.(?=\s|$)/g, ' . ')
   return t.split(/\s+/).filter(w => w !== '').map((w): FactTok => {
@@ -3533,18 +3541,30 @@ const factTokens = (text: string): FactTok[] => {
 const factRead = (ts: FactTok[]): boolean => {
   const w = (i: number, re: RegExp): boolean => ts[i]?.t === 'W' && re.test(ts[i]?.w ?? '')
   const x = (i: number, s: string): boolean => ts[i]?.t === 'X' && ts[i]?.w === s
-  const mod = (i: number): boolean => { const k = ts[i]; return k !== undefined && (k.t === 'W' ? !FACT_NOT_MOD.test(k.w) && !factQuality(k.w) : k.t === 'H' || k.t === 'N' || k.t === 'P') }
+  const mod = (i: number): boolean => { const k = ts[i]; return k !== undefined && (k.t === 'W' ? factMod(k.w) : k.t === 'H' ? FACT_NAME_H.test(k.w) : k.t === 'N' || k.t === 'P') }
   const det = (i: number): boolean => w(i, FACT_DET) || ts[i]?.t === 'N'
   const uniq = (a: FactAt[]): FactAt[] => a.filter((r, k) => a.findIndex(o => o.i === r.i && o.store === r.store) === k)
-  // A noun of the work: an optional lead, up to two of its own words, then the noun, and a name after it.
+  // A noun's own words from a position: up to four, and a list of them ("changed, added or
+  // deleted files", seventh live test), as the positions they end at.
+  const mods = (s: number): number[] => {
+    const out = [s]
+    let e = s
+    for (let n = 0; n < 4 && mod(e); n++) {
+      e++
+      out.push(e)
+      let j = e
+      if (x(j, ',')) j++
+      if (w(j, /^(?:and|or)$/)) j++
+      if (j > e && mod(j)) e = j
+    }
+    return out
+  }
+  // A noun of the work: an optional lead, its own words, then the noun, and a name after it.
   const noun = (i: number, re: RegExp, storeRe: RegExp): FactAt[] => {
     const out: FactAt[] = []
     for (const s of det(i) ? [i, i + 1] : [i]) {
-      for (let m = 0; m <= 2; m++) {
-        let ok = true
-        for (let k = 0; k < m; k++) if (!mod(s + k)) ok = false
-        const n = s + m
-        if (!ok || !w(n, re)) continue
+      for (const n of mods(s)) {
+        if (!w(n, re)) continue
         const store = storeRe.test(ts[n]?.w ?? '')
         out.push({ i: n + 1, store })
         // A state after it with a place: "a commit made during this job" (sixth live test).
@@ -3559,6 +3579,8 @@ const factRead = (ts: FactTok[]): boolean => {
   // one of a few (FACT_PLACE): any capitalised word would let "deployed To Encrypt" through.
   const place = (i: number): number[] => {
     const at = x(i, ',') ? i + 1 : i
+    // "pushed anywhere", "written anywhere else" (seventh live test).
+    if (w(at, /^(?:anywhere|elsewhere)$/)) return w(at + 1, /^else$/) ? [at + 1, at + 2] : [at + 1]
     if (!w(at, FACT_PREP)) return []
     const j = at + 1
     const k = ts[j]
@@ -3655,11 +3677,27 @@ const factRead = (ts: FactTok[]): boolean => {
     go(i, true)
     return uniq(out)
   }
+  // Nouns of the work, each with its places, joined by commas and "and" or "or": "no handoff or note".
+  const nounList = (i: number): number[] => {
+    const out = new Set<number>()
+    const go = (s: number): void => {
+      for (const r of noun(s, FACT_THING, FACT_STORE)) for (const p of places(r.i)) {
+        if (out.has(p)) continue
+        out.add(p)
+        let n = p
+        if (x(n, ',')) n++
+        if (w(n, /^(?:and|or)$/)) n++
+        if (n > p) go(n)
+      }
+    }
+    go(i)
+    return [...out]
+  }
   const clause = (i: number, first: boolean, prev: boolean): FactAt[] => {
     const out: FactAt[] = []
     for (const s of subject(i)) for (const e of pred(s.i, s.store)) out.push({ i: e, store: s.store })
     // Nothing, or no thing, of a place: only a state or existence, never what it holds.
-    const negs = w(i, /^(?:nothing|none)$/) ? places(i + 1) : w(i, /^no$/) ? noun(i + 1, FACT_THING, FACT_STORE).flatMap(r => places(r.i)) : []
+    const negs = w(i, /^(?:nothing|none)$/) ? places(i + 1) : w(i, /^no$/) ? nounList(i + 1) : []
     for (const n of negs) for (const e of pred(n, false)) out.push({ i: e, store: false })
     // No thing holds a thing of the work: "no file in the project holds a change made during this job".
     if (w(i, /^no$/)) for (const r of noun(i + 1, FACT_THING, FACT_STORE)) if (r.store) for (const n of places(r.i)) if (w(n, /^(?:holds?|contains?)$/)) for (const h of noun(n + 1, FACT_HELD, FACT_STORE)) for (const e of places(h.i)) out.push({ i: e, store: false })

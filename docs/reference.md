@@ -679,13 +679,19 @@ returns, shows, displays, gives, accepts, responds, reads, produces and the like
 and does not, never, cannot and the like unless before "exist"), and `factRead` reads the whole
 of it, to its end or a closing stop, as clauses parted by a comma or a semicolon and "and" or
 "but". Each clause is one of a few shapes, each slot typed: a subject of nouns of the work
-(`FACT_THING`, after an optional lead in `FACT_DET` and up to two words of the noun's own, none
-of them in `FACT_NOT_MOD` and none a quality or a doing, `factQuality`: a word of `FACT_QUALITY`
-or one ending in -ed, -ing, -ly, -free, -proof, -less, -ful, -able, -ible, -ous or -ive, each part
-of a hyphened word read alone and a word of `FACT_STATE` let stand, and a hyphened word with a
-verb or a little word folded in refused whole (`FACT_FOLDED`, "the converts-to-uppercase script"), "the installed build"; after
+(`FACT_THING`, after an optional lead in `FACT_DET` and up to four words of the noun's own,
+joined by commas and "and" or "or" where they are a list, "0 changed, added or deleted files";
+a noun's own word comes from a closed list, `factMod`: one of `FACT_MOD`'s plain words that say
+which thing it is (scratch, local, new, current, untracked, two, both and the like), a noun of the
+work, of the machine or an actor, a word of `FACT_STATE` ("the installed build"), any of those
+with 's ("the project's history"), a hyphened word only when each part is one ("the owner-rep
+plugin"), a word with a digit only as a version or a commit (`FACT_NAME_H`, "v2", "a1b2c3d"), and
+a number, a path or a name in backticks; any other word, a quality or a doing above all, makes the
+clause works, so "the resilient tool" and "the fast/secure tool" are works, two words joined by a
+slash being read as a hyphened word and not a path; "working copy" and "working tree" are read as
+a worktree and "working folder" as a folder before `BEHAVES` is matched; after
 the noun, a word of `FACT_STATE` or "made" with a place, "a commit made during this job") or
-names, with places after them (a word of `FACT_PREP`, during and since among them, before a name,
+names, with places after them ("anywhere", "elsewhere" or "anywhere else", or a word of `FACT_PREP`, during, since and by among them, before a name,
 a noun of the work or of the machine, or one of `FACT_PLACE`: main, origin, GitHub and a few
 more); then "is", "was", "has been" and the like (or nothing, "the newest build installed")
 before one or more of `FACT_STATE` (saved, committed, pushed, merged, installed, deployed,
