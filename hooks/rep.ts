@@ -3597,12 +3597,25 @@ const FACT_NAME_H = /^(?:v?\d+(?:\.\d+)+(?:-(?:alpha|beta|rc|dev|pre)\.?\d*)?|v\
 // file's ending from FACT_EXT; a version or a commit is a name; anything else joined by a slash or
 // a dot is its words, each read as a hyphened word's part.
 const FACT_EXT = /\.(?:py|pyw|ts|tsx|mts|cts|js|jsx|mjs|cjs|json|jsonl|md|mdx|txt|text|csv|tsv|log|sh|bash|zsh|fish|ps1|bat|cmd|yml|yaml|toml|ini|cfg|conf|env|lock|html?|css|scss|xml|svg|png|jpe?g|gif|webp|pdf|zip|tar|gz|tgz|go|rs|rb|java|kt|swift|c|h|cc|cpp|hpp|cs|php|sql|db|sqlite|plist|diff|patch|bak|tmp|out|ipynb|vue|svelte|lua|dart|ex|exs|scala|gradle|tf|patch|com|org|io|net|dev|ai)$/i
-const factPath = (m: string): boolean => /^(?:~\/|\.{1,2}\/|\/)/.test(m) || m.includes('://') || FACT_EXT.test(m.slice(m.lastIndexOf('/') + 1))
+// A path inside the folder (ninth live test: "install-case/bin/greet is installed"): one with a
+// slash and a standard folder in it. "secure/fast/reliable" has none, so it is still its words.
+const FACT_DIR = /^(?:bin|sbin|src|lib|libexec|dist|tmp|usr|opt|var|etc|node_modules|\.git|\.claude|\.github)$/
+const factPath = (m: string): boolean => /^(?:~\/|\.{1,2}\/|\/)/.test(m) || m.includes('://') || FACT_EXT.test(m.slice(m.lastIndexOf('/') + 1)) || (m.includes('/') && m.split('/').some(p => FACT_DIR.test(p)))
 const factModPart = (p: string): boolean => {
   const stem = p.replace(/['’]s$/, '')
   return [FACT_MOD, FACT_THING, FACT_PLACE_NOUN, FACT_ACTOR, FACT_STATE].some(re => re.test(stem))
 }
-const factMod = (w: string): boolean => w !== '' && w.split('-').every(p => p !== '' && factModPart(p))
+// A doing folded into a noun's own words (ninth live test): "copies", "changes", "tags" and "logs"
+// are nouns of the work and also say what a thing does, so "the copies-every-file tool" and "the
+// logs-in tool" closed on the builder's own listing. A noun stands before another noun singular
+// ("the file tool"); a plural one stands only next to the noun it names ("the logs folder"), and a
+// count ("every", "all", "two") only first. Words in this order read as what the thing does.
+const FACT_COUNT = /^(?:one|two|three|four|five|six|seven|eight|nine|ten|both|all|each|every|any|some)$/
+const factPlural = (p: string): boolean => /[^s'’]s$/.test(p) && [FACT_THING, FACT_PLACE_NOUN, FACT_ACTOR].some(re => re.test(p))
+// The parts of a noun's own words, in order, where null stands for a version, a number or a path.
+const factRunOk = (parts: ReadonlyArray<string | null>): boolean =>
+  parts.every((p, k) => p === null || ((k === 0 || !FACT_COUNT.test(p)) && (k === parts.length - 1 || !factPlural(p))))
+const factMod = (w: string): boolean => w !== '' && w.split('-').every(p => p !== '' && factModPart(p)) && factRunOk(w.split('-'))
 
 const factTokens = (text: string): FactTok[] => {
   const held: FactTok[] = []
@@ -3612,6 +3625,8 @@ const factTokens = (text: string): FactTok[] => {
     // "Working copy" names a place, not a result working (seventh live test).
     .replace(/\bworking\s+(?:copy|copies|tree|trees)\b/gi, ' worktree ')
     .replace(/\bworking\s+(?:directory|folder)\b/gi, ' folder ')
+    // "with permission to run" is the file's mode, shown by its listing, not the work running.
+    .replace(/\bwith\s+(?:the\s+)?permissions?\s+to\s+(?:run|execute)\b/gi, ' with runpermission ')
     .replace(/\b(?:runs?|is\s+on|built\s+from)\s+(?:the\s+)?(?:newest|latest|current)(?:\s+(?:code|build|version|commit))?\b/gi, ' runsnewest ')
     .replace(/"[^"]*"|“[^”]*”|‘[^’]*’|(?<![\w'])'[^']*'(?![\w'])/g, () => keep({ w: '', t: 'Q' }))
     // In backticks: a version or a commit is a name, a path is a path, plain words are words.
@@ -3650,11 +3665,16 @@ const factRead = (ts: FactTok[]): boolean => {
   const uniq = (a: FactAt[]): FactAt[] => a.filter((r, k) => a.findIndex(o => o.i === r.i && o.store === r.store) === k)
   // A noun's own words from a position: up to four, and a list of them ("changed, added or
   // deleted files", seventh live test), as the positions they end at.
+  // A noun's own words, a list's among them, are read in order as one run (factRunOk).
+  const parts = (i: number): Array<string | null> => { const k = ts[i]; return k?.t === 'W' || (k?.t === 'P' && k.p === 'word') ? k.w.split('-') : [null] }
   const mods = (s: number): number[] => {
     const out = [s]
     let e = s
+    let run: Array<string | null> = []
     for (let n = 0; n < 4 && mod(e); n++) {
+      run = run.concat(parts(e))
       e++
+      if (!factRunOk(run)) break
       out.push(e)
       let j = e
       if (x(j, ',')) j++
@@ -3693,6 +3713,13 @@ const factRead = (ts: FactTok[]): boolean => {
     // "committed for this job" (eighth live test): "for" opens only the job, the session, the task
     // or the work (ninth live test: "no commit was made for this work").
     if (w(at, /^for$/)) return w(at + 1, /^(?:this|the)$/) && w(at + 2, /^(?:job|session|task|work)$/) ? [at + 3] : []
+    // "installed as a copy of greet-source.sh", "installed with permission to run" (ninth live
+    // test, session D's copy follow-up): shown by a byte compare and by the file's listing.
+    if (w(at, /^as$/) && w(at + 1, /^an?$/) && w(at + 2, /^copy$/) && w(at + 3, /^of$/)) {
+      const c = at + 4
+      return (pathAt(c) ? [c + 1] : []).concat(det(c) ? noun(c, FACT_THING, FACT_STORE).map(r => r.i) : [])
+    }
+    if (w(at, /^with$/) && w(at + 1, /^runpermission$/)) return [at + 2]
     if (!w(at, FACT_PREP)) return []
     const j = at + 1
     const k = ts[j]
