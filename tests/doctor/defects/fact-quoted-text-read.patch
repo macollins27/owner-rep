@@ -1,10 +1,10 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 83998ef..7bef6ce 100644
+index e86901f..bfb6d64 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3533,7 +3533,7 @@ const factTokens = (text: string): FactTok[] => {
-     .replace(/\bworking\s+(?:copy|copies|tree|trees)\b/gi, ' worktree ')
-     .replace(/\bworking\s+(?:directory|folder)\b/gi, ' folder ')
+@@ -3553,7 +3553,7 @@ const factTokens = (text: string): FactTok[] => {
+     // "with permission to run" is the file's mode, shown by its listing, not the work running.
+     .replace(/\bwith\s+(?:the\s+)?permissions?\s+to\s+(?:run|execute)\b/gi, ' with runpermission ')
      .replace(/\b(?:runs?|is\s+on|built\s+from)\s+(?:the\s+)?(?:newest|latest|current)(?:\s+(?:code|build|version|commit))?\b/gi, ' runsnewest ')
 -    .replace(/"[^"]*"|“[^”]*”|‘[^’]*’|(?<![\w'])'[^']*'(?![\w'])/g, () => keep({ w: '', t: 'Q' }))
 +    .replace(/‘[^’]*’|(?<![\w'])'[^']*'(?![\w'])/g, () => keep({ w: '', t: 'Q' }))
