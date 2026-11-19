@@ -2277,7 +2277,7 @@
     "name": "heads-up-register-no-plan-gate",
     "breaks": "The look never hands the mod the plans it showed, so no dropped step is carried at all.",
     "patch": "heads-up-register-no-plan-gate.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-19 against prompt group 7"
   },
   {
     "name": "heads-up-flag-speaks-ignored",
@@ -3189,7 +3189,7 @@
     "name": "owner-typed-check-dropped",
     "breaks": "The objective writer drops a check, review or report the owner asked for in the owner's own message, treating it as the agent's method like one from an agent's routine.",
     "patch": "owner-typed-check-dropped.patch",
-    "fixed": "2026-11-10"
+    "fixed": "2026-11-10; remade 2026-11-19 against prompt group 7"
   },
   {
     "name": "approved-check-made-method",
@@ -3861,7 +3861,7 @@
     "name": "watch-frame-back",
     "breaks": "The watch's task opens again with the old fork frame, a pseudo system reminder in capitals saying the reader shares the conversation and must not mention being interrupted.",
     "patch": "watch-frame-back.patch",
-    "fixed": "tested 2026-11-18; remade 2026-11-18 on the merge of prompts into group 2"
+    "fixed": "tested 2026-11-18; remade 2026-11-18 on the merge of prompts into group 2; remade 2026-11-19 against prompt group 7"
   },
   {
     "name": "watch-no-think-back",

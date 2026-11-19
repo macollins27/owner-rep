@@ -1,9 +1,9 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index ebb8393..3364851 100644
+index 3623fdb..193d549 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1748,7 +1748,7 @@ const BRIEF_DECIDING = [...DECIDING.slice(0, 2), 'Never call the session finishe
- const decidingText = (rules: readonly string[]): string => `These rules decide this answer:\n${rules.map(r => `- ${r}`).join('\n')}`
+@@ -1772,7 +1772,7 @@ export const OBJECTIVE_STEP = "the step the owner's messages last set; the rep u
+ export const OBJECTIVE_STEP_LINE = "step: <one sentence: the step the owner's messages last set>"
  
  export function watchPrompt(m: Memory, reason: 'step' | 'stop' | 'note'): string {
 -  return endAsked(`${memoryText(m)}\n\n${watchRequest(reason, list(m.seen, '(none yet)'), list(m.others, '(none)'))}`)
