@@ -4276,5 +4276,47 @@
     "breaks": "Words in backticks stand as the thing held or the place whatever they are, so \"`secure/fast` is committed\" and \"the file is saved in `correct`\" close on the builder's own run.",
     "patch": "fact-tick-noun-any.patch",
     "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-tail-comma-dropped",
+    "breaks": "A text's end notes split by commas stop at the first comma, so \"holds exactly 'amber', 5 bytes, with no final newline\" is read as works and never closes on the dump that shows it.",
+    "patch": "fact-tail-comma-dropped.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-tail-final-missing",
+    "breaks": "\"with no final newline\" is not read as a note of the text's end, so an exact-contents fact the writer wrote that way stays works.",
+    "patch": "fact-tail-final-missing.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-for-work-missing",
+    "breaks": "\"for this work\" is not read as the job's scope, so \"no commit was made for this work\" stays works.",
+    "patch": "fact-for-work-missing.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-made-missing",
+    "breaks": "\"was made\" is not a fact's state, so \"no commit was made for this work\" stays works.",
+    "patch": "fact-made-missing.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-named-any-word",
+    "breaks": "Any word after \"named\" is a name, so \"a script named correctly is saved\" closes on the builder's listing though \"correctly\" is a judgment.",
+    "patch": "fact-named-any-word.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-named-digit-any",
+    "breaks": "Any word with a digit after \"named\" is a name, so a disguised doing (\"named validates2\") closes as a fact.",
+    "patch": "fact-named-digit-any.patch",
+    "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "fact-named-dropped",
+    "breaks": "\"an executable named greet is installed in a bin folder\" is read as works, so an install the listing shows never closes.",
+    "patch": "fact-named-dropped.patch",
+    "fixed": "tested 2026-11-18"
   }
 ]
