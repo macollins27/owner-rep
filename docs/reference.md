@@ -727,7 +727,8 @@ message of the owner's on the job sent after `from` (one the objective was built
 when it was written), and the check's `reopen:` lines when they say what shows otherwise; a look's or a briefing's
 `shown:` line does not move a condition marked `reopened` (only the check's does, the fourth
 argument). Each condition has a `kind`, `works` or `fact`, which the objective writer writes
-before it (`conditionOf` reads it, `heldLine` writes it back, `bare` strips it where a reader
+before it (`conditionOf` reads it, and reads a state written first with no "|", "- not shown: …",
+as that state, "shown" with no where as open; `heldLine` writes it back, `bare` strips it where a reader
 copies it, and `mergeConditions` keeps a held `works`, or one with no kind, as `works` whatever
 kind a rewrite gives, and opens a shown `fact` rewritten as `works` with its where kept as
 `seen`). `conditionOf`, and everything after it through `kindOf`, reads a `fact:` as `fact` only when
@@ -1022,7 +1023,7 @@ what the replies were read as, and for cards the gate's rules (`passed` when non
 menu and `/help` (`command.describe`, `HIDDEN_COMMANDS`): `/owner-rep-counts` prints
 `countsText`, one line per kind and a `cards:` line; `/owner-rep-replay <call file, session folder,
 session id, "this" or "all"> [--kind k] [--last 1-50] [--effort low|medium|high|max] [--times 1-10]
-[--variant build|frame|no-think|rep-system|end-line|proof] [--base frame|no-think|rep-system|end-line|proof] [--now]` (`parseReplayArgs`, `REPLAY_USAGE`) takes a folder's last `--last`
+[--variant build|frame|no-think|rep-system|end-line|proof|decisions] [--base frame|no-think|rep-system|end-line|proof|decisions] [--now]` (`parseReplayArgs`, `REPLAY_USAGE`) takes a folder's last `--last`
 (`REPLAY_LAST`, 10) calls of the kind asked for, or with "all" the last of every session folder's
 calls together by when each was made (`replayPick`, `replayFiles`), rebuilds each from its parts (`savedCall`, which refuses one whose
 texts were not kept, one naming a text by anything but a fingerprint (`isSha`), so a call file
@@ -1037,16 +1038,20 @@ with and sends group 1's record system prompt (`PRE_G2_RECORD_SYSTEM`), for a wa
 ask-again call; `no-think` drops the watch's line telling the model not to think it over;
 `rep-system` (`toRepSystem`, applied after those two) sends `REP_SYSTEM` and rebuilds the task
 from group 1's (the `PRE_G2_*` texts) as the build after prompt group 2 wrote it: the rules moved out, the request
-opening "Based on the record above" with its restatement (it builds this build's texts and undoes group 3's edit, so its arm stays group 2's); a call that asks for `END_LINE` last
+opening "Based on the record above" with its restatement (it builds this build's texts and undoes every later group's edit, `toGroup2`, so its arm stays group 2's); a call that asks for `END_LINE` last
 (`asksEnd`) is matched without it and asks for it again after the new texts; `end-line`, applied
 last, asks for `END_LINE` last (`endAsked`), for a watch, brief or ask-again call, and refuses a
-call that asks for it already. `proof` (`toProof`, applied after `rep-system`) moves a call the build after group 2 saved to
-prompt group 3's texts, for every kind: each pair in `G3_REP_SYSTEM`, `G3_OBJECTIVE_SYSTEM`,
-`G3_OWN_WORDS_SYSTEM` and `G3_TASK` is group 2's text, kept word for word, and the text this build
-sends in its place; the call's system prompt must be group 2's (`preG3System`, this build's with
-every pair undone), and each old text must be in it exactly once (`swapped`), or the call is not
-sent. The objective and own-words calls have no record, so their whole prompt is the task and only
-`proof` applies to them. Every reply is read as its own prompt's build read it
+call that asks for it already. The prompt groups after group 2 are `GROUPS`, in order, each an edit with its pairs by the kind
+of call: `proof` (group 3: `G3_REP_SYSTEM`, `G3_OBJECTIVE_SYSTEM`, `G3_OWN_WORDS_SYSTEM`,
+`G3_TASK`) and `decisions` (group 4: `G4_REP_SYSTEM`, `G4_OBJECTIVE_SYSTEM`, `G4_TASK`; it has no
+own-words pair). Each pair is the group before's text, kept word for word, and the text the group
+sent in its place. Applied after `rep-system`, in that order (`stepGroups`), each named group's
+edit (`stepGroup`) moves a call the build before it saved to exactly what the build after it
+sends: the call's system prompt must be the build before's (`systemBefore`, this build's with
+that group's and every later group's pairs undone), and each old text must be in it exactly once
+(`swapped`), or the call is not sent; so `decisions` alone takes a call the build after group 3
+saved, and `proof` with `decisions` one the build after group 2 saved. The objective and own-words calls have no record, so their whole prompt is the task and only
+the groups' edits apply to them. Every reply is read as its own prompt's build read it
 (`readAsAsked`): a reply to a prompt that never asked for the end line is not taken as cut for
 lacking it, so an old call replayed as saved is read as it was then. With `--now` (`replayNow`)
 each call, in every arm, goes as this build would send it, at `MAX_REPLY_TOKENS` and with
