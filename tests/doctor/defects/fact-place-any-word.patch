@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 7b58d6b..9e75464 100644
+index 84c5787..abda8ad 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3548,7 +3548,7 @@ const factRead = (ts: FactTok[]): boolean => {
+@@ -3613,7 +3613,7 @@ const factRead = (ts: FactTok[]): boolean => {
      const j = at + 1
      const k = ts[j]
      const out: number[] = []
--    if (k?.t === 'P' || (k?.t === 'W' && FACT_PLACE.test(k.w))) out.push(j + 1)
-+    if (k?.t === 'P' || k?.t === 'W') out.push(j + 1)
+-    if (pathAt(j) || (k?.t === 'W' && FACT_PLACE.test(k.w))) out.push(j + 1)
++    if (pathAt(j) || k?.t === 'W') out.push(j + 1)
      for (const r of noun(j, FACT_THING, FACT_STORE).concat(noun(j, FACT_PLACE_NOUN, FACT_STORE))) if (det(j)) out.push(r.i)
      return out
    }

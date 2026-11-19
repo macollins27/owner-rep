@@ -49,6 +49,10 @@ What changed in each release of Owner Rep, newest first. The full record is the
   installed") makes the part "works" too: the words that may stand before the thing come from a
   short list that only says which thing it is (new, local, current, untracked, the project's), so
   a quality no list foresaw ("the resilient tool", "the fast/secure tool") is "works" as well.
+  A word counts as a file's name or a path only when it is one (it ends in a file's ending or
+  starts at a folder), so qualities joined by slashes or dots ("the secure/fast/reliable tool",
+  "the fast.secure tool") or put after the state ("installed (UTF8-compliant)") are "works", and
+  "nothing is committed for this job" is a fact.
 - **The briefing's buttons always show.** A card could be counted one row shorter than it is
   drawn (an indented line a cell or two past the edge, the size beside the buttons), and then
   scrolled with its buttons below the fold. Rows are now counted as the strip wraps them, the

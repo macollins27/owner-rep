@@ -1,12 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index cb54c60..cb6f3d6 100644
+index 83998ef..6d01d83 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3517,7 +3517,6 @@ const factTokens = (text: string): FactTok[] => {
+@@ -3532,7 +3532,6 @@ const factTokens = (text: string): FactTok[] => {
      // "Working copy" names a place, not a result working (seventh live test).
      .replace(/\bworking\s+(?:copy|copies|tree|trees)\b/gi, ' worktree ')
      .replace(/\bworking\s+(?:directory|folder)\b/gi, ' folder ')
 -    .replace(/\b(?:runs?|is\s+on|built\s+from)\s+(?:the\s+)?(?:newest|latest|current)(?:\s+(?:code|build|version|commit))?\b/gi, ' runsnewest ')
-     .replace(/"[^"]*"|“[^”]*”|‘[^’]*’|(?<![\w'])'[^']*'(?![\w'])/g, ' \u0001Q ')
-     .replace(/`[^`\s][^`]*`/g, ' \u0001P ')
-     // A path: a slash at its start or end, a home sign, a file's ending, or three parts. Two
+     .replace(/"[^"]*"|“[^”]*”|‘[^’]*’|(?<![\w'])'[^']*'(?![\w'])/g, () => keep({ w: '', t: 'Q' }))
+     // In backticks: a version or a commit is a name, a path is a path, plain words are words.
+     .replace(/`([^`\s][^`]*)`/g, (_m, c: string) => keep(FACT_NAME_H.test(c) ? { w: c, t: 'H' } : factPath(c) ? { w: c, t: 'P', p: 'tick' } : { w: c.toLowerCase(), t: 'P', p: 'word' }))
