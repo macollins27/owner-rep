@@ -2869,7 +2869,7 @@ const drawnCardRows = (c: CardText, cols: number, put: boolean, size: string): n
   if (c.message !== '') rows += 2 + drawnRowsOf(c.message, cols - 6)
   if (c.does !== '' && c.message !== '') rows += t(c.does)
   rows += t(c.reading)
-  const items = [c.checked === null && !c.isChecking && !checkBarred(c.checkNote) ? '3: Check it' : '', put ? '1: Put message in prompt' : '', '2: Fine, close', '4: Tell the rep', '0: Later', size].filter(i => i !== '')
+  const items = [c.checked === null && !c.isChecking && !checkBarred(c.checkNote) ? '3: Check it' : '', put ? '1: Put message in prompt' : '', '2: Fine, close', '4: Tell the rep', '0: Later', c.size ?? size].filter(i => i !== '')
   let line = -1
   for (const i of items) {
     const iw = widthOf(i)
@@ -9265,6 +9265,29 @@ test('rule: on a five-row band at 100 columns with the conversation\'s size on t
   expect((await small.find({ key: 'close' }))?.props.hotkey).toBe('2')
   await small.unmount()
 })
+
+// 145 characters, as measured live, and one at the 160-character cap.
+for (const why of [
+  'Failed to authenticate: OAuth session expired and could not be refreshed because the authentication server rejected the refresh token as revoked.',
+  'Failed to authenticate: OAuth session expired and could not be refreshed because the authentication server rejected the refresh token as revoked by administrato',
+]) {
+  for (const after of [true, false]) {
+    test(`rule: on a five-row band at 100 columns, an engine reason of ${why.length} characters ${after ? 'after' : 'before'} the answer is drawn whole, in the note's short form when the long one takes three rows (seventh live test of 18 Nov 2026)`, async ($, on) => {
+      on('session.usage', () => ({ value: { startedAt: 0, context: { tokens: 20000, window: 500000, percent: 4 }, rateLimits: [] } }))
+      const answer = (JSON.parse(CHECKED_SAYING('continue', 'Two things first. Run the suite and paste the counts.')) as { result: string }).result
+      const { ui } = await checkOver($, on, streamed(after ? [answer] : ['Still checking: reading the record now.'], { error: why }))
+      await settle($)
+      await ui.unmount()
+      const five = { ...BAND, props: { ...BAND.props, maxRows: 5, bodyColumns: 98, scroll: { offset: 0, bodyRows: 4 } } }
+      const small = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...five })
+      const words = why.replace(/\.$/, '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const note = await small.find({ type: 'Text', text: new RegExp(`${after ? 'after' : 'before'} (?:it )?answer(?:ed|ing): ${words}\\.`) })
+      expect(note === undefined ? 'cut' : 'whole').toBe('whole')
+      expect((await small.find({ key: 'put' }))?.props.hotkey).toBe('1')
+      await small.unmount()
+    })
+  }
+}
 
 test('rule: the Check button\'s card keeps a checker\'s message that pushes the agent on before it stops', async ($, on) => {
   const message = 'Two things before you stop. First, run the full suite and paste the counts. Second, push the branch and show the run.'

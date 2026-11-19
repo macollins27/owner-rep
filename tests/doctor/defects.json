@@ -4180,5 +4180,11 @@
     "breaks": "A hyphened word with a verb folded into it stands as one of a noun's own words, so \"the converts-to-uppercase script is committed\" reads as a fact and closes on the builder's own run.",
     "patch": "fact-folded-clause-kept.patch",
     "fixed": "tested 2026-11-18"
+  },
+  {
+    "name": "check-long-reason-cut",
+    "breaks": "On a five-row band at 100 columns an engine reason of 145 to 160 characters is cut mid-sentence: the card never tries the note's short form or gives up the conversation's size for a row.",
+    "patch": "check-long-reason-cut.patch",
+    "fixed": "tested 2026-11-18"
   }
 ]

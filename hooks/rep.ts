@@ -4860,6 +4860,15 @@ export const checkFailedAfterNote = (why: string): string => `The check's run fa
 // The card's note for a check that failed before it wrote a whole answer, in the engine's words.
 export const checkFailedNote = (why: string): string =>
   `The check failed before it answered: ${failWords(why)}. Nothing from it was taken.`
+// The same notes short, for a band whose rows hold the engine's reason whole only without the
+// words around it: at 100 columns of a 24-row terminal the long form of a 145-character reason
+// took three rows and was cut (seventh live test of 18 Nov 2026). Any other note is kept as it is.
+export const shortCheckNote = (note: string): string => {
+  const after = /^The check's run failed after it answered: ([\s\S]*)\. Its whole answer is shown\.$/.exec(note)
+  if (after !== null) return `Check failed after answering: ${after[1]}.`
+  const before = /^The check failed before it answered: ([\s\S]*)\. Nothing from it was taken\.$/.exec(note)
+  return before === null ? note : `Check failed before answering: ${before[1]}.`
+}
 
 export const same = (a: string, b: string): boolean =>
   a.trim().toLowerCase().replace(/\.$/, '') === b.trim().toLowerCase().replace(/\.$/, '')
@@ -5483,6 +5492,14 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
     // next when there is a row for it (sixth live test of 18 Nov 2026: at 100x24 the engine's
     // reason was cut mid-word while the count line stood).
     x => (x.checkNote === card.checkNote || x.checked === null ? x : { ...x, checkNote: card.checkNote, tight: true, checked: { ...x.checked, looked: '' }, checkedBare: true }),
+    // Still cut: the note's short form; then the conversation's size off the buttons row, which
+    // gives the note a row, with the note long and then short (seventh live test of 18 Nov 2026:
+    // a 145-character reason was cut at 100 columns). The engine's reason is cut last of all.
+    ...[
+      (x: CardText): CardText => ({ ...x, checkNote: shortCheckNote(card.checkNote) }),
+      (x: CardText): CardText => ({ ...x, checkNote: card.checkNote, size: '' }),
+      (x: CardText): CardText => ({ ...x, checkNote: shortCheckNote(card.checkNote), size: '' }),
+    ].map(f => (x: CardText): CardText => (x.checkNote === card.checkNote || x.checkNote === shortCheckNote(card.checkNote) ? x : f({ ...x, tight: true, ...(x.checked === null ? {} : { checked: { ...x.checked, looked: '' }, checkedBare: true }) }))),
     // Back from the floor of a five-row band: what the check found, the margin, the heading.
     x => (x.checkedBare === true ? { ...x, checked: bare() } : x),
     x => ({ ...x, tight: false }),
