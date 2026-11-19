@@ -15,7 +15,7 @@ host steps and the tests on Ubuntu with 2.1.286 (the first build with mods on by
 the workflow: the Markdown files, `docs/`, `llms.txt`, the licence, the issue forms and the
 live captures get no run), and the doctor as eight Ubuntu
 jobs at once, each planting every eighth defect (`doctor.py --shard K/8`), so the whole run
-takes about a quarter of an hour where one machine took over one (`.github/workflows/tests.yml`). `host-calls.sh` fails the run when a
+takes about a quarter of an hour where one machine took over one (`.github/workflows/tests.yml`). A new push to a pull request cancels that pull request's run still going (`concurrency`, grouped by the pull request's number); a push to main never cancels another, so each merge's run finishes. `host-calls.sh` fails the run when a
 `$.process.run` or `$.process.spawn` in the hooks names its program other than through
 `hostArgv` (the copy's argvs from `copyArgvs` and the `--version` probe excepted).
 `node --experimental-strip-types tests/ci/host-commands.mjs` runs the transcript reads, the
