@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index fdf0b2f..c8b121a 100644
+index f8f119f..6bfeb39 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -6961,7 +6961,7 @@ function swapped(text: string, swaps: readonly Swap[], back: boolean): string |
+@@ -7208,7 +7208,7 @@ function swapped(text: string, swaps: readonly Swap[], back: boolean): string |
  type Group = { edit: PromptEdit; system: (kind: CallKind) => readonly Swap[]; task: ReadonlyArray<{ swap: Swap; kinds: readonly CallKind[] }> }
  const GROUPS: readonly Group[] = [
    { edit: 'proof', system: k => (k === 'objective' ? G3_OBJECTIVE_SYSTEM : k === 'own-words' ? G3_OWN_WORDS_SYSTEM : G3_REP_SYSTEM), task: G3_TASK },
 -  { edit: 'decisions', system: k => (k === 'objective' ? G4_OBJECTIVE_SYSTEM : k === 'own-words' ? [] : G4_REP_SYSTEM), task: G4_TASK },
 +  { edit: 'decisions', system: k => (k === 'objective' ? [] : k === 'own-words' ? [] : G4_REP_SYSTEM), task: G4_TASK },
- ]
- const nowSystem = (kind: CallKind): string => (kind === 'objective' ? OBJECTIVE_SYSTEM : kind === 'own-words' ? OWN_WORDS_SYSTEM : REP_SYSTEM)
- const groupTask = (i: number, kind: CallKind): Swap[] => GROUPS[i]!.task.filter(x => x.kinds.includes(kind)).map(x => x.swap)
+   { edit: 'now', system: k => (k === 'objective' ? G5_OBJECTIVE_SYSTEM : []), task: G5_TASK },
+   { edit: 'same-as', system: k => (k === 'objective' ? G6_OBJECTIVE_SYSTEM : []), task: G6_TASK },
+   { edit: 'message', system: k => (k === 'objective' ? [] : k === 'own-words' ? G7_OWN_WORDS_SYSTEM : G7_REP_SYSTEM), task: G7_TASK },

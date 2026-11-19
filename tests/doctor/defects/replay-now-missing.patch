@@ -1,12 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 5b57838..9c2ac55 100644
+index f8f119f..9bd49bb 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -7027,7 +7027,6 @@ const G5_TASK: ReadonlyArray<{ swap: Swap; kinds: readonly CallKind[] }> = [
+@@ -7165,7 +7165,7 @@ const G5_TASK: ReadonlyArray<{ swap: Swap; kinds: readonly CallKind[] }> = [
    { swap: ['Do two things.\n\nFirst, measure the work', `${WATCH_NOW_ASK}\n\nSecond, measure the work`], kinds: ['watch'] },
    { swap: ['\n\nSecond, decide whether', '\n\nThird, decide whether'], kinds: ['watch'] },
    { swap: ['Write the walk first, under "steps:",', WATCH_WALK_AT], kinds: ['watch'] },
 -  { swap: ['nothing else:\n\nsteps:\n', `nothing else:\n\n${WATCH_NOW_LINE}\nsteps:\n`], kinds: ['watch'] },
++
    { swap: ['step: <one sentence>\ndropped:', `${OBJECTIVE_STEP_LINE}\ndropped:`], kinds: ['objective'] },
  ]
- // Each pair's one side found exactly once and put in the other's place, forward (group 2's to
+ // Prompt group 6 (G13): a held condition restated in other words is written once, or in its new

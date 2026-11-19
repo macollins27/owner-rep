@@ -1,12 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 4879782..9209da8 100644
+index f8f119f..e56a882 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -4651,7 +4651,6 @@ export function mergeConditions(
-     if (p.state === 'closed' && h.state !== 'closed') return { text: p.text, state: 'closed', by: p.by, ...k }
+@@ -5860,7 +5860,6 @@ export function mergeConditions(
+     if (p.state === 'closed' && h.state !== 'closed') out.push({ text: p.text, state: 'closed', by: p.by, ...k })
      // A fact held shown and rewritten as works opens again, with its where kept as what was
      // seen: the where showed a fact, never the look someone who did not build it makes.
--    if (h.kind === 'fact' && kind === 'works' && h.state === 'shown') return { text: p.text, state: 'open', by: '', seen: h.by, kind: 'works' }
-     return { ...h, text: p.text, ...k }
-   })
+-    else if (h.kind === 'fact' && kind === 'works' && h.state === 'shown') out.push({ text: p.text, state: 'open', by: '', seen: h.by, kind: 'works' })
+     else out.push({ ...h, text: p.text, ...k })
+   }
    for (const h of held) {

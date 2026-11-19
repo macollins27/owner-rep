@@ -1,12 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
+index b6129e7..7b7c473 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1294,7 +1294,7 @@
+@@ -1547,7 +1547,7 @@ async function readSession($: EngineInterface, sid: string, rec: Rec, kind: Call
    const from = b.outcome === 'none' ? undefined : b.from
    const opensAfter = b.outcome === 'established' && recordText(rows, RECORD_BUDGET, human, from).opensAfter
    const cover = boundaryCover(b, opensAfter, b.outcome === 'none' ? undefined : msgs.find(m => m.n === b.n))
 -  const blocks = recordPrompt(rows, task(cover.told), human, from)
 +  const blocks = recordPrompt(rows, task(cover.told), undefined, from)
+   const effort = kind === 'watch' ? WATCH_EFFORT : BRIEF_EFFORT
    const ask = (prompt: string | PromptBlock[]) =>
      $.model.complete({
-       model: OBJECTIVE_MODEL,

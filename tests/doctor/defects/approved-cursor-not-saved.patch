@@ -1,12 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 35606cf..565dadb 100644
+index b6129e7..d57c30e 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1567,7 +1567,6 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+@@ -1627,7 +1627,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
    // An answered look taken: its marks applied, and its Heads up drawn when it raised one.
    async function takeLook(after: Rec, answer: WatchAnswer): Promise<void> {
      // An answered look moves the cursor, so the next one shows the plans after these.
 -    if (fill?.cursor !== undefined) after.readerAt = { watch: fill.cursor }
-     if (applyMarks(after, answer.shown, answer.closed) && onScreen(sid)) await update($, readingA, () => after.objective)
-     const view = await read($, viewA)
-     const said = headsUp(answer, after.seen, fill?.blocks ?? [])
++
+     const marked = applyMarks(after, answer.shown, answer.closed)
+     // The step the look read in the record is "Right now" until the next look (G11); the
+     // objective's result and conditions are not touched by it.

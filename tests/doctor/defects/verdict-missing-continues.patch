@@ -1,8 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 6b034fe..43cbb7b 100644
+index f8f119f..e29c6b8 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2880,7 +2880,7 @@ export const readAgain = (kind: ReplyKind, text: string, usage?: Usage | null, c
+@@ -3445,7 +3445,7 @@ export const readAgain = (kind: ReplyKind, text: string, usage?: Usage | null, c
  // A verdict line read: stop, continue, or missing when there is none or it names neither.
  export const verdictOf = (s: string | undefined): Verdict => {
    const v = clean(s)
@@ -10,4 +10,4 @@ index 6b034fe..43cbb7b 100644
 +  return /^stop\b/i.test(v) ? 'stop' : /^continue\b/i.test(v) ? 'continue' : 'continue'
  }
  
- // A reply that did not reach "closed:" is read as nothing (endsWhole).
+ // The watch's "now:": its first line's first sentence, kept to NOW_MAX characters; '' for none.

@@ -1,20 +1,21 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index c342914..4af3daf 100644
+index f8f119f..ad86784 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1777,7 +1777,6 @@ ${seen}
+@@ -1801,7 +1801,6 @@ ${seen}
  Notes the other watcher already showed the owner in this session, which you must not repeat either:
  ${others}
  
 -${WALK_RULE}
  ${LIST_GAP_RULE}
- Write the walk first, under "steps:", one line per step; with no plan shown, write "steps: none".
+ ${WATCH_WALK_AT} one line per step; with no plan shown, write "steps: none".
  
-@@ -1849,7 +1848,6 @@ When every condition is shown or closed and the record shows the result working,
+@@ -1874,7 +1873,7 @@ When every condition is shown or closed and the record shows the result working,
  
  ${LOOK_RULE}
  
 -${WALK_RULE}
++
  Walk them to yourself and do not write the walk out. Every step with no sign while later work goes on goes first under "left:", named with the plan's number; every step not assessed goes under "unassessed:".
  
  ## Output structure
