@@ -5,6 +5,9 @@ What changed in each release of Owner Rep, newest first. The full record is the
 
 ## Unreleased
 
+- **Check it runs the same way on every machine.** It always uses Opus at high effort rather
+  than whatever model you last picked, sees the clock so it starts its answer in time, reads what
+  the agent changed before judging it, and keeps its standing rules apart from this check's facts.
 - **A failed objective write is retried at extra-high effort first**, and at maximum effort only
   if that fails too, so the rare retry costs less.
 - **A part of done you restate is kept once.** When your later words say a part of done more

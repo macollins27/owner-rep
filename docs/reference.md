@@ -532,7 +532,17 @@ call writes (below):
    loads in that session too, and every hook passes it by once `isOwnCheck` knows it, by that
    mark or by its folder under `checkCopiesDir`: no record, no call, nothing drawn; G19), and
    with `CLAUDE_CODE_DISABLE_CLAUDE_MDS=1` (`CHECK_ISOLATE_ENV`), `--setting-sources user`,
-   `--disable-slash-commands` and `--strict-mcp-config --mcp-config` from `checkMcpConfig` (G18):
+   `--disable-slash-commands` and `--strict-mcp-config --mcp-config` from `checkMcpConfig` (G18),
+   on `CHECK_MODEL` (`opus`) at `CHECK_EFFORT` (`high`) whatever the owner's default (G17), with
+   `CHECK_SYSTEM` as `--append-system-prompt` (G27): the checker's role (`CHECK_ROLE`), the
+   readers' sections on conditions, proof and the open objective, its standing rules
+   (`CHECK_STANDING`) and last the ways it must not stop (`CHECK_STOPS`, G24), the same text on
+   every check, so `checkPrompt` carries only this check's facts: the session, the room, a clock
+   from `startedAt` (`clockOf`: when it began, when its time runs out, and to start its answer
+   `CHECK_WRITE_BY_MS` before that, running `date` before a long command; G25), the agent's
+   changes to read first (`git status`, `git diff`, `git log --since` the record's first entry;
+   G26), one rule for writing (only in the copy, or nowhere without one; G45), the objective,
+   the briefing, the steps and the answer's form:
    the run loads the owner's user-level settings, the owner's guard hooks among them, the `--settings`
    fence, and the owner's own agentsview entry from Claude Code's `.claude.json` (`checkMcp`
    reads `<CLAUDE_CONFIG_DIR>/.claude.json`, else `~/.claude.json`, and takes that one entry, or

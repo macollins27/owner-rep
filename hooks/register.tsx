@@ -2053,6 +2053,7 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       owner: jobMsgs(rec),
       brief: instant,
       writtenAt: new Date(at).toISOString(),
+      startedAt: Date.now(),
       unanswered: [...(links === null ? ['links' as const] : []), ...(repos.whole ? [] : ['repos' as const])],
     })
     const startedAt = Date.now()
