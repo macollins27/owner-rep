@@ -13355,6 +13355,7 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     const b = readerGets(briefPrompt(planned7()))
     for (const rule of [
       'looks dropped: the agent\'s own whole list of what it is doing for the plan, or of what is done and what remains, stands whole in the record, with no part of it left out, and leaves this step out.',
+      'Say it looks dropped, not that it was skipped or done.',
       'A list from before the approval, a list of one part, a list called partial, or a list that says the step comes later does not count.',
       'A step with no sign while later work goes on, or one that looks dropped, is the owner\'s ask dropped.',
     ]) {
