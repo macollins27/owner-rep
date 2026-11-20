@@ -830,7 +830,7 @@ when it was written), and the check's `reopen:` lines when they say what shows o
 `shown:` line does not move a condition marked `reopened` (only the check's does, the fourth
 argument). Each condition has a `kind`, `works` or `fact`, which the objective writer writes
 before it (`conditionOf` reads it, and reads a state written first with no "|", "- not shown: …",
-as that state, "shown" with no where as open; `heldLine` writes it back, `bare` strips it where a reader
+as that state, "shown" with no where as open, the kind read from the words after the state; `heldLine` writes it back, `bare` strips it where a reader
 copies it, and `mergeConditions` keeps a held `works`, or one with no kind, as `works` whatever
 kind a rewrite gives, and opens a shown `fact` rewritten as `works` with its where kept as
 `seen`). `conditionOf`, and everything after it through `kindOf`, reads a `fact:` as `fact` only when
