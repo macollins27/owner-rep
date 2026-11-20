@@ -3650,14 +3650,17 @@ function conditionOf(line: string): Condition {
   const k = KIND_AT.exec(line)
   const said = k === null ? undefined : (k[1] ?? '').toLowerCase() === 'fact' ? 'fact' : 'works'
   // A "fact" is one only when `factHolds` reads it as one; any other is works, since only a
-  // look by someone who did not build it can show it (Codex reviews of #53).
-  const kind: { kind?: ConditionKind } = said === undefined ? {} : { kind: said === 'fact' && !factHolds(line.split('|')[0] ?? '') ? 'works' : said }
+  // look by someone who did not build it can show it (Codex reviews of #53). It reads the words
+  // the condition keeps, never a state word written before them (round 10: "fact: not shown:
+  // note.txt exists" was read whole and became works).
+  const kindFor = (kept: string): { kind?: ConditionKind } => (said === undefined ? {} : { kind: said === 'fact' && !factHolds(kept) ? 'works' : said })
+  const kind = kindFor(line.split('|')[0] ?? '')
   const m = /^(.*?)\s*\|\s*(open|not[\s-]?shown|shown|closed)\b\s*:?\s*(.*)$/i.exec(line)
   if (m === null) {
     // The state written first with no "|" ("- not shown: the pages are built", the R6 replay of
     // 69440c68): "not shown" is kept, and "shown" with no where is open, as after a "|".
     const f = line.includes('|') ? null : /^\s*(open|not[\s-]?shown|shown)\s*:\s*(.*)$/i.exec(line.replace(KIND_AT, ''))
-    if (f !== null) return { text: bare(f[2] ?? ''), state: /^not/i.test(f[1] ?? '') ? 'not-shown' : 'open', by: '', ...kind }
+    if (f !== null) return { text: bare(f[2] ?? ''), state: /^not/i.test(f[1] ?? '') ? 'not-shown' : 'open', by: '', ...kindFor(f[2] ?? '') }
     return { text: bare(line.split('|')[0] ?? ''), state: 'open', by: '', ...kind }
   }
   const text = bare(m[1] ?? '')

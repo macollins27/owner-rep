@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 9eee59c..5d0be65 100644
+index b46d607..b991687 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3537,7 +3537,7 @@ function conditionOf(line: string): Condition {
-   const said = k === null ? undefined : (k[1] ?? '').toLowerCase() === 'fact' ? 'fact' : 'works'
-   // A "fact" is one only when `factHolds` reads it as one; any other is works, since only a
-   // look by someone who did not build it can show it (Codex reviews of #53).
--  const kind: { kind?: ConditionKind } = said === undefined ? {} : { kind: said === 'fact' && !factHolds(line.split('|')[0] ?? '') ? 'works' : said }
-+  const kind: { kind?: ConditionKind } = said === undefined ? {} : { kind: said }
+@@ -3653,7 +3653,7 @@ function conditionOf(line: string): Condition {
+   // look by someone who did not build it can show it (Codex reviews of #53). It reads the words
+   // the condition keeps, never a state word written before them (round 10: "fact: not shown:
+   // note.txt exists" was read whole and became works).
+-  const kindFor = (kept: string): { kind?: ConditionKind } => (said === undefined ? {} : { kind: said === 'fact' && !factHolds(kept) ? 'works' : said })
++  const kindFor = (kept: string): { kind?: ConditionKind } => (said === undefined ? {} : { kind: said })
+   const kind = kindFor(line.split('|')[0] ?? '')
    const m = /^(.*?)\s*\|\s*(open|not[\s-]?shown|shown|closed)\b\s*:?\s*(.*)$/i.exec(line)
    if (m === null) {
-     // The state written first with no "|" ("- not shown: the pages are built", the R6 replay of
