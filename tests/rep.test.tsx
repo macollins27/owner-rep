@@ -10484,6 +10484,38 @@ test('factHolds reads a doing folded into a noun\'s own words as works: a plural
   for (const text of facts) expect([text, factHolds(text)]).toEqual([text, true])
 })
 
+test('factHolds reads the facts the writer wrote in the tenth live test: an exact copy, a copy as the thing that exists, a size in brackets after a run, and the pushes and report of "no ... exist", while each twin that says how a thing behaves stays works', () => {
+  // Written by the objective writer, labelled fact, in round 10's sessions; each was read as works,
+  // so the builder's own listing or byte count could not close it.
+  const facts = [
+    'a copy of welcome.txt exists in a local sent folder inside the scratch folder',
+    "note.txt in the scratch folder holds exactly 'amber' with no trailing newline (5 bytes)",
+    'install-case/bin/greet in the scratch folder is installed as an exact copy of greet-source.sh',
+    'no helper scripts, handoff notes or proof report exist from this work',
+    'no commits or pushes were made',
+    'no helper scripts, handoff notes, proof report or other proof files exist from this work',
+    'a copy of the note exists in the sent folder',
+  ]
+  for (const text of facts) expect([text, factHolds(text)]).toEqual([text, true])
+  // The same shapes saying how a thing behaves or how good it is stay works.
+  const works = [
+    'a copy of welcome.txt is correct',
+    'a copy of the fast tool exists',
+    'install-case/bin/greet in the scratch folder is installed as an exact copy that greets correctly',
+    'install-case/bin/greet in the scratch folder is installed as a perfect copy of greet-source.sh',
+    "note.txt in the scratch folder holds exactly 'amber' with no trailing newline (and it greets the customer)",
+    "note.txt in the scratch folder holds exactly 'amber' with no trailing newline (5 bytes) and it greets the customer",
+    'no pushes broke the build',
+    'the proof report is accurate',
+    'a proof report that shows the steps exists',
+    'the welcome note is sent',
+    'the note was sent to the customer',
+    'a copy of welcome.txt reaches the customer',
+    'the copy of the tool works',
+  ]
+  for (const text of works) expect([text, factHolds(text)]).toEqual([text, false])
+})
+
 test('a condition\'s kind: written by the writer before it, kept through a held write, stripped where a reader copies it, and one held "works" never turns "fact"', () => {
   const a = parseObjective('objective: moved\nmoved: #1\nresult: r\nfor: f\ndone:\n- works: the page loads for a visitor | open\n- fact: the build installed | not shown\n- the docs written | open\nstep: s\ndropped:\n- nothing')
   expect(a?.kind === 'moved' && a.parts.done).toEqual([
