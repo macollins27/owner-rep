@@ -642,12 +642,14 @@ test('the briefs say a chore left for the owner is the agent\'s unfinished work,
   expect(checkPrompt({ sessionId: 's', cwd: '/tmp', owner: [om('Build it.')], reading: 'x', brief: parseBrief('stands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm', conditions: [], shown: [], from: 0 } as never)).toMatch(/never a step for the owner to do/)
 })
 
-test('the brief and the watch keep a phrase of every rule of the ledger and stay under their word targets', () => {
+test('the brief and the watch keep a phrase of 48 standing rules in both and stay under their word targets', () => {
   const empty = { objective: null, owner: [], past: [], seen: [], others: [] }
   const b = readerGets(briefPrompt(empty))
   const w = readerGets(watchPrompt(empty, 'stop'))
-  // One phrase for each rule of the ledger in the PR of the rewrite (prompt audit §6.1-§6.4): a
-  // rule dropped from what both readers are given fails here.
+  // A phrase for 48 of the standing rules both readers are given, from the ledger in the PR of the
+  // rewrite (prompt audit §6.1-§6.4): one dropped from either reader fails here. Rules said only in
+  // one call's request, and rules with tests of their own (the chore left for the owner, standing
+  // instructions, not assessed, the plan walk), are held by those tests.
   const kept = [
     'take none of it on its word',
     'the owner pushes it off the easy option and onto the right one; you do the same, through the message you write for the owner to send',
