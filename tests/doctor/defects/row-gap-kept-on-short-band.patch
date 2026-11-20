@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index e3597a2..5f8ace1 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -5907,7 +5907,7 @@ export type RowFit = { head: string; gap: number; status: boolean }
+ export const fitRow = (result: string, fixed: number, choices: number, bare: number, gap: number, maxRows: number, cols: number): RowFit => {
+   const status = 1 + fixed + choices <= maxRows || bare >= choices
+   const buttons = status ? choices : bare
+-  const top = gap + 1 + fixed + buttons > maxRows ? 0 : gap
++  const top = gap
+   const room = maxRows - top - fixed - buttons
+   return { head: room < 1 ? '' : rowHead(result, room, cols), gap: top, status }
+ }

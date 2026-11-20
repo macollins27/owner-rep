@@ -1,9 +1,9 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 3fd4e92..8aedf44 100644
+index 3546ff3..2a15516 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -5459,7 +5459,7 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
-     x => ({ ...x, result: card.result }),
+@@ -6034,7 +6034,7 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
+     resultWhole,
      // Why the check cannot run, or what it last said, whole, before the empty line above the
      // card, which comes back next when there is room for it too.
 -    x => ({ ...x, checkNote: card.checkNote, tight: true }),

@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 4da2e96..8dbc9b0 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -3700,7 +3700,7 @@ export const register: Register = on => {
+         reading: objective === result ? '' : objective,
+       }
+       const shown: CardText = inColumns ? fillCard(whole, e.props.maxRows, cols) : whole
+-      const cardHead = shown.headless === true ? undefined : lead(headGlyph, headColor, 'Owner rep', shown.result)
++      const cardHead = lead(headGlyph, headColor, 'Owner rep', shown.result)
+       const section = (label: string, text: string) =>
+         text === '' ? undefined : (
+           <Box paddingLeft={2} width={w(cols)}>

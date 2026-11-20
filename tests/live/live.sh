@@ -37,6 +37,13 @@
 #
 #     PROOF_DIR=<folder> INSTALLED=1 tests/live/live.sh 15
 #
+# Scenario 16 is on demand too: a session resized to 60 columns and 24 rows, a long objective
+# with a claim nothing shows, a note to the rep that draws a heads-up, then Brief me; at the
+# row, the heads-up and the card, Brief me (or the card's buttons) are on screen and nothing
+# sits under a "↓ n more" row.
+#
+#     tests/live/live.sh 16
+#
 # The sessions run in a scratch folder under the system temp directory, in bypass mode, with
 # the nested-session variables unset (set, claude falls into print mode and exits). The mod
 # loads from this checkout (--plugin-dir), with the copy installed at user scope switched off
@@ -162,6 +169,16 @@ tail = " ".join(text.split()[-10:])
 print(f"  the {field} ends: {tail}")
 sys.exit(0 if tail and tail in card else 1)
 PY2
+}
+# narrow_band WHAT BUTTON [head]: scenario 16's checks at 60 columns and 24 rows: BUTTON on
+# screen, the head drawn when asked (the row's always is; above a heads-up or on the card it goes
+# on a band of two rows, which this Mac's status line leaves when it takes six), and no "↓ n
+# more" row, which would mean the band put a button out of view and a digit would type into
+# the prompt.
+narrow_band() {
+  if [[ "${3:-}" == head ]]; then pane | grep -q 'Owner rep ·' ; verdict "$1: the row's head drawn" $?; fi
+  pane | grep -q "$2" ; verdict "$1: $2 on screen" $?
+  pane | grep -qE '↓ [0-9]+ more' ; [[ $? -ne 0 ]]; verdict "$1: nothing scrolled out of the band" $?
 }
 # heights_card ROWS: the checks of scenario 12 on the card drawn in a window of ROWS rows, from
 # its head to its buttons. The band has at most half the window, the prompt's rows included, so
@@ -1279,6 +1296,31 @@ PY
       echo "14 the agent's turn as he saw it: the text each message of the owner's answers, as the rep saved it, against the transcript's, through a plan with a command, two text blocks, a reply typed mid-turn, two interrupts, a background task, /compact, a helper and /reload-plugins"
       turn_capture || bad=$((bad+1)) ;;
     15) owner_held ;;
+    16)
+      echo "16 narrow: at 60 columns and 24 rows the row, a heads-up above it and the card each keep their buttons on screen, nothing under a \"↓ n more\" row"
+      start || { bad=1; fails=$((fails+1)); stop; continue; }
+      tmux resize-window -t "=$S:" -x 60 -y 24; sleep 3
+      send 'This folder is for the invented bicycle repair shop Maple Cycle. The result I want: a short, professional plain-text welcome note saved as welcome.txt, checked for confusing instructions by a test suite that passes, with a proof report of the steps taken, and, once I give go separately, a pretend send that only copies the note into a local sent folder here. Do not run any command or open any file. Reply with exactly this sentence and nothing else: I ran the whole test suite and every test passes, so the work is finished.'
+      wait_for '^\s*stopped, waiting on you' 120
+      sleep 2
+      save 16-narrow-row
+      narrow_band row 'Brief me' head
+      # A note to the rep starts a look at once; the look sees claims nothing in the session shows.
+      send 'Owner rep: what I care about is that the tests really ran and passed, shown in the session, not the agent saying so.'
+      if wait_for 'Heads up ·' 180; then
+        sleep 2
+        save 16-narrow-heads-up
+        narrow_band heads-up 'Brief me'
+        pane | grep -qE '1: Brief me\s+2: Fine' ; verdict 'heads-up: its buttons on screen' $?
+      else
+        echo "  no heads-up was drawn in 180s; the row and the card are still checked"
+      fi
+      tmux send-keys -t "=$S:" 1
+      wait_for 'Fine, close' 240
+      sleep 2
+      save 16-narrow-card
+      narrow_band card 'Fine, close'
+      stop ;;
     *)
       echo "$n: no such scenario in this build"
       bad=1 ;;

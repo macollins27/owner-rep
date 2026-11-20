@@ -1,0 +1,24 @@
+  You also told me not to run any command or open any file,
+  so for now I've done nothing. If you lift that limit, I'll
+  write the welcome note for Maple Cycle and a test that
+  checks it for confusing instructions. I'll run the tests
+  and save a proof report showing what actually happened.
+  When you say go, I'll do the pretend send by copying the
+  note into a local sent/ folder.
+
+✻ Sautéed for 7s · done 8:10 PM
+
+⏺ Prompt dropped by a hook: Owner rep: noted, and
+  reading again. The agent did not see this.
+◆ Heads up · Even a real, passing test run would onl…   [-]
+  1: Brief me   2: Fine   0: Later
+
+────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────
+  [Opus 5.5]
+  owner-rep-live.10uNbWcvdd +owner-rep-live.10uNbWcv… +...
+  Maple Cycle welcome note
+  Context ░░░░ 4%
+  Usage   Weekly  ░░░░ 10% (resets in 1d 5h)
+  ⏵⏵ bypass permissions on (shift+tab to cycle)

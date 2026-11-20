@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 491123b..61f6ebf 100644
+index 4da2e96..db454eb 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -3362,7 +3362,7 @@ export const register: Register = on => {
+@@ -3629,7 +3629,7 @@ export const register: Register = on => {
+     // record line, the buttons row and whatever is drawn above or beneath, so a long result
      // never pushes the row's buttons under a "↓ n more" row (round nine, 100x24).
      const beneathRows = drawsSomething(beneath) ? rowsOf(textOf(beneath), cols) : 0
-     const headOf = (above: number) => {
--      const result = reading?.result ?? placeholder
-+      const result = reading === null ? placeholder : objectiveText(reading)
-       const text = inColumns ? rowHead(result, e.props.maxRows - gap - recordRows - 1 - beneathRows - above, cols) : result
-       return lead(headGlyph, headColor, 'Owner rep', text)
-     }
+-    const rowResult = reading?.result ?? placeholder
++    const rowResult = reading === null ? placeholder : objectiveText(reading)
+     // The row's buttons row as it wraps, its buttons with digits or, under another mod's note or
+     // the rep's heads-up, without.
+     const rowChoiceRows = (digits: boolean, withStatus = true) =>
