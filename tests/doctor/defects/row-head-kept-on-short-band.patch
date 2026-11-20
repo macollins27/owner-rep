@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index e3597a2..4d9a668 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -5909,7 +5909,7 @@ export const fitRow = (result: string, fixed: number, choices: number, bare: num
+   const buttons = status ? choices : bare
+   const top = gap + 1 + fixed + buttons > maxRows ? 0 : gap
+   const room = maxRows - top - fixed - buttons
+-  return { head: room < 1 ? '' : rowHead(result, room, cols), gap: top, status }
++  return { head: rowHead(result, room, cols), gap: top, status }
+ }
+ 
+ // The heads-up and the row under it in a band of `maxRows` rows: `fixed` of them the rows always

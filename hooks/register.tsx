@@ -272,7 +272,9 @@ import {
   skipAfter,
   spentText,
   textOf,
-  rowHead,
+  fitRow,
+  fitNote,
+  buttonRows,
   rowsOf,
   tokensOf,
   VERSIONS_MAX,
@@ -3601,8 +3603,11 @@ export const register: Register = on => {
         {status}
       </Text>
     )
+    // A buttons row in the band's columns: an item that would pass the edge wraps whole onto a
+    // row below, as `buttonRows` counts it, so the rows above it are kept to what the band leaves
+    // (round 10: at 60 columns the row's buttons took two rows where one was counted).
     const choices = (...buttons: RenderNodeList) => (
-      <Box flexDirection="row" gap={3} paddingLeft={2}>
+      <Box flexDirection="row" flexWrap="wrap" columnGap={3} paddingLeft={2} width={w(cols)}>
         {buttons}
       </Box>
     )
@@ -3633,12 +3638,17 @@ export const register: Register = on => {
     // record line, the buttons row and whatever is drawn above or beneath, so a long result
     // never pushes the row's buttons under a "↓ n more" row (round nine, 100x24).
     const beneathRows = drawsSomething(beneath) ? rowsOf(textOf(beneath), cols) : 0
-    const headOf = (above: number) => {
-      const result = reading?.result ?? placeholder
-      const text = inColumns ? rowHead(result, e.props.maxRows - gap - recordRows - 1 - beneathRows - above, cols) : result
-      return lead(headGlyph, headColor, 'Owner rep', text)
-    }
-    const head = headOf(0)
+    const rowResult = reading?.result ?? placeholder
+    // The row's buttons row as it wraps, its buttons with digits or, under another mod's note or
+    // the rep's heads-up, without.
+    const rowChoiceRows = (digits: boolean, withStatus = true) =>
+      buttonRows([...(withStatus ? [status] : []), digits ? `${PRESS_HOTKEY}: Brief me` : 'Brief me', digits ? '2: Tell the rep' : 'Tell the rep'], cols - 2)
+    // On a band too short for the whole row, the empty line above it goes, then the status off its
+    // buttons row, then its head, so the buttons stay in the window (`fitRow`).
+    const rowFit = inColumns
+      ? fitRow(rowResult, recordRows + beneathRows, rowChoiceRows(!hasBeneath), rowChoiceRows(!hasBeneath, false), gap, e.props.maxRows, cols)
+      : { head: rowResult, gap, status: true }
+    const head = rowFit.head === '' ? undefined : lead(headGlyph, headColor, 'Owner rep', rowFit.head)
     const recordLine =
       lines[0] === undefined ? undefined : (
         <Box paddingLeft={2} width={w(cols)}>
@@ -3654,13 +3664,18 @@ export const register: Register = on => {
       // beneath it as approved, its buttons for the mouse alone since the note's own carry
       // the digits (restored 23 Oct 2026; the row had been hidden under a note since
       // 13 Oct, a choice no one asked for).
+      // On the terminal the note, its why and the row's head take only the rows the band leaves
+      // after the buttons rows and the record line (`fitNote`); on a band too short for the row
+      // beneath, its buttons row, which has no digits under a note, goes first, then its head.
+      const noteRows = buttonRows(['1: Brief me', '2: Fine', '0: Later'], cols - 2) + recordRows
+      const fitted = inColumns ? fitNote(note.line, note.why, rowResult, noteRows, rowChoiceRows(false), e.props.maxRows, cols) : { line: note.line, why: note.why, head: rowResult, tight: false, row: true }
       return (
-        <Box flexDirection="column" marginTop={gap}>
-          {lead('◆', 'warning', 'Heads up', note.line)}
-          {note.why !== '' ? (
+        <Box flexDirection="column" marginTop={fitted.tight ? 0 : gap}>
+          {lead('◆', 'warning', 'Heads up', fitted.line)}
+          {fitted.why !== '' ? (
             <Box paddingLeft={2} width={w(cols)}>
               <Text dimColor wrap="wrap">
-                {note.why}
+                {fitted.why}
               </Text>
             </Box>
           ) : undefined}
@@ -3669,9 +3684,9 @@ export const register: Register = on => {
             <Button key="fine" plain hotkey="2" label="Fine" onPress={clear} />,
             <Button key="later" plain hotkey="0" label="Later" onPress={clear} />,
           )}
-          {headOf(rowsOf(`Heads up · ${note.line}`, cols - 2) + rowsOf(note.why, cols - 2) + 1)}
+          {fitted.head !== '' ? lead(headGlyph, headColor, 'Owner rep', fitted.head) : undefined}
           {recordLine}
-          {choices(statusText, <Button key="rep" plain label="Brief me" onPress={onPress} />, <Button key="tell" plain label="Tell the rep" onPress={tell} />)}
+          {fitted.row ? choices(statusText, <Button key="rep" plain label="Brief me" onPress={onPress} />, <Button key="tell" plain label="Tell the rep" onPress={tell} />) : undefined}
           {beneath}
         </Box>
       )
@@ -3694,7 +3709,7 @@ export const register: Register = on => {
         reading: objective === result ? '' : objective,
       }
       const shown: CardText = inColumns ? fillCard(whole, e.props.maxRows, cols) : whole
-      const cardHead = lead(headGlyph, headColor, 'Owner rep', shown.result)
+      const cardHead = shown.headless === true ? undefined : lead(headGlyph, headColor, 'Owner rep', shown.result)
       const section = (label: string, text: string) =>
         text === '' ? undefined : (
           <Box paddingLeft={2} width={w(cols)}>
@@ -3875,10 +3890,10 @@ export const register: Register = on => {
     }
 
     return (
-      <Box flexDirection="column" marginTop={gap}>
+      <Box flexDirection="column" marginTop={rowFit.gap}>
         {head}
         {recordLine}
-        {choices(statusText, repButton, tellButton)}
+        {rowFit.status ? choices(statusText, repButton, tellButton) : choices(repButton, tellButton)}
         {beneath}
       </Box>
     )

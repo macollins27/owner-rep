@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index e3597a2..62e9610 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -6052,7 +6052,6 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
+     // On a band of two rows, whose buttons take both at 60 columns, the head goes, so every button
+     // stays in the window (round 10: when this Mac's status line took six rows the card's buttons
+     // sat under "↓ 2 more").
+-    x => ({ ...x, headless: true }),
+   ]
+   for (const step of floor) if (cardRows(c, cols) > maxRows) c = step(c)
+   // The result whole, then whole without the margin above, then also without the size, which

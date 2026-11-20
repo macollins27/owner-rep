@@ -1,0 +1,24 @@
+  - No sent folder has been made, and nothing has been sent.
+
+  If you remove the no-commands rule, I'll do all of it in
+  this folder. I'll write the welcome note, write a test
+  that checks it for confusing instructions, run the test,
+  and save a proof report of each step. The pretend send to
+  a local sent/ folder will wait until you say go.
+
+✻ Cogitated for 6s · done 8:23 PM
+
+⏺ Prompt dropped by a hook: Owner rep: noted, and
+  reading again. The agent did not see this.
+  3: Check it   1: Put message in prompt                [-]
+  2: Fine, close   4: Tell the rep   0: Later
+
+────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────
+  [Opus 5.5]
+  owner-rep-live.AhBySrYZb7 +owner-rep-live.AhBySrYZ… +...
+  Maple Cycle welcome note
+  Context ░░░░ 4%
+  Usage   Weekly  ░░░░ 11% (resets in 1d 5h)
+  ⏵⏵ bypass permissions on (shift+tab to cycle)

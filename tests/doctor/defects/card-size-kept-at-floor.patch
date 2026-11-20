@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index e3597a2..742810d 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -6048,7 +6048,6 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
+     // Last, the conversation's size off the buttons row, which only says how full the conversation
+     // is, so every button stays in the window (round 10: on a three-row band at 60 columns the
+     // size took the buttons row's third row and Tell the rep and Later sat under "↓ n more").
+-    x => ({ ...x, size: '' }),
+     // On a band of two rows, whose buttons take both at 60 columns, the head goes, so every button
+     // stays in the window (round 10: when this Mac's status line took six rows the card's buttons
+     // sat under "↓ 2 more").

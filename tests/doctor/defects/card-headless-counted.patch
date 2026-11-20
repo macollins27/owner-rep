@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index e3597a2..7f042e9 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -5840,7 +5840,7 @@ export const buttonRows = (items: string[], width: number): number => {
+ export function cardRows(c: CardText, cols: number): number {
+   const w = Math.max(1, cols - 2)
+   const part = (label: string, text: string): number => (text === '' ? 0 : rowsOf(`${label} ${text}`, w))
+-  let rows = (c.tight === true ? 0 : 1) + (c.headless === true ? 0 : rowsOf(`Owner rep · ${c.result}`, w)) + rowsOf(c.count, w) + rowsOf(c.revised, w)
++  let rows = (c.tight === true ? 0 : 1) + rowsOf(`Owner rep · ${c.result}`, w) + rowsOf(c.count, w) + rowsOf(c.revised, w)
+   rows += rowsOf(c.well, w) + part('Stands:', c.stands) + part('Means:', c.means)
+   if (c.leftOut.length > 0) rows += 1 + c.leftOut.reduce((n, item) => n + rowsOf(`  - ${item}`, w), 0)
+   rows += part('Next:', c.next)

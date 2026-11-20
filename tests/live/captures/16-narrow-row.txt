@@ -1,0 +1,24 @@
+  - welcome.txt hasn't been written.
+  - No test suite exists, and none has been run.
+  - There's no proof report.
+  - No sent folder has been made, and nothing has been sent.
+
+  If you remove the no-commands rule, I'll do all of it in
+  this folder. I'll write the welcome note, write a test
+  that checks it for confusing instructions, run the test,
+  and save a proof report of each step. The pretend send to
+  a local sent/ folder will wait until you say go.
+
+✻ Cogitated for 6s · done 8:23 PM
+◆ Owner rep · A short, professional plain-text welco…   [-]
+  1: Brief me   2: Tell the rep
+
+────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────
+  [Opus 5.5]
+  owner-rep-live.AhBySrYZb7 +owner-rep-live.AhBySrYZ… +...
+  Maple Cycle welcome note
+  Context ░░░░ 4%
+  Usage   Weekly  ░░░░ 11% (resets in 1d 5h)
+  ⏵⏵ bypass permissions on (shift+tab to cycle)

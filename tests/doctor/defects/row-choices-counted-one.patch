@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 4da2e96..c292682 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -3637,7 +3637,7 @@ export const register: Register = on => {
+     // On a band too short for the whole row, the empty line above it goes, then the status off its
+     // buttons row, then its head, so the buttons stay in the window (`fitRow`).
+     const rowFit = inColumns
+-      ? fitRow(rowResult, recordRows + beneathRows, rowChoiceRows(!hasBeneath), rowChoiceRows(!hasBeneath, false), gap, e.props.maxRows, cols)
++      ? fitRow(rowResult, recordRows + beneathRows, 1, rowChoiceRows(!hasBeneath, false), gap, e.props.maxRows, cols)
+       : { head: rowResult, gap, status: true }
+     const head = rowFit.head === '' ? undefined : lead(headGlyph, headColor, 'Owner rep', rowFit.head)
+     const recordLine =
