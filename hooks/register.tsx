@@ -184,7 +184,8 @@ import {
   WATCH_EFFORT,
   BRIEF_EFFORT,
   OWN_WORDS_EFFORT,
-  REP_SYSTEM,
+  repSystem,
+  newFence,
   BLOCKS_REFUSED,
   joinBlocks,
   type PromptBlock,
@@ -341,6 +342,10 @@ type Rec = {
   at: number
   // The objective held for the job in hand; null until the writer has written it.
   objective: Objective | null
+  // The session's fence (`newFence`): the tag suffix the record and the owner's messages are
+  // quoted in, made at the first read and kept, so every call of the session sends the same
+  // system prompt and its cache holds. Absent until then.
+  fence?: string
   // The number of the job's first message while no objective is held; a new job sets it.
   jobStart: number
   // An old-shape reading's text, kept until the first objective takes it as a version.
@@ -983,7 +988,8 @@ async function memoryFor($: EngineInterface, sid: string, rec: Rec, reader: 'wat
   // The briefing is told, among coverage's lines, of the plans it cannot compare, by the one path
   // the row and the card take; what it finds itself goes on the card after it answers.
   const gaps = reader === 'brief' ? readerGaps(approved, 'brief') : {}
-  return { ...base, owner, approved, lines: coverage(rec, { full: storeFull.get(sid), gaps }) }
+  const fence = rec.fence ?? (await changeRec($, sid, r => (r.fence ??= newFence())))
+  return { ...base, owner, approved, fence, lines: coverage(rec, { full: storeFull.get(sid), gaps }) }
 }
 
 // The store refused the record: its inline texts go to files, or memory when the files refuse
@@ -1562,7 +1568,7 @@ const NOTHING_READ: ModelForkResult = {
   reason: 'nothing-to-fork',
   usage: { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
 } as ModelForkResult
-async function readSession($: EngineInterface, sid: string, rec: Rec, kind: CallKind, task: (cover: string[]) => string): Promise<Read> {
+async function readSession($: EngineInterface, sid: string, rec: Rec, kind: CallKind, fence: string | undefined, task: (cover: string[]) => string): Promise<Read> {
   const rows = await $.session.messages().catch(() => [])
   if (rows.length === 0) return { result: NOTHING_READ, gaps: {} }
   const items = await heldItems($, sid, rows)
@@ -1577,12 +1583,15 @@ async function readSession($: EngineInterface, sid: string, rec: Rec, kind: Call
   const from = b.outcome === 'none' ? undefined : b.from
   const opensAfter = b.outcome === 'established' && recordText(rows, RECORD_BUDGET, human, from).opensAfter
   const cover = boundaryCover(b, opensAfter, b.outcome === 'none' ? undefined : msgs.find(m => m.n === b.n))
-  const blocks = recordPrompt(rows, task(cover.told), human, from)
+  const blocks = recordPrompt(rows, task(cover.told), human, from, fence)
   const effort = kind === 'watch' ? WATCH_EFFORT : BRIEF_EFFORT
+  // The system prompt goes as one block marked for the cache (G3): every reader call of the
+  // session sends the same one, its fence included. A build that refuses blocks takes the text.
+  const system = repSystem(fence)
   const ask = (prompt: string | PromptBlock[]) =>
     $.model.complete({
       model: OBJECTIVE_MODEL,
-      system: REP_SYSTEM,
+      system: typeof prompt === 'string' ? system : [{ text: system, cache: true }],
       prompt,
       maxTokens: RECORD_MAX_TOKENS,
       effort,
@@ -1610,7 +1619,7 @@ async function readSession($: EngineInterface, sid: string, rec: Rec, kind: Call
       usage: { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
     } as ModelForkResult)
   const settings: CallSettings = { model: OBJECTIVE_MODEL, effort, maxTokens: RECORD_MAX_TOKENS, timeoutMs: RECORD_TIMEOUT_MS }
-  const call: Sent = { kind, settings, system: REP_SYSTEM, prompt: joined ? joinBlocks(blocks) : blocks, joined, result: answered, ms }
+  const call: Sent = { kind, settings, system, prompt: joined ? joinBlocks(blocks) : blocks, joined, result: answered, ms }
   return { result: result as ModelForkResult, gaps: cover.gaps, sent: call }
 }
 
@@ -1632,7 +1641,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
   // is read once more; a second cut one raises no Heads up and marks nothing, and the call log
   // and the counters keep both as cut short.
   for (let attempt = 0; attempt < 2; attempt++) {
-    const got = await readSession($, sid, rec, 'watch', cover => watchPrompt({ ...memory, cover }, reason))
+    const got = await readSession($, sid, rec, 'watch', memory.fence, cover => watchPrompt({ ...memory, cover }, reason))
     // Nothing recorded yet: no model was called, and there is nothing to count.
     if (got.result === NOTHING_READ) return
     const result = got.result
@@ -1861,7 +1870,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       const rec = await loadRec($, sid)
       const memory = { ...(await memoryFor($, sid, rec, 'brief')), context }
       const kind: CallKind = extra === '' ? 'brief' : 'ask-again'
-      const got = await readSession($, sid, rec, kind, cover => {
+      const got = await readSession($, sid, rec, kind, memory.fence, cover => {
         const prompt = briefPrompt({ ...memory, cover })
         return extra === '' ? prompt : endAsked(`${prompt}\n\n${extra}`)
       })
