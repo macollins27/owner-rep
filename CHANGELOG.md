@@ -30,9 +30,9 @@ What changed in each release of Owner Rep, newest first. The full record is the
   a step done in part reads as part left out, and the agent's own word that it narrowed or left
   out part of an approved step reads as looking dropped.
 - **Briefings and messages are short again.** Each card part asks for one or two sentences of
-  about 25 words, under 40; each gap one sentence of about 10 words, under 20, at most six; and
-  the message one sentence of about 15 words a line, under 150 words unless more than five
-  things are asked. The aims sit below the limits so a reply written to them lands under them.
+  about 25 words, under 40; each gap one sentence of about 10 words, under 20, at most six, a
+  decision of yours one short question; and the message one sentence of about 15 words a line,
+  under 150 words unless more than five things are asked. The aims sit below the limits so a reply written to them lands under them.
 - **A dropped plan step reaches you once.** The heads-up above the row names each part of an
   approved plan that looks dropped, and keeps what it said with the plan it came from, so the
   same part is not said again at the next look, while a like step of another plan still is.

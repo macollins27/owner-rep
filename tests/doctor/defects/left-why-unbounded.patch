@@ -6,8 +6,8 @@ index 12261ff..2add17f 100644
  stands: <${SHORT_PART}: where the work really stands, as the record shows it>
  means: <${SHORT_PART}: what the agent's latest message means for the owner against the whole result: what the owner has now and what is waiting>
  left:
--- <${LEFT_ITEMS}. Each says in a few words why it matters. A gap is part of the job not done or not shown, anything "Also look for" names, a chore left "for you", or the owner's own decision (a held go-ahead, or keeping a self-proving step of an approved plan), as one plain question, never folded. A condition already shown or closed is not a gap. Write "- nothing" when there is none.>
-+- <${LEFT_ITEMS}. A gap is part of the job not done or not shown, anything "Also look for" names, a chore left "for you", or the owner's own decision (a held go-ahead, or keeping a self-proving step of an approved plan), as one plain question, never folded. A condition already shown or closed is not a gap. Write "- nothing" when there is none.>
+-- <${LEFT_ITEMS}. Each says in a few words why it matters. A gap is part of the job not done or not shown, anything "Also look for" names, a chore left "for you", or the owner's own decision (a held go-ahead, or keeping a self-proving step of an approved plan), as one short plain question, never folded. A condition already shown or closed is not a gap. Write "- nothing" when there is none.>
++- <${LEFT_ITEMS}. A gap is part of the job not done or not shown, anything "Also look for" names, a chore left "for you", or the owner's own decision (a held go-ahead, or keeping a self-proving step of an approved plan), as one short plain question, never folded. A condition already shown or closed is not a gap. Write "- nothing" when there is none.>
  ${plan ? `${UNASSESSED_PART}\n` : ''}next: <${SHORT_PART}: what the agent does next; a stop only with a stop verdict>
  message:
  <the message for the owner to send, written to the agent ${MESSAGE_FORM}. Empty only when every condition is shown or closed and the work is the best it could be, or no objective is held and nothing is worth sending.>

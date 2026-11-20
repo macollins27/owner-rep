@@ -3,7 +3,7 @@ index 12261ff..59eac27 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
 @@ -1892,7 +1892,7 @@ left:
- - <${LEFT_ITEMS}. Each says in a few words why it matters. A gap is part of the job not done or not shown, anything "Also look for" names, a chore left "for you", or the owner's own decision (a held go-ahead, or keeping a self-proving step of an approved plan), as one plain question, never folded. A condition already shown or closed is not a gap. Write "- nothing" when there is none.>
+ - <${LEFT_ITEMS}. Each says in a few words why it matters. A gap is part of the job not done or not shown, anything "Also look for" names, a chore left "for you", or the owner's own decision (a held go-ahead, or keeping a self-proving step of an approved plan), as one short plain question, never folded. A condition already shown or closed is not a gap. Write "- nothing" when there is none.>
  ${plan ? `${UNASSESSED_PART}\n` : ''}next: <${SHORT_PART}: what the agent does next; a stop only with a stop verdict>
  message:
 -<the message for the owner to send, written to the agent ${MESSAGE_FORM}. Empty only when every condition is shown or closed and the work is the best it could be, or no objective is held and nothing is worth sending.>

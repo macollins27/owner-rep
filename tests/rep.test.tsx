@@ -2155,8 +2155,8 @@ test('rule: a step held for the owner\'s go-ahead reaches the owner as one plain
   }
   // The briefing lists the held decision under "left:" as a question, kept out of the folded last line.
   const left = brief.match(/\nleft:\n- <([^\n]*)>\n/)?.[1] ?? ''
-  expect(left).toContain('or the owner\'s own decision (a held go-ahead, or keeping a self-proving step of an approved plan), as one plain question, never folded.')
-  expect(left.indexOf('as one plain question')).toBeLessThan(left.indexOf('A condition already shown or closed is not a gap.'))
+  expect(left).toContain('or the owner\'s own decision (a held go-ahead, or keeping a self-proving step of an approved plan), as one short plain question, never folded.')
+  expect(left.indexOf('as one short plain question')).toBeLessThan(left.indexOf('A condition already shown or closed is not a gap.'))
 })
 
 test('rule: every watch call\'s answer shape asks for the "now:" line, the step each look reads, at a step, a stop and a note, with a plan held and without', () => {
@@ -2183,7 +2183,7 @@ test('rule: a self-proving step of an approved plan is the owner\'s ask and a qu
   const held = 'hold that step and do everything else until the owner answers'
   // The readers: such a step is named under "left" as a question, and the agent holds it and does the rest.
   expect(REP_SYSTEM).toContain(`A check the owner asked for in their own words is part of the job. ${asked}: name it as that question, and have the message tell the agent to ${held}.`)
-  expect(briefPrompt(m)).toContain('or the owner\'s own decision (a held go-ahead, or keeping a self-proving step of an approved plan), as one plain question, never folded.')
+  expect(briefPrompt(m)).toContain('or the owner\'s own decision (a held go-ahead, or keeping a self-proving step of an approved plan), as one short plain question, never folded.')
   expect(REP_SYSTEM).not.toContain('one that is a step of a plan the owner approved, is part of the job')
   // The check: the same.
   const check = checkPrompt({ sessionId: 's', cwd: '/w', copy: '/c', reading: objectiveText(o), conditions: o.done, shown: [], owner: m.owner, brief: card as never, writtenAt: '10:00', from: 1, unanswered: [], guarded: [] } as never)

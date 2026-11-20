@@ -385,7 +385,8 @@ call writes (below):
    call's and the check's answer forms ask for lengths in words, targets the gate does not
    enforce (G40): `SHORT_PART` for "stands", "means" and "next" (one or two sentences, about 25 words, under 40), `LEFT_ITEMS`
    for "left" (each item one sentence of about 10 words and under 20, at most six, the rest folded
-   into "- and N smaller gaps"), and `MESSAGE_FORM` for the message (each line one sentence of
+   into "- and N smaller gaps"; the owner's own decision is one short plain question, which kept a
+   held go-ahead question, naming the step and its condition, from reaching the limit), and `MESSAGE_FORM` for the message (each line one sentence of
    about 15 words, under 150 words in all unless more than five things are asked; the message
    section itself states no length, so the limit is said once, where the message is asked for).
    The aims sit below the limits so a reply written to the aim lands under them; the limits are

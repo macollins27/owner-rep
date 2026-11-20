@@ -5361,13 +5361,13 @@
     "name": "means-length-last",
     "breaks": "The briefing's \"means:\" part loses its one or two sentences and puts its length after the content, so it runs long (the rewrite's replay, rule 6).",
     "patch": "means-length-last.patch",
-    "fixed": "tested 2026-11-20"
+    "fixed": "tested 2026-11-20; remade 2026-11-20"
   },
   {
     "name": "left-why-unbounded",
     "breaks": "The briefing's \"left:\" no longer says each item gives why it matters in a few words, so items run long (the rewrite's replay, rule 6).",
     "patch": "left-why-unbounded.patch",
-    "fixed": "tested 2026-11-20"
+    "fixed": "tested 2026-11-20; remade 2026-11-20"
   },
   {
     "name": "heads-up-sibling-hidden",
@@ -5469,6 +5469,12 @@
     "name": "short-part-aim-missing",
     "breaks": "Stands, means and next lose their aim of about 25 words, so they are written to the 40-word limit and reach it.",
     "patch": "short-part-aim-missing.patch",
+    "fixed": "2026-11-20"
+  },
+  {
+    "name": "left-question-not-short",
+    "breaks": "The owner's decision under \"left:\" loses \"short\", so the held go-ahead question names the step and its condition at length and reaches the 20-word limit.",
+    "patch": "left-question-not-short.patch",
     "fixed": "2026-11-20"
   }
 ]
