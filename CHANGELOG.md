@@ -16,6 +16,11 @@ What changed in each release of Owner Rep, newest first. The full record is the
   when dropping the empty line above it and the conversation's size makes room, otherwise gives
   it every row the buttons leave, drops the size where the buttons would not fit with it, and
   on a band of two, whose buttons take both rows, leaves out its head.
+- **Facts the writer wrote in the tenth live test read as facts.** "a copy of welcome.txt exists
+  in the sent folder", "installed as an exact copy of greet-source.sh", "with no trailing
+  newline (5 bytes)", "no commits or pushes were made" and "no ... proof report exist" were
+  read as works, so the builder's own listing could not close them. The fact reader now takes
+  each, and the same shapes saying how a thing behaves stay works.
 - **A fact written with its state first stays a fact.** A condition the objective writer wrote
   as "fact: not shown: note.txt exists" was read with "not shown:" still in it, so the fact
   reader refused it and the rep asked for a hands-on look at a plain fact. The reader now

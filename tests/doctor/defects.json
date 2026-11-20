@@ -4605,7 +4605,7 @@
     "name": "fact-state-after-noun-dropped",
     "breaks": "A state after a noun with its place (\"a commit made during this job\", \"the code committed to main\") is not read, so the writer's fact reads as works.",
     "patch": "fact-state-after-noun-dropped.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "fact-no-thing-holds-dropped",
@@ -4779,13 +4779,13 @@
     "name": "fact-for-job-not-place",
     "breaks": "\"For this job\" is not read as a place, so the writer's own facts \"nothing in the scratch folder's repository is committed for this job\" read as works and wait for a look no command needs.",
     "patch": "fact-for-job-not-place.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "fact-for-any-place",
     "breaks": "\"For\" opens any noun of the work, so \"the script is committed for the fix\" reads as a fact about the fix.",
     "patch": "fact-for-any-place.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "fact-any-ending-file",
@@ -4857,7 +4857,7 @@
     "name": "fact-tail-comma-dropped",
     "breaks": "A text's end notes split by commas stop at the first comma, so \"holds exactly 'amber', 5 bytes, with no final newline\" is read as works and never closes on the dump that shows it.",
     "patch": "fact-tail-comma-dropped.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "fact-tail-final-missing",
@@ -4869,13 +4869,13 @@
     "name": "fact-for-work-missing",
     "breaks": "\"for this work\" is not read as the job's scope, so \"no commit was made for this work\" stays works.",
     "patch": "fact-for-work-missing.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "fact-made-missing",
     "breaks": "\"was made\" is not a fact's state, so \"no commit was made for this work\" stays works.",
     "patch": "fact-made-missing.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "fact-named-any-word",
@@ -4893,7 +4893,7 @@
     "name": "fact-named-dropped",
     "breaks": "\"an executable named greet is installed in a bin folder\" is read as works, so an install the listing shows never closes.",
     "patch": "fact-named-dropped.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "row-head-unbounded",
@@ -4941,7 +4941,7 @@
     "name": "fact-copy-of-not-place",
     "breaks": "\"installed as a copy of greet-source.sh\" is not read, so the writer's plain fact stays open as works.",
     "patch": "fact-copy-of-not-place.patch",
-    "fixed": "tested 2026-11-19"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "fact-run-permission-behaves",
@@ -5127,6 +5127,48 @@
     "name": "card-head-drawn-when-headless",
     "breaks": "The band draws the card's head after the floor dropped it, so on a two-row band at 60 columns the buttons sit under \"↓ 2 more\".",
     "patch": "card-head-drawn-when-headless.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "fact-exact-copy-missing",
+    "breaks": "\"installed as an exact copy of greet-source.sh\" is refused, since only \"as a copy of\" is read, so the tenth live test's copy fact becomes works and the builder's byte compare cannot close it.",
+    "patch": "fact-exact-copy-missing.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "fact-copy-of-subject-missing",
+    "breaks": "\"a copy of welcome.txt exists in the sent folder\" is refused, since a copy is read only as a noun of its own, never as a copy of a named file, so the tenth live test's pretend-send fact becomes works.",
+    "patch": "fact-copy-of-subject-missing.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "fact-copy-of-any-word",
+    "breaks": "After \"a copy of the\" any one word is taken as the thing copied, so \"a copy of the fast tool exists\" reads as a fact and a quality closes on the builder's own listing.",
+    "patch": "fact-copy-of-any-word.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "fact-tail-paren-after-run-missing",
+    "breaks": "A size in brackets after a run of words (\"with no trailing newline (5 bytes)\") ends the reading, so the tenth live test's note fact becomes works.",
+    "patch": "fact-tail-paren-after-run-missing.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "fact-tail-paren-any-words",
+    "breaks": "Anything in brackets after a run of words is taken, so \"... with no trailing newline (and it greets the customer)\" reads as a fact.",
+    "patch": "fact-tail-paren-any-words.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "fact-push-report-nouns-missing",
+    "breaks": "\"pushes\" and \"report\" are no nouns of the work, so \"no commits or pushes were made\" and \"no ... proof report exist from this work\" become works.",
+    "patch": "fact-push-report-nouns-missing.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "fact-proof-sent-mods-missing",
+    "breaks": "\"proof\" and \"sent\" are no words a noun may carry, so \"proof report\" and \"a local sent folder\" end the reading and the tenth live test's facts become works.",
+    "patch": "fact-proof-sent-mods-missing.patch",
     "fixed": "tested 2026-11-19"
   }
 ]
