@@ -10487,7 +10487,7 @@ test('factHolds reads a doing folded into a noun\'s own words as works: a plural
   // own listing. Each joining (hyphen, slash, dot, a space) and each slot (the thing, the thing held,
   // the place, after "no") is read the same way.
   const works: string[] = []
-  for (const d of ['copies-files', 'changes-files', 'tags-files', 'logs-in', 'scripts-changes', 'files-logs', 'copies-every-file', 'copies-all-files', 'logs-every-input', 'logs-all-output', 'changes-every-file', 'tags-every-file', 'scripts-every-change', 'files-every-log'])
+  for (const d of ['copies-files', 'changes-files', 'tags-files', 'logs-in', 'scripts-changes', 'files-logs', 'copies-every-file', 'copies-all-files', 'logs-every-input', 'logs-all-output', 'changes-every-file', 'tags-every-file', 'scripts-every-change', 'files-every-log', 'pushes-files', 'reports-errors', 'pushes-every-file', 'reports-every-error'])
     for (const j of ['-', '/', '.', ' ']) {
       const n = d.split('-').join(j)
       works.push(`The ${n} tool is installed`, `The script contains a ${n} fix`, `The file is saved on the ${n} server`, `No file holds ${n} code`)
@@ -10497,6 +10497,38 @@ test('factHolds reads a doing folded into a noun\'s own words as works: a plural
   // A plural noun next to the noun it names, a possessive, and a count first all stay facts.
   const facts = ['the logs folder is committed', 'the tests folder is pushed to main', 'the settings page is published', 'the docs site is deployed', 'the git hooks folder is committed', "the project's working copy holds 0 changed, added or deleted files from this session", 'all changed files are committed', 'every scratch file is deleted', 'the two sample files are saved in the scratch folder', 'the owner-rep plugin is installed', 'the sign-up page is published', "the scratch folder's repository holds 0 commits"]
   for (const text of facts) expect([text, factHolds(text)]).toEqual([text, true])
+})
+
+test('factHolds reads the facts the writer wrote in the tenth live test: an exact copy, a copy as the thing that exists, a size in brackets after a run, and the pushes and report of "no ... exist", while each twin that says how a thing behaves stays works', () => {
+  // Written by the objective writer, labelled fact, in round 10's sessions; each was read as works,
+  // so the builder's own listing or byte count could not close it.
+  const facts = [
+    'a copy of welcome.txt exists in a local sent folder inside the scratch folder',
+    "note.txt in the scratch folder holds exactly 'amber' with no trailing newline (5 bytes)",
+    'install-case/bin/greet in the scratch folder is installed as an exact copy of greet-source.sh',
+    'no helper scripts, handoff notes or proof report exist from this work',
+    'no commits or pushes were made',
+    'no helper scripts, handoff notes, proof report or other proof files exist from this work',
+    'a copy of the note exists in the sent folder',
+  ]
+  for (const text of facts) expect([text, factHolds(text)]).toEqual([text, true])
+  // The same shapes saying how a thing behaves or how good it is stay works.
+  const works = [
+    'a copy of welcome.txt is correct',
+    'a copy of the fast tool exists',
+    'install-case/bin/greet in the scratch folder is installed as an exact copy that greets correctly',
+    'install-case/bin/greet in the scratch folder is installed as a perfect copy of greet-source.sh',
+    "note.txt in the scratch folder holds exactly 'amber' with no trailing newline (and it greets the customer)",
+    "note.txt in the scratch folder holds exactly 'amber' with no trailing newline (5 bytes) and it greets the customer",
+    'no pushes broke the build',
+    'the proof report is accurate',
+    'a proof report that shows the steps exists',
+    'the welcome note is sent',
+    'the note was sent to the customer',
+    'a copy of welcome.txt reaches the customer',
+    'the copy of the tool works',
+  ]
+  for (const text of works) expect([text, factHolds(text)]).toEqual([text, false])
 })
 
 test('a condition\'s kind: written by the writer before it, kept through a held write, stripped where a reader copies it, and one held "works" never turns "fact"', () => {

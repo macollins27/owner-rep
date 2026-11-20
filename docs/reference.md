@@ -867,7 +867,7 @@ resilient tool", "the fast/secure tool", "the `reliable` tool" and "the bug-free
 are works; "working copy" and "working tree" are read as
 a worktree and "working folder" as a folder before `BEHAVES` is matched; after
 the noun, a word of `FACT_STATE` or "made" with a place, "a commit made during this job") or
-names other than plain words in backticks, or "named" or "called" and a name (`namedAt`: quoted, in backticks, a path, a version, or one word of letters, digits, "_" and "-" that is not a judgment such as "correctly" or "well", nor a joining word, `FACT_NAMED_NOT`; the name says which thing it is, never how good it is, so "an executable named greet" stands), with places after them ("as a copy of" a path or a noun of the work, "with permission to run" or "to execute", read as one word before `BEHAVES` is matched, "anywhere", "elsewhere" or "anywhere else", "for this job", "for the session", "for this task" or "for this work" and no other "for", or a word of `FACT_PREP`, during, since and by among them, before a name,
+names other than plain words in backticks, or "named" or "called" and a name, or "copy of" and a path or a noun of the work ("a copy of welcome.txt exists in the sent folder", tenth live test; "a copy of the fast tool" is works) (`namedAt`: quoted, in backticks, a path, a version, or one word of letters, digits, "_" and "-" that is not a judgment such as "correctly" or "well", nor a joining word, `FACT_NAMED_NOT`; the name says which thing it is, never how good it is, so "an executable named greet" stands), with places after them ("as a copy of" or "as an exact copy of" a path or a noun of the work, "with permission to run" or "to execute", read as one word before `BEHAVES` is matched, "anywhere", "elsewhere" or "anywhere else", "for this job", "for the session", "for this task" or "for this work" and no other "for", or a word of `FACT_PREP`, during, since and by among them, before a name,
 a noun of the work or of the machine, or one of `FACT_PLACE`: main, origin, GitHub and a few
 more); then "is", "was", "has been" and the like (or nothing, "the newest build installed")
 before one or more of `FACT_STATE` (saved, committed, pushed, merged, installed, deployed,
@@ -877,7 +877,7 @@ exists, does not exist, no longer exists, or runs the newest. Only a stored thin
 noun of `FACT_STORE`) holds or contains quoted text, a thing of `FACT_HELD` (with "whose
 contents are exactly" and quoted text after it), or is a count of a unit of `FACT_UNIT` ("long", "in size" or "in length" after it), each
 with the note of its end in `FACT_TAIL` ("with no newline at the end", "(14 characters, no
-trailing newline)", "5 bytes, with no final newline": notes split by commas each end there, and what follows a comma that is no note is its own clause). "Nothing", "none" or "no" and a noun, of a place, takes only a state or
+trailing newline)", "5 bytes, with no final newline", "with no trailing newline (5 bytes)": notes split by commas each end there, a note in brackets may follow a note's words, and what follows a comma that is no note is its own clause). "Nothing", "none" or "no" and a noun, of a place, takes only a state or
 existence, and "no" and a stored noun may also hold a thing of `FACT_HELD`, never quoted text; an agent, session or helper (`FACT_ACTOR`) saved or pushed a thing of the work; a
 later clause may leave its subject out or say "it". A slash is "or" and "&" is "and". No word
 of what the work does can stand in any slot, so such a condition is `works` whole, however much
@@ -891,7 +891,7 @@ from this job is committed or pushed", facts; the ninth live test's "note.txt in
 holds exactly 'amber', 5 bytes, with no final newline", "no commit was made for this work",
 "nothing was pushed for this work" and "an executable named greet is installed in a bin folder
 inside the scratch folder", with "install-case/bin/greet is installed as a copy of
-install-case/greet-source.sh" and "… is installed with permission to run", facts the writer wrote unprompted that were read as works). The writer's prompt gives the shape of a fact,
+install-case/greet-source.sh" and "… is installed with permission to run", facts the writer wrote unprompted that were read as works; and the tenth live test's "a copy of welcome.txt exists in a local sent folder inside the scratch folder", "… holds exactly 'amber' with no trailing newline (5 bytes)", "… is installed as an exact copy of greet-source.sh", "no commits or pushes were made" and "no helper scripts, handoff notes or proof report exist from this work", read as works until "pushes", "report", "proof" and "sent" joined the lists). The writer's prompt gives the shape of a fact,
 with one example. The
 writer's prompt asks for one claim per condition (`ONE_CLAIM`) beside its kinds, then (`QUALITY_CONDITION`) that a condition about how good the result is name what a person using it would notice, in the owner's terms, with one example and nothing the owner would not plainly want. It writes what is installed, deployed or running as not shown, which the rep marks shown when the record holds proof from outside the agent's word.
 A `fact` moves shown on any where. A `works` condition, or one with no kind, moves shown only when

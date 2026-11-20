@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 6683b55..c28123e 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3845,7 +3845,7 @@ const factRead = (ts: FactTok[]): boolean => {
+         // ("a copy of the fast tool") is no fact.
+         if (w(n, /^cop(?:y|ies)$/) && w(n + 1, /^of$/)) {
+           if (pathAt(n + 2)) out.push({ i: n + 3, store })
+-          if (det(n + 2)) for (const r of noun(n + 2, FACT_THING, FACT_STORE)) out.push({ i: r.i, store })
++          if (det(n + 2)) out.push({ i: n + 5, store })
+         }
+       }
+     }
