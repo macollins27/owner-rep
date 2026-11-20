@@ -1,8 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index f8f119f..05da68e 100644
+index b46d607..812ca09 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3616,7 +3616,7 @@ function conditionOf(line: string): Condition {
+@@ -3647,7 +3647,7 @@ function conditionOf(line: string): Condition {
      const held = bare((sa[1] ?? '').split('|')[0] ?? '')
      return held === '' ? c : { ...c, state: 'open', by: '', sameAs: held }
    }
@@ -10,4 +10,4 @@ index f8f119f..05da68e 100644
 +  const k = null as RegExpExecArray | null
    const said = k === null ? undefined : (k[1] ?? '').toLowerCase() === 'fact' ? 'fact' : 'works'
    // A "fact" is one only when `factHolds` reads it as one; any other is works, since only a
-   // look by someone who did not build it can show it (Codex reviews of #53).
+   // look by someone who did not build it can show it (Codex reviews of #53). It reads the words
