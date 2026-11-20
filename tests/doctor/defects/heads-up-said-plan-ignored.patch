@@ -1,11 +1,11 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3718,7 +3718,6 @@
-   }
-   const saidBefore = (d: StepRef & { plan?: string }): boolean =>
-     parts.some(x => {
--      if (x.plan !== undefined && x.plan !== d.plan) return false
-       if (likeness(x.part, d.step) < SAID_LIKENESS) return false
-       const mine = x.plan === undefined ? walk : walk.filter(w => w.plan === x.plan)
-       return nearest(mine, s => likeness(x.part, s)).some(w => w.step === d.step)
+@@ -3682,7 +3682,6 @@
+     const planWords = new Set(contentWords(plan.text))
+     const mine = contentWords(d.step).filter(w => planWords.has(w))
+     return said.some(x => {
+-      if (x.plan !== plan.key) return false
+       const kept = new Set(contentWords(x.part))
+       return mine.every(w => kept.has(w)) && likeness(x.part, d.step) >= SAID_LIKENESS
+     })

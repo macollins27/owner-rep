@@ -360,8 +360,9 @@ type Rec = {
   readerAt?: { watch: number }
   past: string[]
   seen: string[]
-  // The dropped plan parts the Heads up has said, each with its plan, so each reaches the owner once
-  // (`headsUpOf`). Records from before it have none; the lines in `seen` stand in.
+  // The dropped plan parts the Heads up has said, each with its plan (`headsUpOf`): a part dropped
+  // later is hidden only when one of these is plainly the same part of the same plan. At most
+  // `SEEN_MAX`; one evicted can only be said again, never hidden.
   saidDrops?: SaidDrop[]
   others: string[]
   // The last card's next step and message; on a briefing's card also its reads (1, 2 with
@@ -1682,7 +1683,10 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
     const view = await read($, viewA)
     const got = headsUpOf(answer, after.seen, fill?.blocks ?? [], after.saidDrops ?? [])
     const said = got.note
-    if (said !== null && view === 'row' && onScreen(sid) && ![...after.seen].some(s => same(s, said.line))) {
+    // A plain flag already shown is not shown again. A note of dropped plan parts is governed by the
+    // parts kept alone: the same step in two plans gives the same line, and each must be said.
+    const repeat = (line: string): boolean => got.drops.length === 0 && after.seen.some(s => same(s, line))
+    if (said !== null && view === 'row' && onScreen(sid) && !repeat(said.line)) {
       after.seen = [...after.seen, said.line].slice(-SEEN_MAX)
       if (got.drops.length > 0) after.saidDrops = [...(after.saidDrops ?? []), ...got.drops].slice(-SEEN_MAX)
       const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId }

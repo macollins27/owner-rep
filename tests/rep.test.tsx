@@ -13682,9 +13682,11 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
       expect(b).toContain(rule)
     }
     expect(w).toContain('A flag about a step that looks dropped names what shows it, the agent\'s own words or the list it is missing from, and asks the agent to do it or show it.')
-    // The flag goes to what the walk does not carry, since the walk's dropped lines reach the owner on their own (PR #68, B).
-    expect(w).toContain('reaches the owner from the walk on its own, so give the flag to the most important concern the walk does not carry, at the same bar.')
-    expect(b).not.toContain('give the flag to the most important concern the walk does not carry')
+    // PR #68's fourth round put back 38b0dc9's text: the watch is not told the walk carries each drop,
+    // so its flag may name a dropped step again, and a drop the Heads up hides as said still reaches
+    // the owner through the flag.
+    expect(rep.WALK_WATCH).toBe("A flag about a step that looks dropped names what shows it, the agent's own words or the list it is missing from, and asks the agent to do it or show it.")
+    expect(w).not.toContain('reaches the owner from the walk on its own')
     expect(w).toContain(rep.NOT_ASSESSED_RULE)
     // The briefing puts such a step first under left:, not as a flag.
     expect(b).not.toContain('A flag about a step that looks dropped')
@@ -13769,10 +13771,14 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     expect(rep.headsUp(a, [], PLANS)).toEqual({ line: flag, why: `The list has no copy step. Also looks dropped: ${STEP}.` })
   })
 
+  // Rewritten for PR #68's fourth round: the second look read the step as said from the line shown;
+  // only a part kept with its plan hides one now.
   test('Heads up: a step of only short words is still told apart, and is not raised twice', () => {
+    const plans = [`#6 (the plan you accepted on the plan screen)\n<approved_plan>\n${PLANS[0]}\n</approved_plan>`]
     const shown = 'A step of the plan you approved looks dropped: Add API.'
-    expect(rep.headsUp(walked('Add API', 'looks dropped'), [], PLANS)?.line).toBe(shown)
-    expect(rep.headsUp(walked('API add', 'looks dropped'), [shown], PLANS)).toBeNull()
+    const got = rep.headsUpOf(walked('Add API', 'looks dropped'), [], plans, [])
+    expect(got.note?.line).toBe(shown)
+    expect(rep.headsUpOf(walked('API add', 'looks dropped'), [shown], plans, got.drops).note).toBeNull()
   })
 
   test('Heads up: however many steps are dropped, the why stays short and the reader\'s flag stays in it', () => {
@@ -13788,14 +13794,22 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     expect(rep.headsUp(walked(STEP, 'looks dropped', flag, 'The list has no such step.'), [], PLANS)).toEqual({ line: flag, why: 'The list has no such step.' })
   })
 
-  test('Heads up: a step already shown, reworded at a later look, is not raised again, and the next flag gets through', () => {
+  // Rewritten for PR #68's fourth round: this test demanded that a step reworded in the reader's own
+  // words ("swap", "over") be hidden by the line shown before. That is not strong evidence the same
+  // part was said, and a line shown is no longer read for dropped parts, so it is said again.
+  test('Heads up: a step already said is not raised again reworded in the plan\'s words, is said again in the reader\'s own, and the next flag gets through', () => {
+    const plans = [`#6 (the plan you accepted on the plan screen)\n<approved_plan>\n${PLANS[0]}\n</approved_plan>`]
     const shown = `A step of the plan you approved looks dropped: ${STEP}.`
+    const said = [{ part: STEP, plan: '6' }]
+    const again = 'move the local store request limit'
+    expect(rep.headsUpOf(walked(again, 'no sign while later work goes on'), [shown], plans, said).note).toBeNull()
+    expect(rep.headsUpOf(walked(again, 'no sign while later work goes on', OTHER), [shown], plans, said).note?.line).toBe(OTHER)
     const later = 'Swap the request limit over to the local store'
-    expect(rep.headsUp(walked(later, 'no sign while later work goes on'), [shown], PLANS)).toBeNull()
-    expect(rep.headsUp(walked(later, 'no sign while later work goes on', OTHER), [shown], PLANS)?.line).toBe(OTHER)
-    // A different step is raised. Two near-identical steps dropped at separate looks read as one here;
-    // the briefing still walks both.
-    expect(rep.headsUp(walked('Copy the whole database to the archive', 'looks dropped'), [shown], PLANS)?.line).toContain('Copy the whole database')
+    expect(rep.headsUpOf(walked(later, 'no sign while later work goes on'), [shown], plans, said).note?.line).toBe(`A step of the plan you approved looks dropped: ${later}.`)
+    // The line shown before, with no part kept, hides nothing.
+    expect(rep.headsUp(walked(STEP, 'no sign while later work goes on'), [shown], plans)?.line).toBe(shown)
+    // A different step is raised.
+    expect(rep.headsUpOf(walked('Copy the whole database to the archive', 'looks dropped'), [shown], plans, said).note?.line).toContain('Copy the whole database')
   })
 
   test('Heads up: more than one step, the forms readers write, and a very long step', () => {
@@ -13809,57 +13823,87 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     expect(long).toContain('word word word')
   })
 
-  // Each dropped part reaches the owner once (PR #68 review, must-fix C). Parts of one step share
-  // words, so a part already said is told apart from its sibling by its own words and its plan.
+  // Each dropped part of an approved plan reaches the owner, and is hidden only on strong evidence
+  // that this same part of this same plan was already said (PR #68, fourth round: the design in
+  // plans/replays/DESIGN-said-drops-2026-11-20.md, its cases numbered here). When unsure, it is said:
+  // a silent drop is the harm the rep exists to prevent, and a repeat is noise.
   const GUARD_PLAN = ['#8 (the plan you accepted on the plan screen)\n<approved_plan>\nBuild a guard that refuses background commands with no time limit, and the same time limit for watching commands.\n</approved_plan>']
   const PART1 = 'guard refuses background commands with no time limit'
   const PART2 = 'the same time limit for watching commands'
+  const CAP_PLAN = ['#8 (the plan you accepted on the plan screen)\n<approved_plan>\nAdd a test for the cap and a test for the reload.\nAdd the doctor entry for the cap and the doctor entry for the reload.\nUpdate the README section on the cap and the README privacy section.\n</approved_plan>']
   const looked = (lines: string, flag = 'none', why = '') =>
     parseWatch(`steps:\n${lines}\nstate: working\nflag: ${flag}\n${why === '' ? '' : `why: ${why}\n`}shown:\n- nothing\nclosed:\n- nothing\n`)
   const dropLine = (part: string) => `A step of the plan you approved looks dropped: ${part}.`
 
-  test('Heads up: a part said at one look does not hide its sibling dropped at the next, whether the record keeps the parts said or only the line shown', () => {
+  test('Heads up (said once, case 1): a part said at one look does not hide its sibling dropped at the next, with the said part\'s line missing, reworded or merged in the next walk', () => {
+    // Missing: the said part has no line in the next walk.
+    const cap = [{ part: 'Add a test for the cap', plan: '8' }]
+    expect(rep.headsUpOf(looked('- #8: Add a test for the reload | looks dropped'), [dropLine('Add a test for the cap')], CAP_PLAN, cap).note?.line).toBe(dropLine('Add a test for the reload'))
+    // Reworded: the said part's line is in other words, so the sibling is the said part's likest line.
+    const entry = [{ part: 'Add the doctor entry for the cap', plan: '8' }]
+    const reworded = looked('- #8: Plant the cap defect in the doctor | done\n- #8: Add the doctor entry for the reload | looks dropped')
+    expect(rep.headsUpOf(reworded, [dropLine('Add the doctor entry for the cap')], CAP_PLAN, entry).note?.line).toBe(dropLine('Add the doctor entry for the reload'))
+    // Merged: the said part's line folds into a shorter one.
+    const readme = [{ part: 'Update the README section on the cap', plan: '8' }]
+    const merged = looked('- #8: Update the README | done\n- #8: Update the README privacy section | looks dropped')
+    expect(rep.headsUpOf(merged, [dropLine('Update the README section on the cap')], CAP_PLAN, readme).note?.line).toBe(dropLine('Update the README privacy section'))
+    // The guard's two parts: the sibling dropped beside the said part, or alone, is said.
     const n = rep.headsUpOf(looked(`- #8: ${PART1} | looks dropped\n- #8: ${PART2} | underway`), [], GUARD_PLAN, [])
     expect(n.note?.line).toBe(dropLine(PART1))
-    expect(n.drops.map(d => d.part)).toEqual([PART1])
-    const next = looked(`- #8: ${PART1} | looks dropped\n- #8: ${PART2} | looks dropped`)
-    expect(rep.headsUpOf(next, [dropLine(PART1)], GUARD_PLAN, n.drops).note?.line).toBe(dropLine(PART2))
-    // A record from before the parts were kept holds only the line shown; it reads the same.
-    expect(rep.headsUp(next, [dropLine(PART1)], GUARD_PLAN)?.line).toBe(dropLine(PART2))
-    // The sibling alone in the walk at the next look: still said, though it is the said part's nearest line.
+    expect(n.drops).toEqual([{ part: PART1, plan: '8' }])
+    expect(rep.headsUpOf(looked(`- #8: ${PART1} | looks dropped\n- #8: ${PART2} | looks dropped`), [dropLine(PART1)], GUARD_PLAN, n.drops).note?.line).toBe(dropLine(PART2))
     expect(rep.headsUpOf(looked(`- #8: ${PART2} | no sign while later work goes on`), [dropLine(PART1)], GUARD_PLAN, n.drops).note?.line).toBe(dropLine(PART2))
-    // A sibling alike enough to pass for the said part reworded is still said: the said part's nearest
-    // line in this walk is itself, not the sibling.
+    // A sibling alike enough by likeness alone to pass for the said part reworded: "watching" is a word
+    // of the plan the said part does not hold, so it is said.
     const sibling = 'guard refuses watching commands with no time limit'
     expect(rep.likeness(PART1, sibling)).toBeGreaterThanOrEqual(rep.SAID_LIKENESS)
     expect(rep.headsUpOf(looked(`- #8: ${PART1} | looks dropped\n- #8: ${sibling} | looks dropped`), [dropLine(PART1)], GUARD_PLAN, n.drops).note?.line).toBe(dropLine(sibling))
+    // A sibling in the reader's own words holds no plan word the said part lacks; its likeness keeps it said.
+    const own = 'add a test for reopening the session'
+    expect(rep.likeness('Add a test for the cap', own)).toBeLessThan(rep.SAID_LIKENESS)
+    expect(rep.headsUpOf(looked(`- #8: ${own} | looks dropped`), [dropLine('Add a test for the cap')], CAP_PLAN, cap).note?.line).toBe(dropLine(own))
   })
 
-  test('Heads up: a part already said and reworded at a later look is not raised again, with its sibling done or dropped and said too', () => {
+  test('Heads up (said once, case 3): a flag ever shown, however close to a plan step, hides nothing; only the parts kept with their plan do', () => {
+    const plan9 = ['#9 (the plan you accepted on the plan screen)\n<approved_plan>\nWrite tests for the reload path.\nShip the release.\n</approved_plan>']
+    const flag = 'Tests for the reload path are missing; the agent skipped them.'
+    expect(rep.headsUpOf(looked('- #9: Tests for the reload path | looks dropped'), [flag], plan9, []).note?.line).toBe(dropLine('Tests for the reload path'))
+    // Nor does a line shown in the Heads up's own words, with no part kept.
+    expect(rep.headsUp(looked(`- #8: ${PART1} | looks dropped\n- #8: ${PART2} | looks dropped`), [dropLine(PART1)], GUARD_PLAN)).toEqual({
+      line: dropLine(PART1),
+      why: `The agent's own words or its own full list leave it out. The agent has to do it or show it. Also looks dropped: ${PART2}.`,
+    })
+  })
+
+  test('Heads up (said once, case 6): a part already said and reworded at a later look in the plan\'s words is not raised again, with its sibling done or dropped and said too', () => {
     const said = [{ part: PART1, plan: '8' }]
     const reworded = 'the guard refuses any background command without a time limit'
     expect(rep.headsUpOf(looked(`- #8: ${reworded} | looks dropped\n- #8: ${PART2} | done`), [dropLine(PART1)], GUARD_PLAN, said).note).toBeNull()
-    expect(rep.headsUp(looked(`- #8: ${reworded} | looks dropped\n- #8: ${PART2} | done`), [dropLine(PART1)], GUARD_PLAN)).toBeNull()
     const both = [...said, { part: PART2, plan: '8' }]
     expect(rep.headsUpOf(looked(`- #8: ${reworded} | looks dropped\n- #8: watching commands get the same time limit | no sign while later work goes on`), [dropLine(PART1)], GUARD_PLAN, both).note).toBeNull()
+    // The reader's own words beside the plan's: still the said part, every plan word in it and alike enough.
+    const cap = [{ part: 'Add a test for the cap', plan: '8' }]
+    expect(rep.headsUpOf(looked('- #8: add a unit test for the cap path | looks dropped'), [], CAP_PLAN, cap).note).toBeNull()
   })
 
-  test('Heads up: a flag that names one part keeps its line, a sibling dropped at the same look goes under "Also looks dropped", and both count as said', () => {
+  test('Heads up (said once, case 5): a flag that names one part keeps its line, a sibling dropped at the same look goes under "Also looks dropped", and both count as said', () => {
     const flag = 'The guard no longer refuses background commands with no time limit, so that part looks dropped.'
     const a = looked(`- #8: ${PART1} | looks dropped\n- #8: ${PART2} | looks dropped`, flag, 'The agent says it took that check out.')
     const got = rep.headsUpOf(a, [], GUARD_PLAN, [])
     expect(got.note).toEqual({ line: flag, why: `The agent says it took that check out. Also looks dropped: ${PART2}.` })
-    expect(got.drops.map(d => d.part)).toEqual([PART1, PART2])
+    expect(got.drops).toEqual([{ part: PART1, plan: '8' }, { part: PART2, plan: '8' }])
     // At the next look neither is raised again.
-    expect(rep.headsUpOf(a, [flag], GUARD_PLAN, got.drops).note).toEqual({ line: flag, why: 'The agent says it took that check out.' })
+    expect(rep.headsUpOf(a, [flag], GUARD_PLAN, got.drops)).toEqual({ note: { line: flag, why: 'The agent says it took that check out.' }, drops: [] })
     expect(rep.headsUpOf(looked(`- #8: ${PART1} | looks dropped\n- #8: ${PART2} | looks dropped`), [flag], GUARD_PLAN, got.drops).note).toBeNull()
   })
 
-  test('Heads up: a one-part step said once and reworded later is not repeated, read from the parts kept or from the line', () => {
-    const said = [{ part: STEP }]
-    expect(rep.headsUpOf(walked('Swap the request limit over to the local store', 'looks dropped'), [], PLANS, said).note).toBeNull()
-    expect(rep.headsUp(walked('Swap the request limit over to the local store', 'looks dropped'), [dropLine(STEP)], PLANS)).toBeNull()
-    expect(rep.headsUpOf(walked('Copy the whole database to the archive', 'looks dropped'), [], PLANS, said).note?.line).toBe(dropLine('Copy the whole database to the archive'))
+  test('Heads up: a part kept with no plan, or from a plan no shown block is headed by, never hides anything', () => {
+    const plans = [`#6 (the plan you accepted on the plan screen)\n<approved_plan>\n${PLANS[0]}\n</approved_plan>`]
+    expect(rep.headsUpOf(walked(STEP, 'looks dropped'), [], plans, [{ part: STEP }]).note?.line).toBe(dropLine(STEP))
+    // A walk whose number heads no shown plan keeps its part with no plan, so it can hide nothing later.
+    const got = rep.headsUpOf(walked(STEP, 'looks dropped'), [], PLANS, [])
+    expect(got.drops).toEqual([{ part: STEP }])
+    expect(rep.headsUpOf(walked(STEP, 'looks dropped'), [dropLine(STEP)], PLANS, got.drops).note?.line).toBe(dropLine(STEP))
   })
 
   test('Heads up: two steps of different plans that share words are each judged on their own', () => {
@@ -13885,17 +13929,20 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     expect(again.drops).toEqual([{ part: run, plan: '9' }])
   })
 
-  test('Heads up: a short dropped part counts as a plan\'s only when the plan holds most of its words, a longer one at the usual share', () => {
-    const plan = ['#4 (the plan you accepted on the plan screen)\n<approved_plan>\nGive background commands a time limit and show the time left in the status row.\n</approved_plan>']
-    // Two of four words is not enough for a short part: no plan here asked for email alerts.
-    expect(rep.headsUp(looked('- #4: email alerts for background commands | looks dropped'), [], plan)).toBeNull()
+  test('Heads up (said once, cases 4 and 8): a dropped part counts as a plan\'s at the one share of its words, short or long', () => {
+    const plan = ['#4 (the plan you accepted on the plan screen)\n<approved_plan>\nGive background commands a time limit and show the time left in the status row.\nRun the install check.\n</approved_plan>']
+    // Case 4: a real step reworded by one word is the plan's.
+    expect(rep.headsUp(looked('- #4: Run the installer check | looks dropped'), [], plan)?.line).toBe(dropLine('Run the installer check'))
     expect(rep.headsUp(looked('- #4: time limit for background commands | looks dropped'), [], plan)?.line).toBe(dropLine('time limit for background commands'))
-    // A longer part reworded still counts at the usual share.
     expect(rep.headsUp(looked('- #4: put the remaining time of each command into the status row at the bottom | no sign while later work goes on'), [], plan)?.line).toBe(
       dropLine('put the remaining time of each command into the status row at the bottom'),
     )
-    expect(rep.PLAN_WORDS_SHORT).toBe(4)
-    expect(rep.PLAN_WORDS_SHORT_SHARE).toBe(0.75)
+    // Case 8, an accepted false positive: two of four words pass the share, so a part no plan asked
+    // for can be called the plan's. A real step lost (case 4) outranks a bad flag.
+    expect(rep.headsUp(looked('- #4: email alerts for background commands | looks dropped'), [], plan)?.line).toBe(dropLine('email alerts for background commands'))
+    // A part with too few of its words in any plan is still never called the plan's.
+    expect(rep.headsUp(looked('- #4: send the weekly invoice to the accountant by email | looks dropped'), [], plan)).toBeNull()
+    expect(rep.PLAN_WORDS_SHARE).toBe(0.4)
   })
 
   test('briefing: "- none" under left: reads as nothing left out, as the other lists read it', () => {
@@ -14283,6 +14330,44 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     await m.look($, 't2')
     expect(await rowSays($, new RegExp(`looks dropped: ${cloud}\\.`))).toBe(true)
     expect((m.rec() as { saidDrops?: unknown }).saidDrops).toEqual([{ part: local, plan: '2' }, { part: cloud, plan: '3' }])
+  })
+
+  // Said once, case 2: two plans hold the same step word for word, so the Heads up's line for the
+  // second is the line already shown for the first. A note of walk drops is governed by the parts
+  // kept, never by that line.
+  const RUN = 'Run the whole test suite and paste its output'
+  const runPlans = () => [msg7(1, 'build the sorter'), yes7(2, `${RUN}.\nAdd a status page.`), yes7(3, `${RUN}.\nShow the bill.`)]
+  const runLine = new RegExp(`looks dropped: ${RUN}\\.`)
+
+  test('Task 8 (mounted, said once case 2): the same step of two plans, dropped at two looks, reaches the owner at each and both are kept', async ($, on) => {
+    const answers = [
+      `steps:\n- #2: ${RUN} | looks dropped\nstate: working\nflag: none\nclosed:\n- nothing\n`,
+      `steps:\n- #2: ${RUN} | looks dropped\n- #3: ${RUN} | looks dropped\nstate: working\nflag: none\nclosed:\n- nothing\n`,
+    ]
+    let at = 0
+    const m = mounted7(on, runPlans(), brief => (brief ? WELL : (answers[Math.min(at++, 1)] ?? '')))
+    await started($)
+    await m.look($, 't1')
+    expect(await rowSays($, runLine)).toBe(true)
+    expect((m.rec() as { saidDrops?: unknown }).saidDrops).toEqual([{ part: RUN, plan: '2' }])
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    await ui.press({ key: 'fine' })
+    await ui.unmount()
+    expect(await rowSays($, runLine)).toBe(false)
+    await m.look($, 't2')
+    expect(await rowSays($, runLine)).toBe(true)
+    expect((m.rec() as { saidDrops?: unknown }).saidDrops).toEqual([{ part: RUN, plan: '2' }, { part: RUN, plan: '3' }])
+  })
+
+  test('Task 8 (mounted, said once case 2): the same step of two plans dropped at one look is said once by name and once under "Also", and both are kept', async ($, on) => {
+    const m = mounted7(on, runPlans(), brief => (brief ? WELL : `steps:\n- #2: ${RUN} | looks dropped\n- #3: ${RUN} | looks dropped\nstate: working\nflag: none\nclosed:\n- nothing\n`))
+    await started($)
+    await m.look($, 't1')
+    expect(await rowSays($, runLine)).toBe(true)
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    expect(await ui.find({ type: 'Text', text: new RegExp(`Also looks dropped: ${RUN}\\.`) })).toBeDefined()
+    await ui.unmount()
+    expect((m.rec() as { saidDrops?: unknown }).saidDrops).toEqual([{ part: RUN, plan: '2' }, { part: RUN, plan: '3' }])
   })
 
   test('Task 8 (mounted): with no approved plan shown to the look, a walked step is not called part of one, and the reader\'s own flag stands', async ($, on) => {
@@ -18330,7 +18415,7 @@ describe('the call log: its pieces', () => {
     // form every template asks for, beside the slot the message is written in, and only there; the
     // section's second copy cost every call, the watch's too, 12 words.
     expect(body).not.toMatch(/\b150 words\b/)
-    expect(rep.MESSAGE_FORM).toContain('each line one sentence of about 15 words, under 150 words in all unless more than five things are asked')
+    expect(rep.MESSAGE_FORM).toContain('each line one sentence of about 12 words, under 150 words in all unless more than five things are asked')
     expect(body).not.toMatch(/\b[A-Z]{3,}\b/)
     // The finish line is not a stop: the gate passes a message that ends on it.
     expect(rep.messageSaysStop(`Show me the install's version and what it printed.\n${rep.MESSAGE_FINISH}`)).toBe(false)
@@ -18351,7 +18436,7 @@ describe('the call log: its pieces', () => {
     expect(check).toContain(`- <${rep.LEFT_ITEMS}: work put off`)
     expect(rep.LEFT_ITEMS).toContain('at most six, the costliest first; fold any more into one last line "- and N smaller gaps"')
     // The aim sits below the limit, so a reply written to the aim lands under it (PR #68, length).
-    expect(rep.LEFT_ITEMS).toContain('each one sentence of about 10 words and under 20')
+    expect(rep.LEFT_ITEMS).toContain('each one sentence of about 8 words and under 20')
     expect(rep.SHORT_PART).toBe('one or two sentences, about 25 words, under 40')
   })
 

@@ -384,10 +384,10 @@ call writes (below):
    them; the own-words call and the check read the same section; the briefing's, the own-words
    call's and the check's answer forms ask for lengths in words, targets the gate does not
    enforce (G40): `SHORT_PART` for "stands", "means" and "next" (one or two sentences, about 25 words, under 40), `LEFT_ITEMS`
-   for "left" (each item one sentence of about 10 words and under 20, at most six, the rest folded
+   for "left" (each item one sentence of about 8 words and under 20, at most six, the rest folded
    into "- and N smaller gaps"; the owner's own decision is one short plain question, which kept a
    held go-ahead question, naming the step and its condition, from reaching the limit), and `MESSAGE_FORM` for the message (each line one sentence of
-   about 15 words, under 150 words in all unless more than five things are asked; the message
+   about 12 words, under 150 words in all unless more than five things are asked; the message
    section itself states no length, so the limit is said once, where the message is asked for).
    The aims sit below the limits so a reply written to the aim lands under them; the limits are
    the rule and nothing cuts a reply short to meet them), and
@@ -540,8 +540,7 @@ call writes (below):
    dropped, is the owner's ask dropped and comes before any flag but one about harm happening now. The Heads up
    writes the walk under `steps:` (`STEP_LINE`) before `state:`; `parseWatch` reads that block as
    if it were not there, save that its lines ending `| not assessed` become `notAssessed`,
-   `walkDropped` turns its `no sign` and `looks dropped` lines into `dropped`, and `walkAll` keeps
-   every line as `walk`. A line marked looks dropped is never `notAssessed`: the reader saw the
+   and `walkDropped` turns its `no sign` and `looks dropped` lines into `dropped`. A line marked looks dropped is never `notAssessed`: the reader saw the
    agent leave it out, so the row never says its proof could be in a part of the record cut short.
    The briefing works the states out without writing the walk, putting each dropped step first
    under "left:" with the plan's number and each step not assessed under "unassessed:". A step
@@ -551,12 +550,9 @@ call writes (below):
    stands whole in the record with no part of it left out and leaves the step out, the step looks
    dropped, said as looking dropped and never as skipped or done. A list from before the
    approval, a list of one part, a list called partial or a list that says the step comes later
-   does not count. The Heads up alone is told (`WALK_WATCH`) that each line with no sign or that
-   looks dropped reaches the owner from the walk on its own, so its one flag goes to the most
-   important concern the walk does not carry, at the same bar (at c440a6ae's look 48 the flag
-   named a drop the walk carried and the shell-kill line the agent knowingly left in went unsaid),
-   and that a flag about such a step names what shows it, the agent's own words or the list it is
-   missing from, and asks the agent to do it or show it; `headsUpOf`'s why says the same.
+   does not count. The Heads up alone is told (`WALK_WATCH`) that a flag about such a step names
+   what shows it, the agent's own words or the list it is missing from, and asks the agent to do
+   it or show it; `headsUpOf`'s why says the same.
 
    `headsUpOf`, called by the look after the reader answers, decides what the owner sees and
    returns the parts it said (`drops`); `headsUp` is its note alone. A step
@@ -571,21 +567,30 @@ call writes (below):
    reader's wording; it names one part at most, the one whose content words it holds most of,
    and the others go under its why, at most `DROPPED_ALSO_MAX` (3) by name.
 
-   Each dropped part reaches the owner once. The look keeps every part a shown note said, by name
-   or under "Also looks dropped", with its plan, on the record as `saidDrops` (at most `SEEN_MAX`);
-   a record from before them has only the lines in `seen`, read back by their heads. A part said
-   hides a part dropped now only when all three hold: the two are alike (`likeness`, the Dice share
-   of their stemmed content words, at least `SAID_LIKENESS`, 0.6), of the same plan (`planKey`:
-   the approving message's number where a shown plan has that head, else a hash of the shown plan
-   holding most of its words; a part read from a line has no plan and matches any), and the part
-   now is the said part's nearest line in this look's walk among that plan's lines. Parts of one
-   step share words, so likeness alone would hide a sibling never said. A line in `seen` with
-   another head hides a part only beside a drop word, holding `SAID_HELD` (0.8) of the part's
-   words, with the part its nearest walk line. A part counts only where the plans shown to this
-   look hold at least `PLAN_WORDS_SHARE` (0.4) of its stemmed content words, or
-   `PLAN_WORDS_SHORT_SHARE` (0.75) for a part of `PLAN_WORDS_SHORT` (4) words or fewer, since two
-   common words are in many plans that never asked for the part; so a part no shown plan holds is
-   never called part of one; words rather than exact text because readers reword steps. The walk's
+   A dropped part is hidden only on strong evidence that this same part of this same plan was
+   already said; when unsure it is said again, since a silent drop is the harm the rep exists to
+   prevent and a repeat is noise. The look keeps every part a shown note said, by name or under
+   "Also looks dropped", with its plan, on the record as `saidDrops` (at most `SEEN_MAX`; one
+   evicted can only be said again). A part's plan is the walk line's number where a plan shown to
+   this look is headed by it. It names the plan, not the step (`walkLine` keeps no part number),
+   and a part whose number heads no shown plan has none and never hides another. A part kept hides a
+   part dropped now only when all three hold: the same plan; every word of the plan that the part
+   dropped now holds is in the part kept (stemmed content words); and the two are alike
+   (`likeness`, the Dice share of their stemmed content words, at least `SAID_LIKENESS`, 0.75).
+   Parts of one step share most words, so likeness alone hides siblings (they reach 0.82 on real
+   replies); the plan words tell them apart ("reload" for "cap"), and on 32 real replay replies
+   and 8,848 pairs of parts of one step the two together hid none. A line in `seen` is never read
+   for this: a flag ever shown hides no step. Readers reword a part from look to look, so a part
+   still dropped is said again at five or six of eight looks, and the flag names it at some of
+   the others (c440a6ae's looks 41 to 48, replayed twice from each of two runs); that noise is the price of never hiding a
+   part not said. The register's check that a line was not shown before applies only to a note
+   with no dropped parts: the same step of two plans gives the same line, and each is said.
+
+   A part counts only where the plans shown to this look hold at least `PLAN_WORDS_SHARE` (0.4)
+   of its stemmed content words, short or long; a real step reworded by one word ("Run the
+   installer check" for "Run the install check") must count, and a short part no plan asked for
+   that shares two common words with one passes too, a bad flag accepted so no real step is lost. A
+   part no shown plan holds is never called part of one; words rather than exact text because readers reword steps. The walk's
    number is not checked against the step, because readers write a step's own number there as
    often as the plan's message. `walkLine` reads every form readers write, `#6:`, `#6 step 2,`,
    `#6.1:`, `#6a:` and `#6 part 2:`, keeping the plan's number, the mark being what follows the

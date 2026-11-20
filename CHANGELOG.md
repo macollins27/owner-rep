@@ -30,15 +30,14 @@ What changed in each release of Owner Rep, newest first. The full record is the
   a step done in part reads as part left out, and the agent's own word that it narrowed or left
   out part of an approved step reads as looking dropped.
 - **Briefings and messages are short again.** Each card part asks for one or two sentences of
-  about 25 words, under 40; each gap one sentence of about 10 words, under 20, at most six, a
-  decision of yours one short question; and the message one sentence of about 15 words a line,
+  about 25 words, under 40; each gap one sentence of about 8 words, under 20, at most six, a
+  decision of yours one short question; and the message one sentence of about 12 words a line,
   under 150 words unless more than five things are asked. The aims sit below the limits so a reply written to them lands under them.
-- **A dropped plan step reaches you once.** The heads-up above the row names each part of an
-  approved plan that looks dropped, and keeps what it said with the plan it came from, so the
-  same part is not said again at the next look, while a like step of another plan still is.
-- **The flag goes to what the walk does not already say.** A step that looks dropped reaches
-  you from the plan walk on its own, so the flag now goes to the most important other concern,
-  such as a fault the agent knowingly left in, rather than repeating the drop.
+- **A dropped plan step is never hidden on a guess.** The heads-up above the row names each part
+  of an approved plan that looks dropped and keeps what it said with the plan it came from. A part
+  is left unsaid only when it is plainly one already said, reworded in the plan's own words; a
+  sibling part, a like step of another plan, or a step a past flag spoke of is said. A part still
+  dropped may be said again at later looks.
 - **A part the agent said it left out is never "not assessed".** Only a line marked "not
   assessed" by the rep counts as one; a part the agent admits it dropped reads as looking
   dropped, never as cut short by a shortened record.

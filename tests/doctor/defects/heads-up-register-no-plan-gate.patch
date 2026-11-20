@@ -1,12 +1,12 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1680,7 +1680,7 @@
+@@ -1681,7 +1681,7 @@
      if (stepped && after.objective !== null) after.objective = { ...after.objective, step: answer.now }
      if ((marked || stepped) && onScreen(sid)) await update($, readingA, () => after.objective)
      const view = await read($, viewA)
 -    const got = headsUpOf(answer, after.seen, fill?.blocks ?? [], after.saidDrops ?? [])
 +    const got = headsUpOf(answer, after.seen, [], after.saidDrops ?? [])
      const said = got.note
-     if (said !== null && view === 'row' && onScreen(sid) && ![...after.seen].some(s => same(s, said.line))) {
-       after.seen = [...after.seen, said.line].slice(-SEEN_MAX)
+     // A plain flag already shown is not shown again. A note of dropped plan parts is governed by the
+     // parts kept alone: the same step in two plans gives the same line, and each must be said.

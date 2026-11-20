@@ -27,3 +27,12 @@
   defect. That became the design at bcba3aa ("Task 7a: the readers read
   the session's record, never a fork"), so the behaviour it planted is the mod's own. No
   successor: `tests/rep.test.tsx` asserts the new behaviour directly.
+- `in-plans-short-part-usual-share.patch`: planted a dropped part of four words or fewer counting
+  as a plan's at the usual 0.4 share rather than three quarters. The short-part share was
+  reverted on 20 Nov 2026 (PR #68, fourth round): a real step reworded by one word must count,
+  so every part counts at the one 0.4 share, which is now the code. No successor:
+  `heads-up-plan-words-any` still plants any step passing.
+- `walk-watch-flag-on-carried-drop.patch`: planted the watch not being told that the walk carries
+  each dropped line on its own, so its flag could go to a drop the owner already hears. That text
+  was reverted on 20 Nov 2026 (PR #68, fourth round) to 38b0dc9's, and the test of `WALK_WATCH`
+  holds that text word for word. No successor.
