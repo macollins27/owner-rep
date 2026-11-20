@@ -13658,10 +13658,15 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
       expect(t).toContain(`- ${rep.DECIDE_DROPPED}`)
     }
     expect(rep.DECIDE_DROPPED).toBe("A step of an approved plan, or a part of one, with no sign while later work goes on or that looks dropped is the owner's ask dropped.")
-    expect(rep.STEP_LINE).toMatch(/^- #<n>: <one thing the step names, in plain words> \|/)
+    expect(rep.STEP_LINE).toMatch(/^- #<n>: <one thing the step names, in the plan's words> \|/)
     // A step walked in its parts: the part left out reaches the owner though the rest is done.
     const a = parseWatch('steps:\n- #8: guard refuses background commands with no time limit | done\n- #8: the same time limit for watching commands | looks dropped\nstate: stopped\nflag: none\nshown:\n- nothing\nclosed:\n- nothing\n')
     expect(rep.headsUp(a, [], ['Build a guard that refuses background commands with no time limit, and the same time limit for watching commands.'])?.line).toBe('A step of the plan you approved looks dropped: the same time limit for watching commands.')
+    // Two parts of one step both left out: the first takes the line, the second its why.
+    const b = parseWatch('steps:\n- #8: guard refuses background commands with no time limit | looks dropped\n- #8: the same time limit for watching commands | no sign while later work goes on\nstate: stopped\nflag: none\nshown:\n- nothing\nclosed:\n- nothing\n')
+    const both = rep.headsUp(b, [], ['Build a guard that refuses background commands with no time limit, and the same time limit for watching commands.'])
+    expect(both?.line).toBe('A step of the plan you approved looks dropped: guard refuses background commands with no time limit.')
+    expect(both?.why).toContain('Also looks dropped: the same time limit for watching commands.')
   })
 
   test('A step missing from the agent\'s own full list: the Heads up says it looks dropped and asks to see it, the step stays not assessed, and the briefing walks it as the owner\'s ask dropped', () => {

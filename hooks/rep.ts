@@ -1500,7 +1500,7 @@ export const APPROVED_HEAD =
 // only while a plan is held: the states, each said once. "Looks dropped" is the one kind of step
 // otherwise not assessed that the agent's own whole list can raise; the list never moves the ask,
 // and a step on it stays unproven.
-export const STEP_LINE = '- #<n>: <one thing the step names, in plain words> | done | claimed | underway | not reached | no sign while later work goes on | looks dropped | done before the summary | runs alongside | not assessed'
+export const STEP_LINE = '- #<n>: <one thing the step names, in the plan\'s words> | done | claimed | underway | not reached | no sign while later work goes on | looks dropped | done before the summary | runs alongside | not assessed'
 export const STEP_STATES = `Each approved plan is in an approved_plan fence above. Walk it against the record, one line for each thing a step names, in the plan's words, so a part done cannot hide a part left out. Give each line one state:
 - done: the record shows all of it done.
 - claimed: the agent says so and the record does not show it.
