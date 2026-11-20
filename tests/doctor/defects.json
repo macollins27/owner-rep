@@ -5062,5 +5062,11 @@
     "breaks": "The replay's rewrite edit takes a call whose record is already in this build's fence, so a call it cannot rewrite exactly is replayed as if it were.",
     "patch": "rewrite-takes-new-wrapper.patch",
     "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "memory-quotes-unescaped",
+    "breaks": "A fence tag in an approved plan, the last briefing's message or the owner's sent message is printed as typed, so the agent's text there can close the owner's fence and pass as the owner's words.",
+    "patch": "memory-quotes-unescaped.patch",
+    "fixed": "tested 2026-11-19"
   }
 ]

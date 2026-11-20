@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index f508b1d..7e33332 100644
+index bc415b6..4c8b33b 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1731,7 +1731,7 @@ ${reading}
+@@ -1733,7 +1733,7 @@ ${reading}
  Conditions still open:
  ${o === null ? '- none written yet' : openLines(o, m.lines !== undefined && m.lines.length > 0 ? list(m.lines, '') : '- none: every condition is shown, or closed by the owner')}${anyReopened(o) ? `\n${REOPENED_LINE}` : ''}${(m.cover ?? []).map(l => `\n${l}`).join('')}
  
 -The session's size: ${contextLine(m)}
 +The conversation's size: ${contextLine(m)}
  
- ${section}${OWNER_HEAD}
- <owner_messages${s}>
+ ${section}${OWNER_HEAD}`
+   const tail = `

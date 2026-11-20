@@ -400,8 +400,10 @@ call writes (below):
    holds): `<session_record_<fence>>` and `<owner_messages_<fence>>`. `fenceTags` prints a tag
    of either fence found in quoted text, with or without a suffix, in any case, spaces allowed
    inside the brackets, with its brackets turned to `‹ ›` and its name lower-cased, so text in the
-   session cannot close either fence by guessing its tag (G23); the owner's messages are fenced
-   so an agent's text cannot pass as theirs. A reader given no fence (`REP_SYSTEM`) has the tags
+   session cannot close either fence by guessing its tag (G23). `memoryText` applies it to every
+   quoted text of what the rep knows (the objective, the approved plans, the owner's messages,
+   the last briefing's message and the owner's sent message), and the replay's `rwMemory` does
+   the same; the owner's messages are fenced so an agent's text cannot pass as theirs. A reader given no fence (`REP_SYSTEM`) has the tags
    unsuffixed. Its words keep three apart: "the
    record" is what the reader is shown, "the session" what happened, "the owner's messages" the
    owner's words. The task after the record holds only what changes per call: `memoryText` (what
