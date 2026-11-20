@@ -1723,7 +1723,9 @@ function memoryText(m: Memory, fence?: string): string {
       : `You last briefed the owner and said next: "${m.lastBrief.next}". The message you wrote then:\n"""\n${m.lastBrief.message}\n"""`
   const sent = m.lastSent === undefined ? '(nothing sent)' : `The owner sent the agent this message:\n"""\n${m.lastSent.text}\n"""\n${SENT_SAY}`
   const s = fenceSuffix(fence)
-  return `## What you already know
+  // Every quoted text here (the objective, the plans, the owner's messages, the rep's and the
+  // owner's sent messages) has its fence tags escaped, so none can close or open a fence.
+  const top = `## What you already know
 
 The objective of this job, as the rep holds it:
 ${reading}
@@ -1733,10 +1735,8 @@ ${o === null ? '- none written yet' : openLines(o, m.lines !== undefined && m.li
 
 The session's size: ${contextLine(m)}
 
-${section}${OWNER_HEAD}
-<owner_messages${s}>
-${fenceTags(readerOwnerLines(onJob, approved, m.lastBrief === undefined ? [] : [m.lastBrief.message])) || '(none recorded yet)'}
-</owner_messages${s}>
+${section}${OWNER_HEAD}`
+  const tail = `
 
 Jobs before this one in the session, closed:
 ${list(m.past, '(none)')}
@@ -1746,6 +1746,8 @@ ${brief}
 
 The last message the owner sent the agent after a briefing:
 ${sent}`
+  const owners = readerOwnerLines(onJob, approved, m.lastBrief === undefined ? [] : [m.lastBrief.message])
+  return `${fenceTags(top)}\n<owner_messages${s}>\n${fenceTags(owners) || '(none recorded yet)'}\n</owner_messages${s}>${fenceTags(tail)}`
 }
 
 // Whether the reader is given an approved plan, shown or told of: the walk is asked for only then.
@@ -8015,7 +8017,7 @@ function rewriteTask(kind: CallKind, task: string): string | { why: string } {
   return done(memory, `${briefRequest(planIn(memory))}\n\n${askAgainText(open, fault)}`)
 }
 // What the rep knows, from the build before the rewrite to this build: the owner's messages under
-// their new heading in the fence (`fence`, none for own words), their fence tags escaped; the new
+// their new heading in the fence (`fence`, none for own words), every quoted text's fence tags escaped; the new
 // sentence on a sent draft; the new line beside a reopened condition. Each old text is found exactly
 // once where it can sit (the reopened line at most once), or the call is not edited.
 function rwMemory(memory: string, fence?: string): string | { why: string } {
@@ -8033,7 +8035,7 @@ function rwMemory(memory: string, fence?: string): string | { why: string } {
   if (tail.endsWith(sentEnd)) tail = `${tail.slice(0, -PRE_RW_SENT_SAY.length)}${SENT_SAY}`
   else if (!tail.endsWith('\n(nothing sent)')) return lost
   const s = fenceSuffix(fence)
-  return `${top.join(`\n${REOPENED_LINE}`)}${memory.slice(sizeAt, ownerAt)}\n\n${OWNER_HEAD}\n<owner_messages${s}>\n${fenceTags(memory.slice(ownerAt + head.length, jobsAt))}\n</owner_messages${s}>${tail}`
+  return `${fenceTags(`${top.join(`\n${REOPENED_LINE}`)}${memory.slice(sizeAt, ownerAt)}`)}\n\n${OWNER_HEAD}\n<owner_messages${s}>\n${fenceTags(memory.slice(ownerAt + head.length, jobsAt))}\n</owner_messages${s}>${fenceTags(tail)}`
 }
 
 // ---- The texts the build after prompt group 1 (171cda2) sent where this build sends REP_SYSTEM and
