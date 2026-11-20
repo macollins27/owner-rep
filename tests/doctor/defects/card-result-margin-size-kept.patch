@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 3546ff3..c734968 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -6028,7 +6028,7 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
+   // cut the result to the one row the row had already cut it past).
+   const fits = (x: CardText): boolean => cardRows(x, cols) <= maxRows
+   const resultWhole = (x: CardText): CardText =>
+-    [{ ...x, result: card.result }, { ...x, result: card.result, tight: true }, { ...x, result: card.result, tight: true, size: '' }].find(fits) ??
++    [{ ...x, result: card.result }].find(fits) ??
+     { ...x, tight: true, result: toRows(card.result, 'Owner rep · ', rowsOf(`Owner rep · ${x.result}`, w) + left({ ...x, tight: true }), w) }
+   const steps: Array<(x: CardText) => CardText> = [
+     resultWhole,

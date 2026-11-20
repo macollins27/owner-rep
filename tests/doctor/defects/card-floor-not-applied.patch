@@ -1,12 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 1333219..437cdfb 100644
+index e3597a2..4042799 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -5285,7 +5285,6 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
-     x => (x.checked === null ? x : { ...x, checked: { ...x.checked, looked: toRows(x.checked.looked, '', 1, w) } }),
-     x => (x.checked === null ? x : { ...x, checked: { ...x.checked, looked: '' } }),
+@@ -6054,7 +6054,6 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
+     // sat under "↓ 2 more").
+     x => ({ ...x, headless: true }),
    ]
 -  for (const step of floor) if (cardRows(c, cols) > maxRows) c = step(c)
-   const steps: Array<(x: CardText) => CardText> = [
-     x => ({ ...x, result: card.result }),
-     // Why the check cannot run, or what it last said, whole, before the empty line above the
+   // The result whole, then whole without the margin above, then also without the size, which
+   // only says how full the conversation is; where it still cannot be whole, every row the
+   // buttons leave it, the size kept (round 10: at 60 and 100 columns on a 24-row terminal the card

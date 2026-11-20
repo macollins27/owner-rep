@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 4da2e96..ee03bc2 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -3884,7 +3884,7 @@ export const register: Register = on => {
+       <Box flexDirection="column" marginTop={rowFit.gap}>
+         {head}
+         {recordLine}
+-        {rowFit.status ? choices(statusText, repButton, tellButton) : choices(repButton, tellButton)}
++        {choices(statusText, repButton, tellButton)}
+         {beneath}
+       </Box>
+     )

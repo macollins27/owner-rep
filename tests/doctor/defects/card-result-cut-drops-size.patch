@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 3546ff3..b2bed0f 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -6029,7 +6029,7 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
+   const fits = (x: CardText): boolean => cardRows(x, cols) <= maxRows
+   const resultWhole = (x: CardText): CardText =>
+     [{ ...x, result: card.result }, { ...x, result: card.result, tight: true }, { ...x, result: card.result, tight: true, size: '' }].find(fits) ??
+-    { ...x, tight: true, result: toRows(card.result, 'Owner rep · ', rowsOf(`Owner rep · ${x.result}`, w) + left({ ...x, tight: true }), w) }
++    { ...x, tight: true, size: '', result: toRows(card.result, 'Owner rep · ', rowsOf(`Owner rep · ${x.result}`, w) + left({ ...x, tight: true, size: '' }), w) }
+   const steps: Array<(x: CardText) => CardText> = [
+     resultWhole,
+     // Why the check cannot run, or what it last said, whole, before the empty line above the

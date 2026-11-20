@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 7b313de..ddba420 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -3598,7 +3598,7 @@ export const register: Register = on => {
+     // row below, as `buttonRows` counts it, so the rows above it are kept to what the band leaves
+     // (round 10: at 60 columns the row's buttons took two rows where one was counted).
+     const choices = (...buttons: RenderNodeList) => (
+-      <Box flexDirection="row" flexWrap="wrap" columnGap={3} paddingLeft={2} width={w(cols)}>
++      <Box flexDirection="row" gap={3} paddingLeft={2}>
+         {buttons}
+       </Box>
+     )

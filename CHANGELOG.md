@@ -5,6 +5,17 @@ What changed in each release of Owner Rep, newest first. The full record is the
 
 ## 0.7.7 (19 November 2026)
 
+- **Every button stays on screen on a 24-row terminal 60 columns wide.** The row's buttons
+  wrapped to two rows where one was counted, so Brief me fell out of view and the digit typed
+  into the prompt; the row now counts its buttons as they wrap, and on a band of three rows (a
+  24-row terminal whose status line takes five) drops the empty line above it, and on a band of
+  two (the status line's usage line wrapped to a sixth) the status beside the buttons. A heads-up above
+  the row now fits its line, its why and the row's head into the rows left, line first, and on a
+  band too short for the row beneath it leaves out the row's buttons, which have no digits under
+  a note, so the note's digits stay in view. On a short band the card shows the result whole
+  when dropping the empty line above it and the conversation's size makes room, otherwise gives
+  it every row the buttons leave, drops the size where the buttons would not fit with it, and
+  on a band of two, whose buttons take both rows, leaves out its head.
 - **A fact written with its state first stays a fact.** A condition the objective writer wrote
   as "fact: not shown: note.txt exists" was read with "not shown:" still in it, so the fact
   reader refused it and the rep asked for a hands-on look at a plain fact. The reader now

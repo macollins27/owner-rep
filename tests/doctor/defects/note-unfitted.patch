@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index d77fb20..1d94108 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -5911,7 +5911,7 @@ export const fitNote = (line: string, why: string, result: string, fixed: number
+     (f.tight ? 0 : 1) + rowsOf(`Heads up · ${f.line}`, w) + rowsOf(f.why, w) + (f.head === '' ? 0 : rowsOf(`Owner rep · ${f.head}`, w)) + fixed + (f.row ? rowChoices : 0)
+   const left = (f: NoteFit): number => maxRows - rows(f)
+   const whole: NoteFit = { line, why, head: result, tight: false, row: true }
+-  if (rows(whole) <= maxRows) return whole
++  if (rows(whole) <= maxRows || whole) return whole
+   const grown = (now: string, text: string, label: string, f: NoteFit): string => toRows(text, label, rowsOf(`${label}${now}`, w) + left(f), w)
+   const oneRow = toRows(result, 'Owner rep · ', 1, w)
+   let f: NoteFit = { line: toRows(line, 'Heads up · ', 1, w), why: '', head: oneRow, tight: true, row: true }

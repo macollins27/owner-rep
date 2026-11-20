@@ -5696,6 +5696,8 @@ export type CardText = {
   // heading or refusal line, and the card with no margin above it.
   checkedBare?: boolean
   tight?: boolean
+  // A band of two rows, whose buttons alone take both: the card drawn without its head.
+  headless?: boolean
 }
 
 // The line drawn while the check runs.
@@ -5838,7 +5840,7 @@ export const buttonRows = (items: string[], width: number): number => {
 export function cardRows(c: CardText, cols: number): number {
   const w = Math.max(1, cols - 2)
   const part = (label: string, text: string): number => (text === '' ? 0 : rowsOf(`${label} ${text}`, w))
-  let rows = (c.tight === true ? 0 : 1) + rowsOf(`Owner rep · ${c.result}`, w) + rowsOf(c.count, w) + rowsOf(c.revised, w)
+  let rows = (c.tight === true ? 0 : 1) + (c.headless === true ? 0 : rowsOf(`Owner rep · ${c.result}`, w)) + rowsOf(c.count, w) + rowsOf(c.revised, w)
   rows += rowsOf(c.well, w) + part('Stands:', c.stands) + part('Means:', c.means)
   if (c.leftOut.length > 0) rows += 1 + c.leftOut.reduce((n, item) => n + rowsOf(`  - ${item}`, w), 0)
   rows += part('Next:', c.next)
@@ -5894,6 +5896,58 @@ const toRows = (text: string, label: string, rows: number, width: number): strin
 // least one, so the buttons drawn under it stay inside the band; the card shows the result whole.
 export const rowHead = (result: string, rows: number, cols: number): string =>
   toRows(result, 'Owner rep · ', Math.max(1, rows), Math.max(1, cols - 2))
+
+// The row in a band of `maxRows` rows: `fixed` of them the rows always drawn under the head (the
+// record line, another mod's note beneath), `choices` the buttons row with the status as it wraps,
+// and `bare` the same row without the status. The empty line above goes first, then the status off
+// the buttons row, then the head, so the buttons stay in the window; the head takes the rows the
+// rest leaves it (round 10: on this Mac's 24-row terminal at 60 columns, a band of three rows and
+// then of two, the buttons sat under "↓ 2 more" and a digit typed into the prompt).
+export type RowFit = { head: string; gap: number; status: boolean }
+export const fitRow = (result: string, fixed: number, choices: number, bare: number, gap: number, maxRows: number, cols: number): RowFit => {
+  const status = 1 + fixed + choices <= maxRows || bare >= choices
+  const buttons = status ? choices : bare
+  const top = gap + 1 + fixed + buttons > maxRows ? 0 : gap
+  const room = maxRows - top - fixed - buttons
+  return { head: room < 1 ? '' : rowHead(result, room, cols), gap: top, status }
+}
+
+// The heads-up and the row under it in a band of `maxRows` rows: `fixed` of them the rows always
+// drawn whole (the note's buttons, the record line), and `rowChoices` the row's buttons row as it
+// wraps. Where all of it does not fit, it starts from the note's line and the row's head on one row
+// each, with no why and no margin above; on a band too short even for that, the row's buttons row,
+// which has no digits under a note, goes, then the row's head, so the note's buttons stay in the
+// window. It gives back, while each fits, the row's buttons row, the head, the line (whole, or
+// grown to the rows left), the why the same way, the margin, then the head grown (round 10: at 60,
+// 100 and 170 columns on a 24-row terminal a long note put every button under "↓ n more", and a
+// digit typed into the prompt).
+export type NoteFit = { line: string; why: string; head: string; tight: boolean; row: boolean }
+export const fitNote = (line: string, why: string, result: string, fixed: number, rowChoices: number, maxRows: number, cols: number): NoteFit => {
+  const w = Math.max(1, cols - 2)
+  const rows = (f: NoteFit): number =>
+    (f.tight ? 0 : 1) + rowsOf(`Heads up · ${f.line}`, w) + rowsOf(f.why, w) + (f.head === '' ? 0 : rowsOf(`Owner rep · ${f.head}`, w)) + fixed + (f.row ? rowChoices : 0)
+  const left = (f: NoteFit): number => maxRows - rows(f)
+  const whole: NoteFit = { line, why, head: result, tight: false, row: true }
+  if (rows(whole) <= maxRows) return whole
+  const grown = (now: string, text: string, label: string, f: NoteFit): string => toRows(text, label, rowsOf(`${label}${now}`, w) + left(f), w)
+  const oneRow = toRows(result, 'Owner rep · ', 1, w)
+  let f: NoteFit = { line: toRows(line, 'Heads up · ', 1, w), why: '', head: oneRow, tight: true, row: true }
+  if (rows(f) > maxRows) f = { ...f, row: false }
+  if (rows(f) > maxRows) f = { ...f, head: '' }
+  const steps: Array<(f: NoteFit) => NoteFit> = [
+    f => ({ ...f, row: true }),
+    f => ({ ...f, head: f.head === '' ? oneRow : f.head }),
+    f => ({ ...f, line: grown(f.line, line, 'Heads up · ', f) }),
+    f => (why === '' || left(f) < 1 ? f : { ...f, why: toRows(why, '', left(f), w) }),
+    f => ({ ...f, tight: false }),
+    f => (f.head === '' ? f : { ...f, head: grown(f.head, result, 'Owner rep · ', f) }),
+  ]
+  for (const step of steps) {
+    const next = step(f)
+    if (rows(next) <= maxRows) f = next
+  }
+  return f
+}
 
 // Fills the band's rows in order of importance. A card that fits is returned as
 // it is. Otherwise the card starts from what must show: the buttons row, counted
@@ -5991,10 +6045,26 @@ export function fillCard(whole: CardText, maxRows: number, cols: number): CardTe
     x => ({ ...x, tight: true }),
     x => (x.checked === null ? x : { ...x, checked: { ...x.checked, looked: toRows(x.checked.looked, '', 1, w) } }),
     x => (x.checked === null ? x : { ...x, checked: { ...x.checked, looked: '' } }),
+    // Last, the conversation's size off the buttons row, which only says how full the conversation
+    // is, so every button stays in the window (round 10: on a three-row band at 60 columns the
+    // size took the buttons row's third row and Tell the rep and Later sat under "↓ n more").
+    x => ({ ...x, size: '' }),
+    // On a band of two rows, whose buttons take both at 60 columns, the head goes, so every button
+    // stays in the window (round 10: when this Mac's status line took six rows the card's buttons
+    // sat under "↓ 2 more").
+    x => ({ ...x, headless: true }),
   ]
   for (const step of floor) if (cardRows(c, cols) > maxRows) c = step(c)
+  // The result whole, then whole without the margin above, then also without the size, which
+  // only says how full the conversation is; where it still cannot be whole, every row the
+  // buttons leave it, the size kept (round 10: at 60 and 100 columns on a 24-row terminal the card
+  // cut the result to the one row the row had already cut it past).
+  const fits = (x: CardText): boolean => cardRows(x, cols) <= maxRows
+  const resultWhole = (x: CardText): CardText =>
+    [{ ...x, result: card.result }, { ...x, result: card.result, tight: true }, { ...x, result: card.result, tight: true, size: '' }].find(fits) ??
+    { ...x, tight: true, result: toRows(card.result, 'Owner rep · ', rowsOf(`Owner rep · ${x.result}`, w) + left({ ...x, tight: true }), w) }
   const steps: Array<(x: CardText) => CardText> = [
-    x => ({ ...x, result: card.result }),
+    resultWhole,
     // Why the check cannot run, or what it last said, whole, before the empty line above the
     // card, which comes back next when there is room for it too.
     x => ({ ...x, checkNote: card.checkNote, tight: true }),

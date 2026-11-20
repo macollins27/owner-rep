@@ -117,7 +117,7 @@
     "name": "row-shows-whole-reading",
     "breaks": "The row draws the whole objective (result, purpose, conditions and step) instead of the result alone, so the strip is crowded and the result is lost in it.",
     "patch": "row-shows-whole-reading.patch",
-    "fixed": "tested 2026-10-14; remade 2026-10-15; remade 2026-10-31; remade 2026-11-19"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "writer-forks-conversation",
@@ -4503,7 +4503,7 @@
     "name": "card-floor-not-applied",
     "breaks": "A checked card too tall for a short band (a 24-row terminal's five rows) is not cut to its floor, so the band scrolls and the check's error note and every button fall out of view.",
     "patch": "card-floor-not-applied.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "card-tight-margin-drawn",
@@ -4533,7 +4533,7 @@
     "name": "check-note-after-margin",
     "breaks": "The empty line above a short band's card keeps its row while the check's error note is cut to one, so the owner reads half of why the check failed beside a blank line.",
     "patch": "check-note-after-margin.patch",
-    "fixed": "tested 2026-11-18; remade 2026-11-18 for the note before the count"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "fact-place-any-word",
@@ -4899,13 +4899,13 @@
     "name": "row-head-unbounded",
     "breaks": "the row draws a long result whole, so at a 24-row terminal its buttons fall under a \"↓ n more\" row.",
     "patch": "row-head-unbounded.patch",
-    "fixed": "tested 2026-11-19"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "row-head-note-unbounded",
     "breaks": "under a heads-up the row's head ignores the note's rows, so its buttons fall under a \"↓ n more\" row.",
     "patch": "row-head-note-unbounded.patch",
-    "fixed": "tested 2026-11-19"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "condition-state-first-dropped",
@@ -5025,6 +5025,108 @@
     "name": "fact-state-first-read-whole",
     "breaks": "A fact written with its state first (\"- fact: not shown: note.txt exists\") is read with the state word still in it, so the fact reader refuses it and the condition becomes works.",
     "patch": "fact-state-first-read-whole.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "row-choices-counted-one",
+    "breaks": "The row's head counts its buttons row as one row however it wraps, so at 60 columns on a 24-row terminal, where \"stopped, waiting on you   1: Brief me   2: Tell the rep\" takes two, both buttons fall under \"↓ 2 more\" and a digit types into the prompt.",
+    "patch": "row-choices-counted-one.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "row-choices-no-wrap",
+    "breaks": "The buttons rows are drawn with no width and a gap of three on both axes, so where they pass the band's edge they are wrapped by the terminal, not as the head's budget counts them.",
+    "patch": "row-choices-no-wrap.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "note-unfitted",
+    "breaks": "The heads-up draws its line and its why whole on any band, so on a 24-row terminal every button falls under \"↓ n more\" and a digit types into the prompt.",
+    "patch": "note-unfitted.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "note-why-before-line",
+    "breaks": "On a short band the heads-up's why takes the row left before its line, so the line saying what is wrong is cut while the reason for it shows.",
+    "patch": "note-why-before-line.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "card-result-margin-size-kept",
+    "breaks": "The card's result is whole only when it fits beside the margin and the size, so on a 24-row terminal 100 columns wide it is cut to one row while the margin and the size keep theirs.",
+    "patch": "card-result-margin-size-kept.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "card-result-cut-drops-size",
+    "breaks": "Where the result cannot be whole the size goes as well, so the owner loses how full the conversation is for one more cut row.",
+    "patch": "card-result-cut-drops-size.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "card-result-cut-not-grown",
+    "breaks": "Where the result cannot be whole it stays at one row, so at 60 columns on a 24-row terminal the card shows less of it than the row did.",
+    "patch": "card-result-cut-not-grown.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "row-gap-kept-on-short-band",
+    "breaks": "The row keeps the empty line above it on any band, so on this Mac's 24-row terminal at 60 columns, a three-row band, its two rows of buttons sit under \"↓ 2 more\" and a digit types into the prompt.",
+    "patch": "row-gap-kept-on-short-band.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "note-row-kept-on-short-band",
+    "breaks": "On a band too short for the heads-up and the whole row beneath it, the row's buttons row stays, so the band scrolls and shows \"↓ n more\" where the row's head could have been.",
+    "patch": "note-row-kept-on-short-band.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "note-head-before-row",
+    "breaks": "On a band too short for the heads-up and the row beneath it, the row's head goes before the row's buttons row, which has no digits under a note, so the goal leaves the screen while buttons the keys cannot press stay.",
+    "patch": "note-head-before-row.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "card-size-kept-at-floor",
+    "breaks": "The card's floor keeps the conversation's size on the buttons row, so on a three-row band at 60 columns the size takes the third row and Tell the rep and Later sit under \"↓ n more\".",
+    "patch": "card-size-kept-at-floor.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "row-status-kept-on-short-band",
+    "breaks": "The row keeps its status beside the buttons on any band, so on a two-row band at 60 columns, which this Mac's 24-row terminal leaves when its status line takes six rows, the buttons wrap to a second row and the head pushes them under \"↓ 2 more\".",
+    "patch": "row-status-kept-on-short-band.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "row-head-kept-on-short-band",
+    "breaks": "The row keeps one row of its head on any band, so on a band with no row left over the buttons sit under \"↓ n more\" and a digit types into the prompt.",
+    "patch": "row-head-kept-on-short-band.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "row-status-drawn-when-dropped",
+    "breaks": "The row draws its status beside the buttons after `fitRow` dropped it, so on a two-row band at 60 columns the buttons wrap to a row the band does not hold.",
+    "patch": "row-status-drawn-when-dropped.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "card-head-kept-on-two-row-band",
+    "breaks": "The card's floor keeps its head, so on a two-row band at 60 columns, whose buttons take both rows, Fine, close, Tell the rep and Later sit under \"↓ 2 more\".",
+    "patch": "card-head-kept-on-two-row-band.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "card-headless-counted",
+    "breaks": "cardRows counts the head of a card drawn without one, so the floor never finds that dropping it fits a two-row band, and the buttons sit under \"↓ 2 more\".",
+    "patch": "card-headless-counted.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "card-head-drawn-when-headless",
+    "breaks": "The band draws the card's head after the floor dropped it, so on a two-row band at 60 columns the buttons sit under \"↓ 2 more\".",
+    "patch": "card-head-drawn-when-headless.patch",
     "fixed": "tested 2026-11-19"
   }
 ]

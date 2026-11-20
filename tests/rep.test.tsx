@@ -3081,7 +3081,7 @@ const drawnCardRows = (c: CardText, cols: number, put: boolean, size: string): n
   const w = cols - 2
   const t = (s: string) => drawnRowsOf(s, w)
   const part = (label: string, s: string) => (s === '' ? 0 : t(`${label} ${s}`))
-  let rows = (c.tight === true ? 0 : 1) + t(`Owner rep · ${c.result}`) + t(c.count) + t(c.revised) + t(c.well) + part('Stands:', c.stands) + part('Means:', c.means)
+  let rows = (c.tight === true ? 0 : 1) + (c.headless === true ? 0 : t(`Owner rep · ${c.result}`)) + t(c.count) + t(c.revised) + t(c.well) + part('Stands:', c.stands) + part('Means:', c.means)
   if (c.leftOut.length > 0) rows += 1 + c.leftOut.reduce((n, i) => n + t(`  - ${i}`), 0)
   rows += part('Next:', c.next)
   if (c.checked !== null && c.checkedBare === true) rows += t(c.checked.looked)
@@ -3405,6 +3405,187 @@ test('rule: the row keeps a long result to the rows the band leaves it, so its b
   expect((await ui.find({ key: 'brief' }))?.props.hotkey).toBe('1')
   expect(await ui.find({ key: 'tell' })).toBeDefined()
   await ui.unmount()
+})
+
+// Round 10 (live test of 19 Nov 2026, session B): the approved objective, 300 characters, and the
+// heads-up a later watch raised over it. The band's columns are the terminal's less its frame: about
+// 55 at 60 columns, 98 at 100 and 165 at 170.
+const R10_RESULT = 'A short, professional plain-text welcome note for the invented bicycle repair shop Maple Cycle, saved as welcome.txt in the scratch folder, checked for confusing instructions, with a proof report of the steps taken and, once go is given separately, a pretend send that only copies the note into a local sent folder there.'
+const R10_NOTE = 'The welcome-note job is unfinished beyond the send, and starting the new job risks leaving the byte count, customer reading and unwanted files behind.'
+const R10_WHY = 'The instructions I drafted for those were never sent to the agent. Its latest reply mentions only the held send, and both the handover note and the report file are still in the folder.'
+
+test('rule: on a 24-row terminal 60 columns wide the row counts its buttons row as it wraps, so the head leaves the buttons inside the band, on a three-row band the empty line above it goes, and a heads-up above it keeps every button with a digit in the band too (round 10)', async ($, on) => {
+  kept(on)
+  quietBand(on)
+  writer(on, () => OBJ(R10_RESULT, ['welcome.txt is saved in the scratch folder | open']))
+  let flag: string | null = null
+  on('model.fork', () => ({ value: { isAnswered: true, text: `state: stopped\nflag: ${flag ?? 'none'}\nwhy: ${flag === null ? '' : R10_WHY}\nshown:\n- nothing\nclosed:\n- nothing`, usage: USAGE } }))
+  await $.prompt.submit(typed('write the welcome note, please'))
+  await settle($)
+  await $.turn.complete(stop('t1'))
+  const band = (cols: number) => ({ ...BAND, props: { ...BAND.props, maxRows: 5, bodyColumns: cols, scroll: { offset: 0, bodyRows: 4 } } })
+  // The buttons row as the band draws it: each item whole, three cells apart, in the band's columns
+  // less the two of its indent. "stopped, waiting on you   1: Brief me   2: Tell the rep" is 55 cells.
+  const choiceRows: Record<number, number> = { 55: 2, 98: 1, 165: 1 }
+  for (const cols of [55, 98, 165]) {
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...band(cols) })
+    expect(await ui.find({ type: 'Text', text: /^stopped, waiting on you$/ })).toBeDefined()
+    const head = (await ui.find({ type: 'Text', text: /^Owner rep · / }))?.text ?? ''
+    // The gap, the head and the buttons row in five rows.
+    expect([cols, 1 + rowsOf(head, cols - 2) + (choiceRows[cols] ?? 0)]).toEqual([cols, 5])
+    expect(head.startsWith('Owner rep · A short, professional')).toBe(true)
+    // The buttons row wraps where it is counted: whole items, three cells apart, in the band's columns.
+    const boxes = await ui.findAll({ type: 'Box' })
+    expect(boxes.some(b => b.props.flexWrap === 'wrap' && b.props.columnGap === 3 && b.props.width === cols && b.props.gap === undefined)).toBe(true)
+    expect((await ui.find({ key: 'rep' }))?.props.hotkey).toBe('1')
+    await ui.unmount()
+  }
+  // On this Mac's 24-row terminal, whose status line takes five rows at 60 columns, the band has
+  // three: at 55 columns the empty line above the row goes, so the head and the two rows of buttons
+  // fit; at 98 and 165 the buttons take one row and the line stays.
+  const short = (cols: number) => ({ ...BAND, props: { ...BAND.props, maxRows: 3, bodyColumns: cols, scroll: { offset: 0, bodyRows: 2 } } })
+  for (const cols of [55, 98, 165]) {
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...short(cols) })
+    const head = (await ui.find({ type: 'Text', text: /^Owner rep · / }))?.text ?? ''
+    const margin = (await ui.findAll({ type: 'Box' })).some(b => b.props.marginTop === 1) ? 1 : 0
+    expect([cols, margin, margin + rowsOf(head, cols - 2) + (choiceRows[cols] ?? 0)]).toEqual([cols, cols === 55 ? 0 : 1, 3])
+    expect((await ui.find({ key: 'rep' }))?.props.hotkey).toBe('1')
+    await ui.unmount()
+  }
+  // When the status line's usage line wraps as well (a sixth row), the band has two: at 55 columns
+  // the status goes from the buttons row, so the head and both buttons with their digits take a row
+  // each; at 98 and 165 the status fits beside them and stays.
+  const two = (cols: number) => ({ ...BAND, props: { ...BAND.props, maxRows: 2, bodyColumns: cols, scroll: { offset: 0, bodyRows: 1 } } })
+  for (const cols of [55, 98, 165]) {
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...two(cols) })
+    const head = (await ui.find({ type: 'Text', text: /^Owner rep · / }))?.text ?? ''
+    const status = (await ui.find({ type: 'Text', text: /^stopped, waiting on you$/ })) !== undefined
+    const margin = (await ui.findAll({ type: 'Box' })).some(b => b.props.marginTop === 1) ? 1 : 0
+    expect([cols, status, margin, rowsOf(head, cols - 2)]).toEqual([cols, cols !== 55, 0, 1])
+    expect((await ui.find({ key: 'rep' }))?.props.hotkey).toBe('1')
+    expect((await ui.find({ key: 'tell' }))?.props.hotkey).toBe('2')
+    await ui.unmount()
+  }
+  // The heads-up: its line, its why, its buttons, the row's head and the row's buttons, with the
+  // margin above them, in the band's five rows; the line before the why, the why before the margin.
+  flag = R10_NOTE
+  await $.turn.complete(stop('t2'))
+  for (const cols of [55, 98, 165]) {
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...band(cols) })
+    const note = (await ui.find({ type: 'Text', text: /^Heads up · / }))?.text ?? ''
+    expect(note.startsWith('Heads up · The welcome-note job')).toBe(true)
+    const why = (await ui.find({ type: 'Text', text: /^The instructions I drafted/ }))?.text ?? ''
+    const head = (await ui.find({ type: 'Text', text: /^Owner rep · / }))?.text ?? ''
+    const margin = (await ui.findAll({ type: 'Box' })).some(b => b.props.marginTop === 1) ? 1 : 0
+    // The note's buttons take one row; the row's own, drawn without digits, one ("stopped, waiting on
+    // you   Brief me   Tell the rep" is 49 cells).
+    const rows = margin + rowsOf(note, cols - 2) + rowsOf(why, cols - 2) + 1 + rowsOf(head, cols - 2) + 1
+    expect([cols, rows <= 5]).toEqual([cols, true])
+    expect(rowsOf(head, cols - 2)).toBeGreaterThanOrEqual(1)
+    // With the buttons rows and the head on one row, four rows are taken and one is left with no
+    // margin: the line takes it, cut at 55 columns (four rows whole), whole at 98 (two rows), and
+    // at 165, whole on one row, it leaves the row to the why.
+    const expected: Record<number, [boolean, number, number]> = { 55: [false, 2, 0], 98: [true, 2, 0], 165: [true, 1, 1] }
+    expect([cols, note === `Heads up · ${R10_NOTE}`, rowsOf(note, cols - 2), rowsOf(why, cols - 2)]).toEqual([cols, ...(expected[cols] ?? [])])
+    expect([cols, margin]).toEqual([cols, 0])
+    expect((await ui.find({ key: 'brief' }))?.props.hotkey).toBe('1')
+    expect((await ui.find({ key: 'fine' }))?.props.hotkey).toBe('2')
+    expect(await ui.find({ key: 'rep' })).toBeDefined()
+    await ui.unmount()
+  }
+  // On the three-row band the note's line, its buttons and the row's head take a row each, and the
+  // row's buttons row, which has no digits under a note, goes, so the note's digits stay in the window.
+  for (const cols of [55, 98, 165]) {
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...short(cols) })
+    const note = (await ui.find({ type: 'Text', text: /^Heads up · / }))?.text ?? ''
+    const head = (await ui.find({ type: 'Text', text: /^Owner rep · / }))?.text ?? ''
+    expect([cols, rowsOf(note, cols - 2), rowsOf(head, cols - 2)]).toEqual([cols, 1, 1])
+    expect(await ui.find({ type: 'Text', text: /^The instructions I drafted/ })).toBeUndefined()
+    expect((await ui.findAll({ type: 'Box' })).some(b => b.props.marginTop === 1)).toBe(false)
+    expect((await ui.find({ key: 'brief' }))?.props.hotkey).toBe('1')
+    expect((await ui.find({ key: 'later' }))?.props.hotkey).toBe('0')
+    expect(await ui.find({ key: 'rep' })).toBeUndefined()
+    expect(await ui.find({ key: 'tell' })).toBeUndefined()
+    await ui.unmount()
+  }
+  // On the two-row band the row's head goes as well: the note's line and its buttons.
+  for (const cols of [55, 98, 165]) {
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...two(cols) })
+    const note = (await ui.find({ type: 'Text', text: /^Heads up · / }))?.text ?? ''
+    expect([cols, rowsOf(note, cols - 2)]).toEqual([cols, 1])
+    expect(await ui.find({ type: 'Text', text: /^Owner rep · / })).toBeUndefined()
+    expect((await ui.find({ key: 'brief' }))?.props.hotkey).toBe('1')
+    expect((await ui.find({ key: 'later' }))?.props.hotkey).toBe('0')
+    await ui.unmount()
+  }
+  // A band with the rows draws the note whole, with its margin.
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  expect((await ui.find({ type: 'Text', text: /^The instructions I drafted/ }))?.text).toBe(R10_WHY)
+  expect((await ui.findAll({ type: 'Box' })).some(b => b.props.marginTop === 1)).toBe(true)
+  await ui.unmount()
+})
+
+test('fillCard gives the result whole before anything else on a 24-row terminal: with the margin\'s row, then the size\'s, and where it still cannot be whole, every row the buttons leave it (round 10)', () => {
+  const size = 'conversation at 5 percent of its window'
+  const card: CardText = { ...CARD_TEXT, result: R10_RESULT, stands: LONG('Stands'), means: LONG('Means'), next: LONG('Next'), message: LONG('Message'), size }
+  // At 98 columns the result is four rows and the buttons with the size two: the size goes, the
+  // result is whole, and the margin comes back to the row left.
+  const at98 = fillCard(card, 5, 98)
+  expect(at98.result).toBe(R10_RESULT)
+  expect(rowsOf(`Owner rep · ${R10_RESULT}`, 96)).toBe(4)
+  expect(drawnCardRows(at98, 98, true, size)).toBeLessThanOrEqual(5)
+  expect(at98.size).toBe('')
+  // At 55 columns it cannot be whole (seven rows): the margin goes, the size stays, and the
+  // result takes the two rows the three button rows leave, as many as the row's head had.
+  const at55 = fillCard(card, 5, 55)
+  expect(rowsOf(`Owner rep · ${R10_RESULT}`, 53)).toBe(7)
+  expect(drawnCardRows(at55, 55, true, size)).toBeLessThanOrEqual(5)
+  expect([at55.tight, at55.size, rowsOf(`Owner rep · ${at55.result}`, 53)]).toEqual([true, size, 2])
+  expect(at55.result.endsWith('…')).toBe(true)
+  // At 165 columns it is two rows, whole with the margin and the size.
+  const at165 = fillCard(card, 5, 165)
+  expect([at165.result, at165.tight ?? false, at165.size]).toEqual([R10_RESULT, false, size])
+  expect(drawnCardRows(at165, 165, true, size)).toBeLessThanOrEqual(5)
+  // On this Mac's 24-row terminal, whose status line takes five rows at 60 columns, the band has
+  // three. At 55 columns the head and the buttons with the size are four rows even with no margin:
+  // the size goes last of the floor, so every button stays in the window.
+  const three55 = fillCard(card, 3, 55)
+  expect([three55.tight, three55.size, rowsOf(`Owner rep · ${three55.result}`, 53)]).toEqual([true, '', 1])
+  expect(drawnCardRows(three55, 55, true, '')).toBeLessThanOrEqual(3)
+  // At 98 the buttons with the size are two rows: the margin goes and the size stays.
+  const three98 = fillCard(card, 3, 98)
+  expect([three98.tight, three98.size]).toEqual([true, size])
+  expect(drawnCardRows(three98, 98, true, size)).toBeLessThanOrEqual(3)
+  // When the status line's usage line wraps as well the band has two. At 55 columns the buttons
+  // alone take both, so the head goes, last of all; at 98 the size goes and the head stays on one
+  // row; at 165 the buttons and the size are one row and both stay.
+  const two55 = fillCard(card, 2, 55)
+  expect([two55.headless, two55.size]).toEqual([true, ''])
+  expect(drawnCardRows(two55, 55, true, '')).toBeLessThanOrEqual(2)
+  const two98 = fillCard(card, 2, 98)
+  expect([two98.headless ?? false, two98.size, rowsOf(`Owner rep · ${two98.result}`, 96)]).toEqual([false, '', 1])
+  expect(drawnCardRows(two98, 98, true, '')).toBeLessThanOrEqual(2)
+  const two165 = fillCard(card, 2, 165)
+  expect([two165.headless ?? false, two165.size]).toEqual([false, size])
+  expect(drawnCardRows(two165, 165, true, size)).toBeLessThanOrEqual(2)
+})
+
+test('rule: on a two-row band 55 columns wide the card is drawn without its head, so both rows of its buttons keep their digits in the window (round 10)', async ($, on) => {
+  session(on)
+  quietBand(on)
+  room(on)
+  on('model.fork', () => ({ value: { isAnswered: true, text: BRIEF(LONG('Stands')), usage: USAGE } }))
+  const two = { ...BAND, props: { ...BAND.props, maxRows: 2, bodyColumns: 55, scroll: { offset: 0, bodyRows: 1 } } }
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...two })
+  await ui.press({ key: 'rep' })
+  expect((await ui.find({ key: 'close' }))?.props.hotkey).toBe('2')
+  expect((await ui.find({ key: 'later' }))?.props.hotkey).toBe('0')
+  expect(await ui.find({ type: 'Text', text: /^Owner rep · / })).toBeUndefined()
+  await ui.unmount()
+  // With the rows for it the head is drawn.
+  const tall = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  expect(await tall.find({ type: 'Text', text: /^Owner rep · / })).toBeDefined()
+  await tall.unmount()
 })
 
 test('rule: on the VS Code surface, whose band scrolls, no line is given a width, so each fills the box, and the card is drawn whole with every sentence and its buttons', async ($, on) => {
