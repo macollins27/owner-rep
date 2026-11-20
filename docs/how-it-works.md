@@ -365,7 +365,9 @@ by helper <run>", "look by Codex <run>", or "look by the check", which signs onl
 own marks. A replay of the prompt rewrite (#68) found the watch and the briefing marking works
 conditions shown "by the check" when no check had run, so only the check is offered that form;
 the readers are offered the run forms alone and told that their own reading of the record is
-no one's look. The rep keeps each run as its call returns: a helper's answer or Codex's output, its
+no one's look. A later replay found the watch marking "reviews it before it is relied on" shown
+on reviews that began after the guard was live, so a condition about order now needs the record
+to show that order. The rep keeps each run as its call returns: a helper's answer or Codex's output, its
 end kept to 300 characters, whether it failed, and whether it changed the work (a helper's own
 Edit or Write call, a shell call of its that writes in the folder, its result's edit count, a
 Codex run with a writing sandbox or approvals bypassed, a `claude -p` run outside plan mode). A

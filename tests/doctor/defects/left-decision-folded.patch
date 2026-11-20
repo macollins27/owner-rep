@@ -1,10 +1,10 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 12261ff..8772589 100644
+index 062f428..d6ff481 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1889,7 +1889,7 @@ well: <one plain sentence, only when every condition is shown or closed and noth
+@@ -1891,7 +1891,7 @@ well: <one plain sentence, only when every condition is shown or closed and noth
  stands: <${SHORT_PART}: where the work really stands, as the record shows it>
- means: <${SHORT_PART}: what the agent's latest message means for the owner against the whole result: what the owner has now and what is waiting>
+ means: <${SHORT_PART}: what the agent's latest message means for the owner against the whole result>
  left:
 -- <${LEFT_ITEMS}. Each says in a few words why it matters. A gap is part of the job not done or not shown, anything "Also look for" names, a chore left "for you", or the owner's own decision (a held go-ahead, or keeping a self-proving step of an approved plan), as one short plain question, never folded. A condition already shown or closed is not a gap. Write "- nothing" when there is none.>
 +- <${LEFT_ITEMS}. Each says in a few words why it matters. A gap is part of the job not done or not shown, anything "Also look for" names, a chore left "for you", or the owner's own decision (a held go-ahead, or keeping a self-proving step of an approved plan), as one short plain question. A condition already shown or closed is not a gap. Write "- nothing" when there is none.>

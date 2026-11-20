@@ -974,8 +974,9 @@ the run qualifies: `runFor` takes the one run of that kind in `Rec.ran` whose id
 ref, and `runQualifies` wants it `done`, unchanged and with something said; the check signs only
 through its own marks. The watch and the briefing are offered only the run forms (`WHERE_LINE`):
 they are told to write only looks the record shows, that their own reading of the record is no
-one's look, and that a look by the agent or by a run that changed the work leaves the condition
-open; the check alone is offered "look by the check" (`LOOK_RULE`). `Rec.ran` (the newest `RUNS_KEPT`, 60) is filled in `tool.call` once the
+one's look, that a look by the agent or by a run that changed the work leaves the condition
+open, and that a condition about order ("before", "first") needs the record to show that order;
+the check alone is offered "look by the check" (`LOOK_RULE`). `Rec.ran` (the newest `RUNS_KEPT`, 60) is filled in `tool.call` once the
 call returns: `runOf` reads an Agent or Task call, or a shell call `shellRun` reads as Codex
 (`codex exec`, `e` or `review` after any options, no help or version flag) or a helper (`claude -p`
 or `--print`, changing the work unless `--permission-mode plan`), as the deciding command

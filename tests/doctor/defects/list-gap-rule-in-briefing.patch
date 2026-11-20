@@ -1,11 +1,11 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 12261ff..8c53c97 100644
+index 062f428..3c5e1e6 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1875,7 +1875,7 @@ ${decidingText(plan, true)}
+@@ -1877,7 +1877,7 @@ ${decidingText(plan, true)}
+ 
  Judge what the agent and its helpers did and what came back, not what the agent says it did. If the owner sent your last message to the agent, say whether the agent did what it asked.
  
- Fill in every part.
 -${plan ? `\n${STEP_STATES}\n${WALK_BRIEF}\n` : ''}
 +${plan ? `\n${STEP_STATES} ${WALK_WATCH}\n${WALK_BRIEF}\n` : ''}
  ## Output structure

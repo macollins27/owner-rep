@@ -25,7 +25,9 @@ What changed in each release of Owner Rep, newest first. The full record is the
 - **A condition is not marked shown on a look nobody made.** The watch and Brief me could mark
   a "works" condition shown "by the check" when no check had run. They now write only the looks
   the record shows, by whoever made them; their own reading of the record and the agent's own
-  look leave the condition open.
+  look leave the condition open. A condition about order ("reviewed before it is relied on") is
+  marked shown only when the record shows that order: a review that began after the step went
+  live no longer counts.
 - **A narrowed plan step is flagged.** The plan walk takes a line for each thing a step names, so
   a step done in part reads as part left out, and the agent's own word that it narrowed or left
   out part of an approved step reads as looking dropped.

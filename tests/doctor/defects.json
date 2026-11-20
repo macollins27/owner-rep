@@ -5280,6 +5280,12 @@
     "fixed": "tested 2026-11-20"
   },
   {
+    "name": "where-order-unchecked",
+    "breaks": "The watch and briefing are no longer told that a condition about order needs the record to show that order, so a review that began after the step it was meant to come before is written up as showing it.",
+    "patch": "where-order-unchecked.patch",
+    "fixed": "tested 2026-11-20"
+  },
+  {
     "name": "walk-one-line-per-step",
     "breaks": "The walk takes one line a step again, so a step of several parts reads done when one part is done and another was left out (the rewrite's replay, rule 3).",
     "patch": "walk-one-line-per-step.patch",
