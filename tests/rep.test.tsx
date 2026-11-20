@@ -2148,6 +2148,22 @@ test('rule: a step held for the owner\'s go-ahead reaches the owner as one plain
   expect(left.indexOf('as one plain question')).toBeLessThan(left.indexOf('A condition already shown or closed is not a gap.'))
 })
 
+test('rule: every watch call\'s answer shape asks for the "now:" line, the step each look reads, at a step, a stop and a note, with a plan held and without', () => {
+  const o = { ...OBJ_FIXTURE, done: OPEN_JOB_OPEN }
+  const m: Memory = { objective: o, owner: [om('build the page')], past: [], seen: [], others: [] }
+  const planned: Memory = { ...m, approved: { blocks: ['#1\n<approved_plan>\n1. Build the page.\n2. Deploy it.\n</approved_plan>'], told: [], shown: [1], over: [], noRoom: [] } }
+  for (const mm of [m, planned]) {
+    for (const reason of ['step', 'stop', 'note'] as const) {
+      const shape = readerGets(watchPrompt(mm, reason)).split('## Output structure')[1] ?? ''
+      const line = shape.split('\n').find(l => l.startsWith('now: <'))
+      expect(line).toBe('now: <the step the agent is on now, in plain words, one sentence>')
+      expect(shape.indexOf('now: <')).toBeLessThan(shape.indexOf('state: <'))
+      // What the reader writes on that line is what the look keeps as the step.
+      expect(parseWatch('now: Writing the page.\nstate: working\nflag: none\nshown:\n- nothing\nclosed:\n- nothing').now).toBe('Writing the page.')
+    }
+  }
+})
+
 test('rule: a self-proving step of an approved plan is the owner\'s ask and a question for the owner, and only a decision truly the owner\'s or the message reaches the owner (prompt group 4)', () => {
   const o = { ...OBJ_FIXTURE, done: OPEN_JOB_OPEN }
   const m: Memory = { objective: o, owner: [om('yes, go with the plan')], past: [], seen: [], others: [] }
