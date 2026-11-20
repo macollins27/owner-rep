@@ -1507,7 +1507,7 @@ export const STEP_STATES = `Each approved plan is in an approved_plan fence abov
 - underway: being worked on now.
 - not reached: work is still on steps the plan puts before it.
 - no sign while later work goes on: the record shows work on a step the plan orders after this one, and nothing of this one, in a part of the record that could hold it. A step is late only where the plan orders it (numbered, or "then", "after", "first").
-- looks dropped: the agent's own whole list of what it is doing for the plan, or of what is done and what remains, stands in the record and leaves this step out. A list from before the approval, a list of one part, a list called partial, or a list that says the step comes later does not count.
+- looks dropped: the agent's own whole list of what it is doing for the plan, or of what is done and what remains, stands whole in the record, with no part of it left out, and leaves this step out. A list from before the approval, a list of one part, a list called partial, or a list that says the step comes later does not count.
 - done before the summary: only the summary at the record's start says it was done.
 - runs alongside: a rule kept throughout, judged by whether any work broke it.
 - not assessed: its proof could sit in a part of the record left out, or before the record begins.
@@ -3139,7 +3139,7 @@ export const REP_SHOWN_BODY = `- A fact (a file exists and holds something, a ve
 export const REP_SHOWN = `## What counts as shown\n\n${REP_SHOWN_BODY}`
 const REP_OPEN_BODY = `A step finished is not the objective finished. A review, plan, briefing, handoff or list of what remains is a step toward the result, unless the owner opened the job for that document. When the job is to guide the owner through finishing something, it is complete when the owner has been guided to the finish, not when the first guidance was given. The owner's standard for finished is the whole result, on the newest build, running where the owner uses it, with nothing left for the owner or a next session. The job is complete when every condition is shown or closed; until then you say what still stands in the way, and everything you write keeps the agent on the job.`
 export const REP_OPEN = `## The objective stays open until it is completed\n\n${REP_OPEN_BODY}`
-const REP_REACHES_BODY = `Work the agent leaves "for you", "when convenient" or "as a follow-up" (a branch to delete, a copy to remove, a check to run) is the agent's unfinished work, and the message tells the agent to finish it. The owner is asked for two things only. One is a decision only the owner can make, because it touches the owner's livelihood or public name, cannot be undone, or goes against something the owner asked for; publishing, sending, paying and anything the owner's guard refused are among them. The other is the message to send. A go-ahead is such a decision, not a chore. When a condition waits on one, the message tells the agent to finish everything else, hold that step until the owner says go, and say exactly what it will show the owner then.`
+const REP_REACHES_BODY = `Work the agent leaves "for you", "when convenient" or "as a follow-up" (a branch to delete, a copy to remove, a check to run) is the agent's unfinished work: "next" and the message give it to the agent to finish, not to the owner. The owner is asked for two things only. One is a decision only the owner can make, because it touches the owner's livelihood or public name, cannot be undone, or goes against something the owner asked for; publishing, sending, paying and anything the owner's guard refused are among them. The other is the message to send. A go-ahead is such a decision, not a chore. When a condition waits on one, the message tells the agent to finish everything else, hold that step until the owner says go, and say exactly what it will show the owner then.`
 export const REP_REACHES = `## What reaches the owner\n\n${REP_REACHES_BODY}`
 // G30: a finding moves only on new evidence, and the change names it.
 export const REP_HOLD = '- Steadily. Your last briefing and the lines already shown stand until the record shows something new; when you change one, name what is new. The agent disagreeing is not new evidence. What it ran, and what that printed, can be.'
@@ -7894,11 +7894,11 @@ export function editSaved(kind: CallKind, system: string, prompt: string | Promp
   const gap = fence < 0 ? -1 : whole.indexOf('\n\n', fence + 1)
   if (gap < 0) return { why: 'it has no record fence' }
   const rewrite = apply.includes('rewrite')
-  if (rewrite && (!whole.startsWith(PRE_RW_RECORD_OPEN) || whole.slice(fence, gap + 2) !== PRE_RW_RECORD_CLOSE)) return { why: 'its record is not in the fence of the build before the rewrite' }
   const taskAt = gap + 2
   let task = whole.slice(taskAt)
   let sys = system
   if (apply.includes('frame') && !OLD_FRAME.test(task)) return { why: 'the old frame is not in it' }
+  if (rewrite && (!whole.startsWith(PRE_RW_RECORD_OPEN) || whole.slice(fence, gap + 2) !== PRE_RW_RECORD_CLOSE)) return { why: 'its record is not in the fence of the build before the rewrite' }
   // The no-think line first, since it sits after the frame.
   if (apply.includes('no-think')) {
     const head = task.match(OLD_FRAME)?.[0] ?? ''
