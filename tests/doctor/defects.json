@@ -3915,7 +3915,7 @@
     "name": "mislabelled-fact-kept",
     "breaks": "A condition the writer marks \"fact:\" though it says the result works, loads or passes stays a fact, so the agent's own run shows it.",
     "patch": "mislabelled-fact-kept.patch",
-    "fixed": "tested 2026-11-17; remade 2026-11-17"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "runs-newest-code-works",
@@ -4911,7 +4911,7 @@
     "name": "condition-state-first-dropped",
     "breaks": "a condition written \"- not shown: the pages are built\", with no \"|\", is read as open with \"not shown:\" left in its text.",
     "patch": "condition-state-first-dropped.patch",
-    "fixed": "tested 2026-11-19"
+    "fixed": "remade 2026-11-19"
   },
   {
     "name": "fact-noun-run-any-order",
@@ -5019,6 +5019,12 @@
     "name": "left-out-fold-stops",
     "breaks": "The left-out list folded onto one row joins its sentences with \"; \" after their full stops, so the owner reads \"directly.; The counter was never run\".",
     "patch": "left-out-fold-stops.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "fact-state-first-read-whole",
+    "breaks": "A fact written with its state first (\"- fact: not shown: note.txt exists\") is read with the state word still in it, so the fact reader refuses it and the condition becomes works.",
+    "patch": "fact-state-first-read-whole.patch",
     "fixed": "tested 2026-11-19"
   }
 ]

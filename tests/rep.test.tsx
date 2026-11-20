@@ -10465,6 +10465,21 @@ test('a condition written with its state first and no "|" ("- not shown: the pag
   ])
 })
 
+test('a fact written with its state first ("- fact: not shown: note.txt exists") stays a fact: the fact reader reads the words the condition keeps, not the state word before them (round 10)', () => {
+  // Each text alone reads as a fact; the behaviour clause does not, with its state first or after a "|".
+  for (const text of ['note.txt exists', 'no commit was made for this work', 'nothing is installed anywhere outside the scratch folder']) expect([text, factHolds(text)]).toEqual([text, true])
+  expect(factHolds('the script greets correctly')).toBe(false)
+  const a = parseObjective('objective: moved\nmoved: #1\nresult: r\nfor: f\ndone:\n- fact: not shown: note.txt exists\n- fact: shown: no commit was made for this work\n- fact: nothing is installed anywhere outside the scratch folder | not shown\n- fact: not shown: the script greets correctly\n- fact: the script prints the name | open\nstep: s\ndropped:\n- nothing')
+  expect(a?.kind === 'moved' && a.parts.done).toEqual([
+    { text: 'note.txt exists', state: 'not-shown', by: '', kind: 'fact' },
+    // Shown with no where is open, as it is after a "|".
+    { text: 'no commit was made for this work', state: 'open', by: '', kind: 'fact' },
+    { text: 'nothing is installed anywhere outside the scratch folder', state: 'not-shown', by: '', kind: 'fact' },
+    { text: 'the script greets correctly', state: 'not-shown', by: '', kind: 'works' },
+    { text: 'the script prints the name', state: 'open', by: '', kind: 'works' },
+  ])
+})
+
 test('factHolds reads a doing folded into a noun\'s own words as works: a plural noun stands only next to the noun it names, and "every" or "all" only first (ninth live test)', () => {
   // The ninth live test's verb/noun collisions: "copies", "changes", "tags" and "logs" are nouns of
   // the work and also say what a thing does, so "the copies-every-file tool" closed on the builder's

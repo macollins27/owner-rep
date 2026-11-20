@@ -5,6 +5,10 @@ What changed in each release of Owner Rep, newest first. The full record is the
 
 ## 0.7.7 (19 November 2026)
 
+- **A fact written with its state first stays a fact.** A condition the objective writer wrote
+  as "fact: not shown: note.txt exists" was read with "not shown:" still in it, so the fact
+  reader refused it and the rep asked for a hands-on look at a plain fact. The reader now
+  reads the words the condition keeps.
 - **The left-out list folded onto one row reads as sentences.** It joined its items with
   "; " after their full stops ("directly.; The counter was never run"); an item that ends its
   sentence is now followed by a space.

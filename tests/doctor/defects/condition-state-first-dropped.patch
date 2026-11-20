@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 99e7d73..03402b5 100644
+index b46d607..4776b6c 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3542,7 +3542,7 @@ function conditionOf(line: string): Condition {
+@@ -3659,7 +3659,7 @@ function conditionOf(line: string): Condition {
    if (m === null) {
      // The state written first with no "|" ("- not shown: the pages are built", the R6 replay of
      // 69440c68): "not shown" is kept, and "shown" with no where is open, as after a "|".
 -    const f = line.includes('|') ? null : /^\s*(open|not[\s-]?shown|shown)\s*:\s*(.*)$/i.exec(line.replace(KIND_AT, ''))
 +    const f = true ? null : /^\s*(open|not[\s-]?shown|shown)\s*:\s*(.*)$/i.exec(line.replace(KIND_AT, ''))
-     if (f !== null) return { text: bare(f[2] ?? ''), state: /^not/i.test(f[1] ?? '') ? 'not-shown' : 'open', by: '', ...kind }
+     if (f !== null) return { text: bare(f[2] ?? ''), state: /^not/i.test(f[1] ?? '') ? 'not-shown' : 'open', by: '', ...kindFor(f[2] ?? '') }
      return { text: bare(line.split('|')[0] ?? ''), state: 'open', by: '', ...kind }
    }
