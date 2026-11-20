@@ -1,8 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 8fd04cc..6d16a94 100644
+index fde7c3c..4ae2454 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1765,7 +1765,7 @@ export const contextLine = (m: Memory): string =>
+@@ -1767,7 +1767,7 @@ export const contextLine = (m: Memory): string =>
  // The rules of REP_SYSTEM that decide an answer, said again after the record in a line each: the
  // watch's, and the briefing's with the verdict's. They restate rules REP_SYSTEM holds and add none.
  // The rule on a dropped step is given only while a plan is held.
@@ -10,4 +10,4 @@ index 8fd04cc..6d16a94 100644
 +const DECIDE_SHOWN = 'A condition is shown where the record shows it; a test passing shows that it passed, and not that the result works.'
  const DECIDE_DROPPED = 'A step of an approved plan with no sign while later work goes on is the owner\'s ask dropped.'
  const DECIDE_VERDICT = 'While any condition is open or not shown, the verdict is "continue", and no part says the work is finished or going well.'
- const DECIDE_ASKED = 'The owner is asked only for a decision that is theirs, and the message to send.'
+ const DECIDE_ASKED = 'The owner is asked only for the message to send and one plain question per decision of theirs.'

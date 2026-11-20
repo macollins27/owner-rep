@@ -197,7 +197,8 @@ expectations for every job:
 The rep also watches where the work goes. When more of a session goes into the agent checking
 its own work than into the product, it says so, and the message it writes for you never asks
 for more tests, scripts or reports: where proof is missing it asks for the proof that fits, a
-command and what it printed for a fact, or a hands-on look at the real thing for whether it works.
+command and what it printed for a fact, or, for whether it works, a hands-on look at what the
+customer gets by someone who did not build it, never the agent re-running its own checks.
 
 That the work does what it should is signed off only by someone who did not build it: a helper
 or a read-only Codex run that changed nothing, or the rep's own check, opening the real thing and
@@ -393,9 +394,9 @@ The full design is in [How the owner rep works](docs/how-it-works.md).
 
 ## Built to be trusted
 
-- **769 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
+- **770 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
   the tests.
-- **A doctor that plants bugs.** It plants 869 known defects in a throwaway copy, one at a
+- **A doctor that plants bugs.** It plants 874 known defects in a throwaway copy, one at a
   time, and fails the build if the tests miss any of them.
 - **Real sessions.** Twelve scenarios run in real Claude Code sessions, with the screen
   captured in [`tests/live/captures`](tests/live/captures).

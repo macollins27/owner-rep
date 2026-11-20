@@ -5212,5 +5212,35 @@
     "breaks": "\"proof\" and \"sent\" are no words a noun may carry, so \"proof report\" and \"a local sent folder\" end the reading and the tenth live test's facts become works.",
     "patch": "fact-proof-sent-mods-missing.patch",
     "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "goahead-question-dropped",
+    "breaks": "\"What reaches the owner\" no longer says each of the owner's decisions reaches the owner as one plain question on the card, so a briefing calls a send held for the owner's go \"your decision, not a gap\" and asks nothing, as in the tenth live test.",
+    "patch": "goahead-question-dropped.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "left-owner-decision-missing",
+    "breaks": "The briefing's \"left:\" names only a self-proving plan step as a question for the owner, so a held go-ahead is left off the card's list or called no gap.",
+    "patch": "left-owner-decision-missing.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "left-decision-folded",
+    "breaks": "The briefing's \"left:\" may fold the owner's decision into \"- and N smaller gaps\", so the question on a held go-ahead can drop off the card.",
+    "patch": "left-decision-folded.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "works-look-by-builder",
+    "breaks": "The message asks for \"a hands-on look at the real thing\" without saying by whom or at what the customer gets, so it accepts the agent re-reading its own work, as in the tenth live test.",
+    "patch": "works-look-by-builder.patch",
+    "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "checks-stand-in-for-look",
+    "breaks": "The message no longer says the agent's own checks do not stand in for the hands-on look, so a message asks the agent to re-run its line-length and character checks where nobody but the agent has read the result.",
+    "patch": "checks-stand-in-for-look.patch",
+    "fixed": "tested 2026-11-19"
   }
 ]

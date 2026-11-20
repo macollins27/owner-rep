@@ -1,9 +1,9 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 8fd04cc..ebab547 100644
+index fde7c3c..8d183bf 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1883,7 +1883,7 @@ left:
- - <${LEFT_ITEMS}. A gap is something asked for and not done or not started; a condition the agent called done that is open; work passable but not the best it could be; the product unopened and unused; effort spent on self-proving pieces; a claim that matters and is not shown; a chore left "for you"; or a self-proving step of an approved plan, as a question for the owner. A condition already shown or closed is not a gap. Each says why it matters. Write "- nothing" when there is none.>
+@@ -1885,7 +1885,7 @@ left:
+ - <${LEFT_ITEMS}. A gap is something asked for and not done or not started; a condition the agent called done that is open; work passable but not the best it could be; the product unopened and unused; effort spent on self-proving pieces; a claim that matters and is not shown; a chore left "for you"; or the owner's own decision (a held go-ahead, or keeping a self-proving step of an approved plan), as one plain question, never folded. A condition already shown or closed is not a gap. Each says why it matters. Write "- nothing" when there is none.>
  ${plan ? 'unassessed:\n- #<n>: <a step of an approved plan you could not assess>\n' : ''}next: <what the agent does next, under 40 words; a stop only with a stop verdict>
  message:
 -<the message for the owner to send, written to the agent ${MESSAGE_FORM}. Empty only when every condition is shown or closed, or no objective is held and nothing is worth sending.>

@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 8fd04cc..57c070c 100644
+index fde7c3c..d77823a 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1865,7 +1865,7 @@ ${decidingText(plan, true)}
+@@ -1867,7 +1867,7 @@ ${decidingText(plan, true)}
  
- Look at what the agent and its helpers actually did and what came back, not at what the agent says it did. If the owner sent your last message to the agent, say whether the agent did what it asked.
+ Judge what the agent and its helpers did and what came back, not what the agent says it did. If the owner sent your last message to the agent, say whether the agent did what it asked.
  
--When every condition is shown or closed and the record shows the result working, say so in one line under "well:". Fill in every other part too: the owner wants the whole picture every time. While any condition is open or not shown, or the work falls short of the best it could be, write the message to the agent.
-+When every condition is shown or closed and the record shows the result working, say so in one line under "well:". Fill in every other part too: the owner wants the whole picture every time. Write the message to the agent when you think it helps.
+-Fill in every part: the owner wants the whole picture every time. While any condition is open or not shown, or the work falls short of the best it could be, write the message to the agent.
++Fill in every part: the owner wants the whole picture every time. Write the message to the agent when you think it helps.
  ${plan ? `\n${STEP_STATES}\nWork out each step's state without writing the walk out. Each step with no sign while later work goes on, or that looks dropped, goes first under "left:" with the plan's number. Each step not assessed goes under "unassessed:".\n` : ''}
  ## Output structure
  

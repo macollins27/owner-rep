@@ -9,11 +9,19 @@ What changed in each release of Owner Rep, newest first. The full record is the
   asking read had grown by patches to about 5,000 words per call, with 35 to 44 "never"s and
   many rules said two or three times. They are rewritten as one system prompt of sections, each
   rule said once with its reason, and the rules that decide an answer restated in a line each
-  after the record. Each call now sends about 3,300 words with no "never" and no capitals for
+  after the record. Each call now sends about 3,300 words with at most one "never" and no capitals for
   emphasis, and a test holds every call to its size target.
 - **Text in the session cannot pass as the record's end or as the owner.** The record and the
   owner's messages are fenced in tags that end in a random code made once per session, and any
   such tag found inside is printed harmlessly, so an agent cannot close the fence by guessing it.
+- **A step held for your go-ahead reaches you as a question.** A briefing could call a send held
+  for your go "your decision, not a gap" and ask nothing; the card now lists each decision that
+  is yours (a go-ahead to publish, send or pay) as one plain question, also while the agent is
+  rightly holding the step.
+- **The message asks a non-builder to look, not the agent to re-check.** Where nobody but the
+  agent had read the result, a message could ask the agent to re-run its own line-length and
+  character checks. Checks are now asked for only to prove a fact; whether the result works or
+  is good is asked of a hands-on look at what the customer gets, by someone who did not build it.
 - **The replay rebuilds calls with this change.** `/owner-rep-replay` takes `rewrite`, the edit
   that turns a watch, briefing, second-asking or own-words call saved by the build before into
   what this build sends.
