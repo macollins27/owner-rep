@@ -677,7 +677,7 @@ test('the brief and the watch keep a phrase of 48 standing rules in both and sta
     '6. The result is as good as the best in its trade would make it, judged by looking at it',
     'A step finished is not the objective finished.',
     'the whole result, on the newest build, running where the owner uses it, with nothing left for the owner or a next session',
-    'The job is complete when every condition is shown or closed; until then nothing you write calls it finished or says the agent should stop: you say what still stands in the way',
+    'The job is complete when every condition is shown or closed; until then nothing you write calls it finished or, while the agent could still move it, says the agent should stop: you say what still stands in the way',
     'The owner is asked for two things only.',
     'A go-ahead is such a decision, not a chore.',
     '- By checking.',
@@ -13669,7 +13669,7 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     expect(both?.why).toContain('Also looks dropped: the same time limit for watching commands.')
   })
 
-  test('A step missing from the agent\'s own full list: the Heads up says it looks dropped and asks to see it, the step stays not assessed, and the briefing walks it as the owner\'s ask dropped', () => {
+  test('A step missing from the agent\'s own full list: the Heads up says it looks dropped and asks to see it, and the briefing walks it as the owner\'s ask dropped', () => {
     const w = readerGets(watchPrompt(planned7(), 'stop'))
     const b = readerGets(briefPrompt(planned7()))
     for (const rule of [
@@ -13682,6 +13682,9 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
       expect(b).toContain(rule)
     }
     expect(w).toContain('A flag about a step that looks dropped names what shows it, the agent\'s own words or the list it is missing from, and asks the agent to do it or show it.')
+    // The flag goes to what the walk does not carry, since the walk's dropped lines reach the owner on their own (PR #68, B).
+    expect(w).toContain('reaches the owner from the walk on its own, so give the flag to the most important concern the walk does not carry, at the same bar.')
+    expect(b).not.toContain('give the flag to the most important concern the walk does not carry')
     expect(w).toContain(rep.NOT_ASSESSED_RULE)
     // The briefing puts such a step first under left:, not as a flag.
     expect(b).not.toContain('A flag about a step that looks dropped')
@@ -13705,13 +13708,21 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     expect(said?.why).toContain(`Also: ${OTHER} Only the opening lines show.`)
   })
 
-  test('Heads up: a step marked looks dropped is carried with no flag at all, is never called skipped, and still counts as not assessed', () => {
+  // Rewritten for PR #68 (must-fix E): this test demanded that a looks-dropped step also count as
+  // not assessed, which put "its proof could be in a part of the record that was cut short" on the
+  // row beside the agent's own admission. A step looks dropped only on what the reader saw.
+  test('Heads up: a step marked looks dropped is carried with no flag at all, is never called skipped, and is not counted as not assessed, so the row says nothing of a cut record', () => {
     const a = walked(STEP, 'looks dropped')
     const said = rep.headsUp(a, [], PLANS)
     expect(said?.line).toBe(`A step of the plan you approved looks dropped: ${STEP}.`)
     expect(said?.why).toContain('The agent\'s own words or its own full list leave it out.')
     expect(`${said?.line} ${said?.why}`).not.toMatch(/skipped/i)
-    expect(a.notAssessed).toEqual([{ n: 6, step: STEP }])
+    expect(a.notAssessed).toBeUndefined()
+    expect(rep.notAssessedGaps(a.notAssessed ?? [])).toEqual({})
+    // The agent's own admission of a drop: the row gets no not-assessed line; a step walked not assessed still does.
+    const admitted = parseWatch(`steps:\n- #6: Build the importer | done\n- #6: ${STEP} | looks dropped — the agent says it left this out\n- #6: Copy the whole database to the archive | not assessed\nstate: working\nflag: none\nclosed:\n- nothing\n`)
+    expect(admitted.notAssessed).toEqual([{ n: 6, step: 'Copy the whole database to the archive' }])
+    expect(JSON.stringify(rep.notAssessedGaps(admitted.notAssessed ?? []))).not.toContain(STEP)
   })
 
   test('Heads up: a step walked as not assessed stays out of it, so the false-alarm protection is unchanged', () => {
@@ -13740,11 +13751,12 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     expect(walked('Render A | B', 'looks dropped').dropped?.[0]?.step).toBe('Render A | B')
   })
 
-  test('Heads up: both readings of a walk take the same forms, so a step never counts as dropped and not as unassessed', () => {
-    for (const line of ['- #6 step 2, Move the limit | looks dropped', '- #6: Move the limit | looks dropped — absent from the full list']) {
+  // Rewritten for PR #68 (must-fix E): a looks-dropped line is read as dropped only, never also as not assessed.
+  test('Heads up: both readings of a walk take the same forms: a looks-dropped line is dropped, a not-assessed line is not assessed', () => {
+    for (const line of ['- #6 step 2, Move the limit | looks dropped', '- #6: Move the limit | looks dropped — absent from the full list', '- #6.1: Move the limit | looks dropped', '- #6a: Move the limit | looks dropped', '- #6 part 2: Move the limit | looks dropped']) {
       const a = parseWatch(`steps:\n${line}\nstate: working\nflag: none\nshown:\n- nothing\nclosed:\n- nothing\n`)
-      expect(a.dropped?.map(d => d.step)).toEqual(['Move the limit'])
-      expect(a.notAssessed).toEqual([{ n: 6, step: 'Move the limit' }])
+      expect(`${line}: ${JSON.stringify(a.dropped?.map(d => [d.n, d.step]))}`).toBe(`${line}: [[6,"Move the limit"]]`)
+      expect(a.notAssessed).toBeUndefined()
     }
     const b = parseWatch(`steps:\n- #6 step 2, Move the limit | not assessed\nstate: working\nflag: none\nshown:\n- nothing\nclosed:\n- nothing\n`)
     expect(b.dropped).toBeUndefined()
@@ -13795,6 +13807,102 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     const long = rep.headsUp(walked('word '.repeat(80).trim(), 'looks dropped'), [], PLANS)?.line ?? ''
     expect(long.length).toBeLessThan(rep.DROPPED_STEP_MAX + 60)
     expect(long).toContain('word word word')
+  })
+
+  // Each dropped part reaches the owner once (PR #68 review, must-fix C). Parts of one step share
+  // words, so a part already said is told apart from its sibling by its own words and its plan.
+  const GUARD_PLAN = ['#8 (the plan you accepted on the plan screen)\n<approved_plan>\nBuild a guard that refuses background commands with no time limit, and the same time limit for watching commands.\n</approved_plan>']
+  const PART1 = 'guard refuses background commands with no time limit'
+  const PART2 = 'the same time limit for watching commands'
+  const looked = (lines: string, flag = 'none', why = '') =>
+    parseWatch(`steps:\n${lines}\nstate: working\nflag: ${flag}\n${why === '' ? '' : `why: ${why}\n`}shown:\n- nothing\nclosed:\n- nothing\n`)
+  const dropLine = (part: string) => `A step of the plan you approved looks dropped: ${part}.`
+
+  test('Heads up: a part said at one look does not hide its sibling dropped at the next, whether the record keeps the parts said or only the line shown', () => {
+    const n = rep.headsUpOf(looked(`- #8: ${PART1} | looks dropped\n- #8: ${PART2} | underway`), [], GUARD_PLAN, [])
+    expect(n.note?.line).toBe(dropLine(PART1))
+    expect(n.drops.map(d => d.part)).toEqual([PART1])
+    const next = looked(`- #8: ${PART1} | looks dropped\n- #8: ${PART2} | looks dropped`)
+    expect(rep.headsUpOf(next, [dropLine(PART1)], GUARD_PLAN, n.drops).note?.line).toBe(dropLine(PART2))
+    // A record from before the parts were kept holds only the line shown; it reads the same.
+    expect(rep.headsUp(next, [dropLine(PART1)], GUARD_PLAN)?.line).toBe(dropLine(PART2))
+    // The sibling alone in the walk at the next look: still said, though it is the said part's nearest line.
+    expect(rep.headsUpOf(looked(`- #8: ${PART2} | no sign while later work goes on`), [dropLine(PART1)], GUARD_PLAN, n.drops).note?.line).toBe(dropLine(PART2))
+    // A sibling alike enough to pass for the said part reworded is still said: the said part's nearest
+    // line in this walk is itself, not the sibling.
+    const sibling = 'guard refuses watching commands with no time limit'
+    expect(rep.likeness(PART1, sibling)).toBeGreaterThanOrEqual(rep.SAID_LIKENESS)
+    expect(rep.headsUpOf(looked(`- #8: ${PART1} | looks dropped\n- #8: ${sibling} | looks dropped`), [dropLine(PART1)], GUARD_PLAN, n.drops).note?.line).toBe(dropLine(sibling))
+  })
+
+  test('Heads up: a part already said and reworded at a later look is not raised again, with its sibling done or dropped and said too', () => {
+    const said = [{ part: PART1, plan: '8' }]
+    const reworded = 'the guard refuses any background command without a time limit'
+    expect(rep.headsUpOf(looked(`- #8: ${reworded} | looks dropped\n- #8: ${PART2} | done`), [dropLine(PART1)], GUARD_PLAN, said).note).toBeNull()
+    expect(rep.headsUp(looked(`- #8: ${reworded} | looks dropped\n- #8: ${PART2} | done`), [dropLine(PART1)], GUARD_PLAN)).toBeNull()
+    const both = [...said, { part: PART2, plan: '8' }]
+    expect(rep.headsUpOf(looked(`- #8: ${reworded} | looks dropped\n- #8: watching commands get the same time limit | no sign while later work goes on`), [dropLine(PART1)], GUARD_PLAN, both).note).toBeNull()
+  })
+
+  test('Heads up: a flag that names one part keeps its line, a sibling dropped at the same look goes under "Also looks dropped", and both count as said', () => {
+    const flag = 'The guard no longer refuses background commands with no time limit, so that part looks dropped.'
+    const a = looked(`- #8: ${PART1} | looks dropped\n- #8: ${PART2} | looks dropped`, flag, 'The agent says it took that check out.')
+    const got = rep.headsUpOf(a, [], GUARD_PLAN, [])
+    expect(got.note).toEqual({ line: flag, why: `The agent says it took that check out. Also looks dropped: ${PART2}.` })
+    expect(got.drops.map(d => d.part)).toEqual([PART1, PART2])
+    // At the next look neither is raised again.
+    expect(rep.headsUpOf(a, [flag], GUARD_PLAN, got.drops).note).toEqual({ line: flag, why: 'The agent says it took that check out.' })
+    expect(rep.headsUpOf(looked(`- #8: ${PART1} | looks dropped\n- #8: ${PART2} | looks dropped`), [flag], GUARD_PLAN, got.drops).note).toBeNull()
+  })
+
+  test('Heads up: a one-part step said once and reworded later is not repeated, read from the parts kept or from the line', () => {
+    const said = [{ part: STEP }]
+    expect(rep.headsUpOf(walked('Swap the request limit over to the local store', 'looks dropped'), [], PLANS, said).note).toBeNull()
+    expect(rep.headsUp(walked('Swap the request limit over to the local store', 'looks dropped'), [dropLine(STEP)], PLANS)).toBeNull()
+    expect(rep.headsUpOf(walked('Copy the whole database to the archive', 'looks dropped'), [], PLANS, said).note?.line).toBe(dropLine('Copy the whole database to the archive'))
+  })
+
+  test('Heads up: two steps of different plans that share words are each judged on their own', () => {
+    const planA = '#3 (the plan you accepted on the plan screen)\n<approved_plan>\nMove the request limit to the local store.\nAdd a status page.\n</approved_plan>'
+    const planB = '#9 (the plan you accepted on the plan screen)\n<approved_plan>\nMove the request limit to the cloud store.\nShow the bill.\n</approved_plan>'
+    const first = rep.headsUpOf(looked('- #3: Move the request limit to the local store | looks dropped'), [], [planA, planB], [])
+    expect(first.drops).toEqual([{ part: 'Move the request limit to the local store', plan: '3' }])
+    const other = looked('- #9: Move the request limit to the cloud store | looks dropped')
+    // Shown beside its sibling plan, and shown alone once the cursor has moved on.
+    expect(rep.headsUpOf(other, [dropLine('Move the request limit to the local store')], [planA, planB], first.drops).note?.line).toBe(dropLine('Move the request limit to the cloud store'))
+    expect(rep.headsUpOf(other, [dropLine('Move the request limit to the local store')], [planB], first.drops).note?.line).toBe(dropLine('Move the request limit to the cloud store'))
+    // The same step of the same plan, reworded, is not raised again.
+    expect(rep.headsUpOf(looked('- #3: move the local store request limit | looks dropped'), [], [planA, planB], first.drops).note).toBeNull()
+    // Two plans that name the same step word for word: said from one, the other's is still said.
+    const runA = '#3 (the plan you accepted on the plan screen)\n<approved_plan>\nRun the whole test suite and paste its output.\n</approved_plan>'
+    const runB = '#9 (the plan you accepted on the plan screen)\n<approved_plan>\nRun the whole test suite and paste its output.\n</approved_plan>'
+    const run = 'Run the whole test suite and paste its output'
+    const both = looked(`- #3: ${run} | looks dropped\n- #9: ${run} | looks dropped`)
+    const once = rep.headsUpOf(looked(`- #3: ${run} | looks dropped`), [], [runA, runB], [])
+    expect(once.drops).toEqual([{ part: run, plan: '3' }])
+    const again = rep.headsUpOf(both, [dropLine(run)], [runA, runB], once.drops)
+    expect(again.note?.line).toBe(dropLine(run))
+    expect(again.drops).toEqual([{ part: run, plan: '9' }])
+  })
+
+  test('Heads up: a short dropped part counts as a plan\'s only when the plan holds most of its words, a longer one at the usual share', () => {
+    const plan = ['#4 (the plan you accepted on the plan screen)\n<approved_plan>\nGive background commands a time limit and show the time left in the status row.\n</approved_plan>']
+    // Two of four words is not enough for a short part: no plan here asked for email alerts.
+    expect(rep.headsUp(looked('- #4: email alerts for background commands | looks dropped'), [], plan)).toBeNull()
+    expect(rep.headsUp(looked('- #4: time limit for background commands | looks dropped'), [], plan)?.line).toBe(dropLine('time limit for background commands'))
+    // A longer part reworded still counts at the usual share.
+    expect(rep.headsUp(looked('- #4: put the remaining time of each command into the status row at the bottom | no sign while later work goes on'), [], plan)?.line).toBe(
+      dropLine('put the remaining time of each command into the status row at the bottom'),
+    )
+    expect(rep.PLAN_WORDS_SHORT).toBe(4)
+    expect(rep.PLAN_WORDS_SHORT_SHARE).toBe(0.75)
+  })
+
+  test('briefing: "- none" under left: reads as nothing left out, as the other lists read it', () => {
+    for (const none of ['- none', '- None.', '- (none)', '- nothing']) {
+      const a = parseBrief(`verdict: continue\nwell: The tests pass.\nstands: s\nmeans: m\nleft:\n${none}\nnext: n\nmessage:\nGo on.\nend\ndoes: d`)
+      expect(`${none}: ${JSON.stringify(a.leftOut)} ${a.well}`).toBe(`${none}: [] The tests pass.`)
+    }
   })
 
   test('Task 7: the briefing walks the same steps to itself, puts a step with no sign first under left:, and gives the steps it could not assess under unassessed:, with no steps: part', () => {
@@ -14153,6 +14261,28 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     expect(await ui.find({ type: 'Text', text: /Also: The agent has not shown the dashboard working\. Only the opening lines show\./ })).toBeDefined()
     await ui.unmount()
     expect((m.rec() as { seen?: string[] }).seen).toEqual(['A step of the plan you approved looks dropped: Move the request limit to the local store.'])
+  })
+
+  test('Task 8 (mounted): the parts the Heads up said are kept with their plan, so a like step of another plan is still said at a later look', async ($, on) => {
+    const local = 'Move the request limit to the local store'
+    const cloud = 'Move the request limit to the cloud store'
+    const answers = [
+      `steps:\n- #2: ${local} | looks dropped\nstate: working\nflag: none\nclosed:\n- nothing\n`,
+      `steps:\n- #3: ${cloud} | looks dropped\nstate: working\nflag: none\nclosed:\n- nothing\n`,
+    ]
+    let at = 0
+    const m = mounted7(on, [msg7(1, 'build the sorter'), yes7(2, `${local}.\nAdd a status page.`), yes7(3, `${cloud}.\nShow the bill.`)], brief => (brief ? WELL : (answers[Math.min(at++, 1)] ?? '')))
+    await started($)
+    await m.look($, 't1')
+    expect(await rowSays($, new RegExp(`looks dropped: ${local}\\.`))).toBe(true)
+    expect((m.rec() as { saidDrops?: unknown }).saidDrops).toEqual([{ part: local, plan: '2' }])
+    // The owner presses Fine, as on any Heads up, and the row is back for the next look.
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    await ui.press({ key: 'fine' })
+    await ui.unmount()
+    await m.look($, 't2')
+    expect(await rowSays($, new RegExp(`looks dropped: ${cloud}\\.`))).toBe(true)
+    expect((m.rec() as { saidDrops?: unknown }).saidDrops).toEqual([{ part: local, plan: '2' }, { part: cloud, plan: '3' }])
   })
 
   test('Task 8 (mounted): with no approved plan shown to the look, a walked step is not called part of one, and the reader\'s own flag stands', async ($, on) => {
@@ -16687,10 +16817,10 @@ describe('coverage: the lines, their tags and their order', () => {
     const cut = 'its proof could be in a part of the record that was cut short'
     expect(rep.notAssessedLine(typedOne, cut, ['make plum.txt'])).toBe(`Not assessed: "make plum.txt" in the plan you approved in message #4 (${cut})`)
     expect(rep.notAssessedLine(accepted, cut, ['make plum.txt', 'make fig.txt'])).toBe(
-      `Not assessed: "make plum.txt" and 1 more step in the plan you accepted on the plan screen (#4) (${cut})`,
+      `Not assessed: "make plum.txt" and 1 more part in the plan you accepted on the plan screen (#4) (${cut})`,
     )
     expect(rep.notAssessedLine(edited, 'the record shown starts after you approved it', ['a', 'b', 'c'])).toBe(
-      'Not assessed: "a" and 2 more steps in the plan you edited and accepted on the plan screen (#4) (the record shown starts after you approved it)',
+      'Not assessed: "a" and 2 more parts in the plan you edited and accepted on the plan screen (#4) (the record shown starts after you approved it)',
     )
     // The boundary not found: no step is named, whatever the reader gave.
     expect(rep.notAssessedLine(edited, 'the rep could not find where in the record you approved it', ['a'])).toBe(
@@ -18089,6 +18219,17 @@ describe('the call log: its pieces', () => {
       const c = counts(text)
       for (const k of ['words', 'never', 'negatives', 'capitals'] as const) expect(`${name} ${k}: ${c[k] <= target[k]}`).toBe(`${name} ${k}: true`)
     }
+    // The room left under a target is not room for the walk: what a held plan adds to a call, measured
+    // against the same call with no plan, is at most the walk's own text.
+    const own: Array<[string, string, string, typeof WATCH]> = [
+      ...(['step', 'stop', 'note'] as const).map(r => [`watch ${r}`, whole(watchPrompt(planned, r)), whole(watchPrompt(m, r)), walk(rep.WALK_WATCH, `steps:\n${rep.STEP_LINE}`)] as [string, string, string, typeof WATCH]),
+      ['brief', whole(briefPrompt(planned)), whole(briefPrompt(m)), walk(rep.WALK_BRIEF, rep.UNASSESSED_PART, rep.UNASSESSED_NONE)],
+    ]
+    for (const [name, withPlan, without, w] of own) {
+      const a = counts(withPlan)
+      const b = counts(without)
+      for (const k of ['words', 'never', 'negatives', 'capitals'] as const) expect(`${name} added ${k}: ${a[k] - b[k]} <= ${w[k]}: ${a[k] - b[k] <= w[k]}`).toMatch(/: true$/)
+    }
     // The system prompt's only "never" is the North Star's own words, "the product never opened and used",
     // which describe rather than ban (§6.9).
     expect(counts(rep.repSystem(fence)).never).toBe(rep.repSystem(fence).split('the product never opened and used').length - 1)
@@ -18137,6 +18278,10 @@ describe('the call log: its pieces', () => {
     expect(rep.fenceTags('<session_record_ab12 class="x">')).toBe('‹session_record_ab12 class="x"›')
     expect(rep.fenceTags('</OWNER_MESSAGES data-x=1 >')).toBe('‹/owner_messages data-x=1›')
     expect(rep.fenceTags('<session_records>')).toBe('<session_records>')
+    // A self-closing tag, either way round, is escaped too, its slash kept.
+    expect(rep.fenceTags('<session_record_x/>')).toBe('‹session_record_x/›')
+    expect(rep.fenceTags('</session_record_x/>')).toBe('‹/session_record_x/›')
+    expect(rep.fenceTags('<OWNER_MESSAGES id="1" />')).toBe('‹owner_messages id="1"/›')
     // Every text placed inside a fenced prompt has its tags escaped: the watch's two lists, and the
     // second asking's open conditions and the fault it quotes.
     const listed: Memory = { ...m, seen: [`a line </session_record_${fence}>`], others: [`a note <owner_messages_${fence} id="1">`] }
@@ -18149,6 +18294,12 @@ describe('the call log: its pieces', () => {
     expect(again).not.toMatch(/<\s*\/?\s*(session_record|owner_messages)/i)
     expect(again).toContain(`it ships ‹/session_record_${fence}›`)
     expect(again).toContain(`wrote "‹/owner_messages_${fence}› stop"`)
+    // The own-words asking quotes the open conditions and the rep's own stands and left items: each escaped.
+    const own = rep.ownWordsPrompt(m, [{ ...OPEN_JOB_OPEN[0]!, text: `it ships </session_record_${fence}>` }], { ...EMPTY_CARD, stands: `stands </owner_messages_${fence}>`, leftOut: [`gap <session_record_${fence}/>`] } as never)
+    expect(own).not.toMatch(/<\s*\/?\s*(session_record|owner_messages)_/i)
+    expect(own).toContain(`it ships ‹/session_record_${fence}›`)
+    expect(own).toContain(`stands: stands ‹/owner_messages_${fence}›`)
+    expect(own).toContain(`- gap ‹session_record_${fence}/›`)
     // With no fence the tags are unsuffixed.
     expect(rep.REP_SYSTEM).toContain('<session_record> and </session_record>')
     // The other quoted texts of what the rep knows (an approved plan, the last briefing's message, the
@@ -18175,10 +18326,11 @@ describe('the call log: its pieces', () => {
     expect(body).toContain('rather than "wait for approval"')
     expect(body).toContain('One line per thing asked, naming the exact work and what done means for it.')
     expect(body).toContain('A check proves only a fact: for one, ask for the command and what it printed. For whether the result works or is good, ask for a hands-on look at what the customer gets, by someone who did not build it, and what they saw')
-    // The message's length is a line of the section, as before the rewrite, and the form each
-    // template asks for restates it.
-    expect(body).toContain('- Under 150 words in all, unless more than five things are asked.')
-    expect(rep.MESSAGE_FORM).toMatch(/\b150 words\b/)
+    // Rewritten for PR #68 (rule 6, length): the message's length and the aim of each line sit in the
+    // form every template asks for, beside the slot the message is written in, and only there; the
+    // section's second copy cost every call, the watch's too, 12 words.
+    expect(body).not.toMatch(/\b150 words\b/)
+    expect(rep.MESSAGE_FORM).toContain('each line one sentence of about 15 words, under 150 words in all unless more than five things are asked')
     expect(body).not.toMatch(/\b[A-Z]{3,}\b/)
     // The finish line is not a stop: the gate passes a message that ends on it.
     expect(rep.messageSaysStop(`Show me the install's version and what it printed.\n${rep.MESSAGE_FINISH}`)).toBe(false)
@@ -18198,6 +18350,9 @@ describe('the call log: its pieces', () => {
     expect(briefPrompt(m)).toContain(`- <${rep.LEFT_ITEMS}. Each says in a few words why it matters. A gap is`)
     expect(check).toContain(`- <${rep.LEFT_ITEMS}: work put off`)
     expect(rep.LEFT_ITEMS).toContain('at most six, the costliest first; fold any more into one last line "- and N smaller gaps"')
+    // The aim sits below the limit, so a reply written to the aim lands under it (PR #68, length).
+    expect(rep.LEFT_ITEMS).toContain('each one sentence of about 10 words and under 20')
+    expect(rep.SHORT_PART).toBe('one or two sentences, about 25 words, under 40')
   })
 
   test('rule: the replay\'s rows and totals name the read, the gate, the words and the tokens', () => {

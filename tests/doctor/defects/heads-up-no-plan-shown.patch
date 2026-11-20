@@ -1,13 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index baaaf44..b59161a 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2683,7 +2683,7 @@ const alsoDropped = (steps: readonly DroppedStep[]): string[] => [
- // only a plan the owner approved can be called that.
- export function headsUp(a: WatchAnswer, seen: readonly string[], plans: readonly string[]): { line: string; why: string } | null {
-   const own = a.flag === null ? null : { line: a.flag, why: a.why }
--  const fresh = (a.dropped ?? []).filter(d => inPlans(d.step, plans) && !seen.some(s => speaksOf(s, d.step)))
-+  const fresh = (a.dropped ?? []).filter(d => !seen.some(s => speaksOf(s, d.step)))
-   const named = fresh.filter(d => a.flag !== null && speaksOf(a.flag, d.step))
+@@ -3724,7 +3724,7 @@
+       return nearest(mine, s => likeness(x.part, s)).some(w => w.step === d.step)
+     }) ||
+     seen.some(l => saidIn(l) === null && DROP_WORD.test(l) && heldIn(d.step, l) >= SAID_HELD && nearest(walk, s => heldIn(s, l)).some(w => w.step === d.step))
+-  const fresh = (a.dropped ?? []).map(d => ({ ...d, plan: planKey(d.n, d.step, plans) })).filter(d => inPlans(d.step, plans) && !saidBefore(d))
++  const fresh = (a.dropped ?? []).map(d => ({ ...d, plan: planKey(d.n, d.step, plans) })).filter(d => !saidBefore(d))
+   const flag = a.flag
+   const named = flag === null ? [] : nearest(fresh.filter(d => speaksOf(flag, d.step)), s => heldIn(s, flag)).slice(0, 1)
    const rest = fresh.filter(d => !named.includes(d))
-   const first = rest[0]

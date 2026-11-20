@@ -1,13 +1,12 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 654b9c8..a408b89 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1633,7 +1633,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+@@ -1680,7 +1680,7 @@
      if (stepped && after.objective !== null) after.objective = { ...after.objective, step: answer.now }
      if ((marked || stepped) && onScreen(sid)) await update($, readingA, () => after.objective)
      const view = await read($, viewA)
--    const said = headsUp(answer, after.seen, fill?.blocks ?? [])
-+    const said = headsUp(answer, after.seen, [])
+-    const got = headsUpOf(answer, after.seen, fill?.blocks ?? [], after.saidDrops ?? [])
++    const got = headsUpOf(answer, after.seen, [], after.saidDrops ?? [])
+     const said = got.note
      if (said !== null && view === 'row' && onScreen(sid) && ![...after.seen].some(s => same(s, said.line))) {
        after.seen = [...after.seen, said.line].slice(-SEEN_MAX)
-       const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId }

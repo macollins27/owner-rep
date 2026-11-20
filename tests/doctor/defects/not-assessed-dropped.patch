@@ -1,8 +1,7 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 91d6584..48b70fe 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2712,7 +2712,7 @@ function stepsOf(part: string | undefined, walk: boolean): { notAssessed?: StepR
+@@ -3553,7 +3553,7 @@
      const m = /^\s*[-*•]?\s*#(\d+)\s*:\s*(.+?)\s*$/.exec(line)
      if (m !== null) out.push({ n: Number(m[1]), step: (m[2] as string).trim() })
    }
@@ -10,4 +9,4 @@ index 91d6584..48b70fe 100644
 +  return {}
  }
  
- // One line of a walk. Readers also write "#6 step 2, the step" and add a note after the mark; the
+ // One line of a walk. Readers also write "#6 step 2, the step", "#6.1:", "#6a:" or "#6 part 2:", and

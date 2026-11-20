@@ -1,11 +1,10 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index fe5b367..d467494 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2890,7 +2890,7 @@ export function headsUp(a: WatchAnswer, seen: readonly string[], plans: readonly
-   const joined = (lines: readonly string[]): string => lines.filter(l => l !== '').join(' ')
-   if (own !== null && named.length > 0) return { line: own.line, why: joined([own.why, ...alsoDropped(rest)]) }
-   return {
+@@ -3736,7 +3736,7 @@
+   if (own !== null && named.length > 0)
+     return { note: { line: own.line, why: joined([own.why, ...alsoDropped(rest)]) }, drops: told([...named, ...rest.slice(0, DROPPED_ALSO_MAX)]) }
+   return { note: {
 -    line: `A step of the plan you approved looks dropped: ${stepText(first.step)}.`,
 +    line: `A step of the plan you approved was skipped: ${stepText(first.step)}.`,
      why: joined([

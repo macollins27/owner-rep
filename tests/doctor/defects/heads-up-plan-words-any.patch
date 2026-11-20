@@ -1,13 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index baaaf44..c6c2d63 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2661,7 +2661,7 @@ export const PLAN_WORDS_SHARE = 0.4
+@@ -3643,7 +3643,7 @@
+ export const PLAN_WORDS_SHORT_SHARE = 0.75
  const inPlans = (step: string, plans: readonly string[]): boolean => {
-   const has = new Set(plans.flatMap(allWords))
-   const words = stepWords(step)
--  return words.length > 0 && words.filter(w => has.has(w)).length >= words.length * PLAN_WORDS_SHARE
-+  return words.length > 0 && words.filter(w => has.has(w)).length >= 0
+   const words = contentWords(step)
+-  return words.length > 0 && heldIn(step, plans.join('\n')) >= (words.length <= PLAN_WORDS_SHORT ? PLAN_WORDS_SHORT_SHARE : PLAN_WORDS_SHARE)
++  return words.length > 0 && heldIn(step, plans.join('\n')) >= 0
  }
  
- export const DROPPED_STEP_MAX = 160
+ // The plan a part belongs to: the approving message's number where a plan shown has that head, else

@@ -1,13 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index baaaf44..1e2557c 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2684,7 +2684,7 @@ const alsoDropped = (steps: readonly DroppedStep[]): string[] => [
- export function headsUp(a: WatchAnswer, seen: readonly string[], plans: readonly string[]): { line: string; why: string } | null {
-   const own = a.flag === null ? null : { line: a.flag, why: a.why }
-   const fresh = (a.dropped ?? []).filter(d => inPlans(d.step, plans) && !seen.some(s => speaksOf(s, d.step)))
--  const named = fresh.filter(d => a.flag !== null && speaksOf(a.flag, d.step))
-+  const named: DroppedStep[] = []
+@@ -3726,7 +3726,7 @@
+     seen.some(l => saidIn(l) === null && DROP_WORD.test(l) && heldIn(d.step, l) >= SAID_HELD && nearest(walk, s => heldIn(s, l)).some(w => w.step === d.step))
+   const fresh = (a.dropped ?? []).map(d => ({ ...d, plan: planKey(d.n, d.step, plans) })).filter(d => inPlans(d.step, plans) && !saidBefore(d))
+   const flag = a.flag
+-  const named = flag === null ? [] : nearest(fresh.filter(d => speaksOf(flag, d.step)), s => heldIn(s, flag)).slice(0, 1)
++  const named: typeof fresh = []
    const rest = fresh.filter(d => !named.includes(d))
    const first = rest[0]
-   if (first === undefined) return own
+   const told = (ds: readonly (StepRef & { plan?: string })[]): SaidDrop[] =>

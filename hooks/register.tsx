@@ -248,7 +248,7 @@ import {
   approvalOf,
   readerParts,
   readerGaps,
-  headsUp,
+  headsUpOf,
   notAssessedGaps,
   joinGaps,
   WATCH_APPROVED_BUDGET,
@@ -261,6 +261,7 @@ import {
   readAsAsked,
   type WriteResult,
   type WatchAnswer,
+  type SaidDrop,
   CHECK_CUT_NOTE,
   parseWatch,
   resultOf,
@@ -359,6 +360,9 @@ type Rec = {
   readerAt?: { watch: number }
   past: string[]
   seen: string[]
+  // The dropped plan parts the Heads up has said, each with its plan, so each reaches the owner once
+  // (`headsUpOf`). Records from before it have none; the lines in `seen` stand in.
+  saidDrops?: SaidDrop[]
   others: string[]
   // The last card's next step and message; on a briefing's card also its reads (1, 2 with
   // the second ask, 3 with the own-words call), what came of that call (`own`) and the
@@ -1676,9 +1680,11 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
     if (stepped && after.objective !== null) after.objective = { ...after.objective, step: answer.now }
     if ((marked || stepped) && onScreen(sid)) await update($, readingA, () => after.objective)
     const view = await read($, viewA)
-    const said = headsUp(answer, after.seen, fill?.blocks ?? [])
+    const got = headsUpOf(answer, after.seen, fill?.blocks ?? [], after.saidDrops ?? [])
+    const said = got.note
     if (said !== null && view === 'row' && onScreen(sid) && ![...after.seen].some(s => same(s, said.line))) {
       after.seen = [...after.seen, said.line].slice(-SEEN_MAX)
+      if (got.drops.length > 0) after.saidDrops = [...(after.saidDrops ?? []), ...got.drops].slice(-SEEN_MAX)
       const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId }
       await update($, noteA, () => note)
       await update($, viewA, () => 'note')

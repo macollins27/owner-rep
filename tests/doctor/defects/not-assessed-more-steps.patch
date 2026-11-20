@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1149,7 +1149,7 @@
+   const first = steps[0]
+   if (first === undefined || why === 'the rep could not find where in the record you approved it') return `Not assessed: the steps of ${planIn(m)} (${why})`
+   const more = steps.length - 1
+-  return `Not assessed: "${fit(first, 100)}"${more > 0 ? ` and ${more} more part${more === 1 ? '' : 's'}` : ''} in ${planIn(m)} (${why})`
++  return `Not assessed: "${fit(first, 100)}"${more > 0 ? ` and ${more} more step${more === 1 ? '' : 's'}` : ''} in ${planIn(m)} (${why})`
+ }
+ export const headsUpTooLongLine = (m: Named): string => `The Heads up cannot compare ${planIn(m)} (too long for it); the briefing does`
+ 

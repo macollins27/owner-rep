@@ -29,8 +29,19 @@ What changed in each release of Owner Rep, newest first. The full record is the
 - **A narrowed plan step is flagged.** The plan walk takes a line for each thing a step names, so
   a step done in part reads as part left out, and the agent's own word that it narrowed or left
   out part of an approved step reads as looking dropped.
-- **Briefings and messages are short again.** Each card part asks for one or two sentences first,
-  each gap gives its reason in a few words, and the message stays under 150 words.
+- **Briefings and messages are short again.** Each card part asks for one or two sentences of
+  about 25 words, under 40; each gap one sentence of about 10 words, under 20, at most six; and
+  the message one sentence of about 15 words a line, under 150 words unless more than five
+  things are asked. The aims sit below the limits so a reply written to them lands under them.
+- **A dropped plan step reaches you once.** The heads-up above the row names each part of an
+  approved plan that looks dropped, and keeps what it said with the plan it came from, so the
+  same part is not said again at the next look, while a like step of another plan still is.
+- **The flag goes to what the walk does not already say.** A step that looks dropped reaches
+  you from the plan walk on its own, so the flag now goes to the most important other concern,
+  such as a fault the agent knowingly left in, rather than repeating the drop.
+- **A part the agent said it left out is never "not assessed".** Only a line marked "not
+  assessed" by the rep counts as one; a part the agent admits it dropped reads as looking
+  dropped, never as cut short by a shortened record.
 - **The replay rebuilds calls with this change.** `/owner-rep-replay` takes `rewrite`, the edit
   that turns a watch, briefing, second-asking or own-words call saved by the build before into
   what this build sends.

@@ -2227,9 +2227,9 @@
   },
   {
     "name": "walk-looks-dropped-not-unassessed",
-    "breaks": "A step marked looks dropped stops counting as not assessed, so the row and the card lose the line that says it was not compared.",
+    "breaks": "A step the agent admitted dropping counts as not assessed again, so the row says its proof could be in a part of the record that was cut short.",
     "patch": "walk-looks-dropped-not-unassessed.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-20 as its inverse, since a looks-dropped step is no longer counted as not assessed (PR #68 E)"
   },
   {
     "name": "heads-up-not-carried",
@@ -5325,7 +5325,7 @@
     "name": "fence-attributes-unescaped",
     "breaks": "A fence tag with attributes inside the record or the owner's messages is printed as typed, so the agent's text can close a fence by adding an attribute.",
     "patch": "fence-attributes-unescaped.patch",
-    "fixed": "tested 2026-11-20"
+    "fixed": "tested 2026-11-20; remade 2026-11-20 to restore a49753a's exact line"
   },
   {
     "name": "watch-lists-unfenced",
@@ -5353,9 +5353,9 @@
   },
   {
     "name": "message-length-line-missing",
-    "breaks": "The section on writing the message to the agent drops its line on length, so messages run past 150 words with five or fewer things asked (the rewrite's replay, rule 6).",
+    "breaks": "The 150-word limit on the message is gone from the request for it, so a message runs as long as the reader likes.",
     "patch": "message-length-line-missing.patch",
-    "fixed": "tested 2026-11-20"
+    "fixed": "tested 2026-11-20; remade 2026-11-20 when the limit moved to MESSAGE_FORM alone"
   },
   {
     "name": "means-length-last",
@@ -5368,5 +5368,107 @@
     "breaks": "The briefing's \"left:\" no longer says each item gives why it matters in a few words, so items run long (the rewrite's replay, rule 6).",
     "patch": "left-why-unbounded.patch",
     "fixed": "tested 2026-11-20"
+  },
+  {
+    "name": "heads-up-sibling-hidden",
+    "breaks": "A part already said hides any like part of the same step, so a sibling dropped later never reaches the owner.",
+    "patch": "heads-up-sibling-hidden.patch",
+    "fixed": "2026-11-20"
+  },
+  {
+    "name": "heads-up-said-plan-ignored",
+    "breaks": "A part said from one plan hides a like step of another plan, so the second plan's dropped step is never said.",
+    "patch": "heads-up-said-plan-ignored.patch",
+    "fixed": "2026-11-20"
+  },
+  {
+    "name": "heads-up-flag-names-every-part",
+    "breaks": "A flag that holds words of two parts names both, so the second part loses its \"Also looks dropped\" line.",
+    "patch": "heads-up-flag-names-every-part.patch",
+    "fixed": "2026-11-20"
+  },
+  {
+    "name": "heads-up-said-drops-not-kept",
+    "breaks": "The look never keeps the parts it said, so a like step of another plan is hidden by the shown line alone.",
+    "patch": "heads-up-said-drops-not-kept.patch",
+    "fixed": "2026-11-20"
+  },
+  {
+    "name": "heads-up-also-not-recorded",
+    "breaks": "A part said under \"Also looks dropped\" beside the flag is not kept as said, so it is raised again at the next look.",
+    "patch": "heads-up-also-not-recorded.patch",
+    "fixed": "2026-11-20"
+  },
+  {
+    "name": "fence-self-closing-unescaped",
+    "breaks": "A self-closing record or owner-messages tag passes through unescaped, so quoted text can end a fenced block.",
+    "patch": "fence-self-closing-unescaped.patch",
+    "fixed": "2026-11-20"
+  },
+  {
+    "name": "own-words-findings-unfenced",
+    "breaks": "The own-words request quotes the briefing's left-out items with their tags unescaped, so a quoted tag can end a fenced block.",
+    "patch": "own-words-findings-unfenced.patch",
+    "fixed": "2026-11-20"
+  },
+  {
+    "name": "walk-line-forms-unread",
+    "breaks": "Walk lines written \"#6.1:\", \"#6a:\" or \"#6 part 2:\" are not read, so their dropped parts never reach the owner.",
+    "patch": "walk-line-forms-unread.patch",
+    "fixed": "2026-11-20"
+  },
+  {
+    "name": "in-plans-short-part-usual-share",
+    "breaks": "A short dropped part counts as the plan's on two common words, so a step no plan asked for is called approved.",
+    "patch": "in-plans-short-part-usual-share.patch",
+    "fixed": "2026-11-20"
+  },
+  {
+    "name": "brief-left-none-as-item",
+    "breaks": "A briefing's \"- none\" under left: is read as an item left out, so the card loses its going-well line.",
+    "patch": "brief-left-none-as-item.patch",
+    "fixed": "2026-11-20"
+  },
+  {
+    "name": "not-assessed-more-steps",
+    "breaks": "The not-assessed line counts the walk's parts as steps, so it says more steps than the plan has.",
+    "patch": "not-assessed-more-steps.patch",
+    "fixed": "2026-11-20"
+  },
+  {
+    "name": "walk-watch-flag-on-carried-drop",
+    "breaks": "The watch is not told the walk carries each dropped line itself, so it spends the one flag on a drop the owner already hears.",
+    "patch": "walk-watch-flag-on-carried-drop.patch",
+    "fixed": "2026-11-20"
+  },
+  {
+    "name": "stop-qualifier-missing",
+    "breaks": "The rule on stopping loses its qualifier, so a reader may not tell the owner to stop an agent that can no longer move the objective.",
+    "patch": "stop-qualifier-missing.patch",
+    "fixed": "2026-11-20"
+  },
+  {
+    "name": "g7-task-live-length-rules",
+    "breaks": "Group 7's replay edit uses the live length rules, so a saved call is no longer turned into what the old build sent.",
+    "patch": "g7-task-live-length-rules.patch",
+    "fixed": "2026-11-20"
+  },
+  {
+    "name": "left-items-aim-missing",
+    "breaks": "Each left-out item loses its aim of about 10 words, so items are written to the 20-word limit and run over it.",
+    "patch": "left-items-aim-missing.patch",
+    "fixed": "2026-11-20"
+  },
+  {
+    "name": "walk-adds-own-room",
+    "breaks": "A held plan adds words to the watch beyond the walk's own text, using the room left under the word target.",
+    "patch": "walk-adds-own-room.patch",
+    "fixed": "2026-11-20"
+  },
+  {
+    "name": "short-part-aim-missing",
+    "breaks": "Stands, means and next lose their aim of about 25 words, so they are written to the 40-word limit and reach it.",
+    "patch": "short-part-aim-missing.patch",
+    "fixed": "2026-11-20"
   }
 ]

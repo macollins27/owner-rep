@@ -1,0 +1,11 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1684,7 +1684,6 @@
+     const said = got.note
+     if (said !== null && view === 'row' && onScreen(sid) && ![...after.seen].some(s => same(s, said.line))) {
+       after.seen = [...after.seen, said.line].slice(-SEEN_MAX)
+-      if (got.drops.length > 0) after.saidDrops = [...(after.saidDrops ?? []), ...got.drops].slice(-SEEN_MAX)
+       const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId }
+       await update($, noteA, () => note)
+       await update($, viewA, () => 'note')

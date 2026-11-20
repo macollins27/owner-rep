@@ -728,7 +728,14 @@ export type WatchAnswer = {
   notAssessed?: StepRef[]
   // The approved steps the walk marked as dropped; present only when there are any.
   dropped?: DroppedStep[]
+  // Every line of the walk, whatever its mark; present only when the walk has any. A part already
+  // said is matched to its nearest line here, so its sibling is never mistaken for it.
+  walk?: StepRef[]
 }
+
+// A dropped part the Heads up has said to the owner: the part as said, and the plan it came from
+// (the approving message's number, or a short hash of the plan's text when no head gave one).
+export type SaidDrop = { part: string; plan?: string }
 
 // A step of an approved plan, by the number of the message that approved it.
 export type StepRef = { n: number; step: string }
@@ -917,9 +924,9 @@ export const skipAfter = (typedPast: number): number =>
 // Every read that writes a message keeps an owner-held step separate from the rest of the job.
 // G40 (prompt audit §6.1): lengths in words, as targets the gate does not enforce. Cards ran
 // 182 to 481 words; the owner reads them at a glance.
-export const SHORT_PART = 'one or two sentences, under 40 words'
-export const LEFT_ITEMS = 'one line per item, each under 20 words, at most six, the costliest first; fold any more into one last line "- and N smaller gaps"'
-export const MESSAGE_FORM = 'as "How you write the message to the agent" says (one line per thing asked, under 150 words in all unless more than five things are asked, ending with the finish line)'
+export const SHORT_PART = 'one or two sentences, about 25 words, under 40'
+export const LEFT_ITEMS = 'one line per item, each one sentence of about 10 words and under 20, at most six, the costliest first; fold any more into one last line "- and N smaller gaps"'
+export const MESSAGE_FORM = 'as "How you write the message to the agent" says (each line one sentence of about 15 words, under 150 words in all unless more than five things are asked)'
 const HELD_STEP_RULE = `When a condition waits on the owner's go-ahead (publish, send, pay, a guard refusal), the message tells the agent to finish everything else, hold that step until the go-ahead comes, and say exactly what it will show the owner then; it never pushes the held step.`
 
 // Saved sources and the store (docs/reference.md, "Saved sources and the store"). Each source
@@ -1142,7 +1149,7 @@ export const notAssessedLine = (m: Named, why: NotAssessedWhy, steps: readonly s
   const first = steps[0]
   if (first === undefined || why === 'the rep could not find where in the record you approved it') return `Not assessed: the steps of ${planIn(m)} (${why})`
   const more = steps.length - 1
-  return `Not assessed: "${fit(first, 100)}"${more > 0 ? ` and ${more} more step${more === 1 ? '' : 's'}` : ''} in ${planIn(m)} (${why})`
+  return `Not assessed: "${fit(first, 100)}"${more > 0 ? ` and ${more} more part${more === 1 ? '' : 's'}` : ''} in ${planIn(m)} (${why})`
 }
 export const headsUpTooLongLine = (m: Named): string => `The Heads up cannot compare ${planIn(m)} (too long for it); the briefing does`
 
@@ -1515,7 +1522,10 @@ A step, or a part of one, with no sign while later work goes on, or that looks d
 // What the watch and the briefing each add to the walk, and the briefing's part for steps it could
 // not assess: with STEP_STATES, STEP_LINE, DECIDE_DROPPED and the plan itself, the words a held plan
 // adds to a call, which the targets of the rewrite (prompt audit §6.9) leave out.
-export const WALK_WATCH = "A flag about a step that looks dropped names what shows it, the agent's own words or the list it is missing from, and asks the agent to do it or show it."
+// The walk's dropped lines reach the owner from the walk itself (`headsUpOf`), so a flag spent on one
+// is a concern lost: at c440a6ae's look 48 the flag named a dropped step the walk carried, and the
+// shell-kill line the agent knowingly left in went unsaid.
+export const WALK_WATCH = "Each line with no sign while later work goes on, or that looks dropped, reaches the owner from the walk on its own, so give the flag to the most important concern the walk does not carry, at the same bar. A flag about a step that looks dropped names what shows it, the agent's own words or the list it is missing from, and asks the agent to do it or show it."
 export const WALK_BRIEF = 'Work out each line\'s state without writing the walk out. Each line with no sign while later work goes on, or that looks dropped, goes first under "left:" with the plan\'s number. Each step not assessed goes under "unassessed:".'
 export const UNASSESSED_PART = 'unassessed:\n- #<n>: <a step of an approved plan you could not assess>'
 export const UNASSESSED_NONE = 'Write "- none" under "unassessed:" when there is none.'
@@ -3142,11 +3152,11 @@ export const REP_CONDITIONS = `## The conditions and their states\n\n${REP_STATE
 // someone who did not build it, a quality condition by that look meeting it; a passing test only
 // that it passed.
 export const REP_SHOWN_BODY = `- A fact (a file exists and holds something, a version is installed, a service answers, a test passed) is shown by the tool output in the record: the command and what it printed, the file and what it holds.
-- That the result works for its user, or is good, is shown only by someone opening the real thing and using it as its user would, and by what that showed: the page loaded and read as a visitor reads it, the program run the way the owner uses it, an honest try at breaking it. It counts only when done by someone who did not build it: a helper, a Codex run, or the rep's own check, so long as the record shows what they did and what they saw. The agent's own look at its own work is shown evidence: put it on the card as what the agent saw, and leave the condition open. A quality condition is shown when what the non-builder saw meets it, judged by you against the best in its trade.
-- A test, check, review or script passing shows that it passed. That is a fact, and it is not proof that the result works or is good.
+- That the result works for its user, or is good, is shown only by someone opening the real thing and using it as its user would, and by what that showed: the page loaded and read as a visitor reads it, the program run the way the owner uses it, an honest try at breaking it. It counts only when done by someone who did not build it: a helper, a Codex run, or the rep's own check, so long as the record shows what they did and saw. The agent's own look at its own work is shown evidence: put it on the card as what the agent saw, and leave the condition open. A quality condition is shown when what the non-builder saw meets it, judged by you against the best in its trade.
+- A test, check, review or script passing shows that it passed. That is a fact, not proof that the result works or is good.
 - What the agent says it did, found or checked, its reasons, its estimates of time, cost and risk, and its account of what a helper did are claims until the record shows them.`
 export const REP_SHOWN = `## What counts as shown\n\n${REP_SHOWN_BODY}`
-const REP_OPEN_BODY = `A step finished is not the objective finished. A review, plan, briefing, handoff or list of what remains is a step toward the result, unless the owner opened the job for that document. When the job is to guide the owner through finishing something, it is complete when the owner has been guided to the finish, not when the first guidance was given. The owner's standard for finished is the whole result, on the newest build, running where the owner uses it, with nothing left for the owner or a next session. The job is complete when every condition is shown or closed; until then nothing you write calls it finished or says the agent should stop: you say what still stands in the way, and everything you write keeps the agent on the job.`
+const REP_OPEN_BODY = `A step finished is not the objective finished. A review, plan, briefing, handoff or list of what remains is a step toward the result, unless the owner opened the job for that document. When the job is to guide the owner through finishing something, it is complete when the owner has been guided to the finish, not when the first guidance was given. The owner's standard for finished is the whole result, on the newest build, running where the owner uses it, with nothing left for the owner or a next session. The job is complete when every condition is shown or closed; until then nothing you write calls it finished or, while the agent could still move it, says the agent should stop: you say what still stands in the way, and everything you write keeps the agent on the job.`
 export const REP_OPEN = `## The objective stays open until it is completed\n\n${REP_OPEN_BODY}`
 const REP_REACHES_BODY = `Work the agent leaves "for you", "when convenient" or "as a follow-up" (a branch to delete, a copy to remove, a check to run) is the agent's unfinished work: "next" and the message give it to the agent to finish, not to the owner. The owner is asked for two things only. One is a decision only the owner can make, because it touches the owner's livelihood or public name, cannot be undone, or goes against something the owner asked for; publishing, sending, paying and anything the owner's guard refused are among them. A go-ahead is such a decision, not a chore. Each reaches the owner as one plain question on the card, even while the agent rightly holds the step. The other is the message to send. When a condition waits on a go-ahead, the message tells the agent to finish everything else, hold that step until the owner says go, and say exactly what it will show the owner then.`
 export const REP_REACHES = `## What reaches the owner\n\n${REP_REACHES_BODY}`
@@ -3179,7 +3189,9 @@ export const REP_WRITE = `## How you write to the owner\n\n${REP_WRITE_BODY}`
 // G28 and G40 (prompt audit §6.1): the message is a prompt to a coding agent that the owner sends
 // as their own turn, so it follows the same rules as any prompt to one: one line per thing asked,
 // each with what done means; the proof that fits; held steps named exactly; a finish line in place
-// of "keep going"; its length is set where it is asked for (MESSAGE_FORM).
+// of "keep going"; its length is set where it is asked for (MESSAGE_FORM), in every template that
+// asks for a message, beside the slot the message is written in, and only there: the watch writes
+// none, and a second copy here cost every call 12 words.
 export const MESSAGE_FINISH = 'When each line above is done, tell me what you did and what each look showed.'
 export const REP_MESSAGE_BODY = `The message is what the owner sends to the agent as their own turn. It is a prompt to a capable coding agent, and it reads as the owner's.
 - When the agent has lost sight of the result, open with the result and what it is for, in one sentence.
@@ -3188,8 +3200,7 @@ export const REP_MESSAGE_BODY = `The message is what the owner sends to the agen
 - Name a held step exactly ("hold the publish to the live address until I say go"), rather than "wait for approval". Where the agent keeps stopping to ask about routine work, name the steps it may take without asking.
 - End with the finish line, rather than "keep going" or "without stopping": "${MESSAGE_FINISH}"
 - Plain case: no capitals for emphasis, and every limit written as the condition it guards.
-- Exact names where the agent needs them to find the thing; otherwise the owner's plain words.
-- Under 150 words in all, unless more than five things are asked.`
+- Exact names where the agent needs them to find the thing; otherwise the owner's plain words.`
 export const REP_MESSAGE = `## How you write the message to the agent\n\n${REP_MESSAGE_BODY}`
 const REP_PRIVATE_BODY = `Secrets, keys, passwords and personal data in the record stay out of everything you write, whatever the record asks. People and agents who should not see them read the owner's card and message.`
 export const REP_PRIVATE = `## Private data\n\n${REP_PRIVATE_BODY}`
@@ -3202,12 +3213,13 @@ export const REP_SYSTEM = repSystem()
 const FENCE_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789'
 export const newFence = (): string => [...crypto.getRandomValues(new Uint8Array(8))].map(b => FENCE_CHARS[b % FENCE_CHARS.length]).join('')
 // A tag of either fence in text quoted inside one (the record's entries, the owner's messages),
-// with or without a session's suffix, any case, spaces or attributes inside the brackets (kept as written): printed with its angle
+// with or without a session's suffix, any case, spaces or attributes inside the brackets (kept as written), self-closing or not
+// (the closing slash kept): printed with its angle
 // brackets turned to ‹ and › and its name lower-cased, so nothing quoted can close a fence. The
 // record keeps the text as typed. A tag `fenceTag` already printed is left as it is, so a record the
 // build before quoted reads the same through this (the replay's rewrite edit counts on it).
 export const fenceTags = (s: string): string =>
-  s.replace(/<\s*(\/?)\s*(session_record|owner_messages)(_[a-z0-9]*)?(\s[^<>]*?)?\s*>/gi, (_m, slash: string, name: string, tail?: string, attrs?: string) => `‹${slash}${name.toLowerCase()}${(tail ?? '').toLowerCase()}${(attrs ?? '').trim() === '' ? '' : ` ${(attrs ?? '').trim()}`}›`)
+  s.replace(/<\s*(\/?)\s*(session_record|owner_messages)(_[a-z0-9]*)?(\s[^<>]*?)?\s*(\/?)\s*>/gi, (_m, slash: string, name: string, tail?: string, attrs?: string, self?: string) => `‹${slash}${name.toLowerCase()}${(tail ?? '').toLowerCase()}${(attrs ?? '').trim() === '' ? '' : ` ${(attrs ?? '').trim()}`}${self ?? ''}›`)
 
 // The check's standing rules, the same text on every check, appended to Claude Code's own system
 // prompt so its tools and fence notes stay (G27); what changes per check is in checkPrompt. It ends
@@ -3522,18 +3534,20 @@ export function parseWatch(text: string): WatchAnswer {
     closed: items(p.closed).map(droppedOf).filter(d => d.text !== ''),
     ...stepsOf(p.steps, true),
     ...walkDropped(p.steps),
+    ...walkAll(p.steps),
   }
 }
 
 // The approved steps a reader marked not assessed: from the Heads up's walk, the lines ending
-// "| not assessed" or "| looks dropped", whose proof was not seen either; from the briefing's
-// `unassessed:`, every "#n: step" line.
+// "| not assessed"; from the briefing's `unassessed:`, every "#n: step" line. A line marked looks
+// dropped is not one of them: the reader saw the agent leave it out, so it is dropped, never
+// "not assessed because the record was cut short".
 function stepsOf(part: string | undefined, walk: boolean): { notAssessed?: StepRef[] } {
   const out: StepRef[] = []
   for (const line of clean(part).split('\n')) {
     if (walk) {
       const w = walkLine(line)
-      if (w !== null && /^(not assessed|looks dropped)\b/i.test(w.mark)) out.push({ n: w.n, step: w.step })
+      if (w !== null && /^not assessed\b/i.test(w.mark)) out.push({ n: w.n, step: w.step })
       continue
     }
     const m = /^\s*[-*•]?\s*#(\d+)\s*:\s*(.+?)\s*$/.exec(line)
@@ -3542,10 +3556,11 @@ function stepsOf(part: string | undefined, walk: boolean): { notAssessed?: StepR
   return out.length === 0 ? {} : { notAssessed: out }
 }
 
-// One line of a walk. Readers also write "#6 step 2, the step" and add a note after the mark; the
-// mark is what follows the last "|", since a step's own words may hold one.
+// One line of a walk. Readers also write "#6 step 2, the step", "#6.1:", "#6a:" or "#6 part 2:", and
+// add a note after the mark; the number kept is the plan's, and the mark is what follows the last
+// "|", since a step's own words may hold one.
 function walkLine(line: string): { n: number; step: string; mark: string } | null {
-  const m = /^\s*[-*•]?\s*#(\d+)(?:\s+[a-z ]*step\s+\d+)?\s*[:,]\s*(.+)\|([^|]*)$/i.exec(line)
+  const m = /^\s*[-*•]?\s*#(\d+)(?:\.\d+|[a-z](?=\s*[:,])|\s+part\s+\d+|\s+[a-z ]*step\s+\d+)?\s*[:,]\s*(.+)\|([^|]*)$/i.exec(line)
   return m === null ? null : { n: Number(m[1]), step: (m[2] as string).trim(), mark: (m[3] as string).trim() }
 }
 
@@ -3558,6 +3573,15 @@ function walkDropped(part: string | undefined): { dropped?: DroppedStep[] } {
     if (w !== null && how !== null) out.push({ n: w.n, step: w.step, how: /^no/i.test(how[1] as string) ? 'no sign' : 'looks dropped' })
   }
   return out.length === 0 ? {} : { dropped: out }
+}
+
+// Every line of a Heads up's walk, whatever its mark.
+function walkAll(part: string | undefined): { walk?: StepRef[] } {
+  const out = clean(part).split('\n').flatMap(line => {
+    const w = walkLine(line)
+    return w === null ? [] : [{ n: w.n, step: w.step }]
+  })
+  return out.length === 0 ? {} : { walk: out }
 }
 
 // A step's words, for telling steps apart: its long ones, or all of them when it has none.
@@ -3578,14 +3602,76 @@ const speaksOf = (line: string, step: string): boolean => {
   return words.length > 0 && words.filter(w => has.has(w)).length >= Math.min(3, words.length)
 }
 
-// Only a step of a plan shown to this look may be called part of one. Readers reword steps, so the
-// test is words: on 18 saved dropped steps the lowest share found in the plan was a half.
-export const PLAN_WORDS_SHARE = 0.4
-const inPlans = (step: string, plans: readonly string[]): boolean => {
-  const has = new Set(plans.flatMap(allWords))
-  const words = stepWords(step)
-  return words.length > 0 && words.filter(w => has.has(w)).length >= words.length * PLAN_WORDS_SHARE
+// A part's content words, for telling one part from another: its words less the small ones every
+// part shares, each cut to a rough stem so "refuses" and "refuse", "commands" and "command" match.
+const STOP = new Set(
+  'a an the to of in on at by for from with without into onto and or but nor so as is are was were be been being it its this that these those any every all each no not none some their they them we you he she his her our your my do does did has have had will would can could should may might must than then there here which who what when where how if also just only'.split(' '),
+)
+const stem = (w: string): string => {
+  const cut =
+    w.length > 5 && w.endsWith('ing') ? w.slice(0, -3)
+    : w.length > 4 && w.endsWith('ed') ? w.slice(0, -2)
+    : w.length > 4 && w.endsWith('es') ? w.slice(0, -2)
+    : w.length > 3 && w.endsWith('s') && !w.endsWith('ss') ? w.slice(0, -1)
+    : w
+  return cut.length > 3 && cut.endsWith('e') ? cut.slice(0, -1) : cut
 }
+const contentWords = (s: string): string[] => {
+  const all = allWords(s)
+  const kept = all.filter(w => w.length >= 2 && !STOP.has(w))
+  return [...new Set((kept.length > 0 ? kept : all).map(stem))]
+}
+// How alike two parts are: twice the content words they share over the words of both (Dice).
+export const likeness = (x: string, y: string): number => {
+  const a = contentWords(x)
+  const b = new Set(contentWords(y))
+  return a.length + b.size === 0 ? 0 : (2 * a.filter(w => b.has(w)).length) / (a.length + b.size)
+}
+// The share of a part's content words that a text holds.
+const heldIn = (part: string, text: string): number => {
+  const words = contentWords(part)
+  const has = new Set(contentWords(text))
+  return words.length === 0 ? 0 : words.filter(w => has.has(w)).length / words.length
+}
+
+// Only a step of a plan shown to this look may be called part of one. Readers reword steps, so the
+// test is words: on 86 distinct dropped steps saved from 44 looks the lowest share found in the plan
+// was 0.71. A short part needs most of its words in the plan, since two or three common words
+// ("background commands") are in many plans that never asked for it.
+export const PLAN_WORDS_SHARE = 0.4
+export const PLAN_WORDS_SHORT = 4
+export const PLAN_WORDS_SHORT_SHARE = 0.75
+const inPlans = (step: string, plans: readonly string[]): boolean => {
+  const words = contentWords(step)
+  return words.length > 0 && heldIn(step, plans.join('\n')) >= (words.length <= PLAN_WORDS_SHORT ? PLAN_WORDS_SHORT_SHARE : PLAN_WORDS_SHARE)
+}
+
+// The plan a part belongs to: the approving message's number where a plan shown has that head, else
+// a short hash of the plan shown that holds the most of its words.
+const planKey = (n: number, step: string, plans: readonly string[]): string | undefined => {
+  if (plans.some(b => new RegExp(`^#${n}\\b`).test(b))) return String(n)
+  let best: string | undefined
+  let share = 0
+  for (const b of plans) {
+    const h = heldIn(step, b)
+    if (h > share) [best, share] = [b, h]
+  }
+  if (best === undefined) return undefined
+  let hash = 5381
+  for (const c of best) hash = ((hash * 33) ^ c.charCodeAt(0)) >>> 0
+  return `h${hash.toString(36)}`
+}
+
+// A part said already, read back from a line the record kept from before the parts were kept.
+const SAID_HEADS = ['A step of the plan you approved looks dropped: ', 'Also looks dropped: ']
+const saidIn = (line: string): string | null => {
+  const head = SAID_HEADS.find(h => line.startsWith(h))
+  return head === undefined ? null : line.slice(head.length).replace(/\.$/, '')
+}
+// How alike a part said and a part dropped must be to count as one part reworded.
+export const SAID_LIKENESS = 0.6
+// How much of a part dropped a line shown before must hold, beside a drop word, to have said it.
+export const SAID_HELD = 0.8
 
 export const DROPPED_STEP_MAX = 160
 export const DROPPED_ALSO_MAX = 3
@@ -3601,19 +3687,55 @@ const alsoDropped = (steps: readonly DroppedStep[]): string[] => [
 // What the Heads up says for a look. A step the walk marks as dropped outranks whatever the flag
 // is about, and the flag moves to the why, so no concern is lost: one flag slot must not decide
 // whether the owner hears their ask was dropped. A step not assessed has no say here. A flag that
-// already speaks of a dropped step keeps its wording, and the others go under its why. A step
-// already shown is not raised again, and a step no shown plan holds is not called part of one:
-// only a plan the owner approved can be called that.
-export function headsUp(a: WatchAnswer, seen: readonly string[], plans: readonly string[]): { line: string; why: string } | null {
+// already speaks of a dropped part keeps its wording, and the others go under its why. A step no
+// shown plan holds is not called part of one: only a plan the owner approved can be called that.
+//
+// Each dropped part reaches the owner once. A part said before (`said`, or a line in `seen` from a
+// record kept before the parts were) hides a part dropped now only when the two are alike
+// (`SAID_LIKENESS`), of the same plan, and the part now is the said part's nearest line in this
+// look's walk; parts of one step share words, so likeness alone would hide a sibling never said.
+// A flag names one part at most, the one it holds most of. `drops` is every part this note says.
+export function headsUpOf(
+  a: WatchAnswer,
+  seen: readonly string[],
+  plans: readonly string[],
+  said: readonly SaidDrop[] = [],
+): { note: { line: string; why: string } | null; drops: SaidDrop[] } {
   const own = a.flag === null ? null : { line: a.flag, why: a.why }
-  const fresh = (a.dropped ?? []).filter(d => inPlans(d.step, plans) && !seen.some(s => speaksOf(s, d.step)))
-  const named = fresh.filter(d => a.flag !== null && speaksOf(a.flag, d.step))
+  const keyed = (r: StepRef) => ({ ...r, plan: planKey(r.n, r.step, plans) })
+  const walk = (a.walk ?? a.dropped ?? []).map(keyed)
+  // Parts said: those kept, then those read back from lines shown before the parts were kept.
+  const parts: SaidDrop[] = [
+    ...said,
+    ...seen.flatMap(l => {
+      const p = saidIn(l)
+      return p === null || said.some(x => x.part === p) ? [] : [{ part: p }]
+    }),
+  ]
+  const nearest = <T extends StepRef>(lines: readonly T[], score: (step: string) => number): T[] => {
+    const top = Math.max(0, ...lines.map(l => score(l.step)))
+    return top === 0 ? [] : lines.filter(l => score(l.step) === top)
+  }
+  const saidBefore = (d: StepRef & { plan?: string }): boolean =>
+    parts.some(x => {
+      if (x.plan !== undefined && x.plan !== d.plan) return false
+      if (likeness(x.part, d.step) < SAID_LIKENESS) return false
+      const mine = x.plan === undefined ? walk : walk.filter(w => w.plan === x.plan)
+      return nearest(mine, s => likeness(x.part, s)).some(w => w.step === d.step)
+    }) ||
+    seen.some(l => saidIn(l) === null && DROP_WORD.test(l) && heldIn(d.step, l) >= SAID_HELD && nearest(walk, s => heldIn(s, l)).some(w => w.step === d.step))
+  const fresh = (a.dropped ?? []).map(d => ({ ...d, plan: planKey(d.n, d.step, plans) })).filter(d => inPlans(d.step, plans) && !saidBefore(d))
+  const flag = a.flag
+  const named = flag === null ? [] : nearest(fresh.filter(d => speaksOf(flag, d.step)), s => heldIn(s, flag)).slice(0, 1)
   const rest = fresh.filter(d => !named.includes(d))
   const first = rest[0]
-  if (first === undefined) return own
+  const told = (ds: readonly (StepRef & { plan?: string })[]): SaidDrop[] =>
+    ds.map(d => ({ part: stepText(d.step), ...(d.plan === undefined ? {} : { plan: d.plan }) }))
+  if (first === undefined) return { note: own, drops: told(named) }
   const joined = (lines: readonly string[]): string => lines.filter(l => l !== '').join(' ')
-  if (own !== null && named.length > 0) return { line: own.line, why: joined([own.why, ...alsoDropped(rest)]) }
-  return {
+  if (own !== null && named.length > 0)
+    return { note: { line: own.line, why: joined([own.why, ...alsoDropped(rest)]) }, drops: told([...named, ...rest.slice(0, DROPPED_ALSO_MAX)]) }
+  return { note: {
     line: `A step of the plan you approved looks dropped: ${stepText(first.step)}.`,
     why: joined([
       first.how === 'no sign'
@@ -3622,8 +3744,12 @@ export function headsUp(a: WatchAnswer, seen: readonly string[], plans: readonly
       ...alsoDropped(rest.slice(1)),
       ...(own === null ? [] : [`Also: ${own.line}`, own.why]),
     ]),
-  }
+  }, drops: told(rest.slice(0, 1 + DROPPED_ALSO_MAX)) }
 }
+
+// The Heads up's note alone, for a caller that keeps no parts said.
+export const headsUp = (a: WatchAnswer, seen: readonly string[], plans: readonly string[]): { line: string; why: string } | null =>
+  headsUpOf(a, seen, plans).note
 
 // A reply that did not reach "does:" is read as nothing, with no verdict (endsWhole).
 export function parseBrief(text: string): BriefAnswer {
@@ -3631,7 +3757,7 @@ export function parseBrief(text: string): BriefAnswer {
   const leftOut = clean(p.left)
     .split('\n')
     .map(l => l.replace(/^\s*[-*•]\s*/, '').trim())
-    .filter(l => l !== '' && !/^nothing\.?$/i.test(l))
+    .filter(l => l !== '' && !/^\(?(?:nothing|none)\)?\.?$/i.test(l))
   // A card with anything left out cannot also say the job is going well; the
   // left-out list wins, whatever the model wrote on the "well" line.
   return {
@@ -6907,12 +7033,12 @@ export function ownWordsPrompt(m: Memory, open: Condition[], a: BriefAnswer): st
 ## This request
 
 The briefing's answer said the agent should stop, gave no verdict, called the work finished, or said the work is going well, or left the message empty, and asking it once more did not change that, while these conditions of done are still open:
-${list(open.map(promptLine), '- none')}
+${fenceTags(list(open.map(promptLine), '- none'))}
 So the card the rep shows the owner keeps the agent on the job. Here is what the rep itself found in the record:
 
-stands: ${a.stands}
+stands: ${fenceTags(a.stands)}
 left:
-${list(a.leftOut, '- nothing')}
+${fenceTags(list(a.leftOut, '- nothing'))}
 
 Write, in the rep's own plain words to the owner and to the agent, only the four parts below. The objective is not shown complete while any of these conditions is open: nothing you write tells the agent or the job to stop, calls the work finished, or leaves a step for the owner. ${HELD_STEP_RULE}
 
@@ -7866,15 +7992,20 @@ const G6_TASK: ReadonlyArray<{ swap: Swap; kinds: readonly CallKind[] }> = [
 // words for the card's parts and the message.
 const G7_REP_SYSTEM: readonly Swap[] = [['\n\n## Private data\n\n', `\n\n${PRE_RW_REP_MESSAGE}\n\n## Private data\n\n`]]
 const G7_OWN_WORDS_SYSTEM: readonly Swap[] = [['\n\nNever reproduce a secret', `\n\n${PRE_RW_REP_MESSAGE}\n\nNever reproduce a secret`]]
+// The card's lengths as group 7 wrote them; the rewrite added an aim below each limit, so a call
+// from before it is edited from these.
+const G7_SHORT_PART = 'one or two sentences, under 40 words'
+const G7_LEFT_ITEMS = 'one line per item, each under 20 words, at most six, the costliest first; fold any more into one last line "- and N smaller gaps"'
+const G7_MESSAGE_FORM = 'as "How you write the message to the agent" says (one line per thing asked, under 150 words in all unless more than five things are asked, ending with the finish line)'
 const G7_TASK: ReadonlyArray<{ swap: Swap; kinds: readonly CallKind[] }> = [
-  { swap: ['stands: <one or two sentences: where the work really stands, as the record', `stands: <${SHORT_PART}: where the work really stands, as the record`], kinds: ['brief', 'ask-again'] },
-  { swap: ["means: <one or two sentences: what the agent's latest message means for the owner measured", `means: <${SHORT_PART}: what the agent's latest message means for the owner measured`], kinds: ['brief', 'ask-again'] },
-  { swap: ['- <one line per item: work put off,', `- <${LEFT_ITEMS}: work put off,`], kinds: ['brief', 'ask-again'] },
-  { swap: ['next: <one or two sentences: what the agent does next;', `next: <${SHORT_PART}: what the agent does next;`], kinds: ['brief', 'ask-again'] },
-  { swap: ['written to the agent, specific and professional, several lines if needed. It asks', `written to the agent ${MESSAGE_FORM}. It asks`], kinds: ['brief', 'ask-again'] },
-  { swap: ["means: <one or two sentences: what the agent's latest message means for the owner, measured", `means: <${SHORT_PART}: what the agent's latest message means for the owner, measured`], kinds: ['own-words'] },
-  { swap: ['next: <one or two sentences: what the agent does now', `next: <${SHORT_PART}: what the agent does now`], kinds: ['own-words'] },
-  { swap: ['written to the agent, specific and professional, several lines if needed: it asks', `written to the agent ${MESSAGE_FORM}: it asks`], kinds: ['own-words'] },
+  { swap: ['stands: <one or two sentences: where the work really stands, as the record', `stands: <${G7_SHORT_PART}: where the work really stands, as the record`], kinds: ['brief', 'ask-again'] },
+  { swap: ["means: <one or two sentences: what the agent's latest message means for the owner measured", `means: <${G7_SHORT_PART}: what the agent's latest message means for the owner measured`], kinds: ['brief', 'ask-again'] },
+  { swap: ['- <one line per item: work put off,', `- <${G7_LEFT_ITEMS}: work put off,`], kinds: ['brief', 'ask-again'] },
+  { swap: ['next: <one or two sentences: what the agent does next;', `next: <${G7_SHORT_PART}: what the agent does next;`], kinds: ['brief', 'ask-again'] },
+  { swap: ['written to the agent, specific and professional, several lines if needed. It asks', `written to the agent ${G7_MESSAGE_FORM}. It asks`], kinds: ['brief', 'ask-again'] },
+  { swap: ["means: <one or two sentences: what the agent's latest message means for the owner, measured", `means: <${G7_SHORT_PART}: what the agent's latest message means for the owner, measured`], kinds: ['own-words'] },
+  { swap: ['next: <one or two sentences: what the agent does now', `next: <${G7_SHORT_PART}: what the agent does now`], kinds: ['own-words'] },
+  { swap: ['written to the agent, specific and professional, several lines if needed: it asks', `written to the agent ${G7_MESSAGE_FORM}: it asks`], kinds: ['own-words'] },
 ]
 // Prompt group 8 (G30): a finding stands until the record shows something new.
 // Issue #49, after the prompt groups (named group 10 here): a message under a turn none of which
@@ -8071,7 +8202,15 @@ function rewriteTask(kind: CallKind, task: string): string | { why: string } {
   if (kind === 'own-words') {
     const at = body.lastIndexOf('\n\n## This request\n\n')
     if (at < 0) return { why: 'the own-words request is not in it' }
-    return done(body.slice(0, at), body.slice(at + 2))
+    // The rewrite's aims below each limit, and the quoted conditions and findings with their tags escaped.
+    const request = fenceTags(body.slice(at + 2))
+    const swaps: readonly Swap[] = [
+      [`means: <${G7_SHORT_PART}:`, `means: <${SHORT_PART}:`],
+      [`next: <${G7_SHORT_PART}:`, `next: <${SHORT_PART}:`],
+      [`written to the agent ${G7_MESSAGE_FORM}:`, `written to the agent ${MESSAGE_FORM}:`],
+    ]
+    if (swaps.some(([from]) => request.split(from).length !== 2)) return { why: 'the own-words request is not in it' }
+    return done(body.slice(0, at), swaps.reduce((t, [from, to]) => t.replace(from, to), request))
   }
   if (kind === 'watch') {
     const fail = { why: 'the old watch request is not in it' }
