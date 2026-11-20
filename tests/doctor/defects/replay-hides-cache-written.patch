@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 12261ff..6445c1c 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -8356,7 +8356,7 @@ export function replayLine(r: ReplayRow): string {
+   const gate = read?.gate === undefined ? '' : ` | gate ${read.gate.length === 0 ? 'passed' : read.gate.join(', ')}`
+   const words = read?.words === undefined ? '' : ` | words ${wordsText(read.words)}`
+   const u = r.usage
+-  const tokens = u === undefined ? '' : ` | in ${u.input_tokens}, cached ${u.cache_read_input_tokens}, written ${u.cache_creation_input_tokens ?? 0}, out ${u.output_tokens}${r.nearCap ? ' (near cap)' : ''}`
++  const tokens = u === undefined ? '' : ` | in ${u.input_tokens}, cached ${u.cache_read_input_tokens}, out ${u.output_tokens}${r.nearCap ? ' (near cap)' : ''}`
+   return `${r.label} ${r.kind}: ${r.outcome}${read === undefined ? '' : `, ${read.parsed}`}${marks}${gate}${words}${tokens} | ${(r.ms / 1000).toFixed(1)} s`
+ }
+ 

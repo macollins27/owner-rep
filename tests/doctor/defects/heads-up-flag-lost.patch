@@ -1,10 +1,10 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index fe5b367..5a16740 100644
+index 12261ff..d7f386b 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2896,7 +2896,6 @@ export function headsUp(a: WatchAnswer, seen: readonly string[], plans: readonly
+@@ -3620,7 +3620,6 @@ export function headsUp(a: WatchAnswer, seen: readonly string[], plans: readonly
          ? 'The record shows later work and does not show this step done. The agent has to show it.'
-         : 'It is not on the agent\'s own full list. The agent has to show it.',
+         : "The agent's own words or its own full list leave it out. The agent has to do it or show it.",
        ...alsoDropped(rest.slice(1)),
 -      ...(own === null ? [] : [`Also: ${own.line}`, own.why]),
      ]),

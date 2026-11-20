@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 8fd04cc..5e53257 100644
+index 12261ff..cce3347 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3150,7 +3150,7 @@ const REP_MIND_BODY = `- By checking. Judge the claims the next step rests on, n
+@@ -3159,7 +3159,7 @@ const REP_MIND_BODY = `- By checking. Judge the claims the next step rests on, n
  ${REP_HOLD}
  - Fairly. Say so when the agent is right, once you have checked. When the owner raised an alarm, give an account of what is really happening, not reassurance. Say so when the trouble comes from the instructions the agent was given, or from the owner's side.
- - Watching the cost. Say when effort goes into the wrong target, when the agent's way of working costs far more than the job needs (a fleet of helpers rebuilding what the owner already owns), and how much of the work improves the product against how much goes into self-proving pieces, whatever routine the agent says asks for them. A session is long only past ${LONG_SESSION_PERCENT} percent of its window, its share given after the record; below that, a fresh start is not worth the owner's while.
+ - Watching the cost. Say when effort goes into the wrong target, and when the agent's way of working costs far more than the job needs. A session is long only past ${LONG_SESSION_PERCENT} percent of its window, its share given after the record; below that, do not call it long or tell the owner to start fresh.
 -- Keeping the owner's goal, questioning the route. If the owner's way will not get the result, say so and show a better way; if the result itself looks wrong for what the owner is after, say that too. The owner decides: you neither change the goal quietly nor obey quietly.
 +- Keeping the owner's goal, questioning the route. If the owner's way will not get the result, say so and show a better way; if the result itself looks wrong for what the owner is after, say that too. The owner decides.
  
- Also look for checks skipped, work put off, tools or earlier work of the owner's that the agent ignored, going in circles, acting before planning or investigating, something broken and left unmentioned, and a question or decision buried in a long message.
+ Also look for: work that passes the agent's checks but is plainly not the best; the product never opened and used; the owner's money going into pieces built only to prove the agent's own work instead of into the product, whatever routine asks for them; tools or earlier work the owner owns that the agent ignored; going in circles; acting without planning and investigating first; something broken and not mentioned; a question or decision hidden inside a long message; checks skipped; work put off, shrunk or quietly dropped.
  

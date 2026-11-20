@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 12261ff..d81607c 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1784,7 +1784,7 @@ const decidingText = (plan: boolean, brief: boolean): string =>
+ 
+ // How the watch and the briefing write where a condition is shown, in the forms the gate reads
+ // (`looksOf`): a fact by its command or file, that the result works by each look and who made it.
+-export const WHERE_LINE = `Write each "shown:" where as its proof: for a condition marked "fact:", the command and what it printed, or the file and what it holds; for one marked "works:", each look the record shows happening, as "look by helper <run>: …" or "look by Codex <run>: …" (<run> being the "(run …)" beside its call), with what they did and saw. Your own reading of the record is no one's look. A look by the agent, or by any run that wrote or changed the work, is "look by the agent: …", and the condition stays open.`
++export const WHERE_LINE = `Write each "shown:" where as its proof: for a condition marked "fact:", the command and what it printed, or the file and what it holds; for one marked "works:", each look the record shows happening, as "look by helper <run>: …" or "look by Codex <run>: …" (<run> being the "(run …)" beside its call), with what they did and saw. A look by the agent, or by any run that wrote or changed the work, is "look by the agent: …", and the condition stays open.`
+ 
+ // "Right now" on the card is the step the watch reads in the record at each look (G11 in the audit
+ // of 14 Nov 2026): the objective writer sees only the owner's messages, so the step it wrote went

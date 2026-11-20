@@ -22,6 +22,15 @@ What changed in each release of Owner Rep, newest first. The full record is the
   agent had read the result, a message could ask the agent to re-run its own line-length and
   character checks. Checks are now asked for only to prove a fact; whether the result works or
   is good is asked of a hands-on look at what the customer gets, by someone who did not build it.
+- **A condition is not marked shown on a look nobody made.** The watch and Brief me could mark
+  a "works" condition shown "by the check" when no check had run. They now write only the looks
+  the record shows, by whoever made them; their own reading of the record and the agent's own
+  look leave the condition open.
+- **A narrowed plan step is flagged.** The plan walk takes a line for each thing a step names, so
+  a step done in part reads as part left out, and the agent's own word that it narrowed or left
+  out part of an approved step reads as looking dropped.
+- **Briefings and messages are short again.** Each card part asks for one or two sentences first,
+  each gap gives its reason in a few words, and the message stays under 150 words.
 - **The replay rebuilds calls with this change.** `/owner-rep-replay` takes `rewrite`, the edit
   that turns a watch, briefing, second-asking or own-words call saved by the build before into
   what this build sends.

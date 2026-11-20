@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 12261ff..a6fa0ab 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1501,7 +1501,7 @@ export const APPROVED_HEAD =
+ // otherwise not assessed that the agent's own whole list can raise; the list never moves the ask,
+ // and a step on it stays unproven.
+ export const STEP_LINE = '- #<n>: <one thing the step names, in plain words> | done | claimed | underway | not reached | no sign while later work goes on | looks dropped | done before the summary | runs alongside | not assessed'
+-export const STEP_STATES = `Each approved plan is in an approved_plan fence above. Walk it against the record, one line for each thing a step names, in the plan's words, so a part done cannot hide a part left out. Give each line one state:
++export const STEP_STATES = `Each approved plan is in an approved_plan fence above. Walk it against the record and give each of its steps one state:
+ - done: the record shows all of it done.
+ - claimed: the agent says so and the record does not show it.
+ - underway: being worked on now.

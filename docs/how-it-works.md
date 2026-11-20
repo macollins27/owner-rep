@@ -362,7 +362,10 @@ looked and what a look said both missed and misfired, so the sign-off now rests 
 rather than on the reader's words. The record prints `(run <id>)`, the end of the call's id,
 beside each call that starts a helper or a Codex run, and a signing look names that run: "look
 by helper <run>", "look by Codex <run>", or "look by the check", which signs only in the check's
-own marks. The rep keeps each run as its call returns: a helper's answer or Codex's output, its
+own marks. A replay of the prompt rewrite (#68) found the watch and the briefing marking works
+conditions shown "by the check" when no check had run, so only the check is offered that form;
+the readers are offered the run forms alone and told that their own reading of the record is
+no one's look. The rep keeps each run as its call returns: a helper's answer or Codex's output, its
 end kept to 300 characters, whether it failed, and whether it changed the work (a helper's own
 Edit or Write call, a shell call of its that writes in the folder, its result's edit count, a
 Codex run with a writing sandbox or approvals bypassed, a `claude -p` run outside plan mode). A

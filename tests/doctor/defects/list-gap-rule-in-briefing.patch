@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index fde7c3c..5bf2450 100644
+index 12261ff..8c53c97 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1868,7 +1868,7 @@ ${decidingText(plan, true)}
+@@ -1875,7 +1875,7 @@ ${decidingText(plan, true)}
  Judge what the agent and its helpers did and what came back, not what the agent says it did. If the owner sent your last message to the agent, say whether the agent did what it asked.
  
- Fill in every part: the owner wants the whole picture every time. While any condition is open or not shown, or the work falls short of the best it could be, write the message to the agent.
--${plan ? `\n${STEP_STATES}\nWork out each step's state without writing the walk out. Each step with no sign while later work goes on, or that looks dropped, goes first under "left:" with the plan's number. Each step not assessed goes under "unassessed:".\n` : ''}
-+${plan ? `\n${STEP_STATES} A flag about a step that looks dropped names the list it is missing from and asks the agent to show that list.\nWork out each step's state without writing the walk out. Each step with no sign while later work goes on, or that looks dropped, goes first under "left:" with the plan's number. Each step not assessed goes under "unassessed:".\n` : ''}
+ Fill in every part.
+-${plan ? `\n${STEP_STATES}\n${WALK_BRIEF}\n` : ''}
++${plan ? `\n${STEP_STATES} ${WALK_WATCH}\n${WALK_BRIEF}\n` : ''}
  ## Output structure
  
  Exactly these labelled parts, in this order, nothing before or after:

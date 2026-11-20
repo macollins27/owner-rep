@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index f508b1d..cd1e183 100644
+index 12261ff..21b8bcb 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -6300,7 +6300,7 @@ export const askAgain = (open: Condition[], fault: string): string => askAgainTe
+@@ -6392,7 +6392,7 @@ export const askAgain = (open: Condition[], fault: string): string => askAgainTe
  // named by their sections (prompt audit §6.4).
  export const askAgainText = (open: string, fault: string): string => `## Asked once more
  
--This is the briefing's second asking. The first answer ${fault}, while these conditions of done are still open:
+-This is the briefing's second asking. The first answer ${fenceTags(fault)}, while these conditions of done are still open:
 +This is the briefing's second asking. The first answer said the agent should stop, gave no verdict, called the work finished, or said the work is going well, while these conditions of done are still open:
- ${open}
+ ${fenceTags(open)}
  
  Measure each one against the record by "What counts as shown". Put each the record shows under "shown:" with where, and each the owner closed in a message of their own under "closed:" with its number. Then give the whole briefing in the structure above. While any of them stays open, the verdict is "continue", "well" is empty, and "next" and the message say what the agent does now to show it, or what stands in the way, asking for the proof it still needs. A condition waiting on the owner's go-ahead is held, as "What reaches the owner" says.`

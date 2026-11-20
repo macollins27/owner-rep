@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index fde7c3c..d77823a 100644
+index 12261ff..e6004ff 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1867,7 +1867,7 @@ ${decidingText(plan, true)}
- 
- Judge what the agent and its helpers did and what came back, not what the agent says it did. If the owner sent your last message to the agent, say whether the agent did what it asked.
- 
--Fill in every part: the owner wants the whole picture every time. While any condition is open or not shown, or the work falls short of the best it could be, write the message to the agent.
-+Fill in every part: the owner wants the whole picture every time. Write the message to the agent when you think it helps.
- ${plan ? `\n${STEP_STATES}\nWork out each step's state without writing the walk out. Each step with no sign while later work goes on, or that looks dropped, goes first under "left:" with the plan's number. Each step not assessed goes under "unassessed:".\n` : ''}
- ## Output structure
+@@ -1892,7 +1892,7 @@ left:
+ - <${LEFT_ITEMS}. Each says in a few words why it matters. A gap is part of the job not done or not shown, anything "Also look for" names, a chore left "for you", or the owner's own decision (a held go-ahead, or keeping a self-proving step of an approved plan), as one plain question, never folded. A condition already shown or closed is not a gap. Write "- nothing" when there is none.>
+ ${plan ? `${UNASSESSED_PART}\n` : ''}next: <${SHORT_PART}: what the agent does next; a stop only with a stop verdict>
+ message:
+-<the message for the owner to send, written to the agent ${MESSAGE_FORM}. Empty only when every condition is shown or closed and the work is the best it could be, or no objective is held and nothing is worth sending.>
++<the message for the owner to send, written to the agent ${MESSAGE_FORM}. Empty only when every condition is shown or closed, or no objective is held and nothing is worth sending.>
+ end
+ does: <one line: what this message will make the agent do>
  

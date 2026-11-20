@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 8fd04cc..b6644ff 100644
+index 12261ff..58a7a65 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3190,7 +3190,7 @@ export const repSystem = (fence?: string): string => repSections(fence).join('\n
+@@ -3200,7 +3200,7 @@ export const repSystem = (fence?: string): string => repSections(fence).join('\n
  export const REP_SYSTEM = repSystem()
  // A session's fence: eight lowercase letters and digits, random, made once and kept in its record.
  const FENCE_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789'
 -export const newFence = (): string => [...crypto.getRandomValues(new Uint8Array(8))].map(b => FENCE_CHARS[b % FENCE_CHARS.length]).join('')
 +export const newFence = (): string => [...new Uint8Array(8)].map(b => FENCE_CHARS[b % FENCE_CHARS.length]).join('')
  // A tag of either fence in text quoted inside one (the record's entries, the owner's messages),
- // with or without a session's suffix, any case, spaces inside the brackets: printed with its angle
+ // with or without a session's suffix, any case, spaces or attributes inside the brackets (kept as written): printed with its angle
  // brackets turned to ‹ and › and its name lower-cased, so nothing quoted can close a fence. The
