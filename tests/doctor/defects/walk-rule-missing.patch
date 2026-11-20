@@ -1,21 +1,22 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index f8f119f..ad86784 100644
+index 8fd04cc..777ac1d 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1801,7 +1801,6 @@ ${seen}
- Notes the other watcher already showed the owner in this session, which you must not repeat either:
+@@ -1815,7 +1815,7 @@ ${seen}
+ 
+ Notes the other watcher already showed the owner:
  ${others}
- 
--${WALK_RULE}
- ${LIST_GAP_RULE}
- ${WATCH_WALK_AT} one line per step; with no plan shown, write "steps: none".
- 
-@@ -1874,7 +1873,7 @@ When every condition is shown or closed and the record shows the result working,
- 
- ${LOOK_RULE}
- 
--${WALK_RULE}
-+
- Walk them to yourself and do not write the walk out. Every step with no sign while later work goes on goes first under "left:", named with the plan's number; every step not assessed goes under "unassessed:".
- 
+-${plan ? `\n${STEP_STATES} A flag about a step that looks dropped names the list it is missing from and asks the agent to show that list.\n` : ''}
++${plan ? `\nA flag about a step that looks dropped names the list it is missing from and asks the agent to show that list.\n` : ''}
  ## Output structure
+ 
+ Exactly these lines, nothing before or after:
+@@ -1866,7 +1866,7 @@ ${decidingText(plan, true)}
+ Look at what the agent and its helpers actually did and what came back, not at what the agent says it did. If the owner sent your last message to the agent, say whether the agent did what it asked.
+ 
+ When every condition is shown or closed and the record shows the result working, say so in one line under "well:". Fill in every other part too: the owner wants the whole picture every time. While any condition is open or not shown, or the work falls short of the best it could be, write the message to the agent.
+-${plan ? `\n${STEP_STATES}\nWork out each step's state without writing the walk out. Each step with no sign while later work goes on, or that looks dropped, goes first under "left:" with the plan's number. Each step not assessed goes under "unassessed:".\n` : ''}
++${plan ? `\nWork out each step's state without writing the walk out. Each step with no sign while later work goes on, or that looks dropped, goes first under "left:" with the plan's number. Each step not assessed goes under "unassessed:".\n` : ''}
+ ## Output structure
+ 
+ Exactly these labelled parts, in this order, nothing before or after:

@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 9f4a977..73ab805 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -988,7 +988,7 @@ async function memoryFor($: EngineInterface, sid: string, rec: Rec, reader: 'wat
+   // The briefing is told, among coverage's lines, of the plans it cannot compare, by the one path
+   // the row and the card take; what it finds itself goes on the card after it answers.
+   const gaps = reader === 'brief' ? readerGaps(approved, 'brief') : {}
+-  const fence = rec.fence ?? (await changeRec($, sid, r => (r.fence ??= newFence())))
++  const fence = newFence()
+   return { ...base, owner, approved, fence, lines: coverage(rec, { full: storeFull.get(sid), gaps }) }
+ }
+ 

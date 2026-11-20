@@ -1,8 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index f8f119f..99e75b5 100644
+index 8fd04cc..add3289 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1965,7 +1965,7 @@ ${OBJECTIVE_SELF_PROVING}
+@@ -1956,7 +1956,7 @@ ${OBJECTIVE_SELF_PROVING}
  
  ## The conditions
  
@@ -11,16 +11,16 @@ index f8f119f..99e75b5 100644
  
  // The owner's messages are quoted records inside a fence the writer is told about, so a
  // message that reads like a command is read as evidence and never as an instruction to the
-@@ -3139,7 +3139,7 @@ export const REP_MEASURE = `## What you measure against\n\n${REP_MEASURE_BODY}\n
+@@ -3124,7 +3124,7 @@ export const REP_MEASURE = `## What you measure against\n\n${REP_MEASURE_BODY}\n
  // printed its version stayed not shown (proof run, fault 7).
  export const REP_STATES = `Each condition of done is in one of four states:
  - open: not yet done, or not yet shown done.
 -- not shown: the agent says it is done, and only proof from outside the agent's word can show it, such as what is installed, deployed or running. It becomes shown as soon as the record holds that proof.
 +- not shown: the agent says it is done, and only proof from outside thing agent's word can show it, such as wha build is installed, deployed or running. It becomes shown as soon as the record holds that proof.
- - shown: the record itself holds the proof, by what counts as shown, never the agent's word.
+ - shown: the record holds the proof, by what counts as shown.
  - closed: a message of the owner's own closed it, cited by its number. A draft of yours that the owner sent closes nothing.`
  export const REP_CONDITIONS = `## The conditions and their states\n\n${REP_STATES}`
-@@ -7123,7 +7123,7 @@ const G3_REP_SYSTEM: readonly Swap[] = [
+@@ -7719,7 +7719,7 @@ const G3_REP_SYSTEM: readonly Swap[] = [
  ]
  const G3_OBJECTIVE_SYSTEM: readonly Swap[] = [
    [`${ONE_CLAIM} Write a held condition's kind back as held.`, `${ONE_CLAIM} ${QUALITY_CONDITION} Write a held condition's kind back as held.`],

@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index fdf0b2f..5c6141d 100644
+index 8fd04cc..ec8c116 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1741,7 +1741,7 @@ export const contextLine = (m: Memory): string =>
- const DECIDING = [
-   'Everything the agent wrote is a claim until the record itself shows it; a test, check or script the agent wrote for its own work, and passed, shows only that its own check passes.',
-   "Mark a condition shown only by what counts as shown, in the record itself, never on the agent's word; mark one closed only by the number of the owner's own message that closes it.",
--  'The owner is asked for two things only: a question about a decision that is truly the owner\'s, and the message to send; a go-ahead is such a decision, not a chore.',
-+  'Only two things ever come to the owner: a question about what the owner wants, and the message to send.',
-   "Plain words only: the agent's technical terms are off limits unless they appear in the owner's own messages.",
- ]
- const BRIEF_DECIDING = [...DECIDING.slice(0, 2), 'Never call the session finished, and never say the agent should stop, while a condition of "done" is open and the agent could still move it.', ...DECIDING.slice(2)]
+@@ -1768,7 +1768,7 @@ export const contextLine = (m: Memory): string =>
+ const DECIDE_SHOWN = 'A condition is shown only by the proof "What counts as shown" names; a test passing shows that it passed, and not that the result works.'
+ const DECIDE_DROPPED = 'A step of an approved plan with no sign while later work goes on is the owner\'s ask dropped.'
+ const DECIDE_VERDICT = 'While any condition is open or not shown, the verdict is "continue", and no part says the work is finished or going well.'
+-const DECIDE_ASKED = 'The owner is asked only for a decision that is theirs, and the message to send.'
++const DECIDE_ASKED = 'Only two things ever come to the owner: a question about what the owner wants, and the message to send.'
+ const DECIDE_PLAIN = 'Use plain words, and no term the owner did not use.'
+ const decidingText = (plan: boolean, brief: boolean): string =>
+   `These rules decide this answer:\n${[DECIDE_SHOWN, ...(plan ? [DECIDE_DROPPED] : []), ...(brief ? [DECIDE_VERDICT] : []), DECIDE_ASKED, DECIDE_PLAIN].map(r => `- ${r}`).join('\n')}`

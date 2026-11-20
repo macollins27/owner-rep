@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index c342914..c73fa4b 100644
+index 8fd04cc..f18c207 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -6351,7 +6351,7 @@ export function editSaved(kind: CallKind, system: string, prompt: string | Promp
-     kept.push(b)
+@@ -7951,7 +7951,7 @@ export function editSaved(kind: CallKind, system: string, prompt: string | Promp
+     kept.push({ ...b, text: record(at, at + b.text.length) })
      at += b.text.length
    }
--  return { system: sys, prompt: [...kept, { text: whole.slice(at, taskAt) + task }] }
-+  return { system: sys, prompt: [{ text: whole.slice(0, taskAt) + task }] }
+-  return { system: sys, prompt: [...kept, { text: record(at, end) + close + task }] }
++  return { system: sys, prompt: [{ text: record(0, end) + close + task }] }
  }
  
- // ---- The texts the build after prompt group 1 (171cda2) sent where this build sends REP_SYSTEM and
+ // The rewrite's fence in a replay: fixed, so a call replayed twice reads the same. A live session's

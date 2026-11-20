@@ -1,12 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 5b57838..c16bea1 100644
+index 8fd04cc..2796c96 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1797,7 +1797,6 @@ ${WATCH_WALK_AT} one line per step; with no plan shown, write "steps: none".
+@@ -1820,7 +1820,6 @@ ${plan ? `\n${STEP_STATES} A flag about a step that looks dropped names the list
  
- Exactly these lines, in English labels, nothing else:
+ Exactly these lines, nothing before or after:
  
--${WATCH_NOW_LINE}
- steps:
- ${STEP_LINE}
- state: <one of: working, stopped, asking, plan-waiting>
+-now: <the step the agent is on now, in plain words, one sentence>
+ ${plan ? `steps:\n${STEP_LINE}\n` : ''}state: <working | stopped | asking | plan-waiting>
+ flag: none
+ 

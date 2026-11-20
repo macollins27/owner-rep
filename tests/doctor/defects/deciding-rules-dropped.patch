@@ -1,12 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index f8f119f..15a25e2 100644
+index 8fd04cc..012dea4 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1787,7 +1787,6 @@ export function watchRequest(reason: 'step' | 'stop' | 'note', seen: string, oth
+@@ -1802,8 +1802,6 @@ export function watchRequest(plan: boolean, reason: 'step' | 'stop' | 'note', se
  
- Based on the record above: ${when.charAt(0).toLowerCase()}${when.slice(1)}
+ Based on the record above: ${WATCH_WHEN[reason]}
  
--${decidingText(DECIDING)}
+-${decidingText(plan, false)}
+-
+ Do three things.
  
- ${WATCH_NOW_ASK}
- 
+ 1. Say the step the agent is on now, as the record shows it.

@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 35606cf..e44803b 100644
+index 9f4a977..30e7d38 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1542,7 +1542,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+@@ -1641,7 +1641,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
    // is read once more; a second cut one raises no Heads up and marks nothing, and the call log
    // and the counters keep both as cut short.
    for (let attempt = 0; attempt < 2; attempt++) {
--    const got = await readSession($, sid, rec, 'watch', cover => watchPrompt({ ...memory, cover }, reason))
-+    const got: Read = reason === 'note' ? { result: NOTHING_READ, gaps: {} } : await readSession($, sid, rec, 'watch', cover => watchPrompt({ ...memory, cover }, reason))
+-    const got = await readSession($, sid, rec, 'watch', memory.fence, cover => watchPrompt({ ...memory, cover }, reason))
++    const got: Read = reason === 'note' ? { result: NOTHING_READ, gaps: {} } : await readSession($, sid, rec, 'watch', memory.fence, cover => watchPrompt({ ...memory, cover }, reason))
      // Nothing recorded yet: no model was called, and there is nothing to count.
      if (got.result === NOTHING_READ) return
      const result = got.result

@@ -1,11 +1,11 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 5b57838..5d33659 100644
+index f508b1d..e134354 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1756,7 +1756,7 @@ const decidingText = (rules: readonly string[]): string => `These rules decide t
- export const WATCH_NOW_ASK = 'Do three things.\n\nFirst, say the step the agent is on now, as the record shows it, in plain words.'
- export const WATCH_WALK_AT = 'Write "now:" first, then the walk under "steps:",'
- export const WATCH_NOW_LINE = 'now: <the step the agent is on now, in plain words, one sentence>'
+@@ -1781,7 +1781,7 @@ export const WHERE_LINE = `Write each "shown:" where as its proof: for a conditi
+ // of 14 Nov 2026): the objective writer sees only the owner's messages, so the step it wrote went
+ // stale as soon as the agent moved on. The writer keeps the step the owner's messages last set,
+ // as the job's starting step; the watch's "now:" replaces it at each look.
 -export const OBJECTIVE_STEP = "the step the owner's messages last set; the rep updates it as the work moves."
 +export const OBJECTIVE_STEP = 'the step the session is on now.'
  export const OBJECTIVE_STEP_LINE = "step: <one sentence: the step the owner's messages last set>"

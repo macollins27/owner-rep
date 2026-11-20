@@ -1,9 +1,9 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index f8f119f..6bfeb39 100644
+index f508b1d..63990d6 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -7208,7 +7208,7 @@ function swapped(text: string, swaps: readonly Swap[], back: boolean): string |
- type Group = { edit: PromptEdit; system: (kind: CallKind) => readonly Swap[]; task: ReadonlyArray<{ swap: Swap; kinds: readonly CallKind[] }> }
+@@ -7819,7 +7819,7 @@ type Group = {
+ }
  const GROUPS: readonly Group[] = [
    { edit: 'proof', system: k => (k === 'objective' ? G3_OBJECTIVE_SYSTEM : k === 'own-words' ? G3_OWN_WORDS_SYSTEM : G3_REP_SYSTEM), task: G3_TASK },
 -  { edit: 'decisions', system: k => (k === 'objective' ? G4_OBJECTIVE_SYSTEM : k === 'own-words' ? [] : G4_REP_SYSTEM), task: G4_TASK },

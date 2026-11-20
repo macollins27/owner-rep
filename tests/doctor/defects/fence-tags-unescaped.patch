@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 8fd04cc..af16c80 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3197,7 +3197,7 @@ export const newFence = (): string => [...crypto.getRandomValues(new Uint8Array(
+ // record keeps the text as typed. A tag `fenceTag` already printed is left as it is, so a record the
+ // build before quoted reads the same through this (the replay's rewrite edit counts on it).
+ export const fenceTags = (s: string): string =>
+-  s.replace(/<\s*(\/?)\s*(session_record|owner_messages)(_[a-z0-9]*)?\s*>/gi, (_m, slash: string, name: string, tail?: string) => `‹${slash}${name.toLowerCase()}${(tail ?? '').toLowerCase()}›`)
++  s.replace(/<\s*(\/?)\s*(session_record|owner_messages)(_[a-z0-9]*)?\s*>/gi, (_m, slash: string, name: string, tail?: string) => `<${slash}${name.toLowerCase()}${(tail ?? '').toLowerCase()}>`)
+ 
+ // The check's standing rules, the same text on every check, appended to Claude Code's own system
+ // prompt so its tools and fence notes stay (G27); what changes per check is in checkPrompt. It ends
