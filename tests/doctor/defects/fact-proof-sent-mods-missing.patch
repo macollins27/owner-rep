@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 6683b55..5a222cc 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3733,7 +3733,7 @@ const FACT_NAMED_NOT = /^(?:well|right|wrong|badly|better|best|for|after|as|by|a
+ // word with a digit only as a version or a commit ("the v2 build"); a path or a name in
+ // backticks always. A plain word not on the list costs a look by someone who did not build it;
+ // a quality let through would close on the builder's own run.
+-const FACT_MOD = /^(?:one|two|three|four|five|six|seven|eight|nine|ten|both|all|each|every|scratch|sample|text|local|new|old|newest|latest|current|previous|original|same|other|own|single|only|home|source|cache|cached|temp|temporary|tmp|untracked|tracked|staged|unstaged|uncommitted|unpushed|unmerged|unsaved|empty|extra|added|changed|deleted|removed|renamed|edited|updated|modified|git|output|input|data|backup|hidden|first|last|final|draft|demo|example|plain|raw|shell|python|json|markdown|html|css|yaml|release|nightly|dev|development|live|public|private|upstream|feature|default|root|parent|child|user|global|sandbox|scratchpad|generated|unused|stale|leftover|greeting|landing|index|setup|status|instructions?|business|website|separate|api|web|ci|master|origin|github|main|production|staging|sign|up|in|out|log|rep|claude|hud|bin|proof|sent)$/
++const FACT_MOD = /^(?:one|two|three|four|five|six|seven|eight|nine|ten|both|all|each|every|scratch|sample|text|local|new|old|newest|latest|current|previous|original|same|other|own|single|only|home|source|cache|cached|temp|temporary|tmp|untracked|tracked|staged|unstaged|uncommitted|unpushed|unmerged|unsaved|empty|extra|added|changed|deleted|removed|renamed|edited|updated|modified|git|output|input|data|backup|hidden|first|last|final|draft|demo|example|plain|raw|shell|python|json|markdown|html|css|yaml|release|nightly|dev|development|live|public|private|upstream|feature|default|root|parent|child|user|global|sandbox|scratchpad|generated|unused|stale|leftover|greeting|landing|index|setup|status|instructions?|business|website|separate|api|web|ci|master|origin|github|main|production|staging|sign|up|in|out|log|rep|claude|hud|bin)$/
+ const FACT_NAME_H = /^(?:v?\d+(?:\.\d+)+(?:-(?:alpha|beta|rc|dev|pre)\.?\d*)?|v\d+(?:-(?:alpha|beta|rc|dev|pre)\.?\d*)?|[0-9a-f]{7,40})$/i
+ // A path or a file's name only where it is one (eighth live test of 18 Nov 2026). Any word with a
+ // slash or a dot in it was a path, so "the secure/fast/reliable tool", "the secure.fast tool" and

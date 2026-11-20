@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 8d2bd98..c87c9ac 100644
+index 6683b55..64831e5 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3487,7 +3487,7 @@ const KIND_AT = /^\s*(works|fact)\s*:\s*/i
+@@ -3707,7 +3707,7 @@ const KIND_AT = /^\s*(works|fact)\s*:\s*/i
  // words in backticks ("`owner-rep`"), which name a thing but are read as words before a noun.
  type FactTok = { w: string; t: 'Q' | 'P' | 'H' | 'N' | 'W' | 'X'; p?: 'path' | 'file' | 'tick' | 'word' }
  type FactAt = { i: number; store: boolean }
 -const FACT_STATE = /^(?:saved|committed|pushed|merged|installed|deployed|tagged|published|created|written|copied|moved|renamed|changed|edited|touched|uploaded|archived|deleted|removed|made)$/
 +const FACT_STATE = /^(?:saved|committed|pushed|merged|installed|deployed|tagged|published|created|written|copied|moved|renamed|changed|edited|touched|uploaded|archived|deleted|removed)$/
- const FACT_THING = /^(?:files?|folders?|director(?:y|ies)|scripts?|executables?|binar(?:y|ies)|commands?|programs?|tools?|apps?|cli|pages?|sites?|services?|servers?|endpoints?|builds?|versions?|releases?|code|changes?|fix(?:es)?|work|commits?|branch(?:es)?|repos?|repositor(?:y|ies)|tags?|packages?|plugins?|modules?|skills?|hooks?|tests?|docs?|documents?|config|configuration|settings|projects?|notes?|readme|changelog|plans?|briefs?|routines?|wording|job|records?|logs?|cop(?:y|ies)|dumps?|worktrees?|things?|items?|entr(?:y|ies)|handoffs?|history|remotes?)$/
- const FACT_STORE = /^(?:files?|folders?|director(?:y|ies)|scripts?|docs?|documents?|notes?|readme|changelog|plans?|briefs?|records?|logs?|commits?|branch(?:es)?|repos?|repositor(?:y|ies)|config|cop(?:y|ies)|history|remotes?|handoffs?|worktrees?)$/
+ const FACT_THING = /^(?:files?|folders?|director(?:y|ies)|scripts?|executables?|binar(?:y|ies)|commands?|programs?|tools?|apps?|cli|pages?|sites?|services?|servers?|endpoints?|builds?|versions?|releases?|code|changes?|fix(?:es)?|work|commits?|branch(?:es)?|repos?|repositor(?:y|ies)|tags?|packages?|plugins?|modules?|skills?|hooks?|tests?|docs?|documents?|config|configuration|settings|projects?|notes?|readme|changelog|plans?|briefs?|routines?|wording|job|records?|logs?|cop(?:y|ies)|dumps?|worktrees?|things?|items?|entr(?:y|ies)|handoffs?|history|remotes?|push(?:es)?|reports?)$/
+ const FACT_STORE = /^(?:files?|folders?|director(?:y|ies)|scripts?|docs?|documents?|notes?|readme|changelog|plans?|briefs?|records?|logs?|commits?|branch(?:es)?|repos?|repositor(?:y|ies)|config|cop(?:y|ies)|history|remotes?|handoffs?|worktrees?|reports?)$/
  const FACT_HELD = /^(?:files?|folders?|director(?:y|ies)|scripts?|docs?|documents?|notes?|readme|changelog|plans?|briefs?|records?|logs?|commits?|versions?|changes?|fix(?:es)?|work|code)$/

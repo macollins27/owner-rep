@@ -1,8 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index e86901f..3e9bae7 100644
+index 6683b55..17f8313 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3637,7 +3637,7 @@ const factRead = (ts: FactTok[]): boolean => {
+@@ -3864,7 +3864,7 @@ const factRead = (ts: FactTok[]): boolean => {
      if (w(at, /^(?:anywhere|elsewhere)$/)) return w(at + 1, /^else$/) ? [at + 1, at + 2] : [at + 1]
      // "committed for this job" (eighth live test): "for" opens only the job, the session, the task
      // or the work (ninth live test: "no commit was made for this work").
@@ -10,4 +10,4 @@ index e86901f..3e9bae7 100644
 +    if (w(at, /^for$/)) return w(at + 1, /^(?:this|the)$/) && w(at + 2, /^(?:job|session|task)$/) ? [at + 3] : []
      // "installed as a copy of greet-source.sh", "installed with permission to run" (ninth live
      // test, session D's copy follow-up): shown by a byte compare and by the file's listing.
-     if (w(at, /^as$/) && w(at + 1, /^an?$/) && w(at + 2, /^copy$/) && w(at + 3, /^of$/)) {
+     const ex = w(at + 2, /^exact$/) ? 1 : 0

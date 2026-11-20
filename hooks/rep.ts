@@ -3717,8 +3717,8 @@ const KIND_AT = /^\s*(works|fact)\s*:\s*/i
 type FactTok = { w: string; t: 'Q' | 'P' | 'H' | 'N' | 'W' | 'X'; p?: 'path' | 'file' | 'tick' | 'word' }
 type FactAt = { i: number; store: boolean }
 const FACT_STATE = /^(?:saved|committed|pushed|merged|installed|deployed|tagged|published|created|written|copied|moved|renamed|changed|edited|touched|uploaded|archived|deleted|removed|made)$/
-const FACT_THING = /^(?:files?|folders?|director(?:y|ies)|scripts?|executables?|binar(?:y|ies)|commands?|programs?|tools?|apps?|cli|pages?|sites?|services?|servers?|endpoints?|builds?|versions?|releases?|code|changes?|fix(?:es)?|work|commits?|branch(?:es)?|repos?|repositor(?:y|ies)|tags?|packages?|plugins?|modules?|skills?|hooks?|tests?|docs?|documents?|config|configuration|settings|projects?|notes?|readme|changelog|plans?|briefs?|routines?|wording|job|records?|logs?|cop(?:y|ies)|dumps?|worktrees?|things?|items?|entr(?:y|ies)|handoffs?|history|remotes?)$/
-const FACT_STORE = /^(?:files?|folders?|director(?:y|ies)|scripts?|docs?|documents?|notes?|readme|changelog|plans?|briefs?|records?|logs?|commits?|branch(?:es)?|repos?|repositor(?:y|ies)|config|cop(?:y|ies)|history|remotes?|handoffs?|worktrees?)$/
+const FACT_THING = /^(?:files?|folders?|director(?:y|ies)|scripts?|executables?|binar(?:y|ies)|commands?|programs?|tools?|apps?|cli|pages?|sites?|services?|servers?|endpoints?|builds?|versions?|releases?|code|changes?|fix(?:es)?|work|commits?|branch(?:es)?|repos?|repositor(?:y|ies)|tags?|packages?|plugins?|modules?|skills?|hooks?|tests?|docs?|documents?|config|configuration|settings|projects?|notes?|readme|changelog|plans?|briefs?|routines?|wording|job|records?|logs?|cop(?:y|ies)|dumps?|worktrees?|things?|items?|entr(?:y|ies)|handoffs?|history|remotes?|push(?:es)?|reports?)$/
+const FACT_STORE = /^(?:files?|folders?|director(?:y|ies)|scripts?|docs?|documents?|notes?|readme|changelog|plans?|briefs?|records?|logs?|commits?|branch(?:es)?|repos?|repositor(?:y|ies)|config|cop(?:y|ies)|history|remotes?|handoffs?|worktrees?|reports?)$/
 const FACT_HELD = /^(?:files?|folders?|director(?:y|ies)|scripts?|docs?|documents?|notes?|readme|changelog|plans?|briefs?|records?|logs?|commits?|versions?|changes?|fix(?:es)?|work|code)$/
 const FACT_ACTOR = /^(?:agents?|sessions?|helpers?|builder|owner|codex)$/
 const FACT_PLACE = /^(?:main|master|origin|remote|production|staging|github|it)$/
@@ -3742,7 +3742,7 @@ const FACT_NAMED_NOT = /^(?:well|right|wrong|badly|better|best|for|after|as|by|a
 // word with a digit only as a version or a commit ("the v2 build"); a path or a name in
 // backticks always. A plain word not on the list costs a look by someone who did not build it;
 // a quality let through would close on the builder's own run.
-const FACT_MOD = /^(?:one|two|three|four|five|six|seven|eight|nine|ten|both|all|each|every|scratch|sample|text|local|new|old|newest|latest|current|previous|original|same|other|own|single|only|home|source|cache|cached|temp|temporary|tmp|untracked|tracked|staged|unstaged|uncommitted|unpushed|unmerged|unsaved|empty|extra|added|changed|deleted|removed|renamed|edited|updated|modified|git|output|input|data|backup|hidden|first|last|final|draft|demo|example|plain|raw|shell|python|json|markdown|html|css|yaml|release|nightly|dev|development|live|public|private|upstream|feature|default|root|parent|child|user|global|sandbox|scratchpad|generated|unused|stale|leftover|greeting|landing|index|setup|status|instructions?|business|website|separate|api|web|ci|master|origin|github|main|production|staging|sign|up|in|out|log|rep|claude|hud|bin)$/
+const FACT_MOD = /^(?:one|two|three|four|five|six|seven|eight|nine|ten|both|all|each|every|scratch|sample|text|local|new|old|newest|latest|current|previous|original|same|other|own|single|only|home|source|cache|cached|temp|temporary|tmp|untracked|tracked|staged|unstaged|uncommitted|unpushed|unmerged|unsaved|empty|extra|added|changed|deleted|removed|renamed|edited|updated|modified|git|output|input|data|backup|hidden|first|last|final|draft|demo|example|plain|raw|shell|python|json|markdown|html|css|yaml|release|nightly|dev|development|live|public|private|upstream|feature|default|root|parent|child|user|global|sandbox|scratchpad|generated|unused|stale|leftover|greeting|landing|index|setup|status|instructions?|business|website|separate|api|web|ci|master|origin|github|main|production|staging|sign|up|in|out|log|rep|claude|hud|bin|proof|sent)$/
 const FACT_NAME_H = /^(?:v?\d+(?:\.\d+)+(?:-(?:alpha|beta|rc|dev|pre)\.?\d*)?|v\d+(?:-(?:alpha|beta|rc|dev|pre)\.?\d*)?|[0-9a-f]{7,40})$/i
 // A path or a file's name only where it is one (eighth live test of 18 Nov 2026). Any word with a
 // slash or a dot in it was a path, so "the secure/fast/reliable tool", "the secure.fast tool" and
@@ -3849,6 +3849,13 @@ const factRead = (ts: FactTok[]): boolean => {
         if (w(n + 1, /^made$/) || w(n + 1, FACT_STATE)) for (const p of places(n + 2)) if (p > n + 2) out.push({ i: p, store })
         if (ts[n + 1]?.t === 'P' && ts[n + 1]?.p !== 'word') out.push({ i: n + 2, store: true })
         if (w(n + 1, /^(?:named|called)$/) && namedAt(n + 2)) out.push({ i: n + 3, store })
+        // A copy of a named file or of a thing from the list: "a copy of welcome.txt exists in the
+        // sent folder" (tenth live test). What it is a copy of is read as a noun, so a quality there
+        // ("a copy of the fast tool") is no fact.
+        if (w(n, /^cop(?:y|ies)$/) && w(n + 1, /^of$/)) {
+          if (pathAt(n + 2)) out.push({ i: n + 3, store })
+          if (det(n + 2)) for (const r of noun(n + 2, FACT_THING, FACT_STORE)) out.push({ i: r.i, store })
+        }
       }
     }
     return out
@@ -3869,8 +3876,9 @@ const factRead = (ts: FactTok[]): boolean => {
     if (w(at, /^for$/)) return w(at + 1, /^(?:this|the)$/) && w(at + 2, /^(?:job|session|task|work)$/) ? [at + 3] : []
     // "installed as a copy of greet-source.sh", "installed with permission to run" (ninth live
     // test, session D's copy follow-up): shown by a byte compare and by the file's listing.
-    if (w(at, /^as$/) && w(at + 1, /^an?$/) && w(at + 2, /^copy$/) && w(at + 3, /^of$/)) {
-      const c = at + 4
+    const ex = w(at + 2, /^exact$/) ? 1 : 0
+    if (w(at, /^as$/) && w(at + 1, /^an?$/) && w(at + 2 + ex, /^copy$/) && w(at + 3 + ex, /^of$/)) {
+      const c = at + 4 + ex
       return (pathAt(c) ? [c + 1] : []).concat(det(c) ? noun(c, FACT_THING, FACT_STORE).map(r => r.i) : [])
     }
     if (w(at, /^with$/) && w(at + 1, /^runpermission$/)) return [at + 2]
@@ -3897,7 +3905,11 @@ const factRead = (ts: FactTok[]): boolean => {
     // note's end is an end, so what follows a comma that is no note is read as its own clause.
     if (x(at, '(')) { const e = run(at + 1, true); if (e > at + 1 && x(e, ')')) out.push(e + 1) } else {
       let s = at
-      for (let e = run(s, false); e > s; s = e + 1, e = run(s, false)) { out.push(e); if (!x(e, ',')) break }
+      for (let e = run(s, false); e > s; s = e + 1, e = run(s, false)) {
+        out.push(e)
+        if (x(e, '(')) { const c = run(e + 1, true); if (c > e + 1 && x(c, ')')) out.push(c + 1) }
+        if (!x(e, ',')) break
+      }
     }
     return out
   }
