@@ -174,7 +174,7 @@ narrows the agent's next step can't shrink the whole job.
 It weighs your messages by kind. A note you send to the rep counts most of all. Then come
 your reasons and complaints, then your instructions. A plan you approve, with a yes or on
 Claude Code's plan screen, counts as your own ask: each of its steps becomes part of "done",
-and the Heads up says so when one of them looks dropped. The plan held is the one the screen
+and the Heads up says so at every look where one of them looks dropped. The plan held is the one the screen
 showed you, and a note you type as you approve it counts as your own words beside it. A yes never approves more than the
 text it answered, and the agent can't approve anything for you by saying you did.
 
@@ -394,9 +394,9 @@ The full design is in [How the owner rep works](docs/how-it-works.md).
 
 ## Built to be trusted
 
-- **784 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
+- **797 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
   the tests.
-- **A doctor that plants bugs.** It plants 915 known defects in a throwaway copy, one at a
+- **A doctor that plants bugs.** It plants 910 known defects in a throwaway copy, one at a
   time, and fails the build if the tests miss any of them.
 - **Real sessions.** Twelve scenarios run in real Claude Code sessions, with the screen
   captured in [`tests/live/captures`](tests/live/captures).

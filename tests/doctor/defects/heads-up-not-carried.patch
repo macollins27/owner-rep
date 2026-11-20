@@ -1,12 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
+index bfe288b..376fca7 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1682,7 +1682,7 @@
+@@ -1677,7 +1677,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
      if ((marked || stepped) && onScreen(sid)) await update($, readingA, () => after.objective)
      const view = await read($, viewA)
-     const got = headsUpOf(answer, after.seen, fill?.blocks ?? [], after.saidDrops ?? [])
+     const got = headsUpOf(answer, fill?.blocks ?? [])
 -    const said = got.note
 +    const said = answer.flag === null ? null : { line: answer.flag, why: answer.why }
-     // A plain flag already shown is not shown again. A note of dropped plan parts is governed by the
-     // parts kept alone: the same step in two plans gives the same line, and each must be said.
+     // A plain flag already shown is not shown again. A note that says a dropped plan part is shown
+     // at every look where the part is dropped: a silent drop is the harm, a repeat only noise.
      const repeat = (line: string): boolean => got.drops.length === 0 && after.seen.some(s => same(s, line))

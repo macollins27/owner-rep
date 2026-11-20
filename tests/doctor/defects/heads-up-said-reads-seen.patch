@@ -1,11 +1,13 @@
-diff --git a/hooks/rep.ts b/hooks/rep.ts
---- a/hooks/rep.ts
-+++ b/hooks/rep.ts
-@@ -3677,6 +3677,7 @@
-     return top === 0 ? [] : lines.filter(l => score(l.step) === top)
-   }
-   const saidBefore = (d: StepRef & { plan?: { key: string; text: string } }): boolean => {
-+    if (seen.some(l => DROP_WORD.test(l) && heldIn(d.step, l) >= 0.8)) return true
-     const plan = d.plan
-     if (plan === undefined) return false
-     const planWords = new Set(contentWords(plan.text))
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index bfe288b..da54568 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1676,7 +1676,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+     if (stepped && after.objective !== null) after.objective = { ...after.objective, step: answer.now }
+     if ((marked || stepped) && onScreen(sid)) await update($, readingA, () => after.objective)
+     const view = await read($, viewA)
+-    const got = headsUpOf(answer, fill?.blocks ?? [])
++    const got = headsUpOf({ ...answer, dropped: answer.dropped?.filter(d => !after.seen.some(s => !s.startsWith('A step of the plan') && s.toLowerCase().includes(d.step.toLowerCase()))) }, fill?.blocks ?? [])
+     const said = got.note
+     // A plain flag already shown is not shown again. A note that says a dropped plan part is shown
+     // at every look where the part is dropped: a silent drop is the harm, a repeat only noise.

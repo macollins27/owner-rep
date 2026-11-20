@@ -520,7 +520,10 @@ line in code's own words (the owner's coverage lines), so a gap can't be talked 
 
 **The walk.** Each reader walks every plan shown to it step by step against the record, and a step
 with no sign while later work goes on counts as dropped. The Heads up then raises the line "A step
-of the plan you approved looks dropped" in the code's words, whatever else it was going to say. The
+of the plan you approved looks dropped" in the code's words, whatever else it was going to say. It
+raises it at every look where the step still looks dropped: nothing said at an earlier look is taken
+as proof the owner saw this part, because each way of matching one part against another hid a
+sibling the owner never saw, and a repeat costs only noise. The
 walk says only what the record shows: it does not claim a step was or was not done where the record
 was cut, and it never moves the owner's ask.
 

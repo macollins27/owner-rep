@@ -1,12 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 490d383..e38dcdf 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3689,7 +3689,7 @@
-   }
-   const fresh = (a.dropped ?? []).map(d => ({ ...d, plan: planOf(d.n, plans) })).filter(d => inPlans(d.step, plans) && !saidBefore(d))
+@@ -3636,7 +3636,7 @@ export function headsUpOf(a: WatchAnswer, plans: readonly string[]): { note: { l
+   const own = a.flag === null ? null : { line: a.flag, why: a.why }
+   const fresh = (a.dropped ?? []).filter(d => inPlans(d.step, plans))
    const flag = a.flag
--  const named = flag === null ? [] : nearest(fresh.filter(d => speaksOf(flag, d.step)), s => heldIn(s, flag)).slice(0, 1)
-+  const named = flag === null ? [] : fresh.filter(d => speaksOf(flag, d.step))
+-  const named = flag === null ? [] : fresh.filter(d => names(flag, d.step)).sort((x, y) => contentWords(y.step).length - contentWords(x.step).length).slice(0, 1)
++  const named = flag === null ? [] : fresh.filter(d => names(flag, d.step))
    const rest = fresh.filter(d => !named.includes(d))
    const first = rest[0]
-   const told = (ds: readonly (StepRef & { plan?: { key: string } })[]): SaidDrop[] =>
+   const told = (ds: readonly StepRef[]): string[] => ds.map(d => stepText(d.step))

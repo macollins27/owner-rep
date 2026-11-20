@@ -2262,12 +2262,6 @@
     "fixed": "2026-10-30; remade 2026-11-20"
   },
   {
-    "name": "heads-up-repeats-shown",
-    "breaks": "A step already shown is raised again at every look, reworded each time, and blocks the next flag.",
-    "patch": "heads-up-repeats-shown.patch",
-    "fixed": "remade 2026-11-20"
-  },
-  {
     "name": "heads-up-no-plan-shown",
     "breaks": "A walked step is called part of the plan the owner approved when no shown plan holds it, or no plan was shown at all.",
     "patch": "heads-up-no-plan-shown.patch",
@@ -2307,12 +2301,6 @@
     "name": "heads-up-also-unbounded",
     "breaks": "Every dropped step is listed by name, so the why grows without limit.",
     "patch": "heads-up-also-unbounded.patch",
-    "fixed": "2026-10-30"
-  },
-  {
-    "name": "heads-up-short-steps-repeat",
-    "breaks": "A step of only short words has no words to compare, so it repeats at every look.",
-    "patch": "heads-up-short-steps-repeat.patch",
     "fixed": "2026-10-30"
   },
   {
@@ -5370,27 +5358,9 @@
     "fixed": "tested 2026-11-20; remade 2026-11-20"
   },
   {
-    "name": "heads-up-sibling-hidden",
-    "breaks": "A part already said hides any like part of the same step, so a sibling dropped later never reaches the owner.",
-    "patch": "heads-up-sibling-hidden.patch",
-    "fixed": "remade 2026-11-20"
-  },
-  {
-    "name": "heads-up-said-plan-ignored",
-    "breaks": "A part said from one plan hides a like step of another plan, so the second plan's dropped step is never said.",
-    "patch": "heads-up-said-plan-ignored.patch",
-    "fixed": "remade 2026-11-20"
-  },
-  {
     "name": "heads-up-flag-names-every-part",
-    "breaks": "A flag that holds words of two parts names both, so the second part loses its \"Also looks dropped\" line.",
+    "breaks": "A flag that holds every word of two parts names both, so the second part loses its \"Also looks dropped\" line.",
     "patch": "heads-up-flag-names-every-part.patch",
-    "fixed": "remade 2026-11-20"
-  },
-  {
-    "name": "heads-up-said-drops-not-kept",
-    "breaks": "The look never keeps the parts it said, so a like step of another plan is hidden by the shown line alone.",
-    "patch": "heads-up-said-drops-not-kept.patch",
     "fixed": "remade 2026-11-20"
   },
   {
@@ -5466,27 +5436,27 @@
     "fixed": "2026-11-20"
   },
   {
-    "name": "heads-up-said-likeness-lowered",
-    "breaks": "The likeness a part said must reach to hide a part dropped is lowered, so a sibling in the reader's own words passes for the part said and never reaches the owner.",
-    "patch": "heads-up-said-likeness-lowered.patch",
-    "fixed": "2026-11-20"
-  },
-  {
-    "name": "heads-up-said-plan-words-unchecked",
-    "breaks": "A part dropped is hidden on likeness alone, without every plan word of it being in the part said, so a sibling that differs by one plan word (\"reload\" for \"cap\") never reaches the owner.",
-    "patch": "heads-up-said-plan-words-unchecked.patch",
-    "fixed": "2026-11-20"
-  },
-  {
     "name": "heads-up-said-reads-seen",
-    "breaks": "A flag or line shown before is read again for dropped parts, so a flag that ever spoke of a step hides that step when the walk later finds it dropped.",
+    "breaks": "A flag shown before is read again for dropped parts, so a flag that ever spoke of a step hides that step when the walk later finds it dropped.",
     "patch": "heads-up-said-reads-seen.patch",
-    "fixed": "2026-11-20"
+    "fixed": "2026-11-20; remade 2026-11-20"
   },
   {
     "name": "heads-up-walk-drop-note-guarded",
     "breaks": "A note of dropped plan parts is held back when its line matches one shown before, so the same step of a second plan, which gives the same line, never reaches the owner.",
     "patch": "heads-up-walk-drop-note-guarded.patch",
+    "fixed": "2026-11-20; remade 2026-11-20"
+  },
+  {
+    "name": "heads-up-walk-drop-said-before-hidden",
+    "breaks": "A dropped plan part named in a line shown before is held back, so a part still dropped at the next look, or reworded there, is never said again.",
+    "patch": "heads-up-walk-drop-said-before-hidden.patch",
+    "fixed": "2026-11-20"
+  },
+  {
+    "name": "heads-up-flag-names-on-some-words",
+    "breaks": "A flag that holds half a dropped part's words stands for it, so a flag about the other part of a step hides the part dropped at that very look.",
+    "patch": "heads-up-flag-names-on-some-words.patch",
     "fixed": "2026-11-20"
   }
 ]

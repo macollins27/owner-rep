@@ -562,29 +562,22 @@ call writes (below):
    not show the step done, never that the record holds nothing of it. The
    flag and its why move into the why after `Also:`, and further dropped steps after `Also looks
    dropped:`, so no concern is lost. This outranks even a flag about harm, whose words stay in the
-   why. A step walked `not assessed` has no say, and a flag that already speaks of a dropped part
-   (`speaksOf`: a drop word and three of the part's words, or all of a shorter part's) keeps the
-   reader's wording; it names one part at most, the one whose content words it holds most of,
-   and the others go under its why, at most `DROPPED_ALSO_MAX` (3) by name.
+   why. A step walked `not assessed` has no say. A flag names a dropped part (`names`) when it
+   speaks of a drop and holds every one of the part's content words; it then keeps the reader's
+   wording and the part is not printed again under its own "Also looks dropped". It names one part
+   at most, the longest it holds, and the others go under its why, at most `DROPPED_ALSO_MAX` (3)
+   by name. A flag about another part of the step, sharing only some of its words, names nothing.
 
-   A dropped part is hidden only on strong evidence that this same part of this same plan was
-   already said; when unsure it is said again, since a silent drop is the harm the rep exists to
-   prevent and a repeat is noise. The look keeps every part a shown note said, by name or under
-   "Also looks dropped", with its plan, on the record as `saidDrops` (at most `SEEN_MAX`; one
-   evicted can only be said again). A part's plan is the walk line's number where a plan shown to
-   this look is headed by it. It names the plan, not the step (`walkLine` keeps no part number),
-   and a part whose number heads no shown plan has none and never hides another. A part kept hides a
-   part dropped now only when all three hold: the same plan; every word of the plan that the part
-   dropped now holds is in the part kept (stemmed content words); and the two are alike
-   (`likeness`, the Dice share of their stemmed content words, at least `SAID_LIKENESS`, 0.75).
-   Parts of one step share most words, so likeness alone hides siblings (they reach 0.82 on real
-   replies); the plan words tell them apart ("reload" for "cap"), and on 32 real replay replies
-   and 8,848 pairs of parts of one step the two together hid none. A line in `seen` is never read
-   for this: a flag ever shown hides no step. Readers reword a part from look to look, so a part
-   still dropped is said again at five or six of eight looks, and the flag names it at some of
-   the others (c440a6ae's looks 41 to 48, replayed twice from each of two runs); that noise is the price of never hiding a
-   part not said. The register's check that a line was not shown before applies only to a note
-   with no dropped parts: the same step of two plans gives the same line, and each is said.
+   A part the walk shows as looking dropped is said at every look where it looks dropped. Nothing
+   said at an earlier look hides it: no part, line or flag shown before is matched against it,
+   since every such matching (a likeness of parts, the plan's words, a flag's words) was found to
+   hide a sibling part the owner never saw, and a silent drop is the harm the rep exists to prevent
+   while a repeat is noise. On c440a6ae's looks 41 to 48 (two runs, each replayed twice) the
+   dropped Monitor part was said at every look the walk marked it dropped: 8 of 8, 6 of 6, 8 of 8
+   and 7 of 7. A record from an earlier build that holds `saidDrops` loads, the field ignored. The
+   register's check that a line was not shown before (`same`) applies only to a note with no
+   dropped parts: a plain flag already shown is not shown again, while the same step of two plans,
+   or a step still dropped, gives the same line and each is said.
 
    A part counts only where the plans shown to this look hold at least `PLAN_WORDS_SHARE` (0.4)
    of its stemmed content words, short or long; a real step reworded by one word ("Run the

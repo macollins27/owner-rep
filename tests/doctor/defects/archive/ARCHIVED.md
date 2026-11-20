@@ -36,3 +36,17 @@
   each dropped line on its own, so its flag could go to a drop the owner already hears. That text
   was reverted on 20 Nov 2026 (PR #68, fourth round) to 38b0dc9's, and the test of `WALK_WATCH`
   holds that text word for word. No successor.
+- `heads-up-said-drops-not-kept.patch`, `heads-up-said-likeness-lowered.patch`,
+  `heads-up-said-plan-words-unchecked.patch`, `heads-up-said-plan-ignored.patch` and
+  `heads-up-sibling-hidden.patch`: each planted a weaker form of the test that hid a dropped plan
+  part because a like part of the same plan had been said at an earlier look (the record's
+  `saidDrops`, its likeness of 0.75 and its plan-word subset check). That test was removed on
+  20 Nov 2026 (PR #68, fifth round): three reviews in a row each found new ways it hid a part
+  never said to the owner, so a part the walk shows as dropped is now said at every look where it
+  is dropped and nothing said before hides it. Their successor is
+  `heads-up-walk-drop-said-before-hidden`, which plants a dropped part named in a line shown
+  before being held back.
+- `heads-up-repeats-shown.patch` and `heads-up-short-steps-repeat.patch`: planted a dropped step
+  being raised again at every look. Since 20 Nov 2026 (PR #68, fifth round) that is the rule: a
+  part still dropped is said at every look, a repeat being noise and a part unsaid the harm. No
+  successor; `heads-up-walk-drop-said-before-hidden` plants the opposite.

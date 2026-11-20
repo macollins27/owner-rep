@@ -1,12 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 490d383..3c734ee 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3628,7 +3628,7 @@
+@@ -3603,7 +3603,7 @@ const heldIn = (part: string, text: string): number => {
  // shares two common words with one passes too, a bad flag accepted so no real step is lost.
  export const PLAN_WORDS_SHARE = 0.4
  const inPlans = (step: string, plans: readonly string[]): boolean =>
 -  contentWords(step).length > 0 && heldIn(step, plans.join('\n')) >= PLAN_WORDS_SHARE
 +  contentWords(step).length > 0 && heldIn(step, plans.join('\n')) >= 0
  
- // The plan a part belongs to: the walk line's number, where a plan shown to this look has that head.
- // With no such plan the part has none, and so can never hide another.
+ // Whether a flag names this dropped part: it speaks of a drop and holds every content word of the
+ // part. Only then does the part go unprinted under the flag's "Also looks dropped" at the same look;

@@ -1,12 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
+index bfe288b..95f605d 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1686,7 +1686,7 @@
-     // A plain flag already shown is not shown again. A note of dropped plan parts is governed by the
-     // parts kept alone: the same step in two plans gives the same line, and each must be said.
+@@ -1681,7 +1681,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+     // A plain flag already shown is not shown again. A note that says a dropped plan part is shown
+     // at every look where the part is dropped: a silent drop is the harm, a repeat only noise.
      const repeat = (line: string): boolean => got.drops.length === 0 && after.seen.some(s => same(s, line))
 -    if (said !== null && view === 'row' && onScreen(sid) && !repeat(said.line)) {
 +    if (said !== null && view === 'row' && onScreen(sid) && true) {
        after.seen = [...after.seen, said.line].slice(-SEEN_MAX)
-       if (got.drops.length > 0) after.saidDrops = [...(after.saidDrops ?? []), ...got.drops].slice(-SEEN_MAX)
        const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId }
+       await update($, noteA, () => note)
