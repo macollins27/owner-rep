@@ -1787,7 +1787,7 @@ const decidingText = (plan: boolean, brief: boolean): string =>
 
 // How the watch and the briefing write where a condition is shown, in the forms the gate reads
 // (`looksOf`): a fact by its command or file, that the result works by each look and who made it.
-export const WHERE_LINE = `Write each "shown:" where as its proof: for a condition marked "fact:", the command and what it printed, or the file and what it holds; for one marked "works:", each look the record shows happening, as "look by helper <run>: …" or "look by Codex <run>: …" (<run> being the "(run …)" beside its call), with what they did and saw. Your own reading of the record is no one's look. A look by the agent, or by any run that wrote or changed the work, is "look by the agent: …", and the condition stays open.`
+export const WHERE_LINE = `Write each "shown:" where as its proof: for a condition marked "fact:", the command and what it printed, or the file and what it holds; for one marked "works:", each look the record shows happening, as "look by helper <run>: …" or "look by Codex <run>: …" (<run> being the "(run …)" beside its call), with what they did and saw. Your own reading of the record is no one's look. A look by the agent, or by any run that wrote or changed the work, is "look by the agent: …", and the condition stays open. One about order ("before", "first") needs the record to show that order.`
 
 // "Right now" on the card is the step the watch reads in the record at each look (G11 in the audit
 // of 14 Nov 2026): the objective writer sees only the owner's messages, so the step it wrote went
@@ -1877,7 +1877,6 @@ ${decidingText(plan, true)}
 
 Judge what the agent and its helpers did and what came back, not what the agent says it did. If the owner sent your last message to the agent, say whether the agent did what it asked.
 
-Fill in every part.
 ${plan ? `\n${STEP_STATES}\n${WALK_BRIEF}\n` : ''}
 ## Output structure
 
@@ -1890,7 +1889,7 @@ closed:
 - <a held condition the owner closed | #n>
 well: <one plain sentence, only when every condition is shown or closed and nothing is left; otherwise empty>
 stands: <${SHORT_PART}: where the work really stands, as the record shows it>
-means: <${SHORT_PART}: what the agent's latest message means for the owner against the whole result: what the owner has now and what is waiting>
+means: <${SHORT_PART}: what the agent's latest message means for the owner against the whole result>
 left:
 - <${LEFT_ITEMS}. Each says in a few words why it matters. A gap is part of the job not done or not shown, anything "Also look for" names, a chore left "for you", or the owner's own decision (a held go-ahead, or keeping a self-proving step of an approved plan), as one short plain question, never folded. A condition already shown or closed is not a gap. Write "- nothing" when there is none.>
 ${plan ? `${UNASSESSED_PART}\n` : ''}next: <${SHORT_PART}: what the agent does next; a stop only with a stop verdict>

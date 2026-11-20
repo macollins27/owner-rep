@@ -10234,6 +10234,10 @@ test('the watch and the briefing mark a works condition shown only on a look the
   expect(rep.WHERE_LINE).toContain('A look by the agent, or by any run that wrote or changed the work, is "look by the agent: …", and the condition stays open.')
   expect(rep.WHERE_LINE).toContain('for a condition marked "fact:", the command and what it printed, or the file and what it holds')
   expect(rep.WHERE_LINE).not.toContain('look by the check')
+  // A real look that came after the step it was meant to come before does not show the condition
+  // (PR #68: the watch marked "reviews it before it is relied on" shown on reviews that began after
+  // the guard was live).
+  expect(rep.WHERE_LINE).toContain('One about order ("before", "first") needs the record to show that order.')
   // The check writes its own look, and it still signs; a helper's run that changed nothing signs from a reader's where.
   expect(LOOK_RULE).toContain('"look by the check: …"')
   const helper: Run = { id: 'toolu_01aaaa01ab2345', kind: 'helper', state: 'done', changed: false, said: 'booked a visit' }
