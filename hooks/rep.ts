@@ -730,10 +730,6 @@ export type WatchAnswer = {
   dropped?: DroppedStep[]
 }
 
-// A dropped part the Heads up has said to the owner: the part as said, and the plan it came from
-// (the approving message's number, from the walk line). A part with no plan never hides another.
-export type SaidDrop = { part: string; plan?: string }
-
 // A step of an approved plan, by the number of the message that approved it.
 export type StepRef = { n: number; step: string }
 
@@ -3571,23 +3567,8 @@ function walkDropped(part: string | undefined): { dropped?: DroppedStep[] } {
   return out.length === 0 ? {} : { dropped: out }
 }
 
-// A step's words, for telling steps apart: its long ones, or all of them when it has none.
 const DROP_WORD = /\b(dropped|skipped|left out|leaves out|missing|no sign)\b/i
 const allWords = (s: string): string[] => s.toLowerCase().match(/[a-z0-9]+/g) ?? []
-const stepWords = (s: string): string[] => {
-  const all = [...new Set(allWords(s))]
-  const long = all.filter(w => w.length >= 4)
-  return long.length > 0 ? long : all
-}
-
-// Whether a line already speaks of this step as dropped. Readers reword a step at every look, so
-// this goes by the step's words: three of them, or all of a shorter step's.
-const speaksOf = (line: string, step: string): boolean => {
-  if (!DROP_WORD.test(line)) return false
-  const has = new Set(allWords(line))
-  const words = stepWords(step)
-  return words.length > 0 && words.filter(w => has.has(w)).length >= Math.min(3, words.length)
-}
 
 // A part's content words, for telling one part from another: its words less the small ones every
 // part shares, each cut to a rough stem so "refuses" and "refuse", "commands" and "command" match.
@@ -3608,12 +3589,6 @@ const contentWords = (s: string): string[] => {
   const kept = all.filter(w => w.length >= 2 && !STOP.has(w))
   return [...new Set((kept.length > 0 ? kept : all).map(stem))]
 }
-// How alike two parts are: twice the content words they share over the words of both (Dice).
-export const likeness = (x: string, y: string): number => {
-  const a = contentWords(x)
-  const b = new Set(contentWords(y))
-  return a.length + b.size === 0 ? 0 : (2 * a.filter(w => b.has(w)).length) / (a.length + b.size)
-}
 // The share of a part's content words that a text holds.
 const heldIn = (part: string, text: string): number => {
   const words = contentWords(part)
@@ -3630,17 +3605,10 @@ export const PLAN_WORDS_SHARE = 0.4
 const inPlans = (step: string, plans: readonly string[]): boolean =>
   contentWords(step).length > 0 && heldIn(step, plans.join('\n')) >= PLAN_WORDS_SHARE
 
-// The plan a part belongs to: the walk line's number, where a plan shown to this look has that head.
-// With no such plan the part has none, and so can never hide another.
-const planOf = (n: number, plans: readonly string[]): { key: string; text: string } | undefined => {
-  const text = plans.find(b => new RegExp(`^#${n}\\b`).test(b))
-  return text === undefined ? undefined : { key: String(n), text }
-}
-
-// How alike a part said and a part dropped must be, beside every plan word of the dropped part being
-// in the part said, to count as the part said reworded. On 32 real replay replies (8,848 pairs of
-// parts of one step) these two together hid no sibling; likeness alone hid siblings up to 0.82.
-export const SAID_LIKENESS = 0.75
+// Whether a flag names this dropped part: it speaks of a drop and holds every content word of the
+// part. Only then does the part go unprinted under the flag's "Also looks dropped" at the same look;
+// a flag about another part of the step, sharing some of its words, does not stand for it.
+const names = (flag: string, step: string): boolean => DROP_WORD.test(flag) && heldIn(step, flag) === 1
 
 export const DROPPED_STEP_MAX = 160
 export const DROPPED_ALSO_MAX = 3
@@ -3656,44 +3624,22 @@ const alsoDropped = (steps: readonly DroppedStep[]): string[] => [
 // What the Heads up says for a look. A step the walk marks as dropped outranks whatever the flag
 // is about, and the flag moves to the why, so no concern is lost: one flag slot must not decide
 // whether the owner hears their ask was dropped. A step not assessed has no say here. A flag that
-// already speaks of a dropped part keeps its wording, and the others go under its why. A step no
-// shown plan holds is not called part of one: only a plan the owner approved can be called that.
+// names a dropped part keeps its wording, and the others go under its why. A step no shown plan
+// holds is not called part of one: only a plan the owner approved can be called that.
 //
-// A dropped part is hidden only on strong evidence that this same part of this same plan was
-// already said: a part kept as said (`said`) of the same plan, holding every word of the plan that
-// the part dropped now holds, and alike (`SAID_LIKENESS`). When unsure it is said again: a silent
-// drop is the harm the rep exists to prevent, and a repeat is noise. A line shown before (`seen`) is
-// never read for this; a flag ever shown hides no step. A flag names one part at most, the one it
-// holds most of. `drops` is every part this note says.
-export function headsUpOf(
-  a: WatchAnswer,
-  seen: readonly string[],
-  plans: readonly string[],
-  said: readonly SaidDrop[] = [],
-): { note: { line: string; why: string } | null; drops: SaidDrop[] } {
+// Every part the walk shows as dropped is said at every look where it is dropped: nothing said at
+// an earlier look hides it, since a silent drop is the harm the rep exists to prevent and a repeat
+// is noise. Readers reword parts at every look, and every test of "already said" built on their
+// words hid parts never said. A flag names one part at most, the one with the most words of those
+// it names (`names`). `drops` is every part this note says.
+export function headsUpOf(a: WatchAnswer, plans: readonly string[]): { note: { line: string; why: string } | null; drops: string[] } {
   const own = a.flag === null ? null : { line: a.flag, why: a.why }
-  const nearest = <T extends StepRef>(lines: readonly T[], score: (step: string) => number): T[] => {
-    const top = Math.max(0, ...lines.map(l => score(l.step)))
-    return top === 0 ? [] : lines.filter(l => score(l.step) === top)
-  }
-  const saidBefore = (d: StepRef & { plan?: { key: string; text: string } }): boolean => {
-    const plan = d.plan
-    if (plan === undefined) return false
-    const planWords = new Set(contentWords(plan.text))
-    const mine = contentWords(d.step).filter(w => planWords.has(w))
-    return said.some(x => {
-      if (x.plan !== plan.key) return false
-      const kept = new Set(contentWords(x.part))
-      return mine.every(w => kept.has(w)) && likeness(x.part, d.step) >= SAID_LIKENESS
-    })
-  }
-  const fresh = (a.dropped ?? []).map(d => ({ ...d, plan: planOf(d.n, plans) })).filter(d => inPlans(d.step, plans) && !saidBefore(d))
+  const fresh = (a.dropped ?? []).filter(d => inPlans(d.step, plans))
   const flag = a.flag
-  const named = flag === null ? [] : nearest(fresh.filter(d => speaksOf(flag, d.step)), s => heldIn(s, flag)).slice(0, 1)
+  const named = flag === null ? [] : fresh.filter(d => names(flag, d.step)).sort((x, y) => contentWords(y.step).length - contentWords(x.step).length).slice(0, 1)
   const rest = fresh.filter(d => !named.includes(d))
   const first = rest[0]
-  const told = (ds: readonly (StepRef & { plan?: { key: string } })[]): SaidDrop[] =>
-    ds.map(d => ({ part: stepText(d.step), ...(d.plan === undefined ? {} : { plan: d.plan.key }) }))
+  const told = (ds: readonly StepRef[]): string[] => ds.map(d => stepText(d.step))
   if (first === undefined) return { note: own, drops: told(named) }
   const joined = (lines: readonly string[]): string => lines.filter(l => l !== '').join(' ')
   if (own !== null && named.length > 0)
@@ -3710,9 +3656,8 @@ export function headsUpOf(
   }, drops: told(rest.slice(0, 1 + DROPPED_ALSO_MAX)) }
 }
 
-// The Heads up's note alone, for a caller that keeps no parts said.
-export const headsUp = (a: WatchAnswer, seen: readonly string[], plans: readonly string[]): { line: string; why: string } | null =>
-  headsUpOf(a, seen, plans).note
+// The Heads up's note alone.
+export const headsUp = (a: WatchAnswer, plans: readonly string[]): { line: string; why: string } | null => headsUpOf(a, plans).note
 
 // A reply that did not reach "does:" is read as nothing, with no verdict (endsWhole).
 export function parseBrief(text: string): BriefAnswer {
