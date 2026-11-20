@@ -3,6 +3,21 @@
 What changed in each release of Owner Rep, newest first. The full record is the
 [commit history](https://github.com/macollins27/owner-rep/commits/main).
 
+## Unreleased
+
+- **The rep's brief is shorter and plainer.** The rules the watch, Brief me and the second
+  asking read had grown by patches to about 5,000 words per call, with 35 to 44 "never"s and
+  many rules said two or three times. They are rewritten as one system prompt of sections, each
+  rule said once with its reason, and the rules that decide an answer restated in a line each
+  after the record. Each call now sends about 3,300 words with no "never" and no capitals for
+  emphasis, and a test holds every call to its size target.
+- **Text in the session cannot pass as the record's end or as the owner.** The record and the
+  owner's messages are fenced in tags that end in a random code made once per session, and any
+  such tag found inside is printed harmlessly, so an agent cannot close the fence by guessing it.
+- **The replay rebuilds calls with this change.** `/owner-rep-replay` takes `rewrite`, the edit
+  that turns a watch, briefing, second-asking or own-words call saved by the build before into
+  what this build sends.
+
 ## 0.7.7 (19 November 2026)
 
 - **A fact written with its state first stays a fact.** A condition the objective writer wrote

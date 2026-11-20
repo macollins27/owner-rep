@@ -470,8 +470,9 @@ was built from, so the agent's words alone never move it.
 
 The record reaches the model as entries labelled `entry 1`, `entry 2` and so on (never `#1`, the
 form the owner's numbered messages take, so no entry can be cited as one of the owner's), fenced
-as data, under a system prompt saying the task means that record wherever it speaks of the
-conversation. Rows after the job's earliest open approval are given whole up to the budget.
+as data between tags that end in the session's own fence, eight random letters and digits made
+once per session, so nothing the agent writes into the record can close the fence by guessing its
+tag; the owner's messages are fenced the same way, so an agent's text cannot pass as theirs. Rows after the job's earliest open approval are given whole up to the budget.
 Earlier ones are cut, each message to 3,000 characters and each tool's input and result to 600, a
 compaction summary up to 40,000, and the oldest are left out past 200,000 characters, with a line
 saying how many. Every cut is marked inside the field it falls in. The approved plans themselves
@@ -696,7 +697,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 759 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 764 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: twelve real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -784,6 +785,12 @@ to an agent by itself.
   measured cost beside the button.
 - **The check runs outside the session.** A headless, read-only run, so the agent never
   hears from the rep and the owner gets no permission prompts.
+- **Fewer, plainer rules.** By November 2026 the readers' brief had grown by patches to about
+  5,000 words per call, with 35 to 44 "never"s and many rules said two or three times. The prompt
+  audit of 14 November rewrote it as one system prompt of sections, each rule said once, plainly,
+  with its reason, the rules that decide an answer restated in a line each after the record. Each
+  call now sends about 3,300 words, none of them "never" and none in capitals for emphasis, and a
+  unit test holds every call to its target, so the brief cannot grow back the same way.
 - **Proven on real sessions.** Each route was pressed live by the owner before the next was
   built: the row, the briefing, the watch, the note to the rep, and two real checks on the session
   that built it. A keyboard chord for the Rep button could not be proven and was removed.
