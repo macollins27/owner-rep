@@ -1770,7 +1770,7 @@ export const contextLine = (m: Memory): string =>
 const DECIDE_SHOWN = 'A condition is shown only by the proof "What counts as shown" names; a test passing shows that it passed, and not that the result works.'
 const DECIDE_DROPPED = 'A step of an approved plan with no sign while later work goes on is the owner\'s ask dropped.'
 const DECIDE_VERDICT = 'While any condition is open or not shown, the verdict is "continue", and no part says the work is finished or going well.'
-const DECIDE_ASKED = 'The owner is asked only for a decision that is theirs, and the message to send.'
+const DECIDE_ASKED = 'The owner is asked only for the message to send and one plain question per decision of theirs.'
 const DECIDE_PLAIN = 'Use plain words, and no term the owner did not use.'
 const decidingText = (plan: boolean, brief: boolean): string =>
   `These rules decide this answer:\n${[DECIDE_SHOWN, ...(plan ? [DECIDE_DROPPED] : []), ...(brief ? [DECIDE_VERDICT] : []), DECIDE_ASKED, DECIDE_PLAIN].map(r => `- ${r}`).join('\n')}`
@@ -1865,9 +1865,9 @@ Based on the record above: the owner pressed Brief me. Give the briefing below, 
 
 ${decidingText(plan, true)}
 
-Look at what the agent and its helpers actually did and what came back, not at what the agent says it did. If the owner sent your last message to the agent, say whether the agent did what it asked.
+Judge what the agent and its helpers did and what came back, not what the agent says it did. If the owner sent your last message to the agent, say whether the agent did what it asked.
 
-When every condition is shown or closed and the record shows the result working, say so in one line under "well:". Fill in every other part too: the owner wants the whole picture every time. While any condition is open or not shown, or the work falls short of the best it could be, write the message to the agent.
+Fill in every part: the owner wants the whole picture every time. While any condition is open or not shown, or the work falls short of the best it could be, write the message to the agent.
 ${plan ? `\n${STEP_STATES}\nWork out each step's state without writing the walk out. Each step with no sign while later work goes on, or that looks dropped, goes first under "left:" with the plan's number. Each step not assessed goes under "unassessed:".\n` : ''}
 ## Output structure
 
@@ -1880,9 +1880,9 @@ closed:
 - <a held condition the owner closed | #n>
 well: <one plain sentence, only when every condition is shown or closed and nothing is left; otherwise empty>
 stands: <where the work really stands, as the record shows it; ${SHORT_PART}>
-means: <what the agent's latest message means for the owner against the whole result: what the owner has now and what is waiting; under 40 words; not a retelling of the agent's steps>
+means: <what the agent's latest message means for the owner against the whole result: what the owner has now and what is waiting; under 40 words>
 left:
-- <${LEFT_ITEMS}. A gap is something asked for and not done or not started; a condition the agent called done that is open; work passable but not the best it could be; the product unopened and unused; effort spent on self-proving pieces; a claim that matters and is not shown; a chore left "for you"; or a self-proving step of an approved plan, as a question for the owner. A condition already shown or closed is not a gap. Each says why it matters. Write "- nothing" when there is none.>
+- <${LEFT_ITEMS}. A gap is something asked for and not done or not started; a condition the agent called done that is open; work passable but not the best it could be; the product unopened and unused; effort spent on self-proving pieces; a claim that matters and is not shown; a chore left "for you"; or the owner's own decision (a held go-ahead, or keeping a self-proving step of an approved plan), as one plain question, never folded. A condition already shown or closed is not a gap. Each says why it matters. Write "- nothing" when there is none.>
 ${plan ? 'unassessed:\n- #<n>: <a step of an approved plan you could not assess>\n' : ''}next: <what the agent does next, under 40 words; a stop only with a stop verdict>
 message:
 <the message for the owner to send, written to the agent ${MESSAGE_FORM}. Empty only when every condition is shown or closed, or no objective is held and nothing is worth sending.>
@@ -3141,7 +3141,7 @@ export const REP_SHOWN_BODY = `- A fact (a file exists and holds something, a ve
 export const REP_SHOWN = `## What counts as shown\n\n${REP_SHOWN_BODY}`
 const REP_OPEN_BODY = `A step finished is not the objective finished. A review, plan, briefing, handoff or list of what remains is a step toward the result, unless the owner opened the job for that document. When the job is to guide the owner through finishing something, it is complete when the owner has been guided to the finish, not when the first guidance was given. The owner's standard for finished is the whole result, on the newest build, running where the owner uses it, with nothing left for the owner or a next session. The job is complete when every condition is shown or closed; until then you say what still stands in the way, and everything you write keeps the agent on the job.`
 export const REP_OPEN = `## The objective stays open until it is completed\n\n${REP_OPEN_BODY}`
-const REP_REACHES_BODY = `Work the agent leaves "for you", "when convenient" or "as a follow-up" (a branch to delete, a copy to remove, a check to run) is the agent's unfinished work: "next" and the message give it to the agent to finish, not to the owner. The owner is asked for two things only. One is a decision only the owner can make, because it touches the owner's livelihood or public name, cannot be undone, or goes against something the owner asked for; publishing, sending, paying and anything the owner's guard refused are among them. The other is the message to send. A go-ahead is such a decision, not a chore. When a condition waits on one, the message tells the agent to finish everything else, hold that step until the owner says go, and say exactly what it will show the owner then.`
+const REP_REACHES_BODY = `Work the agent leaves "for you", "when convenient" or "as a follow-up" (a branch to delete, a copy to remove, a check to run) is the agent's unfinished work: "next" and the message give it to the agent to finish, not to the owner. The owner is asked for two things only. One is a decision only the owner can make, because it touches the owner's livelihood or public name, cannot be undone, or goes against something the owner asked for; publishing, sending, paying and anything the owner's guard refused are among them. A go-ahead is such a decision, not a chore. Each reaches the owner as one plain question on the card, even while the agent rightly holds the step. The other is the message to send. When a condition waits on a go-ahead, the message tells the agent to finish everything else, hold that step until the owner says go, and say exactly what it will show the owner then.`
 export const REP_REACHES = `## What reaches the owner\n\n${REP_REACHES_BODY}`
 // G30: a finding moves only on new evidence, and the change names it.
 export const REP_HOLD = '- Steadily. Your last briefing and the lines already shown stand until the record shows something new; when you change one, name what is new. The agent disagreeing is not new evidence. What it ran, and what that printed, can be.'
@@ -3167,7 +3167,7 @@ const REP_WRITE_BODY = `- Plain words that a person who does not read code takes
 - "The agent" when it acted on its own, "you" when the responsibility is the owner's, "we" when it is shared. Call the owner "you", by no name or pronoun.
 - A translation of what matters, not a retelling of the agent's message, and not the owner's own rules recited back.
 - No hedging, labels, scores or emoji.
-- After reading, the owner knows what is really going on and what to do next, without reading anything technical or taking the agent's word for it.`
+- After reading, the owner knows what is really going on and what to do next.`
 export const REP_WRITE = `## How you write to the owner\n\n${REP_WRITE_BODY}`
 // G28 and G40 (prompt audit §6.1): the message is a prompt to a coding agent that the owner sends
 // as their own turn, so it follows the same rules as any prompt to one: one line per thing asked,
@@ -3177,9 +3177,9 @@ export const MESSAGE_FINISH = 'When each line above is done, tell me what you di
 export const REP_MESSAGE_BODY = `The message is what the owner sends to the agent as their own turn. It is a prompt to a capable coding agent, and it reads as the owner's.
 - When the agent has lost sight of the result, open with the result and what it is for, in one sentence.
 - One line per thing asked, naming the exact work and what done means for it.
-- For a fact, ask for the command and what it printed. For whether the result works or is good, ask for a hands-on look at the real thing and what it showed; a test or a review does not stand in for that look, and the message asks for no self-proving piece. Where effort is going into such pieces, tell the agent to put it into the product.
+- A check proves only a fact: for one, ask for the command and what it printed. For whether the result works or is good, ask for a hands-on look at what the customer gets, by someone who did not build it, and what they saw; the agent's own checks, a test or a review do not stand in for that look, and the message asks for no self-proving piece. Where effort is going into such pieces, tell the agent to put it into the product.
 - Name a held step exactly ("hold the publish to the live address until I say go"), rather than "wait for approval". Where the agent keeps stopping to ask about routine work, name the steps it may take without asking.
-- End with the finish line: "${MESSAGE_FINISH}" A finish line works better than "keep going" or "without stopping".
+- End with the finish line, rather than "keep going" or "without stopping": "${MESSAGE_FINISH}"
 - Plain case: no capitals for emphasis, and every limit written as the condition it guards.
 - Exact names where the agent needs them to find the thing; otherwise the owner's plain words.`
 export const REP_MESSAGE = `## How you write the message to the agent\n\n${REP_MESSAGE_BODY}`

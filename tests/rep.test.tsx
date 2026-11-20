@@ -698,7 +698,7 @@ test('the brief and the watch keep a phrase of 48 standing rules in both and sta
     'A term reaches the owner only if the owner used it',
     'A translation of what matters, not a retelling of the agent\'s message',
     'No hedging, labels, scores or emoji.',
-    'After reading, the owner knows what is really going on and what to do next, without reading anything technical or taking the agent\'s word for it.',
+    'After reading, the owner knows what is really going on and what to do next.',
   ]
   for (const line of kept) {
     expect(b).toContain(line)
@@ -769,7 +769,7 @@ test('the brief and the check write a message while any condition is open or not
   const check = checkPrompt({ sessionId: 's', cwd: '/tmp', copy: '/tmp', owner: [om('Build it.')], reading: 'x', brief: parseBrief('stands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '1:00 pm', conditions: OBJECTIVE_FIXTURE.done, shown: [], from: 0 })
   expect(brief).toContain('While any condition is open or not shown, or the work falls short of the best it could be, write the message to the agent.')
   // How the message asks for proof is said once, in the system prompt's section on the message.
-  expect(rep.REP_MESSAGE).toContain('a test or a review does not stand in for that look, and the message asks for no self-proving piece')
+  expect(rep.REP_MESSAGE).toContain('the agent\'s own checks, a test or a review do not stand in for that look, and the message asks for no self-proving piece')
   expect(brief).not.toContain('new tests')
   expect(check).toContain('never a self-proving piece, and a test or a review never stands in for that look')
   expect(check).not.toContain('never new tests')
@@ -785,7 +785,7 @@ test('the brief and the check write a message while any condition is open or not
 
 test('the brief names all three duties for a step held on the owner\'s go-ahead: finish the rest, hold it, say what will be shown', () => {
   const brief = readerGets(briefPrompt({ objective: null, owner: [om('Build it.')], past: [], seen: [], others: [] }))
-  expect(brief).toContain('A go-ahead is such a decision, not a chore. When a condition waits on one, the message tells the agent to finish everything else, hold that step until the owner says go, and say exactly what it will show the owner then.')
+  expect(brief).toContain('A go-ahead is such a decision, not a chore. Each reaches the owner as one plain question on the card, even while the agent rightly holds the step. The other is the message to send. When a condition waits on a go-ahead, the message tells the agent to finish everything else, hold that step until the owner says go, and say exactly what it will show the owner then.')
   // The message names the held step exactly.
   expect(brief).toContain('Name a held step exactly ("hold the publish to the live address until I say go"), rather than "wait for approval".')
 })
@@ -1476,7 +1476,7 @@ test('every read that writes the message carries the rule for a step that waits 
   // The watch, the briefing and the ask again hold it once, in the system prompt's "What reaches the
   // owner"; the second asking points to it; own words and the check carry their own copy.
   for (const text of [readerGets(briefPrompt(m)), readerGets(watchPrompt(m, 'stop'))]) {
-    expect(text.split('When a condition waits on one, the message tells the agent to finish everything else, hold that step until the owner says go, and say exactly what it will show the owner then.').length).toBe(2)
+    expect(text.split('When a condition waits on a go-ahead, the message tells the agent to finish everything else, hold that step until the owner says go, and say exactly what it will show the owner then.').length).toBe(2)
   }
   expect(askAgain(OPEN_JOB_OPEN, 'gave no verdict')).toContain('A condition waiting on the owner\'s go-ahead is held, as "What reaches the owner" says.')
   for (const text of [ownWordsPrompt(m, OPEN_JOB_OPEN, EMPTY_CARD), check]) {
@@ -2081,7 +2081,7 @@ test('rule: REP_SYSTEM is the one fixed system prompt of the watch, the briefing
   // The briefing restates the open objective's verdict rule; the watch does not give a verdict.
   expect(briefPrompt(m)).toContain('\n- While any condition is open or not shown, the verdict is "continue", and no part says the work is finished or going well.')
   expect(watchPrompt(m, 'step')).not.toContain('the verdict is "continue"')
-  expect(watchPrompt(m, 'step')).toContain('\n- The owner is asked only for a decision that is theirs, and the message to send.')
+  expect(watchPrompt(m, 'step')).toContain('\n- The owner is asked only for the message to send and one plain question per decision of theirs.')
   // The walk of a plan's steps is one text, in both readers, only while a plan is held.
   for (const [name, task] of calls) expect(`${name}: ${count(task, rep.STEP_STATES)}`).toBe(`${name}: ${name.endsWith('with a plan') ? 1 : 0}`)
   // Own words takes the same strings, never a copy that could drift.
@@ -2112,7 +2112,7 @@ test('rule: every read, the check, the writer and the own-words call hold one st
   // Not shown is said plainly, never as a failure, and the message asks for the proof the standard names.
   expect(REP_SYSTEM).toContain(`is "not shown", which is neither a failure nor untrue. Say it plainly, and have the message ask for ${named}.`)
   expect(REP_SYSTEM).toContain('- not shown: the agent says it is done, and only proof from outside the agent\'s word can show it, such as what is installed, deployed or running. It becomes shown as soon as the record holds that proof.')
-  expect(rep.REP_MESSAGE).toContain('For a fact, ask for the command and what it printed. For whether the result works or is good, ask for a hands-on look at the real thing and what it showed')
+  expect(rep.REP_MESSAGE).toContain('A check proves only a fact: for one, ask for the command and what it printed. For whether the result works or is good, ask for a hands-on look at what the customer gets, by someone who did not build it, and what they saw')
   expect(askAgain(OPEN_JOB_OPEN, 'gave no verdict')).toContain('Measure each one against the record by "What counts as shown".')
   expect(askAgain(OPEN_JOB_OPEN, 'gave no verdict')).toContain('asking for the proof it still needs.')
   expect(ownWordsPrompt(m, OPEN_JOB_OPEN, card as never)).toContain("and where proof is missing, the proof that would show it: a fact's command and what it printed, or a hands-on look at the real thing")
@@ -2127,6 +2127,27 @@ test('rule: every read, the check, the writer and the own-words call hold one st
   expect(OBJECTIVE_SYSTEM).toContain("only proof from outside the agent's word can show it, such as what is installed, deployed or running")
 })
 
+test('rule: a step held for the owner\'s go-ahead reaches the owner as one plain question on the card, and whether the result works is asked of a hands-on look by someone who did not build it, never of more checks (tenth live test)', () => {
+  // The tenth live test: a briefing called a send held for the owner "your decision, not a gap" and
+  // asked nothing, and its message asked the agent to re-run its own line-length and character checks
+  // where the card had just said nobody but the agent had read the note.
+  const o = { ...OBJ_FIXTURE, done: OPEN_JOB_OPEN }
+  const m: Memory = { objective: o, owner: [om('write the welcome note, and send it only when I say go')], past: [], seen: [], others: [] }
+  const question = 'Each reaches the owner as one plain question on the card, even while the agent rightly holds the step.'
+  const works = 'A check proves only a fact: for one, ask for the command and what it printed. For whether the result works or is good, ask for a hands-on look at what the customer gets, by someone who did not build it, and what they saw; the agent\'s own checks, a test or a review do not stand in for that look'
+  const brief = readerGets(briefPrompt(m))
+  for (const t of [readerGets(watchPrompt(m, 'step')), readerGets(watchPrompt(m, 'stop')), readerGets(watchPrompt(m, 'note')), brief]) {
+    expect(t).toContain(`publishing, sending, paying and anything the owner's guard refused are among them. A go-ahead is such a decision, not a chore. ${question}`)
+    expect(t).toContain('\n- The owner is asked only for the message to send and one plain question per decision of theirs.')
+    expect(t).toContain(works)
+    expect(t).not.toContain('ask for a hands-on look at the real thing and what it showed')
+  }
+  // The briefing lists the held decision under "left:" as a question, kept out of the folded last line.
+  const left = brief.match(/\nleft:\n- <([^\n]*)>\n/)?.[1] ?? ''
+  expect(left).toContain('or the owner\'s own decision (a held go-ahead, or keeping a self-proving step of an approved plan), as one plain question, never folded.')
+  expect(left.indexOf('as one plain question')).toBeLessThan(left.indexOf('A condition already shown or closed is not a gap.'))
+})
+
 test('rule: a self-proving step of an approved plan is the owner\'s ask and a question for the owner, and only a decision truly the owner\'s or the message reaches the owner (prompt group 4)', () => {
   const o = { ...OBJ_FIXTURE, done: OPEN_JOB_OPEN }
   const m: Memory = { objective: o, owner: [om('yes, go with the plan')], past: [], seen: [], others: [] }
@@ -2135,7 +2156,7 @@ test('rule: a self-proving step of an approved plan is the owner\'s ask and a qu
   const held = 'hold that step and do everything else until the owner answers'
   // The readers: such a step is named under "left" as a question, and the agent holds it and does the rest.
   expect(REP_SYSTEM).toContain(`A check the owner asked for in their own words is part of the job. ${asked}: name it as that question, and have the message tell the agent to ${held}.`)
-  expect(briefPrompt(m)).toContain('or a self-proving step of an approved plan, as a question for the owner.')
+  expect(briefPrompt(m)).toContain('or the owner\'s own decision (a held go-ahead, or keeping a self-proving step of an approved plan), as one plain question, never folded.')
   expect(REP_SYSTEM).not.toContain('one that is a step of a plan the owner approved, is part of the job')
   // The check: the same.
   const check = checkPrompt({ sessionId: 's', cwd: '/w', copy: '/c', reading: objectiveText(o), conditions: o.done, shown: [], owner: m.owner, brief: card as never, writtenAt: '10:00', from: 1, unanswered: [], guarded: [] } as never)
@@ -2148,9 +2169,9 @@ test('rule: a self-proving step of an approved plan is the owner\'s ask and a qu
   // What reaches the owner: a chore is the agent's; the owner gets a plain question on a decision truly theirs, or the message.
   const reaches = rep.REP_REACHES
   expect(reaches).not.toMatch(/does no step of the job themselves, ever|Only two things ever/)
-  expect(reaches).toContain('The owner is asked for two things only. One is a decision only the owner can make, because it touches the owner\'s livelihood or public name, cannot be undone, or goes against something the owner asked for; publishing, sending, paying and anything the owner\'s guard refused are among them. The other is the message to send. A go-ahead is such a decision, not a chore.')
+  expect(reaches).toContain('The owner is asked for two things only. One is a decision only the owner can make, because it touches the owner\'s livelihood or public name, cannot be undone, or goes against something the owner asked for; publishing, sending, paying and anything the owner\'s guard refused are among them. A go-ahead is such a decision, not a chore. Each reaches the owner as one plain question on the card, even while the agent rightly holds the step. The other is the message to send.')
   expect(reaches).toContain('the message tells the agent to finish everything else, hold that step until the owner says go, and say exactly what it will show the owner then.')
-  for (const t of [watchPrompt(m, 'step'), watchPrompt(m, 'stop'), briefPrompt(m)]) expect(t).toContain('\n- The owner is asked only for a decision that is theirs, and the message to send.')
+  for (const t of [watchPrompt(m, 'step'), watchPrompt(m, 'stop'), briefPrompt(m)]) expect(t).toContain('\n- The owner is asked only for the message to send and one plain question per decision of theirs.')
   // The gate lets through a message that holds such a step and pushes the rest, and still refuses one that parks the agent.
   expect(messageSaysStop('Hold the step that writes a script proving each stage ran until the owner answers whether to keep it. Do everything else now: finish the import, run it on the real export and show what it printed.')).toBe(false)
   expect(messageSaysStop('Hold the publish step until the owner says go. Finish everything else, then say exactly what you will show the owner then.')).toBe(false)
@@ -18052,10 +18073,10 @@ describe('the call log: its pieces', () => {
     const m: Memory = { objective: { ...OBJ_FIXTURE, done: OPEN_JOB_OPEN }, owner: [om('make it serious')], past: [], seen: [], others: [] }
     const body = rep.REP_MESSAGE_BODY
     expect(rep.REP_MESSAGE).toBe(`## How you write the message to the agent\n\n${body}`)
-    expect(body).toContain(`End with the finish line: "${rep.MESSAGE_FINISH}"`)
+    expect(body).toContain(`End with the finish line, rather than "keep going" or "without stopping": "${rep.MESSAGE_FINISH}"`)
     expect(body).toContain('rather than "wait for approval"')
     expect(body).toContain('One line per thing asked, naming the exact work and what done means for it.')
-    expect(body).toContain('For a fact, ask for the command and what it printed. For whether the result works or is good, ask for a hands-on look at the real thing and what it showed')
+    expect(body).toContain('A check proves only a fact: for one, ask for the command and what it printed. For whether the result works or is good, ask for a hands-on look at what the customer gets, by someone who did not build it, and what they saw')
     // The message's length is set once, where the template asks for it (MESSAGE_FORM), not in the section.
     expect(body).not.toMatch(/\b\d+ words\b/)
     expect(rep.MESSAGE_FORM).toMatch(/\b\d+ words\b/)
