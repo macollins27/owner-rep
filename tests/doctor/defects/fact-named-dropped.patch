@@ -1,12 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 8d2bd98..7a72247 100644
+index 6683b55..3de5de6 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3599,7 +3599,6 @@ const factRead = (ts: FactTok[]): boolean => {
+@@ -3839,7 +3839,6 @@ const factRead = (ts: FactTok[]): boolean => {
          // A state after it with a place: "a commit made during this job" (sixth live test).
          if (w(n + 1, /^made$/) || w(n + 1, FACT_STATE)) for (const p of places(n + 2)) if (p > n + 2) out.push({ i: p, store })
          if (ts[n + 1]?.t === 'P' && ts[n + 1]?.p !== 'word') out.push({ i: n + 2, store: true })
 -        if (w(n + 1, /^(?:named|called)$/) && namedAt(n + 2)) out.push({ i: n + 3, store })
-       }
-     }
-     return out
+         // A copy of a named file or of a thing from the list: "a copy of welcome.txt exists in the
+         // sent folder" (tenth live test). What it is a copy of is read as a noun, so a quality there
+         // ("a copy of the fast tool") is no fact.

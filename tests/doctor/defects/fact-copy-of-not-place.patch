@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index e86901f..52cdaa3 100644
+index 6683b55..f6dc0b8 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3640,7 +3640,7 @@ const factRead = (ts: FactTok[]): boolean => {
-     if (w(at, /^for$/)) return w(at + 1, /^(?:this|the)$/) && w(at + 2, /^(?:job|session|task|work)$/) ? [at + 3] : []
+@@ -3868,7 +3868,7 @@ const factRead = (ts: FactTok[]): boolean => {
      // "installed as a copy of greet-source.sh", "installed with permission to run" (ninth live
      // test, session D's copy follow-up): shown by a byte compare and by the file's listing.
--    if (w(at, /^as$/) && w(at + 1, /^an?$/) && w(at + 2, /^copy$/) && w(at + 3, /^of$/)) {
+     const ex = w(at + 2, /^exact$/) ? 1 : 0
+-    if (w(at, /^as$/) && w(at + 1, /^an?$/) && w(at + 2 + ex, /^copy$/) && w(at + 3 + ex, /^of$/)) {
 +    if (false) {
-       const c = at + 4
+       const c = at + 4 + ex
        return (pathAt(c) ? [c + 1] : []).concat(det(c) ? noun(c, FACT_THING, FACT_STORE).map(r => r.i) : [])
      }

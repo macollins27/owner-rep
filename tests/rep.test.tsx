@@ -10487,7 +10487,7 @@ test('factHolds reads a doing folded into a noun\'s own words as works: a plural
   // own listing. Each joining (hyphen, slash, dot, a space) and each slot (the thing, the thing held,
   // the place, after "no") is read the same way.
   const works: string[] = []
-  for (const d of ['copies-files', 'changes-files', 'tags-files', 'logs-in', 'scripts-changes', 'files-logs', 'copies-every-file', 'copies-all-files', 'logs-every-input', 'logs-all-output', 'changes-every-file', 'tags-every-file', 'scripts-every-change', 'files-every-log'])
+  for (const d of ['copies-files', 'changes-files', 'tags-files', 'logs-in', 'scripts-changes', 'files-logs', 'copies-every-file', 'copies-all-files', 'logs-every-input', 'logs-all-output', 'changes-every-file', 'tags-every-file', 'scripts-every-change', 'files-every-log', 'pushes-files', 'reports-errors', 'pushes-every-file', 'reports-every-error'])
     for (const j of ['-', '/', '.', ' ']) {
       const n = d.split('-').join(j)
       works.push(`The ${n} tool is installed`, `The script contains a ${n} fix`, `The file is saved on the ${n} server`, `No file holds ${n} code`)

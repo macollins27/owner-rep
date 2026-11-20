@@ -1,13 +1,17 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 8d2bd98..6cbd2cd 100644
+index 6683b55..f26847e 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3641,7 +3641,7 @@ const factRead = (ts: FactTok[]): boolean => {
+@@ -3896,10 +3896,10 @@ const factRead = (ts: FactTok[]): boolean => {
      // note's end is an end, so what follows a comma that is no note is read as its own clause.
      if (x(at, '(')) { const e = run(at + 1, true); if (e > at + 1 && x(e, ')')) out.push(e + 1) } else {
        let s = at
--      for (let e = run(s, false); e > s; s = e + 1, e = run(s, false)) { out.push(e); if (!x(e, ',')) break }
-+      const e = run(s, false); if (e > s) out.push(e)
+-      for (let e = run(s, false); e > s; s = e + 1, e = run(s, false)) {
++      const e = run(s, false)
++      if (e > s) {
+         out.push(e)
+         if (x(e, '(')) { const c = run(e + 1, true); if (c > e + 1 && x(c, ')')) out.push(c + 1) }
+-        if (!x(e, ',')) break
+       }
      }
      return out
-   }
