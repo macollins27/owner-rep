@@ -70,7 +70,8 @@ searches the transcripts of every project there with `git grep` (or `grep -r`) f
 the session it came from, and reads your messages from the files that hold it; nothing else of
 those files is kept.
 
-When you press **Check it**, the rep reads Claude Code's `.claude.json` (in your Claude Code
+When you press **Check it**, the rep reads the first time the session's transcript records and
+tells the check when the session began; nothing else of the transcript is read for this. It reads Claude Code's `.claude.json` (in your Claude Code
 configuration folder, or your home) for your agentsview server entry alone, and passes that
 entry to the check's own run on your machine. Nothing else in that file is read into the rep,
 kept or sent. It also reads the names of the plugins your Claude Code `settings.json` turns on
