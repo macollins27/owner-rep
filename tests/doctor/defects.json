@@ -5217,13 +5217,13 @@
     "name": "move-seen-prior-dropped",
     "breaks": "Each move's mark replaces the one before instead of adding to it, so the sessions an earlier move saw count as unseen again and a record let go since comes back from the map.",
     "patch": "move-seen-prior-dropped.patch",
-    "fixed": "2026-11-21, the check of 535608c (#71)"
+    "fixed": "2026-11-21, the check of 535608c (#71); remade 2026-11-21"
   },
   {
     "name": "move-seen-reread-skipped",
     "breaks": "The move writes its mark over one another process wrote while it ran, so that process's sessions count as unseen again and a record let go since comes back from the map.",
     "patch": "move-seen-reread-skipped.patch",
-    "fixed": "2026-11-21, the check of 535608c (#71)"
+    "fixed": "2026-11-21, the check of 535608c (#71); remade 2026-11-21"
   },
   {
     "name": "move-seen-own-newer-unmarked",
@@ -5236,5 +5236,23 @@
     "breaks": "While a move is unfinished the trim keeps only SESSIONS_MAX minus the mapped records, so two new sessions saving in turn let go each other's records in favour of week-old mapped ones.",
     "patch": "trim-ranks-free-only.patch",
     "fixed": "2026-11-21, the check of 535608c (#71)"
+  },
+  {
+    "name": "move-mark-above-key",
+    "breaks": "The move marks each session at the `at` it read even when that session's key now holds an older copy another move wrote, so an older build's later save in the map counts as seen and is never read.",
+    "patch": "move-mark-above-key.patch",
+    "fixed": "2026-11-21, the check of 13e7d4d (#71)"
+  },
+  {
+    "name": "move-mark-let-go-key-zero",
+    "breaks": "A key another process's trim let go while the move ran drops its session's mark to 0, so the map's copy from before the move is read back in place of the record the trim let go.",
+    "patch": "move-mark-let-go-key-zero.patch",
+    "fixed": "2026-11-21, the check of 13e7d4d (#71)"
+  },
+  {
+    "name": "move-mark-copied-only",
+    "breaks": "Only the sessions this move copied are marked at no more than their key holds, so a session it read but found already copied, whose key another move then wrote over with an older copy, loses the older build's later save.",
+    "patch": "move-mark-copied-only.patch",
+    "fixed": "2026-11-21, the check of 13e7d4d (#71)"
   }
 ]

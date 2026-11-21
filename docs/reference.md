@@ -1384,7 +1384,16 @@ records is copied to its own key when that key is missing or older (`newerRec`),
 every map record the move read, by session id, blank ones and ones whose key was newer included,
 is added to the mark `movedSeen` (`MOVE_SEEN_KEY`, `moveSeenOf`). The move reads the mark again just
 before writing it and merges the two, the later `at` per id (`mergeSeen`), so a mark another process
-wrote meanwhile is kept. A later move copies only map records no finished move saw at their `at` or
+wrote meanwhile is kept. Each session the move read is then marked at no more than the `at` its own
+key still holds, so when another move running at the same time wrote an older copy over that key,
+the map's later save stays unseen, is read, and is copied by the next move; a key let go meanwhile
+keeps its mark, so the map's copy from before the move is not read back. Until the check of
+13e7d4d, that older copy was marked seen at the later `at` and the older build's later save was
+never read. The marks assume clocks move forward: an older build whose clock stepped back, or one
+saving a session twice in the same millisecond with the move reading between, saves a copy no
+later than the one the move saw, and it is not read. The copy itself is a read then a write, with
+no compare-and-set: a new-build save of the same session landing inside one move's read and write
+of that key is written over, the same window as the trim's. A later move copies only map records no finished move saw at their `at` or
 later (`unseenByMove`): a session the mark does not name, or a later `at` than the one it names. So a
 record the trim let go is not copied back, and an older build's save that lands after the map was
 read is a session or an `at` the move did not see, whatever its stamp, so it is read and copied. A

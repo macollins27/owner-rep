@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index d7257be..e283843 100644
+index eae90c5..a112121 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -544,7 +544,7 @@ async function migrate($: EngineInterface): Promise<void> {
-   }
-   // Each record the move read, by its `at`: an older build's save that lands after the map was
-   // read, whatever its stamp, is a session the move did not see or a later `at`, and is read.
--  await $.store.set(MOVE_SEEN_KEY, mergeSeen(moveSeenOf(await $.store.get(MOVE_SEEN_KEY)) ?? seen, saw))
-+  await $.store.set(MOVE_SEEN_KEY, mergeSeen(seen, saw))
-   if (started - newest > OLD_MAP_IDLE_MS) await $.store.delete(OLD_MAP_KEY)
- }
- 
+@@ -547,7 +547,7 @@ async function migrate($: EngineInterface): Promise<void> {
+   // Each session the move read is marked at no more than its own key still holds, so a key another
+   // move overwrote with an older copy leaves the map's later save unseen, read and copied by the
+   // next move. A key let go meanwhile keeps the mark: the map's copy is not read back in its place.
+-  const mark = mergeSeen(moveSeenOf(await $.store.get(MOVE_SEEN_KEY)) ?? seen, saw)
++  const mark = mergeSeen(seen, saw)
+   for (const id of Object.keys(saw)) {
+     const cur = await $.store.get(recKey(id))
+     if (isRec(cur)) mark[id] = Math.min(mark[id] ?? atOf(cur), atOf(cur))
