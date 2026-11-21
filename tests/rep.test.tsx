@@ -9375,6 +9375,32 @@ test('rule: Brief me, reads 1 and 2 with no message: the own-words call, told wh
   expect(rec()?.lastBrief).toMatchObject({ message: 'Show me the install log and each session finishing.', reads: 3, own: 'whole' })
 })
 
+// §6.5: the own-words call is told the rule the card it rewrites broke: the second answer's when the
+// second asking was refused for another rule, the first answer's when the second asking did not answer.
+for (const [name, replies, kept] of [
+  ['the second asking\'s when that was refused for another rule', [EMPTY_BRIEF(), STOP_BRIEF()], 'left the message to the agent empty'],
+  ['the first answer\'s when the second asking did not answer', [STOP_BRIEF(), null], null],
+] as Array<[string, Array<string | null>, string | null]>) {
+  test(`rule: the own-words call names the rule of the answer it rewrites: ${name}`, async ($, on) => {
+    openJob(on)
+    quietBand(on)
+    let n = 0
+    on('model.fork', () => {
+      const text = replies[n++] ?? null
+      return { value: text === null ? { isAnswered: false, reason: 'empty-reply', usage: USAGE } : { isAnswered: true, text, usage: USAGE } }
+    })
+    const asks = ownWords(on, () => OWN_REPLY('Show me the install log and each session finishing.'))
+    await started($)
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    await ui.press({ key: 'rep' })
+    await ui.unmount()
+    expect(n).toBe(2)
+    expect(asks).toHaveLength(1)
+    expect(asks[0]?.prompt).toContain('The briefing was refused because it gave "stop" as its verdict;')
+    if (kept !== null) expect(asks[0]?.prompt).not.toContain(kept)
+  })
+}
+
 test('rule: Brief me, reads 1 and 2 with no message and the own-words call failing: the card carries the fixed text', async ($, on) => {
   const rec = openJob(on)
   quietBand(on)

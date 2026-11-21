@@ -8057,6 +8057,10 @@ message:
 end
 does: <one line: what this message will make the agent do>`
 const PRE_OWN_LEFT = '\nleft:\n'
+// The length aims that build sent, which the rewrite's own-words step writes, so a later change to
+// the live ones never breaks the rewrite and own edits taken together.
+const PRE_OWN_SHORT_PART = 'one or two sentences, about 20 words, under 40'
+const PRE_OWN_MESSAGE_FORM = 'as "How you write the message to the agent" says (each line one sentence of about 12 words, under 150 words in all unless more than five things are asked)'
 
 // The prompt groups after group 2, in order, each with its edit and its pairs by the kind of call.
 // Group i's texts are this build's with every later group's pairs undone; the build after group
@@ -8240,9 +8244,9 @@ function rewriteTask(kind: CallKind, task: string): string | { why: string } {
     // The rewrite's aims below each limit, and the quoted conditions and findings with their tags escaped.
     const request = fenceTags(body.slice(at + 2))
     const swaps: readonly Swap[] = [
-      [`means: <${G7_SHORT_PART}:`, `means: <${SHORT_PART}:`],
-      [`next: <${G7_SHORT_PART}:`, `next: <${SHORT_PART}:`],
-      [`written to the agent ${G7_MESSAGE_FORM}:`, `written to the agent ${MESSAGE_FORM}:`],
+      [`means: <${G7_SHORT_PART}:`, `means: <${PRE_OWN_SHORT_PART}:`],
+      [`next: <${G7_SHORT_PART}:`, `next: <${PRE_OWN_SHORT_PART}:`],
+      [`written to the agent ${G7_MESSAGE_FORM}:`, `written to the agent ${PRE_OWN_MESSAGE_FORM}:`],
     ]
     if (swaps.some(([from]) => request.split(from).length !== 2)) return { why: 'the own-words request is not in it' }
     return done(body.slice(0, at), swaps.reduce((t, [from, to]) => t.replace(from, to), request))
