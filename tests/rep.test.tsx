@@ -14494,6 +14494,33 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
 
   const RP = (n: number, ...steps: string[]) => `#${n}\n<approved_plan>\n${steps.map((s, i) => `${i + 1}. ${s}.`).join('\n')}\n</approved_plan>`
   const saidIn = (got: { note: { line: string; why: string } | null }) => `${got.note?.line ?? ''} ${got.note?.why ?? ''}`
+  test('rule: walk lines readers write for a dropped part, with the plan number in another form or none, are read as dropped (live round on 9590250 wrote "- Verification: … | looks dropped")', () => {
+    const forms = [
+      '- Run the install check | looks dropped',
+      '- **#3**: Run the install check | looks dropped',
+      '1. #3: Run the install check | looks dropped',
+      '- #3 (step 1): Run the install check | looks dropped',
+      '- #3 - Run the install check | looks dropped',
+      '- #3 verification: Run the install check | looks dropped',
+      '- #3: Run the install check | Looks dropped.',
+      '- #3: Run the install check | looks dropped: the agent said it skipped it',
+    ]
+    expect(forms.map(f => (parseWatch(walkAnswer(f)).dropped ?? []).map(d => d.step))).toEqual(forms.map(() => ['Run the install check']))
+    const live = parseWatch(walkAnswer('- #2: Run `python3 -m pytest -v` and show the output | looks dropped\n- Verification: pytest output from step 2, shown verbatim | looks dropped\n- Verification: the real CLI output | done'))
+    expect(live.dropped?.map(d => d.step)).toEqual(['Run `python3 -m pytest -v` and show the output', 'Verification: pytest output from step 2, shown verbatim'])
+    const plan = [RP(2, 'Run `python3 -m pytest -v` and show the output.', 'Verification: pytest output from step 2, shown verbatim.')]
+    expect(rep.headsUp(live, plan)?.line).toContain('Verification: pytest output from step 2, shown verbatim')
+    // A line with no number marked not assessed is not counted as an approved step not assessed.
+    expect(parseWatch(walkAnswer('- Verification: the real CLI output | not assessed')).notAssessed).toBeUndefined()
+  })
+
+  test('rule: a flag that says in one clause that two parts were dropped names both, and neither is said again after it; a part inside a longer named part still is', () => {
+    const plans = [RP(5, 'the install check', 'the lint check')]
+    const flag = 'The install check and the lint check were both skipped.'
+    const got = rep.headsUpOf(parseWatch(walkAnswer('- #5: the install check | looks dropped\n- #5: the lint check | looks dropped', flag, 'Neither ran.')), plans)
+    expect(got).toEqual({ note: { line: flag, why: 'Neither ran.' }, drops: ['the install check', 'the lint check'] })
+  })
+
   test('rule: a flag stands for a dropped part only where one clause of it says that part was dropped', () => {
     const plans = [RP(3, 'Run the install check', 'Update the docs')]
     const done = parseWatch(walkAnswer('- #3: Run the install check | looks dropped\n- #3: Update the docs | underway', 'The docs step was skipped, but the agent did run the install check.', 'The record shows no docs edit.'))

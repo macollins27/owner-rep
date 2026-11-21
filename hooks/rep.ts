@@ -3538,7 +3538,7 @@ function stepsOf(part: string | undefined, walk: boolean): { notAssessed?: StepR
   for (const line of clean(part).split('\n')) {
     if (walk) {
       const w = walkLine(line)
-      if (w !== null && /^not assessed\b/i.test(w.mark)) out.push({ n: w.n, step: w.step })
+      if (w !== null && w.n > 0 && /^not assessed\b/i.test(w.mark)) out.push({ n: w.n, step: w.step })
       continue
     }
     const m = /^\s*[-*•]?\s*#(\d+)\s*:\s*(.+?)\s*$/.exec(line)
@@ -3547,12 +3547,15 @@ function stepsOf(part: string | undefined, walk: boolean): { notAssessed?: StepR
   return out.length === 0 ? {} : { notAssessed: out }
 }
 
-// One line of a walk. Readers also write "#6 step 2, the step", "#6.1:", "#6a:" or "#6 part 2:", and
-// add a note after the mark; the number kept is the plan's, and the mark is what follows the last
-// "|", since a step's own words may hold one.
+// One line of a walk. Readers also write "#6 step 2, the step", "#6.1:", "#6a:", "#6 part 2:",
+// "#6 verification:", "#6 (step 1):", "#6 - the step", "**#6**:" or "1. #6:", and add a note after
+// the mark; the number kept is the plan's, and the mark is what follows the last "|", since a
+// step's own words may hold one. A line with no plan number is read with 0 for it (live round on
+// 9590250: "- Verification: … | looks dropped", the plan's own section, was read as nothing): a
+// dropped part is matched to the plans by its words, never by its number.
 function walkLine(line: string): { n: number; step: string; mark: string } | null {
-  const m = /^\s*[-*•]?\s*#(\d+)(?:\.\d+|[a-z](?=\s*[:,])|\s+part\s+\d+|\s+[a-z ]*step\s+\d+)?\s*[:,]\s*(.+)\|([^|]*)$/i.exec(line)
-  return m === null ? null : { n: Number(m[1]), step: (m[2] as string).trim(), mark: (m[3] as string).trim() }
+  const m = /^\s*(?:[-*•]|\d+[.)])?\s*(?:\*\*)?(?:#(\d+)(?:\.\d+|[a-z](?=\s*[:,])|\s*\([^)]*\)|\s+[a-z][a-z ]*?(?:\s+\d+)?)?(?:\*\*)?\s*[:,\-–—]\s*)?(.+)\|([^|]*)$/i.exec(line)
+  return m === null ? null : { n: Number(m[1] ?? 0), step: (m[2] as string).trim(), mark: (m[3] as string).trim() }
 }
 
 // The steps a Heads up's walk marked as dropped.
@@ -3628,6 +3631,18 @@ const partsSaid = (steps: readonly DroppedStep[], max: number): string => {
   return texts.length > max ? `${said}; and ${texts.length - max} more` : said
 }
 
+// The parts a flag names: each one a clause of it says was dropped (`names`), longest first, less a
+// part whose every content word is in a longer one it names ("the path" beside "the cap path"),
+// since the flag's words cannot tell the two apart.
+const namedBy = (flag: string, steps: readonly DroppedStep[]): DroppedStep[] => {
+  const out: DroppedStep[] = []
+  for (const d of [...steps].filter(d => names(flag, d.step)).sort((x, y) => contentWords(y.step).length - contentWords(x.step).length)) {
+    const words = contentWords(d.step)
+    if (!out.some(o => words.every(w => contentWords(o.step).includes(w)))) out.push(d)
+  }
+  return out
+}
+
 // What the Heads up says for a look. A step the walk marks as dropped outranks whatever the flag
 // is about, and the flag moves to the why, so no concern is lost: one flag slot must not decide
 // whether the owner hears their ask was dropped. A step not assessed has no say here. A flag that
@@ -3638,13 +3653,13 @@ const partsSaid = (steps: readonly DroppedStep[], max: number): string => {
 // an earlier look hides it, since a silent drop is the harm the rep exists to prevent and a repeat
 // is noise. Readers reword parts at every look, and every test of "already said" built on their
 // words hid parts never said. The parts are in the line, after a short lead, because a short band
-// keeps the line and cuts the why. A flag names one part at most, the one with the most words of
-// those it names (`names`). `drops` is every part this note says.
+// keeps the line and cuts the why. The parts a flag names (`namedBy`) are not said again after
+// it. `drops` is every part this note says.
 export function headsUpOf(a: WatchAnswer, plans: readonly string[]): { note: { line: string; why: string } | null; drops: string[] } {
   const own = a.flag === null ? null : { line: a.flag, why: a.why }
   const fresh = (a.dropped ?? []).filter(d => inPlans(d.step, plans))
   const flag = a.flag
-  const named = flag === null ? [] : fresh.filter(d => names(flag, d.step)).sort((x, y) => contentWords(y.step).length - contentWords(x.step).length).slice(0, 1)
+  const named = flag === null ? [] : namedBy(flag, fresh)
   const rest = fresh.filter(d => !named.includes(d))
   const first = rest[0]
   const told = (ds: readonly StepRef[]): string[] => ds.map(d => stepText(d.step))
