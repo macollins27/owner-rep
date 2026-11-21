@@ -812,7 +812,15 @@ and never raises a state: a held condition keeps its state, where and `reopened`
 the writer closes it, and a new one proposed shown starts open;
 `honest` turns a `shown` the writer adds (of the conversation it sees only the agent's turn
 under each of the owner's messages, marked as the agent's) and a `closed` that cites no such
-message back to open. A condition
+message back to open. A `closed` citing a message of the owner's that only approves a plan
+(`approvalOf`, read whole) is taken when the whole condition only waited on the plan, that a plan be
+shown or written, take a set shape, or wait for the go-ahead before building (`waitsOnPlan`,
+which matches the whole text against `PLAN_ONLY`'s shapes, so one that names a plan or a
+go-ahead beside the work or an outward act such as a push, a deploy or a payment is refused,
+review of #72), and turned back to open on any other condition; an approval is never one of the messages a `dropped:` may cite,
+and `settleConditions` adds no "Settle" line for a condition that ends closed (review of #70,
+F5: before it, a yes left "a plan shown before building" open and asked the owner to settle
+it). A condition
 listed twice, or with a state mark copied into its text, is kept once (`parseObjective`,
 `mergeConditions`), and two conditions are the same when their words match with case,
 punctuation and the articles set aside (`conditionKey`). A condition the writer marks

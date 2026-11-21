@@ -7284,6 +7284,45 @@ const LONG_DRAFT_HIS = 'Yes, go ahead with both. Also add plum.txt.'
 const LONG_DRAFT_SENT = `${LONG_DRAFT}\n\n${LONG_DRAFT_HIS}`
 const ALL_THREE = ANSWER(['apple.txt made | open', 'pear.txt made | open', 'plum.txt made | open'], { approved: ['#3 | all'] })
 
+test('rule: waitsOnPlan takes a condition that only waited on the plan, and no condition about the work (review of #70, F5)', () => {
+  for (const t of [
+    'a plan shown before building',
+    'the owner is shown a plan before any code changes',
+    'a written plan comes first',
+    "the agent waits for the owner's go-ahead before building",
+    'nothing is built until the owner approves',
+    'the plan has at most five steps',
+    'the proposal is laid out in three parts',
+    'the agent shows the owner a plan first',
+    'a plan is written and approved before any code is written',
+    'no code is written until the owner approves the plan',
+    'the plan is approved before building.',
+    'wait for my go-ahead before starting',
+  ]) expect([t, rep.waitsOnPlan(t)]).toEqual([t, true])
+  for (const t of [
+    'the dashboard built',
+    'all five steps of the plan done',
+    'the whole plan carried out',
+    'the analytics kept',
+    'the build waits for the tests to finish',
+    'a plan for the next release is not needed',
+    // The review of #72: work, or an outward act's hold, that only names a plan or a go-ahead.
+    'every step of the approved plan is built and tested',
+    'the proposal email is sent to the client',
+    'the subscription plans are shown on the pricing page',
+    'the migration plan runs before the deploy',
+    'the course outline is written',
+    'the plan is sent to Codex for review before building',
+    'the plan has five steps and each step has a test',
+    "nothing is pushed to production without the owner's go-ahead",
+    "the site is published only after the owner's go-ahead",
+    "the invoice is paid only with the owner's go-ahead",
+    'the agent waits for the owner before merging to main',
+    "the agent waits for the owner's go-ahead before deploying",
+    'the plan is carried out before the owner signs off',
+  ]) expect([t, rep.waitsOnPlan(t)]).toEqual([t, false])
+})
+
 describe('Task 5: adding is not closing; drafts with his words; long messages through the live path', () => {
   test('rule: a plan message with no follow-up whose answer drops a held condition by the plan\'s number, as a new job, adds and keeps both old conditions', async ($, on) => {
     const PLAN = turnWith(3000, [[100, 'Step: make plum.txt. Step: make fig.txt.']])
@@ -7315,6 +7354,48 @@ describe('Task 5: adding is not closing; drafts with his words; long messages th
     expect(done).toContain(KEEP_ANALYTICS)
     expect(done).toContain(SETTLE_APPROVED(2, KEEP_ANALYTICS))
     expect(done).toContain('the dashboard built')
+  })
+
+  test('rule: a yes closes a condition that only waited on the plan, with no Settle line, and a work condition it closes stays open with one (review of #70, F5)', async ($, on) => {
+    const SHOWN_FIRST = 'a plan shown before building'
+    const s = asks(on, [his(1, 'show me a plan before building the dashboard')], { objective: HELD_WITH([SHOWN_FIRST, 'the dashboard built']) })
+    s.answer(() => ANSWER([`${SHOWN_FIRST} | closed: #2`, 'the dashboard built | closed: #2'], { approved: ['#2 | all'] }))
+    await started($)
+    await runTurn($, s.scripts, 't1', [said('Plan:\n1. Build the dashboard page.\n2. Wire its data.')])
+    await s.send($, 'yes, go')
+    expect(approves(s.msg(2))).toBe(true)
+    const done = s.obj()?.done ?? []
+    expect(done.find(x => x.text === SHOWN_FIRST)).toMatchObject({ state: 'closed', by: '#2' })
+    expect(done.find(x => x.text === 'the dashboard built')).toMatchObject({ state: 'open' })
+    expect(doneOf(s.obj())).not.toContain(SETTLE_APPROVED(2, SHOWN_FIRST))
+    expect(doneOf(s.obj())).toContain(SETTLE_APPROVED(2, 'the dashboard built'))
+  })
+
+  test('rule: a yes marked as closing work, or an outward act\'s hold, that names a plan or a go-ahead leaves it open with a Settle line (review of #72)', async ($, on) => {
+    const WORK = 'every step of the approved plan is built and tested'
+    const PUSH = "nothing is pushed to production without the owner's go-ahead"
+    const s = asks(on, [his(1, 'plan it, build and test every step, and push nothing to production without my go-ahead')], { objective: HELD_WITH([WORK, PUSH]) })
+    s.answer(() => ANSWER([`${WORK} | closed: #2`, `${PUSH} | closed: #2`], { approved: ['#2 | all'] }))
+    await started($)
+    await runTurn($, s.scripts, 't1', [said('Plan:\n1. Build the page.\n2. Test it.\n3. Push to production.')])
+    await s.send($, 'yes, go')
+    const done = s.obj()?.done ?? []
+    for (const t of [WORK, PUSH]) {
+      expect(done.find(x => x.text === t)).toMatchObject({ state: 'open' })
+      expect(doneOf(s.obj())).toContain(SETTLE_APPROVED(2, t))
+    }
+  })
+
+  test('rule: an approval never drops a condition that waited on the plan; only a close by it is taken', async ($, on) => {
+    const GO_AHEAD = "the agent waits for the owner's go-ahead before building"
+    const s = asks(on, [his(1, 'wait for my go-ahead, then build the dashboard')], { objective: HELD_WITH([GO_AHEAD, 'the dashboard built']) })
+    s.answer(() => ANSWER(['the dashboard built | open'], { approved: ['#2 | all'], dropped: [`${GO_AHEAD} | #2`] }))
+    await started($)
+    await runTurn($, s.scripts, 't1', [said('Plan:\n1. Build the dashboard page.')])
+    await s.send($, 'yes, go')
+    const done = s.obj()?.done ?? []
+    expect(done.find(x => x.text === GO_AHEAD)).toMatchObject({ state: 'open' })
+    expect(doneOf(s.obj())).toContain(SETTLE_APPROVED(2, GO_AHEAD))
   })
 
   test('guard: a typed message that drops an ask in his own words, not marked approved, lets it go', async ($, on) => {

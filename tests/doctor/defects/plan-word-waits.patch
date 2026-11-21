@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 2477128..1e52a31 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2337,7 +2337,7 @@ const PLAN_ONLY = [
+   String.raw`(?:the agent\s+)?waits?\s+for\s+${GO}(?:\s+(?:before\s+${BUILD}|to start))?`,
+   // Nothing built until the owner approves.
+   String.raw`(?:nothing is (?:built|changed|written)|no (?:code|work|building|changes?) (?:is |are )?(?:written|made|done|started|starts|begins)|no building starts|building waits)\s+${UNTIL_OWNER}`,
+-].map(x => new RegExp(`^(?:${x})$`))
++].map(x => new RegExp(`(?:${x})`))
+ export function waitsOnPlan(text: string): boolean {
+   const t = bare(text).toLowerCase().replace(/\s+/g, ' ').replace(/[.!]+$/, '').trim()
+   return PLAN_ONLY.some(r => r.test(t))

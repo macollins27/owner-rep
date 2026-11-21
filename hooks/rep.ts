@@ -2309,8 +2309,43 @@ export function takeApprovals(
   return waits.length > 0 ? { setAside: true, changes: waits } : { setAside: false, changes }
 }
 
+// A condition a yes to the plan is what it waited on (the writer's rule under "Plans the owner
+// approved", review of #70, F5): that a plan be written or shown first, take a set number of steps
+// or parts, or that the agent wait for the owner's go-ahead. Only such a condition may be closed by
+// an approval; one about the work never is, and an approval drops nothing.
+// The whole condition must take one of these shapes. One that only names a plan or a go-ahead
+// beside the work or an outward act ("every step of the approved plan is built", "nothing is
+// pushed without the owner's go-ahead") is not waiting on the plan, and an approval leaves it as
+// held (review of #72). A shape this misses keeps today's Settle line, which is the safe side.
+const A_PLAN = String.raw`(?:a|an|the|my|your|its)\s+(?:(?:written|short|clear|full|detailed|step-by-step|numbered)\s+)?(?:plan|proposal|outline|approach)`
+const TO_OWNER = String.raw`(?:\s+(?:to|for)\s+(?:the owner|me|him|her|them))?`
+const BUILD = String.raw`(?:building|coding|starting|implementing|implementation|work starts|writing (?:any )?code|making (?:any )?changes|(?:any|the)\s+(?:code changes?|code|work|build|building|changes?|implementation)(?:\s+(?:is|are)\s+(?:made|written|done|started|begun))?|anything is (?:built|changed|written)|(?:code|changes?) (?:is|are) (?:made|written))`
+const TIMING = String.raw`(?:\s+(?:first|up front|before\s+${BUILD}))?`
+const SHOWN = String.raw`(?:shown|written(?: down)?|presented|proposed|laid out|shared|drafted)`
+const APPROVED = String.raw`(?:approved|agreed|signed off|okayed)`
+const NUM = String.raw`(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten)`
+const GO = String.raw`(?:(?:the owner['’]s|my|his|her|their|the)\s+)?(?:go-?ahead|approval|sign-off|yes|ok|okay)(?:\s+on\s+${A_PLAN})?`
+const UNTIL_OWNER = String.raw`(?:until|before)\s+(?:(?:the owner|i|he|she|they)\s+(?:approves?|agrees?|okays?|says (?:go|yes|so)|signs? off|gives? (?:the|their|his|her|my) go-?ahead)(?:\s+(?:(?:on|to)\s+)?${A_PLAN})?|${A_PLAN}\s+is\s+${APPROVED})`
+const PLAN_ONLY = [
+  // A plan shown or written first.
+  String.raw`(?:(?:the owner|i|he|she|they) (?:is|am|are) shown |(?:the agent )?(?:shows|writes|presents|proposes|lays out|drafts)(?: the owner| me)? )?${A_PLAN}(?:\s+(?:(?:is|be)\s+)?${SHOWN}(?:\s+and\s+${APPROVED})?${TO_OWNER}|\s+comes first)?${TO_OWNER}${TIMING}`,
+  // A plan approved before building.
+  String.raw`${A_PLAN}\s+is\s+${APPROVED}${TIMING}`,
+  // A set shape.
+  String.raw`${A_PLAN}\s+(?:has|is in|is laid out in|comes in|is split into|is broken into|with)\s+(?:at most |no more than |up to |exactly |only )?${NUM}\s+(?:steps|parts|phases|stages|tasks|sections)`,
+  // The go-ahead before building.
+  String.raw`(?:the agent\s+)?waits?\s+for\s+${GO}(?:\s+(?:before\s+${BUILD}|to start))?`,
+  // Nothing built until the owner approves.
+  String.raw`(?:nothing is (?:built|changed|written)|no (?:code|work|building|changes?) (?:is |are )?(?:written|made|done|started|starts|begins)|no building starts|building waits)\s+${UNTIL_OWNER}`,
+].map(x => new RegExp(`^(?:${x})$`))
+export function waitsOnPlan(text: string): boolean {
+  const t = bare(text).toLowerCase().replace(/\s+/g, ' ').replace(/[.!]+$/, '').trim()
+  return PLAN_ONLY.some(r => r.test(t))
+}
+
 // A held condition a message of the owner's that could not be read whole, or an approval, would
-// let go of is kept, and beside it a condition to settle it with the owner.
+// let go of is kept, and beside it a condition to settle it with the owner. One that ends closed
+// (a yes closing what waited on the plan) needs no settling.
 export function settleConditions(
   held: readonly Condition[],
   merged: Condition[],
@@ -2319,7 +2354,7 @@ export function settleConditions(
 ): Condition[] {
   const out = [...merged]
   for (const c of held) {
-    if (c.state === 'closed') continue
+    if (c.state === 'closed' || merged.some(x => x.state === 'closed' && same(x.text, c.text))) continue
     for (const l of lets) {
       if (l.by === null || !same(bare(l.text), bare(c.text))) continue
       const m = owner.find(x => x.n === l.by)
