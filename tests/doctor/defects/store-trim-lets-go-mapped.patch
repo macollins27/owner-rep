@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 3dddaf7..a60f3c1 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -617,7 +617,7 @@ async function trimStore($: EngineInterface, keep: string): Promise<string[]> {
+   if (ids.length <= SESSIONS_MAX) return []
+   // A record the reads would also take from the old map is never let go: with its key gone the
+   // map's copy, older, would be read in its place and copied back.
+-  const mapped = new Set(Object.keys(await oldMapSinceMove($)))
++  const mapped = new Set<string>()
+   const free = ids.filter(id => !mapped.has(id))
+   const recs = new Map<string, unknown>()
+   for (const id of free) recs.set(id, await $.store.get(recKey(id)))

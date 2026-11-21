@@ -4417,6 +4417,46 @@ describe('the store: one key per session\'s record', () => {
     expect(Object.keys(store).filter(k => k.startsWith('rec:'))).toHaveLength(SESSIONS_MAX)
   })
 
+  test('rule: a save an older build stamps before the move but lands after the move read the map is still read (second review of #71, must-fix 1)', async ($, on) => {
+    const at = NOW_AT()
+    const store: Record<string, unknown> = { sessions: { a: recOfS('a', at - 5000, 'build a') } }
+    let injected = false
+    storeStub(on, store, {
+      // The move has read the map; an older build's save, stamped earlier, lands now.
+      onGet: key => {
+        if (injected || key !== MIGRATED) return
+        injected = true
+        store.sessions = { ...(store.sessions as object), late: recOfS('late', at - 4000, 'said under the older build') }
+      },
+    })
+    let id = 'test-session'
+    plain(on, () => id)
+    await $.prompt.submit(typed('build it'))
+    expect(injected).toBe(true)
+    id = 'late'
+    await $.prompt.submit(typed('back on the new build'))
+    expect((store['rec:late'] as Stored).owner.map(m => m.text)).toEqual(['said under the older build', 'back on the new build'])
+  })
+
+  test('rule: while a move is unfinished the trim never lets go a record the old map holds, so its copy from before the move is not read back (second review of #71, must-fix 2)', async ($, on) => {
+    const at = NOW_AT()
+    const store: Record<string, unknown> = {
+      sessions: { a: recOfS('a', at - 500, 'the old message'), b: recOfS('b', at - 400, 'build b') },
+      'rec:a': { ...recOfS('a', at - 300, 'the old message'), owner: [om('the old message'), om('said after the move', 2)], counter: 2 },
+    }
+    for (let i = 0; i < SESSIONS_MAX - 1; i++) store[`rec:s${i}`] = recOfS(`s${i}`, at - 200 + i)
+    storeStub(on, store, { refuse: key => key === 'rec:b' })
+    let id = 'test-session'
+    plain(on, () => id)
+    await $.prompt.submit(typed('build it'))
+    expect(store[MIGRATED]).toBeUndefined()
+    expect(store['rec:a']).toBeDefined()
+    expect(store['rec:s0']).toBeUndefined()
+    id = 'a'
+    await $.prompt.submit(typed('back to a'))
+    expect((store['rec:a'] as Stored).owner.map(m => m.text)).toEqual(['the old message', 'said after the move', 'back to a'])
+  })
+
   test('rule: the old map goes once its newest record is OLD_MAP_IDLE_MS old, and stays while one is newer', async ($, on) => {
     const idle = Date.now() - rep.OLD_MAP_IDLE_MS - 60_000
     const store: Record<string, unknown> = { sessions: { a: recOfS('a', idle - 1), b: recOfS('b', idle) } }

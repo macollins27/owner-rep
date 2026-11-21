@@ -5188,5 +5188,17 @@
     "breaks": "The trim deletes each record it picked without reading it again, so a save an idle session makes while another session's trim runs is deleted with its whole record.",
     "patch": "store-trim-deletes-unread.patch",
     "fixed": "2026-11-21, the review of #71"
+  },
+  {
+    "name": "store-move-marks-start",
+    "breaks": "The move marks the time it started, so an older build's save stamped before the start but landing after the map was read is neither copied nor read, and its session's next save on the new build writes over it.",
+    "patch": "store-move-marks-start.patch",
+    "fixed": "2026-11-21, the second review of #71"
+  },
+  {
+    "name": "store-trim-lets-go-mapped",
+    "breaks": "The trim lets go a record the reads also take from the old map, so while a move is unfinished that session reads back its copy from before the move.",
+    "patch": "store-trim-lets-go-mapped.patch",
+    "fixed": "2026-11-21, the second review of #71"
   }
 ]

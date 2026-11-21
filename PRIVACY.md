@@ -31,7 +31,7 @@ Versions before this one kept every record in one shared list. After the update 
 each record to a place of its own and leaves that list beside them, so a session still running
 an older version keeps working; the list, up to 32 more records, some of them sessions the
 newest 32 have since pushed out, is removed at the first start after no older version has
-saved into it for a week. A record in that list from before the copy is never read again.
+saved into it for a week. Once the copy has finished, a record in that list from before it is never read again.
 
 Beside the store, in the folder `<config>/owner-rep/sources/`, it saves these texts, each in
 its own file checked by SHA-256:

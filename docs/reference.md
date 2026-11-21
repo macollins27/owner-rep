@@ -1381,25 +1381,31 @@ store's limit is on the whole store's JSON, the record's key included.
 
 The map is moved once per process, before its first read (`migrateOnce`): each of its
 records is copied to its own key when that key is missing or older (`newerRec`), and the time
-the move started is written to `migratedAt` (`MIGRATED_KEY`). A later move copies only the
-map's records saved since then, so a record the trim let go is not copied back. The map is
+the newest `at` the move saw is written to `migratedAt` (`MIGRATED_KEY`), not the time it
+started: an older build's save stamped before the start but landing after the map was read is
+newer than that mark, so it is read and copied rather than missed. A later move copies only the
+map's records newer than the mark, so a record the trim let go is not copied back. The map is
 kept, not deleted: a process still running an older build reads and saves only the map, and
 with the map gone it would load a blank record and save it as the newest. Every read takes the
 newer of the record's own key and the map's entry (`loadStored`, `allStored`), so a save an
 older build makes into the map is the one read. A read takes a map record only when it was
-saved after the last finished move (`oldMapSinceMove`), or every one when no move has
-finished: a finished move copied each record saved before it, so an older map record is in its
+newer than the last finished move's mark (`oldMapSinceMove`), or every one when no move has
+finished: a finished move copied each record it saw, so a map record no newer is in its
 key or was let go, and reading it would bring a let-go record back as its copy from before the
 move. The map goes at the first move after its newest record is `OLD_MAP_IDLE_MS` (7 days)
 old, when no older build can still be saving into it. A move the
-store refuses partway stops there with `migratedAt` unwritten: the map is still read for the
-records not yet copied, and the next process copies them. While the map stays, the store
+store refuses partway stops there with `migratedAt` unwritten: the map is still read whole,
+and the next process copies what is left. The trim never lets go a record that
+`oldMapSinceMove` returns, whether or not its key was copied: with the key gone, the map's
+older copy would be read in its place and copied back. So while a move is unfinished the trim
+lets go only sessions the map does not hold, and the store can hold up to the map's 32 records
+over `SESSIONS_MAX` until a move finishes. While the map stays, the store
 holds each record twice, and the move itself writes other sessions' keys, so a session saving
 in another process in the same instant can lose that one save: the move copies a record only
 when the map's copy is newer than the key's, which is so only at the first move or after an
 older build saved into the map, and the window is between the move's `get` of the key and its `set`.
-A blank record whose session the map still holds is saved rather than deleted, so the map's
-older copy is not read in its place. `storedDrafts` reads the records (`allStored`) before
+A blank record whose session `oldMapSinceMove` returns is saved rather than deleted, so the
+map's older copy is not read in its place. `storedDrafts` reads the records (`allStored`) before
 `droppedDrafts`, the reverse of the trim's order, so a record let go
 between its two reads is in one of them. `loadRec`/`saveRec` are the only way in and out, and `changeRec`
 runs each change alone from its load to its save, so two hooks that finish together never save

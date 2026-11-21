@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index d17edc4..7485f43 100644
+index 3dddaf7..b1b2b5d 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -610,7 +610,7 @@ async function storeRec($: EngineInterface, rec: Rec): Promise<string[]> {
+@@ -614,7 +614,7 @@ async function storeRec($: EngineInterface, rec: Rec): Promise<string[]> {
  // lost. Two sessions trimming at once may each let go the same record. Returns the ids deleted.
  async function trimStore($: EngineInterface, keep: string): Promise<string[]> {
    const ids = (await $.store.keys()).map(recIdOf).filter((id): id is string => id !== null)
 -  if (ids.length <= SESSIONS_MAX) return []
 +  if (ids.length >= 0) return []
-   const recs = new Map<string, unknown>()
-   for (const id of ids) recs.set(id, await $.store.get(recKey(id)))
-   const gone = recsToLetGo(ids.map(id => ({ id, at: atOf(recs.get(id) as { at?: unknown } | undefined) })), keep, SESSIONS_MAX)
+   // A record the reads would also take from the old map is never let go: with its key gone the
+   // map's copy, older, would be read in its place and copied back.
+   const mapped = new Set(Object.keys(await oldMapSinceMove($)))
