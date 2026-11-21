@@ -5674,5 +5674,11 @@
     "breaks": "The own-words request no longer asks for work and proof on every open condition nor keeps a question to the owner for a decision yet to make, so its message can ask only that things be left as they are and its parts can ask the owner about a decision already made.",
     "patch": "own-words-may-leave-as-is.patch",
     "fixed": "2026-11-21"
+  },
+  {
+    "name": "own-words-asks-settled",
+    "breaks": "The own-words request no longer keeps what the owner's messages settled as settled nor puts a look with someone other than the agent and the owner, so its parts can ask the owner again about a decision already made or hand the owner the look.",
+    "patch": "own-words-asks-settled.patch",
+    "fixed": "2026-11-21"
   }
 ]
