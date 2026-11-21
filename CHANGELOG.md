@@ -5,6 +5,26 @@ What changed in each release of Owner Rep, newest first. The full record is the
 
 ## Unreleased
 
+- **The check reads the same rules as the briefing, said once.** Check it now carries what
+  reaches you and how the rep writes to you, which it lacked, and its task no longer repeats
+  its standing rules: the room, the fence and the clock are plain sentences, your messages and
+  the briefing are quoted inside the session's fence, and it reads the agent's commits from the
+  time the session began rather than a time it had to guess. Its "left" names every gap the
+  briefing's does, a chore the agent left "for you" among them, since the check rewrites the
+  whole card. It is 3,267 words with two "never"s, down from 3,671 with twelve, and a test
+  holds it there.
+- **One session's save no longer undoes another's.** Every session's record was kept in one
+  shared list, and each save read the list, changed its own record and wrote the whole list
+  back, so when two sessions saved at nearly the same moment the later one put back the other's
+  older copy; a plan approval was lost that way. Each session's record now has its own place in
+  the store and a save writes only that. Records kept the old way are copied over on the first
+  start, and the old list is kept, and read where it is newer, until it has gone unused for a
+  week, so a session still running an older version loses nothing. A session pushed out of the
+  newest 32 after the update is not read back from that old list, and a session you come back
+  to after a long idle keeps the message it saves while another session is clearing out old
+  records. A save an older version makes while the copy is running is read rather than missed,
+  even with two older versions saving at once, a new session never pushes out another new one to
+  keep old records the copy has not finished with, and a copy cut short partway never lets a session fall back to its record from before it.
 - **A dropped part of your plan stays said until it is done.** A note that a part of your plan
   looks dropped is no longer taken back by a later look that never checked that part, nor
   replaced by an unrelated note; several dropped parts lead with their count and take turns
@@ -17,6 +37,13 @@ What changed in each release of Owner Rep, newest first. The full record is the
   rule said once with its reason, and the rules that decide an answer restated in a line each
   after the record. Each call now sends about 3,300 words with at most one "never" and no capitals for
   emphasis, and a test holds every call to its size target.
+- **The rules for writing down your objective are shorter and plainer.** The call that writes
+  the job's objective from your messages had grown to about 2,600 words with 28 "never"s. It is
+  rewritten from the same prompt audit at about 2,000 words with two, each rule said once. Its
+  rules are now cached across a session's writes, and your messages reach it in the same fenced
+  tags as the other calls. It writes only the conditions that are new or changed, since the rep
+  keeps the rest, so it no longer restates what it already holds in new words or runs out of
+  time on a long job, and the conditions keep their order on the card. A question you ask the agent is kept as a condition until it is answered, so a question is no longer lost when your next message moves the step. What a serious owner plainly wants without saying it (the best in its trade, shown working on the real thing) is the standard every condition meets. It is no longer written as conditions of its own, so a job no longer gains a hands-on tester or a test suite you never asked for. Nor does it gain guards you never asked for around a message that only told the agent something or asked one thing. A step you approved keeps its limits and timing ("nothing before launch" as well as "at launch"), and a condition that needs a person calls you "the owner", by no name or pronoun. A second plan you approve no longer wraps a "Settle with the owner" line inside another on the card. A limit you put on the first step, such as "write a two-line README and stop", bounds that step only and is no longer kept as a condition of the whole job.
 - **Text in the session cannot pass as the record's end or as the owner.** The record and the
   owner's messages are fenced in tags that end in a random code made once per session, and any
   such tag found inside is printed harmlessly, so an agent cannot close the fence by guessing it.

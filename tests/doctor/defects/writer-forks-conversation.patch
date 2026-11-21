@@ -1,13 +1,15 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index b6129e7..f9ef81b 100644
+index c2a7e3d..afa512c 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1428,7 +1428,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
-         const effort = objectiveEffort(attempt)
-         const maxTokens = retry ? OBJECTIVE_RETRY_MAX_TOKENS : OBJECTIVE_MAX_TOKENS
-         const timeoutMs = retry ? OBJECTIVE_RETRY_TIMEOUT_MS : OBJECTIVE_TIMEOUT_MS
--        const { result, ms } = await timed(() => $.model.complete({ model: OBJECTIVE_MODEL, system: OBJECTIVE_SYSTEM, prompt, maxTokens, effort, timeoutMs }))
-+        const { result, ms } = await timed(() => $.model.fork({ prompt }) as never)
-         const sent: Sent = { kind: 'objective', settings: { model: OBJECTIVE_MODEL, effort, maxTokens, timeoutMs }, system: OBJECTIVE_SYSTEM, prompt, joined: true, attempt, result, ms }
-         const read = result !== null && result.isAnswered ? callRead('objective', result.text, undefined, { usage: result.usage as Usage, cap: maxTokens }) : undefined
-         saveCall($, sid, sent, read)
+@@ -1475,8 +1475,8 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
+         // session, and the prompt with it as one block: 2.1.286 checks only the prompt's shape, and
+         // drops a block system beside a text prompt without a word, so only a block prompt makes it
+         // refuse (BLOCKS_REFUSED), and that build is then sent both as text.
+-        const send = (sys: string | PromptBlock[]) =>
+-          $.model.complete({ model: OBJECTIVE_MODEL, system: sys, prompt: typeof sys === 'string' ? prompt : [{ text: prompt }], maxTokens, effort, timeoutMs })
++        const send = (_sys: string | PromptBlock[]) =>
++          $.model.fork({ prompt }) as never
+         const { result, ms } = await timed(() =>
+           send([{ text: system, cache: true }]).catch((e: unknown) => {
+             if (!BLOCKS_REFUSED.test(String(e))) throw e

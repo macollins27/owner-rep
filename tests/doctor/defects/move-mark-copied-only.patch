@@ -1,0 +1,29 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index eae90c5..64dad8b 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -532,6 +532,7 @@ async function migrate($: EngineInterface): Promise<void> {
+   const old = await oldMap($)
+   const seen = moveSeenOf(await $.store.get(MOVE_SEEN_KEY))
+   const saw: Record<string, number> = {}
++  const wrote: string[] = []
+   let newest = 0
+   for (const [id, r] of Object.entries(old)) {
+     newest = Math.max(newest, atOf(r))
+@@ -541,6 +542,7 @@ async function migrate($: EngineInterface): Promise<void> {
+     const own = await $.store.get(recKey(id))
+     if (isRec(own) && atOf(own) >= atOf(r)) continue
+     await $.store.set(recKey(id), r)
++    wrote.push(id)
+   }
+   // Each record the move read, by its `at`: an older build's save that lands after the map was
+   // read, whatever its stamp, is a session the move did not see or a later `at`, and is read.
+@@ -548,7 +550,7 @@ async function migrate($: EngineInterface): Promise<void> {
+   // move overwrote with an older copy leaves the map's later save unseen, read and copied by the
+   // next move. A key let go meanwhile keeps the mark: the map's copy is not read back in its place.
+   const mark = mergeSeen(moveSeenOf(await $.store.get(MOVE_SEEN_KEY)) ?? seen, saw)
+-  for (const id of Object.keys(saw)) {
++  for (const id of Object.keys(saw).filter(i => wrote.includes(i))) {
+     const cur = await $.store.get(recKey(id))
+     if (isRec(cur)) mark[id] = Math.min(mark[id] ?? atOf(cur), atOf(cur))
+   }

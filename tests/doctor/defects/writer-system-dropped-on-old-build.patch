@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index c2a7e3d..85cc882 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1476,7 +1476,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
+         // drops a block system beside a text prompt without a word, so only a block prompt makes it
+         // refuse (BLOCKS_REFUSED), and that build is then sent both as text.
+         const send = (sys: string | PromptBlock[]) =>
+-          $.model.complete({ model: OBJECTIVE_MODEL, system: sys, prompt: typeof sys === 'string' ? prompt : [{ text: prompt }], maxTokens, effort, timeoutMs })
++          $.model.complete({ model: OBJECTIVE_MODEL, system: sys, prompt, maxTokens, effort, timeoutMs })
+         const { result, ms } = await timed(() =>
+           send([{ text: system, cache: true }]).catch((e: unknown) => {
+             if (!BLOCKS_REFUSED.test(String(e))) throw e

@@ -27,6 +27,12 @@
   defect. That became the design at bcba3aa ("Task 7a: the readers read
   the session's record, never a fork"), so the behaviour it planted is the mod's own. No
   successor: `tests/rep.test.tsx` asserts the new behaviour directly.
+- `store-move-marks-start.patch` (archived 21 Nov 2026): planted the move marking the time it
+  started rather than the newest `at` it saw. The move's mark stopped being a time at the check
+  of 535608c: it is now the `at` of each record the move read, by session (`movedSeen`), so no
+  single number is marked any more. Its successor is `store-move-seen-as-threshold`, which plants
+  the reads taking the mark as one threshold, the newest `at` it holds, so the save stamped earlier
+  but landing last is missed again.
 - `in-plans-short-part-usual-share.patch`: planted a dropped part of four words or fewer counting
   as a plan's at the usual 0.4 share rather than three quarters. The short-part share was
   reverted on 20 Nov 2026 (PR #68, fourth round): a real step reworded by one word must count,

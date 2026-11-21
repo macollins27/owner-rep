@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 6469436..9003a8b 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -5497,7 +5497,7 @@ export function moveSeenOf(v: unknown): MoveSeen | undefined {
+ export function unseenByMove(seen: MoveSeen | undefined, id: string, at: number): boolean {
+   if (seen === undefined) return true
+   const was = Object.prototype.hasOwnProperty.call(seen, id) ? seen[id] : undefined
+-  return typeof was !== 'number' || at > was
++  return typeof was !== 'number' || at >= was
+ }
+ 
+ // Two marks as one: every id of either, at the later `at`.

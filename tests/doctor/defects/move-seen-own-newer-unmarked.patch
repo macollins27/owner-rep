@@ -1,0 +1,17 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index d7257be..7fd4c77 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -535,11 +535,11 @@ async function migrate($: EngineInterface): Promise<void> {
+   let newest = 0
+   for (const [id, r] of Object.entries(old)) {
+     newest = Math.max(newest, atOf(r))
+-    saw[id] = atOf(r)
+     if (!unseenByMove(seen, id, atOf(r))) continue
+     if (isBlankRec(r, freshRec(id))) continue
+     const own = await $.store.get(recKey(id))
+     if (isRec(own) && atOf(own) >= atOf(r)) continue
++    saw[id] = atOf(r)
+     await $.store.set(recKey(id), r)
+   }
+   // Each record the move read, by its `at`: an older build's save that lands after the map was

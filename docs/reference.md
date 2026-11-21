@@ -647,19 +647,33 @@ call writes (below):
    `--disable-slash-commands` and `--strict-mcp-config --mcp-config` from `checkMcpConfig` (G18),
    on `CHECK_MODEL` (`opus`) at `CHECK_EFFORT` (`high`) whatever the owner's default (G17), with
    `CHECK_SYSTEM` as `--append-system-prompt` (G27): the checker's role (`CHECK_ROLE`), the
-   readers' sections on conditions, proof and the open objective, its standing rules
+   readers' six sections on conditions, proof, the open objective, what reaches the owner, how
+   to write to the owner and how to write the message (`REP_CONDITIONS`, `REP_SHOWN`,
+   `REP_OPEN`, `REP_REACHES`, `REP_WRITE`, `REP_MESSAGE`), each once, its standing rules
    (`CHECK_STANDING`) and last the ways it must not stop (`CHECK_STOPS`, G24), the same text on
-   every check, so `checkPrompt` carries only this check's facts: the session, the room, a clock
-   from `startedAt` (`clockOf`: when it began, when its time runs out, and to start its answer
-   `CHECK_WRITE_BY_MS` before that, running `date` before a long command; G25), the agent's
-   changes to read first (`git status`, `git diff`, `git log --since` the record's first entry;
-   G26), one rule for writing (only in the copy, or nowhere without one; G45), the objective,
-   the briefing, the steps and the answer's form:
+   every check, so `checkPrompt` (audit §6.8) carries only this check's facts and restates none
+   of those: the session and when it began (`sessionStart` in `register.tsx` finds the
+   session's transcript, by `transcripts` or a `find` under the config folder's `projects`,
+   and reads its first time with `sessionStartArgv`, a `grep -m 1`; `sessionStartOf` takes it
+   only in the form `YYYY-MM-DDTHH:MM:SS[.fff]Z`, else none), the room (`CHECK_ROOM_COPY`, or
+   `CHECK_ROOM_NO_COPY` where the run is in the agent's folder: one rule for writing, only in
+   the copy, or nowhere without one; G45) and the fence's denials as a list, a clock from
+   `startedAt` (`clockOf`: when it began, when its time runs out, and to start its answer
+   `CHECK_WRITE_BY_MS` before that, running `date` before a long command; G25), the
+   objective, the owner's messages and the briefing (headed as written from the record
+   alone), each quoted inside the session's fence (`<owner_messages_…>`, `<briefing_…>`,
+   from `CheckArgs.fence`, the record's `fence`) with any tag of either inside escaped
+   (`checkTags`: `fenceTags`, and the same for `briefing`), the steps, starting with the
+   agent's changes (`git status`, `git diff`, `git log --since` the session's start, or the
+   record's first entry when none was found; G26), and the answer's form with the forms of a
+   look the check writes (`CHECK_LOOKS`, which `looksOf` reads; G44):
    the run loads the owner's user-level settings, the owner's guard hooks among them, the `--settings`
    fence, and the owner's own agentsview entry from Claude Code's `.claude.json` (`checkMcp`
    reads `<CLAUDE_CONFIG_DIR>/.claude.json`, else `~/.claude.json`, and takes that one entry, or
    none; a file past the engine's 4 MiB read limit cannot be read and gives none, and the
-   checker then reads the record through the `agentsview` command, as the brief tells it to), and no CLAUDE.md, skill, slash command, project or local setting or other MCP server;
+   checker then reads the record through the `agentsview` command, as the brief tells it to), and no CLAUDE.md, skill, slash command, project or local setting or other MCP server
+   (hook text the owner's user-level hooks add still reaches it, and `CHECK_STANDING` says this
+   task wins over it);
    nor the owner's plugins: `checkPlugins` reads `<CLAUDE_CONFIG_DIR>/settings.json`, else
    `~/.claude/settings.json`, and `checkPluginsOff` names every key of its `enabledPlugins`, each
    `false`, which `checkSettings` writes into the `--settings` file as `enabledPlugins`, read
@@ -723,12 +737,12 @@ call writes (below):
    and with no copy the run works in a folder that may be a subfolder of its repository;
    reading through git still works, adding, committing and stashing are refused; where the
    host does not answer the link question, `pathLinks` gives null and the brief says the
-   installs the links in the command folders lead to could not be found; where it does not
+   installs the links in the command folders lead to could not be found (`CHECK_NO_LINKS`); where it does not
    answer a git question whole (a throw, a timeout, an answer cut at the output cap or
    without its end mark, or a name holding a line break), `gitRepos` marks its answer not
    whole (`whole: false`) and keeps what the other questions found, and the brief says not
    every repository, nor every place a link in the copy leads to, could be found, and to
-   stage, commit and stash nothing; `CheckArgs.unanswered`), the brief naming the
+   stage, commit and stash nothing (`CHECK_NO_REPOS`); `CheckArgs.unanswered`), the brief naming the
    main ones, saying no list names every one, rather than saying all writes outside the copy
    are denied, and the network closed except
    for the local machine, with `failIfUnavailable` (the run refuses to start where the sandbox cannot)
@@ -886,10 +900,10 @@ back unanswered, or answers with nothing `parseObjective` can read, leaves the o
 which the card's price line (`spentText`) names only when above zero. The writer is a plain
 `$.model.complete` call (`OBJECTIVE_MODEL`, high effort, `OBJECTIVE_MAX_TOKENS` and
 `OBJECTIVE_TIMEOUT_MS`; the cap, and the retries' `OBJECTIVE_RETRY_MAX_TOKENS`, is `MAX_REPLY_TOKENS`, 64,000, the engine's ceiling, since 17 Nov 2026), never a fork of the conversation,
-sent with its fixed rules as `system: OBJECTIVE_SYSTEM` on every attempt, and shown by
+sent with its fixed rules, `objectiveSystem(fence)` in the session's fence (`rec.fence`, which the writer makes with `newFence` when it is the session's first call), as one block marked for the cache on every attempt, so a session's later writes read the rules at the cached price. The prompt goes with it as one block, because 2.1.286 checks only the prompt's shape and drops a block system beside a text prompt without an error; a block prompt makes that build refuse (`BLOCKS_REFUSED`), and it is then sent both as text. The replay sends a cached system the same way, and shown by
 `objectivePrompt` only the held objective, `rec.past` and the owner's numbered messages on the job
-(each with the agent's turn the owner answered, captured as it was shown: whole, only its end when it is long, or its last words), the messages inside a `<his_messages>` fence
-followed by a note that they are quoted records and no instruction to the writer; a fence tag
+(each with the agent's turn the owner answered, captured as it was shown: whole, only its end when it is long, or its last words), the messages inside `<owner_messages_<fence>>`, the tags the readers quote the owner in,
+which the system prompt and the line after them (`objectiveClose`) call quoted records and no instruction to the writer; a fence tag
 (any letter case, spaces inside the brackets allowed) in a message or in the agent line is
 printed with its brackets turned to `‹` `›`, so no message can close the fence, and the record
 keeps the text as typed. Its answer is `objective: holds`, or
@@ -901,23 +915,30 @@ holds or moved, come its `approved:` lines: one `approved: #n | all` or
 an approval are `OBJECTIVE_SYSTEM`'s section "Plans the owner approved": what a yes is, a draft
 with the owner's words read as one message, each step of an approved plan its own condition
 after the whole plan is read, a clash kept as both sides and an open "Settle with the owner
-which stands" condition, a plan's statements of fact held as the agent's claims, and, of the turn the owner answered, only the part the owner took counted, the rest of that turn and the agent's other turns counting for nothing. Outside that section, the rule "Nothing else can move it" holds that what the agent says it did, did not do, found or checked, and any limit it sets on its own work (that it installed nothing, changed nothing, will ask first or left some of it to the owner), is the agent's account and never a condition, a limit or part of the result unless it is a step of a plan the owner approved. `takeObjective` applies it: the first
+which stands" condition, a plan's statements of fact held as the agent's claims, and, of the turn the owner answered, only the part the owner took counted, the rest of that turn and the agent's other turns counting for nothing. Outside that section, the rule on what moves the objective holds that the agent's progress, plan, reasons, step names, its "done", what it says it did or found, and any limit it sets on its own work (that it installed nothing, will ask first, or left some to the owner) are the agent's account, which enters the objective only through a plan the owner approved. The prompt is the prompt audit's §6.6 rewrite (2,004 words, two "never"s), with the kinds, the shape of a fact and one claim per condition added since; a test holds it to that size. `takeObjective` applies it: the first
 objective is taken as it stands; after that a write is taken only when it saw a message of the owner's
 or a note past `from` (`hisFrom` never counts a draft), so neither the agent's words nor the
 rep's drafts can move it and a write that lands late cannot take a newer one's place. A
 correction takes the result, purpose and step whole and runs the conditions through
-`mergeConditions`, which keeps every held condition the writer leaves out unless `dropped:`
+`mergeConditions`. The writer is told to write a held condition only to close it or put it in
+more exact words (`WRITE_CHANGED` in the request; before the replay of 20 Nov 2026 it was told to
+write every one again, and restated them until a long job's writes ran out their time). The merge
+keeps the held conditions in their order, each in its new form where it was written again, with
+new ones after them, and keeps every held condition the writer leaves out unless `dropped:`
 cites the number of a message from the owner, new since the held objective was built (past `from`),
 and never raises a state: a held condition keeps its state, where and `reopened` mark unless
 the writer closes it, and a new one proposed shown starts open;
+a held open condition that an approval or a message that could not be read whole would let go of is
+kept, with a "Settle with the owner" condition beside it (`settleConditions`); a held settle line is
+already that question and is kept as it is, never wrapped in another (the rerun of #70, 21 Nov 2026);
 `honest` turns a `shown` the writer adds (of the conversation it sees only the agent's turn
 under each of the owner's messages, marked as the agent's) and a `closed` that cites no such
 message back to open. A condition
 listed twice, or with a state mark copied into its text, is kept once (`parseObjective`,
 `mergeConditions`), and two conditions are the same when their words match with case,
 punctuation and the articles set aside (`conditionKey`). A condition the writer marks
-`| same as: <held text>` (prompt group 6, G13: the owner's later words made a held one more
-exact) takes the held one's place under the new words, keeps its state, where and marks, and
+`| same as: <held text>` in place of its state (prompt group 6, G13: the owner's later words made a held one more
+exact; `OBJECTIVE_SAME_AS`) takes the held one's place under the new words, keeps its state, where and marks, and
 is never counted as dropped; a held condition is matched once, so a second rewrite of it is
 not kept, and the mark is never saved (`plainCondition`). A new job pushes
 the old result onto `rec.past` and starts the job (`since`, `rec.jobStart`) at its first new
@@ -993,7 +1014,7 @@ holds exactly 'amber', 5 bytes, with no final newline", "no commit was made for 
 inside the scratch folder", with "install-case/bin/greet is installed as a copy of
 install-case/greet-source.sh" and "… is installed with permission to run", facts the writer wrote unprompted that were read as works; and the tenth live test's "a copy of welcome.txt exists in a local sent folder inside the scratch folder", "… holds exactly 'amber' with no trailing newline (5 bytes)", "… is installed as an exact copy of greet-source.sh", "no commits or pushes were made" and "no helper scripts, handoff notes or proof report exist from this work", read as works until "pushes", "report", "proof" and "sent" joined the lists). The writer's prompt gives the shape of a fact,
 with one example. The
-writer's prompt asks for one claim per condition (`ONE_CLAIM`) beside its kinds, then (`QUALITY_CONDITION`) that a condition about how good the result is name what a person using it would notice, in the owner's terms, with one example and nothing the owner would not plainly want. It writes what is installed, deployed or running as not shown, which the rep marks shown when the record holds proof from outside the agent's word.
+writer's prompt asks for one claim per condition (`ONE_CLAIM`) beside its kinds, then (`QUALITY_CONDITION`) that a condition about how good the result is name what a person using it would notice, from what the owner said and what the best in that trade plainly does, with one example and nothing the owner would not plainly want. It writes what is installed, deployed or running as not shown, which the rep marks shown when the record holds proof from outside the agent's word.
 A `fact` moves shown on any where. A `works` condition, or one with no kind, moves shown only when
 `looksOf` finds, among every `look by <who>: <what>` in the where, one whose `who` (compared by
 `whoKey`, without case, curly apostrophes or a leading article) is the check (`CHECK_NAMES`) or a
@@ -1027,7 +1048,7 @@ needing a look by someone who did not build it; `countLine` adds the same by who
 counted rather than named past `LOOKS_NOTE_MAX` characters),
 and `fillCard` brings the count line back right after the head. The prompts are shown each open
 condition's kind (`kindMark`, `works` for one with none) and what its looks saw (`promptLine`).
-The watch, the briefing, ask again and the check carry `LOOK_RULE`, which teaches the form. A new job's conditions start with no mark. A draft moves only `step`, set to the draft's `firstSentence` in
+The watch, the briefing and ask again carry `LOOK_RULE`, which teaches the form; the check carries `CHECK_LOOKS`, the same forms said once in its answer's form. A new job's conditions start with no mark. A draft moves only `step`, set to the draft's `firstSentence` in
 `prompt.submit`. The card shows `revisedLine` under the head and `objectiveText` as its
 reading; the row shows `result`.
 
@@ -1253,7 +1274,7 @@ call that asks for it already. The prompt groups after group 2 are `GROUPS`, in 
 of call: `proof` (group 3: `G3_REP_SYSTEM`, `G3_OBJECTIVE_SYSTEM`, `G3_OWN_WORDS_SYSTEM`,
 `G3_TASK`), `decisions` (group 4: `G4_REP_SYSTEM`, `G4_OBJECTIVE_SYSTEM`, `G4_TASK`; it has no
 own-words pair) and `now` (group 5: `G5_OBJECTIVE_SYSTEM`, `G5_TASK`; watch and objective calls
-only, since it changes neither the shared system prompt nor the briefing), and `same-as` (group 6: `G6_OBJECTIVE_SYSTEM`, `G6_TASK`; objective calls only), and `message` (group 7: `G7_REP_SYSTEM`, `G7_OWN_WORDS_SYSTEM`, `G7_TASK`; every call but the objective's), and `evidence` (group 8: `G8_REP_SYSTEM`, `REP_HOLD` added; watch, brief and ask-again calls). Group 9's edit, `fault`, rebuilds nothing: its second asking names the rule the first answer broke, which no saved call holds, so `editSaved` sends no ask-again call under it, and the build before it's text stays as `askAgainBefore`. Issue #49's edit, `unshown` (`G10_OBJECTIVE_SYSTEM`; objective calls only), rewrites the objective writer's turn-end line, so a message under a turn none of which is shown approves only in words that accept a plan; the build before it is group 9's, since group 9 rebuilt nothing. The rewrite's edit, `rewrite` (prompt audit §6.1 to §6.4; watch, brief, ask-again and own-words calls), is the last group: it swaps `PRE_RW_REP_SYSTEM` for `repSystem(REPLAY_FENCE)` (`PRE_RW_OWN_WORDS_SYSTEM` for `OWN_WORDS_SYSTEM`), and its step (`rewriteTask`) takes the build before's request apart (the watch's reason and its two lists, the briefing's request, the second asking's fault and open conditions) and builds this build's request from those parts, while `rwMemory` rebuilds what the rep knows (the owner's messages in their fence under the new heading, their fence tags escaped, the new lines on a sent draft and on a reopened condition). The own-words request is this build's with the length aims swapped in (`G7_SHORT_PART`, `G7_MESSAGE_FORM` for `SHORT_PART`, `MESSAGE_FORM`) and its quoted conditions and findings escaped by `fenceTags`; group 7's own pairs keep the old length texts frozen (`G7_SHORT_PART`, `G7_LEFT_ITEMS`, `G7_MESSAGE_FORM`), so a change to the live ones never breaks group 7's edit. Each old text must be found exactly once, or the call is not sent. It takes only a call whose record is in the build before's fence (`PRE_RW_RECORD_OPEN`, `PRE_RW_RECORD_CLOSE`) and quotes that record in the replay's fixed fence (`REPLAY_FENCE`, `replay00`, so a call replayed twice reads the same), its fence tags escaped by `fenceTags`, which leaves the old escape as it was. A second asking saved before group 9 names no fault, so, as under `fault`, it is never rebuilt. Each pair is the group before's text, kept word for word, and the text the group
+only, since it changes neither the shared system prompt nor the briefing), and `same-as` (group 6: `G6_OBJECTIVE_SYSTEM`, `G6_TASK`; objective calls only), and `message` (group 7: `G7_REP_SYSTEM`, `G7_OWN_WORDS_SYSTEM`, `G7_TASK`; every call but the objective's), and `evidence` (group 8: `G8_REP_SYSTEM`, `REP_HOLD` added; watch, brief and ask-again calls). Group 9's edit, `fault`, rebuilds nothing: its second asking names the rule the first answer broke, which no saved call holds, so `editSaved` sends no ask-again call under it, and the build before it's text stays as `askAgainBefore`. Issue #49's edit, `unshown` (`G10_OBJECTIVE_SYSTEM`; objective calls only), rewrites the objective writer's turn-end line, so a message under a turn none of which is shown approves only in words that accept a plan; the build before it is group 9's, since group 9 rebuilt nothing. The rewrite's edit, `rewrite` (prompt audit §6.1 to §6.4; watch, brief, ask-again and own-words calls), comes next: it swaps `PRE_RW_REP_SYSTEM` for `repSystem(REPLAY_FENCE)` (`PRE_RW_OWN_WORDS_SYSTEM` for `OWN_WORDS_SYSTEM`), and its step (`rewriteTask`) takes the build before's request apart (the watch's reason and its two lists, the briefing's request, the second asking's fault and open conditions) and builds this build's request from those parts, while `rwMemory` rebuilds what the rep knows (the owner's messages in their fence under the new heading, their fence tags escaped, the new lines on a sent draft and on a reopened condition). The own-words request is this build's with the length aims swapped in (`G7_SHORT_PART`, `G7_MESSAGE_FORM` for `SHORT_PART`, `MESSAGE_FORM`) and its quoted conditions and findings escaped by `fenceTags`; group 7's own pairs keep the old length texts frozen (`G7_SHORT_PART`, `G7_LEFT_ITEMS`, `G7_MESSAGE_FORM`), so a change to the live ones never breaks group 7's edit. Each old text must be found exactly once, or the call is not sent. It takes only a call whose record is in the build before's fence (`PRE_RW_RECORD_OPEN`, `PRE_RW_RECORD_CLOSE`) and quotes that record in the replay's fixed fence (`REPLAY_FENCE`, `replay00`, so a call replayed twice reads the same), its fence tags escaped by `fenceTags`, which leaves the old escape as it was. A second asking saved before group 9 names no fault, so, as under `fault`, it is never rebuilt. The writer's edit, `writer` (prompt audit §6.6; objective calls only), is the last group: it swaps `PRE_OW_OBJECTIVE_SYSTEM` for `objectiveSystem(REPLAY_FENCE)`, and its step (`writerTask`) moves the owner's messages from the build before's `<his_messages>` fence (`PRE_OW_OPEN`, `PRE_OW_SHUT`) into `<owner_messages_replay00>`, their fence tags escaped, and swaps its closing note (`PRE_OW_CLOSE`) for `objectiveClose`; a call whose old fence is not in it exactly once, or whose messages hold the old fence's own tag, is not sent. The older groups' objective pairs read the frozen `PRE_OW_*` texts, so a change to the live writer never breaks their edits. Each pair is the group before's text, kept word for word, and the text the group
 sent in its place. Applied after `rep-system`, in that order (`stepGroups`), each named group's
 edit (`stepGroup`) moves a call the build before it saved to exactly what the build after it
 sends: the call's system prompt must be the build before's (`systemBefore`, this build's with
@@ -1451,17 +1472,87 @@ resume) runs it without waiting and writes the objective when it recorded any; `
 message or note of the owner's is never seeded.
 
 State lives in two places. Atoms (`atom({plugin, key})`) are per-session UI state that drives
-the render. The `$.store` key `sessions` holds a `Rec` per session id (the objective, the
+the render. The `$.store` holds a `Rec` per session id, each under a key of its own,
+`rec:<session id>` (`recKey`; the objective, the
 results of earlier jobs, the owner's numbered messages and the counter, the last briefing's
 next step and message, the last `DRAFTS_MAX` (3) cards' messages in `rec.drafts`, flags already seen, other mods' notes, spend counters with the writer's own and its failed calls), capped
 at `SESSIONS_MAX` newest. A record that still loads as the blank one a session starts with
 (`isBlankRec`: no message, objective, draft or spend) is never kept, since a missing record
 loads the same: `session.end` saves every session's record, so before 17 Oct 2026 each
-scripted `claude -p` run left a blank one that took a place from the owner's sessions. A record `saveRec` lets go leaves its drafts (`recDrafts`: its
+scripted `claude -p` run left a blank one that took a place from the owner's sessions.
+
+A save (`storeRec`) sets the session's own key and nothing of any other session's. Claude
+Code's store locks its file for each `set` or `delete`, reads it, changes the one key and
+writes it back, so a write to one key is whole across processes; a `get`, a change and a `set`
+of one shared value is not. Until 20 Nov 2026 every record sat in one map under the key
+`sessions` (`OLD_MAP_KEY`), and each save read the map, changed its own entry and wrote the map
+back, so a save from another session's process that landed between them was written over: one
+session's save put back an older copy of another's, and a plan approval was lost that way.
+After the save, `trimStore` lists the keys (`$.store.keys`, one read) and, only when the record
+keys number more than `SESSIONS_MAX`, reads each record's `at` and lets go the oldest past it,
+never the session saving (`recsToLetGo`). A record let go leaves its drafts (`recDrafts`: its
 `rec.drafts`, last briefing's message and messages held as `draft`) in the key
-`droppedDrafts`, newest first, each once, up to `DROPPED_DRAFTS_MAX` (200) (`keepDropped`);
-a fork's own first save can let go the record it was forked from. `storedDrafts` reads
-`sessions` before `droppedDrafts`, the reverse of `saveRec`'s order, so a record let go
+`droppedDrafts`, newest first, each once, up to `DROPPED_DRAFTS_MAX` (200) (`keepDropped`),
+before its key is deleted; a fork's own first save can let go the record it was forked from.
+The save stands whatever the trim does: a trim that fails, or a process that ends between the
+two, leaves one record over, which the next save's trim lets go. Each record picked is read
+again just before its key is deleted, and kept when its `at` has changed since the trim read
+it: a session idle long enough to be the oldest can save while another session's trim runs.
+The store has no compare-and-delete, so a save landing between that `get` and the `delete` is
+still lost; the window was the whole trim. `trimStore` returns only the ids it deleted, so only
+their folders go. Two trims at once may each let go the same record (deleting a missing key
+does nothing). `droppedDrafts` is still one key read and written whole, so two
+trims that write it in the same instant can lose one's drafts; that window is a `get` and a
+`set` long, against the whole save the map had. A refused save throws, as before, and the
+store's limit is on the whole store's JSON, the record's key included.
+
+The map is moved once per process, before its first read (`migrateOnce`): each of its
+records is copied to its own key when that key is missing or older (`newerRec`), and the `at` of
+every map record the move read, by session id, blank ones and ones whose key was newer included,
+is added to the mark `movedSeen` (`MOVE_SEEN_KEY`, `moveSeenOf`). The move reads the mark again just
+before writing it and merges the two, the later `at` per id (`mergeSeen`), so a mark another process
+wrote meanwhile is kept. Each session the move read is then marked at no more than the `at` its own
+key still holds, so when another move running at the same time wrote an older copy over that key,
+the map's later save stays unseen, is read, and is copied by the next move; a key let go meanwhile
+keeps its mark, so the map's copy from before the move is not read back. Until the check of
+13e7d4d, that older copy was marked seen at the later `at` and the older build's later save was
+never read. The marks assume clocks move forward: an older build whose clock stepped back, or one
+saving a session twice in the same millisecond with the move reading between, saves a copy no
+later than the one the move saw, and it is not read. The copy itself is a read then a write, with
+no compare-and-set: a new-build save of the same session landing inside one move's read and write
+of that key is written over, the same window as the trim's. A later move copies only map records no finished move saw at their `at` or
+later (`unseenByMove`): a session the mark does not name, or a later `at` than the one it names. So a
+record the trim let go is not copied back, and an older build's save that lands after the map was
+read is a session or an `at` the move did not see, whatever its stamp, so it is read and copied. A
+map copy older than the one the move saw is an older build writing back its stale map, and is not
+read: its record is at its own key, or was let go and stays gone. Until the check of 535608c the
+mark was one time, the newest `at` the move saw, and with two older builds saving during the move a
+save stamped below that time was never read. The map is
+kept, not deleted: a process still running an older build reads and saves only the map, and
+with the map gone it would load a blank record and save it as the newest. Every read takes the
+newer of the record's own key and the map's entry (`loadStored`, `allStored`), so a save an
+older build makes into the map is the one read. A read takes a map record only when no finished
+move saw it (`oldMapSinceMove`), or every one when no move has finished (no mark, or one that is
+not an object): a finished move copied each record it saw, so a map record it saw is in its key
+or was let go, and reading it would bring a let-go record back as its copy from before the
+move. The map goes at the first move after its newest record is `OLD_MAP_IDLE_MS` (7 days)
+old, when no older build can still be saving into it; the mark stays, one number per session the
+map held. A move the store refuses partway stops there with the mark unwritten: the records it
+would have marked are still read, and the next process copies what is left. The trim never lets go
+a record that `oldMapSinceMove` returns, whether or not its key was copied: with the key gone, the
+map's older copy would be read in its place and copied back. It ranks every record key, mapped or
+not, keeps the newest `SESSIONS_MAX`, and lets go only the unmapped ones past them, so a mapped
+record never costs a newer session its place; the store holds at most `SESSIONS_MAX` plus the mapped
+records outside the newest `SESSIONS_MAX`, up to the map's 32 while a move is unfinished. Two moves
+at once can still write the mark backwards in the instant between one's re-read and its `set`; a
+record let go inside that instant can come back from the map. While the map stays, the store
+holds each record twice, and the move itself writes other sessions' keys, so a session saving
+in another process in the same instant can lose that one save: the move copies a record only
+when the map's copy is newer than the key's, which is so only at the first move or after an
+older build saved into the map, and the window is between the move's `get` of the key and its `set`.
+A blank record whose session `oldMapSinceMove` returns is saved rather than deleted, so the
+map's older copy is not read in its place. `storedDrafts` reads the records (`allStored`) before
+`droppedDrafts`, the reverse of the trim's order, so a record let go
 between its two reads is in one of them. `loadRec`/`saveRec` are the only way in and out, and `changeRec`
 runs each change alone from its load to its save, so two hooks that finish together never save
 over each other. Atoms and the module's own values outlive a session: a `/clear` or a resume
