@@ -210,8 +210,8 @@ const storeStub = (on: On, store: Record<string, unknown> = {}, o: StoreHooks = 
 const recIn = <T = Stored>(store: Record<string, unknown>, id = 'test-session'): T | undefined => {
   const own = store[`rec:${id}`] as { at?: number } | undefined
   const mapped = (store.sessions as Record<string, { at?: number }> | undefined)?.[id]
-  const since = typeof store.migratedAt === 'number' ? store.migratedAt : 0
-  const old = mapped !== undefined && (mapped.at ?? 0) > since ? mapped : undefined
+  const seen = rep.moveSeenOf(store[MIGRATED])
+  const old = mapped !== undefined && rep.unseenByMove(seen, id, mapped.at ?? 0) ? mapped : undefined
   if (own === undefined || old === undefined) return (own ?? old) as T | undefined
   return ((old.at ?? 0) > (own.at ?? 0) ? old : own) as T
 }
@@ -4541,7 +4541,93 @@ describe('the store: one key per session\'s record', () => {
     })
     plain(on, () => 'test-session')
     await $.prompt.submit(typed('build it'))
-    expect(store[MIGRATED]).toEqual({ other: at - 70, a: at - 20 })
+    // `a` is marked at what its key holds (at - 50), never above it: see the next tests.
+    expect(store[MIGRATED]).toEqual({ other: at - 70, a: at - 50 })
+  })
+
+  test('rule: two moves at once while an older build saves twice: the other move\'s copy of the later save is not written over by this move\'s older copy', async ($, on) => {
+    const at = NOW_AT()
+    const store: Record<string, unknown> = { sessions: { a: recOfS('a', at - 500, 'a under the older build') } }
+    let raced = false
+    storeStub(on, store, {
+      beforeSet: key => {
+        if (raced || key !== 'rec:a') return
+        raced = true
+        const later = { ...recOfS('a', at - 100, 'a under the older build'), owner: [om('a under the older build'), om('said later under the older build', 2)], counter: 2 }
+        store.sessions = { a: later }
+        store['rec:a'] = later
+        store[MIGRATED] = { a: at - 100 }
+      },
+    })
+    let id = 'test-session'
+    plain(on, () => id)
+    await $.prompt.submit(typed('build it'))
+    expect(raced).toBe(true)
+    id = 'a'
+    await $.prompt.submit(typed('back on the new build'))
+    expect((store['rec:a'] as Stored).owner.map(m => m.text)).toEqual(['a under the older build', 'said later under the older build', 'back on the new build'])
+  })
+
+  test('rule: two moves at once, the other one\'s older copy landing after this move\'s copy of the later save and before its mark: the later save is read', async ($, on) => {
+    const at = NOW_AT()
+    const later = { ...recOfS('a', at - 100, 'a under the older build'), owner: [om('a under the older build'), om('said later under the older build', 2)], counter: 2 }
+    const store: Record<string, unknown> = { sessions: { a: later } }
+    let gets = 0
+    storeStub(on, store, {
+      onGet: key => {
+        if (key !== MIGRATED || ++gets !== 2) return
+        store['rec:a'] = recOfS('a', at - 500, 'a under the older build')
+        store[MIGRATED] = { a: at - 500 }
+      },
+    })
+    let id = 'test-session'
+    plain(on, () => id)
+    await $.prompt.submit(typed('build it'))
+    expect(gets).toBeGreaterThanOrEqual(2)
+    id = 'a'
+    await $.prompt.submit(typed('back on the new build'))
+    expect((store['rec:a'] as Stored).owner.map(m => m.text)).toEqual(['a under the older build', 'said later under the older build', 'back on the new build'])
+  })
+
+  test('rule: a session this move read but did not copy, its key written over with an older copy by another move: the later save is read', async ($, on) => {
+    const at = NOW_AT()
+    const later = { ...recOfS('a', at - 100, 'a under the older build'), owner: [om('a under the older build'), om('said later under the older build', 2)], counter: 2 }
+    const store: Record<string, unknown> = { sessions: { a: later }, 'rec:a': later }
+    let gets = 0
+    storeStub(on, store, {
+      onGet: key => {
+        if (key !== MIGRATED || ++gets !== 2) return
+        store['rec:a'] = recOfS('a', at - 500, 'a under the older build')
+        store[MIGRATED] = { a: at - 500 }
+      },
+    })
+    let id = 'test-session'
+    plain(on, () => id)
+    await $.prompt.submit(typed('build it'))
+    expect(gets).toBeGreaterThanOrEqual(2)
+    id = 'a'
+    await $.prompt.submit(typed('back on the new build'))
+    expect((store['rec:a'] as Stored).owner.map(m => m.text)).toEqual(['a under the older build', 'said later under the older build', 'back on the new build'])
+  })
+
+  test('rule: another move marks a session and its trim lets that key go while this move runs: the map\'s copy from before the move is not read back', async ($, on) => {
+    const at = NOW_AT()
+    const store: Record<string, unknown> = { sessions: { a: recOfS('a', at - 500, 'a before the move') } }
+    let gets = 0
+    storeStub(on, store, {
+      onGet: key => {
+        if (key !== MIGRATED || ++gets !== 2) return
+        store[MIGRATED] = { a: at - 500 }
+        delete store['rec:a']
+      },
+    })
+    let id = 'test-session'
+    plain(on, () => id)
+    await $.prompt.submit(typed('build it'))
+    expect(gets).toBeGreaterThanOrEqual(2)
+    id = 'a'
+    await $.prompt.submit(typed('back to a'))
+    expect((store['rec:a'] as Stored).owner.map(m => m.text)).toEqual(['back to a'])
   })
 
   test('moveSeenOf, unseenByMove and mergeSeen: a mark is an object of finite times; a record is unseen with no mark, no entry, or a later at; marks merge to the later at', () => {

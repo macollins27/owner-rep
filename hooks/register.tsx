@@ -544,7 +544,15 @@ async function migrate($: EngineInterface): Promise<void> {
   }
   // Each record the move read, by its `at`: an older build's save that lands after the map was
   // read, whatever its stamp, is a session the move did not see or a later `at`, and is read.
-  await $.store.set(MOVE_SEEN_KEY, mergeSeen(moveSeenOf(await $.store.get(MOVE_SEEN_KEY)) ?? seen, saw))
+  // Each session the move read is marked at no more than its own key still holds, so a key another
+  // move overwrote with an older copy leaves the map's later save unseen, read and copied by the
+  // next move. A key let go meanwhile keeps the mark: the map's copy is not read back in its place.
+  const mark = mergeSeen(moveSeenOf(await $.store.get(MOVE_SEEN_KEY)) ?? seen, saw)
+  for (const id of Object.keys(saw)) {
+    const cur = await $.store.get(recKey(id))
+    if (isRec(cur)) mark[id] = Math.min(mark[id] ?? atOf(cur), atOf(cur))
+  }
+  await $.store.set(MOVE_SEEN_KEY, mark)
   if (started - newest > OLD_MAP_IDLE_MS) await $.store.delete(OLD_MAP_KEY)
 }
 
