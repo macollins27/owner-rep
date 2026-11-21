@@ -647,19 +647,33 @@ call writes (below):
    `--disable-slash-commands` and `--strict-mcp-config --mcp-config` from `checkMcpConfig` (G18),
    on `CHECK_MODEL` (`opus`) at `CHECK_EFFORT` (`high`) whatever the owner's default (G17), with
    `CHECK_SYSTEM` as `--append-system-prompt` (G27): the checker's role (`CHECK_ROLE`), the
-   readers' sections on conditions, proof and the open objective, its standing rules
+   readers' six sections on conditions, proof, the open objective, what reaches the owner, how
+   to write to the owner and how to write the message (`REP_CONDITIONS`, `REP_SHOWN`,
+   `REP_OPEN`, `REP_REACHES`, `REP_WRITE`, `REP_MESSAGE`), each once, its standing rules
    (`CHECK_STANDING`) and last the ways it must not stop (`CHECK_STOPS`, G24), the same text on
-   every check, so `checkPrompt` carries only this check's facts: the session, the room, a clock
-   from `startedAt` (`clockOf`: when it began, when its time runs out, and to start its answer
-   `CHECK_WRITE_BY_MS` before that, running `date` before a long command; G25), the agent's
-   changes to read first (`git status`, `git diff`, `git log --since` the record's first entry;
-   G26), one rule for writing (only in the copy, or nowhere without one; G45), the objective,
-   the briefing, the steps and the answer's form:
+   every check, so `checkPrompt` (audit §6.8) carries only this check's facts and restates none
+   of those: the session and when it began (`sessionStart` in `register.tsx` finds the
+   session's transcript, by `transcripts` or a `find` under the config folder's `projects`,
+   and reads its first time with `sessionStartArgv`, a `grep -m 1`; `sessionStartOf` takes it
+   only in the form `YYYY-MM-DDTHH:MM:SS[.fff]Z`, else none), the room (`CHECK_ROOM_COPY`, or
+   `CHECK_ROOM_NO_COPY` where the run is in the agent's folder: one rule for writing, only in
+   the copy, or nowhere without one; G45) and the fence's denials as a list, a clock from
+   `startedAt` (`clockOf`: when it began, when its time runs out, and to start its answer
+   `CHECK_WRITE_BY_MS` before that, running `date` before a long command; G25), the
+   objective, the owner's messages and the briefing (headed as written from the record
+   alone), each quoted inside the session's fence (`<owner_messages_…>`, `<briefing_…>`,
+   from `CheckArgs.fence`, the record's `fence`) with any tag of either inside escaped
+   (`checkTags`: `fenceTags`, and the same for `briefing`), the steps, starting with the
+   agent's changes (`git status`, `git diff`, `git log --since` the session's start, or the
+   record's first entry when none was found; G26), and the answer's form with the forms of a
+   look the check writes (`CHECK_LOOKS`, which `looksOf` reads; G44):
    the run loads the owner's user-level settings, the owner's guard hooks among them, the `--settings`
    fence, and the owner's own agentsview entry from Claude Code's `.claude.json` (`checkMcp`
    reads `<CLAUDE_CONFIG_DIR>/.claude.json`, else `~/.claude.json`, and takes that one entry, or
    none; a file past the engine's 4 MiB read limit cannot be read and gives none, and the
-   checker then reads the record through the `agentsview` command, as the brief tells it to), and no CLAUDE.md, skill, slash command, project or local setting or other MCP server;
+   checker then reads the record through the `agentsview` command, as the brief tells it to), and no CLAUDE.md, skill, slash command, project or local setting or other MCP server
+   (hook text the owner's user-level hooks add still reaches it, and `CHECK_STANDING` says this
+   task wins over it);
    nor the owner's plugins: `checkPlugins` reads `<CLAUDE_CONFIG_DIR>/settings.json`, else
    `~/.claude/settings.json`, and `checkPluginsOff` names every key of its `enabledPlugins`, each
    `false`, which `checkSettings` writes into the `--settings` file as `enabledPlugins`, read
@@ -723,12 +737,12 @@ call writes (below):
    and with no copy the run works in a folder that may be a subfolder of its repository;
    reading through git still works, adding, committing and stashing are refused; where the
    host does not answer the link question, `pathLinks` gives null and the brief says the
-   installs the links in the command folders lead to could not be found; where it does not
+   installs the links in the command folders lead to could not be found (`CHECK_NO_LINKS`); where it does not
    answer a git question whole (a throw, a timeout, an answer cut at the output cap or
    without its end mark, or a name holding a line break), `gitRepos` marks its answer not
    whole (`whole: false`) and keeps what the other questions found, and the brief says not
    every repository, nor every place a link in the copy leads to, could be found, and to
-   stage, commit and stash nothing; `CheckArgs.unanswered`), the brief naming the
+   stage, commit and stash nothing (`CHECK_NO_REPOS`); `CheckArgs.unanswered`), the brief naming the
    main ones, saying no list names every one, rather than saying all writes outside the copy
    are denied, and the network closed except
    for the local machine, with `failIfUnavailable` (the run refuses to start where the sandbox cannot)
@@ -1034,7 +1048,7 @@ needing a look by someone who did not build it; `countLine` adds the same by who
 counted rather than named past `LOOKS_NOTE_MAX` characters),
 and `fillCard` brings the count line back right after the head. The prompts are shown each open
 condition's kind (`kindMark`, `works` for one with none) and what its looks saw (`promptLine`).
-The watch, the briefing, ask again and the check carry `LOOK_RULE`, which teaches the form. A new job's conditions start with no mark. A draft moves only `step`, set to the draft's `firstSentence` in
+The watch, the briefing and ask again carry `LOOK_RULE`, which teaches the form; the check carries `CHECK_LOOKS`, the same forms said once in its answer's form. A new job's conditions start with no mark. A draft moves only `step`, set to the draft's `firstSentence` in
 `prompt.submit`. The card shows `revisedLine` under the head and `objectiveText` as its
 reading; the row shows `result`.
 

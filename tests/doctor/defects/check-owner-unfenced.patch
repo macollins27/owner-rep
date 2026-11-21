@@ -1,0 +1,17 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 456655c..8c854a3 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -5363,9 +5363,9 @@ Conditions the rep holds shown, each with where it was shown:
+ ${list(a.shown.map(c => `${c.text} | ${c.by}`), '- none')}
+ 
+ The owner's own messages on this job, oldest first. A line marked "(to the rep)" was said to the rep, not the agent. One marked "(your draft, sent by the owner)" was written by the rep and sent by the owner, so it is the rep's words:
+-<owner_messages${s}>
+-${checkTags(ownerLines(a.owner)) || '(none recorded)'}
+-</owner_messages${s}>
++<owner_messages>
++${ownerLines(a.owner) || '(none recorded)'}
++</owner_messages>
+ 
+ ## The briefing, written at ${at} from the record alone
+ 

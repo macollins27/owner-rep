@@ -604,7 +604,7 @@ says is missing, and offers no Check it, and so does every later card while Clau
 the note saying a restart clears it once the missing piece is installed. The owner's own guard hooks fire inside
 the run as they do for every agent. The copy is removed when the run ends. When no copy can
 be made, or the project's folder would hold its own copy (the home itself), the run starts in the project itself with writes there denied, and its brief says
-so and tells it to run only what writes nothing there. On Windows (recognised by `OS`, by `SystemRoot` or `windir` holding a drive path, or by a working folder on a drive) Claude Code's sandbox is switched off, so there is no room to run in: the
+so and tells it to run only what writes nothing anywhere. On Windows (recognised by `OS`, by `SystemRoot` or `windir` holding a drive path, or by a working folder on a drive) Claude Code's sandbox is switched off, so there is no room to run in: the
 card says so in place of the check's price and offers no Check it button. The run's answer
 carries the count of commands refused approval; the card shows it, and the right number is
 zero, because a refusal in a room where nothing needs approval means the room has a hole.
@@ -717,7 +717,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 874 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 877 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: twelve real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -810,7 +810,12 @@ to an agent by itself.
   audit of 14 November rewrote it as one system prompt of sections, each rule said once, plainly,
   with its reason, the rules that decide an answer restated in a line each after the record. Each
   call now sends about 3,300 words, none of them "never" and none in capitals for emphasis, and a
-  unit test holds every call to its target, so the brief cannot grow back the same way.
+  unit test holds every call to its target, so the brief cannot grow back the same way. The
+  check got the same rewrite (§6.8): its system prompt carries the readers' sections it had
+  lacked (what reaches the owner, how to write to the owner) beside its own standing rules, its
+  task carries only this check's facts, with the owner's messages and the briefing fenced as
+  the readers' are, and it reads the agent's commits from the time the session's transcript
+  begins. It sends about 3,200 words, down from 3,700, with one "never" where it had twelve.
 - **Proven on real sessions.** Each route was pressed live by the owner before the next was
   built: the row, the briefing, the watch, the note to the rep, and two real checks on the session
   that built it. A keyboard chord for the Rep button could not be proven and was removed.

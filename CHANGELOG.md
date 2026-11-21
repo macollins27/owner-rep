@@ -5,6 +5,14 @@ What changed in each release of Owner Rep, newest first. The full record is the
 
 ## Unreleased
 
+- **The check reads the same rules as the briefing, said once.** Check it now carries what
+  reaches you and how the rep writes to you, which it lacked, and its task no longer repeats
+  its standing rules: the room, the fence and the clock are plain sentences, your messages and
+  the briefing are quoted inside the session's fence, and it reads the agent's commits from the
+  time the session began rather than a time it had to guess. Its "left" names every gap the
+  briefing's does, a chore the agent left "for you" among them, since the check rewrites the
+  whole card. It is 3,267 words with two "never"s, down from 3,671 with twelve, and a test
+  holds it there.
 - **One session's save no longer undoes another's.** Every session's record was kept in one
   shared list, and each save read the list, changed its own record and wrote the whole list
   back, so when two sessions saved at nearly the same moment the later one put back the other's

@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 456655c..22db4b3 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -5319,7 +5319,7 @@ export const CHECK_NO_LINKS = ', and this time not the installs the links in tho
+ export function checkPrompt(a: CheckArgs): string {
+   const s = fenceSuffix(a.fence)
+   const at = a.writtenAt
+-  const since = a.sessionStart === undefined || a.sessionStart === '' ? '' : a.sessionStart
++  const since = ''
+   const clock =
+     a.startedAt === undefined
+       ? `You have ${CHECK_TIMEOUT_WORDS} and ${CHECK_MAX_TURNS} turns, and an answer that never arrives is worth nothing to the owner.`

@@ -1083,7 +1083,7 @@
     "name": "no-copy-brief-says-write",
     "breaks": "When no copy could be made and the check runs in the agent's own folder, its brief still tells it to write what it likes there and that the copy is removed after.",
     "patch": "no-copy-brief-says-write.patch",
-    "fixed": "remade 2026-11-19"
+    "fixed": "remade 2026-11-19; remade 2026-11-21"
   },
   {
     "name": "seed-gated-on-typed-rows",
@@ -1197,7 +1197,7 @@
     "name": "brief-overstates-fence",
     "breaks": "The check's brief says the fence denies every write outside the copy, while in fact it is a list of guarded folders, so the run believes a write it should not make would be stopped.",
     "patch": "brief-overstates-fence.patch",
-    "fixed": "remade 2026-11-19"
+    "fixed": "remade 2026-11-19; remade 2026-11-21"
   },
   {
     "name": "refused-count-claims-fence",
@@ -1275,7 +1275,7 @@
     "name": "brief-says-every-place",
     "breaks": "The check's brief says the fence guards every place in the home whose contents run later, while it guards a list of the main ones, so the run believes a write it should not make would be stopped.",
     "patch": "brief-says-every-place.patch",
-    "fixed": "remade 2026-11-19"
+    "fixed": "remade 2026-11-19; remade 2026-11-21"
   },
   {
     "name": "no-fence-forgotten",
@@ -1479,7 +1479,7 @@
     "name": "brief-repo-unsaid",
     "breaks": "The brief drops the repository from the places the fence guards while still naming the links, so the run is not told why staging or committing in the copy is refused.",
     "patch": "brief-repo-unsaid.patch",
-    "fixed": "remade 2026-11-19"
+    "fixed": "remade 2026-11-19; remade 2026-11-21"
   },
   {
     "name": "pnpm-goes-online",
@@ -1515,7 +1515,7 @@
     "name": "unanswered-not-passed",
     "breaks": "When the link or git question gets no answer the brief still says the fence guards the repository and the installs the links lead to, so the run may commit or change an install trusting a guard that is not there.",
     "patch": "unanswered-not-passed.patch",
-    "fixed": "remade 2026-11-19"
+    "fixed": "remade 2026-11-19; remade 2026-11-21"
   },
   {
     "name": "links-unanswered-as-none",
@@ -1533,13 +1533,13 @@
     "name": "brief-repo-unanswered-unsaid",
     "breaks": "When the git question gets no answer the brief still says the repository is guarded, so the run may stage, commit or stash in a repository the fence does not guard.",
     "patch": "brief-repo-unanswered-unsaid.patch",
-    "fixed": "remade 2026-11-19"
+    "fixed": "remade 2026-11-19; remade 2026-11-21"
   },
   {
     "name": "brief-links-unanswered-unsaid",
     "breaks": "When the link question gets no answer the brief does not say the installs the links lead to are unguarded, so the run may change one believing the fence would stop it.",
     "patch": "brief-links-unanswered-unsaid.patch",
-    "fixed": "remade 2026-11-19"
+    "fixed": "remade 2026-11-19; remade 2026-11-21"
   },
   {
     "name": "git-inside-not-searched",
@@ -1713,13 +1713,13 @@
     "name": "brief-links-fence-unsaid",
     "breaks": "The brief does not name the places links in the copy lead to among those the fence guards, so the run is not told why writing through a link that leads out is refused.",
     "patch": "brief-links-fence-unsaid.patch",
-    "fixed": "remade 2026-11-19"
+    "fixed": "remade 2026-11-19; remade 2026-11-21"
   },
   {
     "name": "brief-links-unfound-unsaid",
     "breaks": "The brief does not tell the run to write nothing through a link that leads out of the copy when those links could not be found, so it may write through one.",
     "patch": "brief-links-unfound-unsaid.patch",
-    "fixed": "remade 2026-11-19"
+    "fixed": "remade 2026-11-19; remade 2026-11-21"
   },
   {
     "name": "blank-records-kept",
@@ -2445,7 +2445,7 @@
     "name": "check-may-leave-empty",
     "breaks": "The check prompt lets the checker leave the message empty with conditions open.",
     "patch": "check-may-leave-empty.patch",
-    "fixed": "remade 2026-11-19"
+    "fixed": "remade 2026-11-19; remade 2026-11-21"
   },
   {
     "name": "held-step-line-dropped",
@@ -3549,7 +3549,7 @@
     "name": "check-instructions-line-dropped",
     "breaks": "The check's brief no longer says the agent's instruction files were not loaded and where to read them.",
     "patch": "check-instructions-line-dropped.patch",
-    "fixed": "remade 2026-11-19"
+    "fixed": "remade 2026-11-19; remade 2026-11-21"
   },
   {
     "name": "check-loads-claude-mds",
@@ -4335,7 +4335,7 @@
     "name": "check-prompt-no-end-ask",
     "breaks": "The check's prompt does not ask for the end line, so every whole check comes back without it and is taken as cut, and the Check button never changes the card.",
     "patch": "check-prompt-no-end-ask.patch",
-    "fixed": "remade 2026-11-19"
+    "fixed": "remade 2026-11-19; remade 2026-11-21"
   },
   {
     "name": "ask-again-end-ask-not-last",
@@ -4665,7 +4665,7 @@
     "name": "check-proof-hands-on-only",
     "breaks": "The check's message asks only for a hands-on look where proof is missing, never a fact's command and what it printed.",
     "patch": "check-proof-hands-on-only.patch",
-    "fixed": "remade 2026-11-19"
+    "fixed": "remade 2026-11-19; remade 2026-11-21"
   },
   {
     "name": "quality-condition-dropped",
@@ -4809,7 +4809,7 @@
     "name": "check-self-proving-dropped",
     "breaks": "The check is not told that a self-proving step of an approved plan is a question for the owner, so its rewritten card drops the question the briefing raised.",
     "patch": "check-self-proving-dropped.patch",
-    "fixed": "remade 2026-11-19"
+    "fixed": "remade 2026-11-19; remade 2026-11-21"
   },
   {
     "name": "decisions-replay-no-objective",
@@ -4827,7 +4827,7 @@
     "name": "shown-false-guess-check",
     "breaks": "The check is not told that a guess is no showing, so it files a claim the record shows neither way under \"false\" (ninth live test).",
     "patch": "shown-false-guess-check.patch",
-    "fixed": "remade 2026-11-19"
+    "fixed": "remade 2026-11-19; remade 2026-11-21"
   },
   {
     "name": "fact-tail-comma-dropped",
@@ -5596,6 +5596,84 @@
     "breaks": "A note on screen whose every part a walk took back stays up, and the next look carries its parts again, so the owner is told a step was dropped that the walk marked done.",
     "patch": "taken-back-note-stays.patch",
     "fixed": "2026-11-21, the scoped check of #68"
+  },
+  {
+    "name": "check-without-reaches",
+    "breaks": "The check's standing rules leave out what reaches the owner, so its rewritten card hands the owner the agent's chores and drops the plain question on a go-ahead.",
+    "patch": "check-without-reaches.patch",
+    "fixed": "2026-11-21, the check on the audit's rewritten brief (§6.8)"
+  },
+  {
+    "name": "check-without-write",
+    "breaks": "The check's standing rules leave out how to write to the owner, so its rewritten card is in the agent's jargon and loses the limits the briefing keeps.",
+    "patch": "check-without-write.patch",
+    "fixed": "2026-11-21, the check on the audit's rewritten brief (§6.8)"
+  },
+  {
+    "name": "check-section-in-task",
+    "breaks": "A section of the standing rules is said again in the check's task, so the checker reads the same rule twice and the prompt grows past its target.",
+    "patch": "check-section-in-task.patch",
+    "fixed": "2026-11-21, the check on the audit's rewritten brief (§6.8)"
+  },
+  {
+    "name": "check-briefing-unfenced",
+    "breaks": "The check's task quotes the briefing outside any fence, so a line of it that reads as an instruction is taken as one.",
+    "patch": "check-briefing-unfenced.patch",
+    "fixed": "2026-11-21, the check on the audit's rewritten brief (§6.8)"
+  },
+  {
+    "name": "check-owner-unfenced",
+    "breaks": "The check's task quotes the owner's messages in a bare tag that a message can close, so text after it reads as the check's instructions.",
+    "patch": "check-owner-unfenced.patch",
+    "fixed": "2026-11-21, the check on the audit's rewritten brief (§6.8)"
+  },
+  {
+    "name": "check-briefing-tags-unescaped",
+    "breaks": "A briefing tag quoted inside the briefing is left as it is, so the briefing can close its own fence and what follows reads as the check's instructions.",
+    "patch": "check-briefing-tags-unescaped.patch",
+    "fixed": "2026-11-21, the check on the audit's rewritten brief (§6.8)"
+  },
+  {
+    "name": "check-fence-not-passed",
+    "breaks": "The check is not given the session's fence, so it quotes the owner's messages and the briefing in bare tags anyone can close.",
+    "patch": "check-fence-not-passed.patch",
+    "fixed": "2026-11-21, the check on the audit's rewritten brief (§6.8)"
+  },
+  {
+    "name": "check-start-not-read",
+    "breaks": "The check is not told when the session began, so it reads commits from a time it has to guess and may miss the agent's first ones or take an earlier session's.",
+    "patch": "check-start-not-read.patch",
+    "fixed": "2026-11-21, the check on the audit's rewritten brief (§6.8)"
+  },
+  {
+    "name": "check-start-unused",
+    "breaks": "The session's start is read but the git step ignores it, so the check reads commits from a time it has to guess.",
+    "patch": "check-start-unused.patch",
+    "fixed": "2026-11-21, the check on the audit's rewritten brief (§6.8)"
+  },
+  {
+    "name": "check-start-taken-raw",
+    "breaks": "Whatever follows the first \"timestamp\" in the transcript is taken as the session's start and put into the git command, so a crafted line runs a command of its own.",
+    "patch": "check-start-taken-raw.patch",
+    "fixed": "2026-11-21, the check on the audit's rewritten brief (§6.8)"
+  },
+  {
+    "name": "check-looks-dropped",
+    "breaks": "The check is not told the forms of a look, so it writes its own look in words the rep does not read as the check's, and a condition it opened and used stays open.",
+    "patch": "check-looks-dropped.patch",
+    "fixed": "2026-11-21, the check on the audit's rewritten brief (§6.8)"
+  },
+  {
+    "name": "check-prompt-grows",
+    "breaks": "The check's prompt grows past its size bound by a sentence added to a string it carries, which an allowance counted from those strings would have let through.",
+    "patch": "check-prompt-grows.patch",
+    "fixed": "2026-11-21, the check on the audit's rewritten brief (§6.8)"
+  },
+  {
+    "name": "check-left-drops-chore",
+    "breaks": "The check's \"left\" no longer names a chore the agent left \"for you\", so a card the check rewrites can drop a chore the briefing listed.",
+    "patch": "check-left-drops-chore.patch",
+    "fixed": "2026-11-21"
   },
   {
     "name": "store-whole-map-save",
