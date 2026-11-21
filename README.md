@@ -351,7 +351,9 @@ full, this is everything it reads and runs:
   web, or launch helpers. It runs with your own Claude Code settings, so your hooks fire
   inside it as they do for any agent.
 - **What it keeps:** one record per session, for the 32 newest sessions that hold anything,
-  and the call log above. [PRIVACY.md](PRIVACY.md) lists what each holds.
+  and the call log above. [PRIVACY.md](PRIVACY.md) lists what each holds. After an update
+  from an earlier version, the earlier copy of up to 32 records stays beside them until no
+  older version has saved into it for a week.
 
 Mods are code that runs inside Claude Code with the access Claude Code has, so read the
 source before installing any mod, this one included.
