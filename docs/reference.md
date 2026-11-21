@@ -914,6 +914,9 @@ new ones after them, and keeps every held condition the writer leaves out unless
 cites the number of a message from the owner, new since the held objective was built (past `from`),
 and never raises a state: a held condition keeps its state, where and `reopened` mark unless
 the writer closes it, and a new one proposed shown starts open;
+a held open condition that an approval or a message that could not be read whole would let go of is
+kept, with a "Settle with the owner" condition beside it (`settleConditions`); a held settle line is
+already that question and is kept as it is, never wrapped in another (the rerun of #70, 21 Nov 2026);
 `honest` turns a `shown` the writer adds (of the conversation it sees only the agent's turn
 under each of the owner's messages, marked as the agent's) and a `closed` that cites no such
 message back to open. A condition
