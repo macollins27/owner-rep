@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 8fd04cc..4efe0e7 100644
+index 71c6e23..26ec825 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -7761,7 +7761,7 @@ const G5_TASK: ReadonlyArray<{ swap: Swap; kinds: readonly CallKind[] }> = [
+@@ -7957,7 +7957,7 @@ const G5_TASK: ReadonlyArray<{ swap: Swap; kinds: readonly CallKind[] }> = [
    { swap: ['Do two things.\n\nFirst, measure the work', `${PRE_RW_WATCH_NOW_ASK}\n\nSecond, measure the work`], kinds: ['watch'] },
    { swap: ['\n\nSecond, decide whether', '\n\nThird, decide whether'], kinds: ['watch'] },
    { swap: ['Write the walk first, under "steps:",', PRE_RW_WATCH_WALK_AT], kinds: ['watch'] },
 -  { swap: ['nothing else:\n\nsteps:\n', `nothing else:\n\n${PRE_RW_WATCH_NOW_LINE}\nsteps:\n`], kinds: ['watch'] },
 +  { swap: ['nothing else:\n\nsteps:\n', 'nothing else:\n\nsteps:\n'], kinds: ['watch'] },
-   { swap: ['step: <one sentence>\ndropped:', `${OBJECTIVE_STEP_LINE}\ndropped:`], kinds: ['objective'] },
+   { swap: ['step: <one sentence>\ndropped:', `${PRE_OW_OBJECTIVE_STEP_LINE}\ndropped:`], kinds: ['objective'] },
  ]
  // Prompt group 6 (G13): a held condition restated in other words is written once, or in its new

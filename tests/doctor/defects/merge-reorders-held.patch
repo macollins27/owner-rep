@@ -1,0 +1,14 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index b478c09..745b914 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -6290,8 +6290,7 @@ export function mergeConditions(
+     const gone = dropped.some(d => d.by !== null && his.includes(d.by) && like(d.text, h.text))
+     if (!gone) out.push(h)
+   }
+-  out.push(...added)
+-  return out
++  return [...added, ...out]
+ }
+ 
+ // What the agent is told when a stop is refused.

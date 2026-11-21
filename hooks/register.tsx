@@ -167,7 +167,7 @@ import {
   OBJECTIVE_MODEL,
   OBJECTIVE_TIMEOUT_MS,
   OBJECTIVE_RETRIES,
-  OBJECTIVE_SYSTEM,
+  objectiveSystem,
   objectiveEffort,
   OBJECTIVE_RETRY_MAX_TOKENS,
   OBJECTIVE_RETRY_TIMEOUT_MS,
@@ -188,6 +188,7 @@ import {
   repSystem,
   newFence,
   BLOCKS_REFUSED,
+  cachesSystem,
   joinBlocks,
   type PromptBlock,
   RECORD_TIMEOUT_MS,
@@ -1494,7 +1495,11 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
       // read from where they were saved; the approvals kept past the trim are not the writer's.
       const { msgs, lost } = await readable($, sid, jobMsgs(rec).filter(m => m.pinned !== true), ['sent', 'body', 'took', 'rejected'])
       await markLost($, sid, lost)
-      const memory = { objective: rec.objective, owner: msgs, past: rec.past, ...(waitingN === undefined ? {} : { whole: waitingN }) }
+      // The session's fence, made here when the writer is the first call, so the writer and the
+      // readers after it quote the owner in the same tags and each keeps its system prompt cached.
+      const fence = rec.fence ?? (await changeRec($, sid, r => (r.fence ??= newFence())))
+      const system = objectiveSystem(fence)
+      const memory = { objective: rec.objective, owner: msgs, past: rec.past, fence, ...(waitingN === undefined ? {} : { whole: waitingN }) }
       const showings = writerShowings(memory)
       // The last message this write is shown: the one it reads whole, the last it listed before
       // it stopped, or the newest.
@@ -1516,8 +1521,19 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
         const effort = objectiveEffort(attempt)
         const maxTokens = retry ? OBJECTIVE_RETRY_MAX_TOKENS : OBJECTIVE_MAX_TOKENS
         const timeoutMs = retry ? OBJECTIVE_RETRY_TIMEOUT_MS : OBJECTIVE_TIMEOUT_MS
-        const { result, ms } = await timed(() => $.model.complete({ model: OBJECTIVE_MODEL, system: OBJECTIVE_SYSTEM, prompt, maxTokens, effort, timeoutMs }))
-        const sent: Sent = { kind: 'objective', settings: { model: OBJECTIVE_MODEL, effort, maxTokens, timeoutMs }, system: OBJECTIVE_SYSTEM, prompt, joined: true, attempt, result, ms }
+        // The system prompt goes as one block marked for the cache, the same on every write of the
+        // session, and the prompt with it as one block: 2.1.286 checks only the prompt's shape, and
+        // drops a block system beside a text prompt without a word, so only a block prompt makes it
+        // refuse (BLOCKS_REFUSED), and that build is then sent both as text.
+        const send = (sys: string | PromptBlock[]) =>
+          $.model.complete({ model: OBJECTIVE_MODEL, system: sys, prompt: typeof sys === 'string' ? prompt : [{ text: prompt }], maxTokens, effort, timeoutMs })
+        const { result, ms } = await timed(() =>
+          send([{ text: system, cache: true }]).catch((e: unknown) => {
+            if (!BLOCKS_REFUSED.test(String(e))) throw e
+            return send(system)
+          }),
+        )
+        const sent: Sent = { kind: 'objective', settings: { model: OBJECTIVE_MODEL, effort, maxTokens, timeoutMs }, system, prompt, joined: true, attempt, result, ms }
         const read = result !== null && result.isAnswered ? callRead('objective', result.text, undefined, { usage: result.usage as Usage, cap: maxTokens }) : undefined
         saveCall($, sid, sent, read)
         let again = false
@@ -1928,14 +1944,19 @@ async function replay($: EngineInterface, args: string): Promise<string> {
       const { system, prompt: saved } = texts[arm] as { system: string; prompt: string | PromptBlock[] }
       const sent = replayNow(saved, e.settings.maxTokens, a.now === true)
       const prompt = sent.prompt
-      const send = (p: string | PromptBlock[]) => $.model.complete({ model: e.settings.model, system, prompt: p, maxTokens: sent.cap, effort, timeoutMs: e.settings.timeoutMs })
+      // The system prompt marked for the cache where the build that sent the call marked it.
+      const cache = cachesSystem(e.kind, system, prompt)
+      // A system sent as blocks goes with a prompt in blocks, so 2.1.286 refuses it rather than
+      // dropping the system (the writer's call).
+      const send = (p: string | PromptBlock[], c: boolean) =>
+        $.model.complete({ model: e.settings.model, system: c ? [{ text: system, cache: true }] : system, prompt: c && typeof p === 'string' ? [{ text: p }] : p, maxTokens: sent.cap, effort, timeoutMs: e.settings.timeoutMs })
       for (let i = 1; i <= a.times; i++) {
-        // A build that refuses a prompt in blocks (2.1.286) is sent the same text joined, as the
-        // rep's own calls are.
+        // A build that refuses blocks (2.1.286) is sent the same texts plain, as the rep's own
+        // calls are.
         const { result, ms } = await timed(() =>
-          send(prompt).catch((err: unknown) => {
-            if (typeof prompt === 'string' || !BLOCKS_REFUSED.test(String(err))) throw err
-            return send(joinBlocks(prompt))
+          send(prompt, cache).catch((err: unknown) => {
+            if (!BLOCKS_REFUSED.test(String(err)) || (!cache && typeof prompt === 'string')) throw err
+            return send(typeof prompt === 'string' ? prompt : joinBlocks(prompt), false)
           }),
         )
         const usage = result === null ? undefined : (result.usage as Usage | undefined)

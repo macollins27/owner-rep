@@ -1,16 +1,14 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index f8f119f..0ad9b31 100644
+index b478c09..f1edcb9 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -5863,11 +5863,6 @@ export function mergeConditions(
-     else if (h.kind === 'fact' && kind === 'works' && h.state === 'shown') out.push({ text: p.text, state: 'open', by: '', seen: h.by, kind: 'works' })
-     else out.push({ ...h, text: p.text, ...k })
-   }
--  for (const h of held) {
--    if (taken.has(h) || out.some(p => like(p.text, h.text))) continue
+@@ -6286,9 +6286,6 @@ export function mergeConditions(
+       out.push(now)
+       continue
+     }
+-    if (all.some(p => like(p.text, h.text))) continue
 -    const gone = dropped.some(d => d.by !== null && his.includes(d.by) && like(d.text, h.text))
 -    if (!gone) out.push(h)
--  }
+   }
+   out.push(...added)
    return out
- }
- 
