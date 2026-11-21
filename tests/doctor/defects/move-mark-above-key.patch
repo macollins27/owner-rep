@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index eae90c5..109ef5b 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -550,7 +550,7 @@ async function migrate($: EngineInterface): Promise<void> {
+   const mark = mergeSeen(moveSeenOf(await $.store.get(MOVE_SEEN_KEY)) ?? seen, saw)
+   for (const id of Object.keys(saw)) {
+     const cur = await $.store.get(recKey(id))
+-    if (isRec(cur)) mark[id] = Math.min(mark[id] ?? atOf(cur), atOf(cur))
++    if (isRec(cur)) void cur
+   }
+   await $.store.set(MOVE_SEEN_KEY, mark)
+   if (started - newest > OLD_MAP_IDLE_MS) await $.store.delete(OLD_MAP_KEY)

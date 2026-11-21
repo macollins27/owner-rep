@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 8a29d46..3507f1a 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -5305,7 +5305,7 @@ const checkTags = (s: string): string =>
+ 
+ // The forms of a look the check writes in a "works:" condition's where, which looksOf reads and
+ // signsOff signs by (G44): the check's own look signs off; the agent's never does.
+-export const CHECK_LOOKS = `On a "works:" condition, the where names each look that happened, as "look by helper <run>: …", "look by Codex <run>: …" or "look by the check: …" (<run> being the "(run …)" the record prints beside the call), with what was done and seen. A run that wrote or changed the work, or any helper briefed to build it, is the agent's: write its look "look by the agent: …", and the condition stays open.`
++export const CHECK_LOOKS = `On a "works:" condition, the where names each look that happened, as "look by helper <run>: …", "look by Codex <run>: …" or "look by the check: …" (<run> being the "(run …)" the record prints beside the call), with what was done and seen. A run that wrote or changed the work, or any helper briefed to build it, is the agent's: write its look "look by the agent: …", and the condition stays open. Say each look plainly, in the order it happened, with the command it ran, the file it read and what it printed or held, so that the owner can follow it.`
+ 
+ // The check's room, with a copy made and with none (G45: one rule for writing in each).
+ export const CHECK_ROOM_COPY = `You run in your working directory, the copy, which is thrown away when you finish. Run what you need there, and write only there. Send nothing to anyone. When a claim is about what is on disk now, read the agent's own folder with Read, Glob and Grep, since the copy is of one moment.`

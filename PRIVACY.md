@@ -31,6 +31,14 @@ anything, it keeps:
 It also keeps a list of up to 200 of its own drafts from sessions that have left the store,
 so a message it wrote is never mistaken for one of yours.
 
+Versions before this one kept every record in one shared list. After the update the mod copies
+each record to a place of its own and leaves that list beside them, so a session still running
+an older version keeps working; the list, up to 32 more records, some of them sessions the
+newest 32 have since pushed out, is removed at the first start after no older version has
+saved into it for a week. To tell an older version's later saves from what it has already copied, it keeps
+each session id in that list with the time of the copy it saw. Once the copy has finished, a record in
+that list it saw is never read again unless an older version saves it again.
+
 Beside the store, in the folder `<config>/owner-rep/sources/`, it saves these texts, each in
 its own file checked by SHA-256:
 
@@ -70,7 +78,8 @@ searches the transcripts of every project there with `git grep` (or `grep -r`) f
 the session it came from, and reads your messages from the files that hold it; nothing else of
 those files is kept.
 
-When you press **Check it**, the rep reads Claude Code's `.claude.json` (in your Claude Code
+When you press **Check it**, the rep reads the first time the session's transcript records and
+tells the check when the session began; nothing else of the transcript is read for this. It reads Claude Code's `.claude.json` (in your Claude Code
 configuration folder, or your home) for your agentsview server entry alone, and passes that
 entry to the check's own run on your machine. Nothing else in that file is read into the rep,
 kept or sent. It also reads the names of the plugins your Claude Code `settings.json` turns on

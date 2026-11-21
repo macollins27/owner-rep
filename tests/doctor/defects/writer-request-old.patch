@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index b478c09..2c1b054 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -8204,7 +8204,7 @@ function writerTask(task: string): string | { why: string } {
+   if (/‹\/?his_messages›/.test(inside)) return { why: "a message holds the old fence's own tag" }
+   if (tail.split(PRE_OW_WRITE_ALL).length !== 2 || tail.split(PRE_OW_CONDITION_LINE).length !== 2) return { why: "the build before the objective rewrite's request is not in it once" }
+   const tag = `owner_messages${fenceSuffix(REPLAY_FENCE)}`
+-  const asked = tail.replace(PRE_OW_CLOSE, objectiveClose(tag)).replace(PRE_OW_WRITE_ALL, WRITE_CHANGED).replace(PRE_OW_CONDITION_LINE, CONDITION_LINE)
++  const asked = tail.replace(PRE_OW_CLOSE, objectiveClose(tag)).replace(PRE_OW_CONDITION_LINE, CONDITION_LINE)
+   return `${(open[0] as string).replace(PRE_OW_REOPENED_NOTE, REOPENED_NOTE)}\n<${tag}>\n${fenceTags(inside)}\n</${tag}>\n${asked}`
+ }
+ function rewriteTask(kind: CallKind, task: string): string | { why: string } {

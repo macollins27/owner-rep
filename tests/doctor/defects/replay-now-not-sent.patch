@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index b6129e7..404a85c 100644
+index 0b63a57..66402de 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1768,7 +1768,7 @@ async function replay($: EngineInterface, args: string): Promise<string> {
+@@ -1826,7 +1826,7 @@ async function replay($: EngineInterface, args: string): Promise<string> {
      const tag = [effort, ...(a.variant === undefined ? [] : [`${a.base === undefined ? '' : `${a.base.join('+')}~`}${a.variant.join('+')}`]), ...(a.now === true ? ['now'] : [])].join('.')
      for (const arm of arms) {
        const { system, prompt: saved } = texts[arm] as { system: string; prompt: string | PromptBlock[] }
 -      const sent = replayNow(saved, e.settings.maxTokens, a.now === true)
 +      const sent = replayNow(saved, e.settings.maxTokens, false)
        const prompt = sent.prompt
-       const send = (p: string | PromptBlock[]) => $.model.complete({ model: e.settings.model, system, prompt: p, maxTokens: sent.cap, effort, timeoutMs: e.settings.timeoutMs })
-       for (let i = 1; i <= a.times; i++) {
+       // The system prompt marked for the cache where the build that sent the call marked it.
+       const cache = cachesSystem(e.kind, system, prompt)

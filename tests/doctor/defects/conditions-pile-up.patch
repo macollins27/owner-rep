@@ -1,8 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index f8f119f..0cc84af 100644
+index b478c09..589358c 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -4079,7 +4079,7 @@ export function parseObjective(text: string): ObjectiveAnswer {
+@@ -4208,7 +4208,7 @@ export function parseObjective(text: string): ObjectiveAnswer {
        // A condition listed twice is kept once, the first, so a first write cannot start with repeats.
        done: items(p.done)
          .map(conditionOf)
@@ -11,13 +11,15 @@ index f8f119f..0cc84af 100644
        step: oneLine(p.step),
      },
      cause,
-@@ -5844,9 +5844,7 @@ export function mergeConditions(
-   const out: Condition[] = []
+@@ -6258,10 +6258,8 @@ export function mergeConditions(
+   const written = (): Condition[] => [...taken.values(), ...added]
    for (const raw of proposed) {
      const p = plainCondition(raw)
--    if (out.some(o => like(o.text, p.text))) continue
+-    if (written().some(o => like(o.text, p.text))) continue
      const h = heldOf(raw)
 -    if (h !== undefined && taken.has(h)) continue
-     if (h === undefined) {
-       out.push(p.state === 'shown' ? { text: p.text, state: 'open', by: '', ...(p.kind === undefined ? {} : { kind: p.kind }) } : p)
+-    if (h === undefined) {
++    if (h === undefined || taken.has(h)) {
+       added.push(p.state === 'shown' ? { text: p.text, state: 'open', by: '', ...(p.kind === undefined ? {} : { kind: p.kind }) } : p)
        continue
+     }
