@@ -2223,7 +2223,9 @@ test('rule: the rep speaks of the owner, never by a pronoun: no brief, writer pr
   }
   // The brief writes to the owner as "you" and never guesses who the owner is; the writer writes the result as the thing.
   expect(REP_SYSTEM).toContain('Call the owner "you", by no name or pronoun.')
-  expect(OBJECTIVE_SYSTEM).toContain('- No pronoun or name for the owner: say the result as the thing ("A to-do command with tests, a README and a passing GitHub run, installed where it is used"), the purpose the same way')
+  // Rewritten at the third replay of #70: "No pronoun or name" sat beside "the owner is told plainly", and a
+  // writer used the owner's first name all through one call (rule 9, call 30); a person is "the owner".
+  expect(OBJECTIVE_SYSTEM).toContain('- Call the owner only "the owner"; say the result as the thing ("A to-do command with tests, a README and a passing GitHub run, installed where it is used"), the purpose the same way')
   expect(SENT_MARK).not.toMatch(/\bhim\b/)
   // The owner's own messages are still listed under their numbers, and the draft under the new mark.
   expect(briefPrompt(m)).toMatch(/The owner's own messages on this job[^]*\n- #1 make it serious\n- #2 \(your draft, sent by the owner\) Show me the run\.\n/)
@@ -8957,7 +8959,9 @@ describe("Task 6: the writer's rule and the approved line", () => {
       'Name the message number in the mark.',
       // An approved plan is the owner's ask, step by step, read whole first.
       "A plan the owner approved is held exactly like the owner's own words.",
-      'Each of its steps becomes its own condition, in its own plain words, matching the step; "the approved plan" or "tasks 1 to 5" do not say a step.',
+      // "limits and timing included": at the third replay of #70 a writer kept a step's "at launch" half and
+      // dropped its "nothing before launch" half (rule 3, sample 3 #2).
+      'Each of its steps becomes its own condition, in its own plain words, matching the step, limits and timing included; "the approved plan" or "tasks 1 to 5" do not say a step.',
       "Read the whole plan first: a restriction, exclusion or order anywhere in it or in the owner's message applies to every step it touches.",
       "(that tests pass, that something runs) is the agent's claim, not a condition held shown",
       // Shown in part, or not at all (#49).
@@ -9032,7 +9036,11 @@ describe("Task 6: the writer's rule and the approved line", () => {
     // working on the real thing. They are no longer written as conditions of their own; the second
     // replay of #70 counted 11 and 18 method conditions and a "code fit to be public" line at every
     // step, written from them (plans/replays/rewrite-objective-2026-11-20b.md, rules 4 and 6).
-    expect(built).toContain('Hold every condition to what a serious owner plainly wants unsaid: the result as good as the best in its trade makes it, shown working on the real thing, nothing broken or dropped quietly, and code fit to be public when the work is public. That is the standard each condition meets, a condition of its own only when the owner asks for it.')
+    // Rewritten at the third replay of #70: "a condition of its own only when the owner asks for it" still
+    // left 6 unasked conditions per chain, guards around a message that only informed or asked one
+    // bounded thing (that nothing is lost or duplicated, how it fits the rebuild) (rule 8).
+    expect(built).toContain('Hold every condition to what a serious owner plainly wants unsaid: the result as good as the best in its trade makes it, shown working on the real thing, nothing broken or dropped quietly, and code fit to be public when the work is public. That is the standard each condition meets, not a condition to write: add no guards the owner did not ask for (that nothing is lost or duplicated, how it fits other work).')
+    expect(built).not.toContain('a condition of its own only when the owner asks for it')
     expect(built).not.toContain('It includes what a serious owner plainly wants unsaid')
   })
 

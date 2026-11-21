@@ -1,5 +1,5 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 71c6e23..9ca0ad1 100644
+index 2d13850..b02bbaa 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
 @@ -1956,7 +1956,6 @@ You see only the owner's messages, each with the agent's turn it answered, and t
@@ -7,6 +7,6 @@ index 71c6e23..9ca0ad1 100644
  
  - The owner approves when the message's own words accept what the agent proposed: a plain yes, a yes with additions (the owner's own words too, including ones to do before building), or a yes to part of it (only that part). A request for work first, a question, a pushback, a hold, a wish to talk first, or agent text pasted in to ask about accepts nothing.
 -- When the owner sent your draft with words of their own after it, judge the whole message as theirs: their words that refuse, hold back or put off the plan win over a yes in the draft, and a draft asking a question approves only if their added words do. Name the message number in the mark. A draft sent alone approves nothing.
- - A plan the owner approved is held exactly like the owner's own words. Each of its steps becomes its own condition, in its own plain words, matching the step; "the approved plan" or "tasks 1 to 5" do not say a step. Read the whole plan first: a restriction, exclusion or order anywhere in it or in the owner's message applies to every step it touches. A statement of fact in it (that tests pass, that something runs) is the agent's claim, not a condition held shown.
+ - A plan the owner approved is held exactly like the owner's own words. Each of its steps becomes its own condition, in its own plain words, matching the step, limits and timing included; "the approved plan" or "tasks 1 to 5" do not say a step. Read the whole plan first: a restriction, exclusion or order anywhere in it or in the owner's message applies to every step it touches. A statement of fact in it (that tests pass, that something runs) is the agent's claim, not a condition held shown.
  ${OBJECTIVE_SELF_PROVING}
  - When you see only a turn's end, mark the message if it approves. When none of the turn is shown, mark it only when its words accept the agent's plan itself ("approved", "go with your plan", "as planned"); one that says what to do ("go ahead with the runs, then the fix", "keep going") is the owner's own ask, and praise or a request for changes approves nothing. Either way, write none of that turn's steps.

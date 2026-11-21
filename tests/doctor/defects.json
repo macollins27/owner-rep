@@ -9,7 +9,7 @@
     "name": "flag-shown-twice",
     "breaks": "The watch forgets which flags it has shown, so the same note comes back after the owner dismissed it.",
     "patch": "flag-shown-twice.patch",
-    "fixed": "remade 2026-11-20"
+    "fixed": "remade 2026-11-19; remade 2026-11-20"
   },
   {
     "name": "watch-never-backs-off",
@@ -33,7 +33,7 @@
     "name": "flag-replaces-card",
     "breaks": "A watch flag replaces the briefing card instead of waiting for the row.",
     "patch": "flag-replaces-card.patch",
-    "fixed": "remade 2026-11-20"
+    "fixed": "remade 2026-11-19; remade 2026-11-20"
   },
   {
     "name": "stop-never-marked",
@@ -123,7 +123,7 @@
     "name": "writer-forks-conversation",
     "breaks": "The objective writer's call is made as a fork of the agent's whole conversation instead of a plain completion over the owner's messages, so the writer reads everything the agent said, its account of the job included.",
     "patch": "writer-forks-conversation.patch",
-    "fixed": "remade 2026-11-20 (writer)"
+    "fixed": "remade 2026-11-19; remade 2026-11-20 (writer)"
   },
   {
     "name": "revision-cause-dropped",
@@ -435,19 +435,19 @@
     "name": "writer-unfenced",
     "breaks": "The owner's messages reach the objective writer outside the fence tags and without the closing note that they are records, so a message that reads like a command is taken as an order to the writer and comes back empty.",
     "patch": "writer-unfenced.patch",
-    "fixed": "remade 2026-11-20 (writer)"
+    "fixed": "2026-10-16; remade 2026-10-31; remade 2026-11-20 (writer)"
   },
   {
     "name": "writer-no-system",
     "breaks": "The objective writer is sent no system prompt, so its rules never reach it.",
     "patch": "writer-no-system.patch",
-    "fixed": "remade 2026-11-20 (writer)"
+    "fixed": "remade 2026-11-19; remade 2026-11-20 (writer)"
   },
   {
     "name": "writer-fence-closable",
     "breaks": "A fence tag typed in a message, or in the agent's words under it, is printed as it stands, so a message can close the fence and what follows reads as the writer's own instructions.",
     "patch": "writer-fence-closable.patch",
-    "fixed": "remade 2026-11-20 (writer)"
+    "fixed": "2026-10-16; remade 2026-10-31; remade 2026-11-20 (writer)"
   },
   {
     "name": "clear-id-read-once",
@@ -501,7 +501,7 @@
     "name": "reopened-no-fallback",
     "breaks": "In a reopened session, or after /clear, where there is nothing to fork, the briefing says there is nothing to read yet and the watch reads nothing, though the session's record is there to read.",
     "patch": "reopened-no-fallback.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "fixed": "2026-10-16; remade 2026-10-31; remade 2026-11-19 (rewrite)"
   },
   {
     "name": "reopened-no-seed",
@@ -627,13 +627,13 @@
     "name": "note-look-skips-record",
     "breaks": "the look after the owner's note never falls back to the session record, so a note in a reopened session reads nothing and moves no condition",
     "patch": "note-look-skips-record.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "fixed": "2026-10-16; remade 2026-10-31; remade 2026-11-19 (rewrite)"
   },
   {
     "name": "press-skips-record",
     "breaks": "the press never falls back to the session record, so a briefing in a reopened session says there is nothing to read",
     "patch": "press-skips-record.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "fixed": "2026-10-16; remade 2026-10-31; remade 2026-11-19 (rewrite)"
   },
   {
     "name": "record-numbers-as-messages",
@@ -1779,7 +1779,7 @@
     "name": "judgment-line-dropped",
     "breaks": "The reads lose the judgment line \"you neither change the goal quietly nor obey quietly\", so the rep stops questioning the route.",
     "patch": "judgment-line-dropped.patch",
-    "fixed": "remade 2026-11-19 (rewrite); remade 2026-11-20"
+    "fixed": "2026-10-19; remade 2026-11-19 (rewrite); remade 2026-11-20"
   },
   {
     "name": "gate-replaces-all",
@@ -1869,7 +1869,7 @@
     "name": "approved-section-missing",
     "breaks": "The readers' memory loses the section of plans the owner approved, so neither the Heads up nor the briefing sees a plan's steps and neither can walk them.",
     "patch": "approved-section-missing.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "fixed": "2026-10-29; remade 2026-11-17; remade 2026-11-19 (rewrite)"
   },
   {
     "name": "approved-cursor-not-saved",
@@ -2199,31 +2199,31 @@
     "name": "list-gap-rule-left-out",
     "breaks": "The walk is never told that a step the agent's own full list leaves out looks dropped, so that step stays silent as not assessed.",
     "patch": "list-gap-rule-left-out.patch",
-    "fixed": "remade 2026-11-19 (rewrite); remade 2026-11-20"
+    "fixed": "2026-10-30; remade 2026-11-19 (rewrite); remade 2026-11-20"
   },
   {
     "name": "list-gap-rule-says-skipped",
     "breaks": "The rule no longer forbids calling the step skipped or done, so a reader may claim what it cannot see.",
     "patch": "list-gap-rule-says-skipped.patch",
-    "fixed": "remade 2026-11-19 (rewrite); remade 2026-11-20"
+    "fixed": "2026-10-30; remade 2026-11-19 (rewrite); remade 2026-11-20"
   },
   {
     "name": "list-gap-rule-any-list",
     "breaks": "Any list raises the mark, so a partial list or a list from before the approval raises a false alarm.",
     "patch": "list-gap-rule-any-list.patch",
-    "fixed": "remade 2026-11-19 (rewrite); remade 2026-11-20"
+    "fixed": "2026-10-30; remade 2026-11-19 (rewrite); remade 2026-11-20"
   },
   {
     "name": "list-gap-rule-in-briefing",
     "breaks": "The briefing is told the Heads up's flag rule for a step that looks dropped too, so it raises a flag where it should put the step first under left.",
     "patch": "list-gap-rule-in-briefing.patch",
-    "fixed": "remade 2026-11-19 (rewrite); remade 2026-11-20"
+    "fixed": "2026-10-30; remade 2026-11-19 (rewrite); remade 2026-11-20"
   },
   {
     "name": "walk-no-looks-dropped-state",
     "breaks": "The walk's list of states has no looks dropped, so the reader has no mark to give.",
     "patch": "walk-no-looks-dropped-state.patch",
-    "fixed": "remade 2026-11-19 (rewrite); remade 2026-11-20"
+    "fixed": "2026-10-30; remade 2026-11-19 (rewrite); remade 2026-11-20"
   },
   {
     "name": "walk-looks-dropped-not-unassessed",
@@ -2235,7 +2235,7 @@
     "name": "heads-up-not-carried",
     "breaks": "The look shows the reader's own flag and never reads the walk, so a dropped step behind another flag stays silent.",
     "patch": "heads-up-not-carried.patch",
-    "fixed": "remade 2026-11-20"
+    "fixed": "remade 2026-11-19; remade 2026-11-20"
   },
   {
     "name": "heads-up-no-sign-not-carried",
@@ -2265,19 +2265,19 @@
     "name": "heads-up-no-plan-shown",
     "breaks": "A walked step is called part of the plan the owner approved when no shown plan holds it, or no plan was shown at all.",
     "patch": "heads-up-no-plan-shown.patch",
-    "fixed": "remade 2026-11-20"
+    "fixed": "2026-10-30; remade 2026-11-20"
   },
   {
     "name": "heads-up-register-no-plan-gate",
     "breaks": "The look never hands the mod the plans it showed, so no dropped step is carried at all.",
     "patch": "heads-up-register-no-plan-gate.patch",
-    "fixed": "remade 2026-11-20"
+    "fixed": "2026-10-30; remade 2026-11-19 against prompt group 7; remade 2026-11-20"
   },
   {
     "name": "heads-up-flag-speaks-ignored",
     "breaks": "A flag that already speaks of the step is replaced by the mod's line, losing the reader's named list.",
     "patch": "heads-up-flag-speaks-ignored.patch",
-    "fixed": "remade 2026-11-20"
+    "fixed": "2026-10-30; remade 2026-11-20"
   },
   {
     "name": "heads-up-says-skipped",
@@ -2289,7 +2289,7 @@
     "name": "heads-up-plan-words-any",
     "breaks": "Any step passes as part of the plan, so an unrelated step is called approved.",
     "patch": "heads-up-plan-words-any.patch",
-    "fixed": "remade 2026-11-20"
+    "fixed": "2026-10-30; remade 2026-11-20"
   },
   {
     "name": "heads-up-named-hides-others",
@@ -2445,7 +2445,7 @@
     "name": "brief-may-leave-empty",
     "breaks": "The brief's message part no longer asks for the message while the work falls short of the best it could be, so the first read comes back with no message on passable work.",
     "patch": "brief-may-leave-empty.patch",
-    "fixed": "remade 2026-11-19 (rewrite); remade 2026-11-20"
+    "fixed": "2026-10-30; remade 2026-11-19 (rewrite); remade 2026-11-20"
   },
   {
     "name": "brief-card-may-leave-empty",
@@ -2463,7 +2463,7 @@
     "name": "held-step-line-dropped",
     "breaks": "The message rules no longer say to name a held step exactly, so a forced message can push the held step or say only \"wait for approval\".",
     "patch": "held-step-line-dropped.patch",
-    "fixed": "remade 2026-11-19 (rewrite); remade 2026-11-20"
+    "fixed": "2026-10-30; remade 2026-11-19 (rewrite); remade 2026-11-20"
   },
   {
     "name": "clause-one-modifier-only",
@@ -2733,7 +2733,7 @@
     "name": "cache-mark-on-tail",
     "breaks": "The growing final record chunk is marked for the cache instead of the last complete chunk.",
     "patch": "cache-mark-on-tail.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "fixed": "2026-11-01; remade 2026-11-19 (rewrite)"
   },
   {
     "name": "boundary-guessed",
@@ -2949,7 +2949,7 @@
     "name": "reader-uses-fork",
     "breaks": "The session reader first uses a conversation fork instead of the saved record completion.",
     "patch": "reader-uses-fork.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "fixed": "2026-11-01; remade 2026-11-19 (rewrite)"
   },
   {
     "name": "later-claim-held",
@@ -2967,25 +2967,25 @@
     "name": "not-assessed-rule-missing",
     "breaks": "The prompt omits not assessed rule; a model's obedience to the rule is proved by the harness cases.",
     "patch": "not-assessed-rule-missing.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "fixed": "2026-11-01; remade 2026-11-19 (rewrite)"
   },
   {
     "name": "standing-instructions-line-missing",
     "breaks": "The prompt omits standing instructions line; a model's obedience to the rule is proved by the harness cases.",
     "patch": "standing-instructions-line-missing.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "fixed": "2026-11-01; remade 2026-11-19 (rewrite)"
   },
   {
     "name": "combined-meaning-missing",
     "breaks": "The prompt omits combined meaning; a model's obedience to the rule is proved by the harness cases.",
     "patch": "combined-meaning-missing.patch",
-    "fixed": "remade 2026-11-20 (writer)"
+    "fixed": "remade 2026-11-19; remade 2026-11-20 (writer); remade 2026-11-21"
   },
   {
     "name": "whole-before-steps-missing",
     "breaks": "The prompt omits whole before steps; a model's obedience to the rule is proved by the harness cases.",
     "patch": "whole-before-steps-missing.patch",
-    "fixed": "remade 2026-11-20 (writer)"
+    "fixed": "remade 2026-11-19; remade 2026-11-20 (writer); remade 2026-11-21"
   },
   {
     "name": "draft-counts-as-approval",
@@ -3093,13 +3093,13 @@
     "name": "agent-account-sets-limits",
     "breaks": "The objective writer is no longer told that what the agent says it did or did not do, and any limit it sets on its own work, is the agent's account and never a condition or limit unless a step of a plan the owner approved.",
     "patch": "agent-account-sets-limits.patch",
-    "fixed": "remade 2026-11-20 (writer)"
+    "fixed": "2026-11-03; remade 2026-11-20 (writer); remade 2026-11-21"
   },
   {
     "name": "outside-part-counts",
     "breaks": "The objective writer is no longer told that of the turn the owner answered only the part the owner took counts, that the agent's other turns count for nothing, or that the agent leaving some of the work to the owner is its account and no exception to done.",
     "patch": "outside-part-counts.patch",
-    "fixed": "remade 2026-11-20 (writer)"
+    "fixed": "2026-11-03; remade 2026-11-14; remade 2026-11-20 (writer); remade 2026-11-21"
   },
   {
     "name": "screen-changed-file-held",
@@ -3177,13 +3177,13 @@
     "name": "owner-typed-check-dropped",
     "breaks": "The objective writer drops a check, review or report the owner asked for in the owner's own message, treating it as the agent's method like one from an agent's routine.",
     "patch": "owner-typed-check-dropped.patch",
-    "fixed": "remade 2026-11-20 (writer)"
+    "fixed": "2026-11-10; remade 2026-11-19 against prompt group 7; remade 2026-11-20 (writer); remade 2026-11-21"
   },
   {
     "name": "approved-check-made-method",
     "breaks": "The objective writer is told that a check or test is the agent's method even when it is a step of a plan the owner approved, so 0.6.0's rule drops an approved step.",
     "patch": "approved-check-made-method.patch",
-    "fixed": "remade 2026-11-20 (writer)"
+    "fixed": "remade 2026-11-19; remade 2026-11-20 (writer); remade 2026-11-21"
   },
   {
     "name": "approved-check-called-waste",
@@ -3195,13 +3195,13 @@
     "name": "blocks-refusal-unrecognised",
     "breaks": "A build that takes only a text prompt (2.1.286 refuses blocks at its host check) is never recognised, so its record read is never retried as joined text and every look reads as an API error.",
     "patch": "blocks-refusal-unrecognised.patch",
-    "fixed": "remade 2026-11-20 (writer)"
+    "fixed": "2026-11-10; remade 2026-11-20 (writer)"
   },
   {
     "name": "approval-closing-dropped",
     "breaks": "The objective writer is not told that a yes closes a condition that only waited on the plan, so it lists that condition as dropped by the approval and the card asks the owner to settle what the yes already did.",
     "patch": "approval-closing-dropped.patch",
-    "fixed": "remade 2026-11-20 (writer)"
+    "fixed": "remade 2026-11-19; remade 2026-11-20 (writer)"
   },
   {
     "name": "other-rows-unread",
@@ -3255,7 +3255,7 @@
     "name": "unshown-turn-approval-loose",
     "breaks": "The writer is told to mark a message after a turn none of which is shown whenever it approves, so go-ahead words such as \"keep going\" are taken for a plan approval and the card names a plan nobody approved.",
     "patch": "unshown-turn-approval-loose.patch",
-    "fixed": "remade 2026-11-20 (writer)"
+    "fixed": "remade 2026-11-19; remade 2026-11-20 (writer); remade 2026-11-21"
   },
   {
     "name": "unshown-turn-note-loose",
@@ -3699,7 +3699,7 @@
     "name": "watch-cut-not-reread",
     "breaks": "A look whose answer stopped before its end is not read once more, so one cut reply loses that look's Heads up.",
     "patch": "watch-cut-not-reread.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "fixed": "tested 2026-11-17; remade 2026-11-19 (rewrite)"
   },
   {
     "name": "watch-cut-taken",
@@ -3927,7 +3927,7 @@
     "name": "writer-run-is-fact",
     "breaks": "The writer is told a run passing is a fact, so it marks the result working as something the agent's own run shows.",
     "patch": "writer-run-is-fact.patch",
-    "fixed": "remade 2026-11-20 (writer)"
+    "fixed": "remade 2026-11-19; remade 2026-11-20 (writer); remade 2026-11-21"
   },
   {
     "name": "look-rule-allows-unrun",
@@ -4119,7 +4119,7 @@
     "name": "watch-frame-back",
     "breaks": "The watch's task opens again with the old fork frame, a pseudo system reminder in capitals saying the reader is a side request and must not be interrupted.",
     "patch": "watch-frame-back.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "fixed": "tested 2026-11-18; remade 2026-11-18 on the merge of prompts into group 2; remade 2026-11-19 against prompt group 7; remade 2026-11-19 (rewrite)"
   },
   {
     "name": "watch-no-think-back",
@@ -4143,7 +4143,7 @@
     "name": "variant-sends-unchanged",
     "breaks": "The replay's variant sends a call whose old frame is not there unchanged, under the variant's name, rather than skipping it.",
     "patch": "variant-sends-unchanged.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "fixed": "tested 2026-11-18; remade 2026-11-19 (rewrite)"
   },
   {
     "name": "variant-no-think-kept",
@@ -4161,13 +4161,13 @@
     "name": "variant-cache-marks-lost",
     "breaks": "The replay's variant sends the record and the task as one block, losing the cache marks the call was sent with.",
     "patch": "variant-cache-marks-lost.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "fixed": "tested 2026-11-18; remade 2026-11-19 (rewrite)"
   },
   {
     "name": "replay-all-sorted-by-folder",
     "breaks": "With \"all\", the replay takes the last calls by folder name rather than by when each call was made.",
     "patch": "replay-all-sorted-by-folder.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "fixed": "tested 2026-11-18; remade 2026-11-19 (rewrite)"
   },
   {
     "name": "variant-as-saved-not-sent",
@@ -4209,19 +4209,19 @@
     "name": "rep-patch-sentence-back",
     "breaks": "The reads' system prompt says again that the task was written for a reader of the conversation and means the record, a patch over wording the task no longer uses.",
     "patch": "rep-patch-sentence-back.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "fixed": "tested 2026-11-18; remade 2026-11-19 (rewrite)"
   },
   {
     "name": "watch-record-above-dropped",
     "breaks": "The watch's request no longer opens \"Based on the record above\", so the reader is not pointed back at the record before it is asked.",
     "patch": "watch-record-above-dropped.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "fixed": "tested 2026-11-18; remade 2026-11-19 (rewrite)"
   },
   {
     "name": "brief-record-above-dropped",
     "breaks": "The briefing's request no longer opens \"Based on the record above\", so the reader is not pointed back at the record before it is asked.",
     "patch": "brief-record-above-dropped.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "fixed": "tested 2026-11-18; remade 2026-11-19 (rewrite)"
   },
   {
     "name": "deciding-rules-dropped",
@@ -4239,25 +4239,25 @@
     "name": "rep-system-edit-unanchored",
     "breaks": "The replay's rep-system edit sends a briefing whose old request it could not find, rather than skipping it with the reason.",
     "patch": "rep-system-edit-unanchored.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "fixed": "tested 2026-11-18; remade 2026-11-19 (rewrite)"
   },
   {
     "name": "rep-system-system-kept",
     "breaks": "The replay's rep-system edit moves the rules out of the task but sends group 1's system prompt, not the system prompt of the build before the rewrite.",
     "patch": "rep-system-system-kept.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "fixed": "tested 2026-11-18; remade 2026-11-19 (rewrite)"
   },
   {
     "name": "rep-system-reopened-lost",
     "breaks": "The replay's rep-system edit drops the line on a condition the check reopened, which the build before the rewrite sent.",
     "patch": "rep-system-reopened-lost.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "fixed": "tested 2026-11-18; remade 2026-11-19 (rewrite)"
   },
   {
     "name": "memory-size-says-conversation",
     "breaks": "What the rep knows calls the size \"the conversation's size\" again, against the record and session wording.",
     "patch": "memory-size-says-conversation.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "fixed": "tested 2026-11-18; remade 2026-11-19 (rewrite)"
   },
   {
     "name": "memory-standing-again",
@@ -4299,7 +4299,7 @@
     "name": "writer-one-claim-dropped",
     "breaks": "The objective writer is no longer asked for one claim per condition, so it can write a fact and what the work does as one condition.",
     "patch": "writer-one-claim-dropped.patch",
-    "fixed": "remade 2026-11-20 (writer)"
+    "fixed": "remade 2026-11-19; remade 2026-11-20 (writer); remade 2026-11-21"
   },
   {
     "name": "rows-indent-dropped",
@@ -4353,7 +4353,7 @@
     "name": "ask-again-end-ask-not-last",
     "breaks": "The briefing asked once more puts the open conditions after the ask for the end line, so the ask is no longer the prompt's last line and the model can end its reply without it.",
     "patch": "ask-again-end-ask-not-last.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "fixed": "tested 2026-11-18; remade 2026-11-19 (rewrite)"
   },
   {
     "name": "check-error-read-as-cut",
@@ -4461,7 +4461,7 @@
     "name": "writer-fact-shape-dropped",
     "breaks": "The objective writer is not told the shape of a fact, so its own facts (\"the scratch folder holds a sample text file whose contents are...\") read as works and wait for a look.",
     "patch": "writer-fact-shape-dropped.patch",
-    "fixed": "remade 2026-11-20 (writer)"
+    "fixed": "remade 2026-11-19; remade 2026-11-20 (writer); remade 2026-11-21"
   },
   {
     "name": "replay-now-not-read",
@@ -4485,7 +4485,7 @@
     "name": "replay-now-not-sent",
     "breaks": "The replay says \"--now\" sends a call as this build would, then sends it as logged: the old cap and no end line.",
     "patch": "replay-now-not-sent.patch",
-    "fixed": "remade 2026-11-20 (writer)"
+    "fixed": "remade 2026-11-19; remade 2026-11-20 (writer)"
   },
   {
     "name": "card-floor-not-applied",
@@ -4617,7 +4617,7 @@
     "name": "proof-back-skipped",
     "breaks": "The replay's rep-system edit sends this build's group 3 texts, so its arm is no longer what the build after group 2 sent and a base of rep-system,end-line measures nothing.",
     "patch": "proof-back-skipped.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "fixed": "tested 2026-11-18; remade 2026-11-19 (rewrite)"
   },
   {
     "name": "proof-swap-many",
@@ -4629,7 +4629,7 @@
     "name": "proof-system-unchecked",
     "breaks": "Group 3's replay edit takes any system prompt, so a call this build saved is sent as if group 2 had saved it.",
     "patch": "proof-system-unchecked.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "fixed": "tested 2026-11-18; remade 2026-11-19 (rewrite)"
   },
   {
     "name": "proof-own-words-spec-kept",
@@ -4641,13 +4641,13 @@
     "name": "states-shown-agent-word",
     "breaks": "What counts as shown no longer says the agent's account of what it did is a claim until the record shows it, so the agent's word can show a condition.",
     "patch": "states-shown-agent-word.patch",
-    "fixed": "remade 2026-11-19 (rewrite); remade 2026-11-20"
+    "fixed": "tested 2026-11-18; remade 2026-11-19 (rewrite); remade 2026-11-20"
   },
   {
     "name": "deciding-shown-standard-dropped",
     "breaks": "The reads mark a condition shown where the record shows it, not by what counts as shown.",
     "patch": "deciding-shown-standard-dropped.patch",
-    "fixed": "remade 2026-11-19 (rewrite); remade 2026-11-20"
+    "fixed": "tested 2026-11-18; remade 2026-11-19 (rewrite); remade 2026-11-20"
   },
   {
     "name": "not-shown-failure-back",
@@ -4659,7 +4659,7 @@
     "name": "brief-proof-hands-on-only",
     "breaks": "The message rules ask only for a hands-on look, never a fact's command and what it printed, so a fact is never asked for its proof.",
     "patch": "brief-proof-hands-on-only.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "fixed": "tested 2026-11-18; remade 2026-11-19 (rewrite)"
   },
   {
     "name": "ask-again-measure-dropped",
@@ -4683,13 +4683,13 @@
     "name": "quality-condition-dropped",
     "breaks": "The objective writer is not told a quality condition names what a person using the result would notice, so it writes \"as good as the best in its trade\", which never closes.",
     "patch": "quality-condition-dropped.patch",
-    "fixed": "remade 2026-11-20 (writer)"
+    "fixed": "remade 2026-11-19; remade 2026-11-20 (writer); remade 2026-11-21"
   },
   {
     "name": "objective-not-shown-old",
     "breaks": "The objective writer and the four states are garbled where they say what only proof from outside the agent's word can show, so the rep's states no longer match what the build sends.",
     "patch": "objective-not-shown-old.patch",
-    "fixed": "remade 2026-11-20 (writer)"
+    "fixed": "remade 2026-11-19; remade 2026-11-20 (writer)"
   },
   {
     "name": "fact-name-any-h",
@@ -4791,19 +4791,19 @@
     "name": "decisions-line-old",
     "breaks": "The readers' deciding rules say again \"a question about what the owner wants\", so a go-ahead the agent waits on reads as a chore and never reaches the owner as one plain question.",
     "patch": "decisions-line-old.patch",
-    "fixed": "remade 2026-11-19 (rewrite); remade 2026-11-20"
+    "fixed": "tested 2026-11-18; remade 2026-11-19 (rewrite); remade 2026-11-20"
   },
   {
     "name": "objective-self-proving-dropped",
     "breaks": "The objective writer is not told that a self-proving step of an approved plan stays a condition with a question for the owner beside it, so the step is held as plain work and the owner is never asked whether to keep it.",
     "patch": "objective-self-proving-dropped.patch",
-    "fixed": "remade 2026-11-20 (writer)"
+    "fixed": "remade 2026-11-19; remade 2026-11-20 (writer); remade 2026-11-21"
   },
   {
     "name": "expectation4-plan-step-exempt",
     "breaks": "Expectation 4 exempts every check inside an approved plan, so a self-proving step there is never raised with the owner.",
     "patch": "expectation4-plan-step-exempt.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "fixed": "tested 2026-11-18; remade 2026-11-19 (rewrite)"
   },
   {
     "name": "owner-decision-undefined",
@@ -4965,19 +4965,19 @@
     "name": "watch-prompt-no-now",
     "breaks": "the watch is asked to say the step but its answer shape has no \"now:\" line, so the step is never read.",
     "patch": "watch-prompt-no-now.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "fixed": "tested 2026-11-19; remade 2026-11-19 (rewrite)"
   },
   {
     "name": "objective-step-old-wording",
     "breaks": "the objective writer is still told to write the step the session is on at the moment it writes, which goes stale within the turn.",
     "patch": "objective-step-old-wording.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "fixed": "tested 2026-11-19; remade 2026-11-19 (rewrite)"
   },
   {
     "name": "replay-now-missing",
     "breaks": "The replay's group 5 edit leaves out the \"now:\" line, so a replayed watch call is not what the build before the rewrite sent.",
     "patch": "replay-now-missing.patch",
-    "fixed": "remade 2026-11-20 (writer)"
+    "fixed": "remade 2026-11-19; remade 2026-11-20 (writer)"
   },
   {
     "name": "merge-same-as-ignored",
@@ -4989,19 +4989,19 @@
     "name": "finding-moves-on-pushback",
     "breaks": "The shared system prompt loses the line that a finding stands until the record shows something new, so an agent's disagreement alone can move the rep's briefing.",
     "patch": "finding-moves-on-pushback.patch",
-    "fixed": "remade 2026-11-19 (rewrite); remade 2026-11-20"
+    "fixed": "tested 2026-11-19; remade 2026-11-19 (rewrite); remade 2026-11-20"
   },
   {
     "name": "ask-again-every-fault",
     "breaks": "The second asking lists every rule the gate has rather than the one the first answer broke, so the call, which never saw its first answer, cannot tell what to fix.",
     "patch": "ask-again-every-fault.patch",
-    "fixed": "remade 2026-11-19 (rewrite); remade 2026-11-20"
+    "fixed": "tested 2026-11-19; remade 2026-11-19 (rewrite); remade 2026-11-20"
   },
   {
     "name": "replay-unshown-missing",
     "breaks": "The replay's edit for issue #49 leaves the objective writer's turn-end line as it was, so a replayed objective call is not what this build sends.",
     "patch": "replay-unshown-missing.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "fixed": "tested 2026-11-19; remade 2026-11-19 (rewrite)"
   },
   {
     "name": "left-out-fold-stops",
@@ -5494,12 +5494,30 @@
     "name": "writer-question-only-step",
     "breaks": "The objective writer is no longer told that a question the owner asks is a condition, so a question held only in the step is lost when the next message moves the step.",
     "patch": "writer-question-only-step.patch",
-    "fixed": "2026-11-20, the second replay of #70"
+    "fixed": "2026-11-20, the second replay of #70; remade 2026-11-21"
   },
   {
     "name": "writer-unsaid-made-conditions",
     "breaks": "The objective writer writes what a serious owner wants unsaid as conditions of its own again, so a hands-on tester, tests that pass and code fit to be public are added to every job the owner never asked them for.",
     "patch": "writer-unsaid-made-conditions.patch",
-    "fixed": "2026-11-20, the second replay of #70"
+    "fixed": "2026-11-20, the second replay of #70; remade 2026-11-21"
+  },
+  {
+    "name": "objective-guards-written",
+    "breaks": "The writer is no longer told to add no guards the owner did not ask for, so it writes conditions around a message that only informs or asks one bounded thing (that nothing is lost or duplicated, how it fits other work); the third replay of #70 counted six per chain.",
+    "patch": "objective-guards-written.patch",
+    "fixed": "2026-11-21, the third replay of #70"
+  },
+  {
+    "name": "objective-owner-named",
+    "breaks": "The writer is not told to call the owner only \"the owner\", so a condition that needs a person can use the owner's name from the messages; the third replay of #70 found it all through one call.",
+    "patch": "objective-owner-named.patch",
+    "fixed": "2026-11-21, the third replay of #70"
+  },
+  {
+    "name": "objective-step-limits-dropped",
+    "breaks": "An approved step's condition is not told to keep the step's limits and timing, so a step that says what happens before a date and what happens at it can lose one half; the third replay of #70 lost \"nothing before launch\".",
+    "patch": "objective-step-limits-dropped.patch",
+    "fixed": "2026-11-21, the third replay of #70"
   }
 ]

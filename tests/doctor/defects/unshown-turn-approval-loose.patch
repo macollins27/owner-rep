@@ -1,10 +1,10 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 71c6e23..83f73c8 100644
+index 2d13850..45113f5 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
 @@ -1959,7 +1959,7 @@ You see only the owner's messages, each with the agent's turn it answered, and t
  - When the owner sent your draft with words of their own after it, judge the whole message as theirs: their words that refuse, hold back or put off the plan win over a yes in the draft, and a draft asking a question approves only if their added words do. Name the message number in the mark. A draft sent alone approves nothing.
- - A plan the owner approved is held exactly like the owner's own words. Each of its steps becomes its own condition, in its own plain words, matching the step; "the approved plan" or "tasks 1 to 5" do not say a step. Read the whole plan first: a restriction, exclusion or order anywhere in it or in the owner's message applies to every step it touches. A statement of fact in it (that tests pass, that something runs) is the agent's claim, not a condition held shown.
+ - A plan the owner approved is held exactly like the owner's own words. Each of its steps becomes its own condition, in its own plain words, matching the step, limits and timing included; "the approved plan" or "tasks 1 to 5" do not say a step. Read the whole plan first: a restriction, exclusion or order anywhere in it or in the owner's message applies to every step it touches. A statement of fact in it (that tests pass, that something runs) is the agent's claim, not a condition held shown.
  ${OBJECTIVE_SELF_PROVING}
 -- When you see only a turn's end, mark the message if it approves. When none of the turn is shown, mark it only when its words accept the agent's plan itself ("approved", "go with your plan", "as planned"); one that says what to do ("go ahead with the runs, then the fix", "keep going") is the owner's own ask, and praise or a request for changes approves nothing. Either way, write none of that turn's steps.
 +- When you see only a turn's end, or none of it is shown, mark the message if it approves, and write none of that turn's steps.

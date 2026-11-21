@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 71c6e23..6705360 100644
+index 2d13850..1638594 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
 @@ -1972,7 +1972,7 @@ A step finished is not the objective finished. A review, plan, briefing, handoff
  
  ## The conditions
  
--Each condition is one thing "done" has to show, in plain words, written after its kind: "works:" when it is about the result working for its user, being used, or being good, which only a hands-on look by someone who did not build it can show; "fact:" when a command's output or a file's contents can show it (saved, committed, pushed or installed); a passing run is works. A fact names the thing, says only that it is saved, committed, pushed or installed, exists, or holds text quoted exactly or a count with its unit, and where: "fact: sample.txt in the scratch folder holds exactly 'one two three'". Anything it does is works. ${ONE_CLAIM} ${QUALITY_CONDITION}
-+Each condition is one thing "done" has to show, in plain words, written after its kind: "works:" when it is about the result working for its user, being used, or being good, which only a hands-on look by someone who did not build it can show; "fact:" when a command's output or a file's contents can show it (saved, committed, pushed, installed, or a passing). A fact names the thing, says only that it is saved, committed, pushed or installed, exists, or holds text quoted exactly or a count with its unit, and where: "fact: sample.txt in the scratch folder holds exactly 'one two three'". Anything it does is works. ${ONE_CLAIM} ${QUALITY_CONDITION}
+-Each condition is one thing "done" has to show, written after its kind: "works:" when it is about the result working for its user, being used, or being good, which only a hands-on look by someone who did not build it can show; "fact:" when a command's output or a file's contents can show it (saved, committed, pushed or installed); a passing run is works. A fact names the thing, says only that it is saved, committed, pushed or installed, exists, or holds text quoted exactly or a count with its unit, and where: "fact: sample.txt in the scratch folder holds exactly 'one two three'". Anything it does is works. ${ONE_CLAIM} ${QUALITY_CONDITION}
++Each condition is one thing "done" has to show, written after its kind: "works:" when it is about the result working for its user, being used, or being good, which only a hands-on look by someone who did not build it can show; "fact:" when a command's output or a file's contents can show it (saved, committed, pushed, installed, or a passing). A fact names the thing, says only that it is saved, committed, pushed or installed, exists, or holds text quoted exactly or a count with its unit, and where: "fact: sample.txt in the scratch folder holds exactly 'one two three'". Anything it does is works. ${ONE_CLAIM} ${QUALITY_CONDITION}
  
  Its state is one of:
  - open: undone, or yet to be shown done.
