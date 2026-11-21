@@ -222,7 +222,7 @@ const idsIn = (store: Record<string, unknown>): string[] => [
 // Every record the store holds, by session id, each its newer copy.
 const recsIn = <T = Stored>(store: Record<string, unknown>): Record<string, T> => Object.fromEntries(idsIn(store).map(id => [id, recIn<T>(store, id) as T]))
 // A record put in the store as a save of that session lands: under its own key, newer than any copy.
-const MIGRATED = 'migratedAt'
+const MIGRATED = 'movedSeen'
 const putRec = (store: Record<string, unknown>, id: string, rec: Record<string, unknown>) => {
   store[`rec:${id}`] = { ...rec, at: Math.max(Date.now(), ((recIn<{ at?: number }>(store, id)?.at ?? 0) as number) + 1) }
 }
@@ -4203,7 +4203,7 @@ describe('the store: one key per session\'s record', () => {
   })
 
   test('rule: a save sets its own record\'s key and no other key of the store', async ($, on) => {
-    const store: Record<string, unknown> = { [MIGRATED]: 1, 'rec:other-1': recOfS('other-1', NOW_AT()), 'rec:other-2': recOfS('other-2', NOW_AT() - 1), droppedDrafts: [] }
+    const store: Record<string, unknown> = { [MIGRATED]: {}, 'rec:other-1': recOfS('other-1', NOW_AT()), 'rec:other-2': recOfS('other-2', NOW_AT() - 1), droppedDrafts: [] }
     const set: string[] = []
     storeStub(on, store, { beforeSet: key => set.push(key) })
     plain(on, () => 'test-session')
@@ -4216,7 +4216,7 @@ describe('the store: one key per session\'s record', () => {
   })
 
   test('rule: two sessions saving at once each keep their own record: a save that lands while another is between its read and its write is not written over', async ($, on) => {
-    const store: Record<string, unknown> = { [MIGRATED]: 1 }
+    const store: Record<string, unknown> = { [MIGRATED]: {} }
     let id = 'session-a'
     let holding = true
     let held = () => {}
@@ -4243,7 +4243,7 @@ describe('the store: one key per session\'s record', () => {
   })
 
   test('rule: two trims at once keep SESSIONS_MAX records, both live sessions among them, and every let-go record\'s drafts', async ($, on) => {
-    const store: Record<string, unknown> = { [MIGRATED]: 1 }
+    const store: Record<string, unknown> = { [MIGRATED]: {} }
     for (let i = 0; i < SESSIONS_MAX; i++) store[`rec:s${i}`] = recOfS(`s${i}`, 1000 + i, `a message in s${i}`, { drafts: [`Card for s${i}: ship it.`] })
     let id = 'session-a'
     let holding = false
@@ -4280,7 +4280,7 @@ describe('the store: one key per session\'s record', () => {
   })
 
   test('rule: a save whose trim fails stands, and the next save trims the store back to SESSIONS_MAX', async ($, on) => {
-    const store: Record<string, unknown> = { [MIGRATED]: 1 }
+    const store: Record<string, unknown> = { [MIGRATED]: {} }
     for (let i = 0; i < SESSIONS_MAX; i++) store[`rec:s${i}`] = recOfS(`s${i}`, 1000 + i)
     let fail = true
     storeStub(on, store, {
@@ -4309,7 +4309,7 @@ describe('the store: one key per session\'s record', () => {
     expect(store['rec:a']).toEqual(map.a)
     expect(store['rec:b']).toEqual(map.b)
     expect(store.sessions).toEqual(map)
-    expect(typeof store[MIGRATED]).toBe('number')
+    expect(store[MIGRATED]).toEqual({ a: at - 2, b: at - 1, 'test-session': at - 3 })
     expect(recIn(store)?.owner.map(m => m.text)).toEqual(['the first message', 'the second message'])
   })
 
@@ -4335,12 +4335,12 @@ describe('the store: one key per session\'s record', () => {
     plain(on, () => 'test-session')
     await $.prompt.submit(typed('build it'))
     expect(store['rec:b']).toEqual(map.b)
-    expect(typeof store[MIGRATED]).toBe('number')
+    expect(store[MIGRATED]).toEqual({ a: at - 2, b: at - 1 })
   })
 
   test('rule: a save into the old map by a session on an older build, newer than the record\'s own key, is the one read', async ($, on) => {
     const at = NOW_AT()
-    const store: Record<string, unknown> = { [MIGRATED]: at - 100, 'rec:test-session': recOfS('test-session', at - 50, 'the first message') }
+    const store: Record<string, unknown> = { [MIGRATED]: {}, 'rec:test-session': recOfS('test-session', at - 50, 'the first message') }
     storeStub(on, store)
     plain(on, () => 'test-session')
     await $.prompt.submit(typed('the second message'))
@@ -4354,7 +4354,7 @@ describe('the store: one key per session\'s record', () => {
 
   test('rule: a record let go after the first migration is not copied back from the map', async ($, on) => {
     const at = NOW_AT()
-    const store: Record<string, unknown> = { [MIGRATED]: at - 100, sessions: { gone: recOfS('gone', at - 200), later: recOfS('later', at - 50) } }
+    const store: Record<string, unknown> = { [MIGRATED]: { gone: at - 200, later: at - 60 }, sessions: { gone: recOfS('gone', at - 200), later: recOfS('later', at - 50) } }
     storeStub(on, store)
     plain(on, () => 'test-session')
     await $.prompt.submit(typed('build it'))
@@ -4365,7 +4365,7 @@ describe('the store: one key per session\'s record', () => {
   test('rule: a record the trim let go after the move is not read back from the old map\'s copy from before the move (review of #71, must-fix 1)', async ($, on) => {
     const at = NOW_AT()
     const store: Record<string, unknown> = {
-      [MIGRATED]: at - 100,
+      [MIGRATED]: { z: at - 200 },
       sessions: { z: recOfS('z', at - 200, 'the old message') },
       'rec:z': { ...recOfS('z', at - 90, 'the old message'), owner: [om('the old message'), om('said after the move', 2)], counter: 2 },
     }
@@ -4382,7 +4382,7 @@ describe('the store: one key per session\'s record', () => {
 
   test('rule: a save that lands while another session\'s trim is running is not deleted by that trim (review of #71, must-fix 2)', async ($, on) => {
     const at = NOW_AT()
-    const store: Record<string, unknown> = { [MIGRATED]: 1, 'rec:idle': recOfS('idle', 500, 'an old message in idle') }
+    const store: Record<string, unknown> = { [MIGRATED]: {}, 'rec:idle': recOfS('idle', 500, 'an old message in idle') }
     for (let i = 0; i < SESSIONS_MAX - 1; i++) store[`rec:s${i}`] = recOfS(`s${i}`, at - 80 + i)
     let id = 'session-a'
     let holding = false
@@ -4451,10 +4451,112 @@ describe('the store: one key per session\'s record', () => {
     await $.prompt.submit(typed('build it'))
     expect(store[MIGRATED]).toBeUndefined()
     expect(store['rec:a']).toBeDefined()
-    expect(store['rec:s0']).toBeUndefined()
+    // Rewritten at the check of 535608c (MF-A): this expected rec:s0, newer than the mapped a, let go.
+    // A mapped record never costs a newer one its place: the trim lets go nothing here.
+    expect(store['rec:s0']).toBeDefined()
     id = 'a'
     await $.prompt.submit(typed('back to a'))
     expect((store['rec:a'] as Stored).owner.map(m => m.text)).toEqual(['the old message', 'said after the move', 'back to a'])
+  })
+
+  test('rule: while a move is unfinished and the map holds 31 copied records, two new sessions saving in turn do not let go each other\'s records (check of 535608c, MF-A)', async ($, on) => {
+    const at = NOW_AT()
+    const sessions: Record<string, unknown> = {}
+    const store: Record<string, unknown> = { sessions }
+    for (let i = 0; i < SESSIONS_MAX - 1; i++) {
+      sessions[`m${i}`] = recOfS(`m${i}`, at - 900_000 + i)
+      store[`rec:m${i}`] = recOfS(`m${i}`, at - 900_000 + i)
+    }
+    sessions.big = recOfS('big', at - 800_000, 'a big record')
+    storeStub(on, store, { refuse: key => key === 'rec:big' })
+    let id = 's1'
+    plain(on, () => id)
+    await $.prompt.submit(typed('said in s1'))
+    expect(store[MIGRATED]).toBeUndefined()
+    id = 's2'
+    await $.prompt.submit(typed('said in s2'))
+    id = 's1'
+    await $.prompt.submit(typed('more in s1'))
+    expect((store['rec:s1'] as Stored).owner.map(m => m.text)).toEqual(['said in s1', 'more in s1'])
+    expect((store['rec:s2'] as Stored).owner.map(m => m.text)).toEqual(['said in s2'])
+  })
+
+  test('rule: two older builds racing the move: the save stamped earlier but landing last is still read (check of 535608c, MF-B)', async ($, on) => {
+    const at = NOW_AT()
+    const store: Record<string, unknown> = {
+      sessions: { a: recOfS('a', at - 9000, 'build a'), y: recOfS('y', at - 2000, 'said in y under B') },
+    }
+    let injected = false
+    storeStub(on, store, {
+      onGet: key => {
+        if (injected || key !== MIGRATED) return
+        injected = true
+        store.sessions = { a: recOfS('a', at - 9000, 'build a'), x: recOfS('x', at - 3000, 'said in x under A') }
+      },
+    })
+    let id = 'test-session'
+    plain(on, () => id)
+    await $.prompt.submit(typed('build it'))
+    expect(injected).toBe(true)
+    expect(store['rec:y']).toEqual(recOfS('y', at - 2000, 'said in y under B'))
+    id = 'x'
+    await $.prompt.submit(typed('back on the new build'))
+    expect((store['rec:x'] as Stored).owner.map(m => m.text)).toEqual(['said in x under A', 'back on the new build'])
+  })
+
+  test('rule: an older build writing back a copy older than the one the move saw does not bring back a record the trim let go (check of 535608c, MF-B design)', async ($, on) => {
+    const at = NOW_AT()
+    const store: Record<string, unknown> = { [MIGRATED]: { x: at - 100 }, sessions: { x: recOfS('x', at - 300, 'an older copy of x') } }
+    storeStub(on, store)
+    let id = 'test-session'
+    plain(on, () => id)
+    await $.prompt.submit(typed('build it'))
+    expect(store['rec:x']).toBeUndefined()
+    id = 'x'
+    await $.prompt.submit(typed('back to x'))
+    expect((store['rec:x'] as Stored).owner.map(m => m.text)).toEqual(['back to x'])
+  })
+
+  test('rule: the move\'s mark keeps every session the earlier marks saw and adds each it read, own key newer or not, at its at', async ($, on) => {
+    const at = NOW_AT()
+    const store: Record<string, unknown> = {
+      [MIGRATED]: { gone: at - 900 },
+      sessions: { kept: recOfS('kept', at - 50, 'the map copy'), late: recOfS('late', at - 40) },
+      'rec:kept': recOfS('kept', at - 10, 'its own key, newer'),
+    }
+    storeStub(on, store)
+    plain(on, () => 'test-session')
+    await $.prompt.submit(typed('build it'))
+    expect(store[MIGRATED]).toEqual({ gone: at - 900, kept: at - 50, late: at - 40 })
+    expect((store['rec:kept'] as Stored).owner.map(m => m.text)).toEqual(['its own key, newer'])
+  })
+
+  test('rule: a mark another process writes while the move runs is merged into this move\'s, never written over', async ($, on) => {
+    const at = NOW_AT()
+    const store: Record<string, unknown> = { sessions: { a: recOfS('a', at - 50) } }
+    storeStub(on, store, {
+      beforeSet: key => {
+        if (key === 'rec:a') store[MIGRATED] = { other: at - 70, a: at - 20 }
+      },
+    })
+    plain(on, () => 'test-session')
+    await $.prompt.submit(typed('build it'))
+    expect(store[MIGRATED]).toEqual({ other: at - 70, a: at - 20 })
+  })
+
+  test('moveSeenOf, unseenByMove and mergeSeen: a mark is an object of finite times; a record is unseen with no mark, no entry, or a later at; marks merge to the later at', () => {
+    expect(rep.moveSeenOf(undefined)).toBeUndefined()
+    expect(rep.moveSeenOf(5)).toBeUndefined()
+    expect(rep.moveSeenOf([1])).toBeUndefined()
+    expect(rep.moveSeenOf({ a: 1, b: 'x', c: Number.NaN })).toEqual({ a: 1 })
+    expect(rep.unseenByMove(undefined, 'a', 1)).toBe(true)
+    expect(rep.unseenByMove({}, 'a', 1)).toBe(true)
+    expect(rep.unseenByMove({ a: 5 }, 'a', 5)).toBe(false)
+    expect(rep.unseenByMove({ a: 5 }, 'a', 4)).toBe(false)
+    expect(rep.unseenByMove({ a: 5 }, 'a', 6)).toBe(true)
+    expect(rep.unseenByMove({ a: 5 }, 'constructor', 1)).toBe(true)
+    expect(rep.mergeSeen(undefined, { a: 1 })).toEqual({ a: 1 })
+    expect(rep.mergeSeen({ a: 3, b: 1 }, { a: 2, b: 4, c: 5 })).toEqual({ a: 3, b: 4, c: 5 })
   })
 
   test('rule: the old map goes once its newest record is OLD_MAP_IDLE_MS old, and stays while one is newer', async ($, on) => {

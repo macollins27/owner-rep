@@ -1,17 +1,17 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index d17edc4..3449078 100644
+index d7257be..09cddc7 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -532,7 +532,7 @@ async function migrate($: EngineInterface): Promise<void> {
-   for (const [id, r] of Object.entries(old)) {
+@@ -537,7 +537,7 @@ async function migrate($: EngineInterface): Promise<void> {
      newest = Math.max(newest, atOf(r))
-     if (since > 0 && atOf(r) <= since) continue
+     saw[id] = atOf(r)
+     if (!unseenByMove(seen, id, atOf(r))) continue
 -    if (isBlankRec(r, freshRec(id))) continue
 +
      const own = await $.store.get(recKey(id))
      if (isRec(own) && atOf(own) >= atOf(r)) continue
      await $.store.set(recKey(id), r)
-@@ -595,8 +595,7 @@ async function storeRec($: EngineInterface, rec: Rec): Promise<string[]> {
+@@ -602,8 +602,7 @@ async function storeRec($: EngineInterface, rec: Rec): Promise<string[]> {
    const saved: Rec = { ...rec, at: Date.now() }
    // A blank record loads back the same when missing, so none takes a place (`isBlankRec`),
    // unless the old map holds a copy that would be read in its place.

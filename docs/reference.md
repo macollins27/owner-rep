@@ -1380,26 +1380,36 @@ trims that write it in the same instant can lose one's drafts; that window is a 
 store's limit is on the whole store's JSON, the record's key included.
 
 The map is moved once per process, before its first read (`migrateOnce`): each of its
-records is copied to its own key when that key is missing or older (`newerRec`), and the time
-the newest `at` the move saw is written to `migratedAt` (`MIGRATED_KEY`), not the time it
-started: an older build's save stamped before the start but landing after the map was read is
-newer than that mark, so it is read and copied rather than missed. A later move copies only the
-map's records newer than the mark, so a record the trim let go is not copied back. The map is
+records is copied to its own key when that key is missing or older (`newerRec`), and the `at` of
+every map record the move read, by session id, blank ones and ones whose key was newer included,
+is added to the mark `movedSeen` (`MOVE_SEEN_KEY`, `moveSeenOf`). The move reads the mark again just
+before writing it and merges the two, the later `at` per id (`mergeSeen`), so a mark another process
+wrote meanwhile is kept. A later move copies only map records no finished move saw at their `at` or
+later (`unseenByMove`): a session the mark does not name, or a later `at` than the one it names. So a
+record the trim let go is not copied back, and an older build's save that lands after the map was
+read is a session or an `at` the move did not see, whatever its stamp, so it is read and copied. A
+map copy older than the one the move saw is an older build writing back its stale map, and is not
+read: its record is at its own key, or was let go and stays gone. Until the check of 535608c the
+mark was one time, the newest `at` the move saw, and with two older builds saving during the move a
+save stamped below that time was never read. The map is
 kept, not deleted: a process still running an older build reads and saves only the map, and
 with the map gone it would load a blank record and save it as the newest. Every read takes the
 newer of the record's own key and the map's entry (`loadStored`, `allStored`), so a save an
-older build makes into the map is the one read. A read takes a map record only when it was
-newer than the last finished move's mark (`oldMapSinceMove`), or every one when no move has
-finished: a finished move copied each record it saw, so a map record no newer is in its
-key or was let go, and reading it would bring a let-go record back as its copy from before the
+older build makes into the map is the one read. A read takes a map record only when no finished
+move saw it (`oldMapSinceMove`), or every one when no move has finished (no mark, or one that is
+not an object): a finished move copied each record it saw, so a map record it saw is in its key
+or was let go, and reading it would bring a let-go record back as its copy from before the
 move. The map goes at the first move after its newest record is `OLD_MAP_IDLE_MS` (7 days)
-old, when no older build can still be saving into it. A move the
-store refuses partway stops there with `migratedAt` unwritten: the map is still read whole,
-and the next process copies what is left. The trim never lets go a record that
-`oldMapSinceMove` returns, whether or not its key was copied: with the key gone, the map's
-older copy would be read in its place and copied back. So while a move is unfinished the trim
-lets go only sessions the map does not hold, and the store can hold up to the map's 32 records
-over `SESSIONS_MAX` until a move finishes. While the map stays, the store
+old, when no older build can still be saving into it; the mark stays, one number per session the
+map held. A move the store refuses partway stops there with the mark unwritten: the records it
+would have marked are still read, and the next process copies what is left. The trim never lets go
+a record that `oldMapSinceMove` returns, whether or not its key was copied: with the key gone, the
+map's older copy would be read in its place and copied back. It ranks every record key, mapped or
+not, keeps the newest `SESSIONS_MAX`, and lets go only the unmapped ones past them, so a mapped
+record never costs a newer session its place; the store holds at most `SESSIONS_MAX` plus the mapped
+records outside the newest `SESSIONS_MAX`, up to the map's 32 while a move is unfinished. Two moves
+at once can still write the mark backwards in the instant between one's re-read and its `set`; a
+record let go inside that instant can come back from the map. While the map stays, the store
 holds each record twice, and the move itself writes other sessions' keys, so a session saving
 in another process in the same instant can lose that one save: the move copies a record only
 when the map's copy is newer than the key's, which is so only at the first move or after an

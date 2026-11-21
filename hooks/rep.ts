@@ -5477,9 +5477,38 @@ export const recKey = (id: string): string => `${REC_PREFIX}${id}`
 // The session id a record key names; null for any other key.
 export const recIdOf = (key: string): string | null => (key.startsWith(REC_PREFIX) && key.length > REC_PREFIX.length ? key.slice(REC_PREFIX.length) : null)
 export const OLD_MAP_KEY = 'sessions'
-// When the old map was last copied into record keys: a later copy takes only the map's records
-// saved after it (by a session still running an older build), so a record let go is not copied back.
-export const MIGRATED_KEY = 'migratedAt'
+// What the finished moves of the old map into record keys saw: each map record's `at`, by session
+// id. A later read or copy takes only a map record that no move saw at that `at` or later (a save by
+// a session still running an older build), so a record let go is not read or copied back.
+export const MOVE_SEEN_KEY = 'movedSeen'
+export type MoveSeen = Record<string, number>
+
+// The stored mark, or undefined when there is none or it is not a mark: no move has finished.
+export function moveSeenOf(v: unknown): MoveSeen | undefined {
+  if (typeof v !== 'object' || v === null || Array.isArray(v)) return undefined
+  const out: MoveSeen = {}
+  for (const [id, at] of Object.entries(v as Record<string, unknown>)) if (typeof at === 'number' && Number.isFinite(at)) out[id] = at
+  return out
+}
+
+// Whether a map record saved at `at` is one no finished move saw: no move has finished, no move saw
+// that session, or the last saw it earlier. A copy at or below the `at` seen is that copy or an older
+// one an older build wrote back, and its record is at its own key or was let go.
+export function unseenByMove(seen: MoveSeen | undefined, id: string, at: number): boolean {
+  if (seen === undefined) return true
+  const was = Object.prototype.hasOwnProperty.call(seen, id) ? seen[id] : undefined
+  return typeof was !== 'number' || at > was
+}
+
+// Two marks as one: every id of either, at the later `at`.
+export function mergeSeen(a: MoveSeen | undefined, b: MoveSeen): MoveSeen {
+  const out: MoveSeen = { ...(a ?? {}) }
+  for (const [id, at] of Object.entries(b)) {
+    const was = Object.prototype.hasOwnProperty.call(out, id) ? out[id] : undefined
+    if (was === undefined || at > was) out[id] = at
+  }
+  return out
+}
 // The old map is removed once its newest record is this old: a session still running an older
 // build reads only the map, and would start from a blank record were it gone.
 export const OLD_MAP_IDLE_MS = 7 * 24 * 60 * 60 * 1000

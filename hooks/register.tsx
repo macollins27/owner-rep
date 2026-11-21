@@ -161,7 +161,10 @@ import {
   atOf,
   recsToLetGo,
   OLD_MAP_KEY,
-  MIGRATED_KEY,
+  MOVE_SEEN_KEY,
+  moveSeenOf,
+  unseenByMove,
+  mergeSeen,
   OLD_MAP_IDLE_MS,
   askAgain,
   askFault,
@@ -481,15 +484,13 @@ async function oldMap($: EngineInterface): Promise<Record<string, Rec>> {
   return out
 }
 
-// The old map's records saved after the newest one the last finished move saw (`MIGRATED_KEY`),
-// or all of them when no move has finished: a finished move copied every record it saw to its
-// own key, so one no newer is either there or was let go, and is never read back in place of a
-// record the trim let go.
+// The old map's records no finished move saw at their `at` (`unseenByMove`), or all of them when
+// no move has finished: a finished move copied every record it saw to its own key, so one it saw
+// is either there or was let go, and is never read back in place of a record the trim let go.
 // A session still on an older build saves into the map with a later `at`, and is read.
 async function oldMapSinceMove($: EngineInterface): Promise<Record<string, Rec>> {
-  const got = await $.store.get(MIGRATED_KEY)
-  const since = typeof got === 'number' && Number.isFinite(got) ? got : 0
-  return Object.fromEntries(Object.entries(await oldMap($)).filter(([, r]) => atOf(r) > since))
+  const seen = moveSeenOf(await $.store.get(MOVE_SEEN_KEY))
+  return Object.fromEntries(Object.entries(await oldMap($)).filter(([id, r]) => unseenByMove(seen, id, atOf(r))))
 }
 
 // Every record the store holds, by session id: each record key's, and the old map's where it is
@@ -512,12 +513,13 @@ async function allStored($: EngineInterface): Promise<Map<string, Rec>> {
 }
 
 // Once a process, before its first read: the old map's records copied to keys of their own. A
-// record is copied when its own key is missing or older, and, after the first copy, only when it
-// is newer than the newest record the last move saw (`MIGRATED_KEY`), so a record let go is not
-// copied back. The map stays, read as
-// a fallback, while a session still running an older build may save into it, and goes once its
-// newest record is `OLD_MAP_IDLE_MS` old. A copy the store refuses stops it there, the time
-// unwritten: the map is still read, and the next process copies the rest.
+// record is copied when no finished move saw it at its `at` (`unseenByMove`) and its own key is
+// missing or older, so a record let go is not copied back. Every record the move read is then added
+// to the mark (`MOVE_SEEN_KEY`), merged with the mark read again just before it is written. The map
+// stays, read as a fallback, while a session still running an older build may save into it, and
+// goes once its newest record is `OLD_MAP_IDLE_MS` old. A copy the store refuses stops it there, the
+// mark unwritten: the map's records this move would have marked are still read, and the next
+// process copies the rest.
 let migration: Promise<void> | null = null
 function migrateOnce($: EngineInterface): Promise<void> {
   migration ??= migrate($).catch(() => undefined)
@@ -528,20 +530,21 @@ async function migrate($: EngineInterface): Promise<void> {
   const map = await $.store.get(OLD_MAP_KEY)
   if (map === undefined) return
   const old = await oldMap($)
-  const got = await $.store.get(MIGRATED_KEY)
-  const since = typeof got === 'number' && Number.isFinite(got) ? got : 0
+  const seen = moveSeenOf(await $.store.get(MOVE_SEEN_KEY))
+  const saw: Record<string, number> = {}
   let newest = 0
   for (const [id, r] of Object.entries(old)) {
     newest = Math.max(newest, atOf(r))
-    if (since > 0 && atOf(r) <= since) continue
+    saw[id] = atOf(r)
+    if (!unseenByMove(seen, id, atOf(r))) continue
     if (isBlankRec(r, freshRec(id))) continue
     const own = await $.store.get(recKey(id))
     if (isRec(own) && atOf(own) >= atOf(r)) continue
     await $.store.set(recKey(id), r)
   }
-  // The newest save the move saw, not the time it started: an older build's save stamped before
-  // the start but landing after the map was read is later than that, and is read and copied.
-  await $.store.set(MIGRATED_KEY, Math.max(since, newest, 1))
+  // Each record the move read, by its `at`: an older build's save that lands after the map was
+  // read, whatever its stamp, is a session the move did not see or a later `at`, and is read.
+  await $.store.set(MOVE_SEEN_KEY, mergeSeen(moveSeenOf(await $.store.get(MOVE_SEEN_KEY)) ?? seen, saw))
   if (started - newest > OLD_MAP_IDLE_MS) await $.store.delete(OLD_MAP_KEY)
 }
 
@@ -618,11 +621,11 @@ async function trimStore($: EngineInterface, keep: string): Promise<string[]> {
   // A record the reads would also take from the old map is never let go: with its key gone the
   // map's copy, older, would be read in its place and copied back.
   const mapped = new Set(Object.keys(await oldMapSinceMove($)))
-  const free = ids.filter(id => !mapped.has(id))
+  // The newest SESSIONS_MAX are ranked from every record, mapped or not, so a mapped record never
+  // costs a newer one its place; a mapped record outside them stays, over the cap.
   const recs = new Map<string, unknown>()
-  for (const id of free) recs.set(id, await $.store.get(recKey(id)))
-  const over = ids.length - SESSIONS_MAX
-  const gone = recsToLetGo(free.map(id => ({ id, at: atOf(recs.get(id) as { at?: unknown } | undefined) })), keep, Math.max(free.length - over, 1))
+  for (const id of ids) recs.set(id, await $.store.get(recKey(id)))
+  const gone = recsToLetGo(ids.map(id => ({ id, at: atOf(recs.get(id) as { at?: unknown } | undefined) })), keep, SESSIONS_MAX).filter(id => !mapped.has(id))
   const dropped = gone.flatMap(id => recDrafts(recs.get(id)))
   if (dropped.length > 0) await $.store.set('droppedDrafts', keepDropped(await droppedDrafts($), dropped))
   const deleted: string[] = []

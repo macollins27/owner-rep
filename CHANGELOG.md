@@ -15,7 +15,8 @@ What changed in each release of Owner Rep, newest first. The full record is the
   newest 32 after the update is not read back from that old list, and a session you come back
   to after a long idle keeps the message it saves while another session is clearing out old
   records. A save an older version makes while the copy is running is read rather than missed,
-  and a copy cut short partway never lets a session fall back to its record from before it.
+  even with two older versions saving at once, a new session never pushes out another new one to
+  keep old records the copy has not finished with, and a copy cut short partway never lets a session fall back to its record from before it.
 
 ## 0.7.7 (19 November 2026)
 

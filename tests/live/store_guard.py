@@ -31,7 +31,7 @@ RENAME_SWAP = 0x2  # <stdio.h> on macOS
 DROPPED_DRAFTS_MAX = 200  # hooks/rep.ts
 REC = 'rec:'  # REC_PREFIX in hooks/rep.ts: each record under a key of its own
 OLD_MAP = 'sessions'  # OLD_MAP_KEY: the map every record sat in before that
-MIGRATED = 'migratedAt'  # MIGRATED_KEY
+MIGRATED = 'movedSeen'  # MOVE_SEEN_KEY
 
 
 class Refused(Exception):
@@ -411,8 +411,8 @@ def self_test() -> int:
         check("restore: the run's draft stays listed when it was listed before the run", json.loads(s.read_text())['droppedDrafts'] == ['said twice', 'other'])
 
         # A store the mod has moved to a key per record, the old map kept beside it as a fallback.
-        moved = {MIGRATED: 5, OLD_MAP: {'a': rec(1, 'draft of a'), 'gone': rec(0), 'b': rec(2)}, 'rec:a': rec(1, 'draft of a'), 'rec:b': rec(2), 'droppedDrafts': ['older draft']}
-        ran = {MIGRATED: 5, OLD_MAP: moved[OLD_MAP], 'rec:b': rec(2), 'rec:run': rec(9), 'rec:theirs': rec(8), 'droppedDrafts': ['draft of a', 'older draft']}
+        moved = {MIGRATED: {}, OLD_MAP: {'a': rec(1, 'draft of a'), 'gone': rec(0), 'b': rec(2)}, 'rec:a': rec(1, 'draft of a'), 'rec:b': rec(2), 'droppedDrafts': ['older draft']}
+        ran = {MIGRATED: {}, OLD_MAP: moved[OLD_MAP], 'rec:b': rec(2), 'rec:run': rec(9), 'rec:theirs': rec(8), 'droppedDrafts': ['draft of a', 'older draft']}
         folder, s = fresh('keyed', moved, ran)
         show(s, 'run', 0, folder / 'run.message.txt')
         restore(folder, ['run'])
@@ -422,12 +422,12 @@ def self_test() -> int:
         check('keyed: a record the mod let go before the run stays let go', 'rec:gone' not in done)
         check("keyed: another session's record stays, and the old map is left as it was", 'rec:theirs' in done and done[OLD_MAP] == moved[OLD_MAP])
         check('keyed: what eviction added is taken out', done['droppedDrafts'] == ['older draft'])
-        folder, s = fresh('moved-in-run', {OLD_MAP: {'a': rec(1, 'draft of a'), 'b': rec(2)}, 'droppedDrafts': []}, {MIGRATED: 5, OLD_MAP: {'a': rec(1, 'draft of a'), 'b': rec(2)}, 'rec:b': rec(2), 'rec:run': rec(9), 'droppedDrafts': ['draft of a']})
+        folder, s = fresh('moved-in-run', {OLD_MAP: {'a': rec(1, 'draft of a'), 'b': rec(2)}, 'droppedDrafts': []}, {MIGRATED: {}, OLD_MAP: {'a': rec(1, 'draft of a'), 'b': rec(2)}, 'rec:b': rec(2), 'rec:run': rec(9), 'droppedDrafts': ['draft of a']})
         restore(folder, ['run'])
         done = json.loads(s.read_text())
         check('keyed: a store moved during the run gets the record pushed out back under its own key', done.get('rec:a') == rec(1, 'draft of a') and 'rec:run' not in done and done['droppedDrafts'] == [])
         newer = tmp / 'newer.json'
-        newer.write_text(json.dumps({MIGRATED: 5, OLD_MAP: {'x': rec(launched * 1000 + 9, 'from the map')}, 'rec:x': rec(launched * 1000 + 5, 'from its key')}))
+        newer.write_text(json.dumps({MIGRATED: {}, OLD_MAP: {'x': rec(launched * 1000 + 9, 'from the map')}, 'rec:x': rec(launched * 1000 + 5, 'from its key')}))
         show(newer, 'x', launched, tmp / 'x.txt')
         check('keyed: show reads the newer of the key and the old map', (tmp / 'x.txt').read_text() == 'from the map')
 

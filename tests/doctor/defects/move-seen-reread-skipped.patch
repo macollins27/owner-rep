@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index d7257be..e283843 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -544,7 +544,7 @@ async function migrate($: EngineInterface): Promise<void> {
+   }
+   // Each record the move read, by its `at`: an older build's save that lands after the map was
+   // read, whatever its stamp, is a session the move did not see or a later `at`, and is read.
+-  await $.store.set(MOVE_SEEN_KEY, mergeSeen(moveSeenOf(await $.store.get(MOVE_SEEN_KEY)) ?? seen, saw))
++  await $.store.set(MOVE_SEEN_KEY, mergeSeen(seen, saw))
+   if (started - newest > OLD_MAP_IDLE_MS) await $.store.delete(OLD_MAP_KEY)
+ }
+ 
