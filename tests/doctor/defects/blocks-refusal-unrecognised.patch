@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index f508b1d..203d8df 100644
+index 71c6e23..793018d 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3216,7 +3216,7 @@ export type PromptBlock = { text: string; cache?: true }
+@@ -3247,7 +3247,7 @@ export type PromptBlock = { text: string; cache?: true }
  // The same prompt as one text, for a build that takes no blocks.
  export const joinBlocks = (blocks: readonly PromptBlock[]): string => blocks.map(b => b.text).join('')
  // What a build that takes only a text prompt throws for blocks: 2.1.286's host check.
 -export const BLOCKS_REFUSED = /model\.complete: takes \{ model, prompt \}/
 +export const BLOCKS_REFUSED = /a build that takes only text/
- 
- // The record read's prompt, as text blocks that join to: the record in the session's fence, then
- // the task (the watch prompt, the brief, or the brief with the open conditions named again). The
+ // Whether the build that sent a call marked its system prompt for the cache, so a replay sends it
+ // the same way: a reader's call in blocks, and the objective writer from its rewrite on (the build
+ // whose writer quotes the owner in owner_messages tags).

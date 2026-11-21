@@ -86,8 +86,10 @@ has to show (a list of conditions), and the step the session is on now. The obje
 sets the step from the owner's messages; each look the watch takes then reads the step the agent
 is on from the record and keeps it current, so the card's "Right now" does not lag the work by a
 turn. It is never the owner's text. The owner works by intent rather than exact wording, and a rep that only did
-what the client literally said would not be a good one, so the objective includes what a
-serious owner plainly wants without saying it. The owner's messages are weighed by kind:
+what the client literally said would not be a good one, so every condition is held to what a
+serious owner plainly wants without saying it; those wants become conditions of their own only
+when the owner asks for them. A question the owner asks is a condition until it is answered, so
+it is not lost when the step moves. The owner's messages are weighed by kind:
 reasons and complaints first, then instructions. A "yes" to a plan the agent proposed makes
 that plan the owner's ask, held like the owner's own words: each of its steps becomes a
 condition of "done", read whole before any is written. Whether a message approves is the
@@ -466,7 +468,7 @@ rep's independence comes from its brief, which tells the model to treat everythi
 wrote as a claim, and, for the check step, from reading outside the conversation altogether.
 The objective writer is a plain completion too, shown the agent's words
 only as the line before each of the owner's messages, marked as the agent's. Its rules go to
-it as its system prompt, and the owner's messages reach it fenced as quoted records that it is
+it as its system prompt, marked for the cache so a session's later writes pay less for them, and the owner's messages reach it fenced as quoted records, in the same per-session tags the readers use, that it is
 told are no instruction to it, because unfenced, a message that read like a command came back
 empty in all six tries measured on one such message (16 Oct 2026). Its brief also says that
 line is there only so a short reply can be understood and never sets the result, and
@@ -715,7 +717,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 866 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 874 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: twelve real sessions in tmux, the strip captured to tests/live/captures
 ```
