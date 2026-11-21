@@ -383,8 +383,8 @@ call writes (below):
    of "keep going"; it is the one place exact technical terms may stand, where the agent needs
    them; the own-words call and the check read the same section; the briefing's, the own-words
    call's and the check's answer forms ask for lengths in words, targets the gate does not
-   enforce (G40): `SHORT_PART` for "stands", "means" and "next" (one or two sentences, about 25 words, under 40), `LEFT_ITEMS`
-   for "left" (each item one sentence of about 8 words and under 20, at most six, the rest folded
+   enforce (G40): `SHORT_PART` for "stands", "means" and "next" (one or two sentences, about 20 words, under 35), `LEFT_ITEMS`
+   for "left" (each item one sentence of about 8 words and under 16, at most six, the rest folded
    into "- and N smaller gaps"; the owner's own decision is one short plain question, which kept a
    held go-ahead question, naming the step and its condition, from reaching the limit), and `MESSAGE_FORM` for the message (each line one sentence of
    about 12 words, under 150 words in all unless more than five things are asked; the message
