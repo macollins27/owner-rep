@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 2477128..7fadcb7 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2319,7 +2319,7 @@ export function takeApprovals(
+ // held (review of #72). A shape this misses keeps today's Settle line, which is the safe side.
+ const A_PLAN = String.raw`(?:a|an|the|my|your|its)\s+(?:(?:written|short|clear|full|detailed|step-by-step|numbered)\s+)?(?:plan|proposal|outline|approach)`
+ const TO_OWNER = String.raw`(?:\s+(?:to|for)\s+(?:the owner|me|him|her|them))?`
+-const BUILD = String.raw`(?:building|coding|starting|implementing|implementation|work starts|writing (?:any )?code|making (?:any )?changes|(?:any|the)\s+(?:code changes?|code|work|build|building|changes?|implementation)(?:\s+(?:is|are)\s+(?:made|written|done|started|begun))?|anything is (?:built|changed|written)|(?:code|changes?) (?:is|are) (?:made|written))`
++const BUILD = String.raw`(?:\w+ing|building|coding|starting|implementing|implementation|work starts|writing (?:any )?code|making (?:any )?changes|(?:any|the)\s+(?:code changes?|code|work|build|building|changes?|implementation)(?:\s+(?:is|are)\s+(?:made|written|done|started|begun))?|anything is (?:built|changed|written)|(?:code|changes?) (?:is|are) (?:made|written))`
+ const TIMING = String.raw`(?:\s+(?:first|up front|before\s+${BUILD}))?`
+ const SHOWN = String.raw`(?:shown|written(?: down)?|presented|proposed|laid out|shared|drafted)`
+ const APPROVED = String.raw`(?:approved|agreed|signed off|okayed)`

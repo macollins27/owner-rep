@@ -5175,7 +5175,7 @@
     "name": "approval-never-closes",
     "breaks": "A yes to the plan closes nothing, so a condition that only waited on the plan stays open and the card asks the owner to settle what the yes already did.",
     "patch": "approval-never-closes.patch",
-    "fixed": "tested 2026-11-20"
+    "fixed": "tested 2026-11-20; remade 2026-11-20"
   },
   {
     "name": "approval-closes-any",
@@ -5197,8 +5197,14 @@
   },
   {
     "name": "plan-word-waits",
-    "breaks": "Any condition naming a plan counts as waiting on it, so a yes can close \"all five steps of the plan done\".",
+    "breaks": "A condition counts as waiting on the plan when any part of it takes a plan-only shape, so a yes can close \"the plan has five steps and each step has a test\".",
     "patch": "plan-word-waits.patch",
+    "fixed": "tested 2026-11-20; remade 2026-11-20"
+  },
+  {
+    "name": "approval-outward-hold-closes",
+    "breaks": "Any wait before an act counts as a wait before building, so a yes to the plan closes \"the agent waits for the owner's go-ahead before deploying\".",
+    "patch": "approval-outward-hold-closes.patch",
     "fixed": "tested 2026-11-20"
   }
 ]

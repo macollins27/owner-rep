@@ -7293,6 +7293,11 @@ test('rule: waitsOnPlan takes a condition that only waited on the plan, and no c
     'nothing is built until the owner approves',
     'the plan has at most five steps',
     'the proposal is laid out in three parts',
+    'the agent shows the owner a plan first',
+    'a plan is written and approved before any code is written',
+    'no code is written until the owner approves the plan',
+    'the plan is approved before building.',
+    'wait for my go-ahead before starting',
   ]) expect([t, rep.waitsOnPlan(t)]).toEqual([t, true])
   for (const t of [
     'the dashboard built',
@@ -7301,6 +7306,20 @@ test('rule: waitsOnPlan takes a condition that only waited on the plan, and no c
     'the analytics kept',
     'the build waits for the tests to finish',
     'a plan for the next release is not needed',
+    // The review of #72: work, or an outward act's hold, that only names a plan or a go-ahead.
+    'every step of the approved plan is built and tested',
+    'the proposal email is sent to the client',
+    'the subscription plans are shown on the pricing page',
+    'the migration plan runs before the deploy',
+    'the course outline is written',
+    'the plan is sent to Codex for review before building',
+    'the plan has five steps and each step has a test',
+    "nothing is pushed to production without the owner's go-ahead",
+    "the site is published only after the owner's go-ahead",
+    "the invoice is paid only with the owner's go-ahead",
+    'the agent waits for the owner before merging to main',
+    "the agent waits for the owner's go-ahead before deploying",
+    'the plan is carried out before the owner signs off',
   ]) expect([t, rep.waitsOnPlan(t)]).toEqual([t, false])
 })
 
@@ -7350,6 +7369,21 @@ describe('Task 5: adding is not closing; drafts with his words; long messages th
     expect(done.find(x => x.text === 'the dashboard built')).toMatchObject({ state: 'open' })
     expect(doneOf(s.obj())).not.toContain(SETTLE_APPROVED(2, SHOWN_FIRST))
     expect(doneOf(s.obj())).toContain(SETTLE_APPROVED(2, 'the dashboard built'))
+  })
+
+  test('rule: a yes marked as closing work, or an outward act\'s hold, that names a plan or a go-ahead leaves it open with a Settle line (review of #72)', async ($, on) => {
+    const WORK = 'every step of the approved plan is built and tested'
+    const PUSH = "nothing is pushed to production without the owner's go-ahead"
+    const s = asks(on, [his(1, 'plan it, build and test every step, and push nothing to production without my go-ahead')], { objective: HELD_WITH([WORK, PUSH]) })
+    s.answer(() => ANSWER([`${WORK} | closed: #2`, `${PUSH} | closed: #2`], { approved: ['#2 | all'] }))
+    await started($)
+    await runTurn($, s.scripts, 't1', [said('Plan:\n1. Build the page.\n2. Test it.\n3. Push to production.')])
+    await s.send($, 'yes, go')
+    const done = s.obj()?.done ?? []
+    for (const t of [WORK, PUSH]) {
+      expect(done.find(x => x.text === t)).toMatchObject({ state: 'open' })
+      expect(doneOf(s.obj())).toContain(SETTLE_APPROVED(2, t))
+    }
   })
 
   test('rule: an approval never drops a condition that waited on the plan; only a close by it is taken', async ($, on) => {

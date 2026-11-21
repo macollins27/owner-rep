@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 7e2c9ae..0b78291 100644
+index 2477128..1e52a31 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2321,7 +2321,7 @@ export function waitsOnPlan(text: string): boolean {
-   const t = bare(text).toLowerCase()
-   if (GO_AHEAD.test(t)) return true
-   if (!PLAN_NOUN.test(t) || /\bnot needed\b|\bno plan\b/.test(t)) return false
--  return PLAN_WAIT.test(t) || PLAN_SHAPE.test(t)
-+  return true
- }
- 
- // A held condition a message of the owner's that could not be read whole, or an approval, would
+@@ -2337,7 +2337,7 @@ const PLAN_ONLY = [
+   String.raw`(?:the agent\s+)?waits?\s+for\s+${GO}(?:\s+(?:before\s+${BUILD}|to start))?`,
+   // Nothing built until the owner approves.
+   String.raw`(?:nothing is (?:built|changed|written)|no (?:code|work|building|changes?) (?:is |are )?(?:written|made|done|started|starts|begins)|no building starts|building waits)\s+${UNTIL_OWNER}`,
+-].map(x => new RegExp(`^(?:${x})$`))
++].map(x => new RegExp(`(?:${x})`))
+ export function waitsOnPlan(text: string): boolean {
+   const t = bare(text).toLowerCase().replace(/\s+/g, ' ').replace(/[.!]+$/, '').trim()
+   return PLAN_ONLY.some(r => r.test(t))

@@ -8,7 +8,8 @@ What changed in each release of Owner Rep, newest first. The full record is the
 - **A yes to the plan closes what was only waiting on the plan.** A condition such as "a plan
   shown before building" or "wait for my go-ahead" is closed by the message that approves the
   plan, and the card no longer asks you to settle it. A yes still closes nothing about the
-  work itself and still lets go of nothing you asked for.
+  work itself, nor a hold on a push, deploy, payment or anything sent out, and still lets go
+  of nothing you asked for.
 
 ## 0.7.7 (19 November 2026)
 

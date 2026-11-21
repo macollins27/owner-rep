@@ -1,12 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 7e2c9ae..4834a00 100644
+index 2477128..6bfa702 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2319,6 +2319,7 @@ const PLAN_SHAPE = /\b(?:has|in|with|into)\s+(?:at most |no more than |up to |ex
- const GO_AHEAD = /\bgo-?ahead\b|\buntil the owner (?:says|approves|agrees|okays|gives|confirms)\b|\bwaits? for the owner\b/
+@@ -2340,7 +2340,7 @@ const PLAN_ONLY = [
+ ].map(x => new RegExp(`^(?:${x})$`))
  export function waitsOnPlan(text: string): boolean {
-   const t = bare(text).toLowerCase()
-+  return false
-   if (GO_AHEAD.test(t)) return true
-   if (!PLAN_NOUN.test(t) || /\bnot needed\b|\bno plan\b/.test(t)) return false
-   return PLAN_WAIT.test(t) || PLAN_SHAPE.test(t)
+   const t = bare(text).toLowerCase().replace(/\s+/g, ' ').replace(/[.!]+$/, '').trim()
+-  return PLAN_ONLY.some(r => r.test(t))
++  return false && PLAN_ONLY.some(r => r.test(t))
+ }
+ 
+ // A held condition a message of the owner's that could not be read whole, or an approval, would
