@@ -1,13 +1,17 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 12261ff..c12cfdc 100644
+index 914c369..8e660d4 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3618,7 +3618,7 @@ export function headsUp(a: WatchAnswer, seen: readonly string[], plans: readonly
-     why: joined([
-       first.how === 'no sign'
-         ? 'The record shows later work and does not show this step done. The agent has to show it.'
--        : "The agent's own words or its own full list leave it out. The agent has to do it or show it.",
-+        : 'It is not on the agent\'s own full list. The agent has to show it.',
-       ...alsoDropped(rest.slice(1)),
+@@ -3676,10 +3676,10 @@ export function headsUpOf(a: WatchAnswer, plans: readonly string[]): { note: { l
+       one
+         ? noSign
+           ? 'It is in the plan you approved. The record shows later work and does not show it done. The agent has to show it.'
+-          : "It is in the plan you approved, and the agent's own words or its own full list leave it out. The agent has to do it or show it."
++          : "It is in the plan you approved, and it is not on the agent's own full list. The agent has to show it."
+         : noSign
+           ? 'They are in the plan you approved. The record shows later work and does not show them done. The agent has to show them.'
+-          : "They are in the plan you approved, and the agent's own words or its own full list leave them out. The agent has to do them or show them.",
++          : "They are in the plan you approved, and they are not on the agent's own full list. The agent has to show them.",
        ...(own === null ? [] : [`Also: ${own.line}`, own.why]),
      ]),
+   }, drops: told(listed) }

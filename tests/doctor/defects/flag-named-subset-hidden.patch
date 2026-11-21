@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 914c369..f03f095 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3638,7 +3638,7 @@ const namedBy = (flag: string, steps: readonly DroppedStep[]): DroppedStep[] =>
+   const out: DroppedStep[] = []
+   for (const d of [...steps].filter(d => names(flag, d.step)).sort((x, y) => contentWords(y.step).length - contentWords(x.step).length)) {
+     const words = contentWords(d.step)
+-    if (!out.some(o => words.every(w => contentWords(o.step).includes(w)))) out.push(d)
++    out.push(d)
+   }
+   return out
+ }

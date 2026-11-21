@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 914c369..80b724c 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3554,7 +3554,7 @@ function stepsOf(part: string | undefined, walk: boolean): { notAssessed?: StepR
+ // 9590250: "- Verification: … | looks dropped", the plan's own section, was read as nothing): a
+ // dropped part is matched to the plans by its words, never by its number.
+ function walkLine(line: string): { n: number; step: string; mark: string } | null {
+-  const m = /^\s*(?:[-*•]|\d+[.)])?\s*(?:\*\*)?(?:#(\d+)(?:\.\d+|[a-z](?=\s*[:,])|\s*\([^)]*\)|\s+[a-z][a-z ]*?(?:\s+\d+)?)?(?:\*\*)?\s*[:,\-–—]\s*)?(.+)\|([^|]*)$/i.exec(line)
++  const m = /^\s*(?:[-*•]|\d+[.)])?\s*(?:\*\*)?(?:#(\d+)(?:\.\d+|[a-z](?=\s*[:,])|\s*\([^)]*\)|\s+[a-z][a-z ]*?(?:\s+\d+)?)?(?:\*\*)?\s*[:,\-–—]\s*)(.+)\|([^|]*)$/i.exec(line)
+   return m === null ? null : { n: Number(m[1] ?? 0), step: (m[2] as string).trim(), mark: (m[3] as string).trim() }
+ }
+ 

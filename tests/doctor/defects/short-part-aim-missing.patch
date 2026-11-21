@@ -1,12 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 914c369..dd897fd 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -921,7 +921,7 @@
+@@ -917,7 +917,7 @@ export const skipAfter = (typedPast: number): number =>
  // Every read that writes a message keeps an owner-held step separate from the rest of the job.
  // G40 (prompt audit §6.1): lengths in words, as targets the gate does not enforce. Cards ran
  // 182 to 481 words; the owner reads them at a glance.
--export const SHORT_PART = 'one or two sentences, about 25 words, under 40'
-+export const SHORT_PART = 'one or two sentences, under 40 words'
- export const LEFT_ITEMS = 'one line per item, each one sentence of about 8 words and under 20, at most six, the costliest first; fold any more into one last line "- and N smaller gaps"'
+-export const SHORT_PART = 'one or two sentences, about 20 words, under 35'
++export const SHORT_PART = 'one or two sentences, under 35 words'
+ export const LEFT_ITEMS = 'one line per item, each one sentence of about 8 words and under 16, at most six, the costliest first; fold any more into one last line "- and N smaller gaps"'
  export const MESSAGE_FORM = 'as "How you write the message to the agent" says (each line one sentence of about 12 words, under 150 words in all unless more than five things are asked)'
  const HELD_STEP_RULE = `When a condition waits on the owner's go-ahead (publish, send, pay, a guard refusal), the message tells the agent to finish everything else, hold that step until the go-ahead comes, and say exactly what it will show the owner then; it never pushes the held step.`

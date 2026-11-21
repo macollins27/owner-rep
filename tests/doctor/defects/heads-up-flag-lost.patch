@@ -1,11 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 914c369..f595f24 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3742,7 +3742,6 @@
-         ? 'The record shows later work and does not show this step done. The agent has to show it.'
-         : "The agent's own words or its own full list leave it out. The agent has to do it or show it.",
-       ...alsoDropped(rest.slice(1)),
+@@ -3680,7 +3680,6 @@ export function headsUpOf(a: WatchAnswer, plans: readonly string[]): { note: { l
+         : noSign
+           ? 'They are in the plan you approved. The record shows later work and does not show them done. The agent has to show them.'
+           : "They are in the plan you approved, and the agent's own words or its own full list leave them out. The agent has to do them or show them.",
 -      ...(own === null ? [] : [`Also: ${own.line}`, own.why]),
      ]),
-   }, drops: told(rest.slice(0, 1 + DROPPED_ALSO_MAX)) }
+   }, drops: told(listed) }
  }

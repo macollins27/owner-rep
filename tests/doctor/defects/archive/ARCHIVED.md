@@ -50,3 +50,9 @@
   being raised again at every look. Since 20 Nov 2026 (PR #68, fifth round) that is the rule: a
   part still dropped is said at every look, a repeat being noise and a part unsaid the harm. No
   successor; `heads-up-walk-drop-said-before-hidden` plants the opposite.
+- `heads-up-flag-names-every-part.patch`: planted a flag that holds every word of two dropped
+  parts standing for both, so the second lost its "Also looks dropped" line. Since 20 Nov 2026
+  (PR #68, commit 1061d6a) that is the rule: `namedBy` names every part a clause of the flag says
+  was dropped, and none of them is said again after it. Its successors are `flag-names-one-only`
+  (the flag stands for only the longest part again) and `flag-named-subset-hidden` (a part whose
+  words all sit inside a longer named part counts as named).

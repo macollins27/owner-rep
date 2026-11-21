@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 914c369..a6a30f9 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3671,7 +3671,7 @@ export function headsUpOf(a: WatchAnswer, plans: readonly string[]): { note: { l
+   const one = textsOf(rest).length === 1
+   const noSign = listed.every(d => d.how === 'no sign')
+   return { note: {
+-    line: `${one ? 'Plan step looks' : 'Plan steps look'} dropped: ${partsSaid(rest, 1 + DROPPED_ALSO_MAX)}.`,
++    line: `${one ? 'Plan step looks' : 'Plan steps look'} dropped: ${stepText(first.step)}.`,
+     why: joined([
+       one
+         ? noSign

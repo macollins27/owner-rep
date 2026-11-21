@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 490d383..8d3cd5c 100644
+index 914c369..1dbfcaf 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3608,7 +3608,7 @@ const inPlans = (step: string, plans: readonly string[]): boolean =>
- // Whether a flag names this dropped part: it speaks of a drop and holds every content word of the
- // part. Only then does the part go unprinted under the flag's "Also looks dropped" at the same look;
- // a flag about another part of the step, sharing some of its words, does not stand for it.
--const names = (flag: string, step: string): boolean => DROP_WORD.test(flag) && heldIn(step, flag) === 1
-+const names = (flag: string, step: string): boolean => DROP_WORD.test(flag) && heldIn(step, flag) >= 0.5
+@@ -3613,7 +3613,7 @@ const inPlans = (step: string, plans: readonly string[]): boolean =>
+ // one that says another part was dropped and this one done ("The docs step was skipped, but the
+ // agent did run the install check"): a part printed twice is noise, a part printed nowhere the harm.
+ const CLAUSE_BREAK = /[.;:!?()]|\b(?:but|while|though|although|whereas|yet)\b/i
+-const names = (flag: string, step: string): boolean => flag.split(CLAUSE_BREAK).some(c => DROP_WORD.test(c) && heldIn(step, c) === 1)
++const names = (flag: string, step: string): boolean => flag.split(CLAUSE_BREAK).some(c => DROP_WORD.test(c) && heldIn(step, c) >= 0.5)
  
  export const DROPPED_STEP_MAX = 160
  export const DROPPED_ALSO_MAX = 3

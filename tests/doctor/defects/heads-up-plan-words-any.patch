@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 490d383..3c734ee 100644
+index 914c369..ecfc4ca 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3603,7 +3603,7 @@ const heldIn = (part: string, text: string): number => {
+@@ -3605,7 +3605,7 @@ const heldIn = (part: string, text: string): number => {
  // shares two common words with one passes too, a bad flag accepted so no real step is lost.
  export const PLAN_WORDS_SHARE = 0.4
  const inPlans = (step: string, plans: readonly string[]): boolean =>
 -  contentWords(step).length > 0 && heldIn(step, plans.join('\n')) >= PLAN_WORDS_SHARE
 +  contentWords(step).length > 0 && heldIn(step, plans.join('\n')) >= 0
  
- // Whether a flag names this dropped part: it speaks of a drop and holds every content word of the
- // part. Only then does the part go unprinted under the flag's "Also looks dropped" at the same look;
+ // Whether a flag names this dropped part: one clause of it speaks of a drop and holds every content
+ // word of the part. Only then does the part go unprinted under the flag's "Also looks dropped" at the

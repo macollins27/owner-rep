@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 7806d9d..f224095 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1689,7 +1689,6 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+     // free. A note left up gives way to this look's; the card open, a reading, or the session off
+     // screen holds it. A later look replaces what is held, and one that walks no part as dropped
+     // takes back a held note that said one, since that part no longer looks dropped.
+-    if (got.drops.length === 0 && heldNotes.get(sid)?.drops === true) heldNotes.delete(sid)
+     if (said === null || repeat(said.line)) return
+     const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId }
+     if (onScreen(sid) && (view === 'row' || view === 'note')) {

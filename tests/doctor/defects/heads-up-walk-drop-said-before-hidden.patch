@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index bfe288b..2ff4995 100644
+index 7806d9d..80f9dab 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1680,7 +1680,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+@@ -1684,7 +1684,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
      const said = got.note
      // A plain flag already shown is not shown again. A note that says a dropped plan part is shown
      // at every look where the part is dropped: a silent drop is the harm, a repeat only noise.
 -    const repeat = (line: string): boolean => got.drops.length === 0 && after.seen.some(s => same(s, line))
 +    const repeat = (line: string): boolean => got.drops.length === 0 ? after.seen.some(s => same(s, line)) : got.drops.every(d => after.seen.some(s => s.includes(d)))
-     if (said !== null && view === 'row' && onScreen(sid) && !repeat(said.line)) {
-       after.seen = [...after.seen, said.line].slice(-SEEN_MAX)
-       const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId }
+     // A part that looks dropped reaches the owner: on screen at this look, or held until the row is
+     // free. A note left up gives way to this look's; the card open, a reading, or the session off
+     // screen holds it. A later look replaces what is held, and one that walks no part as dropped

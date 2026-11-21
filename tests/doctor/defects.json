@@ -31,7 +31,7 @@
   },
   {
     "name": "flag-replaces-card",
-    "breaks": "A watch flag replaces the briefing card instead of waiting for the row.",
+    "breaks": "A watch flag replaces the briefing card instead of being held until the row is free.",
     "patch": "flag-replaces-card.patch",
     "fixed": "remade 2026-11-20"
   },
@@ -2229,7 +2229,7 @@
     "name": "walk-looks-dropped-not-unassessed",
     "breaks": "A step the agent admitted dropping counts as not assessed again, so the row says its proof could be in a part of the record that was cut short.",
     "patch": "walk-looks-dropped-not-unassessed.patch",
-    "fixed": "2026-10-30; remade 2026-11-20 as its inverse, since a looks-dropped step is no longer counted as not assessed (PR #68 E)"
+    "fixed": "2026-10-30; remade 2026-11-20 as its inverse, since a looks-dropped step is no longer counted as not assessed (PR #68 E); remade again 2026-11-20"
   },
   {
     "name": "heads-up-not-carried",
@@ -2283,7 +2283,7 @@
     "name": "heads-up-says-skipped",
     "breaks": "The mod's own line calls the step skipped, which it cannot know.",
     "patch": "heads-up-says-skipped.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-20"
   },
   {
     "name": "heads-up-plan-words-any",
@@ -2295,19 +2295,19 @@
     "name": "heads-up-named-hides-others",
     "breaks": "A flag that speaks of one dropped step hides every other dropped step.",
     "patch": "heads-up-named-hides-others.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-20"
   },
   {
     "name": "heads-up-also-unbounded",
-    "breaks": "Every dropped step is listed by name, so the why grows without limit.",
+    "breaks": "Every dropped step is named in the note's line, so the line grows without limit.",
     "patch": "heads-up-also-unbounded.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-20"
   },
   {
     "name": "walk-line-first-bar",
     "breaks": "The mark is read from the first bar, so a step's own words can raise a false alarm.",
     "patch": "walk-line-first-bar.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-20"
   },
   {
     "name": "reported-gap-narrow",
@@ -2745,7 +2745,7 @@
     "name": "not-assessed-dropped",
     "breaks": "Both reader parsers discard not-assessed steps, so their coverage lines disappear.",
     "patch": "not-assessed-dropped.patch",
-    "fixed": "2026-11-01"
+    "fixed": "2026-11-01; remade 2026-11-20"
   },
   {
     "name": "approved-prior-cut-400",
@@ -3711,7 +3711,7 @@
     "name": "brief-cut-not-reread",
     "breaks": "A briefing whose answer stopped before its end is not read once more, so one cut reply leaves the owner with no card.",
     "patch": "brief-cut-not-reread.patch",
-    "fixed": "tested 2026-11-17"
+    "fixed": "tested 2026-11-17; remade 2026-11-20"
   },
   {
     "name": "brief-cut-shown",
@@ -5311,9 +5311,9 @@
   },
   {
     "name": "heads-up-why-list-only",
-    "breaks": "The Heads up line on a dropped step says only that the step is missing from the agent's list, though the agent's own words can show it, and asks only to show it rather than do it.",
+    "breaks": "The Heads up's why on a dropped step says only that the step is missing from the agent's list, though the agent's own words can show it, and asks only to show it rather than do it.",
     "patch": "heads-up-why-list-only.patch",
-    "fixed": "tested 2026-11-20"
+    "fixed": "tested 2026-11-20; remade 2026-11-20"
   },
   {
     "name": "fence-attributes-unescaped",
@@ -5364,16 +5364,10 @@
     "fixed": "tested 2026-11-20; remade 2026-11-20"
   },
   {
-    "name": "heads-up-flag-names-every-part",
-    "breaks": "A flag that holds every word of two parts names both, so the second part loses its \"Also looks dropped\" line.",
-    "patch": "heads-up-flag-names-every-part.patch",
-    "fixed": "remade 2026-11-20"
-  },
-  {
     "name": "heads-up-also-not-recorded",
-    "breaks": "A part said under \"Also looks dropped\" beside the flag is not kept as said, so it is raised again at the next look.",
+    "breaks": "The parts said after the flag under \"Also looks dropped\" are left out of the parts the note says it raised (its drops), so the note's own account of what it said is short.",
     "patch": "heads-up-also-not-recorded.patch",
-    "fixed": "2026-11-20"
+    "fixed": "2026-11-20; remade 2026-11-20"
   },
   {
     "name": "fence-self-closing-unescaped",
@@ -5389,9 +5383,9 @@
   },
   {
     "name": "walk-line-forms-unread",
-    "breaks": "Walk lines written \"#6.1:\", \"#6a:\" or \"#6 part 2:\" are not read, so their dropped parts never reach the owner.",
+    "breaks": "Walk lines written \"#6.1:\", \"#6a:\", \"#6 part 2:\", \"#6 (step 1):\" or \"#6 verification:\" lose their plan number, so the number stays in the dropped part's words and a part not assessed there drops out of the coverage line.",
     "patch": "walk-line-forms-unread.patch",
-    "fixed": "2026-11-20"
+    "fixed": "2026-11-20; remade 2026-11-20"
   },
   {
     "name": "brief-left-none-as-item",
@@ -5419,7 +5413,7 @@
   },
   {
     "name": "left-items-aim-missing",
-    "breaks": "Each left-out item loses its aim of about 8 words, so items are written to the 20-word limit and run over it.",
+    "breaks": "Each left-out item loses its aim of about 8 words, so items are written to the 16-word limit and run over it.",
     "patch": "left-items-aim-missing.patch",
     "fixed": "remade 2026-11-20"
   },
@@ -5431,7 +5425,7 @@
   },
   {
     "name": "short-part-aim-missing",
-    "breaks": "Stands, means and next lose their aim of about 25 words, so they are written to the 40-word limit and reach it.",
+    "breaks": "Stands, means and next lose their aim of about 20 words, so they are written to the 35-word limit and reach it.",
     "patch": "short-part-aim-missing.patch",
     "fixed": "remade 2026-11-20"
   },
@@ -5457,12 +5451,78 @@
     "name": "heads-up-walk-drop-said-before-hidden",
     "breaks": "A dropped plan part named in a line shown before is held back, so a part still dropped at the next look, or reworded there, is never said again.",
     "patch": "heads-up-walk-drop-said-before-hidden.patch",
-    "fixed": "2026-11-20"
+    "fixed": "2026-11-20; remade 2026-11-20"
   },
   {
     "name": "heads-up-flag-names-on-some-words",
     "breaks": "A flag that holds half a dropped part's words stands for it, so a flag about the other part of a step hides the part dropped at that very look.",
     "patch": "heads-up-flag-names-on-some-words.patch",
+    "fixed": "2026-11-20; remade 2026-11-20"
+  },
+  {
+    "name": "held-note-dropped",
+    "breaks": "A part found dropped while the briefing card is open, or while the session is off screen, is not held for the row, so it never reaches the owner.",
+    "patch": "held-note-dropped.patch",
+    "fixed": "2026-11-20"
+  },
+  {
+    "name": "note-view-not-replaced",
+    "breaks": "A newer look's dropped part does not replace a note already on screen, so the owner sees the older note until it is dismissed.",
+    "patch": "note-view-not-replaced.patch",
+    "fixed": "2026-11-20"
+  },
+  {
+    "name": "held-note-kept-after-clear",
+    "breaks": "A held note of a dropped part is kept after the next look finds nothing dropped, so the owner is told of a part that no longer looks dropped.",
+    "patch": "held-note-kept-after-clear.patch",
+    "fixed": "2026-11-20"
+  },
+  {
+    "name": "flag-clause-scope-removed",
+    "breaks": "A flag stands for a dropped part when its words are spread across clauses, so \"the docs step was skipped, but the agent ran the install check\" hides the install check dropped at that look.",
+    "patch": "flag-clause-scope-removed.patch",
+    "fixed": "2026-11-20"
+  },
+  {
+    "name": "heads-up-parts-in-why",
+    "breaks": "The note's line names only the first dropped part, so a short band that keeps only the line hides the others.",
+    "patch": "heads-up-parts-in-why.patch",
+    "fixed": "2026-11-20"
+  },
+  {
+    "name": "heads-up-same-text-twice",
+    "breaks": "The same step of two plans is named twice in the note's line, so the owner reads one part as two.",
+    "patch": "heads-up-same-text-twice.patch",
+    "fixed": "2026-11-20"
+  },
+  {
+    "name": "flag-names-one-only",
+    "breaks": "A flag whose clause says two parts were dropped stands for only the longer one, so the other is said again after it.",
+    "patch": "flag-names-one-only.patch",
+    "fixed": "2026-11-20"
+  },
+  {
+    "name": "flag-named-subset-hidden",
+    "breaks": "A part whose every word is inside a longer part the flag names counts as named too, so \"the path\" dropped beside \"the cap path\" is never said.",
+    "patch": "flag-named-subset-hidden.patch",
+    "fixed": "2026-11-20"
+  },
+  {
+    "name": "walk-line-number-required",
+    "breaks": "A walk line with no plan number, such as \"- Verification: … | looks dropped\", is read as nothing, so its dropped part never reaches the owner.",
+    "patch": "walk-line-number-required.patch",
+    "fixed": "2026-11-20"
+  },
+  {
+    "name": "walk-unnumbered-not-assessed",
+    "breaks": "A walk line with no plan number marked not assessed is counted as a step not assessed, so the coverage line names a step numbered 0.",
+    "patch": "walk-unnumbered-not-assessed.patch",
+    "fixed": "2026-11-20"
+  },
+  {
+    "name": "look-skips-writer-wait",
+    "breaks": "A look does not wait for the objective write in flight, so a turn that ends right after an approval is looked at before the plan is taken in and gets no walk.",
+    "patch": "look-skips-writer-wait.patch",
     "fixed": "2026-11-20"
   }
 ]
