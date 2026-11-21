@@ -1,5 +1,5 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 71c6e23..0a68b69 100644
+index b478c09..f3b99cb 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
 @@ -1976,7 +1976,7 @@ Each condition is one thing "done" has to show, in plain words, written after it
@@ -8,10 +8,10 @@ index 71c6e23..0a68b69 100644
  - open: undone, or yet to be shown done.
 -- not shown: a thing only proof from outside the agent's word can show, such as what is installed, deployed or running; the rep marks it shown when the record holds that proof.
 +- not shown: a thing it a the agersation cannot show by itself, such as what is installed or runs the rewes it corde.
- - shown, with where: only the rep marks this, from the record, which you do not see; copy the where as held.
+ - shown, with where: only the rep marks this, from the record, which you do not see.
  - closed: #n: the owner's own message #n, new since the objective you hold was built, closed that part. A draft's number closes nothing, and a message the objective was already built from had its say then.
  
-@@ -3152,7 +3152,7 @@ export const REP_MEASURE = `## What you measure against\n\n${REP_MEASURE_BODY}\n
+@@ -3163,7 +3163,7 @@ export const REP_MEASURE = `## What you measure against\n\n${REP_MEASURE_BODY}\n
  // printed its version stayed not shown (proof run, fault 7).
  export const REP_STATES = `Each condition of done is in one of four states:
  - open: not yet done, or not yet shown done.
@@ -20,7 +20,7 @@ index 71c6e23..0a68b69 100644
  - shown: the record holds the proof, by what counts as shown.
  - closed: a message of the owner's own closed it, cited by its number. A draft of yours that the owner sent closes nothing.`
  export const REP_CONDITIONS = `## The conditions and their states\n\n${REP_STATES}`
-@@ -7915,7 +7915,7 @@ const G3_REP_SYSTEM: readonly Swap[] = [
+@@ -7938,7 +7938,7 @@ const G3_REP_SYSTEM: readonly Swap[] = [
  ]
  const G3_OBJECTIVE_SYSTEM: readonly Swap[] = [
    [`${PRE_OW_ONE_CLAIM} Write a held condition's kind back as held.`, `${PRE_OW_ONE_CLAIM} ${PRE_OW_QUALITY_CONDITION} Write a held condition's kind back as held.`],

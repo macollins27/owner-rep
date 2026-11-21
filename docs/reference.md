@@ -877,7 +877,11 @@ objective is taken as it stands; after that a write is taken only when it saw a 
 or a note past `from` (`hisFrom` never counts a draft), so neither the agent's words nor the
 rep's drafts can move it and a write that lands late cannot take a newer one's place. A
 correction takes the result, purpose and step whole and runs the conditions through
-`mergeConditions`, which keeps every held condition the writer leaves out unless `dropped:`
+`mergeConditions`. The writer is told to write a held condition only to close it or put it in
+more exact words (`WRITE_CHANGED` in the request; before the replay of 20 Nov 2026 it was told to
+write every one again, and restated them until a long job's writes ran out their time). The merge
+keeps the held conditions in their order, each in its new form where it was written again, with
+new ones after them, and keeps every held condition the writer leaves out unless `dropped:`
 cites the number of a message from the owner, new since the held objective was built (past `from`),
 and never raises a state: a held condition keeps its state, where and `reopened` mark unless
 the writer closes it, and a new one proposed shown starts open;

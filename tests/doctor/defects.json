@@ -5479,5 +5479,15 @@
     "name": "writer-more-exact-dropped",
     "breaks": "The objective writer is not told to write a held condition the owner's later words make more exact in those words with \"same as\", so it writes a second condition beside the held one.",
     "patch": "writer-more-exact-dropped.patch"
+  },
+  {
+    "name": "merge-reorders-held",
+    "breaks": "A write that names only new conditions puts them above the held ones, so the list of what done means reorders on the card at every write.",
+    "patch": "merge-reorders-held.patch"
+  },
+  {
+    "name": "writer-request-old",
+    "breaks": "The replay's writer edit leaves the old request asking the writer to write every part again, so a replayed call is not what this build sends.",
+    "patch": "writer-request-old.patch"
   }
 ]
