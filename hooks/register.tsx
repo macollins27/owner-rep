@@ -1681,13 +1681,42 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
     // A plain flag already shown is not shown again. A note that says a dropped plan part is shown
     // at every look where the part is dropped: a silent drop is the harm, a repeat only noise.
     const repeat = (line: string): boolean => got.drops.length === 0 && after.seen.some(s => same(s, line))
-    if (said !== null && view === 'row' && onScreen(sid) && !repeat(said.line)) {
+    // A part that looks dropped reaches the owner: on screen at this look, or held until the row is
+    // free. A note left up gives way to this look's; the card open, a reading, or the session off
+    // screen holds it. A later look replaces what is held, and one that walks no part as dropped
+    // takes back a held note that said one, since that part no longer looks dropped.
+    if (got.drops.length === 0 && heldNotes.get(sid)?.drops === true) heldNotes.delete(sid)
+    if (said === null || repeat(said.line)) return
+    const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId }
+    if (onScreen(sid) && (view === 'row' || view === 'note')) {
+      heldNotes.delete(sid)
       after.seen = [...after.seen, said.line].slice(-SEEN_MAX)
-      const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId }
       await update($, noteA, () => note)
       await update($, viewA, () => 'note')
-    }
+    } else heldNotes.set(sid, { note, drops: got.drops.length > 0 })
   }
+}
+
+// A look's Heads up that could not be drawn when the look was taken, by session, until the row is free.
+const heldNotes = new Map<string, { note: Note; drops: boolean }>()
+
+// The view back to the bare row, and a held Heads up of the session on screen drawn there.
+async function toRow($: EngineInterface): Promise<void> {
+  await update($, viewA, () => 'row')
+  await showHeld($)
+}
+
+async function showHeld($: EngineInterface): Promise<void> {
+  const sid = currentId
+  const held = heldNotes.get(sid)
+  if (held === undefined || !onScreen(sid) || (await read($, viewA)) !== 'row') return
+  heldNotes.delete(sid)
+  // Queued, not awaited: a caller may be inside this session's own change already.
+  changeRec($, sid, r => {
+    r.seen = [...r.seen, held.note.line].slice(-SEEN_MAX)
+  }).catch(() => undefined)
+  await update($, noteA, () => ({ ...held.note, shownAt: Date.now() }))
+  await update($, viewA, () => 'note')
 }
 
 // The hidden commands: `/owner-rep-counts` prints this session's counters, `/owner-rep-replay`
@@ -1921,7 +1950,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     // A reply cut short is read once more; cut short twice, no card is drawn and the toast says so.
     if ('reason' in first && first.reason === CUT_SHORT) first = await ask('')
     if ('reason' in first) {
-      await update($, viewA, () => 'row')
+      await toRow($)
       $.ui.toast(
         first.reason === 'nothing-to-fork'
           ? 'Owner rep: nothing to read yet. Ask the agent something first.'
@@ -2037,7 +2066,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     await update($, viewA, () => 'brief')
     lastInstant = { at: brief.at, answer: a, refused: taken.refused }
   } catch {
-    await update($, viewA, () => 'row')
+    await toRow($)
     $.ui.toast('Owner rep: the reading failed. Press again.')
   }
 }
@@ -2519,7 +2548,7 @@ async function putMessage($: EngineInterface, text: string): Promise<void> {
     )
     return
   }
-  await update($, viewA, () => 'row')
+  await toRow($)
   $.ui.toast('The message is in your prompt box. Enter sends it; nothing is sent until you do.')
 }
 
@@ -3077,7 +3106,7 @@ const cardUp = new Map<string, boolean>()
 
 async function clearNote($: EngineInterface): Promise<void> {
   await update($, noteA, () => null)
-  await update($, viewA, () => 'row')
+  await toRow($)
 }
 
 // Whether a tree another mod or the engine returned for the band draws
@@ -3140,6 +3169,7 @@ async function enterSession($: EngineInterface, id: string): Promise<void> {
   const rec = await loadRec($, id)
   if (onScreen(id)) await update($, readingA, () => rec.objective)
   if (onScreen(id)) await update($, linesA, () => rowCoverage(rec, id))
+  await showHeld($)
   seedOwner($, id)
     .then(seeded => (seeded ? rebuildObjective($, id, 'load') : undefined))
     .catch(() => undefined)
@@ -3318,7 +3348,7 @@ export const register: Register = on => {
             rec.lastSent = { text: split.draft, at: Date.now() }
             // A draft is the rep's words: it moves the step it asks for and nothing else.
             if (rec.objective !== null) rec.objective = { ...rec.objective, step: firstSentence(split.draft) }
-            if (view === 'brief') await update($, viewA, () => 'row')
+            if (view === 'brief') await toRow($)
           }
           if (view === 'note') {
             promptsPastNote += 1
@@ -3577,7 +3607,7 @@ export const register: Register = on => {
       tellRep($).catch(() => undefined)
     }
     const close = () => {
-      update($, viewA, () => 'row').catch(() => undefined)
+      toRow($).catch(() => undefined)
     }
 
     // The shape "You should know" draws in: a lead glyph, a dim tag, a dot,

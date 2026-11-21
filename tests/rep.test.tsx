@@ -13666,12 +13666,11 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     expect(rep.STEP_LINE).toMatch(/^- #<n>: <one thing the step names, in the plan's words> \|/)
     // A step walked in its parts: the part left out reaches the owner though the rest is done.
     const a = parseWatch('steps:\n- #8: guard refuses background commands with no time limit | done\n- #8: the same time limit for watching commands | looks dropped\nstate: stopped\nflag: none\nshown:\n- nothing\nclosed:\n- nothing\n')
-    expect(rep.headsUp(a, ['Build a guard that refuses background commands with no time limit, and the same time limit for watching commands.'])?.line).toBe('A step of the plan you approved looks dropped: the same time limit for watching commands.')
-    // Two parts of one step both left out: the first takes the line, the second its why.
+    expect(rep.headsUp(a, ['Build a guard that refuses background commands with no time limit, and the same time limit for watching commands.'])?.line).toBe('Plan step looks dropped: the same time limit for watching commands.')
+    // Two parts of one step both left out: both in the line, the first first.
     const b = parseWatch('steps:\n- #8: guard refuses background commands with no time limit | looks dropped\n- #8: the same time limit for watching commands | no sign while later work goes on\nstate: stopped\nflag: none\nshown:\n- nothing\nclosed:\n- nothing\n')
     const both = rep.headsUp(b, ['Build a guard that refuses background commands with no time limit, and the same time limit for watching commands.'])
-    expect(both?.line).toBe('A step of the plan you approved looks dropped: guard refuses background commands with no time limit.')
-    expect(both?.why).toContain('Also looks dropped: the same time limit for watching commands.')
+    expect(both?.line).toBe('Plan steps look dropped: guard refuses background commands with no time limit; the same time limit for watching commands.')
   })
 
   test('A step missing from the agent\'s own full list: the Heads up says it looks dropped and asks to see it, and the briefing walks it as the owner\'s ask dropped', () => {
@@ -13708,8 +13707,8 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
 
   test('Heads up: a step with no sign outranks the flag, and the flag moves to the why, so no concern is lost', () => {
     const said = rep.headsUp(walked(STEP, 'no sign while later work goes on', OTHER, 'Only the opening lines show.'), PLANS)
-    expect(said?.line).toBe(`A step of the plan you approved looks dropped: ${STEP}.`)
-    expect(said?.why).toContain('The record shows later work and does not show this step done. The agent has to show it.')
+    expect(said?.line).toBe(`Plan step looks dropped: ${STEP}.`)
+    expect(said?.why).toContain('It is in the plan you approved. The record shows later work and does not show it done. The agent has to show it.')
     // A step partly done is marked so too: the Heads up never says nothing of it was done.
     expect(said?.why).not.toContain('nothing of this step')
     expect(said?.why).toContain(`Also: ${OTHER} Only the opening lines show.`)
@@ -13721,8 +13720,8 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
   test('Heads up: a step marked looks dropped is carried with no flag at all, is never called skipped, and is not counted as not assessed, so the row says nothing of a cut record', () => {
     const a = walked(STEP, 'looks dropped')
     const said = rep.headsUp(a, PLANS)
-    expect(said?.line).toBe(`A step of the plan you approved looks dropped: ${STEP}.`)
-    expect(said?.why).toContain('The agent\'s own words or its own full list leave it out.')
+    expect(said?.line).toBe(`Plan step looks dropped: ${STEP}.`)
+    expect(said?.why).toContain('the agent\'s own words or its own full list leave it out.')
     expect(`${said?.line} ${said?.why}`).not.toMatch(/skipped/i)
     expect(a.notAssessed).toBeUndefined()
     expect(rep.notAssessedGaps(a.notAssessed ?? [])).toEqual({})
@@ -13773,7 +13772,7 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
   test('Heads up: a flag that speaks of one dropped step does not hide another', () => {
     const flag = 'The whole database copy to the archive looks dropped.'
     const a = parseWatch(`steps:\n- #6: Copy the whole database to the archive | looks dropped\n- #6: ${STEP} | looks dropped\nstate: working\nflag: ${flag}\nwhy: The list has no copy step.\nclosed:\n- nothing\n`)
-    expect(rep.headsUp(a, PLANS)).toEqual({ line: flag, why: `The list has no copy step. Also looks dropped: ${STEP}.` })
+    expect(rep.headsUp(a, PLANS)).toEqual({ line: `${flag} Also looks dropped: ${STEP}.`, why: 'The list has no copy step.' })
   })
 
   // Rewritten for PR #68's fifth round: this test demanded the step not be raised at the second look.
@@ -13781,15 +13780,16 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
   test('Heads up: a step of only short words is still told apart, and is said again at the next look', () => {
     const plans = [`#6 (the plan you accepted on the plan screen)\n<approved_plan>\n${PLANS[0]}\n</approved_plan>`]
     const got = rep.headsUpOf(walked('Add API', 'looks dropped'), plans)
-    expect(got.note?.line).toBe('A step of the plan you approved looks dropped: Add API.')
+    expect(got.note?.line).toBe('Plan step looks dropped: Add API.')
     expect(got.drops).toEqual(['Add API'])
-    expect(rep.headsUpOf(walked('API add', 'looks dropped'), plans).note?.line).toBe('A step of the plan you approved looks dropped: API add.')
+    expect(rep.headsUpOf(walked('API add', 'looks dropped'), plans).note?.line).toBe('Plan step looks dropped: API add.')
   })
 
   test('Heads up: however many steps are dropped, the why stays short and the reader\'s flag stays in it', () => {
     const steps = range(1, 100).map(i => `- #6: ${STEP} part${i} | looks dropped`).join('\n')
     const said = rep.headsUp(parseWatch(`steps:\n${steps}\nstate: working\nflag: ${OTHER}\nwhy: Only the opening lines show.\nclosed:\n- nothing\n`), PLANS)
-    expect(said?.why).toContain(`And ${99 - rep.DROPPED_ALSO_MAX} more of its steps.`)
+    expect(said?.line).toMatch(new RegExp(`; and ${99 - rep.DROPPED_ALSO_MAX} more\\.$`))
+    expect(said?.line.split('; ').length).toBe(2 + rep.DROPPED_ALSO_MAX)
     expect(said?.why).toContain(`Also: ${OTHER} Only the opening lines show.`)
     expect(said?.why.length).toBeLessThan(1000)
   })
@@ -13804,9 +13804,9 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
   test('Heads up: a step still dropped is said again in any wording, and the next flag gets through beside it', () => {
     const plans = [`#6 (the plan you accepted on the plan screen)\n<approved_plan>\n${PLANS[0]}\n</approved_plan>`]
     for (const again of ['move the local store request limit', 'Swap the request limit over to the local store', STEP])
-      expect(rep.headsUp(walked(again, 'no sign while later work goes on'), plans)?.line).toBe(`A step of the plan you approved looks dropped: ${again}.`)
+      expect(rep.headsUp(walked(again, 'no sign while later work goes on'), plans)?.line).toBe(`Plan step looks dropped: ${again}.`)
     const beside = rep.headsUp(walked('move the local store request limit', 'no sign while later work goes on', OTHER), plans)
-    expect(beside?.line).toBe('A step of the plan you approved looks dropped: move the local store request limit.')
+    expect(beside?.line).toBe('Plan step looks dropped: move the local store request limit.')
     expect(beside?.why).toContain(`Also: ${OTHER}`)
     expect(rep.headsUp(walked('Copy the whole database to the archive', 'looks dropped'), plans)?.line).toContain('Copy the whole database')
   })
@@ -13815,8 +13815,7 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     const two = parseWatch(`steps:\n- #5 step 7: Search your typed messages | no sign while later work goes on\n- #5 step 8, Search all your projects last | no sign while later work goes on — the agent wrote none\nstate: working\nflag: none\nshown:\n- nothing\nclosed:\n- nothing\n`)
     expect(two.dropped?.map(d => d.step)).toEqual(['Search your typed messages', 'Search all your projects last'])
     const said = rep.headsUp(two, PLANS)
-    expect(said?.line).toContain('Search your typed messages')
-    expect(said?.why).toContain('Also looks dropped: Search all your projects last.')
+    expect(said?.line).toBe('Plan steps look dropped: Search your typed messages; Search all your projects last.')
     const long = rep.headsUp(walked('word '.repeat(80).trim(), 'looks dropped'), PLANS)?.line ?? ''
     expect(long.length).toBeLessThan(rep.DROPPED_STEP_MAX + 60)
     expect(long).toContain('word word word')
@@ -13831,15 +13830,15 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
   const PART2 = 'the same time limit for watching commands'
   const looked = (lines: string, flag = 'none', why = '') =>
     parseWatch(`steps:\n${lines}\nstate: working\nflag: ${flag}\n${why === '' ? '' : `why: ${why}\n`}shown:\n- nothing\nclosed:\n- nothing\n`)
-  const dropLine = (part: string) => `A step of the plan you approved looks dropped: ${part}.`
+  const dropLine = (part: string) => `Plan step looks dropped: ${part}.`
 
-  test('Heads up (fifth round): a part dropped beside a sibling underway or dropped is said, the sibling under "Also looks dropped"', () => {
+  test('Heads up (fifth round): a part dropped beside a sibling underway or dropped is said, and a sibling dropped too is said in the same line', () => {
     const n = rep.headsUpOf(looked(`- #8: ${PART1} | looks dropped\n- #8: ${PART2} | underway`), GUARD_PLAN)
     expect(n.note?.line).toBe(dropLine(PART1))
     expect(n.drops).toEqual([PART1])
     expect(rep.headsUp(looked(`- #8: ${PART1} | looks dropped\n- #8: ${PART2} | looks dropped`), GUARD_PLAN)).toEqual({
-      line: dropLine(PART1),
-      why: `The agent's own words or its own full list leave it out. The agent has to do it or show it. Also looks dropped: ${PART2}.`,
+      line: `Plan steps look dropped: ${PART1}; ${PART2}.`,
+      why: "They are in the plan you approved, and the agent's own words or its own full list leave them out. The agent has to do them or show them.",
     })
     expect(rep.headsUp(looked(`- #8: ${PART2} | no sign while later work goes on`), GUARD_PLAN)?.line).toBe(dropLine(PART2))
   })
@@ -13852,10 +13851,10 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     expect(got.drops).toEqual([PART1])
   })
 
-  test('Heads up (fifth round): a flag that names one part keeps its line, a sibling dropped at the same look goes under "Also looks dropped", and the same look again says both again', () => {
+  test('Heads up (fifth round): a flag that names one part keeps its line, a sibling dropped at the same look follows it as "Also looks dropped", and the same look again says both again', () => {
     const flag = 'The guard no longer refuses background commands with no time limit, so that part looks dropped.'
     const a = looked(`- #8: ${PART1} | looks dropped\n- #8: ${PART2} | looks dropped`, flag, 'The agent says it took that check out.')
-    const want = { note: { line: flag, why: `The agent says it took that check out. Also looks dropped: ${PART2}.` }, drops: [PART1, PART2] }
+    const want = { note: { line: `${flag} Also looks dropped: ${PART2}.`, why: 'The agent says it took that check out.' }, drops: [PART1, PART2] }
     expect(rep.headsUpOf(a, GUARD_PLAN)).toEqual(want)
     expect(rep.headsUpOf(a, GUARD_PLAN)).toEqual(want)
     // A flag that names a part reworded, missing one of its words, does not stand for it: the part is
@@ -13869,7 +13868,7 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     const plan = ['#8 (the plan you accepted on the plan screen)\n<approved_plan>\nAdd a test for the cap path and a test for the reload path.\n</approved_plan>']
     const flag = 'Add a test for the cap path looks dropped: the agent wrote none.'
     const got = rep.headsUpOf(looked('- #8: Add a test for the path | looks dropped\n- #8: Add a test for the cap path | looks dropped', flag, 'None in the record.'), plan)
-    expect(got.note).toEqual({ line: flag, why: 'None in the record. Also looks dropped: Add a test for the path.' })
+    expect(got.note).toEqual({ line: `${flag} Also looks dropped: Add a test for the path.`, why: 'None in the record.' })
     expect(got.drops).toEqual(['Add a test for the cap path', 'Add a test for the path'])
   })
 
@@ -13877,7 +13876,7 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     expect(rep.headsUp(walked(STEP, 'looks dropped'), PLANS)?.line).toBe(dropLine(STEP))
   })
 
-  test('Heads up: two steps of different plans that share words are each said, and the same step of two plans at one look is said by name and under "Also"', () => {
+  test('Heads up: two steps of different plans that share words are each said, and the same step of two plans at one look is named once', () => {
     const planA = '#3 (the plan you accepted on the plan screen)\n<approved_plan>\nMove the request limit to the local store.\nAdd a status page.\n</approved_plan>'
     const planB = '#9 (the plan you accepted on the plan screen)\n<approved_plan>\nMove the request limit to the cloud store.\nShow the bill.\n</approved_plan>'
     expect(rep.headsUp(looked('- #3: Move the request limit to the local store | looks dropped'), [planA, planB])?.line).toBe(dropLine('Move the request limit to the local store'))
@@ -13887,7 +13886,7 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     const run = 'Run the whole test suite and paste its output'
     const both = rep.headsUpOf(looked(`- #3: ${run} | looks dropped\n- #9: ${run} | looks dropped`), [runA, runB])
     expect(both.note?.line).toBe(dropLine(run))
-    expect(both.note?.why).toContain(`Also looks dropped: ${run}.`)
+    expect(`${both.note?.line} ${both.note?.why}`.split(run).length - 1).toBe(1)
     expect(both.drops).toEqual([run, run])
   })
 
@@ -14258,7 +14257,7 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
   })
 
   const WALKED = `steps:\n- #2: Read the real data first | done\n- #2: Move the request limit to the local store | no sign while later work goes on\nstate: working\nflag: The agent has not shown the dashboard working.\nwhy: Only the opening lines show.\nclosed:\n- nothing\n`
-  const CARRIED = /A step of the plan you approved looks dropped: Move the request limit to the local store\./
+  const CARRIED = /Plan step looks dropped: Move the request limit to the local store\./
 
   test('Task 8 (mounted): a look that walks a step as dropped puts that step on the Heads up over its own flag, keeps the flag in the why, and records it as shown', async ($, on) => {
     const m = mounted7(on, [msg7(1, 'build the sorter'), yes7(2, 'Read the real data first.\nMove the request limit to the local store.')], () => WALKED)
@@ -14269,7 +14268,7 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
     expect(await ui.find({ type: 'Text', text: /Also: The agent has not shown the dashboard working\. Only the opening lines show\./ })).toBeDefined()
     await ui.unmount()
-    expect((m.rec() as { seen?: string[] }).seen).toEqual(['A step of the plan you approved looks dropped: Move the request limit to the local store.'])
+    expect((m.rec() as { seen?: string[] }).seen).toEqual(['Plan step looks dropped: Move the request limit to the local store.'])
   })
 
   // Rewritten for PR #68's fifth round: the record keeps no parts said.
@@ -14317,13 +14316,13 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     expect(await rowSays($, runLine)).toBe(true)
   })
 
-  test('Task 8 (mounted): the same step of two plans dropped at one look is said once by name and once under "Also"', async ($, on) => {
+  test('Task 8 (mounted): the same step of two plans dropped at one look is named once', async ($, on) => {
     const m = mounted7(on, runPlans(), brief => (brief ? WELL : `steps:\n- #2: ${RUN} | looks dropped\n- #3: ${RUN} | looks dropped\nstate: working\nflag: none\nclosed:\n- nothing\n`))
     await started($)
     await m.look($, 't1')
     expect(await rowSays($, runLine)).toBe(true)
     const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
-    expect(await ui.find({ type: 'Text', text: new RegExp(`Also looks dropped: ${RUN}\\.`) })).toBeDefined()
+    expect((await ui.findAll({ type: 'Text' })).map(t => t.text ?? '').join(' ').split(RUN).length - 1).toBe(1)
     await ui.unmount()
   })
 
@@ -14348,7 +14347,7 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     return out
   }
   const owns = (...plans: Array<[number, string]>): OwnerMsg[] => [msg7(1, 'build the sorter'), ...plans.map(([n, plan]) => yes7(n, plan))]
-  const dropOf = (part: string) => `A step of the plan you approved looks dropped: ${part}.`
+  const dropOf = (part: string) => `Plan step looks dropped: ${part}.`
 
   const CAP_RESTART: [number, string] = [8, 'Add a test for the cap path and a test for the reload path.\nAdd the doctor entry for the cap defect and the doctor entry for the reload defect.']
   for (const [first, next] of [
@@ -14437,6 +14436,105 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     await m.look($, 't1')
     expect(await rowSays($, CARRIED)).toBe(false)
     expect(await rowSays($, /The agent has not shown the dashboard working\.$/)).toBe(true)
+  })
+
+  // A part that looks dropped at a look reaches the owner, on screen at that look or as soon as the
+  // row is free, unless a later look stops calling it dropped first.
+  test('rule (mounted): a plain flag left on screen (no Fine) gives way to a part dropped at the next look', async ($, on) => {
+    const owner = owns([2, 'Read the real data first.\nMove the request limit to the local store.'])
+    const answers = [
+      walkAnswer('- #2: Move the request limit to the local store | underway', 'The agent says the tests pass, but never ran them.', 'No run is in the record.'),
+      walkAnswer('- #2: Move the request limit to the local store | looks dropped'),
+    ]
+    let at = 0
+    const m = mounted7(on, owner, brief => (brief ? WELL : (answers[Math.min(at++, 1)] ?? '')))
+    await started($)
+    await m.look($, 't1')
+    expect(await rowSays($, /never ran them/)).toBe(true)
+    await m.look($, 't2')
+    expect(await rowSays($, /looks dropped: Move the request limit to the local store/)).toBe(true)
+  })
+
+  test('rule (mounted): a drop note left on screen gives way to a different part dropped at the next look', async ($, on) => {
+    const owner = owns([8, 'Add a test for the cap path.\nAdd a test for the reload path.'])
+    const answers = [
+      walkAnswer('- #8: Add a test for the cap path | looks dropped\n- #8: Add a test for the reload path | underway'),
+      walkAnswer('- #8: Add a test for the cap path | done\n- #8: Add a test for the reload path | looks dropped'),
+      walkAnswer('- #8: Add a test for the cap path | done\n- #8: Add a test for the reload path | underway'),
+    ]
+    let at = 0
+    const m = mounted7(on, owner, brief => (brief ? WELL : (answers[Math.min(at++, 2)] ?? '')))
+    await started($)
+    await m.look($, 't1')
+    expect(await rowSays($, /looks dropped: Add a test for the cap path/)).toBe(true)
+    await m.look($, 't2')
+    const atTwo = await rowSays($, /Add a test for the reload path/)
+    const capGone = !(await rowSays($, /Add a test for the cap path/))
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    await ui.press({ key: 'fine' })
+    await ui.unmount()
+    await m.look($, 't3')
+    const atThree = await rowSays($, /Add a test for the reload path/)
+    expect({ atTwo, capGone, atThree }).toEqual({ atTwo: true, capGone: true, atThree: false })
+  })
+
+  test('rule (mounted): a part dropped while the briefing card is open reaches the owner when the card closes', async ($, on) => {
+    const owner = owns([2, 'Read the real data first.\nMove the request limit to the local store.'])
+    const m = mounted7(on, owner, brief => (brief ? WELL : walkAnswer('- #2: Move the request limit to the local store | looks dropped')))
+    await started($)
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    await ui.press({ key: 'rep' })
+    await settle($)
+    await m.look($, 't1')
+    const whileOpen = await rowSays($, /looks dropped: Move the request limit/)
+    await ui.press({ key: 'close' })
+    await ui.unmount()
+    expect({ whileOpen, after: await rowSays($, /looks dropped: Move the request limit to the local store/) }).toEqual({ whileOpen: false, after: true })
+  })
+
+  const RP = (n: number, ...steps: string[]) => `#${n}\n<approved_plan>\n${steps.map((s, i) => `${i + 1}. ${s}.`).join('\n')}\n</approved_plan>`
+  const saidIn = (got: { note: { line: string; why: string } | null }) => `${got.note?.line ?? ''} ${got.note?.why ?? ''}`
+  test('rule: a flag stands for a dropped part only where one clause of it says that part was dropped', () => {
+    const plans = [RP(3, 'Run the install check', 'Update the docs')]
+    const done = parseWatch(walkAnswer('- #3: Run the install check | looks dropped\n- #3: Update the docs | underway', 'The docs step was skipped, but the agent did run the install check.', 'The record shows no docs edit.'))
+    expect(saidIn(rep.headsUpOf(done, plans))).toMatch(/looks dropped: Run the install check/)
+    const short = parseWatch(walkAnswer('- #3: Tests | looks dropped', 'The release notes were skipped; the tests pass.', 'No notes file.'))
+    expect(saidIn(rep.headsUpOf(short, [RP(3, 'Write tests', 'Ship the release')]))).toMatch(/looks dropped: Tests/)
+    const real = parseWatch(walkAnswer('- #3: Run the install check | looks dropped', 'The agent skipped the step to run the install check.', 'No run of it is in the record.'))
+    const got = rep.headsUpOf(real, plans)
+    expect({ line: got.note?.line, said: (saidIn(got).match(/install check/g) ?? []).length, drops: got.drops }).toEqual({ line: 'The agent skipped the step to run the install check.', said: 1, drops: ['Run the install check'] })
+  })
+
+  // The parts are in the note's line, which a short band keeps whole before the why (round 10: a
+  // 24-row terminal at 60 columns gave bands of 3 rows, then 2). Below five rows at 60 columns the
+  // row's head and its status row come before the line's second row, so the first part is named.
+  for (const [rows, cols, want] of [[3, 60, 'first'], [4, 60, 'first'], [5, 60, 'all'], [8, 60, 'all'], [5, 100, 'all'], [12, 100, 'all'], [40, 96, 'all']] as const)
+    test(`rule (mounted): on a band ${rows} rows by ${cols} columns, three parts dropped at one look are named: ${want}`, async ($, on) => {
+      const owner = owns([4, 'Add the cap test.\nAdd the reload test.\nUpdate the README.'])
+      const m = mounted7(on, owner, brief => (brief ? WELL : walkAnswer('- #4: Add the cap test | looks dropped\n- #4: Add the reload test | looks dropped\n- #4: Update the README | looks dropped')))
+      await started($)
+      await m.look($, 't1')
+      const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND, props: { ...BAND.props, maxRows: rows, bodyColumns: cols, scroll: { offset: 0, bodyRows: rows - 1 } } })
+      const text = (await ui.findAll({ type: 'Text' })).map(t => t.text ?? '').join(' | ')
+      await ui.unmount()
+      const named = ['Add the cap test', 'Add the reload test', 'Update the README'].filter(p => text.includes(p)).length
+      expect({ text: text.slice(0, 0), named: named >= (want === 'all' ? 3 : 1) ? want : `${named}: ${text}` }).toEqual({ text: '', named: want })
+    })
+
+  test('rule (mounted): a part dropped while the card is open, and no longer dropped at the next look, is not shown when the card closes', async ($, on) => {
+    const owner = owns([2, 'Read the real data first.\nMove the request limit to the local store.'])
+    const answers = [walkAnswer('- #2: Move the request limit to the local store | looks dropped'), walkAnswer('- #2: Move the request limit to the local store | underway')]
+    let at = 0
+    const m = mounted7(on, owner, brief => (brief ? WELL : (answers[Math.min(at++, 1)] ?? '')))
+    await started($)
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    await ui.press({ key: 'rep' })
+    await settle($)
+    await m.look($, 't1')
+    await m.look($, 't2')
+    await ui.press({ key: 'close' })
+    await ui.unmount()
+    expect(await rowSays($, /looks dropped/)).toBe(false)
   })
 }
 

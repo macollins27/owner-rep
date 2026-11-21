@@ -3604,10 +3604,13 @@ export const PLAN_WORDS_SHARE = 0.4
 const inPlans = (step: string, plans: readonly string[]): boolean =>
   contentWords(step).length > 0 && heldIn(step, plans.join('\n')) >= PLAN_WORDS_SHARE
 
-// Whether a flag names this dropped part: it speaks of a drop and holds every content word of the
-// part. Only then does the part go unprinted under the flag's "Also looks dropped" at the same look;
-// a flag about another part of the step, sharing some of its words, does not stand for it.
-const names = (flag: string, step: string): boolean => DROP_WORD.test(flag) && heldIn(step, flag) === 1
+// Whether a flag names this dropped part: one clause of it speaks of a drop and holds every content
+// word of the part. Only then does the part go unprinted under the flag's "Also looks dropped" at the
+// same look. A flag about another part, sharing some of its words, does not stand for it, nor does
+// one that says another part was dropped and this one done ("The docs step was skipped, but the
+// agent did run the install check"): a part printed twice is noise, a part printed nowhere the harm.
+const CLAUSE_BREAK = /[.;:!?()]|\b(?:but|while|though|although|whereas|yet)\b/i
+const names = (flag: string, step: string): boolean => flag.split(CLAUSE_BREAK).some(c => DROP_WORD.test(c) && heldIn(step, c) === 1)
 
 export const DROPPED_STEP_MAX = 160
 export const DROPPED_ALSO_MAX = 3
@@ -3615,22 +3618,28 @@ const stepText = (step: string): string => {
   const s = step.replace(/[.\s]+$/, '')
   return s.length <= DROPPED_STEP_MAX ? s : `${s.slice(0, DROPPED_STEP_MAX - 1).trimEnd()}…`
 }
-const alsoDropped = (steps: readonly DroppedStep[]): string[] => [
-  ...steps.slice(0, DROPPED_ALSO_MAX).map(d => `Also looks dropped: ${stepText(d.step)}.`),
-  ...(steps.length > DROPPED_ALSO_MAX ? [`And ${steps.length - DROPPED_ALSO_MAX} more of its steps.`] : []),
-]
+// Parts named in a note's line, at most `max`, then how many more: the line is what a short band
+// keeps, so a part the why would carry is cut first (round 10's 3-row band named none).
+// The same text of two plans is named once.
+const textsOf = (steps: readonly DroppedStep[]): string[] => [...new Set(steps.map(d => stepText(d.step)))]
+const partsSaid = (steps: readonly DroppedStep[], max: number): string => {
+  const texts = textsOf(steps)
+  const said = texts.slice(0, max).join('; ')
+  return texts.length > max ? `${said}; and ${texts.length - max} more` : said
+}
 
 // What the Heads up says for a look. A step the walk marks as dropped outranks whatever the flag
 // is about, and the flag moves to the why, so no concern is lost: one flag slot must not decide
 // whether the owner hears their ask was dropped. A step not assessed has no say here. A flag that
-// names a dropped part keeps its wording, and the others go under its why. A step no shown plan
-// holds is not called part of one: only a plan the owner approved can be called that.
+// names a dropped part keeps its wording, and the other dropped parts follow it in the line. A step
+// no shown plan holds is not called part of one: only a plan the owner approved can be called that.
 //
 // Every part the walk shows as dropped is said at every look where it is dropped: nothing said at
 // an earlier look hides it, since a silent drop is the harm the rep exists to prevent and a repeat
 // is noise. Readers reword parts at every look, and every test of "already said" built on their
-// words hid parts never said. A flag names one part at most, the one with the most words of those
-// it names (`names`). `drops` is every part this note says.
+// words hid parts never said. The parts are in the line, after a short lead, because a short band
+// keeps the line and cuts the why. A flag names one part at most, the one with the most words of
+// those it names (`names`). `drops` is every part this note says.
 export function headsUpOf(a: WatchAnswer, plans: readonly string[]): { note: { line: string; why: string } | null; drops: string[] } {
   const own = a.flag === null ? null : { line: a.flag, why: a.why }
   const fresh = (a.dropped ?? []).filter(d => inPlans(d.step, plans))
@@ -3642,17 +3651,23 @@ export function headsUpOf(a: WatchAnswer, plans: readonly string[]): { note: { l
   if (first === undefined) return { note: own, drops: told(named) }
   const joined = (lines: readonly string[]): string => lines.filter(l => l !== '').join(' ')
   if (own !== null && named.length > 0)
-    return { note: { line: own.line, why: joined([own.why, ...alsoDropped(rest)]) }, drops: told([...named, ...rest.slice(0, DROPPED_ALSO_MAX)]) }
+    return { note: { line: `${own.line} Also looks dropped: ${partsSaid(rest, DROPPED_ALSO_MAX)}.`, why: own.why }, drops: told([...named, ...rest.slice(0, DROPPED_ALSO_MAX)]) }
+  const listed = rest.slice(0, 1 + DROPPED_ALSO_MAX)
+  const one = textsOf(rest).length === 1
+  const noSign = listed.every(d => d.how === 'no sign')
   return { note: {
-    line: `A step of the plan you approved looks dropped: ${stepText(first.step)}.`,
+    line: `${one ? 'Plan step looks' : 'Plan steps look'} dropped: ${partsSaid(rest, 1 + DROPPED_ALSO_MAX)}.`,
     why: joined([
-      first.how === 'no sign'
-        ? 'The record shows later work and does not show this step done. The agent has to show it.'
-        : "The agent's own words or its own full list leave it out. The agent has to do it or show it.",
-      ...alsoDropped(rest.slice(1)),
+      one
+        ? noSign
+          ? 'It is in the plan you approved. The record shows later work and does not show it done. The agent has to show it.'
+          : "It is in the plan you approved, and the agent's own words or its own full list leave it out. The agent has to do it or show it."
+        : noSign
+          ? 'They are in the plan you approved. The record shows later work and does not show them done. The agent has to show them.'
+          : "They are in the plan you approved, and the agent's own words or its own full list leave them out. The agent has to do them or show them.",
       ...(own === null ? [] : [`Also: ${own.line}`, own.why]),
     ]),
-  }, drops: told(rest.slice(0, 1 + DROPPED_ALSO_MAX)) }
+  }, drops: told(listed) }
 }
 
 // The Heads up's note alone.
