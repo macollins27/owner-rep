@@ -155,6 +155,14 @@ import {
   keepDropped,
   isBlankRec,
   recDrafts,
+  recKey,
+  recIdOf,
+  newerRec,
+  atOf,
+  recsToLetGo,
+  OLD_MAP_KEY,
+  MIGRATED_KEY,
+  OLD_MAP_IDLE_MS,
   askAgain,
   askFault,
   gateRules,
@@ -452,12 +460,75 @@ async function loadRec($: EngineInterface, id: string): Promise<Rec> {
 }
 
 // The store's record, as a copy of its own: a change never touches what the store holds
-// until the store takes it.
+// until the store takes it. The newer of its own key's copy and the old map's: a session still
+// running an older build saves into the map (`newerRec`).
 async function loadStored($: EngineInterface, id: string): Promise<Rec> {
-  const all = await $.store.get('sessions')
-  const got = typeof all === 'object' && all !== null ? (all as Record<string, unknown>)[id] : undefined
-  if (!isRec(got)) return freshRec(id)
+  await migrateOnce($)
+  const own = await $.store.get(recKey(id))
+  const old = (await oldMap($))[id]
+  const got = newerRec(isRec(own) ? own : undefined, old)
+  if (got === undefined) return freshRec(id)
   return fromStored(id, JSON.parse(JSON.stringify(got)) as Rec)
+}
+
+// The records in the old map (`OLD_MAP_KEY`), by session id; empty when there is none.
+async function oldMap($: EngineInterface): Promise<Record<string, Rec>> {
+  const got = await $.store.get(OLD_MAP_KEY)
+  const out: Record<string, Rec> = {}
+  if (typeof got === 'object' && got !== null && !Array.isArray(got)) {
+    for (const [k, v] of Object.entries(got as Record<string, unknown>)) if (isRec(v)) out[k] = v
+  }
+  return out
+}
+
+// Every record the store holds, by session id: each record key's, and the old map's where it is
+// newer or the only copy. Read for the records' drafts (`storedDrafts`) and the other records'
+// inline bytes (`placeSources`); a record let go while this reads is simply missing.
+async function allStored($: EngineInterface): Promise<Map<string, Rec>> {
+  await migrateOnce($)
+  const out = new Map<string, Rec>()
+  for (const k of await $.store.keys()) {
+    const id = recIdOf(k)
+    if (id === null) continue
+    const v = await $.store.get(k)
+    if (isRec(v)) out.set(id, v)
+  }
+  for (const [id, v] of Object.entries(await oldMap($))) {
+    const got = newerRec(out.get(id), v)
+    if (got !== undefined) out.set(id, got)
+  }
+  return out
+}
+
+// Once a process, before its first read: the old map's records copied to keys of their own. A
+// record is copied when its own key is missing or older, and, after the first copy, only when it
+// was saved since (`MIGRATED_KEY`), so a record let go is not copied back. The map stays, read as
+// a fallback, while a session still running an older build may save into it, and goes once its
+// newest record is `OLD_MAP_IDLE_MS` old. A copy the store refuses stops it there, the time
+// unwritten: the map is still read, and the next process copies the rest.
+let migration: Promise<void> | null = null
+function migrateOnce($: EngineInterface): Promise<void> {
+  migration ??= migrate($).catch(() => undefined)
+  return migration
+}
+async function migrate($: EngineInterface): Promise<void> {
+  const started = Date.now()
+  const map = await $.store.get(OLD_MAP_KEY)
+  if (map === undefined) return
+  const old = await oldMap($)
+  const got = await $.store.get(MIGRATED_KEY)
+  const since = typeof got === 'number' && Number.isFinite(got) ? got : 0
+  let newest = 0
+  for (const [id, r] of Object.entries(old)) {
+    newest = Math.max(newest, atOf(r))
+    if (since > 0 && atOf(r) <= since) continue
+    if (isBlankRec(r, freshRec(id))) continue
+    const own = await $.store.get(recKey(id))
+    if (isRec(own) && atOf(own) >= atOf(r)) continue
+    await $.store.set(recKey(id), r)
+  }
+  await $.store.set(MIGRATED_KEY, started)
+  if (started - newest > OLD_MAP_IDLE_MS) await $.store.delete(OLD_MAP_KEY)
 }
 
 function fromStored(id: string, rec: Rec): Rec {
@@ -507,25 +578,32 @@ async function stored($: EngineInterface, rec: Rec, dropped: string[]): Promise<
   return true
 }
 
-// The store's save of the record, returning the ids of the records it let go; throws when the
-// store refuses it.
+// The store's save of the record under its own key, and nothing else of any other session's:
+// returns the ids of the records the trim let go; throws when the store refuses the save.
 async function storeRec($: EngineInterface, rec: Rec): Promise<string[]> {
-  const got = await $.store.get('sessions')
-  const all: Record<string, Rec> = {}
-  if (typeof got === 'object' && got !== null) {
-    for (const [k, v] of Object.entries(got as Record<string, unknown>)) if (isRec(v)) all[k] = v
-  }
-  all[rec.id] = { ...rec, at: Date.now() }
+  await migrateOnce($)
+  const saved: Rec = { ...rec, at: Date.now() }
   // A blank record loads back the same when missing, so none takes a place (`isBlankRec`).
-  for (const k of Object.keys(all)) if (isBlankRec(all[k] as Rec, freshRec(k))) delete all[k]
-  const ids = Object.keys(all).sort((a, b) => (all[b]?.at ?? 0) - (all[a]?.at ?? 0))
-  const kept: Record<string, Rec> = {}
-  for (const k of ids.slice(0, SESSIONS_MAX)) kept[k] = all[k] as Rec
-  // A record let go leaves its drafts behind first, so a draft the owner sent stays the rep's.
-  const dropped = ids.slice(SESSIONS_MAX).flatMap(k => recDrafts(all[k]))
+  if (isBlankRec(saved, freshRec(rec.id))) await $.store.delete(recKey(rec.id))
+  else await $.store.set(recKey(rec.id), saved)
+  // The save stands whatever the trim does: one that fails is done by the next save.
+  return trimStore($, rec.id).catch(() => [])
+}
+
+// The records past the newest SESSIONS_MAX let go, oldest first, never the session saving: only
+// when the record keys number more, so most saves read the keys alone. Each leaves its drafts
+// in `droppedDrafts` before its key goes, so a draft the owner sent stays the rep's. Two sessions
+// trimming at once may each let go the same record; a live one is newest, and stays.
+async function trimStore($: EngineInterface, keep: string): Promise<string[]> {
+  const ids = (await $.store.keys()).map(recIdOf).filter((id): id is string => id !== null)
+  if (ids.length <= SESSIONS_MAX) return []
+  const recs = new Map<string, unknown>()
+  for (const id of ids) recs.set(id, await $.store.get(recKey(id)))
+  const gone = recsToLetGo(ids.map(id => ({ id, at: atOf(recs.get(id) as { at?: unknown } | undefined) })), keep, SESSIONS_MAX)
+  const dropped = gone.flatMap(id => recDrafts(recs.get(id)))
   if (dropped.length > 0) await $.store.set('droppedDrafts', keepDropped(await droppedDrafts($), dropped))
-  await $.store.set('sessions', kept)
-  return ids.slice(SESSIONS_MAX)
+  for (const id of gone) await $.store.delete(recKey(id))
+  return gone
 }
 
 // The drafts of records the store has let go (`saveRec`), newest first.
@@ -901,11 +979,9 @@ async function placeSources($: EngineInterface, sid: string, rec: Rec): Promise<
     unplaced.push({ at: { ...at, ref: refWithout(ref, 'memory') }, text })
   }
   if (unplaced.length === 0) return
-  const all = await $.store.get('sessions').catch(() => null)
+  const all = await allStored($).catch(() => new Map<string, Rec>())
   let others = 0
-  if (typeof all === 'object' && all !== null) {
-    for (const [k, v] of Object.entries(all as Record<string, unknown>)) if (k !== sid && isRec(v)) others += inlineBytes(v)
-  }
+  for (const [k, v] of all) if (k !== sid) others += inlineBytes(v)
   let mine = inlineBytes(rec)
   for (const { at, text } of unplaced) {
     const cost = utf8Bytes(JSON.stringify(text))
@@ -2875,12 +2951,11 @@ async function heldItems($: EngineInterface, sid: string, rows: readonly RecordR
 // The rep's drafts kept in every session's record (`recDrafts`) and those of records the
 // store has let go, so a draft the owner sent is known in a session forked from the one that
 // drew it, or reopened after its own record was let go. The records are read before the kept
-// list, the reverse of `saveRec`'s order, so a record let go between the two reads is in one.
+// list, the reverse of the trim's order (`trimStore`), so a record let go between the two reads is in one.
 async function storedDrafts($: EngineInterface): Promise<string[]> {
-  const all = await $.store.get('sessions')
+  const all = await allStored($)
   const out = await droppedDrafts($)
-  if (typeof all !== 'object' || all === null) return out
-  for (const r of Object.values(all as Record<string, unknown>)) if (isRec(r)) out.push(...recDrafts(r))
+  for (const r of all.values()) out.push(...recDrafts(r))
   return out
 }
 

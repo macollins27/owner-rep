@@ -5467,6 +5467,41 @@ export function keepDropped(kept: readonly string[], add: readonly string[]): st
   return out.slice(0, DROPPED_DRAFTS_MAX)
 }
 
+// The store's layout (docs/reference.md, "The store's keys"). Each session's record has a key of
+// its own, so a save writes that key alone: Claude Code locks the store file, reads it, changes the
+// one key and writes it back, so a save in one session never carries, and never rewinds, another's.
+// Earlier builds kept every record in the one map under OLD_MAP_KEY, read and written whole, which
+// let one session's save put back an older copy of another's.
+export const REC_PREFIX = 'rec:'
+export const recKey = (id: string): string => `${REC_PREFIX}${id}`
+// The session id a record key names; null for any other key.
+export const recIdOf = (key: string): string | null => (key.startsWith(REC_PREFIX) && key.length > REC_PREFIX.length ? key.slice(REC_PREFIX.length) : null)
+export const OLD_MAP_KEY = 'sessions'
+// When the old map was last copied into record keys: a later copy takes only the map's records
+// saved after it (by a session still running an older build), so a record let go is not copied back.
+export const MIGRATED_KEY = 'migratedAt'
+// The old map is removed once its newest record is this old: a session still running an older
+// build reads only the map, and would start from a blank record were it gone.
+export const OLD_MAP_IDLE_MS = 7 * 24 * 60 * 60 * 1000
+
+// The newer of a record's two saved copies, its own key's and the old map's: an older build
+// still running saves into the map, so the newest save wins whichever build made it. Its own
+// key's wins a tie; an absent copy loses.
+export function newerRec<T extends { at?: unknown }>(own: T | undefined, old: T | undefined): T | undefined {
+  if (old === undefined) return own
+  if (own === undefined) return old
+  return atOf(old) > atOf(own) ? old : own
+}
+export const atOf = (r: { at?: unknown } | undefined): number => (typeof r?.at === 'number' && Number.isFinite(r.at) ? r.at : 0)
+
+// The records to let go so `max` stay, oldest first by `at`; the session saving (`keep`) is never
+// one of them, whatever its time says.
+export function recsToLetGo(ats: ReadonlyArray<{ id: string; at: number }>, keep: string, max: number): string[] {
+  if (ats.length <= max) return []
+  const order = [...ats].sort((a, b) => (a.id === keep ? -1 : b.id === keep ? 1 : b.at - a.at))
+  return order.slice(max).map(r => r.id)
+}
+
 // The kept draft the prompt begins with, and what the owner added after it; the longest
 // match wins, so a draft that begins another is not taken for it. null when none matches.
 export function draftSplitAny(text: string, drafts: readonly string[]): { draft: string; his: string } | null {

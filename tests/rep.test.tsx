@@ -160,6 +160,62 @@ const stop = (turnId: string, answer = 'Done.', isAborted = false) =>
 
 const typed = (text: string) => ({ text, wait: false, origin: { kind: 'composer' } }) as const
 
+// The store beneath the mod, as Claude Code keeps a plugin's: `get`, `set`, `keys` and `delete`
+// over the one object, each value kept and read back as JSON, as the store file holds it. A hook
+// that calls one of them unstubbed throws "no implementation" in the kit, which the mod's save
+// takes for a store that refused it, so every test's store answers all four. `limit` refuses a
+// set that puts the whole store's JSON over it, as Claude Code refuses one over 4 MiB in all;
+// `refuse` refuses a set it names (given the whole store as it would stand); `beforeSet` runs
+// before a set lands, so a test can hold it there, and `onGet` once a get has read its value,
+// before it is answered, so a change made there lands just after the read.
+type StoreHooks = {
+  limit?: number
+  refuse?: (key: string, value: unknown, after: Record<string, unknown>) => boolean
+  beforeSet?: (key: string, value: unknown) => unknown
+  onGet?: (key: string) => unknown
+}
+const asJson = (v: unknown): unknown => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)))
+const storeStub = (on: On, store: Record<string, unknown> = {}, o: StoreHooks = {}): Record<string, unknown> => {
+  on('store.get', async (_$, e) => {
+    const value = asJson(store[e.key])
+    await o.onGet?.(e.key)
+    return { value }
+  })
+  on('store.set', async (_$, e) => {
+    const after = { ...store, [e.key]: e.value }
+    if (o.limit !== undefined && new TextEncoder().encode(JSON.stringify(after)).length > o.limit) throw new Error('the store is over its limit')
+    if (o.refuse?.(e.key, e.value, after) === true) throw new Error('the value is over the store\'s limit')
+    await o.beforeSet?.(e.key, e.value)
+    store[e.key] = asJson(e.value)
+    return { value: undefined }
+  })
+  on('store.keys', () => ({ value: Object.keys(store) }))
+  on('store.delete', (_$, e) => {
+    delete store[e.key]
+    return { value: undefined }
+  })
+  return store
+}
+
+// A session's record as the store holds it: the newer of its own key's copy and the old map's,
+// as the mod reads it (an older build still running saves into the map).
+const recIn = <T = Stored>(store: Record<string, unknown>, id = 'test-session'): T | undefined => {
+  const own = store[`rec:${id}`] as { at?: number } | undefined
+  const old = (store.sessions as Record<string, { at?: number }> | undefined)?.[id]
+  if (own === undefined || old === undefined) return (own ?? old) as T | undefined
+  return ((old.at ?? 0) > (own.at ?? 0) ? old : own) as T
+}
+// The session ids whose records the store holds, under either layout.
+const idsIn = (store: Record<string, unknown>): string[] => [
+  ...new Set([...Object.keys(store).filter(k => k.startsWith('rec:')).map(k => k.slice(4)), ...Object.keys((store.sessions as object | undefined) ?? {})]),
+]
+// Every record the store holds, by session id, each its newer copy.
+const recsIn = <T = Stored>(store: Record<string, unknown>): Record<string, T> => Object.fromEntries(idsIn(store).map(id => [id, recIn<T>(store, id) as T]))
+// A record put in the store as a save of that session lands: under its own key, newer than any copy.
+const putRec = (store: Record<string, unknown>, id: string, rec: Record<string, unknown>) => {
+  store[`rec:${id}`] = { ...rec, at: Math.max(Date.now(), ((recIn<{ at?: number }>(store, id)?.at ?? 0) as number) + 1) }
+}
+
 // The watch, the strip and the store in one place, for the tests below.
 const session = (on: On, store: Record<string, unknown> = {}) => {
   mock.store(on, store)
@@ -223,16 +279,12 @@ type Stored = { objective: Objective | null; owner: OwnerMsg[]; past: string[]; 
 
 // A session whose store the test reads back: the function returns the record as saved.
 const kept = (on: On, store: Record<string, unknown> = {}) => {
-  on('store.get', (_$, e) => ({ value: store[e.key] }))
-  on('store.set', (_$, e) => {
-    store[e.key] = e.value
-    return { value: undefined }
-  })
+  storeStub(on, store)
   on('session.id', () => ({ value: 'test-session' }))
   on('turn.complete', () => ({ text: '' }))
   on('prompt.submit', (_$, e) => ({ text: e.text }))
   on('ui.toast', () => ({ value: undefined }))
-  return () => (store.sessions as Record<string, Stored> | undefined)?.['test-session']
+  return () => recIn(store)
 }
 
 // The objective writer, stubbed: each call's prompt kept, answered by `answer()`; null is an empty reply.
@@ -3889,11 +3941,7 @@ test('noteSplit finds a note at the start of the prompt or of a line, after a se
 
 test('rule: a note typed after other text goes to the rep only: the agent gets the text before it, recorded as the owner\'s message, and the note is numbered after it', async ($, on) => {
   const store: Record<string, unknown> = {}
-  on('store.get', (_$, e) => ({ value: store[e.key] }))
-  on('store.set', (_$, e) => {
-    store[e.key] = e.value
-    return { value: undefined }
-  })
+  storeStub(on, store)
   quietBand(on)
   on('session.id', () => ({ value: 'test-session' }))
   const toasts: string[] = []
@@ -3917,7 +3965,7 @@ test('rule: a note typed after other text goes to the rep only: the agent gets t
   expect(result.text).toBe('Run the suite.')
   expect(agent).toEqual(['Run the suite.'])
   await settle($)
-  const rec = () => (store.sessions as Record<string, Stored>)['test-session'] as Stored
+  const rec = () => recIn(store) as Stored
   expect(rec().owner.map(m => [m.n, m.kind, m.text])).toEqual([
     [1, 'his', 'Run the suite.'],
     [2, 'note', 'he wants the GitHub run green too'],
@@ -3945,14 +3993,10 @@ test('rule: a note typed after other text goes to the rep only: the agent gets t
 
 test('rule: a prefix inside a slash command\'s arguments stays the command\'s: nothing is split off, noted or dropped', async ($, on) => {
   const store: Record<string, unknown> = {}
-  on('store.get', (_$, e) => ({ value: store[e.key] }))
-  on('store.set', (_$, e) => {
-    store[e.key] = e.value
-    return { value: undefined }
-  })
+  storeStub(on, store)
   on('session.id', () => ({ value: 'test-session' }))
   on('prompt.submit', (_$, e) => ({ text: e.text }))
-  const rec = () => (store.sessions as Record<string, Stored> | undefined)?.['test-session']
+  const rec = () => recIn(store)
   quietBand(on)
   const toasts: string[] = []
   on('ui.toast', (_$, e) => {
@@ -4000,16 +4044,12 @@ test('rule: the store keeps only the newest SESSIONS_MAX sessions', async ($, on
   const store: Record<string, unknown> = { sessions: {} }
   const old = store.sessions as Record<string, unknown>
   for (let i = 0; i < SESSIONS_MAX; i++) old[`s${i}`] = { id: `s${i}`, at: 1000 + i, objective: null, owner: [om(`a message in s${i}`)], past: [], seen: [], others: [] }
-  on('store.get', ($, e) => ({ value: store[e.key] }))
-  on('store.set', ($, e) => {
-    store[e.key] = e.value
-    return { value: undefined }
-  })
+  storeStub(on, store)
   on('session.id', () => ({ value: 'test-session' }))
   on('prompt.submit', ($, e) => ({ text: e.text }))
   quietBand(on)
   await $.prompt.submit(typed('a prompt from the newest session'))
-  const kept = store.sessions as Record<string, { owner: OwnerMsg[] }>
+  const kept = recsIn<{ owner: OwnerMsg[] }>(store)
   expect(Object.keys(kept)).toHaveLength(SESSIONS_MAX)
   expect(kept['test-session']?.owner).toEqual([{ n: 1, kind: 'his', text: 'a prompt from the newest session', prior: '' }])
   expect(kept.s0).toBeUndefined()
@@ -4041,16 +4081,12 @@ test('rule: a blank record takes no place in the store, so a run where nothing h
   for (let i = 0; i < SESSIONS_MAX - 1; i++) old[`s${i}`] = { id: `s${i}`, at: 1000 + i, objective: null, owner: [om(`a message in s${i}`)], past: [], seen: [], others: [] }
   // Ten newer records of runs where nothing happened, as the rep saved them before.
   for (let i = 0; i < 10; i++) old[`b${i}`] = { id: `b${i}`, at: 5000 + i, objective: null, jobStart: 1, owner: [], counter: 0, past: [], seen: [], others: [], drafts: [], calls: 0, objectiveWhy: '' }
-  on('store.get', ($, e) => ({ value: store[e.key] }))
-  on('store.set', ($, e) => {
-    store[e.key] = e.value
-    return { value: undefined }
-  })
+  storeStub(on, store)
   on('session.id', () => ({ value: 'test-session' }))
   on('prompt.submit', ($, e) => ({ text: e.text }))
   quietBand(on)
   await $.prompt.submit(typed('a prompt from the newest session'))
-  const kept = store.sessions as Record<string, unknown>
+  const kept = recsIn<unknown>(store)
   expect(Object.keys(kept)).toHaveLength(SESSIONS_MAX)
   expect(kept.s0).toBeDefined()
   expect(Object.keys(kept).filter(k => k.startsWith('b'))).toEqual([])
@@ -4107,16 +4143,12 @@ test('rule: a record the store lets go leaves its drafts in the kept list, newes
     lastBrief: { at: 1, next: 'Run it.', message: 'Card three: run the suite and show me.' },
     owner: [om('build it'), { n: 2, kind: 'draft', text: 'Card one: build it on main and show me.', prior: '' }],
   }
-  on('store.get', ($, e) => ({ value: store[e.key] }))
-  on('store.set', ($, e) => {
-    store[e.key] = e.value
-    return { value: undefined }
-  })
+  storeStub(on, store)
   on('session.id', () => ({ value: 'test-session' }))
   on('prompt.submit', ($, e) => ({ text: e.text }))
   quietBand(on)
   await $.prompt.submit(typed('a prompt from the newest session'))
-  expect((store.sessions as Record<string, unknown>).s0).toBeUndefined()
+  expect(recIn(store, 's0')).toBeUndefined()
   expect(store.droppedDrafts).toEqual([
     'Card two: show me the whole log.',
     'Card three: run the suite and show me.',
@@ -4128,12 +4160,7 @@ test('rule: a record the store lets go leaves its drafts in the kept list, newes
 test('rule: the session end saves the record, so the next session finds the objective and the owner\'s messages', async ($, on) => {
   const store: Record<string, unknown> = {}
   let saves = 0
-  on('store.get', ($, e) => ({ value: store[e.key] }))
-  on('store.set', ($, e) => {
-    store[e.key] = e.value
-    if (e.key === 'sessions') saves += 1
-    return { value: undefined }
-  })
+  storeStub(on, store, { beforeSet: key => (saves += key === 'rec:test-session' ? 1 : 0) })
   on('session.id', () => ({ value: 'test-session' }))
   on('prompt.submit', ($, e) => ({ text: e.text }))
   on('turn.complete', () => ({ text: '' }))
@@ -4147,7 +4174,7 @@ test('rule: the session end saves the record, so the next session finds the obje
   const savesBefore = saves
   await $.session.end({ reason: 'other', sessionId: 'test-session', resume: { id: 'test-session' } } as never)
   expect(saves).toBe(savesBefore + 1)
-  const rec = (store.sessions as Record<string, { at: number; objective: Objective | null; owner: OwnerMsg[] }>)['test-session']
+  const rec = recIn<{ at: number; objective: Objective | null; owner: OwnerMsg[] }>(store)
   expect(rec?.objective?.result).toBe('The objective kept across sessions.')
   expect(rec?.owner).toEqual([{ n: 1, kind: 'his', text: 'build the thing', prior: '' }])
 })
@@ -4346,20 +4373,19 @@ const capture = (on: On, store: Record<string, unknown> = {}, sid: () => string 
     when?: (value: unknown) => boolean
     gate?: Promise<void>
     held?: boolean
-    refuse?: (key: string, value: unknown) => boolean
+    refuse?: (key: string, value: unknown, after: Record<string, unknown>) => boolean
     fork?: (prompt: string) => string
     write?: () => string | null
   } = {}
-  on('store.get', (_$, e) => ({ value: store[e.key] }))
-  on('store.set', async (_$, e) => {
-    if (hold.refuse?.(e.key, e.value) === true) throw new Error('the value is over the store\'s limit')
-    if (hold.when?.(e.value) === true) {
-      hold.when = undefined
-      hold.held = true
-      await hold.gate
-    }
-    store[e.key] = e.value
-    return { value: undefined }
+  storeStub(on, store, {
+    refuse: (key, value, after) => hold.refuse?.(key, value, after) === true,
+    beforeSet: async (_key, value) => {
+      if (hold.when?.(value) === true) {
+        hold.when = undefined
+        hold.held = true
+        await hold.gate
+      }
+    },
   })
   on('session.id', () => ({ value: sid() }))
   on('session.start', (_$, e) => ({ cwd: e.cwd }))
@@ -4396,7 +4422,7 @@ const capture = (on: On, store: Record<string, unknown> = {}, sid: () => string 
     if (s.fail !== undefined) throw s.fail
     return { turnId: e.turnId, index: e.index, answer: '', toolUses: [], stopReason: 'end_turn', usage: null, ...s.ret } as never
   })
-  const rec = () => (store.sessions as Record<string, CapRec> | undefined)?.[sid()]
+  const rec = () => recIn<CapRec>(store, sid())
   return { rec, prompts, forks, scripts, submits, hold, reads: () => reads }
 }
 
@@ -5058,7 +5084,7 @@ test('guard: a session left by a /clear takes none of its running turn into the 
   let id = 'before-clear'
   const store: Record<string, unknown> = {}
   const { scripts } = capture(on, store, () => id)
-  const recOf = (k: string) => (store.sessions as Record<string, CapRec> | undefined)?.[k]
+  const recOf = (k: string) => recIn<CapRec>(store, k)
   await started($)
   await send($, 'start the work')
   await $.turn.start({ text: 'start the work', turnId: 't1' })
@@ -5133,7 +5159,7 @@ type T3Rec = {
   pending?: Array<{ turnId: string }>
   objectiveFailed?: number
 }
-const heldIn = (store: Record<string, unknown>): T3Rec | undefined => (store.sessions as Record<string, T3Rec> | undefined)?.[SID]
+const heldIn = (store: Record<string, unknown>): T3Rec | undefined => recIn<T3Rec>(store, SID)
 
 // The disk beneath the mod: files in a map, a write that can fail, a read that can fail once,
 // and every command run kept (a removal is applied to the map).
@@ -5200,7 +5226,9 @@ const recOf = (owner: T3Msg[], more: Record<string, unknown> = {}): Record<strin
   drafts: [],
   ...more,
 })
-const storeOf = (rec: Record<string, unknown>, others: Record<string, unknown> = {}): Record<string, unknown> => ({ sessions: { ...others, [SID]: rec } })
+// The store as this build lays it out, each record under its own key (`rec:<id>`).
+const asRecKeys = (recs: Record<string, unknown>): Record<string, unknown> => Object.fromEntries(Object.entries(recs).map(([id, r]) => [`rec:${id}`, r]))
+const storeOf = (rec: Record<string, unknown>, others: Record<string, unknown> = {}): Record<string, unknown> => asRecKeys({ ...others, [SID]: rec })
 const fileRef = async (text: string): Promise<T3Src> => ({ chars: text.length, sha: await shaOf(text), where: 'file' })
 
 // A newer copy of the record in the session's files, as the store-full path writes it: one part
@@ -5236,22 +5264,21 @@ const othersOf = (count: number): Record<string, unknown> =>
       return [id, { id, at: Date.now() - 1000 - i, objective: null, jobStart: 1, owner: [his(1, 'x')], counter: 1, past: [], seen: [], others: [], drafts: [] }]
     }),
   )
+// The whole store's JSON brought to `target` bytes, as Claude Code measures it for its limit.
 const padTo = (store: Record<string, unknown>, target: number) => {
-  const sessions = store.sessions as Record<string, { owner: T3Msg[] }>
-  const first = sessions['00000000-0000-4000-8000-000000000001'] as { owner: T3Msg[] }
-  ;(first.owner[0] as T3Msg).text += 'x'.repeat(target - utf8(JSON.stringify(sessions)))
-  expect(utf8(JSON.stringify(sessions))).toBe(target)
+  const first = store['rec:00000000-0000-4000-8000-000000000001'] as { owner: T3Msg[] }
+  ;(first.owner[0] as T3Msg).text += 'x'.repeat(target - utf8(JSON.stringify(store)))
+  expect(utf8(JSON.stringify(store))).toBe(target)
 }
 // Room made in the store, as when other sessions' records shrink: Claude Code (and the kit) refuse
 // a store value over 4 MiB by themselves, so relaxing the test's own refusal alone makes no room.
 const makeRoom = (store: Record<string, unknown>) => {
-  const sessions = { ...(store.sessions as Record<string, { owner: T3Msg[] }>) }
-  const id = '00000000-0000-4000-8000-000000000001'
-  const first = sessions[id] as { owner: T3Msg[] }
-  sessions[id] = { ...first, owner: [{ ...(first.owner[0] as T3Msg), text: 'x' }, ...first.owner.slice(1)] }
-  store.sessions = sessions
+  const key = 'rec:00000000-0000-4000-8000-000000000001'
+  const first = store[key] as { owner: T3Msg[] }
+  store[key] = { ...first, owner: [{ ...(first.owner[0] as T3Msg), text: 'x' }, ...first.owner.slice(1)] }
 }
-const overLimit = (key: string, value: unknown): boolean => key === 'sessions' && utf8(JSON.stringify(value)) > STORE_LIMIT
+// Claude Code's refusal: the whole store's JSON, the new value in place, over 4 MiB.
+const overLimit = (_key: string, _value: unknown, after: Record<string, unknown>): boolean => utf8(JSON.stringify(after)) > STORE_LIMIT
 
 // The card for the press, read for one text.
 const cardHas = async ($: Engine, text: RegExp): Promise<boolean> => {
@@ -5428,8 +5455,8 @@ test('rule: a session record the store lets go takes its folder with it, and not
   capture(on, store, () => SID)
   await started($)
   await send($, 'and the charts')
-  expect(Object.keys(store.sessions as object)).not.toContain(oldest)
-  expect(Object.keys(store.sessions as object)).not.toContain('old-session')
+  expect(idsIn(store)).not.toContain(oldest)
+  expect(idsIn(store)).not.toContain('old-session')
   expect(removed(d)).toContain(`${ROOT}/${oldest}`)
   expect(files.has(`${ROOT}/${oldest}/1-sent.txt`)).toBe(false)
   expect(files.get(`${ROOT}/old-session/1-sent.txt`)).toBe('older words')
@@ -5571,7 +5598,7 @@ test('rule: a whole record over one file is written in parts under the part limi
   const owner = range(1, 239).map(n => his(n, heavy(`#${n} `), { prior: HEAVY.repeat(66), src: { body: { chars: TURN.length, sha, where: 'file' } }, turns: [{ by: 'owner', from: 0, to: TURN.length }] }))
   const versions = range(1, 25).map(i => ({ at: i, cause: `#${i} moved it`, text: `version ${i} ${HEAVY.repeat(300)}` }))
   const store = storeOf(recOf(owner, { objective: { ...HELD_OBJ(41, 239), versions }, jobStart: 41, recRev: 7 }))
-  expect(utf8(JSON.stringify(store.sessions))).toBeGreaterThan(8_000_000)
+  expect(utf8(JSON.stringify(store))).toBeGreaterThan(8_000_000)
   const { hold } = capture(on, store, () => SID)
   hold.refuse = overLimit
   await started($)
@@ -6148,7 +6175,7 @@ test('rule: a new job lets the old job\'s pinned approvals go with its files, cl
   ;(next.owner.find(m => m.n === 302) as T3Msg).approved = 'all'
   next.owner.push(...range(303, 502).map(n => his(n)))
   ;(next as unknown as { counter: number }).counter = 502
-  store.sessions = { ...(store.sessions as Record<string, unknown>), [SID]: next }
+  putRec(store, SID, next as unknown as Record<string, unknown>)
   await send($, 'and the docs')
   const after = heldIn(store) as T3Rec
   expect(after.owner.filter(m => m.pinned === true).map(m => m.n)).toEqual([302])
@@ -7540,7 +7567,7 @@ test('rule: a stale answer adds its conditions and leaves the result, purpose an
     // The kit freezes what it stores, so the newer record replaces the session's whole.
     const r = heldIn(s.store) as unknown as { objective: Objective; objRev: number }
     const objective = { ...r.objective, result: 'Changed elsewhere.', purpose: 'For the other reason.', step: 'The other step.' }
-    s.store.sessions = { ...(s.store.sessions as Record<string, unknown>), [SID]: { ...r, objective, objRev: r.objRev + 1 } }
+    putRec(s.store, SID, { ...r, objective, objRev: r.objRev + 1 })
     return ANSWER(['apple.txt made | open', 'pear.txt made | open'], { result: 'This write\'s result.', step: 'This write\'s step.' })
   })
   await started($)
@@ -7863,7 +7890,7 @@ test("rule: a write that lands late cannot take a newer write's place, and a mes
   const saved = rec()
   if (saved?.objective == null) throw new Error('no objective stored')
   const newer = { ...saved.objective, result: 'The README, then the tests, then the licence.', from: 3, revisions: 1, cause: '#3 put the tests first' }
-  store.sessions = { ...(store.sessions as object), 'test-session': { ...saved, objective: newer } }
+  putRec(store, 'test-session', { ...saved, objective: newer })
   // The write that saw only #2 lands now: refused. The write for #3 runs after it.
   waiting = nextHeld()
   held[1]?.release(OBJ('The README and a licence.', ['the licence committed | open'], '#2 added the licence'))
@@ -7881,10 +7908,9 @@ test("rule: a write that lands late cannot take a newer write's place, and a mes
 test('rule: a message whose record waits behind the writer\'s save, and joins the write, is still written', async ($, on) => {
   // The store kept here rather than by kept(), so its writes can be held.
   const store: Record<string, unknown> = {}
-  const rec = () => (store.sessions as Record<string, Stored> | undefined)?.['test-session']
+  const rec = () => recIn(store)
   on('session.id', () => ({ value: 'test-session' }))
   on('prompt.submit', (_$, e) => ({ text: e.text }))
-  on('store.get', (_$, e) => ({ value: store[e.key] }))
   quietBand(on)
   const prompts: string[] = []
   // Holds: the writer's save of its answer, and its update of the row after it.
@@ -7903,14 +7929,14 @@ test('rule: a message whose record waits behind the writer\'s save, and joins th
     if (n === 2) holdSave = true
     return { value: { isAnswered: true, text: OBJ(`Write ${n}.`, ['the steps finished | open'], `#${n} added a step`), usage: USAGE } }
   })
-  on('store.set', async (_$, e) => {
-    if (holdSave) {
-      holdSave = false
-      saveHeld()
-      await new Promise<void>(r => (releaseSave = r))
-    }
-    store[e.key] = e.value
-    return { value: undefined }
+  storeStub(on, store, {
+    beforeSet: async () => {
+      if (holdSave) {
+        holdSave = false
+        saveHeld()
+        await new Promise<void>(r => (releaseSave = r))
+      }
+    },
   })
   on('state.set', async (_$, e, next) => {
     if (holdRow && (e as { key?: string }).key === 'reading') {
@@ -12820,11 +12846,7 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
   const openJobQuiet = (on: On) => {
     const store = OPEN_JOB()
     on('session.start', (_$, e) => ({ cwd: e.cwd }))
-    on('store.get', (_$, e) => ({ value: store[e.key] }))
-    on('store.set', (_$, e) => {
-      store[e.key] = e.value
-      return { value: undefined }
-    })
+    storeStub(on, store)
     on('session.id', () => ({ value: 'test-session' }))
     on('turn.complete', () => ({ text: '' }))
     on('prompt.submit', (_$, e) => ({ text: e.text }))
@@ -13274,11 +13296,7 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     const planted = jobStore([ownerMsg(1, 'build the sorter'), noteYes(2, { src: { body: ref } }), ownerMsg(3, 'and report the count')])
     const store: Record<string, unknown> = { sessions: { [SID]: { ...(planted.sessions as Record<string, Record<string, unknown>>)['test-session'], id: SID } } }
     disk(on, new Map([[`${DIR}/2-body.txt`, NOTE_BODY]]))
-    on('store.get', (_$, e) => ({ value: store[e.key] }))
-    on('store.set', (_$, e) => {
-      store[e.key] = e.value
-      return { value: undefined }
-    })
+    storeStub(on, store)
     on('session.id', () => ({ value: SID }))
     on('turn.complete', () => ({ text: '' }))
     on('prompt.submit', (_$, e) => ({ text: e.text }))
@@ -13385,7 +13403,7 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
       await settleUntil($, () => looks().length > was)
       await settle($)
     }
-    const rec = () => (store.sessions as Record<string, { readerAt?: { watch: number } }>)['test-session']
+    const rec = () => recIn<{ readerAt?: { watch: number } }>(store)
     return { prompts, looks, briefs, look, rec }
   }
   // The card pressed open: whether each text is on it, and it closed again.
@@ -13935,7 +13953,7 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     const next = JSON.parse(JSON.stringify(s.held())) as T3Rec
     next.owner.push(...range(3, 252).map(k => his(k, `and item ${k}`)))
     ;(next as unknown as { counter: number }).counter = 252
-    s.store.sessions = { ...(s.store.sessions as Record<string, unknown>), [SID]: next }
+    putRec(s.store, SID, next as unknown as Record<string, unknown>)
     await s.send($, 'and the totals')
     expect(s.msg(2)).toMatchObject({ approved: 'all', pinned: true })
     expect(s.held()?.owner.some(m => m.n === 3)).toBe(false)
@@ -15363,23 +15381,18 @@ test('rule: a record let go while the drafts are being read is still found, its 
   // read, its drafts move there and the record leaves. Read records first, then the list.
   const drafted = 'Run it on the real data and show me the result.'
   const store: Record<string, unknown> = {
-    sessions: { parent: { id: 'parent', at: 1, owner: [{ n: 1, kind: 'his', text: 'Build the report.', prior: '' }], counter: 1, drafts: [drafted] } },
+    'rec:parent': { id: 'parent', at: 1, owner: [{ n: 1, kind: 'his', text: 'Build the report.', prior: '' }], counter: 1, drafts: [drafted] },
     droppedDrafts: [],
   }
   let moved = false
-  on('store.get', (_$, e) => {
-    const value = store[e.key]
-    if (e.key === 'droppedDrafts' && !moved) {
+  // The kept list is answered as it stood when it was asked for; the move lands just after.
+  storeStub(on, store, {
+    onGet: key => {
+      if (key !== 'droppedDrafts' || moved) return
       moved = true
       store.droppedDrafts = [drafted]
-      const { parent: _gone, ...rest } = store.sessions as Record<string, unknown>
-      store.sessions = rest
-    }
-    return { value }
-  })
-  on('store.set', (_$, e) => {
-    store[e.key] = e.value
-    return { value: undefined }
+      delete store['rec:parent']
+    },
   })
   on('session.id', () => ({ value: 'test-session' }))
   on('turn.complete', () => ({ text: '' }))
@@ -15400,9 +15413,9 @@ test('rule: a record let go while the drafts are being read is still found, its 
   await started($)
   // The seed reads the transcript and both stores before it saves; on a slow machine one settle
   // ends first.
-  await settleUntil($, () => ((store.sessions as Record<string, Stored>)['test-session']?.owner?.length ?? 0) >= 3, 5000)
+  await settleUntil($, () => (recIn(store)?.owner?.length ?? 0) >= 3, 5000)
   expect(moved).toBe(true)
-  expect(noBody((store.sessions as Record<string, Stored>)['test-session']?.owner)).toEqual([
+  expect(noBody(recIn(store)?.owner)).toEqual([
     { n: 1, kind: 'his', text: 'Build the report.', prior: '' },
     { n: 2, kind: 'draft', text: drafted, prior: 'Built.', src: await sentInline(`${drafted} And keep the log.`) },
     { n: 3, kind: 'his', text: 'And keep the log.', prior: 'Built.', withDraft: 2, src: await sentInline(`${drafted} And keep the log.`) },
@@ -15740,12 +15753,8 @@ test('rule: a record that holds a message of the owner\'s is not seeded from the
 // Kept last: they leave the module on another session's id.
 test('rule: after a /clear the owner\'s messages are kept under the new session, and nothing of the old one stays on screen or draws over it', async ($, on) => {
   const store: Record<string, unknown> = {}
-  on('store.get', (_$, e) => ({ value: store[e.key] }))
-  on('store.set', (_$, e) => {
-    store[e.key] = e.value
-    return { value: undefined }
-  })
-  const recOf = (id: string) => (store.sessions as Record<string, Stored> | undefined)?.[id]
+  storeStub(on, store)
+  const recOf = (id: string) => recIn(store, id)
   // A /clear goes on in the same process under a new id, and no session.start fires.
   let id = 'before-clear'
   on('session.id', () => ({ value: id }))
@@ -15812,12 +15821,8 @@ test('rule: after a /clear the owner\'s messages are kept under the new session,
 test('rule: a check still running at a /clear marks its own record and draws nothing over the new session', async ($, on) => {
   const planted = ALL_SHOWN().sessions as Record<string, Record<string, unknown>>
   const store: Record<string, unknown> = { sessions: { 'checked-before': { ...planted['test-session'], id: 'checked-before' } } }
-  on('store.get', (_$, e) => ({ value: store[e.key] }))
-  on('store.set', (_$, e) => {
-    store[e.key] = e.value
-    return { value: undefined }
-  })
-  const recOf = (id: string) => (store.sessions as Record<string, Stored> | undefined)?.[id]
+  storeStub(on, store)
+  const recOf = (id: string) => recIn(store, id)
   let id = 'checked-before'
   on('session.id', () => ({ value: id }))
   on('session.end', (_$, e) => ({ sessionId: e.sessionId }))
@@ -15850,12 +15855,8 @@ test('rule: a check still running at a /clear marks its own record and draws not
 
 test('rule: a session resumed in the same process is read for the owner\'s messages before their next prompt is recorded under it', async ($, on) => {
   const store: Record<string, unknown> = {}
-  on('store.get', (_$, e) => ({ value: store[e.key] }))
-  on('store.set', (_$, e) => {
-    store[e.key] = e.value
-    return { value: undefined }
-  })
-  const recOf = (id: string) => (store.sessions as Record<string, Stored> | undefined)?.[id]
+  storeStub(on, store)
+  const recOf = (id: string) => recIn(store, id)
   // A resume goes on in the same process under the resumed session's id, and no session.start fires.
   let id = 'resumed-from'
   on('session.id', () => ({ value: id }))
@@ -15886,12 +15887,8 @@ test('rule: a session resumed in the same process is read for the owner\'s messa
 
 test('rule: a session resumed while another mod draws is taken up whole, though the band is drawn before any prompt', { plugins: [OTHER_MOD] }, async ($, on) => {
   const store: Record<string, unknown> = {}
-  on('store.get', (_$, e) => ({ value: store[e.key] }))
-  on('store.set', (_$, e) => {
-    store[e.key] = e.value
-    return { value: undefined }
-  })
-  const recOf = (id: string) => (store.sessions as Record<string, Stored> | undefined)?.[id]
+  storeStub(on, store)
+  const recOf = (id: string) => recIn(store, id)
   let id = 'resumed-from'
   on('session.id', () => ({ value: id }))
   on('session.start', (_$, e) => ({ cwd: e.cwd }))
@@ -17130,7 +17127,7 @@ describe('coverage: the failed write and the full store, both standing', () => {
   // the failed write's before the store's (plan 6.4's order).
   test('rule: a write that fails while the store is full shows both lines on the card and in the briefing, the failed write first', { timeoutMs: 30_000 }, async ($, on) => {
     const s = asks(on, [his(1, 'build the importer')], { objective: HELD_OBJ(1, 1), recRev: 3 })
-    Object.assign(s.store.sessions as Record<string, unknown>, othersOf(31))
+    Object.assign(s.store, asRecKeys(othersOf(31)))
     padTo(s.store, STORE_LIMIT - 60)
     s.hold.refuse = overLimit
     s.answer(() => null)
