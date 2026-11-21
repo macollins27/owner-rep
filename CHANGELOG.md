@@ -32,13 +32,16 @@ What changed in each release of Owner Rep, newest first. The full record is the
   a step done in part reads as part left out, and the agent's own word that it narrowed or left
   out part of an approved step reads as looking dropped.
 - **Briefings and messages are short again.** Each card part asks for one or two sentences of
-  about 25 words, under 40; each gap one sentence of about 8 words, under 20, at most six, a
+  about 20 words, under 35; each gap one sentence of about 8 words, under 16, at most six, a
   decision of yours one short question; and the message one sentence of about 12 words a line,
   under 150 words unless more than five things are asked. The aims sit below the limits so a reply written to them lands under them.
 - **A dropped plan step is said every time it looks dropped.** The heads-up above the row names
-  each part of an approved plan that looks dropped, at every look where it still looks dropped.
-  Nothing said before hides it: an earlier part, line or flag that looks like it is not taken as
-  proof the owner saw this one. A flag stands for a part only when it holds all of its words.
+  each part of an approved plan that looks dropped, in its first line so a short band shows it, at
+  every look where it still looks dropped. Nothing said before hides it: an earlier part, line or
+  flag that looks like it is not taken as proof the owner saw this one. A drop found while the
+  card is open is shown when the card closes, and one found while another note is up replaces it.
+  A turn that ends right after you approve a plan is checked against that plan. A flag stands for
+  a part only when one clause of it says that part was dropped and holds all of its words.
 - **A part the agent said it left out is never "not assessed".** Only a line marked "not
   assessed" by the rep counts as one; a part the agent admits it dropped reads as looking
   dropped, never as cut short by a shortened record.

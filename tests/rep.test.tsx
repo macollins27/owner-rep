@@ -14556,7 +14556,7 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     on('model.complete', async () => {
       writes += 1
       if (writes === 1) await new Promise<void>(r => (release = r))
-      return { value: { isAnswered: false, reason: 'error' } }
+      return { value: { isAnswered: false, reason: 'empty-reply', usage: USAGE } }
     })
     await started($)
     await $.prompt.submit(typed('go ahead with the plan'))

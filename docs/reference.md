@@ -556,25 +556,38 @@ call writes (below):
 
    `headsUpOf`, called by the look after the reader answers, decides what the owner sees and
    returns the parts it said (`drops`); `headsUp` is its note alone. A step
-   walked `no sign` or `looks dropped` takes the line, `A step of the plan you approved looks
-   dropped: <step>.`, cut at `DROPPED_STEP_MAX` (160), whatever the reader's flag was about. Its
-   why for `no sign` says only what the rep can know, that the record shows later work and does
-   not show the step done, never that the record holds nothing of it. The
-   flag and its why move into the why after `Also:`, and further dropped steps after `Also looks
-   dropped:`, so no concern is lost. This outranks even a flag about harm, whose words stay in the
-   why. A step walked `not assessed` has no say. A flag names a dropped part (`names`) when it
-   speaks of a drop and holds every one of the part's content words; it then keeps the reader's
-   wording and the part is not printed again under its own "Also looks dropped". It names one part
-   at most, the longest it holds, and the others go under its why, at most `DROPPED_ALSO_MAX` (3)
-   by name. A flag about another part of the step, sharing only some of its words, names nothing.
+   walked `no sign` or `looks dropped` takes the line, `Plan step looks dropped: <part>.` or
+   `Plan steps look dropped: <part>; <part>.`, each part cut at `DROPPED_STEP_MAX` (160), at most
+   `1 + DROPPED_ALSO_MAX` (4) by name and then `; and N more` (`partsSaid`), whatever the reader's
+   flag was about. The same text of two plans is named once (`textsOf`). The parts are in the line
+   because `fitNote` keeps the line before the why on a short band. Its why for `no sign` says only
+   what the rep can know, that the record shows later work and does not show the step done, never
+   that the record holds nothing of it. The flag and its why move into the why after `Also:`, so no
+   concern is lost. This outranks even a flag about harm, whose words stay in the why. A step
+   walked `not assessed` has no say. A flag names a dropped part (`names`) when one clause of it
+   (split at `CLAUSE_BREAK`: sentence marks, brackets, "but", "while", "though" and the like, never
+   a comma) speaks of a drop and holds every one of the part's content words. The flag then keeps
+   the reader's wording as the line, and the other dropped parts follow it in the line after
+   `Also looks dropped:`, at most `DROPPED_ALSO_MAX` (3) by name. It names every part such a clause
+   holds (`namedBy`), longest first, except a part whose every content word is in a longer one it
+   names. A flag about another part of the step, sharing only some of its words, names nothing.
+
+   `walkLine` reads `- #n: <part> | <mark>` and the forms readers also write (`#6 step 2,`, `#6.1:`,
+   `#6a:`, `#6 part 2:`, `#6 verification:`, `#6 (step 1):`, `#6 - `, `**#6**:`, `1. #6:`). A line
+   with no plan number is read with 0 for it and can still be a dropped part, matched to the plans
+   by its words; it is never counted as a step not assessed.
 
    A part the walk shows as looking dropped is said at every look where it looks dropped. Nothing
    said at an earlier look hides it: no part, line or flag shown before is matched against it,
    since every such matching (a likeness of parts, the plan's words, a flag's words) was found to
    hide a sibling part the owner never saw, and a silent drop is the harm the rep exists to prevent
-   while a repeat is noise. On c440a6ae's looks 41 to 48 (two runs, each replayed twice) the
-   dropped Monitor part was said at every look the walk marked it dropped: 8 of 8, 6 of 6, 8 of 8
-   and 7 of 7. A record from an earlier build that holds `saidDrops` loads, the field ignored. The
+   while a repeat is noise. On c440a6ae's looks 41 to 48 (two runs, each replayed twice, with Fine
+   pressed between looks) the dropped Monitor part was said at every look the walk marked it
+   dropped: 8 of 8, 6 of 6, 8 of 8 and 7 of 7. A note found while the briefing card is open, or
+   while the session is not the one on screen, is held in `heldNotes` and shown when the band returns to the row
+   (`showHeld`, called by `toRow` and when the session is entered), unless the next look finds no
+   dropped part; a note found while another note is on screen replaces it. `look` first awaits an
+   objective write in flight for the session (`writing`). A record from an earlier build that holds `saidDrops` loads, the field ignored. The
    register's check that a line was not shown before (`same`) applies only to a note with no
    dropped parts: a plain flag already shown is not shown again, while the same step of two plans,
    or a step still dropped, gives the same line and each is said.
