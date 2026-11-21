@@ -173,6 +173,7 @@ type StoreHooks = {
   refuse?: (key: string, value: unknown, after: Record<string, unknown>) => boolean
   beforeSet?: (key: string, value: unknown) => unknown
   onGet?: (key: string) => unknown
+  onKeys?: () => unknown
 }
 const asJson = (v: unknown): unknown => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)))
 const storeStub = (on: On, store: Record<string, unknown> = {}, o: StoreHooks = {}): Record<string, unknown> => {
@@ -189,7 +190,10 @@ const storeStub = (on: On, store: Record<string, unknown> = {}, o: StoreHooks = 
     store[e.key] = asJson(e.value)
     return { value: undefined }
   })
-  on('store.keys', () => ({ value: Object.keys(store) }))
+  on('store.keys', async () => {
+    await o.onKeys?.()
+    return { value: Object.keys(store) }
+  })
   on('store.delete', (_$, e) => {
     delete store[e.key]
     return { value: undefined }
@@ -212,6 +216,7 @@ const idsIn = (store: Record<string, unknown>): string[] => [
 // Every record the store holds, by session id, each its newer copy.
 const recsIn = <T = Stored>(store: Record<string, unknown>): Record<string, T> => Object.fromEntries(idsIn(store).map(id => [id, recIn<T>(store, id) as T]))
 // A record put in the store as a save of that session lands: under its own key, newer than any copy.
+const MIGRATED = 'migratedAt'
 const putRec = (store: Record<string, unknown>, id: string, rec: Record<string, unknown>) => {
   store[`rec:${id}`] = { ...rec, at: Math.max(Date.now(), ((recIn<{ at?: number }>(store, id)?.at ?? 0) as number) + 1) }
 }
@@ -4155,6 +4160,221 @@ test('rule: a record the store lets go leaves its drafts in the kept list, newes
     'Card one: build it on main and show me.',
     'An earlier dropped card: ship it to the server.',
   ])
+})
+
+// Each session's record lives under its own key, so a save writes that key and nothing of another
+// session's: the store's get and set are each whole, but a get, a change and a set of one shared
+// map let another process's save land between them and be written over.
+describe('the store: one key per session\'s record', () => {
+  const NOW_AT = () => Date.now() - 1000
+  const recOfS = (id: string, at: number, text = `a message in ${id}`, more: Record<string, unknown> = {}) => ({ id, at, objective: null, owner: [om(text)], past: [], seen: [], others: [], ...more })
+  const plain = (on: On, id: () => string) => {
+    on('session.id', () => ({ value: id() }))
+    on('prompt.submit', ($, e) => ({ text: e.text }))
+    quietBand(on)
+  }
+
+  test('recIdOf, newerRec and recsToLetGo: a record key names its session; the later save wins, the own key on a tie; the oldest go first and never the session saving', () => {
+    expect(rep.recKey('abc')).toBe('rec:abc')
+    expect(rep.recIdOf('rec:abc')).toBe('abc')
+    expect(rep.recIdOf('rec:')).toBeNull()
+    expect(rep.recIdOf('sessions')).toBeNull()
+    expect(rep.recIdOf('droppedDrafts')).toBeNull()
+    const own = { at: 5, v: 'own' }
+    const old = { at: 6, v: 'old' }
+    expect(rep.newerRec(own, old)).toBe(old)
+    expect(rep.newerRec(old, own)).toBe(old)
+    expect(rep.newerRec(own, { at: 5, v: 'old' })).toBe(own)
+    expect(rep.newerRec(undefined, old)).toBe(old)
+    expect(rep.newerRec(own, undefined)).toBe(own)
+    expect(rep.newerRec({ v: 'no time' }, { at: 1, v: 'old' })).toEqual({ at: 1, v: 'old' })
+    expect(rep.atOf({ at: Number.NaN })).toBe(0)
+    expect(rep.atOf(undefined)).toBe(0)
+    const ats = [{ id: 'a', at: 3 }, { id: 'b', at: 1 }, { id: 'c', at: 2 }, { id: 'me', at: 0 }]
+    expect(rep.recsToLetGo(ats, 'me', 4)).toEqual([])
+    expect(rep.recsToLetGo(ats, 'me', 2)).toEqual(['c', 'b'])
+    expect(rep.recsToLetGo(ats, 'me', 1)).toEqual(['a', 'c', 'b'])
+  })
+
+  test('rule: a save sets its own record\'s key and no other key of the store', async ($, on) => {
+    const store: Record<string, unknown> = { [MIGRATED]: 1, 'rec:other-1': recOfS('other-1', NOW_AT()), 'rec:other-2': recOfS('other-2', NOW_AT() - 1), droppedDrafts: [] }
+    const set: string[] = []
+    storeStub(on, store, { beforeSet: key => set.push(key) })
+    plain(on, () => 'test-session')
+    await $.prompt.submit(typed('build the importer'))
+    await $.prompt.submit(typed('and test it'))
+    expect(set.length).toBeGreaterThan(0)
+    expect([...new Set(set)]).toEqual(['rec:test-session'])
+    expect(store['rec:other-1']).toEqual(recOfS('other-1', (store['rec:other-1'] as { at: number }).at))
+    expect(recIn(store)?.owner.map(m => m.text)).toEqual(['build the importer', 'and test it'])
+  })
+
+  test('rule: two sessions saving at once each keep their own record: a save that lands while another is between its read and its write is not written over', async ($, on) => {
+    const store: Record<string, unknown> = { [MIGRATED]: 1 }
+    let id = 'session-a'
+    let holding = true
+    let held = () => {}
+    const isHeld = new Promise<void>(r => (held = r))
+    let release = () => {}
+    const out = new Promise<void>(r => (release = r))
+    storeStub(on, store, {
+      beforeSet: async (_key, value) => {
+        if (!holding || !JSON.stringify(value).includes('the prompt in A')) return
+        holding = false
+        held()
+        await out
+      },
+    })
+    plain(on, () => id)
+    const a = $.prompt.submit(typed('the prompt in A'))
+    await isHeld
+    id = 'session-b'
+    await $.prompt.submit(typed('the prompt in B'))
+    release()
+    await a
+    expect(recIn(store, 'session-a')?.owner.map(m => m.text)).toEqual(['the prompt in A'])
+    expect(recIn(store, 'session-b')?.owner.map(m => m.text)).toEqual(['the prompt in B'])
+  })
+
+  test('rule: two trims at once keep SESSIONS_MAX records, both live sessions among them, and every let-go record\'s drafts', async ($, on) => {
+    const store: Record<string, unknown> = { [MIGRATED]: 1 }
+    for (let i = 0; i < SESSIONS_MAX; i++) store[`rec:s${i}`] = recOfS(`s${i}`, 1000 + i, `a message in s${i}`, { drafts: [`Card for s${i}: ship it.`] })
+    let id = 'session-a'
+    let holding = false
+    let held = () => {}
+    const isHeld = new Promise<void>(r => (held = r))
+    let release = () => {}
+    const out = new Promise<void>(r => (release = r))
+    // Session A's trim is held after it lists the keys and reads the oldest record.
+    storeStub(on, store, {
+      onKeys: () => {
+        if (id === 'session-a' && store['rec:session-a'] !== undefined) holding = true
+      },
+      onGet: async key => {
+        if (!holding || key !== 'rec:s0') return
+        holding = false
+        held()
+        await out
+      },
+    })
+    plain(on, () => id)
+    const a = $.prompt.submit(typed('the prompt in A'))
+    await isHeld
+    id = 'session-b'
+    await $.prompt.submit(typed('the prompt in B'))
+    release()
+    await a
+    const ids = Object.keys(store).filter(k => k.startsWith('rec:'))
+    expect(ids).toHaveLength(SESSIONS_MAX)
+    expect(ids).toContain('rec:session-a')
+    expect(ids).toContain('rec:session-b')
+    expect(ids).not.toContain('rec:s0')
+    expect(ids).not.toContain('rec:s1')
+    expect(store.droppedDrafts).toEqual(expect.arrayContaining(['Card for s0: ship it.', 'Card for s1: ship it.']))
+  })
+
+  test('rule: a save whose trim fails stands, and the next save trims the store back to SESSIONS_MAX', async ($, on) => {
+    const store: Record<string, unknown> = { [MIGRATED]: 1 }
+    for (let i = 0; i < SESSIONS_MAX; i++) store[`rec:s${i}`] = recOfS(`s${i}`, 1000 + i)
+    let fail = true
+    storeStub(on, store, {
+      onKeys: () => {
+        if (fail) throw new Error('the process ended')
+      },
+    })
+    plain(on, () => 'test-session')
+    await $.prompt.submit(typed('build the importer'))
+    expect(Object.keys(store).filter(k => k.startsWith('rec:'))).toHaveLength(SESSIONS_MAX + 1)
+    expect(recIn(store)?.owner.map(m => m.text)).toEqual(['build the importer'])
+    fail = false
+    await $.prompt.submit(typed('and test it'))
+    expect(Object.keys(store).filter(k => k.startsWith('rec:'))).toHaveLength(SESSIONS_MAX)
+    expect(store['rec:s0']).toBeUndefined()
+    expect(recIn(store)?.owner.map(m => m.text)).toEqual(['build the importer', 'and test it'])
+  })
+
+  test('rule: the old map\'s records are copied each to its own key, the map kept for a session still on an older build, and every copy reads back the same', async ($, on) => {
+    const at = NOW_AT()
+    const map = { a: recOfS('a', at - 2, 'build a'), b: recOfS('b', at - 1, 'build b', { objective: { result: 'B built.' }, counter: 1 }), 'test-session': recOfS('test-session', at - 3, 'the first message') }
+    const store: Record<string, unknown> = { sessions: JSON.parse(JSON.stringify(map)) }
+    storeStub(on, store)
+    plain(on, () => 'test-session')
+    await $.prompt.submit(typed('the second message'))
+    expect(store['rec:a']).toEqual(map.a)
+    expect(store['rec:b']).toEqual(map.b)
+    expect(store.sessions).toEqual(map)
+    expect(typeof store[MIGRATED]).toBe('number')
+    expect(recIn(store)?.owner.map(m => m.text)).toEqual(['the first message', 'the second message'])
+  })
+
+  test('rule: a migration the store stops partway leaves every record read from the map, and writes no mark, so the next load copies the rest', async ($, on) => {
+    const at = NOW_AT()
+    const map = { a: recOfS('a', at - 2, 'build a'), b: recOfS('b', at - 1, 'build b'), 'test-session': recOfS('test-session', at - 3, 'the first message') }
+    const store: Record<string, unknown> = { sessions: JSON.parse(JSON.stringify(map)) }
+    storeStub(on, store, { refuse: key => key === 'rec:b' })
+    plain(on, () => 'test-session')
+    await $.prompt.submit(typed('the second message'))
+    expect(store['rec:b']).toBeUndefined()
+    expect(store[MIGRATED]).toBeUndefined()
+    expect(recIn(store, 'b')).toEqual(map.b)
+    expect(store.sessions).toEqual(map)
+    expect(recIn(store)?.owner.map(m => m.text)).toEqual(['the first message', 'the second message'])
+  })
+
+  test('rule: a load after a migration stopped partway copies the records still missing', async ($, on) => {
+    const at = NOW_AT()
+    const map = { a: recOfS('a', at - 2, 'build a'), b: recOfS('b', at - 1, 'build b') }
+    const store: Record<string, unknown> = { sessions: JSON.parse(JSON.stringify(map)), 'rec:a': map.a }
+    storeStub(on, store)
+    plain(on, () => 'test-session')
+    await $.prompt.submit(typed('build it'))
+    expect(store['rec:b']).toEqual(map.b)
+    expect(typeof store[MIGRATED]).toBe('number')
+  })
+
+  test('rule: a save into the old map by a session on an older build, newer than the record\'s own key, is the one read', async ($, on) => {
+    const at = NOW_AT()
+    const store: Record<string, unknown> = { [MIGRATED]: at - 100, 'rec:test-session': recOfS('test-session', at - 50, 'the first message') }
+    storeStub(on, store)
+    plain(on, () => 'test-session')
+    await $.prompt.submit(typed('the second message'))
+    // An older build, still running this session in another process, saves its copy into the map.
+    const older = { ...(recIn<Record<string, unknown>>(store) as Record<string, unknown>), owner: [om('the first message'), om('the second message', 2), om('said under the older build', 3)], counter: 3 }
+    store.sessions = { 'test-session': { ...older, at: Math.max(Date.now(), ((older as { at?: number }).at ?? 0) + 1) } }
+    await $.prompt.submit(typed('the fourth message'))
+    expect(recIn(store)?.owner.map(m => m.text)).toEqual(['the first message', 'the second message', 'said under the older build', 'the fourth message'])
+    expect((store['rec:test-session'] as Stored).owner.map(m => m.text)).toEqual(['the first message', 'the second message', 'said under the older build', 'the fourth message'])
+  })
+
+  test('rule: a record let go after the first migration is not copied back from the map', async ($, on) => {
+    const at = NOW_AT()
+    const store: Record<string, unknown> = { [MIGRATED]: at - 100, sessions: { gone: recOfS('gone', at - 200), later: recOfS('later', at - 50) } }
+    storeStub(on, store)
+    plain(on, () => 'test-session')
+    await $.prompt.submit(typed('build it'))
+    expect(store['rec:gone']).toBeUndefined()
+    expect(store['rec:later']).toEqual(recOfS('later', at - 50))
+  })
+
+  test('rule: the old map goes once its newest record is OLD_MAP_IDLE_MS old, and stays while one is newer', async ($, on) => {
+    const idle = Date.now() - rep.OLD_MAP_IDLE_MS - 60_000
+    const store: Record<string, unknown> = { sessions: { a: recOfS('a', idle - 1), b: recOfS('b', idle) } }
+    storeStub(on, store)
+    plain(on, () => 'test-session')
+    await $.prompt.submit(typed('build it'))
+    expect(store.sessions).toBeUndefined()
+    expect(store['rec:a']).toEqual(recOfS('a', idle - 1))
+    expect(store['rec:b']).toEqual(recOfS('b', idle))
+  })
+
+  test('rule: the old map stays while its newest record is younger than OLD_MAP_IDLE_MS', async ($, on) => {
+    const young = Date.now() - rep.OLD_MAP_IDLE_MS + 60 * 60_000
+    const store: Record<string, unknown> = { sessions: { a: recOfS('a', young) } }
+    storeStub(on, store)
+    plain(on, () => 'test-session')
+    await $.prompt.submit(typed('build it'))
+    expect(store.sessions).toEqual({ a: recOfS('a', young) })
+  })
 })
 
 test('rule: the session end saves the record, so the next session finds the objective and the owner\'s messages', async ($, on) => {

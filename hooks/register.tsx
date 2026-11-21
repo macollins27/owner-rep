@@ -583,8 +583,9 @@ async function stored($: EngineInterface, rec: Rec, dropped: string[]): Promise<
 async function storeRec($: EngineInterface, rec: Rec): Promise<string[]> {
   await migrateOnce($)
   const saved: Rec = { ...rec, at: Date.now() }
-  // A blank record loads back the same when missing, so none takes a place (`isBlankRec`).
-  if (isBlankRec(saved, freshRec(rec.id))) await $.store.delete(recKey(rec.id))
+  // A blank record loads back the same when missing, so none takes a place (`isBlankRec`),
+  // unless the old map holds a copy, which would be read in its place.
+  if (isBlankRec(saved, freshRec(rec.id)) && (await oldMap($))[rec.id] === undefined) await $.store.delete(recKey(rec.id))
   else await $.store.set(recKey(rec.id), saved)
   // The save stands whatever the trim does: one that fails is done by the next save.
   return trimStore($, rec.id).catch(() => [])
