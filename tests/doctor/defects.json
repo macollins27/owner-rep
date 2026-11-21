@@ -433,7 +433,7 @@
   },
   {
     "name": "writer-unfenced",
-    "breaks": "The owner's messages reach the objective writer without the fence and the note that they are records, so a message that reads like a command is taken as an order to the writer and comes back empty.",
+    "breaks": "The owner's messages reach the objective writer outside the fence tags and without the closing note that they are records, so a message that reads like a command is taken as an order to the writer and comes back empty.",
     "patch": "writer-unfenced.patch",
     "fixed": "2026-10-16; remade 2026-10-31"
   },
@@ -5464,5 +5464,15 @@
     "breaks": "A flag that holds half a dropped part's words stands for it, so a flag about the other part of a step hides the part dropped at that very look.",
     "patch": "heads-up-flag-names-on-some-words.patch",
     "fixed": "2026-11-20"
+  },
+  {
+    "name": "writer-uncached",
+    "breaks": "The objective writer's system prompt is sent as plain text with no cache mark, so every write pays for the whole rule set again.",
+    "patch": "writer-uncached.patch"
+  },
+  {
+    "name": "writer-more-exact-dropped",
+    "breaks": "The objective writer is not told to write a held condition the owner's later words make more exact in those words with \"same as\", so it writes a second condition beside the held one.",
+    "patch": "writer-more-exact-dropped.patch"
   }
 ]

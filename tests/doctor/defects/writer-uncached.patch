@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 0b63a57..216d0bf 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1475,7 +1475,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
+         // session; a build that refuses blocks (2.1.286) takes the text.
+         const send = (sys: string | PromptBlock[]) => $.model.complete({ model: OBJECTIVE_MODEL, system: sys, prompt, maxTokens, effort, timeoutMs })
+         const { result, ms } = await timed(() =>
+-          send([{ text: system, cache: true }]).catch((e: unknown) => {
++          send(system).catch((e: unknown) => {
+             if (!BLOCKS_REFUSED.test(String(e))) throw e
+             return send(system)
+           }),
