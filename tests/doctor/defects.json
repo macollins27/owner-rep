@@ -5413,7 +5413,7 @@
   },
   {
     "name": "left-items-aim-missing",
-    "breaks": "Each left-out item loses its aim of about 8 words, so items are written to the 16-word limit and run over it.",
+    "breaks": "Each left-out item loses its aim of about 8 words, so items are written to the 20-word limit and run over it.",
     "patch": "left-items-aim-missing.patch",
     "fixed": "remade 2026-11-20"
   },
@@ -5425,7 +5425,7 @@
   },
   {
     "name": "short-part-aim-missing",
-    "breaks": "Stands, means and next lose their aim of about 20 words, so they are written to the 35-word limit and reach it.",
+    "breaks": "Stands, means and next lose their aim of about 20 words, so they are written to the 40-word limit and reach it.",
     "patch": "short-part-aim-missing.patch",
     "fixed": "remade 2026-11-20"
   },

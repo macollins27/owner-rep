@@ -18643,8 +18643,8 @@ describe('the call log: its pieces', () => {
     expect(check).toContain(`- <${rep.LEFT_ITEMS}: work put off`)
     expect(rep.LEFT_ITEMS).toContain('at most six, the costliest first; fold any more into one last line "- and N smaller gaps"')
     // The aim sits below the limit, so a reply written to the aim lands under it (PR #68, length).
-    expect(rep.LEFT_ITEMS).toContain('each one sentence of about 8 words and under 16')
-    expect(rep.SHORT_PART).toBe('one or two sentences, about 20 words, under 35')
+    expect(rep.LEFT_ITEMS).toContain('each one sentence of about 8 words and under 20')
+    expect(rep.SHORT_PART).toBe('one or two sentences, about 20 words, under 40')
   })
 
   test('rule: the replay\'s rows and totals name the read, the gate, the words and the tokens', () => {
