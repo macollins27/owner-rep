@@ -5471,6 +5471,11 @@
     "patch": "writer-uncached.patch"
   },
   {
+    "name": "writer-system-dropped-on-old-build",
+    "breaks": "The writer sends its cached system block beside a text prompt, which 2.1.286 lets through and then drops, so every objective on that build is written with none of the writer's rules.",
+    "patch": "writer-system-dropped-on-old-build.patch"
+  },
+  {
     "name": "writer-more-exact-dropped",
     "breaks": "The objective writer is not told to write a held condition the owner's later words make more exact in those words with \"same as\", so it writes a second condition beside the held one.",
     "patch": "writer-more-exact-dropped.patch"
