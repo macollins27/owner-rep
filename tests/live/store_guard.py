@@ -29,6 +29,9 @@ from typing import Callable, Iterable
 RETRIES = 5
 RENAME_SWAP = 0x2  # <stdio.h> on macOS
 DROPPED_DRAFTS_MAX = 200  # hooks/rep.ts
+REC = 'rec:'  # REC_PREFIX in hooks/rep.ts: each record under a key of its own
+OLD_MAP = 'sessions'  # OLD_MAP_KEY: the map every record sat in before that
+MIGRATED = 'migratedAt'  # MIGRATED_KEY
 
 
 class Refused(Exception):
@@ -74,8 +77,34 @@ def backup(folder: Path, store: Path) -> None:
     write_private(folder / 'store.path', os.fsencode(store))
 
 
+def at(rec: object) -> float:
+    when = rec.get('at') if isinstance(rec, dict) else None
+    return when if isinstance(when, (int, float)) else 0
+
+
+def keyed(store: dict) -> bool:
+    """Whether the mod has moved this store to a key per record."""
+    return MIGRATED in store or any(k.startswith(REC) for k in store)
+
+
+def records_of(store: dict) -> dict:
+    """The records the store keeps, by session id. Once moved to a key per record, those keys,
+    each the newer of its own copy and the old map's (`newerRec`): the map stays only as a
+    fallback, and its other entries are records the mod already let go. Before, the map."""
+    old = {k: v for k, v in (store.get(OLD_MAP) or {}).items() if isinstance(v, dict)}
+    if not keyed(store):
+        return old
+    out = {}
+    for k, v in store.items():
+        if k.startswith(REC) and len(k) > len(REC) and isinstance(v, dict):
+            sid = k[len(REC):]
+            out[sid] = old[sid] if sid in old and at(old[sid]) > at(v) else v
+    return out
+
+
 def show(store: Path, sid: str, launched: int, out: Path) -> dict:
-    rec = load(store).get('sessions', {}).get(sid)
+    got = load(store)
+    rec = records_of(got).get(sid) or (got.get(OLD_MAP) or {}).get(sid)
     if not isinstance(rec, dict):
         raise Refused(f'no record {sid} in {store}')
     brief = rec.get('lastBrief')
@@ -167,12 +196,18 @@ def merged(now: dict, saved: dict, ids: list[str], own: Iterable[str] = ()) -> d
     the run's drafts as `show` read them: a run whose record was itself evicted left them in
     droppedDrafts with nothing else to say whose they are."""
     out = dict(now)
-    sessions = dict(now.get('sessions') or {})
+    sessions = dict(now.get(OLD_MAP) or {})
     for sid in ids:
         sessions.pop(sid, None)
-    back = {k: v for k, v in (saved.get('sessions') or {}).items() if k not in sessions and k not in ids}
-    sessions.update(back)
-    out['sessions'] = sessions
+        out.pop(REC + sid, None)
+    there = records_of(out)
+    back = {k: v for k, v in records_of(saved).items() if k not in there and k not in ids}
+    if keyed(now):
+        out.update({REC + k: v for k, v in back.items()})
+    else:
+        sessions.update(back)
+    if OLD_MAP in now or not keyed(now):
+        out[OLD_MAP] = sessions
     # A record let go leaves its drafts in droppedDrafts first (`saveRec`). One that comes back
     # holds them again, so those leave droppedDrafts, unless they were there before the run;
     # and what the list's cap pushed out to make room goes back on its end.
@@ -191,17 +226,18 @@ def merged(now: dict, saved: dict, ids: list[str], own: Iterable[str] = ()) -> d
 def carried(now: dict, want: dict) -> dict:
     """`now` with what an earlier round took in. A writer may have read this restore's own merge,
     so of two copies of a record the newer stays, and a draft let go in either stays let go."""
-    def at(rec: object) -> float:
-        when = rec.get('at') if isinstance(rec, dict) else None
-        return when if isinstance(when, (int, float)) else 0
-
-    sessions = dict(want.get('sessions') or {})
-    for sid, rec in (now.get('sessions') or {}).items():
+    sessions = dict(want.get(OLD_MAP) or {})
+    for sid, rec in (now.get(OLD_MAP) or {}).items():
         if sid not in sessions or at(rec) >= at(sessions[sid]):
             sessions[sid] = rec
     drafts = list(now.get('droppedDrafts') or [])
     drafts += [d for d in want.get('droppedDrafts') or [] if d not in drafts]
-    out = {**now, 'sessions': sessions}
+    out = {**now}
+    if OLD_MAP in now or OLD_MAP in want or not keyed(now):
+        out[OLD_MAP] = sessions
+    for k, rec in want.items():
+        if k.startswith(REC) and (k not in now or at(rec) > at(now[k])):
+            out[k] = rec
     if 'droppedDrafts' in now or drafts:
         out['droppedDrafts'] = drafts[:DROPPED_DRAFTS_MAX]
     return out
@@ -373,6 +409,27 @@ def self_test() -> int:
         show(s, 'run', 0, folder / 'run.message.txt')
         restore(folder, ['run'])
         check("restore: the run's draft stays listed when it was listed before the run", json.loads(s.read_text())['droppedDrafts'] == ['said twice', 'other'])
+
+        # A store the mod has moved to a key per record, the old map kept beside it as a fallback.
+        moved = {MIGRATED: 5, OLD_MAP: {'a': rec(1, 'draft of a'), 'gone': rec(0), 'b': rec(2)}, 'rec:a': rec(1, 'draft of a'), 'rec:b': rec(2), 'droppedDrafts': ['older draft']}
+        ran = {MIGRATED: 5, OLD_MAP: moved[OLD_MAP], 'rec:b': rec(2), 'rec:run': rec(9), 'rec:theirs': rec(8), 'droppedDrafts': ['draft of a', 'older draft']}
+        folder, s = fresh('keyed', moved, ran)
+        show(s, 'run', 0, folder / 'run.message.txt')
+        restore(folder, ['run'])
+        done = json.loads(s.read_text())
+        check('keyed: the run\'s record key is gone', 'rec:run' not in done)
+        check('keyed: the record pushed out is back under its own key', done.get('rec:a') == rec(1, 'draft of a'))
+        check('keyed: a record the mod let go before the run stays let go', 'rec:gone' not in done)
+        check("keyed: another session's record stays, and the old map is left as it was", 'rec:theirs' in done and done[OLD_MAP] == moved[OLD_MAP])
+        check('keyed: what eviction added is taken out', done['droppedDrafts'] == ['older draft'])
+        folder, s = fresh('moved-in-run', {OLD_MAP: {'a': rec(1, 'draft of a'), 'b': rec(2)}, 'droppedDrafts': []}, {MIGRATED: 5, OLD_MAP: {'a': rec(1, 'draft of a'), 'b': rec(2)}, 'rec:b': rec(2), 'rec:run': rec(9), 'droppedDrafts': ['draft of a']})
+        restore(folder, ['run'])
+        done = json.loads(s.read_text())
+        check('keyed: a store moved during the run gets the record pushed out back under its own key', done.get('rec:a') == rec(1, 'draft of a') and 'rec:run' not in done and done['droppedDrafts'] == [])
+        newer = tmp / 'newer.json'
+        newer.write_text(json.dumps({MIGRATED: 5, OLD_MAP: {'x': rec(launched * 1000 + 9, 'from the map')}, 'rec:x': rec(launched * 1000 + 5, 'from its key')}))
+        show(newer, 'x', launched, tmp / 'x.txt')
+        check('keyed: show reads the newer of the key and the old map', (tmp / 'x.txt').read_text() == 'from the map')
 
         def store_named() -> str:
             return newest_store().name

@@ -3,6 +3,16 @@
 What changed in each release of Owner Rep, newest first. The full record is the
 [commit history](https://github.com/macollins27/owner-rep/commits/main).
 
+## Unreleased
+
+- **One session's save no longer undoes another's.** Every session's record was kept in one
+  shared list, and each save read the list, changed its own record and wrote the whole list
+  back, so when two sessions saved at nearly the same moment the later one put back the other's
+  older copy; a plan approval was lost that way. Each session's record now has its own place in
+  the store and a save writes only that. Records kept the old way are copied over on the first
+  start, and the old list is kept, and read where it is newer, until it has gone unused for a
+  week, so a session still running an older version loses nothing.
+
 ## 0.7.7 (19 November 2026)
 
 - **Every button stays on screen on a 24-row terminal 60 columns wide.** The row's buttons

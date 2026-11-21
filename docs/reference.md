@@ -1345,17 +1345,55 @@ resume) runs it without waiting and writes the objective when it recorded any; `
 message or note of the owner's is never seeded.
 
 State lives in two places. Atoms (`atom({plugin, key})`) are per-session UI state that drives
-the render. The `$.store` key `sessions` holds a `Rec` per session id (the objective, the
+the render. The `$.store` holds a `Rec` per session id, each under a key of its own,
+`rec:<session id>` (`recKey`; the objective, the
 results of earlier jobs, the owner's numbered messages and the counter, the last briefing's
 next step and message, the last `DRAFTS_MAX` (3) cards' messages in `rec.drafts`, flags already seen, other mods' notes, spend counters with the writer's own and its failed calls), capped
 at `SESSIONS_MAX` newest. A record that still loads as the blank one a session starts with
 (`isBlankRec`: no message, objective, draft or spend) is never kept, since a missing record
 loads the same: `session.end` saves every session's record, so before 17 Oct 2026 each
-scripted `claude -p` run left a blank one that took a place from the owner's sessions. A record `saveRec` lets go leaves its drafts (`recDrafts`: its
+scripted `claude -p` run left a blank one that took a place from the owner's sessions.
+
+A save (`storeRec`) sets the session's own key and nothing of any other session's. Claude
+Code's store locks its file for each `set` or `delete`, reads it, changes the one key and
+writes it back, so a write to one key is whole across processes; a `get`, a change and a `set`
+of one shared value is not. Until 20 Nov 2026 every record sat in one map under the key
+`sessions` (`OLD_MAP_KEY`), and each save read the map, changed its own entry and wrote the map
+back, so a save from another session's process that landed between them was written over: one
+session's save put back an older copy of another's, and a plan approval was lost that way.
+After the save, `trimStore` lists the keys (`$.store.keys`, one read) and, only when the record
+keys number more than `SESSIONS_MAX`, reads each record's `at` and lets go the oldest past it,
+never the session saving (`recsToLetGo`). A record let go leaves its drafts (`recDrafts`: its
 `rec.drafts`, last briefing's message and messages held as `draft`) in the key
-`droppedDrafts`, newest first, each once, up to `DROPPED_DRAFTS_MAX` (200) (`keepDropped`);
-a fork's own first save can let go the record it was forked from. `storedDrafts` reads
-`sessions` before `droppedDrafts`, the reverse of `saveRec`'s order, so a record let go
+`droppedDrafts`, newest first, each once, up to `DROPPED_DRAFTS_MAX` (200) (`keepDropped`),
+before its key is deleted; a fork's own first save can let go the record it was forked from.
+The save stands whatever the trim does: a trim that fails, or a process that ends between the
+two, leaves one record over, which the next save's trim lets go. Two trims at once may each
+let go the same record (deleting a missing key does nothing), and a live session's record is
+among the newest, so stays. `droppedDrafts` is still one key read and written whole, so two
+trims that write it in the same instant can lose one's drafts; that window is a `get` and a
+`set` long, against the whole save the map had. A refused save throws, as before, and the
+store's limit is on the whole store's JSON, the record's key included.
+
+The map is moved once per process, before its first read (`migrateOnce`): each of its
+records is copied to its own key when that key is missing or older (`newerRec`), and the time
+the move started is written to `migratedAt` (`MIGRATED_KEY`). A later move copies only the
+map's records saved since then, so a record the trim let go is not copied back. The map is
+kept, not deleted: a process still running an older build reads and saves only the map, and
+with the map gone it would load a blank record and save it as the newest. Every read takes the
+newer of the record's own key and the map's entry (`loadStored`, `allStored`), so a save an
+older build makes into the map is the one read. The map goes once its newest record is
+`OLD_MAP_IDLE_MS` (7 days) old, when no older build can still be saving into it. A move the
+store refuses partway stops there with `migratedAt` unwritten: the map is still read for the
+records not yet copied, and the next process copies them. While the map stays, a record the
+trim let go is still read from it (its drafts and its bytes counted with the others), the store
+holds each record twice, and the move itself writes other sessions' keys, so a session saving
+in another process in the same instant can lose that one save: the move copies a record only
+when the map's copy is newer than the key's, which is so only at the first move or after an
+older build saved into the map, and the window is between the move's `get` of the key and its `set`.
+A blank record whose session the map still holds is saved rather than deleted, so the map's
+older copy is not read in its place. `storedDrafts` reads the records (`allStored`) before
+`droppedDrafts`, the reverse of the trim's order, so a record let go
 between its two reads is in one of them. `loadRec`/`saveRec` are the only way in and out, and `changeRec`
 runs each change alone from its load to its save, so two hooks that finish together never save
 over each other. Atoms and the module's own values outlive a session: a `/clear` or a resume
