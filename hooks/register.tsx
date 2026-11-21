@@ -14,6 +14,7 @@ import {
   OWNER_CUT,
   HIS_CUT,
   PRIOR_CUT,
+  type DroppedStep,
   type OwnerKind,
   type OwnerMsg,
   type PendingTurn,
@@ -249,6 +250,8 @@ import {
   readerParts,
   readerGaps,
   headsUpOf,
+  standingDrops,
+  LOOK_WAIT_MS,
   notAssessedGaps,
   joinGaps,
   WATCH_APPROVED_BUDGET,
@@ -1395,7 +1398,9 @@ function applyMarks(
 
 // The objective writer running for a session, one at a time per session, and
 // whether a message of the owner's or a note asked for a write while it ran.
-type Writing = { run: Promise<void>; again: boolean }
+// `shown` is the newest message number a finished pass was shown, and each pass's end calls
+// `ended`, so a look can wait for the pass that takes in a given message (`writeTaken`).
+type Writing = { run: Promise<void>; again: boolean; shown: number; ended: Set<() => void> }
 const writing = new Map<string, Writing>()
 
 // The objective writer: a plain completion of its own over the owner's
@@ -1413,12 +1418,53 @@ async function rebuildObjective($: EngineInterface, sid: string, cause: WriteCau
     if (cause === 'message' || cause === 'note') running.again = true
     return running.run
   }
-  const entry: Writing = { run: Promise.resolve(), again: false }
+  const entry: Writing = { run: Promise.resolve(), again: false, shown: -1, ended: new Set() }
   writing.set(sid, entry)
   entry.run = writeObjective($, sid, cause === 'load' || cause === 'press', entry).finally(() => {
     if (writing.get(sid) === entry) writing.delete(sid)
+    passEnded(entry, entry.shown)
   })
   return entry.run
+}
+
+// A pass of the writer ended, having been shown messages up to `shown`, whether it landed, failed
+// or stopped for a newer message: each look waiting on it checks whether that is the one it waits
+// for. A pass that stopped for a newer message counts, so a look never waits on a message saved
+// after it began (RV3).
+function passEnded(entry: Writing, shown: number): void {
+  entry.shown = Math.max(entry.shown, shown)
+  for (const check of [...entry.ended]) check()
+}
+
+// Waits until the objective write has taken in every message of the owner's saved when it was
+// called, at most LOOK_WAIT_MS: a pass shown the newest of them ends, or the writer stops. A
+// message saved later is not waited for; the next look reads what its write left. With no
+// writer running there is nothing to wait for, and with no clock the writer alone decides.
+async function writeTaken($: EngineInterface, sid: string): Promise<void> {
+  const entry = writing.get(sid)
+  if (entry === undefined) return
+  const target = (await loadRec($, sid)).counter
+  const held: { timer?: { cancel: () => void }; check?: () => void } = {}
+  try {
+    await new Promise<void>(resolve => {
+      const check = (): void => {
+        if (writing.get(sid) === entry && entry.shown < target) return
+        resolve()
+      }
+      held.check = check
+      entry.ended.add(check)
+      entry.run.then(resolve, resolve)
+      try {
+        held.timer = $.clock.after(LOOK_WAIT_MS, resolve)
+      } catch {
+        // No timer: the writer alone decides.
+      }
+      check()
+    })
+  } finally {
+    if (held.check !== undefined) entry.ended.delete(held.check)
+    held.timer?.cancel()
+  }
 }
 
 // The first message on the job waiting for a write that reads it whole.
@@ -1439,6 +1485,8 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
       !(onlyFirst && rec.objective !== null) &&
       (waitingN !== undefined || hisFrom(rec, Math.max(jobOf(rec), shown + 1)).length > 0)
     let failed = false
+    // The newest message this pass was shown, however it ended: what a waiting look counts.
+    let passSaw = shown
     if (!due) shown = Math.max(shown, newest)
     if (due) {
       // The whole words of each message, what it answered or carried, and what an approval took,
@@ -1451,6 +1499,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
       // it stopped, or the newest.
       const saw = waitingN ?? showings.stoppedAt ?? newest
       const partial = waitingN !== undefined || showings.stoppedAt !== null
+      passSaw = saw
       const prompt = objectivePrompt(memory)
       if (prompt === lastPrompt) break
       const rev = rec.objRev
@@ -1534,6 +1583,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
       if (onScreen(sid)) await update($, readingA, () => after.objective)
     }
     onlyFirst = false
+    passEnded(entry, Math.max(shown, passSaw))
     // A message of the owner's or a note that came in during the write is
     // written now: one whose request joined this run, or one saved after the
     // write was shown the messages; so is what the write left, a message still
@@ -1630,9 +1680,10 @@ async function readSession($: EngineInterface, sid: string, rec: Rec, kind: Call
 // the hook that starts it, so the agent is never slowed.
 async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | 'note', turnId: string): Promise<void> {
   // A write in flight is taking in the owner's newest words, an approval among them: the look waits
-  // for it, so a turn that ends right after an approval is walked against the plan (live round on
-  // 9590250: a turn under 30 seconds got no walk). The write ends within its own time limits.
-  await writing.get(sid)?.run.catch(() => undefined)
+  // until a pass has been shown them, so a turn that ends right after an approval is walked against
+  // the plan (live round on 9590250: a turn under 30 seconds got no walk). It waits for no message
+  // saved after it began, and never longer than LOOK_WAIT_MS (final review of #68).
+  await writeTaken($, sid)
   const rec = await loadRec($, sid)
   // Typing past notes backs the watch off; a note to the rep is never skipped.
   if (rec.skip > 0 && reason !== 'note') {
@@ -1680,29 +1731,44 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
     if (stepped && after.objective !== null) after.objective = { ...after.objective, step: answer.now }
     if ((marked || stepped) && onScreen(sid)) await update($, readingA, () => after.objective)
     const view = await read($, viewA)
-    const got = headsUpOf(answer, fill?.blocks ?? [])
+    // The parts a note held, or this mod's note on screen, said were dropped stay in this look's
+    // note until its walk takes each back (final review of #68: a look shown another plan, or
+    // answering with a plain flag, took back or replaced a drop the owner never saw).
+    const held = heldNotes.get(sid)
+    const carried = [...(held?.parts ?? []), ...(view === 'note' ? (shownParts.get(sid) ?? []) : [])]
+    const plans = fill?.blocks ?? []
+    const parts = standingDrops(answer, plans, carried)
+    const turn = lookTurns.get(sid) ?? 0
+    if (parts.length > 1) lookTurns.set(sid, turn + 1)
+    const got = headsUpOf(answer, plans, carried, turn)
     const said = got.note
     // A plain flag already shown is not shown again. A note that says a dropped plan part is shown
     // at every look where the part is dropped: a silent drop is the harm, a repeat only noise.
     const repeat = (line: string): boolean => got.drops.length === 0 && after.seen.some(s => same(s, line))
     // A part that looks dropped reaches the owner: on screen at this look, or held until the row is
-    // free. A note left up gives way to this look's; the card open, a reading, or the session off
-    // screen holds it. A later look replaces what is held, and one that walks no part as dropped
-    // takes back a held note that said one, since that part no longer looks dropped.
-    if (got.drops.length === 0 && heldNotes.get(sid)?.drops === true) heldNotes.delete(sid)
+    // free. A note left up gives way to this look's, which says its parts too; the card open, a
+    // reading, or the session off screen holds it. A later look's note replaces what is held and
+    // says its parts; a held note whose every part a walk took back goes.
+    if (held !== undefined && held.parts.length > 0 && parts.length === 0) heldNotes.delete(sid)
     if (said === null || repeat(said.line)) return
     const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId }
     if (onScreen(sid) && (view === 'row' || view === 'note')) {
       heldNotes.delete(sid)
+      shownParts.set(sid, parts)
       after.seen = [...after.seen, said.line].slice(-SEEN_MAX)
       await update($, noteA, () => note)
       await update($, viewA, () => 'note')
-    } else heldNotes.set(sid, { note, drops: got.drops.length > 0 })
+    } else heldNotes.set(sid, { note, parts })
   }
 }
 
 // A look's Heads up that could not be drawn when the look was taken, by session, until the row is free.
-const heldNotes = new Map<string, { note: Note; drops: boolean }>()
+// `parts` are the dropped parts it says, every one, not only those its line names.
+const heldNotes = new Map<string, { note: Note; parts: DroppedStep[] }>()
+// The dropped parts the note this mod last drew says, read only while the view is that note.
+const shownParts = new Map<string, DroppedStep[]>()
+// How many looks of a session said several dropped parts: the order their line names them in.
+const lookTurns = new Map<string, number>()
 
 // The view back to the bare row, and a held Heads up of the session on screen drawn there.
 async function toRow($: EngineInterface): Promise<void> {
@@ -1712,9 +1778,12 @@ async function toRow($: EngineInterface): Promise<void> {
 
 async function showHeld($: EngineInterface): Promise<void> {
   const sid = currentId
+  if (!heldNotes.has(sid) || !onScreen(sid) || (await read($, viewA)) !== 'row') return
+  // Read after the view, so a note a look held meanwhile is the one drawn.
   const held = heldNotes.get(sid)
-  if (held === undefined || !onScreen(sid) || (await read($, viewA)) !== 'row') return
+  if (held === undefined) return
   heldNotes.delete(sid)
+  shownParts.set(sid, held.parts)
   // Queued, not awaited: a caller may be inside this session's own change already.
   changeRec($, sid, r => {
     r.seen = [...r.seen, held.note.line].slice(-SEEN_MAX)

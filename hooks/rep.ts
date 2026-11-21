@@ -728,6 +728,9 @@ export type WatchAnswer = {
   notAssessed?: StepRef[]
   // The approved steps the walk marked as dropped; present only when there are any.
   dropped?: DroppedStep[]
+  // The steps the walk marked anything but dropped or not assessed (done, underway); present only
+  // when there are any. Only these take back a part an earlier note said was dropped.
+  cleared?: StepRef[]
 }
 
 // A step of an approved plan, by the number of the message that approved it.
@@ -3558,18 +3561,21 @@ function walkLine(line: string): { n: number; step: string; mark: string } | nul
   return m === null ? null : { n: Number(m[1] ?? 0), step: (m[2] as string).trim(), mark: (m[3] as string).trim() }
 }
 
-// The steps a Heads up's walk marked as dropped.
-function walkDropped(part: string | undefined): { dropped?: DroppedStep[] } {
+// The steps a Heads up's walk marked as dropped, and those it marked anything but dropped or not
+// assessed.
+function walkDropped(part: string | undefined): { dropped?: DroppedStep[]; cleared?: StepRef[] } {
   const out: DroppedStep[] = []
+  const cleared: StepRef[] = []
   for (const line of clean(part).split('\n')) {
     const w = walkLine(line)
-    const how = w === null ? null : /^(no sign while later work goes on|looks dropped)\b/i.exec(w.mark)
-    if (w !== null && how !== null) out.push({ n: w.n, step: w.step, how: /^no/i.test(how[1] as string) ? 'no sign' : 'looks dropped' })
+    if (w === null) continue
+    const how = /^(no sign while later work goes on|looks dropped)\b/i.exec(w.mark)
+    if (how !== null) out.push({ n: w.n, step: w.step, how: /^no/i.test(how[1] as string) ? 'no sign' : 'looks dropped' })
+    else if (!/^not assessed\b/i.test(w.mark) && w.mark !== '') cleared.push({ n: w.n, step: w.step })
   }
-  return out.length === 0 ? {} : { dropped: out }
+  return { ...(out.length === 0 ? {} : { dropped: out }), ...(cleared.length === 0 ? {} : { cleared }) }
 }
 
-const DROP_WORD = /\b(dropped|skipped|left out|leaves out|missing|no sign)\b/i
 const allWords = (s: string): string[] => s.toLowerCase().match(/[a-z0-9]+/g) ?? []
 
 // A part's content words, for telling one part from another: its words less the small ones every
@@ -3604,16 +3610,22 @@ const heldIn = (part: string, text: string): number => {
 // installer check" for "Run the install check") must count, and a short part no plan asked for that
 // shares two common words with one passes too, a bad flag accepted so no real step is lost.
 export const PLAN_WORDS_SHARE = 0.4
+// How long a look waits for the objective write taking in the owner's newest words.
+export const LOOK_WAIT_MS = 60_000
 const inPlans = (step: string, plans: readonly string[]): boolean =>
   contentWords(step).length > 0 && heldIn(step, plans.join('\n')) >= PLAN_WORDS_SHARE
 
-// Whether a flag names this dropped part: one clause of it speaks of a drop and holds every content
-// word of the part. Only then does the part go unprinted under the flag's "Also looks dropped" at the
-// same look. A flag about another part, sharing some of its words, does not stand for it, nor does
-// one that says another part was dropped and this one done ("The docs step was skipped, but the
-// agent did run the install check"): a part printed twice is noise, a part printed nowhere the harm.
-const CLAUSE_BREAK = /[.;:!?()]|\b(?:but|while|though|although|whereas|yet)\b/i
-const names = (flag: string, step: string): boolean => flag.split(CLAUSE_BREAK).some(c => DROP_WORD.test(c) && heldIn(step, c) === 1)
+// The same part of the same plan: both with a plan number, the same one, and the same content
+// words. Only that takes back a part an earlier note said was dropped: a sibling ("a test for the
+// reload" beside "a test for the cap"), a shorter one ("the path" beside "the cap path") or a line
+// with no plan number never does, since a part taken back wrongly is a silent drop and one kept
+// wrongly only a repeat.
+const samePart = (x: StepRef, y: StepRef): boolean => {
+  if (x.n <= 0 || x.n !== y.n) return false
+  const a = contentWords(x.step)
+  const b = new Set(contentWords(y.step))
+  return a.length > 0 && a.length === b.size && a.every(w => b.has(w))
+}
 
 export const DROPPED_STEP_MAX = 160
 export const DROPPED_ALSO_MAX = 3
@@ -3625,53 +3637,53 @@ const stepText = (step: string): string => {
 // keeps, so a part the why would carry is cut first (round 10's 3-row band named none).
 // The same text of two plans is named once.
 const textsOf = (steps: readonly DroppedStep[]): string[] => [...new Set(steps.map(d => stepText(d.step)))]
-const partsSaid = (steps: readonly DroppedStep[], max: number): string => {
-  const texts = textsOf(steps)
+const partsSaid = (texts: readonly string[], max: number): string => {
   const said = texts.slice(0, max).join('; ')
   return texts.length > max ? `${said}; and ${texts.length - max} more` : said
 }
 
-// The parts a flag names: each one a clause of it says was dropped (`names`), longest first, less a
-// part whose every content word is in a longer one it names ("the path" beside "the cap path"),
-// since the flag's words cannot tell the two apart.
-const namedBy = (flag: string, steps: readonly DroppedStep[]): DroppedStep[] => {
-  const out: DroppedStep[] = []
-  for (const d of [...steps].filter(d => names(flag, d.step)).sort((x, y) => contentWords(y.step).length - contentWords(x.step).length)) {
-    const words = contentWords(d.step)
-    if (!out.some(o => words.every(w => contentWords(o.step).includes(w)))) out.push(d)
-  }
-  return out
+// The parts a look's note says: those its walk shows dropped in a plan shown to it, then those
+// `carried` from a note still held or on screen, less each its walk takes back (`samePart` with a
+// step marked done or underway) or drops again itself. A carried part passes without the plans:
+// the plan it came from may not be shown to this look.
+export function standingDrops(a: WatchAnswer, plans: readonly string[], carried: readonly DroppedStep[] = []): DroppedStep[] {
+  const fresh = (a.dropped ?? []).filter(d => inPlans(d.step, plans))
+  const kept = carried.filter(c => !(a.cleared ?? []).some(w => samePart(w, c)) && !fresh.some(f => samePart(f, c) || stepText(f.step) === stepText(c.step)))
+  return [...fresh, ...kept]
 }
 
 // What the Heads up says for a look. A step the walk marks as dropped outranks whatever the flag
 // is about, and the flag moves to the why, so no concern is lost: one flag slot must not decide
-// whether the owner hears their ask was dropped. A step not assessed has no say here. A flag that
-// names a dropped part keeps its wording, and the other dropped parts follow it in the line. A step
-// no shown plan holds is not called part of one: only a plan the owner approved can be called that.
+// whether the owner hears their ask was dropped. A flag never stands for a part, even one it seems
+// to name: whether a flag's clause calls a part dropped or done cannot be read from its words
+// (final review of #68: "skipped, and the agent did run the install check"), and a part printed
+// twice is noise, a part printed nowhere the harm. A step not assessed has no say here. A step no
+// shown plan holds is not called part of one: only a plan the owner approved can be called that.
 //
-// Every part the walk shows as dropped is said at every look where it is dropped: nothing said at
-// an earlier look hides it, since a silent drop is the harm the rep exists to prevent and a repeat
-// is noise. Readers reword parts at every look, and every test of "already said" built on their
-// words hid parts never said. The parts are in the line, after a short lead, because a short band
-// keeps the line and cuts the why. The parts a flag names (`namedBy`) are not said again after
-// it. `drops` is every part this note says.
-export function headsUpOf(a: WatchAnswer, plans: readonly string[]): { note: { line: string; why: string } | null; drops: string[] } {
+// Every part the walk shows as dropped is said at every look where it is dropped, and a part a
+// held or on-screen note said (`carried`) until a walk takes it back: nothing said at an earlier
+// look hides it, since a silent drop is the harm the rep exists to prevent and a repeat is noise.
+// The parts are in the line, after a short lead, because a short band keeps the line and cuts the
+// why. Several lead with their count, which one row keeps, and `turn` turns their order, so at
+// successive looks each part takes the first slot. `drops` is every part the line names.
+export function headsUpOf(
+  a: WatchAnswer,
+  plans: readonly string[],
+  carried: readonly DroppedStep[] = [],
+  turn = 0,
+): { note: { line: string; why: string } | null; drops: string[] } {
   const own = a.flag === null ? null : { line: a.flag, why: a.why }
-  const fresh = (a.dropped ?? []).filter(d => inPlans(d.step, plans))
-  const flag = a.flag
-  const named = flag === null ? [] : namedBy(flag, fresh)
-  const rest = fresh.filter(d => !named.includes(d))
-  const first = rest[0]
-  const told = (ds: readonly StepRef[]): string[] => ds.map(d => stepText(d.step))
-  if (first === undefined) return { note: own, drops: told(named) }
+  const rest = standingDrops(a, plans, carried)
+  if (rest.length === 0) return { note: own, drops: [] }
+  const all = textsOf(rest)
+  const at = ((turn % all.length) + all.length) % all.length
+  const texts = [...all.slice(at), ...all.slice(0, at)]
+  const max = 1 + DROPPED_ALSO_MAX
+  const one = texts.length === 1
+  const noSign = rest.every(d => d.how === 'no sign')
   const joined = (lines: readonly string[]): string => lines.filter(l => l !== '').join(' ')
-  if (own !== null && named.length > 0)
-    return { note: { line: `${own.line} Also looks dropped: ${partsSaid(rest, DROPPED_ALSO_MAX)}.`, why: own.why }, drops: told([...named, ...rest.slice(0, DROPPED_ALSO_MAX)]) }
-  const listed = rest.slice(0, 1 + DROPPED_ALSO_MAX)
-  const one = textsOf(rest).length === 1
-  const noSign = listed.every(d => d.how === 'no sign')
   return { note: {
-    line: `${one ? 'Plan step looks' : 'Plan steps look'} dropped: ${partsSaid(rest, 1 + DROPPED_ALSO_MAX)}.`,
+    line: `${one ? 'Plan step looks' : `${texts.length} plan steps look`} dropped: ${partsSaid(texts, max)}.`,
     why: joined([
       one
         ? noSign
@@ -3682,7 +3694,7 @@ export function headsUpOf(a: WatchAnswer, plans: readonly string[]): { note: { l
           : "They are in the plan you approved, and the agent's own words or its own full list leave them out. The agent has to do them or show them.",
       ...(own === null ? [] : [`Also: ${own.line}`, own.why]),
     ]),
-  }, drops: told(listed) }
+  }, drops: texts.slice(0, max) }
 }
 
 // The Heads up's note alone.
