@@ -5638,7 +5638,7 @@
     "name": "objective-guards-written",
     "breaks": "The writer is no longer told to add no guards the owner did not ask for, so it writes conditions around a message that only informs or asks one bounded thing (that nothing is lost or duplicated, how it fits other work); the third replay of #70 counted six per chain.",
     "patch": "objective-guards-written.patch",
-    "fixed": "2026-11-21, the third replay of #70"
+    "fixed": "2026-11-21, the third replay of #70; remade 2026-11-21"
   },
   {
     "name": "objective-owner-named",
@@ -5663,5 +5663,11 @@
     "breaks": "A held \"Settle with the owner\" line that a later approval lets go of is wrapped in another settle line, so the card shows \"Settle with the owner: #3 approved a plan that would let go of: Settle with the owner: #2 approved ...\"; the rerun of #70 on 21 Nov found it at sample 3.",
     "patch": "settle-line-wrapped.patch",
     "fixed": "2026-11-21, the rerun of #70"
+  },
+  {
+    "name": "objective-step-bound-kept",
+    "breaks": "A first message ending with a bound on its step, such as \"write a two-line README and stop\", has that bound written as a condition of the whole job, and the card drafts it into the owner's message.",
+    "patch": "objective-step-bound-kept.patch",
+    "fixed": "2026-11-21, the live check of #70"
   }
 ]
