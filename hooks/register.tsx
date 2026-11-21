@@ -140,6 +140,8 @@ import {
   windowsOs,
   refusedLine,
   checkPrompt,
+  sessionStartArgv,
+  sessionStartOf,
   doingFor,
   firstSentence,
   fillCard,
@@ -2185,6 +2187,26 @@ async function pressCheck($: EngineInterface, sid: string): Promise<void> {
   await update($, briefA, x => (x === null ? x : { ...x, isChecking: true, checkNote: '' }))
   await runCheck($, sid, b.at, lastInstant.answer, lastInstant.refused)
 }
+// When the session began, for the commits the check reads (§8 item 9): the first time its transcript
+// records, from the path the classic hooks gave or, with none, the file found by name under
+// <config>/projects. '' when no file or no time is found, and the check then reads from the
+// record's first entry.
+async function sessionStart($: EngineInterface, host: Host, home: string, sid: string): Promise<string> {
+  try {
+    let path = transcripts.get(sid) ?? ''
+    if (path === '') {
+      const set = await $.env.get('CLAUDE_CONFIG_DIR')
+      const config = set !== undefined && set !== '' ? set : `${home}/.claude`
+      const found = await $.process.run(hostArgv(host, ['find', `${config}/projects`, '-maxdepth', '2', '-name', `${sid}.jsonl`]), { timeoutMs: HUMAN_READ_TIMEOUT_MS })
+      path = found.exitCode === 0 ? (found.stdout.split('\n').find(l => l.trim() !== '')?.trim() ?? '') : ''
+      if (path === '') return ''
+    }
+    const first = await $.process.run(hostArgv(host, sessionStartArgv(path)), { timeoutMs: HUMAN_READ_TIMEOUT_MS })
+    return first.exitCode === 0 ? sessionStartOf(first.stdout) : ''
+  } catch {
+    return ''
+  }
+}
 async function runCheck($: EngineInterface, sid: string, at: number, instant: BriefAnswer, refused: boolean): Promise<void> {
   const epoch = ++checkEpoch
   activeCheck?.stop()
@@ -2227,6 +2249,8 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
       brief: instant,
       writtenAt: new Date(at).toISOString(),
       startedAt: Date.now(),
+      sessionStart: await sessionStart($, checkHost, home, sid),
+      fence: rec.fence,
       unanswered: [...(links === null ? ['links' as const] : []), ...(repos.whole ? [] : ['repos' as const])],
     })
     const startedAt = Date.now()
