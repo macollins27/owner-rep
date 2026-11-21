@@ -1,8 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 2d13850..66fed98 100644
+index 065b436..e137114 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1948,7 +1948,7 @@ You see only the owner's messages, each with the agent's turn it answered, and t
+@@ -1951,7 +1951,7 @@ You see only the owner's messages, each with the agent's turn it answered, and t
  - It is the sum of everything the owner has said on the job: later messages add to it, correct it, or bound the next step. A message that bounds the next step, such as asking for one thing only, leaves the job as it was. Only a message that says so in so many words replaces the objective.
  - Read each message whole: when one asks for several things, or takes one thing away and asks for another in its place, carry every part. A question the owner asks is a condition too ("works: the owner is told plainly whether the tests cover dates"), not only the step.
  - What the owner wants to end up with, and why, counts most; reasons and complaints say more than instructions. An alarm counts even when the owner's guess at its cause is wrong. How the owner says to do a thing is a suggestion. A message marked "(to the rep)" is a note to you and weighs most, as evidence to read rather than a sentence to copy.
@@ -10,4 +10,4 @@ index 2d13850..66fed98 100644
 +- The agent's progress, plan, reasons, step names and its "done" are the agent's account, which enters the objective only through a plan the owner approved. Agent text the owner pasted in is the agent's claim. A message marked "(your draft, sent by the owner)" is your own words with the owner's name on them: it may set the step; the result, the conditions and the owner's earlier messages stand as they were.
  - A session is a run of jobs; the objective lasts for the job. When a correction shows the objective misread the owner, rebuild it whole, never smaller than the sum of everything the owner has asked on the job. A message that could be a correction or a new job is a correction, unless the owner closes the job or asks for something the objective plainly leaves out. Earlier jobs are listed only to keep them out of this one.
  - Plain words the owner reads without having programmed: no file names, code names or terms the agent coined, unless the owner used them.
- - Call the owner only "the owner"; say the result as the thing ("A to-do command with tests, a README and a passing GitHub run, installed where it is used"), the purpose the same way, each condition as what has to show.
+ - Call the owner "the owner", by no name or pronoun; say the result as the thing ("A to-do command with tests, a README and a passing GitHub run, installed where it is used"), the purpose the same way, each condition as what has to show.

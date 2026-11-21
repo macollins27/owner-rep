@@ -1946,7 +1946,7 @@ You see only the owner's messages, each with the agent's turn it answered, and t
 
 - It is your own reading, in your own words. The owner works by intent and sometimes puts a thing wrongly: write what the owner wants.
 - It says, in this order: the result the owner will have when the job is done; what it is for, because the purpose sets the standard; the conditions "done" has to show; and ${OBJECTIVE_STEP}
-- Hold every condition to what a serious owner plainly wants unsaid: the result as good as the best in its trade makes it, shown working on the real thing, nothing broken or dropped quietly, and code fit to be public when the work is public. That is the standard each condition meets, not a condition to write: add no guards the owner did not ask for (that nothing is lost or duplicated, how it fits other work).
+- Hold every condition to what a serious owner plainly wants unsaid: the result as good as the best in its trade makes it, shown working on the real thing, nothing broken or dropped quietly, and code fit to be public when the work is public. That is the standard each condition meets, not a condition to write: add no guards the owner did not ask for (nothing lost or duplicated, how it fits other work).
 - Every condition is about the result: what the owner will have, and how good. The agent's method (a routine, a brief carried out step by step, a check or test run, a review, a report) is a condition only when the owner asked for that very thing, in their own message or a plan they approved. A brief, handoff or plan an agent wrote that the owner pasted or pointed to shows what the owner is after: take the result it serves, not its steps.
 - It is the sum of everything the owner has said on the job: later messages add to it, correct it, or bound the next step. A message that bounds the next step, such as asking for one thing only, leaves the job as it was. Only a message that says so in so many words replaces the objective.
 - Read each message whole: when one asks for several things, or takes one thing away and asks for another in its place, carry every part. A question the owner asks is a condition too ("works: the owner is told plainly whether the tests cover dates"), not only the step.
@@ -1954,7 +1954,7 @@ You see only the owner's messages, each with the agent's turn it answered, and t
 - The agent's progress, plan, reasons, step names, its "done", what it says it did or found, and any limit it sets on its own work (that it installed nothing, will ask first, or left some to the owner) are the agent's account, which enters the objective only through a plan the owner approved. Agent text the owner pasted in is the agent's claim. A message marked "(your draft, sent by the owner)" is your own words with the owner's name on them: it may set the step; the result, the conditions and the owner's earlier messages stand as they were.
 - A session is a run of jobs; the objective lasts for the job. When a correction shows the objective misread the owner, rebuild it whole, never smaller than the sum of everything the owner has asked on the job. A message that could be a correction or a new job is a correction, unless the owner closes the job or asks for something the objective plainly leaves out. Earlier jobs are listed only to keep them out of this one.
 - Plain words the owner reads without having programmed: no file names, code names or terms the agent coined, unless the owner used them.
-- Call the owner only "the owner"; say the result as the thing ("A to-do command with tests, a README and a passing GitHub run, installed where it is used"), the purpose the same way, each condition as what has to show.
+- Call the owner "the owner", by no name or pronoun; say the result as the thing ("A to-do command with tests, a README and a passing GitHub run, installed where it is used"), the purpose the same way, each condition as what has to show.
 
 ## Plans the owner approved
 
@@ -2327,7 +2327,8 @@ export function takeApprovals(
 }
 
 // A held condition a message of the owner's that could not be read whole, or an approval, would
-// let go of is kept, and beside it a condition to settle it with the owner.
+// let go of is kept, and beside it a condition to settle it with the owner. A held settle line
+// is already that question: it is kept as it is, never wrapped in another.
 export function settleConditions(
   held: readonly Condition[],
   merged: Condition[],
@@ -2336,7 +2337,7 @@ export function settleConditions(
 ): Condition[] {
   const out = [...merged]
   for (const c of held) {
-    if (c.state === 'closed') continue
+    if (c.state === 'closed' || /^Settle with the owner\b/.test(bare(c.text))) continue
     for (const l of lets) {
       if (l.by === null || !same(bare(l.text), bare(c.text))) continue
       const m = owner.find(x => x.n === l.by)

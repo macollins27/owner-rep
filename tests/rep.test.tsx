@@ -2223,9 +2223,10 @@ test('rule: the rep speaks of the owner, never by a pronoun: no brief, writer pr
   }
   // The brief writes to the owner as "you" and never guesses who the owner is; the writer writes the result as the thing.
   expect(REP_SYSTEM).toContain('Call the owner "you", by no name or pronoun.')
-  // Rewritten at the third replay of #70: "No pronoun or name" sat beside "the owner is told plainly", and a
-  // writer used the owner's first name all through one call (rule 9, call 30); a person is "the owner".
-  expect(OBJECTIVE_SYSTEM).toContain('- Call the owner only "the owner"; say the result as the thing ("A to-do command with tests, a README and a passing GitHub run, installed where it is used"), the purpose the same way')
+  // Rewritten at the third replay of #70: "No pronoun or name" gave no word to use, and a writer used the
+  // owner's first name all through one call (rule 9, call 30). The rerun of 21 Nov showed the ban is needed
+  // too: "Call the owner only "the owner"" alone took the names from 20 to 7 and the pronouns from 5 to 31.
+  expect(OBJECTIVE_SYSTEM).toContain('- Call the owner "the owner", by no name or pronoun; say the result as the thing ("A to-do command with tests, a README and a passing GitHub run, installed where it is used"), the purpose the same way')
   expect(SENT_MARK).not.toMatch(/\bhim\b/)
   // The owner's own messages are still listed under their numbers, and the draft under the new mark.
   expect(briefPrompt(m)).toMatch(/The owner's own messages on this job[^]*\n- #1 make it serious\n- #2 \(your draft, sent by the owner\) Show me the run\.\n/)
@@ -7372,6 +7373,29 @@ describe('Task 5: adding is not closing; drafts with his words; long messages th
     expect(done).toContain('the dashboard built')
   })
 
+  test('rule: a second approval that lets go of a settle line keeps it as it is, never wrapped in another (the targeted rerun of #70, sample 3 B1)', async ($, on) => {
+    // The rerun's writer let go of #2's settle line at #3, and the card showed "Settle with the owner:
+    // #3 approved a plan that would let go of: Settle with the owner: #2 approved a plan that ...".
+    const s = asks(on, [his(1, 'build the dashboard, and keep the analytics')], { objective: HELD_WITH([KEEP_ANALYTICS, 'the dashboard built']) })
+    let n = 0
+    s.answer(() =>
+      ++n === 1
+        ? ANSWER(['the dashboard built | open'], { approved: ['#2 | all'], dropped: [`${KEEP_ANALYTICS} | #2`] })
+        : ANSWER(['the dashboard built | open'], { approved: ['#3 | all'], dropped: [`${KEEP_ANALYTICS} | #3`, `${SETTLE_APPROVED(2, KEEP_ANALYTICS)} | #3`] }),
+    )
+    await started($)
+    await runTurn($, s.scripts, 't1', [said('Plan:\n1. Remove the analytics.\n2. Build the dashboard.')])
+    await s.send($, 'yes, go')
+    await runTurn($, s.scripts, 't2', [said('Plan:\n1. Remove the analytics for good.\n2. Ship the dashboard.')])
+    await s.send($, 'yes, go')
+    expect(n).toBe(2)
+    const done = doneOf(s.obj())
+    expect(done).toContain(KEEP_ANALYTICS)
+    expect(done).toContain(SETTLE_APPROVED(2, KEEP_ANALYTICS))
+    expect(done).toContain(SETTLE_APPROVED(3, KEEP_ANALYTICS))
+    expect(done.filter(t => t.includes('let go of: Settle with the owner'))).toEqual([])
+  })
+
   test('guard: a typed message that drops an ask in his own words, not marked approved, lets it go', async ($, on) => {
     const s = asks(on, [his(1, 'build the dashboard, and keep the analytics')], { objective: HELD_WITH([KEEP_ANALYTICS, 'the dashboard built']) })
     s.answer(() => ANSWER(['the dashboard built | open'], { dropped: [`${KEEP_ANALYTICS} | #2`], cause: '#2 dropped the analytics' }))
@@ -9039,7 +9063,7 @@ describe("Task 6: the writer's rule and the approved line", () => {
     // Rewritten at the third replay of #70: "a condition of its own only when the owner asks for it" still
     // left 6 unasked conditions per chain, guards around a message that only informed or asked one
     // bounded thing (that nothing is lost or duplicated, how it fits the rebuild) (rule 8).
-    expect(built).toContain('Hold every condition to what a serious owner plainly wants unsaid: the result as good as the best in its trade makes it, shown working on the real thing, nothing broken or dropped quietly, and code fit to be public when the work is public. That is the standard each condition meets, not a condition to write: add no guards the owner did not ask for (that nothing is lost or duplicated, how it fits other work).')
+    expect(built).toContain('Hold every condition to what a serious owner plainly wants unsaid: the result as good as the best in its trade makes it, shown working on the real thing, nothing broken or dropped quietly, and code fit to be public when the work is public. That is the standard each condition meets, not a condition to write: add no guards the owner did not ask for (nothing lost or duplicated, how it fits other work).')
     expect(built).not.toContain('a condition of its own only when the owner asks for it')
     expect(built).not.toContain('It includes what a serious owner plainly wants unsaid')
   })

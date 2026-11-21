@@ -5642,7 +5642,7 @@
   },
   {
     "name": "objective-owner-named",
-    "breaks": "The writer is not told to call the owner only \"the owner\", so a condition that needs a person can use the owner's name from the messages; the third replay of #70 found it all through one call.",
+    "breaks": "The writer is not told to call the owner \"the owner\" by no name or pronoun, so a condition that needs a person can use the owner's name from the messages or \"him\"; the third replay of #70 found the name all through one call.",
     "patch": "objective-owner-named.patch",
     "fixed": "2026-11-21, the third replay of #70"
   },
@@ -5651,5 +5651,17 @@
     "breaks": "An approved step's condition is not told to keep the step's limits and timing, so a step that says what happens before a date and what happens at it can lose one half; the third replay of #70 lost \"nothing before launch\".",
     "patch": "objective-step-limits-dropped.patch",
     "fixed": "2026-11-21, the third replay of #70"
+  },
+  {
+    "name": "objective-pronoun-ban-dropped",
+    "breaks": "The writer is told to call the owner \"the owner\" but no longer to use no name or pronoun, so it writes \"him\" and \"his\" for the owner; the rerun of #70 on 21 Nov counted 31 against 5 when the ban was left out.",
+    "patch": "objective-pronoun-ban-dropped.patch",
+    "fixed": "2026-11-21, the rerun of #70"
+  },
+  {
+    "name": "settle-line-wrapped",
+    "breaks": "A held \"Settle with the owner\" line that a later approval lets go of is wrapped in another settle line, so the card shows \"Settle with the owner: #3 approved a plan that would let go of: Settle with the owner: #2 approved ...\"; the rerun of #70 on 21 Nov found it at sample 3.",
+    "patch": "settle-line-wrapped.patch",
+    "fixed": "2026-11-21, the rerun of #70"
   }
 ]

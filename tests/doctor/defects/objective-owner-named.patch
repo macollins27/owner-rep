@@ -1,12 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 2d13850..7e973d1 100644
+index 065b436..4dab799 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1951,7 +1951,7 @@ You see only the owner's messages, each with the agent's turn it answered, and t
+@@ -1954,7 +1954,7 @@ You see only the owner's messages, each with the agent's turn it answered, and t
  - The agent's progress, plan, reasons, step names, its "done", what it says it did or found, and any limit it sets on its own work (that it installed nothing, will ask first, or left some to the owner) are the agent's account, which enters the objective only through a plan the owner approved. Agent text the owner pasted in is the agent's claim. A message marked "(your draft, sent by the owner)" is your own words with the owner's name on them: it may set the step; the result, the conditions and the owner's earlier messages stand as they were.
  - A session is a run of jobs; the objective lasts for the job. When a correction shows the objective misread the owner, rebuild it whole, never smaller than the sum of everything the owner has asked on the job. A message that could be a correction or a new job is a correction, unless the owner closes the job or asks for something the objective plainly leaves out. Earlier jobs are listed only to keep them out of this one.
  - Plain words the owner reads without having programmed: no file names, code names or terms the agent coined, unless the owner used them.
--- Call the owner only "the owner"; say the result as the thing ("A to-do command with tests, a README and a passing GitHub run, installed where it is used"), the purpose the same way, each condition as what has to show.
+-- Call the owner "the owner", by no name or pronoun; say the result as the thing ("A to-do command with tests, a README and a passing GitHub run, installed where it is used"), the purpose the same way, each condition as what has to show.
 +- Say the result as the thing ("A to-do command with tests, a README and a passing GitHub run, installed where it is used"), the purpose the same way, each condition as what has to show.
  
  ## Plans the owner approved

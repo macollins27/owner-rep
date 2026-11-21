@@ -1,12 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 2d13850..19a2d45 100644
+index 065b436..dd54453 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1943,7 +1943,7 @@ You see only the owner's messages, each with the agent's turn it answered, and t
+@@ -1946,7 +1946,7 @@ You see only the owner's messages, each with the agent's turn it answered, and t
  
  - It is your own reading, in your own words. The owner works by intent and sometimes puts a thing wrongly: write what the owner wants.
  - It says, in this order: the result the owner will have when the job is done; what it is for, because the purpose sets the standard; the conditions "done" has to show; and ${OBJECTIVE_STEP}
--- Hold every condition to what a serious owner plainly wants unsaid: the result as good as the best in its trade makes it, shown working on the real thing, nothing broken or dropped quietly, and code fit to be public when the work is public. That is the standard each condition meets, not a condition to write: add no guards the owner did not ask for (that nothing is lost or duplicated, how it fits other work).
+-- Hold every condition to what a serious owner plainly wants unsaid: the result as good as the best in its trade makes it, shown working on the real thing, nothing broken or dropped quietly, and code fit to be public when the work is public. That is the standard each condition meets, not a condition to write: add no guards the owner did not ask for (nothing lost or duplicated, how it fits other work).
 +- It includes what a serious owner plainly wants unsaid: the result as good as the best in its trade makes it; shown to work by someone opening the real thing, using it and trying to break it; nothing left broken or dropped quietly; code fit to be public when the work is public; and no effort on checks or process the result does not need.
  - Every condition is about the result: what the owner will have, and how good. The agent's method (a routine, a brief carried out step by step, a check or test run, a review, a report) is a condition only when the owner asked for that very thing, in their own message or a plan they approved. A brief, handoff or plan an agent wrote that the owner pasted or pointed to shows what the owner is after: take the result it serves, not its steps.
  - It is the sum of everything the owner has said on the job: later messages add to it, correct it, or bound the next step. A message that bounds the next step, such as asking for one thing only, leaves the job as it was. Only a message that says so in so many words replaces the objective.
