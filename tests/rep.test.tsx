@@ -167,13 +167,15 @@ const typed = (text: string) => ({ text, wait: false, origin: { kind: 'composer'
 // set that puts the whole store's JSON over it, as Claude Code refuses one over 4 MiB in all;
 // `refuse` refuses a set it names (given the whole store as it would stand); `beforeSet` runs
 // before a set lands, so a test can hold it there, and `onGet` once a get has read its value,
-// before it is answered, so a change made there lands just after the read.
+// before it is answered, so a change made there lands just after the read; `onDelete` sees each
+// key deleted.
 type StoreHooks = {
   limit?: number
   refuse?: (key: string, value: unknown, after: Record<string, unknown>) => boolean
   beforeSet?: (key: string, value: unknown) => unknown
   onGet?: (key: string) => unknown
   onKeys?: () => unknown
+  onDelete?: (key: string) => unknown
 }
 const asJson = (v: unknown): unknown => (v === undefined ? undefined : JSON.parse(JSON.stringify(v)))
 const storeStub = (on: On, store: Record<string, unknown> = {}, o: StoreHooks = {}): Record<string, unknown> => {
@@ -195,6 +197,7 @@ const storeStub = (on: On, store: Record<string, unknown> = {}, o: StoreHooks = 
     return { value: Object.keys(store) }
   })
   on('store.delete', (_$, e) => {
+    o.onDelete?.(e.key)
     delete store[e.key]
     return { value: undefined }
   })
@@ -202,10 +205,13 @@ const storeStub = (on: On, store: Record<string, unknown> = {}, o: StoreHooks = 
 }
 
 // A session's record as the store holds it: the newer of its own key's copy and the old map's,
-// as the mod reads it (an older build still running saves into the map).
+// the map's only when saved since the last move, as the mod reads it (an older build still
+// running saves into the map).
 const recIn = <T = Stored>(store: Record<string, unknown>, id = 'test-session'): T | undefined => {
   const own = store[`rec:${id}`] as { at?: number } | undefined
-  const old = (store.sessions as Record<string, { at?: number }> | undefined)?.[id]
+  const mapped = (store.sessions as Record<string, { at?: number }> | undefined)?.[id]
+  const since = typeof store.migratedAt === 'number' ? store.migratedAt : 0
+  const old = mapped !== undefined && (mapped.at ?? 0) > since ? mapped : undefined
   if (own === undefined || old === undefined) return (own ?? old) as T | undefined
   return ((old.at ?? 0) > (own.at ?? 0) ? old : own) as T
 }
@@ -4354,6 +4360,61 @@ describe('the store: one key per session\'s record', () => {
     await $.prompt.submit(typed('build it'))
     expect(store['rec:gone']).toBeUndefined()
     expect(store['rec:later']).toEqual(recOfS('later', at - 50))
+  })
+
+  test('rule: a record the trim let go after the move is not read back from the old map\'s copy from before the move (review of #71, must-fix 1)', async ($, on) => {
+    const at = NOW_AT()
+    const store: Record<string, unknown> = {
+      [MIGRATED]: at - 100,
+      sessions: { z: recOfS('z', at - 200, 'the old message') },
+      'rec:z': { ...recOfS('z', at - 90, 'the old message'), owner: [om('the old message'), om('said after the move', 2)], counter: 2 },
+    }
+    for (let i = 0; i < SESSIONS_MAX - 1; i++) store[`rec:s${i}`] = recOfS(`s${i}`, at - 80 + i)
+    storeStub(on, store)
+    let id = 'test-session'
+    plain(on, () => id)
+    await $.prompt.submit(typed('build it'))
+    expect(store['rec:z']).toBeUndefined()
+    id = 'z'
+    await $.prompt.submit(typed('back to z'))
+    expect((store['rec:z'] as Stored).owner.map(m => m.text)).not.toContain('the old message')
+  })
+
+  test('rule: a save that lands while another session\'s trim is running is not deleted by that trim (review of #71, must-fix 2)', async ($, on) => {
+    const at = NOW_AT()
+    const store: Record<string, unknown> = { [MIGRATED]: 1, 'rec:idle': recOfS('idle', 500, 'an old message in idle') }
+    for (let i = 0; i < SESSIONS_MAX - 1; i++) store[`rec:s${i}`] = recOfS(`s${i}`, at - 80 + i)
+    let id = 'session-a'
+    let holding = false
+    let held = () => {}
+    const isHeld = new Promise<void>(r => (held = r))
+    let release = () => {}
+    const out = new Promise<void>(r => (release = r))
+    const deleted: string[] = []
+    // Session A's trim is held once it has read the last record's at, before it lets any go.
+    storeStub(on, store, {
+      onKeys: () => {
+        if (id === 'session-a' && store['rec:session-a'] !== undefined) holding = true
+      },
+      onGet: async key => {
+        if (!holding || key !== `rec:s${SESSIONS_MAX - 2}`) return
+        holding = false
+        held()
+        await out
+      },
+      onDelete: key => deleted.push(key),
+    })
+    plain(on, () => id)
+    const a = $.prompt.submit(typed('the prompt in A'))
+    await isHeld
+    id = 'idle'
+    await $.prompt.submit(typed('the owner comes back: approve the plan'))
+    release()
+    await a
+    expect(recIn(store, 'idle')?.owner.map(m => m.text)).toContain('the owner comes back: approve the plan')
+    expect(deleted).not.toContain('rec:idle')
+    // The trim lets go the oldest record it can, s0, in idle's place.
+    expect(Object.keys(store).filter(k => k.startsWith('rec:'))).toHaveLength(SESSIONS_MAX)
   })
 
   test('rule: the old map goes once its newest record is OLD_MAP_IDLE_MS old, and stays while one is newer', async ($, on) => {

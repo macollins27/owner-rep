@@ -1368,9 +1368,13 @@ never the session saving (`recsToLetGo`). A record let go leaves its drafts (`re
 `droppedDrafts`, newest first, each once, up to `DROPPED_DRAFTS_MAX` (200) (`keepDropped`),
 before its key is deleted; a fork's own first save can let go the record it was forked from.
 The save stands whatever the trim does: a trim that fails, or a process that ends between the
-two, leaves one record over, which the next save's trim lets go. Two trims at once may each
-let go the same record (deleting a missing key does nothing), and a live session's record is
-among the newest, so stays. `droppedDrafts` is still one key read and written whole, so two
+two, leaves one record over, which the next save's trim lets go. Each record picked is read
+again just before its key is deleted, and kept when its `at` has changed since the trim read
+it: a session idle long enough to be the oldest can save while another session's trim runs.
+The store has no compare-and-delete, so a save landing between that `get` and the `delete` is
+still lost; the window was the whole trim. `trimStore` returns only the ids it deleted, so only
+their folders go. Two trims at once may each let go the same record (deleting a missing key
+does nothing). `droppedDrafts` is still one key read and written whole, so two
 trims that write it in the same instant can lose one's drafts; that window is a `get` and a
 `set` long, against the whole save the map had. A refused save throws, as before, and the
 store's limit is on the whole store's JSON, the record's key included.
@@ -1382,11 +1386,14 @@ map's records saved since then, so a record the trim let go is not copied back. 
 kept, not deleted: a process still running an older build reads and saves only the map, and
 with the map gone it would load a blank record and save it as the newest. Every read takes the
 newer of the record's own key and the map's entry (`loadStored`, `allStored`), so a save an
-older build makes into the map is the one read. The map goes once its newest record is
-`OLD_MAP_IDLE_MS` (7 days) old, when no older build can still be saving into it. A move the
+older build makes into the map is the one read. A read takes a map record only when it was
+saved after the last finished move (`oldMapSinceMove`), or every one when no move has
+finished: a finished move copied each record saved before it, so an older map record is in its
+key or was let go, and reading it would bring a let-go record back as its copy from before the
+move. The map goes at the first move after its newest record is `OLD_MAP_IDLE_MS` (7 days)
+old, when no older build can still be saving into it. A move the
 store refuses partway stops there with `migratedAt` unwritten: the map is still read for the
-records not yet copied, and the next process copies them. While the map stays, a record the
-trim let go is still read from it (its drafts and its bytes counted with the others), the store
+records not yet copied, and the next process copies them. While the map stays, the store
 holds each record twice, and the move itself writes other sessions' keys, so a session saving
 in another process in the same instant can lose that one save: the move copies a record only
 when the map's copy is newer than the key's, which is so only at the first move or after an

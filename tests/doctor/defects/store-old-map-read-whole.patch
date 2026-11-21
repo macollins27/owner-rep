@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index d17edc4..3716369 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -488,7 +488,7 @@ async function oldMap($: EngineInterface): Promise<Record<string, Rec>> {
+ async function oldMapSinceMove($: EngineInterface): Promise<Record<string, Rec>> {
+   const got = await $.store.get(MIGRATED_KEY)
+   const since = typeof got === 'number' && Number.isFinite(got) ? got : 0
+-  return Object.fromEntries(Object.entries(await oldMap($)).filter(([, r]) => atOf(r) > since))
++  return Object.fromEntries(Object.entries(await oldMap($)).filter(() => since >= 0))
+ }
+ 
+ // Every record the store holds, by session id: each record key's, and the old map's where it is

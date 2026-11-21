@@ -11,7 +11,10 @@ What changed in each release of Owner Rep, newest first. The full record is the
   older copy; a plan approval was lost that way. Each session's record now has its own place in
   the store and a save writes only that. Records kept the old way are copied over on the first
   start, and the old list is kept, and read where it is newer, until it has gone unused for a
-  week, so a session still running an older version loses nothing.
+  week, so a session still running an older version loses nothing. A session pushed out of the
+  newest 32 after the update is not read back from that old list, and a session you come back
+  to after a long idle keeps the message it saves while another session is clearing out old
+  records.
 
 ## 0.7.7 (19 November 2026)
 

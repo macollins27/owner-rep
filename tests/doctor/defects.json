@@ -5176,5 +5176,17 @@
     "breaks": "A session's save reads the whole map of every session's record, changes its own and writes the map back, so another process's save that lands between the read and the write is lost.",
     "patch": "store-whole-map-save.patch",
     "fixed": "tested 2026-11-20"
+  },
+  {
+    "name": "store-old-map-read-whole",
+    "breaks": "Every read takes the old map's copy of a record whatever its age, so a record the trim let go after the move comes back as its copy from before the move, and its session goes on from it.",
+    "patch": "store-old-map-read-whole.patch",
+    "fixed": "2026-11-21, the review of #71"
+  },
+  {
+    "name": "store-trim-deletes-unread",
+    "breaks": "The trim deletes each record it picked without reading it again, so a save an idle session makes while another session's trim runs is deleted with its whole record.",
+    "patch": "store-trim-deletes-unread.patch",
+    "fixed": "2026-11-21, the review of #71"
   }
 ]

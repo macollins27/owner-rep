@@ -1,9 +1,9 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index e3dcd55..4daf2d7 100644
+index d17edc4..7485f43 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -597,7 +597,7 @@ async function storeRec($: EngineInterface, rec: Rec): Promise<string[]> {
- // trimming at once may each let go the same record; a live one is newest, and stays.
+@@ -610,7 +610,7 @@ async function storeRec($: EngineInterface, rec: Rec): Promise<string[]> {
+ // lost. Two sessions trimming at once may each let go the same record. Returns the ids deleted.
  async function trimStore($: EngineInterface, keep: string): Promise<string[]> {
    const ids = (await $.store.keys()).map(recIdOf).filter((id): id is string => id !== null)
 -  if (ids.length <= SESSIONS_MAX) return []

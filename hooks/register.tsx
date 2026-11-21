@@ -465,7 +465,7 @@ async function loadRec($: EngineInterface, id: string): Promise<Rec> {
 async function loadStored($: EngineInterface, id: string): Promise<Rec> {
   await migrateOnce($)
   const own = await $.store.get(recKey(id))
-  const old = (await oldMap($))[id]
+  const old = (await oldMapSinceMove($))[id]
   const got = newerRec(isRec(own) ? own : undefined, old)
   if (got === undefined) return freshRec(id)
   return fromStored(id, JSON.parse(JSON.stringify(got)) as Rec)
@@ -481,8 +481,18 @@ async function oldMap($: EngineInterface): Promise<Record<string, Rec>> {
   return out
 }
 
+// The old map's records saved since the last move finished (`MIGRATED_KEY`), or all of them
+// when none has: a finished move copied every record saved before it to its own key, so an older
+// one is either there or was let go, and is never read back in place of a record the trim let go.
+// A session still on an older build saves into the map with a later `at`, and is read.
+async function oldMapSinceMove($: EngineInterface): Promise<Record<string, Rec>> {
+  const got = await $.store.get(MIGRATED_KEY)
+  const since = typeof got === 'number' && Number.isFinite(got) ? got : 0
+  return Object.fromEntries(Object.entries(await oldMap($)).filter(([, r]) => atOf(r) > since))
+}
+
 // Every record the store holds, by session id: each record key's, and the old map's where it is
-// newer or the only copy. Read for the records' drafts (`storedDrafts`) and the other records'
+// newer or the only copy, of those saved since the last move (`oldMapSinceMove`). Read for the records' drafts (`storedDrafts`) and the other records'
 // inline bytes (`placeSources`); a record let go while this reads is simply missing.
 async function allStored($: EngineInterface): Promise<Map<string, Rec>> {
   await migrateOnce($)
@@ -493,7 +503,7 @@ async function allStored($: EngineInterface): Promise<Map<string, Rec>> {
     const v = await $.store.get(k)
     if (isRec(v)) out.set(id, v)
   }
-  for (const [id, v] of Object.entries(await oldMap($))) {
+  for (const [id, v] of Object.entries(await oldMapSinceMove($))) {
     const got = newerRec(out.get(id), v)
     if (got !== undefined) out.set(id, got)
   }
@@ -584,8 +594,8 @@ async function storeRec($: EngineInterface, rec: Rec): Promise<string[]> {
   await migrateOnce($)
   const saved: Rec = { ...rec, at: Date.now() }
   // A blank record loads back the same when missing, so none takes a place (`isBlankRec`),
-  // unless the old map holds a copy, which would be read in its place.
-  if (isBlankRec(saved, freshRec(rec.id)) && (await oldMap($))[rec.id] === undefined) await $.store.delete(recKey(rec.id))
+  // unless the old map holds a copy that would be read in its place.
+  if (isBlankRec(saved, freshRec(rec.id)) && (await oldMapSinceMove($))[rec.id] === undefined) await $.store.delete(recKey(rec.id))
   else await $.store.set(recKey(rec.id), saved)
   // The save stands whatever the trim does: one that fails is done by the next save.
   return trimStore($, rec.id).catch(() => [])
@@ -593,8 +603,11 @@ async function storeRec($: EngineInterface, rec: Rec): Promise<string[]> {
 
 // The records past the newest SESSIONS_MAX let go, oldest first, never the session saving: only
 // when the record keys number more, so most saves read the keys alone. Each leaves its drafts
-// in `droppedDrafts` before its key goes, so a draft the owner sent stays the rep's. Two sessions
-// trimming at once may each let go the same record; a live one is newest, and stays.
+// in `droppedDrafts` before its key goes, so a draft the owner sent stays the rep's. Each key is read
+// again just before it is deleted, and kept when its `at` has changed since the trim read it: a
+// session idle long enough to be the oldest may save while another session's trim runs. The
+// store has no compare-and-delete, so a save landing between that read and the delete is still
+// lost. Two sessions trimming at once may each let go the same record. Returns the ids deleted.
 async function trimStore($: EngineInterface, keep: string): Promise<string[]> {
   const ids = (await $.store.keys()).map(recIdOf).filter((id): id is string => id !== null)
   if (ids.length <= SESSIONS_MAX) return []
@@ -603,8 +616,14 @@ async function trimStore($: EngineInterface, keep: string): Promise<string[]> {
   const gone = recsToLetGo(ids.map(id => ({ id, at: atOf(recs.get(id) as { at?: unknown } | undefined) })), keep, SESSIONS_MAX)
   const dropped = gone.flatMap(id => recDrafts(recs.get(id)))
   if (dropped.length > 0) await $.store.set('droppedDrafts', keepDropped(await droppedDrafts($), dropped))
-  for (const id of gone) await $.store.delete(recKey(id))
-  return gone
+  const deleted: string[] = []
+  for (const id of gone) {
+    const now = await $.store.get(recKey(id))
+    if (atOf(now as { at?: unknown } | undefined) !== atOf(recs.get(id) as { at?: unknown } | undefined)) continue
+    await $.store.delete(recKey(id))
+    deleted.push(id)
+  }
+  return deleted
 }
 
 // The drafts of records the store has let go (`saveRec`), newest first.

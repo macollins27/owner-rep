@@ -1,12 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index e3dcd55..9924d76 100644
+index d17edc4..6e0bf63 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -602,7 +602,6 @@ async function trimStore($: EngineInterface, keep: string): Promise<string[]> {
+@@ -615,7 +615,7 @@ async function trimStore($: EngineInterface, keep: string): Promise<string[]> {
    for (const id of ids) recs.set(id, await $.store.get(recKey(id)))
    const gone = recsToLetGo(ids.map(id => ({ id, at: atOf(recs.get(id) as { at?: unknown } | undefined) })), keep, SESSIONS_MAX)
    const dropped = gone.flatMap(id => recDrafts(recs.get(id)))
 -  if (dropped.length > 0) await $.store.set('droppedDrafts', keepDropped(await droppedDrafts($), dropped))
-   for (const id of gone) await $.store.delete(recKey(id))
-   return gone
- }
++
+   const deleted: string[] = []
+   for (const id of gone) {
+     const now = await $.store.get(recKey(id))
