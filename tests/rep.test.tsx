@@ -8839,9 +8839,9 @@ test('rule: in a session with no fence yet, the writer makes it before its first
   const rec = kept(on, unwritten())
   quietBand(on)
   on('session.start', (_$, e) => ({ cwd: e.cwd }))
-  const asks: Array<{ system: unknown; blocks: unknown; prompt: string }> = []
+  const asks: Array<{ system: unknown; blocks: unknown; promptBlocks: unknown; prompt: string }> = []
   on('model.complete', (_$, e) => {
-    asks.push({ system: e.system, blocks: e.systemBlocks, prompt: String(e.prompt) })
+    asks.push({ system: e.system, blocks: e.systemBlocks, promptBlocks: e.promptBlocks, prompt: String(e.prompt) })
     return { value: { isAnswered: true, text: OBJ('A licence file.', ['the file committed | open']), usage: USAGE } }
   })
   await $.session.start({ cwd: '/tmp/x', surface: 'terminal', isInteractive: true })
@@ -8852,8 +8852,37 @@ test('rule: in a session with no fence yet, the writer makes it before its first
   expect(asks[0]?.system).toBe(objectiveSystem(fence))
   expect(asks[0]?.prompt).toContain(`<owner_messages_${fence}>\n- #1 add a licence file\n</owner_messages_${fence}>`)
   expect(rec()?.objective?.result).toMatch(/licence file/)
-  // The engine is handed the system prompt as one block marked for the cache.
+  // The engine is handed the system prompt as one block marked for the cache, beside a prompt in
+  // one block. 2.1.286 refuses blocks at its host check, before any hook, so its hook sees only
+  // the text sent after the refusal (its test engine has no `prompt.mention`, which every build
+  // from 2.1.310 on has, and every one of those is held to the blocks).
+  // There the rules still reach the model, as text beside the text prompt: a fallback that is
+  // missing leaves the writer with no call at all, and a block system beside a text prompt passes
+  // that check and is dropped, which is the call this one would be.
+  if (asks[0]?.blocks === undefined && !('mention' in $.prompt)) {
+    expect(typeof asks[0]?.system).toBe('string')
+    expect(asks[0]?.promptBlocks).toBeUndefined()
+    return
+  }
   expect(asks[0]?.blocks).toEqual([{ text: objectiveSystem(fence), cache: true }])
+  expect(asks[0]?.promptBlocks).toEqual([{ text: asks[0]?.prompt }])
+})
+
+test('rule: a writer call that fails other than by refusing blocks is made once, not sent again as text', async ($, on) => {
+  kept(on, unwritten())
+  quietBand(on)
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  let calls = 0
+  on('model.complete', (_$, e, next) => {
+    if (!String(e.prompt).includes('<owner_messages_')) return { value: { isAnswered: true, text: HOLDS, usage: USAGE } }
+    calls += 1
+    // Nothing beneath answers it: "no implementation for model.complete", on any build.
+    return next(e)
+  })
+  await $.session.start({ cwd: '/tmp/x', surface: 'terminal', isInteractive: true })
+  await settleUntil($, () => calls >= 1)
+  await settle($)
+  expect(calls).toBe(1)
 })
 
 test('rule: a message cannot close the fence: a fence tag in the owner\'s text or in the agent line is printed with its brackets turned, in any case, and the record keeps the text', () => {

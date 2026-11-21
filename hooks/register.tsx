@@ -1472,8 +1472,11 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
         const maxTokens = retry ? OBJECTIVE_RETRY_MAX_TOKENS : OBJECTIVE_MAX_TOKENS
         const timeoutMs = retry ? OBJECTIVE_RETRY_TIMEOUT_MS : OBJECTIVE_TIMEOUT_MS
         // The system prompt goes as one block marked for the cache, the same on every write of the
-        // session; a build that refuses blocks (2.1.286) takes the text.
-        const send = (sys: string | PromptBlock[]) => $.model.complete({ model: OBJECTIVE_MODEL, system: sys, prompt, maxTokens, effort, timeoutMs })
+        // session, and the prompt with it as one block: 2.1.286 checks only the prompt's shape, and
+        // drops a block system beside a text prompt without a word, so only a block prompt makes it
+        // refuse (BLOCKS_REFUSED), and that build is then sent both as text.
+        const send = (sys: string | PromptBlock[]) =>
+          $.model.complete({ model: OBJECTIVE_MODEL, system: sys, prompt: typeof sys === 'string' ? prompt : [{ text: prompt }], maxTokens, effort, timeoutMs })
         const { result, ms } = await timed(() =>
           send([{ text: system, cache: true }]).catch((e: unknown) => {
             if (!BLOCKS_REFUSED.test(String(e))) throw e
@@ -1830,7 +1833,10 @@ async function replay($: EngineInterface, args: string): Promise<string> {
       const prompt = sent.prompt
       // The system prompt marked for the cache where the build that sent the call marked it.
       const cache = cachesSystem(e.kind, system, prompt)
-      const send = (p: string | PromptBlock[], c: boolean) => $.model.complete({ model: e.settings.model, system: c ? [{ text: system, cache: true }] : system, prompt: p, maxTokens: sent.cap, effort, timeoutMs: e.settings.timeoutMs })
+      // A system sent as blocks goes with a prompt in blocks, so 2.1.286 refuses it rather than
+      // dropping the system (the writer's call).
+      const send = (p: string | PromptBlock[], c: boolean) =>
+        $.model.complete({ model: e.settings.model, system: c ? [{ text: system, cache: true }] : system, prompt: c && typeof p === 'string' ? [{ text: p }] : p, maxTokens: sent.cap, effort, timeoutMs: e.settings.timeoutMs })
       for (let i = 1; i <= a.times; i++) {
         // A build that refuses blocks (2.1.286) is sent the same texts plain, as the rep's own
         // calls are.
