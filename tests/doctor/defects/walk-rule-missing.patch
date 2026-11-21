@@ -1,21 +1,22 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index f8f119f..ad86784 100644
+index 062f428..ce38e49 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1801,7 +1801,6 @@ ${seen}
- Notes the other watcher already showed the owner in this session, which you must not repeat either:
- ${others}
+@@ -1827,7 +1827,7 @@ ${fenceTags(seen)}
  
--${WALK_RULE}
- ${LIST_GAP_RULE}
- ${WATCH_WALK_AT} one line per step; with no plan shown, write "steps: none".
- 
-@@ -1874,7 +1873,7 @@ When every condition is shown or closed and the record shows the result working,
- 
- ${LOOK_RULE}
- 
--${WALK_RULE}
-+
- Walk them to yourself and do not write the walk out. Every step with no sign while later work goes on goes first under "left:", named with the plan's number; every step not assessed goes under "unassessed:".
- 
+ Notes the other watcher already showed the owner:
+ ${fenceTags(others)}
+-${plan ? `\n${STEP_STATES} ${WALK_WATCH}\n` : ''}
++${plan ? `\n${WALK_WATCH}\n` : ''}
  ## Output structure
+ 
+ Exactly these lines, nothing before or after:
+@@ -1877,7 +1877,7 @@ ${decidingText(plan, true)}
+ 
+ Judge what the agent and its helpers did and what came back, not what the agent says it did. If the owner sent your last message to the agent, say whether the agent did what it asked.
+ 
+-${plan ? `\n${STEP_STATES}\n${WALK_BRIEF}\n` : ''}
++${plan ? `\n${WALK_BRIEF}\n` : ''}
+ ## Output structure
+ 
+ Exactly these labelled parts, in this order, nothing before or after:

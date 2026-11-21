@@ -14,6 +14,7 @@ import {
   OWNER_CUT,
   HIS_CUT,
   PRIOR_CUT,
+  type DroppedStep,
   type OwnerKind,
   type OwnerMsg,
   type PendingTurn,
@@ -195,7 +196,8 @@ import {
   WATCH_EFFORT,
   BRIEF_EFFORT,
   OWN_WORDS_EFFORT,
-  REP_SYSTEM,
+  repSystem,
+  newFence,
   BLOCKS_REFUSED,
   joinBlocks,
   type PromptBlock,
@@ -258,7 +260,10 @@ import {
   approvalOf,
   readerParts,
   readerGaps,
-  headsUp,
+  headsUpOf,
+  standingDrops,
+  manyParts,
+  LOOK_WAIT_MS,
   notAssessedGaps,
   joinGaps,
   WATCH_APPROVED_BUDGET,
@@ -354,6 +359,10 @@ type Rec = {
   at: number
   // The objective held for the job in hand; null until the writer has written it.
   objective: Objective | null
+  // The session's fence (`newFence`): the tag suffix the record and the owner's messages are
+  // quoted in, made at the first read and kept, so every call of the session sends the same
+  // system prompt and its cache holds. Absent until then.
+  fence?: string
   // The number of the job's first message while no objective is held; a new job sets it.
   jobStart: number
   // An old-shape reading's text, kept until the first objective takes it as a version.
@@ -1101,7 +1110,8 @@ async function memoryFor($: EngineInterface, sid: string, rec: Rec, reader: 'wat
   // The briefing is told, among coverage's lines, of the plans it cannot compare, by the one path
   // the row and the card take; what it finds itself goes on the card after it answers.
   const gaps = reader === 'brief' ? readerGaps(approved, 'brief') : {}
-  return { ...base, owner, approved, lines: coverage(rec, { full: storeFull.get(sid), gaps }) }
+  const fence = rec.fence ?? (await changeRec($, sid, r => (r.fence ??= newFence())))
+  return { ...base, owner, approved, fence, lines: coverage(rec, { full: storeFull.get(sid), gaps }) }
 }
 
 // The store refused the record: its inline texts go to files, or memory when the files refuse
@@ -1505,7 +1515,9 @@ function applyMarks(
 
 // The objective writer running for a session, one at a time per session, and
 // whether a message of the owner's or a note asked for a write while it ran.
-type Writing = { run: Promise<void>; again: boolean }
+// `shown` is the newest message number a finished pass was shown, and each pass's end calls
+// `ended`, so a look can wait for the pass that takes in a given message (`writeTaken`).
+type Writing = { run: Promise<void>; again: boolean; shown: number; ended: Set<() => void> }
 const writing = new Map<string, Writing>()
 
 // The objective writer: a plain completion of its own over the owner's
@@ -1523,12 +1535,53 @@ async function rebuildObjective($: EngineInterface, sid: string, cause: WriteCau
     if (cause === 'message' || cause === 'note') running.again = true
     return running.run
   }
-  const entry: Writing = { run: Promise.resolve(), again: false }
+  const entry: Writing = { run: Promise.resolve(), again: false, shown: -1, ended: new Set() }
   writing.set(sid, entry)
   entry.run = writeObjective($, sid, cause === 'load' || cause === 'press', entry).finally(() => {
     if (writing.get(sid) === entry) writing.delete(sid)
+    passEnded(entry, entry.shown)
   })
   return entry.run
+}
+
+// A pass of the writer ended, having been shown messages up to `shown`, whether it landed, failed
+// or stopped for a newer message: each look waiting on it checks whether that is the one it waits
+// for. A pass that stopped for a newer message counts, so a look never waits on a message saved
+// after it began (RV3).
+function passEnded(entry: Writing, shown: number): void {
+  entry.shown = Math.max(entry.shown, shown)
+  for (const check of [...entry.ended]) check()
+}
+
+// Waits until the objective write has taken in every message of the owner's saved when it was
+// called, at most LOOK_WAIT_MS: a pass shown the newest of them ends, or the writer stops. A
+// message saved later is not waited for; the next look reads what its write left. With no
+// writer running there is nothing to wait for, and with no clock the writer alone decides.
+async function writeTaken($: EngineInterface, sid: string): Promise<void> {
+  const entry = writing.get(sid)
+  if (entry === undefined) return
+  const target = (await loadRec($, sid)).counter
+  const held: { timer?: { cancel: () => void }; check?: () => void } = {}
+  try {
+    await new Promise<void>(resolve => {
+      const check = (): void => {
+        if (writing.get(sid) === entry && entry.shown < target) return
+        resolve()
+      }
+      held.check = check
+      entry.ended.add(check)
+      entry.run.then(resolve, resolve)
+      try {
+        held.timer = $.clock.after(LOOK_WAIT_MS, resolve)
+      } catch {
+        // No timer: the writer alone decides.
+      }
+      check()
+    })
+  } finally {
+    if (held.check !== undefined) entry.ended.delete(held.check)
+    held.timer?.cancel()
+  }
 }
 
 // The first message on the job waiting for a write that reads it whole.
@@ -1549,6 +1602,8 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
       !(onlyFirst && rec.objective !== null) &&
       (waitingN !== undefined || hisFrom(rec, Math.max(jobOf(rec), shown + 1)).length > 0)
     let failed = false
+    // The newest message this pass was shown, however it ended: what a waiting look counts.
+    let passSaw = shown
     if (!due) shown = Math.max(shown, newest)
     if (due) {
       // The whole words of each message, what it answered or carried, and what an approval took,
@@ -1561,6 +1616,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
       // it stopped, or the newest.
       const saw = waitingN ?? showings.stoppedAt ?? newest
       const partial = waitingN !== undefined || showings.stoppedAt !== null
+      passSaw = saw
       const prompt = objectivePrompt(memory)
       if (prompt === lastPrompt) break
       const rev = rec.objRev
@@ -1644,6 +1700,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
       if (onScreen(sid)) await update($, readingA, () => after.objective)
     }
     onlyFirst = false
+    passEnded(entry, Math.max(shown, passSaw))
     // A message of the owner's or a note that came in during the write is
     // written now: one whose request joined this run, or one saved after the
     // write was shown the messages; so is what the write left, a message still
@@ -1680,7 +1737,7 @@ const NOTHING_READ: ModelForkResult = {
   reason: 'nothing-to-fork',
   usage: { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
 } as ModelForkResult
-async function readSession($: EngineInterface, sid: string, rec: Rec, kind: CallKind, task: (cover: string[]) => string): Promise<Read> {
+async function readSession($: EngineInterface, sid: string, rec: Rec, kind: CallKind, fence: string | undefined, task: (cover: string[]) => string): Promise<Read> {
   const rows = await $.session.messages().catch(() => [])
   if (rows.length === 0) return { result: NOTHING_READ, gaps: {} }
   const items = await heldItems($, sid, rows)
@@ -1695,12 +1752,15 @@ async function readSession($: EngineInterface, sid: string, rec: Rec, kind: Call
   const from = b.outcome === 'none' ? undefined : b.from
   const opensAfter = b.outcome === 'established' && recordText(rows, RECORD_BUDGET, human, from).opensAfter
   const cover = boundaryCover(b, opensAfter, b.outcome === 'none' ? undefined : msgs.find(m => m.n === b.n))
-  const blocks = recordPrompt(rows, task(cover.told), human, from)
+  const blocks = recordPrompt(rows, task(cover.told), human, from, fence)
   const effort = kind === 'watch' ? WATCH_EFFORT : BRIEF_EFFORT
+  // The system prompt goes as one block marked for the cache (G3): every reader call of the
+  // session sends the same one, its fence included. A build that refuses blocks takes the text.
+  const system = repSystem(fence)
   const ask = (prompt: string | PromptBlock[]) =>
     $.model.complete({
       model: OBJECTIVE_MODEL,
-      system: REP_SYSTEM,
+      system: typeof prompt === 'string' ? system : [{ text: system, cache: true }],
       prompt,
       maxTokens: RECORD_MAX_TOKENS,
       effort,
@@ -1728,7 +1788,7 @@ async function readSession($: EngineInterface, sid: string, rec: Rec, kind: Call
       usage: { input_tokens: 0, output_tokens: 0, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 },
     } as ModelForkResult)
   const settings: CallSettings = { model: OBJECTIVE_MODEL, effort, maxTokens: RECORD_MAX_TOKENS, timeoutMs: RECORD_TIMEOUT_MS }
-  const call: Sent = { kind, settings, system: REP_SYSTEM, prompt: joined ? joinBlocks(blocks) : blocks, joined, result: answered, ms }
+  const call: Sent = { kind, settings, system, prompt: joined ? joinBlocks(blocks) : blocks, joined, result: answered, ms }
   return { result: result as ModelForkResult, gaps: cover.gaps, sent: call }
 }
 
@@ -1736,6 +1796,11 @@ async function readSession($: EngineInterface, sid: string, rec: Rec, kind: Call
 // works from, read by a fresh instance with the rep's brief. Never awaited by
 // the hook that starts it, so the agent is never slowed.
 async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | 'note', turnId: string): Promise<void> {
+  // A write in flight is taking in the owner's newest words, an approval among them: the look waits
+  // until a pass has been shown them, so a turn that ends right after an approval is walked against
+  // the plan (live round on 9590250: a turn under 30 seconds got no walk). It waits for no message
+  // saved after it began, and never longer than LOOK_WAIT_MS (final review of #68).
+  await writeTaken($, sid)
   const rec = await loadRec($, sid)
   // Typing past notes backs the watch off; a note to the rep is never skipped.
   if (rec.skip > 0 && reason !== 'note') {
@@ -1750,7 +1815,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
   // is read once more; a second cut one raises no Heads up and marks nothing, and the call log
   // and the counters keep both as cut short.
   for (let attempt = 0; attempt < 2; attempt++) {
-    const got = await readSession($, sid, rec, 'watch', cover => watchPrompt({ ...memory, cover }, reason))
+    const got = await readSession($, sid, rec, 'watch', memory.fence, cover => watchPrompt({ ...memory, cover }, reason))
     // Nothing recorded yet: no model was called, and there is nothing to count.
     if (got.result === NOTHING_READ) return
     const result = got.result
@@ -1783,14 +1848,75 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
     if (stepped && after.objective !== null) after.objective = { ...after.objective, step: answer.now }
     if ((marked || stepped) && onScreen(sid)) await update($, readingA, () => after.objective)
     const view = await read($, viewA)
-    const said = headsUp(answer, after.seen, fill?.blocks ?? [])
-    if (said !== null && view === 'row' && onScreen(sid) && ![...after.seen].some(s => same(s, said.line))) {
+    // The parts a note held, or this mod's note on screen, said were dropped stay in this look's
+    // note until its walk takes each back (final review of #68: a look shown another plan, or
+    // answering with a plain flag, took back or replaced a drop the owner never saw).
+    const held = heldNotes.get(sid)
+    const noteUp = view === 'note' && onScreen(sid)
+    const onNote = noteUp ? (shownParts.get(sid) ?? []) : []
+    const carried = [...(held?.parts ?? []), ...onNote]
+    const plans = fill?.blocks ?? []
+    const parts = standingDrops(answer, plans, carried)
+    // The turn moves when a note of several parts reaches the screen, here or in `showHeld`.
+    const turn = lookTurns.get(sid) ?? 0
+    const got = headsUpOf(answer, plans, carried, turn)
+    const said = got.note
+    // A plain flag already shown is not shown again. A note that says a dropped plan part is shown
+    // at every look where the part is dropped: a silent drop is the harm, a repeat only noise.
+    const repeat = (line: string): boolean => got.drops.length === 0 && after.seen.some(s => same(s, line))
+    // A part that looks dropped reaches the owner: on screen at this look, or held until the row is
+    // free. A note left up gives way to this look's, which says its parts too; the card open, a
+    // reading, or the session off screen holds it. A later look's note replaces what is held and
+    // says its parts; a held note whose every part a walk took back goes.
+    if (held !== undefined && held.parts.length > 0 && parts.length === 0) heldNotes.delete(sid)
+    // The note on screen whose every part a walk took back comes down, unless this look draws its
+    // own: it would go on telling the owner a step was dropped that the walk marked done.
+    const takenBack = onNote.length > 0 && parts.length === 0
+    if (said === null || repeat(said.line)) {
+      if (takenBack) await toRow($)
+      return
+    }
+    const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId }
+    if (onScreen(sid) && (view === 'row' || view === 'note')) {
+      heldNotes.delete(sid)
+      shownParts.set(sid, parts)
+      if (manyParts(parts)) lookTurns.set(sid, turn + 1)
       after.seen = [...after.seen, said.line].slice(-SEEN_MAX)
-      const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId }
       await update($, noteA, () => note)
       await update($, viewA, () => 'note')
-    }
+    } else heldNotes.set(sid, { note, parts })
   }
+}
+
+// A look's Heads up that could not be drawn when the look was taken, by session, until the row is free.
+// `parts` are the dropped parts it says, every one, not only those its line names.
+const heldNotes = new Map<string, { note: Note; parts: DroppedStep[] }>()
+// The dropped parts the note this mod last drew says, read only while the view is that note.
+const shownParts = new Map<string, DroppedStep[]>()
+// How many notes of several dropped parts reached a session's screen: which part leads the next.
+const lookTurns = new Map<string, number>()
+
+// The view back to the bare row, and a held Heads up of the session on screen drawn there.
+async function toRow($: EngineInterface): Promise<void> {
+  await update($, viewA, () => 'row')
+  await showHeld($)
+}
+
+async function showHeld($: EngineInterface): Promise<void> {
+  const sid = currentId
+  if (!heldNotes.has(sid) || !onScreen(sid) || (await read($, viewA)) !== 'row') return
+  // Read after the view, so a note a look held meanwhile is the one drawn.
+  const held = heldNotes.get(sid)
+  if (held === undefined) return
+  heldNotes.delete(sid)
+  shownParts.set(sid, held.parts)
+  if (manyParts(held.parts)) lookTurns.set(sid, (lookTurns.get(sid) ?? 0) + 1)
+  // Queued, not awaited: a caller may be inside this session's own change already.
+  changeRec($, sid, r => {
+    r.seen = [...r.seen, held.note.line].slice(-SEEN_MAX)
+  }).catch(() => undefined)
+  await update($, noteA, () => ({ ...held.note, shownAt: Date.now() }))
+  await update($, viewA, () => 'note')
 }
 
 // The hidden commands: `/owner-rep-counts` prints this session's counters, `/owner-rep-replay`
@@ -1979,7 +2105,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       const rec = await loadRec($, sid)
       const memory = { ...(await memoryFor($, sid, rec, 'brief')), context }
       const kind: CallKind = extra === '' ? 'brief' : 'ask-again'
-      const got = await readSession($, sid, rec, kind, cover => {
+      const got = await readSession($, sid, rec, kind, memory.fence, cover => {
         const prompt = briefPrompt({ ...memory, cover })
         return extra === '' ? prompt : endAsked(`${prompt}\n\n${extra}`)
       })
@@ -2024,7 +2150,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     // A reply cut short is read once more; cut short twice, no card is drawn and the toast says so.
     if ('reason' in first && first.reason === CUT_SHORT) first = await ask('')
     if ('reason' in first) {
-      await update($, viewA, () => 'row')
+      await toRow($)
       $.ui.toast(
         first.reason === 'nothing-to-fork'
           ? 'Owner rep: nothing to read yet. Ask the agent something first.'
@@ -2140,7 +2266,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     await update($, viewA, () => 'brief')
     lastInstant = { at: brief.at, answer: a, refused: taken.refused }
   } catch {
-    await update($, viewA, () => 'row')
+    await toRow($)
     $.ui.toast('Owner rep: the reading failed. Press again.')
   }
 }
@@ -2622,7 +2748,7 @@ async function putMessage($: EngineInterface, text: string): Promise<void> {
     )
     return
   }
-  await update($, viewA, () => 'row')
+  await toRow($)
   $.ui.toast('The message is in your prompt box. Enter sends it; nothing is sent until you do.')
 }
 
@@ -3179,7 +3305,7 @@ const cardUp = new Map<string, boolean>()
 
 async function clearNote($: EngineInterface): Promise<void> {
   await update($, noteA, () => null)
-  await update($, viewA, () => 'row')
+  await toRow($)
 }
 
 // Whether a tree another mod or the engine returned for the band draws
@@ -3242,6 +3368,7 @@ async function enterSession($: EngineInterface, id: string): Promise<void> {
   const rec = await loadRec($, id)
   if (onScreen(id)) await update($, readingA, () => rec.objective)
   if (onScreen(id)) await update($, linesA, () => rowCoverage(rec, id))
+  await showHeld($)
   seedOwner($, id)
     .then(seeded => (seeded ? rebuildObjective($, id, 'load') : undefined))
     .catch(() => undefined)
@@ -3420,7 +3547,7 @@ export const register: Register = on => {
             rec.lastSent = { text: split.draft, at: Date.now() }
             // A draft is the rep's words: it moves the step it asks for and nothing else.
             if (rec.objective !== null) rec.objective = { ...rec.objective, step: firstSentence(split.draft) }
-            if (view === 'brief') await update($, viewA, () => 'row')
+            if (view === 'brief') await toRow($)
           }
           if (view === 'note') {
             promptsPastNote += 1
@@ -3679,7 +3806,7 @@ export const register: Register = on => {
       tellRep($).catch(() => undefined)
     }
     const close = () => {
-      update($, viewA, () => 'row').catch(() => undefined)
+      toRow($).catch(() => undefined)
     }
 
     // The shape "You should know" draws in: a lead glyph, a dim tag, a dot,

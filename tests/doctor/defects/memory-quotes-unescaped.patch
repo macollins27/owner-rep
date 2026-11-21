@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index bc415b6..9927810 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1747,7 +1747,7 @@ ${brief}
+ The last message the owner sent the agent after a briefing:
+ ${sent}`
+   const owners = readerOwnerLines(onJob, approved, m.lastBrief === undefined ? [] : [m.lastBrief.message])
+-  return `${fenceTags(top)}\n<owner_messages${s}>\n${fenceTags(owners) || '(none recorded yet)'}\n</owner_messages${s}>${fenceTags(tail)}`
++  return `${top}\n<owner_messages${s}>\n${fenceTags(owners) || '(none recorded yet)'}\n</owner_messages${s}>${tail}`
+ }
+ 
+ // Whether the reader is given an approved plan, shown or told of: the walk is asked for only then.

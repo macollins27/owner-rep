@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index b6129e7..405c6fc 100644
+index 7778e4d..f128a61 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1636,7 +1636,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
-     if ((marked || stepped) && onScreen(sid)) await update($, readingA, () => after.objective)
-     const view = await read($, viewA)
-     const said = headsUp(answer, after.seen, fill?.blocks ?? [])
--    if (said !== null && view === 'row' && onScreen(sid) && ![...after.seen].some(s => same(s, said.line))) {
-+    if (said !== null && onScreen(sid) && ![...after.seen].some(s => same(s, said.line))) {
-       after.seen = [...after.seen, said.line].slice(-SEEN_MAX)
-       const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId }
-       await update($, noteA, () => note)
+@@ -1761,7 +1761,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+       return
+     }
+     const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId }
+-    if (onScreen(sid) && (view === 'row' || view === 'note')) {
++    if (onScreen(sid)) {
+       heldNotes.delete(sid)
+       shownParts.set(sid, parts)
+       if (manyParts(parts)) lookTurns.set(sid, turn + 1)

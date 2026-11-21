@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 909ca5c..aa1b492 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1455,7 +1455,7 @@ async function writeTaken($: EngineInterface, sid: string): Promise<void> {
+       entry.ended.add(check)
+       entry.run.then(resolve, resolve)
+       try {
+-        held.timer = $.clock.after(LOOK_WAIT_MS, resolve)
++        void LOOK_WAIT_MS
+       } catch {
+         // No timer: the writer alone decides.
+       }

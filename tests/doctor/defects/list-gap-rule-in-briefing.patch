@@ -1,12 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 1f98566..b77dace 100644
+index 062f428..3c5e1e6 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1455,6 +1455,7 @@ When every condition is shown or closed and the conversation shows the result wo
- ${LOOK_RULE}
+@@ -1877,7 +1877,7 @@ ${decidingText(plan, true)}
  
- ${WALK_RULE}
-+${LIST_GAP_RULE}
- Walk them to yourself and do not write the walk out. Every step with no sign while later work goes on goes first under "left:", named with the plan's number; every step not assessed goes under "unassessed:".
+ Judge what the agent and its helpers did and what came back, not what the agent says it did. If the owner sent your last message to the agent, say whether the agent did what it asked.
  
+-${plan ? `\n${STEP_STATES}\n${WALK_BRIEF}\n` : ''}
++${plan ? `\n${STEP_STATES} ${WALK_WATCH}\n${WALK_BRIEF}\n` : ''}
  ## Output structure
+ 
+ Exactly these labelled parts, in this order, nothing before or after:

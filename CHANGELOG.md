@@ -17,6 +17,55 @@ What changed in each release of Owner Rep, newest first. The full record is the
   records. A save an older version makes while the copy is running is read rather than missed,
   even with two older versions saving at once, a new session never pushes out another new one to
   keep old records the copy has not finished with, and a copy cut short partway never lets a session fall back to its record from before it.
+- **A dropped part of your plan stays said until it is done.** A note that a part of your plan
+  looks dropped is no longer taken back by a later look that never checked that part, nor
+  replaced by an unrelated note; several dropped parts lead with their count and take turns
+  in first place, so a short band shows each; a note whose every part the rep then finds done
+  comes down; and the rep never waits more than a minute for
+  its own reading of your newest words before it looks.
+- **The rep's brief is shorter and plainer.** The rules the watch, Brief me and the second
+  asking read had grown by patches to about 5,000 words per call, with 35 to 44 "never"s and
+  many rules said two or three times. They are rewritten as one system prompt of sections, each
+  rule said once with its reason, and the rules that decide an answer restated in a line each
+  after the record. Each call now sends about 3,300 words with at most one "never" and no capitals for
+  emphasis, and a test holds every call to its size target.
+- **Text in the session cannot pass as the record's end or as the owner.** The record and the
+  owner's messages are fenced in tags that end in a random code made once per session, and any
+  such tag found inside is printed harmlessly, so an agent cannot close the fence by guessing it.
+- **A step held for your go-ahead reaches you as a question.** A briefing could call a send held
+  for your go "your decision, not a gap" and ask nothing; the card now lists each decision that
+  is yours (a go-ahead to publish, send or pay) as one plain question, also while the agent is
+  rightly holding the step.
+- **The message asks a non-builder to look, not the agent to re-check.** Where nobody but the
+  agent had read the result, a message could ask the agent to re-run its own line-length and
+  character checks. Checks are now asked for only to prove a fact; whether the result works or
+  is good is asked of a hands-on look at what the customer gets, by someone who did not build it.
+- **A condition is not marked shown on a look nobody made.** The watch and Brief me could mark
+  a "works" condition shown "by the check" when no check had run. They now write only the looks
+  the record shows, by whoever made them; their own reading of the record and the agent's own
+  look leave the condition open. A condition about order ("reviewed before it is relied on") is
+  marked shown only when the record shows that order: a review that began after the step went
+  live no longer counts.
+- **A narrowed plan step is flagged.** The plan walk takes a line for each thing a step names, so
+  a step done in part reads as part left out, and the agent's own word that it narrowed or left
+  out part of an approved step reads as looking dropped.
+- **Briefings and messages are short again.** Each card part asks for one or two sentences of
+  about 20 words, under 40; each gap one sentence of about 8 words, under 20, at most six, a
+  decision of yours one short question; and the message one sentence of about 12 words a line,
+  under 150 words unless more than five things are asked. The aims sit below the limits so a reply written to them lands under them.
+- **A dropped plan step is said every time it looks dropped.** The heads-up above the row names
+  each part of an approved plan that looks dropped, in its first line so a short band shows it, at
+  every look where it still looks dropped. Nothing said before hides it: an earlier part, line or
+  flag that looks like it is not taken as proof the owner saw this one. A drop found while the
+  card is open is shown when the card closes, and one found while another note is up replaces it.
+  A turn that ends right after you approve a plan is checked against that plan. A flag stands for
+  a part only when one clause of it says that part was dropped and holds all of its words.
+- **A part the agent said it left out is never "not assessed".** Only a line marked "not
+  assessed" by the rep counts as one; a part the agent admits it dropped reads as looking
+  dropped, never as cut short by a shortened record.
+- **The replay rebuilds calls with this change.** `/owner-rep-replay` takes `rewrite`, the edit
+  that turns a watch, briefing, second-asking or own-words call saved by the build before into
+  what this build sends.
 
 ## 0.7.7 (19 November 2026)
 

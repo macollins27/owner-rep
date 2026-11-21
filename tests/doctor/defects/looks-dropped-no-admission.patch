@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 12261ff..6cd2057 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1507,7 +1507,7 @@ export const STEP_STATES = `Each approved plan is in an approved_plan fence abov
+ - underway: being worked on now.
+ - not reached: work is still on steps the plan puts before it.
+ - no sign while later work goes on: the record shows work on a step the plan orders after this one, and nothing of this one, in a part of the record that could hold it. A step is late only where the plan orders it (numbered, or "then", "after", "first").
+-- looks dropped: the agent says it left this out or did less of it, whatever its reason; or the agent's own whole list of what it is doing for the plan, or of what is done and what remains, stands whole in the record, with no part of it left out, and leaves this out. Say it looks dropped, not that it was skipped or done. A list from before the approval, a list of one part, a list called partial, or a list that says the step comes later does not count.
++- looks dropped: the agent's own whole list of what it is doing for the plan, or of what is done and what remains, stands whole in the record, with no part of it left out, and leaves this out. Say it looks dropped, not that it was skipped or done. A list from before the approval, a list of one part, a list called partial, or a list that says the step comes later does not count.
+ - done before the summary: only the summary at the record's start says it was done.
+ - runs alongside: a rule kept throughout, judged by whether any work broke it.
+ - not assessed: its proof could sit in a part of the record left out, or before the record begins.

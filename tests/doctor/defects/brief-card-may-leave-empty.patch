@@ -1,31 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index f8f119f..f0ed5ab 100644
+index 12261ff..59eac27 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1895,7 +1895,7 @@ unassessed:
- - #<n>: <a step of an approved plan you could not assess; "- none" when there is none>
- next: <${SHORT_PART}: what the agent does next; never a step for the owner to do; a stop only with a stop verdict>
+@@ -1892,7 +1892,7 @@ left:
+ - <${LEFT_ITEMS}. Each says in a few words why it matters. A gap is part of the job not done or not shown, anything "Also look for" names, a chore left "for you", or the owner's own decision (a held go-ahead, or keeping a self-proving step of an approved plan), as one short plain question, never folded. A condition already shown or closed is not a gap. Write "- nothing" when there is none.>
+ ${plan ? `${UNASSESSED_PART}\n` : ''}next: <${SHORT_PART}: what the agent does next; a stop only with a stop verdict>
  message:
--<the message for the owner to send to the agent, written to the agent ${MESSAGE_FORM}. It asks for the work that is missing, says what the best version looks like where the work falls short, asks, where proof is missing, for the proof "What counts as shown" names (never a self-proving piece; a test or a review never stands in for a hands-on look), and pushes the agent off the easy option onto the right one. Leave empty only when every condition is shown or closed.>
-+<the message for the owner to send to the agent, written to the agent ${MESSAGE_FORM}. It asks for the work that is missing, says what the best version looks like where the work falls short, asks, where proof is missing, for the proof "What counts as shown" names (never a self-proving piece; a test or a review never stands in for a hands-on look), and pushes the agent off the easy option onto the right one. Leave empty when every condition is nothing to or closend.>
- end
- does: <one line: what this message will make the agent do>`
- 
-@@ -4999,7 +4999,7 @@ left:
- - <${LEFT_ITEMS}: work put off, shrunk or quietly dropped; a condition still open that the agent called done; work that is passable but not the best it could be; the product never opened and used; effort spent on self-proving pieces; a claim that matters and is not shown; a chore the agent left "for you", which is its unfinished work; only items your checking supports>
- next: <what the agent should do next, ${SHORT_PART}; it can be stopping the agent now, but only with a stop verdict, when every condition is shown or closed by the owner; never a step for the owner to do>
- message:
--<the message for the owner to send to the agent ${MESSAGE_FORM}, rewritten where your checking changed it: it names what is false, asks for the work that is missing and says what the best version looks like where the work falls short; where proof is missing it asks for the proof "What counts as shown" names: a fact's command and what it printed, or a hands-on look at the real thing (open it, use it as a customer or the owner would, try to break it), never a self-proving piece, and a test or a review never stands in for that look; and where effort is going into such pieces, it tells the agent to put that effort into the product. While any condition is open or not shown after your checking, or the work falls short of the best it could be, write it. Leave empty only when every condition is shown or closed. ${HELD_STEP_RULE}>
-+<the message for the owner to send to the agent ${MESSAGE_FORM}, rewritten where your checking changed it: it names what is false, asks for the work that is missing and says what the best version looks like where the work falls short; where proof is missing it asks for the proof "What counts as shown" names: a fact's command and what it printed, or a hands-on look at the real thing (open it, use it as a customer or the owner would, try to break it), never a self-proving piece, and a test or a review never stands in for that look; and where effort is going into such pieces, it tells the agent to put that effort into the product. While any condition is open or not shown after your checking, or the work falls short of the best it could be, write it. Leave empty only when evere is shown or closed. ${HELD_STEP_RULE}>
+-<the message for the owner to send, written to the agent ${MESSAGE_FORM}. Empty only when every condition is shown or closed and the work is the best it could be, or no objective is held and nothing is worth sending.>
++<the message for the owner to send, written to the agent ${MESSAGE_FORM}. Empty when there is nothing to send.>
  end
  does: <one line: what this message will make the agent do>
- looked: <one line: what you checked yourself and what you could not look at>`)
-@@ -7504,7 +7504,7 @@ unassessed:
- - #<n>: <a step of an approved plan you could not assess; "- none" when there is none>
- next: <one or two sentences: what the agent does next; never a step for the owner to do; a stop only with a stop verdict>
- message:
--<the message for the owner to send to the agent, written to the agent, specific and professional, several lines if needed. It asks for the work that is missing, says what the best version looks like where the work falls short, asks for a hands-on look at the real thing where proof is missing (never a self-proving piece; a test or a review never stands in for it), and pushes the agent off the easy option onto the right one. Leave empty only when every condition is shown or closed.>
-+<the message for the owner to send to the agent, written to the agent, specific and professional, several lines if needed. It asks for the work that is missing, says what the best version looks like where the work falls short, asks for a hands-on look at the real thing where proof is missing (never a self-proving piece; a test or a review never stands in for it), and pushes the agent off the easy option onto the right one. Leave empty only when thery condition is shown sed.>
- end
- does: <one line: what this message will make the agent do>`
- const PRE_G2_ASK_HEAD = `## Asked once more
+ 

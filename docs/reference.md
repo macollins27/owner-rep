@@ -131,10 +131,12 @@ call writes (below):
    `ownWordsPrompt` names the empty message, then read 1's usable message, then
    `OPEN_MESSAGE`. `OPEN_MESSAGE` ends with the sentence on a held step: `If a step needs my
    go-ahead, hold it: finish the rest, and tell me what you will show me when I give it.`
-   `HELD_STEP_RULE` gives that same direction to all four message-writing reads:
-   `briefPrompt`, `checkPrompt`, `askAgain` and `ownWordsPrompt`. Each tells the agent to
-   finish everything else, hold only the step awaiting the owner, and say exactly what it
-   will show when the go-ahead comes, without pushing the held step.
+   The watch, the briefing and its second ask are given that direction once, in `REP_SYSTEM`'s
+   "What reaches the owner" (`REP_REACHES`: a go-ahead is a decision only the owner can make,
+   and the message tells the agent to finish everything else, hold that step until the owner
+   says go, and say exactly what it will show then) and in the message section's line on naming
+   a held step exactly; `askAgain` points to that section by name. `HELD_STEP_RULE` gives the
+   same direction to the check (`checkPrompt`) and the own-words call (`ownWordsPrompt`).
    A Check card goes through the same gate and has no second ask or own-words call, so an
    instant read refused with the checker's message empty gets `OPEN_MESSAGE` when a condition
    is still open, an instant read that passed keeps its message when the checker leaves it
@@ -146,7 +148,7 @@ call writes (below):
    cut to 200 characters, since the second call never saw the first answer; G39), and that answer
    passes the same gate. When it is refused too, or does not answer, one plain
    `$.model.complete` (`OBJECTIVE_MODEL`, `OWN_WORDS_EFFORT` high, `OWN_WORDS_SYSTEM`: built from the same
-   named strings as `REP_SYSTEM` (`REP_WHO`, `REP_STAKE`, `REP_SHOWN_BODY`, `REP_UNSEEN`, `REP_STATES`,
+   named strings as `REP_SYSTEM` (`REP_OWNER`, `REP_STAKE`, `REP_SHOWN_BODY`, `REP_UNSEEN`, `REP_STATES`,
    `REP_WRITE`, `REP_MESSAGE`), so each rule has one source, and one line against reproducing a secret, a key, a
    password or personal data it is shown; `OWN_WORDS_MAX_TOKENS` 64,000, `MAX_REPLY_TOKENS`, the engine's ceiling, `OWN_WORDS_TIMEOUT_MS` two minutes) over
    `ownWordsPrompt` (the memory, the open conditions, what stands and what is left out)
@@ -364,30 +366,74 @@ call writes (below):
    The watch and the briefing (and its second ask) read through one helper, `readSession`.
    It reads `$.session.messages()` and, when there are rows, makes one `$.model.complete`
    (`OBJECTIVE_MODEL`, `WATCH_EFFORT` for a look and `BRIEF_EFFORT` for the briefing and its second ask, both high until a replay shows a lower level loses nothing, `REP_SYSTEM`, `RECORD_MAX_TOKENS` 64,000, the engine's ceiling,
-   `RECORD_TIMEOUT_MS` four minutes) over `recordPrompt`, never a fork. `REP_SYSTEM` is one fixed
-   text for all three, `REP_SECTIONS` joined: `REP_OPENING` (it has no tools and gives one answer),
-   `REP_FORMAT`, "Why you exist" (`REP_WHO`, `REP_STAKE`), "The record" (`REP_FENCE`, then
-   `REP_UNSEEN`: `STANDING_LINE` and `NOT_ASSESSED_RULE`), "What you measure against" with the six
-   expectations, "The conditions and their states" (`REP_STATES`: the four states, shown only by what counts as shown, in the record, never on the agent's word), "What counts as shown" (`REP_SHOWN_BODY`, the one standard every read, the check and the own-words call name: a fact by its command and what it printed, the result working or being good by a hands-on look at the real thing; a test, check, review or script passing shows only that it passed), "The
-   objective stays open until it is completed", "What reaches the owner", "How you make up your mind" (`REP_MIND`, with `REP_HOLD`, G30: a finding and the lines already shown stand until the record shows something new, a change names what is new, and an agent's disagreement is not new evidence; the check's standing rules say the same), "How you write to the owner",
+   `RECORD_TIMEOUT_MS` four minutes) over `recordPrompt`, never a fork. Its system prompt is
+   `repSystem(fence)`, one text for all three, `repSections` joined, sent as one block marked for
+   the cache (G3): `REP_OPENING` (who the owner is; one task, no tools, one answer), "Why you
+   exist" (`REP_STAKE`), "The record" (`repRecord`: `repFence`, then `REP_UNSEEN`:
+   `STANDING_LINE` and `NOT_ASSESSED_RULE`), "What you measure against" (`REP_MEASURE_BODY`, the
+   owner's messages as evidence weighed in order, and `REP_SIX`, the six expectations, a
+   self-proving step of an approved plan raised as a question for the owner), "The conditions and
+   their states" (`REP_STATES`: the four states, each defined once), "What counts as shown" (`REP_SHOWN_BODY`, the one standard every read, the check and the own-words call name: a fact by its command and what it printed, the result working or being good by a hands-on look at the real thing by someone who did not build it; a test, check, review or script passing shows only that it passed; what the agent says it did is a claim until the record shows it), "The
+   objective stays open until it is completed" (`REP_OPEN`: until every condition is shown or closed nothing the reader writes calls the job finished or says the agent should stop), "What reaches the owner" (`REP_REACHES`: work left "for you" is the agent's to finish; the owner is asked for two things only, a decision only the owner can make, defined there, and the message; a go-ahead is such a decision, and each reaches the owner as one plain question on the card, even while the agent rightly holds that step, which the message holds; the briefing's `left:` lists it as that question, never folded), "How you make up your mind" (`REP_MIND`: a claim is shown false only where the record shows the opposite, and one shown neither way is "not shown", and nothing the reader writes calls it untrue or inaccurate (#59); a session is long only past `LONG_SESSION_PERCENT`, and below it the reader neither calls it long nor tells the owner to start fresh; the look-for list holds the North Star's eight things to look for in its words ("the owner" for "he", the third followed by "whatever routine asks for them"), with checks skipped and work put off, shrunk or quietly dropped; with `REP_HOLD`, G30: a finding and the lines already shown stand until the record shows something new, a change names what is new, and an agent's disagreement is not new evidence; the check's standing rules say the same), "How you write to the owner" (`REP_WRITE`: a term reaches the owner only if the owner used it, said as what to write with no list made first, G38; after reading, the owner knows what is going on and what to do next without reading anything technical or taking the agent's word for it),
    "How you write the message to the agent" (`REP_MESSAGE_BODY`, G28: the message is a prompt the
    owner sends as their own turn, so one line per thing asked with what done means for it, a
-   fact's command and what it printed or a hands-on look for working, a held step named exactly,
+   fact's command and what it printed (a check proves only a fact) or, for working, a hands-on look at
+   what the customer gets by someone who did not build it, the agent's own checks standing in for nothing, a held step named exactly,
    the routine steps the agent may take alone, and last the finish line `MESSAGE_FINISH` in place
    of "keep going"; it is the one place exact technical terms may stand, where the agent needs
    them; the own-words call and the check read the same section; the briefing's, the own-words
    call's and the check's answer forms ask for lengths in words, targets the gate does not
-   enforce (G40): `SHORT_PART` for "stands", "means" and "next", `LEFT_ITEMS` for "left" (each
-   item under 20 words, at most six, the rest folded into "- and N smaller gaps"), and
-   `MESSAGE_FORM` for the message), and
-   "Private data" (secrets, keys, passwords and personal data stay out of what it writes). Nothing
-   per call goes into it, so it is the same bytes on every read. Its words keep three apart: "the
+   enforce (G40): `SHORT_PART` for "stands", "means" and "next" (one or two sentences, about 20 words, under 40), `LEFT_ITEMS`
+   for "left" (each item one sentence of about 8 words and under 20, at most six, the rest folded
+   into "- and N smaller gaps"; the owner's own decision is one short plain question, which kept a
+   held go-ahead question, naming the step and its condition, from reaching the limit), and `MESSAGE_FORM` for the message (each line one sentence of
+   about 12 words, under 150 words in all unless more than five things are asked; the message
+   section itself states no length, so the limit is said once, where the message is asked for).
+   The aims sit below the limits so a reply written to the aim lands under them; the limits are
+   the rule and nothing cuts a reply short to meet them), and
+   "Private data" (secrets, keys, passwords and personal data stay out of what it writes). These
+   rules were rewritten by the prompt audit's §6.1 to §6.4: each said once, plainly, with its
+   reason, with no capitals for emphasis and no stacks of "never"; `PRE_RW_REP_SYSTEM` keeps the
+   text as the build before it sent it (after #49 and #64), for the replay. Each section appears once in each call, and
+   the rules the own-words call and the check share are the same strings (a unit test holds
+   both). Each reader call is at or under its §6.9 target in words, "never", negatives and
+   capitals (watch 3,500/5/84/0, briefing 3,360/6/77/0, second asking 160/0/1/0, the whole call
+   with no plan held), held by a unit test on a fixed memory. The targets leave out the plan walk:
+   with a plan held, the same test lets each call add only the walk's own text, its ceiling the
+   no-plan target plus the counts of the plan as quoted, the line standing in for the owner's
+   approving reply, `STEP_STATES`, `DECIDE_DROPPED` and the call's own walk text (`WALK_WATCH`
+   and the `steps:` line for the watch; `WALK_BRIEF`, `UNASSESSED_PART` and `UNASSESSED_NONE`
+   for the briefing). The same test holds what a held plan adds, measured against the same call
+   with no plan, to those walk counts alone, so the room left under a target is never spent on
+   the walk. The system prompt's one "never" is the North Star's "the product never
+   opened and used".
+
+   The record and the owner's messages are fenced by tags ending in the session's fence
+   (`newFence`: eight random lowercase letters and digits, made once and kept in the session's
+   record as `fence`, so every read of the session sends the same system prompt and the cache
+   holds): `<session_record_<fence>>` and `<owner_messages_<fence>>`. `fenceTags` prints a tag
+   of either fence found in quoted text, with or without a suffix, in any case, spaces or
+   attributes allowed inside the brackets (attributes kept as written), self-closing or not (the
+   closing slash kept), with its brackets turned
+   to `‹ ›` and its name lower-cased, so text in the session cannot close either fence by
+   guessing its tag (G23). `memoryText` applies it to every quoted text of what the rep knows
+   (the objective, the approved plans, the owner's messages, the last briefing's message and the
+   owner's sent message), and the replay's `rwMemory` does the same; `watchRequest` applies it to
+   the lines already shown and the other watcher's notes, and `askAgainText` to the open
+   conditions and the fault it quotes, and `ownWordsPrompt` to the open conditions, what stands
+   and the items left out, so every text placed inside a fenced prompt is escaped; the owner's messages are fenced so an agent's text cannot pass as theirs. A reader given no fence (`REP_SYSTEM`) has the tags
+   unsuffixed. Its words keep three apart: "the
    record" is what the reader is shown, "the session" what happened, "the owner's messages" the
    owner's words. The task after the record holds only what changes per call: `memoryText` (what
-   the rep knows), the request, which opens "Based on the record above", and `decidingText`, a
-   short restatement of the rules that decide that answer (`DECIDING` for the watch,
-   `BRIEF_DECIDING` for the briefing), since a long record sits between them and the system
-   prompt. It carries no frame of its own and no line on how long to think, since the effort
+   the rep knows: the objective, the open conditions, the session's size, the approved plans
+   while one is held, the owner's messages in their fence, the jobs before, the last briefing and
+   the last message sent), the request (`watchRequest(plan, reason, seen, others)`,
+   `briefRequest(plan)`), which opens "Based on the record above", and `decidingText(plan,
+   brief)`, the rules that decide that answer restated in a line each (`DECIDE_SHOWN`,
+   `DECIDE_DROPPED` while a plan is held, `DECIDE_VERDICT` for the briefing, `DECIDE_ASKED`,
+   `DECIDE_PLAIN`), since a long record sits between them and the system prompt; each restates
+   a rule `REP_SYSTEM` holds and adds none. It carries no frame of its own and no line on how
+   long to think, since the effort
    setting governs that. The prompt is the rows printed by `recordText`
    as entries labelled `entry N`, never `#N` (the owner's rows as the person only where their key is
    one of the owner's messages that `heldItems` read from the transcript, `NOT_TYPED` applied after
@@ -397,8 +443,8 @@ call writes (below):
    results shown only for results not already printed), each message cut to
    `RECORD_ENTRY_CUT` (3,000) and each tool input or result to `RECORD_TOOL_CUT` (600),
    head and tail kept around a marked gap, the oldest entries left out past `RECORD_BUDGET`
-   (200,000 characters) with a line saying how many, fenced in `<session_record>` with any
-   fence tag inside printed with `‹ ›`, then the task. `headTail` marks every cut inside its
+   (200,000 characters) with a line saying how many, fenced in the session's `<session_record_<fence>>` with any
+   fence tag inside printed with `‹ ›` (`fenceTags`), then the task. `headTail` marks every cut inside its
    field (`[… n characters of this <field> left out here …]`). A compaction summary is cut at
    `RECORD_SUMMARY_CUT` (40,000). `recordPrompt` sends the record as blocks of about
    `RECORD_CHUNK` (50,000) characters and marks the last complete one for the cache, so a later
@@ -485,38 +531,92 @@ call writes (below):
    shown whole within a few looks; the briefing keeps no cursor. With no approval there is no
    section and the memory is as before Task 7.
 
-   `WALK_RULE` has both readers walk each shown plan's steps against the record first and give
-   each a state (done, claimed, underway, not reached, no sign while later work goes on, done
-   before the summary, runs alongside, looks dropped, not assessed), a step with no sign while
-   later work goes on counting as the owner's ask dropped. The Heads up writes the walk under
-   `steps:` before `state:`; `parseWatch` reads that block as if it were not there, save that its
-   lines ending `| not assessed` or `| looks dropped` become `notAssessed`, and `walkDropped` turns
-   its `no sign` and `looks dropped` lines into `dropped`. `LIST_GAP_RULE`, in the Heads up alone,
-   makes the one exception to staying quiet about a step left not assessed: where the agent's own
-   full list of what it is building or doing to carry out an approved plan, or a summary of what
-   is done and what remains of it, stands whole in the record and a step of that plan is not on
-   it, the walk marks the step `looks dropped`, without calling it skipped or done. A left-out
-   part inside the list, a list from before the approval, a list of one part of the work, a list
-   called partial or a step the agent says comes later leaves it `not assessed`.
+   While a plan is held (`planHeld`), both readers are given `STEP_STATES`, which asks for a walk
+   line for each thing a step names, in the plan's words, so a part done cannot hide a part left
+   out, and one state for each line, each state defined once (done meaning the record shows all
+   of it done): done, claimed, underway, not reached, no
+   sign while later work goes on, looks dropped, done before the summary, runs alongside, not
+   assessed. A step, or a part of one, with no sign while later work goes on, or one that looks
+   dropped, is the owner's ask dropped and comes before any flag but one about harm happening now. The Heads up
+   writes the walk under `steps:` (`STEP_LINE`) before `state:`; `parseWatch` reads that block as
+   if it were not there, save that its lines ending `| not assessed` become `notAssessed`,
+   and `walkDropped` turns its `no sign` and `looks dropped` lines into `dropped`. A line marked looks dropped is never `notAssessed`: the reader saw the
+   agent leave it out, so the row never says its proof could be in a part of the record cut short.
+   The briefing works the states out without writing the walk, putting each dropped step first
+   under "left:" with the plan's number and each step not assessed under "unassessed:". A step
+   looks dropped where the agent says it left it out or did less of it, whatever its reason. It is
+   also the one exception to staying quiet about a step otherwise not assessed: where the
+   agent's own whole list of what it is doing for the plan, or of what is done and what remains,
+   stands whole in the record with no part of it left out and leaves the step out, the step looks
+   dropped, said as looking dropped and never as skipped or done. A list from before the
+   approval, a list of one part, a list called partial or a list that says the step comes later
+   does not count. The Heads up alone is told (`WALK_WATCH`) that a flag about such a step names
+   what shows it, the agent's own words or the list it is missing from, and asks the agent to do
+   it or show it; `headsUpOf`'s why says the same.
 
-   `headsUp`, called by the look after the reader answers, decides what the owner sees. A step
-   walked `no sign` or `looks dropped` takes the line, `A step of the plan you approved looks
-   dropped: <step>.`, cut at `DROPPED_STEP_MAX` (160), whatever the reader's flag was about. Its
-   why for `no sign` says only what the rep can know, that the record shows later work and does
-   not show the step done, never that the record holds nothing of it. The
-   flag and its why move into the why after `Also:`, and further dropped steps after `Also looks
-   dropped:`, so no concern is lost. This outranks even a flag about harm, whose words stay in the
-   why. A step walked `not assessed` has no say, a flag that already speaks of the step keeps the
-   reader's wording, and a step `seen` already speaks of is not raised again (`speaksOf`: a drop
-   word and three of the step's words, or all of a shorter step's, so two near-identical steps
-   dropped at separate looks read as one; the briefing still walks both). A flag that speaks of
-   one dropped step keeps the line, and the others go under its why, at most `DROPPED_ALSO_MAX`
-   (3) by name. A step counts only where the plans shown to this look hold at least
-   `PLAN_WORDS_SHARE` (0.4) of its words, so a step no shown plan holds is never called part of
-   one; words rather than exact text because readers reword steps. The walk's number is not
-   checked, because readers write a step's own number there as often as the plan's message.
-   `walkLine` reads both the walk's forms for `notAssessed` and for `dropped`, the mark being what
-   follows the last `|`. `NOT_ASSESSED_RULE` and the lines of `boundaryCover` still hold, and the
+   `headsUpOf`, called by the look after the reader answers, decides what the owner sees and
+   returns the parts its line names (`drops`); `headsUp` is its note alone. A step
+   walked `no sign` or `looks dropped` takes the line, `Plan step looks dropped: <part>.` or
+   `N plan steps look dropped: <part>; <part>.`, each part cut at `DROPPED_STEP_MAX` (160), at most
+   `1 + DROPPED_ALSO_MAX` (4) by name and then `; and N more` (`partsSaid`), whatever the reader's
+   flag was about. The same text of two plans is named once (`textsOf`). The parts are in the line
+   because `fitNote` keeps the line before the why on a short band; several lead with their count,
+   which a one-row band keeps, and take turns in first place: `standingDrops` gives them an order
+   that holds from look to look (the carried parts first, each in its place, a part dropped again
+   keeping its place, then the new ones), `headsUpOf`'s `turn` turns it, and the turn (`lookTurns`)
+   moves only when a note naming several parts reaches the screen, drawn by the look or by
+   `showHeld` (`manyParts`), never at a note held and replaced unseen. So on a band that cuts the
+   line each part reaches the owner in turn. Its why for `no sign` says only
+   what the rep can know, that the record shows later work and does not show the step done, never
+   that the record holds nothing of it. The flag and its why move into the why after `Also:`, so no
+   concern is lost. This outranks even a flag about harm, whose words stay in the why. A step
+   walked `not assessed` has no say. A flag never stands for a dropped part, even one whose words it
+   holds: whether a clause calls a part dropped or done cannot be read from its words ("skipped, and
+   the agent did run the install check"), so the part is always in the line and the flag always in
+   the why. A part the flag speaks of is then said twice, which is noise; one said nowhere would be
+   the harm.
+
+   `walkLine` reads `- #n: <part> | <mark>` and the forms readers also write (`#6 step 2,`, `#6.1:`,
+   `#6a:`, `#6 part 2:`, `#6 verification:`, `#6 (step 1):`, `#6 - `, `**#6**:`, `1. #6:`). A line
+   with no plan number is read with 0 for it and can still be a dropped part, matched to the plans
+   by its words; it is never counted as a step not assessed.
+
+   A part the walk shows as looking dropped is said at every look where it looks dropped. Nothing
+   said at an earlier look hides it: no part, line or flag shown before is matched against it,
+   since every such matching (a likeness of parts, the plan's words, a flag's words) was found to
+   hide a sibling part the owner never saw, and a silent drop is the harm the rep exists to prevent
+   while a repeat is noise. On c440a6ae's looks 41 to 48 (two runs, each replayed twice, with Fine
+   pressed between looks) the dropped Monitor part was said at every look the walk marked it
+   dropped: 8 of 8, 6 of 6, 8 of 8 and 7 of 7. A note found while the briefing card is open, or
+   while the session is not the one on screen, is held in `heldNotes` and shown when the band returns to the row
+   (`showHeld`, called by `toRow` and when the session is entered); a note found while another note
+   is on screen replaces it. The parts a held note says, and while the view is the note the parts of
+   the note this mod drew (`shownParts`), are carried into the next look's note (`standingDrops`):
+   a look shown another plan, or answering with a plain flag, says them still. A carried part goes
+   only when a walk line takes it back (`samePart`): the same plan number, above 0, and the same set
+   of content words, marked anything but dropped or `not assessed` (the answer's `cleared`). A
+   sibling, a shorter part, a line with no plan number or one of another plan never takes it back,
+   since a part taken back wrongly is a silent drop and one kept wrongly only a repeat. A held note
+   whose every part is taken back goes, and so does this mod's note on screen: when a look's walk
+   takes back every part it said and the look draws nothing of its own, the band returns to the row
+   (`toRow`, which then draws a held note). The parts of the note on screen are carried only for the
+   session on screen. `look` first waits for an objective write in flight for the
+   session (`writeTaken`): until a pass shown the owner's newest message number saved when the look
+   began has ended, however it ended, or the writer has stopped, and never longer than
+   `LOOK_WAIT_MS` (60 s). A message saved after the look began is not waited for. A record from an earlier build that holds `saidDrops` loads, the field ignored. The
+   register's check that a line was not shown before (`same`) applies only to a note with no
+   dropped parts: a plain flag already shown is not shown again, while the same step of two plans,
+   or a step still dropped, gives the same line and each is said.
+
+   A part counts only where the plans shown to this look hold at least `PLAN_WORDS_SHARE` (0.4)
+   of its stemmed content words, short or long; a real step reworded by one word ("Run the
+   installer check" for "Run the install check") must count, and a short part no plan asked for
+   that shares two common words with one passes too, a bad flag accepted so no real step is lost. A
+   part no shown plan holds is never called part of one; words rather than exact text because readers reword steps. The walk's
+   number is not checked against the step, because readers write a step's own number there as
+   often as the plan's message. `walkLine` reads every form readers write, `#6:`, `#6 step 2,`,
+   `#6.1:`, `#6a:` and `#6 part 2:`, keeping the plan's number, the mark being what follows the
+   last `|`. `NOT_ASSESSED_RULE` and the lines of `boundaryCover` still hold, and the
    list
    can only raise the mark; it
    never moves the ask. The briefing walks to itself and names the steps
@@ -901,7 +1001,11 @@ run (`RUN_WHO`: "helper <run>", "Codex <run>", "Codex run <run>", "helper (run <
 something seen and no "no", "not", "never" or "without" just before it, and `signsOff` finds that
 the run qualifies: `runFor` takes the one run of that kind in `Rec.ran` whose id ends with the
 ref, and `runQualifies` wants it `done`, unchanged and with something said; the check signs only
-through its own marks. `Rec.ran` (the newest `RUNS_KEPT`, 60) is filled in `tool.call` once the
+through its own marks. The watch and the briefing are offered only the run forms (`WHERE_LINE`):
+they are told to write only looks the record shows, that their own reading of the record is no
+one's look, that a look by the agent or by a run that changed the work leaves the condition
+open, and that a condition about order ("before", "first") needs the record to show that order;
+the check alone is offered "look by the check" (`LOOK_RULE`). `Rec.ran` (the newest `RUNS_KEPT`, 60) is filled in `tool.call` once the
 call returns: `runOf` reads an Agent or Task call, or a shell call `shellRun` reads as Codex
 (`codex exec`, `e` or `review` after any options, no help or version flag) or a helper (`claude -p`
 or `--print`, changing the work unless `--permission-mode plan`), as the deciding command
@@ -1132,7 +1236,9 @@ texts were not kept, one naming a text by anything but a fingerprint (`isSha`), 
 cannot point it at another file, one whose texts are missing, whose system text no longer has its
 fingerprint, or whose prompt no longer joins to `promptSha`), prints it as logged and sends
 it `--times` times with the same settings, or the effort given, reading each answer with
-`callRead` against the saved `open` (`replayLine`), then the totals of each (`replayTotals`). With
+`callRead` against the saved `open` (`replayLine`, whose tokens are those read fresh, read from
+the cache, written to the cache and sent out; a part written "- none", "None." or "(none)" marks
+nothing, as `items` reads it), then the totals of each (`replayTotals`). With
 `--variant`, each call is sent `--times` times as saved and `--times` times with its texts edited
 to what this build sends in their place (`editSaved`; `build` names every edit in
 `PROMPT_EDITS`): `frame` drops the fork frame the build before prompt group 1 opened the task
@@ -1147,7 +1253,7 @@ call that asks for it already. The prompt groups after group 2 are `GROUPS`, in 
 of call: `proof` (group 3: `G3_REP_SYSTEM`, `G3_OBJECTIVE_SYSTEM`, `G3_OWN_WORDS_SYSTEM`,
 `G3_TASK`), `decisions` (group 4: `G4_REP_SYSTEM`, `G4_OBJECTIVE_SYSTEM`, `G4_TASK`; it has no
 own-words pair) and `now` (group 5: `G5_OBJECTIVE_SYSTEM`, `G5_TASK`; watch and objective calls
-only, since it changes neither the shared system prompt nor the briefing), and `same-as` (group 6: `G6_OBJECTIVE_SYSTEM`, `G6_TASK`; objective calls only), and `message` (group 7: `G7_REP_SYSTEM`, `G7_OWN_WORDS_SYSTEM`, `G7_TASK`; every call but the objective's), and `evidence` (group 8: `G8_REP_SYSTEM`, `REP_HOLD` added; watch, brief and ask-again calls). Group 9's edit, `fault`, rebuilds nothing: its second asking names the rule the first answer broke, which no saved call holds, so `editSaved` sends no ask-again call under it, and the build before it's text stays as `askAgainBefore`. Issue #49's edit, `unshown` (`G10_OBJECTIVE_SYSTEM`; objective calls only), rewrites the objective writer's turn-end line, so a message under a turn none of which is shown approves only in words that accept a plan; the build before it is group 9's, since group 9 rebuilt nothing. Each pair is the group before's text, kept word for word, and the text the group
+only, since it changes neither the shared system prompt nor the briefing), and `same-as` (group 6: `G6_OBJECTIVE_SYSTEM`, `G6_TASK`; objective calls only), and `message` (group 7: `G7_REP_SYSTEM`, `G7_OWN_WORDS_SYSTEM`, `G7_TASK`; every call but the objective's), and `evidence` (group 8: `G8_REP_SYSTEM`, `REP_HOLD` added; watch, brief and ask-again calls). Group 9's edit, `fault`, rebuilds nothing: its second asking names the rule the first answer broke, which no saved call holds, so `editSaved` sends no ask-again call under it, and the build before it's text stays as `askAgainBefore`. Issue #49's edit, `unshown` (`G10_OBJECTIVE_SYSTEM`; objective calls only), rewrites the objective writer's turn-end line, so a message under a turn none of which is shown approves only in words that accept a plan; the build before it is group 9's, since group 9 rebuilt nothing. The rewrite's edit, `rewrite` (prompt audit §6.1 to §6.4; watch, brief, ask-again and own-words calls), is the last group: it swaps `PRE_RW_REP_SYSTEM` for `repSystem(REPLAY_FENCE)` (`PRE_RW_OWN_WORDS_SYSTEM` for `OWN_WORDS_SYSTEM`), and its step (`rewriteTask`) takes the build before's request apart (the watch's reason and its two lists, the briefing's request, the second asking's fault and open conditions) and builds this build's request from those parts, while `rwMemory` rebuilds what the rep knows (the owner's messages in their fence under the new heading, their fence tags escaped, the new lines on a sent draft and on a reopened condition). The own-words request is this build's with the length aims swapped in (`G7_SHORT_PART`, `G7_MESSAGE_FORM` for `SHORT_PART`, `MESSAGE_FORM`) and its quoted conditions and findings escaped by `fenceTags`; group 7's own pairs keep the old length texts frozen (`G7_SHORT_PART`, `G7_LEFT_ITEMS`, `G7_MESSAGE_FORM`), so a change to the live ones never breaks group 7's edit. Each old text must be found exactly once, or the call is not sent. It takes only a call whose record is in the build before's fence (`PRE_RW_RECORD_OPEN`, `PRE_RW_RECORD_CLOSE`) and quotes that record in the replay's fixed fence (`REPLAY_FENCE`, `replay00`, so a call replayed twice reads the same), its fence tags escaped by `fenceTags`, which leaves the old escape as it was. A second asking saved before group 9 names no fault, so, as under `fault`, it is never rebuilt. Each pair is the group before's text, kept word for word, and the text the group
 sent in its place. Applied after `rep-system`, in that order (`stepGroups`), each named group's
 edit (`stepGroup`) moves a call the build before it saved to exactly what the build after it
 sends: the call's system prompt must be the build before's (`systemBefore`, this build's with
@@ -1164,7 +1270,7 @@ against that cap; the rest is as logged, so a call saved before the shared cap a
 shows what those two alone change (audit test R16). With `--base`, a strict part of the
 variant's edits, the first arm is sent with the base's edits in place of as saved, so the two arms
 differ by the variant's other edits alone; a base that is not a strict part prints `REPLAY_USAGE`. Only the task after
-the last `</session_record>` is edited, never the record, and the blocks wholly before it go as
+the last `</session_record>` is edited, never the record (the rewrite changes only its fence and the fence tags inside it), and the blocks wholly before it go as
 they were, cache marks and all. A call an edit applies to but cannot change (its old text is not
 there, or its system prompt is not the record read's), or one no edit applies to, is not sent in
 either arm, so the arms are the same calls; the totals are `logged`, `as saved` (or `base`) and

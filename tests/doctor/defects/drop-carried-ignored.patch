@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index cf4083e..2f53dc9 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3655,7 +3655,7 @@ export function standingDrops(a: WatchAnswer, plans: readonly string[], carried:
+   const kept = once
+     .filter(c => !(a.cleared ?? []).some(w => samePart(w, c)))
+     .map(c => fresh.find(f => alike(f, c)) ?? c)
+-  return [...kept, ...fresh.filter(f => !kept.includes(f))]
++  return fresh
+ }
+ 
+ // Whether a note of these parts names several, so its drawing counts as a turn.

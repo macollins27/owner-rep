@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index b6129e7..27c6908 100644
+index 9f4a977..682987e 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1552,7 +1552,7 @@ async function readSession($: EngineInterface, sid: string, rec: Rec, kind: Call
+@@ -1587,7 +1587,7 @@ async function readSession($: EngineInterface, sid: string, rec: Rec, kind: Call
+   const effort = kind === 'watch' ? WATCH_EFFORT : BRIEF_EFFORT
+   // The system prompt goes as one block marked for the cache (G3): every reader call of the
+   // session sends the same one, its fence included. A build that refuses blocks takes the text.
+-  const system = repSystem(fence)
++  const system = repSystem(fence).slice(0, repSystem(fence).indexOf('\n\n## Private data'))
    const ask = (prompt: string | PromptBlock[]) =>
      $.model.complete({
        model: OBJECTIVE_MODEL,
--      system: REP_SYSTEM,
-+      system: REP_SYSTEM.slice(0, REP_SYSTEM.indexOf('\n\n## Private data')),
-       prompt,
-       maxTokens: RECORD_MAX_TOKENS,
-       effort,

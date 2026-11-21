@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index baaaf44..c6c2d63 100644
+index 2992ce2..da1f63f 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2661,7 +2661,7 @@ export const PLAN_WORDS_SHARE = 0.4
- const inPlans = (step: string, plans: readonly string[]): boolean => {
-   const has = new Set(plans.flatMap(allWords))
-   const words = stepWords(step)
--  return words.length > 0 && words.filter(w => has.has(w)).length >= words.length * PLAN_WORDS_SHARE
-+  return words.length > 0 && words.filter(w => has.has(w)).length >= 0
- }
+@@ -3613,7 +3613,7 @@ export const PLAN_WORDS_SHARE = 0.4
+ // How long a look waits for the objective write taking in the owner's newest words.
+ export const LOOK_WAIT_MS = 60_000
+ const inPlans = (step: string, plans: readonly string[]): boolean =>
+-  contentWords(step).length > 0 && heldIn(step, plans.join('\n')) >= PLAN_WORDS_SHARE
++  contentWords(step).length > 0 && heldIn(step, plans.join('\n')) >= 0
  
- export const DROPPED_STEP_MAX = 160
+ // The same part of the same plan: both with a plan number, the same one, and the same content
+ // words. Only that takes back a part an earlier note said was dropped: a sibling ("a test for the

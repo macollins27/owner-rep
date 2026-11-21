@@ -174,7 +174,8 @@ narrows the agent's next step can't shrink the whole job.
 It weighs your messages by kind. A note you send to the rep counts most of all. Then come
 your reasons and complaints, then your instructions. A plan you approve, with a yes or on
 Claude Code's plan screen, counts as your own ask: each of its steps becomes part of "done",
-and the Heads up says so when one of them looks dropped. The plan held is the one the screen
+and the Heads up names it at every look where it looks dropped, including a look made while
+the card was open or another note was up. The plan held is the one the screen
 showed you, and a note you type as you approve it counts as your own words beside it. A yes never approves more than the
 text it answered, and the agent can't approve anything for you by saying you did.
 
@@ -197,7 +198,8 @@ expectations for every job:
 The rep also watches where the work goes. When more of a session goes into the agent checking
 its own work than into the product, it says so, and the message it writes for you never asks
 for more tests, scripts or reports: where proof is missing it asks for the proof that fits, a
-command and what it printed for a fact, or a hands-on look at the real thing for whether it works.
+command and what it printed for a fact, or, for whether it works, a hands-on look at what the
+customer gets by someone who did not build it, never the agent re-running its own checks.
 
 That the work does what it should is signed off only by someone who did not build it: a helper
 or a read-only Codex run that changed nothing, or the rep's own check, opening the real thing and
@@ -395,9 +397,9 @@ The full design is in [How the owner rep works](docs/how-it-works.md).
 
 ## Built to be trusted
 
-- **791 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
+- **866 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
   the tests.
-- **A doctor that plants bugs.** It plants 876 known defects in a throwaway copy, one at a
+- **A doctor that plants bugs.** It plants 947 known defects in a throwaway copy, one at a
   time, and fails the build if the tests miss any of them.
 - **Real sessions.** Twelve scenarios run in real Claude Code sessions, with the screen
   captured in [`tests/live/captures`](tests/live/captures).

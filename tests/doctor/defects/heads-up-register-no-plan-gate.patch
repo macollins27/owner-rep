@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 654b9c8..a408b89 100644
+index 7778e4d..6fd47e7 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1633,7 +1633,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
-     if (stepped && after.objective !== null) after.objective = { ...after.objective, step: answer.now }
-     if ((marked || stepped) && onScreen(sid)) await update($, readingA, () => after.objective)
-     const view = await read($, viewA)
--    const said = headsUp(answer, after.seen, fill?.blocks ?? [])
-+    const said = headsUp(answer, after.seen, [])
-     if (said !== null && view === 'row' && onScreen(sid) && ![...after.seen].some(s => same(s, said.line))) {
-       after.seen = [...after.seen, said.line].slice(-SEEN_MAX)
-       const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId }
+@@ -1739,7 +1739,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+     const noteUp = view === 'note' && onScreen(sid)
+     const onNote = noteUp ? (shownParts.get(sid) ?? []) : []
+     const carried = [...(held?.parts ?? []), ...onNote]
+-    const plans = fill?.blocks ?? []
++    const plans: string[] = []
+     const parts = standingDrops(answer, plans, carried)
+     // The turn moves when a note of several parts reaches the screen, here or in `showHeld`.
+     const turn = lookTurns.get(sid) ?? 0

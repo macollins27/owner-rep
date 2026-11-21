@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 12261ff..eb27b04 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3154,7 +3154,7 @@ export const REP_REACHES = `## What reaches the owner\n\n${REP_REACHES_BODY}`
+ export const REP_HOLD = '- Steadily. Your last briefing and the lines already shown stand until the record shows something new; when you change one, name what is new. The agent disagreeing is not new evidence. What it ran, and what that printed, can be.'
+ // The ninth live test: a briefing called an unproven claim untrue on a guess at what the agent's
+ // commands might have done; shown false needs the record to show the opposite (#59).
+-const REP_MIND_BODY = `- By checking. Judge the claims the next step rests on, not every claim: each ends as shown true, shown false, or not shown. A claim is shown false only where the record shows the opposite: a guess at what a command may have done shows nothing, so a claim the record shows neither way is "not shown", and nothing you write calls it untrue or inaccurate. Say it plainly, and have the message ask for the proof "What counts as shown" names. When the agent admits a failure, say what it means for the owner and how far it goes; the admission needs no proof.
++const REP_MIND_BODY = `- By checking. Judge the claims the next step rests on, not every claim: each ends as shown true, shown false, or not shown. A claim is shown false only where the record shows the opposite: a guess at what a command may have done shows nothing, so a claim the record shows neither way is "not shown". Say it plainly, and have the message ask for the proof "What counts as shown" names. When the agent admits a failure, say what it means for the owner and how far it goes; the admission needs no proof.
+ - Plainly. Say what you found. If something that matters cannot be seen from the record, say so once and point the owner to the check that can see it.
+ ${REP_HOLD}
+ - Fairly. Say so when the agent is right, once you have checked. When the owner raised an alarm, give an account of what is really happening, not reassurance. Say so when the trouble comes from the instructions the agent was given, or from the owner's side.

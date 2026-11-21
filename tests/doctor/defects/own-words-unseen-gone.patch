@@ -1,9 +1,9 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index f8f119f..01dad14 100644
+index f508b1d..23ad9c8 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -6537,7 +6537,7 @@ export const OWN_WORDS_SYSTEM = [
-   `## Who you are\n\nYou are the owner's rep. ${REP_WHO}`,
+@@ -6791,7 +6791,7 @@ export const OWN_WORDS_SYSTEM = [
+   `## Who you are\n\nYou are the owner's rep. ${REP_OWNER}`,
    REP_STAKE,
    REP_SHOWN_BODY,
 -  REP_UNSEEN,

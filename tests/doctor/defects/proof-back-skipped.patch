@@ -1,11 +1,11 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index fdf0b2f..7d80b7f 100644
+index f508b1d..bde4633 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -7036,8 +7036,7 @@ export function editSaved(kind: CallKind, system: string, prompt: string | Promp
-     const moved = toRepSystem(kind, sys, ended ? task.trimEnd().slice(0, -END_ASK.length).trimEnd() : task)
+@@ -7921,8 +7921,7 @@ export function editSaved(kind: CallKind, system: string, prompt: string | Promp
      if ('why' in moved) return moved
-     // toRepSystem builds this build's texts; group 2's are those with every later group undone.
+     // toRepSystem builds the texts of the build before the rewrite; group 2's are those with every
+     // group before the rewrite undone.
 -    const g2 = toGroup2(kind, moved.system, moved.task)
 -    if ('why' in g2) return g2
 +    const g2 = moved

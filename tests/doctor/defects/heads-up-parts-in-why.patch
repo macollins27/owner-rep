@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 2992ce2..5566656 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3683,7 +3683,7 @@ export function headsUpOf(
+   const noSign = rest.every(d => d.how === 'no sign')
+   const joined = (lines: readonly string[]): string => lines.filter(l => l !== '').join(' ')
+   return { note: {
+-    line: `${one ? 'Plan step looks' : `${texts.length} plan steps look`} dropped: ${partsSaid(texts, max)}.`,
++    line: `${one ? 'Plan step looks' : `${texts.length} plan steps look`} dropped: ${texts[0]}.`,
+     why: joined([
+       one
+         ? noSign

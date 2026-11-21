@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -8000,7 +8000,7 @@
+ const G7_TASK: ReadonlyArray<{ swap: Swap; kinds: readonly CallKind[] }> = [
+   { swap: ['stands: <one or two sentences: where the work really stands, as the record', `stands: <${G7_SHORT_PART}: where the work really stands, as the record`], kinds: ['brief', 'ask-again'] },
+   { swap: ["means: <one or two sentences: what the agent's latest message means for the owner measured", `means: <${G7_SHORT_PART}: what the agent's latest message means for the owner measured`], kinds: ['brief', 'ask-again'] },
+-  { swap: ['- <one line per item: work put off,', `- <${G7_LEFT_ITEMS}: work put off,`], kinds: ['brief', 'ask-again'] },
++  { swap: ['- <one line per item: work put off,', `- <${LEFT_ITEMS}: work put off,`], kinds: ['brief', 'ask-again'] },
+   { swap: ['next: <one or two sentences: what the agent does next;', `next: <${G7_SHORT_PART}: what the agent does next;`], kinds: ['brief', 'ask-again'] },
+   { swap: ['written to the agent, specific and professional, several lines if needed. It asks', `written to the agent ${G7_MESSAGE_FORM}. It asks`], kinds: ['brief', 'ask-again'] },
+   { swap: ["means: <one or two sentences: what the agent's latest message means for the owner, measured", `means: <${G7_SHORT_PART}: what the agent's latest message means for the owner, measured`], kinds: ['own-words'] },

@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 2992ce2..1805b5a 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3571,7 +3571,7 @@ function walkDropped(part: string | undefined): { dropped?: DroppedStep[]; clear
+     if (w === null) continue
+     const how = /^(no sign while later work goes on|looks dropped)\b/i.exec(w.mark)
+     if (how !== null) out.push({ n: w.n, step: w.step, how: /^no/i.test(how[1] as string) ? 'no sign' : 'looks dropped' })
+-    else if (!/^not assessed\b/i.test(w.mark) && w.mark !== '') cleared.push({ n: w.n, step: w.step })
++    else if (w.mark !== '') cleared.push({ n: w.n, step: w.step })
+   }
+   return { ...(out.length === 0 ? {} : { dropped: out }), ...(cleared.length === 0 ? {} : { cleared }) }
+ }

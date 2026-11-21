@@ -33,3 +33,40 @@
   single number is marked any more. Its successor is `store-move-seen-as-threshold`, which plants
   the reads taking the mark as one threshold, the newest `at` it holds, so the save stamped earlier
   but landing last is missed again.
+- `in-plans-short-part-usual-share.patch`: planted a dropped part of four words or fewer counting
+  as a plan's at the usual 0.4 share rather than three quarters. The short-part share was
+  reverted on 20 Nov 2026 (PR #68, fourth round): a real step reworded by one word must count,
+  so every part counts at the one 0.4 share, which is now the code. No successor:
+  `heads-up-plan-words-any` still plants any step passing.
+- `walk-watch-flag-on-carried-drop.patch`: planted the watch not being told that the walk carries
+  each dropped line on its own, so its flag could go to a drop the owner already hears. That text
+  was reverted on 20 Nov 2026 (PR #68, fourth round) to 38b0dc9's, and the test of `WALK_WATCH`
+  holds that text word for word. No successor.
+- `heads-up-said-drops-not-kept.patch`, `heads-up-said-likeness-lowered.patch`,
+  `heads-up-said-plan-words-unchecked.patch`, `heads-up-said-plan-ignored.patch` and
+  `heads-up-sibling-hidden.patch`: each planted a weaker form of the test that hid a dropped plan
+  part because a like part of the same plan had been said at an earlier look (the record's
+  `saidDrops`, its likeness of 0.75 and its plan-word subset check). That test was removed on
+  20 Nov 2026 (PR #68, fifth round): three reviews in a row each found new ways it hid a part
+  never said to the owner, so a part the walk shows as dropped is now said at every look where it
+  is dropped and nothing said before hides it. Their successor is
+  `heads-up-walk-drop-said-before-hidden`, which plants a dropped part named in a line shown
+  before being held back.
+- `heads-up-repeats-shown.patch` and `heads-up-short-steps-repeat.patch`: planted a dropped step
+  being raised again at every look. Since 20 Nov 2026 (PR #68, fifth round) that is the rule: a
+  part still dropped is said at every look, a repeat being noise and a part unsaid the harm. No
+  successor; `heads-up-walk-drop-said-before-hidden` plants the opposite.
+- `heads-up-flag-names-every-part.patch`: planted a flag that holds every word of two dropped
+  parts standing for both, so the second lost its "Also looks dropped" line. Since 20 Nov 2026
+  (PR #68, commit 1061d6a) that is the rule: `namedBy` names every part a clause of the flag says
+  was dropped, and none of them is said again after it. Its successors are `flag-names-one-only`
+  (the flag stands for only the longest part again) and `flag-named-subset-hidden` (a part whose
+  words all sit inside a longer named part counts as named).
+- `heads-up-flag-speaks-ignored.patch`, `heads-up-named-hides-others.patch`,
+  `heads-up-flag-names-on-some-words.patch`, `flag-clause-scope-removed.patch`,
+  `flag-names-one-only.patch` and `flag-named-subset-hidden.patch`: each planted a fault in how a
+  flag stood for a dropped part (`names`, `namedBy`, `CLAUSE_BREAK`). Since 21 Nov 2026 (the final
+  review of #68) no flag stands for a part: whether a clause calls a part dropped or done cannot be
+  read from its words, so the part is always in the line and the flag in the why, and that code is
+  gone. Their successor is `heads-up-flag-lost` (the flag dropped from the why) with
+  `heads-up-not-carried` (the flag shown and the walk never read).

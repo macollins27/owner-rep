@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3211,7 +3211,7 @@
+ export const REP_SYSTEM = repSystem()
+ // A session's fence: eight lowercase letters and digits, random, made once and kept in its record.
+ const FENCE_CHARS = 'abcdefghijklmnopqrstuvwxyz0123456789'
+-export const newFence = (): string => [...crypto.getRandomValues(new Uint8Array(8))].map(b => FENCE_CHARS[b % FENCE_CHARS.length]).join('')
++export const newFence = (): string => [...new Uint8Array(8)].map(b => FENCE_CHARS[b % FENCE_CHARS.length]).join('')
+ // A tag of either fence in text quoted inside one (the record's entries, the owner's messages),
+ // with or without a session's suffix, any case, spaces or attributes inside the brackets (kept as written), self-closing or not
+ // (the closing slash kept): printed with its angle

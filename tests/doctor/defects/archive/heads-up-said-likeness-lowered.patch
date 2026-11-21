@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3640,7 +3640,7 @@
+ // How alike a part said and a part dropped must be, beside every plan word of the dropped part being
+ // in the part said, to count as the part said reworded. On 32 real replay replies (8,848 pairs of
+ // parts of one step) these two together hid no sibling; likeness alone hid siblings up to 0.82.
+-export const SAID_LIKENESS = 0.75
++export const SAID_LIKENESS = 0.5
+ 
+ export const DROPPED_STEP_MAX = 160
+ export const DROPPED_ALSO_MAX = 3

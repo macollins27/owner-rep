@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index b6129e7..a7c1ba9 100644
+index 7778e4d..a235fec 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1636,7 +1636,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
-     if ((marked || stepped) && onScreen(sid)) await update($, readingA, () => after.objective)
-     const view = await read($, viewA)
-     const said = headsUp(answer, after.seen, fill?.blocks ?? [])
--    if (said !== null && view === 'row' && onScreen(sid) && ![...after.seen].some(s => same(s, said.line))) {
-+    if (said !== null && view === 'row' && onScreen(sid) && true) {
-       after.seen = [...after.seen, said.line].slice(-SEEN_MAX)
-       const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId }
-       await update($, noteA, () => note)
+@@ -1756,7 +1756,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+     // The note on screen whose every part a walk took back comes down, unless this look draws its
+     // own: it would go on telling the owner a step was dropped that the walk marked done.
+     const takenBack = onNote.length > 0 && parts.length === 0
+-    if (said === null || repeat(said.line)) {
++    if (said === null) {
+       if (takenBack) await toRow($)
+       return
+     }

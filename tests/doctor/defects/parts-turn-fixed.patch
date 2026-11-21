@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 2992ce2..031289c 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3676,7 +3676,7 @@ export function headsUpOf(
+   const rest = standingDrops(a, plans, carried)
+   if (rest.length === 0) return { note: own, drops: [] }
+   const all = textsOf(rest)
+-  const at = ((turn % all.length) + all.length) % all.length
++  const at = 0
+   const texts = [...all.slice(at), ...all.slice(0, at)]
+   const max = 1 + DROPPED_ALSO_MAX
+   const one = texts.length === 1

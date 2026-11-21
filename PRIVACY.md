@@ -16,9 +16,13 @@ anything, it keeps:
 - the fingerprints and sizes of the saved texts listed below;
 - the messages the rep drafted that you sent, the last briefing's next step and message, and
   the last three cards' messages;
-- the notes the rep has shown, and the text of up to 10 notes other mods drew in the strip,
-  so none is repeated;
+- the notes the rep has shown, the steps of your approved plans those notes said look dropped
+  (up to 40, each with the number of the message that approved its plan, or a short fingerprint
+  of that plan's text), and the text of up to
+  10 notes other mods drew in the strip, so none is repeated;
 - counters of what the rep has spent, and of how its model calls came back and were read;
+- a random label of eight letters and digits, made once for the session, which marks where
+  the session's record and your messages begin and end in what the rep reads;
 - the last 60 helper and Codex runs the agent or its helpers started: each one's tool-call id,
   whether it finished, failed or is still going, whether it changed the work, and up to 300
   characters of its own last words (the end of a helper's answer, or of what Codex printed), so

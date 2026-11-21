@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index b6129e7..55c4b11 100644
+index 7778e4d..7b82b1d 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1635,7 +1635,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
-     if (stepped && after.objective !== null) after.objective = { ...after.objective, step: answer.now }
-     if ((marked || stepped) && onScreen(sid)) await update($, readingA, () => after.objective)
-     const view = await read($, viewA)
--    const said = headsUp(answer, after.seen, fill?.blocks ?? [])
+@@ -1744,7 +1744,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+     // The turn moves when a note of several parts reaches the screen, here or in `showHeld`.
+     const turn = lookTurns.get(sid) ?? 0
+     const got = headsUpOf(answer, plans, carried, turn)
+-    const said = got.note
 +    const said = answer.flag === null ? null : { line: answer.flag, why: answer.why }
-     if (said !== null && view === 'row' && onScreen(sid) && ![...after.seen].some(s => same(s, said.line))) {
-       after.seen = [...after.seen, said.line].slice(-SEEN_MAX)
-       const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId }
+     // A plain flag already shown is not shown again. A note that says a dropped plan part is shown
+     // at every look where the part is dropped: a silent drop is the harm, a repeat only noise.
+     const repeat = (line: string): boolean => got.drops.length === 0 && after.seen.some(s => same(s, line))

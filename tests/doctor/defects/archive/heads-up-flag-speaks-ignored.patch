@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 914c369..29d95bd 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3659,7 +3659,7 @@ export function headsUpOf(a: WatchAnswer, plans: readonly string[]): { note: { l
+   const own = a.flag === null ? null : { line: a.flag, why: a.why }
+   const fresh = (a.dropped ?? []).filter(d => inPlans(d.step, plans))
+   const flag = a.flag
+-  const named = flag === null ? [] : namedBy(flag, fresh)
++  const named: typeof fresh = []
+   const rest = fresh.filter(d => !named.includes(d))
+   const first = rest[0]
+   const told = (ds: readonly StepRef[]): string[] => ds.map(d => stepText(d.step))
