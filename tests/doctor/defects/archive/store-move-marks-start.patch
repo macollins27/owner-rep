@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 3dddaf7..3331042 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -541,7 +541,7 @@ async function migrate($: EngineInterface): Promise<void> {
+   }
+   // The newest save the move saw, not the time it started: an older build's save stamped before
+   // the start but landing after the map was read is later than that, and is read and copied.
+-  await $.store.set(MIGRATED_KEY, Math.max(since, newest, 1))
++  await $.store.set(MIGRATED_KEY, started)
+   if (started - newest > OLD_MAP_IDLE_MS) await $.store.delete(OLD_MAP_KEY)
+ }
+ 

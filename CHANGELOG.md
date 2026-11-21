@@ -5,6 +5,18 @@ What changed in each release of Owner Rep, newest first. The full record is the
 
 ## Unreleased
 
+- **One session's save no longer undoes another's.** Every session's record was kept in one
+  shared list, and each save read the list, changed its own record and wrote the whole list
+  back, so when two sessions saved at nearly the same moment the later one put back the other's
+  older copy; a plan approval was lost that way. Each session's record now has its own place in
+  the store and a save writes only that. Records kept the old way are copied over on the first
+  start, and the old list is kept, and read where it is newer, until it has gone unused for a
+  week, so a session still running an older version loses nothing. A session pushed out of the
+  newest 32 after the update is not read back from that old list, and a session you come back
+  to after a long idle keeps the message it saves while another session is clearing out old
+  records. A save an older version makes while the copy is running is read rather than missed,
+  even with two older versions saving at once, a new session never pushes out another new one to
+  keep old records the copy has not finished with, and a copy cut short partway never lets a session fall back to its record from before it.
 - **A dropped part of your plan stays said until it is done.** A note that a part of your plan
   looks dropped is no longer taken back by a later look that never checked that part, nor
   replaced by an unrelated note; several dropped parts lead with their count and take turns

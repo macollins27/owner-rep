@@ -1,0 +1,16 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index d7257be..df307f4 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -624,8 +624,9 @@ async function trimStore($: EngineInterface, keep: string): Promise<string[]> {
+   // The newest SESSIONS_MAX are ranked from every record, mapped or not, so a mapped record never
+   // costs a newer one its place; a mapped record outside them stays, over the cap.
+   const recs = new Map<string, unknown>()
+-  for (const id of ids) recs.set(id, await $.store.get(recKey(id)))
+-  const gone = recsToLetGo(ids.map(id => ({ id, at: atOf(recs.get(id) as { at?: unknown } | undefined) })), keep, SESSIONS_MAX).filter(id => !mapped.has(id))
++  const free = ids.filter(id => !mapped.has(id))
++  for (const id of free) recs.set(id, await $.store.get(recKey(id)))
++  const gone = recsToLetGo(free.map(id => ({ id, at: atOf(recs.get(id) as { at?: unknown } | undefined) })), keep, Math.max(free.length - (ids.length - SESSIONS_MAX), 1))
+   const dropped = gone.flatMap(id => recDrafts(recs.get(id)))
+   if (dropped.length > 0) await $.store.set('droppedDrafts', keepDropped(await droppedDrafts($), dropped))
+   const deleted: string[] = []
