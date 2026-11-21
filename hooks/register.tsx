@@ -1629,6 +1629,10 @@ async function readSession($: EngineInterface, sid: string, rec: Rec, kind: Call
 // works from, read by a fresh instance with the rep's brief. Never awaited by
 // the hook that starts it, so the agent is never slowed.
 async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | 'note', turnId: string): Promise<void> {
+  // A write in flight is taking in the owner's newest words, an approval among them: the look waits
+  // for it, so a turn that ends right after an approval is walked against the plan (live round on
+  // 9590250: a turn under 30 seconds got no walk). The write ends within its own time limits.
+  await writing.get(sid)?.run.catch(() => undefined)
   const rec = await loadRec($, sid)
   // Typing past notes backs the watch off; a note to the rep is never skipped.
   if (rec.skip > 0 && reason !== 'note') {

@@ -14548,6 +14548,27 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
       expect({ text: text.slice(0, 0), named: named >= (want === 'all' ? 3 : 1) ? want : `${named}: ${text}` }).toEqual({ text: '', named: want })
     })
 
+  test('rule (mounted): a turn that ends while the objective writer is still taking in the owner\'s newest message is looked at once that write lands (live round on 9590250: a fast turn after an approval got no plan walk)', async ($, on) => {
+    const owner = owns([2, 'Read the real data first.\nMove the request limit to the local store.'])
+    const m = mounted7(on, owner, brief => (brief ? WELL : walkAnswer('- #2: Move the request limit to the local store | looks dropped')))
+    let release: () => void = () => undefined
+    let writes = 0
+    on('model.complete', async () => {
+      writes += 1
+      if (writes === 1) await new Promise<void>(r => (release = r))
+      return { value: { isAnswered: false, reason: 'error' } }
+    })
+    await started($)
+    await $.prompt.submit(typed('go ahead with the plan'))
+    await settleUntil($, () => writes > 0)
+    await $.turn.complete(stop('t1'))
+    await settleUntil($, () => m.looks().length > 0, 300)
+    const before = m.looks().length
+    release()
+    await settleUntil($, () => m.looks().length > 0)
+    expect({ writes: writes > 0, before, after: m.looks().length }).toEqual({ writes: true, before: 0, after: 1 })
+  })
+
   test('rule (mounted): a part dropped while the card is open, and no longer dropped at the next look, is not shown when the card closes', async ($, on) => {
     const owner = owns([2, 'Read the real data first.\nMove the request limit to the local store.'])
     const answers = [walkAnswer('- #2: Move the request limit to the local store | looks dropped'), walkAnswer('- #2: Move the request limit to the local store | underway')]
