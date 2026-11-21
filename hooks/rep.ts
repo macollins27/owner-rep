@@ -2309,8 +2309,24 @@ export function takeApprovals(
   return waits.length > 0 ? { setAside: true, changes: waits } : { setAside: false, changes }
 }
 
+// A condition a yes to the plan is what it waited on (the writer's rule under "Plans the owner
+// approved", review of #70, F5): that a plan be written or shown first, take a set number of steps
+// or parts, or that the agent wait for the owner's go-ahead. Only such a condition may be closed by
+// an approval; one about the work never is, and an approval drops nothing.
+const PLAN_NOUN = /\b(?:plan|proposal|outline)s?\b/
+const PLAN_WAIT = /\b(?:shown|show|written|write|laid out|proposed|presented|sent|shared|first|before|approv\w*|agreed|sign-off)\b/
+const PLAN_SHAPE = /\b(?:has|in|with|into)\s+(?:at most |no more than |up to |exactly )?(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+(?:steps|parts|phases|stages|tasks)\b/
+const GO_AHEAD = /\bgo-?ahead\b|\buntil the owner (?:says|approves|agrees|okays|gives|confirms)\b|\bwaits? for the owner\b/
+export function waitsOnPlan(text: string): boolean {
+  const t = bare(text).toLowerCase()
+  if (GO_AHEAD.test(t)) return true
+  if (!PLAN_NOUN.test(t) || /\bnot needed\b|\bno plan\b/.test(t)) return false
+  return PLAN_WAIT.test(t) || PLAN_SHAPE.test(t)
+}
+
 // A held condition a message of the owner's that could not be read whole, or an approval, would
-// let go of is kept, and beside it a condition to settle it with the owner.
+// let go of is kept, and beside it a condition to settle it with the owner. One that ends closed
+// (a yes closing what waited on the plan) needs no settling.
 export function settleConditions(
   held: readonly Condition[],
   merged: Condition[],
@@ -2319,7 +2335,7 @@ export function settleConditions(
 ): Condition[] {
   const out = [...merged]
   for (const c of held) {
-    if (c.state === 'closed') continue
+    if (c.state === 'closed' || merged.some(x => x.state === 'closed' && same(x.text, c.text))) continue
     for (const l of lets) {
       if (l.by === null || !same(bare(l.text), bare(c.text))) continue
       const m = owner.find(x => x.n === l.by)

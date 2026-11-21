@@ -240,6 +240,7 @@ import {
   parseObjective,
   parseApproved,
   settleConditions,
+  waitsOnPlan,
   takeApprovals,
   wordsUnread,
   writerShowings,
@@ -1199,12 +1200,14 @@ async function contextOf($: EngineInterface): Promise<Memory['context']> {
 // of the owner's messages, so a condition it marks shown is taken only as
 // already held shown, and one it marks closed only when the number cited is
 // one of the messages of theirs it is given (on a correction, those sent after
-// the held objective was built); otherwise it is open.
-function honest(proposed: Condition[], held: Condition[], his: readonly number[]): Condition[] {
+// the held objective was built), or an approval among them (`yeses`) and the
+// condition only waited on the plan (`waitsOnPlan`); otherwise it is open.
+function honest(proposed: Condition[], held: Condition[], his: readonly number[], yeses: readonly number[] = []): Condition[] {
   return proposed.map(c => {
     const was = held.find(x => same(x.text, c.text))
+    const by = Number(c.by.slice(1))
     if (c.state === 'shown' && was?.state !== 'shown' && was?.state !== 'closed') return { ...c, state: 'open', by: '' }
-    if (c.state === 'closed' && !his.includes(Number(c.by.slice(1))) && was?.state !== 'closed') return { ...c, state: 'open', by: '' }
+    if (c.state === 'closed' && !his.includes(by) && !(yeses.includes(by) && waitsOnPlan(c.text)) && was?.state !== 'closed') return { ...c, state: 'open', by: '' }
     return c
   })
 }
@@ -1229,6 +1232,11 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number, r
     const m = byN.get(n)
     return m !== undefined && !approvalOf(m) && !wordsUnread(m)
   }
+  // An approval read whole may close a condition that only waited on the plan (F5), never drop one.
+  const isYes = (n: number): boolean => {
+    const m = byN.get(n)
+    return m !== undefined && approvalOf(m) && !wordsUnread(m)
+  }
   const canOpen = (n: number): boolean => {
     const m = byN.get(n)
     return m !== undefined && m.kind !== 'plan' && canClose(n)
@@ -1248,7 +1256,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number, r
     }
     rec.objective = {
       ...a.parts,
-      done: honest(a.parts.done.map(plainCondition), [], his.filter(canClose)),
+      done: honest(a.parts.done.map(plainCondition), [], his.filter(canClose), his.filter(isYes)),
       openedAt: now,
       since: his.length > 0 ? Math.min(...his) : rec.jobStart,
       from: saw,
@@ -1266,7 +1274,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number, r
   if (rev !== undefined && rev < rec.objRev) {
     const fresh = hisFrom(rec, held.from + 1).filter(n => n <= saw)
     const closers = fresh.filter(canClose)
-    const merged = mergeConditions(held.done, honest(a.parts.done, held.done, closers), a.dropped, closers)
+    const merged = mergeConditions(held.done, honest(a.parts.done, held.done, closers, fresh.filter(isYes)), a.dropped, closers)
     rec.objective = { ...held, done: settleConditions(held.done, merged, lets, rec.owner), from: Math.max(held.from, saw) }
     return true
   }
@@ -1284,7 +1292,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number, r
     rec.jobStart = since
     rec.objective = {
       ...a.parts,
-      done: honest(a.parts.done.map(plainCondition), [], hisFrom(rec, since).filter(n => n <= saw && canClose(n))),
+      done: honest(a.parts.done.map(plainCondition), [], hisFrom(rec, since).filter(n => n <= saw && canClose(n)), hisFrom(rec, since).filter(n => n <= saw && isYes(n))),
       openedAt: now,
       since,
       from: saw,
@@ -1302,7 +1310,7 @@ function takeObjective(rec: Rec, a: ObjectiveAnswer, now: number, saw: number, r
     result: a.parts.result,
     purpose: a.parts.purpose,
     step: a.parts.step,
-    done: settleConditions(held.done, mergeConditions(held.done, honest(a.parts.done, held.done, closers), a.dropped, closers), lets, rec.owner),
+    done: settleConditions(held.done, mergeConditions(held.done, honest(a.parts.done, held.done, closers, fresh.filter(isYes)), a.dropped, closers), lets, rec.owner),
     from: saw,
     movedAt: now,
     cause: a.cause,
