@@ -9028,8 +9028,20 @@ describe("Task 6: the writer's rule and the approved line", () => {
     // "nothing installed or set up without a request" as a condition the owner never set.
     const built = section('How the objective is built')
     expect(built).toContain("what it says it did or found, and any limit it sets on its own work (that it installed nothing, will ask first, or left some to the owner) are the agent's account, which enters the objective only through a plan the owner approved.")
-    // The unstated wants in 0.6.0's words: the best in its trade, proof by someone using the real thing.
-    expect(built).toContain('It includes what a serious owner plainly wants unsaid: the result as good as the best in its trade makes it; shown to work by someone opening the real thing, using it and trying to break it; nothing left broken or dropped quietly; code fit to be public when the work is public; and no effort on checks or process the result does not need.')
+    // The unstated wants stay, as the standard every condition meets: the best in its trade, shown
+    // working on the real thing. They are no longer written as conditions of their own; the second
+    // replay of #70 counted 11 and 18 method conditions and a "code fit to be public" line at every
+    // step, written from them (plans/replays/rewrite-objective-2026-11-20b.md, rules 4 and 6).
+    expect(built).toContain('Hold every condition to what a serious owner plainly wants unsaid: the result as good as the best in its trade makes it, shown working on the real thing, nothing broken or dropped quietly, and code fit to be public when the work is public. That is the standard each condition meets, a condition of its own only when the owner asks for it.')
+    expect(built).not.toContain('It includes what a serious owner plainly wants unsaid')
+  })
+
+  test("rule: a question the owner asks is a condition, not only the step (the second replay of #70 lost two questions when the step moved)", () => {
+    // B1 carried "why the hands-on check was left out" and "do the instructions say 'no heavy
+    // machinery'" only in the step; the next message moved the step and both were gone, so an
+    // unanswered question had nothing to be judged against.
+    const built = section('How the objective is built')
+    expect(built).toContain('A question the owner asks is a condition too ("works: the owner is told plainly whether the tests cover dates"), not only the step.')
   })
 
   test("of the turn the owner answered only the part the owner took counts; the rest of that turn and the agent's other turns set nothing, and the agent saying some of the work is the owner's to do is its account, never an exception to done", () => {

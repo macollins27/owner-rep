@@ -5489,5 +5489,17 @@
     "name": "writer-request-old",
     "breaks": "The replay's writer edit leaves the old request asking the writer to write every part again, so a replayed call is not what this build sends.",
     "patch": "writer-request-old.patch"
+  },
+  {
+    "name": "writer-question-only-step",
+    "breaks": "The objective writer is no longer told that a question the owner asks is a condition, so a question held only in the step is lost when the next message moves the step.",
+    "patch": "writer-question-only-step.patch",
+    "fixed": "2026-11-20, the second replay of #70"
+  },
+  {
+    "name": "writer-unsaid-made-conditions",
+    "breaks": "The objective writer writes what a serious owner wants unsaid as conditions of its own again, so a hands-on tester, tests that pass and code fit to be public are added to every job the owner never asked them for.",
+    "patch": "writer-unsaid-made-conditions.patch",
+    "fixed": "2026-11-20, the second replay of #70"
   }
 ]

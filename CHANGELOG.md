@@ -17,7 +17,7 @@ What changed in each release of Owner Rep, newest first. The full record is the
   rules are now cached across a session's writes, and your messages reach it in the same fenced
   tags as the other calls. It writes only the conditions that are new or changed, since the rep
   keeps the rest, so it no longer restates what it already holds in new words or runs out of
-  time on a long job, and the conditions keep their order on the card.
+  time on a long job, and the conditions keep their order on the card. A question you ask the agent is kept as a condition until it is answered, so a question is no longer lost when your next message moves the step. What a serious owner plainly wants without saying it (the best in its trade, shown working on the real thing) is the standard every condition meets. It is no longer written as conditions of its own, so a job no longer gains a hands-on tester or a test suite you never asked for.
 - **Text in the session cannot pass as the record's end or as the owner.** The record and the
   owner's messages are fenced in tags that end in a random code made once per session, and any
   such tag found inside is printed harmlessly, so an agent cannot close the fence by guessing it.

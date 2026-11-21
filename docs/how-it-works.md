@@ -86,8 +86,10 @@ has to show (a list of conditions), and the step the session is on now. The obje
 sets the step from the owner's messages; each look the watch takes then reads the step the agent
 is on from the record and keeps it current, so the card's "Right now" does not lag the work by a
 turn. It is never the owner's text. The owner works by intent rather than exact wording, and a rep that only did
-what the client literally said would not be a good one, so the objective includes what a
-serious owner plainly wants without saying it. The owner's messages are weighed by kind:
+what the client literally said would not be a good one, so every condition is held to what a
+serious owner plainly wants without saying it; those wants become conditions of their own only
+when the owner asks for them. A question the owner asks is a condition until it is answered, so
+it is not lost when the step moves. The owner's messages are weighed by kind:
 reasons and complaints first, then instructions. A "yes" to a plan the agent proposed makes
 that plan the owner's ask, held like the owner's own words: each of its steps becomes a
 condition of "done", read whole before any is written. Whether a message approves is the
