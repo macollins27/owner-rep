@@ -230,7 +230,7 @@ const settleUntil = async ($: Engine, done: () => boolean, ms = 1500) => {
 }
 
 // What the store holds for the session, as the tests read it back.
-type Stored = { objective: Objective | null; owner: OwnerMsg[]; past: string[]; jobStart: number; objectiveCalls: number; objectiveTokens: number; calls: number; checks: number; seen: string[]; lastBrief?: { at: number; next: string; message: string; reads?: number }; drafts?: string[]; objectiveFailed?: number; objectiveWhy?: string; ran?: Run[]; changedBy?: string[] }
+type Stored = { objective: Objective | null; owner: OwnerMsg[]; past: string[]; jobStart: number; objectiveCalls: number; objectiveTokens: number; calls: number; checks: number; seen: string[]; lastBrief?: { at: number; next: string; message: string; reads?: number }; drafts?: string[]; objectiveFailed?: number; objectiveWhy?: string; ran?: Run[]; changedBy?: string[]; fence?: string }
 
 // A session whose store the test reads back: the function returns the record as saved.
 const kept = (on: On, store: Record<string, unknown> = {}) => {
