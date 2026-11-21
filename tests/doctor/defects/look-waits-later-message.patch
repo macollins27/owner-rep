@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 909ca5c..4c2e881 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1448,7 +1448,7 @@ async function writeTaken($: EngineInterface, sid: string): Promise<void> {
+   try {
+     await new Promise<void>(resolve => {
+       const check = (): void => {
+-        if (writing.get(sid) === entry && entry.shown < target) return
++        if (writing.get(sid) === entry) return
+         resolve()
+       }
+       held.check = check

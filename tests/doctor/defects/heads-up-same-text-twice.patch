@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 914c369..eb7656d 100644
+index 2992ce2..76743b8 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3624,7 +3624,7 @@ const stepText = (step: string): string => {
+@@ -3636,7 +3636,7 @@ const stepText = (step: string): string => {
  // Parts named in a note's line, at most `max`, then how many more: the line is what a short band
  // keeps, so a part the why would carry is cut first (round 10's 3-row band named none).
  // The same text of two plans is named once.
 -const textsOf = (steps: readonly DroppedStep[]): string[] => [...new Set(steps.map(d => stepText(d.step)))]
 +const textsOf = (steps: readonly DroppedStep[]): string[] => steps.map(d => stepText(d.step))
- const partsSaid = (steps: readonly DroppedStep[], max: number): string => {
-   const texts = textsOf(steps)
+ const partsSaid = (texts: readonly string[], max: number): string => {
    const said = texts.slice(0, max).join('; ')
+   return texts.length > max ? `${said}; and ${texts.length - max} more` : said

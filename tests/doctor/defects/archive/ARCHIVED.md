@@ -56,3 +56,11 @@
   was dropped, and none of them is said again after it. Its successors are `flag-names-one-only`
   (the flag stands for only the longest part again) and `flag-named-subset-hidden` (a part whose
   words all sit inside a longer named part counts as named).
+- `heads-up-flag-speaks-ignored.patch`, `heads-up-named-hides-others.patch`,
+  `heads-up-flag-names-on-some-words.patch`, `flag-clause-scope-removed.patch`,
+  `flag-names-one-only.patch` and `flag-named-subset-hidden.patch`: each planted a fault in how a
+  flag stood for a dropped part (`names`, `namedBy`, `CLAUSE_BREAK`). Since 21 Nov 2026 (the final
+  review of #68) no flag stands for a part: whether a clause calls a part dropped or done cannot be
+  read from its words, so the part is always in the line and the flag in the why, and that code is
+  gone. Their successor is `heads-up-flag-lost` (the flag dropped from the why) with
+  `heads-up-not-carried` (the flag shown and the walk never read).

@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 909ca5c..aad68ec 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1735,7 +1735,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+     // note until its walk takes each back (final review of #68: a look shown another plan, or
+     // answering with a plain flag, took back or replaced a drop the owner never saw).
+     const held = heldNotes.get(sid)
+-    const carried = [...(held?.parts ?? []), ...(view === 'note' ? (shownParts.get(sid) ?? []) : [])]
++    const carried = [...(held?.parts ?? [])]
+     const plans = fill?.blocks ?? []
+     const parts = standingDrops(answer, plans, carried)
+     const turn = lookTurns.get(sid) ?? 0

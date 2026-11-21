@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 914c369..1ac7cba 100644
+index 2992ce2..35b3415 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3657,7 +3657,7 @@ const namedBy = (flag: string, steps: readonly DroppedStep[]): DroppedStep[] =>
- // it. `drops` is every part this note says.
- export function headsUpOf(a: WatchAnswer, plans: readonly string[]): { note: { line: string; why: string } | null; drops: string[] } {
-   const own = a.flag === null ? null : { line: a.flag, why: a.why }
+@@ -3647,7 +3647,7 @@ const partsSaid = (texts: readonly string[], max: number): string => {
+ // step marked done or underway) or drops again itself. A carried part passes without the plans:
+ // the plan it came from may not be shown to this look.
+ export function standingDrops(a: WatchAnswer, plans: readonly string[], carried: readonly DroppedStep[] = []): DroppedStep[] {
 -  const fresh = (a.dropped ?? []).filter(d => inPlans(d.step, plans))
 +  const fresh = (a.dropped ?? []).filter(d => true)
-   const flag = a.flag
-   const named = flag === null ? [] : namedBy(flag, fresh)
-   const rest = fresh.filter(d => !named.includes(d))
+   const kept = carried.filter(c => !(a.cleared ?? []).some(w => samePart(w, c)) && !fresh.some(f => samePart(f, c) || stepText(f.step) === stepText(c.step)))
+   return [...fresh, ...kept]
+ }

@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 914c369..eb5546f 100644
+index 2992ce2..be1c3a1 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3671,7 +3671,7 @@ export function headsUpOf(a: WatchAnswer, plans: readonly string[]): { note: { l
-   const one = textsOf(rest).length === 1
-   const noSign = listed.every(d => d.how === 'no sign')
+@@ -3683,7 +3683,7 @@ export function headsUpOf(
+   const noSign = rest.every(d => d.how === 'no sign')
+   const joined = (lines: readonly string[]): string => lines.filter(l => l !== '').join(' ')
    return { note: {
--    line: `${one ? 'Plan step looks' : 'Plan steps look'} dropped: ${partsSaid(rest, 1 + DROPPED_ALSO_MAX)}.`,
-+    line: `${one ? 'Plan step was' : 'Plan steps were'} skipped: ${partsSaid(rest, 1 + DROPPED_ALSO_MAX)}.`,
+-    line: `${one ? 'Plan step looks' : `${texts.length} plan steps look`} dropped: ${partsSaid(texts, max)}.`,
++    line: `${one ? 'Plan step was' : `${texts.length} plan steps were`} skipped: ${partsSaid(texts, max)}.`,
      why: joined([
        one
          ? noSign

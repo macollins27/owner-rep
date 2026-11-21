@@ -1,14 +1,14 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 914c369..c74b19f 100644
+index 2992ce2..9d658a2 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3627,8 +3627,7 @@ const stepText = (step: string): string => {
+@@ -3638,8 +3638,7 @@ const stepText = (step: string): string => {
+ // The same text of two plans is named once.
  const textsOf = (steps: readonly DroppedStep[]): string[] => [...new Set(steps.map(d => stepText(d.step)))]
- const partsSaid = (steps: readonly DroppedStep[], max: number): string => {
-   const texts = textsOf(steps)
+ const partsSaid = (texts: readonly string[], max: number): string => {
 -  const said = texts.slice(0, max).join('; ')
 -  return texts.length > max ? `${said}; and ${texts.length - max} more` : said
 +  return texts.join('; ')
  }
  
- // The parts a flag names: each one a clause of it says was dropped (`names`), longest first, less a
+ // The parts a look's note says: those its walk shows dropped in a plan shown to it, then those

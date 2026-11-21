@@ -1,8 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 914c369..8e660d4 100644
+index 2992ce2..89f6395 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3676,10 +3676,10 @@ export function headsUpOf(a: WatchAnswer, plans: readonly string[]): { note: { l
+@@ -3688,10 +3688,10 @@ export function headsUpOf(
        one
          ? noSign
            ? 'It is in the plan you approved. The record shows later work and does not show it done. The agent has to show it.'
@@ -14,4 +14,4 @@ index 914c369..8e660d4 100644
 +          : "They are in the plan you approved, and they are not on the agent's own full list. The agent has to show them.",
        ...(own === null ? [] : [`Also: ${own.line}`, own.why]),
      ]),
-   }, drops: told(listed) }
+   }, drops: texts.slice(0, max) }

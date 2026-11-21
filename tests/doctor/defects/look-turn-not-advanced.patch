@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 909ca5c..c740c94 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1739,7 +1739,6 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+     const plans = fill?.blocks ?? []
+     const parts = standingDrops(answer, plans, carried)
+     const turn = lookTurns.get(sid) ?? 0
+-    if (parts.length > 1) lookTurns.set(sid, turn + 1)
+     const got = headsUpOf(answer, plans, carried, turn)
+     const said = got.note
+     // A plain flag already shown is not shown again. A note that says a dropped plan part is shown

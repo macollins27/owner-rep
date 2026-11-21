@@ -5,6 +5,11 @@ What changed in each release of Owner Rep, newest first. The full record is the
 
 ## Unreleased
 
+- **A dropped part of your plan stays said until it is done.** A note that a part of your plan
+  looks dropped is no longer taken back by a later look that never checked that part, nor
+  replaced by an unrelated note; several dropped parts lead with their count and take turns
+  in first place, so a short band shows each; and the rep never waits more than a minute for
+  its own reading of your newest words before it looks.
 - **The rep's brief is shorter and plainer.** The rules the watch, Brief me and the second
   asking read had grown by patches to about 5,000 words per call, with 35 to 44 "never"s and
   many rules said two or three times. They are rewritten as one system prompt of sections, each

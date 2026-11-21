@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 914c369..e8a013c 100644
+index 2992ce2..2c4f042 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3666,7 +3666,7 @@ export function headsUpOf(a: WatchAnswer, plans: readonly string[]): { note: { l
-   if (first === undefined) return { note: own, drops: told(named) }
-   const joined = (lines: readonly string[]): string => lines.filter(l => l !== '').join(' ')
-   if (own !== null && named.length > 0)
--    return { note: { line: `${own.line} Also looks dropped: ${partsSaid(rest, DROPPED_ALSO_MAX)}.`, why: own.why }, drops: told([...named, ...rest.slice(0, DROPPED_ALSO_MAX)]) }
-+    return { note: { line: `${own.line} Also looks dropped: ${partsSaid(rest, DROPPED_ALSO_MAX)}.`, why: own.why }, drops: told(named) }
-   const listed = rest.slice(0, 1 + DROPPED_ALSO_MAX)
-   const one = textsOf(rest).length === 1
-   const noSign = listed.every(d => d.how === 'no sign')
+@@ -3694,7 +3694,7 @@ export function headsUpOf(
+           : "They are in the plan you approved, and the agent's own words or its own full list leave them out. The agent has to do them or show them.",
+       ...(own === null ? [] : [`Also: ${own.line}`, own.why]),
+     ]),
+-  }, drops: texts.slice(0, max) }
++  }, drops: texts.slice(0, 1) }
+ }
+ 
+ // The Heads up's note alone.

@@ -14660,6 +14660,7 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     ['the same words with no plan number', '- Add a test for the cap | done', true],
     ['the part itself done', '- #8: Add a test for the cap | done', false],
     ['the part itself not assessed', '- #8: Add a test for the cap | not assessed', true],
+    ['the same words of another plan done', '- #9: Add a test for the cap | done', true],
   ] as const)
     test(`rule (mounted): a drop held while the card is open, then ${how} at the next look: still said on close, ${kept}`, async ($, on) => {
       const owner = owns([8, 'Add a test for the cap and a test for the reload.\nAdd a test for the cap path.'])
@@ -14690,6 +14691,36 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     expect(await rowSays($, /Move the request limit/)).toBe(true)
     await m.look($, 't2')
     expect({ drop: await rowSays($, /Move the request limit/), flag: await rowSays($, /never ran them/) }).toEqual({ drop: true, flag: true })
+  })
+
+  test('rule: a carried part with no plan number is never taken back, even by a numberless line of its own words', () => {
+    const plans = [RP(8, 'Add a test for the cap')]
+    const carried = [{ n: 0, step: 'Add a test for the cap', how: 'looks dropped' as const }]
+    const a = parseWatch(walkAnswer('- Add a test for the cap | done'))
+    expect(rep.standingDrops(a, plans, carried).map(d => d.step)).toEqual(['Add a test for the cap'])
+  })
+
+  test('rule (mounted): a part dismissed with Fine and walked dropped again at the next look is said again', async ($, on) => {
+    const owner = owns([2, 'Read the real data first.\nMove the request limit to the local store.'])
+    const m = mounted7(on, owner, brief => (brief ? WELL : walkAnswer('- #2: Move the request limit to the local store | looks dropped')))
+    await started($)
+    await m.look($, 't1')
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    await ui.press({ key: 'fine' })
+    await ui.unmount()
+    expect(await rowSays($, /Move the request limit/)).toBe(false)
+    await m.look($, 't2')
+    expect(await rowSays($, /Move the request limit/)).toBe(true)
+  })
+
+  test('rule (mounted): with several parts dropped, the next look leads its line with the next part', async ($, on) => {
+    const owner = owns([4, 'Add the cap test.\nAdd the reload test.\nUpdate the README.'])
+    const m = mounted7(on, owner, brief => (brief ? WELL : walkAnswer('- #4: Add the cap test | looks dropped\n- #4: Add the reload test | looks dropped\n- #4: Update the README | looks dropped')))
+    await started($)
+    await m.look($, 't1')
+    const first = await rowSays($, /dropped: Add the cap test;/)
+    await m.look($, 't2')
+    expect({ first, second: await rowSays($, /dropped: Add the reload test;/) }).toEqual({ first: true, second: true })
   })
 
   test('RV1b: a flag naming a dropped part never takes the part out of the line; the flag goes to the why', () => {

@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 7806d9d..9bca222 100644
+index 909ca5c..6648dc2 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1692,7 +1692,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
-     if (got.drops.length === 0 && heldNotes.get(sid)?.drops === true) heldNotes.delete(sid)
+@@ -1752,7 +1752,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+     if (held !== undefined && held.parts.length > 0 && parts.length === 0) heldNotes.delete(sid)
      if (said === null || repeat(said.line)) return
      const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId }
 -    if (onScreen(sid) && (view === 'row' || view === 'note')) {
 +    if (onScreen(sid) && view === 'row') {
        heldNotes.delete(sid)
+       shownParts.set(sid, parts)
        after.seen = [...after.seen, said.line].slice(-SEEN_MAX)
-       await update($, noteA, () => note)

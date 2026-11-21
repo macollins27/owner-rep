@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 2992ce2..8357102 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3649,7 +3649,7 @@ const partsSaid = (texts: readonly string[], max: number): string => {
+ export function standingDrops(a: WatchAnswer, plans: readonly string[], carried: readonly DroppedStep[] = []): DroppedStep[] {
+   const fresh = (a.dropped ?? []).filter(d => inPlans(d.step, plans))
+   const kept = carried.filter(c => !(a.cleared ?? []).some(w => samePart(w, c)) && !fresh.some(f => samePart(f, c) || stepText(f.step) === stepText(c.step)))
+-  return [...fresh, ...kept]
++  return fresh
+ }
+ 
+ // What the Heads up says for a look. A step the walk marks as dropped outranks whatever the flag

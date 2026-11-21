@@ -1,11 +1,11 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index bfe288b..376fca7 100644
+index 909ca5c..cdbde0c 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1677,7 +1677,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
-     if ((marked || stepped) && onScreen(sid)) await update($, readingA, () => after.objective)
-     const view = await read($, viewA)
-     const got = headsUpOf(answer, fill?.blocks ?? [])
+@@ -1741,7 +1741,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+     const turn = lookTurns.get(sid) ?? 0
+     if (parts.length > 1) lookTurns.set(sid, turn + 1)
+     const got = headsUpOf(answer, plans, carried, turn)
 -    const said = got.note
 +    const said = answer.flag === null ? null : { line: answer.flag, why: answer.why }
      // A plain flag already shown is not shown again. A note that says a dropped plan part is shown
