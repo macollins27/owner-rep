@@ -625,7 +625,11 @@ messages, notes to the rep and sent drafts, each numbered (the job's kept whole 
 and the 40 before it), flags already shown, notes other mods have shown, and spend counters
 that count the writer's calls beside the looks. A record the cap lets go leaves the rep's
 drafts it held in a separate list of the 200 newest, so a message the rep drafted stays its
-own after the session that drew it drops out. A record saved by a build from before the
+own after the session that drew it drops out. Each record has a store key of its own, so a
+session's save writes that key alone: several sessions run at once, each in its own process,
+and a save of one shared map let one session put back an older copy of another's record. That
+map, up to 32 more records, stays beside the keys after an update, read where it is newer, until
+no older build has saved into it for a week. A record saved by a build from before the
 objective is rebuilt from the owner's messages on the next start, press or message, with its
 old text kept as an earlier version. A session the rep holds no record of (one whose record
 was dropped from the 32, one forked with a new id, one older than the mod) has the owner's
@@ -713,7 +717,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 848 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 874 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: twelve real sessions in tmux, the strip captured to tests/live/captures
 ```

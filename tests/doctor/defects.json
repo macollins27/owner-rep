@@ -57,7 +57,7 @@
     "name": "sessions-unbounded",
     "breaks": "The store keeps every session ever seen instead of the newest SESSIONS_MAX.",
     "patch": "sessions-unbounded.patch",
-    "fixed": "tested 2026-10-14"
+    "fixed": "tested 2026-10-14; remade 2026-11-20"
   },
   {
     "name": "card-overflows-band",
@@ -933,25 +933,25 @@
     "name": "dropped-drafts-lost",
     "breaks": "A record the store lets go takes its drafts with it, so a card message the owner sent in that session is seeded as their own words when the session is reopened or forked later.",
     "patch": "dropped-drafts-lost.patch",
-    "fixed": "2026-10-16; remade 2026-10-31"
+    "fixed": "2026-10-16; remade 2026-10-31; remade 2026-11-20; remade 2026-11-21"
   },
   {
     "name": "dropped-drafts-unread",
     "breaks": "The drafts of records the store let go are kept but never read, so a card message the owner sent in such a session is seeded as their own words.",
     "patch": "dropped-drafts-unread.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-11-20"
   },
   {
     "name": "dropped-drafts-read-order",
     "breaks": "The drafts reader reads the kept list before the records, the order the store writes them, so a record let go between the two reads is in neither and a card message the owner sent there is seeded as their own words.",
     "patch": "dropped-drafts-read-order.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-11-20"
   },
   {
     "name": "dropped-drafts-uncapped",
     "breaks": "The kept drafts of records let go grow without end.",
     "patch": "dropped-drafts-uncapped.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-11-20"
   },
   {
     "name": "dropped-drafts-oldest-first",
@@ -1725,7 +1725,7 @@
     "name": "blank-records-kept",
     "breaks": "A record holding nothing, saved for a scripted run or a window opened and closed, takes one of the store's places and pushes out a session that holds the owner's messages.",
     "patch": "blank-records-kept.patch",
-    "fixed": "2026-10-17"
+    "fixed": "2026-10-17; remade 2026-11-20; remade 2026-11-21"
   },
   {
     "name": "blank-as-saved",
@@ -2841,7 +2841,7 @@
     "name": "loss-mark-cleared-on-save",
     "breaks": "A successful store save clears a still-relevant record loss mark.",
     "patch": "loss-mark-cleared-on-save.patch",
-    "fixed": "2026-11-01"
+    "fixed": "2026-11-01; remade 2026-11-20"
   },
   {
     "name": "stale-pass-replaces",
@@ -5596,6 +5596,90 @@
     "breaks": "A note on screen whose every part a walk took back stays up, and the next look carries its parts again, so the owner is told a step was dropped that the walk marked done.",
     "patch": "taken-back-note-stays.patch",
     "fixed": "2026-11-21, the scoped check of #68"
+  },
+  {
+    "name": "store-whole-map-save",
+    "breaks": "A session's save reads the whole map of every session's record, changes its own and writes the map back, so another process's save that lands between the read and the write is lost.",
+    "patch": "store-whole-map-save.patch",
+    "fixed": "tested 2026-11-20"
+  },
+  {
+    "name": "store-old-map-read-whole",
+    "breaks": "Every read takes the old map's copy of a record whatever its age, so a record the trim let go after the move comes back as its copy from before the move, and its session goes on from it.",
+    "patch": "store-old-map-read-whole.patch",
+    "fixed": "2026-11-21, the review of #71; remade 2026-11-21"
+  },
+  {
+    "name": "store-trim-deletes-unread",
+    "breaks": "The trim deletes each record it picked without reading it again, so a save an idle session makes while another session's trim runs is deleted with its whole record.",
+    "patch": "store-trim-deletes-unread.patch",
+    "fixed": "2026-11-21, the review of #71"
+  },
+  {
+    "name": "store-trim-lets-go-mapped",
+    "breaks": "The trim lets go a record the reads also take from the old map, so while a move is unfinished that session reads back its copy from before the move.",
+    "patch": "store-trim-lets-go-mapped.patch",
+    "fixed": "2026-11-21, the second review of #71; remade 2026-11-21"
+  },
+  {
+    "name": "store-move-seen-as-threshold",
+    "breaks": "The reads take the move's mark as one threshold, the newest `at` it holds, so with two older builds saving during the move, the save stamped earlier but landing last is never read, and its session's next save on the new build writes over it.",
+    "patch": "store-move-seen-as-threshold.patch",
+    "fixed": "2026-11-21, the check of 535608c (#71)"
+  },
+  {
+    "name": "move-seen-differs",
+    "breaks": "A map copy older than the one the move saw counts as unseen, so an older build writing back its stale map brings back a record the trim let go, as that older copy.",
+    "patch": "move-seen-differs.patch",
+    "fixed": "2026-11-21, the check of 535608c (#71)"
+  },
+  {
+    "name": "move-seen-at-or-later",
+    "breaks": "A map copy at exactly the `at` the move saw counts as unseen, so a record the trim let go after the move is read back from its copy from before the move.",
+    "patch": "move-seen-at-or-later.patch",
+    "fixed": "2026-11-21, the check of 535608c (#71)"
+  },
+  {
+    "name": "move-seen-prior-dropped",
+    "breaks": "Each move's mark replaces the one before instead of adding to it, so the sessions an earlier move saw count as unseen again and a record let go since comes back from the map.",
+    "patch": "move-seen-prior-dropped.patch",
+    "fixed": "2026-11-21, the check of 535608c (#71); remade 2026-11-21"
+  },
+  {
+    "name": "move-seen-reread-skipped",
+    "breaks": "The move writes its mark over one another process wrote while it ran, so that process's sessions count as unseen again and a record let go since comes back from the map.",
+    "patch": "move-seen-reread-skipped.patch",
+    "fixed": "2026-11-21, the check of 535608c (#71); remade 2026-11-21"
+  },
+  {
+    "name": "move-seen-own-newer-unmarked",
+    "breaks": "A map record whose own key was newer is left out of the move's mark, so it counts as unseen for good: the trim never lets its key go, and once that key is let go another way its map copy from before the move is read back.",
+    "patch": "move-seen-own-newer-unmarked.patch",
+    "fixed": "2026-11-21, the check of 535608c (#71)"
+  },
+  {
+    "name": "trim-ranks-free-only",
+    "breaks": "While a move is unfinished the trim keeps only SESSIONS_MAX minus the mapped records, so two new sessions saving in turn let go each other's records in favour of week-old mapped ones.",
+    "patch": "trim-ranks-free-only.patch",
+    "fixed": "2026-11-21, the check of 535608c (#71)"
+  },
+  {
+    "name": "move-mark-above-key",
+    "breaks": "The move marks each session at the `at` it read even when that session's key now holds an older copy another move wrote, so an older build's later save in the map counts as seen and is never read.",
+    "patch": "move-mark-above-key.patch",
+    "fixed": "2026-11-21, the check of 13e7d4d (#71)"
+  },
+  {
+    "name": "move-mark-let-go-key-zero",
+    "breaks": "A key another process's trim let go while the move ran drops its session's mark to 0, so the map's copy from before the move is read back in place of the record the trim let go.",
+    "patch": "move-mark-let-go-key-zero.patch",
+    "fixed": "2026-11-21, the check of 13e7d4d (#71)"
+  },
+  {
+    "name": "move-mark-copied-only",
+    "breaks": "Only the sessions this move copied are marked at no more than their key holds, so a session it read but found already copied, whose key another move then wrote over with an older copy, loses the older build's later save.",
+    "patch": "move-mark-copied-only.patch",
+    "fixed": "2026-11-21, the check of 13e7d4d (#71)"
   },
   {
     "name": "writer-uncached",

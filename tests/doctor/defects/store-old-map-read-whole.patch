@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index d7257be..b2db645 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -490,7 +490,7 @@ async function oldMap($: EngineInterface): Promise<Record<string, Rec>> {
+ // A session still on an older build saves into the map with a later `at`, and is read.
+ async function oldMapSinceMove($: EngineInterface): Promise<Record<string, Rec>> {
+   const seen = moveSeenOf(await $.store.get(MOVE_SEEN_KEY))
+-  return Object.fromEntries(Object.entries(await oldMap($)).filter(([id, r]) => unseenByMove(seen, id, atOf(r))))
++  return Object.fromEntries(Object.entries(await oldMap($)).filter(() => seen !== null))
+ }
+ 
+ // Every record the store holds, by session id: each record key's, and the old map's where it is

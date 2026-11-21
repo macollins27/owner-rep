@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 264fffa..8e687a3 100644
+index 3dddaf7..b1b2b5d 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -264,7 +264,7 @@ async function saveRec($: EngineInterface, rec: Rec): Promise<void> {
-   for (const k of Object.keys(all)) if (isBlankRec(all[k] as Rec, freshRec(k))) delete all[k]
-   const ids = Object.keys(all).sort((a, b) => (all[b]?.at ?? 0) - (all[a]?.at ?? 0))
-   const kept: Record<string, Rec> = {}
--  for (const k of ids.slice(0, SESSIONS_MAX)) kept[k] = all[k] as Rec
-+  for (const k of ids) kept[k] = all[k] as Rec
-   // A record let go leaves its drafts behind first, so a draft the owner sent stays the rep's.
-   const dropped = ids.slice(SESSIONS_MAX).flatMap(k => recDrafts(all[k]))
-   if (dropped.length > 0) await $.store.set('droppedDrafts', keepDropped(await droppedDrafts($), dropped))
+@@ -614,7 +614,7 @@ async function storeRec($: EngineInterface, rec: Rec): Promise<string[]> {
+ // lost. Two sessions trimming at once may each let go the same record. Returns the ids deleted.
+ async function trimStore($: EngineInterface, keep: string): Promise<string[]> {
+   const ids = (await $.store.keys()).map(recIdOf).filter((id): id is string => id !== null)
+-  if (ids.length <= SESSIONS_MAX) return []
++  if (ids.length >= 0) return []
+   // A record the reads would also take from the old map is never let go: with its key gone the
+   // map's copy, older, would be read in its place and copied back.
+   const mapped = new Set(Object.keys(await oldMapSinceMove($)))
