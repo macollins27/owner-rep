@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index eae90c5..a112121 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -547,7 +547,7 @@ async function migrate($: EngineInterface): Promise<void> {
+   // Each session the move read is marked at no more than its own key still holds, so a key another
+   // move overwrote with an older copy leaves the map's later save unseen, read and copied by the
+   // next move. A key let go meanwhile keeps the mark: the map's copy is not read back in its place.
+-  const mark = mergeSeen(moveSeenOf(await $.store.get(MOVE_SEEN_KEY)) ?? seen, saw)
++  const mark = mergeSeen(seen, saw)
+   for (const id of Object.keys(saw)) {
+     const cur = await $.store.get(recKey(id))
+     if (isRec(cur)) mark[id] = Math.min(mark[id] ?? atOf(cur), atOf(cur))

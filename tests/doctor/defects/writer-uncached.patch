@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index c2a7e3d..069ead1 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1478,7 +1478,7 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
+         const send = (sys: string | PromptBlock[]) =>
+           $.model.complete({ model: OBJECTIVE_MODEL, system: sys, prompt: typeof sys === 'string' ? prompt : [{ text: prompt }], maxTokens, effort, timeoutMs })
+         const { result, ms } = await timed(() =>
+-          send([{ text: system, cache: true }]).catch((e: unknown) => {
++          send(system).catch((e: unknown) => {
+             if (!BLOCKS_REFUSED.test(String(e))) throw e
+             return send(system)
+           }),

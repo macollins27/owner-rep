@@ -1,23 +1,20 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index f8f119f..660833c 100644
+index b478c09..f20c7d6 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -5852,16 +5852,8 @@ export function mergeConditions(
-       continue
-     }
-     taken.add(h)
--    // The kind the writer gives now, except that a condition held "works", or with no kind
--    // (read as works), never turns "fact": a rewrite never turns a condition that needs a
--    // look by someone else into one the agent's own run shows.
+@@ -6268,13 +6268,8 @@ export function mergeConditions(
+     // The kind the writer gives now, except that a condition held "works", or with no kind
+     // (read as works), never turns "fact": a rewrite never turns a condition that needs a
+     // look by someone else into one the agent's own run shows.
 -    const kind = h.kind === 'fact' ? (p.kind ?? 'fact') : p.kind === 'fact' || h.kind === 'works' ? 'works' : p.kind
 -    const k: { kind?: ConditionKind } = kind === undefined ? {} : { kind }
--    if (p.state === 'closed' && h.state !== 'closed') out.push({ text: p.text, state: 'closed', by: p.by, ...k })
+-    if (p.state === 'closed' && h.state !== 'closed') taken.set(h, { text: p.text, state: 'closed', by: p.by, ...k })
 -    // A fact held shown and rewritten as works opens again, with its where kept as what was
 -    // seen: the where showed a fact, never the look someone who did not build it makes.
--    else if (h.kind === 'fact' && kind === 'works' && h.state === 'shown') out.push({ text: p.text, state: 'open', by: '', seen: h.by, kind: 'works' })
--    else out.push({ ...h, text: p.text, ...k })
+-    else if (h.kind === 'fact' && kind === 'works' && h.state === 'shown') taken.set(h, { text: p.text, state: 'open', by: '', seen: h.by, kind: 'works' })
+-    else taken.set(h, { ...h, text: p.text, ...k })
 +    const rank = (s: ConditionState): number => (s === 'closed' ? 2 : s === 'shown' ? 1 : 0)
-+    out.push(rank(p.state) < rank(h.state) ? { ...p, state: h.state, by: h.by } : p)
++    taken.set(h, rank(p.state) < rank(h.state) ? { ...p, state: h.state, by: h.by } : p)
    }
-   for (const h of held) {
-     if (taken.has(h) || out.some(p => like(p.text, h.text))) continue
+   // The held conditions stay in their order, each in its new form where the writer wrote it again,
+   // and the new ones follow, so writing only what changed never reorders the list the owner reads.

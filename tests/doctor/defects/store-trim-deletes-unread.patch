@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index d17edc4..b776443 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -619,7 +619,6 @@ async function trimStore($: EngineInterface, keep: string): Promise<string[]> {
+   const deleted: string[] = []
+   for (const id of gone) {
+     const now = await $.store.get(recKey(id))
+-    if (atOf(now as { at?: unknown } | undefined) !== atOf(recs.get(id) as { at?: unknown } | undefined)) continue
+     await $.store.delete(recKey(id))
+     deleted.push(id)
+   }

@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index b478c09..2db7056 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1919,7 +1919,7 @@ const heldParts = (o: Objective): string =>
+ // The objective writer's one line asking that a condition hold one claim, so a fact never carries
+ // what the work does beside it (live test of 18 Nov 2026, section 11).
+ // A restated condition is written once, or in its new words marked "same as:" the held one (G13).
+-export const OBJECTIVE_SAME_AS = 'A condition that says what a held one says, in any words, is that held one: leave it out. When the owner\'s later words make a held condition more exact, write it in the new words with "| same as: <the held text>" in place of its state; it keeps the held state.'
++export const OBJECTIVE_SAME_AS = 'A condition that says what a held one says, in any words, is that held one: leave it out.'
+ export const OBJECTIVE_SAME_AS_LINE = "- works | fact: <the new words> | same as: <the held condition's text>"
+ export const ONE_CLAIM = 'Write one claim per condition.'
+ // G12 (prompt audit §6.6): a condition about how good the result is names what a person using it

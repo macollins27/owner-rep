@@ -86,8 +86,10 @@ has to show (a list of conditions), and the step the session is on now. The obje
 sets the step from the owner's messages; each look the watch takes then reads the step the agent
 is on from the record and keeps it current, so the card's "Right now" does not lag the work by a
 turn. It is never the owner's text. The owner works by intent rather than exact wording, and a rep that only did
-what the client literally said would not be a good one, so the objective includes what a
-serious owner plainly wants without saying it. The owner's messages are weighed by kind:
+what the client literally said would not be a good one, so every condition is held to what a
+serious owner plainly wants without saying it; those wants become conditions of their own only
+when the owner asks for them. A question the owner asks is a condition until it is answered, so
+it is not lost when the step moves. The owner's messages are weighed by kind:
 reasons and complaints first, then instructions. A "yes" to a plan the agent proposed makes
 that plan the owner's ask, held like the owner's own words: each of its steps becomes a
 condition of "done", read whole before any is written. Whether a message approves is the
@@ -466,7 +468,7 @@ rep's independence comes from its brief, which tells the model to treat everythi
 wrote as a claim, and, for the check step, from reading outside the conversation altogether.
 The objective writer is a plain completion too, shown the agent's words
 only as the line before each of the owner's messages, marked as the agent's. Its rules go to
-it as its system prompt, and the owner's messages reach it fenced as quoted records that it is
+it as its system prompt, marked for the cache so a session's later writes pay less for them, and the owner's messages reach it fenced as quoted records, in the same per-session tags the readers use, that it is
 told are no instruction to it, because unfenced, a message that read like a command came back
 empty in all six tries measured on one such message (16 Oct 2026). Its brief also says that
 line is there only so a short reply can be understood and never sets the result, and
@@ -623,7 +625,11 @@ messages, notes to the rep and sent drafts, each numbered (the job's kept whole 
 and the 40 before it), flags already shown, notes other mods have shown, and spend counters
 that count the writer's calls beside the looks. A record the cap lets go leaves the rep's
 drafts it held in a separate list of the 200 newest, so a message the rep drafted stays its
-own after the session that drew it drops out. A record saved by a build from before the
+own after the session that drew it drops out. Each record has a store key of its own, so a
+session's save writes that key alone: several sessions run at once, each in its own process,
+and a save of one shared map let one session put back an older copy of another's record. That
+map, up to 32 more records, stays beside the keys after an update, read where it is newer, until
+no older build has saved into it for a week. A record saved by a build from before the
 objective is rebuilt from the owner's messages on the next start, press or message, with its
 old text kept as an earlier version. A session the rep holds no record of (one whose record
 was dropped from the 32, one forked with a new id, one older than the mod) has the owner's
@@ -711,7 +717,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 843 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 877 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: twelve real sessions in tmux, the strip captured to tests/live/captures
 ```

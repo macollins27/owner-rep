@@ -1,8 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index c95e00f..4a4a1cc 100644
+index ee8eebd..b8c97b0 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -2234,7 +2234,7 @@ export const DROPPED_DRAFTS_MAX = 200
+@@ -5464,7 +5464,7 @@ export const DROPPED_DRAFTS_MAX = 200
  export function keepDropped(kept: readonly string[], add: readonly string[]): string[] {
    const out: string[] = []
    for (const d of [...add, ...kept]) if (d.trim() !== '' && !out.some(o => sameFolded(o, d))) out.push(d)
@@ -10,4 +10,4 @@ index c95e00f..4a4a1cc 100644
 +  return out
  }
  
- // The kept draft the prompt begins with, and what the owner added after it; the longest
+ // The store's layout (docs/reference.md, "The store's keys"). Each session's record has a key of

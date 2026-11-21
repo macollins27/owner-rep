@@ -1,12 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 71c6e23..a0fd22e 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1440,7 +1440,7 @@ Each condition is one thing "done" has to show, in plain words. You do not see t
- // text as typed. `fenceTag` does the same for any fence; the session record below uses it
- // too.
- const fenceTag = (s: string, tag: string): string => s.replace(new RegExp(`<\\s*(\\/?)\\s*${tag}\\s*>`, 'gi'), `‹$1${tag}›`)
--const fenced = (s: string): string => fenceTag(s, 'his_messages')
-+const fenced = (s: string): string => s
+@@ -2377,7 +2377,7 @@ ${held}
  
- // ---- Reading an approval, or any long message of the owner's, whole (docs/reference.md).
- // Each message new since the objective was built ("fresh") is shown to the writer with what it
+ The owner's messages on this job, oldest first, each numbered (each is evidence, weighed as above; "(to the rep)" marks one said to you; "(your draft, sent by the owner)" marks one the rep wrote and the owner sent):
+ <${tag}>
+-${fenceTags(shown.lines.join('\n') || '(none recorded yet)')}
++${shown.lines.join('\n') || '(none recorded yet)'}
+ </${tag}>
+ ${shown.stoppedAt === null ? '' : `(The owner's later messages are read in the next write.)\n`}${objectiveClose(tag)}
+ 
