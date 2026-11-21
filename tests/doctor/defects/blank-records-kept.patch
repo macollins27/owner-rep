@@ -1,12 +1,23 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index a298c46..dd96e62 100644
+index d7257be..09cddc7 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -213,7 +213,6 @@ async function saveRec($: EngineInterface, rec: Rec): Promise<void> {
-   }
-   all[rec.id] = { ...rec, at: Date.now() }
-   // A blank record loads back the same when missing, so none takes a place (`isBlankRec`).
--  for (const k of Object.keys(all)) if (isBlankRec(all[k] as Rec, freshRec(k))) delete all[k]
-   const ids = Object.keys(all).sort((a, b) => (all[b]?.at ?? 0) - (all[a]?.at ?? 0))
-   const kept: Record<string, Rec> = {}
-   for (const k of ids.slice(0, SESSIONS_MAX)) kept[k] = all[k] as Rec
+@@ -537,7 +537,7 @@ async function migrate($: EngineInterface): Promise<void> {
+     newest = Math.max(newest, atOf(r))
+     saw[id] = atOf(r)
+     if (!unseenByMove(seen, id, atOf(r))) continue
+-    if (isBlankRec(r, freshRec(id))) continue
++
+     const own = await $.store.get(recKey(id))
+     if (isRec(own) && atOf(own) >= atOf(r)) continue
+     await $.store.set(recKey(id), r)
+@@ -602,8 +602,7 @@ async function storeRec($: EngineInterface, rec: Rec): Promise<string[]> {
+   const saved: Rec = { ...rec, at: Date.now() }
+   // A blank record loads back the same when missing, so none takes a place (`isBlankRec`),
+   // unless the old map holds a copy that would be read in its place.
+-  if (isBlankRec(saved, freshRec(rec.id)) && (await oldMapSinceMove($))[rec.id] === undefined) await $.store.delete(recKey(rec.id))
+-  else await $.store.set(recKey(rec.id), saved)
++  await $.store.set(recKey(rec.id), saved)
+   // The save stands whatever the trim does: one that fails is done by the next save.
+   return trimStore($, rec.id).catch(() => [])
+ }

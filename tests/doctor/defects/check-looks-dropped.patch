@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 456655c..4f0b2af 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -5389,8 +5389,6 @@ The agent and its helpers keep working while you check, so the record you read n
+ 
+ Exactly these labelled parts, in this order, nothing before or after. One item per line under holds, false, notshown, changed, shown, closed, reopen and left, each starting with "- "; write "- nothing" under a part with nothing. The "shown:", "closed:" and "reopen:" lines are kept for the record and not shown on the card, so there name the command, the file and what they printed or hold. Every other part is for the owner, in plain words.
+ 
+-${CHECK_LOOKS}
+-
+ verdict: <continue | stop; stop only when every condition is shown or closed by the owner>
+ holds:
+ - <a claim that held as of ${at}, and in a few words what showed it>

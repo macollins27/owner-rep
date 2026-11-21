@@ -1,17 +1,17 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 8fd04cc..add3289 100644
+index b478c09..f3b99cb 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1956,7 +1956,7 @@ ${OBJECTIVE_SELF_PROVING}
+@@ -1976,7 +1976,7 @@ Each condition is one thing "done" has to show, in plain words, written after it
  
- ## The conditions
+ Its state is one of:
+ - open: undone, or yet to be shown done.
+-- not shown: a thing only proof from outside the agent's word can show, such as what is installed, deployed or running; the rep marks it shown when the record holds that proof.
++- not shown: a thing it a the agersation cannot show by itself, such as what is installed or runs the rewes it corde.
+ - shown, with where: only the rep marks this, from the record, which you do not see.
+ - closed: #n: the owner's own message #n, new since the objective you hold was built, closed that part. A draft's number closes nothing, and a message the objective was already built from had its say then.
  
--Each condition is one thing "done" has to show, in plain words, written after its kind: "works:" when it is about the result working for its user, being used, or being good, which only a hands-on look by someone who did not build it can show; "fact:" when a command's output or a file's contents can show it (saved, committed, pushed or installed); a passing run is works. A fact names the thing, says only that it is saved, committed, pushed or installed, exists, or holds text quoted exactly or a count with its unit, and where: "fact: sample.txt in the scratch folder holds exactly 'one two three'". Anything it does is works. ${ONE_CLAIM} ${QUALITY_CONDITION} Write a held condition's kind back as held. You do not see the conversation, so you may never mark a condition shown. Write every condition you already hold again as it stands, with the state it is held in: a shown one with "shown:" and its where copied as held, a closed one with "closed:" and its number as held. Those marks are kept whatever you write. ${OBJECTIVE_SAME_AS} A new condition is "open", or "not shown" when only proof from outside the agent's word can show it, such as what is installed, deployed or running; the rep marks it shown when the session's record holds that proof. Mark a condition "closed: #n" only when the owner's own message #n closes that part and is new since the objective you hold was built; never by the number of a draft, and never by a message it was already built from, which had its say then. A held condition you leave out is kept, unless you list it under "dropped" with the number of the owner's own message, new since it was built, that says, in so many words, that it no longer stands.`
-+Each condition is one thing "done" has to show, in plain words, written after its kind: "works:" when it is about the result working for its user, being used, or being good, which only a hands-on look by someone who did not build it can show; "fact:" when a command's output or a file's contents can show it (saved, committed, pushed or installed); a passing run is works. A fact names the thing, says only that it is saved, committed, pushed or installed, exists, or holds text quoted exactly or a count with its unit, and where: "fact: sample.txt in the scratch folder holds exactly 'one two three'". Anything it does is works. ${ONE_CLAIM} ${QUALITY_CONDITION} Write a held condition's kind back as held. You do not see the conversation, so you may never mark a condition shown. Write every condition you already hold again as it stands, with the state it is held in: a shown one with "shown:" and its where copied as held, a closed one with "closed:" and its number as held. Those marks are kept whatever you write. ${OBJECTIVE_SAME_AS} A new condition is "open", or "not shown" when it proof a the agersation cannot show by itself, such as what is installed or runs the rewes it corde. Mark a condition "closed: #n" only when the owner's own message #n closes that part and is new since the objective you hold was built; never by the number of a draft, and never by a message it was already built from, which had its say then. A held condition you leave out is kept, unless you list it under "dropped" with the number of the owner's own message, new since it was built, that says, in so many words, that it no longer stands.`
- 
- // The owner's messages are quoted records inside a fence the writer is told about, so a
- // message that reads like a command is read as evidence and never as an instruction to the
-@@ -3124,7 +3124,7 @@ export const REP_MEASURE = `## What you measure against\n\n${REP_MEASURE_BODY}\n
+@@ -3163,7 +3163,7 @@ export const REP_MEASURE = `## What you measure against\n\n${REP_MEASURE_BODY}\n
  // printed its version stayed not shown (proof run, fault 7).
  export const REP_STATES = `Each condition of done is in one of four states:
  - open: not yet done, or not yet shown done.
@@ -20,10 +20,10 @@ index 8fd04cc..add3289 100644
  - shown: the record holds the proof, by what counts as shown.
  - closed: a message of the owner's own closed it, cited by its number. A draft of yours that the owner sent closes nothing.`
  export const REP_CONDITIONS = `## The conditions and their states\n\n${REP_STATES}`
-@@ -7719,7 +7719,7 @@ const G3_REP_SYSTEM: readonly Swap[] = [
+@@ -7938,7 +7938,7 @@ const G3_REP_SYSTEM: readonly Swap[] = [
  ]
  const G3_OBJECTIVE_SYSTEM: readonly Swap[] = [
-   [`${ONE_CLAIM} Write a held condition's kind back as held.`, `${ONE_CLAIM} ${QUALITY_CONDITION} Write a held condition's kind back as held.`],
+   [`${PRE_OW_ONE_CLAIM} Write a held condition's kind back as held.`, `${PRE_OW_ONE_CLAIM} ${PRE_OW_QUALITY_CONDITION} Write a held condition's kind back as held.`],
 -  ['"not shown" when it is a thing a conversation cannot show by itself, such as whether a build is installed or a service runs the newest code.', `"not shown" when only proof from outside the agent's word can show it, such as what is installed, deployed or running; the rep marks it shown when the session's record holds that proof.`],
 +  ['"not shown" when it is a thing a conversation cannot show by itself, such as whether a build is installed or a service runs the newest code.', `"not shown" when only is from outside the a convent's word can show it, such as whether at is installed, deployed or a service running; the nep markst shown when the session's recod holds that proof.`],
  ]

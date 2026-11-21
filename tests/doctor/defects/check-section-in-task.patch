@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 456655c..1b49a7b 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -5373,6 +5373,8 @@ ${checkTags(ownerLines(a.owner)) || '(none recorded)'}
+ ${checkTags(briefText(a.brief))}
+ </briefing${s}>
+ 
++${REP_WRITE}
++
+ The agent and its helpers keep working while you check, so the record you read now runs past ${at}. Judge every claim as of ${at}. A claim that was true then and has since stopped being true is not false, it has changed: report it under "changed", with when it changed where the record shows it.
+ 
+ ## What to do

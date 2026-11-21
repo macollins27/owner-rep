@@ -298,7 +298,9 @@ full, this is everything it reads and runs:
   transcripts in every project folder there once for one line of that session, with
   `git grep` (or `grep -r` where git cannot run), and reads up to 40 of the files that hold it,
   newest first, the same way. It also reads the transcript lines where you
-  approved a plan on that screen, to find a note you typed with the approval.
+  approved a plan on that screen, to find a note you typed with the approval. On a press of
+  Check it, it reads the first time the session's transcript records, with `grep`, and tells
+  the check when the session began, so it reads the agent's commits from then.
 - **Its own folder:** `<config>/owner-rep/sources/`, under Claude Code's folder. It writes each
   saved text there as a file named by the session and checked by fingerprint, and removes those
   files with `rm` when their message or session goes. When the shared store is full it also
@@ -353,7 +355,9 @@ full, this is everything it reads and runs:
   web, or launch helpers. It runs with your own Claude Code settings, so your hooks fire
   inside it as they do for any agent.
 - **What it keeps:** one record per session, for the 32 newest sessions that hold anything,
-  and the call log above. [PRIVACY.md](PRIVACY.md) lists what each holds.
+  and the call log above. [PRIVACY.md](PRIVACY.md) lists what each holds. After an update
+  from an earlier version, the earlier copy of up to 32 records stays beside them until the
+  first start after no older version has saved into it for a week.
 
 Mods are code that runs inside Claude Code with the access Claude Code has, so read the
 source before installing any mod, this one included.
@@ -395,9 +399,9 @@ The full design is in [How the owner rep works](docs/how-it-works.md).
 
 ## Built to be trusted
 
-- **840 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
+- **882 tests**, run on Ubuntu, macOS and Windows on every push that touches the code or
   the tests.
-- **A doctor that plants bugs.** It plants 933 known defects in a throwaway copy, one at a
+- **A doctor that plants bugs.** It plants 987 known defects in a throwaway copy, one at a
   time, and fails the build if the tests miss any of them.
 - **Real sessions.** Twelve scenarios run in real Claude Code sessions, with the screen
   captured in [`tests/live/captures`](tests/live/captures).

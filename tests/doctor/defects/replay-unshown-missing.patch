@@ -1,8 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index f508b1d..c3b38ba 100644
+index 52778e8..40de583 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -7824,7 +7824,7 @@ const GROUPS: readonly Group[] = [
+@@ -8078,7 +8078,7 @@ const GROUPS: readonly Group[] = [
    { edit: 'same-as', system: k => (k === 'objective' ? G6_OBJECTIVE_SYSTEM : []), task: G6_TASK },
    { edit: 'message', system: k => (k === 'objective' ? [] : k === 'own-words' ? G7_OWN_WORDS_SYSTEM : G7_REP_SYSTEM), task: G7_TASK },
    { edit: 'evidence', system: k => (k === 'objective' || k === 'own-words' ? [] : G8_REP_SYSTEM), task: [] },
@@ -10,4 +10,4 @@ index f508b1d..c3b38ba 100644
 +  { edit: 'unshown', system: () => [], task: [] },
    {
      edit: 'rewrite',
-     system: k => (k === 'objective' ? [] : k === 'own-words' ? [[PRE_RW_OWN_WORDS_SYSTEM, OWN_WORDS_SYSTEM]] : [[PRE_RW_REP_SYSTEM, repSystem(REPLAY_FENCE)]]),
+     system: k => (k === 'objective' ? [] : k === 'own-words' ? [[PRE_RW_OWN_WORDS_SYSTEM, PRE_OWN_OWN_WORDS_SYSTEM]] : [[PRE_RW_REP_SYSTEM, repSystem(REPLAY_FENCE)]]),

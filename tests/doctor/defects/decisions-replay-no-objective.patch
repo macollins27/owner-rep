@@ -1,9 +1,9 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index f508b1d..63990d6 100644
+index 52778e8..3fd5e14 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -7819,7 +7819,7 @@ type Group = {
- }
+@@ -8073,7 +8073,7 @@ type Group = {
+ export type Known = { fault?: string }
  const GROUPS: readonly Group[] = [
    { edit: 'proof', system: k => (k === 'objective' ? G3_OBJECTIVE_SYSTEM : k === 'own-words' ? G3_OWN_WORDS_SYSTEM : G3_REP_SYSTEM), task: G3_TASK },
 -  { edit: 'decisions', system: k => (k === 'objective' ? G4_OBJECTIVE_SYSTEM : k === 'own-words' ? [] : G4_REP_SYSTEM), task: G4_TASK },

@@ -1,11 +1,11 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index f8f119f..c60077e 100644
+index 456655c..8b5e9d9 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -4926,7 +4926,7 @@ const briefText = (b: BriefAnswer): string =>
-   ].join('\n')
- 
- export function checkPrompt(a: CheckArgs): string {
+@@ -5324,7 +5324,7 @@ export function checkPrompt(a: CheckArgs): string {
+     a.startedAt === undefined
+       ? `You have ${CHECK_TIMEOUT_WORDS} and ${CHECK_MAX_TURNS} turns, and an answer that never arrives is worth nothing to the owner.`
+       : `This check began at ${clockOf(a.startedAt)}. You have until ${clockOf(a.startedAt + CHECK_TIMEOUT_MS)} (${CHECK_TIMEOUT_WORDS}) and ${CHECK_MAX_TURNS} turns, and an answer that never arrives is worth nothing to the owner. Run \`date\` before any command that may take minutes. Begin writing your answer by ${clockOf(a.startedAt + CHECK_TIMEOUT_MS - CHECK_WRITE_BY_MS)}, whatever is left.`
 -  return endAsked(`## The session
 +  return (`## The session
  

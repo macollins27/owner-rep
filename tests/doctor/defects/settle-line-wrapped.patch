@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 065b436..4bd1375 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -2337,7 +2337,7 @@ export function settleConditions(
+ ): Condition[] {
+   const out = [...merged]
+   for (const c of held) {
+-    if (c.state === 'closed' || /^Settle with the owner\b/.test(bare(c.text))) continue
++    if (c.state === 'closed') continue
+     for (const l of lets) {
+       if (l.by === null || !same(bare(l.text), bare(c.text))) continue
+       const m = owner.find(x => x.n === l.by)

@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 5d6696e..462fda1 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2250,7 +2250,6 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
+       writtenAt: new Date(at).toISOString(),
+       startedAt: Date.now(),
+       sessionStart: await sessionStart($, checkHost, home, sid),
+-      fence: rec.fence,
+       unanswered: [...(links === null ? ['links' as const] : []), ...(repos.whole ? [] : ['repos' as const])],
+     })
+     const startedAt = Date.now()

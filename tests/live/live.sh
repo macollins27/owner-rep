@@ -154,11 +154,19 @@ heights_record() {
   store=${stores[1]:-}
   CARD=$card python3 -I - "$store" "$HEIGHTS_FIRST" "$1" <<'PY2'
 import json, os, sys
+# The records as the mod reads them: each under its own key (rec:<id>), the newer of it and
+# the old map's ("sessions") copy, which stays beside the keys while older builds may save there.
+def recs_of(d):
+    out = dict(d.get("sessions") or {})
+    for k, v in d.items():
+        if k.startswith("rec:") and isinstance(v, dict) and (k[4:] not in out or v.get("at", 0) >= out[k[4:]].get("at", 0)):
+            out[k[4:]] = v
+    return out
 store, first, field = sys.argv[1:4]
 fold = lambda t: " ".join(str(t).replace("│", " ").split())
 card = fold(os.environ.get("CARD", ""))
 try:
-    recs = [r for r in json.load(open(store)).get("sessions", {}).values() if any(isinstance(m, dict) and fold(m.get("text", "")) == fold(first) for m in r.get("owner", []))]
+    recs = [r for r in recs_of(json.load(open(store))).values() if any(isinstance(m, dict) and fold(m.get("text", "")) == fold(first) for m in r.get("owner", []))]
 except OSError:
     recs = []
 if not recs:
@@ -242,13 +250,21 @@ E
   pane | sed "s/${USER:-user}/user/g" > $T13/card.txt
   cat > $T13/check.py <<'PY'
 import glob, hashlib, json, os, sys
+# The records as the mod reads them: each under its own key (rec:<id>), the newer of it and
+# the old map's ("sessions") copy, which stays beside the keys while older builds may save there.
+def recs_of(d):
+    out = dict(d.get("sessions") or {})
+    for k, v in d.items():
+        if k.startswith("rec:") and isinstance(v, dict) and (k[4:] not in out or v.get("at", 0) >= out[k[4:]].get("at", 0)):
+            out[k[4:]] = v
+    return out
 cfg = os.environ.get("CLAUDE_CONFIG_DIR") or os.path.expanduser("~/.claude")
 ask, note, name, card_file = os.environ["PLAN_ASK"], os.environ["PLAN_NOTE"], os.environ["STORE_NAME"], sys.argv[1]
 fold = lambda t: " ".join(str(t).split())
 hit = None
 for f in sorted(glob.glob(os.path.join(cfg, "plugins", "store", name)), key=os.path.getmtime, reverse=True):
     try:
-        recs = json.load(open(f)).get("sessions", {})
+        recs = recs_of(json.load(open(f)))
     except (OSError, ValueError):
         continue
     for sid, r in recs.items():
@@ -406,6 +422,14 @@ export const register: Register = on => {
 TS
   cat > $T14/check.py <<'PY'
 import datetime, glob, hashlib, json, os, sys
+# The records as the mod reads them: each under its own key (rec:<id>), the newer of it and
+# the old map's ("sessions") copy, which stays beside the keys while older builds may save there.
+def recs_of(d):
+    out = dict(d.get("sessions") or {})
+    for k, v in d.items():
+        if k.startswith("rec:") and isinstance(v, dict) and (k[4:] not in out or v.get("at", 0) >= out[k[4:]].get("at", 0)):
+            out[k[4:]] = v
+    return out
 from collections import OrderedDict
 
 mode, logdir = sys.argv[1], sys.argv[2]
@@ -425,7 +449,7 @@ def record(sid):
     files = glob.glob(os.path.join(cfg, "plugins", "store", "owner-rep_inline-*.json"))
     for f in sorted(files, key=os.path.getmtime, reverse=True):
         try:
-            s = json.load(open(f)).get("sessions", {})
+            s = recs_of(json.load(open(f)))
         except (OSError, ValueError):
             continue
         if sid in s:
@@ -1161,7 +1185,7 @@ for n in $want; do
       stores=("${CLAUDE_CONFIG_DIR:-$HOME/.claude}"/plugins/store/${~STORE_NAME}(Nom))
       store=${stores[1]:-}
       ids_before=$(mktemp -t owner-rep-live-ids)
-      [[ -n $store ]] && python3 -I -c 'import json, sys; print("\n".join(json.load(open(sys.argv[1])).get("sessions", {}).keys()))' $store > $ids_before
+      [[ -n $store ]] && python3 -I -c 'import json, sys; d = json.load(open(sys.argv[1])); print("\n".join({*(d.get("sessions") or {}), *(k[4:] for k in d if k.startswith("rec:"))}))' $store > $ids_before
       # The same folder, the same unset variables and flags; --fork-session gives the reopened
       # session a new id, so the rep holds no record of it and must read the session itself.
       start $LIVE_DIR --continue --fork-session || { bad=1; fails=$((fails+1)); stop; continue; }
@@ -1190,10 +1214,18 @@ for n in $want; do
       else
         python3 -I - $store $ids_before $first $queued <<'PY'
 import json, sys
+# The records as the mod reads them: each under its own key (rec:<id>), the newer of it and
+# the old map's ("sessions") copy, which stays beside the keys while older builds may save there.
+def recs_of(d):
+    out = dict(d.get("sessions") or {})
+    for k, v in d.items():
+        if k.startswith("rec:") and isinstance(v, dict) and (k[4:] not in out or v.get("at", 0) >= out[k[4:]].get("at", 0)):
+            out[k[4:]] = v
+    return out
 store, before, first, queued = sys.argv[1:5]
 fold = lambda t: " ".join(str(t).split())
 old = set(open(before).read().split())
-recs = [(k, r) for k, r in json.load(open(store)).get("sessions", {}).items() if k not in old]
+recs = [(k, r) for k, r in recs_of(json.load(open(store))).items() if k not in old]
 forks = [(k, r) for k, r in recs if any(isinstance(m, dict) and fold(m.get("text", "")) == fold(first) for m in r.get("owner", []))]
 if not forks:
     print("  no new record holding the first prompt")
@@ -1252,9 +1284,17 @@ PY
       else
         python3 -I - $store $first <<'PY'
 import json, sys
+# The records as the mod reads them: each under its own key (rec:<id>), the newer of it and
+# the old map's ("sessions") copy, which stays beside the keys while older builds may save there.
+def recs_of(d):
+    out = dict(d.get("sessions") or {})
+    for k, v in d.items():
+        if k.startswith("rec:") and isinstance(v, dict) and (k[4:] not in out or v.get("at", 0) >= out[k[4:]].get("at", 0)):
+            out[k[4:]] = v
+    return out
 store, first = sys.argv[1:3]
 fold = lambda t: " ".join(str(t).split())
-recs = [(k, r) for k, r in json.load(open(store)).get("sessions", {}).items() if any(isinstance(m, dict) and fold(m.get("text", "")) == fold(first) for m in r.get("owner", []))]
+recs = [(k, r) for k, r in recs_of(json.load(open(store))).items() if any(isinstance(m, dict) and fold(m.get("text", "")) == fold(first) for m in r.get("owner", []))]
 if not recs:
     print("  no record holding the first prompt")
     sys.exit(1)

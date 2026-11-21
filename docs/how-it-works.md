@@ -86,8 +86,10 @@ has to show (a list of conditions), and the step the session is on now. The obje
 sets the step from the owner's messages; each look the watch takes then reads the step the agent
 is on from the record and keeps it current, so the card's "Right now" does not lag the work by a
 turn. It is never the owner's text. The owner works by intent rather than exact wording, and a rep that only did
-what the client literally said would not be a good one, so the objective includes what a
-serious owner plainly wants without saying it. The owner's messages are weighed by kind:
+what the client literally said would not be a good one, so every condition is held to what a
+serious owner plainly wants without saying it; those wants become conditions of their own only
+when the owner asks for them. A question the owner asks is a condition until it is answered, so
+it is not lost when the step moves. The owner's messages are weighed by kind:
 reasons and complaints first, then instructions. A "yes" to a plan the agent proposed makes
 that plan the owner's ask, held like the owner's own words: each of its steps becomes a
 condition of "done", read whole before any is written. Whether a message approves is the
@@ -466,7 +468,7 @@ rep's independence comes from its brief, which tells the model to treat everythi
 wrote as a claim, and, for the check step, from reading outside the conversation altogether.
 The objective writer is a plain completion too, shown the agent's words
 only as the line before each of the owner's messages, marked as the agent's. Its rules go to
-it as its system prompt, and the owner's messages reach it fenced as quoted records that it is
+it as its system prompt, marked for the cache so a session's later writes pay less for them, and the owner's messages reach it fenced as quoted records, in the same per-session tags the readers use, that it is
 told are no instruction to it, because unfenced, a message that read like a command came back
 empty in all six tries measured on one such message (16 Oct 2026). Its brief also says that
 line is there only so a short reply can be understood and never sets the result, and
@@ -602,7 +604,7 @@ says is missing, and offers no Check it, and so does every later card while Clau
 the note saying a restart clears it once the missing piece is installed. The owner's own guard hooks fire inside
 the run as they do for every agent. The copy is removed when the run ends. When no copy can
 be made, or the project's folder would hold its own copy (the home itself), the run starts in the project itself with writes there denied, and its brief says
-so and tells it to run only what writes nothing there. On Windows (recognised by `OS`, by `SystemRoot` or `windir` holding a drive path, or by a working folder on a drive) Claude Code's sandbox is switched off, so there is no room to run in: the
+so and tells it to run only what writes nothing anywhere. On Windows (recognised by `OS`, by `SystemRoot` or `windir` holding a drive path, or by a working folder on a drive) Claude Code's sandbox is switched off, so there is no room to run in: the
 card says so in place of the check's price and offers no Check it button. The run's answer
 carries the count of commands refused approval; the card shows it, and the right number is
 zero, because a refusal in a room where nothing needs approval means the room has a hole.
@@ -623,7 +625,11 @@ messages, notes to the rep and sent drafts, each numbered (the job's kept whole 
 and the 40 before it), flags already shown, notes other mods have shown, and spend counters
 that count the writer's calls beside the looks. A record the cap lets go leaves the rep's
 drafts it held in a separate list of the 200 newest, so a message the rep drafted stays its
-own after the session that drew it drops out. A record saved by a build from before the
+own after the session that drew it drops out. Each record has a store key of its own, so a
+session's save writes that key alone: several sessions run at once, each in its own process,
+and a save of one shared map let one session put back an older copy of another's record. That
+map, up to 32 more records, stays beside the keys after an update, read where it is newer, until
+no older build has saved into it for a week. A record saved by a build from before the
 objective is rebuilt from the owner's messages on the next start, press or message, with its
 old text kept as an earlier version. A session the rep holds no record of (one whose record
 was dropped from the 32, one forked with a new id, one older than the mod) has the owner's
@@ -711,7 +717,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 840 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 882 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: twelve real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -804,7 +810,12 @@ to an agent by itself.
   audit of 14 November rewrote it as one system prompt of sections, each rule said once, plainly,
   with its reason, the rules that decide an answer restated in a line each after the record. Each
   call now sends about 3,300 words, none of them "never" and none in capitals for emphasis, and a
-  unit test holds every call to its target, so the brief cannot grow back the same way.
+  unit test holds every call to its target, so the brief cannot grow back the same way. The
+  check got the same rewrite (§6.8): its system prompt carries the readers' sections it had
+  lacked (what reaches the owner, how to write to the owner) beside its own standing rules, its
+  task carries only this check's facts, with the owner's messages and the briefing fenced as
+  the readers' are, and it reads the agent's commits from the time the session's transcript
+  begins. It sends about 3,200 words, down from 3,700, with one "never" where it had twelve.
 - **Proven on real sessions.** Each route was pressed live by the owner before the next was
   built: the row, the briefing, the watch, the note to the rep, and two real checks on the session
   that built it. A keyboard chord for the Rep button could not be proven and was removed.
