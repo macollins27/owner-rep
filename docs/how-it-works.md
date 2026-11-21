@@ -809,7 +809,7 @@ to an agent by itself.
   lacked (what reaches the owner, how to write to the owner) beside its own standing rules, its
   task carries only this check's facts, with the owner's messages and the briefing fenced as
   the readers' are, and it reads the agent's commits from the time the session's transcript
-  begins. It sends about 3,200 words with at most one "never".
+  begins. It sends about 3,200 words, down from 3,700, with one "never" where it had twelve.
 - **Proven on real sessions.** Each route was pressed live by the owner before the next was
   built: the row, the briefing, the watch, the note to the rep, and two real checks on the session
   that built it. A keyboard chord for the Rep button could not be proven and was removed.

@@ -1,9 +1,9 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 456655c..eedb8e5 100644
+index 4a7a879..be28116 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
 @@ -5412,7 +5412,7 @@ left:
- - <${LEFT_ITEMS}: what still stands between the work and the objective, such as work dropped or shrunk, or a condition the agent called done that is still open; only gaps your checking supports; a condition shown or closed is not a gap>
+ - <${LEFT_ITEMS}: what still stands between the work and the objective, such as work dropped or shrunk, work short of the best it could be, or a condition the agent called done that is still open; only gaps your checking supports; a condition shown or closed is not a gap>
  next: <what the agent should do next, ${SHORT_PART}; a stop only with a stop verdict>
  message:
 -<the message for the owner to send ${MESSAGE_FORM}. It names what is false and asks for what is missing and for the proof "What counts as shown" names. While any condition is open or not shown after your checking, or the work falls short of the best it could be, write it. Leave empty only when every condition is shown or closed.>
