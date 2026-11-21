@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 75750fc..5934529 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1866,7 +1866,7 @@ async function replayFiles($: EngineInterface, a: { path: string; kind?: CallKin
+ // What the own edit needs and an own-words call file does not hold: the rule its briefing broke,
+ // read from the calls saved before it in the same folder (`savedFault`), the nearest twelve.
+ async function knownBefore($: EngineInterface, kind: CallKind, file: string, edits: readonly string[]): Promise<Known> {
+-  if (kind !== 'own-words' || !edits.includes('own')) return {}
++  if (kind !== 'own-words' || edits.includes('own')) return {}
+   const dir = file.slice(0, file.lastIndexOf('/'))
+   const name = file.slice(file.lastIndexOf('/') + 1)
+   const names = (await $.fs.list(dir).catch(() => []))

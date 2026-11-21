@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 52778e8..1c26479 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -6964,7 +6964,7 @@ export const sectionOf = (text: string, heading: string): string => {
+ // the four states, the weighing, how the rep makes up its mind) stay with the calls that read one.
+ // Fixed text only: nothing of the owner's goes into it.
+ export const OWN_WORDS_OPENING = `You are the owner's rep. ${REP_OWNER} You are given what the rep knows of one Claude Code session and what it found in that session's record, and you write the parts of the owner's card that a refused briefing could not.`
+-export const OWN_WORDS_SYSTEM = [OWN_WORDS_OPENING, REP_WHY, REP_SHOWN, REP_REACHES, REP_WRITE, REP_MESSAGE, REP_PRIVATE].join('\n\n')
++export const OWN_WORDS_SYSTEM = [OWN_WORDS_OPENING, REP_WHY, REP_SHOWN, REP_UNSEEN, REP_REACHES, REP_WRITE, REP_MESSAGE, REP_PRIVATE].join('\n\n')
+ 
+ // Its cap and time: four short parts, written at high effort (the cap was 4,000 tokens until G16).
+ export const OWN_WORDS_MAX_TOKENS = MAX_REPLY_TOKENS

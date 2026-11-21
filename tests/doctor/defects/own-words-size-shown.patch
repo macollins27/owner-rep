@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 52778e8..e5e71f3 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -7007,7 +7007,7 @@ end
+ does: <one line: what this message will make the agent do>`
+ }
+ export function ownWordsPrompt(m: Memory, open: Condition[], a: BriefAnswer, fault: string): string {
+-  return endAsked(ownWordsText(memoryText(m, m.fence, false), fenceTags(list(open.map(promptLine), '- none')), fenceTags(a.stands), fenceTags(list(a.leftOut, '- nothing')), fenceTags(fault)))
++  return endAsked(ownWordsText(memoryText(m, m.fence), fenceTags(list(open.map(promptLine), '- none')), fenceTags(a.stands), fenceTags(list(a.leftOut, '- nothing')), fenceTags(fault)))
+ }
+ 
+ // The own-words answer taken into a card the gate refused: each part the gate

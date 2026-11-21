@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 52778e8..e513495 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -8342,7 +8342,6 @@ function ownTask(task: string, fault: string | undefined): string | { why: strin
+ export function savedFault(earlier: readonly CallEntry[]): string | null {
+   let asked = false
+   for (const e of earlier) {
+-    if (e.kind === 'own-words') return null
+     if (e.kind !== 'brief' && e.kind !== 'ask-again') continue
+     if (!asked && e.kind !== 'ask-again') return null
+     asked = true

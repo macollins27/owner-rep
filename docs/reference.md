@@ -135,8 +135,9 @@ call writes (below):
    "What reaches the owner" (`REP_REACHES`: a go-ahead is a decision only the owner can make,
    and the message tells the agent to finish everything else, hold that step until the owner
    says go, and say exactly what it will show then) and in the message section's line on naming
-   a held step exactly; `askAgain` points to that section by name. `HELD_STEP_RULE` gives the
-   same direction to the check (`checkPrompt`) and the own-words call (`ownWordsPrompt`).
+   a held step exactly; `askAgain` points to that section by name. The own-words call takes the
+   same section in `OWN_WORDS_SYSTEM`, and `ownWordsPrompt` points to it by name. `HELD_STEP_RULE`
+   gives the same direction to the check (`checkPrompt`).
    A Check card goes through the same gate and has no second ask or own-words call, so an
    instant read refused with the checker's message empty gets `OPEN_MESSAGE` when a condition
    is still open, an instant read that passed keeps its message when the checker leaves it
@@ -147,12 +148,21 @@ call writes (below):
    broke: `askFault` over the gate's rules, each said plainly with the sentence that broke it quoted,
    cut to 200 characters, since the second call never saw the first answer; G39), and that answer
    passes the same gate. When it is refused too, or does not answer, one plain
-   `$.model.complete` (`OBJECTIVE_MODEL`, `OWN_WORDS_EFFORT` high, `OWN_WORDS_SYSTEM`: built from the same
-   named strings as `REP_SYSTEM` (`REP_OWNER`, `REP_STAKE`, `REP_SHOWN_BODY`, `REP_UNSEEN`, `REP_STATES`,
-   `REP_WRITE`, `REP_MESSAGE`), so each rule has one source, and one line against reproducing a secret, a key, a
-   password or personal data it is shown; `OWN_WORDS_MAX_TOKENS` 64,000, `MAX_REPLY_TOKENS`, the engine's ceiling, `OWN_WORDS_TIMEOUT_MS` two minutes) over
-   `ownWordsPrompt` (the memory, the open conditions, what stands and what is left out)
-   writes the replaced parts in the rep's own words. Its reply is read by `parseOwnWords`,
+   `$.model.complete` (`OBJECTIVE_MODEL`, `OWN_WORDS_EFFORT` high, left there until the audit's
+   replay R37 measures medium on it; `OWN_WORDS_SYSTEM` (prompt audit §6.5): `OWN_WORDS_OPENING`,
+   true of this call, which is given what the rep knows and what it found rather than a record,
+   then the same section strings `REP_SYSTEM` holds for what it writes, `REP_WHY`, `REP_SHOWN`,
+   `REP_REACHES`, `REP_WRITE`, `REP_MESSAGE` and `REP_PRIVATE`, so each rule has one source; the
+   sections on reading a record stay with the readers; `OWN_WORDS_MAX_TOKENS` 64,000, `MAX_REPLY_TOKENS`, the engine's ceiling, `OWN_WORDS_TIMEOUT_MS` two minutes) over
+   `ownWordsPrompt(memory, open, answer, fault)` writes the replaced parts in the rep's own words.
+   Its request is what the rep knows (`memoryText` without the session's size, which is for a
+   reader of the record), then "What the rep found in the record" (what stands and what is left
+   out), then "This request": the rule the briefing broke, `askFault` over the last read's
+   answer and gate rules, as the second asking names it, "and it stayed refused when asked once
+   more" (true whether the second asking was refused or did not answer), the open conditions,
+   one sentence that while a condition is open nothing it writes tells the agent to stop, calls
+   the work finished or gives the owner a chore, a pointer to "What reaches the owner" for a held
+   step, and the four labelled parts with their length aims. Its reply is read by `parseOwnWords`,
    which answers null unless the reply came back whole: `means:`, `next:`, `message:` and
    `does:` each once and in that order, the message closed by its `end` line before `does:`
    and not empty, and means, next and does each ending at a sentence mark (`.`, `!` or `?`,
@@ -398,7 +408,11 @@ call writes (below):
    the rules the own-words call and the check share are the same strings (a unit test holds
    both). Each reader call is at or under its §6.9 target in words, "never", negatives and
    capitals (watch 3,500/5/84/0, briefing 3,360/6/77/0, second asking 160/0/1/0, the whole call
-   with no plan held), held by a unit test on a fixed memory. The targets leave out the plan walk:
+   with no plan held), held by a unit test on a fixed memory. The own-words call's system prompt
+   and its request's fixed text are held apart: the system at 1,132/0/20/0, over §6.9's 1,024 and
+   18 because the shared sections it takes grew after the audit (#68), and the request, from what
+   the rep found to its last part with each quoted text a placeholder and without the end line,
+   at §6.9's 226/0/2/0. The targets leave out the plan walk:
    with a plan held, the same test lets each call add only the walk's own text, its ceiling the
    no-plan target plus the counts of the plan as quoted, the line standing in for the owner's
    approving reply, `STEP_STATES`, `DECIDE_DROPPED` and the call's own walk text (`WALK_WATCH`
@@ -420,12 +434,12 @@ call writes (below):
    (the objective, the approved plans, the owner's messages, the last briefing's message and the
    owner's sent message), and the replay's `rwMemory` does the same; `watchRequest` applies it to
    the lines already shown and the other watcher's notes, and `askAgainText` to the open
-   conditions and the fault it quotes, and `ownWordsPrompt` to the open conditions, what stands
-   and the items left out, so every text placed inside a fenced prompt is escaped; the owner's messages are fenced so an agent's text cannot pass as theirs. A reader given no fence (`REP_SYSTEM`) has the tags
+   conditions and the fault it quotes, and `ownWordsPrompt` to the open conditions, what stands,
+   the items left out and the fault it quotes, so every text placed inside a fenced prompt is escaped; the owner's messages are fenced so an agent's text cannot pass as theirs. A reader given no fence (`REP_SYSTEM`) has the tags
    unsuffixed. Its words keep three apart: "the
    record" is what the reader is shown, "the session" what happened, "the owner's messages" the
    owner's words. The task after the record holds only what changes per call: `memoryText` (what
-   the rep knows: the objective, the open conditions, the session's size, the approved plans
+   the rep knows: the objective, the open conditions, the session's size (not in the own-words call's), the approved plans
    while one is held, the owner's messages in their fence, the jobs before, the last briefing and
    the last message sent), the request (`watchRequest(plan, reason, seen, others)`,
    `briefRequest(plan)`), which opens "Based on the record above", and `decidingText(plan,
@@ -1229,7 +1243,7 @@ what the replies were read as, and for cards the gate's rules (`passed` when non
 menu and `/help` (`command.describe`, `HIDDEN_COMMANDS`): `/owner-rep-counts` prints
 `countsText`, one line per kind and a `cards:` line; `/owner-rep-replay <call file, session folder,
 session id, "this" or "all"> [--kind k] [--last 1-50] [--effort low|medium|high|xhigh|max] [--times 1-10]
-[--variant build|frame|no-think|rep-system|end-line|proof|decisions|now] [--base frame|no-think|rep-system|end-line|proof|decisions|now] [--now]` (`parseReplayArgs`, `REPLAY_USAGE`) takes a folder's last `--last`
+[--variant build|frame|no-think|rep-system|end-line|proof|decisions|now|same-as|message|evidence|fault|unshown|rewrite|own] [--base frame|no-think|rep-system|end-line|proof|decisions|now|same-as|message|evidence|fault|unshown|rewrite|own] [--now]` (`parseReplayArgs`, `REPLAY_USAGE`) takes a folder's last `--last`
 (`REPLAY_LAST`, 10) calls of the kind asked for, or with "all" the last of every session folder's
 calls together by when each was made (`replayPick`, `replayFiles`), rebuilds each from its parts (`savedCall`, which refuses one whose
 texts were not kept, one naming a text by anything but a fingerprint (`isSha`), so a call file
@@ -1253,7 +1267,7 @@ call that asks for it already. The prompt groups after group 2 are `GROUPS`, in 
 of call: `proof` (group 3: `G3_REP_SYSTEM`, `G3_OBJECTIVE_SYSTEM`, `G3_OWN_WORDS_SYSTEM`,
 `G3_TASK`), `decisions` (group 4: `G4_REP_SYSTEM`, `G4_OBJECTIVE_SYSTEM`, `G4_TASK`; it has no
 own-words pair) and `now` (group 5: `G5_OBJECTIVE_SYSTEM`, `G5_TASK`; watch and objective calls
-only, since it changes neither the shared system prompt nor the briefing), and `same-as` (group 6: `G6_OBJECTIVE_SYSTEM`, `G6_TASK`; objective calls only), and `message` (group 7: `G7_REP_SYSTEM`, `G7_OWN_WORDS_SYSTEM`, `G7_TASK`; every call but the objective's), and `evidence` (group 8: `G8_REP_SYSTEM`, `REP_HOLD` added; watch, brief and ask-again calls). Group 9's edit, `fault`, rebuilds nothing: its second asking names the rule the first answer broke, which no saved call holds, so `editSaved` sends no ask-again call under it, and the build before it's text stays as `askAgainBefore`. Issue #49's edit, `unshown` (`G10_OBJECTIVE_SYSTEM`; objective calls only), rewrites the objective writer's turn-end line, so a message under a turn none of which is shown approves only in words that accept a plan; the build before it is group 9's, since group 9 rebuilt nothing. The rewrite's edit, `rewrite` (prompt audit §6.1 to §6.4; watch, brief, ask-again and own-words calls), is the last group: it swaps `PRE_RW_REP_SYSTEM` for `repSystem(REPLAY_FENCE)` (`PRE_RW_OWN_WORDS_SYSTEM` for `OWN_WORDS_SYSTEM`), and its step (`rewriteTask`) takes the build before's request apart (the watch's reason and its two lists, the briefing's request, the second asking's fault and open conditions) and builds this build's request from those parts, while `rwMemory` rebuilds what the rep knows (the owner's messages in their fence under the new heading, their fence tags escaped, the new lines on a sent draft and on a reopened condition). The own-words request is this build's with the length aims swapped in (`G7_SHORT_PART`, `G7_MESSAGE_FORM` for `SHORT_PART`, `MESSAGE_FORM`) and its quoted conditions and findings escaped by `fenceTags`; group 7's own pairs keep the old length texts frozen (`G7_SHORT_PART`, `G7_LEFT_ITEMS`, `G7_MESSAGE_FORM`), so a change to the live ones never breaks group 7's edit. Each old text must be found exactly once, or the call is not sent. It takes only a call whose record is in the build before's fence (`PRE_RW_RECORD_OPEN`, `PRE_RW_RECORD_CLOSE`) and quotes that record in the replay's fixed fence (`REPLAY_FENCE`, `replay00`, so a call replayed twice reads the same), its fence tags escaped by `fenceTags`, which leaves the old escape as it was. A second asking saved before group 9 names no fault, so, as under `fault`, it is never rebuilt. Each pair is the group before's text, kept word for word, and the text the group
+only, since it changes neither the shared system prompt nor the briefing), and `same-as` (group 6: `G6_OBJECTIVE_SYSTEM`, `G6_TASK`; objective calls only), and `message` (group 7: `G7_REP_SYSTEM`, `G7_OWN_WORDS_SYSTEM`, `G7_TASK`; every call but the objective's), and `evidence` (group 8: `G8_REP_SYSTEM`, `REP_HOLD` added; watch, brief and ask-again calls). Group 9's edit, `fault`, rebuilds nothing: its second asking names the rule the first answer broke, which no saved call holds, so `editSaved` sends no ask-again call under it, and the build before it's text stays as `askAgainBefore`. Issue #49's edit, `unshown` (`G10_OBJECTIVE_SYSTEM`; objective calls only), rewrites the objective writer's turn-end line, so a message under a turn none of which is shown approves only in words that accept a plan; the build before it is group 9's, since group 9 rebuilt nothing. The rewrite's edit, `rewrite` (prompt audit §6.1 to §6.4; watch, brief, ask-again and own-words calls), is the group before the own-words rewrite: it swaps `PRE_RW_REP_SYSTEM` for `repSystem(REPLAY_FENCE)` (`PRE_RW_OWN_WORDS_SYSTEM` for `PRE_OWN_OWN_WORDS_SYSTEM`, the own-words system prompt the build after #68 sent), and its step (`rewriteTask`) takes the build before's request apart (the watch's reason and its two lists, the briefing's request, the second asking's fault and open conditions) and builds this build's request from those parts, while `rwMemory` rebuilds what the rep knows (the owner's messages in their fence under the new heading, their fence tags escaped, the new lines on a sent draft and on a reopened condition). The own-words request is the build after #68's, with that build's length aims swapped in (`G7_SHORT_PART`, `G7_MESSAGE_FORM` for `PRE_OWN_SHORT_PART`, `PRE_OWN_MESSAGE_FORM`) and its quoted conditions and findings escaped by `fenceTags`; group 7's own pairs keep the old length texts frozen (`G7_SHORT_PART`, `G7_LEFT_ITEMS`, `G7_MESSAGE_FORM`), so a change to the live ones never breaks group 7's edit. Each old text must be found exactly once, or the call is not sent. It takes only a call whose record is in the build before's fence (`PRE_RW_RECORD_OPEN`, `PRE_RW_RECORD_CLOSE`) and quotes that record in the replay's fixed fence (`REPLAY_FENCE`, `replay00`, so a call replayed twice reads the same), its fence tags escaped by `fenceTags`, which leaves the old escape as it was. A second asking saved before group 9 names no fault, so, as under `fault`, it is never rebuilt. The own-words rewrite's edit, `own` (prompt audit §6.5; own-words calls only), is the last group: it swaps `PRE_OWN_OWN_WORDS_SYSTEM` for `OWN_WORDS_SYSTEM`, and its step (`ownTask`) reads the build after #68's request back into its parts (the open conditions, what stands, what is left out) between the frozen texts `PRE_OWN_HEAD`, `PRE_OWN_FOUND`, `PRE_OWN_LEFT` and `PRE_OWN_TAIL`, checks that they build the old request again, takes the session's size out of what the rep knows, quotes the owner's messages in the replay's fence and builds this build's request (`ownWordsText`). The rule the briefing broke was never in that request, so the replay reads it from the calls saved before the own-words call in its folder (`savedFault`, the nearest twelve, nearest first): the ask-again call just before it, its gate rules over its reply (`askFault`), or, when that ask-again was not read (no gate), the nearest briefing's; another own-words call, a briefing first or an ask-again that passed gives none, and `editSaved` (given it as `known.fault`) then does not send the call. Each pair is the group before's text, kept word for word, and the text the group
 sent in its place. Applied after `rep-system`, in that order (`stepGroups`), each named group's
 edit (`stepGroup`) moves a call the build before it saved to exactly what the build after it
 sends: the call's system prompt must be the build before's (`systemBefore`, this build's with

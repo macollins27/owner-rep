@@ -1,12 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 52778e8..4a61532 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -7032,7 +7032,7 @@
+@@ -6990,7 +6990,7 @@ ${left}
  
  ## This request
  
--The briefing's answer said the agent should stop, gave no verdict, called the work finished, or said the work is going well, or left the message empty, and asking it once more did not change that, while these conditions of done are still open:
-+The briefing's answer said the agent should stop, gave no verdict, called the work finished, or said the work is going well, and asking it once more did not change that, while these conditions of done are still open:
- ${fenceTags(list(open.map(promptLine), '- none'))}
- So the card the rep shows the owner keeps the agent on the job. Here is what the rep itself found in the record:
+-The briefing was refused because it ${fault}, and it stayed refused when asked once more, while these conditions are open:
++The briefing was refused, and it stayed refused when asked once more, while these conditions are open:
+ ${open}
  
+ From what the rep found above, write in your own words only the four parts below. While a condition is open, nothing you write tells the agent to stop, calls the work finished, or gives the owner a chore. A step waiting on the owner's go-ahead is held, as "What reaches the owner" says.

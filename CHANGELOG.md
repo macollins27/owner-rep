@@ -5,6 +5,11 @@ What changed in each release of Owner Rep, newest first. The full record is the
 
 ## Unreleased
 
+- **When Brief me rewrites a refused card in its own words, it knows why.** The call that
+  writes those parts is now told which rule the briefing broke, is given the same rules on
+  proof, your decisions, plain writing, the message and private data that the other reads
+  use, word for word, and no longer gets the rules for reading a record, which it never
+  reads. Its request is about 40 percent shorter, with no "never" in it.
 - **A dropped part of your plan stays said until it is done.** A note that a part of your plan
   looks dropped is no longer taken back by a later look that never checked that part, nor
   replaced by an unrelated note; several dropped parts lead with their count and take turns
