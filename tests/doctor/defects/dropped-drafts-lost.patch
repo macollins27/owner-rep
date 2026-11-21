@@ -1,12 +1,12 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
+index e3dcd55..9924d76 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -397,8 +397,6 @@ async function storeRec($: EngineInterface, rec: Rec): Promise<string[]> {
-   const kept: Record<string, Rec> = {}
-   for (const k of ids.slice(0, SESSIONS_MAX)) kept[k] = all[k] as Rec
-   // A record let go leaves its drafts behind first, so a draft the owner sent stays the rep's.
--  const dropped = ids.slice(SESSIONS_MAX).flatMap(k => recDrafts(all[k]))
+@@ -602,7 +602,6 @@ async function trimStore($: EngineInterface, keep: string): Promise<string[]> {
+   for (const id of ids) recs.set(id, await $.store.get(recKey(id)))
+   const gone = recsToLetGo(ids.map(id => ({ id, at: atOf(recs.get(id) as { at?: unknown } | undefined) })), keep, SESSIONS_MAX)
+   const dropped = gone.flatMap(id => recDrafts(recs.get(id)))
 -  if (dropped.length > 0) await $.store.set('droppedDrafts', keepDropped(await droppedDrafts($), dropped))
-   await $.store.set('sessions', kept)
-   return ids.slice(SESSIONS_MAX)
+   for (const id of gone) await $.store.delete(recKey(id))
+   return gone
  }

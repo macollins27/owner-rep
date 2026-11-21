@@ -5170,5 +5170,11 @@
     "breaks": "\"proof\" and \"sent\" are no words a noun may carry, so \"proof report\" and \"a local sent folder\" end the reading and the tenth live test's facts become works.",
     "patch": "fact-proof-sent-mods-missing.patch",
     "fixed": "tested 2026-11-19"
+  },
+  {
+    "name": "store-whole-map-save",
+    "breaks": "A session's save reads the whole map of every session's record, changes its own and writes the map back, so another process's save that lands between the read and the write is lost.",
+    "patch": "store-whole-map-save.patch",
+    "fixed": "tested 2026-11-20"
   }
 ]
