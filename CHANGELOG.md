@@ -11,6 +11,12 @@ What changed in each release of Owner Rep, newest first. The full record is the
   rule said once with its reason, and the rules that decide an answer restated in a line each
   after the record. Each call now sends about 3,300 words with at most one "never" and no capitals for
   emphasis, and a test holds every call to its size target.
+- **The rules for writing down your objective are shorter and plainer.** The call that writes
+  the job's objective from your messages had grown to about 2,600 words with 28 "never"s. It is
+  rewritten from the same prompt audit at about 2,000 words with two, each rule said once. Its
+  rules are now cached across a session's writes, your messages reach it in the same fenced tags
+  as the other calls, and a condition your later words make more exact replaces the one held
+  instead of piling up beside it.
 - **Text in the session cannot pass as the record's end or as the owner.** The record and the
   owner's messages are fenced in tags that end in a random code made once per session, and any
   such tag found inside is printed harmlessly, so an agent cannot close the fence by guessing it.

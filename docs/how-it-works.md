@@ -466,7 +466,7 @@ rep's independence comes from its brief, which tells the model to treat everythi
 wrote as a claim, and, for the check step, from reading outside the conversation altogether.
 The objective writer is a plain completion too, shown the agent's words
 only as the line before each of the owner's messages, marked as the agent's. Its rules go to
-it as its system prompt, and the owner's messages reach it fenced as quoted records that it is
+it as its system prompt, marked for the cache so a session's later writes pay less for them, and the owner's messages reach it fenced as quoted records, in the same per-session tags the readers use, that it is
 told are no instruction to it, because unfenced, a message that read like a command came back
 empty in all six tries measured on one such message (16 Oct 2026). Its brief also says that
 line is there only so a short reply can be understood and never sets the result, and

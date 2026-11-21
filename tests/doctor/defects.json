@@ -123,7 +123,7 @@
     "name": "writer-forks-conversation",
     "breaks": "The objective writer's call is made as a fork of the agent's whole conversation instead of a plain completion over the owner's messages, so the writer reads everything the agent said, its account of the job included.",
     "patch": "writer-forks-conversation.patch",
-    "fixed": "remade 2026-11-19"
+    "fixed": "remade 2026-11-20 (writer)"
   },
   {
     "name": "revision-cause-dropped",
@@ -435,19 +435,19 @@
     "name": "writer-unfenced",
     "breaks": "The owner's messages reach the objective writer outside the fence tags and without the closing note that they are records, so a message that reads like a command is taken as an order to the writer and comes back empty.",
     "patch": "writer-unfenced.patch",
-    "fixed": "2026-10-16; remade 2026-10-31"
+    "fixed": "remade 2026-11-20 (writer)"
   },
   {
     "name": "writer-no-system",
     "breaks": "The objective writer is sent no system prompt, so its rules never reach it.",
     "patch": "writer-no-system.patch",
-    "fixed": "remade 2026-11-19"
+    "fixed": "remade 2026-11-20 (writer)"
   },
   {
     "name": "writer-fence-closable",
     "breaks": "A fence tag typed in a message, or in the agent's words under it, is printed as it stands, so a message can close the fence and what follows reads as the writer's own instructions.",
     "patch": "writer-fence-closable.patch",
-    "fixed": "2026-10-16; remade 2026-10-31"
+    "fixed": "remade 2026-11-20 (writer)"
   },
   {
     "name": "clear-id-read-once",
@@ -2979,13 +2979,13 @@
     "name": "combined-meaning-missing",
     "breaks": "The prompt omits combined meaning; a model's obedience to the rule is proved by the harness cases.",
     "patch": "combined-meaning-missing.patch",
-    "fixed": "remade 2026-11-19"
+    "fixed": "remade 2026-11-20 (writer)"
   },
   {
     "name": "whole-before-steps-missing",
     "breaks": "The prompt omits whole before steps; a model's obedience to the rule is proved by the harness cases.",
     "patch": "whole-before-steps-missing.patch",
-    "fixed": "remade 2026-11-19"
+    "fixed": "remade 2026-11-20 (writer)"
   },
   {
     "name": "draft-counts-as-approval",
@@ -3093,13 +3093,13 @@
     "name": "agent-account-sets-limits",
     "breaks": "The objective writer is no longer told that what the agent says it did or did not do, and any limit it sets on its own work, is the agent's account and never a condition or limit unless a step of a plan the owner approved.",
     "patch": "agent-account-sets-limits.patch",
-    "fixed": "2026-11-03"
+    "fixed": "remade 2026-11-20 (writer)"
   },
   {
     "name": "outside-part-counts",
     "breaks": "The objective writer is no longer told that of the turn the owner answered only the part the owner took counts, that the agent's other turns count for nothing, or that the agent leaving some of the work to the owner is its account and no exception to done.",
     "patch": "outside-part-counts.patch",
-    "fixed": "2026-11-03; remade 2026-11-14"
+    "fixed": "remade 2026-11-20 (writer)"
   },
   {
     "name": "screen-changed-file-held",
@@ -3177,13 +3177,13 @@
     "name": "owner-typed-check-dropped",
     "breaks": "The objective writer drops a check, review or report the owner asked for in the owner's own message, treating it as the agent's method like one from an agent's routine.",
     "patch": "owner-typed-check-dropped.patch",
-    "fixed": "2026-11-10; remade 2026-11-19 against prompt group 7"
+    "fixed": "remade 2026-11-20 (writer)"
   },
   {
     "name": "approved-check-made-method",
     "breaks": "The objective writer is told that a check or test is the agent's method even when it is a step of a plan the owner approved, so 0.6.0's rule drops an approved step.",
     "patch": "approved-check-made-method.patch",
-    "fixed": "remade 2026-11-19"
+    "fixed": "remade 2026-11-20 (writer)"
   },
   {
     "name": "approved-check-called-waste",
@@ -3195,13 +3195,13 @@
     "name": "blocks-refusal-unrecognised",
     "breaks": "A build that takes only a text prompt (2.1.286 refuses blocks at its host check) is never recognised, so its record read is never retried as joined text and every look reads as an API error.",
     "patch": "blocks-refusal-unrecognised.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "fixed": "remade 2026-11-20 (writer)"
   },
   {
     "name": "approval-closing-dropped",
     "breaks": "The objective writer is not told that a yes closes a condition that only waited on the plan, so it lists that condition as dropped by the approval and the card asks the owner to settle what the yes already did.",
     "patch": "approval-closing-dropped.patch",
-    "fixed": "remade 2026-11-19"
+    "fixed": "remade 2026-11-20 (writer)"
   },
   {
     "name": "other-rows-unread",
@@ -3255,7 +3255,7 @@
     "name": "unshown-turn-approval-loose",
     "breaks": "The writer is told to mark a message after a turn none of which is shown whenever it approves, so go-ahead words such as \"keep going\" are taken for a plan approval and the card names a plan nobody approved.",
     "patch": "unshown-turn-approval-loose.patch",
-    "fixed": "remade 2026-11-19"
+    "fixed": "remade 2026-11-20 (writer)"
   },
   {
     "name": "unshown-turn-note-loose",
@@ -3927,7 +3927,7 @@
     "name": "writer-run-is-fact",
     "breaks": "The writer is told a run passing is a fact, so it marks the result working as something the agent's own run shows.",
     "patch": "writer-run-is-fact.patch",
-    "fixed": "remade 2026-11-19"
+    "fixed": "remade 2026-11-20 (writer)"
   },
   {
     "name": "look-rule-allows-unrun",
@@ -4299,7 +4299,7 @@
     "name": "writer-one-claim-dropped",
     "breaks": "The objective writer is no longer asked for one claim per condition, so it can write a fact and what the work does as one condition.",
     "patch": "writer-one-claim-dropped.patch",
-    "fixed": "remade 2026-11-19"
+    "fixed": "remade 2026-11-20 (writer)"
   },
   {
     "name": "rows-indent-dropped",
@@ -4461,7 +4461,7 @@
     "name": "writer-fact-shape-dropped",
     "breaks": "The objective writer is not told the shape of a fact, so its own facts (\"the scratch folder holds a sample text file whose contents are...\") read as works and wait for a look.",
     "patch": "writer-fact-shape-dropped.patch",
-    "fixed": "remade 2026-11-19"
+    "fixed": "remade 2026-11-20 (writer)"
   },
   {
     "name": "replay-now-not-read",
@@ -4485,7 +4485,7 @@
     "name": "replay-now-not-sent",
     "breaks": "The replay says \"--now\" sends a call as this build would, then sends it as logged: the old cap and no end line.",
     "patch": "replay-now-not-sent.patch",
-    "fixed": "remade 2026-11-19"
+    "fixed": "remade 2026-11-20 (writer)"
   },
   {
     "name": "card-floor-not-applied",
@@ -4683,13 +4683,13 @@
     "name": "quality-condition-dropped",
     "breaks": "The objective writer is not told a quality condition names what a person using the result would notice, so it writes \"as good as the best in its trade\", which never closes.",
     "patch": "quality-condition-dropped.patch",
-    "fixed": "remade 2026-11-19"
+    "fixed": "remade 2026-11-20 (writer)"
   },
   {
     "name": "objective-not-shown-old",
     "breaks": "The objective writer and the four states are garbled where they say what only proof from outside the agent's word can show, so the rep's states no longer match what the build sends.",
     "patch": "objective-not-shown-old.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "fixed": "remade 2026-11-20 (writer)"
   },
   {
     "name": "fact-name-any-h",
@@ -4797,7 +4797,7 @@
     "name": "objective-self-proving-dropped",
     "breaks": "The objective writer is not told that a self-proving step of an approved plan stays a condition with a question for the owner beside it, so the step is held as plain work and the owner is never asked whether to keep it.",
     "patch": "objective-self-proving-dropped.patch",
-    "fixed": "remade 2026-11-19"
+    "fixed": "remade 2026-11-20 (writer)"
   },
   {
     "name": "expectation4-plan-step-exempt",
@@ -4977,7 +4977,7 @@
     "name": "replay-now-missing",
     "breaks": "The replay's group 5 edit leaves out the \"now:\" line, so a replayed watch call is not what the build before the rewrite sent.",
     "patch": "replay-now-missing.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "fixed": "remade 2026-11-20 (writer)"
   },
   {
     "name": "merge-same-as-ignored",
