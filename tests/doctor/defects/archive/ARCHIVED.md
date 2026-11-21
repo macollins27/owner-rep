@@ -50,3 +50,17 @@
   being raised again at every look. Since 20 Nov 2026 (PR #68, fifth round) that is the rule: a
   part still dropped is said at every look, a repeat being noise and a part unsaid the harm. No
   successor; `heads-up-walk-drop-said-before-hidden` plants the opposite.
+- `heads-up-flag-names-every-part.patch`: planted a flag that holds every word of two dropped
+  parts standing for both, so the second lost its "Also looks dropped" line. Since 20 Nov 2026
+  (PR #68, commit 1061d6a) that is the rule: `namedBy` names every part a clause of the flag says
+  was dropped, and none of them is said again after it. Its successors are `flag-names-one-only`
+  (the flag stands for only the longest part again) and `flag-named-subset-hidden` (a part whose
+  words all sit inside a longer named part counts as named).
+- `heads-up-flag-speaks-ignored.patch`, `heads-up-named-hides-others.patch`,
+  `heads-up-flag-names-on-some-words.patch`, `flag-clause-scope-removed.patch`,
+  `flag-names-one-only.patch` and `flag-named-subset-hidden.patch`: each planted a fault in how a
+  flag stood for a dropped part (`names`, `namedBy`, `CLAUSE_BREAK`). Since 21 Nov 2026 (the final
+  review of #68) no flag stands for a part: whether a clause calls a part dropped or done cannot be
+  read from its words, so the part is always in the line and the flag in the why, and that code is
+  gone. Their successor is `heads-up-flag-lost` (the flag dropped from the why) with
+  `heads-up-not-carried` (the flag shown and the walk never read).

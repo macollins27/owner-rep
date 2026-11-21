@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 490d383..8b4eb00 100644
+index cf4083e..1570117 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3634,7 +3634,7 @@ const alsoDropped = (steps: readonly DroppedStep[]): string[] => [
- // it names (`names`). `drops` is every part this note says.
- export function headsUpOf(a: WatchAnswer, plans: readonly string[]): { note: { line: string; why: string } | null; drops: string[] } {
-   const own = a.flag === null ? null : { line: a.flag, why: a.why }
+@@ -3649,7 +3649,7 @@ const partsSaid = (texts: readonly string[], max: number): string => {
+ // shown to it and not carried. A carried part passes without the plans: the plan it came from may
+ // not be shown to this look.
+ export function standingDrops(a: WatchAnswer, plans: readonly string[], carried: readonly DroppedStep[] = []): DroppedStep[] {
 -  const fresh = (a.dropped ?? []).filter(d => inPlans(d.step, plans))
 +  const fresh = (a.dropped ?? []).filter(d => true)
-   const flag = a.flag
-   const named = flag === null ? [] : fresh.filter(d => names(flag, d.step)).sort((x, y) => contentWords(y.step).length - contentWords(x.step).length).slice(0, 1)
-   const rest = fresh.filter(d => !named.includes(d))
+   const alike = (x: DroppedStep, y: DroppedStep): boolean => samePart(x, y) || stepText(x.step) === stepText(y.step)
+   const once = carried.filter((c, i) => !carried.slice(0, i).some(e => alike(e, c)))
+   const kept = once

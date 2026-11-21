@@ -523,11 +523,17 @@ waiting or unreadable, and the writer may close it only once read; anything not 
 line in code's own words (the owner's coverage lines), so a gap can't be talked away by a model.
 
 **The walk.** Each reader walks every plan shown to it step by step against the record, and a step
-with no sign while later work goes on counts as dropped. The Heads up then raises the line "A step
-of the plan you approved looks dropped" in the code's words, whatever else it was going to say. It
+with no sign while later work goes on counts as dropped. The Heads up then raises the line "Plan
+step looks dropped:" with the parts named in it, in the code's words, whatever else it was going to
+say. The parts are in the line rather than the why because a short band keeps the line and cuts the
+why first: on a 24-row terminal at 60 columns, parts kept in the why never reached the screen. It
 raises it at every look where the step still looks dropped: nothing said at an earlier look is taken
 as proof the owner saw this part, because each way of matching one part against another hid a
-sibling the owner never saw, and a repeat costs only noise. The
+sibling the owner never saw, and a repeat costs only noise. A look that finds a drop while the
+briefing card is open holds its note and shows it when the card closes, unless a later look finds
+the part no longer dropped; one that finds a drop while another note is up replaces that note. A
+look waits for an objective write already running, so a turn that ends right after an approval is
+walked against the plan just approved. The
 walk says only what the record shows: it does not claim a step was or was not done where the record
 was cut, and it never moves the owner's ask.
 
@@ -707,7 +713,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 771 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 847 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: twelve real sessions in tmux, the strip captured to tests/live/captures
 ```

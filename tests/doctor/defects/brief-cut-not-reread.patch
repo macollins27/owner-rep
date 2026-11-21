@@ -1,12 +1,12 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 35606cf..7d5a824 100644
+index 7806d9d..b1359b4 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1733,7 +1733,6 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
+@@ -1952,7 +1952,6 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
      }
      let first = await ask('')
      // A reply cut short is read once more; cut short twice, no card is drawn and the toast says so.
 -    if ('reason' in first && first.reason === CUT_SHORT) first = await ask('')
      if ('reason' in first) {
-       await update($, viewA, () => 'row')
+       await toRow($)
        $.ui.toast(

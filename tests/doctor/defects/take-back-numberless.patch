@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 2992ce2..91b3b20 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3621,7 +3621,7 @@ const inPlans = (step: string, plans: readonly string[]): boolean =>
+ // with no plan number never does, since a part taken back wrongly is a silent drop and one kept
+ // wrongly only a repeat.
+ const samePart = (x: StepRef, y: StepRef): boolean => {
+-  if (x.n <= 0 || x.n !== y.n) return false
++  if (x.n !== y.n) return false
+   const a = contentWords(x.step)
+   const b = new Set(contentWords(y.step))
+   return a.length > 0 && a.length === b.size && a.every(w => b.has(w))

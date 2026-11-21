@@ -5,6 +5,12 @@ What changed in each release of Owner Rep, newest first. The full record is the
 
 ## Unreleased
 
+- **A dropped part of your plan stays said until it is done.** A note that a part of your plan
+  looks dropped is no longer taken back by a later look that never checked that part, nor
+  replaced by an unrelated note; several dropped parts lead with their count and take turns
+  in first place, so a short band shows each; a note whose every part the rep then finds done
+  comes down; and the rep never waits more than a minute for
+  its own reading of your newest words before it looks.
 - **The rep's brief is shorter and plainer.** The rules the watch, Brief me and the second
   asking read had grown by patches to about 5,000 words per call, with 35 to 44 "never"s and
   many rules said two or three times. They are rewritten as one system prompt of sections, each
@@ -17,7 +23,7 @@ What changed in each release of Owner Rep, newest first. The full record is the
   rules are now cached across a session's writes, and your messages reach it in the same fenced
   tags as the other calls. It writes only the conditions that are new or changed, since the rep
   keeps the rest, so it no longer restates what it already holds in new words or runs out of
-  time on a long job, and the conditions keep their order on the card. A question you ask the agent is kept as a condition until it is answered, so a question is no longer lost when your next message moves the step. What a serious owner plainly wants without saying it (the best in its trade, shown working on the real thing) is the standard every condition meets. It is no longer written as conditions of its own, so a job no longer gains a hands-on tester or a test suite you never asked for.
+  time on a long job, and the conditions keep their order on the card. A question you ask the agent is kept as a condition until it is answered, so a question is no longer lost when your next message moves the step. What a serious owner plainly wants without saying it (the best in its trade, shown working on the real thing) is the standard every condition meets. It is no longer written as conditions of its own, so a job no longer gains a hands-on tester or a test suite you never asked for. Nor does it gain guards you never asked for around a message that only told the agent something or asked one thing. A step you approved keeps its limits and timing ("nothing before launch" as well as "at launch"), and a condition that needs a person calls you "the owner", never by name.
 - **Text in the session cannot pass as the record's end or as the owner.** The record and the
   owner's messages are fenced in tags that end in a random code made once per session, and any
   such tag found inside is printed harmlessly, so an agent cannot close the fence by guessing it.
@@ -39,13 +45,16 @@ What changed in each release of Owner Rep, newest first. The full record is the
   a step done in part reads as part left out, and the agent's own word that it narrowed or left
   out part of an approved step reads as looking dropped.
 - **Briefings and messages are short again.** Each card part asks for one or two sentences of
-  about 25 words, under 40; each gap one sentence of about 8 words, under 20, at most six, a
+  about 20 words, under 40; each gap one sentence of about 8 words, under 20, at most six, a
   decision of yours one short question; and the message one sentence of about 12 words a line,
   under 150 words unless more than five things are asked. The aims sit below the limits so a reply written to them lands under them.
 - **A dropped plan step is said every time it looks dropped.** The heads-up above the row names
-  each part of an approved plan that looks dropped, at every look where it still looks dropped.
-  Nothing said before hides it: an earlier part, line or flag that looks like it is not taken as
-  proof the owner saw this one. A flag stands for a part only when it holds all of its words.
+  each part of an approved plan that looks dropped, in its first line so a short band shows it, at
+  every look where it still looks dropped. Nothing said before hides it: an earlier part, line or
+  flag that looks like it is not taken as proof the owner saw this one. A drop found while the
+  card is open is shown when the card closes, and one found while another note is up replaces it.
+  A turn that ends right after you approve a plan is checked against that plan. A flag stands for
+  a part only when one clause of it says that part was dropped and holds all of its words.
 - **A part the agent said it left out is never "not assessed".** Only a line marked "not
   assessed" by the rep counts as one; a part the agent admits it dropped reads as looking
   dropped, never as cut short by a shortened record.

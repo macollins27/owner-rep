@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 909ca5c..1d45fcf 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1683,7 +1683,6 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+   // until a pass has been shown them, so a turn that ends right after an approval is walked against
+   // the plan (live round on 9590250: a turn under 30 seconds got no walk). It waits for no message
+   // saved after it began, and never longer than LOOK_WAIT_MS (final review of #68).
+-  await writeTaken($, sid)
+   const rec = await loadRec($, sid)
+   // Typing past notes backs the watch off; a note to the rep is never skipped.
+   if (rec.skip > 0 && reason !== 'note') {

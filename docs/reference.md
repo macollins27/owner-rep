@@ -383,7 +383,7 @@ call writes (below):
    of "keep going"; it is the one place exact technical terms may stand, where the agent needs
    them; the own-words call and the check read the same section; the briefing's, the own-words
    call's and the check's answer forms ask for lengths in words, targets the gate does not
-   enforce (G40): `SHORT_PART` for "stands", "means" and "next" (one or two sentences, about 25 words, under 40), `LEFT_ITEMS`
+   enforce (G40): `SHORT_PART` for "stands", "means" and "next" (one or two sentences, about 20 words, under 40), `LEFT_ITEMS`
    for "left" (each item one sentence of about 8 words and under 20, at most six, the rest folded
    into "- and N smaller gaps"; the owner's own decision is one short plain question, which kept a
    held go-ahead question, naming the step and its condition, from reaching the limit), and `MESSAGE_FORM` for the message (each line one sentence of
@@ -555,26 +555,55 @@ call writes (below):
    it or show it; `headsUpOf`'s why says the same.
 
    `headsUpOf`, called by the look after the reader answers, decides what the owner sees and
-   returns the parts it said (`drops`); `headsUp` is its note alone. A step
-   walked `no sign` or `looks dropped` takes the line, `A step of the plan you approved looks
-   dropped: <step>.`, cut at `DROPPED_STEP_MAX` (160), whatever the reader's flag was about. Its
-   why for `no sign` says only what the rep can know, that the record shows later work and does
-   not show the step done, never that the record holds nothing of it. The
-   flag and its why move into the why after `Also:`, and further dropped steps after `Also looks
-   dropped:`, so no concern is lost. This outranks even a flag about harm, whose words stay in the
-   why. A step walked `not assessed` has no say. A flag names a dropped part (`names`) when it
-   speaks of a drop and holds every one of the part's content words; it then keeps the reader's
-   wording and the part is not printed again under its own "Also looks dropped". It names one part
-   at most, the longest it holds, and the others go under its why, at most `DROPPED_ALSO_MAX` (3)
-   by name. A flag about another part of the step, sharing only some of its words, names nothing.
+   returns the parts its line names (`drops`); `headsUp` is its note alone. A step
+   walked `no sign` or `looks dropped` takes the line, `Plan step looks dropped: <part>.` or
+   `N plan steps look dropped: <part>; <part>.`, each part cut at `DROPPED_STEP_MAX` (160), at most
+   `1 + DROPPED_ALSO_MAX` (4) by name and then `; and N more` (`partsSaid`), whatever the reader's
+   flag was about. The same text of two plans is named once (`textsOf`). The parts are in the line
+   because `fitNote` keeps the line before the why on a short band; several lead with their count,
+   which a one-row band keeps, and take turns in first place: `standingDrops` gives them an order
+   that holds from look to look (the carried parts first, each in its place, a part dropped again
+   keeping its place, then the new ones), `headsUpOf`'s `turn` turns it, and the turn (`lookTurns`)
+   moves only when a note naming several parts reaches the screen, drawn by the look or by
+   `showHeld` (`manyParts`), never at a note held and replaced unseen. So on a band that cuts the
+   line each part reaches the owner in turn. Its why for `no sign` says only
+   what the rep can know, that the record shows later work and does not show the step done, never
+   that the record holds nothing of it. The flag and its why move into the why after `Also:`, so no
+   concern is lost. This outranks even a flag about harm, whose words stay in the why. A step
+   walked `not assessed` has no say. A flag never stands for a dropped part, even one whose words it
+   holds: whether a clause calls a part dropped or done cannot be read from its words ("skipped, and
+   the agent did run the install check"), so the part is always in the line and the flag always in
+   the why. A part the flag speaks of is then said twice, which is noise; one said nowhere would be
+   the harm.
+
+   `walkLine` reads `- #n: <part> | <mark>` and the forms readers also write (`#6 step 2,`, `#6.1:`,
+   `#6a:`, `#6 part 2:`, `#6 verification:`, `#6 (step 1):`, `#6 - `, `**#6**:`, `1. #6:`). A line
+   with no plan number is read with 0 for it and can still be a dropped part, matched to the plans
+   by its words; it is never counted as a step not assessed.
 
    A part the walk shows as looking dropped is said at every look where it looks dropped. Nothing
    said at an earlier look hides it: no part, line or flag shown before is matched against it,
    since every such matching (a likeness of parts, the plan's words, a flag's words) was found to
    hide a sibling part the owner never saw, and a silent drop is the harm the rep exists to prevent
-   while a repeat is noise. On c440a6ae's looks 41 to 48 (two runs, each replayed twice) the
-   dropped Monitor part was said at every look the walk marked it dropped: 8 of 8, 6 of 6, 8 of 8
-   and 7 of 7. A record from an earlier build that holds `saidDrops` loads, the field ignored. The
+   while a repeat is noise. On c440a6ae's looks 41 to 48 (two runs, each replayed twice, with Fine
+   pressed between looks) the dropped Monitor part was said at every look the walk marked it
+   dropped: 8 of 8, 6 of 6, 8 of 8 and 7 of 7. A note found while the briefing card is open, or
+   while the session is not the one on screen, is held in `heldNotes` and shown when the band returns to the row
+   (`showHeld`, called by `toRow` and when the session is entered); a note found while another note
+   is on screen replaces it. The parts a held note says, and while the view is the note the parts of
+   the note this mod drew (`shownParts`), are carried into the next look's note (`standingDrops`):
+   a look shown another plan, or answering with a plain flag, says them still. A carried part goes
+   only when a walk line takes it back (`samePart`): the same plan number, above 0, and the same set
+   of content words, marked anything but dropped or `not assessed` (the answer's `cleared`). A
+   sibling, a shorter part, a line with no plan number or one of another plan never takes it back,
+   since a part taken back wrongly is a silent drop and one kept wrongly only a repeat. A held note
+   whose every part is taken back goes, and so does this mod's note on screen: when a look's walk
+   takes back every part it said and the look draws nothing of its own, the band returns to the row
+   (`toRow`, which then draws a held note). The parts of the note on screen are carried only for the
+   session on screen. `look` first waits for an objective write in flight for the
+   session (`writeTaken`): until a pass shown the owner's newest message number saved when the look
+   began has ended, however it ended, or the writer has stopped, and never longer than
+   `LOOK_WAIT_MS` (60 s). A message saved after the look began is not waited for. A record from an earlier build that holds `saidDrops` loads, the field ignored. The
    register's check that a line was not shown before (`same`) applies only to a note with no
    dropped parts: a plain flag already shown is not shown again, while the same step of two plans,
    or a step still dropped, gives the same line and each is said.
@@ -872,7 +901,7 @@ holds or moved, come its `approved:` lines: one `approved: #n | all` or
 an approval are `OBJECTIVE_SYSTEM`'s section "Plans the owner approved": what a yes is, a draft
 with the owner's words read as one message, each step of an approved plan its own condition
 after the whole plan is read, a clash kept as both sides and an open "Settle with the owner
-which stands" condition, a plan's statements of fact held as the agent's claims, and, of the turn the owner answered, only the part the owner took counted, the rest of that turn and the agent's other turns counting for nothing. Outside that section, the rule "What moves it" holds that the agent's progress, plan, reasons, step names, its "done", what it says it did or found, and any limit it sets on its own work (that it installed nothing, will ask first, or left some to the owner) are the agent's account, which enters the objective only through a plan the owner approved. The prompt is the prompt audit's §6.6 rewrite (2,005 words, two "never"s), with the kinds, the shape of a fact and one claim per condition added since; a test holds it to that size. `takeObjective` applies it: the first
+which stands" condition, a plan's statements of fact held as the agent's claims, and, of the turn the owner answered, only the part the owner took counted, the rest of that turn and the agent's other turns counting for nothing. Outside that section, the rule on what moves the objective holds that the agent's progress, plan, reasons, step names, its "done", what it says it did or found, and any limit it sets on its own work (that it installed nothing, will ask first, or left some to the owner) are the agent's account, which enters the objective only through a plan the owner approved. The prompt is the prompt audit's §6.6 rewrite (2,004 words, two "never"s), with the kinds, the shape of a fact and one claim per condition added since; a test holds it to that size. `takeObjective` applies it: the first
 objective is taken as it stands; after that a write is taken only when it saw a message of the owner's
 or a note past `from` (`hisFrom` never counts a draft), so neither the agent's words nor the
 rep's drafts can move it and a write that lands late cannot take a newer one's place. A

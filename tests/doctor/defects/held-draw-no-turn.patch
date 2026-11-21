@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 7778e4d..cad7538 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1794,7 +1794,6 @@ async function showHeld($: EngineInterface): Promise<void> {
+   if (held === undefined) return
+   heldNotes.delete(sid)
+   shownParts.set(sid, held.parts)
+-  if (manyParts(held.parts)) lookTurns.set(sid, (lookTurns.get(sid) ?? 0) + 1)
+   // Queued, not awaited: a caller may be inside this session's own change already.
+   changeRec($, sid, r => {
+     r.seen = [...r.seen, held.note.line].slice(-SEEN_MAX)

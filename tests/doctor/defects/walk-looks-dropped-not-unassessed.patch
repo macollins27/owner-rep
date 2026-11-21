@@ -1,12 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 914c369..7047bb0 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3547,7 +3547,7 @@
+@@ -3538,7 +3538,7 @@ function stepsOf(part: string | undefined, walk: boolean): { notAssessed?: StepR
    for (const line of clean(part).split('\n')) {
      if (walk) {
        const w = walkLine(line)
--      if (w !== null && /^not assessed\b/i.test(w.mark)) out.push({ n: w.n, step: w.step })
-+      if (w !== null && /^(not assessed|looks dropped)\b/i.test(w.mark)) out.push({ n: w.n, step: w.step })
+-      if (w !== null && w.n > 0 && /^not assessed\b/i.test(w.mark)) out.push({ n: w.n, step: w.step })
++      if (w !== null && w.n > 0 && /^(not assessed|looks dropped)\b/i.test(w.mark)) out.push({ n: w.n, step: w.step })
        continue
      }
      const m = /^\s*[-*•]?\s*#(\d+)\s*:\s*(.+?)\s*$/.exec(line)
