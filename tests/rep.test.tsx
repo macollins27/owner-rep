@@ -8822,7 +8822,9 @@ test('objectivePrompt shows the owner\'s messages with their numbers and the age
   expect(objectiveSystem('ab12cd34')).not.toMatch(/<owner_messages>|his_messages/)
   expect(p).toMatch(/Jobs before this one[^]*- An earlier job\./)
   expect(p).toMatch(/^objective: holds \| moved$/m)
-  expect(OBJECTIVE_SYSTEM).toContain("A message that bounds the next step, such as asking for one thing only, leaves the job as it was.")
+  // The live check of #70: a first message ending "write a two-line README and stop" left the two lines as a
+  // condition of the whole job. A step's work is the job's; a bound on the step, first message included, is not.
+  expect(OBJECTIVE_SYSTEM).toContain("A step's work is part of the job; a bound on that step (one thing only, a first small version, stop after it), in the first message or a later one, is no condition of done and leaves the job as it was.")
   expect(OBJECTIVE_SYSTEM).toMatch(/guided to the finish/)
   // 0.6.0: an agent's routine, brief or checks are method, a condition only where the owner asked for it.
   expect(OBJECTIVE_SYSTEM).toContain("The agent's method (a routine, a brief carried out step by step, a check or test run, a review, a report) is a condition only when the owner asked for that very thing, in their own message or a plan they approved.")
@@ -19039,7 +19041,8 @@ describe('the call log: its pieces', () => {
       negatives: (t.match(/\b(?:not|no|nothing|none|never|don['’]t)\b/gi) ?? []).length,
       capitals: (text.match(/\b[A-Z]{2,}\b/g) ?? []).filter(w => !ABBREVIATIONS.has(w)).length,
     }
-    const TARGET = { words: 2007, never: 2, negatives: 41, capitals: 0 }
+    // 2029 words: 2007, and 23 for the step-bound rule the live check of #70 showed was needed.
+    const TARGET = { words: 2029, never: 2, negatives: 41, capitals: 0 }
     for (const k of ['words', 'never', 'negatives', 'capitals'] as const) expect(`objective system ${k}: ${c[k]} <= ${TARGET[k]}: ${c[k] <= TARGET[k]}`).toMatch(/: true$/)
     // A word in capitals for emphasis still counts.
     expect(('Write it. NEVER copy.'.match(/\b[A-Z]{2,}\b/g) ?? []).filter(w => !ABBREVIATIONS.has(w))).toEqual(['NEVER'])
