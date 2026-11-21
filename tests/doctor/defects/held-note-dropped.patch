@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 909ca5c..c0fa8b4 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1758,7 +1758,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+       after.seen = [...after.seen, said.line].slice(-SEEN_MAX)
+       await update($, noteA, () => note)
+       await update($, viewA, () => 'note')
+-    } else heldNotes.set(sid, { note, parts })
++    } else void note
+   }
+ }
+ 

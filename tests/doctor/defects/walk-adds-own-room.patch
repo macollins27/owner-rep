@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1840,7 +1840,7 @@
+ Exactly these lines, nothing before or after:
+ 
+ now: <the step the agent is on now, in plain words, one sentence>
+-${plan ? `steps:\n${STEP_LINE}\n` : ''}state: <working | stopped | asking | plan-waiting>
++${plan ? `steps:\n${STEP_LINE}\n(Walk every step of every plan with care, line by line, before you give the state, and give each step its own line even when two steps say the same thing.)\n` : ''}state: <working | stopped | asking | plan-waiting>
+ flag: none
+ 
+ or, in place of "flag: none":

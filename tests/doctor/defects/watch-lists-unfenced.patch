@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 12261ff..8843906 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1820,7 +1820,7 @@ Do three things.
+ 3. Decide whether there is one thing the owner should know right now: something the owner would very likely miss, and that costs the owner money, time, wasted work, a wrong result, a decision they are in the middle of, or work called finished that is not. The bar is very high, and most looks have nothing to flag. Leave out anything the owner is already discussing with the agent, anything the agent plainly said and the owner answered, and the lines below. Interesting is not important. When in doubt, flag none.
+ 
+ Lines already shown to the owner:
+-${fenceTags(seen)}
++${seen}
+ 
+ Notes the other watcher already showed the owner:
+ ${fenceTags(others)}

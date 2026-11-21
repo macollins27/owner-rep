@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 8fd04cc..3b39dc1 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -7901,7 +7901,7 @@ export function editSaved(kind: CallKind, system: string, prompt: string | Promp
+   let task = whole.slice(taskAt)
+   let sys = system
+   if (apply.includes('frame') && !OLD_FRAME.test(task)) return { why: 'the old frame is not in it' }
+-  if (rewrite && (!whole.startsWith(PRE_RW_RECORD_OPEN) || whole.slice(fence, gap + 2) !== PRE_RW_RECORD_CLOSE)) return { why: 'its record is not in the fence of the build before the rewrite' }
++  if (rewrite && false && (!whole.startsWith(PRE_RW_RECORD_OPEN) || whole.slice(fence, gap + 2) !== PRE_RW_RECORD_CLOSE)) return { why: 'its record is not in the fence of the build before the rewrite' }
+   // The no-think line first, since it sits after the frame.
+   if (apply.includes('no-think')) {
+     const head = task.match(OLD_FRAME)?.[0] ?? ''

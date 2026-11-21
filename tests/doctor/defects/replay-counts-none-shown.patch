@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 12261ff..f59709f 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -5282,7 +5282,7 @@ const items = (s: string | undefined): string[] =>
+   clean(s)
+     .split('\n')
+     .map(l => l.replace(/^\s*[-*•]\s*/, '').trim())
+-    .filter(l => l !== '' && !/^\(?(?:nothing|none)\)?\.?$/i.test(l))
++    .filter(l => l !== '' && !/^nothing\.?$/i.test(l))
+ 
+ // A reply that did not reach "looked:" is read as nothing (endsWhole).
+ export function parseCheck(text: string): CheckAnswer {

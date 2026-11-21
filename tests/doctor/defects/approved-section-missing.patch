@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 5a5ee04..74ee987 100644
+index 8fd04cc..501309c 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1759,7 +1759,7 @@ function memoryText(m: Memory): string {
+@@ -1716,7 +1716,7 @@ function memoryText(m: Memory, fence?: string): string {
        : `"${objectiveText(o, false)}"${o.movedAt === null ? '' : `\n(${revisedLine(o)})`}`
    const onJob = o === null ? m.owner : m.owner.filter(x => x.n >= o.since)
    const approved = m.approved
--  const section = approved === undefined || approved.blocks.length + approved.told.length === 0 ? '' : `${APPROVED_HEAD}\n\n${[...approved.blocks, ...approved.told].join('\n\n')}\n\n`
-+  const section = approved !== undefined || approved === undefined ? '' : `${APPROVED_HEAD}\n\n${[...approved.blocks, ...approved.told].join('\n\n')}\n\n`
+-  const section = planHeld(m) ? `${APPROVED_HEAD}\n\n${[...(approved?.blocks ?? []), ...(approved?.told ?? [])].join('\n\n')}\n\n` : ''
++  const section = false ? `${APPROVED_HEAD}\n\n${[...(approved?.blocks ?? []), ...(approved?.told ?? [])].join('\n\n')}\n\n` : ''
    const brief =
      m.lastBrief === undefined
        ? '(none yet)'

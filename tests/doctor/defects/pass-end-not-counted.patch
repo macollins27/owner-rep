@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 909ca5c..d7c70cb 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1583,7 +1583,6 @@ async function writeObjective($: EngineInterface, sid: string, onlyFirst: boolea
+       if (onScreen(sid)) await update($, readingA, () => after.objective)
+     }
+     onlyFirst = false
+-    passEnded(entry, Math.max(shown, passSaw))
+     // A message of the owner's or a note that came in during the write is
+     // written now: one whose request joined this run, or one saved after the
+     // write was shown the messages; so is what the write left, a message still

@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index c342914..fd7e1c5 100644
+index 8fd04cc..74d86c6 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1841,7 +1841,7 @@ export function briefPrompt(m: Memory): string {
- // The briefing's request, after what the rep knows.
- export const BRIEF_REQUEST = `## This request
+@@ -1859,7 +1859,7 @@ export function briefPrompt(m: Memory): string {
+ export function briefRequest(plan: boolean): string {
+   return `## This request
  
--Based on the record above: the owner pressed the key. Give the owner the short briefing described below, measured against the objective above. Look at what the agent actually did in the record, including the helpers it launched and what they reported, not at what the agent says it did. Where the next step depends on a claim the record does not show, say "not shown" and have the message ask for the proof. If the owner sent your last message to the agent, say whether the agent did the step that message asked for.
-+The owner pressed the key. Give the owner the short briefing described below, measured against the objective above. Look at what the agent actually did in the record, including the helpers it launched and what they reported, not at what the agent says it did. Where the next step depends on a claim the record does not show, say "not shown" and have the message ask for the proof. If the owner sent your last message to the agent, say whether the agent did the step that message asked for.
+-Based on the record above: the owner pressed Brief me. Give the briefing below, measured against the objective.
++The owner pressed Brief me. Give the briefing below, measured against the objective.
  
- ${decidingText(BRIEF_DECIDING)}
+ ${decidingText(plan, true)}
  

@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 7778e4d..0fe3ab6 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1738,7 +1738,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+     const held = heldNotes.get(sid)
+     const noteUp = view === 'note' && onScreen(sid)
+     const onNote = noteUp ? (shownParts.get(sid) ?? []) : []
+-    const carried = [...(held?.parts ?? []), ...onNote]
++    const carried = [...(held?.parts ?? [])]
+     const plans = fill?.blocks ?? []
+     const parts = standingDrops(answer, plans, carried)
+     // The turn moves when a note of several parts reaches the screen, here or in `showHeld`.

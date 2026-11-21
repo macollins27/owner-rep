@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3757,7 +3757,7 @@
+   const leftOut = clean(p.left)
+     .split('\n')
+     .map(l => l.replace(/^\s*[-*•]\s*/, '').trim())
+-    .filter(l => l !== '' && !/^\(?(?:nothing|none)\)?\.?$/i.test(l))
++    .filter(l => l !== '' && !/^\(?nothing\)?\.?$/i.test(l))
+   // A card with anything left out cannot also say the job is going well; the
+   // left-out list wins, whatever the model wrote on the "well" line.
+   return {

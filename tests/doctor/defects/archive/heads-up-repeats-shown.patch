@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3687,7 +3687,7 @@
+       return mine.every(w => kept.has(w)) && likeness(x.part, d.step) >= SAID_LIKENESS
+     })
+   }
+-  const fresh = (a.dropped ?? []).map(d => ({ ...d, plan: planOf(d.n, plans) })).filter(d => inPlans(d.step, plans) && !saidBefore(d))
++  const fresh = (a.dropped ?? []).map(d => ({ ...d, plan: planOf(d.n, plans) })).filter(d => inPlans(d.step, plans))
+   const flag = a.flag
+   const named = flag === null ? [] : nearest(fresh.filter(d => speaksOf(flag, d.step)), s => heldIn(s, flag)).slice(0, 1)
+   const rest = fresh.filter(d => !named.includes(d))

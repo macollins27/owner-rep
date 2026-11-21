@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1525,7 +1525,7 @@
+ // The walk's dropped lines reach the owner from the walk itself (`headsUpOf`), so a flag spent on one
+ // is a concern lost: at c440a6ae's look 48 the flag named a dropped step the walk carried, and the
+ // shell-kill line the agent knowingly left in went unsaid.
+-export const WALK_WATCH = "Each line with no sign while later work goes on, or that looks dropped, reaches the owner from the walk on its own, so give the flag to the most important concern the walk does not carry, at the same bar. A flag about a step that looks dropped names what shows it, the agent's own words or the list it is missing from, and asks the agent to do it or show it."
++export const WALK_WATCH = "A flag about a step that looks dropped names what shows it, the agent's own words or the list it is missing from, and asks the agent to do it or show it."
+ export const WALK_BRIEF = 'Work out each line\'s state without writing the walk out. Each line with no sign while later work goes on, or that looks dropped, goes first under "left:" with the plan\'s number. Each step not assessed goes under "unassessed:".'
+ export const UNASSESSED_PART = 'unassessed:\n- #<n>: <a step of an approved plan you could not assess>'
+ export const UNASSESSED_NONE = 'Write "- none" under "unassessed:" when there is none.'

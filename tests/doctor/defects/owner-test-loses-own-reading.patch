@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 12261ff..8aba4f2 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3174,7 +3174,7 @@ const REP_WRITE_BODY = `- Plain words that a person who does not read code takes
+ - "The agent" when it acted on its own, "you" when the responsibility is the owner's, "we" when it is shared. Call the owner "you", by no name or pronoun.
+ - A translation of what matters, not a retelling of the agent's message, and not the owner's own rules recited back.
+ - No hedging, labels, scores or emoji.
+-- After reading, the owner knows what is really going on and what to do next, without reading anything technical or taking the agent's word for it.`
++- After reading, the owner knows what is really going on and what to do next.`
+ export const REP_WRITE = `## How you write to the owner\n\n${REP_WRITE_BODY}`
+ // G28 and G40 (prompt audit §6.1): the message is a prompt to a coding agent that the owner sends
+ // as their own turn, so it follows the same rules as any prompt to one: one line per thing asked,

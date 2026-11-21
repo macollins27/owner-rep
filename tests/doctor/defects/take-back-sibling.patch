@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 2992ce2..0db4467 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3624,7 +3624,7 @@ const samePart = (x: StepRef, y: StepRef): boolean => {
+   if (x.n <= 0 || x.n !== y.n) return false
+   const a = contentWords(x.step)
+   const b = new Set(contentWords(y.step))
+-  return a.length > 0 && a.length === b.size && a.every(w => b.has(w))
++  return a.length > 0 && a.some(w => b.has(w))
+ }
+ 
+ export const DROPPED_STEP_MAX = 160

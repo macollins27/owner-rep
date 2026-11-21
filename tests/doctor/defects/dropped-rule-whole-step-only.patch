@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 12261ff..6c16d0e 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -1775,7 +1775,7 @@ export const contextLine = (m: Memory): string =>
+ // watch's, and the briefing's with the verdict's. They restate rules REP_SYSTEM holds and add none.
+ // The rule on a dropped step is given only while a plan is held.
+ const DECIDE_SHOWN = 'A condition is shown only by the proof "What counts as shown" names; a test passing shows that it passed, and not that the result works.'
+-export const DECIDE_DROPPED = "A step of an approved plan, or a part of one, with no sign while later work goes on or that looks dropped is the owner's ask dropped."
++export const DECIDE_DROPPED = "A step of an approved plan with no sign while later work goes on or that looks dropped is the owner's ask dropped."
+ const DECIDE_VERDICT = 'While any condition is open or not shown, the verdict is "continue", and no part says the work is finished or going well.'
+ const DECIDE_ASKED = 'The owner is asked only for the message to send and one plain question per decision of theirs.'
+ const DECIDE_PLAIN = 'Use plain words, and no term the owner did not use.'

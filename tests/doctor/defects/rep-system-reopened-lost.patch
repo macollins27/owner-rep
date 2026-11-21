@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index fa5a469..8ac7a66 100644
+index 8fd04cc..3ab2d92 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -6773,7 +6773,7 @@ function toRepSystem(kind: CallKind, system: string, task: string): { system: st
+@@ -7699,7 +7699,7 @@ function toRepSystem(kind: CallKind, system: string, task: string): { system: st
    after += PRE_G2_STANDING.length
    const sizeAt = memory.indexOf("\n\nThe conversation's size: ", after)
    if (sizeAt < 0) return lost
--  const known = `## What you already know\n\nThe objective of this job, as the rep holds it:\n${memory.slice(top.length, markAt)}${reopened ? `\n${REOPENED_LINE}` : ''}${memory.slice(after, sizeAt)}\n\nThe session's size: ${memory.slice(sizeAt + "\n\nThe conversation's size: ".length)}`
+-  const known = `## What you already know\n\nThe objective of this job, as the rep holds it:\n${memory.slice(top.length, markAt)}${reopened ? `\n${PRE_RW_REOPENED_LINE}` : ''}${memory.slice(after, sizeAt)}\n\nThe session's size: ${memory.slice(sizeAt + "\n\nThe conversation's size: ".length)}`
 +  const known = `## What you already know\n\nThe objective of this job, as the rep holds it:\n${memory.slice(top.length, markAt)}${memory.slice(after, sizeAt)}\n\nThe session's size: ${memory.slice(sizeAt + "\n\nThe conversation's size: ".length)}`
-   return { system: REP_SYSTEM, task: `${known}\n\n${request}` }
+   return { system: PRE_RW_REP_SYSTEM, task: `${known}\n\n${request}` }
  }
  // Prompt group 3 (G5, G10, G12): each text the build after group 2 sent that this build words

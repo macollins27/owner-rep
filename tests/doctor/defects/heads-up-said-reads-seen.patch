@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 7778e4d..5e43a53 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1735,6 +1735,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+     // The parts a note held, or this mod's note on screen, said were dropped stay in this look's
+     // note until its walk takes each back (final review of #68: a look shown another plan, or
+     // answering with a plain flag, took back or replaced a drop the owner never saw).
++    answer = { ...answer, dropped: answer.dropped?.filter(d => !after.seen.some(s => s.toLowerCase().includes(d.step.toLowerCase()))) }
+     const held = heldNotes.get(sid)
+     const noteUp = view === 'note' && onScreen(sid)
+     const onNote = noteUp ? (shownParts.get(sid) ?? []) : []

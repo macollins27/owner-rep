@@ -362,7 +362,12 @@ looked and what a look said both missed and misfired, so the sign-off now rests 
 rather than on the reader's words. The record prints `(run <id>)`, the end of the call's id,
 beside each call that starts a helper or a Codex run, and a signing look names that run: "look
 by helper <run>", "look by Codex <run>", or "look by the check", which signs only in the check's
-own marks. The rep keeps each run as its call returns: a helper's answer or Codex's output, its
+own marks. A replay of the prompt rewrite (#68) found the watch and the briefing marking works
+conditions shown "by the check" when no check had run, so only the check is offered that form;
+the readers are offered the run forms alone and told that their own reading of the record is
+no one's look. A later replay found the watch marking "reviews it before it is relied on" shown
+on reviews that began after the guard was live, so a condition about order now needs the record
+to show that order. The rep keeps each run as its call returns: a helper's answer or Codex's output, its
 end kept to 300 characters, whether it failed, and whether it changed the work (a helper's own
 Edit or Write call, a shell call of its that writes in the folder, its result's edit count, a
 Codex run with a writing sandbox or approvals bypassed, a `claude -p` run outside plan mode). A
@@ -470,8 +475,9 @@ was built from, so the agent's words alone never move it.
 
 The record reaches the model as entries labelled `entry 1`, `entry 2` and so on (never `#1`, the
 form the owner's numbered messages take, so no entry can be cited as one of the owner's), fenced
-as data, under a system prompt saying the task means that record wherever it speaks of the
-conversation. Rows after the job's earliest open approval are given whole up to the budget.
+as data between tags that end in the session's own fence, eight random letters and digits made
+once per session, so nothing the agent writes into the record can close the fence by guessing its
+tag; the owner's messages are fenced the same way, so an agent's text cannot pass as theirs. Rows after the job's earliest open approval are given whole up to the budget.
 Earlier ones are cut, each message to 3,000 characters and each tool's input and result to 600, a
 compaction summary up to 40,000, and the oldest are left out past 200,000 characters, with a line
 saying how many. Every cut is marked inside the field it falls in. The approved plans themselves
@@ -515,8 +521,17 @@ waiting or unreadable, and the writer may close it only once read; anything not 
 line in code's own words (the owner's coverage lines), so a gap can't be talked away by a model.
 
 **The walk.** Each reader walks every plan shown to it step by step against the record, and a step
-with no sign while later work goes on counts as dropped. The Heads up then raises the line "A step
-of the plan you approved looks dropped" in the code's words, whatever else it was going to say. The
+with no sign while later work goes on counts as dropped. The Heads up then raises the line "Plan
+step looks dropped:" with the parts named in it, in the code's words, whatever else it was going to
+say. The parts are in the line rather than the why because a short band keeps the line and cuts the
+why first: on a 24-row terminal at 60 columns, parts kept in the why never reached the screen. It
+raises it at every look where the step still looks dropped: nothing said at an earlier look is taken
+as proof the owner saw this part, because each way of matching one part against another hid a
+sibling the owner never saw, and a repeat costs only noise. A look that finds a drop while the
+briefing card is open holds its note and shows it when the card closes, unless a later look finds
+the part no longer dropped; one that finds a drop while another note is up replaces that note. A
+look waits for an objective write already running, so a turn that ends right after an approval is
+walked against the plan just approved. The
 walk says only what the record shows: it does not claim a step was or was not done where the record
 was cut, and it never moves the owner's ask.
 
@@ -696,7 +711,7 @@ from the session's transcript file under `~/.claude/projects/` when it is not.
 
 ```
 claude plugin validate .      # manifest, hooks, and every engine call and state key
-claude plugin test .          # 759 tests in tests/rep.test.tsx, a few seconds
+claude plugin test .          # 840 tests in tests/rep.test.tsx, a few seconds
 python3 tests/doctor/doctor.py  # plants each known defect in a throwaway copy; the suite must fail
 tests/live/live.sh              # on demand: twelve real sessions in tmux, the strip captured to tests/live/captures
 ```
@@ -784,6 +799,12 @@ to an agent by itself.
   measured cost beside the button.
 - **The check runs outside the session.** A headless, read-only run, so the agent never
   hears from the rep and the owner gets no permission prompts.
+- **Fewer, plainer rules.** By November 2026 the readers' brief had grown by patches to about
+  5,000 words per call, with 35 to 44 "never"s and many rules said two or three times. The prompt
+  audit of 14 November rewrote it as one system prompt of sections, each rule said once, plainly,
+  with its reason, the rules that decide an answer restated in a line each after the record. Each
+  call now sends about 3,300 words, none of them "never" and none in capitals for emphasis, and a
+  unit test holds every call to its target, so the brief cannot grow back the same way.
 - **Proven on real sessions.** Each route was pressed live by the owner before the next was
   built: the row, the briefing, the watch, the note to the rep, and two real checks on the session
   that built it. A keyboard chord for the Rep button could not be proven and was removed.

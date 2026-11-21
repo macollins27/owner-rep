@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 914c369..e37f046 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3640,7 +3640,7 @@ const namedBy = (flag: string, steps: readonly DroppedStep[]): DroppedStep[] =>
+     const words = contentWords(d.step)
+     if (!out.some(o => words.every(w => contentWords(o.step).includes(w)))) out.push(d)
+   }
+-  return out
++  return out.slice(0, 1)
+ }
+ 
+ // What the Heads up says for a look. A step the walk marks as dropped outranks whatever the flag
