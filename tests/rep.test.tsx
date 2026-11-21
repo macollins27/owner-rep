@@ -2137,7 +2137,11 @@ test('rule: every read, the check, the writer and the own-words call hold one st
   expect(askAgain(OPEN_JOB_OPEN, 'gave no verdict')).toContain('asking for the proof it still needs.')
   expect(ownWordsPrompt(m, OPEN_JOB_OPEN, card as never)).toContain("and where proof is missing, the proof that would show it: a fact's command and what it printed, or a hands-on look at the real thing")
   const check = checkPrompt({ sessionId: 's', cwd: '/w', copy: '/c', reading: objectiveText(o), conditions: o.done, shown: [], owner: m.owner, brief: card as never, writtenAt: '10:00', from: 1, unanswered: [], guarded: [] } as never)
-  expect(check).toContain(`It names what is false and asks for what is missing and for ${named}.`)
+  expect(check).toContain(`It names what is false, asks for what is missing and for ${named}, and says what the best version looks like where the work falls short.`)
+  // The check rewrites the whole card, so its "left" keeps every gap the briefing's does: the product
+  // never used, effort on self-proving pieces, a claim that matters and is not shown, and a chore left
+  // "for you" (the North Star: the agent's unfinished work, listed until it is done).
+  expect(check).toContain('the product never opened and used, effort spent on pieces that only prove the agent\'s own work, a claim that matters and is not shown, or a chore the agent left "for you", which is its unfinished work; only gaps your checking supports')
   expect(rep.CHECK_SYSTEM).toContain(rep.REP_SHOWN)
   // The ninth live test: shown false only where the record shows the opposite, in the reads and the check.
   expect(REP_SYSTEM).toContain('A claim is shown false only where the record shows the opposite: a guess at what a command may have done shows nothing, so a claim the record shows neither way is "not shown", and nothing you write calls it untrue or inaccurate.')
@@ -18936,8 +18940,11 @@ describe('the call log: its pieces', () => {
     // number so that nothing it carries can grow under it: the shared sections have grown 93 words
     // under the readers' own targets since the audit counted them at 1,055, the card's limits (40 and
     // 20 words) were put back after the audit (b637eea), and the forms of a look the check writes
-    // (CHECK_LOOKS, G44) add 76. Its "never"s, negatives and capitals stay within the audit's.
-    const allowed = { words: 3218, never: CHECK.never, negatives: CHECK.negatives, capitals: CHECK.capitals }
+    // (CHECK_LOOKS, G44) add 76. The review of #73 put back 49 words the first cut had lost: the
+    // check's "left" names the product never used, self-proving effort, a claim not shown and a chore
+    // left "for you", as the briefing's does, and its message says what the best version looks like.
+    // Its "never"s, negatives and capitals stay within the audit's.
+    const allowed = { words: 3267, never: CHECK.never, negatives: CHECK.negatives, capitals: CHECK.capitals }
     for (const k of ['words', 'never', 'negatives', 'capitals'] as const) expect(`check ${k}: ${c[k]} <= ${allowed[k]}: ${c[k] <= allowed[k]}`).toMatch(/: true$/)
     // Its other cases add only their own sentences: the room with no copy in place of the copy's, and
     // the fence's lines for a question that got no answer.

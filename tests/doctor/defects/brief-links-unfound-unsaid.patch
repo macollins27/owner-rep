@@ -1,9 +1,9 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 456655c..8cc8275 100644
+index e4bf3b4..b294c7f 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
 @@ -5312,7 +5312,7 @@ export const CHECK_ROOM_COPY = `You run in your working directory, the copy, whi
- export const CHECK_ROOM_NO_COPY = `You run in the agent's own folder, since no copy of it could be made, and writes there are denied. Read it with Read, Glob and Grep, and run only what writes nothing there. Name a check that would have to write in it under "looked" as not run. Send nothing to anyone.`
+ export const CHECK_ROOM_NO_COPY = `You run in the agent's own folder, since no copy of it could be made, and writes there are denied. Read it with Read, Glob and Grep, and run only what writes nothing anywhere. Name a check that would have to write in it under "looked" as not run. Send nothing to anyone.`
  // What the fence's first line says when the repositories and links could not all be found, and what
  // its last adds when the installs the command folders' links lead to could not be.
 -export const CHECK_NO_REPOS = `the agent's folder. Not every git repository it and the copy belong to, nor every place a link in the copy leads to, could be found this time, so stage, commit and stash nothing, and write nothing through a link that leads out of the copy;`

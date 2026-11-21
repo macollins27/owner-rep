@@ -5668,5 +5668,11 @@
     "breaks": "The check's prompt grows past its size bound by a sentence added to a string it carries, which an allowance counted from those strings would have let through.",
     "patch": "check-prompt-grows.patch",
     "fixed": "2026-11-21, the check on the audit's rewritten brief (§6.8)"
+  },
+  {
+    "name": "check-left-drops-chore",
+    "breaks": "The check's \"left\" no longer names a chore the agent left \"for you\", so a card the check rewrites can drop a chore the briefing listed.",
+    "patch": "check-left-drops-chore.patch",
+    "fixed": "2026-11-21"
   }
 ]

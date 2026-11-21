@@ -9,8 +9,10 @@ What changed in each release of Owner Rep, newest first. The full record is the
   reaches you and how the rep writes to you, which it lacked, and its task no longer repeats
   its standing rules: the room, the fence and the clock are plain sentences, your messages and
   the briefing are quoted inside the session's fence, and it reads the agent's commits from the
-  time the session began rather than a time it had to guess. It is 3,186 words with one "never",
-  down from 3,671 with twelve, and a test holds it there.
+  time the session began rather than a time it had to guess. Its "left" names every gap the
+  briefing's does, a chore the agent left "for you" among them, since the check rewrites the
+  whole card. It is 3,267 words with two "never"s, down from 3,671 with twelve, and a test
+  holds it there.
 - **A dropped part of your plan stays said until it is done.** A note that a part of your plan
   looks dropped is no longer taken back by a later look that never checked that part, nor
   replaced by an unrelated note; several dropped parts lead with their count and take turns

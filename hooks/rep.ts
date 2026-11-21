@@ -5309,7 +5309,7 @@ export const CHECK_LOOKS = `On a "works:" condition, the where names each look t
 
 // The check's room, with a copy made and with none (G45: one rule for writing in each).
 export const CHECK_ROOM_COPY = `You run in your working directory, the copy, which is thrown away when you finish. Run what you need there, and write only there. Send nothing to anyone. When a claim is about what is on disk now, read the agent's own folder with Read, Glob and Grep, since the copy is of one moment.`
-export const CHECK_ROOM_NO_COPY = `You run in the agent's own folder, since no copy of it could be made, and writes there are denied. Read it with Read, Glob and Grep, and run only what writes nothing there. Name a check that would have to write in it under "looked" as not run. Send nothing to anyone.`
+export const CHECK_ROOM_NO_COPY = `You run in the agent's own folder, since no copy of it could be made, and writes there are denied. Read it with Read, Glob and Grep, and run only what writes nothing anywhere. Name a check that would have to write in it under "looked" as not run. Send nothing to anyone.`
 // What the fence's first line says when the repositories and links could not all be found, and what
 // its last adds when the installs the command folders' links lead to could not be.
 export const CHECK_NO_REPOS = `the agent's folder. Not every git repository it and the copy belong to, nor every place a link in the copy leads to, could be found this time, so stage, commit and stash nothing, and write nothing through a link that leads out of the copy;`
@@ -5409,10 +5409,10 @@ reopen:
 stands: <where the work really stands now, after your checking; ${SHORT_PART}>
 means: <what the agent's latest message means for the owner, rewritten where your checking changed it; ${SHORT_PART}>
 left:
-- <${LEFT_ITEMS}: what still stands between the work and the objective, such as work dropped or shrunk, work short of the best it could be, or a condition the agent called done that is still open; only gaps your checking supports; a condition shown or closed is not a gap>
+- <${LEFT_ITEMS}: what still stands between the work and the objective, such as work dropped or shrunk, work short of the best it could be, a condition the agent called done that is still open, the product never opened and used, effort spent on pieces that only prove the agent's own work, a claim that matters and is not shown, or a chore the agent left "for you", which is its unfinished work; only gaps your checking supports; a condition shown or closed is not a gap>
 next: <what the agent should do next, ${SHORT_PART}; a stop only with a stop verdict>
 message:
-<the message for the owner to send ${MESSAGE_FORM}. It names what is false and asks for what is missing and for the proof "What counts as shown" names. While any condition is open or not shown after your checking, or the work falls short of the best it could be, write it. Leave empty only when every condition is shown or closed.>
+<the message for the owner to send ${MESSAGE_FORM}. It names what is false, asks for what is missing and for the proof "What counts as shown" names, and says what the best version looks like where the work falls short. While any condition is open or not shown after your checking, or the work falls short of the best it could be, write it. Leave empty only when every condition is shown or closed.>
 end
 does: <one line: what this message will make the agent do>
 looked: <one line: what you checked yourself and what you could not look at>`)
