@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 456655c..14ab253 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -5296,7 +5296,7 @@ const briefText = (b: BriefAnswer): string =>
+ // item 9): sessionStartArgv prints the first "timestamp" field, and sessionStartOf takes it only
+ // when it is an ISO time, '' otherwise, so nothing but a time reaches the check's git command.
+ export const sessionStartArgv = (file: string): string[] => ['grep', '-m', '1', '-o', '"timestamp":"[^"]*"', file]
+-export const sessionStartOf = (out: string): string => /^"timestamp":"(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?Z)"\s*$/.exec(out.trim())?.[1] ?? ''
++export const sessionStartOf = (out: string): string => /^"timestamp":"(.*)"\s*$/.exec(out.trim())?.[1] ?? ''
+ 
+ // A tag of the check's own fences quoted inside the text they hold, escaped as fenceTags escapes the
+ // record's: the briefing's here, the owner's and the record's by fenceTags.

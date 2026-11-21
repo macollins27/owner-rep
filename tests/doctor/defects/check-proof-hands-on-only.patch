@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index f8f119f..38a06cd 100644
+index 456655c..c080fd1 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -4999,7 +4999,7 @@ left:
- - <${LEFT_ITEMS}: work put off, shrunk or quietly dropped; a condition still open that the agent called done; work that is passable but not the best it could be; the product never opened and used; effort spent on self-proving pieces; a claim that matters and is not shown; a chore the agent left "for you", which is its unfinished work; only items your checking supports>
- next: <what the agent should do next, ${SHORT_PART}; it can be stopping the agent now, but only with a stop verdict, when every condition is shown or closed by the owner; never a step for the owner to do>
+@@ -5412,7 +5412,7 @@ left:
+ - <${LEFT_ITEMS}: what still stands between the work and the objective, such as work dropped or shrunk, or a condition the agent called done that is still open; only gaps your checking supports; a condition shown or closed is not a gap>
+ next: <what the agent should do next, ${SHORT_PART}; a stop only with a stop verdict>
  message:
--<the message for the owner to send to the agent ${MESSAGE_FORM}, rewritten where your checking changed it: it names what is false, asks for the work that is missing and says what the best version looks like where the work falls short; where proof is missing it asks for the proof "What counts as shown" names: a fact's command and what it printed, or a hands-on look at the real thing (open it, use it as a customer or the owner would, try to break it), never a self-proving piece, and a test or a review never stands in for that look; and where effort is going into such pieces, it tells the agent to put that effort into the product. While any condition is open or not shown after your checking, or the work falls short of the best it could be, write it. Leave empty only when every condition is shown or closed. ${HELD_STEP_RULE}>
-+<the message for the owner to send to the agent ${MESSAGE_FORM}, rewritten where your checking changed it: it names what is false, asks for the work that is missing and says what the best version looks like where the work falls short; where proof is missing it asks for a hands-on look at the real thing (open it, use it as a customer or the owner would, try to break it), never a self-proving piece, and a test or a review never stands in for that look; and where effort is going into such pieces, it tells the agent to put that effort into the product. While any condition is open or not shown after your checking, or the work falls short of the best it could be, write it. Leave empty only when every condition is shown or closed. ${HELD_STEP_RULE}>
+-<the message for the owner to send ${MESSAGE_FORM}. It names what is false and asks for what is missing and for the proof "What counts as shown" names. While any condition is open or not shown after your checking, or the work falls short of the best it could be, write it. Leave empty only when every condition is shown or closed.>
++<the message for the owner to send ${MESSAGE_FORM}. It names what is false and asks for what is missing and for a hands-on look at the real thing. While any condition is open or not shown after your checking, or the work falls short of the best it could be, write it. Leave empty only when every condition is shown or closed.>
  end
  does: <one line: what this message will make the agent do>
  looked: <one line: what you checked yourself and what you could not look at>`)

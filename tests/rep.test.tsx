@@ -10260,6 +10260,21 @@ test('the watch and the briefing mark a works condition shown only on a look the
   expect(signsOff(looksOf('look by the agent: opened the page')[0] as Look, [helper], false)).toBe(false)
 })
 
+// The check is told the forms of a look once, in its answer's form, and each form it names is one
+// looksOf reads as that signer: its own look signs, the agent's never does (G44).
+test('rule: the check is told each form of a look once, and each reads as its signer, the check\'s signing and the agent\'s not', () => {
+  const brief = checkBrief({ sessionId: 's', cwd: '/w', copy: '/c', reading: 'x', conditions: [], shown: [], owner: [om('Build it.')], brief: parseBrief('stands: a\nmeans: b\nleft:\n- nothing\nnext: c\nmessage:\nend\ndoes:'), writtenAt: '10:00', from: 1 })
+  expect(brief.split(rep.CHECK_LOOKS).length).toBe(2)
+  expect(brief.indexOf(rep.CHECK_LOOKS)).toBeGreaterThan(brief.indexOf('## Output structure'))
+  const forms = [...rep.CHECK_LOOKS.matchAll(/"(look by [^":]+): …"/g)].map(m => m[1] as string)
+  expect(forms).toEqual(['look by helper <run>', 'look by Codex <run>', 'look by the check', 'look by the agent'])
+  const read = forms.map(f => looksOf(`${f.replace('<run>', '01ab2345')}: opened the page and booked a visit`)[0])
+  expect(read.map(l => l?.as ?? null)).toEqual(['helper', 'codex', 'check', null])
+  expect(rep.isAgentWho(read[3]?.who ?? '')).toBe(true)
+  expect(signsOff(looksOf('look by the check: opened the page and booked a visit')[0] as Look, [], true)).toBe(true)
+  expect(signsOff(looksOf('look by the agent: opened the page and booked a visit')[0] as Look, [], true)).toBe(false)
+})
+
 test('signsOff: a helper\'s or Codex look signs only when the one run of its kind it names is in the record, finished, said something and changed nothing; the check only in its own marks', () => {
   const one = (where: string): Look => looksOf(where)[0] as Look
   const run = (id: string, kind: Run['kind'], more: Partial<Run> = {}): Run => ({ id, kind, state: 'done', changed: false, said: 'paid; order 1042', ...more })
