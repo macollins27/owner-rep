@@ -9,7 +9,8 @@ What changed in each release of Owner Rep, newest first. The full record is the
   writes those parts is now told which rule the briefing broke, is given the same rules on
   proof, your decisions, plain writing, the message and private data that the other reads
   use, word for word, and no longer gets the rules for reading a record, which it never
-  reads. Its request is about 40 percent shorter, with no "never" in it.
+  reads. Its request is about 30 percent shorter, with no "never" in it, and asks for work and
+  proof on every open condition, putting a question to you only for a decision you have yet to make.
 - **A dropped part of your plan stays said until it is done.** A note that a part of your plan
   looks dropped is no longer taken back by a later look that never checked that part, nor
   replaced by an unrelated note; several dropped parts lead with their count and take turns

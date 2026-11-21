@@ -6993,7 +6993,7 @@ ${left}
 The briefing was refused because it ${fault}, and it stayed refused when asked once more, while these conditions are open:
 ${open}
 
-From what the rep found above, write in your own words only the four parts below. While a condition is open, nothing you write tells the agent to stop, calls the work finished, or gives the owner a chore. A step waiting on the owner's go-ahead is held, as "What reaches the owner" says.
+From what the rep found above, write in your own words only the four parts below. While a condition is open, nothing you write tells the agent or the job to stop, calls the work finished, or gives the owner a chore. The message asks for work and proof on every open condition: asking only that things be left as they are is a stop in other words. A question reaches the owner only for a decision the owner has yet to make. A step waiting on the owner's go-ahead is held, as "What reaches the owner" says.
 
 ## Output structure
 

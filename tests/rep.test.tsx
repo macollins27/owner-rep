@@ -2061,7 +2061,10 @@ test('rule: OWN_WORDS_SYSTEM opens on what the call is given and holds the share
   for (const label of ['\n\nmeans: <', '\nnext: <', '\nmessage:\n<', '\nend\n', '\ndoes: <']) expect(p).toContain(label)
   expect(p).toContain('Exactly these labelled parts, in this order, nothing before or after:')
   // While a condition is open, what it writes keeps the agent on the job and leaves the owner no chore.
-  expect(p).toContain('While a condition is open, nothing you write tells the agent to stop, calls the work finished, or gives the owner a chore.')
+  expect(p).toContain('While a condition is open, nothing you write tells the agent or the job to stop, calls the work finished, or gives the owner a chore.')
+  // The review of #74: a message asking only that things be left as they are is the refused stop in
+  // other words, and a question to the owner about a decision already made is a chore.
+  expect(p).toContain('The message asks for work and proof on every open condition: asking only that things be left as they are is a stop in other words. A question reaches the owner only for a decision the owner has yet to make.')
   // The message slot: one line per open condition, the work and its proof; the finish line is the shared section's.
   expect(p).toContain('one line per open condition, asking for the work that is missing and the proof it needs>')
   // What it writes is read by the briefing's own parser.
@@ -18946,9 +18949,12 @@ describe('the call log: its pieces', () => {
     // every call asks for last), are measured apart, as §6.9 sets them. The system's words and
     // negatives stand over §6.9's 1024 and 18: the shared sections it takes are the briefing's own
     // text, which grew after the audit (#68), and are not cut for this call; the targets hold it at
-    // what it is now (the build after #68 sent 1094 words, one "never" and 22 negatives).
+    // what it is now (the build after #68 sent 1094 words, one "never" and 22 negatives). The request
+    // stands 43 words over §6.9's 226: the review of #74 put back that the message asks for work and
+    // proof on every open condition, that a stop of the job is a stop, and that a question goes to the
+    // owner only for a decision yet to make, after a replay found a reply without each.
     const OWN_SYSTEM = { words: 1132, never: 0, negatives: 20, capitals: 0 }
-    const OWN_REQUEST = { words: 226, never: 0, negatives: 2, capitals: 0 }
+    const OWN_REQUEST = { words: 269, never: 0, negatives: 2, capitals: 0 }
     const ownPrompt = ownWordsPrompt(m, [{ text: '{condition}', state: 'open', by: '', kind: 'fact' } as never], { ...EMPTY_CARD, stands: '{stands}', leftOut: ['{left}'] }, '{fault}')
     expect(ownPrompt.endsWith(`\n\n${rep.END_ASK}`)).toBe(true)
     const ownRequest = ownPrompt.slice(ownPrompt.indexOf('## What the rep found in the record'), ownPrompt.length - rep.END_ASK.length)

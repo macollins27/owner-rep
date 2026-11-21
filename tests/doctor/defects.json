@@ -5619,7 +5619,7 @@
     "name": "own-words-held-copied",
     "breaks": "The own-words request copies the held-step rule beside the shared section that already says it, so the rule is said twice in two wordings.",
     "patch": "own-words-held-copied.patch",
-    "fixed": "tested 2026-11-21"
+    "fixed": "tested 2026-11-21; remade 2026-11-21"
   },
   {
     "name": "own-words-reaches-gone",
@@ -5637,7 +5637,7 @@
     "name": "own-words-stop-allowed",
     "breaks": "The own-words request loses the rule that nothing it writes stops the agent, calls the work finished or gives the owner a chore while a condition is open.",
     "patch": "own-words-stop-allowed.patch",
-    "fixed": "tested 2026-11-21"
+    "fixed": "tested 2026-11-21; remade 2026-11-21"
   },
   {
     "name": "replay-own-sent-without-fault",
@@ -5668,5 +5668,11 @@
     "breaks": "The replay never reads the calls saved before an own-words call, so the own edit sends none of them again.",
     "patch": "replay-own-fault-unread.patch",
     "fixed": "tested 2026-11-21"
+  },
+  {
+    "name": "own-words-may-leave-as-is",
+    "breaks": "The own-words request no longer asks for work and proof on every open condition nor keeps a question to the owner for a decision yet to make, so its message can ask only that things be left as they are and its parts can ask the owner about a decision already made.",
+    "patch": "own-words-may-leave-as-is.patch",
+    "fixed": "2026-11-21"
   }
 ]

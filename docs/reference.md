@@ -412,7 +412,9 @@ call writes (below):
    and its request's fixed text are held apart: the system at 1,132/0/20/0, over §6.9's 1,024 and
    18 because the shared sections it takes grew after the audit (#68), and the request, from what
    the rep found to its last part with each quoted text a placeholder and without the end line,
-   at §6.9's 226/0/2/0. The targets leave out the plan walk:
+   at 269/0/2/0, 43 words over §6.9's 226 for the rules the review of #74 put back (the message
+   asks for work and proof on every open condition; a question goes to the owner only for a
+   decision yet to make). The targets leave out the plan walk:
    with a plan held, the same test lets each call add only the walk's own text, its ceiling the
    no-plan target plus the counts of the plan as quoted, the line standing in for the owner's
    approving reply, `STEP_STATES`, `DECIDE_DROPPED` and the call's own walk text (`WALK_WATCH`
