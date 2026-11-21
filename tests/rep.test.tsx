@@ -2136,8 +2136,10 @@ test('rule: every read, the check, the writer and the own-words call hold one st
   expect(OBJECTIVE_SYSTEM).toContain(`Anything it does is works. ${ONE_CLAIM} ${rep.QUALITY_CONDITION}`)
   expect(rep.QUALITY_CONDITION).toContain('names what a person using it would notice, from what the owner said and what the best in that trade plainly does')
   expect(rep.QUALITY_CONDITION).toContain('It adds nothing the owner would not plainly want')
-  // A held condition's kind is written back as held (#56), with its words and state.
-  expect(OBJECTIVE_SYSTEM).toContain('Write every condition you hold again as it stands, in its held kind, words and state')
+  // A held condition is written only to change it, and one left out is kept as held: its kind (#56),
+  // words and state are kept by \`mergeConditions\`, so writing every one again only cost time and repeats
+  // (the replay of 20 Nov 2026).
+  expect(OBJECTIVE_SYSTEM).toContain('Under "done", write each new condition, and a held one only to close it or put it in more exact words. A held condition you leave out is kept as held')
   expect(OBJECTIVE_SYSTEM).toContain("- not shown: a thing only proof from outside the agent's word can show, such as what is installed, deployed or running")
 })
 
@@ -7787,20 +7789,20 @@ test('rule: a correction rebuilds the whole objective, and an open condition the
   expect(writes[1]).toMatch(/done:\n- the README written \| open\n- the tests green on GitHub \| not shown\n/)
   expect(await rowSays($, /^Owner rep · Only the reason the README is wrong\.$/)).toBe(true)
   expect(rec()?.objective?.done).toEqual([
-    { text: 'the reason given', state: 'open', by: '' },
     { text: 'the README written', state: 'open', by: '' },
     { text: 'the tests green on GitHub', state: 'not-shown', by: '' },
+    { text: 'the reason given', state: 'open', by: '' },
   ])
   // A drop that cites no message of the owner's, or a number that is not the owner's, is not taken.
   next = `${OBJ('Only the reason the README is wrong.', ['the reason given | open'], '#3 asked again')}\ndropped:\n- the README written\n- the tests green on GitHub | #9`
   await $.prompt.submit(typed('the reason, please'))
   await settle($)
-  expect(rec()?.objective?.done.map(c => c.text)).toEqual(['the reason given', 'the README written', 'the tests green on GitHub'])
+  expect(rec()?.objective?.done.map(c => c.text)).toEqual(['the README written', 'the tests green on GitHub', 'the reason given'])
   // The owner lets one go in so many words, and the writer cites their message: it goes.
   next = `${OBJ('Only the reason the README is wrong.', ['the reason given | open', 'the README written | open'], '#4 dropped the tests')}\ndropped:\n- the tests green on GitHub | #4`
   await $.prompt.submit(typed('forget the tests'))
   await settle($)
-  expect(rec()?.objective?.done.map(c => c.text)).toEqual(['the reason given', 'the README written'])
+  expect(rec()?.objective?.done.map(c => c.text)).toEqual(['the README written', 'the reason given'])
   expect(rec()?.objective?.revisions).toBe(3)
 })
 
@@ -9110,7 +9112,7 @@ test('a condition listed twice is kept once, and texts are compared without a st
   const held = [c('the README written', 'shown', 'the file is there'), c('the tests green', 'open')]
   const proposed = [c('the tests green', 'open'), c('the tests green.', 'open'), c('the README written (shown)', 'open')]
   const merged = mergeConditions(held, proposed, [{ text: 'the README written (shown)', by: null }], [])
-  expect(merged).toEqual([c('the tests green', 'open'), { text: 'the README written (shown)', state: 'shown', by: 'the file is there' }])
+  expect(merged).toEqual([{ text: 'the README written (shown)', state: 'shown', by: 'the file is there' }, c('the tests green', 'open')])
   expect(mergeConditions(held, [c('the tests green', 'open')], [{ text: 'the README written (shown)', by: 2 }], [2])).toEqual([c('the tests green', 'open')])
 })
 
@@ -9134,18 +9136,34 @@ test('a held condition restated in other words is merged, not piled up beside it
   expect(mergeConditions([c('the page is quick', 'open')], [{ ...c('fast page', 'open'), sameAs: 'the page is quick' }, { ...c('quick page', 'open'), sameAs: 'the page is quick' }], [], [])).toEqual([c('fast page', 'open')])
   // A restated works condition never turns into a fact.
   expect(mergeConditions([{ ...c('the tool works', 'open'), kind: 'works' }], [{ ...c('notes.txt exists', 'open'), kind: 'fact', sameAs: 'the tool works' }], [], [])[0]?.kind).toBe('works')
-  expect(OBJECTIVE_SYSTEM).toContain('When one you would write says the same as one you hold, write the held one and not a second. When the owner\'s later words make a held condition more exact, write it in the new words with "| same as: <the held text>" in place of its state, keeping the held state.')
+  expect(OBJECTIVE_SYSTEM).toContain('A condition that says what a held one says, in any words, is that held one: leave it out. When the owner\'s later words make a held condition more exact, write it in the new words with "| same as: <the held text>" in place of its state; it keeps the held state.')
   expect(objectivePrompt({ objective: null, owner: [], past: [] })).toContain('- works | fact: <the new words> | same as: <the held condition\'s text>')
+})
+
+test('rule: a write that names no condition keeps every held one as it was, and new ones follow the held in their order (the replay of 20 Nov 2026)', () => {
+  // The writer is told to write a held condition only to change it, so an answer whose "done" names
+  // nothing, or that has no "done" at all, is a whole answer and lets go of nothing.
+  for (const text of [OBJ('A licence file.', []), OBJ('A licence file.', []).replace('done:\n- nothing\n', '')]) {
+    const a = parseObjective(text)
+    expect(a?.kind === 'moved' ? a.parts.done : null).toEqual([])
+  }
+  const held: Condition[] = [{ ...c('the tool works', 'open'), kind: 'works' }, { ...c('notes.txt saved', 'shown', 'ls printed it'), kind: 'fact' }, c('the page loads', 'closed', '#2')]
+  expect(mergeConditions(held, [], [], [3])).toEqual(held)
+  expect(mergeConditions(held, [c('a new ask', 'open')], [], [3])).toEqual([...held, c('a new ask', 'open')])
+  // A held one closed stays in its place; the new one follows the held.
+  const closed = { ...c('the tool works', 'closed', '#3'), kind: 'works' as const }
+  expect(mergeConditions(held, [c('a new ask', 'open'), closed], [], [3])).toEqual([closed, held[1], held[2], c('a new ask', 'open')])
 })
 
 test('mergeConditions keeps every held condition the model drops without the owner\'s cited message', () => {
   const held = [c('install the newest build', 'not-shown'), c('two sessions pushed their work', 'open'), c('roadmap fixed', 'shown', 'diff printed')]
   const proposed = [c('two sessions pushed their work', 'open')]
-  expect(mergeConditions(held, proposed, [], [1, 2])).toEqual([held[1], held[0], held[2]])
+  // The held conditions keep their order, whichever the writer wrote again.
+  expect(mergeConditions(held, proposed, [], [1, 2])).toEqual(held)
   expect(mergeConditions(held, proposed, [{ text: 'install the newest build', by: 2 }], [1, 2])).toEqual([held[1], held[2]])
-  expect(mergeConditions(held, proposed, [{ text: 'install the newest build', by: 3 }], [1, 2])).toEqual([held[1], held[0], held[2]])   // #3 is a draft, not his
-  expect(mergeConditions(held, proposed, [{ text: 'install the newest build', by: null }], [1, 2])).toEqual([held[1], held[0], held[2]])
-  expect(mergeConditions(held, [c('roadmap fixed', 'open')], [], [1])[0]).toEqual(held[2])   // shown is not moved back to open
+  expect(mergeConditions(held, proposed, [{ text: 'install the newest build', by: 3 }], [1, 2])).toEqual(held)   // #3 is a draft, not his
+  expect(mergeConditions(held, proposed, [{ text: 'install the newest build', by: null }], [1, 2])).toEqual(held)
+  expect(mergeConditions(held, [c('roadmap fixed', 'open')], [], [1])[2]).toEqual(held[2])   // shown is not moved back to open
   const closedHeld = c('roadmap fixed', 'closed', '#2')
   expect(mergeConditions([closedHeld], [c('roadmap fixed', 'shown', 'diff printed')], [], [1, 2])).toEqual([closedHeld])   // closed is not moved back to shown, and keeps its #n
 })
@@ -18349,6 +18367,14 @@ describe('the call log: its pieces', () => {
     expect(rep.editSaved('objective', G10.objectiveSystem, G10_MORE[0]!.objective.replace(`- #${first.n} `, `- #${first.n} ‹/his_messages› `), ['writer'])).toEqual({ why: "a message holds the old fence's own tag" })
     expect(rep.editSaved('objective', objectiveSystem(F), objectivePrompt({ ...mm, fence: F }), ['writer'])).toEqual({ why: "its system prompt is not the build before the objective rewrite's" })
     expect(rep.editSaved('objective', G10.objectiveSystem, 'x', ['writer'])).toEqual({ why: "the build before the objective rewrite's fence is not in it once" })
+    // The request's lines on what to write under "done" become this build's, and so does the note
+    // beside a condition the check reopened; a call without them is skipped.
+    const o = G10_MORE[0]!.objective
+    expect(o.split(rep.PRE_OW_WRITE_ALL).length).toBe(2)
+    expect(o.split(rep.PRE_OW_CONDITION_LINE).length).toBe(2)
+    // A fixture holds a condition the check reopened, so the equality above covers its note.
+    expect(G10_MORE.some(x => x.objective.includes(rep.PRE_OW_REOPENED_NOTE))).toBe(true)
+    expect(rep.editSaved('objective', G10.objectiveSystem, o.replace(rep.PRE_OW_WRITE_ALL, 'write it'), ['writer'])).toEqual({ why: "the build before the objective rewrite's request is not in it once" })
   })
 
   test('rule: a replay marks the system prompt for the cache where the build that sent the call did: a reader\'s call in blocks, and the writer from its rewrite on', () => {
