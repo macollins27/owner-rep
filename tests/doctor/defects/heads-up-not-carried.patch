@@ -1,10 +1,10 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 909ca5c..cdbde0c 100644
+index 7778e4d..7b82b1d 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1741,7 +1741,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+@@ -1744,7 +1744,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+     // The turn moves when a note of several parts reaches the screen, here or in `showHeld`.
      const turn = lookTurns.get(sid) ?? 0
-     if (parts.length > 1) lookTurns.set(sid, turn + 1)
      const got = headsUpOf(answer, plans, carried, turn)
 -    const said = got.note
 +    const said = answer.flag === null ? null : { line: answer.flag, why: answer.why }

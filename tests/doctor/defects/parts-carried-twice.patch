@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index cf4083e..4dd400b 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -3652,7 +3652,7 @@ export function standingDrops(a: WatchAnswer, plans: readonly string[], carried:
+   const fresh = (a.dropped ?? []).filter(d => inPlans(d.step, plans))
+   const alike = (x: DroppedStep, y: DroppedStep): boolean => samePart(x, y) || stepText(x.step) === stepText(y.step)
+   const once = carried.filter((c, i) => !carried.slice(0, i).some(e => alike(e, c)))
+-  const kept = once
++  const kept = carried
+     .filter(c => !(a.cleared ?? []).some(w => samePart(w, c)))
+     .map(c => fresh.find(f => alike(f, c)) ?? c)
+   return [...kept, ...fresh.filter(f => !kept.includes(f))]

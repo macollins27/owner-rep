@@ -251,6 +251,7 @@ import {
   readerGaps,
   headsUpOf,
   standingDrops,
+  manyParts,
   LOOK_WAIT_MS,
   notAssessedGaps,
   joinGaps,
@@ -1735,11 +1736,13 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
     // note until its walk takes each back (final review of #68: a look shown another plan, or
     // answering with a plain flag, took back or replaced a drop the owner never saw).
     const held = heldNotes.get(sid)
-    const carried = [...(held?.parts ?? []), ...(view === 'note' ? (shownParts.get(sid) ?? []) : [])]
+    const noteUp = view === 'note' && onScreen(sid)
+    const onNote = noteUp ? (shownParts.get(sid) ?? []) : []
+    const carried = [...(held?.parts ?? []), ...onNote]
     const plans = fill?.blocks ?? []
     const parts = standingDrops(answer, plans, carried)
+    // The turn moves when a note of several parts reaches the screen, here or in `showHeld`.
     const turn = lookTurns.get(sid) ?? 0
-    if (parts.length > 1) lookTurns.set(sid, turn + 1)
     const got = headsUpOf(answer, plans, carried, turn)
     const said = got.note
     // A plain flag already shown is not shown again. A note that says a dropped plan part is shown
@@ -1750,11 +1753,18 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
     // reading, or the session off screen holds it. A later look's note replaces what is held and
     // says its parts; a held note whose every part a walk took back goes.
     if (held !== undefined && held.parts.length > 0 && parts.length === 0) heldNotes.delete(sid)
-    if (said === null || repeat(said.line)) return
+    // The note on screen whose every part a walk took back comes down, unless this look draws its
+    // own: it would go on telling the owner a step was dropped that the walk marked done.
+    const takenBack = onNote.length > 0 && parts.length === 0
+    if (said === null || repeat(said.line)) {
+      if (takenBack) await toRow($)
+      return
+    }
     const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId }
     if (onScreen(sid) && (view === 'row' || view === 'note')) {
       heldNotes.delete(sid)
       shownParts.set(sid, parts)
+      if (manyParts(parts)) lookTurns.set(sid, turn + 1)
       after.seen = [...after.seen, said.line].slice(-SEEN_MAX)
       await update($, noteA, () => note)
       await update($, viewA, () => 'note')
@@ -1767,7 +1777,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
 const heldNotes = new Map<string, { note: Note; parts: DroppedStep[] }>()
 // The dropped parts the note this mod last drew says, read only while the view is that note.
 const shownParts = new Map<string, DroppedStep[]>()
-// How many looks of a session said several dropped parts: the order their line names them in.
+// How many notes of several dropped parts reached a session's screen: which part leads the next.
 const lookTurns = new Map<string, number>()
 
 // The view back to the bare row, and a held Heads up of the session on screen drawn there.
@@ -1784,6 +1794,7 @@ async function showHeld($: EngineInterface): Promise<void> {
   if (held === undefined) return
   heldNotes.delete(sid)
   shownParts.set(sid, held.parts)
+  if (manyParts(held.parts)) lookTurns.set(sid, (lookTurns.get(sid) ?? 0) + 1)
   // Queued, not awaited: a caller may be inside this session's own change already.
   changeRec($, sid, r => {
     r.seen = [...r.seen, held.note.line].slice(-SEEN_MAX)

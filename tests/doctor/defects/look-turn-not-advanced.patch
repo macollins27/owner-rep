@@ -1,12 +1,20 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 909ca5c..c740c94 100644
+index 7778e4d..6bbf146 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1739,7 +1739,6 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
-     const plans = fill?.blocks ?? []
-     const parts = standingDrops(answer, plans, carried)
-     const turn = lookTurns.get(sid) ?? 0
--    if (parts.length > 1) lookTurns.set(sid, turn + 1)
-     const got = headsUpOf(answer, plans, carried, turn)
-     const said = got.note
-     // A plain flag already shown is not shown again. A note that says a dropped plan part is shown
+@@ -1764,7 +1764,6 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+     if (onScreen(sid) && (view === 'row' || view === 'note')) {
+       heldNotes.delete(sid)
+       shownParts.set(sid, parts)
+-      if (manyParts(parts)) lookTurns.set(sid, turn + 1)
+       after.seen = [...after.seen, said.line].slice(-SEEN_MAX)
+       await update($, noteA, () => note)
+       await update($, viewA, () => 'note')
+@@ -1794,7 +1793,6 @@ async function showHeld($: EngineInterface): Promise<void> {
+   if (held === undefined) return
+   heldNotes.delete(sid)
+   shownParts.set(sid, held.parts)
+-  if (manyParts(held.parts)) lookTurns.set(sid, (lookTurns.get(sid) ?? 0) + 1)
+   // Queued, not awaited: a caller may be inside this session's own change already.
+   changeRec($, sid, r => {
+     r.seen = [...r.seen, held.note.line].slice(-SEEN_MAX)

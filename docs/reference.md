@@ -561,9 +561,12 @@ call writes (below):
    `1 + DROPPED_ALSO_MAX` (4) by name and then `; and N more` (`partsSaid`), whatever the reader's
    flag was about. The same text of two plans is named once (`textsOf`). The parts are in the line
    because `fitNote` keeps the line before the why on a short band; several lead with their count,
-   which a one-row band keeps, and take turns in first place: `headsUpOf`'s `turn` turns their order,
-   and the look advances it (`lookTurns`) at each look that says more than one, so on a band that
-   cuts the line each part reaches the owner in turn. Its why for `no sign` says only
+   which a one-row band keeps, and take turns in first place: `standingDrops` gives them an order
+   that holds from look to look (the carried parts first, each in its place, a part dropped again
+   keeping its place, then the new ones), `headsUpOf`'s `turn` turns it, and the turn (`lookTurns`)
+   moves only when a note naming several parts reaches the screen, drawn by the look or by
+   `showHeld` (`manyParts`), never at a note held and replaced unseen. So on a band that cuts the
+   line each part reaches the owner in turn. Its why for `no sign` says only
    what the rep can know, that the record shows later work and does not show the step done, never
    that the record holds nothing of it. The flag and its why move into the why after `Also:`, so no
    concern is lost. This outranks even a flag about harm, whose words stay in the why. A step
@@ -594,7 +597,10 @@ call writes (below):
    of content words, marked anything but dropped or `not assessed` (the answer's `cleared`). A
    sibling, a shorter part, a line with no plan number or one of another plan never takes it back,
    since a part taken back wrongly is a silent drop and one kept wrongly only a repeat. A held note
-   whose every part is taken back goes. `look` first waits for an objective write in flight for the
+   whose every part is taken back goes, and so does this mod's note on screen: when a look's walk
+   takes back every part it said and the look draws nothing of its own, the band returns to the row
+   (`toRow`, which then draws a held note). The parts of the note on screen are carried only for the
+   session on screen. `look` first waits for an objective write in flight for the
    session (`writeTaken`): until a pass shown the owner's newest message number saved when the look
    began has ended, however it ended, or the writer has stopped, and never longer than
    `LOOK_WAIT_MS` (60 s). A message saved after the look began is not waited for. A record from an earlier build that holds `saidDrops` loads, the field ignored. The

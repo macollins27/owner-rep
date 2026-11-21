@@ -3642,15 +3642,24 @@ const partsSaid = (texts: readonly string[], max: number): string => {
   return texts.length > max ? `${said}; and ${texts.length - max} more` : said
 }
 
-// The parts a look's note says: those its walk shows dropped in a plan shown to it, then those
-// `carried` from a note still held or on screen, less each its walk takes back (`samePart` with a
-// step marked done or underway) or drops again itself. A carried part passes without the plans:
-// the plan it came from may not be shown to this look.
+// The parts a look's note says, in an order that holds from look to look so its turns reach each
+// (scoped check of #68): those `carried` from a note still held or on screen first, each once and in
+// the order said, less each its walk takes back (`samePart` with a step marked done or underway),
+// and in the place of one it drops again its fresh copy; then those its walk shows dropped in a plan
+// shown to it and not carried. A carried part passes without the plans: the plan it came from may
+// not be shown to this look.
 export function standingDrops(a: WatchAnswer, plans: readonly string[], carried: readonly DroppedStep[] = []): DroppedStep[] {
   const fresh = (a.dropped ?? []).filter(d => inPlans(d.step, plans))
-  const kept = carried.filter(c => !(a.cleared ?? []).some(w => samePart(w, c)) && !fresh.some(f => samePart(f, c) || stepText(f.step) === stepText(c.step)))
-  return [...fresh, ...kept]
+  const alike = (x: DroppedStep, y: DroppedStep): boolean => samePart(x, y) || stepText(x.step) === stepText(y.step)
+  const once = carried.filter((c, i) => !carried.slice(0, i).some(e => alike(e, c)))
+  const kept = once
+    .filter(c => !(a.cleared ?? []).some(w => samePart(w, c)))
+    .map(c => fresh.find(f => alike(f, c)) ?? c)
+  return [...kept, ...fresh.filter(f => !kept.includes(f))]
 }
+
+// Whether a note of these parts names several, so its drawing counts as a turn.
+export const manyParts = (steps: readonly DroppedStep[]): boolean => textsOf(steps).length > 1
 
 // What the Heads up says for a look. A step the walk marks as dropped outranks whatever the flag
 // is about, and the flag moves to the why, so no concern is lost: one flag slot must not decide

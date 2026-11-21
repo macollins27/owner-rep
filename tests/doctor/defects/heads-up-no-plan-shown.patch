@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 2992ce2..35b3415 100644
+index cf4083e..1570117 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3647,7 +3647,7 @@ const partsSaid = (texts: readonly string[], max: number): string => {
- // step marked done or underway) or drops again itself. A carried part passes without the plans:
- // the plan it came from may not be shown to this look.
+@@ -3649,7 +3649,7 @@ const partsSaid = (texts: readonly string[], max: number): string => {
+ // shown to it and not carried. A carried part passes without the plans: the plan it came from may
+ // not be shown to this look.
  export function standingDrops(a: WatchAnswer, plans: readonly string[], carried: readonly DroppedStep[] = []): DroppedStep[] {
 -  const fresh = (a.dropped ?? []).filter(d => inPlans(d.step, plans))
 +  const fresh = (a.dropped ?? []).filter(d => true)
-   const kept = carried.filter(c => !(a.cleared ?? []).some(w => samePart(w, c)) && !fresh.some(f => samePart(f, c) || stepText(f.step) === stepText(c.step)))
-   return [...fresh, ...kept]
- }
+   const alike = (x: DroppedStep, y: DroppedStep): boolean => samePart(x, y) || stepText(x.step) === stepText(y.step)
+   const once = carried.filter((c, i) => !carried.slice(0, i).some(e => alike(e, c)))
+   const kept = once

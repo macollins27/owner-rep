@@ -1,0 +1,12 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 7778e4d..d15c559 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -1757,7 +1757,6 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+     // own: it would go on telling the owner a step was dropped that the walk marked done.
+     const takenBack = onNote.length > 0 && parts.length === 0
+     if (said === null || repeat(said.line)) {
+-      if (takenBack) await toRow($)
+       return
+     }
+     const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId }

@@ -14819,6 +14819,100 @@ test('recordText, given the rows the owner\'s transcript proves, labels only tho
     await settleUntil($, () => m.looks().length > 0, 1500)
     expect({ before, after: m.looks().length }).toEqual({ before: 0, after: 1 })
   })
+
+  for (const rows of [2, 3, 4] as const)
+    test(`SC1 (mounted): band ${rows}x60, two plans shown in turn by the rotation, each walk dropping its own plan's part: each part reaches the band at some look`, async ($, on) => {
+      const big = (tag: string) => Array.from({ length: 700 }, (_, i) => `${tag} filler line ${i} with words.`).join('\n')
+      const owner = owns([2, `Move the request limit to the local store.\n${big('A')}`], [3, `Add a status page.\n${big('B')}`])
+      const m = mounted7(on, owner, brief => (brief ? WELL : walkAnswer('- #2: Move the request limit to the local store | looks dropped\n- #3: Add a status page | looks dropped')))
+      await started($)
+      const band = async (): Promise<string> => {
+        const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND, props: { ...BAND.props, maxRows: rows, bodyColumns: 60, scroll: { offset: 0, bodyRows: rows - 1 } } })
+        const text = (await ui.findAll({ type: 'Text' })).map(t => t.text ?? '').join(' | ')
+        await ui.unmount()
+        return text
+      }
+      // The owner has the card open for the first two looks, then leaves the note up.
+      const card = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+      await card.press({ key: 'rep' })
+      await settle($)
+      await m.look($, 't1')
+      await m.look($, 't2')
+      await card.press({ key: 'close' })
+      await card.unmount()
+      const seen = [await band()]
+      for (const i of range(3, 8)) {
+        await m.look($, `t${i}`)
+        seen.push(await band())
+      }
+      const shown = m.looks().map(p => (/<approved_plan>\s*Add a status page/.test(p) ? '#3' : '') + (/<approved_plan>\s*Move the request limit/.test(p) ? '#2' : ''))
+      expect({ shown, statusOnBand: seen.some(t => /Add a status/.test(t)), limitOnBand: seen.some(t => /Move the request/.test(t)) })
+        .toEqual({ shown: ['#2', '#3', '#2', '#3', '#2', '#3', '#2', '#3'], statusOnBand: true, limitOnBand: true })
+    })
+
+  test('SC1b: two parts of one plan, the walk alternating which it marks dropped and which not assessed, the note on screen carrying what it said: each leads the line in turn', () => {
+    const plans = [RP(4, 'Add the cap test', 'Add the reload test')]
+    const capWalk = parseWatch(walkAnswer('- #4: Add the cap test | looks dropped\n- #4: Add the reload test | not assessed'))
+    const reloadWalk = parseWatch(walkAnswer('- #4: Add the reload test | looks dropped\n- #4: Add the cap test | not assessed'))
+    // The looks as takeLook makes them with the note left up: each carries the parts the note on
+    // screen said, and the turn moves when a note of several parts is drawn.
+    let carried: ReturnType<typeof rep.standingDrops> = []
+    let turn = 0
+    const leads: (string | undefined)[] = []
+    for (const walk of [capWalk, reloadWalk, capWalk, reloadWalk, capWalk]) {
+      const parts = rep.standingDrops(walk, plans, carried)
+      leads.push(/dropped: ([^;.]+)/.exec(rep.headsUpOf(walk, plans, carried, turn).note?.line ?? '')?.[1])
+      if (new Set(parts.map(d => d.step)).size > 1) turn++
+      carried = parts
+    }
+    expect(new Set(leads.slice(1))).toEqual(new Set(['Add the cap test', 'Add the reload test']))
+  })
+
+  test('SC1c (mounted): band 2x60, the card open across two looks at a time, so each held note is replaced unseen: the notes the owner is shown lead with each part in turn', async ($, on) => {
+    const owner = owns([2, 'Move the request limit to the local store.\nAdd a status page.'])
+    const m = mounted7(on, owner, brief => (brief ? WELL : walkAnswer('- #2: Move the request limit to the local store | looks dropped\n- #2: Add a status page | looks dropped')))
+    await started($)
+    const leads: string[] = []
+    for (const i of range(0, 2)) {
+      const card = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+      await card.press({ key: 'rep' })
+      await settle($)
+      await m.look($, `a${i}`)
+      await m.look($, `b${i}`)
+      await card.press({ key: 'close' })
+      await card.unmount()
+      const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND, props: { ...BAND.props, maxRows: 2, bodyColumns: 60, scroll: { offset: 0, bodyRows: 1 } } })
+      const text = (await ui.findAll({ type: 'Text' })).map(t => t.text ?? '').join(' | ')
+      await ui.unmount()
+      leads.push(/dropped: (Move|Add)/.exec(text)?.[1] ?? '')
+    }
+    expect(leads).toEqual(['Move', 'Add', 'Move'])
+  })
+
+  test('standingDrops: a part carried by both the held note and the note on screen is said once, in its first place', () => {
+    const plans = [RP(4, 'Add the cap test', 'Add the reload test')]
+    const cap = { n: 4, step: 'Add the cap test', how: 'looks dropped' as const }
+    const reload = { n: 4, step: 'Add the reload test', how: 'looks dropped' as const }
+    const quiet = parseWatch(walkAnswer('- #4: Add the cap test | not assessed'))
+    expect(rep.standingDrops(quiet, plans, [cap, reload, { ...cap, step: 'add the cap test' }, reload]).map(d => d.step)).toEqual(['Add the cap test', 'Add the reload test'])
+  })
+
+  test('SC2 (mounted): a part on screen that a walk took back is not said again as dropped by a later look that never walks it', async ($, on) => {
+    const owner = owns([2, 'Read the real data first.\nMove the request limit to the local store.'])
+    const answers = [
+      walkAnswer('- #2: Move the request limit to the local store | looks dropped'),
+      walkAnswer('- #2: Move the request limit to the local store | done'),
+      `steps:\n- nothing\nstate: working\nflag: The agent says the tests pass, but never ran them.\nwhy: No run.\nclosed:\n- nothing\n`,
+    ]
+    let at = 0
+    const m = mounted7(on, owner, brief => (brief ? WELL : (answers[Math.min(at++, 2)] ?? '')))
+    await started($)
+    await m.look($, 't1')
+    const first = await rowSays($, /dropped: Move the request limit/)
+    await m.look($, 't2')
+    await m.look($, 't3')
+    expect({ first, third: await rowSays($, /dropped: Move the request limit/), flag: await rowSays($, /never ran them/) }).toEqual({ first: true, third: false, flag: true })
+  })
 }
 
 // What a reopened session's record holds: one typed prompt and one agent answer with a tool use.

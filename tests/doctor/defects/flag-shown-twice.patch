@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 909ca5c..958c764 100644
+index 7778e4d..a235fec 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1750,7 +1750,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
-     // reading, or the session off screen holds it. A later look's note replaces what is held and
-     // says its parts; a held note whose every part a walk took back goes.
-     if (held !== undefined && held.parts.length > 0 && parts.length === 0) heldNotes.delete(sid)
--    if (said === null || repeat(said.line)) return
-+    if (said === null) return
-     const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId }
-     if (onScreen(sid) && (view === 'row' || view === 'note')) {
-       heldNotes.delete(sid)
+@@ -1756,7 +1756,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+     // The note on screen whose every part a walk took back comes down, unless this look draws its
+     // own: it would go on telling the owner a step was dropped that the walk marked done.
+     const takenBack = onNote.length > 0 && parts.length === 0
+-    if (said === null || repeat(said.line)) {
++    if (said === null) {
+       if (takenBack) await toRow($)
+       return
+     }

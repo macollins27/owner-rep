@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 909ca5c..ae408a3 100644
+index 7778e4d..f128a61 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1752,7 +1752,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
-     if (held !== undefined && held.parts.length > 0 && parts.length === 0) heldNotes.delete(sid)
-     if (said === null || repeat(said.line)) return
+@@ -1761,7 +1761,7 @@ async function look($: EngineInterface, sid: string, reason: 'step' | 'stop' | '
+       return
+     }
      const note: Note = { line: said.line, why: said.why, shownAt: Date.now(), turnId }
 -    if (onScreen(sid) && (view === 'row' || view === 'note')) {
 +    if (onScreen(sid)) {
        heldNotes.delete(sid)
        shownParts.set(sid, parts)
-       after.seen = [...after.seen, said.line].slice(-SEEN_MAX)
+       if (manyParts(parts)) lookTurns.set(sid, turn + 1)
