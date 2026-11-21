@@ -304,6 +304,8 @@ import {
   countsText,
   nearCap,
   editSaved,
+  savedFault,
+  type Known,
   parseReplayArgs,
   removableCallFolder,
   overCallCap,
@@ -1861,6 +1863,31 @@ async function replayFiles($: EngineInterface, a: { path: string; kind?: CallKin
   return { files, where: path }
 }
 
+// What the own edit needs and an own-words call file does not hold: the rule its briefing broke,
+// read from the calls saved before it in the same folder (`savedFault`), the nearest twelve.
+async function knownBefore($: EngineInterface, kind: CallKind, file: string, edits: readonly string[]): Promise<Known> {
+  if (kind !== 'own-words' || !edits.includes('own')) return {}
+  const dir = file.slice(0, file.lastIndexOf('/'))
+  const name = file.slice(file.lastIndexOf('/') + 1)
+  const names = (await $.fs.list(dir).catch(() => []))
+    .filter(f => f.kind === 'file' && CALL_FILE.test(f.name) && f.name < name)
+    .map(f => f.name)
+    .sort()
+    .reverse()
+    .slice(0, 12)
+  const earlier: CallEntry[] = []
+  for (const n of names) {
+    const t = await readText($, `${dir}/${n}`)
+    try {
+      if (t !== null) earlier.push(JSON.parse(t) as CallEntry)
+    } catch {
+      // A file that is not JSON is passed over, as the replay passes over one it cannot read.
+    }
+  }
+  const fault = savedFault(earlier)
+  return fault === null ? {} : { fault }
+}
+
 // The run a replay's kept replies are named by: the time it started, in milliseconds, and always
 // later than the run before it here, so running the same replay again never writes over a reply.
 let lastReplayRun = 0
@@ -1902,8 +1929,9 @@ async function replay($: EngineInterface, args: string): Promise<string> {
       continue
     }
     const texts: Record<string, { system: string; prompt: string | PromptBlock[] }> = { replay: { system: got.system, prompt: got.prompt }, 'as saved': { system: got.system, prompt: got.prompt } }
+    const known = await knownBefore($, e.kind, file, [...(a.variant ?? []), ...(a.base ?? [])])
     if (a.variant !== undefined) {
-      const edited = editSaved(e.kind, got.system, got.prompt, a.variant)
+      const edited = editSaved(e.kind, got.system, got.prompt, a.variant, known)
       if ('why' in edited) {
         lines.push(`  not sent again: ${edited.why}`)
         continue
@@ -1911,7 +1939,7 @@ async function replay($: EngineInterface, args: string): Promise<string> {
       texts.variant = edited
     }
     if (a.base !== undefined) {
-      const edited = editSaved(e.kind, got.system, got.prompt, a.base)
+      const edited = editSaved(e.kind, got.system, got.prompt, a.base, known)
       if ('why' in edited) {
         lines.push(`  not sent again: ${edited.why}`)
         continue
@@ -2067,8 +2095,8 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     }
     // Refused twice (or refused once, the second ask unanswered): the parts the gate
     // replaced are written in the rep's own words by one plain call (no fork) over the
-    // objective, the open conditions, the owner's messages and what the briefing itself
-    // found. A part it writes that still says stop, a reply that did not come back
+    // objective, the open conditions, the owner's messages, what the briefing itself
+    // found and the rule it broke, as the second ask named it. A part it writes that still says stop, a reply that did not come back
     // whole (parseOwnWords) or came within 2% of its cap (cutShort), or a call that
     // fails, leaves the rep's fixed text, and the
     // press goes on. It writes card parts only, never the objective. With no objective
@@ -2079,7 +2107,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       taken = { ...taken, ...unusableReplaced(taken.answer, taken.replaced, open) }
       reads += 1
       const rec = await loadRec($, sid)
-      const prompt = ownWordsPrompt({ ...(await memoryFor($, sid, rec, 'brief')), context }, open, taken.answer)
+      const prompt = ownWordsPrompt(await memoryFor($, sid, rec, 'brief'), open, taken.answer, askFault(taken.written, taken.rules))
       const { result, ms } = await timed(() =>
         $.model.complete({ model: OBJECTIVE_MODEL, system: OWN_WORDS_SYSTEM, prompt, maxTokens: OWN_WORDS_MAX_TOKENS, effort: OWN_WORDS_EFFORT, timeoutMs: OWN_WORDS_TIMEOUT_MS }),
       )
