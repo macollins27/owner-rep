@@ -9,11 +9,13 @@ loads ships under a new version, and every version on main gets its tags and its
                                left BASE, its version must be above BASE's and CHANGELOG.md
                                must have a heading for it.
   release.py publish [--dry-run]
-                               a push to main: when HEAD's version has no tag, tag HEAD
-                               v<version> and owner-rep--v<version> and publish the GitHub
-                               release with that version's changelog section. When the tag
-                               exists and what the mod loads changed since it, fail: a change
-                               reached main without a version of its own.
+                               a push to main: every version above the newest tag, in order,
+                               gets tags v<version> and owner-rep--v<version> on the first
+                               main commit that carries it and a GitHub release with its
+                               changelog section, the newest marked Latest. A tag whose
+                               release is missing gets its release. When HEAD's version is
+                               already tagged and what the mod loads changed since, fail: a
+                               change reached main without a version of its own.
 
 Run from the repository root. `publish` needs `gh` signed in with permission to write.
 """
@@ -53,14 +55,16 @@ def parse(v):
 
 
 def loaded_changes(old, new):
-    names = git('diff', '--name-only', old, new).splitlines()
+    # --no-renames: a loaded file moved into docs/ is a loaded file removed.
+    names = git('diff', '--name-only', '--no-renames', old, new).splitlines()
     return [n for n in names if n and not NOT_LOADED.match(n)]
 
 
 def notes(changelog, version):
-    """The changelog section under `## <version> (`, without its heading, or None."""
-    m = re.search(rf'^## {re.escape(version)} \(.*?\)\s*$\n(.*?)(?=^## |\Z)', changelog, re.M | re.S)
-    return m.group(1).strip() if m else None
+    """The changelog section under `## <version> (date)`, without its heading, or None when
+    there is no such heading or nothing under it."""
+    m = re.search(rf'^## {re.escape(version)} \([^)\n]*\)[^\n]*\n(.*?)(?=^## |\Z)', changelog, re.M | re.S)
+    return (m.group(1).strip() or None) if m else None
 
 
 def marketplace_agrees(ref, version):
@@ -80,7 +84,7 @@ def check(base, head):
         shown = ', '.join(changed[:8]) + (' and more' if len(changed) > 8 else '')
         problems.append(
             f'This changes what the mod loads ({shown}) but {MANIFEST} says {new}, not above '
-            f"main's {old}. Raise it (the last number for a fix, the middle one for a change in "
+            f"{base.removeprefix('origin/')}'s {old}. Raise it (the last number for a fix, the middle one for a change in "
             "what the rep does or says), or take the next free number if another pull request "
             'took yours.')
     if notes(show(head, 'CHANGELOG.md'), new) is None:
@@ -100,11 +104,36 @@ def tag_exists(tag):
                           capture_output=True).returncode == 0
 
 
+def release_exists(tag):
+    return subprocess.run(['gh', 'release', 'view', tag], capture_output=True).returncode == 0
+
+
+def first_commits():
+    """Each version on main's first-parent line since the newest tagged one, oldest first,
+    with the first commit that carries it. Walking the line rather than reading HEAD alone
+    means a run GitHub dropped from the queue, or one that failed, leaves no version behind."""
+    tagged = [parse(t[1:]) for t in git('tag', '-l', 'v*').split()
+              if re.fullmatch(r'v\d+\.\d+\.\d+', t)]
+    newest = max(tagged, default=(0, 0, 0))
+    found = {}
+    for sha in git('rev-list', '--first-parent', 'HEAD').split():
+        try:
+            v = version_at(sha)
+            pv = parse(v)
+        except (subprocess.CalledProcessError, SystemExit, ValueError):
+            break
+        if pv <= newest:
+            break
+        found[v] = sha  # walking newest to oldest, so the last write is the first commit
+    return sorted(found.items(), key=lambda item: parse(item[0]))
+
+
 def publish(dry_run):
     version = version_at('HEAD')
     parse(version)
     tag = f'v{version}'
-    if tag_exists(tag):
+    todo = first_commits()
+    if not todo and tag_exists(tag):
         changed = loaded_changes(tag, 'HEAD')
         if changed:
             print(f'::error::{tag} is already released, and what the mod loads changed since '
@@ -112,29 +141,37 @@ def publish(dry_run):
                   f'until {MANIFEST} has a new version. Open a pull request that raises it and '
                   'adds its changelog section.')
             return 1
-        print(f'{tag} is released and nothing the mod loads changed since: nothing to do.')
-        return 0
-    body = notes(show('HEAD', 'CHANGELOG.md'), version)
-    if body is None:
-        print(f'::error::CHANGELOG.md has no "## {version} (...)" section to publish as the release notes.')
-        return 1
-    if not marketplace_agrees('HEAD', version):
-        print(f'::error::{MARKETPLACE} gives {NAME} a version other than {version}.')
-        return 1
-    head = git('rev-parse', 'HEAD')
-    tags = [tag, f'{NAME}--v{version}']
-    print(f'Release {version} at {head[:7]}: tags {" and ".join(tags)}, notes {len(body)} characters.')
-    if dry_run:
-        print(body)
-        return 0
-    for t in tags:
-        if not tag_exists(t):
-            git('tag', '-a', t, '-m', f'Owner Rep {version}', head)
-    git('push', 'origin', *[f'refs/tags/{t}' for t in tags])
-    with tempfile.NamedTemporaryFile('w', suffix='.md', delete=False) as f:
-        f.write(body + '\n')
-    subprocess.run(['gh', 'release', 'create', tag, '--verify-tag', '--title', f'Owner Rep {version}',
-                    '--notes-file', f.name, '--latest'], check=True)
+        if release_exists(tag):
+            print(f'{tag} is released and nothing the mod loads changed since: nothing to do.')
+            return 0
+        todo = [(version, git('rev-list', '-n1', tag))]
+    for v, sha in todo:
+        body = notes(show(sha, 'CHANGELOG.md'), v)
+        if body is None:
+            print(f'::error::CHANGELOG.md at {sha[:7]} has no "## {v} (...)" section to publish as the release notes.')
+            return 1
+        if not marketplace_agrees(sha, v):
+            print(f'::error::{MARKETPLACE} at {sha[:7]} gives {NAME} a version other than {v}.')
+            return 1
+    for v, sha in todo:
+        tags = [f'v{v}', f'{NAME}--v{v}']
+        latest = v == version
+        body = notes(show(sha, 'CHANGELOG.md'), v)
+        print(f'Release {v} at {sha[:7]}: tags {" and ".join(tags)}, notes {len(body)} characters'
+              f'{", marked Latest" if latest else ""}.')
+        if dry_run:
+            print(body)
+            continue
+        for t in tags:
+            if not tag_exists(t):
+                git('tag', '-a', t, '-m', f'Owner Rep {v}', sha)
+        git('push', 'origin', *[f'refs/tags/{t}' for t in tags])
+        if release_exists(tags[0]):
+            continue
+        with tempfile.NamedTemporaryFile('w', suffix='.md', delete=False) as f:
+            f.write(body + '\n')
+        subprocess.run(['gh', 'release', 'create', tags[0], '--verify-tag', '--title', f'Owner Rep {v}',
+                        '--notes-file', f.name, f'--latest={"true" if latest else "false"}'], check=True)
     return 0
 
 
