@@ -84,9 +84,9 @@ reach no one who installed it. So:
   installed the rep. A pull request that changes only tests, docs or CI needs no version and
   no changelog line.
 - **Nobody tags or publishes by hand.** On each push to main, `.github/workflows/release.yml`
-  tags a version with no tag yet as `vX.Y.Z` and `owner-rep--vX.Y.Z` (the form plugin
-  dependency ranges resolve against) and publishes the GitHub release with that changelog
-  section as its notes.
+  tags every version above the newest tag as `vX.Y.Z` and `owner-rep--vX.Y.Z` (the form plugin
+  dependency ranges resolve against), on the first main commit that carries it, and publishes
+  its GitHub release with that changelog section as its notes, the newest marked Latest.
 - **The checks.** On a pull request, the `release` workflow's `version` job fails when what
   the mod loads changed without a higher version and its changelog section. On main, its
   `publish` job fails when what the mod loads changed since the current version's tag, which

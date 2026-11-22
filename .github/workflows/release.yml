@@ -4,9 +4,9 @@ name: release
 # what the mod loads reaches no one who installed it until that version changes.
 # On a pull request, `version` fails when the pull request changes what the mod loads without
 # raising the version above main's and giving it a changelog section.
-# On a push to main, `publish` tags a version that has no tag yet (v<version> and
-# owner-rep--v<version>, the form plugin dependency ranges resolve against) and publishes its
-# GitHub release from its changelog section. It fails when what the mod loads changed since
+# On a push to main, `publish` tags each version above the newest tag (v<version> and
+# owner-rep--v<version>, the form plugin dependency ranges resolve against) on the first main
+# commit carrying it, and publishes its GitHub release from its changelog section. It fails when what the mod loads changed since
 # the version's tag, which happens when two pull requests took the same number.
 # The rules are in tests/ci/release.py; CLAUDE.md says how to cut a version.
 on:
@@ -31,7 +31,8 @@ jobs:
   publish:
     if: github.event_name == 'push'
     runs-on: ubuntu-latest
-    # One release at a time, and none cancelled: each merge's version is tagged in turn.
+    # One release at a time. GitHub keeps one queued run per group and drops older queued
+    # ones; publish walks main's history, so the run that does go tags every version.
     concurrency:
       group: release
       cancel-in-progress: false

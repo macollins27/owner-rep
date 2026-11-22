@@ -41,11 +41,15 @@ change touches any path the mod loads (every path but `tests/`, `docs/`, `.githu
 `archive/`, the Markdown files, `llms.txt`, `LICENSE`, `.gitignore`, `.gitattributes` and
 `tsconfig.json`), the manifest's `version` must be above the base's, three numbers, and
 `CHANGELOG.md` must have a `## X.Y.Z (...)` section for it; a marketplace entry that names a
-different version also fails it. On a push to main, `publish` runs `release.py publish`: when
-the manifest's version has no `vX.Y.Z` tag, it tags the commit `vX.Y.Z` and
-`owner-rep--vX.Y.Z` and creates the GitHub release with that changelog section as its notes,
-marked Latest; when the tag exists and a loaded path changed since it, the job fails, since
-that change has no version of its own. `publish` alone has `contents: write`, and one runs at
+different version also fails it. On a push to main, `publish` runs `release.py publish`: it
+walks main's first-parent line back to the newest `vX.Y.Z` tag and, for each version above
+it, oldest first, tags the first commit carrying it `vX.Y.Z` and `owner-rep--vX.Y.Z` and
+creates the GitHub release with that version's changelog section as its notes, the newest
+marked Latest, so a run GitHub dropped from its queue or one that failed leaves no version
+untagged. A tag whose release is missing gets its release. When HEAD's version is tagged and
+a loaded path changed since the tag, the job fails, since that change has no version of its
+own. Paths are compared with `--no-renames`, so a loaded file moved into `docs/` counts as
+removed. `publish` alone has `contents: write`, and one runs at
 a time.
 
 ## Architecture
