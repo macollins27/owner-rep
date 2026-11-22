@@ -155,7 +155,13 @@ def publish(dry_run):
                 print(f'::error::{MARKETPLACE} at {at[:7]} gives {NAME} a version other than {v}.')
                 return 1
             plan.append((v, at, tags, body))
-    top = max([highest_tag()] + [parse(v) for v, *_ in plan])
+    # Latest goes only to the highest version tagged, planned, or on main now: a re-run of an
+    # old job, with a newer version on main still untagged, cannot take Latest from it.
+    try:
+        on_main = [parse(version_at('origin/main'))]
+    except (subprocess.CalledProcessError, SystemExit, ValueError):
+        on_main = []
+    top = max([highest_tag(), parse(version)] + on_main + [parse(v) for v, *_ in plan])
     for v, at, tags, body in plan:
         latest = parse(v) == top
         print(f'Release {v} at {at[:7]}: '
@@ -174,6 +180,8 @@ def publish(dry_run):
             f.write(body + '\n')
         subprocess.run(['gh', 'release', 'create', f'v{v}', '--verify-tag', '--title', f'Owner Rep {v}',
                         '--notes-file', f.name, f'--latest={"true" if latest else "false"}'], check=True)
+    # Only HEAD's version is checked: once a newer version is on main, a change that slipped
+    # into an older one's span ships with the newer one, so there is nothing left to flag.
     tag = f'v{version}'
     since = tag if tag_exists(tag) else dict((v, a) for v, a, *_ in plan).get(version)
     changed = loaded_changes(since, 'HEAD') if since else []
