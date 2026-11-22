@@ -1,0 +1,12 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 52778e8..7cc3c92 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -8344,7 +8344,6 @@ export function savedFault(earlier: readonly CallEntry[]): string | null {
+   for (const e of earlier) {
+     if (e.kind === 'own-words') return null
+     if (e.kind !== 'brief' && e.kind !== 'ask-again') continue
+-    if (!asked && e.kind !== 'ask-again') return null
+     asked = true
+     const gate = e.read?.gate
+     if (gate === undefined || e.reply === undefined) continue

@@ -5,6 +5,12 @@ What changed in each release of Owner Rep, newest first. The full record is the
 
 ## Unreleased
 
+- **When Brief me rewrites a refused card in its own words, it knows why.** The call that
+  writes those parts is now told which rule the briefing broke, is given the same rules on
+  proof, your decisions, plain writing, the message and private data that the other reads
+  use, word for word, and no longer gets the rules for reading a record, which it never
+  reads. Its request is about a quarter shorter, with no "never" in it, and asks for work and
+  proof on every open condition, putting a question to you only for a decision you have yet to make.
 - **The check reads the same rules as the briefing, said once.** Check it now carries what
   reaches you and how the rep writes to you, which it lacked, and its task no longer repeats
   its standing rules: the room, the fence and the clock are plain sentences, your messages and

@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index bc415b6..4c8b33b 100644
+index 52778e8..82b8e8e 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1733,7 +1733,7 @@ ${reading}
- Conditions still open:
- ${o === null ? '- none written yet' : openLines(o, m.lines !== undefined && m.lines.length > 0 ? list(m.lines, '') : '- none: every condition is shown, or closed by the owner')}${anyReopened(o) ? `\n${REOPENED_LINE}` : ''}${(m.cover ?? []).map(l => `\n${l}`).join('')}
+@@ -1745,7 +1745,7 @@ The objective of this job, as the rep holds it:
+ ${reading}
  
--The session's size: ${contextLine(m)}
-+The conversation's size: ${contextLine(m)}
+ Conditions still open:
+-${o === null ? '- none written yet' : openLines(o, m.lines !== undefined && m.lines.length > 0 ? list(m.lines, '') : '- none: every condition is shown, or closed by the owner')}${anyReopened(o) ? `\n${REOPENED_LINE}` : ''}${(m.cover ?? []).map(l => `\n${l}`).join('')}${size ? `\n\nThe session's size: ${contextLine(m)}` : ''}
++${o === null ? '- none written yet' : openLines(o, m.lines !== undefined && m.lines.length > 0 ? list(m.lines, '') : '- none: every condition is shown, or closed by the owner')}${anyReopened(o) ? `\n${REOPENED_LINE}` : ''}${(m.cover ?? []).map(l => `\n${l}`).join('')}${size ? `\n\nThe conversation's size: ${contextLine(m)}` : ''}
  
  ${section}${OWNER_HEAD}`
    const tail = `

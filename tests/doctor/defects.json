@@ -2407,9 +2407,9 @@
   },
   {
     "name": "own-words-silent-on-empty",
-    "breaks": "The own-words call is not told the message was left empty, so its opening names a stop that never happened.",
+    "breaks": "The own-words call is not told the rule the briefing broke, so its opening names a stop that never happened.",
     "patch": "own-words-silent-on-empty.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-21"
   },
   {
     "name": "check-drops-instant-message",
@@ -3681,7 +3681,7 @@
     "name": "own-words-cap-low",
     "breaks": "The own-words reply cap drops back to 4,000, under the engine's ceiling, so a long own-words answer is cut short again.",
     "patch": "own-words-cap-low.patch",
-    "fixed": "remade 2026-11-19"
+    "fixed": "remade 2026-11-19; remade 2026-11-21"
   },
   {
     "name": "watch-cut-not-reread",
@@ -4218,10 +4218,10 @@
     "fixed": "remade 2026-11-19 (rewrite)"
   },
   {
-    "name": "own-words-unseen-gone",
-    "breaks": "The own-words call loses the shared lines on standing instructions and steps it could not assess, which it is meant to take from the same strings as the reads.",
-    "patch": "own-words-unseen-gone.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "name": "own-words-unseen-back",
+    "breaks": "The own-words call takes the record-reading lines on standing instructions and steps it could not assess again, though it is given no record to read them in.",
+    "patch": "own-words-unseen-back.patch",
+    "fixed": "remade 2026-11-19 (rewrite); remade 2026-11-21 as own-words-unseen-back, the lines it guarded taken out on purpose (§6.5)"
   },
   {
     "name": "rep-system-edit-unanchored",
@@ -4245,13 +4245,13 @@
     "name": "memory-size-says-conversation",
     "breaks": "What the rep knows calls the size \"the conversation's size\" again, against the record and session wording.",
     "patch": "memory-size-says-conversation.patch",
-    "fixed": "tested 2026-11-18; remade 2026-11-19 (rewrite)"
+    "fixed": "tested 2026-11-18; remade 2026-11-19 (rewrite); remade 2026-11-21"
   },
   {
     "name": "memory-standing-again",
     "breaks": "What the rep knows repeats the standing-instructions line the system prompt already holds.",
     "patch": "memory-standing-again.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "tested 2026-11-18; remade 2026-11-21"
   },
   {
     "name": "replay-base-not-subset",
@@ -4657,9 +4657,9 @@
   },
   {
     "name": "own-words-proof-hands-on-only",
-    "breaks": "The own-words message asks only for a hands-on look where proof is missing, never a fact's command and what it printed.",
+    "breaks": "The own-words message asks only for the missing work, never the proof each open condition needs.",
     "patch": "own-words-proof-hands-on-only.patch",
-    "fixed": "remade 2026-11-19"
+    "fixed": "remade 2026-11-19; remade 2026-11-21"
   },
   {
     "name": "check-proof-hands-on-only",
@@ -4815,7 +4815,7 @@
     "name": "decisions-replay-no-objective",
     "breaks": "The replay's decisions edit leaves an objective call's system prompt as group 3 sent it, so a replay of group 4 measures the objective writer without its change.",
     "patch": "decisions-replay-no-objective.patch",
-    "fixed": "remade 2026-11-19 (rewrite)"
+    "fixed": "remade 2026-11-19 (rewrite); remade 2026-11-21"
   },
   {
     "name": "shown-false-guess-reads",
@@ -4989,7 +4989,7 @@
     "name": "replay-unshown-missing",
     "breaks": "The replay's edit for issue #49 leaves the objective writer's turn-end line as it was, so a replayed objective call is not what this build sends.",
     "patch": "replay-unshown-missing.patch",
-    "fixed": "tested 2026-11-19; remade 2026-11-19 (rewrite)"
+    "fixed": "tested 2026-11-19; remade 2026-11-19 (rewrite); remade 2026-11-21"
   },
   {
     "name": "left-out-fold-stops",
@@ -5367,7 +5367,7 @@
     "name": "own-words-findings-unfenced",
     "breaks": "The own-words request quotes the briefing's left-out items with their tags unescaped, so a quoted tag can end a fenced block.",
     "patch": "own-words-findings-unfenced.patch",
-    "fixed": "2026-11-20"
+    "fixed": "2026-11-20; remade 2026-11-21"
   },
   {
     "name": "walk-line-forms-unread",
@@ -5596,6 +5596,90 @@
     "breaks": "A note on screen whose every part a walk took back stays up, and the next look carries its parts again, so the owner is told a step was dropped that the walk marked done.",
     "patch": "taken-back-note-stays.patch",
     "fixed": "2026-11-21, the scoped check of #68"
+  },
+  {
+    "name": "own-words-size-shown",
+    "breaks": "The own-words request carries the session's size again, a line for a reader of the record, which own words is not.",
+    "patch": "own-words-size-shown.patch",
+    "fixed": "tested 2026-11-21"
+  },
+  {
+    "name": "own-words-fault-of-first-read",
+    "breaks": "The own-words call is told the first reading's broken rule when the second asking was refused for another, so it names a fault the card no longer has.",
+    "patch": "own-words-fault-of-first-read.patch",
+    "fixed": "tested 2026-11-21"
+  },
+  {
+    "name": "own-words-fault-unfenced",
+    "breaks": "The own-words request quotes the broken rule with its tags unescaped, so a quoted fence tag in the briefing's answer can end the owner's messages.",
+    "patch": "own-words-fault-unfenced.patch",
+    "fixed": "tested 2026-11-21"
+  },
+  {
+    "name": "own-words-held-copied",
+    "breaks": "The own-words request copies the held-step rule beside the shared section that already says it, so the rule is said twice in two wordings.",
+    "patch": "own-words-held-copied.patch",
+    "fixed": "tested 2026-11-21; remade 2026-11-21"
+  },
+  {
+    "name": "own-words-reaches-gone",
+    "breaks": "The own-words call loses the section on what reaches the owner, so it is not told a held step or a chore left for the owner is the agent's to finish.",
+    "patch": "own-words-reaches-gone.patch",
+    "fixed": "tested 2026-11-21"
+  },
+  {
+    "name": "own-words-private-gone",
+    "breaks": "The own-words call loses the line that keeps secrets and personal data out of what it writes.",
+    "patch": "own-words-private-gone.patch",
+    "fixed": "tested 2026-11-21"
+  },
+  {
+    "name": "own-words-stop-allowed",
+    "breaks": "The own-words request loses the rule that nothing it writes stops the agent, calls the work finished or gives the owner a chore while a condition is open.",
+    "patch": "own-words-stop-allowed.patch",
+    "fixed": "tested 2026-11-21; remade 2026-11-21"
+  },
+  {
+    "name": "replay-own-sent-without-fault",
+    "breaks": "The replay's own edit sends an own-words call with a stand-in for the rule its briefing broke when no earlier call names it, so the replayed request is not what this build sent.",
+    "patch": "replay-own-sent-without-fault.patch",
+    "fixed": "tested 2026-11-21"
+  },
+  {
+    "name": "replay-own-size-kept",
+    "breaks": "The replay's own edit keeps the session's size in a replayed own-words request, which this build no longer sends.",
+    "patch": "replay-own-size-kept.patch",
+    "fixed": "tested 2026-11-21"
+  },
+  {
+    "name": "saved-fault-past-own-words",
+    "breaks": "The rule an own-words call's briefing broke is read past an earlier own-words call, from another card's briefing.",
+    "patch": "saved-fault-past-own-words.patch",
+    "fixed": "tested 2026-11-21"
+  },
+  {
+    "name": "saved-fault-from-brief-alone",
+    "breaks": "The rule an own-words call's briefing broke is read from a briefing with no second asking after it, which no own-words call follows.",
+    "patch": "saved-fault-from-brief-alone.patch",
+    "fixed": "tested 2026-11-21"
+  },
+  {
+    "name": "replay-own-fault-unread",
+    "breaks": "The replay never reads the calls saved before an own-words call, so the own edit sends none of them again.",
+    "patch": "replay-own-fault-unread.patch",
+    "fixed": "tested 2026-11-21"
+  },
+  {
+    "name": "own-words-may-leave-as-is",
+    "breaks": "The own-words request no longer asks for work and proof on every open condition nor keeps a question to the owner for a decision yet to make, so its message can ask only that things be left as they are and its parts can ask the owner about a decision already made.",
+    "patch": "own-words-may-leave-as-is.patch",
+    "fixed": "2026-11-21"
+  },
+  {
+    "name": "own-words-asks-settled",
+    "breaks": "The own-words request no longer keeps what the owner's messages settled as settled nor puts a look with someone other than the agent and the owner, so its parts can ask the owner again about a decision already made or hand the owner the look.",
+    "patch": "own-words-asks-settled.patch",
+    "fixed": "2026-11-21"
   },
   {
     "name": "check-without-reaches",

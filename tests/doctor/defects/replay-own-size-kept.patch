@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 52778e8..7a38c78 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -8330,7 +8330,7 @@ function ownTask(task: string, fault: string | undefined): string | { why: strin
+   if (sizeEnd < 0 || old.indexOf(`\n\n${OWNER_HEAD}${opens}`) < sizeEnd || old.split(opens).length !== 2 || old.split(closes).length !== 2) return fail
+   if (fault === undefined) return { why: 'the rule its briefing broke is not in the calls saved before it' }
+   const s = fenceSuffix(REPLAY_FENCE)
+-  const memory = `${old.slice(0, sizeAt)}${old.slice(sizeEnd)}`.replace(opens, `\n<owner_messages${s}>\n`).replace(closes, `\n</owner_messages${s}>`)
++  const memory = old.replace(opens, `\n<owner_messages${s}>\n`).replace(closes, `\n</owner_messages${s}>`)
+   const now = ownWordsText(memory, open, stands, left, fenceTags(fault))
+   return ended ? endAsked(now) : now
+ }

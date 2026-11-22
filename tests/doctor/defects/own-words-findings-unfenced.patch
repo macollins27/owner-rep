@@ -1,12 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 52778e8..c0f6752 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -7038,7 +7038,7 @@
+@@ -7007,7 +7007,7 @@ end
+ does: <one line: what this message will make the agent do>`
+ }
+ export function ownWordsPrompt(m: Memory, open: Condition[], a: BriefAnswer, fault: string): string {
+-  return endAsked(ownWordsText(memoryText(m, m.fence, false), fenceTags(list(open.map(promptLine), '- none')), fenceTags(a.stands), fenceTags(list(a.leftOut, '- nothing')), fenceTags(fault)))
++  return endAsked(ownWordsText(memoryText(m, m.fence, false), fenceTags(list(open.map(promptLine), '- none')), fenceTags(a.stands), list(a.leftOut, '- nothing'), fenceTags(fault)))
+ }
  
- stands: ${fenceTags(a.stands)}
- left:
--${fenceTags(list(a.leftOut, '- nothing'))}
-+${list(a.leftOut, '- nothing')}
- 
- Write, in the rep's own plain words to the owner and to the agent, only the four parts below. The objective is not shown complete while any of these conditions is open: nothing you write tells the agent or the job to stop, calls the work finished, or leaves a step for the owner. ${HELD_STEP_RULE}
- 
+ // The own-words answer taken into a card the gate refused: each part the gate

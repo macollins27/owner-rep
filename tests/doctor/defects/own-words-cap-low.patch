@@ -1,9 +1,9 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index f8f119f..9f8e52f 100644
+index 52778e8..9c1a0c8 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -6545,7 +6545,7 @@ export const OWN_WORDS_SYSTEM = [
- ].join('\n\n')
+@@ -6967,7 +6967,7 @@ export const OWN_WORDS_OPENING = `You are the owner's rep. ${REP_OWNER} You are
+ export const OWN_WORDS_SYSTEM = [OWN_WORDS_OPENING, REP_WHY, REP_SHOWN, REP_REACHES, REP_WRITE, REP_MESSAGE, REP_PRIVATE].join('\n\n')
  
  // Its cap and time: four short parts, written at high effort (the cap was 4,000 tokens until G16).
 -export const OWN_WORDS_MAX_TOKENS = MAX_REPLY_TOKENS
