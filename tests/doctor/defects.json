@@ -5945,5 +5945,11 @@
     "breaks": "The second read is told a condition waiting on the owner's go-ahead is held, so a refused card comes back holding a step for the owner.",
     "patch": "ask-again-holds-for-goahead.patch",
     "fixed": "2026-11-22"
+  },
+  {
+    "name": "earlier-message-calls-unpaired",
+    "breaks": "When Brief me falls back on read 1's message, the card keeps the last read's left lines, so it can list a call its own message contradicts.",
+    "patch": "earlier-message-calls-unpaired.patch",
+    "fixed": "2026-11-22"
   }
 ]
