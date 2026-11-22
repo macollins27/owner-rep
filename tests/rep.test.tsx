@@ -873,7 +873,9 @@ test('the brief makes every call itself: a call that weighs on the owner is one 
   const brief = readerGets(briefPrompt({ objective: null, owner: [om('Build it.')], past: [], seen: [], others: [] }))
   expect(brief).toContain('You make every call yourself and the message carries it: the owner edits what they disagree with and sends it, so every decision reaches the owner with your answer.')
   expect(brief).toContain("The agent holds a step for the owner only where the owner's own words asked for it; a hold in your draft that the owner sent unchanged was your call, made again now.")
-  expect(brief).toContain("A call weighs on the owner when it touches the owner's livelihood or public name, cannot be undone, or goes against what the owner asked for; publishing, sending, paying and deleting the owner's data are among them. For each, \"left\" gives one line of what is at stake, what you chose and why, and anything you assumed that only the owner knows; the message carries your call: do it, do it once a named thing is shown, or leave it out and say why.")
+  expect(brief).toContain("A call weighs on the owner when it touches the owner's livelihood or public name, cannot be undone, or goes against what the owner asked for; publishing, sending, paying and deleting the owner's data are among them. For each, \"left\" gives one line of what is at stake, what you chose and why; the message carries your call: do it, do it once a named thing is shown, or leave it out and say why.")
+  // An assumption about a fact only the owner knows is named for any call, weighty or not.
+  expect(brief).toContain('Name under "left" any assumption about facts only the owner knows.')
   expect(brief).toContain("A step the owner's guard refused stays refused: the card says whether the guard should let it through, and the message gives the agent no way around it.")
   // The message carries the call exactly, and the card's gap line is that call.
   expect(brief).toContain('Name your call on each weighty step exactly ("publish to the live address once the booking form is shown working"), rather than "wait for approval".')
@@ -1577,7 +1579,7 @@ test('every read that writes the message carries the rule that every call is the
     expect(text).not.toContain('go-ahead')
   }
   expect(askAgain(OPEN_JOB_OPEN, 'gave no verdict')).toContain('Every call is yours to make, as "What reaches the owner" says.')
-  expect(ownWordsPrompt(m, OPEN_JOB_OPEN, EMPTY_CARD, 'gave no verdict')).toContain('every call still open is yours to make, as "What reaches the owner" says.')
+  expect(ownWordsPrompt(m, OPEN_JOB_OPEN, EMPTY_CARD, 'gave no verdict')).toContain('every call still open is yours to make, as "What reaches the owner" says, and the message carries each call "left" gives as it stands.')
   expect(askAgain(OPEN_JOB_OPEN, 'gave no verdict')).not.toContain('go-ahead')
 })
 
@@ -2150,7 +2152,7 @@ test('rule: OWN_WORDS_SYSTEM opens on what the call is given and holds the share
   // The review of #74: a message asking only that things be left as they are is the refused stop in
   // other words. The repair of 22 November 2026: what the owner settled stays settled, and every
   // call still open is the rep's, never a question put to the owner.
-  expect(p).toContain('The message asks for work and proof on every open condition: asking only that things be left as they are is a stop in other words. What the owner\'s messages already settle stays settled, and the parts act on it; every call still open is yours to make, as "What reaches the owner" says. A look at the result is by someone other than the agent and the owner.')
+  expect(p).toContain('The message asks for work and proof on every open condition: asking only that things be left as they are is a stop in other words. What the owner\'s messages already settle stays settled, and the parts act on it; every call still open is yours to make, as "What reaches the owner" says, and the message carries each call "left" gives as it stands. A look at the result is by someone other than the agent and the owner.')
   expect(p).not.toContain('A question reaches the owner')
   // The message slot: one line per open condition, the work and its proof; the finish line is the shared section's.
   expect(p).toContain('one line per open condition, asking for the work that is missing and the proof it needs>')
