@@ -23,7 +23,8 @@ What changed in each release of Owner Rep, newest first. The full record is the
 - **Your guards stay yours.** When one of your guards refuses a step, the card can say the
   guard should let it through, but the message never tells the agent to get around it.
 - **The card and its message agree.** When the rep rewrites a refused message in its own
-  words, the new message carries the same calls the card shows.
+  words, the new message carries the same calls the card shows; when it falls back on its
+  first reading's message, the card shows that reading's calls with it.
 - **The fallback message no longer holds steps for a go-ahead.** When the rep has to fall back
   on its fixed message, the message lists what is open and asks for each to be shown.
 

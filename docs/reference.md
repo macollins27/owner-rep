@@ -231,7 +231,8 @@ call writes (below):
    `messageUsable(own.message)`), `takeOwnWords` is not given the message to take, and
    `earlierMessage(answer, replaced, ownTaken,
    first)` puts read 1's message on the card, without its stop sentences, with read 1's gated
-   `does:` line, provided read 1 kept its message (`'message'` not in `first.replaced`) and
+   `does:` line and read 1's `left:` lines (they carry the calls that message acts on, so the
+   card never shows one read's calls beside another's message), provided read 1 kept its message (`'message'` not in `first.replaced`) and
    `messageUsable(first.answer.message)`; otherwise the card is unchanged. It is decided by the
    `replaced` lists, never by comparing a message with `OPEN_MESSAGE`, and runs only after
    the own-words call. So Brief me's message is, in this order: the last read's own message

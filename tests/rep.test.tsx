@@ -1543,6 +1543,27 @@ test('earlierMessage puts read 1\'s message, without its stop sentences, and its
   expect(earlierMessage(last.answer, last.replaced, false, unusable)).toBe(last.answer)
 })
 
+// The review of #80: the card's left lines carry the rep's calls, so they travel with the message
+// they belong to. Read 1's message on the card brings read 1's left lines; the last read's stay
+// whenever its own or the own-words message stands.
+test('earlierMessage takes read 1\'s left lines with read 1\'s message, so the card never shows one read\'s calls beside another read\'s message', () => {
+  const lastCard = { ...REFUSED_CARD('Wrap up and stop here.'), leftOut: ['Sending the welcome email: I chose to leave it unsent, since customers have not seen the copy.'] }
+  const last = gateVerdict(lastCard, OPEN_JOB_OPEN)
+  expect(last.replaced).toEqual(['means', 'message'])
+  const read1Card = { ...REFUSED_CARD('Send the welcome email now and show the delivery result.'), leftOut: ['Sending the welcome email: I chose to send it now, since the copy was approved.'] }
+  const read1 = gateVerdict(read1Card, OPEN_JOB_OPEN)
+  expect(read1.replaced).toEqual(['means'])
+  const taken = earlierMessage(last.answer, last.replaced, false, read1)
+  expect(taken.message).toBe('Send the welcome email now and show the delivery result.')
+  expect(taken.leftOut).toEqual(read1.answer.leftOut)
+  expect(taken.leftOut[0]).toBe('Sending the welcome email: I chose to send it now, since the copy was approved.')
+  expect(taken.leftOut.join(' ')).not.toContain('leave it unsent')
+  expect(taken.means).toBe(last.answer.means)
+  // The own-words message taken, or read 1 replaced too: the last read's left lines stay.
+  expect(earlierMessage(last.answer, last.replaced, true, read1).leftOut).toEqual(last.answer.leftOut)
+  expect(earlierMessage(last.answer, last.replaced, false, { ...read1, replaced: ['means', 'message'] }).leftOut).toEqual(last.answer.leftOut)
+})
+
 // The second reader's eight findings on the stop reading and the chooser (review round 1). Each
 // takes the reader's exact input, with close variants that must stay caught or kept.
 

@@ -7242,12 +7242,13 @@ export function ownMessageTaken(replaced: Replaced[], own: BriefAnswer | null): 
 // Brief me's last net before the fixed list: when the last read's message was
 // replaced by the rep's fixed text and the own-words call gave no usable one,
 // a message read 1 kept stands instead, without its stop sentences, with read
-// 1's does line (already through the gate). Read 1 replaced too, or nothing
+// 1's does line (already through the gate) and read 1's left lines, which carry
+// the calls that message acts on. Read 1 replaced too, or nothing
 // usable left of it (`messageUsable`, so praise alone is not), and the fixed text stays. Every other part is the last
 // read's. Decided by the parts lists, never by comparing the message's text.
 export function earlierMessage(answer: BriefAnswer, replaced: Replaced[], ownTaken: boolean, first: { answer: BriefAnswer; replaced: Replaced[] }): BriefAnswer {
   if (!replaced.includes('message') || ownTaken || first.replaced.includes('message')) return answer
-  return messageUsable(first.answer.message) ? { ...answer, message: withoutStopSentences(first.answer.message), does: first.answer.does } : answer
+  return messageUsable(first.answer.message) ? { ...answer, message: withoutStopSentences(first.answer.message), does: first.answer.does, leftOut: first.answer.leftOut } : answer
 }
 
 // Whether a part ends at a sentence mark: a full stop, an exclamation mark or a
