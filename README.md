@@ -120,7 +120,11 @@ claude plugin install owner-rep@owner-rep
 ```
 
 A shell install takes effect in your next session, or after `/reload-plugins` in one that is
-already open. To update later, run `claude plugin update owner-rep@owner-rep` and restart.
+already open. To update later, run `claude plugin update owner-rep@owner-rep` and restart,
+or have Claude Code do it for you: in `/plugin`, open **Marketplaces**, pick `owner-rep` and
+turn on auto-update, which Claude Code leaves off for marketplaces other than Anthropic's.
+What each version changed is in the [changelog](CHANGELOG.md) and on the
+[releases page](https://github.com/macollins27/owner-rep/releases).
 To remove it, run `claude plugin uninstall owner-rep@owner-rep`.
 
 **Where it draws.** The rep draws in the terminal, in the Claude desktop app, and in Claude

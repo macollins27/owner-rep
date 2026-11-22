@@ -33,6 +33,21 @@ that job alone; otherwise they run in full.
 `tests/ci/declarations.sh` runs first there and fails the run when the installed build is
 not the one stamped on the pinned copy's first line, so the two cannot drift apart unseen.
 
+A second workflow, `.github/workflows/release.yml`, runs on every pull request and every push
+to main, with no paths left out. Its rules are in `tests/ci/release.py`, and `CLAUDE.md`
+under "Releases" says how to cut a version. On a pull request, `version` runs
+`release.py check origin/<base> HEAD` against the pull request's merge with its base: when the
+change touches any path the mod loads (every path but `tests/`, `docs/`, `.github/`,
+`archive/`, the Markdown files, `llms.txt`, `LICENSE`, `.gitignore`, `.gitattributes` and
+`tsconfig.json`), the manifest's `version` must be above the base's, three numbers, and
+`CHANGELOG.md` must have a `## X.Y.Z (...)` section for it; a marketplace entry that names a
+different version also fails it. On a push to main, `publish` runs `release.py publish`: when
+the manifest's version has no `vX.Y.Z` tag, it tags the commit `vX.Y.Z` and
+`owner-rep--vX.Y.Z` and creates the GitHub release with that changelog section as its notes,
+marked Latest; when the tag exists and a loaded path changed since it, the job fails, since
+that change has no version of its own. `publish` alone has `contents: write`, and one runs at
+a time.
+
 ## Architecture
 
 Two modules, deliberately split:
