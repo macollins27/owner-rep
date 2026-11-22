@@ -8848,3 +8848,4 @@ export function replayTotals(rows: readonly ReplayRow[], label: string): string 
   const gates = Object.keys(gate).length === 0 ? '' : `; gate: ${listed(gate)}`
   return `${label}: ${mine.length} calls; read as: ${listed(parsed)}${gates}; tokens in ${k(input)}, cached ${k(cached)}, written ${k(written)}, out ${k(output)}; ${(ms / mine.length / 1000).toFixed(1)} s a call`
 }
+// probe
