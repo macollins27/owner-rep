@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index ac28676..6ee917a 100644
+index b0a6539..594b437 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -918,7 +918,7 @@ export const skipAfter = (typedPast: number): number =>
+@@ -932,7 +932,7 @@ const DC_OWN_Q = 'What the owner\'s messages already settle stays settled, and t
  // G40 (prompt audit §6.1): lengths in words, as targets the gate does not enforce. Cards ran
  // 182 to 481 words; the owner reads them at a glance.
  export const SHORT_PART = 'one or two sentences, about 20 words, under 40'
 -export const LEFT_ITEMS = 'one line per item, each one sentence of about 8 words and under 20, at most six, the costliest first; fold any more into one last line "- and N smaller gaps"'
 +export const LEFT_ITEMS = 'one line per item, each under 20 words, at most six, the costliest first; fold any more into one last line "- and N smaller gaps"'
  export const MESSAGE_FORM = 'as "How you write the message to the agent" says (each line one sentence of about 12 words, under 150 words in all unless more than five things are asked)'
- const HELD_STEP_RULE = `When a condition waits on the owner's go-ahead (publish, send, pay, a guard refusal), the message tells the agent to finish everything else, hold that step until the go-ahead comes, and say exactly what it will show the owner then; it never pushes the held step.`
  
+ // Saved sources and the store (docs/reference.md, "Saved sources and the store"). Each source

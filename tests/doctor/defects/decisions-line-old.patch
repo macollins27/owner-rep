@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 12261ff..fb18d29 100644
+index b0a6539..de9bbf1 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1777,7 +1777,7 @@ export const contextLine = (m: Memory): string =>
- const DECIDE_SHOWN = 'A condition is shown only by the proof "What counts as shown" names; a test passing shows that it passed, and not that the result works.'
- export const DECIDE_DROPPED = "A step of an approved plan, or a part of one, with no sign while later work goes on or that looks dropped is the owner's ask dropped."
- const DECIDE_VERDICT = 'While any condition is open or not shown, the verdict is "continue", and no part says the work is finished or going well.'
--const DECIDE_ASKED = 'The owner is asked only for the message to send and one plain question per decision of theirs.'
-+const DECIDE_ASKED = 'Only two things ever come to the owner: a question about what the owner wants, and the message to send.'
- const DECIDE_PLAIN = 'Use plain words, and no term the owner did not use.'
- const decidingText = (plan: boolean, brief: boolean): string =>
-   `These rules decide this answer:\n${[DECIDE_SHOWN, ...(plan ? [DECIDE_DROPPED] : []), ...(brief ? [DECIDE_VERDICT] : []), DECIDE_ASKED, DECIDE_PLAIN].map(r => `- ${r}`).join('\n')}`
+@@ -921,7 +921,7 @@ export const skipAfter = (typedPast: number): number =>
+ // owner reaches the owner as what the rep chose and why, and the message carries it; no step is held
+ // for the owner's approval unless the owner's own words asked for that hold. These are the texts the
+ // decide edit puts in place of PRE_DC's (the replay's decide group, below).
+-const DC_ASKED = 'You make every call and the message carries it: each decision reaches the owner as your answer and its reason.'
++const DC_ASKED = 'Only two things ever come to the owner: a question about what the owner wants, and the message to send.'
+ const DC_LEFT = 'or a call that weighs on the owner, in one line under 30 words, as "What reaches the owner" says, never folded.'
+ const DC_SIX = 'A self-proving step inside a plan the owner approved is the owner\'s ask: say under "left" whether you would keep or drop it and why, and have the message carry that call.'
+ const DC_REACHES = 'You make every call yourself and the message carries it: the owner edits what they disagree with and sends it, so every decision reaches the owner with your answer. A call weighs on the owner when it touches the owner\'s livelihood or public name, cannot be undone, or goes against what the owner asked for; publishing, sending, paying and deleting the owner\'s data are among them. For each, "left" gives one line of what is at stake, what you chose and why, and anything you assumed that only the owner knows; the message carries your call: do it, do it once a named thing is shown, or leave it out and say why. The agent holds a step for the owner only where the owner\'s own words asked for it; a hold in your draft that the owner sent unchanged was your call, made again now. A step the owner\'s guard refused stays refused: the card says whether the guard should let it through, and the message gives the agent no way around it.'

@@ -186,9 +186,8 @@ saying what it does the rep's fixed text, the list of open conditions. Beside a 
 a line saying what it does that says stop is the rep's. An empty message is refused the same
 way while a condition is open, on the message alone: an owner looking at open work with nothing
 to send has lost the one thing the card is for, and the rest of a sound card is kept because
-nothing in it is wrong. The fixed list also tells the agent to hold any step that needs the
-owner's go-ahead, finish the rest, and say what it will show, since a bare list of open work
-would push it into a step only the owner may order. A rep's message is about the work, so
+nothing in it is wrong. The fixed list holds no step for the owner: the rep makes every call,
+and a step the owner wanted held is held by the owner's own words, which the agent has. A rep's message is about the work, so
 any sentence other than those three forms counts: a statement of fact such as "The install is
 not shown." is a finding that tells the agent what to show, and requiring an order would
 throw findings away.
@@ -421,16 +420,23 @@ planning are work on the product. None of them is the sign-off, which stays a ha
 someone who did not build the thing. The objective writer
 is told that a routine followed or a brief's steps carried out is the agent's method, never a
 condition of done, and the paid check looks at the product itself. A step of a plan the owner
-approved that is such a piece stays a condition, since the owner said yes to it, with an open
-question beside it asking whether to keep it; the check flags it the same way.
+approved that is such a piece stays a condition, since the owner said yes to it, with the rep's
+call beside it on whether to keep or drop it, and why; the check makes the same call.
 
 One consequence is spelled out in the
 brief: the owner does no step of the job. A chore the agent leaves "for you", such as a branch
 to delete, is the agent's unfinished work, listed as left out and put in the message to the
-agent, never relayed to the owner as what to do next. What does reach the owner is a decision that is
-truly theirs: one that touches their livelihood or public name, cannot be undone, or goes against
-something they asked for. A go-ahead to publish, send or pay is one, put as a plain question,
-and the message tells the agent to finish the rest and hold that step until the owner says go. A card that lists anything left out
+agent, never relayed to the owner as what to do next. Every decision reaches the owner already
+made. The owner reads, edits and sends every message, so the rep's call is where the owner
+starts, and a question with no answer would leave them stuck. A call that weighs on the owner,
+one that touches their livelihood or public name, cannot be undone, or goes against something
+they asked for (publishing, sending, paying, deleting their data), gets one line on the card:
+what is at stake, what the rep chose and why, and anything it assumed that only the owner knows.
+The message carries the call: do it, do it once a named thing is shown, or leave it out and say
+why. The agent holds a step only where the owner's own words asked for that; a hold the rep's
+own earlier draft put in, sent unchanged, is the rep's call and is made again. A refusal from
+the owner's guard stands: the card may say the guard should let the step through, and the
+message gives the agent no way around it. A card that lists anything left out
 cannot also carry the line saying every part is done; the code drops that line.
 
 Nothing in a session except the owner's own messages can give the rep orders. Text an agent
