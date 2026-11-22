@@ -108,70 +108,84 @@ def release_exists(tag):
     return subprocess.run(['gh', 'release', 'view', tag], capture_output=True).returncode == 0
 
 
+# Versions below this were tagged and released by hand on 21 Nov 2026; publish keeps every
+# version from here up whole.
+FIRST_AUTOMATED = (0, 8, 0)
+
+
 def first_commits():
-    """Each version on main's first-parent line since the newest tagged one, oldest first,
-    with the first commit that carries it. Walking the line rather than reading HEAD alone
-    means a run GitHub dropped from the queue, or one that failed, leaves no version behind."""
-    tagged = [parse(t[1:]) for t in git('tag', '-l', 'v*').split()
-              if re.fullmatch(r'v\d+\.\d+\.\d+', t)]
-    newest = max(tagged, default=(0, 0, 0))
+    """Each version from FIRST_AUTOMATED up on main's first-parent line, oldest first, with the
+    first commit that carries it. Every run reads the whole line, so a run GitHub dropped from
+    its queue, or one that failed partway, leaves nothing behind for the next."""
     found = {}
     for sha in git('rev-list', '--first-parent', 'HEAD').split():
         try:
             v = version_at(sha)
             pv = parse(v)
         except (subprocess.CalledProcessError, SystemExit, ValueError):
-            break
-        if pv <= newest:
+            continue  # a commit whose manifest cannot be read carries no version
+        if pv < FIRST_AUTOMATED:
             break
         found[v] = sha  # walking newest to oldest, so the last write is the first commit
     return sorted(found.items(), key=lambda item: parse(item[0]))
 
 
+def highest_tag():
+    tagged = [parse(t[1:]) for t in git('tag', '-l', 'v*').split()
+              if re.fullmatch(r'v\d+\.\d+\.\d+', t)]
+    return max(tagged, default=(0, 0, 0))
+
+
 def publish(dry_run):
+    """Give every version on main its tags and its release, then fail when what the mod loads
+    changed since HEAD's version was first carried, a change with no version of its own."""
     version = version_at('HEAD')
     parse(version)
-    tag = f'v{version}'
-    todo = first_commits()
-    if not todo and tag_exists(tag):
-        changed = loaded_changes(tag, 'HEAD')
-        if changed:
-            print(f'::error::{tag} is already released, and what the mod loads changed since '
-                  f'({", ".join(changed[:8])}). Those changes reach no one who installed it '
-                  f'until {MANIFEST} has a new version. Open a pull request that raises it and '
-                  'adds its changelog section.')
-            return 1
-        if release_exists(tag):
-            print(f'{tag} is released and nothing the mod loads changed since: nothing to do.')
-            return 0
-        todo = [(version, git('rev-list', '-n1', tag))]
-    for v, sha in todo:
-        body = notes(show(sha, 'CHANGELOG.md'), v)
-        if body is None:
-            print(f'::error::CHANGELOG.md at {sha[:7]} has no "## {v} (...)" section to publish as the release notes.')
-            return 1
-        if not marketplace_agrees(sha, v):
-            print(f'::error::{MARKETPLACE} at {sha[:7]} gives {NAME} a version other than {v}.')
-            return 1
-    for v, sha in todo:
-        tags = [f'v{v}', f'{NAME}--v{v}']
-        latest = v == version
-        body = notes(show(sha, 'CHANGELOG.md'), v)
-        print(f'Release {v} at {sha[:7]}: tags {" and ".join(tags)}, notes {len(body)} characters'
-              f'{", marked Latest" if latest else ""}.')
+    plan = []
+    for v, sha in first_commits():
+        tag = f'v{v}'
+        at = git('rev-list', '-n1', tag) if tag_exists(tag) else sha
+        tags = [t for t in (tag, f'{NAME}--v{v}') if not tag_exists(t)]
+        if tags or not release_exists(tag):
+            body = notes(show(at, 'CHANGELOG.md'), v)
+            if body is None:
+                print(f'::error::CHANGELOG.md at {at[:7]} has no "## {v} (...)" section to publish as the release notes.')
+                return 1
+            if not marketplace_agrees(at, v):
+                print(f'::error::{MARKETPLACE} at {at[:7]} gives {NAME} a version other than {v}.')
+                return 1
+            plan.append((v, at, tags, body))
+    top = max([highest_tag()] + [parse(v) for v, *_ in plan])
+    for v, at, tags, body in plan:
+        latest = parse(v) == top
+        print(f'Release {v} at {at[:7]}: '
+              f'{"tags " + " and ".join(tags) if tags else "tags already there"}, '
+              f'notes {len(body)} characters{", marked Latest" if latest else ""}.')
         if dry_run:
             print(body)
             continue
         for t in tags:
-            if not tag_exists(t):
-                git('tag', '-a', t, '-m', f'Owner Rep {v}', sha)
-        git('push', 'origin', *[f'refs/tags/{t}' for t in tags])
-        if release_exists(tags[0]):
+            git('tag', '-a', t, '-m', f'Owner Rep {v}', at)
+        if tags:
+            git('push', 'origin', *[f'refs/tags/{t}' for t in tags])
+        if release_exists(f'v{v}'):
             continue
         with tempfile.NamedTemporaryFile('w', suffix='.md', delete=False) as f:
             f.write(body + '\n')
-        subprocess.run(['gh', 'release', 'create', tags[0], '--verify-tag', '--title', f'Owner Rep {v}',
+        subprocess.run(['gh', 'release', 'create', f'v{v}', '--verify-tag', '--title', f'Owner Rep {v}',
                         '--notes-file', f.name, f'--latest={"true" if latest else "false"}'], check=True)
+    tag = f'v{version}'
+    since = tag if tag_exists(tag) else dict((v, a) for v, a, *_ in plan).get(version)
+    changed = loaded_changes(since, 'HEAD') if since else []
+    if changed:
+        print(f'::error::{version} was first released at {git("rev-parse", "--short", since)}, and what '
+              f'the mod loads changed since ({", ".join(changed[:8])}). Those changes reach no one '
+              f'who installed it until {MANIFEST} has a new version. Open a pull request that '
+              'raises it and adds its changelog section.')
+        return 1
+    if not plan:
+        print(f'Every version from {".".join(map(str, FIRST_AUTOMATED))} on main has its tags and '
+              'release, and nothing the mod loads changed since: nothing to do.')
     return 0
 
 
