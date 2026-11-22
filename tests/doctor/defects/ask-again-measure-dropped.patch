@@ -1,5 +1,5 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index b0a6539..2eb5e1d 100644
+index a35ba31..66c3747 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
 @@ -6665,7 +6665,7 @@ export const askAgainBeforeFault = (open: string): string => `## Asked once more

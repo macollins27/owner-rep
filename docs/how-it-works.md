@@ -431,8 +431,8 @@ made. The owner reads, edits and sends every message, so the rep's call is where
 starts, and a question with no answer would leave them stuck. A call that weighs on the owner,
 one that touches their livelihood or public name, cannot be undone, or goes against something
 they asked for (publishing, sending, paying, deleting their data), gets one line on the card:
-what is at stake, what the rep chose and why, and anything it assumed that only the owner knows.
-The message carries the call: do it, do it once a named thing is shown, or leave it out and say
+what is at stake, what the rep chose and why. Any call, weighty or not, that rests on a fact
+only the owner knows names on the card what the rep assumed. The message carries the call: do it, do it once a named thing is shown, or leave it out and say
 why. The agent holds a step only where the owner's own words asked for that; a hold the rep's
 own earlier draft put in, sent unchanged, is the rep's call and is made again. A refusal from
 the owner's guard stands: the card may say the guard should let the step through, and the

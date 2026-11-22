@@ -5401,7 +5401,7 @@
   },
   {
     "name": "left-question-not-short",
-    "breaks": "A weighty call under \"left:\" loses its word limit, so its line of stake, choice and reason runs long.",
+    "breaks": "A weighty call under \"left:\" loses its word limit and may run to as many lines as it likes, so its stake, choice and reason bury the other gaps.",
     "patch": "left-question-not-short.patch",
     "fixed": "2026-11-20; remade 2026-11-22"
   },
@@ -5906,7 +5906,7 @@
   },
   {
     "name": "assumption-unnamed",
-    "breaks": "A weighty call's line no longer names what the rep assumed that only the owner knows, so the owner cannot catch a wrong guess about their own business.",
+    "breaks": "A call that rests on a fact only the owner knows no longer names what the rep assumed, so the owner cannot catch a wrong guess about their own business.",
     "patch": "assumption-unnamed.patch",
     "fixed": "2026-11-22"
   },

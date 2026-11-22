@@ -1,5 +1,5 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index b0a6539..985129a 100644
+index a35ba31..cc70edb 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
 @@ -1903,7 +1903,7 @@ well: <one plain sentence, only when every condition is shown or closed and noth

@@ -158,13 +158,15 @@ call writes (below):
    the owner. The watch, the briefing and its second ask are told once, in `REP_SYSTEM`'s "What
    reaches the owner" (`REP_REACHES`, from `DC_REACHES`), that the rep makes every call and the
    message carries it; that a call weighing on the owner gets one line under `left:` of what is
-   at stake, the call, why, and what it assumed that only the owner knows; that the agent holds
+   at stake, the call and why; that any call resting on a fact only the owner knows names its
+   assumption under `left:`; that the agent holds
    a step only where the owner's own words asked, a hold in a draft the owner sent unchanged
    being the rep's call made again; and that a guard's refusal stands, the message giving the
    agent no way around it. The message section names the rep's call on each weighty step
    exactly (`DC_MESSAGE`); `askAgain` points to "What reaches the owner" by name (`DC_ASK`). The
    own-words call takes the same section in `OWN_WORDS_SYSTEM`, and `ownWordsPrompt` points to
-   it by name (`DC_OWN_Q`). The check reads the same section (`checkPrompt`). The held-step rule
+   it by name (`DC_OWN_Q`), which also has the new message carry each call `left:` gives as it
+   stands, since `takeOwnWords` keeps the gated card's `left:` lines. The check reads the same section (`checkPrompt`). The held-step rule
    the check carried before 0.9.0 is history, `PRE_HELD_STEP_RULE`, kept for the replay.
    A Check card goes through the same gate and has no second ask or own-words call, so an
    instant read refused with the checker's message empty gets `OPEN_MESSAGE` when a condition

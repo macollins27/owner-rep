@@ -13,13 +13,17 @@ What changed in each release of Owner Rep, newest first. The full record is the
 - **A call that weighs on you gets one line.** For anything touching your livelihood or
   public name, anything that can't be undone, or anything that goes against what you asked
   for (publishing, sending, paying, deleting your data), "left out" gives one line under 30
-  words: what is at stake, what the rep chose, why, and anything it assumed that only you
-  know.
+  words: what is at stake, what the rep chose and why.
+- **The rep names its guesses about your business.** Whenever a call rests on something only
+  you know (your working week, your prices, who your customers are), the card says what the
+  rep assumed, so you can correct it before you send.
 - **Your own holds still hold.** A step you asked the agent to wait on stays held. A hold that
   came from the rep's own earlier message, sent unchanged, is decided again rather than read
   as yours.
 - **Your guards stay yours.** When one of your guards refuses a step, the card can say the
   guard should let it through, but the message never tells the agent to get around it.
+- **The card and its message agree.** When the rep rewrites a refused message in its own
+  words, the new message carries the same calls the card shows.
 - **The fallback message no longer holds steps for a go-ahead.** When the rep has to fall back
   on its fixed message, the message lists what is open and asks for each to be shown.
 

@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index b0a6539..c1fba6f 100644
+index a35ba31..5f65ca1 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
 @@ -928,7 +928,7 @@ const DC_REACHES = 'You make every call yourself and the message carries it: the
  const DC_MIND = 'If the owner\'s way will not get the result, the message takes a better way and the card says why; if the result itself looks wrong for what the owner is after, say what you would aim for. You neither change the goal quietly nor obey quietly.'
  const DC_MESSAGE = '- Name your call on each weighty step exactly ("publish to the live address once the booking form is shown working"), rather than "wait for approval".'
  const DC_ASK = 'Every call is yours to make, as "What reaches the owner" says.'
--const DC_OWN_Q = 'What the owner\'s messages already settle stays settled, and the parts act on it; every call still open is yours to make, as "What reaches the owner" says. A look at the result is by someone other than the agent and the owner.'
-+const DC_OWN_Q = 'Every call still open is yours to make, as "What reaches the owner" says.'
+-const DC_OWN_Q = 'What the owner\'s messages already settle stays settled, and the parts act on it; every call still open is yours to make, as "What reaches the owner" says, and the message carries each call "left" gives as it stands. A look at the result is by someone other than the agent and the owner.'
++const DC_OWN_Q = 'Every call still open is yours to make, as "What reaches the owner" says, and the message carries each call "left" gives as it stands.'
  // G40 (prompt audit §6.1): lengths in words, as targets the gate does not enforce. Cards ran
  // 182 to 481 words; the owner reads them at a glance.
  export const SHORT_PART = 'one or two sentences, about 20 words, under 40'

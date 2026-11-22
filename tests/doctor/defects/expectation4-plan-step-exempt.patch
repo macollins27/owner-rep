@@ -1,5 +1,5 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index b0a6539..29823da 100644
+index a35ba31..5386960 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
 @@ -3166,7 +3166,7 @@ const REP_SIX = `On top of the objective sit six expectations for every job. The
