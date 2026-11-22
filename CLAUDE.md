@@ -31,7 +31,7 @@ npx -y -p typescript@5.9.3 tsc -p tests/ci/tsconfig.json --noEmit   # type check
 ```
 
 `claude plugin test` has no filter flag; run the whole file, which takes a few seconds.
-`python3 tests/doctor/doctor.py --shard K/8` runs every eighth defect, as CI does.
+`python3 tests/doctor/doctor.py --shard K/16` runs every sixteenth defect, as CI does.
 `claude plugin validate` reports one expected warning, that a root `CLAUDE.md` is not shipped
 as plugin context: this file is for work on the repository.
 

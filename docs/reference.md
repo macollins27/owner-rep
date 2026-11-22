@@ -13,9 +13,9 @@ type check on Ubuntu, macOS and Windows with Claude Code 2.1.325, and validate, 
 host steps and the tests on Ubuntu with 2.1.286 (the first build with mods on by default), 2.1.310
 (the last build whose band draws every mod in one chain) and the newest release, on every push that touches more than prose and pictures (`paths-ignore` in
 the workflow: the Markdown files, `docs/`, `llms.txt`, the licence, the issue forms and the
-live captures get no run), and the doctor as eight Ubuntu
-jobs at once, each planting every eighth defect (`doctor.py --shard K/8`), so the whole run
-takes about a quarter of an hour where one machine took over one (`.github/workflows/tests.yml`). A new push to a pull request cancels that pull request's run still going (`concurrency`, grouped by the pull request's number); a push to main never cancels another, so each merge's run finishes. `host-calls.sh` fails the run when a
+live captures get no run), and the doctor as sixteen Ubuntu
+jobs at once, each planting every sixteenth defect (`doctor.py --shard K/16`), so the whole run
+takes about three hours where eight jobs took four to six each and GitHub stops a job at six (`.github/workflows/tests.yml`). A new push to a pull request cancels that pull request's run still going (`concurrency`, grouped by the pull request's number); a push to main never cancels another, so each merge's run finishes. `host-calls.sh` fails the run when a
 `$.process.run` or `$.process.spawn` in the hooks names its program other than through
 `hostArgv` (the copy's argvs from `copyArgvs` and the `--version` probe excepted).
 `node --experimental-strip-types tests/ci/host-commands.mjs` runs the transcript reads, the

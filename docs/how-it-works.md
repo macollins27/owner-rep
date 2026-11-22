@@ -728,7 +728,7 @@ with 2.1.286, the first build with mods on by default, with 2.1.310, the last bu
 draws every mod in one chain, and with the newest release, on
 every push that touches more than prose and pictures (`paths-ignore` in the workflow: the
 Markdown files, `docs/`, `llms.txt`, the licence, the issue forms and the live captures get
-no run), and the doctor as eight Ubuntu jobs at once, each planting every eighth defect
+no run), and the doctor as sixteen Ubuntu jobs at once, each planting every sixteenth defect
 (`.github/workflows/tests.yml`). A merge to main whose pull request's run passed on the
 same files passes on a light first job without running them again. The type check uses a
 pinned copy of the API
