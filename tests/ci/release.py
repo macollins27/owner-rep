@@ -9,13 +9,13 @@ loads ships under a new version, and every version on main gets its tags and its
                                left BASE, its version must be above BASE's and CHANGELOG.md
                                must have a heading for it.
   release.py publish [--dry-run]
-                               a push to main: every version above the newest tag, in order,
-                               gets tags v<version> and owner-rep--v<version> on the first
-                               main commit that carries it and a GitHub release with its
-                               changelog section, the newest marked Latest. A tag whose
-                               release is missing gets its release. When HEAD's version is
-                               already tagged and what the mod loads changed since, fail: a
-                               change reached main without a version of its own.
+                               a push to main: every version from 0.8.0 up on main's
+                               first-parent line that lacks them gets tags v<version> and
+                               owner-rep--v<version> on the first commit that carries it and a
+                               GitHub release with its changelog section; only the highest
+                               version tagged is marked Latest. Then, when what the mod loads
+                               changed since HEAD's version was first carried, fail: a change
+                               reached main without a version of its own.
 
 Run from the repository root. `publish` needs `gh` signed in with permission to write.
 """

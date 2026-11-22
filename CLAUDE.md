@@ -84,13 +84,14 @@ reach no one who installed it. So:
   installed the rep. A pull request that changes only tests, docs or CI needs no version and
   no changelog line.
 - **Nobody tags or publishes by hand.** On each push to main, `.github/workflows/release.yml`
-  tags every version above the newest tag as `vX.Y.Z` and `owner-rep--vX.Y.Z` (the form plugin
-  dependency ranges resolve against), on the first main commit that carries it, and publishes
-  its GitHub release with that changelog section as its notes, the newest marked Latest.
+  gives every version from 0.8.0 up its tags, `vX.Y.Z` and `owner-rep--vX.Y.Z` (the form plugin
+  dependency ranges resolve against), on the first main commit that carries it, and its GitHub
+  release with that changelog section as its notes, the highest marked Latest. A run that
+  failed or was dropped is made good by the next.
 - **The checks.** On a pull request, the `release` workflow's `version` job fails when what
   the mod loads changed without a higher version and its changelog section. On main, its
-  `publish` job fails when what the mod loads changed since the current version's tag, which
-  is how two pull requests that took the same number show. The rules are in
+  `publish` job fails when what the mod loads changed since the current version was first on
+  main, which is how two pull requests that took the same number show. The rules are in
   `tests/ci/release.py`; `python3 tests/ci/release.py check origin/main HEAD` runs the pull
   request's check from a branch.
 

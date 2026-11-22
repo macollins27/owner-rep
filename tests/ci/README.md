@@ -95,8 +95,8 @@ requests (#64 to #74) merged after 0.7.7 without one, and GitHub's releases had 
 0.4.1 (those from 0.5.0 to 0.7.7 were added on 21 Nov 2026), because nothing said to raise it. `release.py check BASE HEAD`, run by the `release`
 workflow's `version` job on every pull request, fails when HEAD changes a loaded path without
 a higher version and its changelog section. `release.py publish`, run by its `publish` job on
-every push to main, tags and releases each version on main above the newest tag, and fails
-when a loaded path changed since the current version's tag. Both were run on 21 Nov 2026 against past
+every push to main, gives every version from 0.8.0 up on main its tags and release, and
+fails when a loaded path changed since the current version was first on main. Both were run on 21 Nov 2026 against past
 merges: `check 13d5497 292645e` (0.7.7 to the merge of #74, hooks changed, version unchanged)
 and `check 9ab25d8 e82a5ab` (#67 alone) fail, `check 57be727 c2d6ee8` (0.7.5 to 0.7.6) and
 `check dffe3e3 57be727` (0.7.4 to 0.7.5) pass, and `check 452b4cc^1 452b4cc` (#65, the

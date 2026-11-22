@@ -4,10 +4,11 @@ name: release
 # what the mod loads reaches no one who installed it until that version changes.
 # On a pull request, `version` fails when the pull request changes what the mod loads without
 # raising the version above main's and giving it a changelog section.
-# On a push to main, `publish` tags each version above the newest tag (v<version> and
-# owner-rep--v<version>, the form plugin dependency ranges resolve against) on the first main
-# commit carrying it, and publishes its GitHub release from its changelog section. It fails when what the mod loads changed since
-# the version's tag, which happens when two pull requests took the same number.
+# On a push to main, `publish` gives each version from 0.8.0 up that lacks them its tags
+# (v<version> and owner-rep--v<version>, the form plugin dependency ranges resolve against) on
+# the first main commit carrying it, and its GitHub release from its changelog section. It
+# fails when what the mod loads changed since the version was first on main, which happens
+# when two pull requests took the same number.
 # The rules are in tests/ci/release.py; CLAUDE.md says how to cut a version.
 on:
   pull_request:
