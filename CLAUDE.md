@@ -89,7 +89,8 @@ reach no one who installed it. So:
   release with that changelog section as its notes, the highest marked Latest. A run that
   failed or was dropped is made good by the next.
 - **The checks.** On a pull request, the `release` workflow's `version` job fails when what
-  the mod loads changed without a higher version and its changelog section. On main, its
+  the mod loads changed without a higher version and its changelog section; main's ruleset
+  requires it, so such a pull request cannot merge. On main, its
   `publish` job fails when what the mod loads changed since the current version was first on
   main, which is how two pull requests that took the same number show. The rules are in
   `tests/ci/release.py`; `python3 tests/ci/release.py check origin/main HEAD` runs the pull
