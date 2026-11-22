@@ -697,8 +697,8 @@ successor; three moved there on 15 Oct 2026, when the objective replaced the rea
     path-links question, while the copy's commands pass (the Windows job of
     [run 39157223612](https://github.com/macollins27/owner-rep/actions/runs/39157223612/job/117762818504), on c5a7f33,
     `tests/ci/README.md`).
-    Since 26 Oct 2026 the doctor runs as eight Ubuntu jobs at once (`--shard K/8`), each
-    planting every eighth defect: the whole run takes about a quarter of an hour where one
+    From 26 Oct 2026 the doctor ran as eight Ubuntu jobs at once (`--shard K/8`), each
+    planting every eighth defect: the whole run then took about a quarter of an hour where one
     machine took over one. Since 21 Nov 2026 it runs as sixteen (`--shard K/16`): with 987
     entries and 882 tests, each of the eight took four to six hours, and GitHub stopped
     #73's shard 1 and #74's shards 2, 4 and 8 at its six-hour limit. Since 26 Oct 2026 too, the tests run on Ubuntu with Claude Code
