@@ -11,9 +11,9 @@ true when you do. Every name here is in [`hooks/rep.ts`](../hooks/rep.ts),
 GitHub runs validate, `tests/ci/host-calls.sh`, `tests/ci/host-commands.mjs`, test and the
 type check on Ubuntu, macOS and Windows with Claude Code 2.1.325, and validate, the two
 host steps and the tests on Ubuntu with 2.1.286 (the first build with mods on by default), 2.1.310
-(the last build whose band draws every mod in one chain) and the newest release, on every push that touches more than prose and pictures (`paths-ignore` in
-the workflow: the Markdown files, `docs/`, `llms.txt`, the licence, the issue forms and the
-live captures get no run), and the doctor as sixteen Ubuntu
+(the last build whose band draws every mod in one chain) and the newest release, on every push and pull request that touches more than prose and pictures (the `merged`
+job's `prose` step: when every changed path is a Markdown file, under `docs/`, `llms.txt`, the
+licence, an issue form or a live capture, the tests and the doctor are skipped), and the doctor as sixteen Ubuntu
 jobs at once, each planting every sixteenth defect (`doctor.py --shard K/16`), so the whole run
 takes about three hours where eight jobs took four to six each and GitHub stops a job at six (`.github/workflows/tests.yml`). A new push to a pull request cancels that pull request's run still going (`concurrency`, grouped by the pull request's number); a push to main never cancels another, so each merge's run finishes. `host-calls.sh` fails the run when a
 `$.process.run` or `$.process.spawn` in the hooks names its program other than through
@@ -26,10 +26,13 @@ link, and reads the answers with the mod's own parsers (`linkTargets` for the pa
 Windows one of the check's questions that fails is printed as skipped, since the check does
 not start there, and the copy's commands must still pass (`tests/ci/README.md`). The run's type check uses `tests/ci/types/`, a pinned copy of the
 declarations for Claude Code 2.1.325, the build the declarations step and the type check
-run on; move both together. On a push to main the `merged` job runs first: when the push is
+run on; move both together. The `merged` job runs first. On a push to main, when the push is
 a merge whose second parent holds the same files and has a passing `pull_request` run of the
-workflow, it sets `tested` and the tests and the doctor are skipped, so the run passes on
-that job alone; otherwise they run in full.
+workflow, it sets `tested` and the tests and the doctor are skipped; otherwise they run in
+full. The last job, `passed`, runs always and fails when the tests or the doctor failed or
+were cancelled; main's ruleset requires it beside `version`, so, since every install reads
+main (the marketplace entry's `source` is `./`), nothing merges there before its tests and
+the doctor have passed or a prose-only change has rightly skipped them.
 `tests/ci/declarations.sh` runs first there and fails the run when the installed build is
 not the one stamped on the pinned copy's first line, so the two cannot drift apart unseen.
 
@@ -52,8 +55,8 @@ GitHub dropped from its queue, or one that failed partway, is made good by the n
 when a loaded path changed since HEAD's version was first on main (its tag), the job fails,
 since that change has no version of its own. Paths are compared with `--no-renames`, so a loaded file moved into `docs/` counts as
 removed. `publish` alone has `contents: write`, and one runs at
-a time. The ruleset on main requires `version` to pass, so a pull request it fails cannot
-merge; the ruleset also keeps main from being deleted or overwritten.
+a time. The ruleset on main requires `version` and the tests workflow's `passed` to pass, so a pull
+request either fails cannot merge; the ruleset also keeps main from being deleted or overwritten.
 
 ## Architecture
 

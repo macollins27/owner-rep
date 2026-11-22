@@ -1,29 +1,17 @@
 name: tests
 
-# A push or pull request that changes only prose and pictures (the README and the other
-# Markdown files, docs/, llms.txt, the licence, the issue forms and the live captures) gets
-# no run: nothing the mod loads or the tests read is in those files, and the run takes
-# over an hour of machine time. Everything else, the workflow itself included, still runs.
-# A push runs only on main: a branch with a pull request open gets one run through the pull
-# request, not a second for the push.
+# Every push to main and every pull request gets a run, and its last job, `passed`, always
+# reports: main's ruleset requires it, so nothing merges into main, the branch every install
+# reads, before its tests and the doctor have passed. A change of only prose and pictures (the
+# README and the other Markdown files, docs/, llms.txt, the licence, the issue forms and the
+# live captures) skips the tests and the doctor, which take hours of machine time, and passes
+# on `passed` alone: nothing the mod loads or the tests read is in those files. Everything
+# else, the workflow itself included, runs in full. A push runs only on main: a branch with a
+# pull request open gets one run through the pull request, not a second for the push.
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'llms.txt'
-      - 'LICENSE'
-      - '.github/ISSUE_TEMPLATE/**'
-      - 'tests/live/captures/**'
   pull_request:
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - 'llms.txt'
-      - 'LICENSE'
-      - '.github/ISSUE_TEMPLATE/**'
-      - 'tests/live/captures/**'
 
 # A new push to a pull request cancels that pull request's run still going, since the newer
 # run supersedes it. A push to main never cancels: each merge's run finishes.
@@ -36,21 +24,41 @@ permissions:
   actions: read
 
 jobs:
-  # A push to main that merges a pull request is not tested a second time when the pull
-  # request's own run passed and the merge holds exactly the files that run tested (the
-  # branch already held main, so the merge changed nothing). The run then passes on this job
-  # alone. Otherwise, a merge of a branch behind main or a push straight to main, the tests
-  # and the doctor run in full.
+  # Whether the change holds only prose and pictures (`prose`), which the tests and the doctor
+  # skip. And a push to main that merges a pull request is not tested a second time when the
+  # pull request's own run passed and the merge holds exactly the files that run tested (the
+  # branch already held main, so the merge changed nothing): `tested`. Otherwise, a merge of a
+  # branch behind main or a push straight to main, the tests and the doctor run in full.
   merged:
-    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     outputs:
       tested: ${{ steps.find.outputs.tested }}
+      prose: ${{ steps.prose.outputs.prose }}
     steps:
       - uses: actions/checkout@v5
         with:
-          fetch-depth: 2
+          fetch-depth: 0
+      - id: prose
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          prose=true
+          if ! files=$(git diff --name-only --no-renames "$(git merge-base "$BASE" HEAD)" HEAD); then
+            prose=false
+            echo "Could not compare with $BASE: the tests run in full."
+          fi
+          while IFS= read -r f; do
+            case "$f" in
+              '') ;;
+              *.md|docs/*|llms.txt|LICENSE|.github/ISSUE_TEMPLATE/*|tests/live/captures/*) ;;
+              *) prose=false; echo "Changes $f: the tests run." ;;
+            esac
+          done <<< "$files"
+          [ -n "$files" ] || prose=false
+          [ "$prose" = true ] && echo "Only prose and pictures changed: the tests and the doctor are skipped."
+          echo "prose=$prose" >> "$GITHUB_OUTPUT"
       - id: find
+        if: github.event_name == 'push'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -78,7 +86,7 @@ jobs:
   # that breaks the mod shows here.
   tests:
     needs: merged
-    if: ${{ !cancelled() && needs.merged.outputs.tested != 'true' }}
+    if: ${{ !cancelled() && needs.merged.outputs.tested != 'true' && needs.merged.outputs.prose != 'true' }}
     strategy:
       fail-fast: false
       matrix:
@@ -126,7 +134,7 @@ jobs:
   # hours and GitHub stops a job at six, so sixteen machines each take every sixteenth defect.
   doctor:
     needs: merged
-    if: ${{ !cancelled() && needs.merged.outputs.tested != 'true' }}
+    if: ${{ !cancelled() && needs.merged.outputs.tested != 'true' && needs.merged.outputs.prose != 'true' }}
     strategy:
       fail-fast: false
       matrix:
@@ -141,3 +149,19 @@ jobs:
         run: npm install -g @anthropic-ai/claude-code@2.1.325
       - name: Plant every sixteenth known defect and expect the suite to fail each time
         run: python3 tests/doctor/doctor.py --shard ${{ matrix.shard }}/16
+
+  # The one check main's ruleset requires: it passes when the tests and the doctor passed or
+  # were rightly skipped, and fails when either failed or was cancelled.
+  passed:
+    needs: [merged, tests, doctor]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail unless the tests and the doctor passed or were skipped
+        env:
+          RESULTS: ${{ needs.merged.result }} ${{ needs.tests.result }} ${{ needs.doctor.result }}
+        run: |
+          echo "merged, tests, doctor: $RESULTS"
+          case " $RESULTS " in
+            *' failure '*|*' cancelled '*) exit 1 ;;
+          esac
