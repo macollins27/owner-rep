@@ -90,7 +90,9 @@ reach no one who installed it. So:
   failed or was dropped is made good by the next.
 - **The checks.** On a pull request, the `release` workflow's `version` job fails when what
   the mod loads changed without a higher version and its changelog section; main's ruleset
-  requires it, so such a pull request cannot merge. On main, its
+  requires it, and the `tests` workflow's `passed` job, so a pull request without its version
+  or with failing tests or doctor cannot merge. Installs read main, so that is what keeps a
+  broken version from reaching anyone. On main, its
   `publish` job fails when what the mod loads changed since the current version was first on
   main, which is how two pull requests that took the same number show. The rules are in
   `tests/ci/release.py`; `python3 tests/ci/release.py check origin/main HEAD` runs the pull
