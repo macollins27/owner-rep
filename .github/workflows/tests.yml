@@ -121,15 +121,16 @@ jobs:
           npm install -g typescript@5.9.3
           tsc -p tests/ci/tsconfig.json --noEmit
 
-  # The doctor plants each known defect and runs the suite after each, about fifteen seconds a
-  # time; one machine took over an hour. Eight machines each take every eighth defect.
+  # The doctor plants each known defect and runs the suite after each. With about a thousand
+  # defects and a suite of nearly nine hundred tests, eight machines each took four to six
+  # hours and GitHub stops a job at six, so sixteen machines each take every sixteenth defect.
   doctor:
     needs: merged
     if: ${{ !cancelled() && needs.merged.outputs.tested != 'true' }}
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
@@ -138,5 +139,5 @@ jobs:
           node-version: 22
       - name: Install Claude Code, the build the type declarations are pinned to
         run: npm install -g @anthropic-ai/claude-code@2.1.325
-      - name: Plant every eighth known defect and expect the suite to fail each time
-        run: python3 tests/doctor/doctor.py --shard ${{ matrix.shard }}/8
+      - name: Plant every sixteenth known defect and expect the suite to fail each time
+        run: python3 tests/doctor/doctor.py --shard ${{ matrix.shard }}/16
