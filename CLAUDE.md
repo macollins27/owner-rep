@@ -45,7 +45,6 @@ when they differ. What CI runs on each push is in `docs/reference.md` under "Tes
   the code shows. A change to what the rep reads, runs, keeps or sends also changes the
   README's "What it can reach" and `PRIVACY.md`, since the plugin directory's security scan
   reads the README for that.
-- **Changelog.** `CHANGELOG.md` gets a line for each release.
 - **Pure core, thin adapter.** `hooks/rep.ts` is pure functions and constants with no `$`;
   anything that can be unit-tested lives there. `hooks/register.tsx` is the engine side:
   hooks, state, the store record, the band render and the check run. `types/index.d.ts`
@@ -65,6 +64,36 @@ when they differ. What CI runs on each push is in `docs/reference.md` under "Tes
 - **Icon.** The listing icon is `.claude-plugin/icon.png`, named by `icon` in `plugin.json`;
   its source is `docs/brand/sign.svg`. The directory takes the icon only at the first
   submission.
+
+## Releases
+
+A marketplace install is pinned to the `version` in `.claude-plugin/plugin.json`: until that
+string changes, `claude plugin update` and auto-update copy nothing new, however many commits
+land. A session started with `--plugin-dir`, or a marketplace added from a local folder, loads
+the files in place and ignores the version, so a change can work in your own session and still
+reach no one who installed it. So:
+
+- **Every pull request that changes what the mod loads raises the version.** That is any path
+  outside `tests/`, `docs/`, `.github/`, `archive/` and the Markdown files, `llms.txt`,
+  `LICENSE`, `.gitignore`, `.gitattributes` and `tsconfig.json`; in practice `hooks/`,
+  `types/` and `.claude-plugin/`. Raise the last number for a fix and the middle one for a
+  change in what the rep does, says or keeps; 1.0.0 is Maxwell's call. Take the number above
+  main's at the time, and if another pull request merges with it first, take the next one.
+- **The same pull request gives the version its changelog section**, `## X.Y.Z (day month
+  year)` at the top of `CHANGELOG.md`, with a line for each change written for the person who
+  installed the rep. A pull request that changes only tests, docs or CI needs no version and
+  no changelog line.
+- **Nobody tags or publishes by hand.** On each push to main, `.github/workflows/release.yml`
+  gives every version from 0.8.0 up its tags, `vX.Y.Z` and `owner-rep--vX.Y.Z` (the form plugin
+  dependency ranges resolve against), on the first main commit that carries it, and its GitHub
+  release with that changelog section as its notes, the highest marked Latest. A run that
+  failed or was dropped is made good by the next.
+- **The checks.** On a pull request, the `release` workflow's `version` job fails when what
+  the mod loads changed without a higher version and its changelog section. On main, its
+  `publish` job fails when what the mod loads changed since the current version was first on
+  main, which is how two pull requests that took the same number show. The rules are in
+  `tests/ci/release.py`; `python3 tests/ci/release.py check origin/main HEAD` runs the pull
+  request's check from a branch.
 
 ## Installing
 

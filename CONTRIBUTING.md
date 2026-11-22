@@ -53,6 +53,11 @@ own build's declarations instead.
   `PRIVACY.md` must be something the code shows. A change to what the rep reads, runs, keeps
   or sends changes the README's "What it can reach" and `PRIVACY.md` too.
 - **A green GitHub run** on Ubuntu, macOS and Windows.
+- **A new version when it changes what the rep loads** (`hooks/`, `types/`,
+  `.claude-plugin/`): raise `version` in `.claude-plugin/plugin.json` above main's (the last
+  number for a fix, the middle one for a change in behaviour) and add its section at the top
+  of `CHANGELOG.md`. Installs stay on their version until the number changes. The `release`
+  workflow fails without it, and tags and publishes the release once the pull request merges.
 - **No compiled files.** Don't commit `.claude-plugin/types/`, `node_modules/` or any `.js`.
 
 Commit messages in this repository say what is now true, in a plain sentence: "The heads-up

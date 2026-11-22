@@ -1,0 +1,52 @@
+name: release
+
+# A marketplace install is pinned to the version in .claude-plugin/plugin.json, so a change to
+# what the mod loads reaches no one who installed it until that version changes.
+# On a pull request, `version` fails when the pull request changes what the mod loads without
+# raising the version above main's and giving it a changelog section.
+# On a push to main, `publish` gives each version from 0.8.0 up that lacks them its tags
+# (v<version> and owner-rep--v<version>, the form plugin dependency ranges resolve against) on
+# the first main commit carrying it, and its GitHub release from its changelog section. It
+# fails when what the mod loads changed since the version was first on main, which happens
+# when two pull requests took the same number.
+# The rules are in tests/ci/release.py; CLAUDE.md says how to cut a version.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  version:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Fail when what the mod loads changed without a new version and its changelog section
+        run: python3 tests/ci/release.py check "origin/${{ github.base_ref }}" HEAD
+
+  publish:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    # One release at a time. GitHub keeps one queued run per group and drops older queued
+    # ones; publish walks main's history, so the run that does go tags every version.
+    concurrency:
+      group: release
+      cancel-in-progress: false
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Tag and release the version on main when it has no tag yet
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          python3 tests/ci/release.py publish

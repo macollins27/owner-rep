@@ -3,8 +3,13 @@
 What changed in each release of Owner Rep, newest first. The full record is the
 [commit history](https://github.com/macollins27/owner-rep/commits/main).
 
-## Unreleased
+## 0.8.0 (21 November 2026)
 
+- **Updates reach you again.** Claude Code keeps an install on the version its manifest names
+  until that number changes, and the ten changes after 0.7.7 went out without a new one, so
+  `claude plugin update` found nothing to fetch. This release carries them all. From now on
+  every change to what the rep loads comes with a new version, and each version is tagged and
+  published as a GitHub release when it merges.
 - **When Brief me rewrites a refused card in its own words, it knows why.** The call that
   writes those parts is now told which rule the briefing broke, is given the same rules on
   proof, your decisions, plain writing, the message and private data that the other reads
