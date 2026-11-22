@@ -699,7 +699,9 @@ successor; three moved there on 15 Oct 2026, when the objective replaced the rea
     `tests/ci/README.md`).
     Since 26 Oct 2026 the doctor runs as eight Ubuntu jobs at once (`--shard K/8`), each
     planting every eighth defect: the whole run takes about a quarter of an hour where one
-    machine took over one. Since 26 Oct 2026 too, the tests run on Ubuntu with Claude Code
+    machine took over one. Since 21 Nov 2026 it runs as sixteen (`--shard K/16`): with 987
+    entries and 882 tests, each of the eight took four to six hours, and GitHub stopped
+    #73's shard 1 and #74's shards 2, 4 and 8 at its six-hour limit. Since 26 Oct 2026 too, the tests run on Ubuntu with Claude Code
     2.1.286, the first build with mods on by default (2.1.281 to 2.1.285 pass only with the
     early-access switch on, and 2.1.280 fails 161 of 230), and with the newest release,
     beside 2.1.310 (since 14 Nov 2026 beside 2.1.325, with 2.1.310 kept on Ubuntu); and a merge to main whose pull request's run passed on the same files
