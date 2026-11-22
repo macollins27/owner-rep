@@ -52,7 +52,8 @@ GitHub dropped from its queue, or one that failed partway, is made good by the n
 when a loaded path changed since HEAD's version was first on main (its tag), the job fails,
 since that change has no version of its own. Paths are compared with `--no-renames`, so a loaded file moved into `docs/` counts as
 removed. `publish` alone has `contents: write`, and one runs at
-a time.
+a time. The ruleset on main requires `version` to pass, so a pull request it fails cannot
+merge; the ruleset also keeps main from being deleted or overwritten.
 
 ## Architecture
 
