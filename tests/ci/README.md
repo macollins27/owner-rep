@@ -86,3 +86,18 @@ What stays unshown on a real Windows machine: the mod inside a live interactive 
 there, so the card as drawn, and `$.env.get` reaching the process environment (the script
 reads Node's own `process.env`), and the lookup of `claude.exe`, which only the check, refused
 there, would spawn.
+
+# The release check
+
+A marketplace install is pinned to the `version` in `.claude-plugin/plugin.json`, so a change
+to what the mod loads reaches no one who installed it until that number changes. Ten pull
+requests (#64 to #74) merged after 0.7.7 without one, and GitHub's last release was 0.4.1,
+because nothing said to raise it. `release.py check BASE HEAD`, run by the `release`
+workflow's `version` job on every pull request, fails when HEAD changes a loaded path without
+a higher version and its changelog section. `release.py publish`, run by its `publish` job on
+every push to main, tags and releases a version that has no tag yet, and fails when a loaded
+path changed since the current version's tag. Both were run on 21 Nov 2026 against past
+merges: `check 13d5497 292645e` (0.7.7 to the merge of #74, hooks changed, version unchanged)
+and `check 9ab25d8 e82a5ab` (#67 alone) fail, `check 57be727 c2d6ee8` (0.7.5 to 0.7.6) and
+`check dffe3e3 57be727` (0.7.4 to 0.7.5) pass, and `check 452b4cc^1 452b4cc` (#65, the
+workflow alone) passes with no version needed.
