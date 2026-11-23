@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 75750fc..15f6c89 100644
+index 493c01d..dde409d 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -2107,7 +2107,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
-       taken = { ...taken, ...unusableReplaced(taken.answer, taken.replaced, open) }
+@@ -2254,7 +2254,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
+       taken = { ...taken, ...unusableReplaced(taken.answer, taken.replaced, open, taken.held) }
        reads += 1
        const rec = await loadRec($, sid)
--      const prompt = ownWordsPrompt(await memoryFor($, sid, rec, 'brief'), open, taken.answer, askFault(taken.written, taken.rules))
-+      const prompt = ownWordsPrompt(await memoryFor($, sid, rec, 'brief'), open, taken.answer, askFault(first.written, first.rules))
+-      const prompt = ownWordsPrompt(await memoryFor($, sid, rec, 'brief'), open, taken.answer, askFault(taken.written, taken.rules, taken.held))
++      const prompt = ownWordsPrompt(await memoryFor($, sid, rec, 'brief'), open, taken.answer, askFault(first.written, first.rules, first.held))
        const { result, ms } = await timed(() =>
          $.model.complete({ model: OBJECTIVE_MODEL, system: OWN_WORDS_SYSTEM, prompt, maxTokens: OWN_WORDS_MAX_TOKENS, effort: OWN_WORDS_EFFORT, timeoutMs: OWN_WORDS_TIMEOUT_MS }),
        )

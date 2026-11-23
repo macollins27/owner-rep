@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 79554ff..01d720d 100644
+index 9ff9d5e..8b5a49f 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3277,11 +3277,11 @@ export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer:
+@@ -7188,11 +7188,11 @@ export function gateVerdict(a: BriefAnswer, open: Condition[] | null, held: Held
          well: '',
          means: UNWRITTEN_MEANS,
          next: UNWRITTEN_NEXT,
 -        message: message ? UNWRITTEN_MESSAGE : kept,
--        does: message || messageSaysStop(a.does) ? UNWRITTEN_DOES : a.does,
+-        does: message || messageSaysStop(a.does, held) ? UNWRITTEN_DOES : a.does,
 +        message: UNWRITTEN_MESSAGE,
 +        does: UNWRITTEN_DOES,
        },

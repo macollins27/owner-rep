@@ -1,8 +1,8 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index b6129e7..b8ed52f 100644
+index 493c01d..6ab02d2 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1915,7 +1915,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
+@@ -2248,7 +2248,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
      // fails, leaves the rep's fixed text, and the
      // press goes on. It writes card parts only, never the objective. With no objective
      // written there is no such call.
@@ -10,4 +10,4 @@ index b6129e7..b8ed52f 100644
 +    if (false && taken.refused && taken.replaced.length > 0 && first.open !== null && taken.open !== null) {
        // A message the gate kept that is praise, thanks, a question or a back-reference alone counts as replaced.
        const open = taken.open
-       taken = { ...taken, ...unusableReplaced(taken.answer, taken.replaced, open) }
+       taken = { ...taken, ...unusableReplaced(taken.answer, taken.replaced, open, taken.held) }

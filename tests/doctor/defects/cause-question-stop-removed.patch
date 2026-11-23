@@ -1,11 +1,11 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 85e8014..c63a234 100644
+index 9ff9d5e..6d7e550 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3065,7 +3065,7 @@ const maskExempt = (read: string, afterNegated = false): string => {
-     button === undefined || OWNER_BUTTON.test(button) ? 'x' : wait)
-   s = s.replace(WAIT_AFTER_NEGATED, (_: string, act: string) => `${act}x`)
-   if (afterNegated) s = s.replace(WAIT_FIRST, (_: string, lead: string) => `${lead}x`)
+@@ -6929,7 +6929,7 @@ const maskExempt = (read: string, held: Held, afterNegated = ''): string => {
+     (act !== undefined ? held.has(stemOf(act)) : buttonHeld(button ?? '', held)) ? 'x' : wait)
+   s = s.replace(WAIT_AFTER_NEGATED, (all: string, act: string) => (held.has(stemIn(act)) ? `${act}x` : all))
+   if (afterNegated !== '' && held.has(afterNegated)) s = s.replace(WAIT_FIRST, (_: string, lead: string) => `${lead}x`)
 -  return s.replace(CAUSE_ASKED, 'x ')
 +  return s
  }

@@ -1,17 +1,17 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 85e8014..82c0616 100644
+index 9ff9d5e..bd3676d 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3063,7 +3063,11 @@ const maskExempt = (read: string, afterNegated = false): string => {
+@@ -6927,7 +6927,11 @@ const maskExempt = (read: string, held: Held, afterNegated = ''): string => {
    s = s.replace(BLOCKER_IF, (all: string, condition: string, clause: string) => (BLOCKER_TOLD.test(clause) ? condition + clause.replace(/\bstop\b/gi, 'x') : all))
-   s = s.replace(WAIT_BEFORE_ACT, (wait: string, button?: string) =>
-     button === undefined || OWNER_BUTTON.test(button) ? 'x' : wait)
--  s = s.replace(WAIT_AFTER_NEGATED, (_: string, act: string) => `${act}x`)
+   s = s.replace(WAIT_BEFORE_ACT, (wait: string, act?: string, button?: string) =>
+     (act !== undefined ? held.has(stemOf(act)) : buttonHeld(button ?? '', held)) ? 'x' : wait)
+-  s = s.replace(WAIT_AFTER_NEGATED, (all: string, act: string) => (held.has(stemIn(act)) ? `${act}x` : all))
 +  const negated = new RegExp(NEGATED_ACT, 'i').exec(s)
-+  if (negated !== null) {
++  if (negated !== null && held.has(stemIn(negated[0]))) {
 +    const after = negated.index + negated[0].length
 +    s = s.slice(0, after) + s.slice(after).replace(new RegExp(WAIT_ON_HIM_BARE, 'gi'), 'x')
 +  }
-   if (afterNegated) s = s.replace(WAIT_FIRST, (_: string, lead: string) => `${lead}x`)
+   if (afterNegated !== '' && held.has(afterNegated)) s = s.replace(WAIT_FIRST, (_: string, lead: string) => `${lead}x`)
    return s.replace(CAUSE_ASKED, 'x ')
  }

@@ -1,8 +1,8 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 79554ff..e948afb 100644
+index 9ff9d5e..ea44997 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3284,7 +3284,7 @@ export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer:
+@@ -7195,7 +7195,7 @@ export function gateVerdict(a: BriefAnswer, open: Condition[] | null, held: Held
        replaced: ['means', 'next', ...(message ? ['message' as const] : [])],
      }
    }
@@ -11,12 +11,12 @@ index 79554ff..e948afb 100644
    return {
      answer: {
        ...a,
-@@ -3292,12 +3292,12 @@ export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer:
+@@ -7203,12 +7203,12 @@ export function gateVerdict(a: BriefAnswer, open: Condition[] | null, held: Held
        well: '',
        means: OPEN_MEANS(open),
        next: next ? OPEN_NEXT(open) : a.next,
 -      message: message ? OPEN_MESSAGE(open) : kept,
--      does: message || messageSaysStop(a.does) ? OPEN_DOES : a.does,
+-      does: message || messageSaysStop(a.does, held) ? OPEN_DOES : a.does,
 +      message: OPEN_MESSAGE(open),
 +      does: OPEN_DOES,
        leftOut: withOpen(a.leftOut, open),

@@ -1,12 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 79554ff..da0f98c 100644
+index 9ff9d5e..3c99830 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3258,7 +3258,7 @@ const withOpen = (leftOut: string[], open: Condition[]): string[] => {
+@@ -7169,7 +7169,7 @@ const withOpen = (leftOut: string[], open: Condition[]): string[] => {
  }
- export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer: BriefAnswer; refused: boolean; replaced: Replaced[] } {
+ export function gateVerdict(a: BriefAnswer, open: Condition[] | null, held: Held = NONE_HELD): { answer: BriefAnswer; refused: boolean; replaced: Replaced[] } {
    if (open !== null && open.length === 0) return { answer: a, refused: false, replaced: [] }
--  const sound = a.verdict === 'continue' && a.well === '' && !saysStop(a.next) && !messageSaysStop(a.message)
+-  const sound = a.verdict === 'continue' && a.well === '' && !saysStop(a.next) && !messageSaysStop(a.message, held)
 +  const sound = a.verdict === 'continue' && a.well === ''
    if (sound && (open === null || a.message.trim() !== '')) return { answer: a, refused: false, replaced: [] }
    if (sound && open !== null) {

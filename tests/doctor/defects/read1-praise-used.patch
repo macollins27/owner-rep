@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 264efc1..fce824a 100644
+index 9ff9d5e..0555dd0 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -7248,7 +7248,7 @@ export function ownMessageTaken(replaced: Replaced[], own: BriefAnswer | null):
+@@ -7333,7 +7333,7 @@ export function ownMessageTaken(replaced: Replaced[], own: BriefAnswer | null, h
  // read's. Decided by the parts lists, never by comparing the message's text.
- export function earlierMessage(answer: BriefAnswer, replaced: Replaced[], ownTaken: boolean, first: { answer: BriefAnswer; replaced: Replaced[] }): BriefAnswer {
+ export function earlierMessage(answer: BriefAnswer, replaced: Replaced[], ownTaken: boolean, first: { answer: BriefAnswer; replaced: Replaced[] }, held: Held = NONE_HELD): BriefAnswer {
    if (!replaced.includes('message') || ownTaken || first.replaced.includes('message')) return answer
--  return messageUsable(first.answer.message) ? { ...answer, message: withoutStopSentences(first.answer.message), does: first.answer.does, leftOut: first.answer.leftOut } : answer
-+  return withoutStopSentences(first.answer.message) !== '' ? { ...answer, message: withoutStopSentences(first.answer.message), does: first.answer.does, leftOut: first.answer.leftOut } : answer
+-  return messageUsable(first.answer.message, held) ? { ...answer, message: withoutStopSentences(first.answer.message, held), does: first.answer.does, leftOut: first.answer.leftOut } : answer
++  return withoutStopSentences(first.answer.message, held) !== '' ? { ...answer, message: withoutStopSentences(first.answer.message, held), does: first.answer.does, leftOut: first.answer.leftOut } : answer
  }
  
  // Whether a part ends at a sentence mark: a full stop, an exclamation mark or a

@@ -261,13 +261,13 @@
     "name": "stop-while-open",
     "breaks": "The gate never refuses, so a card can say stop, or that the work is going well, while a condition of the objective is still open or none is written.",
     "patch": "stop-while-open.patch",
-    "fixed": "2026-10-15; remade 2026-10-19; remade 2026-10-29; remade 2026-10-30"
+    "fixed": "2026-10-15; remade 2026-10-19; remade 2026-10-29; remade 2026-10-30; remade 2026-11-22"
   },
   {
     "name": "unwritten-gate-open",
     "breaks": "With no objective written the gate lets everything through, so a card can tell the agent to stop, or say the work is going well, before anything measures it.",
     "patch": "unwritten-gate-open.patch",
-    "fixed": "2026-10-15; remade 2026-10-19; remade 2026-10-29; remade 2026-10-30"
+    "fixed": "2026-10-15; remade 2026-10-19; remade 2026-10-29; remade 2026-10-30; remade 2026-11-22"
   },
   {
     "name": "verdict-missing-continues",
@@ -279,7 +279,7 @@
     "name": "stop-next-unread",
     "breaks": "The gate reads only the verdict line, so an answer that says continue while its next step tells the agent to stop, or calls the work finished, passes while a condition is open.",
     "patch": "stop-next-unread.patch",
-    "fixed": "2026-10-15; remade 2026-10-19; remade 2026-10-29; remade 2026-10-30"
+    "fixed": "2026-10-15; remade 2026-10-19; remade 2026-10-29; remade 2026-10-30; remade 2026-11-22"
   },
   {
     "name": "draft-moves-result",
@@ -477,7 +477,7 @@
     "name": "clear-brief-marks-draw",
     "breaks": "A briefing still running at a /clear marks a condition and draws the ended session's objective on the new session's row.",
     "patch": "clear-brief-marks-draw.patch",
-    "fixed": "2026-10-16"
+    "fixed": "2026-10-16; remade 2026-11-22"
   },
   {
     "name": "clear-check-marks-draw",
@@ -1785,31 +1785,31 @@
     "name": "gate-replaces-all",
     "breaks": "A refused card loses the model's own sound next step and message too, so a card refused only for its verdict or its going-well line drops what the agent should do now for the rep's fixed text.",
     "patch": "gate-replaces-all.patch",
-    "fixed": "2026-10-19; remade 2026-10-29; remade 2026-10-30"
+    "fixed": "2026-10-19; remade 2026-10-29; remade 2026-10-30; remade 2026-11-22"
   },
   {
     "name": "message-not-gated",
     "breaks": "The gate reads the next step but not the message, so a card whose message tells the agent to stop passes while a condition is open, and the owner can send that stop themselves.",
     "patch": "message-not-gated.patch",
-    "fixed": "2026-10-19; remade 2026-10-29; remade 2026-10-30"
+    "fixed": "2026-10-19; remade 2026-10-29; remade 2026-10-30; remade 2026-11-22"
   },
   {
     "name": "own-words-not-asked",
     "breaks": "A briefing refused twice is never written in the rep's own words, so the card always shows the fixed texts in place of what the rep found.",
     "patch": "own-words-not-asked.patch",
-    "fixed": "remade 2026-11-19"
+    "fixed": "remade 2026-11-19; remade 2026-11-22"
   },
   {
     "name": "own-words-stop-taken",
     "breaks": "A part the own-words call writes is taken even when it says stop, so a card refused for saying stop can say stop again while a condition is open.",
     "patch": "own-words-stop-taken.patch",
-    "fixed": "2026-10-19; remade 2026-10-29"
+    "fixed": "2026-10-19; remade 2026-10-29; remade 2026-11-22"
   },
   {
     "name": "message-voice-unshifted",
     "breaks": "The gate reads the card's message as if it were a next step, so a message written in the owner's voice that has the agent wait for their sign-off or hand the work back to them stays on a refused card, and a message that has them wait until the agent has a log is refused.",
     "patch": "message-voice-unshifted.patch",
-    "fixed": "2026-10-19; remade 2026-10-29; remade 2026-10-30"
+    "fixed": "2026-10-19; remade 2026-10-29; remade 2026-10-30; remade 2026-11-22"
   },
   {
     "name": "card-cut-with-rows-empty",
@@ -1887,67 +1887,67 @@
     "name": "message-swapped-whole",
     "breaks": "The gate replaces a refused card's whole message whenever any sentence of it says stop, so the rep's own findings and asks beside a stop sentence are lost for the fixed text.",
     "patch": "message-swapped-whole.patch",
-    "fixed": "2026-10-29; remade 2026-10-30"
+    "fixed": "2026-10-29; remade 2026-10-30; remade 2026-11-22"
   },
   {
     "name": "stop-sentence-kept",
     "breaks": "Taking the stop sentences out of a message keeps the last one, so a refused card can still tell the agent to stop while a condition is open.",
     "patch": "stop-sentence-kept.patch",
-    "fixed": "2026-10-29; remade 2026-10-30"
+    "fixed": "2026-10-29; remade 2026-10-30; remade 2026-11-22"
   },
   {
     "name": "own-words-message-swapped-whole",
     "breaks": "The own-words message is dropped whole when a sentence of it says stop, instead of being taken without that sentence, so the card falls back to the fixed text though the rep wrote a usable message.",
     "patch": "own-words-message-swapped-whole.patch",
-    "fixed": "2026-10-29"
+    "fixed": "2026-10-29; remade 2026-11-22"
   },
   {
     "name": "unwritten-swaps-usable",
     "breaks": "With no objective written the gate replaces every refused message with the fixed text, so a sound message that only stood beside a stop verdict is lost.",
     "patch": "unwritten-swaps-usable.patch",
-    "fixed": "2026-10-29; remade 2026-10-30"
+    "fixed": "2026-10-29; remade 2026-10-30; remade 2026-11-22"
   },
   {
     "name": "before-stop-exemption-dropped",
     "breaks": "\"Before you stop\" is read as a stop, so a message pushing the agent to finish more work before it stops is cut down or replaced.",
     "patch": "before-stop-exemption-dropped.patch",
-    "fixed": "2026-10-29; remade 2026-10-30"
+    "fixed": "2026-10-29; remade 2026-10-30; remade 2026-11-22"
   },
   {
     "name": "reply-from-other-caught",
     "breaks": "A wait for a reply from someone other than the owner is read as a stop, so a message telling the agent to wait on the lead or a tool is cut.",
     "patch": "reply-from-other-caught.patch",
-    "fixed": "2026-10-29; remade 2026-10-30"
+    "fixed": "2026-10-29; remade 2026-10-30; remade 2026-11-22"
   },
   {
     "name": "blocker-report-stop-removed",
     "breaks": "A stop on a blocker that tells the owner what stands in the way is read as a stop, so the message's instruction to report the refusal or absence is cut.",
     "patch": "blocker-report-stop-removed.patch",
-    "fixed": "2026-10-29; remade 2026-10-30"
+    "fixed": "2026-10-29; remade 2026-10-30; remade 2026-11-22"
   },
   {
     "name": "blocker-stop-unreported-kept",
     "breaks": "A stop on a refusal or an absence is let through even when the sentence does not tell the owner what stands in the way, so \"If the push is refused, stop.\" stays on a refused card.",
     "patch": "blocker-stop-unreported-kept.patch",
-    "fixed": "2026-10-29; remade 2026-10-30"
+    "fixed": "2026-10-29; remade 2026-10-30; remade 2026-11-22"
   },
   {
     "name": "outward-wait-exemption-dropped",
-    "breaks": "A wait on the owner's word before an outward act he alone decides (submit, send, publish, pay) is read as a stop, so the message loses the line that keeps the agent from acting for him.",
+    "breaks": "A wait on the owner's word before an act the owner's own words held (\"Ask me before merging.\") is read as a stop, so the message loses the hold the owner asked for.",
     "patch": "outward-wait-exemption-dropped.patch",
-    "fixed": "2026-10-29; remade 2026-10-30"
+    "fixed": "2026-10-29; remade 2026-10-30; remade 2026-11-22"
   },
   {
     "name": "merge-wait-exempted",
-    "breaks": "Merging is counted an outward act the owner alone decides, so \"Wait for my go-ahead before merging.\" stays on a refused card and stops the agent.",
+    "breaks": "Merging is held by its name alone, so \"Wait for my go-ahead before merging.\" stays on a refused card and stops the agent though the owner never asked for that hold.",
     "patch": "merge-wait-exempted.patch",
-    "fixed": "2026-10-29; remade 2026-10-30"
+    "fixed": "2026-10-29; remade 2026-10-30; remade 2026-11-22"
   },
   {
     "name": "stop-once-missed",
     "breaks": "A stop once something is done (\"You can stop after that.\", \"Then stop once the suite is green.\") is not read as a stop, so it stays on a refused card.",
     "patch": "stop-once-missed.patch",
-    "fixed": "2026-10-29; remade 2026-10-30"
+    "fixed": "2026-10-29; remade 2026-10-30; remade 2026-11-22"
   },
   {
     "name": "quoted-stop-read",
@@ -1995,13 +1995,13 @@
     "name": "brief-me-no-read1-fallback",
     "breaks": "Brief me never falls back to read 1's message, so when the last read and the own-words call give nothing usable the card shows the fixed text though read 1 wrote a sound message.",
     "patch": "brief-me-no-read1-fallback.patch",
-    "fixed": "2026-10-29; remade 2026-10-30; remade 2026-10-31"
+    "fixed": "2026-10-29; remade 2026-10-30; remade 2026-10-31; remade 2026-11-22"
   },
   {
     "name": "own-words-replaces-read2",
     "breaks": "The own-words message writes over a message the gate kept, so the rep's sound message from the read is replaced.",
     "patch": "own-words-replaces-read2.patch",
-    "fixed": "2026-10-29"
+    "fixed": "2026-10-29; remade 2026-11-22"
   },
   {
     "name": "read1-fallback-over-own-words",
@@ -2013,25 +2013,25 @@
     "name": "own-message-taken-whole",
     "breaks": "The own-words message is counted taken when it is not empty, without its stop sentences taken out, so a reply that was all stop sentences blocks read 1's message from standing.",
     "patch": "own-message-taken-whole.patch",
-    "fixed": "2026-10-29; remade 2026-10-30"
+    "fixed": "2026-10-29; remade 2026-10-30; remade 2026-11-22"
   },
   {
     "name": "blocker-stop-masks-other-clause",
     "breaks": "A blocker stop that tells the owner what stands in the way masks every stop in its sentence, so a stop in another clause (\"tell me why; otherwise, you can stop now\") reaches the card.",
     "patch": "blocker-stop-masks-other-clause.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-22"
   },
   {
     "name": "negated-act-masks-any-wait",
     "breaks": "After a negated outward act, any wait on the owner is let through, so a wait before something else (\"Do not publish the report; wait for my approval before running the tests.\") reaches the card.",
     "patch": "negated-act-masks-any-wait.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-22"
   },
   {
     "name": "whitespace-changes-verdict",
     "breaks": "A sentence is read with its runs of whitespace as written and the wait on someone else's lookahead can backtrack past a space, so \"Wait for a reply from  me.\" with two spaces reaches the card.",
     "patch": "whitespace-changes-verdict.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-22"
   },
   {
     "name": "approval-from-whitespace",
@@ -2047,21 +2047,21 @@
   },
   {
     "name": "button-inflection-exempted",
-    "breaks": "Only the bare forms of the agent's operations are kept out of the buttons, so \"Wait for my word on Merging.\" is let through as a wait before a button.",
+    "breaks": "Only the bare forms of the agent's operations are kept out of the buttons once the owner held any act, so \"Wait for my word on Merging.\" is let through as a wait before a button.",
     "patch": "button-inflection-exempted.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-22"
   },
   {
     "name": "sign-off-outward",
     "breaks": "Signing with any object, or signing off, counts as an outward act, so \"Wait for my approval before signing off on the tests.\" is let through.",
     "patch": "sign-off-outward.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-22"
   },
   {
     "name": "technical-apply-post-outward",
     "breaks": "Applying or posting anything counts as an outward act, so \"Wait for my approval before applying the migration.\" is let through.",
     "patch": "technical-apply-post-outward.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-22"
   },
   {
     "name": "bracket-left-unbalanced",
@@ -2073,19 +2073,19 @@
     "name": "own-praise-taken",
     "breaks": "An own-words message of praise alone counts as taken, so \"Great work.\" stands on Brief me's card over read 1's usable message.",
     "patch": "own-praise-taken.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-22"
   },
   {
     "name": "own-praise-lands",
     "breaks": "An own-words message not counted as taken is still put on the card, so \"Great work.\" stands where read 1's message or the list of open conditions belongs.",
     "patch": "own-praise-lands.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-22"
   },
   {
     "name": "read2-praise-kept",
     "breaks": "A message read 2 kept whole that is only praise or thanks stands on Brief me's card, and the own-words message and read 1's are never tried in its place.",
     "patch": "read2-praise-kept.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-22"
   },
   {
     "name": "read1-praise-used",
@@ -2121,61 +2121,61 @@
     "name": "sign-modifiers-dropped",
     "breaks": "Signing an agreement, contract or form is an outward act only right after a bare determiner, so \"Wait for my approval before signing the employment contract.\" and \"... signing our contract.\" are taken out.",
     "patch": "sign-modifiers-dropped.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-22"
   },
   {
     "name": "grouped-praise-usable",
     "breaks": "Brief me's chooser reads praise spread across a bracket as usable, so the own-words message \"Great work. (Thanks. Nice job.)\" displaces read 1's usable message.",
     "patch": "grouped-praise-usable.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-22"
   },
   {
     "name": "negated-act-back-reference-caught",
     "breaks": "After a negated outward act, a wait on the owner whose only object refers back to it is read as a stop, so \"Do not publish it; wait for my word on that.\" is taken out.",
     "patch": "negated-act-back-reference-caught.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-22"
   },
   {
     "name": "cause-question-stop-removed",
     "breaks": "A stop or hand-back asked about as the thing a cause led to is read as an order, so \"Name which instruction let you, or any agent, stop ordered work and hand it back to me.\" is taken out.",
     "patch": "cause-question-stop-removed.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-22"
   },
   {
     "name": "cause-question-past-clause",
     "breaks": "The mask on a stop asked about as a cause runs to the sentence end, so the stop in its next clause is let through: \"Find what made you stop, then stop.\" is kept.",
     "patch": "cause-question-past-clause.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-22"
   },
   {
     "name": "cause-question-after-do",
     "breaks": "An order to do what lets the agent stop is read as a question about a cause, so \"Do what lets you stop.\" is kept.",
     "patch": "cause-question-after-do.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-22"
   },
   {
     "name": "cause-question-aside-refused",
     "breaks": "A question about a cause with an aside between commas after its object (\"let you, or any agent, stop\") is read as an order and its sentence taken out.",
     "patch": "cause-question-aside-refused.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-22"
   },
   {
     "name": "button-any-capital-exempted",
-    "breaks": "Any word with a capital after \"on\" is let through as a button the owner presses, so \"Wait for my word on Build.\" reaches the card.",
+    "breaks": "Any word with a capital after \"on\" is let through as a button the owner presses once the owner held any act, so \"Wait for my word on Build.\" reaches the card.",
     "patch": "button-any-capital-exempted.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-22"
   },
   {
     "name": "negated-act-wait-anywhere-after",
     "breaks": "After a negated outward act, a wait on the owner anywhere later in the sentence is let through, so \"Do not publish the report; run the suite and wait for my approval.\" reaches the card.",
     "patch": "negated-act-wait-anywhere-after.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-22"
   },
   {
     "name": "negated-act-sentence-break-caught",
     "breaks": "A wait on the owner in the sentence straight after a negated outward act is read as a stop, so \"Do not publish it. Wait for my word.\" loses its second sentence.",
     "patch": "negated-act-sentence-break-caught.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-22"
   },
   {
     "name": "blocker-negated-condition-kept",
@@ -2349,43 +2349,43 @@
     "name": "empty-message-passes",
     "breaks": "A sound card passes with an empty message while conditions are open, so the owner gets a card with work open and nothing to send.",
     "patch": "empty-message-passes.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-22"
   },
   {
     "name": "blank-message-passes",
     "breaks": "A message of blanks counts as written, so a card with open conditions and nothing to send passes the gate.",
     "patch": "blank-message-passes.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-22"
   },
   {
     "name": "empty-no-objective-refused",
     "breaks": "A card with an empty message and no objective written is refused, though the rule is only for open conditions.",
     "patch": "empty-no-objective-refused.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-22"
   },
   {
     "name": "empty-replaces-means",
     "breaks": "A card refused only for its empty message takes the full refused path, so the rep's text overwrites a good meaning.",
     "patch": "empty-replaces-means.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-22"
   },
   {
     "name": "empty-left-out-not-merged",
     "breaks": "A card refused for its empty message does not list the open conditions as left out.",
     "patch": "empty-left-out-not-merged.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-22"
   },
   {
     "name": "empty-does-overwritten",
     "breaks": "The does line of a card refused for its empty message is always the rep's, so a harmless line the model wrote is lost.",
     "patch": "empty-does-overwritten.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-22"
   },
   {
     "name": "empty-does-kept",
     "breaks": "The does line of a card refused for its empty message stays when empty or saying stop, so the fixed text sits over a line that does not describe it.",
     "patch": "empty-does-kept.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-22"
   },
   {
     "name": "ask-again-silent-on-empty",
@@ -2397,7 +2397,7 @@
     "name": "empty-refusal-no-second-read",
     "breaks": "A card refused only for its empty message gets no second read, so the model is not asked to write the message.",
     "patch": "empty-refusal-no-second-read.patch",
-    "fixed": "remade 2026-11-19"
+    "fixed": "remade 2026-11-19; remade 2026-11-22"
   },
   {
     "name": "own-words-silent-on-empty",
@@ -2415,13 +2415,13 @@
     "name": "empty-all-shown-refused",
     "breaks": "The gate refuses every empty message, so a card with every condition shown or closed gets the fixed text with an empty list.",
     "patch": "empty-all-shown-refused.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-22"
   },
   {
     "name": "usable-message-refused",
     "breaks": "A sound card with a usable message and open conditions is refused as if it were empty, so a good read 1 costs a second read and loses its message.",
     "patch": "usable-message-refused.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-22"
   },
   {
     "name": "brief-may-leave-empty",
@@ -3003,7 +3003,7 @@
     "name": "check-drops-record-lines",
     "breaks": "The card Check it rewrites loses the record's own warnings, and a stop stands beside a lost record.",
     "patch": "check-drops-record-lines.patch",
-    "fixed": "2026-11-01"
+    "fixed": "2026-11-01; remade 2026-11-22"
   },
   {
     "name": "unread-list-taken-for-none",
@@ -3471,7 +3471,7 @@
     "name": "gate-rules-miss-empty",
     "breaks": "The call log's list of the gate's rules leaves out an empty message, so a card the gate refused for it is logged and counted as passed.",
     "patch": "gate-rules-miss-empty.patch",
-    "fixed": "2026-11-14"
+    "fixed": "2026-11-14; remade 2026-11-22"
   },
   {
     "name": "call-log-prunes-any-folder",
@@ -4161,19 +4161,19 @@
     "name": "replay-replies-not-kept",
     "breaks": "The replay does not keep the replies it got, so the two arms cannot be read side by side.",
     "patch": "replay-replies-not-kept.patch",
-    "fixed": "tested 2026-11-18; remade 2026-11-18 on the merge with prompts"
+    "fixed": "tested 2026-11-18; remade 2026-11-18 on the merge with prompts; remade 2026-11-22"
   },
   {
     "name": "replay-run-not-in-name",
     "breaks": "A kept replay reply is named without its run, so running the same replay again with the same settings writes over the earlier run's replies.",
     "patch": "replay-run-not-in-name.patch",
-    "fixed": "2026-11-18; remade 2026-11-18 on the merge with prompts"
+    "fixed": "2026-11-18; remade 2026-11-18 on the merge with prompts; remade 2026-11-22"
   },
   {
     "name": "replay-old-reply-read-as-cut",
     "breaks": "The replay reads a reply to a call saved before the end line as cut for lacking a line its prompt never asked for, so every old call replayed as saved reads as cut short.",
     "patch": "replay-old-reply-read-as-cut.patch",
-    "fixed": "2026-11-18; remade 2026-11-18 on the merge with prompts"
+    "fixed": "2026-11-18; remade 2026-11-18 on the merge with prompts; remade 2026-11-22"
   },
   {
     "name": "call-cap-skips-replays",
@@ -5589,7 +5589,7 @@
     "name": "own-words-fault-of-first-read",
     "breaks": "The own-words call is told the first reading's broken rule when the second asking was refused for another, so it names a fault the card no longer has.",
     "patch": "own-words-fault-of-first-read.patch",
-    "fixed": "tested 2026-11-21"
+    "fixed": "tested 2026-11-21; remade 2026-11-22"
   },
   {
     "name": "own-words-fault-unfenced",
