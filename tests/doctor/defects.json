@@ -5951,5 +5951,113 @@
     "breaks": "When Brief me falls back on read 1's message, the card keeps the last read's left lines, so it can list a call its own message contradicts.",
     "patch": "earlier-message-calls-unpaired.patch",
     "fixed": "2026-11-22"
+  },
+  {
+    "name": "hold-by-act-name",
+    "breaks": "A wait on the owner before any act stands on the card by the act's name alone, whoever asked for it, so the rep's own invented hold reaches the agent.",
+    "patch": "hold-by-act-name.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "hold-button-any-act",
+    "breaks": "A wait on the owner's button (Send, Approve) stands when the owner held any act at all, so a hold on tagging lets a wait on Send through.",
+    "patch": "hold-button-any-act.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "hold-after-negated-any-act",
+    "breaks": "A wait after a negated act stands when the owner held any act, not the one named.",
+    "patch": "hold-after-negated-any-act.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "hold-shape4-any-act",
+    "breaks": "A bare wait after \"Do not merge.\" stands when the owner held any act, such as publishing, not merging.",
+    "patch": "hold-shape4-any-act.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "held-reads-drafts",
+    "breaks": "Holds are read from the rep's drafts and the agent's plans as well as the owner's own words, so the rep's own hold, sent back, counts as the owner's.",
+    "patch": "held-reads-drafts.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "held-reads-quotes",
+    "breaks": "Holds are read inside quoted text in the owner's messages, so the agent's request the owner pasted counts as the owner holding the act.",
+    "patch": "held-reads-quotes.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "held-reads-rep-sentences",
+    "breaks": "A sentence of the rep's that the owner sent inside an edited draft counts as the owner holding the act.",
+    "patch": "held-reads-rep-sentences.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "held-order-keeps-hold",
+    "breaks": "An order to do a held act (\"I've read it; push it\") does not let the hold go, so the agent is still told to wait.",
+    "patch": "held-order-keeps-hold.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "held-mention-releases",
+    "breaks": "Any later mention of a held act (\"Deploying is slow\") lets the hold go, though the owner ordered nothing.",
+    "patch": "held-mention-releases.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "held-no-wait-holds",
+    "breaks": "\"Don't wait for my approval before deploying\" is read as holding deploying.",
+    "patch": "held-no-wait-holds.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "held-sentence-not-split",
+    "breaks": "\"Merge now, but ask me before deploying\" is read as one clause: merging is held too, or deploying is let go.",
+    "patch": "held-sentence-not-split.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "held-saved-call-read-new",
+    "breaks": "A saved call from before the gate fix replays with no acts held, so its recorded verdict changes.",
+    "patch": "held-saved-call-read-new.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "held-not-recorded",
+    "breaks": "The call's record does not keep which acts the owner held, so a replay cannot read it as it was read.",
+    "patch": "held-not-recorded.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "held-every-job",
+    "breaks": "A hold from an earlier job of the session still holds in this one.",
+    "patch": "held-every-job.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "held-past-drafts-unread",
+    "breaks": "Only the last card's message is read past, so a rep sentence from an older draft the owner edited and sent counts as the owner's hold.",
+    "patch": "held-past-drafts-unread.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "held-check-ignored",
+    "breaks": "The Check button's card reads no holds, so the checker's wait on the owner the owner asked for is cut.",
+    "patch": "held-check-ignored.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "held-brief-ignored",
+    "breaks": "Brief me reads no holds, so a wait the owner asked for is cut from the card's message.",
+    "patch": "held-brief-ignored.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "held-second-fault-ignored",
+    "breaks": "The second asking names a held wait as the fault, though the owner asked for it.",
+    "patch": "held-second-fault-ignored.patch",
+    "fixed": "2026-11-22"
   }
 ]

@@ -1732,6 +1732,9 @@ const HOLDS_BY_ACT: [string, string][] = [
   ['Wait for my word before you push.', 'push'],
   ['Wait for my go-ahead on Merge.', 'merge'],
   ['Wait for my word before you open a pull request.', 'pull request'],
+  // Buttons the act list does not name as an act: read by the button's own stem.
+  ['Wait for my word on Send.', 'send'],
+  ['Wait for my word on Approve.', 'approve'],
 ]
 
 test('a wait on the owner\'s word before an act is a stop unless the owner\'s own words hold that act: no act is the owner\'s by its name alone', () => {
@@ -1755,6 +1758,13 @@ test('before this change the gate let through a wait before an outward act whoev
   for (const m of C5_EXEMPT) expect([m, messageSaysStop(m, rep.OLD_HELD)]).toEqual([m, false])
   for (const m of C5_STOPS) expect([m, messageSaysStop(m, rep.OLD_HELD)]).toEqual([m, true])
   for (const [m, act] of HOLDS_BY_ACT) expect([m, messageSaysStop(m, rep.OLD_HELD)]).toEqual([m, !rep.OLD_HELD.has(act)])
+})
+
+test('a call saved before the gate fix has no held acts and replays with OLD_HELD; a call saved after replays with the acts it recorded', () => {
+  expect(rep.savedHeld({ gate: [] } as never)).toBe(rep.OLD_HELD)
+  expect(rep.savedHeld(undefined)).toBe(rep.OLD_HELD)
+  expect([...rep.savedHeld({ gate: [], held: ['merge'] } as never)]).toEqual(['merge'])
+  expect([...rep.savedHeld({ gate: [], held: [] } as never)]).toEqual([])
 })
 
 test('the gate, the chooser and the fault named for the second asking read a hold the same way, against the owner\'s held acts', () => {
@@ -11024,6 +11034,28 @@ const checkedCard = async ($: Engine, on: On, brief: string, out: string) => {
   await ui.unmount()
   return rec()?.lastBrief?.message
 }
+
+// The gate fix (PR 2) on the second asking: read 1's message holds a wait the owner asked for and
+// a stop; the fault read 2 is told quotes the stop alone, never the owner's own hold.
+test('rule: Brief me, read 1 refused with the owner\'s hold and a stop in its message: the second asking quotes the stop, not the hold', async ($, on) => {
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  kept(on, HOLD_JOB([om('ship the release and install it here'), om('Ask me before merging anything.', 2)]))
+  quietBand(on)
+  const prompts: string[] = []
+  const first = `${HOLD_MESSAGE} You can stop after that.`
+  on('model.fork', (_$, e) => {
+    prompts.push(String(e.prompt))
+    return { value: { isAnswered: true, text: USABLE_BRIEF('continue').replace('Show me each session finishing.', first), usage: USAGE } }
+  })
+  ownWords(on, () => OWN_WORDS())
+  await started($)
+  const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+  await ui.press({ key: 'rep' })
+  await ui.unmount()
+  expect(prompts).toHaveLength(2)
+  expect(prompts[1]).toContain('"You can stop after that."')
+  expect(prompts[1]).not.toContain('"Wait for my go-ahead before merging."')
+})
 
 // The gate fix (PR 2) on the Check button: the checker's wait on the owner before merging stands
 // where the owner's own words held merging, and is cut where they did not.

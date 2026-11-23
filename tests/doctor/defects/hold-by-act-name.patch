@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 9ff9d5e..62f91a9 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -6926,7 +6926,7 @@ const maskExempt = (read: string, held: Held, afterNegated = ''): string => {
+   let s = read.replace(BEFORE_STOPS, 'x').replace(WAIT_ON_OTHER, 'x ')
+   s = s.replace(BLOCKER_IF, (all: string, condition: string, clause: string) => (BLOCKER_TOLD.test(clause) ? condition + clause.replace(/\bstop\b/gi, 'x') : all))
+   s = s.replace(WAIT_BEFORE_ACT, (wait: string, act?: string, button?: string) =>
+-    (act !== undefined ? held.has(stemOf(act)) : buttonHeld(button ?? '', held)) ? 'x' : wait)
++    (act !== undefined || OWNER_BUTTON.test(button ?? '')) ? 'x' : wait)
+   s = s.replace(WAIT_AFTER_NEGATED, (all: string, act: string) => (held.has(stemIn(act)) ? `${act}x` : all))
+   if (afterNegated !== '' && held.has(afterNegated)) s = s.replace(WAIT_FIRST, (_: string, lead: string) => `${lead}x`)
+   return s.replace(CAUSE_ASKED, 'x ')

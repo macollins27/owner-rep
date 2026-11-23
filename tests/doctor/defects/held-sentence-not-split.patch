@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 9ff9d5e..9806f19 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -6999,7 +6999,7 @@ export function heldActs(owner: readonly OwnerMsg[], rep: readonly string[]): He
+       if (f === '' || theirs.some(r => r.includes(f))) continue
+       const noWait = NO_WAIT.test(sentence)
+       const holds = !noWait && OWNER_LETS_GO.test(sentence)
+-      for (const clause of sentence.split(/[;,:]|\s+(?:but|and\s+then|then)\s+/i)) {
++      for (const clause of [sentence]) {
+         const acts = [...clause.matchAll(OWNER_ACT)].map(a => stemOf(a[0])).filter(a => a !== '')
+         const order = ORDERS_ACT.test(clause.trim()) && !OWNER_LETS_GO.test(clause)
+         for (const a of acts) {

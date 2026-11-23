@@ -206,19 +206,25 @@ opens is set aside, so "otherwise, you can stop now" or "but in any case you can
 after it is still taken out, while "then stop, and tell me what it refused" is the same kept
 stop said another way. A negated condition names no blocker, so "If the remote is not missing,
 stop and tell me why." is taken out. A wait on the
-owner's word before an outward act only the owner does toward the outside world, from a closed
-list (submitting, sending an email, message, application, letter or invoice, publishing,
-signing an agreement, contract or form, applying for something, posting publicly, paying,
-buying, purchasing, or pressing a button only the owner presses: Submit, Send, Publish, Post,
-Pay, Sign, Apply, Approve or Purchase, so "Wait for my word on Build." is taken out), is kept because acting there
-without the owner would speak or spend for them. The wait has to govern the act: a wait on the
+owner's word before an act is kept only when the owner's own words in this job held that act
+("Ask me before merging.", "Do not publish without my OK."): then the owner asked for the hold,
+and every other call is the rep's to make. The rep's own hold, sent back unchanged or inside an
+edited draft, holds nothing, nor does a quoted request, an earlier job's hold or a mere mention
+("Deploying is slow."); an order to do the act ("I have read it; push it.") lets it go. The
+acts that can be held are the outward ones only the owner does toward the outside world
+(submitting, sending an email, message, application, letter or invoice, publishing, signing an
+agreement, contract or form, applying for something, posting publicly, paying, buying,
+purchasing) and the agent's operations (merging, pushing, deploying, releasing, installing,
+deleting, tagging, shipping, committing, opening a pull request), with the button of each
+("Wait for my word on Build." is taken out). No act is the owner's by its name alone: with
+nothing held, "Wait for my go-ahead before publishing." is taken out like any other wait on
+the owner. The wait has to govern the act: a wait on the
 owner after a sentence that says not to publish is kept only when it is the very next clause
 (after a semicolon, a comma, "and" or the sentence's end) and waits on nothing else, or on that
 act again ("Do not publish it; wait for my word on that.", "Do not publish it. Wait for my
 word."), so "Do not publish the report; wait for my approval before running the tests." and
 "Do not publish the report; run the suite and wait for my approval." are still taken out. Signing off on the tests, applying a migration and posting results to a pull request are
-the agent's work, and so are merging, pushing, deleting, deploying and installing in any form,
-so a wait before them is still a stop. A stop or a hand-back named as what an instruction or
+the agent's work, so a wait before them is still a stop. A stop or a hand-back named as what an instruction or
 habit led to ("name which instruction let you stop ordered work and hand it back to me") is
 the thing the owner wants found and removed, not an order, so it is kept; a stop in another
 clause or sentence ("Find what made you stop, then stop.") is still taken out. A run of spaces or tabs never changes what a sentence

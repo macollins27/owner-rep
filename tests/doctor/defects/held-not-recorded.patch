@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 9ff9d5e..690a541 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -7587,7 +7587,7 @@ export function callRead(kind: CallKind, text: string, open?: Condition[] | null
+     parsed: a.verdict === 'missing' ? 'no-verdict' : 'read',
+     ...marksOf(a),
+     words: cardWords(a),
+-    ...(open === undefined ? {} : { gate: gateRules(a, open, held), held: [...held].sort() }),
++    ...(open === undefined ? {} : { gate: gateRules(a, open, held) }),
+   }
+ }
+ 

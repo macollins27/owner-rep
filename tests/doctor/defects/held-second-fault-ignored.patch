@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 493c01d..cbc0564 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2236,7 +2236,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
+     let end: BriefEnd = first.refused ? 'fixed-text' : 'passed'
+     if (first.refused && first.open !== null) {
+       reads += 1
+-      const again = await ask(askAgain(first.open, askFault(first.written, first.rules, first.held)))
++      const again = await ask(askAgain(first.open, askFault(first.written, first.rules)))
+       if (!('reason' in again)) taken = again
+       if (!taken.refused) end = 'asked-again'
+     }

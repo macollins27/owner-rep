@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 9ff9d5e..c9d78ec 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -6992,7 +6992,7 @@ export function heldActs(owner: readonly OwnerMsg[], rep: readonly string[]): He
+   const held = new Set<string>()
+   for (const m of owner) {
+     if (m.kind !== 'his' && m.kind !== 'note') continue
+-    const text = unquoted(m.text)
++    const text = m.text
+     for (const { start, end } of sentencesOf(text)) {
+       const sentence = text.slice(start, end).replace(/\s+/g, ' ').trim()
+       const f = folded(sentence)

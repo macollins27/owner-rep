@@ -3,6 +3,18 @@
 What changed in each release of Owner Rep, newest first. The full record is the
 [commit history](https://github.com/macollins27/owner-rep/commits/main).
 
+## 0.9.1 (22 November 2026)
+
+- **A wait on you stands only where you asked for it.** When the message tells the agent to
+  wait for your go-ahead before a step, that wait now stays only if your own words in this
+  job asked for it ("ask me before merging"). A wait the rep invented, or one it wrote before
+  and you sent back, is taken out, whatever the step is, publishing included.
+- **You can hold the agent's own steps too.** Merging, pushing, deploying, installing,
+  deleting, tagging, committing and opening a pull request can now be held by your words,
+  as publishing, sending and paying could. When you later tell the agent to go ahead ("I've
+  read it, push it"), the hold ends; a mere mention of the step does not end it, and a hold
+  from an earlier job does not carry over.
+
 ## 0.9.0 (22 November 2026)
 
 - **The rep makes the call.** It used to write messages like "hold the publish until I say

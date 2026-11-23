@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 493c01d..6a578e3 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2195,7 +2195,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
+         if (applyMarks(after, parsed.shown, parsed.closed) && onScreen(sid)) await update($, readingA, () => after.objective)
+         const left = gateOpen(after.objective)
+         // A wait on the owner before an act stands only where the owner's own words hold that act.
+-        const held = heldOf(after)
++        const held: Held = new Set<string>()
+         briefRead = callRead(kind, result.text, left, size, held)
+         gatedOpen = left
+         if (got.sent !== undefined) after.counts = countCall(after.counts, counted(got.sent, briefRead))

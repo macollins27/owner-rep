@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 9ff9d5e..3ea16f6 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -7566,7 +7566,7 @@ const marksOf = (a: { shown: Array<{ by: string }>; closed: unknown[] }) => ({
+ // Heads up line), a card's (no verdict, or read; and the gate's rules against `open`).
+ // The acts held when a saved call was gated: those its read kept, or for a call saved before the
+ // gate read who asked for a hold, the acts the gate let a wait before then (OLD_HELD).
+-export const savedHeld = (read?: CallRead): Held => (read?.held === undefined ? OLD_HELD : new Set(read.held))
++export const savedHeld = (read?: CallRead): Held => new Set(read?.held ?? [])
+ export function callRead(kind: CallKind, text: string, open?: Condition[] | null, size?: { usage?: Usage | null; cap: number }, held: Held = NONE_HELD): CallRead {
+   if (noLabels(text)) return { parsed: 'no-labels' }
+   if (cutShort(kind, text, size?.usage, size?.cap)) return { parsed: kind === 'own-words' ? 'cut' : 'cut-short' }

@@ -316,7 +316,9 @@ call writes (below):
       blocker word) names no refusal or absence, so `If the remote is not missing, stop and
       tell me why.` is caught; `not found`, `does not exist` and `doesn't exist` are blocker
       words themselves and still count.
-   4. A wait on the owner's word before an outward act only the owner does toward the
+   4. A wait on the owner's word before an act the owner's own words of this job held
+      (`heldActs`, below), and only that act: no act is the owner's by its name alone. The
+      acts it can name are the outward acts only the owner does toward the
       outside world, from a closed list (`OUTWARD_ACT`): submit, publish, pay, buy,
       purchase; send with an email, message, application, letter or invoice as its object
       (`send it` is no such act); sign with an agreement, contract, form, lease, offer, NDA
@@ -325,13 +327,16 @@ call writes (below):
       `signing the release commit form` counts too, while `signing the release tag` does
       not); apply for or to; post publicly, online, or on or to social
       media. Signing off, and signing, applying or posting anything else (`signing off on
-      the tests`, `applying the migration`), are the agent's work. Said as a wait for the
+      the tests`, `applying the migration`), are the agent's work, and the agent's operations (`AGENT_ACT`): merge, push, deploy,
+      release, install, delete, tag, ship, commit, and open a or the pull request or PR; the two
+      lists together are `HOLD_ACT`, each read by its stem (`stemOf`). Said as a wait for the
       owner's word, go-ahead, approval or sign-off on,
       before or to the act (`WAIT_BEFORE_ACT`: `Wait for my go-ahead before you send the
       email.`), or on a button only the owner presses toward the outside world, named after
       "on", in any case (`OWNER_BUTTON`: Submit, Send, Publish, Post, Pay, Sign, Apply,
-      Approve, Purchase; `wait for my word on Submit`; any other word is no button, so `Wait
-      for my word on Build.` and `Wait for my word on Merging.` are caught), or as
+      Approve, Purchase, Merge, Push, Deploy, Release, Install, Delete, Tag, Ship, Commit;
+      `wait for my word on Submit`; any other word is no button, so `Wait for my word on
+      Build.` and `Wait for my word on Merging.` are caught), or as
       the act said not to happen (`NEGATED_ACT`: not, never or n't before it, or `HELD_ACT`,
       and the rest of its clause). `HELD_ACT` reads hold, hold off on or hold back on, an
       optional the, this or that, then an outward act (bare send or sending also counts).
@@ -347,9 +352,29 @@ call writes (below):
       that.`, `Do not publish it. Wait for my word.`). A wait before something else is read
       (`Do not publish the report; wait for my approval before running the tests.` is
       caught), and so is a wait after other work (`Do not publish the report; run the suite
-      and wait for my approval.`, or a sentence between). Merging, pushing, deleting, deploying
-      and installing are the agent's to do, so `Wait for my go-ahead before merging.` is
-      still caught.
+      and wait for my approval.`, or a sentence between). Every one of these is masked only
+      when the act it names, by its stem, is one the owner held: the wait after `Do not merge.`
+      stands for a held merge and not for a held publish. With nothing held, `Wait for my
+      go-ahead before publishing.` and `Wait for my go-ahead before merging.` are both caught.
+
+      `heldActs(owner, rep)` gives the acts held. It reads the owner's own messages and notes of
+      this job (`jobMsgs`: kind his or note, never a draft or an agent's plan), with quoted text
+      ("…", “…” and lines opening with `>`) taken out (`unquoted`), sentence by sentence, and
+      skips a sentence found, folded to lower case and one space, inside one of the rep's
+      recent messages (`rep`: the record's drafts and the last card's message), so the rep's
+      own hold, sent back inside an edited draft, holds nothing. A sentence that asks for the
+      owner first (`OWNER_LETS_GO`: until or before I, without or before my OK, approval,
+      go-ahead, word, sign-off, review or look, ask me, check with me, wait for me, wait for my
+      word, I want to review, let me see, my OK) holds each act it names (`OWNER_ACT`, any
+      tense). It is read clause by clause (split at a semicolon, comma or colon, and at "but",
+      "and then" or "then"): a clause that opens with the act as an order (`ORDERS_ACT`:
+      `merge it`, `I have read it; push it`, `go ahead and deploy`) and asks for no one first
+      lets that act go, as does a sentence that says not to wait or ask (`NO_WAIT`: `Don't wait
+      for my approval before deploying.`); a later message wins. So `Merge now, but ask me
+      before deploying.` holds deploying alone, and a mere mention (`Deploying is slow.`)
+      changes nothing. A call saved before 0.9.1 has no `held` and replays with the acts the
+      gate exempted then (`OLD_HELD`, read through `savedHeld`); `callRead` records the acts
+      held beside the gate's rules.
    5. A stop or hand-back asked about as the thing a cause led to (`CAUSE_ASKED`, masked last):
       "which" or "what" (not after "do", and never "whatever"), up to three words (`which
       instruction or habit`), a causing verb (let, lets, made, makes, allowed, allows, led,
