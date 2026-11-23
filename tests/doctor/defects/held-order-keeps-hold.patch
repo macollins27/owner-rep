@@ -1,13 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 9ff9d5e..b7d70ca 100644
+index 641cefa..ed50198 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -7003,7 +7003,7 @@ export function heldActs(owner: readonly OwnerMsg[], rep: readonly string[]): He
-         const acts = [...clause.matchAll(OWNER_ACT)].map(a => stemOf(a[0])).filter(a => a !== '')
-         const order = ORDERS_ACT.test(clause.trim()) && !OWNER_LETS_GO.test(clause)
-         for (const a of acts) {
--          if (order || noWait) held.delete(a)
-+          if (noWait) held.delete(a)
-           else if (holds) held.add(a)
+@@ -7076,7 +7076,6 @@ export function heldActs(owner: readonly OwnerMsg[]): Held {
+         for (const a of c.acts) {
+           if (c.noWait) held.delete(a)
+           else if (c.holds || bare) held.add(a)
+-          else if (c.order) held.delete(a)
          }
        }
+       negatedBefore = !bare && clauses.every(c => !c.holds && !c.order && !c.noWait) && NEGATES.test(sentence) ? all : []

@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 9ff9d5e..070ef7f 100644
+index 641cefa..7aca261 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -6918,7 +6918,7 @@ const WAIT_FIRST = new RegExp(String.raw`^(\s*(?:and\s+)?)${WAIT_ON_HIM_BARE}`,
+@@ -6946,7 +6946,7 @@ const WAIT_FIRST = new RegExp(String.raw`^(\s*(?:and\s+)?)${WAIT_ON_HIM_BARE}`,
  // you stop, then stop.", "Which rule lets you stop? You can stop now." (the second sentence). Not
  // after "do" ("Do what lets you stop." is an order), and "whatever" is no "what".
  const CAUSED = String.raw`(?:the agent|any agent|another agent|(?:the\s+)?(?:other\s+)?agents)`
 -const CAUSE_ASKED = new RegExp(String.raw`(?<!\bdo\s+)\b(?:which|what)\b(?:\s+[\w'’-]+){0,3}?\s+(?:let|lets|made|makes|allowed|allows|led|leads|caused|causes|told|tells|got|gets|permitted)\s+${CAUSED}(?:\s+(?:or|and)\s+${CAUSED})?(?:\s*,[^,;:.!?]*,)?\s+(?:to\s+)?(?:stop(?:s|ped|ping)?|hand(?:s|ed|ing)?)\b(?:(?!\b(?:${BLOCKER_ENDS})\b)[^;:,.!?])*`, 'gi')
 +const CAUSE_ASKED = new RegExp(String.raw`\b(?:which|what)\b(?:\s+[\w'’-]+){0,3}?\s+(?:let|lets|made|makes|allowed|allows|led|leads|caused|causes|told|tells|got|gets|permitted)\s+${CAUSED}(?:\s+(?:or|and)\s+${CAUSED})?(?:\s*,[^,;:.!?]*,)?\s+(?:to\s+)?(?:stop(?:s|ped|ping)?|hand(?:s|ed|ing)?)\b(?:(?!\b(?:${BLOCKER_ENDS})\b)[^;:,.!?])*`, 'gi')
- // A button is held when its word is an act the owner holds; OLD_HELD keeps the old buttons only.
- const buttonHeld = (button: string, held: Held): boolean =>
-   (held === OLD_HELD ? OLD_BUTTON : OWNER_BUTTON).test(button) && held.has(stemOf(button))
+ // A wait before an act, or after the acts said not to happen, is let through only when the owner
+ // holds every act it names (`actsIn`): the act it waits before and each joined to it up to the
+ // clause's end. A button is held when its word is an act the owner holds.

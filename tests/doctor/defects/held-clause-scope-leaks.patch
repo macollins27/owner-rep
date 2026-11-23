@@ -1,0 +1,15 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 641cefa..42e3faa 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -7064,8 +7064,8 @@ export function heldActs(owner: readonly OwnerMsg[]): Held {
+       }
+       const clauses = sentence.split(/[;,:]|\s+(?:but|and\s+then|then)\s+/i).map(c => {
+         const acts = actsIn(c, OWNER_ACT)
+-        const noWait = NO_WAIT.test(c)
+-        const holds = !noWait && OWNER_LETS_GO.test(c)
++        const noWait = NO_WAIT.test(sentence)
++        const holds = !noWait && OWNER_LETS_GO.test(sentence)
+         return { acts, noWait, holds, order: !holds && ORDERS_ACT.test(c.trim()) }
+       })
+       // A clause naming the owner and no act holds the sentence's other acts.

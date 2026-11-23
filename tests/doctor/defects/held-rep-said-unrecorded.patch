@@ -1,0 +1,13 @@
+diff --git a/hooks/register.tsx b/hooks/register.tsx
+index 794fc37..22ae340 100644
+--- a/hooks/register.tsx
++++ b/hooks/register.tsx
+@@ -2845,7 +2845,7 @@ function pushOwner(rec: Rec, kind: OwnerKind, text: string, prior: string, more:
+   const cut = kind === 'draft' ? OWNER_CUT : HIS_CUT
+   // The rep's sentences the owner sent as theirs, read against the drafts the rep has now.
+   const repSaid = kind === 'his' ? repSentences(text, [...rec.drafts, rec.lastBrief?.message ?? '']) : []
+-  const said = repSaid.length > 0 ? { repSaid } : {}
++  const said = repSaid.length > 0 ? {} : {}
+   const { list, uncovered } = trimCounted([...rec.owner, { n: ++rec.counter, kind, text: fit(text, cut), prior: fitTail(prior, PRIOR_CUT), ...said, ...more }], jobOf(rec), rec.uncovered)
+   rec.owner = list
+   if (uncovered === undefined) delete rec.uncovered

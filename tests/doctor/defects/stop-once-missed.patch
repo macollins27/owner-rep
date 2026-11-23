@@ -1,11 +1,11 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 9ff9d5e..65e01e6 100644
+index 641cefa..eca149c 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -6944,7 +6944,7 @@ const readOf = (sentence: string): string => toAgentVoice(maskReported(unwrap(se
+@@ -6983,7 +6983,7 @@ const readOf = (sentence: string): string => toAgentVoice(maskReported(unwrap(se
  const sentenceSaysStop = (sentence: string, before: string, held: Held): boolean => {
-   const last = NEGATED_LAST.exec(readOf(before))
-   const read = maskExempt(readOf(sentence), held, last === null ? '' : stemIn(last[0]))
+   const last = (held === OLD_HELD ? OLD_NEGATED_LAST : NEGATED_LAST).exec(readOf(before))
+   const read = maskExempt(readOf(sentence), held, last === null ? [] : held === OLD_HELD ? ['old'] : actsIn(last[0]))
 -  return STOP_NEXT.test(read) || STOP_ONCE.test(read)
 +  return STOP_NEXT.test(read)
  }

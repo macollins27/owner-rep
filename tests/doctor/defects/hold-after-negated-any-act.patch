@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 9ff9d5e..f81c0c8 100644
+index 641cefa..f2d76be 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -6927,7 +6927,7 @@ const maskExempt = (read: string, held: Held, afterNegated = ''): string => {
-   s = s.replace(BLOCKER_IF, (all: string, condition: string, clause: string) => (BLOCKER_TOLD.test(clause) ? condition + clause.replace(/\bstop\b/gi, 'x') : all))
-   s = s.replace(WAIT_BEFORE_ACT, (wait: string, act?: string, button?: string) =>
-     (act !== undefined ? held.has(stemOf(act)) : buttonHeld(button ?? '', held)) ? 'x' : wait)
--  s = s.replace(WAIT_AFTER_NEGATED, (all: string, act: string) => (held.has(stemIn(act)) ? `${act}x` : all))
+@@ -6960,7 +6960,7 @@ const maskExempt = (read: string, held: Held, afterNegated: readonly string[] =
+     // The clause past the act is kept, so a later stop in it is still read.
+     return allHeld(actsIn(act + rest), held) ? 'x' : wait
+   })
+-  s = s.replace(WAIT_AFTER_NEGATED, (all: string, act: string) => (allHeld(actsIn(act), held) ? `${act}x` : all))
 +  s = s.replace(WAIT_AFTER_NEGATED, (all: string, act: string) => (held.size > 0 ? `${act}x` : all))
-   if (afterNegated !== '' && held.has(afterNegated)) s = s.replace(WAIT_FIRST, (_: string, lead: string) => `${lead}x`)
+   if (allHeld(afterNegated, held)) s = s.replace(WAIT_FIRST, (_: string, lead: string) => `${lead}x`)
    return s.replace(CAUSE_ASKED, 'x ')
  }

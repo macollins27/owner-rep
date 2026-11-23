@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 641cefa..c926575 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -7031,7 +7031,7 @@ const ORDERS_ACT = /^(?:(?:and|but|so|then|ok(?:ay)?|now|please|just|go\s+ahead\
+ const NEGATES = /\b(?:not|never|hold)\b|n['’]t\b/i
+ const unquoted = (text: string): string =>
+   text
+-    .replace(/"[^"\n]*"|“[^”\n]*”|‘[^’\n]*’|(?<![\w'’])'[^'\n]*'(?![\w'’])/g, ' ')
++    .replace(/"[^"\n]*"|“[^”\n]*”/g, ' ')
+     .split('\n')
+     .filter(l => !/^\s*>/.test(l))
+     .join('\n')

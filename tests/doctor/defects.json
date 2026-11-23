@@ -5990,7 +5990,7 @@
   },
   {
     "name": "held-reads-rep-sentences",
-    "breaks": "A sentence of the rep's that the owner sent inside an edited draft counts as the owner holding the act.",
+    "breaks": "A sentence of the rep's that the owner sent inside an edited draft, recorded as the rep's when it came in, counts as the owner holding the act.",
     "patch": "held-reads-rep-sentences.patch",
     "fixed": "2026-11-22"
   },
@@ -6038,7 +6038,7 @@
   },
   {
     "name": "held-past-drafts-unread",
-    "breaks": "Only the last card's message is read past, so a rep sentence from an older draft the owner edited and sent counts as the owner's hold.",
+    "breaks": "A message of the owner's is checked only against the last card's message when it comes in, so a sentence of the rep's from an older draft the owner edited and sent counts as the owner's hold.",
     "patch": "held-past-drafts-unread.patch",
     "fixed": "2026-11-22"
   },
@@ -6058,6 +6058,66 @@
     "name": "held-second-fault-ignored",
     "breaks": "The second asking names a held wait as the fault, though the owner asked for it.",
     "patch": "held-second-fault-ignored.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "held-rep-said-unrecorded",
+    "breaks": "A message of the owner's is never recorded with the sentences of the rep's it carries, so the rep's hold inside an edited draft counts as the owner's once that draft leaves the last cards' list.",
+    "patch": "held-rep-said-unrecorded.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "held-read-against-later-cards",
+    "breaks": "The owner's messages are read against the rep's latest cards each time, so a card that says the owner's own hold again erases it, and an edited draft's rep hold becomes the owner's once the draft rolls off.",
+    "patch": "held-read-against-later-cards.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "held-first-act-only",
+    "breaks": "Only the first act a wait names is checked, so with merging held, \"Wait for my go-ahead before merging and deploying.\" reaches the card and stops the agent before deploying too.",
+    "patch": "held-first-act-only.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "held-clause-scope-leaks",
+    "breaks": "A no-wait or a hold reaches across the owner's sentence, so \"Don't wait for my approval before merging, but ask me before deploying.\" holds nothing, and \"Ask me before merging; deploying is slow.\" holds deploying.",
+    "patch": "held-clause-scope-leaks.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "held-every-act-word",
+    "breaks": "Every act word in a clause counts as its act, so \"Publish the deploy notes.\" lets a hold on deploying go, and \"Ask me before publishing the deploy notes.\" holds deploying.",
+    "patch": "held-every-act-word.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "held-single-quotes-read",
+    "breaks": "Text in single quotes is read as the owner's own, so the agent's words the owner reports (\"The agent said 'wait for my go-ahead before merging'.\") hold merging.",
+    "patch": "held-single-quotes-read.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "held-split-sentence-lost",
+    "breaks": "A hold split across two sentences is lost: after \"Do not merge the branch. Wait for my word.\" merging is not held, so the wait the owner asked for is cut.",
+    "patch": "held-split-sentence-lost.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "held-bare-clause-ignored",
+    "breaks": "A clause that waits on the owner without naming an act holds nothing, so \"Until I have read it, do not push.\" does not hold pushing.",
+    "patch": "held-bare-clause-ignored.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "held-approve-unread",
+    "breaks": "Approving is not read as an act the owner can hold, so \"Wait for my word on Approve.\" is cut though the owner asked for it.",
+    "patch": "held-approve-unread.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "old-matchers-dropped",
+    "breaks": "A call saved before the gate fix is replayed through the new matchers, so its verdict differs from the one it was sent with (\"Do not merge or do not publish it. Wait for my word.\").",
+    "patch": "old-matchers-dropped.patch",
     "fixed": "2026-11-22"
   }
 ]

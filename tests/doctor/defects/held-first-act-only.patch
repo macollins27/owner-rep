@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 641cefa..026428e 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -6906,7 +6906,7 @@ const actsIn = (text: string, words: RegExp = ACT_ALL): string[] => {
+   for (const m of text.matchAll(words)) {
+     const at = m.index ?? 0
+     const joined = last >= 0 && /(?:,|\band\b|\bor\b|&)\s*(?:(?:then|also|to|the|a|an|it|this|that|open)\s+)*$/i.test(text.slice(last, at))
+-    if (out.length > 0 && !joined) break
++    if (out.length > 0) break
+     const stem = stemOf(m[0])
+     if (stem !== '' && !out.includes(stem)) out.push(stem)
+     last = at + m[0].length

@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 9ff9d5e..32db4e6 100644
+index 641cefa..45818c0 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -6996,7 +6996,7 @@ export function heldActs(owner: readonly OwnerMsg[], rep: readonly string[]): He
+@@ -7058,7 +7058,7 @@ export function heldActs(owner: readonly OwnerMsg[]): Held {
      for (const { start, end } of sentencesOf(text)) {
        const sentence = text.slice(start, end).replace(/\s+/g, ' ').trim()
        const f = folded(sentence)
--      if (f === '' || theirs.some(r => r.includes(f))) continue
-+      if (f === '') continue
-       const noWait = NO_WAIT.test(sentence)
-       const holds = !noWait && OWNER_LETS_GO.test(sentence)
-       for (const clause of sentence.split(/[;,:]|\s+(?:but|and\s+then|then)\s+/i)) {
+-      if (f === '' || theirs.includes(f)) {
++      if (f === '') {
+         negatedBefore = []
+         continue
+       }

@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 493c01d..f203993 100644
+index 794fc37..2886f8a 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1304,7 +1304,7 @@ const jobOf = (rec: Rec): number => rec.objective?.since ?? rec.jobStart
+@@ -1305,7 +1305,7 @@ const jobOf = (rec: Rec): number => rec.objective?.since ?? rec.jobStart
  const jobMsgs = (rec: Rec): OwnerMsg[] => rec.owner.filter(m => m.n >= jobOf(rec))
- // The acts the owner's own words of this job hold (`heldActs`), read past the rep's recent
- // messages, so a sentence of the rep's the owner sent inside an edited draft holds nothing.
--const heldOf = (rec: Rec): Held => heldActs(jobMsgs(rec), [...rec.drafts, rec.lastBrief?.message ?? ''])
-+const heldOf = (rec: Rec): Held => heldActs(rec.owner, [...rec.drafts, rec.lastBrief?.message ?? ''])
+ // The acts the owner's own words of this job hold (`heldActs`), past the sentences of the rep's
+ // each message was recorded as carrying when it came in (`repSaid`).
+-const heldOf = (rec: Rec): Held => heldActs(jobMsgs(rec))
++const heldOf = (rec: Rec): Held => heldActs(rec.owner)
  // The numbers of the owner's own messages and notes from `from` on: never a draft's.
  const hisFrom = (rec: Rec, from: number): number[] => rec.owner.filter(m => m.kind !== 'draft' && m.n >= from).map(m => m.n)
  

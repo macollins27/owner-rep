@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 641cefa..b78731d 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -7069,7 +7069,7 @@ export function heldActs(owner: readonly OwnerMsg[]): Held {
+         return { acts, noWait, holds, order: !holds && ORDERS_ACT.test(c.trim()) }
+       })
+       // A clause naming the owner and no act holds the sentence's other acts.
+-      const bare = clauses.some(c => c.holds && c.acts.length === 0)
++      const bare = false
+       const all = clauses.flatMap(c => c.acts)
+       if (bare && all.length === 0) for (const a of negatedBefore) held.add(a)
+       for (const c of clauses) {

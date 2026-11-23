@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 641cefa..5890fda 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -7013,7 +7013,7 @@ export const messageSaysStop = (text: string, held: Held = NONE_HELD): boolean =
+ // merging") or a later order to do an act ("push it", "merge and deploy now") lets go the acts it
+ // names; a mention of one ("deploying is slow", "publish the deploy notes" for deploying) does
+ // not. "Don't deploy until the tests pass" holds nothing: it waits on the tests, not on the owner.
+-const OWNER_ACT = /\b(?:submit(?:s|ted|ting)?|publish(?:es|ed|ing)?|post(?:s|ed|ing)?|appl(?:y|ies|ied|ying)|pa(?:y|ys|id|ying)|b(?:uy|uys|ought|uying)|purchas(?:e|es|ed|ing)|sign(?:s|ed|ing)?|sen(?:d|ds|t|ding)|merg(?:e|es|ed|ing)|push(?:es|ed|ing)?|deploy(?:s|ed|ing)?|releas(?:e|es|ed|ing)|install(?:s|ed|ing)?|delet(?:e|es|ed|ing)|tag(?:s|ged|ging)?|ship(?:s|ped|ping)?|commit(?:s|ted|ting)?|approv(?:e|es|ed|ing)|pull\s+requests?|PRs?)\b/gi
++const OWNER_ACT = /\b(?:submit(?:s|ted|ting)?|publish(?:es|ed|ing)?|post(?:s|ed|ing)?|appl(?:y|ies|ied|ying)|pa(?:y|ys|id|ying)|b(?:uy|uys|ought|uying)|purchas(?:e|es|ed|ing)|sign(?:s|ed|ing)?|sen(?:d|ds|t|ding)|merg(?:e|es|ed|ing)|push(?:es|ed|ing)?|deploy(?:s|ed|ing)?|releas(?:e|es|ed|ing)|install(?:s|ed|ing)?|delet(?:e|es|ed|ing)|tag(?:s|ged|ging)?|ship(?:s|ped|ping)?|commit(?:s|ted|ting)?|pull\s+requests?|PRs?)\b/gi
+ const OWNER_LETS_GO = new RegExp(
+   [
+     String.raw`\b(?:until|till|before|unless)\s+(?:I|I['’](?:ve|ll|m|d))\b`,

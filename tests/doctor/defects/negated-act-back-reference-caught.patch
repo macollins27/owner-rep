@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 9ff9d5e..4e57714 100644
+index 641cefa..01a2285 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -6903,7 +6903,7 @@ export const NONE_HELD: Held = new Set<string>()
- export const OLD_HELD: Held = new Set(['submit', 'publish', 'post', 'apply', 'pay', 'buy', 'purchase', 'sign', 'send', 'approve'])
- const OLD_BUTTON = /^(?:submit|send|publish|post|pay|sign|apply|approve|purchase)$/i
+@@ -6929,7 +6929,7 @@ const OLD_BUTTON = /^(?:submit|send|publish|post|pay|sign|apply|approve|purchase
+ const OLD_HELD_ACT = String.raw`\bhold(?:\s+(?:off|back)\s+on)?(?:\s+(?:the|this|that))?\s+(?:${OUTWARD_ACT}|send(?:ing)?\b)`
+ const OLD_NEGATED_ACT = String.raw`(?:(?:\bnot|\bnever|n['’]t)\s+${OUTWARD_ACT}|${OLD_HELD_ACT})(?:(?!\band\b)[^;:,.!?])*?`
  
 -const WAIT_ON_HIM_BARE = String.raw`\bwaits?\s+(?:for|on|until|till)\s+${ON_HIM}(?:['’]s\s+[\w-]+)?(?:\s+(?:on|for)\s+(?:that|it|this))?${CLAUSE_END}`
 +const WAIT_ON_HIM_BARE = String.raw`\bwaits?\s+(?:for|on|until|till)\s+${ON_HIM}(?:['’]s\s+[\w-]+)?${CLAUSE_END}`
  const WAIT_AFTER_NEGATED = new RegExp(String.raw`(${NEGATED_ACT}(?:\s*[;,]\s*(?:and\s+)?|\s+and\s+))${WAIT_ON_HIM_BARE}`, 'gi')
  const NEGATED_LAST = new RegExp(String.raw`${NEGATED_ACT}[.!]*\s*$`, 'i')
- const WAIT_FIRST = new RegExp(String.raw`^(\s*(?:and\s+)?)${WAIT_ON_HIM_BARE}`, 'i')
+ const OLD_WAIT_AFTER_NEGATED = new RegExp(String.raw`(${OLD_NEGATED_ACT}(?:\s*[;,]\s*(?:and\s+)?|\s+and\s+))${WAIT_ON_HIM_BARE}`, 'gi')

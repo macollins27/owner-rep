@@ -1,12 +1,12 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 9ff9d5e..3815f04 100644
+index 641cefa..74af1b3 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -6991,7 +6991,6 @@ export function heldActs(owner: readonly OwnerMsg[], rep: readonly string[]): He
-   const theirs = rep.map(folded).filter(r => r !== '')
+@@ -7051,7 +7051,6 @@ export function repSentences(text: string, drafts: readonly string[]): string[]
+ export function heldActs(owner: readonly OwnerMsg[]): Held {
    const held = new Set<string>()
    for (const m of owner) {
 -    if (m.kind !== 'his' && m.kind !== 'note') continue
+     const theirs = m.repSaid ?? []
      const text = unquoted(m.text)
-     for (const { start, end } of sentencesOf(text)) {
-       const sentence = text.slice(start, end).replace(/\s+/g, ' ').trim()
+     let negatedBefore: string[] = []

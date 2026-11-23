@@ -1,13 +1,13 @@
 diff --git a/hooks/register.tsx b/hooks/register.tsx
-index 493c01d..643412d 100644
+index 794fc37..97752f7 100644
 --- a/hooks/register.tsx
 +++ b/hooks/register.tsx
-@@ -1304,7 +1304,7 @@ const jobOf = (rec: Rec): number => rec.objective?.since ?? rec.jobStart
- const jobMsgs = (rec: Rec): OwnerMsg[] => rec.owner.filter(m => m.n >= jobOf(rec))
- // The acts the owner's own words of this job hold (`heldActs`), read past the rep's recent
- // messages, so a sentence of the rep's the owner sent inside an edited draft holds nothing.
--const heldOf = (rec: Rec): Held => heldActs(jobMsgs(rec), [...rec.drafts, rec.lastBrief?.message ?? ''])
-+const heldOf = (rec: Rec): Held => heldActs(jobMsgs(rec), [rec.lastBrief?.message ?? ''])
- // The numbers of the owner's own messages and notes from `from` on: never a draft's.
- const hisFrom = (rec: Rec, from: number): number[] => rec.owner.filter(m => m.kind !== 'draft' && m.n >= from).map(m => m.n)
- 
+@@ -2844,7 +2844,7 @@ async function putMessage($: EngineInterface, text: string): Promise<void> {
+ function pushOwner(rec: Rec, kind: OwnerKind, text: string, prior: string, more: Partial<OwnerMsg> = {}): void {
+   const cut = kind === 'draft' ? OWNER_CUT : HIS_CUT
+   // The rep's sentences the owner sent as theirs, read against the drafts the rep has now.
+-  const repSaid = kind === 'his' ? repSentences(text, [...rec.drafts, rec.lastBrief?.message ?? '']) : []
++  const repSaid = kind === 'his' ? repSentences(text, [rec.lastBrief?.message ?? '']) : []
+   const said = repSaid.length > 0 ? { repSaid } : {}
+   const { list, uncovered } = trimCounted([...rec.owner, { n: ++rec.counter, kind, text: fit(text, cut), prior: fitTail(prior, PRIOR_CUT), ...said, ...more }], jobOf(rec), rec.uncovered)
+   rec.owner = list

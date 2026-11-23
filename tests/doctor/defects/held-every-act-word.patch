@@ -1,0 +1,13 @@
+diff --git a/hooks/rep.ts b/hooks/rep.ts
+index 641cefa..65907d6 100644
+--- a/hooks/rep.ts
++++ b/hooks/rep.ts
+@@ -7063,7 +7063,7 @@ export function heldActs(owner: readonly OwnerMsg[]): Held {
+         continue
+       }
+       const clauses = sentence.split(/[;,:]|\s+(?:but|and\s+then|then)\s+/i).map(c => {
+-        const acts = actsIn(c, OWNER_ACT)
++        const acts = [...new Set([...c.matchAll(new RegExp(OWNER_ACT.source, 'gi'))].map(w => stemOf(w[0])))]
+         const noWait = NO_WAIT.test(c)
+         const holds = !noWait && OWNER_LETS_GO.test(c)
+         return { acts, noWait, holds, order: !holds && ORDERS_ACT.test(c.trim()) }
