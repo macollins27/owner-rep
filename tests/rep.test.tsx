@@ -10230,23 +10230,26 @@ test('rule: Brief me, read 1 with no message while work is open: read 2 is told 
 // The gate fix of 22 November 2026 (PR 2), through the hooks: a wait on the owner before merging
 // stands on the card where the owner's own words held merging, and is cut where only the rep's
 // own draft, which the owner sent, asked for it.
-const HOLD_JOB = (owner: OwnerMsg[]): Record<string, unknown> => {
+const HOLD_JOB = (owner: OwnerMsg[], drafts: string[] = []): Record<string, unknown> => {
   const r = OPEN_JOB() as { sessions: { 'test-session': Record<string, unknown> } }
   r.sessions['test-session'].owner = owner
   r.sessions['test-session'].counter = owner.length
+  r.sessions['test-session'].drafts = drafts
   return r
 }
 const HOLD_MESSAGE = 'Run the suite and paste its counts. Wait for my go-ahead before merging.'
-for (const [name, owner, message] of [
+for (const [name, owner, message, drafts] of [
   ['the owner\'s own words held merging', [om('ship the release and install it here'), om('Ask me before merging anything.', 2)], HOLD_MESSAGE],
   ['only the rep\'s draft the owner sent held it', [om('ship the release and install it here'), { n: 2, kind: 'draft', text: 'Wait for my go-ahead before merging.', prior: '' }], 'Run the suite and paste its counts.'],
   ['the owner held merging, then told the agent to merge', [om('ship the release and install it here'), om('Ask me before merging anything.', 2), om('I have read it; merge it.', 3)], 'Run the suite and paste its counts.'],
   // The owner's message 0 came before this job (jobStart 1): an earlier job's hold holds nothing now.
   ['only an earlier job held merging', [om('Ask me before merging anything.', 0), om('ship the release and install it here'), om('and finish the two other sessions', 2)], 'Run the suite and paste its counts.'],
-] as [string, OwnerMsg[], string][]) {
+  // The rep drafted the hold; the owner changed one word elsewhere and sent it as their own message.
+  ['the owner sent the rep\'s hold inside an edited draft', [om('ship the release and install it here'), om('Fix the heading. Wait for my go-ahead before merging.', 2)], 'Run the suite and paste its counts.', ['Fix the typo. Wait for my go-ahead before merging.']],
+] as [string, OwnerMsg[], string, string[]?][]) {
   test(`rule: Brief me, a wait on the owner before merging when ${name}: the card's message is "${message}"`, async ($, on) => {
     on('session.start', (_$, e) => ({ cwd: e.cwd }))
-    const rec = kept(on, HOLD_JOB(owner))
+    const rec = kept(on, HOLD_JOB(owner, drafts))
     quietBand(on)
     on('model.fork', () => ({ value: { isAnswered: true, text: USABLE_BRIEF('continue').replace('Show me each session finishing.', HOLD_MESSAGE), usage: USAGE } }))
     ownWords(on, () => OWN_WORDS())
