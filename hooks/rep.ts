@@ -1374,10 +1374,10 @@ export const RECORD_DOES = 'Makes the agent account for everything you asked for
 // and is the rep's own ask only when nothing is left (or what is left still says stop, as a
 // stop spread over two sentences would); what it does is the rep's own when it says stop
 // itself or the message became the rep's.
-export function withRecordLines(a: BriefAnswer, lines: readonly string[]): BriefAnswer {
+export function withRecordLines(a: BriefAnswer, lines: readonly string[], held: Held = NONE_HELD): BriefAnswer {
   if (lines.length === 0) return a
-  const kept = withoutStopSentences(a.message)
-  const message = kept === '' || messageSaysStop(kept)
+  const kept = withoutStopSentences(a.message, held)
+  const message = kept === '' || messageSaysStop(kept, held)
   return {
     ...a,
     verdict: 'continue',
@@ -1385,7 +1385,7 @@ export function withRecordLines(a: BriefAnswer, lines: readonly string[]): Brief
     means: a.verdict === 'continue' ? a.means : (lines[0] as string),
     next: a.next === '' || saysStop(a.next) ? RECORD_NEXT : a.next,
     message: message ? RECORD_MESSAGE : kept,
-    does: message || messageSaysStop(a.does) ? RECORD_DOES : a.does,
+    does: message || messageSaysStop(a.does, held) ? RECORD_DOES : a.does,
     leftOut: [...lines, ...a.leftOut.filter(l => !lines.includes(l))],
   }
 }
@@ -6872,10 +6872,37 @@ const BLOCKER_TOLD = /\btell\s+the owner\s+(?:(?:exactly|plainly|clearly)\s+)?(?
 // Wait for my word." A hold on anything else ("Hold everything", "Hold the rest", "Hold off",
 // "Hold on") still leaves a wait on the owner read as a stop.
 const OUTWARD_ACT = String.raw`(?:submit(?:s|ting)?|publish(?:es|ing)?|post(?:s|ing)?\s+(?:(?:it|this|that|them|the\s+[\w'’-]+)\s+)?(?:publicly|online|(?:on|to)\s+social\s+media)|appl(?:y|ies|ying)\s+(?:for|to)|pay(?:s|ing)?|buy(?:s|ing)?|purchas(?:e|es|ing)|sign(?:s|ing)?\s+(?:(?:the|an?|this|that|our|the owner['’]s|the agent['’]s)\s+(?:[\w'’-]+\s+){0,2})?(?:agreement|contract|form|lease|offer|NDA|paperwork)s?|send(?:s|ing)?\s+(?:(?:the|an?|this|that|the owner['’]s)\s+)?(?:email|message|application|letter|invoice)s?)\b`
-const WAIT_BEFORE_ACT = new RegExp(String.raw`\bwaits?\s+for\s+(?:(?:the owner['’]s|his|the)\s+)?(?:word|go-ahead|approval|sign-off)\s+(?:(?:on|before|to)\s+(?:the agent\s+(?:(?:can|may)\s+)?)?${OUTWARD_ACT}|on\s+([\w-]+))`, 'gi')
-const OWNER_BUTTON = /^(?:submit|send|publish|post|pay|sign|apply|approve|purchase)$/i
-const HELD_ACT = String.raw`\bhold(?:\s+(?:off|back)\s+on)?(?:\s+(?:the|this|that))?\s+(?:${OUTWARD_ACT}|send(?:ing)?\b)`
-const NEGATED_ACT = String.raw`(?:(?:\bnot|\bnever|n['’]t)\s+${OUTWARD_ACT}|${HELD_ACT})(?:(?!\band\b)[^;:,.!?])*?`
+// The agent's own operations a hold of the owner's can name too (PR 2 of the repair of 22 November
+// 2026): merging, pushing, deploying, releasing, installing, deleting, tagging, shipping,
+// committing and opening a pull request. A wait on the owner before one of them, or before an
+// outward act, is let through only when the owner's own words hold that act (`heldActs`): the
+// gate reads who asked for the hold, never the act's name alone.
+const AGENT_ACT = String.raw`(?:merg(?:e|es|ing)|push(?:es|ing)?|deploy(?:s|ing)?|releas(?:e|es|ing)|install(?:s|ing)?|delet(?:e|es|ing)|tag(?:s|ging)?|ship(?:s|ping)?|commit(?:s|ting)?|open(?:s|ing)?\s+(?:a|the)\s+(?:pull\s+request|PR))\b`
+const HOLD_ACT = String.raw`(?:${OUTWARD_ACT}|${AGENT_ACT})`
+const WAIT_BEFORE_ACT = new RegExp(String.raw`\bwaits?\s+for\s+(?:(?:the owner['’]s|his|the)\s+)?(?:word|go-ahead|approval|sign-off)\s+(?:(?:on|before|to)\s+(?:the agent\s+(?:(?:can|may)\s+)?)?(${HOLD_ACT})|on\s+([\w-]+))`, 'gi')
+const OWNER_BUTTON = /^(?:submit|send|publish|post|pay|sign|apply|approve|purchase|merge|push|deploy|release|install|delete|tag|ship|commit)$/i
+const HELD_ACT = String.raw`\bhold(?:\s+(?:off|back)\s+on)?(?:\s+(?:the|this|that))?\s+(?:${HOLD_ACT}|send(?:ing)?\b)`
+const NEGATED_ACT = String.raw`(?:(?:\bnot|\bnever|n['’]t)\s+${HOLD_ACT}|${HELD_ACT})(?:(?!\band\b)[^;:,.!?])*?`
+// The act a hold names, as one stem: the first act word in the text ("Do not publish the merge
+// notes" holds publish), or '' when it names none.
+const ACT_IN = new RegExp(String.raw`\b(?:${HOLD_ACT}|send(?:ing)?\b)`, 'i')
+const STEMS: ReadonlyArray<readonly [RegExp, string]> = [
+  [/^submit/i, 'submit'], [/^publish/i, 'publish'], [/^post/i, 'post'], [/^appl/i, 'apply'], [/^pa(?:y|id)/i, 'pay'],
+  [/^b(?:uy|ought)/i, 'buy'], [/^purchas/i, 'purchase'], [/^sign/i, 'sign'], [/^sen[dt]/i, 'send'], [/^merg/i, 'merge'],
+  [/^push/i, 'push'], [/^deploy/i, 'deploy'], [/^releas/i, 'release'], [/^install/i, 'install'], [/^delet/i, 'delete'],
+  [/^tag/i, 'tag'], [/^ship/i, 'ship'], [/^commit/i, 'commit'], [/^(?:open|pull|PRs?\b)/i, 'pull request'], [/^approv/i, 'approve'],
+]
+const stemOf = (word: string): string => STEMS.find(([re]) => re.test(word.trim()))?.[1] ?? ''
+const stemIn = (text: string): string => stemOf(ACT_IN.exec(text)?.[0] ?? '')
+// The acts the owner's own words hold, by stem (`heldActs`). NONE_HELD holds none, so every wait
+// on the owner before an act is a stop. OLD_HELD is what the gate let through before this
+// change, whoever asked: a wait before an outward act or on an owner's button. Only the replay
+// reads it, so a call saved before the change is rebuilt as it was sent (`savedFault`).
+export type Held = ReadonlySet<string>
+export const NONE_HELD: Held = new Set<string>()
+export const OLD_HELD: Held = new Set(['submit', 'publish', 'post', 'apply', 'pay', 'buy', 'purchase', 'sign', 'send', 'approve'])
+const OLD_BUTTON = /^(?:submit|send|publish|post|pay|sign|apply|approve|purchase)$/i
+
 const WAIT_ON_HIM_BARE = String.raw`\bwaits?\s+(?:for|on|until|till)\s+${ON_HIM}(?:['’]s\s+[\w-]+)?(?:\s+(?:on|for)\s+(?:that|it|this))?${CLAUSE_END}`
 const WAIT_AFTER_NEGATED = new RegExp(String.raw`(${NEGATED_ACT}(?:\s*[;,]\s*(?:and\s+)?|\s+and\s+))${WAIT_ON_HIM_BARE}`, 'gi')
 const NEGATED_LAST = new RegExp(String.raw`${NEGATED_ACT}[.!]*\s*$`, 'i')
@@ -6892,13 +6919,16 @@ const WAIT_FIRST = new RegExp(String.raw`^(\s*(?:and\s+)?)${WAIT_ON_HIM_BARE}`, 
 // after "do" ("Do what lets you stop." is an order), and "whatever" is no "what".
 const CAUSED = String.raw`(?:the agent|any agent|another agent|(?:the\s+)?(?:other\s+)?agents)`
 const CAUSE_ASKED = new RegExp(String.raw`(?<!\bdo\s+)\b(?:which|what)\b(?:\s+[\w'’-]+){0,3}?\s+(?:let|lets|made|makes|allowed|allows|led|leads|caused|causes|told|tells|got|gets|permitted)\s+${CAUSED}(?:\s+(?:or|and)\s+${CAUSED})?(?:\s*,[^,;:.!?]*,)?\s+(?:to\s+)?(?:stop(?:s|ped|ping)?|hand(?:s|ed|ing)?)\b(?:(?!\b(?:${BLOCKER_ENDS})\b)[^;:,.!?])*`, 'gi')
-const maskExempt = (read: string, afterNegated = false): string => {
+// A button is held when its word is an act the owner holds; OLD_HELD keeps the old buttons only.
+const buttonHeld = (button: string, held: Held): boolean =>
+  (held === OLD_HELD ? OLD_BUTTON : OWNER_BUTTON).test(button) && held.has(stemOf(button))
+const maskExempt = (read: string, held: Held, afterNegated = ''): string => {
   let s = read.replace(BEFORE_STOPS, 'x').replace(WAIT_ON_OTHER, 'x ')
   s = s.replace(BLOCKER_IF, (all: string, condition: string, clause: string) => (BLOCKER_TOLD.test(clause) ? condition + clause.replace(/\bstop\b/gi, 'x') : all))
-  s = s.replace(WAIT_BEFORE_ACT, (wait: string, button?: string) =>
-    button === undefined || OWNER_BUTTON.test(button) ? 'x' : wait)
-  s = s.replace(WAIT_AFTER_NEGATED, (_: string, act: string) => `${act}x`)
-  if (afterNegated) s = s.replace(WAIT_FIRST, (_: string, lead: string) => `${lead}x`)
+  s = s.replace(WAIT_BEFORE_ACT, (wait: string, act?: string, button?: string) =>
+    (act !== undefined ? held.has(stemOf(act)) : buttonHeld(button ?? '', held)) ? 'x' : wait)
+  s = s.replace(WAIT_AFTER_NEGATED, (all: string, act: string) => (held.has(stemIn(act)) ? `${act}x` : all))
+  if (afterNegated !== '' && held.has(afterNegated)) s = s.replace(WAIT_FIRST, (_: string, lead: string) => `${lead}x`)
   return s.replace(CAUSE_ASKED, 'x ')
 }
 
@@ -6911,21 +6941,76 @@ const maskExempt = (read: string, afterNegated = false): string => {
 // wait on the owner opening this one through (shape 4). Only the copy read is changed; a removal
 // cuts the message's own text.
 const readOf = (sentence: string): string => toAgentVoice(maskReported(unwrap(sentence.replace(LIST_MARKER, '').replace(/\s+/g, ' '))))
-const sentenceSaysStop = (sentence: string, before = ''): boolean => {
-  const read = maskExempt(readOf(sentence), NEGATED_LAST.test(readOf(before)))
+const sentenceSaysStop = (sentence: string, before: string, held: Held): boolean => {
+  const last = NEGATED_LAST.exec(readOf(before))
+  const read = maskExempt(readOf(sentence), held, last === null ? '' : stemIn(last[0]))
   return STOP_NEXT.test(read) || STOP_ONCE.test(read)
 }
 
 // The sentences of a text that say stop, each read with the sentence just before it.
-const stopSpans = (text: string): { start: number; end: number }[] => {
+const stopSpans = (text: string, held: Held = NONE_HELD): { start: number; end: number }[] => {
   const spans = sentencesOf(text)
-  return spans.filter(({ start, end }, i) => sentenceSaysStop(text.slice(start, end), i === 0 ? '' : text.slice(spans[i - 1]?.start, spans[i - 1]?.end)))
+  return spans.filter(({ start, end }, i) => sentenceSaysStop(text.slice(start, end), i === 0 ? '' : text.slice(spans[i - 1]?.start, spans[i - 1]?.end), held))
 }
 
 // Whether a message, or what it does, tells the agent or the job to stop, calls the work
 // finished, or hands it back to the owner: true when any one of its sentences does, each read
-// in the third person with only the sentence before it beside it (`sentenceSaysStop`).
-export const messageSaysStop = (text: string): boolean => stopSpans(text).length > 0
+// in the third person with only the sentence before it beside it (`sentenceSaysStop`). A wait on
+// the owner before an act is a hand-back unless `held`, the acts the owner's own words hold
+// (`heldActs`), has that act.
+export const messageSaysStop = (text: string, held: Held = NONE_HELD): boolean => stopSpans(text, held).length > 0
+
+// The acts the owner's own words hold for the owner, by stem, from the owner's messages of the
+// job in order: their own messages and notes to the rep, never a draft of the rep's or an agent's
+// plan, with quoted words and any sentence of the rep's that the owner sent (one of `rep`, the
+// rep's recent messages, found in an edited draft) left out. A sentence holds the acts it names
+// when it names the owner as the one who lets them go ("until I have read it", "without my OK",
+// "ask me before", "wait for my go-ahead", "I want to review it first"), and is not told not to
+// wait ("don't wait for my approval"). A later order to do an act ("push it", "merge now"), or a
+// sentence told not to wait, lets that act go; a mention of it ("deploying is slow") does not.
+// "Don't deploy until the tests pass" holds nothing: it waits on the tests, not on the owner.
+const OWNER_ACT = /\b(?:submit(?:s|ted|ting)?|publish(?:es|ed|ing)?|post(?:s|ed|ing)?|appl(?:y|ies|ied|ying)|pa(?:y|ys|id|ying)|b(?:uy|uys|ought|uying)|purchas(?:e|es|ed|ing)|sign(?:s|ed|ing)?|sen(?:d|ds|t|ding)|merg(?:e|es|ed|ing)|push(?:es|ed|ing)?|deploy(?:s|ed|ing)?|releas(?:e|es|ed|ing)|install(?:s|ed|ing)?|delet(?:e|es|ed|ing)|tag(?:s|ged|ging)?|ship(?:s|ped|ping)?|commit(?:s|ted|ting)?|pull\s+requests?|PRs?)\b/gi
+const OWNER_LETS_GO = new RegExp(
+  [
+    String.raw`\b(?:until|till|before|unless)\s+(?:I|I['’](?:ve|ll|m|d))\b`,
+    String.raw`\b(?:without|before|until|till)\s+(?:getting\s+|having\s+)?my\s+(?:ok|okay|approval|go-ahead|go\s+ahead|word|sign-off|say-so|review|consent|permission|look)\b`,
+    String.raw`\b(?:ask|check\s+with|run\s+it\s+by|clear\s+it\s+with|confirm\s+with|wait\s+for|wait\s+on)\s+me\b`,
+    String.raw`\bwait\s+(?:for|on)\s+my\s+[\w-]+`,
+    String.raw`\bI(?:['’]d|\s+would)?\s+(?:want|need|like|have)\s+to\s+(?:review|read|see|look|check|approve|sign\s+off|test|try)\b`,
+    String.raw`\blet\s+me\s+(?:review|read|see|look|check|approve)\b`,
+    String.raw`\bmy\s+(?:ok|okay|approval|go-ahead|sign-off|say-so)\b`,
+  ].join('|'),
+  'i',
+)
+const NO_WAIT = /\b(?:don['’]t|do\s+not|no\s+need\s+to|never|without)\s+(?:wait|ask|check)/i
+const ORDERS_ACT = /^(?:(?:and|but|so|then|ok(?:ay)?|now|please|go\s+ahead\s+and|you\s+can|you\s+may|feel\s+free\s+to)[\s,]+)*(?:submit|publish|post|apply|pay|buy|purchase|sign|send|merge|push|deploy|release|install|delete|tag|ship|commit|open\s+(?:a|the)\s+(?:pull\s+request|PR))\b/i
+const unquoted = (text: string): string =>
+  text.replace(/"[^"\n]*"|“[^”\n]*”/g, ' ').split('\n').filter(l => !/^\s*>/.test(l)).join('\n')
+const folded = (s: string): string => s.toLowerCase().replace(/\s+/g, ' ').trim().replace(/[.!?]+$/, '')
+export function heldActs(owner: readonly OwnerMsg[], rep: readonly string[]): Held {
+  const theirs = rep.map(folded).filter(r => r !== '')
+  const held = new Set<string>()
+  for (const m of owner) {
+    if (m.kind !== 'his' && m.kind !== 'note') continue
+    const text = unquoted(m.text)
+    for (const { start, end } of sentencesOf(text)) {
+      const sentence = text.slice(start, end).replace(/\s+/g, ' ').trim()
+      const f = folded(sentence)
+      if (f === '' || theirs.some(r => r.includes(f))) continue
+      const noWait = NO_WAIT.test(sentence)
+      const holds = !noWait && OWNER_LETS_GO.test(sentence)
+      for (const clause of sentence.split(/[;,:]|\s+(?:but|and\s+then|then)\s+/i)) {
+        const acts = [...clause.matchAll(OWNER_ACT)].map(a => stemOf(a[0])).filter(a => a !== '')
+        const order = ORDERS_ACT.test(clause.trim()) && !OWNER_LETS_GO.test(clause)
+        for (const a of acts) {
+          if (order || noWait) held.delete(a)
+          else if (holds) held.add(a)
+        }
+      }
+    }
+  }
+  return held
+}
 
 // What is left after a removal names something to do, show or fix when one of its sentences
 // holds a letter or a digit ("..." or "—" alone names nothing) and is not praise or thanks, not a
@@ -6994,8 +7079,8 @@ const pairsOf = (text: string): Map<number, number> => {
 // suite. (You can stop now. Thanks.)" gives "Run the suite. (Thanks.)"), and a pair wholly in
 // removed text goes with it. When what is left names nothing to do, show or fix (`usable`), it
 // gives ''. Pure; '' gives ''.
-export const withoutStopSentences = (message: string): string => {
-  const cuts = stopSpans(message)
+export const withoutStopSentences = (message: string, held: Held = NONE_HELD): string => {
+  const cuts = stopSpans(message, held)
   if (cuts.length === 0) return message
   const partner = pairsOf(message)
   const removed = (i: number): boolean => cuts.some(c => i >= c.start && i < c.end)
@@ -7082,18 +7167,18 @@ const withOpen = (leftOut: string[], open: Condition[]): string[] => {
   }
   return all
 }
-export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer: BriefAnswer; refused: boolean; replaced: Replaced[] } {
+export function gateVerdict(a: BriefAnswer, open: Condition[] | null, held: Held = NONE_HELD): { answer: BriefAnswer; refused: boolean; replaced: Replaced[] } {
   if (open !== null && open.length === 0) return { answer: a, refused: false, replaced: [] }
-  const sound = a.verdict === 'continue' && a.well === '' && !saysStop(a.next) && !messageSaysStop(a.message)
+  const sound = a.verdict === 'continue' && a.well === '' && !saysStop(a.next) && !messageSaysStop(a.message, held)
   if (sound && (open === null || a.message.trim() !== '')) return { answer: a, refused: false, replaced: [] }
   if (sound && open !== null) {
     return {
-      answer: { ...a, message: OPEN_MESSAGE(open), does: a.does === '' || messageSaysStop(a.does) ? OPEN_DOES : a.does, leftOut: withOpen(a.leftOut, open) },
+      answer: { ...a, message: OPEN_MESSAGE(open), does: a.does === '' || messageSaysStop(a.does, held) ? OPEN_DOES : a.does, leftOut: withOpen(a.leftOut, open) },
       refused: true,
       replaced: ['message'],
     }
   }
-  const kept = withoutStopSentences(a.message)
+  const kept = withoutStopSentences(a.message, held)
   const message = kept === ''
   if (open === null) {
     return {
@@ -7104,7 +7189,7 @@ export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer:
         means: UNWRITTEN_MEANS,
         next: UNWRITTEN_NEXT,
         message: message ? UNWRITTEN_MESSAGE : kept,
-        does: message || messageSaysStop(a.does) ? UNWRITTEN_DOES : a.does,
+        does: message || messageSaysStop(a.does, held) ? UNWRITTEN_DOES : a.does,
       },
       refused: true,
       replaced: ['means', 'next', ...(message ? ['message' as const] : [])],
@@ -7119,7 +7204,7 @@ export function gateVerdict(a: BriefAnswer, open: Condition[] | null): { answer:
       means: OPEN_MEANS(open),
       next: next ? OPEN_NEXT(open) : a.next,
       message: message ? OPEN_MESSAGE(open) : kept,
-      does: message || messageSaysStop(a.does) ? OPEN_DOES : a.does,
+      does: message || messageSaysStop(a.does, held) ? OPEN_DOES : a.does,
       leftOut: withOpen(a.leftOut, open),
     },
     refused: true,
@@ -7198,17 +7283,17 @@ export function ownWordsPrompt(m: Memory, open: Condition[], a: BriefAnswer, fau
 // empty, and what stands, what is left out and the marks stay the gated card's.
 // The engine passes parseOwnWords's answer, so a reply that did not come back
 // whole is null here and every replaced part stays the rep's fixed text.
-export function takeOwnWords(gated: BriefAnswer, replaced: Replaced[], own: BriefAnswer | null): BriefAnswer {
+export function takeOwnWords(gated: BriefAnswer, replaced: Replaced[], own: BriefAnswer | null, held: Held = NONE_HELD): BriefAnswer {
   if (own === null || replaced.length === 0) return gated
   const out = { ...gated }
   const taken = new Set<Replaced>()
   for (const part of replaced) {
-    const text = part === 'message' ? withoutStopSentences(own.message) : own[part]
+    const text = part === 'message' ? withoutStopSentences(own.message, held) : own[part]
     if (text === '' || (part !== 'message' && saysStop(text))) continue
     out[part] = text
     taken.add(part)
   }
-  if (taken.has('message') && own.does !== '' && !messageSaysStop(own.does)) out.does = own.does
+  if (taken.has('message') && own.does !== '' && !messageSaysStop(own.does, held)) out.does = own.does
   return out
 }
 
@@ -7217,8 +7302,8 @@ export function takeOwnWords(gated: BriefAnswer, replaced: Replaced[], own: Brie
 // something to do, show or fix (`usable`), even where nothing was taken out. A message of only
 // praise, thanks, a question or a bare back-reference is not usable here, though the gate keeps
 // such a message whole on the card it gives.
-export const messageUsable = (message: string): boolean => {
-  const kept = withoutStopSentences(message)
+export const messageUsable = (message: string, held: Held = NONE_HELD): boolean => {
+  const kept = withoutStopSentences(message, held)
   return kept !== '' && usable(kept, true)
 }
 
@@ -7226,8 +7311,8 @@ export const messageUsable = (message: string): boolean => {
 // is not usable (`messageUsable`) is put to the fixed text, with what it does, and listed as
 // replaced, so the own-words message and then read 1's may stand in its place. A replaced
 // message, or a usable one, stays as it is.
-export function unusableReplaced(answer: BriefAnswer, replaced: Replaced[], open: Condition[]): { answer: BriefAnswer; replaced: Replaced[] } {
-  if (replaced.includes('message') || messageUsable(answer.message)) return { answer, replaced }
+export function unusableReplaced(answer: BriefAnswer, replaced: Replaced[], open: Condition[], held: Held = NONE_HELD): { answer: BriefAnswer; replaced: Replaced[] } {
+  if (replaced.includes('message') || messageUsable(answer.message, held)) return { answer, replaced }
   return { answer: { ...answer, message: OPEN_MESSAGE(open), does: OPEN_DOES }, replaced: [...replaced, 'message'] }
 }
 
@@ -7235,8 +7320,8 @@ export function unusableReplaced(answer: BriefAnswer, replaced: Replaced[], open
 // reply came back whole, and its message is usable (`messageUsable`) once its
 // stop sentences are taken out. Brief me hands takeOwnWords the message as a
 // replaced part only when this is true.
-export function ownMessageTaken(replaced: Replaced[], own: BriefAnswer | null): boolean {
-  return replaced.includes('message') && own !== null && messageUsable(own.message)
+export function ownMessageTaken(replaced: Replaced[], own: BriefAnswer | null, held: Held = NONE_HELD): boolean {
+  return replaced.includes('message') && own !== null && messageUsable(own.message, held)
 }
 
 // Brief me's last net before the fixed list: when the last read's message was
@@ -7246,9 +7331,9 @@ export function ownMessageTaken(replaced: Replaced[], own: BriefAnswer | null): 
 // the calls that message acts on. Read 1 replaced too, or nothing
 // usable left of it (`messageUsable`, so praise alone is not), and the fixed text stays. Every other part is the last
 // read's. Decided by the parts lists, never by comparing the message's text.
-export function earlierMessage(answer: BriefAnswer, replaced: Replaced[], ownTaken: boolean, first: { answer: BriefAnswer; replaced: Replaced[] }): BriefAnswer {
+export function earlierMessage(answer: BriefAnswer, replaced: Replaced[], ownTaken: boolean, first: { answer: BriefAnswer; replaced: Replaced[] }, held: Held = NONE_HELD): BriefAnswer {
   if (!replaced.includes('message') || ownTaken || first.replaced.includes('message')) return answer
-  return messageUsable(first.answer.message) ? { ...answer, message: withoutStopSentences(first.answer.message), does: first.answer.does, leftOut: first.answer.leftOut } : answer
+  return messageUsable(first.answer.message, held) ? { ...answer, message: withoutStopSentences(first.answer.message, held), does: first.answer.does, leftOut: first.answer.leftOut } : answer
 }
 
 // Whether a part ends at a sentence mark: a full stop, an exclamation mark or a
@@ -7372,6 +7457,9 @@ export type CallRead = {
   words?: Record<string, number>
   // The gate's rules that refused a card: none when it passed.
   gate?: GateRule[]
+  // The acts the owner's own words held when the gate read it (`heldActs`); absent on a call
+  // saved before the gate read who asked for a hold, which OLD_HELD reads as it was read then.
+  held?: string[]
 }
 export type CallEntry = {
   v: 1
@@ -7420,13 +7508,13 @@ export function callOutcome(result: { isAnswered: boolean; reason?: string; stat
 // The gate's rules a card breaks, in gateVerdict's terms: a refused card breaks at least one, a
 // card that passes none. With no condition open nothing is refused.
 export type GateRule = 'stop-verdict' | 'no-verdict' | 'going-well' | 'next-says-stop' | 'message-says-stop' | 'empty-message' | 'no-objective'
-export function gateRules(a: BriefAnswer, open: Condition[] | null): GateRule[] {
+export function gateRules(a: BriefAnswer, open: Condition[] | null, held: Held = NONE_HELD): GateRule[] {
   if (open !== null && open.length === 0) return []
   const rules: GateRule[] = []
   if (a.verdict !== 'continue') rules.push(a.verdict === 'stop' ? 'stop-verdict' : 'no-verdict')
   if (a.well !== '') rules.push('going-well')
   if (saysStop(a.next)) rules.push('next-says-stop')
-  if (messageSaysStop(a.message)) rules.push('message-says-stop')
+  if (messageSaysStop(a.message, held)) rules.push('message-says-stop')
   if (rules.length === 0 && open !== null && a.message.trim() === '') rules.push('empty-message')
   if (rules.length > 0 && open === null) rules.push('no-objective')
   return rules
@@ -7440,7 +7528,7 @@ const quoted = (s: string): string => {
   const t = s.replace(/\s+/g, ' ').trim()
   return `"${t.length > QUOTE_MAX ? `${t.slice(0, QUOTE_MAX - 1).trimEnd()}…` : t}"`
 }
-export function askFault(a: BriefAnswer, rules: readonly GateRule[]): string {
+export function askFault(a: BriefAnswer, rules: readonly GateRule[], held: Held = NONE_HELD): string {
   const said: string[] = []
   for (const r of rules) {
     if (r === 'stop-verdict') said.push('gave "stop" as its verdict')
@@ -7448,7 +7536,7 @@ export function askFault(a: BriefAnswer, rules: readonly GateRule[]): string {
     else if (r === 'going-well') said.push(`said under "well" that the work is going well: ${quoted(a.well)}`)
     else if (r === 'next-says-stop') said.push(`told the agent to stop in "next": ${quoted(a.next)}`)
     else if (r === 'message-says-stop') {
-      const span = stopSpans(a.message)[0]
+      const span = stopSpans(a.message, held)[0]
       said.push(`told the agent to stop in its message: ${quoted(span === undefined ? a.message : a.message.slice(span.start, span.end))}`)
     } else if (r === 'empty-message') said.push('left the message to the agent empty')
   }
@@ -7476,7 +7564,10 @@ const marksOf = (a: { shown: Array<{ by: string }>; closed: unknown[] }) => ({
 // for the own-words call cut, as it was counted before; otherwise the objective writer's
 // (unreadable, holds or moved), the watch's (unreadable without a state; flag when it raised a
 // Heads up line), a card's (no verdict, or read; and the gate's rules against `open`).
-export function callRead(kind: CallKind, text: string, open?: Condition[] | null, size?: { usage?: Usage | null; cap: number }): CallRead {
+// The acts held when a saved call was gated: those its read kept, or for a call saved before the
+// gate read who asked for a hold, the acts the gate let a wait before then (OLD_HELD).
+export const savedHeld = (read?: CallRead): Held => (read?.held === undefined ? OLD_HELD : new Set(read.held))
+export function callRead(kind: CallKind, text: string, open?: Condition[] | null, size?: { usage?: Usage | null; cap: number }, held: Held = NONE_HELD): CallRead {
   if (noLabels(text)) return { parsed: 'no-labels' }
   if (cutShort(kind, text, size?.usage, size?.cap)) return { parsed: kind === 'own-words' ? 'cut' : 'cut-short' }
   if (kind === 'objective') {
@@ -7496,7 +7587,7 @@ export function callRead(kind: CallKind, text: string, open?: Condition[] | null
     parsed: a.verdict === 'missing' ? 'no-verdict' : 'read',
     ...marksOf(a),
     words: cardWords(a),
-    ...(open === undefined ? {} : { gate: gateRules(a, open) }),
+    ...(open === undefined ? {} : { gate: gateRules(a, open, held), held: [...held].sort() }),
   }
 }
 
@@ -8632,7 +8723,7 @@ export function savedFault(earlier: readonly CallEntry[]): string | null {
     asked = true
     const gate = e.read?.gate
     if (gate === undefined || e.reply === undefined) continue
-    return gate.length === 0 ? null : askFault(parseBrief(e.reply), gate)
+    return gate.length === 0 ? null : askFault(parseBrief(e.reply), gate, savedHeld(e.read))
   }
   return null
 }

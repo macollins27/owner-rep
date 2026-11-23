@@ -42,6 +42,9 @@ import {
   isMismatch,
   coverage,
   withRecordLines,
+  heldActs,
+  savedHeld,
+  type Held,
   type ReaderGaps,
   type Manifest,
   type LossMark,
@@ -1299,6 +1302,9 @@ function parsedRec(sid: string, json: string): Rec | null {
 // The number of the job's first message, and the job's messages.
 const jobOf = (rec: Rec): number => rec.objective?.since ?? rec.jobStart
 const jobMsgs = (rec: Rec): OwnerMsg[] => rec.owner.filter(m => m.n >= jobOf(rec))
+// The acts the owner's own words of this job hold (`heldActs`), read past the rep's recent
+// messages, so a sentence of the rep's the owner sent inside an edited draft holds nothing.
+const heldOf = (rec: Rec): Held => heldActs(jobMsgs(rec), [...rec.drafts, rec.lastBrief?.message ?? ''])
 // The numbers of the owner's own messages and notes from `from` on: never a draft's.
 const hisFrom = (rec: Rec, from: number): number[] => rec.owner.filter(m => m.kind !== 'draft' && m.n >= from).map(m => m.n)
 
@@ -2113,7 +2119,7 @@ async function replay($: EngineInterface, args: string): Promise<string> {
           ...callOutcome(result as never),
           ms,
           nearCap: nearCap(usage, sent.cap),
-          ...(result !== null && result.isAnswered ? { read: callRead(e.kind, readAsAsked(prompt, result.text), e.open, { usage, cap: sent.cap }) } : {}),
+          ...(result !== null && result.isAnswered ? { read: callRead(e.kind, readAsAsked(prompt, result.text), e.open, { usage, cap: sent.cap }, savedHeld(e.read)) } : {}),
           ...(usage === undefined ? {} : { usage }),
         }
         if (result !== null && result.isAnswered) await writeFile($, `${dir}/replays/${base}.${run}.${tag}.${label.replace(/ /g, '-')}.txt`, result.text)
@@ -2188,11 +2194,13 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
         const parsed = parseBrief(result.text)
         if (applyMarks(after, parsed.shown, parsed.closed) && onScreen(sid)) await update($, readingA, () => after.objective)
         const left = gateOpen(after.objective)
-        briefRead = callRead(kind, result.text, left, size)
+        // A wait on the owner before an act stands only where the owner's own words hold that act.
+        const held = heldOf(after)
+        briefRead = callRead(kind, result.text, left, size, held)
         gatedOpen = left
         if (got.sent !== undefined) after.counts = countCall(after.counts, counted(got.sent, briefRead))
         // The answer as written and the rules it broke, so a second asking can name them (askFault).
-        return { ...gateVerdict(parsed, left), open: left, written: parsed, rules: gateRules(parsed, left) }
+        return { ...gateVerdict(parsed, left, held), open: left, written: parsed, rules: gateRules(parsed, left, held), held }
       })
       if (got.sent !== undefined) saveCall($, sid, got.sent, briefRead, gatedOpen)
       return out
@@ -2228,7 +2236,7 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     let end: BriefEnd = first.refused ? 'fixed-text' : 'passed'
     if (first.refused && first.open !== null) {
       reads += 1
-      const again = await ask(askAgain(first.open, askFault(first.written, first.rules)))
+      const again = await ask(askAgain(first.open, askFault(first.written, first.rules, first.held)))
       if (!('reason' in again)) taken = again
       if (!taken.refused) end = 'asked-again'
     }
@@ -2243,10 +2251,10 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
     if (taken.refused && taken.replaced.length > 0 && first.open !== null && taken.open !== null) {
       // A message the gate kept that is praise, thanks, a question or a back-reference alone counts as replaced.
       const open = taken.open
-      taken = { ...taken, ...unusableReplaced(taken.answer, taken.replaced, open) }
+      taken = { ...taken, ...unusableReplaced(taken.answer, taken.replaced, open, taken.held) }
       reads += 1
       const rec = await loadRec($, sid)
-      const prompt = ownWordsPrompt(await memoryFor($, sid, rec, 'brief'), open, taken.answer, askFault(taken.written, taken.rules))
+      const prompt = ownWordsPrompt(await memoryFor($, sid, rec, 'brief'), open, taken.answer, askFault(taken.written, taken.rules, taken.held))
       const { result, ms } = await timed(() =>
         $.model.complete({ model: OBJECTIVE_MODEL, system: OWN_WORDS_SYSTEM, prompt, maxTokens: OWN_WORDS_MAX_TOKENS, effort: OWN_WORDS_EFFORT, timeoutMs: OWN_WORDS_TIMEOUT_MS }),
       )
@@ -2276,14 +2284,14 @@ async function pressBrief($: EngineInterface, sid: string): Promise<void> {
       ownRead = !answered ? 'none' : own === null ? 'cut' : 'whole'
       if (own !== null) end = 'own-words'
       // The own-words message is taken only when it is usable: praise alone leaves the fixed text for read 1's message.
-      const ownTaken = ownMessageTaken(taken.replaced, own)
-      taken = { ...taken, answer: takeOwnWords(taken.answer, ownTaken ? taken.replaced : taken.replaced.filter(p => p !== 'message'), own) }
+      const ownTaken = ownMessageTaken(taken.replaced, own, taken.held)
+      taken = { ...taken, answer: takeOwnWords(taken.answer, ownTaken ? taken.replaced : taken.replaced.filter(p => p !== 'message'), own, taken.held) }
       // No usable message from the last read or the own-words call: one read 1 kept stands before the list.
-      taken = { ...taken, answer: earlierMessage(taken.answer, taken.replaced, ownTaken, first) }
+      taken = { ...taken, answer: earlierMessage(taken.answer, taken.replaced, ownTaken, first, taken.held) }
     }
     // While the rep could not check, keep or save something, the card says so first and never
     // stops. The briefing's own gaps (Task 7) go in `gaps`; the Heads up's too-long line never does.
-    const a = withRecordLines(taken.answer, coverage(await loadRec($, sid), { full: storeFull.get(sid), gaps }))
+    const a = withRecordLines(taken.answer, coverage(await loadRec($, sid), { full: storeFull.get(sid), gaps }), taken.held)
     const brief = await changeRec($, sid, after => {
       const brief: Brief = {
         result: after.objective === null ? '' : firstSentence(objectiveText(after.objective)),
@@ -2526,7 +2534,8 @@ async function runCheck($: EngineInterface, sid: string, at: number, instant: Br
           does: or(c.does, instant.does),
         },
         gateOpen(after.objective),
-      ).answer, coverage(after, { full: storeFull.get(sid), gaps: lookGaps.get(sid) }))
+        heldOf(after),
+      ).answer, coverage(after, { full: storeFull.get(sid), gaps: lookGaps.get(sid) }), heldOf(after))
       const patch: Partial<Brief> = {
         checked,
         ...(marked && after.objective !== null ? { reading: objectiveText(after.objective), count: countLine(after.objective) } : {}),

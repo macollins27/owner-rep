@@ -1253,16 +1253,22 @@ test('messageSaysStop leaves the eight shapes of message that once tripped it th
     parseBrief(`means: The build is made; the sessions are not shown.\nnext: Run the sessions.\nmessage:\n${message}\nend\ndoes: Makes the agent show the sessions.`)
   const gated = gateVerdict(card('Wrap up and stop here.'), OPEN_JOB_OPEN)
   expect(gated.replaced).toEqual(['means', 'message'])
+  // Rewritten for the gate fix (PR 2): the wait before Submit is the owner's only where the owner
+  // held Submit, so the eight are read with the owner's words holding it.
+  const held: rep.Held = new Set(['submit'])
   // Each assertion holds all eight, so a failure names every shape it fails on.
-  expect(shapes.map(([name, m]) => [name, messageSaysStop(m)])).toEqual(shapes.map(([name]) => [name, false]))
+  expect(shapes.map(([name, m]) => [name, messageSaysStop(m, held)])).toEqual(shapes.map(([name]) => [name, false]))
   expect(shapes.map(([name, m]) => {
-    const g = gateVerdict(card(m), OPEN_JOB_OPEN)
+    const g = gateVerdict(card(m), OPEN_JOB_OPEN, held)
     return [name, g.replaced, g.answer.message, g.answer.does]
   })).toEqual(shapes.map(([name, m]) => [name, ['means'], m, 'Makes the agent show its work.']))
   expect(shapes.map(([name, m]) => {
-    const t = takeOwnWords(gated.answer, gated.replaced, own(m))
+    const t = takeOwnWords(gated.answer, gated.replaced, own(m), held)
     return [name, t.message, t.does]
   })).toEqual(shapes.map(([name, m]) => [name, m, 'Makes the agent show the sessions.']))
+  // With no hold of the owner's, only the wait before Submit is cut from it.
+  expect(shapes.map(([name, m]) => [name, messageSaysStop(m)])).toEqual(shapes.map(([name]) => [name, name === 'wait before Submit']))
+  expect(withoutStopSentences(WAIT_BEFORE_SUBMIT)).toBe(WAIT_BEFORE_SUBMIT.replace(/ After that, wait for my word on Submit\.$/, ''))
 })
 
 test('sentencesOf splits a message into sentences as spans over the text: a mark with any closing quote or bracket before whitespace or the end, a line break, a list item with its marker, a line ending in a colon, never a decimal or a line-start list marker', () => {
@@ -1424,9 +1430,13 @@ const C5_STOPS = [
 ]
 
 test('messageSaysStop lets four message shapes through that do not stop the agent while it could move the work: a push before it stops, a wait on someone else, a blocker stop that tells the owner what stands in the way, and a wait on his word before an outward act he alone decides; the rest of the sentence is still read', () => {
+  // Rewritten for the gate fix (PR 2): the three waits on the owner (the last three of C5_EXEMPT)
+  // are let through only with the owner's words holding their act, and caught with none.
   const exempt = C5_EXEMPT
-  expect(exempt.map(m => [m, messageSaysStop(m)])).toEqual(exempt.map(m => [m, false]))
+  expect(exempt.map(m => [m, messageSaysStop(m, OUTWARD_HELD)])).toEqual(exempt.map(m => [m, false]))
+  expect(exempt.map(m => [m, messageSaysStop(m)])).toEqual(exempt.map((m, i) => [m, i >= exempt.length - 3]))
   const stops = C5_STOPS
+  expect(stops.map(m => [m, messageSaysStop(m, OUTWARD_HELD)])).toEqual(stops.map(m => [m, true]))
   expect(stops.map(m => [m, messageSaysStop(m)])).toEqual(stops.map(m => [m, true]))
   // The exemptions are a message's: a next step keeps STOP_NEXT's reading, which refuses these.
   for (const n of ['Wait for a reply from the lead.', 'Wait for his word on Submit.', 'Then the agent can stop and tell him exactly what it refused.']) expect([n, saysStop(n)]).toEqual([n, true])
@@ -1439,21 +1449,30 @@ const REFUSED_CARD = (message: string) =>
   parseBrief(`verdict: stop\nwell:\nstands: The build is made.\nmeans: Nothing is waiting.\nleft:\n- nothing\nnext: Run the two sessions and show each one finishing.\nmessage:\n${message}\nend\ndoes: Makes the agent show its work.`)
 const OWN_WORDS_REPLY = (message: string) =>
   parseBrief(`means: The build is made; the sessions are not shown.\nnext: Run the sessions.\nmessage:\n${message}\nend\ndoes: Makes the agent show its work.`)
-const viaGate = (m: string, open: Condition[] | null = OPEN_JOB_OPEN) => {
-  const g = gateVerdict(REFUSED_CARD(m), open)
+const viaGate = (m: string, open: Condition[] | null = OPEN_JOB_OPEN, held: rep.Held = rep.NONE_HELD) => {
+  const g = gateVerdict(REFUSED_CARD(m), open, held)
   return [m, g.replaced, g.answer.message, g.answer.does]
 }
-const viaOwnWords = (m: string) => {
-  const gated = gateVerdict(REFUSED_CARD('Wrap up and stop here.'), OPEN_JOB_OPEN)
+const viaOwnWords = (m: string, held: rep.Held = rep.NONE_HELD) => {
+  const gated = gateVerdict(REFUSED_CARD('Wrap up and stop here.'), OPEN_JOB_OPEN, held)
   expect(gated.replaced).toEqual(['means', 'message'])
-  const t = takeOwnWords(gated.answer, gated.replaced, OWN_WORDS_REPLY(m))
+  const t = takeOwnWords(gated.answer, gated.replaced, OWN_WORDS_REPLY(m), held)
   return [m, t.message, t.does]
 }
+// Rewritten for the gate fix of 22 November 2026 (PR 2): a wait on the owner's word before an act
+// is let through only when the owner's own words hold that act, so each test of the shapes such a
+// wait takes reads them with the owner having held every outward act (a set equal to OLD_HELD,
+// read as live), and checks each is caught when the owner held none.
+const OUTWARD_HELD: rep.Held = new Set(rep.OLD_HELD)
+const KEPT_HELD = (m: string) => [m, messageSaysStop(m, OUTWARD_HELD), withoutStopSentences(m, OUTWARD_HELD), viaGate(m, OPEN_JOB_OPEN, OUTWARD_HELD)[2], viaOwnWords(m, OUTWARD_HELD)[1]]
+const KEPT_WHOLE = (m: string) => [m, false, m, m, m]
 
 test('gateVerdict and takeOwnWords keep a message that does not say stop whole, byte for byte, with its does line: every kept message and every one of the eight shapes', () => {
+  // Rewritten for the gate fix (PR 2): read with the owner's words holding every outward act, so
+  // the wait before Submit among the eight shapes stays.
   const whole = [...STOP_KEPT, ...STOP_SHAPES]
-  expect(whole.map(m => viaGate(m))).toEqual(whole.map(m => [m, ['means'], m, 'Makes the agent show its work.']))
-  expect(whole.map(viaOwnWords)).toEqual(whole.map(m => [m, m, 'Makes the agent show its work.']))
+  expect(whole.map(m => viaGate(m, OPEN_JOB_OPEN, OUTWARD_HELD))).toEqual(whole.map(m => [m, ['means'], m, 'Makes the agent show its work.']))
+  expect(whole.map(m => viaOwnWords(m, OUTWARD_HELD))).toEqual(whole.map(m => [m, m, 'Makes the agent show its work.']))
 })
 
 test('on a refused card, through the gate and as the own-words message, only the stop sentences go and the rest of the message stands exactly; the fixed text comes only when nothing usable is left', () => {
@@ -1483,7 +1502,7 @@ test('on a refused card, through the gate and as the own-words message, only the
   // as the own-words message, the gated card's fixed text is left in place.
   const none = ['You can stop once the README is fixed. Do that first.', 'Great work. You can stop now.', 'Thanks. Please stop.', 'Many thanks. You can stop now.', 'Well done so far. Thank you. Please stop here.']
   expect(none.map(m => viaGate(m))).toEqual(none.map(m => [m, ['means', 'message'], OPEN_MESSAGE(OPEN_JOB_OPEN), OPEN_DOES]))
-  expect(none.map(viaOwnWords)).toEqual(none.map(m => [m, OPEN_MESSAGE(OPEN_JOB_OPEN), OPEN_DOES]))
+  expect(none.map(m => viaOwnWords(m))).toEqual(none.map(m => [m, OPEN_MESSAGE(OPEN_JOB_OPEN), OPEN_DOES]))
   // A kept message beside a does line that says stop: only the does line is the rep's, on both paths.
   const mixed = kept[0]?.[0] ?? ''
   const stopDoes = gateVerdict(parseBrief(`verdict: stop\nwell:\nstands: s\nmeans: m\nleft:\n- nothing\nnext: Run the suite.\nmessage:\n${mixed}\nend\ndoes: Makes the agent stop and wait for my approval.`), OPEN_JOB_OPEN)
@@ -1617,7 +1636,11 @@ test('a hold on one named step the owner keeps, with a wait on his word, is no s
     'Hold the send step and wait for my word.',
     'Hold sending and wait for my go-ahead.',
   ]
-  expect(kept.map(READ_STOP)).toEqual(kept.map(STAYS_WHOLE))
+  // Rewritten for the gate fix (PR 2): the step held is the owner's only where the owner's words
+  // held it; with none held, the wait goes and the hold of the step stays as a call.
+  expect(kept.map(m => [m, messageSaysStop(m, OUTWARD_HELD), withoutStopSentences(m, OUTWARD_HELD)])).toEqual(kept.map(STAYS_WHOLE))
+  expect(kept.map(m => [m, messageSaysStop(m)])).toEqual(kept.map(m => [m, true]))
+  expect(withoutStopSentences('Run the test and paste what it printed. Hold the publish step and wait for my word.')).toBe('Run the test and paste what it printed.')
   const out = [
     'Hold everything and wait for my word',
     'Hold everything and wait for my word.',
@@ -1641,8 +1664,117 @@ test('a negated outward act lets through only a wait on the owner that has no ob
     'Never publish it; wait for my approval before you run the suite.',
   ]
   expect(caught.map(R1_CAUGHT_WHOLE)).toEqual(caught.map(R1_CAUGHT_OUT))
+  // Rewritten for the gate fix (PR 2): let through with the owner's words holding the act; caught with none.
   for (const m of ['Do not publish it; wait for my word.', 'Do not send the email yet; wait for my go-ahead.', 'Do not publish it; wait for my word before you publish it.'])
-    expect([m, messageSaysStop(m)]).toEqual([m, false])
+    expect([m, messageSaysStop(m, OUTWARD_HELD), messageSaysStop(m)]).toEqual([m, false, true])
+})
+
+// A hold on the owner's word is the owner's only where the owner's own words asked for it (North
+// Star repair of 22 November 2026, PR 2): the gate lets a wait on the owner before an act through
+// only when `heldActs` finds that act held in the owner's own typed words of this job.
+const ownerSaid = (...texts: string[]): OwnerMsg[] => texts.map((text, i) => ({ n: i + 1, kind: 'his', text, prior: '' }))
+const heldBy = (...texts: string[]) => [...rep.heldActs(ownerSaid(...texts), [])].sort()
+
+test('heldActs reads a hold only where the owner names themselves as the one who lets the act go, and the latest order to do the act lets it go', () => {
+  const table: [string[], string[]][] = [
+    [['Ask me before merging.'], ['merge']],
+    [['Do not publish without my OK.'], ['publish']],
+    [['Do not push or open a pull request until I have read the file.'], ['pull request', 'push']],
+    [["Don't merge it yet, I want to review it first."], ['merge']],
+    [['Wait for my go-ahead before you deploy.'], ['deploy']],
+    [['Please don\'t send the invoice until I say so.'], ['send']],
+    // A hold on something other than the owner holds nothing.
+    [["Don't deploy until the tests pass."], []],
+    [['Merge it once CI is green.'], []],
+    // Told not to wait, nothing is held.
+    [["Don't wait for my approval before deploying."], []],
+    [['Ask me before deploying.', "Don't wait for my approval before deploying."], []],
+    // An order to do the act lets it go; a mention of it does not.
+    [['Ask me before deploying.', 'Deploying is slow.'], ['deploy']],
+    [['Do not push until I have read the file.', "I've read it; push it."], []],
+    [['Merge now, but ask me before deploying.'], ['deploy']],
+    [['Ask me before merging.', 'Merge now, but ask me before deploying.'], ['deploy']],
+    // Quoted words are someone else's.
+    [['The agent said "wait for my go-ahead before merging" and I do not know why.'], []],
+  ]
+  expect(table.map(([texts]) => [texts, heldBy(...texts)])).toEqual(table)
+})
+
+test('heldActs reads only the owner\'s own words: never a draft, an agent\'s plan, or a sentence of the rep\'s that the owner sent inside an edited draft; a note to the rep counts', () => {
+  const draft: OwnerMsg = { n: 1, kind: 'draft', text: 'Wait for my approval before publishing.', prior: '' }
+  const plan: OwnerMsg = { n: 2, kind: 'plan', text: 'I will ask you before merging.', prior: '' }
+  const note: OwnerMsg = { n: 3, kind: 'note', text: 'Do not let it merge until I have looked.', prior: '' }
+  expect([...rep.heldActs([draft, plan], [])]).toEqual([])
+  expect([...rep.heldActs([draft, plan, note], [])]).toEqual(['merge'])
+  // The owner changed one word of the rep's draft, so the whole message is the owner's; the
+  // sentence the owner left as the rep wrote it is still the rep's.
+  const edited: OwnerMsg = { n: 4, kind: 'his', text: 'Fix the heading. Wait for my approval before publishing.', prior: '' }
+  expect([...rep.heldActs([edited], ['Fix the typo. Wait for my approval before publishing.'])]).toEqual([])
+  expect([...rep.heldActs([edited], [])]).toEqual(['publish'])
+})
+
+// Every wait on the owner the gate let through by its act before this change, and the owner-held
+// operations it cut.
+const HOLDS_BY_ACT: [string, string][] = [
+  ['After that, wait for my word on Submit.', 'submit'],
+  ['Wait for my go-ahead before you send the email.', 'send'],
+  ['Do not publish it; wait for my word.', 'publish'],
+  ['Wait for my go-ahead before publishing.', 'publish'],
+  ['Hold the publish step and wait for my word.', 'publish'],
+  ['Hold back on the pay step and wait for my word.', 'pay'],
+  ['Hold sending and wait for my go-ahead.', 'send'],
+  ['Wait for my word before you sign the contract.', 'sign'],
+  ['Wait for my go-ahead before you apply for the job.', 'apply'],
+  ['Wait for my word before you post it publicly.', 'post'],
+  ['Wait for my go-ahead before merging.', 'merge'],
+  ['Do not merge it; wait for my word.', 'merge'],
+  ['Hold the merge and wait for my word.', 'merge'],
+  ['Wait for my word before you push.', 'push'],
+  ['Wait for my go-ahead on Merge.', 'merge'],
+  ['Wait for my word before you open a pull request.', 'pull request'],
+]
+
+test('a wait on the owner\'s word before an act is a stop unless the owner\'s own words hold that act: no act is the owner\'s by its name alone', () => {
+  const none = new Set<string>()
+  expect(HOLDS_BY_ACT.map(([m]) => [m, messageSaysStop(m, none)])).toEqual(HOLDS_BY_ACT.map(([m]) => [m, true]))
+  expect(HOLDS_BY_ACT.map(([m]) => [m, messageSaysStop(m)])).toEqual(HOLDS_BY_ACT.map(([m]) => [m, true]))
+  expect(HOLDS_BY_ACT.map(([m, act]) => [m, messageSaysStop(m, new Set([act])), withoutStopSentences(m, new Set([act]))])).toEqual(HOLDS_BY_ACT.map(([m]) => [m, false, m]))
+  // The owner holding another act lets none of these through.
+  expect(HOLDS_BY_ACT.map(([m, act]) => [m, messageSaysStop(m, new Set([act === 'tag' ? 'delete' : 'tag']))])).toEqual(HOLDS_BY_ACT.map(([m]) => [m, true]))
+  // A wait after a negated act in the sentence before is let through only for that act.
+  const two = 'Do not merge the branch. Wait for my word.'
+  expect([messageSaysStop(two, new Set(['merge'])), messageSaysStop(two, new Set(['publish'])), messageSaysStop(two)]).toEqual([false, true, true])
+  expect(messageSaysStop('Do not merge the branch. Run the tests and wait for my word.', new Set(['merge']))).toBe(true)
+  // Leaving a step out is a call, never a stop, whoever asked.
+  for (const m of ['Leave it unpublished: the copy is not checked.', 'Do not publish it.', 'Do not merge the branch.']) expect([m, messageSaysStop(m)]).toEqual([m, false])
+  // The rest of the sentence is still read past an exempt wait.
+  expect(messageSaysStop('Wait for my go-ahead before merging, then you are done.', new Set(['merge']))).toBe(true)
+})
+
+test('before this change the gate let through a wait before an outward act whoever asked; OLD_HELD gives the same verdict, so the calls saved before it replay as they were sent', () => {
+  for (const m of C5_EXEMPT) expect([m, messageSaysStop(m, rep.OLD_HELD)]).toEqual([m, false])
+  for (const m of C5_STOPS) expect([m, messageSaysStop(m, rep.OLD_HELD)]).toEqual([m, true])
+  for (const [m, act] of HOLDS_BY_ACT) expect([m, messageSaysStop(m, rep.OLD_HELD)]).toEqual([m, !rep.OLD_HELD.has(act)])
+})
+
+test('the gate, the chooser and the fault named for the second asking read a hold the same way, against the owner\'s held acts', () => {
+  const m = 'Run the suite and paste its counts. Wait for my go-ahead before merging.'
+  const held = new Set(['merge'])
+  const kept = gateVerdict(REFUSED_CARD(m), OPEN_JOB_OPEN, held)
+  expect([kept.answer.message, rep.gateRules(REFUSED_CARD(m), OPEN_JOB_OPEN, held)]).toEqual([m, ['stop-verdict']])
+  const cut = gateVerdict(REFUSED_CARD(m), OPEN_JOB_OPEN)
+  expect([cut.answer.message, rep.gateRules(REFUSED_CARD(m), OPEN_JOB_OPEN)]).toEqual(['Run the suite and paste its counts.', ['stop-verdict', 'message-says-stop']])
+  expect(rep.askFault(REFUSED_CARD(m), ['message-says-stop'])).toContain('"Wait for my go-ahead before merging."')
+  expect(messageUsable('Wait for my go-ahead before merging.', held)).toBe(true)
+  expect(messageUsable('Wait for my go-ahead before merging.')).toBe(false)
+  expect(ownMessageTaken(['message'], OWN_WORDS_REPLY('Wait for my go-ahead before merging.'), held)).toBe(true)
+  const gated = gateVerdict(REFUSED_CARD('Wrap up and stop here.'), OPEN_JOB_OPEN, held)
+  expect(takeOwnWords(gated.answer, gated.replaced, OWN_WORDS_REPLY(m), held).message).toBe(m)
+  expect(takeOwnWords(gated.answer, gated.replaced, OWN_WORDS_REPLY(m)).message).toBe('Run the suite and paste its counts.')
+  expect(rep.withRecordLines(kept.answer, ['The record is cut.'], held).message).toBe(m)
+  const reply = `verdict: continue\nwell:\nstands: Both parts are built.\nmeans: The build is made and nothing shows it running.\nleft:\n- nothing\nnext: Show the two sessions finishing.\nmessage:\n${m}\nend\ndoes: Makes the agent show the sessions.\nend of reply`
+  expect([rep.callRead('brief', reply, OPEN_JOB_OPEN, undefined, held).gate, rep.callRead('brief', reply, OPEN_JOB_OPEN, undefined, held).held]).toEqual([[], ['merge']])
+  expect(rep.callRead('brief', reply, OPEN_JOB_OPEN).gate).toEqual(['message-says-stop'])
 })
 
 test('no run of whitespace changes a verdict: a wait on the owner past two spaces or a tab is caught, and every caught, kept and C5 message reads the same with its spaces doubled or turned to tabs', () => {
@@ -1873,8 +2005,14 @@ test('a removed list item\'s own marker goes with it, and a marker with text aft
 test('a wait on the owner\'s word on an operation that is the agent\'s is caught in every form of the word, however capitalised; a button named with a capital stays kept', () => {
   const caught = ['Wait for my word on Merging.', 'Wait for my word on Pushing.', 'Wait for my go-ahead on Merged.', 'Wait for my word on Deploys.', 'Wait for my word on INSTALLING.', 'Wait for my word on Deleting.', 'Wait for my word on Pushes.']
   expect(caught.map(R1_CAUGHT_WHOLE)).toEqual(caught.map(R1_CAUGHT_OUT))
+  // Rewritten for the gate fix (PR 2): a button stays kept where the owner's words held its act.
   for (const m of ['After that, wait for my word on Submit.', 'Wait for my word on Send.'])
-    expect([m, messageSaysStop(m)]).toEqual([m, false])
+    expect([m, messageSaysStop(m, OUTWARD_HELD), messageSaysStop(m)]).toEqual([m, false, true])
+  // Where the owner's words hold the act, a wait on it in the forms the rep writes for a step to
+  // come is the owner's; one in the past tense ("on Merged") names no step and is still caught.
+  const forms = new Set(['merge', 'push', 'deploy', 'install', 'delete'])
+  expect(caught.map(m => [m, messageSaysStop(m, forms)])).toEqual(caught.map(m => [m, m.includes('Merged')]))
+  expect(messageSaysStop('Wait for my word on Merge.', new Set(['merge']))).toBe(false)
 })
 
 test('the outward acts are only those the owner does toward the outside world: signing off, or signing, applying or posting something technical, is no outward act and the wait before it is caught', () => {
@@ -1886,8 +2024,11 @@ test('the outward acts are only those the owner does toward the outside world: s
     'Wait for my word before posting the results to the pull request.',
   ]
   expect(caught.map(R1_CAUGHT_WHOLE)).toEqual(caught.map(R1_CAUGHT_OUT))
+  // Rewritten for the gate fix (PR 2): let through with the owner's words holding the act; caught with none.
   for (const m of ['Wait for my word before you sign the contract.', 'Wait for my approval before signing the agreement.', 'Wait for my go-ahead before you apply for the job.', 'Wait for my word before you post it publicly.', 'Wait for my go-ahead before you send the email.'])
-    expect([m, messageSaysStop(m)]).toEqual([m, false])
+    expect([m, messageSaysStop(m, OUTWARD_HELD), messageSaysStop(m)]).toEqual([m, false, true])
+  // Signing off is no act of the owner's to hold, whatever the owner held.
+  expect(messageSaysStop('Wait for my approval before you sign off.', OUTWARD_HELD)).toBe(true)
 })
 
 test('a removal leaves no bracket or quote unbalanced: a mark whose partner stays on kept text stays with it, and a pair both removed goes', () => {
@@ -1963,7 +2104,8 @@ test('signing an agreement, contract or form with a determiner or possessive and
     'Wait for my go-ahead before you sign your new lease agreement.',
     'Wait for my word before signing this rental agreement.',
   ])
-    expect([m, messageSaysStop(m), withoutStopSentences(m), viaGate(m)[2]]).toEqual([m, false, m, m])
+    // Rewritten for the gate fix (PR 2): kept with the owner's words holding signing, caught with none.
+    expect([m, messageSaysStop(m, OUTWARD_HELD), withoutStopSentences(m, OUTWARD_HELD), viaGate(m, OPEN_JOB_OPEN, OUTWARD_HELD)[2], messageSaysStop(m)]).toEqual([m, false, m, m, true])
   const caught = [
     'Wait for my approval before signing the release tag.',
     'Wait for my go-ahead before signing the release tag.',
@@ -1998,7 +2140,8 @@ test('after a negated outward act, a wait on the owner whose only object refers 
     'Do not send the email yet; wait for my go-ahead on this.',
     'Never publish it; wait for my approval for that.',
   ])
-    expect([m, messageSaysStop(m), withoutStopSentences(m), viaGate(m)[2]]).toEqual([m, false, m, m])
+    // Rewritten for the gate fix (PR 2): kept with the owner's words holding the act, caught with none.
+    expect([m, messageSaysStop(m, OUTWARD_HELD), withoutStopSentences(m, OUTWARD_HELD), viaGate(m, OPEN_JOB_OPEN, OUTWARD_HELD)[2], messageSaysStop(m)]).toEqual([m, false, m, m, true])
   const caught = [
     'Do not publish the report; wait for my approval before running the tests.',
     'Do not publish it; wait for my word on the tests.',
@@ -2047,8 +2190,10 @@ test('a stop or hand-back that is the object of a question about its cause ("whi
 test('the capital-word exemption after "on" holds only for a button the owner alone presses toward the outside world (Submit, Send, Publish, Post, Pay, Sign, Apply, Approve, Purchase), in any case; any other word is caught', () => {
   const caught = ['Wait for my word on Build.', 'Wait for my word on Run.', 'Wait for my go-ahead on Release.', 'Wait for my approval on Tests.', 'Wait for my word on Continue.', 'Wait for my word on Merging.']
   expect(caught.map(R1_CAUGHT_WHOLE)).toEqual(caught.map(R1_CAUGHT_OUT))
-  for (const m of ['Wait for my word on Submit.', 'Wait for my word on SEND.', 'Wait for my go-ahead on Publish.', 'Wait for my word on Post.', 'Wait for my word on pay.', 'Wait for my word on Sign.', 'Wait for my word on Apply.', 'Wait for my approval on Approve.', 'Wait for my word on Purchase.', 'After that, wait for my word on Submit.', WAIT_BEFORE_SUBMIT])
-    expect([m, messageSaysStop(m), withoutStopSentences(m), viaGate(m)[2], viaOwnWords(m)[1]]).toEqual([m, false, m, m, m])
+  // Rewritten for the gate fix (PR 2): kept with the owner's words holding the act, caught with none.
+  const buttons = ['Wait for my word on Submit.', 'Wait for my word on SEND.', 'Wait for my go-ahead on Publish.', 'Wait for my word on Post.', 'Wait for my word on pay.', 'Wait for my word on Sign.', 'Wait for my word on Apply.', 'Wait for my approval on Approve.', 'Wait for my word on Purchase.', 'After that, wait for my word on Submit.', WAIT_BEFORE_SUBMIT]
+  expect(buttons.map(KEPT_HELD)).toEqual(buttons.map(KEPT_WHOLE))
+  expect(buttons.map(m => [m, messageSaysStop(m)])).toEqual(buttons.map(m => [m, true]))
 })
 
 test('after a negated outward act, a wait on the owner is let through only as the clause directly after it (a semicolon, a comma, "and" or a sentence break between, nothing else); a wait after other work is caught', () => {
@@ -2059,8 +2204,9 @@ test('after a negated outward act, a wait on the owner is let through only as th
     'Do not publish it, then stop. Wait for my word.',
   ]
   expect(caught.map(R1_CAUGHT_WHOLE)).toEqual(caught.map(R1_CAUGHT_OUT))
+  expect(caught.map(m => [m, messageSaysStop(m, OUTWARD_HELD)])).toEqual(caught.map(m => [m, true]))
   // With a sentence between, the wait is caught and only it goes.
-  expect([messageSaysStop('Never publish it. Run the suite. Wait for my word.'), withoutStopSentences('Never publish it. Run the suite. Wait for my word.')]).toEqual([true, 'Never publish it. Run the suite.'])
+  expect([messageSaysStop('Never publish it. Run the suite. Wait for my word.', OUTWARD_HELD), withoutStopSentences('Never publish it. Run the suite. Wait for my word.', OUTWARD_HELD)]).toEqual([true, 'Never publish it. Run the suite.'])
   for (const m of [
     'Do not publish it; wait for my word on that.',
     'Do not publish it, and wait for my word.',
@@ -2069,9 +2215,10 @@ test('after a negated outward act, a wait on the owner is let through only as th
     'Do not publish it. Wait for my word.',
     'Run the suite. Do not send the email yet.\nWait for my go-ahead on that.',
   ])
-    expect([m, messageSaysStop(m), withoutStopSentences(m), viaGate(m)[2], viaOwnWords(m)[1]]).toEqual([m, false, m, m, m])
+    // Rewritten for the gate fix (PR 2): kept with the owner's words holding the act, caught with none.
+    expect([...KEPT_HELD(m), messageSaysStop(m)]).toEqual([...KEPT_WHOLE(m), true])
   // A wait standing alone, or after a sentence that negates no outward act, is still caught.
-  expect(['Wait for my word.', 'Run the suite. Wait for my word.'].map(messageSaysStop)).toEqual([true, true])
+  expect(['Wait for my word.', 'Run the suite. Wait for my word.'].map(m => messageSaysStop(m))).toEqual([true, true])
   expect(withoutStopSentences('Run the suite. Wait for my word.')).toBe('Run the suite.')
 })
 
@@ -10079,6 +10226,35 @@ test('rule: Brief me, read 1 with no message while work is open: read 2 is told 
   expect(asks).toHaveLength(0)
   expect(rec()?.lastBrief).toMatchObject({ message: 'Show me each session finishing.', reads: 2, own: 'skipped' })
 })
+
+// The gate fix of 22 November 2026 (PR 2), through the hooks: a wait on the owner before merging
+// stands on the card where the owner's own words held merging, and is cut where only the rep's
+// own draft, which the owner sent, asked for it.
+const HOLD_JOB = (owner: OwnerMsg[]): Record<string, unknown> => {
+  const r = OPEN_JOB() as { sessions: { 'test-session': Record<string, unknown> } }
+  r.sessions['test-session'].owner = owner
+  r.sessions['test-session'].counter = owner.length
+  return r
+}
+const HOLD_MESSAGE = 'Run the suite and paste its counts. Wait for my go-ahead before merging.'
+for (const [name, owner, message] of [
+  ['the owner\'s own words held merging', [om('ship the release and install it here'), om('Ask me before merging anything.', 2)], HOLD_MESSAGE],
+  ['only the rep\'s draft the owner sent held it', [om('ship the release and install it here'), { n: 2, kind: 'draft', text: 'Wait for my go-ahead before merging.', prior: '' }], 'Run the suite and paste its counts.'],
+  ['the owner held merging, then told the agent to merge', [om('ship the release and install it here'), om('Ask me before merging anything.', 2), om('I have read it; merge it.', 3)], 'Run the suite and paste its counts.'],
+] as [string, OwnerMsg[], string][]) {
+  test(`rule: Brief me, a wait on the owner before merging when ${name}: the card's message is "${message}"`, async ($, on) => {
+    on('session.start', (_$, e) => ({ cwd: e.cwd }))
+    const rec = kept(on, HOLD_JOB(owner))
+    quietBand(on)
+    on('model.fork', () => ({ value: { isAnswered: true, text: USABLE_BRIEF('continue').replace('Show me each session finishing.', HOLD_MESSAGE), usage: USAGE } }))
+    ownWords(on, () => OWN_WORDS())
+    await started($)
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    await ui.press({ key: 'rep' })
+    await ui.unmount()
+    expect(rec()?.lastBrief?.message).toBe(message)
+  })
+}
 
 test('rule: Brief me, reads 1 and 2 with no message: the own-words call, told why, writes the card\'s message', async ($, on) => {
   const rec = openJob(on)
