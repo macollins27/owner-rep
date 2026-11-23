@@ -43,6 +43,7 @@ import {
   coverage,
   withRecordLines,
   heldActs,
+  repSentences,
   savedHeld,
   type Held,
   type ReaderGaps,
@@ -1302,9 +1303,9 @@ function parsedRec(sid: string, json: string): Rec | null {
 // The number of the job's first message, and the job's messages.
 const jobOf = (rec: Rec): number => rec.objective?.since ?? rec.jobStart
 const jobMsgs = (rec: Rec): OwnerMsg[] => rec.owner.filter(m => m.n >= jobOf(rec))
-// The acts the owner's own words of this job hold (`heldActs`), read past the rep's recent
-// messages, so a sentence of the rep's the owner sent inside an edited draft holds nothing.
-const heldOf = (rec: Rec): Held => heldActs(jobMsgs(rec), [...rec.drafts, rec.lastBrief?.message ?? ''])
+// The acts the owner's own words of this job hold (`heldActs`), past the sentences of the rep's
+// each message was recorded as carrying when it came in (`repSaid`).
+const heldOf = (rec: Rec): Held => heldActs(jobMsgs(rec))
 // The numbers of the owner's own messages and notes from `from` on: never a draft's.
 const hisFrom = (rec: Rec, from: number): number[] => rec.owner.filter(m => m.kind !== 'draft' && m.n >= from).map(m => m.n)
 
@@ -2842,7 +2843,10 @@ async function putMessage($: EngineInterface, text: string): Promise<void> {
 // an approval the trim could not keep (`trimCounted`), the last 10 by number.
 function pushOwner(rec: Rec, kind: OwnerKind, text: string, prior: string, more: Partial<OwnerMsg> = {}): void {
   const cut = kind === 'draft' ? OWNER_CUT : HIS_CUT
-  const { list, uncovered } = trimCounted([...rec.owner, { n: ++rec.counter, kind, text: fit(text, cut), prior: fitTail(prior, PRIOR_CUT), ...more }], jobOf(rec), rec.uncovered)
+  // The rep's sentences the owner sent as theirs, read against the drafts the rep has now.
+  const repSaid = kind === 'his' ? repSentences(text, [...rec.drafts, rec.lastBrief?.message ?? '']) : []
+  const said = repSaid.length > 0 ? { repSaid } : {}
+  const { list, uncovered } = trimCounted([...rec.owner, { n: ++rec.counter, kind, text: fit(text, cut), prior: fitTail(prior, PRIOR_CUT), ...said, ...more }], jobOf(rec), rec.uncovered)
   rec.owner = list
   if (uncovered === undefined) delete rec.uncovered
   else rec.uncovered = uncovered

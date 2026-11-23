@@ -56,6 +56,9 @@ export type OwnerMsg = {
   // A plan-screen answer read from the session's rows, not seen as it happened.
   readBack?: true
   withDraft?: number
+  // The sentences of the message that were a draft of the rep's word for word when it came in,
+  // folded (`repSentences`): never the owner's hold. Absent when there were none.
+  repSaid?: string[]
   toolUseId?: string
   // An approval of the open job kept past the trim (`trimKept`).
   pinned?: true
@@ -6893,7 +6896,24 @@ const STEMS: ReadonlyArray<readonly [RegExp, string]> = [
   [/^tag/i, 'tag'], [/^ship/i, 'ship'], [/^commit/i, 'commit'], [/^(?:open|pull|PRs?\b)/i, 'pull request'], [/^approv/i, 'approve'],
 ]
 const stemOf = (word: string): string => STEMS.find(([re]) => re.test(word.trim()))?.[1] ?? ''
-const stemIn = (text: string): string => stemOf(ACT_IN.exec(text)?.[0] ?? '')
+// Every act a hold names, by stem: the first act word in the text and each later one joined to
+// an act before it by "and", "or", "&" or a comma ("merging and deploying", "the merge and the
+// deploy"), never one named as a thing ("publishing the merge notes" names publishing alone).
+const ACT_ALL = new RegExp(ACT_IN.source, 'gi')
+const actsIn = (text: string, words: RegExp = ACT_ALL): string[] => {
+  const out: string[] = []
+  let last = -1
+  for (const m of text.matchAll(words)) {
+    const at = m.index ?? 0
+    const joined = last >= 0 && /(?:,|\band\b|\bor\b|&)\s*(?:(?:then|also|to|the|a|an|it|this|that|open)\s+)*$/i.test(text.slice(last, at))
+    if (out.length > 0 && !joined) break
+    const stem = stemOf(m[0])
+    if (stem !== '' && !out.includes(stem)) out.push(stem)
+    last = at + m[0].length
+  }
+  return out
+}
+const allHeld = (acts: readonly string[], held: Held): boolean => acts.length > 0 && acts.every(a => held.has(a))
 // The acts the owner's own words hold, by stem (`heldActs`). NONE_HELD holds none, so every wait
 // on the owner before an act is a stop. OLD_HELD is what the gate let through before this
 // change, whoever asked: a wait before an outward act or on an owner's button. Only the replay
@@ -6901,11 +6921,19 @@ const stemIn = (text: string): string => stemOf(ACT_IN.exec(text)?.[0] ?? '')
 export type Held = ReadonlySet<string>
 export const NONE_HELD: Held = new Set<string>()
 export const OLD_HELD: Held = new Set(['submit', 'publish', 'post', 'apply', 'pay', 'buy', 'purchase', 'sign', 'send', 'approve'])
+// The matchers as they were before the change, read only with OLD_HELD, so a saved call's verdict
+// is rebuilt by the same reading, not only the same acts: the first outward act said not to
+// happen let a wait through, whatever came before or after it.
+const OLD_WAIT_BEFORE_ACT = new RegExp(String.raw`\bwaits?\s+for\s+(?:(?:the owner['’]s|his|the)\s+)?(?:word|go-ahead|approval|sign-off)\s+(?:(?:on|before|to)\s+(?:the agent\s+(?:(?:can|may)\s+)?)?${OUTWARD_ACT}|on\s+([\w-]+))`, 'gi')
 const OLD_BUTTON = /^(?:submit|send|publish|post|pay|sign|apply|approve|purchase)$/i
+const OLD_HELD_ACT = String.raw`\bhold(?:\s+(?:off|back)\s+on)?(?:\s+(?:the|this|that))?\s+(?:${OUTWARD_ACT}|send(?:ing)?\b)`
+const OLD_NEGATED_ACT = String.raw`(?:(?:\bnot|\bnever|n['’]t)\s+${OUTWARD_ACT}|${OLD_HELD_ACT})(?:(?!\band\b)[^;:,.!?])*?`
 
 const WAIT_ON_HIM_BARE = String.raw`\bwaits?\s+(?:for|on|until|till)\s+${ON_HIM}(?:['’]s\s+[\w-]+)?(?:\s+(?:on|for)\s+(?:that|it|this))?${CLAUSE_END}`
 const WAIT_AFTER_NEGATED = new RegExp(String.raw`(${NEGATED_ACT}(?:\s*[;,]\s*(?:and\s+)?|\s+and\s+))${WAIT_ON_HIM_BARE}`, 'gi')
 const NEGATED_LAST = new RegExp(String.raw`${NEGATED_ACT}[.!]*\s*$`, 'i')
+const OLD_WAIT_AFTER_NEGATED = new RegExp(String.raw`(${OLD_NEGATED_ACT}(?:\s*[;,]\s*(?:and\s+)?|\s+and\s+))${WAIT_ON_HIM_BARE}`, 'gi')
+const OLD_NEGATED_LAST = new RegExp(String.raw`${OLD_NEGATED_ACT}[.!]*\s*$`, 'i')
 const WAIT_FIRST = new RegExp(String.raw`^(\s*(?:and\s+)?)${WAIT_ON_HIM_BARE}`, 'i')
 // 5. A stop or hand-back asked about as the thing a cause led to: "which" or "what", up to three
 // words ("which instruction or habit"), a causing verb (let, made, allowed, led, caused, told, got,
@@ -6919,16 +6947,27 @@ const WAIT_FIRST = new RegExp(String.raw`^(\s*(?:and\s+)?)${WAIT_ON_HIM_BARE}`, 
 // after "do" ("Do what lets you stop." is an order), and "whatever" is no "what".
 const CAUSED = String.raw`(?:the agent|any agent|another agent|(?:the\s+)?(?:other\s+)?agents)`
 const CAUSE_ASKED = new RegExp(String.raw`(?<!\bdo\s+)\b(?:which|what)\b(?:\s+[\w'’-]+){0,3}?\s+(?:let|lets|made|makes|allowed|allows|led|leads|caused|causes|told|tells|got|gets|permitted)\s+${CAUSED}(?:\s+(?:or|and)\s+${CAUSED})?(?:\s*,[^,;:.!?]*,)?\s+(?:to\s+)?(?:stop(?:s|ped|ping)?|hand(?:s|ed|ing)?)\b(?:(?!\b(?:${BLOCKER_ENDS})\b)[^;:,.!?])*`, 'gi')
-// A button is held when its word is an act the owner holds; OLD_HELD keeps the old buttons only.
-const buttonHeld = (button: string, held: Held): boolean =>
-  (held === OLD_HELD ? OLD_BUTTON : OWNER_BUTTON).test(button) && held.has(stemOf(button))
-const maskExempt = (read: string, held: Held, afterNegated = ''): string => {
+// A wait before an act, or after the acts said not to happen, is let through only when the owner
+// holds every act it names (`actsIn`): the act it waits before and each joined to it up to the
+// clause's end. A button is held when its word is an act the owner holds.
+const maskExempt = (read: string, held: Held, afterNegated: readonly string[] = []): string => {
   let s = read.replace(BEFORE_STOPS, 'x').replace(WAIT_ON_OTHER, 'x ')
   s = s.replace(BLOCKER_IF, (all: string, condition: string, clause: string) => (BLOCKER_TOLD.test(clause) ? condition + clause.replace(/\bstop\b/gi, 'x') : all))
-  s = s.replace(WAIT_BEFORE_ACT, (wait: string, act?: string, button?: string) =>
-    (act !== undefined ? held.has(stemOf(act)) : buttonHeld(button ?? '', held)) ? 'x' : wait)
-  s = s.replace(WAIT_AFTER_NEGATED, (all: string, act: string) => (held.has(stemIn(act)) ? `${act}x` : all))
-  if (afterNegated !== '' && held.has(afterNegated)) s = s.replace(WAIT_FIRST, (_: string, lead: string) => `${lead}x`)
+  if (held === OLD_HELD) return maskOld(s, afterNegated.length > 0)
+  s = s.replace(WAIT_BEFORE_ACT, (wait: string, act: string | undefined, button: string | undefined, at: number, whole: string) => {
+    if (act === undefined) return OWNER_BUTTON.test(button ?? '') && held.has(stemOf(button ?? '')) ? 'x' : wait
+    const rest = whole.slice(at + wait.length).match(/^[^;:,.!?]*/)?.[0] ?? ''
+    // The clause past the act is kept, so a later stop in it is still read.
+    return allHeld(actsIn(act + rest), held) ? 'x' : wait
+  })
+  s = s.replace(WAIT_AFTER_NEGATED, (all: string, act: string) => (allHeld(actsIn(act), held) ? `${act}x` : all))
+  if (allHeld(afterNegated, held)) s = s.replace(WAIT_FIRST, (_: string, lead: string) => `${lead}x`)
+  return s.replace(CAUSE_ASKED, 'x ')
+}
+const maskOld = (read: string, afterNegated: boolean): string => {
+  let s = read.replace(OLD_WAIT_BEFORE_ACT, (wait: string, button?: string) => (button === undefined || OLD_BUTTON.test(button) ? 'x' : wait))
+  s = s.replace(OLD_WAIT_AFTER_NEGATED, (_: string, act: string) => `${act}x`)
+  if (afterNegated) s = s.replace(WAIT_FIRST, (_: string, lead: string) => `${lead}x`)
   return s.replace(CAUSE_ASKED, 'x ')
 }
 
@@ -6942,8 +6981,8 @@ const maskExempt = (read: string, held: Held, afterNegated = ''): string => {
 // cuts the message's own text.
 const readOf = (sentence: string): string => toAgentVoice(maskReported(unwrap(sentence.replace(LIST_MARKER, '').replace(/\s+/g, ' '))))
 const sentenceSaysStop = (sentence: string, before: string, held: Held): boolean => {
-  const last = NEGATED_LAST.exec(readOf(before))
-  const read = maskExempt(readOf(sentence), held, last === null ? '' : stemIn(last[0]))
+  const last = (held === OLD_HELD ? OLD_NEGATED_LAST : NEGATED_LAST).exec(readOf(before))
+  const read = maskExempt(readOf(sentence), held, last === null ? [] : held === OLD_HELD ? ['old'] : actsIn(last[0]))
   return STOP_NEXT.test(read) || STOP_ONCE.test(read)
 }
 
@@ -6962,14 +7001,19 @@ export const messageSaysStop = (text: string, held: Held = NONE_HELD): boolean =
 
 // The acts the owner's own words hold for the owner, by stem, from the owner's messages of the
 // job in order: their own messages and notes to the rep, never a draft of the rep's or an agent's
-// plan, with quoted words and any sentence of the rep's that the owner sent (one of `rep`, the
-// rep's recent messages, found in an edited draft) left out. A sentence holds the acts it names
-// when it names the owner as the one who lets them go ("until I have read it", "without my OK",
-// "ask me before", "wait for my go-ahead", "I want to review it first"), and is not told not to
-// wait ("don't wait for my approval"). A later order to do an act ("push it", "merge now"), or a
-// sentence told not to wait, lets that act go; a mention of it ("deploying is slow") does not.
-// "Don't deploy until the tests pass" holds nothing: it waits on the tests, not on the owner.
-const OWNER_ACT = /\b(?:submit(?:s|ted|ting)?|publish(?:es|ed|ing)?|post(?:s|ed|ing)?|appl(?:y|ies|ied|ying)|pa(?:y|ys|id|ying)|b(?:uy|uys|ought|uying)|purchas(?:e|es|ed|ing)|sign(?:s|ed|ing)?|sen(?:d|ds|t|ding)|merg(?:e|es|ed|ing)|push(?:es|ed|ing)?|deploy(?:s|ed|ing)?|releas(?:e|es|ed|ing)|install(?:s|ed|ing)?|delet(?:e|es|ed|ing)|tag(?:s|ged|ging)?|ship(?:s|ped|ping)?|commit(?:s|ted|ting)?|pull\s+requests?|PRs?)\b/gi
+// plan, with quoted words (double or single quotes, a quoted line) and the sentences of the rep's
+// that the owner sent inside an edited draft (`repSaid`, recorded when the message came in, so a
+// later card saying the owner's words again never makes them the rep's) left out. A clause holds
+// the acts it names (`actsIn`) when it names the owner as the one who lets them go ("until I have
+// read it", "without my OK", "ask me before", "wait for my go-ahead", "I want to review it
+// first"); a clause that names the owner and no act holds the acts of the sentence's other
+// clauses ("Until I have read it, do not push."; "Wait for my go-ahead, then merge."), and a
+// sentence that is only that holds the acts the sentence before said not to happen ("Do not merge
+// the branch. Wait for my word."). A clause told not to wait ("don't wait for my approval before
+// merging") or a later order to do an act ("push it", "merge and deploy now") lets go the acts it
+// names; a mention of one ("deploying is slow", "publish the deploy notes" for deploying) does
+// not. "Don't deploy until the tests pass" holds nothing: it waits on the tests, not on the owner.
+const OWNER_ACT = /\b(?:submit(?:s|ted|ting)?|publish(?:es|ed|ing)?|post(?:s|ed|ing)?|appl(?:y|ies|ied|ying)|pa(?:y|ys|id|ying)|b(?:uy|uys|ought|uying)|purchas(?:e|es|ed|ing)|sign(?:s|ed|ing)?|sen(?:d|ds|t|ding)|merg(?:e|es|ed|ing)|push(?:es|ed|ing)?|deploy(?:s|ed|ing)?|releas(?:e|es|ed|ing)|install(?:s|ed|ing)?|delet(?:e|es|ed|ing)|tag(?:s|ged|ging)?|ship(?:s|ped|ping)?|commit(?:s|ted|ting)?|approv(?:e|es|ed|ing)|pull\s+requests?|PRs?)\b/gi
 const OWNER_LETS_GO = new RegExp(
   [
     String.raw`\b(?:until|till|before|unless)\s+(?:I|I['’](?:ve|ll|m|d))\b`,
@@ -6983,30 +7027,59 @@ const OWNER_LETS_GO = new RegExp(
   'i',
 )
 const NO_WAIT = /\b(?:don['’]t|do\s+not|no\s+need\s+to|never|without)\s+(?:wait|ask|check)/i
-const ORDERS_ACT = /^(?:(?:and|but|so|then|ok(?:ay)?|now|please|go\s+ahead\s+and|you\s+can|you\s+may|feel\s+free\s+to)[\s,]+)*(?:submit|publish|post|apply|pay|buy|purchase|sign|send|merge|push|deploy|release|install|delete|tag|ship|commit|open\s+(?:a|the)\s+(?:pull\s+request|PR))\b/i
+const ORDERS_ACT = /^(?:(?:and|but|so|then|ok(?:ay)?|now|please|just|go\s+ahead\s+and|you\s+can|you\s+may|feel\s+free\s+to)[\s,]+)*(?:submit|publish|post|apply|pay|buy|purchase|sign|send|merge|push|deploy|release|install|delete|tag|ship|commit|approve|open\s+(?:a|the)\s+(?:pull\s+request|PR))\b/i
+const NEGATES = /\b(?:not|never|hold)\b|n['’]t\b/i
 const unquoted = (text: string): string =>
-  text.replace(/"[^"\n]*"|“[^”\n]*”/g, ' ').split('\n').filter(l => !/^\s*>/.test(l)).join('\n')
+  text
+    .replace(/"[^"\n]*"|“[^”\n]*”|‘[^’\n]*’|(?<![\w'’])'[^'\n]*'(?![\w'’])/g, ' ')
+    .split('\n')
+    .filter(l => !/^\s*>/.test(l))
+    .join('\n')
 const folded = (s: string): string => s.toLowerCase().replace(/\s+/g, ' ').trim().replace(/[.!?]+$/, '')
-export function heldActs(owner: readonly OwnerMsg[], rep: readonly string[]): Held {
-  const theirs = rep.map(folded).filter(r => r !== '')
+// The sentences of a message of the owner's that are a sentence of a draft of the rep's word for
+// word, folded: what `heldActs` leaves out as the rep's. Read when the message comes in, against the drafts the
+// rep had then.
+export function repSentences(text: string, drafts: readonly string[]): string[] {
+  const theirs = new Set(drafts.flatMap(d => sentencesOf(d).map(({ start, end }) => folded(d.slice(start, end)))).filter(d => d !== ''))
+  const out: string[] = []
+  for (const { start, end } of sentencesOf(text)) {
+    const f = folded(text.slice(start, end))
+    if (f !== '' && theirs.has(f) && !out.includes(f)) out.push(f)
+  }
+  return out
+}
+export function heldActs(owner: readonly OwnerMsg[]): Held {
   const held = new Set<string>()
   for (const m of owner) {
     if (m.kind !== 'his' && m.kind !== 'note') continue
+    const theirs = m.repSaid ?? []
     const text = unquoted(m.text)
+    let negatedBefore: string[] = []
     for (const { start, end } of sentencesOf(text)) {
       const sentence = text.slice(start, end).replace(/\s+/g, ' ').trim()
       const f = folded(sentence)
-      if (f === '' || theirs.some(r => r.includes(f))) continue
-      const noWait = NO_WAIT.test(sentence)
-      const holds = !noWait && OWNER_LETS_GO.test(sentence)
-      for (const clause of sentence.split(/[;,:]|\s+(?:but|and\s+then|then)\s+/i)) {
-        const acts = [...clause.matchAll(OWNER_ACT)].map(a => stemOf(a[0])).filter(a => a !== '')
-        const order = ORDERS_ACT.test(clause.trim()) && !OWNER_LETS_GO.test(clause)
-        for (const a of acts) {
-          if (order || noWait) held.delete(a)
-          else if (holds) held.add(a)
+      if (f === '' || theirs.includes(f)) {
+        negatedBefore = []
+        continue
+      }
+      const clauses = sentence.split(/[;,:]|\s+(?:but|and\s+then|then)\s+/i).map(c => {
+        const acts = actsIn(c, OWNER_ACT)
+        const noWait = NO_WAIT.test(c)
+        const holds = !noWait && OWNER_LETS_GO.test(c)
+        return { acts, noWait, holds, order: !holds && ORDERS_ACT.test(c.trim()) }
+      })
+      // A clause naming the owner and no act holds the sentence's other acts.
+      const bare = clauses.some(c => c.holds && c.acts.length === 0)
+      const all = clauses.flatMap(c => c.acts)
+      if (bare && all.length === 0) for (const a of negatedBefore) held.add(a)
+      for (const c of clauses) {
+        for (const a of c.acts) {
+          if (c.noWait) held.delete(a)
+          else if (c.holds || bare) held.add(a)
+          else if (c.order) held.delete(a)
         }
       }
+      negatedBefore = !bare && clauses.every(c => !c.holds && !c.order && !c.noWait) && NEGATES.test(sentence) ? all : []
     }
   }
   return held

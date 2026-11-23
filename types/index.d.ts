@@ -104,6 +104,8 @@ export type OwnerMsg = {
   read?: ReadState
   screen?: 'accepted' | 'edited' | 'rejected' | 'accept-note'
   withDraft?: number
+  // The rep's sentences the owner sent inside an edited draft, folded: never the owner's hold.
+  repSaid?: string[]
   toolUseId?: string
   // An approval of the open job kept past the trim.
   pinned?: true

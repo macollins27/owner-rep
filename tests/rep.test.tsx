@@ -1673,7 +1673,7 @@ test('a negated outward act lets through only a wait on the owner that has no ob
 // Star repair of 22 November 2026, PR 2): the gate lets a wait on the owner before an act through
 // only when `heldActs` finds that act held in the owner's own typed words of this job.
 const ownerSaid = (...texts: string[]): OwnerMsg[] => texts.map((text, i) => ({ n: i + 1, kind: 'his', text, prior: '' }))
-const heldBy = (...texts: string[]) => [...rep.heldActs(ownerSaid(...texts), [])].sort()
+const heldBy = (...texts: string[]) => [...rep.heldActs(ownerSaid(...texts))].sort()
 
 test('heldActs reads a hold only where the owner names themselves as the one who lets the act go, and the latest order to do the act lets it go', () => {
   const table: [string[], string[]][] = [
@@ -1696,6 +1696,22 @@ test('heldActs reads a hold only where the owner names themselves as the one who
     [['Ask me before merging.', 'Merge now, but ask me before deploying.'], ['deploy']],
     // Quoted words are someone else's.
     [['The agent said "wait for my go-ahead before merging" and I do not know why.'], []],
+    [["The agent said 'wait for my go-ahead before merging'."], []],
+    // A hold or a no-wait stands for its own clause (Codex review of PR 2).
+    [["Don't wait for my approval before merging, but ask me before deploying."], ['deploy']],
+    [['Ask me before merging; deploying is slow.'], ['merge']],
+    // A clause that names the owner and no act holds the acts of the sentence's other clauses.
+    [['Until I have read it, do not push.'], ['push']],
+    [['Wait for my go-ahead, then merge.'], ['merge']],
+    // An order lets go only the acts it orders; an act named as a thing is no order to do it.
+    [['Ask me before deploying.', 'Publish the deploy notes.'], ['deploy']],
+    [['Ask me before merging or deploying.', 'Merge and deploy it.'], []],
+    [['Ask me before publishing the deploy notes.'], ['publish']],
+    // A hold said across two sentences: the act said not to happen, then a wait on the owner.
+    [['Do not merge the branch. Wait for my word.'], ['merge']],
+    [['Do not merge the branch. Deploy it when the tests pass.'], []],
+    // The owner's buttons hold as acts.
+    [['Wait for my word on Approve.'], ['approve']],
   ]
   expect(table.map(([texts]) => [texts, heldBy(...texts)])).toEqual(table)
 })
@@ -1704,13 +1720,19 @@ test('heldActs reads only the owner\'s own words: never a draft, an agent\'s pla
   const draft: OwnerMsg = { n: 1, kind: 'draft', text: 'Wait for my approval before publishing.', prior: '' }
   const plan: OwnerMsg = { n: 2, kind: 'plan', text: 'I will ask you before merging.', prior: '' }
   const note: OwnerMsg = { n: 3, kind: 'note', text: 'Do not let it merge until I have looked.', prior: '' }
-  expect([...rep.heldActs([draft, plan], [])]).toEqual([])
-  expect([...rep.heldActs([draft, plan, note], [])]).toEqual(['merge'])
+  expect([...rep.heldActs([draft, plan])]).toEqual([])
+  expect([...rep.heldActs([draft, plan, note])]).toEqual(['merge'])
   // The owner changed one word of the rep's draft, so the whole message is the owner's; the
-  // sentence the owner left as the rep wrote it is still the rep's.
-  const edited: OwnerMsg = { n: 4, kind: 'his', text: 'Fix the heading. Wait for my approval before publishing.', prior: '' }
-  expect([...rep.heldActs([edited], ['Fix the typo. Wait for my approval before publishing.'])]).toEqual([])
-  expect([...rep.heldActs([edited], [])]).toEqual(['publish'])
+  // sentence the owner left as the rep wrote it, recorded as the rep's when the message came in
+  // (`repSaid`), is still the rep's, however many cards come after.
+  const text = 'Fix the heading. Wait for my approval before publishing.'
+  const repSaid = rep.repSentences(text, ['Fix the typo. Wait for my approval before publishing.'])
+  expect(repSaid).toEqual(['wait for my approval before publishing'])
+  expect([...rep.heldActs([{ n: 4, kind: 'his', text, prior: '', repSaid }])]).toEqual([])
+  expect([...rep.heldActs([{ n: 4, kind: 'his', text, prior: '' }])]).toEqual(['publish'])
+  // The owner's own hold stays the owner's when a later card says it again (Codex review of PR 2).
+  expect(rep.repSentences('Wait for my go-ahead before merging.', [])).toEqual([])
+  expect([...rep.heldActs([{ n: 1, kind: 'his', text: 'Wait for my go-ahead before merging.', prior: '' }])]).toEqual(['merge'])
 })
 
 // Every wait on the owner the gate let through by its act before this change, and the owner-held
@@ -1752,12 +1774,26 @@ test('a wait on the owner\'s word before an act is a stop unless the owner\'s ow
   for (const m of ['Leave it unpublished: the copy is not checked.', 'Do not publish it.', 'Do not merge the branch.']) expect([m, messageSaysStop(m)]).toEqual([m, false])
   // The rest of the sentence is still read past an exempt wait.
   expect(messageSaysStop('Wait for my go-ahead before merging, then you are done.', new Set(['merge']))).toBe(true)
+  // A wait before several acts stands only when the owner holds every one (Codex review of PR 2);
+  // an act named as a thing ("the merge notes") is not one of them.
+  for (const m of ['Wait for my go-ahead before merging and deploying.', 'Do not merge or deploy. Wait for my word.', 'Do not merge or deploy it; wait for my word.'])
+    expect([m, messageSaysStop(m, new Set(['merge'])), messageSaysStop(m, new Set(['merge', 'deploy']))]).toEqual([m, true, false])
+  expect(messageSaysStop('Wait for my go-ahead before publishing the merge notes.', new Set(['publish']))).toBe(false)
 })
 
 test('before this change the gate let through a wait before an outward act whoever asked; OLD_HELD gives the same verdict, so the calls saved before it replay as they were sent', () => {
   for (const m of C5_EXEMPT) expect([m, messageSaysStop(m, rep.OLD_HELD)]).toEqual([m, false])
   for (const m of C5_STOPS) expect([m, messageSaysStop(m, rep.OLD_HELD)]).toEqual([m, true])
   for (const [m, act] of HOLDS_BY_ACT) expect([m, messageSaysStop(m, rep.OLD_HELD)]).toEqual([m, !rep.OLD_HELD.has(act)])
+  // Read with the old matchers, not only the old acts: the first outward act said not to happen
+  // let the wait through, whatever came before it (verdicts of 9eb4adc).
+  const old: [string, boolean][] = [
+    ['Do not merge or do not publish it. Wait for my word.', false],
+    ['Wait for my go-ahead before publishing and merging.', false],
+    ['Do not publish or merge it; wait for my word.', false],
+    ['Do not merge it; wait for my word.', true],
+  ]
+  expect(old.map(([m]) => [m, messageSaysStop(m, rep.OLD_HELD)])).toEqual(old)
 })
 
 test('a call saved before the gate fix has no held acts and replays with OLD_HELD; a call saved after replays with the acts it recorded', () => {
@@ -5552,6 +5588,20 @@ test('rule: an edited draft of the rep\'s, stored as the owner\'s, keeps the who
   expect(m?.text).toBe(fit(long, HIS_CUT))
   expect(m?.src?.sent?.text).toBe(long)
   expect(prompts.some(p => p.includes(long))).toBe(true)
+})
+
+// The gate fix (PR 2), Codex review: a draft the owner edited is recorded with the rep's sentences
+// it still carries, read against the drafts the rep had when it came in, so the rep's hold in it
+// stays the rep's after the draft leaves the last cards' list; a message of the owner's own
+// carries none.
+test('rule: an edited draft of the rep\'s is recorded with the sentences of the rep\'s it still carries, and the owner\'s own message with none', async ($, on) => {
+  const { rec } = capture(on, RECORDED({ drafts: ['Fix the typo. Wait for my go-ahead before merging.'] }))
+  await started($)
+  await send($, 'Fix the heading. Wait for my go-ahead before merging.')
+  expect(rec()?.owner.at(-1)).toMatchObject({ kind: 'his', repSaid: ['wait for my go-ahead before merging'] })
+  await send($, 'Ask me before deploying.')
+  expect(rec()?.owner.at(-1)?.kind).toBe('his')
+  expect(rec()?.owner.at(-1)?.repSaid).toBeUndefined()
 })
 
 test('rule: a message split into words for the agent and a note to the rep keeps the whole message as sent, and the writer reads the agent part whole', async ($, on) => {
@@ -10254,8 +10304,12 @@ for (const [name, owner, message, drafts] of [
   ['the owner held merging, then told the agent to merge', [om('ship the release and install it here'), om('Ask me before merging anything.', 2), om('I have read it; merge it.', 3)], 'Run the suite and paste its counts.'],
   // The owner's message 0 came before this job (jobStart 1): an earlier job's hold holds nothing now.
   ['only an earlier job held merging', [om('Ask me before merging anything.', 0), om('ship the release and install it here'), om('and finish the two other sessions', 2)], 'Run the suite and paste its counts.'],
-  // The rep drafted the hold; the owner changed one word elsewhere and sent it as their own message.
-  ['the owner sent the rep\'s hold inside an edited draft', [om('ship the release and install it here'), om('Fix the heading. Wait for my go-ahead before merging.', 2)], 'Run the suite and paste its counts.', ['Fix the typo. Wait for my go-ahead before merging.']],
+  // The rep drafted the hold; the owner changed one word elsewhere and sent it as their own message,
+  // recorded with the rep's sentence as the rep's when it came in. The draft has since left the
+  // last cards' list: what was recorded still holds.
+  ['the owner sent the rep\'s hold inside an edited draft', [om('ship the release and install it here'), { ...om('Fix the heading. Wait for my go-ahead before merging.', 2), repSaid: ['wait for my go-ahead before merging'] }], 'Run the suite and paste its counts.'],
+  // The owner's own hold, which a later card said again: still the owner's (Codex review of PR 2).
+  ['the owner held merging and a later card said it again', [om('ship the release and install it here'), om('Wait for my go-ahead before merging.', 2)], HOLD_MESSAGE, [HOLD_MESSAGE]],
 ] as [string, OwnerMsg[], string, string[]?][]) {
   test(`rule: Brief me, a wait on the owner before merging when ${name}: the card's message is "${message}"`, async ($, on) => {
     on('session.start', (_$, e) => ({ cwd: e.cwd }))
