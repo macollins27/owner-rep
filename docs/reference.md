@@ -353,28 +353,48 @@ call writes (below):
       (`Do not publish the report; wait for my approval before running the tests.` is
       caught), and so is a wait after other work (`Do not publish the report; run the suite
       and wait for my approval.`, or a sentence between). Every one of these is masked only
-      when the act it names, by its stem, is one the owner held: the wait after `Do not merge.`
-      stands for a held merge and not for a held publish. With nothing held, `Wait for my
-      go-ahead before publishing.` and `Wait for my go-ahead before merging.` are both caught.
+      when every act it names, by its stem, is one the owner held (`actsIn`, `allHeld`): the
+      first act word and each later one joined to the act before it by "and", "or", "&" or a
+      comma, with only then, also, to, the, a, an, it, this, that or open between, up to the
+      clause's end; an act named as a thing is not joined (`publishing the merge notes` names
+      publishing alone). So the wait after `Do not merge.` stands for a held merge and not for
+      a held publish, and with merging alone held `Wait for my go-ahead before merging and
+      deploying.` and `Do not merge or deploy. Wait for my word.` are caught. A button is held
+      when its word's stem is held. With nothing held, `Wait for my go-ahead before
+      publishing.` and `Wait for my go-ahead before merging.` are both caught.
 
-      `heldActs(owner, rep)` gives the acts held. It reads the owner's own messages and notes of
+      `heldActs(owner)` gives the acts held. It reads the owner's own messages and notes of
       this job (`jobMsgs`: kind his or note, never a draft or an agent's plan), with quoted text
-      ("…", “…” and lines opening with `>`) taken out (`unquoted`), sentence by sentence, and
-      skips a sentence found, folded to lower case and one space, inside one of the rep's
-      recent messages (`rep`: the record's drafts and the last card's message), so the rep's
-      own hold, sent back inside an edited draft, holds nothing. A sentence that asks for the
+      ("…", “…”, ‘…’, '…' standing apart from a word, and lines opening with `>`) taken out
+      (`unquoted`), sentence by sentence. It skips a sentence the message was recorded as
+      carrying from the rep (`repSaid`): when a message of the owner's comes in, `pushOwner`
+      records each of its sentences that is, folded to lower case and one space, a whole
+      sentence of one of the rep's drafts it holds then (the record's drafts and the last
+      card's message; `repSentences`). So the rep's own hold, sent back inside an edited draft,
+      holds nothing for the rest of the job, after that draft has left the drafts list too, and
+      a later card that says the owner's own hold again takes nothing from it. A message
+      recorded before 0.9.1 has no `repSaid` and is read as all the owner's. Each sentence is
+      read clause by clause (split at a semicolon, comma or colon, and at "but", "and then" or
+      "then"), and each clause for its acts (`actsIn` over `OWNER_ACT`, any tense, approving
+      among them: the first act and those joined to it, as above). A clause that asks for the
       owner first (`OWNER_LETS_GO`: until or before I, without or before my OK, approval,
       go-ahead, word, sign-off, review or look, ask me, check with me, wait for me, wait for my
-      word, I want to review, let me see, my OK) holds each act it names (`OWNER_ACT`, any
-      tense). It is read clause by clause (split at a semicolon, comma or colon, and at "but",
-      "and then" or "then"): a clause that opens with the act as an order (`ORDERS_ACT`:
-      `merge it`, `I have read it; push it`, `go ahead and deploy`) and asks for no one first
-      lets that act go, as does a sentence that says not to wait or ask (`NO_WAIT`: `Don't wait
-      for my approval before deploying.`); a later message wins. So `Merge now, but ask me
-      before deploying.` holds deploying alone, and a mere mention (`Deploying is slow.`)
-      changes nothing. A call saved before 0.9.1 has no `held` and replays with the acts the
-      gate exempted then (`OLD_HELD`, read through `savedHeld`); `callRead` records the acts
-      held beside the gate's rules.
+      word, I want to review, let me see, my OK) holds its acts, and one that asks for the owner
+      and names no act holds the acts of the sentence's other clauses (`Until I have read it, do
+      not push.`, `Wait for my go-ahead, then merge.`). A sentence that is only such a bare
+      hold holds the acts the sentence before it said not to happen (`NEGATES`: not, never,
+      n't or hold), so `Do not merge the branch. Wait for my word.` holds merging. A clause
+      that says not to wait or ask (`NO_WAIT`: `Don't wait for my approval before deploying.`)
+      lets its acts go, and so does one that opens with the act as an order (`ORDERS_ACT`:
+      `merge it`, `I have read it; push it`, `go ahead and deploy`, `just approve it`) and asks
+      for no one first; a later message wins. So `Merge now, but ask me before deploying.` holds
+      deploying alone, `Don't wait for my approval before merging, but ask me before deploying.`
+      holds deploying, `Ask me before merging; deploying is slow.` holds merging, `Publish the
+      deploy notes.` lets publishing go and not deploying, and a mere mention (`Deploying is
+      slow.`) changes nothing. A call saved before 0.9.1 has no `held` and replays with the
+      acts and the matchers the gate had then (`OLD_HELD`, read through `savedHeld`: the
+      `OLD_` matchers in `maskOld`, so its verdict is rebuilt as it was sent); `callRead`
+      records the acts held beside the gate's rules.
    5. A stop or hand-back asked about as the thing a cause led to (`CAUSE_ASKED`, masked last):
       "which" or "what" (not after "do", and never "whatever"), up to three words (`which
       instruction or habit`), a causing verb (let, lets, made, makes, allowed, allows, led,

@@ -209,8 +209,14 @@ stop and tell me why." is taken out. A wait on the
 owner's word before an act is kept only when the owner's own words in this job held that act
 ("Ask me before merging.", "Do not publish without my OK."): then the owner asked for the hold,
 and every other call is the rep's to make. The rep's own hold, sent back unchanged or inside an
-edited draft, holds nothing, nor does a quoted request, an earlier job's hold or a mere mention
-("Deploying is slow."); an order to do the act ("I have read it; push it.") lets it go. The
+edited draft, holds nothing: which sentences of a message were the rep's is recorded when the
+message comes in, so it stays the rep's for the whole job, and a later card that repeats the
+owner's own hold takes nothing from it. Nor does a quoted request hold anything, or an earlier
+job's hold, or a mere mention ("Deploying is slow."); an order to do the act ("I have read it;
+push it.") lets it go, and only the act it orders ("Publish the deploy notes." does not let
+deploying go). A hold reaches only the clause it is in, or a bare "wait for my word" right
+after a sentence saying not to do the act, and a wait that names two acts ("before merging and
+deploying") stands only when the owner held both. The
 acts that can be held are the outward ones only the owner does toward the outside world
 (submitting, sending an email, message, application, letter or invoice, publishing, signing an
 agreement, contract or form, applying for something, posting publicly, paying, buying,

@@ -14,6 +14,15 @@ What changed in each release of Owner Rep, newest first. The full record is the
   as publishing, sending and paying could. When you later tell the agent to go ahead ("I've
   read it, push it"), the hold ends; a mere mention of the step does not end it, and a hold
   from an earlier job does not carry over.
+- **Your hold is read the way you said it.** A hold covers the part of your sentence it is in
+  ("merge now, but ask me before deploying" holds deploying only), a "wait for my word" right
+  after "do not merge the branch" holds merging, and a wait that names two steps stays only
+  if you held both. The agent's words you quote, in double or single quotes, hold nothing,
+  and "wait for my word on Approve" now holds approving.
+- **The rep's words stay the rep's.** When you send a card back with your own edits, the
+  sentences you left as the rep wrote them are marked as the rep's when the message arrives,
+  so they never count as your hold later in the job, and a card that repeats your own hold
+  never cancels it.
 
 ## 0.9.0 (22 November 2026)
 
