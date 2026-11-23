@@ -10241,6 +10241,8 @@ for (const [name, owner, message] of [
   ['the owner\'s own words held merging', [om('ship the release and install it here'), om('Ask me before merging anything.', 2)], HOLD_MESSAGE],
   ['only the rep\'s draft the owner sent held it', [om('ship the release and install it here'), { n: 2, kind: 'draft', text: 'Wait for my go-ahead before merging.', prior: '' }], 'Run the suite and paste its counts.'],
   ['the owner held merging, then told the agent to merge', [om('ship the release and install it here'), om('Ask me before merging anything.', 2), om('I have read it; merge it.', 3)], 'Run the suite and paste its counts.'],
+  // The owner's message 0 came before this job (jobStart 1): an earlier job's hold holds nothing now.
+  ['only an earlier job held merging', [om('Ask me before merging anything.', 0), om('ship the release and install it here'), om('and finish the two other sessions', 2)], 'Run the suite and paste its counts.'],
 ] as [string, OwnerMsg[], string][]) {
   test(`rule: Brief me, a wait on the owner before merging when ${name}: the card's message is "${message}"`, async ($, on) => {
     on('session.start', (_$, e) => ({ cwd: e.cwd }))
@@ -11018,6 +11020,31 @@ const checkedCard = async ($: Engine, on: On, brief: string, out: string) => {
   await ui.press({ key: 'check' })
   await ui.unmount()
   return rec()?.lastBrief?.message
+}
+
+// The gate fix (PR 2) on the Check button: the checker's wait on the owner before merging stands
+// where the owner's own words held merging, and is cut where they did not.
+for (const [name, owner, message] of [
+  ['the owner held merging', [om('ship the release and install it here'), om('Do not merge without my OK.', 2)], HOLD_MESSAGE],
+  ['nobody held merging', [om('ship the release and install it here'), om('and finish the two other sessions', 2)], 'Run the suite and paste its counts.'],
+] as [string, OwnerMsg[], string][]) {
+  test(`rule: the Check card, the checker waiting on the owner before merging when ${name}: the card's message is "${message}"`, async ($, on) => {
+    const rec = kept(on, HOLD_JOB(owner))
+    quietBand(on)
+    checkRoom(on)
+    on('model.fork', () => ({ value: { isAnswered: true, text: USABLE_BRIEF('continue'), usage: USAGE } }))
+    ownWords(on, () => Promise.reject(new Error('the model is down')))
+    on('process.spawn', async function* () {
+      yield { stream: 'stdout', text: CHECKED_SAYING('continue', HOLD_MESSAGE) }
+      return { value: { code: 0, signal: null } }
+    })
+    await started($)
+    const ui = await $.ui.mount({ plugin: 'owner-rep', surface: 'terminal', ...BAND })
+    await ui.press({ key: 'rep' })
+    await ui.press({ key: 'check' })
+    await ui.unmount()
+    expect(rec()?.lastBrief?.message).toBe(message)
+  })
 }
 
 test('rule: the Check card, the instant card refused and the checker writing no message while conditions stay open: the card carries the fixed text', async ($, on) => {
