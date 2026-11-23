@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index fde7c3c..5db0e7e 100644
+index b0a6539..09f245a 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3177,7 +3177,7 @@ export const MESSAGE_FINISH = 'When each line above is done, tell me what you di
+@@ -3229,7 +3229,7 @@ export const MESSAGE_FINISH = 'When each line above is done, tell me what you di
  export const REP_MESSAGE_BODY = `The message is what the owner sends to the agent as their own turn. It is a prompt to a capable coding agent, and it reads as the owner's.
  - When the agent has lost sight of the result, open with the result and what it is for, in one sentence.
  - One line per thing asked, naming the exact work and what done means for it.
 -- A check proves only a fact: for one, ask for the command and what it printed. For whether the result works or is good, ask for a hands-on look at what the customer gets, by someone who did not build it, and what they saw; the agent's own checks, a test or a review do not stand in for that look, and the message asks for no self-proving piece. Where effort is going into such pieces, tell the agent to put it into the product.
 +- A check proves only a fact: for one, ask for the command and what it printed. For whether the result works or is good, ask for a hands-on look at the real thing and what it showed; the agent's own checks, a test or a review do not stand in for that look, and the message asks for no self-proving piece. Where effort is going into such pieces, tell the agent to put it into the product.
- - Name a held step exactly ("hold the publish to the live address until I say go"), rather than "wait for approval". Where the agent keeps stopping to ask about routine work, name the steps it may take without asking.
+ ${DC_MESSAGE} Where the agent keeps stopping to ask about routine work, name the steps it may take without asking.
  - End with the finish line, rather than "keep going" or "without stopping": "${MESSAGE_FINISH}"
  - Plain case: no capitals for emphasis, and every limit written as the condition it guards.

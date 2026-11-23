@@ -1779,7 +1779,7 @@
     "name": "judgment-line-dropped",
     "breaks": "The reads lose the judgment line \"you neither change the goal quietly nor obey quietly\", so the rep stops questioning the route.",
     "patch": "judgment-line-dropped.patch",
-    "fixed": "2026-10-19; remade 2026-11-19 (rewrite); remade 2026-11-20"
+    "fixed": "2026-10-19; remade 2026-11-19 (rewrite); remade 2026-11-20; remade 2026-11-22"
   },
   {
     "name": "gate-replaces-all",
@@ -2007,7 +2007,7 @@
     "name": "read1-fallback-over-own-words",
     "breaks": "Read 1's message is put back even when the own-words call gave a usable one, so the own-words message is thrown away.",
     "patch": "read1-fallback-over-own-words.patch",
-    "fixed": "2026-10-29; remade 2026-10-30"
+    "fixed": "2026-10-29; remade 2026-10-30; remade 2026-11-22"
   },
   {
     "name": "own-message-taken-whole",
@@ -2091,7 +2091,7 @@
     "name": "read1-praise-used",
     "breaks": "Read 1's message of praise alone counts as usable, so it stands on Brief me's card before the list of open conditions.",
     "patch": "read1-praise-used.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-22"
   },
   {
     "name": "praise-whitespace-usable",
@@ -2388,16 +2388,10 @@
     "fixed": "2026-10-30"
   },
   {
-    "name": "fixed-text-no-held-step",
-    "breaks": "The fixed text drops its held-step sentence, so a fallback message can push a step that waits on the owner.",
-    "patch": "fixed-text-no-held-step.patch",
-    "fixed": "2026-10-30; remade 2026-11-17"
-  },
-  {
     "name": "ask-again-silent-on-empty",
     "breaks": "The second read is not told an empty message counts, so a read refused for its empty message is asked again without the reason.",
     "patch": "ask-again-silent-on-empty.patch",
-    "fixed": "2026-10-30"
+    "fixed": "2026-10-30; remade 2026-11-22"
   },
   {
     "name": "empty-refusal-no-second-read",
@@ -2409,7 +2403,7 @@
     "name": "own-words-silent-on-empty",
     "breaks": "The own-words call is not told the rule the briefing broke, so its opening names a stop that never happened.",
     "patch": "own-words-silent-on-empty.patch",
-    "fixed": "2026-10-30; remade 2026-11-21"
+    "fixed": "2026-10-30; remade 2026-11-21; remade 2026-11-22"
   },
   {
     "name": "check-drops-instant-message",
@@ -2433,13 +2427,13 @@
     "name": "brief-may-leave-empty",
     "breaks": "The brief's message part no longer asks for the message while the work falls short of the best it could be, so the first read comes back with no message on passable work.",
     "patch": "brief-may-leave-empty.patch",
-    "fixed": "2026-10-30; remade 2026-11-19 (rewrite); remade 2026-11-20"
+    "fixed": "2026-10-30; remade 2026-11-19 (rewrite); remade 2026-11-20; remade 2026-11-22"
   },
   {
     "name": "brief-card-may-leave-empty",
     "breaks": "The message placeholder in the brief's output structure lets the model leave the message empty without the limit.",
     "patch": "brief-card-may-leave-empty.patch",
-    "fixed": "remade 2026-11-19 (rewrite); remade 2026-11-20"
+    "fixed": "remade 2026-11-19 (rewrite); remade 2026-11-20; remade 2026-11-22"
   },
   {
     "name": "check-may-leave-empty",
@@ -2449,9 +2443,9 @@
   },
   {
     "name": "held-step-line-dropped",
-    "breaks": "The message rules no longer say to name a held step exactly, so a forced message can push the held step or say only \"wait for approval\".",
+    "breaks": "The message rules no longer say to name the rep's call on each weighty step exactly, so a message can say only \"wait for approval\".",
     "patch": "held-step-line-dropped.patch",
-    "fixed": "2026-10-30; remade 2026-11-19 (rewrite); remade 2026-11-20"
+    "fixed": "2026-10-30; remade 2026-11-19 (rewrite); remade 2026-11-20; remade 2026-11-22"
   },
   {
     "name": "clause-one-modifier-only",
@@ -4635,7 +4629,7 @@
     "name": "deciding-shown-standard-dropped",
     "breaks": "The reads mark a condition shown where the record shows it, not by what counts as shown.",
     "patch": "deciding-shown-standard-dropped.patch",
-    "fixed": "tested 2026-11-18; remade 2026-11-19 (rewrite); remade 2026-11-20"
+    "fixed": "tested 2026-11-18; remade 2026-11-19 (rewrite); remade 2026-11-20; remade 2026-11-22"
   },
   {
     "name": "not-shown-failure-back",
@@ -4647,13 +4641,13 @@
     "name": "brief-proof-hands-on-only",
     "breaks": "The message rules ask only for a hands-on look, never a fact's command and what it printed, so a fact is never asked for its proof.",
     "patch": "brief-proof-hands-on-only.patch",
-    "fixed": "tested 2026-11-18; remade 2026-11-19 (rewrite)"
+    "fixed": "tested 2026-11-18; remade 2026-11-19 (rewrite); remade 2026-11-22"
   },
   {
     "name": "ask-again-measure-dropped",
     "breaks": "The second read is no longer told to measure each open condition by what counts as shown.",
     "patch": "ask-again-measure-dropped.patch",
-    "fixed": "tested 2026-11-18"
+    "fixed": "tested 2026-11-18; remade 2026-11-22"
   },
   {
     "name": "own-words-proof-hands-on-only",
@@ -4777,9 +4771,9 @@
   },
   {
     "name": "decisions-line-old",
-    "breaks": "The readers' deciding rules say again \"a question about what the owner wants\", so a go-ahead the agent waits on reads as a chore and never reaches the owner as one plain question.",
+    "breaks": "The readers' deciding rules say again \"a question about what the owner wants\", so a call the rep should make reaches the owner as a question with no answer.",
     "patch": "decisions-line-old.patch",
-    "fixed": "tested 2026-11-18; remade 2026-11-19 (rewrite); remade 2026-11-20"
+    "fixed": "tested 2026-11-18; remade 2026-11-19 (rewrite); remade 2026-11-20; remade 2026-11-22"
   },
   {
     "name": "objective-self-proving-dropped",
@@ -4789,27 +4783,21 @@
   },
   {
     "name": "expectation4-plan-step-exempt",
-    "breaks": "Expectation 4 exempts every check inside an approved plan, so a self-proving step there is never raised with the owner.",
+    "breaks": "Expectation 4 exempts every check inside an approved plan, so a self-proving step there never gets the rep's keep-or-drop call.",
     "patch": "expectation4-plan-step-exempt.patch",
-    "fixed": "tested 2026-11-18; remade 2026-11-19 (rewrite)"
+    "fixed": "tested 2026-11-18; remade 2026-11-19 (rewrite); remade 2026-11-22"
   },
   {
     "name": "owner-decision-undefined",
-    "breaks": "The reads are not told which decisions are truly the owner's (livelihood, public name, cannot be undone, against the ask; publishing, sending, paying, a guard's refusal), and ask instead for what the owner wants, so the owner gets technical questions or none at all.",
+    "breaks": "The reads are not told which calls weigh on the owner (livelihood, public name, cannot be undone, against the ask; publishing, sending, paying, deleting the owner's data), so a weighty call reaches the owner with no line of what is at stake.",
     "patch": "owner-decision-undefined.patch",
-    "fixed": "remade 2026-11-19 (rewrite); remade 2026-11-20"
-  },
-  {
-    "name": "goahead-hold-missing",
-    "breaks": "A condition waiting on the owner's go-ahead gets no message to hold that one step and finish the rest, so the agent stops whole or goes ahead unasked.",
-    "patch": "goahead-hold-missing.patch",
-    "fixed": "remade 2026-11-19 (rewrite); remade 2026-11-20"
+    "fixed": "remade 2026-11-19 (rewrite); remade 2026-11-20; remade 2026-11-22"
   },
   {
     "name": "check-self-proving-dropped",
-    "breaks": "The check is not told that a self-proving step of an approved plan is a question for the owner, so its rewritten card drops the question the briefing raised.",
+    "breaks": "The check is not told that a self-proving step of an approved plan gets the rep's keep-or-drop call, so its rewritten card drops the call the briefing made.",
     "patch": "check-self-proving-dropped.patch",
-    "fixed": "remade 2026-11-19; remade 2026-11-21"
+    "fixed": "remade 2026-11-19; remade 2026-11-21; remade 2026-11-22"
   },
   {
     "name": "decisions-replay-no-objective",
@@ -4827,7 +4815,7 @@
     "name": "shown-false-guess-check",
     "breaks": "The check is not told that a guess is no showing, so it files a claim the record shows neither way under \"false\" (ninth live test).",
     "patch": "shown-false-guess-check.patch",
-    "fixed": "remade 2026-11-19; remade 2026-11-21"
+    "fixed": "remade 2026-11-19; remade 2026-11-21; remade 2026-11-22"
   },
   {
     "name": "fact-tail-comma-dropped",
@@ -4977,19 +4965,19 @@
     "name": "finding-moves-on-pushback",
     "breaks": "The shared system prompt loses the line that a finding stands until the record shows something new, so an agent's disagreement alone can move the rep's briefing.",
     "patch": "finding-moves-on-pushback.patch",
-    "fixed": "tested 2026-11-19; remade 2026-11-19 (rewrite); remade 2026-11-20"
+    "fixed": "tested 2026-11-19; remade 2026-11-19 (rewrite); remade 2026-11-20; remade 2026-11-22"
   },
   {
     "name": "ask-again-every-fault",
     "breaks": "The second asking lists every rule the gate has rather than the one the first answer broke, so the call, which never saw its first answer, cannot tell what to fix.",
     "patch": "ask-again-every-fault.patch",
-    "fixed": "tested 2026-11-19; remade 2026-11-19 (rewrite); remade 2026-11-20"
+    "fixed": "tested 2026-11-19; remade 2026-11-19 (rewrite); remade 2026-11-20; remade 2026-11-22"
   },
   {
     "name": "replay-unshown-missing",
     "breaks": "The replay's edit for issue #49 leaves the objective writer's turn-end line as it was, so a replayed objective call is not what this build sends.",
     "patch": "replay-unshown-missing.patch",
-    "fixed": "tested 2026-11-19; remade 2026-11-19 (rewrite); remade 2026-11-21"
+    "fixed": "tested 2026-11-19; remade 2026-11-19 (rewrite); remade 2026-11-21; remade 2026-11-22"
   },
   {
     "name": "left-out-fold-stops",
@@ -5190,46 +5178,40 @@
     "fixed": "tested 2026-11-19"
   },
   {
-    "name": "goahead-question-dropped",
-    "breaks": "\"What reaches the owner\" no longer says each of the owner's decisions reaches the owner as one plain question on the card, so a briefing calls a send held for the owner's go \"your decision, not a gap\" and asks nothing, as in the tenth live test.",
-    "patch": "goahead-question-dropped.patch",
-    "fixed": "tested 2026-11-19; remade 2026-11-20"
-  },
-  {
     "name": "left-owner-decision-missing",
-    "breaks": "The briefing's \"left:\" names only a self-proving plan step as a question for the owner, so a held go-ahead is left off the card's list or called no gap.",
+    "breaks": "The briefing's \"left:\" no longer lists a call that weighs on the owner, so a weighty call drops off the card.",
     "patch": "left-owner-decision-missing.patch",
-    "fixed": "tested 2026-11-19; remade 2026-11-20"
+    "fixed": "tested 2026-11-19; remade 2026-11-20; remade 2026-11-22"
   },
   {
     "name": "left-decision-folded",
-    "breaks": "The briefing's \"left:\" may fold the owner's decision into \"- and N smaller gaps\", so the question on a held go-ahead can drop off the card.",
+    "breaks": "The briefing's \"left:\" may fold a weighty call into \"- and N smaller gaps\", so its stake line can drop off the card.",
     "patch": "left-decision-folded.patch",
-    "fixed": "tested 2026-11-19; remade 2026-11-20"
+    "fixed": "tested 2026-11-19; remade 2026-11-20; remade 2026-11-22"
   },
   {
     "name": "works-look-by-builder",
     "breaks": "The message asks for \"a hands-on look at the real thing\" without saying by whom or at what the customer gets, so it accepts the agent re-reading its own work, as in the tenth live test.",
     "patch": "works-look-by-builder.patch",
-    "fixed": "tested 2026-11-19"
+    "fixed": "tested 2026-11-19; remade 2026-11-22"
   },
   {
     "name": "checks-stand-in-for-look",
     "breaks": "The message no longer says the agent's own checks do not stand in for the hands-on look, so a message asks the agent to re-run its line-length and character checks where nobody but the agent has read the result.",
     "patch": "checks-stand-in-for-look.patch",
-    "fixed": "tested 2026-11-19"
+    "fixed": "tested 2026-11-19; remade 2026-11-22"
   },
   {
     "name": "look-for-north-star-item-missing",
     "breaks": "The rep's look-for list drops one of the North Star's things to look for (acting without planning and investigating first), so a reader is no longer told to watch for it.",
     "patch": "look-for-north-star-item-missing.patch",
-    "fixed": "tested 2026-11-20"
+    "fixed": "tested 2026-11-20; remade 2026-11-22"
   },
   {
     "name": "look-for-shrunk-missing",
     "breaks": "The look-for list no longer names work shrunk or quietly dropped, so a narrowed step of an approved plan reads as done (the rewrite's replay, rule 3).",
     "patch": "look-for-shrunk-missing.patch",
-    "fixed": "tested 2026-11-20"
+    "fixed": "tested 2026-11-20; remade 2026-11-22"
   },
   {
     "name": "unshown-called-untrue",
@@ -5241,13 +5223,13 @@
     "name": "stop-while-open-allowed",
     "breaks": "The rule that nothing says the agent should stop while a condition is open is gone, so a reader can tell the owner to stop the agent with work still open.",
     "patch": "stop-while-open-allowed.patch",
-    "fixed": "tested 2026-11-20"
+    "fixed": "tested 2026-11-20; remade 2026-11-22"
   },
   {
     "name": "short-session-called-long",
     "breaks": "Below the long-session threshold the reads are no longer told not to call the session long, so a card tells the owner to start fresh in a session that is not long.",
     "patch": "short-session-called-long.patch",
-    "fixed": "tested 2026-11-20"
+    "fixed": "tested 2026-11-20; remade 2026-11-22"
   },
   {
     "name": "owner-test-loses-own-reading",
@@ -5295,7 +5277,7 @@
     "name": "dropped-rule-whole-step-only",
     "breaks": "The rule that a dropped step is the owner's ask dropped covers only a whole step, so a part of a step left out ranks with a tidiness flag.",
     "patch": "dropped-rule-whole-step-only.patch",
-    "fixed": "tested 2026-11-20"
+    "fixed": "tested 2026-11-20; remade 2026-11-22"
   },
   {
     "name": "heads-up-why-list-only",
@@ -5319,7 +5301,7 @@
     "name": "ask-again-open-unfenced",
     "breaks": "The second asking places the open conditions in the fenced prompt with their fence tags as typed, so a condition's text can close a fence.",
     "patch": "ask-again-open-unfenced.patch",
-    "fixed": "tested 2026-11-20"
+    "fixed": "tested 2026-11-20; remade 2026-11-22"
   },
   {
     "name": "replay-counts-none-shown",
@@ -5337,19 +5319,19 @@
     "name": "message-length-line-missing",
     "breaks": "The 150-word limit on the message is gone from the request for it, so a message runs as long as the reader likes.",
     "patch": "message-length-line-missing.patch",
-    "fixed": "remade 2026-11-20"
+    "fixed": "remade 2026-11-20; remade 2026-11-22"
   },
   {
     "name": "means-length-last",
     "breaks": "The briefing's \"means:\" part loses its one or two sentences and puts its length after the content, so it runs long (the rewrite's replay, rule 6).",
     "patch": "means-length-last.patch",
-    "fixed": "tested 2026-11-20; remade 2026-11-20"
+    "fixed": "tested 2026-11-20; remade 2026-11-20; remade 2026-11-22"
   },
   {
     "name": "left-why-unbounded",
     "breaks": "The briefing's \"left:\" no longer says each item gives why it matters in a few words, so items run long (the rewrite's replay, rule 6).",
     "patch": "left-why-unbounded.patch",
-    "fixed": "tested 2026-11-20; remade 2026-11-20"
+    "fixed": "tested 2026-11-20; remade 2026-11-20; remade 2026-11-22"
   },
   {
     "name": "heads-up-also-not-recorded",
@@ -5391,7 +5373,7 @@
     "name": "stop-qualifier-missing",
     "breaks": "The rule on stopping loses its qualifier, so a reader may not tell the owner to stop an agent that can no longer move the objective.",
     "patch": "stop-qualifier-missing.patch",
-    "fixed": "2026-11-20"
+    "fixed": "2026-11-20; remade 2026-11-22"
   },
   {
     "name": "g7-task-live-length-rules",
@@ -5403,7 +5385,7 @@
     "name": "left-items-aim-missing",
     "breaks": "Each left-out item loses its aim of about 8 words, so items are written to the 20-word limit and run over it.",
     "patch": "left-items-aim-missing.patch",
-    "fixed": "remade 2026-11-20"
+    "fixed": "remade 2026-11-20; remade 2026-11-22"
   },
   {
     "name": "walk-adds-own-room",
@@ -5415,13 +5397,13 @@
     "name": "short-part-aim-missing",
     "breaks": "Stands, means and next lose their aim of about 20 words, so they are written to the 40-word limit and reach it.",
     "patch": "short-part-aim-missing.patch",
-    "fixed": "remade 2026-11-20"
+    "fixed": "remade 2026-11-20; remade 2026-11-22"
   },
   {
     "name": "left-question-not-short",
-    "breaks": "The owner's decision under \"left:\" loses \"short\", so the held go-ahead question names the step and its condition at length and reaches the 20-word limit.",
+    "breaks": "A weighty call under \"left:\" loses its word limit and may run to as many lines as it likes, so its stake, choice and reason bury the other gaps.",
     "patch": "left-question-not-short.patch",
-    "fixed": "2026-11-20"
+    "fixed": "2026-11-20; remade 2026-11-22"
   },
   {
     "name": "heads-up-said-reads-seen",
@@ -5616,12 +5598,6 @@
     "fixed": "tested 2026-11-21"
   },
   {
-    "name": "own-words-held-copied",
-    "breaks": "The own-words request copies the held-step rule beside the shared section that already says it, so the rule is said twice in two wordings.",
-    "patch": "own-words-held-copied.patch",
-    "fixed": "tested 2026-11-21; remade 2026-11-21"
-  },
-  {
     "name": "own-words-reaches-gone",
     "breaks": "The own-words call loses the section on what reaches the owner, so it is not told a held step or a chore left for the owner is the agent's to finish.",
     "patch": "own-words-reaches-gone.patch",
@@ -5637,7 +5613,7 @@
     "name": "own-words-stop-allowed",
     "breaks": "The own-words request loses the rule that nothing it writes stops the agent, calls the work finished or gives the owner a chore while a condition is open.",
     "patch": "own-words-stop-allowed.patch",
-    "fixed": "tested 2026-11-21; remade 2026-11-21"
+    "fixed": "tested 2026-11-21; remade 2026-11-21; remade 2026-11-22"
   },
   {
     "name": "replay-own-sent-without-fault",
@@ -5671,15 +5647,15 @@
   },
   {
     "name": "own-words-may-leave-as-is",
-    "breaks": "The own-words request no longer asks for work and proof on every open condition nor keeps a question to the owner for a decision yet to make, so its message can ask only that things be left as they are and its parts can ask the owner about a decision already made.",
+    "breaks": "The own-words request no longer asks for work and proof on every open condition, so its message can ask only that things be left as they are.",
     "patch": "own-words-may-leave-as-is.patch",
-    "fixed": "2026-11-21"
+    "fixed": "2026-11-21; remade 2026-11-22"
   },
   {
     "name": "own-words-asks-settled",
-    "breaks": "The own-words request no longer keeps what the owner's messages settled as settled nor puts a look with someone other than the agent and the owner, so its parts can ask the owner again about a decision already made or hand the owner the look.",
+    "breaks": "The own-words request no longer keeps what the owner's messages settled as settled nor puts a look with someone other than the agent and the owner, so its parts can reopen a settled decision or hand the owner the look.",
     "patch": "own-words-asks-settled.patch",
-    "fixed": "2026-11-21"
+    "fixed": "2026-11-21; remade 2026-11-22"
   },
   {
     "name": "check-without-reaches",
@@ -5915,5 +5891,65 @@
     "breaks": "A first message ending with a bound on its step, such as \"write a two-line README and stop\", has that bound written as a condition of the whole job, and the card drafts it into the owner's message.",
     "patch": "objective-step-bound-kept.patch",
     "fixed": "2026-11-21, the live check of #70"
+  },
+  {
+    "name": "fixed-text-holds-for-goahead",
+    "breaks": "The fixed text tells the agent to hold any step for the owner's go-ahead, so a fallback message stops work the rep should have decided.",
+    "patch": "fixed-text-holds-for-goahead.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "stake-line-dropped",
+    "breaks": "A weighty call gets no line under \"left\" saying what is at stake, what the rep chose and why, so the owner sends it without seeing the stake.",
+    "patch": "stake-line-dropped.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "assumption-unnamed",
+    "breaks": "A call that rests on a fact only the owner knows no longer names what the rep assumed, so the owner cannot catch a wrong guess about their own business.",
+    "patch": "assumption-unnamed.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "owner-asked-hold-dropped",
+    "breaks": "The reads lose the rule that a step the owner's own words held stays held, so a message can push the agent past a hold the owner asked for.",
+    "patch": "owner-asked-hold-dropped.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "draft-hold-read-as-owners",
+    "breaks": "A hold the rep's own draft put in, sent unchanged by the owner, is no longer marked as the rep's call, so it reads as the owner's ask and is never decided again.",
+    "patch": "draft-hold-read-as-owners.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "every-call-not-made",
+    "breaks": "\"What reaches the owner\" no longer says the rep makes every call, so a briefing puts each decision to the owner as a plain question with no answer.",
+    "patch": "every-call-not-made.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "brief-holds-until-go",
+    "breaks": "The message rules tell the rep to name a held step \"until I say go\", so the message stops the agent on a call the rep should have made.",
+    "patch": "brief-holds-until-go.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "guard-workaround-allowed",
+    "breaks": "The reads lose the guard rule, so a message can tell the agent to get around a refusal from the owner's guard.",
+    "patch": "guard-workaround-allowed.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "ask-again-holds-for-goahead",
+    "breaks": "The second read is told a condition waiting on the owner's go-ahead is held, so a refused card comes back holding a step for the owner.",
+    "patch": "ask-again-holds-for-goahead.patch",
+    "fixed": "2026-11-22"
+  },
+  {
+    "name": "earlier-message-calls-unpaired",
+    "breaks": "When Brief me falls back on read 1's message, the card keeps the last read's left lines, so it can list a call its own message contradicts.",
+    "patch": "earlier-message-calls-unpaired.patch",
+    "fixed": "2026-11-22"
   }
 ]

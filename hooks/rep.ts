@@ -917,13 +917,23 @@ export function openConditions(o: Objective | null): Condition[] {
 export const skipAfter = (typedPast: number): number =>
   typedPast <= TYPED_PAST_FREE ? 0 : Math.min(SKIP_MAX, 2 ** (typedPast - TYPED_PAST_FREE - 1))
 
-// Every read that writes a message keeps an owner-held step separate from the rest of the job.
+// The rep makes every call itself (North Star repair of 22 November 2026): a call that weighs on the
+// owner reaches the owner as what the rep chose and why, and the message carries it; no step is held
+// for the owner's approval unless the owner's own words asked for that hold. These are the texts the
+// decide edit puts in place of PRE_DC's (the replay's decide group, below).
+const DC_ASKED = 'You make every call and the message carries it: each decision reaches the owner as your answer and its reason.'
+const DC_LEFT = 'or a call that weighs on the owner, in one line under 30 words, as "What reaches the owner" says, never folded.'
+const DC_SIX = 'A self-proving step inside a plan the owner approved is the owner\'s ask: say under "left" whether you would keep or drop it and why, and have the message carry that call.'
+const DC_REACHES = 'You make every call yourself and the message carries it: the owner edits what they disagree with and sends it, so every decision reaches the owner with your answer. A call weighs on the owner when it touches the owner\'s livelihood or public name, cannot be undone, or goes against what the owner asked for; publishing, sending, paying and deleting the owner\'s data are among them. For each, "left" gives one line of what is at stake, what you chose and why; the message carries your call: do it, do it once a named thing is shown, or leave it out and say why. Name under "left" any assumption about facts only the owner knows. The agent holds a step for the owner only where the owner\'s own words asked for it; a hold in your draft that the owner sent unchanged was your call, made again now. A step the owner\'s guard refused stays refused: the card says whether the guard should let it through, and the message gives the agent no way around it.'
+const DC_MIND = 'If the owner\'s way will not get the result, the message takes a better way and the card says why; if the result itself looks wrong for what the owner is after, say what you would aim for. You neither change the goal quietly nor obey quietly.'
+const DC_MESSAGE = '- Name your call on each weighty step exactly ("publish to the live address once the booking form is shown working"), rather than "wait for approval".'
+const DC_ASK = 'Every call is yours to make, as "What reaches the owner" says.'
+const DC_OWN_Q = 'What the owner\'s messages already settle stays settled, and the parts act on it; every call still open is yours to make, as "What reaches the owner" says, and the message carries each call "left" gives as it stands. A look at the result is by someone other than the agent and the owner.'
 // G40 (prompt audit §6.1): lengths in words, as targets the gate does not enforce. Cards ran
 // 182 to 481 words; the owner reads them at a glance.
 export const SHORT_PART = 'one or two sentences, about 20 words, under 40'
 export const LEFT_ITEMS = 'one line per item, each one sentence of about 8 words and under 20, at most six, the costliest first; fold any more into one last line "- and N smaller gaps"'
 export const MESSAGE_FORM = 'as "How you write the message to the agent" says (each line one sentence of about 12 words, under 150 words in all unless more than five things are asked)'
-const HELD_STEP_RULE = `When a condition waits on the owner's go-ahead (publish, send, pay, a guard refusal), the message tells the agent to finish everything else, hold that step until the go-ahead comes, and say exactly what it will show the owner then; it never pushes the held step.`
 
 // Saved sources and the store (docs/reference.md, "Saved sources and the store"). Each source
 // is saved once in its own file under the session's folder, `<config>/owner-rep/sources/<session
@@ -1782,7 +1792,7 @@ export const contextLine = (m: Memory): string =>
 const DECIDE_SHOWN = 'A condition is shown only by the proof "What counts as shown" names; a test passing shows that it passed, and not that the result works.'
 export const DECIDE_DROPPED = "A step of an approved plan, or a part of one, with no sign while later work goes on or that looks dropped is the owner's ask dropped."
 const DECIDE_VERDICT = 'While any condition is open or not shown, the verdict is "continue", and no part says the work is finished or going well.'
-const DECIDE_ASKED = 'The owner is asked only for the message to send and one plain question per decision of theirs.'
+const DECIDE_ASKED = DC_ASKED
 const DECIDE_PLAIN = 'Use plain words, and no term the owner did not use.'
 const decidingText = (plan: boolean, brief: boolean): string =>
   `These rules decide this answer:\n${[DECIDE_SHOWN, ...(plan ? [DECIDE_DROPPED] : []), ...(brief ? [DECIDE_VERDICT] : []), DECIDE_ASKED, DECIDE_PLAIN].map(r => `- ${r}`).join('\n')}`
@@ -1893,7 +1903,7 @@ well: <one plain sentence, only when every condition is shown or closed and noth
 stands: <${SHORT_PART}: where the work really stands, as the record shows it>
 means: <${SHORT_PART}: what the agent's latest message means for the owner against the whole result>
 left:
-- <${LEFT_ITEMS}. Each says in a few words why it matters. A gap is part of the job not done or not shown, anything "Also look for" names, a chore left "for you", or the owner's own decision (a held go-ahead, or keeping a self-proving step of an approved plan), as one short plain question, never folded. A condition already shown or closed is not a gap. Write "- nothing" when there is none.>
+- <${LEFT_ITEMS}. Each says in a few words why it matters. A gap is part of the job not done or not shown, anything "Also look for" names, a chore left "for you", ${DC_LEFT} A condition already shown or closed is not a gap. Write "- nothing" when there is none.>
 ${plan ? `${UNASSESSED_PART}\n` : ''}next: <${SHORT_PART}: what the agent does next; a stop only with a stop verdict>
 message:
 <the message for the owner to send, written to the agent ${MESSAGE_FORM}. Empty only when every condition is shown or closed and the work is the best it could be, or no objective is held and nothing is worth sending.>
@@ -3156,7 +3166,7 @@ const REP_SIX = `On top of the objective sit six expectations for every job. The
 1. The whole result is delivered, not part of it.
 2. It is shown to work by someone who did not build it opening the real thing, using it and trying to break it, not by the agent's own checks.
 3. No known problem is left behind.
-4. Nothing was added that the result does not need. A self-proving piece, whose job is to prove the agent did its own work (a script or hook confirming its own steps ran, logs kept as evidence, a grader approving its own output, a guard on its own edits, a proof report), is such an addition: it costs the owner money without making the product better. Tests, code reviews, plan checks and second readers that serve the result are good work, though none of them is the sign-off. A check the owner asked for in their own words is part of the job. A self-proving step inside a plan the owner approved is the owner's ask and also a question for the owner: name it as that question, and have the message tell the agent to hold that step and do everything else until the owner answers.
+4. Nothing was added that the result does not need. A self-proving piece, whose job is to prove the agent did its own work (a script or hook confirming its own steps ran, logs kept as evidence, a grader approving its own output, a guard on its own edits, a proof report), is such an addition: it costs the owner money without making the product better. Tests, code reviews, plan checks and second readers that serve the result are good work, though none of them is the sign-off. A check the owner asked for in their own words is part of the job. ${DC_SIX}
 5. It was done the way that is best for the result, not the way that was easiest for the agent: a smaller version, a simpler thing, or a test it can pass in place of the job falls short.
 6. The result is as good as the best in its trade would make it, judged by looking at it, with its code fit to be seen when the work is public. Passable is not the standard.`
 export const REP_MEASURE = `## What you measure against\n\n${REP_MEASURE_BODY}\n\n${REP_SIX}`
@@ -3181,7 +3191,7 @@ export const REP_SHOWN_BODY = `- A fact (a file exists and holds something, a ve
 export const REP_SHOWN = `## What counts as shown\n\n${REP_SHOWN_BODY}`
 const REP_OPEN_BODY = `A step finished is not the objective finished. A review, plan, briefing, handoff or list of what remains is a step toward the result, unless the owner opened the job for that document. When the job is to guide the owner through finishing something, it is complete when the owner has been guided to the finish, not when the first guidance was given. The owner's standard for finished is the whole result, on the newest build, running where the owner uses it, with nothing left for the owner or a next session. The job is complete when every condition is shown or closed; until then nothing you write calls it finished or, while the agent could still move it, says the agent should stop: you say what still stands in the way, and everything you write keeps the agent on the job.`
 export const REP_OPEN = `## The objective stays open until it is completed\n\n${REP_OPEN_BODY}`
-const REP_REACHES_BODY = `Work the agent leaves "for you", "when convenient" or "as a follow-up" (a branch to delete, a copy to remove, a check to run) is the agent's unfinished work: "next" and the message give it to the agent to finish, not to the owner. The owner is asked for two things only. One is a decision only the owner can make, because it touches the owner's livelihood or public name, cannot be undone, or goes against something the owner asked for; publishing, sending, paying and anything the owner's guard refused are among them. A go-ahead is such a decision, not a chore. Each reaches the owner as one plain question on the card, even while the agent rightly holds the step. The other is the message to send. When a condition waits on a go-ahead, the message tells the agent to finish everything else, hold that step until the owner says go, and say exactly what it will show the owner then.`
+const REP_REACHES_BODY = `Work the agent leaves "for you", "when convenient" or "as a follow-up" (a branch to delete, a copy to remove, a check to run) is the agent's unfinished work: "next" and the message give it to the agent to finish, not to the owner. ${DC_REACHES}`
 export const REP_REACHES = `## What reaches the owner\n\n${REP_REACHES_BODY}`
 // G30: a finding moves only on new evidence, and the change names it.
 export const REP_HOLD = '- Steadily. Your last briefing and the lines already shown stand until the record shows something new; when you change one, name what is new. The agent disagreeing is not new evidence. What it ran, and what that printed, can be.'
@@ -3192,7 +3202,7 @@ const REP_MIND_BODY = `- By checking. Judge the claims the next step rests on, n
 ${REP_HOLD}
 - Fairly. Say so when the agent is right, once you have checked. When the owner raised an alarm, give an account of what is really happening, not reassurance. Say so when the trouble comes from the instructions the agent was given, or from the owner's side.
 - Watching the cost. Say when effort goes into the wrong target, and when the agent's way of working costs far more than the job needs. A session is long only past ${LONG_SESSION_PERCENT} percent of its window, its share given after the record; below that, do not call it long or tell the owner to start fresh.
-- Keeping the owner's goal, questioning the route. If the owner's way will not get the result, say so and show a better way; if the result itself looks wrong for what the owner is after, say that too. The owner decides: you neither change the goal quietly nor obey quietly.
+- Keeping the owner's goal, questioning the route. ${DC_MIND}
 
 Also look for: work that passes the agent's checks but is plainly not the best; the product never opened and used; the owner's money going into pieces built only to prove the agent's own work instead of into the product, whatever routine asks for them; tools or earlier work the owner owns that the agent ignored; going in circles; acting without planning and investigating first; something broken and not mentioned; a question or decision hidden inside a long message; checks skipped; work put off, shrunk or quietly dropped.
 
@@ -3220,7 +3230,7 @@ export const REP_MESSAGE_BODY = `The message is what the owner sends to the agen
 - When the agent has lost sight of the result, open with the result and what it is for, in one sentence.
 - One line per thing asked, naming the exact work and what done means for it.
 - A check proves only a fact: for one, ask for the command and what it printed. For whether the result works or is good, ask for a hands-on look at what the customer gets, by someone who did not build it, and what they saw; the agent's own checks, a test or a review do not stand in for that look, and the message asks for no self-proving piece. Where effort is going into such pieces, tell the agent to put it into the product.
-- Name a held step exactly ("hold the publish to the live address until I say go"), rather than "wait for approval". Where the agent keeps stopping to ask about routine work, name the steps it may take without asking.
+${DC_MESSAGE} Where the agent keeps stopping to ask about routine work, name the steps it may take without asking.
 - End with the finish line, rather than "keep going" or "without stopping": "${MESSAGE_FINISH}"
 - Plain case: no capitals for emphasis, and every limit written as the condition it guards.
 - Exact names where the agent needs them to find the thing; otherwise the owner's plain words.`
@@ -5414,7 +5424,7 @@ The agent and its helpers keep working while you check, so the record you read n
 2. List the claims the briefing rests on, and the claims in the agent's latest messages that the next step depends on: work done, files saved, tests run and passed, a problem fixed, a helper's result used, something installed or running.
 3. Judge each as of ${at}, by "What counts as shown". It holds when you saw the proof yourself. It is false when the record or the disk showed otherwise then; a guess at what a command may have done shows nothing. It is not shown when nothing proves it either way. What became true or false after ${at} is a change.
 4. Judge each condition the rep holds open the same way. Under "shown:" put each one the record or the disk shows, with where: the command and what it printed, or the file and what it holds. Under "closed:" put each one the owner closed in a message of their own${a.from > 0 ? ` sent after #${a.from}` : ''}, cited as #n. Check each condition held shown the same way; where it was not so as of ${at}, put it under "reopen:" with what shows otherwise. Write each condition in its words as listed, without the mark in brackets.
-5. Open the real thing where you can reach it and use it the way its user would: read the pages as a visitor, run the program the way the owner uses it, try to break it. Judge it against the best in its trade; the agent's own tests passing says only that they pass. Where what you saw meets a "works:" condition held open, put it under "shown:" as "look by the check: …"; where it falls short, say what better looks like. Then say how the work was split, with the figures the record shows, between work on the product (tests, reviews, plan checks and planning among it) and self-proving pieces, which only prove the agent's own work (scripts confirming its steps ran, graders of its own output, proof reports). A self-proving step inside a plan the owner approved is the owner's ask and also a question for the owner: put it under "left" as that question, and have the message tell the agent to hold that step and do everything else until the owner answers.
+5. Open the real thing where you can reach it and use it the way its user would: read the pages as a visitor, run the program the way the owner uses it, try to break it. Judge it against the best in its trade; the agent's own tests passing says only that they pass. Where what you saw meets a "works:" condition held open, put it under "shown:" as "look by the check: …"; where it falls short, say what better looks like. Then say how the work was split, with the figures the record shows, between work on the product (tests, reviews, plan checks and planning among it) and self-proving pieces, which only prove the agent's own work (scripts confirming its steps ran, graders of its own output, proof reports). A self-proving step inside a plan the owner approved is the owner's ask: put under "left" whether you would keep or drop it and why, and have the message carry that call.
 6. Rewrite the whole briefing in the light of what you found: stands, means, left, next and the message. Drop the "left" items your checking disproved and add what it found. The card the owner reads is your version, so it agrees with itself. While any condition stays open, no part of it says the job or the session is finished.
 7. Say in one line what you checked and what you could not look at.
 
@@ -6478,7 +6488,7 @@ export const OPEN_MEANS = (open: Condition[]): string =>
 // The message a refused card offers to send in place of the model's: it keeps
 // the agent on the job, never tells it to stop.
 export const OPEN_MESSAGE = (open: Condition[]): string =>
-  `The job is not finished. These conditions of done are still open:\n${list(open.map(c => conditionLine(c, false)), '- none')}\nBefore anything stops, show each one working, or say what stands in the way. If a step needs my go-ahead, hold it: finish the rest, and tell me what you will show me when I give it.`
+  `The job is not finished. These conditions of done are still open:\n${list(open.map(c => conditionLine(c, false)), '- none')}\nBefore anything stops, show each one working, or say what stands in the way.`
 
 // What sending that message makes the agent do.
 export const OPEN_DOES = 'Keeps the agent on the job until it shows each open condition working or says what stands in the way.'
@@ -6644,16 +6654,18 @@ export const askAgainText = (open: string, fault: string): string => `## Asked o
 This is the briefing's second asking. The first answer ${fenceTags(fault)}, while these conditions of done are still open:
 ${fenceTags(open)}
 
-Measure each one against the record by "What counts as shown". Put each the record shows under "shown:" with where, and each the owner closed in a message of their own under "closed:" with its number. Then give the whole briefing in the structure above. While any of them stays open, the verdict is "continue", "well" is empty, and "next" and the message say what the agent does now to show it, or what stands in the way, asking for the proof it still needs. A condition waiting on the owner's go-ahead is held, as "What reaches the owner" says.`
+Measure each one against the record by "What counts as shown". Put each the record shows under "shown:" with where, and each the owner closed in a message of their own under "closed:" with its number. Then give the whole briefing in the structure above. While any of them stays open, the verdict is "continue", "well" is empty, and "next" and the message say what the agent does now to show it, or what stands in the way, asking for the proof it still needs. ${DC_ASK}`
 // What the build before G39 sent in its place, listing every fault the gate refuses on. History,
 // kept word for word so the replay's chain can rebuild that build's texts; never sent.
+// The held-step rule that build ended it with, history like the rest of it.
+const PRE_HELD_STEP_RULE = `When a condition waits on the owner's go-ahead (publish, send, pay, a guard refusal), the message tells the agent to finish everything else, hold that step until the go-ahead comes, and say exactly what it will show the owner then; it never pushes the held step.`
 export const askAgainBefore = (open: Condition[]): string => askAgainBeforeFault(list(open.map(promptLine), '- none'))
 export const askAgainBeforeFault = (open: string): string => `## Asked once more
 
 Your first answer said the agent should stop, gave no verdict, called the work finished, or said the work is going well, while these conditions of done are still open:
 ${open}
 
-None of these may stand while any of them is open. An empty message counts too: while any of these is open, write the message to the agent, asking for the proof each still needs. Look at the record again and measure each one by what counts as shown: put under "shown:" each one it now shows, with where, and under "closed:" each one the owner closed in a message of the owner's own, with its number. ${LOOK_RULE} Then give the whole briefing again in the same structure. While any of them stays open the verdict is "continue", "well" is empty, and "next" and "message" say what the agent does now to show it, or what stands in the way. ${HELD_STEP_RULE}`
+None of these may stand while any of them is open. An empty message counts too: while any of these is open, write the message to the agent, asking for the proof each still needs. Look at the record again and measure each one by what counts as shown: put under "shown:" each one it now shows, with where, and under "closed:" each one the owner closed in a message of the owner's own, with its number. ${LOOK_RULE} Then give the whole briefing again in the same structure. While any of them stays open the verdict is "continue", "well" is empty, and "next" and "message" say what the agent does now to show it, or what stands in the way. ${PRE_HELD_STEP_RULE}`
 
 // A part of a refused card the gate wrote in the rep's fixed text, in place of the model's.
 export type Replaced = 'means' | 'next' | 'message'
@@ -7159,7 +7171,7 @@ ${left}
 The briefing was refused because it ${fault}, and it stayed refused when asked once more, while these conditions are open:
 ${open}
 
-From what the rep found above, write in your own words only the four parts below. While a condition is open, nothing you write tells the agent or the job to stop, calls the work finished, or gives the owner a chore. The message asks for work and proof on every open condition: asking only that things be left as they are is a stop in other words. A question reaches the owner only for a decision the owner has yet to make: what the owner's messages already settle stays settled, and the parts act on it. A look at the result is by someone other than the agent and the owner. A step waiting on the owner's go-ahead is held, as "What reaches the owner" says.
+From what the rep found above, write in your own words only the four parts below. While a condition is open, nothing you write tells the agent or the job to stop, calls the work finished, or gives the owner a chore. The message asks for work and proof on every open condition: asking only that things be left as they are is a stop in other words. ${DC_OWN_Q}
 
 ## Output structure
 
@@ -7230,12 +7242,13 @@ export function ownMessageTaken(replaced: Replaced[], own: BriefAnswer | null): 
 // Brief me's last net before the fixed list: when the last read's message was
 // replaced by the rep's fixed text and the own-words call gave no usable one,
 // a message read 1 kept stands instead, without its stop sentences, with read
-// 1's does line (already through the gate). Read 1 replaced too, or nothing
+// 1's does line (already through the gate) and read 1's left lines, which carry
+// the calls that message acts on. Read 1 replaced too, or nothing
 // usable left of it (`messageUsable`, so praise alone is not), and the fixed text stays. Every other part is the last
 // read's. Decided by the parts lists, never by comparing the message's text.
 export function earlierMessage(answer: BriefAnswer, replaced: Replaced[], ownTaken: boolean, first: { answer: BriefAnswer; replaced: Replaced[] }): BriefAnswer {
   if (!replaced.includes('message') || ownTaken || first.replaced.includes('message')) return answer
-  return messageUsable(first.answer.message) ? { ...answer, message: withoutStopSentences(first.answer.message), does: first.answer.does } : answer
+  return messageUsable(first.answer.message) ? { ...answer, message: withoutStopSentences(first.answer.message), does: first.answer.does, leftOut: first.answer.leftOut } : answer
 }
 
 // Whether a part ends at a sentence mark: a full stop, an exclamation mark or a
@@ -7558,7 +7571,7 @@ export function countsText(counts: Counts | undefined): string {
 }
 
 // The edits of this build a replay's variant can make to a saved call (`editSaved`, below).
-export const PROMPT_EDITS = ['frame', 'no-think', 'rep-system', 'end-line', 'proof', 'decisions', 'now', 'same-as', 'message', 'evidence', 'fault', 'unshown', 'rewrite', 'writer', 'own'] as const
+export const PROMPT_EDITS = ['frame', 'no-think', 'rep-system', 'end-line', 'proof', 'decisions', 'now', 'same-as', 'message', 'evidence', 'fault', 'unshown', 'rewrite', 'writer', 'own', 'decide'] as const
 export type PromptEdit = (typeof PROMPT_EDITS)[number]
 const PROMPT_EDITS_LIST = PROMPT_EDITS.join('|')
 
@@ -8036,7 +8049,7 @@ const preRwWatchRequest = (reason: 'step' | 'stop' | 'note', seen: string, other
 // call is never sent unchanged under the variant's name. Only the task after the record is edited:
 // the record is the session's, and anything in it, the old texts quoted among them, stays. The edits
 // themselves, `PROMPT_EDITS`, are named above the replay's words.
-const EDIT_KINDS: Record<PromptEdit, readonly CallKind[]> = { frame: ['watch', 'brief', 'ask-again'], 'no-think': ['watch'], 'rep-system': ['watch', 'brief', 'ask-again'], 'end-line': ['watch', 'brief', 'ask-again'], proof: ['objective', 'watch', 'brief', 'ask-again', 'own-words'], decisions: ['objective', 'watch', 'brief', 'ask-again'], now: ['objective', 'watch'], 'same-as': ['objective'], message: ['watch', 'brief', 'ask-again', 'own-words'], evidence: ['watch', 'brief', 'ask-again'], fault: ['ask-again'], unshown: ['objective'], rewrite: ['watch', 'brief', 'ask-again', 'own-words'], writer: ['objective'], own: ['own-words'] }
+const EDIT_KINDS: Record<PromptEdit, readonly CallKind[]> = { frame: ['watch', 'brief', 'ask-again'], 'no-think': ['watch'], 'rep-system': ['watch', 'brief', 'ask-again'], 'end-line': ['watch', 'brief', 'ask-again'], proof: ['objective', 'watch', 'brief', 'ask-again', 'own-words'], decisions: ['objective', 'watch', 'brief', 'ask-again'], now: ['objective', 'watch'], 'same-as': ['objective'], message: ['watch', 'brief', 'ask-again', 'own-words'], evidence: ['watch', 'brief', 'ask-again'], fault: ['ask-again'], unshown: ['objective'], rewrite: ['watch', 'brief', 'ask-again', 'own-words'], writer: ['objective'], own: ['own-words'], decide: ['watch', 'brief', 'ask-again', 'own-words'] }
 // What the build before prompt group 1 sent (G1, G2): the fork frame that opened the task, the line
 // after it on the watch, and the start of the record read's system prompt.
 const OLD_FRAME = /^<system-reminder>This is a side request from the user[^]*?<\/system-reminder>\n\n/
@@ -8188,6 +8201,25 @@ const G10_OBJECTIVE_SYSTEM: readonly Swap[] = [
   ],
 ]
 const G8_REP_SYSTEM: readonly Swap[] = [['the admission needs no proof.\n- Plainly, without hedging.', `the admission needs no proof.\n${PRE_RW_REP_HOLD}\n- Plainly, without hedging.`]]
+// What the build before the decide edit (0.8.0) sent where this build sends the DC texts, kept word
+// for word for the replay. They are history, never sent.
+const PRE_DC_ASKED = 'The owner is asked only for the message to send and one plain question per decision of theirs.'
+const PRE_DC_LEFT = 'or the owner\'s own decision (a held go-ahead, or keeping a self-proving step of an approved plan), as one short plain question, never folded.'
+const PRE_DC_SIX = 'A self-proving step inside a plan the owner approved is the owner\'s ask and also a question for the owner: name it as that question, and have the message tell the agent to hold that step and do everything else until the owner answers.'
+const PRE_DC_REACHES = 'The owner is asked for two things only. One is a decision only the owner can make, because it touches the owner\'s livelihood or public name, cannot be undone, or goes against something the owner asked for; publishing, sending, paying and anything the owner\'s guard refused are among them. A go-ahead is such a decision, not a chore. Each reaches the owner as one plain question on the card, even while the agent rightly holds the step. The other is the message to send. When a condition waits on a go-ahead, the message tells the agent to finish everything else, hold that step until the owner says go, and say exactly what it will show the owner then.'
+const PRE_DC_MIND = 'If the owner\'s way will not get the result, say so and show a better way; if the result itself looks wrong for what the owner is after, say that too. The owner decides: you neither change the goal quietly nor obey quietly.'
+const PRE_DC_MESSAGE = '- Name a held step exactly ("hold the publish to the live address until I say go"), rather than "wait for approval".'
+const PRE_DC_ASK = 'A condition waiting on the owner\'s go-ahead is held, as "What reaches the owner" says.'
+const PRE_DC_OWN_Q = 'A question reaches the owner only for a decision the owner has yet to make: what the owner\'s messages already settle stays settled, and the parts act on it. A look at the result is by someone other than the agent and the owner. A step waiting on the owner\'s go-ahead is held, as "What reaches the owner" says.'
+// The decide group's pairs, as [what the build before it sent, what this build sends].
+const DC_REP_SYSTEM: readonly Swap[] = [[PRE_DC_SIX, DC_SIX], [PRE_DC_REACHES, DC_REACHES], [PRE_DC_MIND, DC_MIND], [PRE_DC_MESSAGE, DC_MESSAGE]]
+const DC_OWN_WORDS_SYSTEM: readonly Swap[] = [[PRE_DC_REACHES, DC_REACHES], [PRE_DC_MESSAGE, DC_MESSAGE]]
+const DC_TASK: ReadonlyArray<{ swap: Swap; kinds: readonly CallKind[] }> = [
+  { swap: [PRE_DC_ASKED, DC_ASKED], kinds: ['watch', 'brief', 'ask-again'] },
+  { swap: [PRE_DC_LEFT, DC_LEFT], kinds: ['brief', 'ask-again'] },
+  { swap: [PRE_DC_ASK, DC_ASK], kinds: ['ask-again'] },
+  { swap: [PRE_DC_OWN_Q, DC_OWN_Q], kinds: ['own-words'] },
+]
 // Each pair's one side found exactly once and put in the other's place, forward (group 2's to
 // this build's) or back; null when one is not found exactly once.
 function swapped(text: string, swaps: readonly Swap[], back: boolean): string | null {
@@ -8300,22 +8332,35 @@ const GROUPS: readonly Group[] = [
   { edit: 'unshown', system: k => (k === 'objective' ? G10_OBJECTIVE_SYSTEM : []), task: [] },
   {
     edit: 'rewrite',
-    system: k => (k === 'objective' ? [] : k === 'own-words' ? [[PRE_RW_OWN_WORDS_SYSTEM, PRE_OWN_OWN_WORDS_SYSTEM]] : [[PRE_RW_REP_SYSTEM, repSystem(REPLAY_FENCE)]]),
+    system: k => (k === 'objective' ? [] : k === 'own-words' ? [[PRE_RW_OWN_WORDS_SYSTEM, PRE_OWN_OWN_WORDS_SYSTEM]] : [[PRE_RW_REP_SYSTEM, after(REWRITE_AT, k)]]),
     task: [],
-    step: (kind, task) => rewriteTask(kind, task),
+    // Its own-words task is the build after #68's, which the own edit takes forward.
+    step: (kind, task) => (kind === 'own-words' ? rewriteTask(kind, task) : laterUndone(REWRITE_AT, kind, rewriteTask(kind, task))),
   },
   // The objective writer's rewrite (prompt audit §6.6): the whole system prompt, and the owner's
   // messages in the session's fence (`writerTask`).
   { edit: 'writer', system: k => (k === 'objective' ? [[PRE_OW_OBJECTIVE_SYSTEM, objectiveSystem(REPLAY_FENCE)]] : []), task: [], step: (_kind, task) => writerTask(task) },
   // The own-words rewrite (§6.5): its system prompt, and its request from the build after #68's.
-  { edit: 'own', system: k => (k === 'own-words' ? [[PRE_OWN_OWN_WORDS_SYSTEM, OWN_WORDS_SYSTEM]] : []), task: [], step: (_kind, task, known) => ownTask(task, known.fault) },
+  { edit: 'own', system: k => (k === 'own-words' ? [[PRE_OWN_OWN_WORDS_SYSTEM, after(OWN_AT, k)]] : []), task: [], step: (kind, task, known) => laterUndone(OWN_AT, kind, ownTask(task, known.fault)) },
+  // The rep makes every call itself (0.9.0): pairs, like the groups before the rewrite.
+  { edit: 'decide', system: k => (k === 'objective' ? [] : k === 'own-words' ? DC_OWN_WORDS_SYSTEM : DC_REP_SYSTEM), task: DC_TASK },
 ]
 const REWRITE_AT = GROUPS.findIndex(g => g.edit === 'rewrite')
+const OWN_AT = GROUPS.findIndex(g => g.edit === 'own')
+// A group whose step writes this build's texts gives the texts of the build after it: this build's
+// with every later group's pairs undone (`after`, `laterUndone`).
+const after = (i: number, kind: CallKind): string => systemBefore(kind, i + 1) ?? ''
+function laterUndone(i: number, kind: CallKind, moved: string | { why: string }): string | { why: string } {
+  if (typeof moved !== 'string') return moved
+  let t: string | null = moved
+  for (let j = GROUPS.length - 1; j > i && t !== null; j--) t = swapped(t, groupTask(j, kind), true)
+  return t ?? { why: `${builtBy(i + 1)}'s texts cannot be rebuilt from this build's` }
+}
 const nowSystem = (kind: CallKind): string => (kind === 'objective' ? objectiveSystem(REPLAY_FENCE) : kind === 'own-words' ? OWN_WORDS_SYSTEM : repSystem(REPLAY_FENCE))
 const groupTask = (i: number, kind: CallKind): Swap[] => GROUPS[i]!.task.filter(x => x.kinds.includes(kind)).map(x => x.swap)
 // Whose texts stand before group i: the build after group 2 before the first, this build after the last.
 // Group 9's edit (fault) rebuilds nothing, so the build before #49's edit is the build after group 9.
-const BUILT_BEFORE = ['group 2', 'group 3', 'group 4', 'group 5', 'group 6', 'group 7', 'group 9', 'the build before the rewrite', 'the build before the objective rewrite', 'the build after #68'] as const
+const BUILT_BEFORE = ['group 2', 'group 3', 'group 4', 'group 5', 'group 6', 'group 7', 'group 9', 'the build before the rewrite', 'the build before the objective rewrite', 'the build after #68', 'the build before the rep made every call'] as const
 const builtBy = (i: number): string => BUILT_BEFORE[i] ?? 'this build'
 // The system prompt the build before group i (0 for group 3) sent for a call of this kind.
 export function systemBefore(kind: CallKind, i: number): string | null {

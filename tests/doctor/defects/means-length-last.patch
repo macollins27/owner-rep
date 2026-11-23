@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 062f428..13dccf9 100644
+index b0a6539..a3d416b 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1889,7 +1889,7 @@ closed:
+@@ -1901,7 +1901,7 @@ closed:
  - <a held condition the owner closed | #n>
  well: <one plain sentence, only when every condition is shown or closed and nothing is left; otherwise empty>
  stands: <${SHORT_PART}: where the work really stands, as the record shows it>
 -means: <${SHORT_PART}: what the agent's latest message means for the owner against the whole result>
 +means: <what the agent's latest message means for the owner against the whole result; under 40 words>
  left:
- - <${LEFT_ITEMS}. Each says in a few words why it matters. A gap is part of the job not done or not shown, anything "Also look for" names, a chore left "for you", or the owner's own decision (a held go-ahead, or keeping a self-proving step of an approved plan), as one short plain question, never folded. A condition already shown or closed is not a gap. Write "- nothing" when there is none.>
+ - <${LEFT_ITEMS}. Each says in a few words why it matters. A gap is part of the job not done or not shown, anything "Also look for" names, a chore left "for you", ${DC_LEFT} A condition already shown or closed is not a gap. Write "- nothing" when there is none.>
  ${plan ? `${UNASSESSED_PART}\n` : ''}next: <${SHORT_PART}: what the agent does next; a stop only with a stop verdict>

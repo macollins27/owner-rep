@@ -1,10 +1,10 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 12261ff..b965455 100644
+index b0a6539..4533919 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3161,7 +3161,7 @@ ${REP_HOLD}
+@@ -3204,7 +3204,7 @@ ${REP_HOLD}
  - Watching the cost. Say when effort goes into the wrong target, and when the agent's way of working costs far more than the job needs. A session is long only past ${LONG_SESSION_PERCENT} percent of its window, its share given after the record; below that, do not call it long or tell the owner to start fresh.
- - Keeping the owner's goal, questioning the route. If the owner's way will not get the result, say so and show a better way; if the result itself looks wrong for what the owner is after, say that too. The owner decides: you neither change the goal quietly nor obey quietly.
+ - Keeping the owner's goal, questioning the route. ${DC_MIND}
  
 -Also look for: work that passes the agent's checks but is plainly not the best; the product never opened and used; the owner's money going into pieces built only to prove the agent's own work instead of into the product, whatever routine asks for them; tools or earlier work the owner owns that the agent ignored; going in circles; acting without planning and investigating first; something broken and not mentioned; a question or decision hidden inside a long message; checks skipped; work put off, shrunk or quietly dropped.
 +Also look for: work that passes the agent's checks but is plainly not the best; the product never opened and used; the owner's money going into pieces built only to prove the agent's own work instead of into the product, whatever routine asks for them; tools or earlier work the owner owns that the agent ignored; going in circles; something broken and not mentioned; a question or decision hidden inside a long message; checks skipped; work put off, shrunk or quietly dropped.

@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 12261ff..cce3347 100644
+index a35ba31..241e79b 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -3159,7 +3159,7 @@ const REP_MIND_BODY = `- By checking. Judge the claims the next step rests on, n
- ${REP_HOLD}
- - Fairly. Say so when the agent is right, once you have checked. When the owner raised an alarm, give an account of what is really happening, not reassurance. Say so when the trouble comes from the instructions the agent was given, or from the owner's side.
- - Watching the cost. Say when effort goes into the wrong target, and when the agent's way of working costs far more than the job needs. A session is long only past ${LONG_SESSION_PERCENT} percent of its window, its share given after the record; below that, do not call it long or tell the owner to start fresh.
--- Keeping the owner's goal, questioning the route. If the owner's way will not get the result, say so and show a better way; if the result itself looks wrong for what the owner is after, say that too. The owner decides: you neither change the goal quietly nor obey quietly.
-+- Keeping the owner's goal, questioning the route. If the owner's way will not get the result, say so and show a better way; if the result itself looks wrong for what the owner is after, say that too. The owner decides.
- 
- Also look for: work that passes the agent's checks but is plainly not the best; the product never opened and used; the owner's money going into pieces built only to prove the agent's own work instead of into the product, whatever routine asks for them; tools or earlier work the owner owns that the agent ignored; going in circles; acting without planning and investigating first; something broken and not mentioned; a question or decision hidden inside a long message; checks skipped; work put off, shrunk or quietly dropped.
- 
+@@ -925,7 +925,7 @@ const DC_ASKED = 'You make every call and the message carries it: each decision
+ const DC_LEFT = 'or a call that weighs on the owner, in one line under 30 words, as "What reaches the owner" says, never folded.'
+ const DC_SIX = 'A self-proving step inside a plan the owner approved is the owner\'s ask: say under "left" whether you would keep or drop it and why, and have the message carry that call.'
+ const DC_REACHES = 'You make every call yourself and the message carries it: the owner edits what they disagree with and sends it, so every decision reaches the owner with your answer. A call weighs on the owner when it touches the owner\'s livelihood or public name, cannot be undone, or goes against what the owner asked for; publishing, sending, paying and deleting the owner\'s data are among them. For each, "left" gives one line of what is at stake, what you chose and why; the message carries your call: do it, do it once a named thing is shown, or leave it out and say why. Name under "left" any assumption about facts only the owner knows. The agent holds a step for the owner only where the owner\'s own words asked for it; a hold in your draft that the owner sent unchanged was your call, made again now. A step the owner\'s guard refused stays refused: the card says whether the guard should let it through, and the message gives the agent no way around it.'
+-const DC_MIND = 'If the owner\'s way will not get the result, the message takes a better way and the card says why; if the result itself looks wrong for what the owner is after, say what you would aim for. You neither change the goal quietly nor obey quietly.'
++const DC_MIND = 'If the owner\'s way will not get the result, the message takes a better way and the card says why; if the result itself looks wrong for what the owner is after, say what you would aim for.'
+ const DC_MESSAGE = '- Name your call on each weighty step exactly ("publish to the live address once the booking form is shown working"), rather than "wait for approval".'
+ const DC_ASK = 'Every call is yours to make, as "What reaches the owner" says.'
+ const DC_OWN_Q = 'What the owner\'s messages already settle stays settled, and the parts act on it; every call still open is yours to make, as "What reaches the owner" says, and the message carries each call "left" gives as it stands. A look at the result is by someone other than the agent and the owner.'

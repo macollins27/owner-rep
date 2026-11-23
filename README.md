@@ -67,7 +67,9 @@ option taken in place of the right one. Then one "Heads up" line appears above t
 how many things it takes to be done, how many are shown and how many are still open. Then it
 says where the work really stands, what the agent's last message means, what was left out,
 and what should happen next. It also gives you the message to send the agent, written and
-ready. The card fills the space it has, most important first, so a taller window shows more
+ready. The rep makes every call in it for you, and a call that weighs on you (your livelihood
+or public name, something that can't be undone) gets one line saying what is at stake, what
+the rep chose and why, and any guess it made about something only you know is named, so you can change it before you send. The card fills the space it has, most important first, so a taller window shows more
 of it, and its buttons always stay on screen. One press puts that message in your prompt box,
 whole even when the card had room for only part of it. Nothing is sent until you press Enter.
 

@@ -1,13 +1,13 @@
 diff --git a/hooks/rep.ts b/hooks/rep.ts
-index 062f428..d6ff481 100644
+index a35ba31..69a82a8 100644
 --- a/hooks/rep.ts
 +++ b/hooks/rep.ts
-@@ -1891,7 +1891,7 @@ well: <one plain sentence, only when every condition is shown or closed and noth
- stands: <${SHORT_PART}: where the work really stands, as the record shows it>
- means: <${SHORT_PART}: what the agent's latest message means for the owner against the whole result>
- left:
--- <${LEFT_ITEMS}. Each says in a few words why it matters. A gap is part of the job not done or not shown, anything "Also look for" names, a chore left "for you", or the owner's own decision (a held go-ahead, or keeping a self-proving step of an approved plan), as one short plain question, never folded. A condition already shown or closed is not a gap. Write "- nothing" when there is none.>
-+- <${LEFT_ITEMS}. Each says in a few words why it matters. A gap is part of the job not done or not shown, anything "Also look for" names, a chore left "for you", or the owner's own decision (a held go-ahead, or keeping a self-proving step of an approved plan), as one short plain question. A condition already shown or closed is not a gap. Write "- nothing" when there is none.>
- ${plan ? `${UNASSESSED_PART}\n` : ''}next: <${SHORT_PART}: what the agent does next; a stop only with a stop verdict>
- message:
- <the message for the owner to send, written to the agent ${MESSAGE_FORM}. Empty only when every condition is shown or closed and the work is the best it could be, or no objective is held and nothing is worth sending.>
+@@ -922,7 +922,7 @@ export const skipAfter = (typedPast: number): number =>
+ // for the owner's approval unless the owner's own words asked for that hold. These are the texts the
+ // decide edit puts in place of PRE_DC's (the replay's decide group, below).
+ const DC_ASKED = 'You make every call and the message carries it: each decision reaches the owner as your answer and its reason.'
+-const DC_LEFT = 'or a call that weighs on the owner, in one line under 30 words, as "What reaches the owner" says, never folded.'
++const DC_LEFT = 'or a call that weighs on the owner, in one line under 30 words, as "What reaches the owner" says.'
+ const DC_SIX = 'A self-proving step inside a plan the owner approved is the owner\'s ask: say under "left" whether you would keep or drop it and why, and have the message carry that call.'
+ const DC_REACHES = 'You make every call yourself and the message carries it: the owner edits what they disagree with and sends it, so every decision reaches the owner with your answer. A call weighs on the owner when it touches the owner\'s livelihood or public name, cannot be undone, or goes against what the owner asked for; publishing, sending, paying and deleting the owner\'s data are among them. For each, "left" gives one line of what is at stake, what you chose and why; the message carries your call: do it, do it once a named thing is shown, or leave it out and say why. Name under "left" any assumption about facts only the owner knows. The agent holds a step for the owner only where the owner\'s own words asked for it; a hold in your draft that the owner sent unchanged was your call, made again now. A step the owner\'s guard refused stays refused: the card says whether the guard should let it through, and the message gives the agent no way around it.'
+ const DC_MIND = 'If the owner\'s way will not get the result, the message takes a better way and the card says why; if the result itself looks wrong for what the owner is after, say what you would aim for. You neither change the goal quietly nor obey quietly.'
